@@ -57,6 +57,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   private ground: Api | null = null;
   private game = new Chess();
+  private pendingMove: string | null = null;
 
   ngAfterViewInit() {
     this.game = this.createGame(this.fen);
@@ -67,6 +68,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     if (!this.ground) return;
     if (changes['fen'] || changes['side'] || changes['lastMove'] || changes['showCoordinates']) {
       this.game = this.createGame(this.fen);
+      this.pendingMove = null;
       this.ground.set(this.config());
     }
   }
@@ -97,19 +99,19 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
       lastMove: this.lastMove ? [this.lastMove.from as Key, this.lastMove.to as Key] : undefined,
       movable: {
         free: false,
-        color: turnColor,
-        dests: this.legalDests(),
+        color: this.pendingMove ? undefined : turnColor,
+        dests: this.pendingMove ? new Map<Key, Key[]>() : this.legalDests(),
         showDests: true,
         events: {
           after: (from: Key, to: Key) => this.handleMove(from, to),
         },
       },
       draggable: {
-        enabled: true,
+        enabled: !this.pendingMove,
         showGhost: true,
       },
       selectable: {
-        enabled: true,
+        enabled: !this.pendingMove,
       },
       animation: {
         enabled: true,
@@ -131,6 +133,8 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   private handleMove(from: Key, to: Key) {
+    if (this.pendingMove) return;
+
     const legalMoves = this.game.moves({ verbose: true }) as any[];
     const matching = legalMoves.find((m) => m.from === from && m.to === to);
     if (!matching) {
@@ -139,10 +143,12 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     }
 
     const uci = from + to + (matching.promotion || '');
+    this.pendingMove = uci;
+    this.ground?.set({
+      movable: { color: undefined, dests: new Map<Key, Key[]>() },
+      draggable: { enabled: false },
+      selectable: { enabled: false },
+    });
     this.move.emit(uci);
-
-    // The server is the source of truth. Reset immediately; parent inputs will
-    // update the board to the accepted FEN after the API response.
-    queueMicrotask(() => this.ground?.set(this.config()));
   }
 }
