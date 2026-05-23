@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "npm run build --workspace=packages/chess-domain && ts-node-dev --respawn --transpile-only src/main.ts",
+    "dev": "(cd ../.. && npm run build --workspace=packages/chess-domain) && ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "db:migrate": "prisma migrate deploy",
