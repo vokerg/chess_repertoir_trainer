@@ -11,11 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Color {
-  WHITE
-  BLACK
-}
-
 model Course {
   id          Int       @id @default(autoincrement())
   name        String
@@ -42,7 +37,7 @@ model Line {
   chapterId       Int
   chapter         Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   name            String
-  sideToTrain     Color
+  sideToTrain     String
   startingFen     String
   tags            String?
   notes           String?
@@ -63,14 +58,15 @@ model MoveNode {
   line            Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
   parent          MoveNode?@relation("MoveNodeToMoveNode", fields: [parentId], references: [id], onDelete: Cascade)
   children        MoveNode[] @relation("MoveNodeToMoveNode")
+  trainingAttempts TrainingAttemptMove[]
   plyNumber       Int
   fenBefore       String
   fenAfter        String
   moveUci         String
   moveSan         String
   moveNumber      Int
-  colorToMoveBefore Color
-  side            Color
+  colorToMoveBefore String
+  side            String
   isUserMove      Boolean
   isCorrectUserMove Boolean
   comment         String?

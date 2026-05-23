@@ -23,6 +23,7 @@
     "prisma:studio": "npm run prisma:studio --workspace=apps/api"
   },
   "devDependencies": {
+    "@angular/core": "^21.2.14",
     "concurrently": "^8.2.0"
   }
 }

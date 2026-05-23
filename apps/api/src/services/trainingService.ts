@@ -90,7 +90,7 @@ export const TrainingService = {
         // We need to find node by UCI and parent state.current? The state.current may still be same because we didn't advance; expected move is child of current
         const currentNode = state.current;
         const children = currentNode.children;
-        const expectedChild = children.find((c) => c.node.moveUci === expectedMove);
+        const expectedChild = children.find((c: any) => c.node.moveUci === expectedMove);
         if (expectedChild) {
           await prisma.moveNode.update({
             where: { id: expectedChild.node.id },

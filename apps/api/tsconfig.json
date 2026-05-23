@@ -7,6 +7,6 @@
     "target": "ES2019",
     "declaration": true
   },
-  "include": ["src/**/*", "prisma/seed.ts"],
+  "include": ["src/**/*"],
   "exclude": ["dist"]
 }

@@ -39,9 +39,9 @@ export function createInitialTreeState(startingFen: string, sideToTrain: Color):
  * true if the move is legal, false otherwise.
  */
 export function validateMoveFromFen(fen: string, move: string): boolean {
-  const chess = new Chess(fen);
+  const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
   const moves = chess.moves({ verbose: true });
-  return moves.some((m) => m.uci === move || m.san === move);
+  return moves.some((m) => m.lan === move || m.san === move);
 }
 
 /**
@@ -51,8 +51,8 @@ export function validateMoveFromFen(fen: string, move: string): boolean {
  * prepopulate move pickers.
  */
 export function getLegalMoves(fen: string): { uci: string; san: string }[] {
-  const chess = new Chess(fen);
-  return chess.moves({ verbose: true }).map((m) => ({ uci: m.uci, san: m.san }));
+  const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
+  return chess.moves({ verbose: true }).map((m) => ({ uci: m.lan, san: m.san }));
 }
 
 /**

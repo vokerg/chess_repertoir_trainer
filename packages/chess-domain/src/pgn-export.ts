@@ -10,13 +10,13 @@ import { MoveTreeNode } from './types';
  */
 export function exportToPgn(root: MoveTreeNode): string {
   const moves: string[] = [];
-  const chess = new Chess(root.node.fenAfter);
+  const chess = root.node.fenAfter === 'startpos' ? new Chess() : new Chess(root.node.fenAfter);
   let current: MoveTreeNode | undefined = root;
   while (current && current.children.length > 0) {
     // Determine whose turn it is based on the underlying FEN
-    const children = current.children;
+    const children: MoveTreeNode[] = current.children;
     // If there is a child where isUserMove is true and isCorrectUserMove is true, pick it.
-    let next: MoveTreeNode | undefined = children.find((c) => c.node.isUserMove && c.node.isCorrectUserMove);
+    let next: MoveTreeNode | undefined = children.find((c: MoveTreeNode) => c.node.isUserMove && c.node.isCorrectUserMove);
     if (!next) {
       // Otherwise pick the first opponent branch
       next = children[0];
@@ -27,7 +27,7 @@ export function exportToPgn(root: MoveTreeNode): string {
   }
   // Build PGN string with move numbers. PGN numbers increment each time White moves.
   const pgn: string[] = [];
-  let moveNumber = chess.move_number || 1;
+  let moveNumber = chess.moveNumber() || 1;
   let isWhite = chess.turn() === 'w';
   for (const san of moves) {
     if (isWhite) {

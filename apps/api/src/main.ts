@@ -6,8 +6,8 @@ import registerRoutes from './routes';
 // Load environment variables from .env
 dotenv.config();
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-const ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:4200';
+const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3000;
+const ORIGIN = process.env['CORS_ORIGIN'] || 'http://localhost:4200';
 
 async function bootstrap() {
   const app = Fastify({ logger: true });

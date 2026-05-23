@@ -1,5 +1,12 @@
-import { PrismaClient, Color } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Chess } from 'chess.js';
+
+type Color = string;
+
+const Color = {
+  WHITE: 'WHITE',
+  BLACK: 'BLACK'
+} as const;
 
 const prisma = new PrismaClient();
 

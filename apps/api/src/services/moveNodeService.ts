@@ -47,24 +47,23 @@ export const MoveNodeService = {
       fenBefore = parentNode.fenAfter;
       plyNumber = parentNode.plyNumber + 1;
       moveNumber = parentNode.moveNumber;
-      // Determine color from parent fenAfter: it's the side whose turn it is to move
-      const parts = fenBefore.split(' ');
-      colorToMoveBefore = parts[1] === 'w' ? 'WHITE' : 'BLACK';
     } else {
       // Root node uses line starting FEN
       fenBefore = line.startingFen;
-      const parts = fenBefore.split(' ');
-      colorToMoveBefore = parts[1] === 'w' ? 'WHITE' : 'BLACK';
       // plyNumber starts at 1
       plyNumber = 1;
       // moveNumber starts at 1
       moveNumber = 1;
     }
+
+    // Use chess.js to validate and apply the move
+    const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
+    // Determine color from chess instance: it's the side whose turn it is to move
+    colorToMoveBefore = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
     // Determine whether this move is a user (trained side) or opponent move
     const isUserMove = colorToMoveBefore === line.sideToTrain;
-    // Use chess.js to validate and apply the move
-    const chess = new Chess(fenBefore);
-    const move = chess.move({ from: moveUci.slice(0, 2), to: moveUci.slice(2, 4), promotion: moveUci.length === 5 ? moveUci[4] : undefined, sloppy: true });
+
+    const move = chess.move({ from: moveUci.slice(0, 2), to: moveUci.slice(2, 4), promotion: moveUci.length === 5 ? moveUci[4] : undefined });
     if (!move) throw new Error('Illegal move');
     const fenAfter = chess.fen();
     const moveSan = move.san;
