@@ -71,7 +71,7 @@ export interface TrainingSession {
   lineId: number;
   startedAt: Date;
   completedAt?: Date | null;
-  result: 'PASSED' | 'FAILED' | 'ABANDONED';
+  result: 'IN_PROGRESS' | 'PASSED' | 'FAILED' | 'ABANDONED';
   mistakesCount: number;
   totalExpectedMoves: number;
   correctMoves: number;
