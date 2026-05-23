@@ -20,6 +20,17 @@ export default async function chaptersRoutes(app: FastifyInstance, opts: Fastify
   });
 
   // Update chapter by ID
+  app.get('/api/chapters/:id', async (request, reply) => {
+    const id = Number((request.params as any).id);
+    const chapter = await ChapterService.get(id);
+    if (!chapter) {
+      reply.code(404);
+      return { message: 'Chapter not found' };
+    }
+    return chapter;
+  });
+
+  // Update chapter by ID
   app.patch('/api/chapters/:id', async (request, reply) => {
     const id = Number((request.params as any).id);
     const data = updateChapterSchema.parse(request.body);
