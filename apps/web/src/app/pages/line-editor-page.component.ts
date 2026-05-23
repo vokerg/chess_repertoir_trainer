@@ -1,9 +1,11 @@
-import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
+import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 @Component({
   selector: 'app-line-editor-page',
@@ -15,7 +17,19 @@ import { MoveTreeComponent } from '../components/move-tree.component';
       <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
       <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
         <div>
-          <app-chess-board [fen]="currentFen" [side]="line?.sideToTrain" [lastMove]="lastMove" (move)="onBoardMove($event)"></app-chess-board>
+          <div style="display:flex;gap:12px;align-items:stretch;">
+            <div class="eval-bar" title="Stockfish evaluation">
+              <div class="eval-black" [style.height.%]="100 - evalWhitePercent()"></div>
+              <div class="eval-label">{{ evalLabel() }}</div>
+            </div>
+            <app-chess-board
+              [fen]="currentFen"
+              [side]="line?.sideToTrain"
+              [lastMove]="lastMove"
+              [arrows]="analysisArrows()"
+              (move)="onBoardMove($event)"
+            ></app-chess-board>
+          </div>
 
           <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <button type="button" (click)="goToStart()" [disabled]="currentNodeId === 0" title="Home">⏮ Start</button>
@@ -39,9 +53,26 @@ import { MoveTreeComponent } from '../components/move-tree.component';
             </div>
           </div>
         </div>
-        <div>
+        <div style="min-width:260px;">
           <h3>Move Tree</h3>
           <app-move-tree [tree]="tree" [selectedNodeId]="currentNodeId" (nodeSelected)="onSelectNode($event)"></app-move-tree>
+
+          <div class="analysis-panel">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <h3 style="margin:0;">Stockfish</h3>
+              <button type="button" (click)="rerunAnalysis()" [disabled]="analysis.running">Analyze</button>
+            </div>
+            <p *ngIf="analysis.error" style="color:#b00020;">{{ analysis.error }}</p>
+            <p *ngIf="analysis.running">Analyzing… depth {{ topDepth() || '…' }}</p>
+            <p *ngIf="!analysis.running && !analysis.bestMove && !analysis.error">Select a position to analyze.</p>
+            <p *ngIf="analysis.bestMove"><strong>Best:</strong> <code>{{ analysis.bestMove }}</code></p>
+            <ol *ngIf="analysis.lines.length > 0">
+              <li *ngFor="let line of analysis.lines.slice(0, 3)">
+                <span class="score">{{ lineScoreLabel(line) }}</span>
+                <code>{{ line.pv.slice(0, 8).join(' ') }}</code>
+              </li>
+            </ol>
+          </div>
         </div>
       </div>
     </div>
@@ -49,9 +80,55 @@ import { MoveTreeComponent } from '../components/move-tree.component';
       <p>Loading...</p>
       <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
     </div>
-  `
+  `,
+  styles: [
+    `
+    .eval-bar {
+      position: relative;
+      width: 34px;
+      min-height: min(76vw, 520px);
+      background: #f7f7f7;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+    .eval-black {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #222;
+      transition: height 180ms ease;
+    }
+    .eval-label {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #b00020;
+      text-shadow: 0 1px 2px #fff;
+      writing-mode: vertical-rl;
+      user-select: none;
+    }
+    .analysis-panel {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      padding: 12px;
+      max-width: 420px;
+      background: #fff;
+    }
+    .analysis-panel ol { padding-left: 20px; }
+    .analysis-panel li { margin: 8px 0; }
+    .score { display: inline-block; min-width: 56px; font-weight: bold; }
+    `
+  ]
 })
-export class LineEditorPageComponent implements OnInit {
+export class LineEditorPageComponent implements OnInit, OnDestroy {
   lineId!: number;
   line: any;
   tree: any;
@@ -62,8 +139,17 @@ export class LineEditorPageComponent implements OnInit {
   loaded = false;
   deleting = false;
   error: string | null = null;
+  analysis: EngineAnalysis = { fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] };
 
-  constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
+  private analysisSub?: Subscription;
+  private analysisTimer?: ReturnType<typeof setTimeout>;
+
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+    private stockfish: StockfishAnalysisService,
+  ) {}
 
   @HostListener('window:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent) {
@@ -87,10 +173,20 @@ export class LineEditorPageComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
+      this.analysis = analysis;
+      this.cdr.detectChanges();
+    });
     this.route.paramMap.subscribe((params) => {
       this.lineId = Number(params.get('lineId'));
       this.loadLineAndTree();
     });
+  }
+
+  ngOnDestroy() {
+    if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.analysisSub?.unsubscribe();
+    this.stockfish.stop();
   }
 
   loadLineAndTree(selectNodeId?: number) {
@@ -106,6 +202,7 @@ export class LineEditorPageComponent implements OnInit {
             this.setSelectedNode(targetId);
             this.lastMove = null;
             this.loaded = true;
+            this.scheduleAnalysis();
             this.cdr.detectChanges();
           },
           error: () => {
@@ -163,12 +260,14 @@ export class LineEditorPageComponent implements OnInit {
 
   onSelectNode(id: number) {
     this.setSelectedNode(id);
+    this.scheduleAnalysis();
     this.cdr.detectChanges();
   }
 
   goToStart() {
     if (!this.tree?.root) return;
     this.setSelectedNode(0);
+    this.scheduleAnalysis();
     this.cdr.detectChanges();
   }
 
@@ -176,6 +275,7 @@ export class LineEditorPageComponent implements OnInit {
     const parent = this.findParentNode(this.currentNodeId);
     if (parent) {
       this.setSelectedNode(parent.node.id);
+      this.scheduleAnalysis();
       this.cdr.detectChanges();
     }
   }
@@ -184,6 +284,7 @@ export class LineEditorPageComponent implements OnInit {
     const firstChild = this.selectedNode?.children?.[0];
     if (firstChild) {
       this.setSelectedNode(firstChild.node.id);
+      this.scheduleAnalysis();
       this.cdr.detectChanges();
     }
   }
@@ -195,6 +296,7 @@ export class LineEditorPageComponent implements OnInit {
     }
     if (node) {
       this.setSelectedNode(node.node.id);
+      this.scheduleAnalysis();
       this.cdr.detectChanges();
     }
   }
@@ -210,6 +312,7 @@ export class LineEditorPageComponent implements OnInit {
           next: (tree) => {
             this.tree = tree;
             this.setSelectedNode(created.id);
+            this.scheduleAnalysis();
             this.cdr.detectChanges();
           },
           error: () => {
@@ -248,5 +351,53 @@ export class LineEditorPageComponent implements OnInit {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  rerunAnalysis() {
+    if (!this.currentFen) return;
+    this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
+  }
+
+  scheduleAnalysis() {
+    if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.analysisTimer = setTimeout(() => this.rerunAnalysis(), 250);
+  }
+
+  analysisArrows() {
+    const move = this.analysis.bestMove;
+    if (!move || this.analysis.fen !== this.currentFen || move === '(none)') return [];
+    return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
+  }
+
+  topDepth() {
+    return Math.max(0, ...this.analysis.lines.map((line) => line.depth));
+  }
+
+  lineScoreLabel(line: EngineLine) {
+    if (line.mate !== undefined) return `M${line.mate}`;
+    if (line.scoreCp === undefined) return '—';
+    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, this.currentFen);
+    const pawns = whiteCp / 100;
+    return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
+  }
+
+  evalLabel() {
+    const first = this.analysis.lines[0];
+    if (!first || this.analysis.fen !== this.currentFen) return '—';
+    return this.lineScoreLabel(first);
+  }
+
+  evalWhitePercent() {
+    const first = this.analysis.lines[0];
+    if (!first || this.analysis.fen !== this.currentFen) return 50;
+    if (first.mate !== undefined) return first.mate > 0 ? 100 : 0;
+    const whiteCp = this.scoreFromWhitePerspective(first.scoreCp ?? 0, this.currentFen);
+    const clamped = Math.max(-800, Math.min(800, whiteCp));
+    return 50 + (clamped / 800) * 50;
+  }
+
+  private scoreFromWhitePerspective(scoreCp: number, fen: string) {
+    const turn = fen.split(' ')[1];
+    return turn === 'b' ? -scoreCp : scoreCp;
   }
 }
