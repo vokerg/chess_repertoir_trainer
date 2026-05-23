@@ -16,6 +16,7 @@ import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Config } from '@lichess-org/chessground/config';
 import type { Color, Key } from '@lichess-org/chessground/types';
+import { ChessSoundService } from '../services/chess-sound.service';
 
 type BoardSide = 'WHITE' | 'BLACK';
 
@@ -51,6 +52,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   @Input() side: BoardSide = 'WHITE';
   @Input() lastMove: { from: string; to: string } | null = null;
   @Input() showCoordinates = true;
+  @Input() sound = true;
   @Output() move = new EventEmitter<string>();
 
   @ViewChild('board', { static: true }) boardElement!: ElementRef<HTMLElement>;
@@ -58,6 +60,8 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   private ground: Api | null = null;
   private game = new Chess();
   private pendingMove: string | null = null;
+
+  constructor(private sounds: ChessSoundService) {}
 
   ngAfterViewInit() {
     this.game = this.createGame(this.fen);
@@ -143,11 +147,13 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     const matching = legalMoves.find((m) => m.from === from && m.to === to);
     if (!matching) {
       this.ground?.set(this.config());
+      if (this.sound) this.sounds.play('error');
       return;
     }
 
     const uci = from + to + (matching.promotion || '');
     this.pendingMove = uci;
+    if (this.sound) this.sounds.play(matching.captured ? 'capture' : 'move');
     this.ground?.set({
       movable: { color: undefined, dests: new Map<Key, Key[]>() },
       draggable: { enabled: false },
