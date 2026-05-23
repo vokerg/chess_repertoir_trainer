@@ -91,12 +91,16 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     return {
       fen: this.game.fen(),
       orientation: this.side === 'WHITE' ? 'white' : 'black',
+      turnColor,
       coordinates: this.showCoordinates,
       highlight: {
         lastMove: true,
         check: true,
       },
       lastMove: this.lastMove ? [this.lastMove.from as Key, this.lastMove.to as Key] : undefined,
+      events: {
+        move: (from: Key, to: Key) => this.handleMove(from, to),
+      },
       movable: {
         free: false,
         color: this.pendingMove ? undefined : turnColor,
