@@ -23,16 +23,17 @@ interface PendingRun {
   fen: string;
   depth: number;
   multipv: number;
+  started: boolean;
   lines: Map<number, EngineLine>;
 }
 
 @Injectable({ providedIn: 'root' })
 export class StockfishAnalysisService implements OnDestroy {
   private worker: Worker | null = null;
-  private workerUrl: string | null = null;
   private ready = false;
   private runSeq = 0;
   private currentRun: PendingRun | null = null;
+  private startupTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly stateSubject = new BehaviorSubject<EngineAnalysis>({
     fen: '',
@@ -49,10 +50,7 @@ export class StockfishAnalysisService implements OnDestroy {
 
   ngOnDestroy() {
     this.stop();
-    this.worker?.terminate();
-    this.worker = null;
-    if (this.workerUrl) URL.revokeObjectURL(this.workerUrl);
-    this.workerUrl = null;
+    this.resetWorker();
   }
 
   analyze(fen: string, options: { depth?: number; multipv?: number } = {}) {
@@ -60,20 +58,16 @@ export class StockfishAnalysisService implements OnDestroy {
     const multipv = options.multipv ?? 3;
     const runId = ++this.runSeq;
 
+    // The asm.js engine appears to become unstable across repeated searches,
+    // so each analysis gets a fresh worker process.
+    this.resetWorker();
+    this.currentRun = { id: runId, fen, depth, multipv, started: false, lines: new Map<number, EngineLine>() };
+    this.emit({ fen, running: true, ready: false, error: null, bestMove: null, lines: [] });
+
     this.ensureWorker();
     if (!this.worker) {
       this.emit({ fen, running: false, ready: false, error: 'Stockfish worker could not be loaded.', bestMove: null, lines: [] });
-      return;
     }
-
-    this.currentRun = { id: runId, fen, depth, multipv, lines: new Map<number, EngineLine>() };
-    this.emit({ fen, running: true, ready: this.ready, error: null, bestMove: null, lines: [] });
-
-    this.post('stop');
-    this.post('ucinewgame');
-    this.post(`setoption name MultiPV value ${multipv}`);
-    this.post(`position fen ${fen}`);
-    this.post(`go depth ${depth}`);
   }
 
   stop() {
@@ -87,59 +81,31 @@ export class StockfishAnalysisService implements OnDestroy {
     if (this.worker) return;
     try {
       const assetBase = `${window.location.origin}/assets/stockfish/`;
-      const bootstrap = `
-        const base = '${assetBase}';
-        const candidates = [
-          'stockfish-18-lite-single.js',
-          'src/stockfish-18-lite-single.js',
-          'stockfish-17-lite-single.js',
-          'src/stockfish-17-lite-single.js',
-          'stockfish-16.1-lite-single.js',
-          'src/stockfish-16.1-lite-single.js',
-          'stockfish.js',
-          'src/stockfish.js'
-        ];
-        self.Module = {
-          locateFile: function(path) {
-            const script = self.__stockfishScript || '';
-            const dir = script.includes('/') ? script.slice(0, script.lastIndexOf('/') + 1) : base;
-            return dir + path;
-          }
-        };
-        self.onerror = function(message, source, line, column, error) {
-          self.postMessage('error ' + (message || (error && error.message) || 'unknown worker error'));
-        };
-        let loaded = false;
-        let errors = [];
-        for (const candidate of candidates) {
-          try {
-            const url = base + candidate;
-            self.__stockfishScript = url;
-            importScripts(url);
-            loaded = true;
-            break;
-          } catch (error) {
-            errors.push(candidate + ': ' + (error && error.message ? error.message : String(error)));
-          }
-        }
-        if (!loaded) {
-          self.postMessage('error no Stockfish script loaded. Tried: ' + errors.join(' | '));
-        }
-      `;
-      this.workerUrl = URL.createObjectURL(new Blob([bootstrap], { type: 'application/javascript' }));
-      this.worker = new Worker(this.workerUrl);
+      const workerUrl = `${assetBase}bin/stockfish-18-asm.js`;
+
+      this.ready = false;
+      this.worker = new Worker(workerUrl);
       this.worker.onmessage = (event) => this.zone.run(() => this.handleMessage(String(event.data ?? '')));
       this.worker.onerror = (event) => this.zone.run(() => {
         const state = this.stateSubject.value;
         const detail = event.message ? ` ${event.message}` : '';
         this.emit({ ...state, running: false, ready: false, error: `Stockfish failed to start.${detail}` });
       });
+      this.startupTimer = setTimeout(() => {
+        this.zone.run(() => {
+          if (!this.ready) {
+            const state = this.stateSubject.value;
+            this.emit({ ...state, running: false, ready: false, error: 'Stockfish did not become ready in time.' });
+            this.resetWorker();
+          }
+        });
+      }, 4000);
       this.post('uci');
       this.post('isready');
     } catch (error: any) {
       const state = this.stateSubject.value;
       this.emit({ ...state, running: false, ready: false, error: `Stockfish worker could not be created. ${error?.message ?? ''}`.trim() });
-      this.worker = null;
+      this.resetWorker();
     }
   }
 
@@ -151,12 +117,18 @@ export class StockfishAnalysisService implements OnDestroy {
     if (message.startsWith('error ')) {
       const state = this.stateSubject.value;
       this.emit({ ...state, running: false, ready: false, error: `Stockfish failed to start. ${message.slice(6)}` });
+      this.resetWorker();
       return;
     }
 
     if (message === 'uciok' || message === 'readyok') {
+      if (this.startupTimer) {
+        clearTimeout(this.startupTimer);
+        this.startupTimer = null;
+      }
       this.ready = true;
       this.emit({ ...this.stateSubject.value, ready: true });
+      this.startCurrentRun();
       return;
     }
 
@@ -174,6 +146,7 @@ export class StockfishAnalysisService implements OnDestroy {
       const state = this.stateSubject.value;
       this.emit({ ...state, running: false, bestMove });
       this.currentRun = null;
+      this.resetWorker();
     }
   }
 
@@ -199,5 +172,26 @@ export class StockfishAnalysisService implements OnDestroy {
 
   private emit(state: EngineAnalysis) {
     this.stateSubject.next(state);
+  }
+
+  private startCurrentRun() {
+    if (!this.worker || !this.currentRun || this.currentRun.started) return;
+    const { fen, depth, multipv } = this.currentRun;
+    this.currentRun.started = true;
+    this.post('stop');
+    this.post('ucinewgame');
+    this.post(`setoption name MultiPV value ${multipv}`);
+    this.post(`position fen ${fen}`);
+    this.post(`go depth ${depth}`);
+  }
+
+  private resetWorker() {
+    if (this.startupTimer) {
+      clearTimeout(this.startupTimer);
+      this.startupTimer = null;
+    }
+    this.worker?.terminate();
+    this.worker = null;
+    this.ready = false;
   }
 }
