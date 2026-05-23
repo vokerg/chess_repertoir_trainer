@@ -60,6 +60,9 @@ export class LineTrainPageComponent implements OnInit {
         this.currentFen = session.fen;
         this.expectedMove = session.expectedMove;
         this.mistakesCount = 0;
+        this.completed = session.completed ?? false;
+        this.passed = false;
+        this.accuracy = null;
         this.feedback = null;
         this.loaded = true;
       });
@@ -67,25 +70,24 @@ export class LineTrainPageComponent implements OnInit {
   }
   onBoardMove(uci: string) {
     if (this.completed) return;
-    // store last move for highlight
     const from = uci.substring(0, 2);
     const to = uci.substring(2, 4);
     this.lastMove = { from, to };
     this.api.post<any>(`/training/${this.sessionId}/move`, { moveUci: uci }).subscribe((res) => {
       this.currentFen = res.fen;
       this.expectedMove = res.nextExpectedMove;
-      this.completed = res.completed;
+      this.mistakesCount = res.mistakesCount ?? this.mistakesCount;
       if (res.correct) {
         this.feedback = 'Correct!';
         this.feedbackCorrect = true;
       } else {
         this.feedback = `Incorrect. Expected ${res.expectedMove}`;
         this.feedbackCorrect = false;
-        this.mistakesCount += 1;
       }
       if (res.completed) {
-        // call complete
-        this.finish();
+        this.completed = true;
+        this.passed = res.result === 'PASSED';
+        this.accuracy = res.accuracy;
       }
     });
   }
@@ -95,6 +97,7 @@ export class LineTrainPageComponent implements OnInit {
       this.completed = true;
       this.passed = session.result === 'PASSED';
       this.accuracy = session.accuracy;
+      this.mistakesCount = session.mistakesCount ?? this.mistakesCount;
     });
   }
 }
