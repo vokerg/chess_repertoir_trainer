@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../services/api.service';
@@ -18,10 +18,12 @@ import { MoveTreeComponent } from '../components/move-tree.component';
           <app-chess-board [fen]="currentFen" [side]="line?.sideToTrain" [lastMove]="lastMove" (move)="onBoardMove($event)"></app-chess-board>
 
           <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <button type="button" (click)="goToStart()" [disabled]="currentNodeId === 0">⏮ Start</button>
-            <button type="button" (click)="goToPrevious()" [disabled]="currentNodeId === 0">← Previous</button>
-            <button type="button" (click)="goToNext()" [disabled]="!selectedNode?.children?.length">Next →</button>
+            <button type="button" (click)="goToStart()" [disabled]="currentNodeId === 0" title="Home">⏮ Start</button>
+            <button type="button" (click)="goToPrevious()" [disabled]="currentNodeId === 0" title="Left arrow">← Previous</button>
+            <button type="button" (click)="goToNext()" [disabled]="!selectedNode?.children?.length" title="Right arrow">Next →</button>
+            <button type="button" (click)="goToEnd()" [disabled]="!selectedNode?.children?.length" title="End">End ⏭</button>
             <span style="color:#666;">Selected: {{ selectedLabel() }}</span>
+            <span style="color:#888;font-size:12px;">Keyboard: ←/→, Home/End</span>
           </div>
 
           <div style="margin-top:12px;border:1px solid #ddd;padding:10px;max-width:520px;">
@@ -62,6 +64,27 @@ export class LineEditorPageComponent implements OnInit {
   error: string | null = null;
 
   constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      this.goToPrevious();
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      this.goToNext();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      this.goToStart();
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      this.goToEnd();
+    }
+  }
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
@@ -144,6 +167,7 @@ export class LineEditorPageComponent implements OnInit {
   }
 
   goToStart() {
+    if (!this.tree?.root) return;
     this.setSelectedNode(0);
     this.cdr.detectChanges();
   }
@@ -160,6 +184,17 @@ export class LineEditorPageComponent implements OnInit {
     const firstChild = this.selectedNode?.children?.[0];
     if (firstChild) {
       this.setSelectedNode(firstChild.node.id);
+      this.cdr.detectChanges();
+    }
+  }
+
+  goToEnd() {
+    let node = this.selectedNode;
+    while (node?.children?.length) {
+      node = node.children[0];
+    }
+    if (node) {
+      this.setSelectedNode(node.node.id);
       this.cdr.detectChanges();
     }
   }
