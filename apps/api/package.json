@@ -4,14 +4,14 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "dev": "(cd ../.. && npm run build --workspace=packages/chess-domain) && ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "rm -f ../../data/dev.db && npm run db:migrate && npm run db:seed",
     "prisma:studio": "prisma studio",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -27,7 +27,7 @@
     "@types/node": "^20.11.0",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.2.2",
+    "typescript": "^5.9.0",
     "vitest": "^4.1.7"
   },
   "prisma": {

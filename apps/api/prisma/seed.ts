@@ -1,17 +1,56 @@
 import { PrismaClient } from '@prisma/client';
 import { Chess } from 'chess.js';
 
-type Color = string;
-
 const Color = {
   WHITE: 'WHITE',
-  BLACK: 'BLACK'
+  BLACK: 'BLACK',
 } as const;
+
+type ColorValue = (typeof Color)[keyof typeof Color];
 
 const prisma = new PrismaClient();
 
+function colorToMove(chess: Chess): ColorValue {
+  return chess.turn() === 'w' ? Color.WHITE : Color.BLACK;
+}
+
+function parseUci(moveUci: string): { from: string; to: string; promotion?: string } {
+  return {
+    from: moveUci.slice(0, 2),
+    to: moveUci.slice(2, 4),
+    promotion: moveUci.length === 5 ? moveUci[4] : undefined,
+  };
+}
+
+async function createMove(lineId: number, parentId: number | null, fenBefore: string, moveUci: string, plyNumber: number, sideToTrain: ColorValue, sortOrder = 0) {
+  const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
+  const colorToMoveBefore = colorToMove(chess);
+  const move = chess.move(parseUci(moveUci));
+  if (!move) {
+    throw new Error(`Invalid move ${moveUci} from ${fenBefore}`);
+  }
+
+  const isUserMove = colorToMoveBefore === sideToTrain;
+  return prisma.moveNode.create({
+    data: {
+      lineId,
+      parentId,
+      plyNumber,
+      fenBefore,
+      fenAfter: chess.fen(),
+      moveUci,
+      moveSan: move.san,
+      moveNumber: Math.ceil(plyNumber / 2),
+      colorToMoveBefore,
+      side: colorToMoveBefore,
+      isUserMove,
+      isCorrectUserMove: isUserMove,
+      sortOrder,
+    },
+  });
+}
+
 async function main() {
-  // Remove existing data to ensure idempotent seeding
   await prisma.trainingAttemptMove.deleteMany();
   await prisma.trainingSession.deleteMany();
   await prisma.moveNode.deleteMany();
@@ -19,14 +58,13 @@ async function main() {
   await prisma.chapter.deleteMany();
   await prisma.course.deleteMany();
 
-  // Create a course
   const course = await prisma.course.create({
     data: {
       name: 'My White Repertoire',
       description: 'Sample repertoire for White.',
     },
   });
-  // Create a chapter
+
   const chapter = await prisma.chapter.create({
     data: {
       courseId: course.id,
@@ -35,251 +73,35 @@ async function main() {
       sortOrder: 0,
     },
   });
-  // Create a line
+
   const line = await prisma.line.create({
     data: {
       chapterId: chapter.id,
       name: 'Italian Game sample',
       sideToTrain: Color.WHITE,
       startingFen: 'startpos',
-      notes: 'A simple Italian Game line.',
+      notes: 'A simple Italian Game line with branching Black replies.',
     },
   });
-  // Helper to create move nodes
-  const createMove = async (parentId: number | null, moveUci: string | null, plyNumber: number, chess: any, isUserMove: boolean, isCorrectUserMove: boolean) => {
-    const fenBefore: string = chess.fen();
-    let moveSan = '';
-    let moveNumber = Math.ceil(plyNumber / 2);
-    let colorToMoveBefore: Color;
-    let side: Color;
-    let fenAfter: string = fenBefore;
-    if (moveUci) {
-      const move = chess.move(moveUci, { sloppy: true });
-      if (!move) {
-        throw new Error(`Invalid move ${moveUci} at ply ${plyNumber}`);
-      }
-      moveSan = move.san;
-      fenAfter = chess.fen();
-      colorToMoveBefore = move.color === 'w' ? Color.WHITE : Color.BLACK;
-      side = isUserMove ? line.sideToTrain : (line.sideToTrain === Color.WHITE ? Color.BLACK : Color.WHITE);
-    } else {
-      colorToMoveBefore = line.sideToTrain;
-      side = line.sideToTrain;
-    }
-    const node = await prisma.moveNode.create({
-      data: {
-        lineId: line.id,
-        parentId,
-        plyNumber,
-        fenBefore,
-        fenAfter,
-        moveUci: moveUci ?? '',
-        moveSan,
-        moveNumber,
-        colorToMoveBefore,
-        side,
-        isUserMove,
-        isCorrectUserMove,
-      },
-    });
-    return node;
-  };
-  // Initialize chess from starting position
-  const chess = new Chess();
-  // Root node
-  const rootNode = await createMove(null, null, 0, chess, false, false);
+
+  const sideToTrain = Color.WHITE;
+  const startFen = 'startpos';
+
   // Main line: 1. e4 e5 2. Nf3 Nc6 3. Bc4
-  // Move 1: White e4
-  chess.reset();
-  let node = rootNode;
-  // Use new chess instance to compute successive FENs
-  let chessLine = new Chess();
-  const move1White = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: rootNode.id,
-      plyNumber: 1,
-      fenBefore: chessLine.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 1,
-      colorToMoveBefore: Color.WHITE,
-      side: Color.WHITE,
-      isUserMove: true,
-      isCorrectUserMove: true,
-    },
-  });
-  // Actually compute FENs and SAN and update the record
-  const moveObj1 = chessLine.move('e2e4');
-  await prisma.moveNode.update({
-    where: { id: move1White.id },
-    data: {
-      fenAfter: chessLine.fen(),
-      moveUci: 'e2e4',
-      moveSan: moveObj1!.san,
-    },
-  });
-  // Black main reply: e5
-  const move1Black = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: move1White.id,
-      plyNumber: 2,
-      fenBefore: chessLine.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 1,
-      colorToMoveBefore: Color.BLACK,
-      side: Color.BLACK,
-      isUserMove: false,
-      isCorrectUserMove: false,
-    },
-  });
-  const moveObj2 = chessLine.move('e7e5');
-  await prisma.moveNode.update({
-    where: { id: move1Black.id },
-    data: {
-      fenAfter: chessLine.fen(),
-      moveUci: 'e7e5',
-      moveSan: moveObj2!.san,
-    },
-  });
-  // White move: Nf3
-  const move2White = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: move1Black.id,
-      plyNumber: 3,
-      fenBefore: chessLine.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 2,
-      colorToMoveBefore: Color.WHITE,
-      side: Color.WHITE,
-      isUserMove: true,
-      isCorrectUserMove: true,
-    },
-  });
-  const moveObj3 = chessLine.move('g1f3');
-  await prisma.moveNode.update({
-    where: { id: move2White.id },
-    data: {
-      fenAfter: chessLine.fen(),
-      moveUci: 'g1f3',
-      moveSan: moveObj3!.san,
-    },
-  });
-  // Black move: Nc6
-  const move2Black = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: move2White.id,
-      plyNumber: 4,
-      fenBefore: chessLine.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 2,
-      colorToMoveBefore: Color.BLACK,
-      side: Color.BLACK,
-      isUserMove: false,
-      isCorrectUserMove: false,
-    },
-  });
-  const moveObj4 = chessLine.move('b8c6');
-  await prisma.moveNode.update({
-    where: { id: move2Black.id },
-    data: {
-      fenAfter: chessLine.fen(),
-      moveUci: 'b8c6',
-      moveSan: moveObj4!.san,
-    },
-  });
-  // White move: Bc4
-  const move3White = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: move2Black.id,
-      plyNumber: 5,
-      fenBefore: chessLine.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 3,
-      colorToMoveBefore: Color.WHITE,
-      side: Color.WHITE,
-      isUserMove: true,
-      isCorrectUserMove: true,
-    },
-  });
-  const moveObj5 = chessLine.move('f1c4');
-  await prisma.moveNode.update({
-    where: { id: move3White.id },
-    data: {
-      fenAfter: chessLine.fen(),
-      moveUci: 'f1c4',
-      moveSan: moveObj5!.san,
-    },
-  });
-  // Add an alternative opponent branch to illustrate branching: 1... c5 2.Nf3
-  // Reset to after White's first move
-  const altChess = new Chess();
-  altChess.move('e2e4');
-  const altBranch = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: move1White.id,
-      plyNumber: 2,
-      fenBefore: altChess.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 1,
-      colorToMoveBefore: Color.BLACK,
-      side: Color.BLACK,
-      isUserMove: false,
-      isCorrectUserMove: false,
-      sortOrder: 1,
-    },
-  });
-  const altMove = altChess.move('c7c5');
-  await prisma.moveNode.update({
-    where: { id: altBranch.id },
-    data: {
-      fenAfter: altChess.fen(),
-      moveUci: 'c7c5',
-      moveSan: altMove!.san,
-    },
-  });
-  // Follow up from 1...c5: 2.Nf3
-  const altUserMove = await prisma.moveNode.create({
-    data: {
-      lineId: line.id,
-      parentId: altBranch.id,
-      plyNumber: 3,
-      fenBefore: altChess.fen(),
-      fenAfter: '',
-      moveUci: '',
-      moveSan: '',
-      moveNumber: 2,
-      colorToMoveBefore: Color.WHITE,
-      side: Color.WHITE,
-      isUserMove: true,
-      isCorrectUserMove: true,
-    },
-  });
-  const altMoveObj = altChess.move('g1f3');
-  await prisma.moveNode.update({
-    where: { id: altUserMove.id },
-    data: {
-      fenAfter: altChess.fen(),
-      moveUci: 'g1f3',
-      moveSan: altMoveObj!.san,
-    },
-  });
+  const e4 = await createMove(line.id, null, startFen, 'e2e4', 1, sideToTrain);
+  const e5 = await createMove(line.id, e4.id, e4.fenAfter, 'e7e5', 2, sideToTrain);
+  const nf3AfterE5 = await createMove(line.id, e5.id, e5.fenAfter, 'g1f3', 3, sideToTrain);
+  const nc6 = await createMove(line.id, nf3AfterE5.id, nf3AfterE5.fenAfter, 'b8c6', 4, sideToTrain);
+  await createMove(line.id, nc6.id, nc6.fenAfter, 'f1c4', 5, sideToTrain);
+
+  // Opponent branch: 1... c5 2. Nf3
+  const c5 = await createMove(line.id, e4.id, e4.fenAfter, 'c7c5', 2, sideToTrain, 1);
+  await createMove(line.id, c5.id, c5.fenAfter, 'g1f3', 3, sideToTrain);
+
+  // Opponent branch: 1... e6 2. d4
+  const e6 = await createMove(line.id, e4.id, e4.fenAfter, 'e7e6', 2, sideToTrain, 2);
+  await createMove(line.id, e6.id, e6.fenAfter, 'd2d4', 3, sideToTrain);
+
   console.log('✅ Seed data created');
 }
 

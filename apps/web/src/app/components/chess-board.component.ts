@@ -1,9 +1,11 @@
+import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnInit } from '@angular/core';
 import { Chess } from 'chess.js';
 
 @Component({
   selector: 'app-chess-board',
   standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="board-wrapper">
       <!-- File coordinates at top -->
@@ -90,7 +92,7 @@ export class ChessBoardComponent implements OnInit, OnChanges {
   loadFen(fen: string) {
     this.updateCoordinateLabels();
     try {
-      this.game = new Chess(fen);
+      this.game = fen === 'startpos' ? new Chess() : new Chess(fen);
     } catch {
       this.game = new Chess();
     }
