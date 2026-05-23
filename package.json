@@ -7,11 +7,16 @@
     "apps/api",
     "packages/chess-domain"
   ],
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
+    "dev": "npm run build:domain && concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build": "npm run build:domain && npm run build:api && npm run build:web",
+    "build:domain": "npm run build --workspace=packages/chess-domain",
     "build:api": "npm run build --workspace=apps/api",
     "build:web": "npm run build --workspace=apps/web",
     "test": "npm run test --workspace=packages/chess-domain && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
@@ -23,7 +28,6 @@
     "prisma:studio": "npm run prisma:studio --workspace=apps/api"
   },
   "devDependencies": {
-    "@angular/core": "^21.2.14",
     "concurrently": "^8.2.0"
   }
 }
