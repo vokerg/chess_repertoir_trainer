@@ -16,7 +16,15 @@ import { MoveTreeComponent } from '../components/move-tree.component';
       <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
         <div>
           <app-chess-board [fen]="currentFen" [side]="line?.sideToTrain" [lastMove]="lastMove" (move)="onBoardMove($event)"></app-chess-board>
-          <div style="margin-top:12px;border:1px solid #ddd;padding:10px;max-width:320px;">
+
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button type="button" (click)="goToStart()" [disabled]="currentNodeId === 0">⏮ Start</button>
+            <button type="button" (click)="goToPrevious()" [disabled]="currentNodeId === 0">← Previous</button>
+            <button type="button" (click)="goToNext()" [disabled]="!selectedNode?.children?.length">Next →</button>
+            <span style="color:#666;">Selected: {{ selectedLabel() }}</span>
+          </div>
+
+          <div style="margin-top:12px;border:1px solid #ddd;padding:10px;max-width:520px;">
             <h3 style="margin-top:0;">Selected move</h3>
             <p *ngIf="selectedNode?.node?.id === 0">Start position. Add the first move from the board.</p>
             <div *ngIf="selectedNode?.node?.id !== 0">
@@ -115,6 +123,14 @@ export class LineEditorPageComponent implements OnInit {
     this.selectedNode = selected;
     this.currentNodeId = selected.node.id;
     this.currentFen = selected.node.fenAfter;
+    this.lastMove = selected.node.id === 0 || !selected.node.moveUci
+      ? null
+      : { from: selected.node.moveUci.substring(0, 2), to: selected.node.moveUci.substring(2, 4) };
+  }
+
+  selectedLabel() {
+    if (!this.selectedNode || this.selectedNode.node.id === 0) return 'start';
+    return `${this.selectedNode.node.moveSan || this.selectedNode.node.moveUci}`;
   }
 
   countDescendants(node: any): number {
@@ -124,16 +140,34 @@ export class LineEditorPageComponent implements OnInit {
 
   onSelectNode(id: number) {
     this.setSelectedNode(id);
-    this.lastMove = null;
     this.cdr.detectChanges();
+  }
+
+  goToStart() {
+    this.setSelectedNode(0);
+    this.cdr.detectChanges();
+  }
+
+  goToPrevious() {
+    const parent = this.findParentNode(this.currentNodeId);
+    if (parent) {
+      this.setSelectedNode(parent.node.id);
+      this.cdr.detectChanges();
+    }
+  }
+
+  goToNext() {
+    const firstChild = this.selectedNode?.children?.[0];
+    if (firstChild) {
+      this.setSelectedNode(firstChild.node.id);
+      this.cdr.detectChanges();
+    }
   }
 
   onBoardMove(uci: string) {
     const parentId = this.currentNodeId === 0 ? null : this.currentNodeId;
     const body: any = { parentId, moveUci: uci };
-    const from = uci.substring(0, 2);
-    const to = uci.substring(2, 4);
-    this.lastMove = { from, to };
+    this.lastMove = { from: uci.substring(0, 2), to: uci.substring(2, 4) };
     this.error = null;
     this.api.post<any>(`/lines/${this.lineId}/nodes`, body).subscribe({
       next: (created) => {
