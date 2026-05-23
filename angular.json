@@ -21,8 +21,8 @@
               "apps/web/src/favicon.ico",
               "apps/web/src/assets",
               {
-                "glob": "stockfish-18-lite-single.*",
-                "input": "node_modules/stockfish/src",
+                "glob": "**/*",
+                "input": "node_modules/stockfish",
                 "output": "assets/stockfish"
               }
             ],
@@ -66,8 +66,8 @@
               "apps/web/src/favicon.ico",
               "apps/web/src/assets",
               {
-                "glob": "stockfish-18-lite-single.*",
-                "input": "node_modules/stockfish/src",
+                "glob": "**/*",
+                "input": "node_modules/stockfish",
                 "output": "assets/stockfish"
               }
             ],
