@@ -30,8 +30,13 @@ apps/web/.angular/
 apps/web/node_modules/
 apps/api/node_modules/
 
-# Remove compiled Prisma client (will be generated on install)
+# TypeScript build artifacts produced beside Prisma scripts
+apps/api/prisma/*.js
+apps/api/prisma/*.js.map
+apps/api/prisma/*.d.ts
+
+# Compiled Prisma client
 apps/api/prisma/generated/
 
-# Keep data folder, but ignore DB files within it
+# Keep data folder, but do not commit local DB files
 data/*.db
