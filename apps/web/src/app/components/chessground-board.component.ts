@@ -13,9 +13,11 @@ import {
 } from '@angular/core';
 import { Chess } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
+import type { Api } from '@lichess-org/chessground/api';
+import type { Config } from '@lichess-org/chessground/config';
+import type { Color, Key } from '@lichess-org/chessground/types';
 
 type BoardSide = 'WHITE' | 'BLACK';
-type Square = string;
 
 @Component({
   selector: 'app-chessground-board',
@@ -53,7 +55,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   @ViewChild('board', { static: true }) boardElement!: ElementRef<HTMLElement>;
 
-  private ground: any | null = null;
+  private ground: Api | null = null;
   private game = new Chess();
 
   ngAfterViewInit() {
@@ -82,8 +84,8 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     }
   }
 
-  private config() {
-    const turnColor = this.game.turn() === 'w' ? 'white' : 'black';
+  private config(): Config {
+    const turnColor: Color = this.game.turn() === 'w' ? 'white' : 'black';
     return {
       fen: this.game.fen(),
       orientation: this.side === 'WHITE' ? 'white' : 'black',
@@ -92,14 +94,14 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
         lastMove: true,
         check: true,
       },
-      lastMove: this.lastMove ? [this.lastMove.from, this.lastMove.to] : undefined,
+      lastMove: this.lastMove ? [this.lastMove.from as Key, this.lastMove.to as Key] : undefined,
       movable: {
         free: false,
         color: turnColor,
         dests: this.legalDests(),
         showDests: true,
         events: {
-          after: (from: Square, to: Square) => this.handleMove(from, to),
+          after: (from: Key, to: Key) => this.handleMove(from, to),
         },
       },
       draggable: {
@@ -116,11 +118,11 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     };
   }
 
-  private legalDests() {
-    const dests = new Map<string, string[]>();
+  private legalDests(): Map<Key, Key[]> {
+    const dests = new Map<Key, Key[]>();
     for (const move of this.game.moves({ verbose: true }) as any[]) {
-      const from = move.from;
-      const to = move.to;
+      const from = move.from as Key;
+      const to = move.to as Key;
       const existing = dests.get(from) ?? [];
       existing.push(to);
       dests.set(from, existing);
@@ -128,7 +130,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     return dests;
   }
 
-  private handleMove(from: Square, to: Square) {
+  private handleMove(from: Key, to: Key) {
     const legalMoves = this.game.moves({ verbose: true }) as any[];
     const matching = legalMoves.find((m) => m.from === from && m.to === to);
     if (!matching) {
