@@ -16,10 +16,10 @@ import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Config } from '@lichess-org/chessground/config';
 import type { Color, Key } from '@lichess-org/chessground/types';
-import type { DrawShape } from '@lichess-org/chessground/draw';
 import { ChessSoundService } from '../services/chess-sound.service';
 
 type BoardSide = 'WHITE' | 'BLACK';
+type BoardArrowShape = { orig: Key; dest: Key; brush: string };
 
 @Component({
   selector: 'app-chessground-board',
@@ -107,7 +107,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
       drawable: {
         enabled: true,
         visible: true,
-        autoShapes: this.arrowShapes(),
+        autoShapes: this.arrowShapes() as any,
       },
       events: {
         move: (from: Key, to: Key) => this.handleMove(from, to),
@@ -135,13 +135,13 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     };
   }
 
-  private arrowShapes(): DrawShape[] {
+  private arrowShapes(): BoardArrowShape[] {
     return (this.arrows || [])
       .filter((arrow) => arrow.from && arrow.to)
       .map((arrow) => ({
         orig: arrow.from as Key,
         dest: arrow.to as Key,
-        brush: (arrow.brush || 'green') as any,
+        brush: arrow.brush || 'green',
       }));
   }
 
