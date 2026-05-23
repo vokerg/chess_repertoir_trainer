@@ -6,26 +6,14 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@angular-devkit/build-angular": "21.2.12",
-    "@angular/animations": "21.2.14",
-    "@angular/common": "21.2.14",
-    "@angular/compiler": "21.2.14",
-    "@angular/compiler-cli": "21.2.14",
-    "@angular/core": "21.2.14",
-    "@angular/forms": "21.2.14",
-    "@angular/platform-browser": "21.2.14",
-    "@angular/platform-browser-dynamic": "21.2.14",
-    "@angular/router": "21.2.14",
-    "chess.js": "^1.0.0",
-    "fastify": "5.8.5",
-    "zod": "^3.22.4"
+    "chess.js": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "typescript": "^5.2.2",
+    "typescript": "^5.9.0",
     "vitest": "^4.1.7"
   }
 }
