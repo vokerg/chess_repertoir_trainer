@@ -29,6 +29,7 @@ interface PendingRun {
 @Injectable({ providedIn: 'root' })
 export class StockfishAnalysisService implements OnDestroy {
   private worker: Worker | null = null;
+  private workerUrl: string | null = null;
   private ready = false;
   private runSeq = 0;
   private currentRun: PendingRun | null = null;
@@ -50,6 +51,8 @@ export class StockfishAnalysisService implements OnDestroy {
     this.stop();
     this.worker?.terminate();
     this.worker = null;
+    if (this.workerUrl) URL.revokeObjectURL(this.workerUrl);
+    this.workerUrl = null;
   }
 
   analyze(fen: string, options: { depth?: number; multipv?: number } = {}) {
@@ -83,15 +86,29 @@ export class StockfishAnalysisService implements OnDestroy {
   private ensureWorker() {
     if (this.worker) return;
     try {
-      this.worker = new Worker('/assets/stockfish/stockfish-18-lite-single.js');
+      const assetBase = `${window.location.origin}/assets/stockfish/`;
+      const bootstrap = `
+        self.Module = {
+          locateFile: function(path) { return '${assetBase}' + path; }
+        };
+        self.onerror = function(message, source, line, column, error) {
+          self.postMessage('error ' + (message || (error && error.message) || 'unknown worker error'));
+        };
+        importScripts('${assetBase}stockfish-18-lite-single.js');
+      `;
+      this.workerUrl = URL.createObjectURL(new Blob([bootstrap], { type: 'application/javascript' }));
+      this.worker = new Worker(this.workerUrl);
       this.worker.onmessage = (event) => this.zone.run(() => this.handleMessage(String(event.data ?? '')));
-      this.worker.onerror = () => this.zone.run(() => {
+      this.worker.onerror = (event) => this.zone.run(() => {
         const state = this.stateSubject.value;
-        this.emit({ ...state, running: false, ready: false, error: 'Stockfish failed to start.' });
+        const detail = event.message ? ` ${event.message}` : '';
+        this.emit({ ...state, running: false, ready: false, error: `Stockfish failed to start.${detail}` });
       });
       this.post('uci');
       this.post('isready');
-    } catch {
+    } catch (error: any) {
+      const state = this.stateSubject.value;
+      this.emit({ ...state, running: false, ready: false, error: `Stockfish worker could not be created. ${error?.message ?? ''}`.trim() });
       this.worker = null;
     }
   }
@@ -101,6 +118,12 @@ export class StockfishAnalysisService implements OnDestroy {
   }
 
   private handleMessage(message: string) {
+    if (message.startsWith('error ')) {
+      const state = this.stateSubject.value;
+      this.emit({ ...state, running: false, ready: false, error: `Stockfish failed to start. ${message.slice(6)}` });
+      return;
+    }
+
     if (message === 'uciok' || message === 'readyok') {
       this.ready = true;
       this.emit({ ...this.stateSubject.value, ready: true });
