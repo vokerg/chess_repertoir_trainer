@@ -16,6 +16,7 @@ import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Config } from '@lichess-org/chessground/config';
 import type { Color, Key } from '@lichess-org/chessground/types';
+import type { DrawShape } from '@lichess-org/chessground/draw';
 import { ChessSoundService } from '../services/chess-sound.service';
 
 type BoardSide = 'WHITE' | 'BLACK';
@@ -51,6 +52,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   @Input() fen: string = '';
   @Input() side: BoardSide = 'WHITE';
   @Input() lastMove: { from: string; to: string } | null = null;
+  @Input() arrows: Array<{ from: string; to: string; brush?: string }> = [];
   @Input() showCoordinates = true;
   @Input() sound = true;
   @Output() move = new EventEmitter<string>();
@@ -70,7 +72,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   ngOnChanges(changes: SimpleChanges) {
     if (!this.ground) return;
-    if (changes['fen'] || changes['side'] || changes['lastMove'] || changes['showCoordinates']) {
+    if (changes['fen'] || changes['side'] || changes['lastMove'] || changes['showCoordinates'] || changes['arrows']) {
       this.game = this.createGame(this.fen);
       this.pendingMove = null;
       this.ground.set(this.config());
@@ -102,6 +104,11 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
         check: true,
       },
       lastMove: this.lastMove ? [this.lastMove.from as Key, this.lastMove.to as Key] : undefined,
+      drawable: {
+        enabled: true,
+        visible: true,
+        autoShapes: this.arrowShapes(),
+      },
       events: {
         move: (from: Key, to: Key) => this.handleMove(from, to),
       },
@@ -126,6 +133,16 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
         duration: 160,
       },
     };
+  }
+
+  private arrowShapes(): DrawShape[] {
+    return (this.arrows || [])
+      .filter((arrow) => arrow.from && arrow.to)
+      .map((arrow) => ({
+        orig: arrow.from as Key,
+        dest: arrow.to as Key,
+        brush: (arrow.brush || 'green') as any,
+      }));
   }
 
   private legalDests(): Map<Key, Key[]> {
