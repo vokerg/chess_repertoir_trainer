@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../services/api.service';
@@ -23,7 +23,8 @@ import { MoveTreeComponent } from '../components/move-tree.component';
       </div>
     </div>
     <div *ngIf="!loaded">
-      Loading...
+      <p>Loading...</p>
+      <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
     </div>
   `
 })
@@ -35,31 +36,46 @@ export class LineEditorPageComponent implements OnInit {
   currentFen: string = '';
   lastMove: { from: string; to: string } | null = null;
   loaded = false;
-  constructor(private route: ActivatedRoute, private api: ApiService) {}
+  error: string | null = null;
+
+  constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
+
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
       this.lineId = Number(params.get('lineId'));
       this.loadLineAndTree();
     });
   }
+
   loadLineAndTree() {
     this.loaded = false;
-    // fetch line details
-    this.api.get<any>(`/lines/${this.lineId}`).subscribe((line) => {
-      this.line = line;
-      // fetch tree
-      this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe((tree) => {
-        this.tree = tree;
-        // set current node to root
-        this.currentNodeId = tree.root.node.id;
-        this.currentFen = tree.root.node.fenAfter;
-      this.lastMove = null;
-        this.loaded = true;
-      });
+    this.error = null;
+    this.api.get<any>(`/lines/${this.lineId}`).subscribe({
+      next: (line) => {
+        this.line = line;
+        this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe({
+          next: (tree) => {
+            this.tree = tree;
+            this.currentNodeId = tree.root.node.id;
+            this.currentFen = tree.root.node.fenAfter;
+            this.lastMove = null;
+            this.loaded = true;
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.error = 'Could not load move tree.';
+            this.cdr.detectChanges();
+          },
+        });
+      },
+      error: () => {
+        this.error = 'Could not load line.';
+        this.cdr.detectChanges();
+      },
     });
   }
+
   onSelectNode(id: number) {
-    // find node in tree recursively and set currentFen
     const findNode = (node: any): any => {
       if (node.node.id === id) return node;
       for (const child of node.children || []) {
@@ -73,23 +89,36 @@ export class LineEditorPageComponent implements OnInit {
       this.currentNodeId = selected.node.id;
       this.currentFen = selected.node.fenAfter;
       this.lastMove = null;
+      this.cdr.detectChanges();
     }
   }
+
   onBoardMove(uci: string) {
-    // call API to add node under current node
     const parentId = this.currentNodeId === 0 ? null : this.currentNodeId;
     const body: any = { parentId, moveUci: uci };
-    // record last move for highlight
     const from = uci.substring(0, 2);
     const to = uci.substring(2, 4);
     this.lastMove = { from, to };
-    this.api.post<any>(`/lines/${this.lineId}/nodes`, body).subscribe((created) => {
-      // refresh tree and set current node to created id
-      this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe((tree) => {
-        this.tree = tree;
-        this.currentNodeId = created.id;
-        this.currentFen = created.fenAfter;
-      });
+    this.error = null;
+    this.api.post<any>(`/lines/${this.lineId}/nodes`, body).subscribe({
+      next: (created) => {
+        this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe({
+          next: (tree) => {
+            this.tree = tree;
+            this.currentNodeId = created.id;
+            this.currentFen = created.fenAfter;
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.error = 'Move was added, but the tree could not be reloaded.';
+            this.cdr.detectChanges();
+          },
+        });
+      },
+      error: () => {
+        this.error = 'Could not add this move. It may be illegal or this position already has a trained-side move.';
+        this.cdr.detectChanges();
+      },
     });
   }
 }
