@@ -12,9 +12,22 @@ import { MoveTreeComponent } from '../components/move-tree.component';
   template: `
     <div *ngIf="loaded">
       <h2>{{ line?.name }} - Editor</h2>
-      <div style="display:flex;flex-wrap:wrap;gap:20px;">
+      <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
         <div>
           <app-chess-board [fen]="currentFen" [side]="line?.sideToTrain" [lastMove]="lastMove" (move)="onBoardMove($event)"></app-chess-board>
+          <div style="margin-top:12px;border:1px solid #ddd;padding:10px;max-width:320px;">
+            <h3 style="margin-top:0;">Selected move</h3>
+            <p *ngIf="selectedNode?.node?.id === 0">Start position. Add the first move from the board.</p>
+            <div *ngIf="selectedNode?.node?.id !== 0">
+              <p><strong>{{ selectedNode?.node?.moveSan }}</strong> <code>{{ selectedNode?.node?.moveUci }}</code></p>
+              <p>Side: {{ selectedNode?.node?.side }} · {{ selectedNode?.node?.isUserMove ? 'trained move' : 'opponent reply' }}</p>
+              <p>Children to delete with this move: {{ countDescendants(selectedNode) }}</p>
+              <button type="button" (click)="deleteSelectedSubtree()" [disabled]="deleting">
+                {{ deleting ? 'Deleting...' : 'Delete this move and continuation' }}
+              </button>
+            </div>
+          </div>
         </div>
         <div>
           <h3>Move Tree</h3>
@@ -32,10 +45,12 @@ export class LineEditorPageComponent implements OnInit {
   lineId!: number;
   line: any;
   tree: any;
+  selectedNode: any;
   currentNodeId: number = 0;
   currentFen: string = '';
   lastMove: { from: string; to: string } | null = null;
   loaded = false;
+  deleting = false;
   error: string | null = null;
 
   constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
@@ -47,7 +62,7 @@ export class LineEditorPageComponent implements OnInit {
     });
   }
 
-  loadLineAndTree() {
+  loadLineAndTree(selectNodeId?: number) {
     this.loaded = false;
     this.error = null;
     this.api.get<any>(`/lines/${this.lineId}`).subscribe({
@@ -56,8 +71,8 @@ export class LineEditorPageComponent implements OnInit {
         this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe({
           next: (tree) => {
             this.tree = tree;
-            this.currentNodeId = tree.root.node.id;
-            this.currentFen = tree.root.node.fenAfter;
+            const targetId = selectNodeId ?? tree.root.node.id;
+            this.setSelectedNode(targetId);
             this.lastMove = null;
             this.loaded = true;
             this.cdr.detectChanges();
@@ -75,22 +90,42 @@ export class LineEditorPageComponent implements OnInit {
     });
   }
 
-  onSelectNode(id: number) {
-    const findNode = (node: any): any => {
-      if (node.node.id === id) return node;
-      for (const child of node.children || []) {
-        const res = findNode(child);
-        if (res) return res;
-      }
-      return null;
-    };
-    const selected = findNode(this.tree.root);
-    if (selected) {
-      this.currentNodeId = selected.node.id;
-      this.currentFen = selected.node.fenAfter;
-      this.lastMove = null;
-      this.cdr.detectChanges();
+  findNode(id: number, node = this.tree?.root): any {
+    if (!node) return null;
+    if (node.node.id === id) return node;
+    for (const child of node.children || []) {
+      const res = this.findNode(id, child);
+      if (res) return res;
     }
+    return null;
+  }
+
+  findParentNode(id: number, node = this.tree?.root, parent: any = null): any {
+    if (!node) return null;
+    if (node.node.id === id) return parent;
+    for (const child of node.children || []) {
+      const res = this.findParentNode(id, child, node);
+      if (res) return res;
+    }
+    return null;
+  }
+
+  setSelectedNode(id: number) {
+    const selected = this.findNode(id) || this.tree.root;
+    this.selectedNode = selected;
+    this.currentNodeId = selected.node.id;
+    this.currentFen = selected.node.fenAfter;
+  }
+
+  countDescendants(node: any): number {
+    if (!node) return 0;
+    return (node.children || []).reduce((sum: number, child: any) => sum + 1 + this.countDescendants(child), 0);
+  }
+
+  onSelectNode(id: number) {
+    this.setSelectedNode(id);
+    this.lastMove = null;
+    this.cdr.detectChanges();
   }
 
   onBoardMove(uci: string) {
@@ -105,8 +140,7 @@ export class LineEditorPageComponent implements OnInit {
         this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe({
           next: (tree) => {
             this.tree = tree;
-            this.currentNodeId = created.id;
-            this.currentFen = created.fenAfter;
+            this.setSelectedNode(created.id);
             this.cdr.detectChanges();
           },
           error: () => {
@@ -117,6 +151,31 @@ export class LineEditorPageComponent implements OnInit {
       },
       error: () => {
         this.error = 'Could not add this move. It may be illegal or this position already has a trained-side move.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  deleteSelectedSubtree() {
+    if (!this.selectedNode || this.selectedNode.node.id === 0 || this.deleting) return;
+    const node = this.selectedNode.node;
+    const parent = this.findParentNode(node.id);
+    const parentId = parent?.node?.id ?? 0;
+    const label = node.moveSan || node.moveUci;
+    const descendantCount = this.countDescendants(this.selectedNode);
+    const confirmed = window.confirm(`Delete ${label} and ${descendantCount} following move(s)? This cannot be undone.`);
+    if (!confirmed) return;
+
+    this.deleting = true;
+    this.error = null;
+    this.api.delete<void>(`/nodes/${node.id}/subtree`).subscribe({
+      next: () => {
+        this.deleting = false;
+        this.loadLineAndTree(parentId);
+      },
+      error: () => {
+        this.deleting = false;
+        this.error = 'Could not delete this move.';
         this.cdr.detectChanges();
       },
     });
