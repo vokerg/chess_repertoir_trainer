@@ -1,0 +1,115 @@
+// Prisma schema for the chess repertoire trainer API. This defines
+// entities for courses, chapters, lines, move nodes, training sessions
+// and attempts. Use `npx prisma migrate dev` to generate migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Color {
+  WHITE
+  BLACK
+}
+
+model Course {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  chapters    Chapter[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Chapter {
+  id          Int      @id @default(autoincrement())
+  courseId    Int
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  lines       Line[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Line {
+  id              Int      @id @default(autoincrement())
+  chapterId       Int
+  chapter         Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  name            String
+  sideToTrain     Color
+  startingFen     String
+  tags            String?
+  notes           String?
+  passedCount     Int      @default(0)
+  failedCount     Int      @default(0)
+  totalAttempts   Int      @default(0)
+  lastTrainedAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  moves           MoveNode[]
+  sessions        TrainingSession[]
+}
+
+model MoveNode {
+  id              Int      @id @default(autoincrement())
+  lineId          Int
+  parentId        Int?
+  line            Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  parent          MoveNode?@relation("MoveNodeToMoveNode", fields: [parentId], references: [id], onDelete: Cascade)
+  children        MoveNode[] @relation("MoveNodeToMoveNode")
+  plyNumber       Int
+  fenBefore       String
+  fenAfter        String
+  moveUci         String
+  moveSan         String
+  moveNumber      Int
+  colorToMoveBefore Color
+  side            Color
+  isUserMove      Boolean
+  isCorrectUserMove Boolean
+  comment         String?
+  annotation      String?
+  branchLabel     String?
+  branchWeight    Float?
+  sortOrder       Int      @default(0)
+  timesSeen       Int      @default(0)
+  correctCount    Int      @default(0)
+  incorrectCount  Int      @default(0)
+  currentStreak   Int      @default(0)
+  lastSeenAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TrainingSession {
+  id                 Int      @id @default(autoincrement())
+  lineId             Int
+  line               Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  attempts           TrainingAttemptMove[]
+  startedAt          DateTime @default(now())
+  completedAt        DateTime?
+  result             String
+  mistakesCount      Int      @default(0)
+  totalExpectedMoves Int      @default(0)
+  correctMoves       Int      @default(0)
+  accuracy           Float?
+}
+
+model TrainingAttemptMove {
+  id             Int      @id @default(autoincrement())
+  sessionId      Int
+  session        TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  moveNodeId     Int?
+  moveNode       MoveNode? @relation(fields: [moveNodeId], references: [id], onDelete: Cascade)
+  fenBefore      String
+  expectedMoveUci String?
+  playedMoveUci  String?
+  wasCorrect     Boolean
+  createdAt      DateTime @default(now())
+}

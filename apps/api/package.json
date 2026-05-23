@@ -1,0 +1,45 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:reset": "rm -f ../../data/dev.db && npm run db:migrate && npm run db:seed",
+    "prisma:studio": "prisma studio",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@angular-devkit/build-angular": "21.2.12",
+    "@angular/animations": "21.2.14",
+    "@angular/common": "21.2.14",
+    "@angular/compiler": "21.2.14",
+    "@angular/compiler-cli": "21.2.14",
+    "@angular/core": "21.2.14",
+    "@angular/forms": "21.2.14",
+    "@angular/platform-browser": "21.2.14",
+    "@angular/platform-browser-dynamic": "21.2.14",
+    "@angular/router": "21.2.14",
+    "@fastify/cors": "^8.4.0",
+    "@prisma/client": "^5.6.0",
+    "chess-domain": "file:../../packages/chess-domain",
+    "dotenv": "^16.3.1",
+    "fastify": "^5.8.5",
+    "prisma": "^5.6.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.7"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  }
+}

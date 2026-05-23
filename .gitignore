@@ -1,0 +1,37 @@
+# Node modules and output directories
+node_modules/
+dist/
+build/
+coverage/
+.angular/
+.cache/
+
+# Environment files
+.env
+.env.local
+
+# SQLite database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Angular and npm caches
+apps/web/.angular/
+apps/web/node_modules/
+apps/api/node_modules/
+
+# Remove compiled Prisma client (will be generated on install)
+apps/api/prisma/generated/
+
+# Keep data folder, but ignore DB files within it
+data/*.db

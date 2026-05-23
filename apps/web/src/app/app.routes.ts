@@ -1,0 +1,30 @@
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  { path: '', redirectTo: '/courses', pathMatch: 'full' },
+  {
+    path: 'courses',
+    loadComponent: () => import('./pages/courses-page.component').then((m) => m.CoursesPageComponent),
+  },
+  {
+    path: 'courses/:courseId',
+    loadComponent: () => import('./pages/course-detail-page.component').then((m) => m.CourseDetailPageComponent),
+  },
+  {
+    path: 'chapters/:chapterId/lines',
+    loadComponent: () => import('./pages/lines-page.component').then((m) => m.LinesPageComponent),
+  },
+  {
+    path: 'lines/:lineId/edit',
+    loadComponent: () => import('./pages/line-editor-page.component').then((m) => m.LineEditorPageComponent),
+  },
+  {
+    path: 'lines/:lineId/train',
+    loadComponent: () => import('./pages/line-train-page.component').then((m) => m.LineTrainPageComponent),
+  },
+  {
+    path: 'stats',
+    loadComponent: () => import('./pages/stats-page.component').then((m) => m.StatsPageComponent),
+  },
+  { path: '**', redirectTo: '/courses' },
+];
