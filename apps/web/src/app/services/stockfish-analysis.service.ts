@@ -88,13 +88,43 @@ export class StockfishAnalysisService implements OnDestroy {
     try {
       const assetBase = `${window.location.origin}/assets/stockfish/`;
       const bootstrap = `
+        const base = '${assetBase}';
+        const candidates = [
+          'stockfish-18-lite-single.js',
+          'src/stockfish-18-lite-single.js',
+          'stockfish-17-lite-single.js',
+          'src/stockfish-17-lite-single.js',
+          'stockfish-16.1-lite-single.js',
+          'src/stockfish-16.1-lite-single.js',
+          'stockfish.js',
+          'src/stockfish.js'
+        ];
         self.Module = {
-          locateFile: function(path) { return '${assetBase}' + path; }
+          locateFile: function(path) {
+            const script = self.__stockfishScript || '';
+            const dir = script.includes('/') ? script.slice(0, script.lastIndexOf('/') + 1) : base;
+            return dir + path;
+          }
         };
         self.onerror = function(message, source, line, column, error) {
           self.postMessage('error ' + (message || (error && error.message) || 'unknown worker error'));
         };
-        importScripts('${assetBase}stockfish-18-lite-single.js');
+        let loaded = false;
+        let errors = [];
+        for (const candidate of candidates) {
+          try {
+            const url = base + candidate;
+            self.__stockfishScript = url;
+            importScripts(url);
+            loaded = true;
+            break;
+          } catch (error) {
+            errors.push(candidate + ': ' + (error && error.message ? error.message : String(error)));
+          }
+        }
+        if (!loaded) {
+          self.postMessage('error no Stockfish script loaded. Tried: ' + errors.join(' | '));
+        }
       `;
       this.workerUrl = URL.createObjectURL(new Blob([bootstrap], { type: 'application/javascript' }));
       this.worker = new Worker(this.workerUrl);
