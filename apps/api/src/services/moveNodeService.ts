@@ -3,12 +3,19 @@ import prisma from '../prisma';
 import { getLineById } from '../repositories/lineRepository';
 import {
   getNodeById,
-  getChildrenOfParent,
   createMoveNode,
   updateMoveNode,
   deleteNodeAndSubtree,
   existsCorrectUserMove,
 } from '../repositories/moveNodeRepository';
+
+function parseUci(moveUci: string): { from: string; to: string; promotion?: string } {
+  return {
+    from: moveUci.slice(0, 2),
+    to: moveUci.slice(2, 4),
+    promotion: moveUci.length === 5 ? moveUci[4] : undefined,
+  };
+}
 
 /**
  * Service for managing move nodes (authoring mode).
@@ -18,9 +25,8 @@ import {
  */
 export const MoveNodeService = {
   /**
-   * Create a new move node under the given line. The node can be attached to a parent
-   * or be a root node if parentId is null. The body should contain at least the
-   * moveUci. Additional optional fields like comment, annotation, branchLabel, etc. can be passed.
+   * Create a new real move node under the given line. parentId null means this is
+   * a first move from the line's synthetic root/start position.
    */
   create: async (lineId: number, body: {
     parentId?: number | null;
@@ -32,65 +38,50 @@ export const MoveNodeService = {
     sortOrder?: number;
   }) => {
     const { parentId = null, moveUci, comment = null, annotation = null, branchLabel = null, branchWeight = null, sortOrder = 0 } = body;
-    // Fetch line to get starting FEN and side to train
     const line = await getLineById(lineId);
     if (!line) throw new Error('Line not found');
-    // Determine the FEN before the move based on parent
+
     let fenBefore: string;
     let plyNumber: number;
-    let moveNumber: number;
-    let colorToMoveBefore: 'WHITE' | 'BLACK';
-    if (parentId) {
+
+    if (parentId != null) {
       const parentNode = await getNodeById(parentId);
       if (!parentNode) throw new Error('Parent node not found');
       if (parentNode.lineId !== lineId) throw new Error('Parent node does not belong to this line');
       fenBefore = parentNode.fenAfter;
       plyNumber = parentNode.plyNumber + 1;
-      moveNumber = parentNode.moveNumber;
     } else {
-      // Root node uses line starting FEN
       fenBefore = line.startingFen;
-      // plyNumber starts at 1
       plyNumber = 1;
-      // moveNumber starts at 1
-      moveNumber = 1;
     }
 
-    // Use chess.js to validate and apply the move
     const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
-    // Determine color from chess instance: it's the side whose turn it is to move
-    colorToMoveBefore = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
-    // Determine whether this move is a user (trained side) or opponent move
+    const colorToMoveBefore: 'WHITE' | 'BLACK' = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
     const isUserMove = colorToMoveBefore === line.sideToTrain;
 
-    const move = chess.move({ from: moveUci.slice(0, 2), to: moveUci.slice(2, 4), promotion: moveUci.length === 5 ? moveUci[4] : undefined });
-    if (!move) throw new Error('Illegal move');
-    const fenAfter = chess.fen();
-    const moveSan = move.san;
-    // Determine new move number: increment on Black's move to White's move; but simpler: derive from fen after and plyNumber.
-    // We'll set moveNumber based on plyNumber: round up ply/2
-    const newPlyNumber = plyNumber;
-    const newMoveNumber = Math.ceil(newPlyNumber / 2);
-    // Check if there's an existing correct user move under this parent
-    let isCorrectUserMove = false;
     if (isUserMove) {
       const exists = await existsCorrectUserMove(lineId, parentId);
-      // If none exists, mark this as correct. Otherwise it's an additional branch for user side and not correct.
-      isCorrectUserMove = !exists;
+      if (exists) {
+        throw new Error('This position already has a correct trained-side move. Delete or replace it first.');
+      }
     }
+
+    const move = chess.move(parseUci(moveUci));
+    if (!move) throw new Error('Illegal move');
+
     const nodeData = {
       lineId,
       parentId,
-      plyNumber: newPlyNumber,
+      plyNumber,
       fenBefore,
-      fenAfter,
+      fenAfter: chess.fen(),
       moveUci,
-      moveSan,
-      moveNumber: newMoveNumber,
+      moveSan: move.san,
+      moveNumber: Math.ceil(plyNumber / 2),
       colorToMoveBefore,
       side: colorToMoveBefore,
       isUserMove,
-      isCorrectUserMove,
+      isCorrectUserMove: isUserMove,
       comment,
       annotation,
       branchLabel,
@@ -101,8 +92,8 @@ export const MoveNodeService = {
       incorrectCount: 0,
       currentStreak: 0,
     };
-    const created = await createMoveNode(nodeData);
-    return created;
+
+    return createMoveNode(nodeData);
   },
   /**
    * Update node properties such as comment, annotation, branchLabel, branchWeight and sortOrder.
@@ -118,7 +109,6 @@ export const MoveNodeService = {
   }) => {
     const node = await getNodeById(id);
     if (!node) throw new Error('Node not found');
-    // Only allow isCorrectUserMove change for user moves
     const data: any = {};
     if (body.comment !== undefined) data.comment = body.comment;
     if (body.annotation !== undefined) data.annotation = body.annotation;
@@ -126,23 +116,22 @@ export const MoveNodeService = {
     if (body.branchWeight !== undefined) data.branchWeight = body.branchWeight;
     if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
     if (body.isCorrectUserMove !== undefined && node.isUserMove) {
-      // Ensure there is only one correct user move per parent; if setting this to true, unset others
-      if (body.isCorrectUserMove) {
-        // Update other siblings
-        await prisma.moveNode.updateMany({
-          where: {
-            lineId: node.lineId,
-            parentId: node.parentId,
-            isUserMove: true,
-            isCorrectUserMove: true,
-          },
-          data: { isCorrectUserMove: false },
-        });
+      if (!body.isCorrectUserMove) {
+        throw new Error('A trained-side position must keep exactly one correct move. Delete or replace the node instead.');
       }
-      data.isCorrectUserMove = body.isCorrectUserMove;
+      await prisma.moveNode.updateMany({
+        where: {
+          lineId: node.lineId,
+          parentId: node.parentId,
+          isUserMove: true,
+          isCorrectUserMove: true,
+          NOT: { id: node.id },
+        },
+        data: { isCorrectUserMove: false },
+      });
+      data.isCorrectUserMove = true;
     }
-    const updated = await updateMoveNode(id, data);
-    return updated;
+    return updateMoveNode(id, data);
   },
   /**
    * Delete a node and its subtree. This cascades to child nodes and training attempts referencing this node.
