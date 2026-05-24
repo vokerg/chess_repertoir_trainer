@@ -25,7 +25,7 @@ export const StatsService = {
       ],
       take: 5,
     });
-    const weakest = weakestLines.map((line) => {
+    const weakest = weakestLines.map((line: any) => {
       const failureRate = line.totalAttempts > 0 ? line.failedCount / line.totalAttempts : 0;
       return { id: line.id, name: line.name, failureRate };
     });
@@ -60,9 +60,9 @@ export const StatsService = {
    */
   courseStats: async (courseId: number) => {
     const lines = await prisma.line.findMany({ where: { chapter: { courseId } } });
-    const totalAttempts = lines.reduce((sum, l) => sum + l.totalAttempts, 0);
-    const passed = lines.reduce((sum, l) => sum + l.passedCount, 0);
-    const failed = lines.reduce((sum, l) => sum + l.failedCount, 0);
+    const totalAttempts = lines.reduce((sum: number, l: any) => sum + l.totalAttempts, 0);
+    const passed = lines.reduce((sum: number, l: any) => sum + l.passedCount, 0);
+    const failed = lines.reduce((sum: number, l: any) => sum + l.failedCount, 0);
     const passRate = totalAttempts > 0 ? passed / totalAttempts : 0;
     const failureRate = totalAttempts > 0 ? failed / totalAttempts : 0;
     return {
