@@ -61,8 +61,7 @@ export default async function linesRoutes(app: FastifyInstance, opts: FastifyPlu
     const id = Number((request.params as any).id);
     try {
       const pgn = await PgnService.exportLine(id);
-      reply.header('content-type', 'text/plain; charset=utf-8');
-      return pgn;
+      return { pgn };
     } catch (err: any) {
       reply.code(404);
       return { message: err.message };
