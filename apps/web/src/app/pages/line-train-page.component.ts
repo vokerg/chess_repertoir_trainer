@@ -4,6 +4,17 @@ import { CommonModule } from '@angular/common';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
 
+interface MistakeReviewItem {
+  id: number;
+  fenBefore: string;
+  expectedMoveUci: string | null;
+  playedMoveUci: string | null;
+  moveSan: string | null;
+  comment: string | null;
+  annotation: string | null;
+  branchLabel: string | null;
+}
+
 @Component({
   selector: 'app-line-train-page',
   standalone: true,
@@ -37,6 +48,23 @@ import { ChessBoardComponent } from '../components/chess-board.component';
       <div *ngIf="completed" style="margin-top:20px;">
         <h3>Session {{ passed ? 'Passed' : 'Failed' }}</h3>
         <p>Accuracy: {{ accuracy | number:'1.0-2' }}</p>
+        <section style="margin-top:12px;border:1px solid #ddd;padding:12px;background:#fff;max-width:680px;">
+          <h3 style="margin-top:0;">Mistake review</h3>
+          <p *ngIf="reviewLoading">Loading mistake review...</p>
+          <p *ngIf="!reviewLoading && mistakes.length === 0">No mistakes. Clean session.</p>
+          <ol *ngIf="mistakes.length > 0">
+            <li *ngFor="let mistake of mistakes" style="margin-bottom:12px;">
+              <p style="margin:0 0 4px;">
+                Expected <code>{{ mistake.expectedMoveUci }}</code>
+                <span *ngIf="mistake.moveSan">({{ mistake.moveSan }})</span>,
+                played <code>{{ mistake.playedMoveUci }}</code>
+              </p>
+              <p *ngIf="mistake.branchLabel" style="margin:0;color:#666;">Branch: {{ mistake.branchLabel }}</p>
+              <p *ngIf="mistake.comment" style="margin:0;color:#333;">Note: {{ mistake.comment }}</p>
+              <p *ngIf="mistake.annotation" style="margin:0;color:#333;">Annotation: {{ mistake.annotation }}</p>
+            </li>
+          </ol>
+        </section>
       </div>
     </div>
     <div *ngIf="!loaded">
@@ -61,6 +89,8 @@ export class LineTrainPageComponent implements OnInit {
   loaded = false;
   boardReady = true;
   showExpectedMove = false;
+  reviewLoading = false;
+  mistakes: MistakeReviewItem[] = [];
   error: string | null = null;
   lastMove: { from: string; to: string } | null = null;
 
@@ -93,6 +123,8 @@ export class LineTrainPageComponent implements OnInit {
             this.feedbackCorrect = false;
             this.lastMove = null;
             this.showExpectedMove = false;
+            this.mistakes = [];
+            this.reviewLoading = false;
             this.loaded = true;
             this.resetBoard();
             this.cdr.detectChanges();
@@ -133,6 +165,7 @@ export class LineTrainPageComponent implements OnInit {
         this.completed = true;
         this.passed = res.result === 'PASSED';
         this.accuracy = res.accuracy;
+        this.loadReview();
       }
 
       this.resetBoard();
@@ -152,7 +185,23 @@ export class LineTrainPageComponent implements OnInit {
       this.passed = session.result === 'PASSED';
       this.accuracy = session.accuracy;
       this.mistakesCount = session.mistakesCount ?? this.mistakesCount;
+      this.loadReview();
       this.cdr.detectChanges();
+    });
+  }
+
+  private loadReview() {
+    this.reviewLoading = true;
+    this.api.get<any>(`/training/${this.sessionId}/review`).subscribe({
+      next: (review) => {
+        this.mistakes = review.mistakes ?? [];
+        this.reviewLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.reviewLoading = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 
