@@ -10,6 +10,21 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chess_trainer_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d chess_trainer_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     env:
       CI: true
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
