@@ -1,3 +1,3 @@
 export const appConfig = {
-  apiBaseUrl: '/api',
+  apiBaseUrl: "/api",
 };
