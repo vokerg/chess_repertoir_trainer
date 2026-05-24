@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
+import { PgnToolsComponent } from '../components/pgn-tools.component';
 
 interface ChapterDetail {
   id: number;
@@ -24,7 +25,7 @@ interface Line {
 @Component({
   selector: 'app-lines-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PgnToolsComponent],
   template: `
     <section class="stack" *ngIf="chapterId">
       <a [routerLink]="courseId ? ['/courses', courseId] : ['/courses']" class="subtle-link">← Back to course</a>
@@ -159,6 +160,8 @@ interface Line {
               <button type="submit" [disabled]="saving">{{ saving ? 'Creating...' : 'Add line' }}</button>
             </div>
           </form>
+
+          <app-pgn-tools [chapterId]="chapterId" [lines]="lines" (changed)="loadLines()"></app-pgn-tools>
         </aside>
       </div>
     </section>
