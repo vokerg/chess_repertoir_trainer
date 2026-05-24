@@ -9,7 +9,7 @@
     "start": "node dist/main.js",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:reset": "rm -f ../../data/dev.db && npm run db:migrate && npm run db:seed",
+    "db:reset": "prisma migrate reset --force && npm run db:seed",
     "prisma:studio": "prisma studio",
     "test": "vitest run"
   },
