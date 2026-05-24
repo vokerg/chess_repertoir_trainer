@@ -19,7 +19,12 @@
             "tsConfig": "apps/web/tsconfig.app.json",
             "assets": [
               "apps/web/src/favicon.ico",
-              "apps/web/src/assets"
+              "apps/web/src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/stockfish",
+                "output": "assets/stockfish"
+              }
             ],
             "styles": [
               "apps/web/src/styles.css"
@@ -59,7 +64,12 @@
             "karmaConfig": "apps/web/karma.conf.js",
             "assets": [
               "apps/web/src/favicon.ico",
-              "apps/web/src/assets"
+              "apps/web/src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/stockfish",
+                "output": "assets/stockfish"
+              }
             ],
             "styles": [
               "apps/web/src/styles.css"
