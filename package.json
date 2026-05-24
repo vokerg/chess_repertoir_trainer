@@ -19,7 +19,7 @@
     "build:domain": "npm run build --workspace=packages/chess-domain",
     "build:api": "npm run build --workspace=apps/api",
     "build:web": "npm run build --workspace=apps/web",
-    "test": "npm run test --workspace=packages/chess-domain -- --passWithNoTests && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
+    "test": "npm run test --workspace=packages/chess-domain && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
     "lint": "npm run lint --workspaces",
     "format": "npm run format --workspaces",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
