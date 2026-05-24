@@ -30,7 +30,7 @@ async function buildReview(sessionId: number) {
 
   return {
     ...session,
-    mistakes: mistakes.map((attempt) => ({
+    mistakes: mistakes.map((attempt: any) => ({
       id: attempt.id,
       moveNodeId: attempt.moveNodeId,
       fenBefore: attempt.fenBefore,
