@@ -5,12 +5,13 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
+import { MoveNotesComponent } from '../components/move-notes.component';
 import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent],
+  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, MoveNotesComponent],
   template: `
     <div *ngIf="loaded">
       <h2>{{ line?.name }} - Editor</h2>
@@ -52,6 +53,8 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
               </button>
             </div>
           </div>
+
+          <app-move-notes [node]="selectedNode" (savedNode)="onNotesSaved($event)"></app-move-notes>
         </div>
         <div style="min-width:260px;">
           <h3>Move Tree</h3>
@@ -66,6 +69,9 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
             <p *ngIf="analysis.running">Analyzing… depth {{ topDepth() || '…' }}</p>
             <p *ngIf="!analysis.running && !analysis.bestMove && !analysis.error">Select a position to analyze.</p>
             <p *ngIf="analysis.bestMove"><strong>Best:</strong> <code>{{ analysis.bestMove }}</code></p>
+            <div *ngIf="engineWarning()" class="engine-warning">
+              {{ engineWarning() }}
+            </div>
             <ol *ngIf="analysis.lines.length > 0">
               <li *ngFor="let line of analysis.lines.slice(0, 3)">
                 <span class="score">{{ lineScoreLabel(line) }}</span>
@@ -129,6 +135,15 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
     .analysis-panel ol { padding-left: 20px; }
     .analysis-panel li { margin: 8px 0; }
     .score { display: inline-block; min-width: 56px; font-weight: bold; }
+    .engine-warning {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #f2b84b;
+      background: #fff7e6;
+      color: #7a4b00;
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
     `
   ]
 })
@@ -357,6 +372,12 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  onNotesSaved(updated: any) {
+    if (!this.selectedNode?.node) return;
+    Object.assign(this.selectedNode.node, updated);
+    this.cdr.detectChanges();
+  }
+
   rerunAnalysis() {
     if (!this.currentFen) return;
     this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
@@ -371,6 +392,18 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     const move = this.analysis.bestMove;
     if (!move || this.analysis.fen !== this.currentFen || move === '(none)') return [];
     return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
+  }
+
+  plannedTrainedMove() {
+    return (this.selectedNode?.children || []).find((child: any) => child.node.isUserMove && child.node.isCorrectUserMove)?.node?.moveUci;
+  }
+
+  engineWarning() {
+    if (this.analysis.fen !== this.currentFen || !this.analysis.bestMove || this.analysis.bestMove === '(none)') return null;
+    const planned = this.plannedTrainedMove();
+    if (!planned) return null;
+    if (planned === this.analysis.bestMove) return null;
+    return `Engine warning: your planned move is ${planned}, but Stockfish currently prefers ${this.analysis.bestMove}.`;
   }
 
   topDepth() {
