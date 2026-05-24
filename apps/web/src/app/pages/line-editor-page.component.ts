@@ -18,7 +18,7 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
       <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
         <div>
           <div style="display:flex;gap:12px;align-items:stretch;">
-            <div class="eval-bar" title="Stockfish evaluation">
+            <div class="eval-bar" [class.eval-bar-flipped]="isBlackPerspective()" title="Stockfish evaluation">
               <div class="eval-black" [style.height.%]="100 - evalWhitePercent()"></div>
               <div class="eval-label">{{ evalLabel() }}</div>
             </div>
@@ -100,6 +100,10 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
       right: 0;
       background: #222;
       transition: height 180ms ease;
+    }
+    .eval-bar-flipped .eval-black {
+      top: auto;
+      bottom: 0;
     }
     .eval-label {
       position: absolute;
@@ -394,6 +398,10 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     const whiteCp = this.scoreFromWhitePerspective(first.scoreCp ?? 0, this.currentFen);
     const clamped = Math.max(-800, Math.min(800, whiteCp));
     return 50 + (clamped / 800) * 50;
+  }
+
+  isBlackPerspective() {
+    return this.line?.sideToTrain === 'BLACK';
   }
 
   private scoreFromWhitePerspective(scoreCp: number, fen: string) {
