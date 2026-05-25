@@ -1,6 +1,7 @@
 // Prisma schema for the chess repertoire trainer API. This defines
 // entities for courses, chapters, lines, move nodes, training sessions
-// and attempts. It also stores imported games from external chess accounts.
+// and attempts. It also stores imported games from external chess accounts
+// and backend Stockfish analysis for imported games.
 
 generator client {
   provider = "prisma-client-js"
@@ -45,11 +46,11 @@ model ExternalAccount {
 }
 
 model ImportedGame {
-  id                    Int             @id @default(autoincrement())
+  id                    Int                @id @default(autoincrement())
   userId                Int
-  user                  AppUser         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  AppUser            @relation(fields: [userId], references: [id], onDelete: Cascade)
   accountId             Int
-  account               ExternalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account               ExternalAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
   provider              String
   providerGameId        String
   providerUrl           String?
@@ -74,8 +75,10 @@ model ImportedGame {
   status                String?
   openingName           String?
   openingEco            String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  analysisRuns          GameAnalysisRun[]
+  moveAnalyses          GameMoveAnalysis[]
 
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
@@ -104,6 +107,79 @@ model ImportRun {
 
   @@index([accountId, startedAt])
   @@index([userId, startedAt])
+}
+
+model PositionAnalysis {
+  id                    Int                @id @default(autoincrement())
+  cacheKey              String             @unique
+  fen                   String
+  normalizedFen         String
+  playedMoveUci         String?
+  depth                 Int
+  multipv               Int
+  engineName            String
+  engineVersion         String?
+  classificationVersion String             @default("v1")
+  bestMoveUci           String?
+  bestScoreCpWhite      Int?
+  playedScoreCpWhite    Int?
+  scoreLossCp           Int?
+  classification        String?
+  lines                 Json?
+  playedLine            Json?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  gameMoves             GameMoveAnalysis[]
+
+  @@index([normalizedFen])
+  @@index([classification])
+}
+
+model GameAnalysisRun {
+  id             Int                @id @default(autoincrement())
+  importedGameId Int
+  importedGame   ImportedGame       @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  status         String
+  depth          Int
+  multipv        Int
+  engineName     String
+  engineVersion  String?
+  positionsTotal Int                @default(0)
+  positionsDone  Int                @default(0)
+  summary        Json?
+  error          String?
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  moves          GameMoveAnalysis[]
+
+  @@index([importedGameId, createdAt])
+  @@index([status])
+}
+
+model GameMoveAnalysis {
+  id                 Int              @id @default(autoincrement())
+  analysisRunId      Int
+  analysisRun        GameAnalysisRun  @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  importedGameId     Int
+  importedGame       ImportedGame     @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  positionAnalysisId Int
+  positionAnalysis   PositionAnalysis @relation(fields: [positionAnalysisId], references: [id])
+  plyNumber          Int
+  moveNumber         Int
+  side               String
+  fenBefore          String
+  fenAfter           String?
+  playedMoveUci      String
+  playedMoveSan      String?
+  classification     String?
+  scoreLossCp        Int?
+  createdAt          DateTime         @default(now())
+
+  @@unique([analysisRunId, plyNumber])
+  @@index([importedGameId, plyNumber])
+  @@index([positionAnalysisId])
+  @@index([classification])
 }
 
 model Course {
