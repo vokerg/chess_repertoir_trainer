@@ -18,12 +18,18 @@ function toUci(move: any): string {
 
 function parsePgnMoves(pgn: string): ParsedGameMove[] {
   const chess = new Chess();
-  const loaded = chess.loadPgn(pgn);
-  if (!loaded) throw new Error('Could not parse imported game PGN');
+  try {
+    chess.loadPgn(pgn);
+  } catch {
+    throw new Error('Could not parse imported game PGN');
+  }
 
   const history = chess.history({ verbose: true }) as any[];
   return history.map((move, index) => {
     const plyNumber = index + 1;
+    if (!move.before || !move.after) {
+      throw new Error('Could not reconstruct move positions from imported game PGN');
+    }
     return {
       plyNumber,
       moveNumber: Math.ceil(plyNumber / 2),
