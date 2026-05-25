@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CurrentUserService } from '../services/currentUserService';
 import { ExternalAccountService } from '../services/externalAccountService';
 import { LichessImportService } from '../services/lichessImportService';
+import { ChessComImportService } from '../services/chessComImportService';
 
 const createAccountSchema = z.object({
   provider: z.enum(['LICHESS', 'CHESS_COM']),
@@ -74,13 +75,17 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
       reply.code(404);
       return { message: 'External account not found' };
     }
-    if (account.provider !== 'LICHESS') {
-      reply.code(400);
-      return { message: 'Only Lichess sync is implemented for now' };
-    }
 
     try {
-      return await LichessImportService.syncAccount(id);
+      if (account.provider === 'LICHESS') {
+        return await LichessImportService.syncAccount(id);
+      }
+      if (account.provider === 'CHESS_COM') {
+        return await ChessComImportService.syncAccount(id);
+      }
+
+      reply.code(400);
+      return { message: `Unsupported provider: ${account.provider}` };
     } catch (err: any) {
       reply.code(400);
       return { error: err.message ?? String(err) };
