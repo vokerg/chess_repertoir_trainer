@@ -163,18 +163,38 @@ Optional body:
 ```json
 {
   "depth": 12,
-  "multipv": 3
+  "multipv": 3,
+  "force": false
 }
+```
+
+Saved analysis can be read with:
+
+```http
+GET /api/imported-games/:gameId/analysis
 ```
 
 Behavior:
 
-- The endpoint loads the imported game PGN, expands it into plies, analyzes each played move through the shared position-analysis service, and stores the result.
+- The analyze endpoint loads the imported game PGN, expands it into plies, analyzes each played move through the shared position-analysis service, and stores the result.
 - `PositionAnalysis` stores the heavy reusable Stockfish result for a concrete position, played move, depth, MultiPV, engine, and classification version.
 - `GameAnalysisRun` stores the one-game run metadata and summary.
 - `GameMoveAnalysis` stores the game-specific move row and points to `PositionAnalysis`.
-- If a run already exists for the same imported game, depth, MultiPV, engine name, and engine version, the endpoint returns that run and does not re-analyze.
+- If `force` is false or omitted and a `RUNNING` or `COMPLETED` run already exists for the same imported game, depth, MultiPV, engine name, and engine version, the endpoint returns that run and does not re-analyze.
+- If `force` is true, the endpoint creates a new `GameAnalysisRun`; existing `PositionAnalysis` cache rows are still reused.
+- Analyze and read endpoints return compact game-analysis reports by default. Full engine lines remain stored in `PositionAnalysis` and should be exposed through a dedicated detail endpoint only when needed.
 - Cache hits do not update hit counters; reuse can be derived later from `GameMoveAnalysis.positionAnalysisId` references.
+
+Frontend contract for analysis status:
+
+- The source of truth is `GameAnalysisRun`, not a boolean column on `ImportedGame`.
+- Future frontend DTOs may expose an `analysis` summary on imported-game list/detail responses, but that status should be derived from analysis runs.
+- Suggested frontend-facing status values are `NOT_ANALYZED`, `RUNNING`, `COMPLETED`, and `FAILED`.
+- A game with no analysis runs is `NOT_ANALYZED`.
+- A game with a latest `RUNNING` run is `RUNNING`.
+- A game with a latest `COMPLETED` run is `COMPLETED`.
+- A game with only failed runs is `FAILED`.
+- If performance later requires denormalized analysis fields on `ImportedGame`, treat them as a read-model/cache optimization, not the source of truth.
 
 This is a synchronous MVP endpoint. It is intended for one-game analysis and not yet for account-wide or queued batch analysis.
 
