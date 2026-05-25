@@ -2,10 +2,19 @@ import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { PositionAnalysisResult } from './analysis.types';
 
-const gameAnalysisRunInclude = {
+const compactGameAnalysisRunInclude = {
   moves: {
     orderBy: { plyNumber: 'asc' as const },
-    include: { positionAnalysis: true },
+    include: {
+      positionAnalysis: {
+        select: {
+          id: true,
+          bestMoveUci: true,
+          bestScoreCpWhite: true,
+          playedScoreCpWhite: true,
+        },
+      },
+    },
   },
 };
 
@@ -24,6 +33,7 @@ export async function getExistingGameAnalysis(importedGameId: number, settings: 
   return prisma.gameAnalysisRun.findFirst({
     where: {
       importedGameId,
+      importedGame: { userId: SINGLETON_USER_ID },
       status: { in: ['RUNNING', 'COMPLETED'] },
       depth: settings.depth,
       multipv: settings.multipv,
@@ -31,7 +41,19 @@ export async function getExistingGameAnalysis(importedGameId: number, settings: 
       engineVersion: settings.engineVersion ?? null,
     },
     orderBy: { createdAt: 'desc' },
-    include: gameAnalysisRunInclude,
+    include: compactGameAnalysisRunInclude,
+  });
+}
+
+export async function getLatestGameAnalysisForImportedGame(importedGameId: number) {
+  return prisma.gameAnalysisRun.findFirst({
+    where: {
+      importedGameId,
+      importedGame: { userId: SINGLETON_USER_ID },
+      status: { in: ['RUNNING', 'COMPLETED'] },
+    },
+    orderBy: { createdAt: 'desc' },
+    include: compactGameAnalysisRunInclude,
   });
 }
 
@@ -66,7 +88,7 @@ export async function completeGameAnalysisRun(id: number, summary: unknown, posi
       positionsDone,
       completedAt: new Date(),
     },
-    include: gameAnalysisRunInclude,
+    include: compactGameAnalysisRunInclude,
   });
 }
 
