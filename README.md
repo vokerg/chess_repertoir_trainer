@@ -10,7 +10,7 @@ This project is in stabilization/prototype stage. The intended v1 stack is:
 
 - Frontend: Angular
 - Backend: TypeScript + Fastify
-- Database: SQLite
+- Database: PostgreSQL on Neon
 - ORM: Prisma
 - Chess rules: chess.js
 - Validation: Zod
@@ -50,7 +50,10 @@ chess-repertoire-trainer/
 │   └── web/            # Angular frontend
 ├── packages/
 │   └── chess-domain/   # Pure TypeScript chess/training logic
-├── data/               # Local SQLite DB files live here and are ignored by Git
+├── apps/api/prisma/
+│   ├── migrations/     # Active PostgreSQL migrations
+│   └── legacy-sqlite-migrations/
+│                      # Archived SQLite migration history kept for reference
 ├── .env.example
 ├── .gitignore
 ├── .nvmrc
@@ -84,17 +87,25 @@ The root workspace scripts build `packages/chess-domain` before API/web builds s
 
 ## Environment configuration
 
-Copy the example environment file:
+Copy the example environment file into the API workspace:
 
 ```bash
-cp .env.example .env
+cp .env.example apps/api/.env
 ```
 
-The default SQLite URL is resolved relative to `apps/api/prisma/schema.prisma` and points at the root `data/dev.db` file:
+The API workspace is the source of truth for local database configuration. Prisma CLI commands such as `migrate`, `seed`, and `studio` run from `apps/api`, and the Fastify API also loads its environment from that workspace.
+
+For Neon, configure both connection URLs:
 
 ```text
-DATABASE_URL="file:../../../data/dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@YOUR-POOLED-HOST/neondb?sslmode=require&channel_binding=require"
+DIRECT_URL="postgresql://USER:PASSWORD@YOUR-DIRECT-HOST/neondb?sslmode=require&channel_binding=require"
 ```
+
+- `DATABASE_URL` is the pooled runtime connection used by the app.
+- `DIRECT_URL` is the direct connection used by Prisma CLI commands such as `migrate` and `seed`.
+
+If you change database credentials or switch environments, restart the API dev server so it reloads the updated env file.
 
 ## Database setup
 
@@ -103,11 +114,13 @@ npm run db:migrate
 npm run db:seed
 ```
 
-Reset local data:
+Reset the target database:
 
 ```bash
 npm run db:reset
 ```
+
+`db:reset` is destructive. On Neon it resets the configured remote database, not a local SQLite file.
 
 The seed creates:
 
@@ -146,6 +159,12 @@ npm run build
 npm run test
 ```
 
+Current testing status:
+
+- `packages/chess-domain` contains Vitest test files, but the workspace test script is not fully wired yet.
+- `apps/api` and `apps/web` currently use placeholder test scripts.
+- Treat `npm test` as a lightweight repo check, not full behavioral coverage.
+
 Useful scoped commands:
 
 ```bash
@@ -175,7 +194,12 @@ From a clean clone, the target is:
 14. Wrong moves do not advance the line.
 15. Correct moves advance the line.
 16. Opponent moves are auto-played randomly from available branches.
-17. Data persists in SQLite after restart.
+17. Data persists in PostgreSQL after restart.
+
+## Migration history
+
+- `apps/api/prisma/migrations/` contains the active PostgreSQL migration history used for Neon and other Postgres environments.
+- `apps/api/prisma/legacy-sqlite-migrations/` contains the archived SQLite-era migration that should not be applied to Postgres databases.
 
 ## Known limitations
 
