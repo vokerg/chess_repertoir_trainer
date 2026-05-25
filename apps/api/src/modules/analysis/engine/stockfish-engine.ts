@@ -74,6 +74,9 @@ export class StockfishEngine {
 
     return new Promise((resolve, reject) => {
       const child = spawn(enginePath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+      const stdin = child.stdin;
+      const stdout = child.stdout;
+      const stderrStream = child.stderr;
       let settled = false;
       let bestMoveUci: string | undefined;
       let stderr = '';
@@ -83,7 +86,7 @@ export class StockfishEngine {
         settled = true;
         clearTimeout(timer);
         try {
-          child.stdin.write('quit\n');
+          stdin?.write('quit\n');
         } catch {
           // ignore stdin errors during shutdown
         }
@@ -107,11 +110,16 @@ export class StockfishEngine {
         finish(new Error(`Stockfish timed out after ${timeoutMs}ms`));
       }, timeoutMs);
 
+      if (!stdin || !stdout || !stderrStream) {
+        finish(new Error('Stockfish process did not expose stdio pipes'));
+        return;
+      }
+
       child.on('error', (error) => {
         finish(new Error(`Could not start Stockfish at ${enginePath}: ${error.message}`));
       });
 
-      child.stderr.on('data', (chunk) => {
+      stderrStream.on('data', (chunk) => {
         stderr += String(chunk);
       });
 
@@ -121,7 +129,7 @@ export class StockfishEngine {
         }
       });
 
-      const rl = createInterface({ input: child.stdout });
+      const rl = createInterface({ input: stdout });
       rl.on('line', (line) => {
         const message = line.trim();
         if (!message) return;
@@ -129,18 +137,18 @@ export class StockfishEngine {
         if (message === 'uciok') {
           const threads = Number(process.env['STOCKFISH_THREADS'] || 1);
           const hash = Number(process.env['STOCKFISH_HASH_MB'] || 64);
-          if (Number.isFinite(threads) && threads > 0) child.stdin.write(`setoption name Threads value ${threads}\n`);
-          if (Number.isFinite(hash) && hash > 0) child.stdin.write(`setoption name Hash value ${hash}\n`);
-          child.stdin.write(`setoption name MultiPV value ${multipv}\n`);
-          child.stdin.write('isready\n');
+          if (Number.isFinite(threads) && threads > 0) stdin.write(`setoption name Threads value ${threads}\n`);
+          if (Number.isFinite(hash) && hash > 0) stdin.write(`setoption name Hash value ${hash}\n`);
+          stdin.write(`setoption name MultiPV value ${multipv}\n`);
+          stdin.write('isready\n');
           return;
         }
 
         if (message === 'readyok') {
           const searchMoves = options.searchMoves?.length ? ` searchmoves ${options.searchMoves.join(' ')}` : '';
-          child.stdin.write('ucinewgame\n');
-          child.stdin.write(`position fen ${options.fen}\n`);
-          child.stdin.write(`go depth ${depth}${searchMoves}\n`);
+          stdin.write('ucinewgame\n');
+          stdin.write(`position fen ${options.fen}\n`);
+          stdin.write(`go depth ${depth}${searchMoves}\n`);
           return;
         }
 
@@ -157,7 +165,7 @@ export class StockfishEngine {
         }
       });
 
-      child.stdin.write('uci\n');
+      stdin.write('uci\n');
     });
   }
 }
