@@ -77,7 +77,6 @@ export class StockfishEngine {
       let settled = false;
       let bestMoveUci: string | undefined;
       let stderr = '';
-      let discoveredVersion = process.env['STOCKFISH_VERSION'];
 
       const finish = (err?: Error) => {
         if (settled) return;
@@ -127,10 +126,6 @@ export class StockfishEngine {
         const message = line.trim();
         if (!message) return;
 
-        if (!discoveredVersion && /stockfish/i.test(message)) {
-          discoveredVersion = message;
-        }
-
         if (message === 'uciok') {
           const threads = Number(process.env['STOCKFISH_THREADS'] || 1);
           const hash = Number(process.env['STOCKFISH_HASH_MB'] || 64);
@@ -158,9 +153,6 @@ export class StockfishEngine {
         if (message.startsWith('bestmove ')) {
           const tokens = message.split(/\s+/);
           bestMoveUci = tokens[1] && tokens[1] !== '(none)' ? tokens[1] : undefined;
-          if (!process.env['STOCKFISH_VERSION'] && discoveredVersion) {
-            process.env['STOCKFISH_VERSION'] = discoveredVersion;
-          }
           finish();
         }
       });
