@@ -196,6 +196,15 @@ Frontend contract for analysis status:
 - A game with only failed runs is `FAILED`.
 - If performance later requires denormalized analysis fields on `ImportedGame`, treat them as a read-model/cache optimization, not the source of truth.
 
+Future opening-book support:
+
+- Stockfish-only classification can mislabel playable theory as an inaccuracy, especially in the opening. For example, a known theoretical move can lose a small number of centipawns at shallow depth but still be a normal book move.
+- Future analysis should add `BOOK` to the classification vocabulary before `BEST`, `GOOD`, `INACCURACY`, `MISTAKE`, and `BLUNDER`.
+- Opening-book detection should happen before score-loss classification: if `fenBefore + playedMoveUci` is found in the book, classify the move as `BOOK` while still storing engine eval, score loss, and best move.
+- Preferred source is a local opening-book table generated from public Lichess game data, not live API calls during game analysis.
+- A future minimal table could store `normalizedFen`, `moveUci`, `moveSan`, `source`, `games`, and optional popularity/win-rate fields.
+- The book lookup should live behind an `OpeningBookService` or analysis-owned repository boundary so the source can change later without touching game-analysis orchestration.
+
 This is a synchronous MVP endpoint. It is intended for one-game analysis and not yet for account-wide or queued batch analysis.
 
 ## Running locally
