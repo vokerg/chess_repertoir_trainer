@@ -28,6 +28,12 @@ interface CompactAnalysisMove {
   positionAnalysisId: number;
 }
 
+interface AnalyzeImportedGameOptions {
+  depth: number;
+  multipv: number;
+  force: boolean;
+}
+
 function toUci(move: any): string {
   return `${move.from}${move.to}${move.promotion ?? ''}`;
 }
@@ -132,20 +138,23 @@ export const GameAnalysisService = {
     return { run: compactRun(run) };
   },
 
-  analyzeImportedGame: async (importedGameId: number, options: { depth: number; multipv: number }) => {
+  analyzeImportedGame: async (importedGameId: number, options: AnalyzeImportedGameOptions) => {
     await CurrentUserService.getOrCreate();
 
     const engineName = StockfishEngine.engineName;
     const engineVersion = StockfishEngine.engineVersion();
-    const existing = await getExistingGameAnalysis(importedGameId, {
-      depth: options.depth,
-      multipv: options.multipv,
-      engineName,
-      engineVersion,
-    });
 
-    if (existing) {
-      return { reusedExisting: true, run: compactRun(existing) };
+    if (!options.force) {
+      const existing = await getExistingGameAnalysis(importedGameId, {
+        depth: options.depth,
+        multipv: options.multipv,
+        engineName,
+        engineVersion,
+      });
+
+      if (existing) {
+        return { reusedExisting: true, run: compactRun(existing) };
+      }
     }
 
     const game = await getImportedGameForAnalysis(importedGameId);
