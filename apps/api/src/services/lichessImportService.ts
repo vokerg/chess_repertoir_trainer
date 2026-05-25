@@ -45,6 +45,12 @@ type LichessPlayer = {
   aiLevel?: number;
 };
 
+type ParsedTimeControl = {
+  raw: string | null;
+  initial: number | null;
+  increment: number | null;
+};
+
 function toDate(value?: number) {
   return typeof value === 'number' ? new Date(value) : null;
 }
@@ -57,10 +63,44 @@ function normalizeLichessName(value?: string | null) {
   return value?.trim().toLowerCase() ?? null;
 }
 
+function getPgnHeader(pgn: string | undefined, header: string) {
+  if (!pgn) return null;
+  const escaped = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = pgn.match(new RegExp(`\\[${escaped}\\s+"([^"]*)"\\]`));
+  return match?.[1] ?? null;
+}
+
+function parseTimeControlRaw(raw: string | null): ParsedTimeControl {
+  if (!raw || raw === '-' || raw === '?') {
+    return { raw, initial: null, increment: null };
+  }
+
+  const match = raw.match(/^(\d+)(?:\+(\d+))?$/);
+  if (!match) {
+    return { raw, initial: null, increment: null };
+  }
+
+  return {
+    raw,
+    initial: Number(match[1]),
+    increment: match[2] ? Number(match[2]) : 0,
+  };
+}
+
+function getTimeControl(game: LichessGame): ParsedTimeControl {
+  if (game.clock) {
+    const initial = game.clock.initial ?? 0;
+    const increment = game.clock.increment ?? 0;
+    return { raw: `${initial}+${increment}`, initial, increment };
+  }
+
+  return parseTimeControlRaw(getPgnHeader(game.pgn, 'TimeControl'));
+}
+
 function getUserColor(game: LichessGame, accountUsername: string): 'WHITE' | 'BLACK' | null {
   const account = normalizeLichessName(accountUsername);
-  const white = normalizeLichessName(playerName(game.players?.white));
-  const black = normalizeLichessName(playerName(game.players?.black));
+  const white = normalizeLichessName(playerName(game.players?.white) ?? getPgnHeader(game.pgn, 'White'));
+  const black = normalizeLichessName(playerName(game.players?.black) ?? getPgnHeader(game.pgn, 'Black'));
 
   if (account && white === account) return 'WHITE';
   if (account && black === account) return 'BLACK';
@@ -78,14 +118,7 @@ function getResult(game: LichessGame) {
   if (game.winner === 'white') return '1-0';
   if (game.winner === 'black') return '0-1';
   if (game.status === 'draw' || game.status === 'stalemate') return '1/2-1/2';
-  return '*';
-}
-
-function buildTimeControlRaw(game: LichessGame) {
-  if (!game.clock) return null;
-  const initial = game.clock.initial ?? 0;
-  const increment = game.clock.increment ?? 0;
-  return `${initial}+${increment}`;
+  return getPgnHeader(game.pgn, 'Result') ?? '*';
 }
 
 function buildLichessUrl(gameId: string) {
@@ -97,10 +130,17 @@ function compactRawGame(game: LichessGame) {
   return withoutClockSnapshots;
 }
 
+function parseRating(value: string | null) {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function normalizeGame(game: LichessGame, account: { id: number; userId: number; username: string; provider: string }) {
+  const timeControl = getTimeControl(game);
   const userColor = getUserColor(game, account.username);
-  const whiteUsername = playerName(game.players?.white);
-  const blackUsername = playerName(game.players?.black);
+  const whiteUsername = playerName(game.players?.white) ?? getPgnHeader(game.pgn, 'White');
+  const blackUsername = playerName(game.players?.black) ?? getPgnHeader(game.pgn, 'Black');
   const opponentUsername = userColor === 'WHITE' ? blackUsername : userColor === 'BLACK' ? whiteUsername : null;
 
   return {
@@ -108,28 +148,28 @@ function normalizeGame(game: LichessGame, account: { id: number; userId: number;
     accountId: account.id,
     provider: account.provider,
     providerGameId: game.id,
-    providerUrl: game.url ?? buildLichessUrl(game.id),
+    providerUrl: game.url ?? getPgnHeader(game.pgn, 'Site') ?? buildLichessUrl(game.id),
     pgn: game.pgn ?? null,
     rawJson: compactRawGame(game) as any,
     rated: game.rated ?? null,
-    variant: game.variant ?? null,
+    variant: game.variant ?? getPgnHeader(game.pgn, 'Variant'),
     speedCategory: game.speed ?? game.perf ?? null,
-    timeControlRaw: buildTimeControlRaw(game),
-    timeControlInitial: game.clock?.initial ?? null,
-    timeControlIncrement: game.clock?.increment ?? null,
+    timeControlRaw: timeControl.raw,
+    timeControlInitial: timeControl.initial,
+    timeControlIncrement: timeControl.increment,
     startedAt: toDate(game.createdAt),
     endedAt: toDate(game.lastMoveAt ?? game.createdAt),
     whiteUsername,
     blackUsername,
-    whiteRating: game.players?.white?.rating ?? null,
-    blackRating: game.players?.black?.rating ?? null,
+    whiteRating: game.players?.white?.rating ?? parseRating(getPgnHeader(game.pgn, 'WhiteElo')),
+    blackRating: game.players?.black?.rating ?? parseRating(getPgnHeader(game.pgn, 'BlackElo')),
     userColor,
     opponentUsername,
     result: getResult(game),
     resultForUser: getResultForUser(game, userColor),
-    status: game.status ?? null,
-    openingName: game.opening?.name ?? null,
-    openingEco: game.opening?.eco ?? null,
+    status: game.status ?? getPgnHeader(game.pgn, 'Termination'),
+    openingName: game.opening?.name ?? getPgnHeader(game.pgn, 'Opening'),
+    openingEco: game.opening?.eco ?? getPgnHeader(game.pgn, 'ECO'),
   };
 }
 
