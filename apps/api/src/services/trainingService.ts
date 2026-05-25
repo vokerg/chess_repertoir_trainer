@@ -93,8 +93,16 @@ export const TrainingService = {
     if (!expectedChild || !expectedMove) throw new Error('No user move is expected in this position');
 
     const fenBefore = state.current.node.fenAfter;
+    const pathLengthBefore = state.path.length;
     const result = playUserMove(state, moveUci);
     const wasCorrect = result.correct;
+    const playedMoves = wasCorrect
+      ? state.path.slice(pathLengthBefore).map((pathNode) => ({
+          moveUci: pathNode.node.moveUci,
+          moveSan: pathNode.node.moveSan,
+          isUserMove: pathNode.node.isUserMove,
+        }))
+      : [];
 
     await prisma.trainingAttemptMove.create({
       data: {
@@ -138,6 +146,7 @@ export const TrainingService = {
     return {
       correct: wasCorrect,
       expectedMove,
+      playedMoves,
       fen: newFen,
       nextExpectedMove: nextExpected,
       completed: result.completed,

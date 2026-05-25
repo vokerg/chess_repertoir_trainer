@@ -16,6 +16,7 @@ export type ChessBoardImplementation = 'chessground' | 'legacy';
       [side]="side"
       [lastMove]="lastMove"
       [showCoordinates]="showCoordinates"
+      [positionVersion]="positionVersion"
       (move)="move.emit($event)"
     ></app-legacy-chess-board>
 
@@ -27,6 +28,7 @@ export type ChessBoardImplementation = 'chessground' | 'legacy';
         [arrows]="arrows"
         [showCoordinates]="showCoordinates"
         [sound]="sound"
+        [positionVersion]="positionVersion"
         (move)="move.emit($event)"
       ></app-chessground-board>
     </ng-template>
@@ -40,5 +42,6 @@ export class ChessBoardComponent {
   @Input() arrows: Array<{ from: string; to: string; brush?: string }> = [];
   @Input() showCoordinates = true;
   @Input() sound = true;
+  @Input() positionVersion = 0;
   @Output() move = new EventEmitter<string>();
 }

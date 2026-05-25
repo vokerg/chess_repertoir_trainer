@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Chess } from 'chess.js';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
 
@@ -24,17 +25,19 @@ interface MistakeReviewItem {
       <h2>Training: {{ lineName }}</h2>
       <div>
         <app-chess-board
-          *ngIf="boardReady"
           [fen]="currentFen"
           [side]="sideToTrain"
           [lastMove]="lastMove"
+          [positionVersion]="boardPositionVersion"
           (move)="onBoardMove($event)"
         ></app-chess-board>
       </div>
       <div style="margin-top:10px;">
         <p *ngIf="feedback" [style.color]="feedbackCorrect ? 'green' : 'red'">{{ feedback }}</p>
         <p *ngIf="showExpectedMove" style="color:#666;">
-          Expected move: <code>{{ expectedMove || '(waiting...)' }}</code>
+          Expected move:
+          <strong>{{ expectedMovePiece() }}</strong>
+          <code>{{ expectedMoveLabel() }}</code>
         </p>
         <p *ngIf="!showExpectedMove" style="color:#666;">
           Expected move hidden. Use Reveal only if you are stuck.
@@ -45,9 +48,16 @@ interface MistakeReviewItem {
         </button>
         <button type="button" (click)="finish()" [disabled]="completed">Finish</button>
       </div>
+      <div *ngIf="completed" class="completion-panel" [class.completion-panel-failed]="!passed">
+        <h3>{{ passed ? 'Line complete' : 'Training complete' }}</h3>
+        <p>{{ passed ? 'Clean run. Nice work.' : 'Finished with mistakes to review.' }}</p>
+        <div class="completion-stats">
+          <span>Accuracy: {{ accuracy | percent:'1.0-0' }}</span>
+          <span>Mistakes: {{ mistakesCount }}</span>
+        </div>
+        <button type="button" (click)="startTraining()">Train again</button>
+      </div>
       <div *ngIf="completed" style="margin-top:20px;">
-        <h3>Session {{ passed ? 'Passed' : 'Failed' }}</h3>
-        <p>Accuracy: {{ accuracy | number:'1.0-2' }}</p>
         <section style="margin-top:12px;border:1px solid #ddd;padding:12px;background:#fff;max-width:680px;">
           <h3 style="margin-top:0;">Mistake review</h3>
           <p *ngIf="reviewLoading">Loading mistake review...</p>
@@ -71,7 +81,37 @@ interface MistakeReviewItem {
       <p>Loading...</p>
       <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
     </div>
-  `
+  `,
+  styles: [
+    `
+    .completion-panel {
+      margin-top: 20px;
+      border: 1px solid #9ad29a;
+      background: #f3fbf1;
+      color: #163b16;
+      padding: 16px;
+      max-width: 680px;
+    }
+    .completion-panel-failed {
+      border-color: #f0c36a;
+      background: #fff8e8;
+      color: #4a3300;
+    }
+    .completion-panel h3 {
+      margin: 0 0 6px;
+    }
+    .completion-panel p {
+      margin: 0 0 12px;
+    }
+    .completion-stats {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    `
+  ]
 })
 export class LineTrainPageComponent implements OnInit {
   lineId!: number;
@@ -87,12 +127,12 @@ export class LineTrainPageComponent implements OnInit {
   passed = false;
   accuracy: number | null = null;
   loaded = false;
-  boardReady = true;
   showExpectedMove = false;
   reviewLoading = false;
   mistakes: MistakeReviewItem[] = [];
   error: string | null = null;
   lastMove: { from: string; to: string } | null = null;
+  boardPositionVersion = 0;
 
   constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
 
@@ -126,7 +166,7 @@ export class LineTrainPageComponent implements OnInit {
             this.mistakes = [];
             this.reviewLoading = false;
             this.loaded = true;
-            this.resetBoard();
+            this.boardPositionVersion++;
             this.cdr.detectChanges();
           },
           error: () => {
@@ -150,13 +190,15 @@ export class LineTrainPageComponent implements OnInit {
       this.mistakesCount = res.mistakesCount ?? this.mistakesCount;
 
       if (res.correct) {
-        this.lastMove = { from: uci.substring(0, 2), to: uci.substring(2, 4) };
+        const lastPlayedMove = res.playedMoves?.at(-1)?.moveUci || uci;
+        this.lastMove = { from: lastPlayedMove.substring(0, 2), to: lastPlayedMove.substring(2, 4) };
         this.feedback = 'Correct!';
         this.feedbackCorrect = true;
       } else {
         this.lastMove = null;
+        this.boardPositionVersion++;
         this.feedback = this.showExpectedMove
-          ? `Incorrect. Expected ${res.expectedMove}. Try it again.`
+          ? `Incorrect. Expected ${this.expectedMoveLabel(res.expectedMove)}. Try it again.`
           : 'Incorrect. Same position — try again.';
         this.feedbackCorrect = false;
       }
@@ -168,7 +210,6 @@ export class LineTrainPageComponent implements OnInit {
         this.loadReview();
       }
 
-      this.resetBoard();
       this.cdr.detectChanges();
     });
   }
@@ -190,6 +231,17 @@ export class LineTrainPageComponent implements OnInit {
     });
   }
 
+  expectedMoveLabel(moveUci: string | undefined = this.expectedMove) {
+    const move = this.describeExpectedMove(moveUci);
+    return move?.san || moveUci || '(waiting...)';
+  }
+
+  expectedMovePiece(moveUci: string | undefined = this.expectedMove) {
+    const move = this.describeExpectedMove(moveUci);
+    if (!move) return '';
+    return this.pieceSymbol(move.piece, move.color);
+  }
+
   private loadReview() {
     this.reviewLoading = true;
     this.api.get<any>(`/training/${this.sessionId}/review`).subscribe({
@@ -205,12 +257,25 @@ export class LineTrainPageComponent implements OnInit {
     });
   }
 
-  private resetBoard() {
-    this.boardReady = false;
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      this.boardReady = true;
-      this.cdr.detectChanges();
-    });
+  private describeExpectedMove(moveUci: string | undefined) {
+    if (!moveUci || !this.currentFen) return null;
+    try {
+      const game = new Chess(this.currentFen);
+      return game.move({
+        from: moveUci.substring(0, 2),
+        to: moveUci.substring(2, 4),
+        promotion: moveUci.substring(4, 5) || 'q',
+      }) as any;
+    } catch {
+      return null;
+    }
+  }
+
+  private pieceSymbol(piece: string, color: string) {
+    const symbols: Record<string, Record<string, string>> = {
+      w: { p: '♙', n: '♘', b: '♗', r: '♖', q: '♕', k: '♔' },
+      b: { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' },
+    };
+    return symbols[color]?.[piece] || '';
   }
 }

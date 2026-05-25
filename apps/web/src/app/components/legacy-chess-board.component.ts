@@ -55,6 +55,7 @@ export class LegacyChessBoardComponent implements OnInit, OnChanges {
   @Input() side: 'WHITE' | 'BLACK' = 'WHITE';
   @Input() lastMove: { from: string; to: string } | null = null;
   @Input() showCoordinates = true;
+  @Input() positionVersion = 0;
   @Output() move = new EventEmitter<string>();
 
   game!: any;
@@ -71,6 +72,7 @@ export class LegacyChessBoardComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['fen'] && !changes['fen'].firstChange) this.loadFen(this.fen);
     if (changes['side']) this.loadFen(this.fen);
+    if (changes['positionVersion'] && !changes['positionVersion'].firstChange) this.loadFen(this.fen);
   }
 
   updateCoordinateLabels() {

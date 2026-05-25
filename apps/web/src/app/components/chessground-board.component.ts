@@ -55,6 +55,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   @Input() arrows: Array<{ from: string; to: string; brush?: string }> = [];
   @Input() showCoordinates = true;
   @Input() sound = true;
+  @Input() positionVersion = 0;
   @Output() move = new EventEmitter<string>();
 
   @ViewChild('board', { static: true }) boardElement!: ElementRef<HTMLElement>;
@@ -72,7 +73,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   ngOnChanges(changes: SimpleChanges) {
     if (!this.ground) return;
-    if (changes['fen'] || changes['side']) {
+    if (changes['fen'] || changes['side'] || changes['positionVersion']) {
       this.game = this.createGame(this.fen);
       this.pendingMove = null;
       this.ground.set(this.config());
