@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import { CurrentUserService } from '../../services/currentUserService';
-import { StockfishEngine } from './engine/stockfish-engine';
+import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
 import { PositionAnalysisService } from './position-analysis.service';
 import {
   completeGameAnalysisRun,
@@ -175,15 +175,18 @@ export const GameAnalysisService = {
 
     const summary = emptySummary();
     let positionsDone = 0;
+    let session: StockfishSession | undefined;
 
     try {
+      session = await StockfishSession.start();
+
       for (const move of moves) {
         const position = await PositionAnalysisService.analyzePosition({
           fen: move.fenBefore,
           playedMoveUci: move.playedMoveUci,
           depth: options.depth,
           multipv: options.multipv,
-        });
+        }, session);
 
         await createGameMoveAnalysis({
           analysisRunId: run.id,
@@ -209,6 +212,8 @@ export const GameAnalysisService = {
     } catch (err: any) {
       await failGameAnalysisRun(run.id, err?.message ?? String(err), positionsDone);
       throw err;
+    } finally {
+      session?.close();
     }
   },
 };
