@@ -1,11 +1,12 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
+import { getGeneratedOpenApiPaths, getGeneratedOpenApiSchemas } from '../openapi/route-registry';
 
-const openApiDocument = {
+const legacyOpenApiDocument = {
   openapi: '3.0.3',
   info: {
     title: 'Chess Repertoire Trainer API',
     version: '0.1.0',
-    description: 'Backend API for repertoire authoring, training, and external game imports.',
+    description: 'Backend API for repertoire authoring, training, external game imports, and analysis.',
   },
   servers: [
     {
@@ -18,6 +19,7 @@ const openApiDocument = {
     { name: 'Current user' },
     { name: 'External accounts' },
     { name: 'Imported games' },
+    { name: 'Analysis' },
   ],
   paths: {
     '/health': {
@@ -31,9 +33,7 @@ const openApiDocument = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  properties: {
-                    ok: { type: 'boolean' },
-                  },
+                  properties: { ok: { type: 'boolean' } },
                   required: ['ok'],
                 },
               },
@@ -67,10 +67,7 @@ const openApiDocument = {
             description: 'External accounts',
             content: {
               'application/json': {
-                schema: {
-                  type: 'array',
-                  items: { $ref: '#/components/schemas/ExternalAccount' },
-                },
+                schema: { type: 'array', items: { $ref: '#/components/schemas/ExternalAccount' } },
               },
             },
           },
@@ -85,12 +82,7 @@ const openApiDocument = {
             'application/json': {
               schema: { $ref: '#/components/schemas/CreateExternalAccountRequest' },
               examples: {
-                lichess: {
-                  value: {
-                    provider: 'LICHESS',
-                    username: 'someLichessUser',
-                  },
-                },
+                lichess: { value: { provider: 'LICHESS', username: 'someLichessUser' } },
               },
             },
           },
@@ -177,28 +169,15 @@ const openApiDocument = {
         summary: 'List imported games for an external account',
         parameters: [
           { $ref: '#/components/parameters/AccountId' },
-          {
-            name: 'take',
-            in: 'query',
-            required: false,
-            schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 },
-          },
-          {
-            name: 'skip',
-            in: 'query',
-            required: false,
-            schema: { type: 'integer', minimum: 0, default: 0 },
-          },
+          { name: 'take', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 } },
+          { name: 'skip', in: 'query', required: false, schema: { type: 'integer', minimum: 0, default: 0 } },
         ],
         responses: {
           '200': {
             description: 'Imported games',
             content: {
               'application/json': {
-                schema: {
-                  type: 'array',
-                  items: { $ref: '#/components/schemas/ImportedGame' },
-                },
+                schema: { type: 'array', items: { $ref: '#/components/schemas/ImportedGame' } },
               },
             },
           },
@@ -331,19 +310,35 @@ const openApiDocument = {
       },
       ErrorResponse: {
         type: 'object',
-        properties: {
-          error: {},
-        },
+        properties: { error: {} },
       },
       MessageResponse: {
         type: 'object',
-        properties: {
-          message: { type: 'string' },
-        },
+        properties: { message: { type: 'string' } },
       },
     },
   },
 };
+
+function buildOpenApiDocument() {
+  const generatedSchemas = getGeneratedOpenApiSchemas();
+  const generatedPaths = getGeneratedOpenApiPaths();
+
+  return {
+    ...legacyOpenApiDocument,
+    paths: {
+      ...legacyOpenApiDocument.paths,
+      ...generatedPaths,
+    },
+    components: {
+      ...legacyOpenApiDocument.components,
+      schemas: {
+        ...legacyOpenApiDocument.components.schemas,
+        ...generatedSchemas,
+      },
+    },
+  };
+}
 
 function swaggerHtml() {
   return `<!doctype html>
@@ -373,7 +368,7 @@ function swaggerHtml() {
 }
 
 export default async function swaggerRoutes(app: FastifyInstance) {
-  app.get('/api/docs/openapi.json', async () => openApiDocument);
+  app.get('/api/docs/openapi.json', async () => buildOpenApiDocument());
 
   app.get('/api/docs', async (_request, reply: FastifyReply) => {
     reply.type('text/html');
