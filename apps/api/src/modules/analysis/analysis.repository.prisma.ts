@@ -1,5 +1,6 @@
 import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
+import { GameAccuracySummary } from './accuracy';
 import { PositionAnalysisResult } from './analysis.types';
 
 const compactGameAnalysisRunInclude = {
@@ -79,12 +80,19 @@ export async function createGameAnalysisRun(data: {
   });
 }
 
-export async function completeGameAnalysisRun(id: number, summary: unknown, positionsDone: number) {
+export async function completeGameAnalysisRun(id: number, summary: unknown, positionsDone: number, accuracy?: GameAccuracySummary) {
   return prisma.gameAnalysisRun.update({
     where: { id },
     data: {
       status: 'COMPLETED',
       summary: summary as any,
+      accuracyVersion: accuracy?.version,
+      whiteAccuracy: accuracy?.white.accuracy,
+      blackAccuracy: accuracy?.black.accuracy,
+      whiteAverageCentipawnLoss: accuracy?.white.averageCentipawnLoss,
+      blackAverageCentipawnLoss: accuracy?.black.averageCentipawnLoss,
+      whiteMovesAnalyzed: accuracy?.white.moves ?? 0,
+      blackMovesAnalyzed: accuracy?.black.moves ?? 0,
       positionsDone,
       completedAt: new Date(),
     },
