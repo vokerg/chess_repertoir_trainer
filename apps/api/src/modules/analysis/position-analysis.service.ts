@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Chess } from 'chess.js';
-import { StockfishEngine } from './engine/stockfish-engine';
+import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
 import {
   ANALYSIS_CLASSIFICATION_VERSION,
   EngineLine,
@@ -96,8 +96,16 @@ function storedFromRow(row: any): StoredPositionAnalysis {
   };
 }
 
+async function runSearch(session: StockfishSession | undefined, input: { fen: string; depth: number; multipv: number; searchMoves?: string[] }) {
+  const search = session ? session.search.bind(session) : StockfishEngine.search.bind(StockfishEngine);
+  return search(input);
+}
+
 export const PositionAnalysisService = {
-  analyzePosition: async (input: { fen: string; playedMoveUci?: string; depth: number; multipv: number }): Promise<StoredPositionAnalysis> => {
+  analyzePosition: async (
+    input: { fen: string; playedMoveUci?: string; depth: number; multipv: number },
+    session?: StockfishSession,
+  ): Promise<StoredPositionAnalysis> => {
     const normalizedFen = normalizeFenForCache(input.fen);
     const engineName = StockfishEngine.engineName;
     const engineVersion = StockfishEngine.engineVersion();
@@ -115,7 +123,7 @@ export const PositionAnalysisService = {
     const cached = await findPositionAnalysis(cacheKey);
     if (cached) return storedFromRow(cached);
 
-    const mainSearch = await StockfishEngine.search({
+    const mainSearch = await runSearch(session, {
       fen: input.fen,
       depth: input.depth,
       multipv: input.multipv,
@@ -129,7 +137,7 @@ export const PositionAnalysisService = {
       if (input.playedMoveUci === bestMoveUci) {
         playedLine = bestLine;
       } else {
-        const forced = await StockfishEngine.search({
+        const forced = await runSearch(session, {
           fen: input.fen,
           depth: input.depth,
           multipv: 1,
