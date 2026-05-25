@@ -22,6 +22,7 @@ type LichessGame = {
     increment?: number;
     totalTime?: number;
   };
+  clocks?: number[];
   players?: {
     white?: LichessPlayer;
     black?: LichessPlayer;
@@ -91,6 +92,11 @@ function buildLichessUrl(gameId: string) {
   return `https://lichess.org/${gameId}`;
 }
 
+function compactRawGame(game: LichessGame) {
+  const { clocks, ...withoutClockSnapshots } = game;
+  return withoutClockSnapshots;
+}
+
 function normalizeGame(game: LichessGame, account: { id: number; userId: number; username: string; provider: string }) {
   const userColor = getUserColor(game, account.username);
   const whiteUsername = playerName(game.players?.white);
@@ -104,7 +110,7 @@ function normalizeGame(game: LichessGame, account: { id: number; userId: number;
     providerGameId: game.id,
     providerUrl: game.url ?? buildLichessUrl(game.id),
     pgn: game.pgn ?? null,
-    rawJson: game as any,
+    rawJson: compactRawGame(game) as any,
     rated: game.rated ?? null,
     variant: game.variant ?? null,
     speedCategory: game.speed ?? game.perf ?? null,
@@ -188,7 +194,6 @@ export const LichessImportService = {
       url.searchParams.set('finished', 'true');
       url.searchParams.set('sort', 'dateAsc');
       url.searchParams.set('pgnInJson', 'true');
-      url.searchParams.set('clocks', 'true');
       url.searchParams.set('opening', 'true');
       if (syncSince) url.searchParams.set('since', String(syncSince.getTime()));
 
