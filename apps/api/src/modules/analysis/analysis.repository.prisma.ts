@@ -2,6 +2,13 @@ import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { PositionAnalysisResult } from './analysis.types';
 
+const gameAnalysisRunInclude = {
+  moves: {
+    orderBy: { plyNumber: 'asc' as const },
+    include: { positionAnalysis: true },
+  },
+};
+
 export async function getImportedGameForAnalysis(importedGameId: number) {
   return prisma.importedGame.findFirst({
     where: { id: importedGameId, userId: SINGLETON_USER_ID },
@@ -23,7 +30,7 @@ export async function getExistingGameAnalysis(importedGameId: number, settings: 
       engineVersion: settings.engineVersion ?? null,
     },
     orderBy: { createdAt: 'desc' },
-    include: { moves: { orderBy: { plyNumber: 'asc' } } },
+    include: gameAnalysisRunInclude,
   });
 }
 
@@ -58,7 +65,7 @@ export async function completeGameAnalysisRun(id: number, summary: unknown, posi
       positionsDone,
       completedAt: new Date(),
     },
-    include: { moves: { orderBy: { plyNumber: 'asc' } } },
+    include: gameAnalysisRunInclude,
   });
 }
 
