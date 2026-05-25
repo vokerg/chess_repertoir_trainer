@@ -196,7 +196,7 @@ Frontend contract for analysis status:
 - A game with only failed runs is `FAILED`.
 - If performance later requires denormalized analysis fields on `ImportedGame`, treat them as a read-model/cache optimization, not the source of truth.
 
-Future opening-book support:
+Future opening-book and classification support:
 
 - Stockfish-only classification can mislabel playable theory as an inaccuracy, especially in the opening. For example, a known theoretical move can lose a small number of centipawns at shallow depth but still be a normal book move.
 - Future analysis should add `BOOK` to the classification vocabulary before `BEST`, `GOOD`, `INACCURACY`, `MISTAKE`, and `BLUNDER`.
@@ -204,6 +204,9 @@ Future opening-book support:
 - Preferred source is a local opening-book table generated from public Lichess game data, not live API calls during game analysis.
 - A future minimal table could store `normalizedFen`, `moveUci`, `moveSan`, `source`, `games`, and optional popularity/win-rate fields.
 - The book lookup should live behind an `OpeningBookService` or analysis-owned repository boundary so the source can change later without touching game-analysis orchestration.
+- Future analysis should consider a `MISS` classification for missed tactical or winning opportunities. A miss is different from a blunder: the player may not make an immediately terrible move, but fails to play a clearly strong best move.
+- `MISS` should not be implemented as just another raw centipawn-loss threshold. It should be a special classification based on the relationship between the best move score, played move score, side to move, and whether the best move represented a major opportunity.
+- Adding `BOOK`, `MISS`, or other human-facing classification changes should bump `classificationVersion` so old cached `PositionAnalysis` rows do not silently change meaning.
 
 This is a synchronous MVP endpoint. It is intended for one-game analysis and not yet for account-wide or queued batch analysis.
 
