@@ -162,6 +162,8 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
 
   private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
+  private creatingMove = false;
+  private displayedEval: { line: EngineLine; fen: string } | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -194,6 +196,10 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
       this.analysis = analysis;
+      const firstLine = analysis.lines[0];
+      if (firstLine && analysis.fen === this.currentFen) {
+        this.displayedEval = { line: firstLine, fen: analysis.fen };
+      }
       this.cdr.detectChanges();
     });
     this.route.paramMap.subscribe((params) => {
@@ -321,6 +327,9 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   }
 
   onBoardMove(uci: string) {
+    if (this.creatingMove) return;
+
+    this.creatingMove = true;
     const parentId = this.currentNodeId === 0 ? null : this.currentNodeId;
     const body: any = { parentId, moveUci: uci };
     this.lastMove = { from: uci.substring(0, 2), to: uci.substring(2, 4) };
@@ -329,18 +338,21 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
       next: (created) => {
         this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe({
           next: (tree) => {
+            this.creatingMove = false;
             this.tree = tree;
             this.setSelectedNode(created.id);
             this.scheduleAnalysis();
             this.cdr.detectChanges();
           },
           error: () => {
+            this.creatingMove = false;
             this.error = 'Move was added, but the tree could not be reloaded.';
             this.cdr.detectChanges();
           },
         });
       },
       error: () => {
+        this.creatingMove = false;
         this.error = 'Could not add this move. It may be illegal or this position already has a trained-side move.';
         this.cdr.detectChanges();
       },
@@ -410,25 +422,25 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     return Math.max(0, ...this.analysis.lines.map((line) => line.depth));
   }
 
-  lineScoreLabel(line: EngineLine) {
+  lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
     if (line.mate !== undefined) return `M${line.mate}`;
     if (line.scoreCp === undefined) return '—';
-    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, this.currentFen);
+    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
     const pawns = whiteCp / 100;
     return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
   }
 
   evalLabel() {
-    const first = this.analysis.lines[0];
-    if (!first || this.analysis.fen !== this.currentFen) return '—';
-    return this.lineScoreLabel(first);
+    const displayed = this.displayedEvalLine();
+    if (!displayed) return '—';
+    return this.lineScoreLabel(displayed.line, displayed.fen);
   }
 
   evalWhitePercent() {
-    const first = this.analysis.lines[0];
-    if (!first || this.analysis.fen !== this.currentFen) return 50;
-    if (first.mate !== undefined) return first.mate > 0 ? 100 : 0;
-    const whiteCp = this.scoreFromWhitePerspective(first.scoreCp ?? 0, this.currentFen);
+    const displayed = this.displayedEvalLine();
+    if (!displayed) return 50;
+    if (displayed.line.mate !== undefined) return displayed.line.mate > 0 ? 100 : 0;
+    const whiteCp = this.scoreFromWhitePerspective(displayed.line.scoreCp ?? 0, displayed.fen);
     const clamped = Math.max(-800, Math.min(800, whiteCp));
     return 50 + (clamped / 800) * 50;
   }
@@ -440,5 +452,10 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   private scoreFromWhitePerspective(scoreCp: number, fen: string) {
     const turn = fen.split(' ')[1];
     return turn === 'b' ? -scoreCp : scoreCp;
+  }
+
+  private displayedEvalLine() {
+    const currentLine = this.analysis.fen === this.currentFen ? this.analysis.lines[0] : null;
+    return currentLine ? { line: currentLine, fen: this.currentFen } : this.displayedEval;
   }
 }

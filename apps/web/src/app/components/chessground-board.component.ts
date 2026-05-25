@@ -72,9 +72,14 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   ngOnChanges(changes: SimpleChanges) {
     if (!this.ground) return;
-    if (changes['fen'] || changes['side'] || changes['lastMove'] || changes['showCoordinates'] || changes['arrows']) {
+    if (changes['fen'] || changes['side']) {
       this.game = this.createGame(this.fen);
       this.pendingMove = null;
+      this.ground.set(this.config());
+      return;
+    }
+
+    if (changes['lastMove'] || changes['showCoordinates'] || changes['arrows']) {
       this.ground.set(this.config());
     }
   }
@@ -108,9 +113,6 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
         enabled: true,
         visible: true,
         autoShapes: this.arrowShapes() as any,
-      },
-      events: {
-        move: (from: Key, to: Key) => this.handleMove(from, to),
       },
       movable: {
         free: false,
@@ -169,13 +171,10 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     }
 
     const uci = from + to + (matching.promotion || '');
+    this.game.move({ from, to, promotion: matching.promotion || 'q' });
     this.pendingMove = uci;
     if (this.sound) this.sounds.play(matching.captured ? 'capture' : 'move');
-    this.ground?.set({
-      movable: { color: undefined, dests: new Map<Key, Key[]>() },
-      draggable: { enabled: false },
-      selectable: { enabled: false },
-    });
+    this.ground?.set(this.config());
     this.move.emit(uci);
   }
 }
