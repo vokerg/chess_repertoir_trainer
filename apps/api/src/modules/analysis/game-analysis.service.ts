@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js';
 import { CurrentUserService } from '../../services/currentUserService';
 import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
-import { PositionAnalysisService } from './position-analysis.service';
+import { PositionAnalysisService, PositionAnalysisStats } from './position-analysis.service';
 import {
   completeGameAnalysisRun,
   createGameAnalysisRun,
@@ -70,6 +70,13 @@ function emptySummary() {
     white: { BEST: 0, GOOD: 0, INACCURACY: 0, MISTAKE: 0, BLUNDER: 0 },
     black: { BEST: 0, GOOD: 0, INACCURACY: 0, MISTAKE: 0, BLUNDER: 0 },
     criticalPlyNumbers: [] as number[],
+    performance: {
+      durationMs: 0,
+      positionCacheHits: 0,
+      positionCacheMisses: 0,
+      engineSearches: 0,
+      forcedMoveSearches: 0,
+    },
   };
 }
 
@@ -174,6 +181,8 @@ export const GameAnalysisService = {
     });
 
     const summary = emptySummary();
+    const stats: PositionAnalysisStats = summary.performance;
+    const startedAtMs = Date.now();
     let positionsDone = 0;
     let session: StockfishSession | undefined;
 
@@ -186,7 +195,7 @@ export const GameAnalysisService = {
           playedMoveUci: move.playedMoveUci,
           depth: options.depth,
           multipv: options.multipv,
-        }, session);
+        }, session, stats);
 
         await createGameMoveAnalysis({
           analysisRunId: run.id,
@@ -207,9 +216,11 @@ export const GameAnalysisService = {
         addToSummary(summary, move, position.classification);
       }
 
+      summary.performance.durationMs = Date.now() - startedAtMs;
       const completed = await completeGameAnalysisRun(run.id, summary, positionsDone);
       return { reusedExisting: false, run: compactRun(completed) };
     } catch (err: any) {
+      summary.performance.durationMs = Date.now() - startedAtMs;
       await failGameAnalysisRun(run.id, err?.message ?? String(err), positionsDone);
       throw err;
     } finally {
