@@ -17,7 +17,7 @@ This project is in stabilization/prototype stage. The intended v1 stack is:
 - Tests: Vitest
 - Package manager: npm workspaces
 
-The current priority is a reliable local authoring/training loop. Do not treat cloud sync, auth, mobile, Stockfish, PGN import, or advanced spaced repetition as current v1 features.
+The current priority is a reliable local authoring/training loop plus experimental imported-game workflows. Do not treat cloud sync, auth, mobile, full PGN import, or advanced spaced repetition as current v1 features.
 
 ## Product model
 
@@ -77,6 +77,8 @@ Recommended versions:
 
 Angular 21 requires a modern Node/TypeScript toolchain, so Node 18 is not the target for this repo.
 
+Backend imported-game analysis also requires a server-side Stockfish executable. Locally, install Stockfish and set `STOCKFISH_PATH` if the executable is not available as `stockfish` on `PATH`.
+
 ## Installation
 
 ```bash
@@ -107,6 +109,22 @@ DIRECT_URL="postgresql://USER:PASSWORD@YOUR-DIRECT-HOST/neondb?sslmode=require&c
 
 If you change database credentials or switch environments, restart the API dev server so it reloads the updated env file.
 
+Backend Stockfish analysis env knobs:
+
+```text
+STOCKFISH_PATH=stockfish
+STOCKFISH_VERSION=stockfish-local
+ANALYSIS_DEFAULT_DEPTH=12
+ANALYSIS_MAX_DEPTH=16
+ANALYSIS_DEFAULT_MULTIPV=3
+ANALYSIS_MAX_MULTIPV=3
+ANALYSIS_TIMEOUT_MS=15000
+STOCKFISH_THREADS=1
+STOCKFISH_HASH_MB=64
+```
+
+`STOCKFISH_VERSION` is optional but recommended for deployed environments because it is part of the position-analysis cache identity. Keep it stable until you intentionally want new engine results.
+
 ## Database setup
 
 ```bash
@@ -131,6 +149,34 @@ The seed creates:
 - Branches after `1. e4`: `1...c5 2.Nf3` and `1...e6 2.d4`
 
 The seed stores real move nodes only; it does not create a fake blank root node.
+
+## Backend imported-game analysis
+
+The API can analyze one imported game at a time with server-side Stockfish:
+
+```http
+POST /api/imported-games/:gameId/analysis-runs
+```
+
+Optional body:
+
+```json
+{
+  "depth": 12,
+  "multipv": 3
+}
+```
+
+Behavior:
+
+- The endpoint loads the imported game PGN, expands it into plies, analyzes each played move through the shared position-analysis service, and stores the result.
+- `PositionAnalysis` stores the heavy reusable Stockfish result for a concrete position, played move, depth, MultiPV, engine, and classification version.
+- `GameAnalysisRun` stores the one-game run metadata and summary.
+- `GameMoveAnalysis` stores the game-specific move row and points to `PositionAnalysis`.
+- If a run already exists for the same imported game, depth, MultiPV, engine name, and engine version, the endpoint returns that run and does not re-analyze.
+- Cache hits do not update hit counters; reuse can be derived later from `GameMoveAnalysis.positionAnalysisId` references.
+
+This is a synchronous MVP endpoint. It is intended for one-game analysis and not yet for account-wide or queued batch analysis.
 
 ## Running locally
 
@@ -204,7 +250,8 @@ From a clean clone, the target is:
 ## Known limitations
 
 - Active training session state is kept in API memory. Restarting the API loses active sessions.
+- Imported-game analysis is synchronous, CPU-bound, and limited to one game per request in this MVP.
 - The UI is intentionally basic and needs a dedicated authoring UX pass after stabilization.
 - JSON import/export exists but needs versioning and merge/deduplication before it should be trusted as a robust backup system.
 - The stats model is simple and not yet a spaced repetition scheduler.
-- Mobile, auth, cloud sync, Stockfish, and full PGN import are future work, not current scope.
+- Mobile, auth, cloud sync, account-wide analysis queues, and full PGN import are future work, not current scope.
