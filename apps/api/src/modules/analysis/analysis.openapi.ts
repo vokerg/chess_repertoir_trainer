@@ -4,6 +4,7 @@ export const analysisOpenApiSchemas = {
     properties: {
       depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
       multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
+      force: { type: 'boolean', default: false, description: 'When true, creates a new analysis run even if a matching RUNNING or COMPLETED run already exists. PositionAnalysis cache is still reused.' },
     },
   },
   AnalyzeImportedGameResponse: {
@@ -97,7 +98,7 @@ export const getImportedGameAnalysisOpenApiOperation = {
 export const analyzeImportedGameOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Analyze one imported game with backend Stockfish',
-  description: 'Synchronously analyzes the stored PGN for one imported game. If a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and Stockfish is not executed again.',
+  description: 'Synchronously analyzes the stored PGN for one imported game. If force is false and a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and Stockfish is not executed again. If force is true, a new run is created while PositionAnalysis cache is still reused.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
@@ -109,6 +110,14 @@ export const analyzeImportedGameOpenApiOperation = {
             value: {
               depth: 12,
               multipv: 3,
+              force: false,
+            },
+          },
+          forceRerun: {
+            value: {
+              depth: 12,
+              multipv: 3,
+              force: true,
             },
           },
         },
