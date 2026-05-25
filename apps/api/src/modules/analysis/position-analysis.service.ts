@@ -10,6 +10,13 @@ import {
 } from './analysis.types';
 import { createPositionAnalysis, findPositionAnalysis } from './analysis.repository.prisma';
 
+export interface PositionAnalysisStats {
+  positionCacheHits: number;
+  positionCacheMisses: number;
+  engineSearches: number;
+  forcedMoveSearches: number;
+}
+
 function normalizeFenForCache(fen: string): string {
   const chess = new Chess(fen);
   const parts = chess.fen().split(/\s+/);
@@ -96,7 +103,12 @@ function storedFromRow(row: any): StoredPositionAnalysis {
   };
 }
 
-async function runSearch(session: StockfishSession | undefined, input: { fen: string; depth: number; multipv: number; searchMoves?: string[] }) {
+async function runSearch(
+  session: StockfishSession | undefined,
+  input: { fen: string; depth: number; multipv: number; searchMoves?: string[] },
+  stats?: PositionAnalysisStats,
+) {
+  stats && (stats.engineSearches += 1);
   const search = session ? session.search.bind(session) : StockfishEngine.search.bind(StockfishEngine);
   return search(input);
 }
@@ -105,6 +117,7 @@ export const PositionAnalysisService = {
   analyzePosition: async (
     input: { fen: string; playedMoveUci?: string; depth: number; multipv: number },
     session?: StockfishSession,
+    stats?: PositionAnalysisStats,
   ): Promise<StoredPositionAnalysis> => {
     const normalizedFen = normalizeFenForCache(input.fen);
     const engineName = StockfishEngine.engineName;
@@ -121,13 +134,18 @@ export const PositionAnalysisService = {
     });
 
     const cached = await findPositionAnalysis(cacheKey);
-    if (cached) return storedFromRow(cached);
+    if (cached) {
+      stats && (stats.positionCacheHits += 1);
+      return storedFromRow(cached);
+    }
+
+    stats && (stats.positionCacheMisses += 1);
 
     const mainSearch = await runSearch(session, {
       fen: input.fen,
       depth: input.depth,
       multipv: input.multipv,
-    });
+    }, stats);
 
     const bestLine = mainSearch.lines[0];
     const bestMoveUci = mainSearch.bestMoveUci ?? bestLine?.moveUci;
@@ -137,12 +155,13 @@ export const PositionAnalysisService = {
       if (input.playedMoveUci === bestMoveUci) {
         playedLine = bestLine;
       } else {
+        stats && (stats.forcedMoveSearches += 1);
         const forced = await runSearch(session, {
           fen: input.fen,
           depth: input.depth,
           multipv: 1,
           searchMoves: [input.playedMoveUci],
-        });
+        }, stats);
         playedLine = forced.lines[0];
       }
     }
