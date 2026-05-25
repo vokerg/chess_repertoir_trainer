@@ -4,12 +4,13 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "(cd ../.. && npm run build --workspace=packages/chess-domain) && ts-node-dev --respawn --transpile-only src/main.ts",
-    "build": "tsc -p tsconfig.json",
+    "dev": "(cd ../.. && npm run build --workspace=packages/chess-domain) && prisma migrate deploy && prisma generate && ts-node-dev --respawn --transpile-only src/main.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "prisma migrate deploy && prisma generate",
+    "db:generate": "prisma generate",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force && npm run db:seed",
+    "db:reset": "prisma migrate reset --force && prisma generate && npm run db:seed",
     "prisma:studio": "prisma studio",
     "test": "node -e \"console.log('No api tests yet')\""
   },

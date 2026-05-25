@@ -1,6 +1,6 @@
 // Prisma schema for the chess repertoire trainer API. This defines
 // entities for courses, chapters, lines, move nodes, training sessions
-// and attempts. Use `npx prisma migrate dev` to generate migrations.
+// and attempts. It also stores imported games from external chess accounts.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,6 +10,100 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model AppUser {
+  id               Int               @id @default(autoincrement())
+  displayName      String?
+  externalAccounts ExternalAccount[]
+  importedGames    ImportedGame[]
+  importRuns       ImportRun[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model ExternalAccount {
+  id                  Int            @id @default(autoincrement())
+  userId              Int
+  user                AppUser        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider            String
+  username            String
+  displayName         String?
+  providerUserId      String?
+  isActive            Boolean        @default(true)
+  lastSyncAt          DateTime?
+  syncCursorTime      DateTime?
+  lastSyncRunId       Int?
+  importedGames       ImportedGame[]
+  importRuns          ImportRun[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@unique([userId, provider, username])
+  @@index([userId])
+  @@index([provider, username])
+}
+
+model ImportedGame {
+  id                    Int             @id @default(autoincrement())
+  userId                Int
+  user                  AppUser         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             Int
+  account               ExternalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider              String
+  providerGameId        String
+  providerUrl           String?
+  pgn                   String?
+  rawJson               Json?
+  rated                 Boolean?
+  variant               String?
+  speedCategory         String?
+  timeControlRaw        String?
+  timeControlInitial    Int?
+  timeControlIncrement  Int?
+  startedAt             DateTime?
+  endedAt               DateTime?
+  whiteUsername         String?
+  blackUsername         String?
+  whiteRating           Int?
+  blackRating           Int?
+  userColor             String?
+  opponentUsername      String?
+  result                String?
+  resultForUser         String?
+  status                String?
+  openingName           String?
+  openingEco            String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@unique([accountId, providerGameId])
+  @@index([userId, endedAt])
+  @@index([accountId, endedAt])
+  @@index([provider, providerGameId])
+}
+
+model ImportRun {
+  id              Int              @id @default(autoincrement())
+  userId          Int
+  user            AppUser          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId       Int
+  account         ExternalAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider        String
+  status          String
+  syncSince       DateTime?
+  syncUntil       DateTime?
+  gamesSeen       Int              @default(0)
+  gamesImported   Int              @default(0)
+  gamesUpdated    Int              @default(0)
+  gamesSkipped    Int              @default(0)
+  gamesFailed     Int              @default(0)
+  error           String?
+  startedAt       DateTime         @default(now())
+  completedAt     DateTime?
+
+  @@index([accountId, startedAt])
+  @@index([userId, startedAt])
 }
 
 model Course {
