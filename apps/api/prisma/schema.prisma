@@ -136,22 +136,29 @@ model PositionAnalysis {
 }
 
 model GameAnalysisRun {
-  id             Int                @id @default(autoincrement())
-  importedGameId Int
-  importedGame   ImportedGame       @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
-  status         String
-  depth          Int
-  multipv        Int
-  engineName     String
-  engineVersion  String?
-  positionsTotal Int                @default(0)
-  positionsDone  Int                @default(0)
-  summary        Json?
-  error          String?
-  startedAt      DateTime           @default(now())
-  completedAt    DateTime?
-  createdAt      DateTime           @default(now())
-  moves          GameMoveAnalysis[]
+  id                        Int                @id @default(autoincrement())
+  importedGameId            Int
+  importedGame              ImportedGame       @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  status                    String
+  depth                     Int
+  multipv                   Int
+  engineName                String
+  engineVersion             String?
+  positionsTotal            Int                @default(0)
+  positionsDone             Int                @default(0)
+  summary                   Json?
+  accuracyVersion           String?
+  whiteAccuracy             Float?
+  blackAccuracy             Float?
+  whiteAverageCentipawnLoss Float?
+  blackAverageCentipawnLoss Float?
+  whiteMovesAnalyzed        Int                @default(0)
+  blackMovesAnalyzed        Int                @default(0)
+  error                     String?
+  startedAt                 DateTime           @default(now())
+  completedAt               DateTime?
+  createdAt                 DateTime           @default(now())
+  moves                     GameMoveAnalysis[]
 
   @@index([importedGameId, createdAt])
   @@index([status])
