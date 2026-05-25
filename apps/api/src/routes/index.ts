@@ -1,8 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import coursesRoutes from './courses';
-import chaptersRoutes from './chapters';
-import linesRoutes from './lines';
-import nodesRoutes from './nodes';
+import coursesModule from '../modules/courses/courses.routes';
 import trainingRoutes from './training';
 import statsRoutes from './stats';
 import importExportRoutes from './importExport';
@@ -10,10 +7,7 @@ import externalAccountsRoutes from './externalAccounts';
 import swaggerRoutes from './swagger';
 
 export default function registerRoutes(app: FastifyInstance): void {
-  app.register(coursesRoutes, { prefix: '/api/courses' });
-  app.register(chaptersRoutes);
-  app.register(linesRoutes);
-  app.register(nodesRoutes);
+  app.register(coursesModule);
   app.register(trainingRoutes);
   app.register(statsRoutes);
   app.register(importExportRoutes);
