@@ -13,6 +13,21 @@ import {
 } from './analysis.repository.prisma';
 import { MoveClassification, ParsedGameMove } from './analysis.types';
 
+interface CompactAnalysisMove {
+  id: number;
+  plyNumber: number;
+  moveNumber: number;
+  side: string;
+  playedMoveUci: string;
+  playedMoveSan: string | null;
+  classification: string | null;
+  scoreLossCp: number | null;
+  bestMoveUci: string | null;
+  bestScoreCpWhite: number | null;
+  playedScoreCpWhite: number | null;
+  positionAnalysisId: number;
+}
+
 function toUci(move: any): string {
   return `${move.from}${move.to}${move.promotion ?? ''}`;
 }
@@ -63,16 +78,16 @@ function addToSummary(summary: ReturnType<typeof emptySummary>, move: ParsedGame
   }
 }
 
-function compactMove(move: any) {
+function compactMove(move: any): CompactAnalysisMove {
   return {
     id: move.id,
     plyNumber: move.plyNumber,
     moveNumber: move.moveNumber,
     side: move.side,
     playedMoveUci: move.playedMoveUci,
-    playedMoveSan: move.playedMoveSan,
-    classification: move.classification,
-    scoreLossCp: move.scoreLossCp,
+    playedMoveSan: move.playedMoveSan ?? null,
+    classification: move.classification ?? null,
+    scoreLossCp: move.scoreLossCp ?? null,
     bestMoveUci: move.positionAnalysis?.bestMoveUci ?? null,
     bestScoreCpWhite: move.positionAnalysis?.bestScoreCpWhite ?? null,
     playedScoreCpWhite: move.positionAnalysis?.playedScoreCpWhite ?? null,
@@ -81,8 +96,8 @@ function compactMove(move: any) {
 }
 
 function compactRun(run: any) {
-  const moves = Array.isArray(run.moves) ? run.moves.map(compactMove) : [];
-  const criticalMoves = moves.filter((move) => move.classification === 'MISTAKE' || move.classification === 'BLUNDER');
+  const moves: CompactAnalysisMove[] = Array.isArray(run.moves) ? run.moves.map(compactMove) : [];
+  const criticalMoves = moves.filter((move: CompactAnalysisMove) => move.classification === 'MISTAKE' || move.classification === 'BLUNDER');
 
   return {
     id: run.id,
