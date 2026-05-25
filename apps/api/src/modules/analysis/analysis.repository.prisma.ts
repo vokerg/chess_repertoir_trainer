@@ -24,6 +24,7 @@ export async function getExistingGameAnalysis(importedGameId: number, settings: 
   return prisma.gameAnalysisRun.findFirst({
     where: {
       importedGameId,
+      status: { in: ['RUNNING', 'COMPLETED'] },
       depth: settings.depth,
       multipv: settings.multipv,
       engineName: settings.engineName,
