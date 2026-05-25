@@ -1,11 +1,14 @@
 import prisma from '../../prisma';
+import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { PositionAnalysisResult } from './analysis.types';
 
 export async function getImportedGameForAnalysis(importedGameId: number) {
-  return prisma.importedGame.findUnique({ where: { id: importedGameId } });
+  return prisma.importedGame.findFirst({
+    where: { id: importedGameId, userId: SINGLETON_USER_ID },
+  });
 }
 
-export async function getExistingCompletedGameAnalysis(importedGameId: number, settings: {
+export async function getExistingGameAnalysis(importedGameId: number, settings: {
   depth: number;
   multipv: number;
   engineName: string;
@@ -14,7 +17,6 @@ export async function getExistingCompletedGameAnalysis(importedGameId: number, s
   return prisma.gameAnalysisRun.findFirst({
     where: {
       importedGameId,
-      status: 'COMPLETED',
       depth: settings.depth,
       multipv: settings.multipv,
       engineName: settings.engineName,
@@ -22,25 +24,6 @@ export async function getExistingCompletedGameAnalysis(importedGameId: number, s
     },
     orderBy: { createdAt: 'desc' },
     include: { moves: { orderBy: { plyNumber: 'asc' } } },
-  });
-}
-
-export async function getRunningGameAnalysis(importedGameId: number, settings: {
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string;
-}) {
-  return prisma.gameAnalysisRun.findFirst({
-    where: {
-      importedGameId,
-      status: 'RUNNING',
-      depth: settings.depth,
-      multipv: settings.multipv,
-      engineName: settings.engineName,
-      engineVersion: settings.engineVersion ?? null,
-    },
-    orderBy: { createdAt: 'desc' },
   });
 }
 
