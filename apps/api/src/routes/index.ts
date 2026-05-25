@@ -6,6 +6,7 @@ import nodesRoutes from './nodes';
 import trainingRoutes from './training';
 import statsRoutes from './stats';
 import importExportRoutes from './importExport';
+import externalAccountsRoutes from './externalAccounts';
 
 export default function registerRoutes(app: FastifyInstance): void {
   app.register(coursesRoutes, { prefix: '/api/courses' });
@@ -15,4 +16,5 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(trainingRoutes);
   app.register(statsRoutes);
   app.register(importExportRoutes);
+  app.register(externalAccountsRoutes);
 }
