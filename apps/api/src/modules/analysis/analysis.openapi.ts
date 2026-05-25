@@ -10,16 +10,23 @@ export const analysisOpenApiSchemas = {
     type: 'object',
     properties: {
       reusedExisting: { type: 'boolean' },
-      run: { $ref: '#/components/schemas/GameAnalysisRun' },
+      run: { $ref: '#/components/schemas/CompactGameAnalysisRun' },
     },
     required: ['reusedExisting', 'run'],
   },
-  GameAnalysisRun: {
+  ImportedGameAnalysisResponse: {
+    type: 'object',
+    properties: {
+      run: { $ref: '#/components/schemas/CompactGameAnalysisRun' },
+    },
+    required: ['run'],
+  },
+  CompactGameAnalysisRun: {
     type: 'object',
     properties: {
       id: { type: 'integer' },
       importedGameId: { type: 'integer' },
-      status: { type: 'string', enum: ['RUNNING', 'COMPLETED', 'FAILED'] },
+      status: { type: 'string', enum: ['RUNNING', 'COMPLETED'] },
       depth: { type: 'integer' },
       multipv: { type: 'integer' },
       engineName: { type: 'string' },
@@ -33,85 +40,65 @@ export const analysisOpenApiSchemas = {
       createdAt: { type: 'string', format: 'date-time' },
       moves: {
         type: 'array',
-        items: { $ref: '#/components/schemas/GameMoveAnalysis' },
+        items: { $ref: '#/components/schemas/CompactGameMoveAnalysis' },
+      },
+      criticalMoves: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/CompactGameMoveAnalysis' },
       },
     },
-    required: ['id', 'importedGameId', 'status', 'depth', 'multipv', 'engineName', 'positionsTotal', 'positionsDone', 'startedAt', 'createdAt'],
+    required: ['id', 'importedGameId', 'status', 'depth', 'multipv', 'engineName', 'positionsTotal', 'positionsDone', 'startedAt', 'createdAt', 'moves', 'criticalMoves'],
   },
-  GameMoveAnalysis: {
+  CompactGameMoveAnalysis: {
     type: 'object',
     properties: {
       id: { type: 'integer' },
-      analysisRunId: { type: 'integer' },
-      importedGameId: { type: 'integer' },
-      positionAnalysisId: { type: 'integer' },
       plyNumber: { type: 'integer' },
       moveNumber: { type: 'integer' },
       side: { type: 'string', enum: ['WHITE', 'BLACK'] },
-      fenBefore: { type: 'string' },
-      fenAfter: { type: 'string', nullable: true },
       playedMoveUci: { type: 'string' },
       playedMoveSan: { type: 'string', nullable: true },
       classification: { type: 'string', enum: ['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER'], nullable: true },
       scoreLossCp: { type: 'integer', nullable: true },
-      createdAt: { type: 'string', format: 'date-time' },
-      positionAnalysis: { $ref: '#/components/schemas/PositionAnalysis' },
-    },
-    required: ['id', 'analysisRunId', 'importedGameId', 'positionAnalysisId', 'plyNumber', 'moveNumber', 'side', 'fenBefore', 'playedMoveUci', 'createdAt'],
-  },
-  PositionAnalysis: {
-    type: 'object',
-    properties: {
-      id: { type: 'integer' },
-      fen: { type: 'string' },
-      normalizedFen: { type: 'string' },
-      playedMoveUci: { type: 'string', nullable: true },
-      depth: { type: 'integer' },
-      multipv: { type: 'integer' },
-      engineName: { type: 'string' },
-      engineVersion: { type: 'string', nullable: true },
-      classificationVersion: { type: 'string' },
       bestMoveUci: { type: 'string', nullable: true },
       bestScoreCpWhite: { type: 'integer', nullable: true },
       playedScoreCpWhite: { type: 'integer', nullable: true },
-      scoreLossCp: { type: 'integer', nullable: true },
-      classification: { type: 'string', enum: ['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER'], nullable: true },
-      lines: { type: 'array', nullable: true, items: { $ref: '#/components/schemas/EngineLine' } },
-      playedLine: { $ref: '#/components/schemas/EngineLine' },
-      createdAt: { type: 'string', format: 'date-time' },
-      updatedAt: { type: 'string', format: 'date-time' },
+      positionAnalysisId: { type: 'integer' },
     },
-    required: ['id', 'fen', 'normalizedFen', 'depth', 'multipv', 'engineName', 'classificationVersion', 'createdAt', 'updatedAt'],
+    required: ['id', 'plyNumber', 'moveNumber', 'side', 'playedMoveUci', 'positionAnalysisId'],
   },
-  EngineLine: {
-    type: 'object',
-    properties: {
-      multipv: { type: 'integer' },
-      depth: { type: 'integer' },
-      moveUci: { type: 'string', nullable: true },
-      scoreCpWhite: { type: 'integer', nullable: true },
-      mateWhite: { type: 'integer', nullable: true },
-      pvUci: {
-        type: 'array',
-        items: { type: 'string' },
+};
+
+const importedGameIdParameter = {
+  name: 'gameId',
+  in: 'path',
+  required: true,
+  schema: { type: 'integer' },
+};
+
+export const getImportedGameAnalysisOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Get latest saved analysis for one imported game',
+  description: 'Returns the latest RUNNING or COMPLETED imported-game analysis run as a compact report. Full engine lines remain stored in PositionAnalysis and are not returned by this endpoint.',
+  parameters: [importedGameIdParameter],
+  responses: {
+    '200': {
+      description: 'Latest saved imported-game analysis',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/ImportedGameAnalysisResponse' },
+        },
       },
     },
-    required: ['multipv', 'depth', 'pvUci'],
+    '404': { $ref: '#/components/responses/NotFound' },
   },
 };
 
 export const analyzeImportedGameOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Analyze one imported game with backend Stockfish',
-  description: 'Synchronously analyzes the stored PGN for one imported game. If a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that run is returned and Stockfish is not executed again.',
-  parameters: [
-    {
-      name: 'gameId',
-      in: 'path',
-      required: true,
-      schema: { type: 'integer' },
-    },
-  ],
+  description: 'Synchronously analyzes the stored PGN for one imported game. If a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and Stockfish is not executed again.',
+  parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
     content: {
