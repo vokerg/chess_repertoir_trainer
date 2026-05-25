@@ -9,6 +9,7 @@ import {
   failGameAnalysisRun,
   getExistingGameAnalysis,
   getImportedGameForAnalysis,
+  getLatestGameAnalysisForImportedGame,
 } from './analysis.repository.prisma';
 import { MoveClassification, ParsedGameMove } from './analysis.types';
 
@@ -62,7 +63,60 @@ function addToSummary(summary: ReturnType<typeof emptySummary>, move: ParsedGame
   }
 }
 
+function compactMove(move: any) {
+  return {
+    id: move.id,
+    plyNumber: move.plyNumber,
+    moveNumber: move.moveNumber,
+    side: move.side,
+    playedMoveUci: move.playedMoveUci,
+    playedMoveSan: move.playedMoveSan,
+    classification: move.classification,
+    scoreLossCp: move.scoreLossCp,
+    bestMoveUci: move.positionAnalysis?.bestMoveUci ?? null,
+    bestScoreCpWhite: move.positionAnalysis?.bestScoreCpWhite ?? null,
+    playedScoreCpWhite: move.positionAnalysis?.playedScoreCpWhite ?? null,
+    positionAnalysisId: move.positionAnalysisId,
+  };
+}
+
+function compactRun(run: any) {
+  const moves = Array.isArray(run.moves) ? run.moves.map(compactMove) : [];
+  const criticalMoves = moves.filter((move) => move.classification === 'MISTAKE' || move.classification === 'BLUNDER');
+
+  return {
+    id: run.id,
+    importedGameId: run.importedGameId,
+    status: run.status,
+    depth: run.depth,
+    multipv: run.multipv,
+    engineName: run.engineName,
+    engineVersion: run.engineVersion,
+    positionsTotal: run.positionsTotal,
+    positionsDone: run.positionsDone,
+    summary: run.summary,
+    error: run.error,
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+    createdAt: run.createdAt,
+    moves,
+    criticalMoves,
+  };
+}
+
 export const GameAnalysisService = {
+  getImportedGameAnalysis: async (importedGameId: number) => {
+    await CurrentUserService.getOrCreate();
+
+    const game = await getImportedGameForAnalysis(importedGameId);
+    if (!game) throw new Error('Imported game not found');
+
+    const run = await getLatestGameAnalysisForImportedGame(importedGameId);
+    if (!run) throw new Error('Imported game analysis not found');
+
+    return { run: compactRun(run) };
+  },
+
   analyzeImportedGame: async (importedGameId: number, options: { depth: number; multipv: number }) => {
     await CurrentUserService.getOrCreate();
 
@@ -76,7 +130,7 @@ export const GameAnalysisService = {
     });
 
     if (existing) {
-      return { reusedExisting: true, run: existing };
+      return { reusedExisting: true, run: compactRun(existing) };
     }
 
     const game = await getImportedGameForAnalysis(importedGameId);
@@ -127,7 +181,7 @@ export const GameAnalysisService = {
       }
 
       const completed = await completeGameAnalysisRun(run.id, summary, positionsDone);
-      return { reusedExisting: false, run: completed };
+      return { reusedExisting: false, run: compactRun(completed) };
     } catch (err: any) {
       await failGameAnalysisRun(run.id, err?.message ?? String(err), positionsDone);
       throw err;
