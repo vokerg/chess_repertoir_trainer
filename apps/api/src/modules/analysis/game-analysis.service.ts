@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { CurrentUserService } from '../../services/currentUserService';
+import { ANALYSIS_ACCURACY_VERSION, GameAccuracyTracker } from './accuracy';
 import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
 import { PositionAnalysisService, PositionAnalysisStats } from './position-analysis.service';
 import {
@@ -70,6 +71,11 @@ function emptySummary() {
     white: { BEST: 0, GOOD: 0, INACCURACY: 0, MISTAKE: 0, BLUNDER: 0 },
     black: { BEST: 0, GOOD: 0, INACCURACY: 0, MISTAKE: 0, BLUNDER: 0 },
     criticalPlyNumbers: [] as number[],
+    accuracy: {
+      version: ANALYSIS_ACCURACY_VERSION,
+      white: { moves: 0, averageCentipawnLoss: null as number | null, accuracy: null as number | null },
+      black: { moves: 0, averageCentipawnLoss: null as number | null, accuracy: null as number | null },
+    },
     performance: {
       durationMs: 0,
       positionCacheHits: 0,
@@ -122,6 +128,13 @@ function compactRun(run: any) {
     engineVersion: run.engineVersion,
     positionsTotal: run.positionsTotal,
     positionsDone: run.positionsDone,
+    accuracyVersion: run.accuracyVersion,
+    whiteAccuracy: run.whiteAccuracy,
+    blackAccuracy: run.blackAccuracy,
+    whiteAverageCentipawnLoss: run.whiteAverageCentipawnLoss,
+    blackAverageCentipawnLoss: run.blackAverageCentipawnLoss,
+    whiteMovesAnalyzed: run.whiteMovesAnalyzed,
+    blackMovesAnalyzed: run.blackMovesAnalyzed,
     summary: run.summary,
     error: run.error,
     startedAt: run.startedAt,
@@ -182,6 +195,7 @@ export const GameAnalysisService = {
 
     const summary = emptySummary();
     const stats: PositionAnalysisStats = summary.performance;
+    const accuracyTracker = new GameAccuracyTracker();
     const startedAtMs = Date.now();
     let positionsDone = 0;
     let session: StockfishSession | undefined;
@@ -196,6 +210,8 @@ export const GameAnalysisService = {
           depth: options.depth,
           multipv: options.multipv,
         }, session, stats);
+
+        accuracyTracker.add(move.side, position);
 
         await createGameMoveAnalysis({
           analysisRunId: run.id,
@@ -216,8 +232,10 @@ export const GameAnalysisService = {
         addToSummary(summary, move, position.classification);
       }
 
+      const accuracy = accuracyTracker.summarize(game.userColor);
+      summary.accuracy = accuracy;
       summary.performance.durationMs = Date.now() - startedAtMs;
-      const completed = await completeGameAnalysisRun(run.id, summary, positionsDone);
+      const completed = await completeGameAnalysisRun(run.id, summary, positionsDone, accuracy);
       return { reusedExisting: false, run: compactRun(completed) };
     } catch (err: any) {
       summary.performance.durationMs = Date.now() - startedAtMs;
