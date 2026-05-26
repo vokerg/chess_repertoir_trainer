@@ -157,17 +157,25 @@ function toDetail(row: ImportedGameDetailRow) {
   };
 }
 
+function groupCount(row: Record<string, any>, valueKey?: string | number | symbol) {
+  const count = row._count;
+  if (count && typeof count === 'object') {
+    if (typeof count._all === 'number') return count._all;
+    if (valueKey !== undefined && typeof count[valueKey] === 'number') return count[valueKey];
+  }
+  return typeof count === 'number' ? count : 0;
+}
+
 function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyof T) {
   return rows
     .filter((row) => row[valueKey] !== null && row[valueKey] !== undefined)
-    .map((row) => ({ value: row[valueKey], count: row._count._all }));
+    .map((row) => ({ value: row[valueKey], count: groupCount(row, valueKey) }));
 }
 
 async function searchRows(query: ImportedGameSearchQuery) {
   let cursor = decodeCursor(query.cursor);
   const visibleRows: ImportedGameListRow[] = [];
-  let nextCursor: string | null = null;
-  let hasMore = false;
+  let lastScannedRow: ImportedGameListRow | null = null;
 
   for (let page = 0; page < 25; page += 1) {
     const rows = await findImportedGames(query, cursor);
@@ -176,13 +184,17 @@ async function searchRows(query: ImportedGameSearchQuery) {
 
     for (let index = 0; index < candidates.length; index += 1) {
       const row = candidates[index];
+      lastScannedRow = row;
       if (!rowMatchesAnalysisFilters(row, query)) continue;
 
       visibleRows.push(row);
       if (visibleRows.length === query.limit) {
-        hasMore = batchHasMore || index < candidates.length - 1;
-        nextCursor = hasMore ? encodeCursor(row) : null;
-        return { visibleRows, nextCursor, hasMore };
+        const hasMore = batchHasMore || index < candidates.length - 1;
+        return {
+          visibleRows,
+          nextCursor: hasMore ? encodeCursor(row) : null,
+          hasMore,
+        };
       }
     }
 
@@ -193,9 +205,11 @@ async function searchRows(query: ImportedGameSearchQuery) {
     cursor = toCursor(candidates[candidates.length - 1]);
   }
 
-  hasMore = true;
-  nextCursor = visibleRows.length ? encodeCursor(visibleRows[visibleRows.length - 1]) : null;
-  return { visibleRows, nextCursor, hasMore };
+  return {
+    visibleRows,
+    nextCursor: lastScannedRow ? encodeCursor(lastScannedRow) : null,
+    hasMore: lastScannedRow !== null,
+  };
 }
 
 export const ImportedGamesService = {
@@ -243,7 +257,7 @@ export const ImportedGamesService = {
       openings: facets.openings.map((opening) => ({
         eco: opening.openingEco,
         name: opening.openingName,
-        count: opening._count._all,
+        count: groupCount(opening, 'openingEco'),
       })),
       analysisStatuses: [
         { value: 'ANALYZED', count: facets.totalAnalyzed },
