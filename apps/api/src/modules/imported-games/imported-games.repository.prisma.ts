@@ -144,18 +144,20 @@ function buildCursorWhere(cursor: ImportedGameCursor | null, sort: ImportedGameS
   if (!cursor) return undefined;
 
   if (sort === 'endedAtAsc') {
+    if (!cursor.endedAt) return { OR: [{ endedAt: { not: null } }, { endedAt: null, id: { gt: cursor.id } }] };
     return {
       OR: [
-        { endedAt: cursor.endedAt ? { gt: new Date(cursor.endedAt) } : { not: null } },
-        { endedAt: cursor.endedAt ? new Date(cursor.endedAt) : null, id: { gt: cursor.id } },
+        { endedAt: { gt: new Date(cursor.endedAt) } },
+        { endedAt: new Date(cursor.endedAt), id: { gt: cursor.id } },
       ],
     };
   }
 
+  if (!cursor.endedAt) return { endedAt: null, id: { lt: cursor.id } };
   return {
     OR: [
-      { endedAt: cursor.endedAt ? { lt: new Date(cursor.endedAt) } : null },
-      { endedAt: cursor.endedAt ? new Date(cursor.endedAt) : null, id: { lt: cursor.id } },
+      { endedAt: { lt: new Date(cursor.endedAt) } },
+      { endedAt: new Date(cursor.endedAt), id: { lt: cursor.id } },
     ],
   };
 }
