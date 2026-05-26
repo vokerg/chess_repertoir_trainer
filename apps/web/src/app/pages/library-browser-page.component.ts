@@ -61,7 +61,7 @@ type LineStatus = 'NEW' | 'WEAK' | 'CLEAN' | 'REVIEW';
             placeholder="Search repertoires, sections, lines..."
           />
 
-          <div class="library-actions">
+          <div class="library-actions library-toolbar-actions">
             <button type="button" class="secondary" (click)="reviewOnly = !reviewOnly" [class.library-filter-active]="reviewOnly">
               {{ reviewOnly ? 'Review filter on' : 'Filters' }}
             </button>

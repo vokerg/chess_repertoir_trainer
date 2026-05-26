@@ -137,7 +137,7 @@ textarea:focus {
 }
 
 .page-shell {
-  width: min(1180px, calc(100vw - 32px));
+  width: min(1320px, calc(100vw - 32px));
   margin: 0 auto;
 }
 
@@ -350,7 +350,9 @@ textarea:focus {
 }
 
 .library-search {
+  flex: 1 1 320px;
   width: min(420px, 100%);
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 0.75rem 1rem;
@@ -360,7 +362,11 @@ textarea:focus {
 
 .library-columns {
   display: grid;
-  grid-template-columns: 260px 300px minmax(320px, 1fr) 340px;
+  grid-template-columns:
+    minmax(220px, 0.95fr)
+    minmax(240px, 1fr)
+    minmax(300px, 1.15fr)
+    minmax(280px, 1fr);
   min-height: 560px;
 }
 
@@ -448,6 +454,11 @@ textarea:focus {
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
+}
+
+.library-toolbar-actions {
+  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .library-button-link {
@@ -585,6 +596,15 @@ textarea:focus {
   align-items: center;
 }
 
+.library-detail .library-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.library-detail .library-actions > * {
+  width: 100%;
+}
+
 .library-filter-active {
   background: var(--accent-soft) !important;
   color: var(--accent-strong) !important;
@@ -596,7 +616,7 @@ textarea:focus {
   }
 
   .library-columns {
-    grid-template-columns: 240px 280px minmax(300px, 1fr);
+    grid-template-columns: minmax(220px, 0.95fr) minmax(240px, 1fr) minmax(300px, 1.15fr);
   }
 
   .library-detail {
@@ -617,6 +637,11 @@ textarea:focus {
   .library-search,
   .library-actions {
     width: 100%;
+  }
+
+  .library-toolbar-actions {
+    margin-left: 0;
+    justify-content: flex-start;
   }
 
   .library-columns {
