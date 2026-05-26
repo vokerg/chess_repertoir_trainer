@@ -28,7 +28,7 @@ interface MistakeReviewItem {
           <h2 class="workbench-title">{{ lineName }}</h2>
           <div class="workbench-meta">
             <span>Train as {{ sideToTrain === 'BLACK' ? 'Black' : 'White' }}</span>
-            <span>{{ completed ? 'Session complete' : 'Session active' }}</span>
+            <span>{{ completed ? 'Session complete' : 'In progress' }}</span>
           </div>
         </div>
 
@@ -51,8 +51,12 @@ interface MistakeReviewItem {
               (move)="onBoardMove($event)"
             ></app-chess-board>
 
-            <div class="training-feedback" [class.correct]="feedbackCorrect && feedback" [class.incorrect]="feedback && !feedbackCorrect">
-              {{ feedback || 'Your move. Stay focused on this line.' }}
+            <div
+              class="training-feedback"
+              [class.correct]="feedback && feedbackCorrect"
+              [class.incorrect]="feedback && !feedbackCorrect"
+            >
+              {{ feedback || 'Find the next trained move on the board.' }}
             </div>
           </div>
         </section>
@@ -61,30 +65,30 @@ interface MistakeReviewItem {
           <div>
             <h3 class="training-goal-title">Goal</h3>
             <p class="training-goal-subtitle">
-              Train the prepared moves for {{ sideToTrain === 'BLACK' ? 'Black' : 'White' }}. The expected move starts hidden so the board stays honest.
+              Play the repertoire line from memory. Keep the expected move hidden unless you are stuck.
             </p>
           </div>
 
-          <section class="expected-move-card">
+          <div class="expected-move-card">
             <p class="expected-move-label">Expected move</p>
             <p class="expected-move-value" *ngIf="showExpectedMove">
               <span>{{ expectedMovePiece() }}</span>
               <code>{{ expectedMoveLabel() }}</code>
             </p>
             <p class="training-goal-subtitle" *ngIf="!showExpectedMove">
-              Hidden. Reveal only if you are stuck.
+              Hidden. Reveal only when you need a hint.
             </p>
-          </section>
+          </div>
 
-          <section class="training-progress-block">
+          <div class="training-progress-block">
             <div class="training-progress-labels">
-              <span>{{ completed ? 'Complete' : 'In progress' }}</span>
-              <span>{{ mistakesCount }} mistake{{ mistakesCount === 1 ? '' : 's' }}</span>
+              <span>Session progress</span>
+              <span>{{ progressLabel() }}</span>
             </div>
-            <div class="training-progress-track" aria-hidden="true">
-              <div class="training-progress-fill" [style.width.%]="trainingProgressPercent()"></div>
+            <div class="training-progress-track">
+              <div class="training-progress-fill" [style.width.%]="progressPercent()"></div>
             </div>
-          </section>
+          </div>
 
           <div class="library-stat-grid">
             <div class="library-mini-stat">
@@ -119,31 +123,31 @@ interface MistakeReviewItem {
         </aside>
       </div>
 
-      <section *ngIf="completed" class="workbench-panel mistake-review-grid">
-        <div>
-          <h3 class="workbench-panel-title">Mistake review</h3>
-          <p class="workbench-panel-subtitle">Review the moments that broke the session, then train again when ready.</p>
-        </div>
+      <section *ngIf="completed" class="workbench-panel">
+        <h3 class="workbench-panel-title">Mistake review</h3>
+        <p class="workbench-panel-subtitle">Review the missed moves and any notes attached to those branches.</p>
 
         <p *ngIf="reviewLoading" class="status-note">Loading mistake review...</p>
         <div *ngIf="!reviewLoading && mistakes.length === 0" class="empty-state">No mistakes. Clean session.</div>
 
-        <article *ngFor="let mistake of mistakes" class="mistake-card">
-          <p class="mistake-card-title">
-            Expected <code>{{ mistake.expectedMoveUci || '—' }}</code>
-            <span *ngIf="mistake.moveSan">({{ mistake.moveSan }})</span>
-            · played <code>{{ mistake.playedMoveUci || '—' }}</code>
-          </p>
-          <p *ngIf="mistake.branchLabel" class="mistake-card-meta">Branch: {{ mistake.branchLabel }}</p>
-          <p *ngIf="mistake.comment" class="mistake-card-meta">Note: {{ mistake.comment }}</p>
-          <p *ngIf="mistake.annotation" class="mistake-card-meta">Annotation: {{ mistake.annotation }}</p>
-        </article>
+        <div *ngIf="mistakes.length > 0" class="mistake-review-grid">
+          <article class="mistake-card" *ngFor="let mistake of mistakes">
+            <h4 class="mistake-card-title">
+              Expected <code>{{ mistake.expectedMoveUci || '—' }}</code>
+              <span *ngIf="mistake.moveSan">({{ mistake.moveSan }})</span>
+            </h4>
+            <p class="mistake-card-meta">Played <code>{{ mistake.playedMoveUci || '—' }}</code></p>
+            <p *ngIf="mistake.branchLabel" class="mistake-card-meta">Branch: {{ mistake.branchLabel }}</p>
+            <p *ngIf="mistake.comment" class="mistake-card-meta">Note: {{ mistake.comment }}</p>
+            <p *ngIf="mistake.annotation" class="mistake-card-meta">Annotation: {{ mistake.annotation }}</p>
+          </article>
+        </div>
       </section>
     </section>
 
     <ng-template #loadingState>
       <section class="section-card stack">
-        <p class="status-note">Loading training session...</p>
+        <p class="status-note">Loading training focus...</p>
         <p *ngIf="error" class="status-error">{{ error }}</p>
       </section>
     </ng-template>
@@ -220,39 +224,33 @@ export class LineTrainPageComponent implements OnInit {
 
   onBoardMove(uci: string) {
     if (this.completed) return;
-    this.api.post<any>(`/training/${this.sessionId}/move`, { moveUci: uci }).subscribe({
-      next: (res) => {
-        this.currentFen = res.fen;
-        this.expectedMove = res.nextExpectedMove;
-        this.mistakesCount = res.mistakesCount ?? this.mistakesCount;
+    this.api.post<any>(`/training/${this.sessionId}/move`, { moveUci: uci }).subscribe((res) => {
+      this.currentFen = res.fen;
+      this.expectedMove = res.nextExpectedMove;
+      this.mistakesCount = res.mistakesCount ?? this.mistakesCount;
 
-        if (res.correct) {
-          const lastPlayedMove = res.playedMoves?.at(-1)?.moveUci || uci;
-          this.lastMove = { from: lastPlayedMove.substring(0, 2), to: lastPlayedMove.substring(2, 4) };
-          this.feedback = 'Correct!';
-          this.feedbackCorrect = true;
-        } else {
-          this.lastMove = null;
-          this.boardPositionVersion++;
-          this.feedback = this.showExpectedMove
-            ? `Incorrect. Expected ${this.expectedMoveLabel(res.expectedMove)}. Try it again.`
-            : 'Incorrect. Same position — try again.';
-          this.feedbackCorrect = false;
-        }
+      if (res.correct) {
+        const lastPlayedMove = res.playedMoves?.at(-1)?.moveUci || uci;
+        this.lastMove = { from: lastPlayedMove.substring(0, 2), to: lastPlayedMove.substring(2, 4) };
+        this.feedback = 'Correct!';
+        this.feedbackCorrect = true;
+      } else {
+        this.lastMove = null;
+        this.boardPositionVersion++;
+        this.feedback = this.showExpectedMove
+          ? `Incorrect. Expected ${this.expectedMoveLabel(res.expectedMove)}. Try it again.`
+          : 'Incorrect. Same position — try again.';
+        this.feedbackCorrect = false;
+      }
 
-        if (res.completed) {
-          this.completed = true;
-          this.passed = res.result === 'PASSED';
-          this.accuracy = res.accuracy;
-          this.loadReview();
-        }
+      if (res.completed) {
+        this.completed = true;
+        this.passed = res.result === 'PASSED';
+        this.accuracy = res.accuracy;
+        this.loadReview();
+      }
 
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.error = err?.error?.message || err?.error?.error || 'Could not submit move.';
-        this.cdr.detectChanges();
-      },
+      this.cdr.detectChanges();
     });
   }
 
@@ -284,10 +282,15 @@ export class LineTrainPageComponent implements OnInit {
     return this.pieceSymbol(move.piece, move.color);
   }
 
-  trainingProgressPercent() {
+  progressLabel() {
+    if (this.completed) return 'Complete';
+    return this.mistakesCount === 0 ? 'Clean so far' : `${this.mistakesCount} mistake${this.mistakesCount === 1 ? '' : 's'}`;
+  }
+
+  progressPercent() {
     if (this.completed) return 100;
-    if (this.mistakesCount > 0) return 38;
-    return 18;
+    if (this.mistakesCount === 0) return 42;
+    return Math.max(18, Math.min(82, 42 - this.mistakesCount * 8));
   }
 
   accuracyLabel() {
