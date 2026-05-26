@@ -113,38 +113,9 @@ function buildOpponentRatingWhere(query: ImportedGameSearchQuery): Prisma.Import
   ];
 }
 
-function buildAnalysisStatusWhere(statuses?: string[]): Prisma.ImportedGameWhereInput[] {
-  if (!statuses?.length) return [];
-
-  const clauses: Prisma.ImportedGameWhereInput[] = [];
-  if (statuses.includes('NOT_ANALYZED')) {
-    clauses.push({ analysisRuns: { none: {} } });
-  }
-
-  const runStatuses = statuses.filter((status) => status !== 'NOT_ANALYZED');
-  if (runStatuses.length) {
-    clauses.push({ analysisRuns: { some: { status: { in: runStatuses } } } });
-  }
-
-  return clauses.length ? [{ OR: clauses }] : [];
-}
-
 function buildClassificationWhere(classifications?: string[]): Prisma.ImportedGameWhereInput[] {
   if (!classifications?.length) return [];
   return [{ moveAnalyses: { some: { classification: { in: classifications } } } }];
-}
-
-function buildAccuracyWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput[] {
-  if (query.minAccuracy === undefined && query.maxAccuracy === undefined) return [];
-  const range = ratingRange(query.minAccuracy, query.maxAccuracy);
-  return [
-    {
-      OR: [
-        { userColor: 'WHITE', analysisRuns: { some: { whiteAccuracy: range } } },
-        { userColor: 'BLACK', analysisRuns: { some: { blackAccuracy: range } } },
-      ],
-    },
-  ];
 }
 
 export function buildImportedGameWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput {
@@ -164,9 +135,7 @@ export function buildImportedGameWhere(query: ImportedGameSearchQuery): Prisma.I
     AND: [
       ...buildUserRatingWhere(query),
       ...buildOpponentRatingWhere(query),
-      ...buildAnalysisStatusWhere(query.analysisStatus),
       ...buildClassificationWhere(query.classification),
-      ...buildAccuracyWhere(query),
     ],
   };
 }
