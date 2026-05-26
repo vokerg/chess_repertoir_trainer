@@ -4,6 +4,8 @@ import { CurrentUserService } from '../services/currentUserService';
 import { ExternalAccountService } from '../services/externalAccountService';
 import { LichessImportService } from '../services/lichessImportService';
 import { ChessComImportService } from '../services/chessComImportService';
+import { ImportedGamesService } from '../modules/imported-games/imported-games.service';
+import { importedGameSearchQuerySchema } from '../modules/imported-games/imported-games.schemas';
 
 const createAccountSchema = z.object({
   provider: z.enum(['LICHESS', 'CHESS_COM']),
@@ -16,9 +18,8 @@ const updateAccountSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-const listGamesQuerySchema = z.object({
+const listAccountGamesQuerySchema = importedGameSearchQuerySchema.omit({ accountIds: true }).extend({
   take: z.coerce.number().int().min(1).max(200).optional(),
-  skip: z.coerce.number().int().min(0).optional(),
 });
 
 export default async function externalAccountsRoutes(app: FastifyInstance) {
@@ -100,12 +101,17 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
       return { message: 'External account not found' };
     }
 
-    const parsed = listGamesQuerySchema.safeParse(request.query);
+    const parsed = listAccountGamesQuerySchema.safeParse(request.query);
     if (!parsed.success) {
       reply.code(400);
       return { error: parsed.error.errors };
     }
 
-    return ExternalAccountService.listGamesForCurrentUser(id, parsed.data.take ?? 50, parsed.data.skip ?? 0);
+    const { take, ...query } = parsed.data;
+    return ImportedGamesService.search({
+      ...query,
+      accountIds: [id],
+      limit: take ?? query.limit,
+    });
   });
 }
