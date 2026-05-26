@@ -1,7 +1,11 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/courses', pathMatch: 'full' },
+  { path: '', redirectTo: '/library', pathMatch: 'full' },
+  {
+    path: 'library',
+    loadComponent: () => import('./pages/library-browser-page.component').then((m) => m.LibraryBrowserPageComponent),
+  },
   {
     path: 'courses',
     loadComponent: () => import('./pages/courses-page.component').then((m) => m.CoursesPageComponent),
@@ -26,5 +30,5 @@ export const routes: Routes = [
     path: 'stats',
     loadComponent: () => import('./pages/stats-page.component').then((m) => m.StatsPageComponent),
   },
-  { path: '**', redirectTo: '/courses' },
+  { path: '**', redirectTo: '/library' },
 ];

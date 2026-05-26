@@ -8,25 +8,29 @@ import { ApiService } from '../services/api.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section *ngIf="node?.node?.id && node.node.id !== 0" style="margin-top:12px;border:1px solid #ddd;padding:10px;max-width:520px;background:#fff;">
-      <h3 style="margin-top:0;">Move notes</h3>
-      <div style="display:grid;gap:8px;">
-        <label>
-          Branch label
-          <input [(ngModel)]="branchLabel" placeholder="Main line, rare reply, trap..." style="width:100%;" />
+    <section *ngIf="node?.node?.id && node.node.id !== 0" class="workbench-panel workbench-panel-compact move-notes-card">
+      <div>
+        <h3 class="workbench-panel-title">Notes</h3>
+        <p class="workbench-panel-subtitle">Attach the practical memory hooks that make this branch trainable later.</p>
+      </div>
+
+      <div class="move-notes-form">
+        <label class="form-field">
+          <span class="library-mini-stat-label">Branch label</span>
+          <input [(ngModel)]="branchLabel" placeholder="Main line, rare reply, trap..." />
         </label>
-        <label>
-          Comment
-          <textarea [(ngModel)]="comment" rows="3" placeholder="Why this move matters" style="width:100%;"></textarea>
+        <label class="form-field">
+          <span class="library-mini-stat-label">Comment</span>
+          <textarea [(ngModel)]="comment" rows="3" placeholder="Why this move matters"></textarea>
         </label>
-        <label>
-          Annotation
-          <input [(ngModel)]="annotation" placeholder="!, ?, +=, practical note..." style="width:100%;" />
+        <label class="form-field">
+          <span class="library-mini-stat-label">Annotation</span>
+          <input [(ngModel)]="annotation" placeholder="!, ?, +=, practical note..." />
         </label>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div class="move-notes-actions">
           <button type="button" (click)="save()" [disabled]="saving">{{ saving ? 'Saving...' : 'Save notes' }}</button>
-          <span *ngIf="saved" style="color:green;">Saved</span>
-          <span *ngIf="error" style="color:#b00020;">{{ error }}</span>
+          <span *ngIf="saved" class="save-state">Saved</span>
+          <span *ngIf="error" class="save-state error">{{ error }}</span>
         </div>
       </div>
     </section>
