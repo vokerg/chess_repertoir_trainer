@@ -13,139 +13,151 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
   standalone: true,
   imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, MoveNotesComponent],
   template: `
-    <div *ngIf="loaded">
-      <h2>{{ line?.name }} - Editor</h2>
-      <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
-      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
-        <div>
-          <div style="display:flex;gap:12px;align-items:stretch;">
-            <div class="eval-bar" [class.eval-bar-flipped]="isBlackPerspective()" title="Stockfish evaluation">
-              <div class="eval-black" [style.height.%]="100 - evalWhitePercent()"></div>
-              <div class="eval-label">{{ evalLabel() }}</div>
-            </div>
-            <app-chess-board
-              [fen]="currentFen"
-              [side]="line?.sideToTrain"
-              [lastMove]="lastMove"
-              [arrows]="analysisArrows()"
-              (move)="onBoardMove($event)"
-            ></app-chess-board>
+    <section *ngIf="loaded; else loadingState" class="stack">
+      <header class="workbench-header">
+        <div class="workbench-title-group">
+          <a routerLink="/library" class="workbench-breadcrumb">← Library / Board workbench</a>
+          <h2 class="workbench-title">{{ line?.name || 'Line editor' }}</h2>
+          <div class="workbench-meta">
+            <span>Train as {{ line?.sideToTrain === 'BLACK' ? 'Black' : 'White' }}</span>
+            <span>Selected: {{ selectedLabel() }}</span>
+          </div>
+        </div>
+
+        <nav class="workbench-mode-switch" aria-label="Line mode">
+          <span class="mode-pill mode-pill-active">Build</span>
+          <a class="mode-pill" [routerLink]="['/lines', lineId, 'train']">Train</a>
+        </nav>
+      </header>
+
+      <p *ngIf="error" class="status-error">{{ error }}</p>
+
+      <div class="line-workbench">
+        <section class="workbench-panel">
+          <div>
+            <h3 class="workbench-panel-title">Board workbench</h3>
+            <p class="workbench-panel-subtitle">Play a move on the board to add it to the selected node. Use the keyboard to move through the main branch.</p>
           </div>
 
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <button type="button" (click)="goToStart()" [disabled]="currentNodeId === 0" title="Home">⏮ Start</button>
-            <button type="button" (click)="goToPrevious()" [disabled]="currentNodeId === 0" title="Left arrow">← Previous</button>
-            <button type="button" (click)="goToNext()" [disabled]="!selectedNode?.children?.length" title="Right arrow">Next →</button>
-            <button type="button" (click)="goToEnd()" [disabled]="!selectedNode?.children?.length" title="End">End ⏭</button>
-            <span style="color:#666;">Selected: {{ selectedLabel() }}</span>
-            <span style="color:#888;font-size:12px;">Keyboard: ←/→, Home/End</span>
-          </div>
+          <div class="board-stage">
+            <div class="eval-bar-modern" [class.eval-bar-modern-flipped]="isBlackPerspective()" title="Stockfish evaluation">
+              <div class="eval-black-modern" [style.height.%]="100 - evalWhitePercent()"></div>
+              <div class="eval-label-modern">{{ evalLabel() }}</div>
+            </div>
 
-          <div style="margin-top:12px;border:1px solid #ddd;padding:10px;max-width:520px;">
-            <h3 style="margin-top:0;">Selected move</h3>
-            <p *ngIf="selectedNode?.node?.id === 0">Start position. Add the first move from the board.</p>
-            <div *ngIf="selectedNode?.node?.id !== 0">
-              <p><strong>{{ selectedNode?.node?.moveSan }}</strong> <code>{{ selectedNode?.node?.moveUci }}</code></p>
-              <p>Side: {{ selectedNode?.node?.side }} · {{ selectedNode?.node?.isUserMove ? 'trained move' : 'opponent reply' }}</p>
-              <p>Children to delete with this move: {{ countDescendants(selectedNode) }}</p>
-              <button type="button" (click)="deleteSelectedSubtree()" [disabled]="deleting">
-                {{ deleting ? 'Deleting...' : 'Delete this move and continuation' }}
-              </button>
+            <div class="board-shell">
+              <app-chess-board
+                [fen]="currentFen"
+                [side]="line?.sideToTrain"
+                [lastMove]="lastMove"
+                [arrows]="analysisArrows()"
+                (move)="onBoardMove($event)"
+              ></app-chess-board>
             </div>
           </div>
+
+          <div class="board-action-row">
+            <button type="button" class="secondary" (click)="goToStart()" [disabled]="currentNodeId === 0" title="Home">⏮ Start</button>
+            <button type="button" class="secondary" (click)="goToPrevious()" [disabled]="currentNodeId === 0" title="Left arrow">← Previous</button>
+            <button type="button" class="secondary" (click)="goToNext()" [disabled]="!selectedNode?.children?.length" title="Right arrow">Next →</button>
+            <button type="button" class="secondary" (click)="goToEnd()" [disabled]="!selectedNode?.children?.length" title="End">End ⏭</button>
+            <span class="keyboard-hint">Keyboard: ←/→, Home/End</span>
+          </div>
+        </section>
+
+        <div class="workbench-side-stack">
+          <section class="workbench-panel move-tree-panel">
+            <div>
+              <h3 class="workbench-panel-title">Move tree</h3>
+              <p class="workbench-panel-subtitle">Root is the start position. Green-outlined moves are trained-side moves; softer replies are opponent continuations.</p>
+            </div>
+            <app-move-tree [tree]="tree" [selectedNodeId]="currentNodeId" (nodeSelected)="onSelectNode($event)"></app-move-tree>
+          </section>
+
+          <section class="workbench-panel">
+            <div>
+              <h3 class="workbench-panel-title">Selected move</h3>
+              <p class="workbench-panel-subtitle">Inspect the current node before adding moves, notes, or deleting a continuation.</p>
+            </div>
+
+            <div *ngIf="selectedNode?.node?.id === 0" class="empty-state">
+              Start position. Add the first move from the board.
+            </div>
+
+            <div *ngIf="selectedNode?.node?.id !== 0" class="selected-move-grid">
+              <div class="selected-move-card">
+                <p class="library-mini-stat-label">SAN</p>
+                <strong>{{ selectedNode?.node?.moveSan || '—' }}</strong>
+              </div>
+              <div class="selected-move-card">
+                <p class="library-mini-stat-label">UCI</p>
+                <code class="selected-move-value">{{ selectedNode?.node?.moveUci || '—' }}</code>
+              </div>
+              <div class="selected-move-card">
+                <p class="library-mini-stat-label">Side</p>
+                <strong>{{ selectedNode?.node?.side || '—' }}</strong>
+              </div>
+              <div class="selected-move-card">
+                <p class="library-mini-stat-label">Role</p>
+                <strong>{{ selectedNode?.node?.isUserMove ? 'Trained move' : 'Opponent reply' }}</strong>
+              </div>
+              <div class="selected-move-card">
+                <p class="library-mini-stat-label">Children</p>
+                <strong>{{ selectedNode?.children?.length || 0 }}</strong>
+              </div>
+              <div class="selected-move-card">
+                <p class="library-mini-stat-label">Subtree</p>
+                <strong>{{ countDescendants(selectedNode) }} following</strong>
+              </div>
+            </div>
+          </section>
 
           <app-move-notes [node]="selectedNode" (savedNode)="onNotesSaved($event)"></app-move-notes>
-        </div>
-        <div style="min-width:260px;">
-          <h3>Move Tree</h3>
-          <app-move-tree [tree]="tree" [selectedNodeId]="currentNodeId" (nodeSelected)="onSelectNode($event)"></app-move-tree>
 
-          <div class="analysis-panel">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <h3 style="margin:0;">Stockfish</h3>
-              <button type="button" (click)="rerunAnalysis()" [disabled]="analysis.running">Analyze</button>
+          <section class="workbench-panel engine-panel-modern">
+            <div class="engine-panel-header">
+              <div>
+                <h3 class="workbench-panel-title">Stockfish</h3>
+                <p class="workbench-panel-subtitle">Secondary analysis for the selected position.</p>
+              </div>
+              <button type="button" class="secondary" (click)="rerunAnalysis()" [disabled]="analysis.running">Analyze</button>
             </div>
-            <p *ngIf="analysis.error" style="color:#b00020;">{{ analysis.error }}</p>
-            <p *ngIf="analysis.running">Analyzing… depth {{ topDepth() || '…' }}</p>
-            <p *ngIf="!analysis.running && !analysis.bestMove && !analysis.error">Select a position to analyze.</p>
-            <p *ngIf="analysis.bestMove"><strong>Best:</strong> <code>{{ analysis.bestMove }}</code></p>
-            <div *ngIf="engineWarning()" class="engine-warning">
+
+            <p *ngIf="analysis.error" class="status-error">{{ analysis.error }}</p>
+            <p *ngIf="analysis.running" class="status-note">Analyzing… depth {{ topDepth() || '…' }}</p>
+            <p *ngIf="!analysis.running && !analysis.bestMove && !analysis.error" class="status-note">Select a position to analyze.</p>
+            <p *ngIf="analysis.bestMove" class="status-note"><strong>Best:</strong> <code>{{ analysis.bestMove }}</code></p>
+
+            <div *ngIf="engineWarning()" class="engine-warning-modern">
               {{ engineWarning() }}
             </div>
-            <ol *ngIf="analysis.lines.length > 0">
-              <li *ngFor="let line of analysis.lines.slice(0, 3)">
-                <span class="score">{{ lineScoreLabel(line) }}</span>
-                <code>{{ line.pv.slice(0, 8).join(' ') }}</code>
-              </li>
-            </ol>
-          </div>
+
+            <div *ngFor="let engineLine of analysis.lines.slice(0, 3)" class="engine-line-modern">
+              <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
+              <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
+            </div>
+          </section>
+
+          <section class="danger-zone">
+            <h3 class="workbench-panel-title">Danger zone</h3>
+            <p class="workbench-panel-subtitle">Delete the selected move and every continuation below it. The start position cannot be deleted.</p>
+            <div class="board-action-row">
+              <button type="button" class="danger" (click)="deleteSelectedSubtree()" [disabled]="selectedNode?.node?.id === 0 || deleting">
+                {{ deleting ? 'Deleting...' : 'Delete selected subtree' }}
+              </button>
+            </div>
+          </section>
         </div>
       </div>
-    </div>
-    <div *ngIf="!loaded">
-      <p>Loading...</p>
-      <p *ngIf="error" style="color:#b00020;">{{ error }}</p>
-    </div>
+    </section>
+
+    <ng-template #loadingState>
+      <section class="section-card stack">
+        <p class="status-note">Loading editor...</p>
+        <p *ngIf="error" class="status-error">{{ error }}</p>
+      </section>
+    </ng-template>
   `,
-  styles: [
-    `
-    .eval-bar {
-      position: relative;
-      width: 34px;
-      min-height: min(76vw, 520px);
-      background: #f7f7f7;
-      border: 1px solid #bbb;
-      border-radius: 4px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-    }
-    .eval-black {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #222;
-      transition: height 180ms ease;
-    }
-    .eval-bar-flipped .eval-black {
-      top: auto;
-      bottom: 0;
-    }
-    .eval-label {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      text-align: center;
-      font-size: 11px;
-      font-weight: bold;
-      color: #b00020;
-      text-shadow: 0 1px 2px #fff;
-      writing-mode: vertical-rl;
-      user-select: none;
-    }
-    .analysis-panel {
-      margin-top: 20px;
-      border: 1px solid #ddd;
-      padding: 12px;
-      max-width: 420px;
-      background: #fff;
-    }
-    .analysis-panel ol { padding-left: 20px; }
-    .analysis-panel li { margin: 8px 0; }
-    .score { display: inline-block; min-width: 56px; font-weight: bold; }
-    .engine-warning {
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid #f2b84b;
-      background: #fff7e6;
-      color: #7a4b00;
-      border-radius: 8px;
-      font-size: 0.92rem;
-    }
-    `
-  ]
 })
 export class LineEditorPageComponent implements OnInit, OnDestroy {
   lineId!: number;
