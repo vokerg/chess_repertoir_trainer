@@ -150,6 +150,32 @@ The seed creates:
 
 The seed stores real move nodes only; it does not create a fake blank root node.
 
+## Imported games browser API
+
+The imported-games browser should use the dedicated search API rather than the account-scoped legacy list:
+
+```http
+GET /api/imported-games
+GET /api/imported-games/:gameId
+GET /api/imported-games/:gameId/pgn
+GET /api/imported-games/facets
+```
+
+`GET /api/imported-games` returns compact list DTOs for the games browser. PGN, raw provider JSON, and full engine lines are intentionally excluded from list rows.
+
+Supported query parameters include:
+
+- `accountIds`, `providers`, `speedCategory`, `variant`, `openingEco` as comma-separated lists.
+- `from` and `to` for `endedAt` date filtering.
+- `resultForUser`, `userColor`, `rated`, `openingName`, `opponent`.
+- rating ranges: `minUserRating`, `maxUserRating`, `minOpponentRating`, `maxOpponentRating`.
+- latest-analysis filters: `analysisStatus`, `classification`, `minAccuracy`, `maxAccuracy`.
+- cursor pagination: `limit`, `cursor`, and `sort=endedAtDesc|endedAtAsc`.
+
+List and detail DTOs expose an `analysis` summary derived from the latest `GameAnalysisRun` with status values `NOT_ANALYZED`, `RUNNING`, `COMPLETED`, and `FAILED`.
+
+`GET /api/me/accounts/:id/games` remains available as an account-scoped compatibility route, but it is backed by the same imported-games search service.
+
 ## Backend imported-game analysis
 
 The API can analyze one imported game at a time with server-side Stockfish:
@@ -283,6 +309,7 @@ From a clean clone, the target is:
 
 - Active training session state is kept in API memory. Restarting the API loses active sessions.
 - Imported-game analysis is synchronous, CPU-bound, and limited to one game per request in this MVP.
+- Imported-game search analysis filters are derived from latest run summaries at request time. If this becomes slow with large libraries, move those fields into a denormalized read model.
 - The UI is intentionally basic and needs a dedicated authoring UX pass after stabilization.
 - JSON import/export exists but needs versioning and merge/deduplication before it should be trusted as a robust backup system.
 - The stats model is simple and not yet a spaced repetition scheduler.
