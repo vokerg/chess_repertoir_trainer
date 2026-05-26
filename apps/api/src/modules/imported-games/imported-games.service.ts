@@ -172,6 +172,25 @@ function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyo
     .map((row) => ({ value: row[valueKey], count: groupCount(row, valueKey) }));
 }
 
+function analysisStatusFacetRows(rows: Array<{ analysisRuns: Array<{ status: string }> }>) {
+  const counts: Record<ImportedGameAnalysisStatus, number> = {
+    NOT_ANALYZED: 0,
+    RUNNING: 0,
+    COMPLETED: 0,
+    FAILED: 0,
+  };
+
+  for (const row of rows) {
+    const status = row.analysisRuns[0]?.status;
+    if (!status) counts.NOT_ANALYZED += 1;
+    else if (status === 'RUNNING') counts.RUNNING += 1;
+    else if (status === 'COMPLETED') counts.COMPLETED += 1;
+    else counts.FAILED += 1;
+  }
+
+  return Object.entries(counts).map(([value, count]) => ({ value, count }));
+}
+
 async function searchRows(query: ImportedGameSearchQuery) {
   let cursor = decodeCursor(query.cursor);
   const visibleRows: ImportedGameListRow[] = [];
@@ -259,10 +278,7 @@ export const ImportedGamesService = {
         name: opening.openingName,
         count: groupCount(opening, 'openingEco'),
       })),
-      analysisStatuses: [
-        { value: 'ANALYZED', count: facets.totalAnalyzed },
-        { value: 'NOT_ANALYZED', count: Math.max(0, facets.totalGames - facets.totalAnalyzed) },
-      ],
+      analysisStatuses: analysisStatusFacetRows(facets.latestAnalysisRows),
     };
   },
 };
