@@ -127,11 +127,17 @@ const searchParameters = [
   { name: 'openingEco', in: 'query', schema: { type: 'string' } },
   { name: 'openingName', in: 'query', schema: { type: 'string' } },
   { name: 'opponent', in: 'query', schema: { type: 'string' } },
-  { name: 'analysisStatus', in: 'query', schema: { type: 'string' }, description: 'Comma-separated NOT_ANALYZED,RUNNING,COMPLETED,FAILED.' },
-  { name: 'classification', in: 'query', schema: { type: 'string' }, description: 'Comma-separated move classifications to require in at least one analyzed move.' },
+  { name: 'minUserRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
+  { name: 'maxUserRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
+  { name: 'minOpponentRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
+  { name: 'maxOpponentRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
+  { name: 'minAccuracy', in: 'query', schema: { type: 'number', minimum: 0, maximum: 100 } },
+  { name: 'maxAccuracy', in: 'query', schema: { type: 'number', minimum: 0, maximum: 100 } },
+  { name: 'analysisStatus', in: 'query', schema: { type: 'string' }, description: 'Comma-separated NOT_ANALYZED,RUNNING,COMPLETED,FAILED. Applied to the latest analysis run summary.' },
+  { name: 'classification', in: 'query', schema: { type: 'string' }, description: 'Comma-separated move classifications to require in the latest analysis summary.' },
   { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 } },
   { name: 'cursor', in: 'query', schema: { type: 'string' } },
-  { name: 'sort', in: 'query', schema: { type: 'string', enum: ['endedAtDesc', 'endedAtAsc', 'accuracyAsc'], default: 'endedAtDesc' } },
+  { name: 'sort', in: 'query', schema: { type: 'string', enum: ['endedAtDesc', 'endedAtAsc'], default: 'endedAtDesc' } },
 ];
 
 export const listImportedGamesOpenApiOperation = {
