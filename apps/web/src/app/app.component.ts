@@ -6,31 +6,80 @@ import { RouterModule } from '@angular/router';
   standalone: true,
   imports: [RouterModule],
   template: `
-    <div class="page-shell" style="padding:20px 0 28px;">
-      <header class="glass-card" style="border-radius:32px;padding:24px 24px 22px;position:relative;overflow:hidden;">
-        <div style="position:absolute;inset:auto -80px -80px auto;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle, rgba(183,121,39,0.38), transparent 68%);pointer-events:none;"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between;position:relative;">
-          <div style="max-width:700px;">
+    <div class="page-shell app-shell">
+      <header class="glass-card app-header">
+        <div class="app-header-glow"></div>
+        <div class="app-header-inner">
+          <div class="app-header-copy">
             <span class="eyebrow">Opening Lab</span>
-            <h1 class="page-heading">Chess Repertoire Trainer</h1>
+            <h1 class="page-heading app-title">Chess Repertoire Trainer</h1>
             <p class="page-subtitle">
               Build polished opening trees, train the critical branches, and keep weak spots visible before they punish you over the board.
             </p>
           </div>
-          <nav style="display:flex;gap:10px;flex-wrap:wrap;">
+          <nav class="app-nav" aria-label="Main navigation">
+            <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill">Study</a>
+            <a routerLink="/stats" routerLinkActive="nav-pill-active" class="nav-pill">Review</a>
             <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill">Courses</a>
-            <a routerLink="/stats" routerLinkActive="nav-pill-active" class="nav-pill">Stats</a>
           </nav>
         </div>
       </header>
 
-      <main style="padding:18px 0 40px;">
+      <main class="app-main">
         <router-outlet></router-outlet>
       </main>
     </div>
   `,
   styles: [
     `
+    .app-shell {
+      padding: 20px 0 28px;
+    }
+
+    .app-header {
+      border-radius: 32px;
+      padding: 24px 24px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-header-glow {
+      position: absolute;
+      inset: auto -80px -80px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(183,121,39,0.38), transparent 68%);
+      pointer-events: none;
+    }
+
+    .app-header-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-end;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .app-header-copy {
+      max-width: 700px;
+    }
+
+    .app-title {
+      font-size: clamp(2rem, 4vw, 3.35rem);
+    }
+
+    .app-nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .app-main {
+      padding: 18px 0 40px;
+    }
+
     .nav-pill {
       display: inline-flex;
       align-items: center;

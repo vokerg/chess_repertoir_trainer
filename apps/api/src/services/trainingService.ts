@@ -3,7 +3,6 @@ import {
   TrainingState,
   playUserMove,
   getExpectedUserMoveUci,
-  getCorrectUserMove,
 } from 'chess-domain';
 import { LineService } from './lineService';
 import prisma from '../prisma';
@@ -14,6 +13,43 @@ import prisma from '../prisma';
  * which is acceptable for v1 as sessions are short-lived.
  */
 const activeSessions: Map<number, { state: TrainingState }> = new Map();
+
+async function recordMissedExpectedMove(sessionId: number, state: TrainingState) {
+  const expectedChild = state.expectedUserMove;
+  const expectedMove = expectedChild?.node.moveUci;
+  if (!expectedChild || !expectedMove) return;
+
+  const fenBefore = state.current.node.fenAfter;
+
+  await prisma.trainingAttemptMove.create({
+    data: {
+      sessionId,
+      moveNodeId: expectedChild.node.id,
+      fenBefore,
+      expectedMoveUci: expectedMove,
+      playedMoveUci: null,
+      wasCorrect: false,
+    },
+  });
+
+  await prisma.moveNode.update({
+    where: { id: expectedChild.node.id },
+    data: {
+      timesSeen: { increment: 1 },
+      incorrectCount: { increment: 1 },
+      currentStreak: 0,
+      lastSeenAt: new Date(),
+    },
+  });
+
+  await prisma.trainingSession.update({
+    where: { id: sessionId },
+    data: {
+      totalExpectedMoves: { increment: 1 },
+      mistakesCount: { increment: 1 },
+    },
+  });
+}
 
 async function finalizeSession(sessionId: number) {
   const sessionRow = await prisma.trainingSession.findUnique({ where: { id: sessionId } });
@@ -88,7 +124,7 @@ export const TrainingService = {
     if (!sessionMeta) throw new Error('Session not found or already completed');
 
     const { state } = sessionMeta;
-    const expectedChild = getCorrectUserMove(state.current);
+    const expectedChild = state.expectedUserMove;
     const expectedMove = expectedChild?.node.moveUci;
     if (!expectedChild || !expectedMove) throw new Error('No user move is expected in this position');
 
@@ -162,9 +198,17 @@ export const TrainingService = {
    * Explicitly complete a session early. The current counters are finalized as-is.
    */
   complete: async (sessionId: number) => {
-    if (!activeSessions.has(sessionId)) {
+    const sessionMeta = activeSessions.get(sessionId);
+    if (!sessionMeta) {
       return prisma.trainingSession.findUnique({ where: { id: sessionId } });
     }
+
+    if (!sessionMeta.state.completed) {
+      await recordMissedExpectedMove(sessionId, sessionMeta.state);
+      sessionMeta.state.completed = true;
+      sessionMeta.state.expectedUserMove = undefined;
+    }
+
     return finalizeSession(sessionId);
   },
 

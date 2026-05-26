@@ -56,12 +56,20 @@ export function getLegalMoves(fen: string): { uci: string; san: string }[] {
 }
 
 /**
- * Given a parent node, find the child representing the correct user move.
- * Returns undefined if none exists. A correct user move is defined as a
- * move where isUserMove === true and isCorrectUserMove === true.
+ * Given a parent node, find the children representing correct user moves.
+ * A correct user move is defined as a move where isUserMove === true and
+ * isCorrectUserMove === true.
+ */
+export function getCorrectUserMoves(parent: MoveTreeNode): MoveTreeNode[] {
+  return parent.children.filter((child) => child.node.isUserMove && child.node.isCorrectUserMove);
+}
+
+/**
+ * Given a parent node, return the first correct user move, if any.
+ * This remains useful for callers that only need a single matching node.
  */
 export function getCorrectUserMove(parent: MoveTreeNode): MoveTreeNode | undefined {
-  return parent.children.find((child) => child.node.isUserMove && child.node.isCorrectUserMove);
+  return getCorrectUserMoves(parent)[0];
 }
 
 /**
@@ -78,6 +86,16 @@ export function getOpponentBranches(parent: MoveTreeNode): MoveTreeNode[] {
  * available, undefined is returned.
  */
 export function chooseRandomOpponentBranch(children: MoveTreeNode[]): MoveTreeNode | undefined {
+  if (children.length === 0) return undefined;
+  const index = Math.floor(Math.random() * children.length);
+  return children[index];
+}
+
+/**
+ * Choose a random trained-side continuation from the list of valid user
+ * moves. If no moves are available, undefined is returned.
+ */
+export function chooseRandomUserMove(children: MoveTreeNode[]): MoveTreeNode | undefined {
   if (children.length === 0) return undefined;
   const index = Math.floor(Math.random() * children.length);
   return children[index];
