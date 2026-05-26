@@ -82,7 +82,14 @@ const legacyOpenApiDocument = {
             'application/json': {
               schema: { $ref: '#/components/schemas/CreateExternalAccountRequest' },
               examples: {
-                lichess: { value: { provider: 'LICHESS', username: 'someLichessUser' } },
+                lichess: {
+                  summary: 'Lichess account',
+                  value: { provider: 'LICHESS', username: 'someLichessUser' },
+                },
+                chessCom: {
+                  summary: 'Chess.com account',
+                  value: { provider: 'CHESS_COM', username: 'someChessComUser' },
+                },
               },
             },
           },
@@ -147,7 +154,8 @@ const legacyOpenApiDocument = {
       post: {
         tags: ['External accounts'],
         summary: 'Synchronize games for an external account',
-        description: 'Currently implemented for Lichess accounts only. The sync is synchronous and uses cursor + overlap + upsert behavior.',
+        description:
+          'Synchronizes finished games for a Lichess or Chess.com account. Lichess uses the public user games stream. Chess.com uses the public monthly archive API. The sync is synchronous and uses cursor + overlap + upsert behavior.',
         parameters: [{ $ref: '#/components/parameters/AccountId' }],
         responses: {
           '200': {
@@ -155,6 +163,37 @@ const legacyOpenApiDocument = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ImportRunSummary' },
+                examples: {
+                  lichess: {
+                    summary: 'Lichess sync summary',
+                    value: {
+                      importRunId: 1,
+                      status: 'COMPLETED',
+                      gamesSeen: 25,
+                      gamesImported: 20,
+                      gamesUpdated: 5,
+                      gamesSkipped: 0,
+                      gamesFailed: 0,
+                      syncSince: null,
+                      syncUntil: '2026-05-26T05:00:00.000Z',
+                    },
+                  },
+                  chessCom: {
+                    summary: 'Chess.com sync summary',
+                    value: {
+                      importRunId: 2,
+                      status: 'COMPLETED',
+                      gamesSeen: 40,
+                      gamesImported: 30,
+                      gamesUpdated: 3,
+                      gamesSkipped: 7,
+                      gamesFailed: 0,
+                      syncSince: '2026-04-25T05:00:00.000Z',
+                      syncUntil: '2026-05-26T05:00:00.000Z',
+                      archivesFetched: 2,
+                    },
+                  },
+                },
               },
             },
           },
@@ -302,9 +341,15 @@ const legacyOpenApiDocument = {
           gamesSeen: { type: 'integer' },
           gamesImported: { type: 'integer' },
           gamesUpdated: { type: 'integer' },
+          gamesSkipped: { type: 'integer', description: 'Games seen but skipped during incremental import because they are older than the sync overlap.' },
           gamesFailed: { type: 'integer' },
           syncSince: { type: 'string', format: 'date-time', nullable: true },
           syncUntil: { type: 'string', format: 'date-time', nullable: true },
+          archivesFetched: {
+            type: 'integer',
+            nullable: true,
+            description: 'Chess.com-only count of monthly archive endpoints fetched during this sync.',
+          },
         },
         required: ['importRunId', 'status', 'gamesSeen', 'gamesImported', 'gamesUpdated', 'gamesFailed'],
       },
