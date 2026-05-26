@@ -144,11 +144,12 @@ function buildCursorWhere(cursor: ImportedGameCursor | null, sort: ImportedGameS
   if (!cursor) return undefined;
 
   if (sort === 'endedAtAsc') {
-    if (!cursor.endedAt) return { OR: [{ endedAt: { not: null } }, { endedAt: null, id: { gt: cursor.id } }] };
+    if (!cursor.endedAt) return { endedAt: null, id: { gt: cursor.id } };
     return {
       OR: [
         { endedAt: { gt: new Date(cursor.endedAt) } },
         { endedAt: new Date(cursor.endedAt), id: { gt: cursor.id } },
+        { endedAt: null },
       ],
     };
   }
@@ -158,13 +159,14 @@ function buildCursorWhere(cursor: ImportedGameCursor | null, sort: ImportedGameS
     OR: [
       { endedAt: { lt: new Date(cursor.endedAt) } },
       { endedAt: new Date(cursor.endedAt), id: { lt: cursor.id } },
+      { endedAt: null },
     ],
   };
 }
 
 function buildOrderBy(sort: ImportedGameSort): Prisma.ImportedGameOrderByWithRelationInput[] {
-  if (sort === 'endedAtAsc') return [{ endedAt: 'asc' }, { id: 'asc' }];
-  return [{ endedAt: 'desc' }, { id: 'desc' }];
+  if (sort === 'endedAtAsc') return [{ endedAt: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }];
+  return [{ endedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }];
 }
 
 export async function findImportedGames(query: ImportedGameSearchQuery, cursor: ImportedGameCursor | null) {
