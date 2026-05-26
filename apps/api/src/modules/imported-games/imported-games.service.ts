@@ -24,7 +24,7 @@ function decodeCursor(cursor?: string): ImportedGameCursor | null {
   if (!cursor) return null;
   try {
     const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
-    if (!parsed || typeof parsed.id !== 'number') return null;
+    if (!parsed || typeof parsed.id !== 'number') throw new Error('Invalid imported-games cursor');
     return {
       endedAt: typeof parsed.endedAt === 'string' ? parsed.endedAt : null,
       id: parsed.id,
@@ -58,6 +58,44 @@ function criticalMoveCount(summary: unknown) {
   if (!summary || typeof summary !== 'object') return null;
   const critical = (summary as any).criticalPlyNumbers;
   return Array.isArray(critical) ? critical.length : null;
+}
+
+function classificationCount(summary: unknown, classification: string) {
+  if (!summary || typeof summary !== 'object') return 0;
+  const white = (summary as any).white;
+  const black = (summary as any).black;
+  const whiteCount = white && typeof white === 'object' && typeof white[classification] === 'number' ? white[classification] : 0;
+  const blackCount = black && typeof black === 'object' && typeof black[classification] === 'number' ? black[classification] : 0;
+  return whiteCount + blackCount;
+}
+
+function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
+  if (query.analysisStatus?.length && !query.analysisStatus.includes(deriveAnalysisStatus(row))) {
+    return false;
+  }
+
+  const accuracy = userAccuracy(row);
+  if (query.minAccuracy !== undefined && (accuracy === null || accuracy < query.minAccuracy)) {
+    return false;
+  }
+  if (query.maxAccuracy !== undefined && (accuracy === null || accuracy > query.maxAccuracy)) {
+    return false;
+  }
+
+  if (query.classification?.length) {
+    const run = latestRun(row);
+    if (!run) return false;
+    return query.classification.some((classification) => classificationCount(run.summary, classification) > 0);
+  }
+
+  return true;
+}
+
+function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGameCursor {
+  return {
+    endedAt: row.endedAt ? row.endedAt.toISOString() : null,
+    id: row.id,
+  };
 }
 
 function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
@@ -122,17 +160,48 @@ function toDetail(row: ImportedGameDetailRow) {
 function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyof T) {
   return rows
     .filter((row) => row[valueKey] !== null && row[valueKey] !== undefined)
-    .map((row) => ({ value: row[valueKey], count: row._count }));
+    .map((row) => ({ value: row[valueKey], count: row._count._all }));
+}
+
+async function searchRows(query: ImportedGameSearchQuery) {
+  let cursor = decodeCursor(query.cursor);
+  const visibleRows: ImportedGameListRow[] = [];
+  let nextCursor: string | null = null;
+  let hasMore = false;
+
+  for (let page = 0; page < 25; page += 1) {
+    const rows = await findImportedGames(query, cursor);
+    const candidates = rows.slice(0, query.limit);
+    const batchHasMore = rows.length > query.limit;
+
+    for (let index = 0; index < candidates.length; index += 1) {
+      const row = candidates[index];
+      if (!rowMatchesAnalysisFilters(row, query)) continue;
+
+      visibleRows.push(row);
+      if (visibleRows.length === query.limit) {
+        hasMore = batchHasMore || index < candidates.length - 1;
+        nextCursor = hasMore ? encodeCursor(row) : null;
+        return { visibleRows, nextCursor, hasMore };
+      }
+    }
+
+    if (!candidates.length || !batchHasMore) {
+      return { visibleRows, nextCursor: null, hasMore: false };
+    }
+
+    cursor = toCursor(candidates[candidates.length - 1]);
+  }
+
+  hasMore = true;
+  nextCursor = visibleRows.length ? encodeCursor(visibleRows[visibleRows.length - 1]) : null;
+  return { visibleRows, nextCursor, hasMore };
 }
 
 export const ImportedGamesService = {
   search: async (query: ImportedGameSearchQuery) => {
     await CurrentUserService.getOrCreate();
-    const cursor = decodeCursor(query.cursor);
-    const rows = await findImportedGames(query, cursor);
-    const visibleRows = rows.slice(0, query.limit);
-    const hasMore = rows.length > query.limit;
-    const nextCursor = hasMore && visibleRows.length ? encodeCursor(visibleRows[visibleRows.length - 1]) : null;
+    const { visibleRows, nextCursor, hasMore } = await searchRows(query);
 
     return {
       items: visibleRows.map(toListItem),
@@ -174,7 +243,7 @@ export const ImportedGamesService = {
       openings: facets.openings.map((opening) => ({
         eco: opening.openingEco,
         name: opening.openingName,
-        count: opening._count,
+        count: opening._count._all,
       })),
       analysisStatuses: [
         { value: 'ANALYZED', count: facets.totalAnalyzed },
