@@ -8,23 +8,23 @@ import { ApiService } from '../services/api.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section *ngIf="node?.node?.id && node.node.id !== 0" class="workbench-panel workbench-panel-compact move-notes-card">
+    <section *ngIf="node?.node?.id && node.node.id !== 0" class="move-notes-card">
       <div>
         <h3 class="workbench-panel-title">Notes</h3>
-        <p class="workbench-panel-subtitle">Attach the practical memory hooks that make this branch trainable later.</p>
+        <p class="workbench-panel-subtitle">Capture why this move belongs in the line.</p>
       </div>
 
       <div class="move-notes-form">
         <label class="form-field">
-          <span class="library-mini-stat-label">Branch label</span>
+          <span class="metric-label">Branch label</span>
           <input [(ngModel)]="branchLabel" placeholder="Main line, rare reply, trap..." />
         </label>
         <label class="form-field">
-          <span class="library-mini-stat-label">Comment</span>
+          <span class="metric-label">Comment</span>
           <textarea [(ngModel)]="comment" rows="3" placeholder="Why this move matters"></textarea>
         </label>
         <label class="form-field">
-          <span class="library-mini-stat-label">Annotation</span>
+          <span class="metric-label">Annotation</span>
           <input [(ngModel)]="annotation" placeholder="!, ?, +=, practical note..." />
         </label>
         <div class="move-notes-actions">
