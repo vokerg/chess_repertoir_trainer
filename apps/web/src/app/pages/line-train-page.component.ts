@@ -128,7 +128,9 @@ interface MistakeReviewItem {
         <p class="workbench-panel-subtitle">Review the missed moves and any notes attached to those branches.</p>
 
         <p *ngIf="reviewLoading" class="status-note">Loading mistake review...</p>
-        <div *ngIf="!reviewLoading && mistakes.length === 0" class="empty-state">No mistakes. Clean session.</div>
+        <div *ngIf="!reviewLoading && mistakes.length === 0" class="empty-state">
+          {{ passed ? 'No mistakes. Clean session.' : 'No move-level mistakes to review, but the session did not finish cleanly.' }}
+        </div>
 
         <div *ngIf="mistakes.length > 0" class="mistake-review-grid">
           <article class="mistake-card" *ngFor="let mistake of mistakes">

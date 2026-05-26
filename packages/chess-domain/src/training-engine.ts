@@ -1,5 +1,11 @@
 import { MoveTree, MoveTreeNode } from './types';
-import { getCorrectUserMove, getOpponentBranches, chooseRandomOpponentBranch, evaluateTrainingMove } from './move-tree';
+import {
+  getCorrectUserMoves,
+  getOpponentBranches,
+  chooseRandomOpponentBranch,
+  chooseRandomUserMove,
+  evaluateTrainingMove,
+} from './move-tree';
 
 /**
  * A stateful representation of a training session on a move tree. The
@@ -12,7 +18,13 @@ export interface TrainingState {
   tree: MoveTree;
   current: MoveTreeNode;
   path: MoveTreeNode[];
+  expectedUserMove?: MoveTreeNode;
   completed: boolean;
+}
+
+function refreshExpectedUserMove(state: TrainingState): void {
+  const userMoves = getCorrectUserMoves(state.current);
+  state.expectedUserMove = chooseRandomUserMove(userMoves);
 }
 
 /**
@@ -25,6 +37,7 @@ export function startTraining(tree: MoveTree): TrainingState {
     tree,
     current: tree.root,
     path: [tree.root],
+    expectedUserMove: undefined,
     completed: false,
   };
   // Advance through any opponent moves at the beginning
@@ -48,9 +61,9 @@ export function autoPlayOpponentMoves(state: TrainingState): void {
         state.path.push(next);
       }
     } else {
-      // No opponent moves; check if there is a user move
-      const userMove = getCorrectUserMove(state.current);
-      if (!userMove) {
+      // No opponent moves; check whether a trained-side continuation exists.
+      refreshExpectedUserMove(state);
+      if (!state.expectedUserMove) {
         // End of the line
         state.completed = true;
       }
@@ -65,8 +78,7 @@ export function autoPlayOpponentMoves(state: TrainingState): void {
  * the line has ended), returns undefined.
  */
 export function getExpectedUserMoveUci(state: TrainingState): string | undefined {
-  const userMove = getCorrectUserMove(state.current);
-  return userMove?.node.moveUci;
+  return state.expectedUserMove?.node.moveUci;
 }
 
 /**
@@ -79,16 +91,17 @@ export function playUserMove(state: TrainingState, moveUci: string): { correct: 
   const correct = evaluateTrainingMove(expectedMove, moveUci);
   if (correct && expectedMove) {
     // Advance to the correct child
-    const next = getCorrectUserMove(state.current);
+    const next = state.expectedUserMove;
     if (next) {
       state.current = next;
       state.path.push(next);
+      state.expectedUserMove = undefined;
       // After a correct user move, auto play any opponent replies
       autoPlayOpponentMoves(state);
     }
   }
   // If incorrect, do not advance; the caller may decide to retry or end
-  if (state.current.children.length === 0 || (!getCorrectUserMove(state.current) && getOpponentBranches(state.current).length === 0)) {
+  if (state.current.children.length === 0 || (!state.expectedUserMove && getOpponentBranches(state.current).length === 0)) {
     state.completed = true;
   }
   return { correct, expectedMove: expectedMove, completed: state.completed };
