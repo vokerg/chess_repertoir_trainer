@@ -32,16 +32,29 @@ interface Line {
 
       <section class="section-card stack">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-          <div>
+          <div class="stack" style="gap:0.7rem;">
             <span class="eyebrow">Line studio</span>
-            <h2 class="page-heading" style="font-size:clamp(1.8rem,3vw,2.9rem);">
-              {{ chapter?.name || 'Chapter lines' }}
-            </h2>
+            <div *ngIf="editingChapterName; else chapterTitle" class="inline-form" style="grid-template-columns:minmax(220px, 1fr) auto auto;">
+              <div class="stack" style="gap:0.45rem;">
+                <label for="chapter-page-rename" class="metric-label">Chapter name</label>
+                <input id="chapter-page-rename" [(ngModel)]="chapterNameDraft" name="chapterPageRename" />
+              </div>
+              <button type="button" (click)="saveChapterName()" [disabled]="savingChapterName">{{ savingChapterName ? 'Saving...' : 'Save' }}</button>
+              <button type="button" class="secondary" (click)="cancelChapterEdit()" [disabled]="savingChapterName">Cancel</button>
+            </div>
+            <ng-template #chapterTitle>
+              <h2 class="page-heading" style="font-size:clamp(1.8rem,3vw,2.9rem);">
+                {{ chapter?.name || 'Chapter lines' }}
+              </h2>
+            </ng-template>
             <p class="page-subtitle">
               {{ chapter?.description || 'Shape concrete move orders, attach practice targets, and jump between edit and training quickly.' }}
             </p>
           </div>
-          <span class="pill">{{ lines.length }} lines</span>
+          <div class="collection-actions">
+            <span class="pill">{{ lines.length }} lines</span>
+            <button *ngIf="!editingChapterName" type="button" class="secondary" (click)="startChapterEdit()" [disabled]="!chapter">Rename chapter</button>
+          </div>
         </div>
 
         <div class="grid-auto">
@@ -84,7 +97,17 @@ interface Line {
             <article class="collection-card" *ngFor="let line of lines">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
                 <div class="stack" style="gap:0.45rem;">
-                  <h4 class="collection-title">{{ line.name }}</h4>
+                  <div *ngIf="editingLineId === line.id; else lineTitle" class="inline-form" style="grid-template-columns:minmax(220px, 1fr) auto auto;">
+                    <div class="stack" style="gap:0.45rem;">
+                      <label [for]="'line-rename-' + line.id" class="metric-label">Line name</label>
+                      <input [id]="'line-rename-' + line.id" [(ngModel)]="lineNameDraft" [name]="'lineRename' + line.id" />
+                    </div>
+                    <button type="button" (click)="saveLineName(line)" [disabled]="savingLineId === line.id">{{ savingLineId === line.id ? 'Saving...' : 'Save' }}</button>
+                    <button type="button" class="secondary" (click)="cancelLineEdit()" [disabled]="savingLineId === line.id">Cancel</button>
+                  </div>
+                  <ng-template #lineTitle>
+                    <h4 class="collection-title">{{ line.name }}</h4>
+                  </ng-template>
                   <p class="collection-description">
                     Train as {{ line.sideToTrain === 'WHITE' ? 'White' : 'Black' }} ·
                     {{ line.startingFen === 'startpos' ? 'Start position' : 'Custom FEN' }}
@@ -115,6 +138,7 @@ interface Line {
                 <a [routerLink]="['/lines', line.id, 'train']" style="text-decoration:none;">
                   <button type="button" class="secondary">Train</button>
                 </a>
+                <button type="button" class="secondary" (click)="startLineEdit(line)" [disabled]="savingLineId === line.id">Rename</button>
                 <button
                   type="button"
                   class="secondary"
@@ -177,6 +201,12 @@ export class LinesPageComponent implements OnInit {
   newLineStartingFen = 'startpos';
   loading = false;
   saving = false;
+  editingChapterName = false;
+  chapterNameDraft = '';
+  savingChapterName = false;
+  editingLineId: number | null = null;
+  lineNameDraft = '';
+  savingLineId: number | null = null;
   deletingLineId: number | null = null;
   error: string | null = null;
 
@@ -195,6 +225,7 @@ export class LinesPageComponent implements OnInit {
       next: (chapter) => {
         this.chapter = chapter;
         this.courseId = chapter.courseId;
+        if (!this.editingChapterName) this.chapterNameDraft = chapter.name;
         this.cdr.detectChanges();
       },
       error: () => {
@@ -254,6 +285,69 @@ export class LinesPageComponent implements OnInit {
       error: (err) => {
         this.error = err?.error?.message || err?.error?.error || 'Could not delete line.';
         this.deletingLineId = null;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  startChapterEdit() {
+    if (!this.chapter) return;
+    this.editingChapterName = true;
+    this.chapterNameDraft = this.chapter.name;
+  }
+
+  cancelChapterEdit() {
+    this.editingChapterName = false;
+    this.chapterNameDraft = this.chapter?.name || '';
+  }
+
+  saveChapterName() {
+    const name = this.chapterNameDraft.trim();
+    if (!name || !this.chapter) return;
+    this.savingChapterName = true;
+    this.error = null;
+    this.api.patch<ChapterDetail>(`/chapters/${this.chapter.id}`, { name }).subscribe({
+      next: (chapter) => {
+        this.chapter = chapter;
+        this.chapterNameDraft = chapter.name;
+        this.editingChapterName = false;
+        this.savingChapterName = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || err?.error?.error || 'Could not rename chapter.';
+        this.savingChapterName = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  startLineEdit(line: Line) {
+    this.editingLineId = line.id;
+    this.lineNameDraft = line.name;
+  }
+
+  cancelLineEdit() {
+    this.editingLineId = null;
+    this.lineNameDraft = '';
+  }
+
+  saveLineName(line: Line) {
+    const name = this.lineNameDraft.trim();
+    if (!name) return;
+    this.savingLineId = line.id;
+    this.error = null;
+    this.api.patch<Line>(`/lines/${line.id}`, { name }).subscribe({
+      next: (updated) => {
+        this.lines = this.lines.map((item) => (item.id === line.id ? { ...item, ...updated } : item));
+        this.editingLineId = null;
+        this.lineNameDraft = '';
+        this.savingLineId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || err?.error?.error || 'Could not rename line.';
+        this.savingLineId = null;
         this.cdr.detectChanges();
       },
     });

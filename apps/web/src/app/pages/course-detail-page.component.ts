@@ -37,16 +37,27 @@ interface Chapter {
 
       <section class="section-card stack">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-          <div>
+          <div class="stack" style="gap:0.7rem;">
             <span class="eyebrow">Course detail</span>
-            <h2 class="page-heading" style="font-size:clamp(1.8rem,3vw,2.9rem);">
-              {{ course?.name || 'Course' }}
-            </h2>
+            <div *ngIf="editingCourseName; else courseHeading" class="inline-form" style="grid-template-columns:minmax(220px, 1fr) auto auto;">
+              <div class="stack" style="gap:0.45rem;">
+                <label for="course-rename" class="metric-label">Course name</label>
+                <input id="course-rename" [(ngModel)]="courseNameDraft" name="courseRename" />
+              </div>
+              <button type="button" (click)="saveCourseName()" [disabled]="savingCourseName">{{ savingCourseName ? 'Saving...' : 'Save' }}</button>
+              <button type="button" class="secondary" (click)="cancelCourseEdit()" [disabled]="savingCourseName">Cancel</button>
+            </div>
+            <ng-template #courseHeading>
+              <h2 class="page-heading" style="font-size:clamp(1.8rem,3vw,2.9rem);">
+                {{ course?.name || 'Course' }}
+              </h2>
+            </ng-template>
             <p class="page-subtitle">
               {{ course?.description || 'Group related chapters into a single focused opening system and track how much of it is actually getting trained.' }}
             </p>
           </div>
           <div class="collection-actions">
+            <button *ngIf="!editingCourseName" type="button" class="secondary" (click)="startCourseEdit()" [disabled]="!course">Rename course</button>
             <button type="button" class="secondary" (click)="deleteCourse()" [disabled]="deletingCourse">
               {{ deletingCourse ? 'Deleting...' : 'Delete course' }}
             </button>
@@ -93,8 +104,18 @@ interface Chapter {
           <div class="stack" *ngIf="chapters.length > 0">
             <article class="collection-card" *ngFor="let chapter of chapters">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-                <div>
-                  <h4 class="collection-title">{{ chapter.name }}</h4>
+                <div class="stack" style="gap:0.55rem;">
+                  <div *ngIf="editingChapterId === chapter.id; else chapterHeading" class="inline-form" style="grid-template-columns:minmax(220px, 1fr) auto auto;">
+                    <div class="stack" style="gap:0.45rem;">
+                      <label [for]="'chapter-rename-' + chapter.id" class="metric-label">Chapter name</label>
+                      <input [id]="'chapter-rename-' + chapter.id" [(ngModel)]="chapterNameDraft" [name]="'chapterRename' + chapter.id" />
+                    </div>
+                    <button type="button" (click)="saveChapterName(chapter)" [disabled]="savingChapterId === chapter.id">{{ savingChapterId === chapter.id ? 'Saving...' : 'Save' }}</button>
+                    <button type="button" class="secondary" (click)="cancelChapterEdit()" [disabled]="savingChapterId === chapter.id">Cancel</button>
+                  </div>
+                  <ng-template #chapterHeading>
+                    <h4 class="collection-title">{{ chapter.name }}</h4>
+                  </ng-template>
                   <p class="collection-description">
                     {{ chapter.description || 'A chapter for a key branch, model structure, or opponent system.' }}
                   </p>
@@ -106,6 +127,9 @@ interface Chapter {
                 <a [routerLink]="['/chapters', chapter.id, 'lines']" style="text-decoration:none;">
                   <button type="button">Open lines</button>
                 </a>
+                <button type="button" class="secondary" (click)="startChapterEdit(chapter)" [disabled]="savingChapterId === chapter.id">
+                  Rename
+                </button>
                 <button
                   type="button"
                   class="secondary"
@@ -163,6 +187,12 @@ export class CourseDetailPageComponent implements OnInit {
   newChapterDescription: string | null = null;
   loading = false;
   saving = false;
+  editingCourseName = false;
+  courseNameDraft = '';
+  savingCourseName = false;
+  editingChapterId: number | null = null;
+  chapterNameDraft = '';
+  savingChapterId: number | null = null;
   deletingCourse = false;
   deletingChapterId: number | null = null;
   error: string | null = null;
@@ -191,6 +221,7 @@ export class CourseDetailPageComponent implements OnInit {
     this.api.get<CourseDetail>(`/courses/${this.courseId}`).subscribe({
       next: (course) => {
         this.course = course;
+        if (!this.editingCourseName) this.courseNameDraft = course.name;
         this.cdr.detectChanges();
       },
       error: () => {
@@ -244,6 +275,69 @@ export class CourseDetailPageComponent implements OnInit {
       error: (err) => {
         this.error = err?.error?.message || err?.error?.error || 'Could not create chapter.';
         this.saving = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  startCourseEdit() {
+    if (!this.course) return;
+    this.editingCourseName = true;
+    this.courseNameDraft = this.course.name;
+  }
+
+  cancelCourseEdit() {
+    this.editingCourseName = false;
+    this.courseNameDraft = this.course?.name || '';
+  }
+
+  saveCourseName() {
+    const name = this.courseNameDraft.trim();
+    if (!name || !this.course) return;
+    this.savingCourseName = true;
+    this.error = null;
+    this.api.patch<CourseDetail>(`/courses/${this.courseId}`, { name }).subscribe({
+      next: (course) => {
+        this.course = course;
+        this.courseNameDraft = course.name;
+        this.editingCourseName = false;
+        this.savingCourseName = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || err?.error?.error || 'Could not rename course.';
+        this.savingCourseName = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  startChapterEdit(chapter: Chapter) {
+    this.editingChapterId = chapter.id;
+    this.chapterNameDraft = chapter.name;
+  }
+
+  cancelChapterEdit() {
+    this.editingChapterId = null;
+    this.chapterNameDraft = '';
+  }
+
+  saveChapterName(chapter: Chapter) {
+    const name = this.chapterNameDraft.trim();
+    if (!name) return;
+    this.savingChapterId = chapter.id;
+    this.error = null;
+    this.api.patch<Chapter>(`/chapters/${chapter.id}`, { name }).subscribe({
+      next: (updated) => {
+        this.chapters = this.chapters.map((item) => (item.id === chapter.id ? { ...item, ...updated } : item));
+        this.editingChapterId = null;
+        this.chapterNameDraft = '';
+        this.savingChapterId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || err?.error?.error || 'Could not rename chapter.';
+        this.savingChapterId = null;
         this.cdr.detectChanges();
       },
     });

@@ -8,6 +8,13 @@ import { MoveTreeComponent } from '../components/move-tree.component';
 import { MoveNotesComponent } from '../components/move-notes.component';
 import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
+interface EditableLine {
+  id: number;
+  chapterId: number;
+  name: string;
+  sideToTrain: 'WHITE' | 'BLACK';
+}
+
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
@@ -16,7 +23,7 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
         <div class="workbench-title-group">
-          <a routerLink="/library" class="workbench-breadcrumb">← Library / Board workbench</a>
+          <a [routerLink]="breadcrumbLink()" class="workbench-breadcrumb">{{ breadcrumbLabel() }}</a>
           <h2 class="workbench-title">{{ line?.name || 'Line editor' }}</h2>
           <div class="workbench-meta">
             <span>Train as {{ line?.sideToTrain === 'BLACK' ? 'Black' : 'White' }}</span>
@@ -51,6 +58,7 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
                 [side]="line?.sideToTrain"
                 [lastMove]="lastMove"
                 [arrows]="analysisArrows()"
+                [positionVersion]="boardPositionVersion"
                 (move)="onBoardMove($event)"
               ></app-chess-board>
             </div>
@@ -161,12 +169,13 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../service
 })
 export class LineEditorPageComponent implements OnInit, OnDestroy {
   lineId!: number;
-  line: any;
+  line: EditableLine | null = null;
   tree: any;
   selectedNode: any;
   currentNodeId: number = 0;
   currentFen: string = '';
   lastMove: { from: string; to: string } | null = null;
+  boardPositionVersion = 0;
   loaded = false;
   deleting = false;
   error: string | null = null;
@@ -229,7 +238,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   loadLineAndTree(selectNodeId?: number) {
     this.loaded = false;
     this.error = null;
-    this.api.get<any>(`/lines/${this.lineId}`).subscribe({
+    this.api.get<EditableLine>(`/lines/${this.lineId}`).subscribe({
       next: (line) => {
         this.line = line;
         this.api.get<any>(`/lines/${this.lineId}/tree`).subscribe({
@@ -239,6 +248,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
             this.setSelectedNode(targetId);
             this.lastMove = null;
             this.loaded = true;
+            this.boardPositionVersion++;
             this.scheduleAnalysis();
             this.cdr.detectChanges();
           },
@@ -365,6 +375,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.creatingMove = false;
+        this.boardPositionVersion++;
         this.error = 'Could not add this move. It may be illegal or this position already has a trained-side move.';
         this.cdr.detectChanges();
       },
@@ -469,5 +480,13 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   private displayedEvalLine() {
     const currentLine = this.analysis.fen === this.currentFen ? this.analysis.lines[0] : null;
     return currentLine ? { line: currentLine, fen: this.currentFen } : this.displayedEval;
+  }
+
+  breadcrumbLink() {
+    return this.line?.chapterId ? ['/chapters', this.line.chapterId, 'lines'] : ['/courses'];
+  }
+
+  breadcrumbLabel() {
+    return this.line?.chapterId ? '← Back to lines' : '← Back to courses';
   }
 }
