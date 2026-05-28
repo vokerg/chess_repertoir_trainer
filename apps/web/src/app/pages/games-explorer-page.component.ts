@@ -323,9 +323,14 @@ interface GameFilters {
                 </td>
                 <td>
                   <div class="games-row-actions">
-                    <button type="button" (click)="analyse(game)" [disabled]="analysingGameId === game.id || game.analysis?.status === 'RUNNING'">
-                      {{ analysingGameId === game.id || game.analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
+                    <button *ngIf="game.analysis?.status === 'COMPLETED'; else analyseAction" type="button" class="secondary analysed-action" disabled>
+                      Analysed
                     </button>
+                    <ng-template #analyseAction>
+                      <button type="button" (click)="analyse(game)" [disabled]="analysingGameId === game.id || game.analysis?.status === 'RUNNING'">
+                        {{ analysingGameId === game.id || game.analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
+                      </button>
+                    </ng-template>
                     <a *ngIf="game.providerUrl" class="games-link-button" [href]="game.providerUrl" target="_blank" rel="noreferrer">Open</a>
                   </div>
                 </td>
@@ -375,6 +380,7 @@ interface GameFilters {
       .games-actions-heading { width: 170px; }
       .games-row-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
       .games-row-actions button { padding: 0.65rem 0.85rem; }
+      .analysed-action { color: var(--success); opacity: 0.82; }
       .games-link-button { display: inline-flex; align-items: center; min-height: 38px; border-radius: 999px; padding: 0 0.85rem; text-decoration: none; background: rgba(35, 27, 21, 0.08); color: var(--text); font-weight: 800; }
       .games-pagination { display: flex; justify-content: center; padding-top: 0.25rem; }
       .games-empty { border: 1px dashed var(--border-strong); border-radius: 24px; padding: 1.4rem; color: var(--muted); }
@@ -599,11 +605,10 @@ export class GamesExplorerPageComponent implements OnInit {
   }
 
   analysisMeta(analysis?: ImportedGameAnalysisSummary | null): string {
-    if (!analysis || analysis.status === 'NOT_ANALYZED') return 'No run yet';
-    const parts = [];
-    if (analysis.depth) parts.push(`depth ${analysis.depth}`);
-    if (typeof analysis.criticalMoveCount === 'number') parts.push(`${analysis.criticalMoveCount} critical`);
-    return parts.length > 0 ? parts.join(' · ') : 'Run metadata unavailable';
+    if (!analysis || analysis.status === 'NOT_ANALYZED') return 'Ready to analyse';
+    if (analysis.status === 'RUNNING') return 'Analysis in progress';
+    if (analysis.status === 'FAILED') return 'Try analysing again';
+    return 'Analysis saved';
   }
 
   playerLabel(player?: ImportedGamePlayer | null): string {
