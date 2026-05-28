@@ -196,6 +196,14 @@ interface GameFilters {
           </label>
 
           <label class="games-field">
+            <span>Variant</span>
+            <select [(ngModel)]="filters.variant" (ngModelChange)="refresh()">
+              <option value="">Any variant</option>
+              <option *ngFor="let variant of facets.variants || []" [value]="facetKey(variant)">{{ facetLabel(variant) }}</option>
+            </select>
+          </label>
+
+          <label class="games-field">
             <span>Analysis</span>
             <select [(ngModel)]="filters.analysisStatus" (ngModelChange)="refresh()">
               <option value="">Any status</option>
@@ -229,6 +237,16 @@ interface GameFilters {
           <label class="games-field compact">
             <span>Max accuracy</span>
             <input [(ngModel)]="filters.maxAccuracy" (keyup.enter)="refresh()" inputmode="decimal" placeholder="100" />
+          </label>
+
+          <label class="games-field compact">
+            <span>From</span>
+            <input type="date" [(ngModel)]="filters.from" (ngModelChange)="refresh()" />
+          </label>
+
+          <label class="games-field compact">
+            <span>To</span>
+            <input type="date" [(ngModel)]="filters.to" (ngModelChange)="refresh()" />
           </label>
         </div>
 
@@ -460,9 +478,17 @@ export class GamesExplorerPageComponent implements OnInit {
     if (this.filters.analysisStatus) params.set('analysisStatus', this.filters.analysisStatus);
     if (this.filters.minAccuracy.trim()) params.set('minAccuracy', this.filters.minAccuracy.trim());
     if (this.filters.maxAccuracy.trim()) params.set('maxAccuracy', this.filters.maxAccuracy.trim());
-    if (this.filters.from) params.set('from', this.filters.from);
-    if (this.filters.to) params.set('to', this.filters.to);
+    if (this.filters.from) params.set('from', this.dayStartIso(this.filters.from));
+    if (this.filters.to) params.set('to', this.dayEndIso(this.filters.to));
     return `?${params.toString()}`;
+  }
+
+  dayStartIso(value: string): string {
+    return `${value}T00:00:00.000Z`;
+  }
+
+  dayEndIso(value: string): string {
+    return `${value}T23:59:59.999Z`;
   }
 
   defaultFilters(): GameFilters {
