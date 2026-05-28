@@ -105,6 +105,23 @@ export const importedGamesOpenApiSchemas = {
       analysisStatuses: { type: 'array', items: { type: 'object', additionalProperties: true } },
     },
   },
+  ImportedGamePlyIndexRequest: {
+    type: 'object',
+    properties: {
+      force: { type: 'boolean', default: false },
+    },
+  },
+  ImportedGamePlyIndexResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      status: { type: 'string', enum: ['INDEXED', 'ALREADY_INDEXED', 'FAILED'] },
+      pliesIndexed: { type: 'integer', nullable: true },
+      plyIndexedAt: { type: 'string', format: 'date-time', nullable: true },
+      error: { type: 'string', nullable: true },
+    },
+    required: ['importedGameId', 'status'],
+  },
 };
 
 const importedGameIdParameter = {
@@ -179,5 +196,27 @@ export const getImportedGameFacetsOpenApiOperation = {
   summary: 'Get imported-game filter facets',
   responses: {
     '200': { description: 'Imported game filter facets', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameFacetsResponse' } } } },
+  },
+};
+
+export const indexImportedGamePlyOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Parse one imported game into ply rows',
+  description: 'Parses one imported game PGN into lightweight move-by-move rows. This does not run Stockfish and does not build an explorer tree.',
+  parameters: [importedGameIdParameter],
+  requestBody: {
+    required: false,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/ImportedGamePlyIndexRequest' },
+        examples: { default: { value: { force: false } } },
+      },
+    },
+  },
+  responses: {
+    '200': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
+    '201': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
+    '400': { $ref: '#/components/responses/BadRequest' },
+    '404': { $ref: '#/components/responses/NotFound' },
   },
 };
