@@ -4,7 +4,6 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
-import { MoveTreeComponent } from '../components/move-tree.component';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -103,15 +102,10 @@ interface PlayedMove {
   fenAfter: string;
 }
 
-interface GameTreeNode {
-  node: any;
-  children: GameTreeNode[];
-}
-
 @Component({
   selector: 'app-game-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent],
+  imports: [CommonModule, RouterModule, ChessBoardComponent],
   template: `
     <section class="game-detail-page stack">
       <header class="workbench-header">
@@ -165,7 +159,7 @@ interface GameTreeNode {
           <section class="workbench-panel game-board-panel">
             <div>
               <h3 class="workbench-panel-title">Game board</h3>
-              <p class="workbench-panel-subtitle">Replay the imported game move by move. The board is read-only; use the controls, keyboard, or move tree.</p>
+              <p class="workbench-panel-subtitle">Replay the imported game move by move. The board is read-only; use the controls, keyboard, or the score below.</p>
             </div>
 
             <div class="game-board-layout">
@@ -241,12 +235,36 @@ interface GameTreeNode {
               </div>
             </section>
 
-            <section class="workbench-panel move-tree-panel">
+            <section class="workbench-panel move-score-panel">
               <div>
-                <h3 class="workbench-panel-title">Move tree</h3>
-                <p class="workbench-panel-subtitle">This imported game is one played line. Select any node to jump to that position.</p>
+                <h3 class="workbench-panel-title">Game score</h3>
+                <p class="workbench-panel-subtitle">A single played line should read like notation, not a repertoire tree. Select any move to jump there.</p>
               </div>
-              <app-move-tree [tree]="gameTree" [selectedNodeId]="selectedPly" (nodeSelected)="selectPly($event)"></app-move-tree>
+              <div class="game-score-strip" *ngIf="moves.length > 0; else noScore">
+                <button
+                  type="button"
+                  class="score-chip score-chip-start"
+                  [class.score-chip-active]="selectedPly === 0"
+                  (click)="selectPly(0)"
+                >
+                  Start
+                </button>
+                <button
+                  type="button"
+                  *ngFor="let move of moves"
+                  class="score-chip"
+                  [class.score-chip-active]="selectedPly === move.plyNumber"
+                  [class.score-chip-user]="move.side === game?.userColor"
+                  (click)="selectPly(move.plyNumber)"
+                >
+                  <span class="score-chip-prefix">{{ movePrefix(move) }}</span>
+                  <span>{{ move.san }}</span>
+                  <small *ngIf="analysisByPly[move.plyNumber]">{{ shortClassification(analysisByPly[move.plyNumber].classification) }}</small>
+                </button>
+              </div>
+              <ng-template #noScore>
+                <div class="empty-state compact-empty">No PGN moves could be loaded for this game.</div>
+              </ng-template>
             </section>
 
             <section class="workbench-panel move-list-panel">
@@ -308,6 +326,15 @@ interface GameTreeNode {
       .piece-dot { width: 28px; height: 28px; border-radius: 50%; display: inline-block; border: 2px solid rgba(35,27,21,0.24); }
       .white-dot { background: #fffaf1; }
       .black-dot { background: #1c1a18; }
+      .move-score-panel { display: grid; gap: 0.9rem; }
+      .game-score-strip { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+      .score-chip { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 40px; border-radius: 999px; border: 1px solid var(--border); padding: 0.45rem 0.75rem; background: rgba(255,255,255,0.72); color: var(--text); font-weight: 900; box-shadow: none; }
+      .score-chip:hover { transform: none; border-color: rgba(183, 121, 39, 0.28); background: rgba(255,248,235,0.95); }
+      .score-chip-active { border-color: rgba(183, 121, 39, 0.44); background: var(--accent-soft); color: var(--accent-strong); }
+      .score-chip-user { background: rgba(210, 235, 226, 0.7); }
+      .score-chip-start { background: rgba(35,27,21,0.06); }
+      .score-chip-prefix { color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+      .score-chip small { color: var(--muted); font-size: 0.65rem; font-weight: 900; letter-spacing: 0.08em; }
       .move-list-panel { max-height: 600px; overflow: auto; }
       .moves-grid { display: grid; gap: 0.35rem; }
       .move-pair-row { display: grid; grid-template-columns: 42px 1fr 1fr; gap: 0.4rem; align-items: center; border-radius: 16px; padding: 0.45rem; background: rgba(35,27,21,0.05); color: var(--text); box-shadow: none; text-align: left; }
@@ -328,7 +355,6 @@ export class GameDetailPageComponent implements OnInit {
   gameId!: number;
   game: ImportedGameDetail | null = null;
   moves: PlayedMove[] = [];
-  gameTree: { root: GameTreeNode } | null = null;
   analysisRun: AnalysisRun | null = null;
   analysisByPly: Record<number, AnalysisMove> = {};
   selectedPly = 0;
@@ -373,7 +399,6 @@ export class GameDetailPageComponent implements OnInit {
       next: (game) => {
         this.game = game;
         this.moves = this.parsePgn(game.pgn || '');
-        this.gameTree = this.buildGameTree();
         this.loading = false;
         this.cdr.detectChanges();
         this.loadAnalysis();
@@ -422,29 +447,6 @@ export class GameDetailPageComponent implements OnInit {
       this.error = 'Could not parse this game PGN for board replay.';
       return [];
     }
-  }
-
-  buildGameTree(): { root: GameTreeNode } {
-    const root: GameTreeNode = {
-      node: { id: 0, moveSan: 'Start', moveUci: null, fenAfter: 'startpos', isUserMove: false },
-      children: [],
-    };
-    let current = root;
-    for (const move of this.moves) {
-      const child: GameTreeNode = {
-        node: {
-          id: move.plyNumber,
-          moveSan: `${move.moveNumber}${move.side === 'WHITE' ? '.' : '...'} ${move.san}`,
-          moveUci: move.uci,
-          fenAfter: move.fenAfter,
-          isUserMove: move.side === this.game?.userColor,
-        },
-        children: [],
-      };
-      current.children.push(child);
-      current = child;
-    }
-    return { root };
   }
 
   currentMove(): PlayedMove | null {
@@ -506,6 +508,10 @@ export class GameDetailPageComponent implements OnInit {
     const move = this.currentMove();
     if (!move) return 'Before the first move.';
     return `${move.side === 'WHITE' ? 'White' : 'Black'} played ${move.uci}`;
+  }
+
+  movePrefix(move: PlayedMove): string {
+    return move.side === 'WHITE' ? `${move.moveNumber}.` : `${move.moveNumber}...`;
   }
 
   movePairs(): Array<{ moveNumber: number; white?: PlayedMove; black?: PlayedMove }> {

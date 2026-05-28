@@ -293,17 +293,12 @@ interface GameFilters {
                   <p class="games-muted">{{ colorLabel(game.userColor) }}</p>
                 </td>
                 <td>
-                  <p class="game-main">
+                  <p class="game-main players-line">
                     <a *ngIf="profileUrl(game.provider, game.white?.username); else whiteName" class="profile-link" [href]="profileUrl(game.provider, game.white?.username)" target="_blank" rel="noreferrer">{{ playerLabel(game.white) }}</a>
                     <ng-template #whiteName>{{ playerLabel(game.white) }}</ng-template>
-                    <span class="games-muted">vs</span>
+                    <span class="games-muted players-separator">vs</span>
                     <a *ngIf="profileUrl(game.provider, game.black?.username); else blackName" class="profile-link" [href]="profileUrl(game.provider, game.black?.username)" target="_blank" rel="noreferrer">{{ playerLabel(game.black) }}</a>
                     <ng-template #blackName>{{ playerLabel(game.black) }}</ng-template>
-                  </p>
-                  <p class="games-muted">
-                    Opponent:
-                    <a *ngIf="profileUrl(game.provider, game.opponentUsername); else opponentName" class="profile-link muted-profile" [href]="profileUrl(game.provider, game.opponentUsername)" target="_blank" rel="noreferrer">{{ game.opponentUsername }}</a>
-                    <ng-template #opponentName>{{ game.opponentUsername || 'Unknown' }}</ng-template>
                   </p>
                 </td>
                 <td>
@@ -320,16 +315,29 @@ interface GameFilters {
                 </td>
                 <td>
                   <div class="games-row-actions">
-                    <a class="games-link-button game-replay-button" [routerLink]="['/games', game.id]">Replay</a>
-                    <button *ngIf="game.analysis?.status === 'COMPLETED'; else analyseAction" type="button" class="secondary analysed-action" disabled>
-                      Analysed
+                    <button *ngIf="game.analysis?.status === 'COMPLETED'; else analyseAction" type="button" class="secondary analysed-action" disabled aria-label="Analysis complete">
+                      Done
                     </button>
                     <ng-template #analyseAction>
-                      <button type="button" (click)="analyse(game)" [disabled]="analysingGameId === game.id || game.analysis?.status === 'RUNNING'">
+                      <button type="button" class="games-primary-action" (click)="analyse(game)" [disabled]="analysingGameId === game.id || game.analysis?.status === 'RUNNING'">
                         {{ analysingGameId === game.id || game.analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
                       </button>
                     </ng-template>
-                    <a *ngIf="game.providerUrl" class="games-link-button" [href]="game.providerUrl" target="_blank" rel="noreferrer">Open</a>
+                    <details *ngIf="game.providerUrl" class="games-action-menu">
+                      <summary aria-label="More actions">•••</summary>
+                      <div class="games-action-menu-panel">
+                        <button
+                          *ngIf="canForceReanalyse(game)"
+                          type="button"
+                          class="games-action-menu-item games-action-menu-item-button"
+                          (click)="forceReanalyse(game)"
+                          [disabled]="analysingGameId === game.id"
+                        >
+                          {{ analysingGameId === game.id ? 'Re-analysing...' : 'Force re-analysis' }}
+                        </button>
+                        <a *ngIf="game.providerUrl" class="games-action-menu-item" [href]="game.providerUrl" target="_blank" rel="noreferrer">Open on {{ providerLabel(game.provider) }}</a>
+                      </div>
+                    </details>
                   </div>
                 </td>
               </tr>
@@ -370,6 +378,8 @@ interface GameFilters {
       .game-detail-link:hover { background: var(--accent-soft); }
       .game-detail-link:hover .game-main { color: var(--accent-strong); }
       .game-main { margin: 0; font-weight: 800; color: var(--text); line-height: 1.3; }
+      .players-line { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0.45rem; }
+      .players-separator { margin-top: 0; font-weight: 700; }
       .profile-link { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(35,27,21,0.22); }
       .profile-link:hover { color: var(--accent-strong); border-color: var(--accent-strong); }
       .muted-profile { color: var(--muted); }
@@ -381,12 +391,21 @@ interface GameFilters {
       .result-draw { background: var(--warning-soft); color: var(--warning); }
       .result-loss { background: var(--danger-soft); color: var(--danger); }
       .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
-      .games-actions-heading { width: 240px; }
-      .games-row-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-      .games-row-actions button { padding: 0.65rem 0.85rem; }
+      .games-actions-heading { width: 172px; }
+      .games-row-actions { display: flex; gap: 0.45rem; align-items: center; justify-content: flex-start; }
+      .games-row-actions button { padding: 0.6rem 0.8rem; }
+      .games-primary-action { min-width: 88px; }
       .analysed-action { color: var(--success); opacity: 0.82; }
       .games-link-button { display: inline-flex; align-items: center; min-height: 38px; border-radius: 999px; padding: 0 0.85rem; text-decoration: none; background: rgba(35, 27, 21, 0.08); color: var(--text); font-weight: 800; }
       .game-replay-button { background: var(--accent-soft); color: var(--accent-strong); }
+      .games-action-menu { position: relative; }
+      .games-action-menu summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255, 252, 247, 0.92); color: var(--muted-strong); cursor: pointer; font-weight: 900; letter-spacing: 0.12em; }
+      .games-action-menu summary::-webkit-details-marker { display: none; }
+      .games-action-menu[open] summary { background: var(--accent-soft); color: var(--accent-strong); border-color: rgba(190, 126, 59, 0.35); }
+      .games-action-menu-panel { position: absolute; right: 0; top: calc(100% + 0.4rem); z-index: 3; display: grid; min-width: 170px; padding: 0.45rem; border-radius: 18px; border: 1px solid var(--border); background: rgba(255, 252, 247, 0.98); box-shadow: 0 18px 34px rgba(35, 27, 21, 0.12); }
+      .games-action-menu-item { display: block; border-radius: 12px; padding: 0.7rem 0.8rem; color: var(--text); text-decoration: none; font-weight: 700; }
+      .games-action-menu-item-button { width: 100%; border: 0; background: transparent; text-align: left; }
+      .games-action-menu-item:hover { background: rgba(35, 27, 21, 0.06); color: var(--accent-strong); }
       .games-pagination { display: flex; justify-content: center; padding-top: 0.25rem; }
       .games-empty { border: 1px dashed var(--border-strong); border-radius: 24px; padding: 1.4rem; color: var(--muted); }
       .status-error { color: var(--danger); font-weight: 800; }
@@ -452,9 +471,21 @@ export class GamesExplorerPageComponent implements OnInit {
   }
 
   analyse(game: ImportedGameListItem) {
+    this.runAnalysis(game);
+  }
+
+  forceReanalyse(game: ImportedGameListItem) {
+    this.runAnalysis(game, true);
+  }
+
+  canForceReanalyse(game: ImportedGameListItem): boolean {
+    return game.analysis?.status === 'RUNNING' || game.analysis?.status === 'FAILED' || game.analysis?.status === 'COMPLETED';
+  }
+
+  runAnalysis(game: ImportedGameListItem, force = false) {
     this.analysingGameId = game.id;
     this.error = null;
-    this.api.post<ImportedGameAnalysisSummary>(`/imported-games/${game.id}/analysis-runs`, {}).subscribe({
+    this.api.post<ImportedGameAnalysisSummary>(`/imported-games/${game.id}/analysis-runs`, force ? { force: true } : {}).subscribe({
       next: () => {
         this.analysingGameId = null;
         this.refresh();
