@@ -93,7 +93,6 @@ interface GameFilters {
   resultForUser: '' | ResultForUser;
   userColor: '' | UserColor;
   speedCategory: string;
-  variant: string;
   rated: '' | 'true' | 'false';
   timeControl: string;
   opponent: string;
@@ -176,9 +175,9 @@ interface GameFilters {
           </label>
 
           <label class="games-field">
-            <span>Speed</span>
+            <span>Control</span>
             <select [(ngModel)]="filters.speedCategory" (ngModelChange)="refresh()">
-              <option value="">Any speed</option>
+              <option value="">Any control</option>
               <option value="bullet">Bullet</option>
               <option value="blitz">Blitz</option>
               <option value="rapid">Rapid</option>
@@ -197,14 +196,6 @@ interface GameFilters {
           </label>
 
           <label class="games-field">
-            <span>Variant</span>
-            <select [(ngModel)]="filters.variant" (ngModelChange)="refresh()">
-              <option value="">Any variant</option>
-              <option *ngFor="let variant of facets.variants || []" [value]="facetKey(variant)">{{ facetLabel(variant) }}</option>
-            </select>
-          </label>
-
-          <label class="games-field">
             <span>Analysis</span>
             <select [(ngModel)]="filters.analysisStatus" (ngModelChange)="refresh()">
               <option value="">Any status</option>
@@ -217,7 +208,7 @@ interface GameFilters {
 
           <label class="games-field">
             <span>Time control</span>
-            <input [(ngModel)]="filters.timeControl" (keyup.enter)="refresh()" placeholder="e.g. 300+0" />
+            <input [(ngModel)]="filters.timeControl" (keyup.enter)="refresh()" placeholder="e.g. 10+5" />
           </label>
 
           <label class="games-field">
@@ -270,7 +261,7 @@ interface GameFilters {
         <p *ngIf="loading && filteredGames().length === 0" class="status-note">Loading imported games...</p>
 
         <div *ngIf="!loading && !error && filteredGames().length === 0" class="empty-state games-empty">
-          No imported games match these filters. Try widening provider, speed, or analysis filters.
+          No imported games match these filters. Try widening provider, control, or analysis filters.
         </div>
 
         <div class="games-table-wrap" *ngIf="filteredGames().length > 0">
@@ -280,10 +271,9 @@ interface GameFilters {
                 <th>Game</th>
                 <th>Result</th>
                 <th>Players</th>
-                <th>Speed</th>
+                <th>Control</th>
                 <th>Opening</th>
                 <th>Accuracy</th>
-                <th>Analysis</th>
                 <th class="games-actions-heading">Actions</th>
               </tr>
             </thead>
@@ -294,7 +284,7 @@ interface GameFilters {
                     <span class="provider-pill" [ngClass]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
                     <div>
                       <p class="game-main">{{ gameDateLabel(game) }}</p>
-                      <p class="games-muted">{{ game.timeControl?.raw || timeControlLabel(game) }} · {{ game.rated === true ? 'Rated' : game.rated === false ? 'Casual' : 'Rating unknown' }}</p>
+                      <p class="games-muted">{{ displayTimeControl(game) }} · {{ game.rated === true ? 'Rated' : game.rated === false ? 'Casual' : 'Rating unknown' }}</p>
                     </div>
                   </a>
                 </td>
@@ -303,12 +293,22 @@ interface GameFilters {
                   <p class="games-muted">{{ colorLabel(game.userColor) }}</p>
                 </td>
                 <td>
-                  <p class="game-main">{{ playerLabel(game.white) }} <span class="games-muted">vs</span> {{ playerLabel(game.black) }}</p>
-                  <p class="games-muted">Opponent: {{ game.opponentUsername || 'Unknown' }}</p>
+                  <p class="game-main">
+                    <a *ngIf="profileUrl(game.provider, game.white?.username); else whiteName" class="profile-link" [href]="profileUrl(game.provider, game.white?.username)" target="_blank" rel="noreferrer">{{ playerLabel(game.white) }}</a>
+                    <ng-template #whiteName>{{ playerLabel(game.white) }}</ng-template>
+                    <span class="games-muted">vs</span>
+                    <a *ngIf="profileUrl(game.provider, game.black?.username); else blackName" class="profile-link" [href]="profileUrl(game.provider, game.black?.username)" target="_blank" rel="noreferrer">{{ playerLabel(game.black) }}</a>
+                    <ng-template #blackName>{{ playerLabel(game.black) }}</ng-template>
+                  </p>
+                  <p class="games-muted">
+                    Opponent:
+                    <a *ngIf="profileUrl(game.provider, game.opponentUsername); else opponentName" class="profile-link muted-profile" [href]="profileUrl(game.provider, game.opponentUsername)" target="_blank" rel="noreferrer">{{ game.opponentUsername }}</a>
+                    <ng-template #opponentName>{{ game.opponentUsername || 'Unknown' }}</ng-template>
+                  </p>
                 </td>
                 <td>
-                  <p class="game-main">{{ speedLabel(game.speedCategory) }}</p>
-                  <p class="games-muted">{{ game.variant || 'standard' }}</p>
+                  <p class="game-main">{{ timeClassLabel(game.speedCategory) }}</p>
+                  <p class="games-muted">{{ displayTimeControl(game) }}</p>
                 </td>
                 <td>
                   <p class="game-main">{{ game.opening?.eco || '—' }}</p>
@@ -317,10 +317,6 @@ interface GameFilters {
                 <td>
                   <p class="game-main">{{ accuracyLabel(game.analysis?.userAccuracy) }}</p>
                   <p class="games-muted">W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} · B {{ accuracyLabel(game.analysis?.blackAccuracy) }}</p>
-                </td>
-                <td>
-                  <span class="analysis-pill" [ngClass]="analysisClass(game.analysis?.status)">{{ analysisLabel(game.analysis?.status) }}</span>
-                  <p class="games-muted">{{ analysisMeta(game.analysis) }}</p>
                 </td>
                 <td>
                   <div class="games-row-actions">
@@ -366,7 +362,7 @@ interface GameFilters {
       .games-section-title { margin: 0; font-size: 1.35rem; letter-spacing: -0.03em; }
       .games-muted { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.35; }
       .games-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 24px; background: rgba(255, 252, 247, 0.72); }
-      .games-table { width: 100%; min-width: 1180px; border-collapse: collapse; }
+      .games-table { width: 100%; min-width: 1080px; border-collapse: collapse; }
       .games-table th { text-align: left; padding: 0.85rem 0.9rem; color: var(--muted-strong); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(35, 27, 21, 0.05); }
       .games-table td { padding: 0.95rem 0.9rem; border-top: 1px solid var(--border); vertical-align: top; }
       .game-title-cell { display: flex; gap: 0.7rem; align-items: flex-start; }
@@ -374,14 +370,17 @@ interface GameFilters {
       .game-detail-link:hover { background: var(--accent-soft); }
       .game-detail-link:hover .game-main { color: var(--accent-strong); }
       .game-main { margin: 0; font-weight: 800; color: var(--text); line-height: 1.3; }
+      .profile-link { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(35,27,21,0.22); }
+      .profile-link:hover { color: var(--accent-strong); border-color: var(--accent-strong); }
+      .muted-profile { color: var(--muted); }
       .opening-name { max-width: 220px; }
-      .provider-pill, .result-pill, .analysis-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
+      .provider-pill, .result-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
       .provider-lichess { background: rgba(35, 27, 21, 0.08); color: var(--text); }
       .provider-chess-com { background: var(--success-soft); color: var(--success); }
-      .result-win, .analysis-completed { background: var(--success-soft); color: var(--success); }
-      .result-draw, .analysis-running { background: var(--warning-soft); color: var(--warning); }
-      .result-loss, .analysis-failed { background: var(--danger-soft); color: var(--danger); }
-      .result-unknown, .analysis-not-analysed { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
+      .result-win { background: var(--success-soft); color: var(--success); }
+      .result-draw { background: var(--warning-soft); color: var(--warning); }
+      .result-loss { background: var(--danger-soft); color: var(--danger); }
+      .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
       .games-actions-heading { width: 240px; }
       .games-row-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
       .games-row-actions button { padding: 0.65rem 0.85rem; }
@@ -483,7 +482,6 @@ export class GamesExplorerPageComponent implements OnInit {
     if (this.filters.resultForUser) params.set('resultForUser', this.filters.resultForUser);
     if (this.filters.userColor) params.set('userColor', this.filters.userColor);
     if (this.filters.speedCategory) params.set('speedCategory', this.filters.speedCategory);
-    if (this.filters.variant) params.set('variant', this.filters.variant);
     if (this.filters.rated) params.set('rated', this.filters.rated);
     if (this.filters.opponent.trim()) params.set('opponent', this.filters.opponent.trim());
     if (this.filters.openingName.trim()) params.set('openingName', this.filters.openingName.trim());
@@ -510,7 +508,6 @@ export class GamesExplorerPageComponent implements OnInit {
       resultForUser: '',
       userColor: '',
       speedCategory: '',
-      variant: '',
       rated: '',
       timeControl: '',
       opponent: '',
@@ -529,11 +526,15 @@ export class GamesExplorerPageComponent implements OnInit {
   }
 
   filteredGames(): ImportedGameListItem[] {
-    const timeControl = this.filters.timeControl.trim().toLowerCase();
+    const timeControl = this.normalizedTimeControlSearch(this.filters.timeControl);
     if (!timeControl) return this.games;
     return this.games.filter((game) => {
-      const raw = (game.timeControl?.raw || this.timeControlLabel(game)).toLowerCase();
-      return raw.includes(timeControl);
+      const labels = [
+        this.displayTimeControl(game),
+        game.timeControl?.raw || '',
+        this.timeControlFromRaw(game.timeControl?.raw),
+      ];
+      return labels.some((label) => this.normalizedTimeControlSearch(label).includes(timeControl));
     });
   }
 
@@ -582,6 +583,14 @@ export class GamesExplorerPageComponent implements OnInit {
     return provider === 'CHESS_COM' ? 'provider-chess-com' : 'provider-lichess';
   }
 
+  profileUrl(provider?: Provider | null, username?: string | null): string | null {
+    if (!provider || !username) return null;
+    const encoded = encodeURIComponent(username);
+    if (provider === 'LICHESS') return `https://lichess.org/@/${encoded}`;
+    if (provider === 'CHESS_COM') return `https://www.chess.com/member/${encoded}`;
+    return null;
+  }
+
   resultLabel(result?: ResultForUser | null): string {
     if (result === 'WIN') return 'Win';
     if (result === 'DRAW') return 'Draw';
@@ -596,52 +605,61 @@ export class GamesExplorerPageComponent implements OnInit {
     return 'result-unknown';
   }
 
-  analysisLabel(status?: AnalysisStatus | null): string {
-    if (status === 'COMPLETED') return 'Completed';
-    if (status === 'RUNNING') return 'Running';
-    if (status === 'FAILED') return 'Failed';
-    return 'Not analysed';
-  }
-
-  analysisClass(status?: AnalysisStatus | null): string {
-    if (status === 'COMPLETED') return 'analysis-completed';
-    if (status === 'RUNNING') return 'analysis-running';
-    if (status === 'FAILED') return 'analysis-failed';
-    return 'analysis-not-analysed';
-  }
-
-  analysisMeta(analysis?: ImportedGameAnalysisSummary | null): string {
-    if (!analysis || analysis.status === 'NOT_ANALYZED') return 'Ready to analyse';
-    if (analysis.status === 'RUNNING') return 'Analysis in progress';
-    if (analysis.status === 'FAILED') return 'Try analysing again';
-    return 'Analysis saved';
-  }
-
   playerLabel(player?: ImportedGamePlayer | null): string {
     if (!player) return 'Unknown';
     return `${player.username || 'Unknown'}${player.rating ? ` (${player.rating})` : ''}`;
   }
 
   colorLabel(color?: UserColor | null): string {
-    if (color === 'WHITE') return 'You had White';
-    if (color === 'BLACK') return 'You had Black';
-    return 'Colour unknown';
+    if (color === 'WHITE') return 'White';
+    if (color === 'BLACK') return 'Black';
+    return '—';
   }
 
-  speedLabel(speed?: string | null): string {
+  timeClassLabel(speed?: string | null): string {
     return speed ? speed.charAt(0).toUpperCase() + speed.slice(1) : 'Unknown';
   }
 
   gameDateLabel(game: ImportedGameListItem): string {
-    if (!game.endedAt) return `Game #${game.id}`;
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(game.endedAt));
+    if (!game.endedAt) return `#${game.id}`;
+    return this.shortDate(game.endedAt);
   }
 
-  timeControlLabel(game: ImportedGameListItem): string {
-    const initial = game.timeControl?.initial;
-    const increment = game.timeControl?.increment;
-    if (typeof initial === 'number' && typeof increment === 'number') return `${initial}+${increment}`;
-    return 'Time control unknown';
+  shortDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
+  }
+
+  displayTimeControl(game: ImportedGameListItem): string {
+    const fromParts = this.formatTimeControl(game.timeControl?.initial, game.timeControl?.increment);
+    if (fromParts) return fromParts;
+    return this.timeControlFromRaw(game.timeControl?.raw) || '—';
+  }
+
+  timeControlFromRaw(raw?: string | null): string {
+    if (!raw) return '';
+    const match = raw.match(/^(\d+)\s*\+\s*(\d+)$/);
+    if (!match) return raw;
+    return this.formatTimeControl(Number(match[1]), Number(match[2])) || raw;
+  }
+
+  formatTimeControl(initial?: number | null, increment?: number | null): string | null {
+    if (typeof initial !== 'number' || typeof increment !== 'number') return null;
+    return `${this.formatInitialMinutes(initial)}+${increment}`;
+  }
+
+  formatInitialMinutes(initialSeconds: number): string {
+    if (initialSeconds < 60) return `${initialSeconds}s`;
+    const minutes = initialSeconds / 60;
+    return Number.isInteger(minutes) ? String(minutes) : String(Number(minutes.toFixed(1)));
+  }
+
+  normalizedTimeControlSearch(value?: string | null): string {
+    return (value || '').toLowerCase().replace(/\s+/g, '').replace(/\+0$/, '+0');
   }
 
   accuracyLabel(value?: number | null): string {
