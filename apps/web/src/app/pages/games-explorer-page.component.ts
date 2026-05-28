@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
@@ -107,7 +108,7 @@ interface GameFilters {
 @Component({
   selector: 'app-games-explorer-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <section class="games-page stack">
       <section class="section-card games-hero">
@@ -289,13 +290,13 @@ interface GameFilters {
             <tbody>
               <tr *ngFor="let game of filteredGames()">
                 <td>
-                  <div class="game-title-cell">
+                  <a class="game-title-cell game-detail-link" [routerLink]="['/games', game.id]" aria-label="Open imported game replay">
                     <span class="provider-pill" [ngClass]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
                     <div>
                       <p class="game-main">{{ gameDateLabel(game) }}</p>
                       <p class="games-muted">{{ game.timeControl?.raw || timeControlLabel(game) }} · {{ game.rated === true ? 'Rated' : game.rated === false ? 'Casual' : 'Rating unknown' }}</p>
                     </div>
-                  </div>
+                  </a>
                 </td>
                 <td>
                   <span class="result-pill" [ngClass]="resultClass(game.resultForUser)">{{ resultLabel(game.resultForUser) }}</span>
@@ -323,6 +324,7 @@ interface GameFilters {
                 </td>
                 <td>
                   <div class="games-row-actions">
+                    <a class="games-link-button game-replay-button" [routerLink]="['/games', game.id]">Replay</a>
                     <button *ngIf="game.analysis?.status === 'COMPLETED'; else analyseAction" type="button" class="secondary analysed-action" disabled>
                       Analysed
                     </button>
@@ -368,6 +370,9 @@ interface GameFilters {
       .games-table th { text-align: left; padding: 0.85rem 0.9rem; color: var(--muted-strong); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(35, 27, 21, 0.05); }
       .games-table td { padding: 0.95rem 0.9rem; border-top: 1px solid var(--border); vertical-align: top; }
       .game-title-cell { display: flex; gap: 0.7rem; align-items: flex-start; }
+      .game-detail-link { text-decoration: none; border-radius: 18px; padding: 0.25rem; margin: -0.25rem; transition: background 140ms ease, color 140ms ease; }
+      .game-detail-link:hover { background: var(--accent-soft); }
+      .game-detail-link:hover .game-main { color: var(--accent-strong); }
       .game-main { margin: 0; font-weight: 800; color: var(--text); line-height: 1.3; }
       .opening-name { max-width: 220px; }
       .provider-pill, .result-pill, .analysis-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
@@ -377,11 +382,12 @@ interface GameFilters {
       .result-draw, .analysis-running { background: var(--warning-soft); color: var(--warning); }
       .result-loss, .analysis-failed { background: var(--danger-soft); color: var(--danger); }
       .result-unknown, .analysis-not-analysed { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
-      .games-actions-heading { width: 170px; }
+      .games-actions-heading { width: 240px; }
       .games-row-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
       .games-row-actions button { padding: 0.65rem 0.85rem; }
       .analysed-action { color: var(--success); opacity: 0.82; }
       .games-link-button { display: inline-flex; align-items: center; min-height: 38px; border-radius: 999px; padding: 0 0.85rem; text-decoration: none; background: rgba(35, 27, 21, 0.08); color: var(--text); font-weight: 800; }
+      .game-replay-button { background: var(--accent-soft); color: var(--accent-strong); }
       .games-pagination { display: flex; justify-content: center; padding-top: 0.25rem; }
       .games-empty { border: 1px dashed var(--border-strong); border-radius: 24px; padding: 1.4rem; color: var(--muted); }
       .status-error { color: var(--danger); font-weight: 800; }
