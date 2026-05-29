@@ -23,6 +23,20 @@ export async function getImportedGameForPlyIndex(importedGameId: number): Promis
   });
 }
 
+export async function clearPlyRowsForGame(importedGameId: number) {
+  return prisma.$transaction(async (tx) => {
+    await tx.importedGamePly.deleteMany({ where: { importedGameId } });
+    return tx.importedGame.update({
+      where: { id: importedGameId },
+      data: {
+        plyIndexedAt: null,
+        plyIndexError: null,
+      },
+      select: { id: true },
+    });
+  });
+}
+
 export async function replacePlyRowsForGame(importedGameId: number, rows: ImportedGamePlyCreateInput[]) {
   return prisma.$transaction(async (tx) => {
     await tx.importedGamePly.deleteMany({ where: { importedGameId } });
