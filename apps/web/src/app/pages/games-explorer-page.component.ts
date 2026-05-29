@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
@@ -116,6 +116,7 @@ interface GameFilters {
   analysisStatus: '' | AnalysisStatus;
   minAccuracy: string;
   maxAccuracy: string;
+  minOpponentRating: string;
   from: string;
   to: string;
 }
@@ -195,6 +196,7 @@ interface GameFilters {
             <select [(ngModel)]="filters.speedCategory" (ngModelChange)="refresh()">
               <option value="">Any control</option>
               <option value="bullet">Bullet</option>
+              <option value="blitz,rapid">Blitz + rapid</option>
               <option value="blitz">Blitz</option>
               <option value="rapid">Rapid</option>
               <option value="classical">Classical</option>
@@ -248,6 +250,11 @@ interface GameFilters {
           </label>
 
           <label class="games-field compact">
+            <span>Opp. rating &gt;</span>
+            <input [(ngModel)]="filters.minOpponentRating" (keyup.enter)="refresh()" inputmode="numeric" placeholder="1200" />
+          </label>
+
+          <label class="games-field compact">
             <span>From</span>
             <input type="date" [(ngModel)]="filters.from" (ngModelChange)="refresh()" />
           </label>
@@ -290,7 +297,7 @@ interface GameFilters {
                 <th>Control</th>
                 <th>Opening</th>
                 <th>Accuracy</th>
-                <th>Ply analysis</th>
+                <th aria-label="Status"></th>
                 <th class="games-actions-heading">Actions</th>
               </tr>
             </thead>
@@ -331,44 +338,53 @@ interface GameFilters {
                   <p class="games-muted">W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} · B {{ accuracyLabel(game.analysis?.blackAccuracy) }}</p>
                 </td>
                 <td>
-                  <span class="ply-status-pill" [ngClass]="plyIndexClass(game)">{{ plyIndexLabel(game) }}</span>
-                  <p *ngIf="plyIndexDateLabel(game)" class="games-muted">{{ plyIndexDateLabel(game) }}</p>
-                  <p *ngIf="game.plyIndex?.error" class="games-muted ply-index-error" [title]="game.plyIndex.error">{{ game.plyIndex.error }}</p>
+                  <p class="game-main">{{ analysisStatusLabel(game) }}</p>
+                  <p class="games-muted games-status-secondary">{{ plyIndexStatusLabel(game) }}</p>
                 </td>
                 <td>
                   <div class="games-row-actions">
-                    <button
-                      *ngIf="game.plyIndex?.status !== 'INDEXED'"
-                      type="button"
-                      class="secondary games-ply-action"
-                      (click)="indexPlies(game)"
-                      [disabled]="indexingPlyGameId === game.id"
-                    >
-                      {{ indexingPlyGameId === game.id ? 'Indexing...' : plyIndexActionLabel(game) }}
-                    </button>
-                    <button *ngIf="game.analysis?.status === 'COMPLETED'; else analyseAction" type="button" class="secondary analysed-action" disabled aria-label="Analysis complete">
-                      Done
-                    </button>
-                    <ng-template #analyseAction>
-                      <button type="button" class="games-primary-action" (click)="analyse(game)" [disabled]="analysingGameId === game.id || game.analysis?.status === 'RUNNING'">
-                        {{ analysingGameId === game.id || game.analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
+                    <div class="games-action-menu">
+                      <button
+                        type="button"
+                        class="games-action-menu-trigger"
+                        aria-label="More actions"
+                        [attr.aria-expanded]="isActionMenuOpen(game.id)"
+                        (click)="toggleActionMenu(game.id, $event)"
+                      >
+                        •••
                       </button>
-                    </ng-template>
-                    <details *ngIf="game.providerUrl" class="games-action-menu">
-                      <summary aria-label="More actions">•••</summary>
-                      <div class="games-action-menu-panel">
+                      <div *ngIf="isActionMenuOpen(game.id)" class="games-action-menu-panel">
                         <button
-                          *ngIf="canForceReanalyse(game)"
+                          *ngIf="!canForceReanalyse(game); else reanalyseAction"
                           type="button"
                           class="games-action-menu-item games-action-menu-item-button"
-                          (click)="forceReanalyse(game)"
-                          [disabled]="analysingGameId === game.id"
+                          (click)="analyse(game)"
+                          [disabled]="analysingGameId === game.id || game.analysis?.status === 'RUNNING'"
                         >
-                          {{ analysingGameId === game.id ? 'Re-analysing...' : 'Force re-analysis' }}
+                          {{ analysingGameId === game.id || game.analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
                         </button>
-                        <a *ngIf="game.providerUrl" class="games-action-menu-item" [href]="game.providerUrl" target="_blank" rel="noreferrer">Open on {{ providerLabel(game.provider) }}</a>
+                        <ng-template #reanalyseAction>
+                          <button
+                            type="button"
+                            class="games-action-menu-item games-action-menu-item-button"
+                            (click)="forceReanalyse(game)"
+                            [disabled]="analysingGameId === game.id"
+                          >
+                            {{ analysingGameId === game.id ? 'Re-analysing...' : 'Force re-analysis' }}
+                          </button>
+                        </ng-template>
+                        <button
+                          *ngIf="game.plyIndex?.status !== 'INDEXED'"
+                          type="button"
+                          class="games-action-menu-item games-action-menu-item-button"
+                          (click)="indexPlies(game)"
+                          [disabled]="indexingPlyGameId === game.id"
+                        >
+                          {{ indexingPlyGameId === game.id ? 'Indexing...' : plyIndexActionLabel(game) }}
+                        </button>
+                        <a *ngIf="game.providerUrl" class="games-action-menu-item" [href]="game.providerUrl" target="_blank" rel="noreferrer" (click)="closeActionMenu()">Open on {{ providerLabel(game.provider) }}</a>
                       </div>
-                    </details>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -422,19 +438,14 @@ interface GameFilters {
       .result-draw { background: var(--warning-soft); color: var(--warning); }
       .result-loss, .ply-failed { background: var(--danger-soft); color: var(--danger); }
       .result-unknown, .ply-not-indexed { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
-      .ply-index-error { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--danger); }
+      .games-status-secondary { margin-top: 0.15rem; }
       .games-actions-heading { width: 240px; }
-      .games-row-actions { display: flex; gap: 0.45rem; align-items: center; justify-content: flex-start; flex-wrap: wrap; }
-      .games-row-actions button { padding: 0.6rem 0.8rem; }
-      .games-primary-action { min-width: 88px; }
-      .games-ply-action { min-width: 112px; }
-      .analysed-action { color: var(--success); opacity: 0.82; }
+      .games-row-actions { display: flex; gap: 0.45rem; align-items: center; justify-content: flex-end; }
       .games-link-button { display: inline-flex; align-items: center; min-height: 38px; border-radius: 999px; padding: 0 0.85rem; text-decoration: none; background: rgba(35, 27, 21, 0.08); color: var(--text); font-weight: 800; }
       .game-replay-button { background: var(--accent-soft); color: var(--accent-strong); }
       .games-action-menu { position: relative; }
-      .games-action-menu summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255, 252, 247, 0.92); color: var(--muted-strong); cursor: pointer; font-weight: 900; letter-spacing: 0.12em; }
-      .games-action-menu summary::-webkit-details-marker { display: none; }
-      .games-action-menu[open] summary { background: var(--accent-soft); color: var(--accent-strong); border-color: rgba(190, 126, 59, 0.35); }
+      .games-action-menu-trigger { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255, 252, 247, 0.92); color: var(--muted-strong); cursor: pointer; font-weight: 900; letter-spacing: 0.12em; padding: 0; }
+      .games-action-menu-trigger[aria-expanded='true'] { background: var(--accent-soft); color: var(--accent-strong); border-color: rgba(190, 126, 59, 0.35); }
       .games-action-menu-panel { position: absolute; right: 0; top: calc(100% + 0.4rem); z-index: 3; display: grid; min-width: 170px; padding: 0.45rem; border-radius: 18px; border: 1px solid var(--border); background: rgba(255, 252, 247, 0.98); box-shadow: 0 18px 34px rgba(35, 27, 21, 0.12); }
       .games-action-menu-item { display: block; border-radius: 12px; padding: 0.7rem 0.8rem; color: var(--text); text-decoration: none; font-weight: 700; }
       .games-action-menu-item-button { width: 100%; border: 0; background: transparent; text-align: left; }
@@ -455,6 +466,7 @@ export class GamesExplorerPageComponent implements OnInit {
   error: string | null = null;
   analysingGameId: number | null = null;
   indexingPlyGameId: number | null = null;
+  activeActionMenuGameId: number | null = null;
   pageInfo: ImportedGameSearchResponse['pageInfo'] = { nextCursor: null, hasMore: false };
 
   filters: GameFilters = this.defaultFilters();
@@ -464,6 +476,18 @@ export class GamesExplorerPageComponent implements OnInit {
   ngOnInit() {
     this.loadFacets();
     this.refresh();
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleDocumentClick(event: MouseEvent) {
+    const target = event.target;
+    if (!(target instanceof Element) || target.closest('.games-action-menu')) return;
+    this.closeActionMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  handleEscapeKey() {
+    this.closeActionMenu();
   }
 
   loadFacets() {
@@ -476,6 +500,7 @@ export class GamesExplorerPageComponent implements OnInit {
   }
 
   refresh() {
+    this.closeActionMenu();
     this.games = [];
     this.pageInfo = { nextCursor: null, hasMore: false };
     this.loadGames();
@@ -505,10 +530,12 @@ export class GamesExplorerPageComponent implements OnInit {
   }
 
   analyse(game: ImportedGameListItem) {
+    this.closeActionMenu();
     this.runAnalysis(game);
   }
 
   forceReanalyse(game: ImportedGameListItem) {
+    this.closeActionMenu();
     this.runAnalysis(game, true);
   }
 
@@ -535,6 +562,7 @@ export class GamesExplorerPageComponent implements OnInit {
   indexPlies(game: ImportedGameListItem) {
     if (game.plyIndex?.status === 'INDEXED') return;
 
+    this.closeActionMenu();
     this.indexingPlyGameId = game.id;
     this.error = null;
     const force = game.plyIndex?.status === 'FAILED';
@@ -552,8 +580,22 @@ export class GamesExplorerPageComponent implements OnInit {
   }
 
   resetFilters() {
+    this.closeActionMenu();
     this.filters = this.defaultFilters();
     this.refresh();
+  }
+
+  toggleActionMenu(gameId: number, event?: Event) {
+    event?.stopPropagation();
+    this.activeActionMenuGameId = this.activeActionMenuGameId === gameId ? null : gameId;
+  }
+
+  closeActionMenu() {
+    this.activeActionMenuGameId = null;
+  }
+
+  isActionMenuOpen(gameId: number): boolean {
+    return this.activeActionMenuGameId === gameId;
   }
 
   queryString(cursor?: string | null): string {
@@ -572,6 +614,7 @@ export class GamesExplorerPageComponent implements OnInit {
     if (this.filters.analysisStatus) params.set('analysisStatus', this.filters.analysisStatus);
     if (this.filters.minAccuracy.trim()) params.set('minAccuracy', this.filters.minAccuracy.trim());
     if (this.filters.maxAccuracy.trim()) params.set('maxAccuracy', this.filters.maxAccuracy.trim());
+    if (this.filters.minOpponentRating.trim()) params.set('minOpponentRating', this.filters.minOpponentRating.trim());
     if (this.filters.from) params.set('from', this.dayStartIso(this.filters.from));
     if (this.filters.to) params.set('to', this.dayEndIso(this.filters.to));
     return `?${params.toString()}`;
@@ -599,6 +642,7 @@ export class GamesExplorerPageComponent implements OnInit {
       analysisStatus: '',
       minAccuracy: '',
       maxAccuracy: '',
+      minOpponentRating: '',
       from: '',
       to: '',
     };
@@ -752,6 +796,18 @@ export class GamesExplorerPageComponent implements OnInit {
 
   accuracyLabel(value?: number | null): string {
     return typeof value === 'number' ? `${Math.round(value)}%` : '—';
+  }
+
+  analysisStatusLabel(game: ImportedGameListItem): string {
+    if (this.analysingGameId === game.id || game.analysis?.status === 'RUNNING') return 'Analysing...';
+    if (game.analysis?.status === 'COMPLETED') return 'Analysed';
+    return 'Not analysed';
+  }
+
+  plyIndexStatusLabel(game: ImportedGameListItem): string {
+    if (this.indexingPlyGameId === game.id) return 'Indexing...';
+    if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
+    return 'Not indexed';
   }
 
   plyIndexLabel(game: ImportedGameListItem): string {
