@@ -5,6 +5,8 @@ import { SINGLETON_USER_ID } from '../../services/currentUserService';
 export type ImportedGameForPlyIndex = {
   id: number;
   pgn: string | null;
+  openingEco: string | null;
+  openingName: string | null;
   plyIndexedAt: Date | null;
   plyIndexError: string | null;
 };
@@ -17,6 +19,8 @@ export async function getImportedGameForPlyIndex(importedGameId: number): Promis
     select: {
       id: true,
       pgn: true,
+      openingEco: true,
+      openingName: true,
       plyIndexedAt: true,
       plyIndexError: true,
     },
@@ -61,6 +65,14 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
       plyIndexedAt: game.plyIndexedAt,
       pliesIndexed: rows.length,
     };
+  });
+}
+
+export async function applyOpeningNameFallback(importedGameId: number, openingName: string) {
+  return prisma.importedGame.update({
+    where: { id: importedGameId },
+    data: { openingName },
+    select: { id: true, openingEco: true, openingName: true },
   });
 }
 
