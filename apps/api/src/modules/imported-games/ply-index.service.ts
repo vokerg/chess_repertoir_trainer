@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js';
 import { CurrentUserService } from '../../services/currentUserService';
 import {
+  clearPlyRowsForGame,
   countPlyRowsForGame,
   getImportedGameForPlyIndex,
   ImportedGamePlyCreateInput,
@@ -71,6 +72,10 @@ export const ImportedGamePlyIndexService = {
         pliesIndexed: await countPlyRowsForGame(importedGameId),
         plyIndexedAt: game.plyIndexedAt,
       };
+    }
+
+    if (options.force || game.plyIndexError) {
+      await clearPlyRowsForGame(importedGameId);
     }
 
     if (!game.pgn) {
