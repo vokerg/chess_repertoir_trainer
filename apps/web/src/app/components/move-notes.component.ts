@@ -8,7 +8,7 @@ import { ApiService } from '../services/api.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section *ngIf="node?.node?.id && node.node.id !== 0" class="move-notes-card">
+    <section *ngIf="node?.node?.id && node.node.id !== 0" class="workbench-panel move-notes-card">
       <div>
         <h3 class="workbench-panel-title">Notes</h3>
         <p class="workbench-panel-subtitle">Capture why this move belongs in the line.</p>

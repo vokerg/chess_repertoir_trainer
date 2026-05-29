@@ -82,46 +82,6 @@ interface EditableLine {
             <app-move-tree [tree]="tree" [selectedNodeId]="currentNodeId" (nodeSelected)="onSelectNode($event)"></app-move-tree>
           </section>
 
-          <section class="workbench-panel">
-            <div>
-              <h3 class="workbench-panel-title">Selected move</h3>
-              <p class="workbench-panel-subtitle">Inspect the current node before adding moves, notes, or deleting a continuation.</p>
-            </div>
-
-            <div *ngIf="selectedNode?.node?.id === 0" class="empty-state">
-              Start position. Add the first move from the board.
-            </div>
-
-            <div *ngIf="selectedNode?.node?.id !== 0" class="selected-move-grid">
-              <div class="selected-move-card">
-                <p class="library-mini-stat-label">SAN</p>
-                <strong>{{ selectedNode?.node?.moveSan || '—' }}</strong>
-              </div>
-              <div class="selected-move-card">
-                <p class="library-mini-stat-label">UCI</p>
-                <code class="selected-move-value">{{ selectedNode?.node?.moveUci || '—' }}</code>
-              </div>
-              <div class="selected-move-card">
-                <p class="library-mini-stat-label">Side</p>
-                <strong>{{ selectedNode?.node?.side || '—' }}</strong>
-              </div>
-              <div class="selected-move-card">
-                <p class="library-mini-stat-label">Role</p>
-                <strong>{{ selectedNode?.node?.isUserMove ? 'Trained move' : 'Opponent reply' }}</strong>
-              </div>
-              <div class="selected-move-card">
-                <p class="library-mini-stat-label">Children</p>
-                <strong>{{ selectedNode?.children?.length || 0 }}</strong>
-              </div>
-              <div class="selected-move-card">
-                <p class="library-mini-stat-label">Subtree</p>
-                <strong>{{ countDescendants(selectedNode) }} following</strong>
-              </div>
-            </div>
-          </section>
-
-          <app-move-notes [node]="selectedNode" (savedNode)="onNotesSaved($event)"></app-move-notes>
-
           <section class="workbench-panel engine-panel-modern">
             <div class="engine-panel-header">
               <div>
@@ -145,6 +105,8 @@ interface EditableLine {
               <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
             </div>
           </section>
+
+          <app-move-notes [node]="selectedNode" (savedNode)="onNotesSaved($event)"></app-move-notes>
 
           <section class="danger-zone">
             <h3 class="workbench-panel-title">Danger zone</h3>
