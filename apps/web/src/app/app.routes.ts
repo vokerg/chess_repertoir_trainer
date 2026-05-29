@@ -7,6 +7,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/library-browser-page.component').then((m) => m.LibraryBrowserPageComponent),
   },
   {
+    path: 'accounts',
+    loadComponent: () => import('./pages/accounts-page.component').then((m) => m.AccountsPageComponent),
+  },
+  {
     path: 'games',
     loadComponent: () => import('./pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
   },

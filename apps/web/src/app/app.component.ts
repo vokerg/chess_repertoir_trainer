@@ -19,6 +19,7 @@ import { RouterModule } from '@angular/router';
           </div>
           <nav class="app-nav" aria-label="Main navigation">
             <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill">Study</a>
+            <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill">Accounts</a>
             <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill">Games</a>
             <a routerLink="/stats" routerLinkActive="nav-pill-active" class="nav-pill">Review</a>
             <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill">Courses</a>
