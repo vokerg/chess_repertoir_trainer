@@ -46,6 +46,8 @@ export const importedGameListSelect = {
   status: true,
   openingName: true,
   openingEco: true,
+  plyIndexedAt: true,
+  plyIndexError: true,
   analysisRuns: {
     orderBy: { createdAt: 'desc' as const },
     take: 1,

@@ -8,6 +8,7 @@ type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
 type ResultForUser = 'WIN' | 'DRAW' | 'LOSS';
 type AnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+type PlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
 
 interface ImportedGamePlayer {
   username?: string | null;
@@ -25,6 +26,20 @@ interface ImportedGameAnalysisSummary {
   userAccuracy?: number | null;
   summary?: Record<string, unknown> | null;
   criticalMoveCount?: number | null;
+}
+
+interface ImportedGamePlyIndexSummary {
+  status: PlyIndexStatus;
+  indexedAt?: string | null;
+  error?: string | null;
+}
+
+interface ImportedGamePlyIndexResult {
+  importedGameId: number;
+  status: 'INDEXED' | 'ALREADY_INDEXED' | 'FAILED';
+  pliesIndexed?: number | null;
+  plyIndexedAt?: string | null;
+  error?: string;
 }
 
 interface ImportedGameListItem {
@@ -54,6 +69,7 @@ interface ImportedGameListItem {
     eco?: string | null;
     name?: string | null;
   } | null;
+  plyIndex: ImportedGamePlyIndexSummary;
   analysis: ImportedGameAnalysisSummary;
 }
 
@@ -115,7 +131,7 @@ interface GameFilters {
           <span class="eyebrow">Games explorer</span>
           <h2 class="page-heading page-heading-library">Search imported games</h2>
           <p class="page-subtitle">
-            Filter your Lichess and Chess.com archive, compare result and accuracy signals, then send any game into backend Stockfish analysis.
+            Filter your Lichess and Chess.com archive, compare result and accuracy signals, then send any game into backend Stockfish analysis or lightweight ply indexing.
           </p>
         </div>
         <div class="games-hero-stats" aria-label="Imported games summary">
@@ -128,8 +144,8 @@ interface GameFilters {
             <p class="metric-value">{{ analysedCount() }}</p>
           </div>
           <div class="metric-card games-mini-card">
-            <p class="metric-label">Avg accuracy</p>
-            <p class="metric-value">{{ averageAccuracyLabel() }}</p>
+            <p class="metric-label">Ply indexed</p>
+            <p class="metric-value">{{ plyIndexedCount() }}</p>
           </div>
         </div>
       </section>
@@ -274,6 +290,7 @@ interface GameFilters {
                 <th>Control</th>
                 <th>Opening</th>
                 <th>Accuracy</th>
+                <th>Ply analysis</th>
                 <th class="games-actions-heading">Actions</th>
               </tr>
             </thead>
@@ -314,7 +331,21 @@ interface GameFilters {
                   <p class="games-muted">W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} · B {{ accuracyLabel(game.analysis?.blackAccuracy) }}</p>
                 </td>
                 <td>
+                  <span class="ply-status-pill" [ngClass]="plyIndexClass(game)">{{ plyIndexLabel(game) }}</span>
+                  <p *ngIf="plyIndexDateLabel(game)" class="games-muted">{{ plyIndexDateLabel(game) }}</p>
+                  <p *ngIf="game.plyIndex?.error" class="games-muted ply-index-error" [title]="game.plyIndex.error">{{ game.plyIndex.error }}</p>
+                </td>
+                <td>
                   <div class="games-row-actions">
+                    <button
+                      *ngIf="game.plyIndex?.status !== 'INDEXED'"
+                      type="button"
+                      class="secondary games-ply-action"
+                      (click)="indexPlies(game)"
+                      [disabled]="indexingPlyGameId === game.id"
+                    >
+                      {{ indexingPlyGameId === game.id ? 'Indexing...' : plyIndexActionLabel(game) }}
+                    </button>
                     <button *ngIf="game.analysis?.status === 'COMPLETED'; else analyseAction" type="button" class="secondary analysed-action" disabled aria-label="Analysis complete">
                       Done
                     </button>
@@ -370,7 +401,7 @@ interface GameFilters {
       .games-section-title { margin: 0; font-size: 1.35rem; letter-spacing: -0.03em; }
       .games-muted { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.35; }
       .games-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 24px; background: rgba(255, 252, 247, 0.72); }
-      .games-table { width: 100%; min-width: 1080px; border-collapse: collapse; }
+      .games-table { width: 100%; min-width: 1220px; border-collapse: collapse; }
       .games-table th { text-align: left; padding: 0.85rem 0.9rem; color: var(--muted-strong); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(35, 27, 21, 0.05); }
       .games-table td { padding: 0.95rem 0.9rem; border-top: 1px solid var(--border); vertical-align: top; }
       .game-title-cell { display: flex; gap: 0.7rem; align-items: flex-start; }
@@ -384,17 +415,19 @@ interface GameFilters {
       .profile-link:hover { color: var(--accent-strong); border-color: var(--accent-strong); }
       .muted-profile { color: var(--muted); }
       .opening-name { max-width: 220px; }
-      .provider-pill, .result-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
+      .provider-pill, .result-pill, .ply-status-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
       .provider-lichess { background: rgba(35, 27, 21, 0.08); color: var(--text); }
       .provider-chess-com { background: var(--success-soft); color: var(--success); }
-      .result-win { background: var(--success-soft); color: var(--success); }
+      .result-win, .ply-indexed { background: var(--success-soft); color: var(--success); }
       .result-draw { background: var(--warning-soft); color: var(--warning); }
-      .result-loss { background: var(--danger-soft); color: var(--danger); }
-      .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
-      .games-actions-heading { width: 172px; }
-      .games-row-actions { display: flex; gap: 0.45rem; align-items: center; justify-content: flex-start; }
+      .result-loss, .ply-failed { background: var(--danger-soft); color: var(--danger); }
+      .result-unknown, .ply-not-indexed { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
+      .ply-index-error { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--danger); }
+      .games-actions-heading { width: 240px; }
+      .games-row-actions { display: flex; gap: 0.45rem; align-items: center; justify-content: flex-start; flex-wrap: wrap; }
       .games-row-actions button { padding: 0.6rem 0.8rem; }
       .games-primary-action { min-width: 88px; }
+      .games-ply-action { min-width: 112px; }
       .analysed-action { color: var(--success); opacity: 0.82; }
       .games-link-button { display: inline-flex; align-items: center; min-height: 38px; border-radius: 999px; padding: 0 0.85rem; text-decoration: none; background: rgba(35, 27, 21, 0.08); color: var(--text); font-weight: 800; }
       .game-replay-button { background: var(--accent-soft); color: var(--accent-strong); }
@@ -421,6 +454,7 @@ export class GamesExplorerPageComponent implements OnInit {
   loading = false;
   error: string | null = null;
   analysingGameId: number | null = null;
+  indexingPlyGameId: number | null = null;
   pageInfo: ImportedGameSearchResponse['pageInfo'] = { nextCursor: null, hasMore: false };
 
   filters: GameFilters = this.defaultFilters();
@@ -493,6 +527,25 @@ export class GamesExplorerPageComponent implements OnInit {
       error: (err) => {
         this.error = err?.error?.message || err?.error?.error || 'Could not start game analysis.';
         this.analysingGameId = null;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  indexPlies(game: ImportedGameListItem) {
+    if (game.plyIndex?.status === 'INDEXED') return;
+
+    this.indexingPlyGameId = game.id;
+    this.error = null;
+    const force = game.plyIndex?.status === 'FAILED';
+    this.api.post<ImportedGamePlyIndexResult>(`/imported-games/${game.id}/ply-index`, force ? { force: true } : {}).subscribe({
+      next: () => {
+        this.indexingPlyGameId = null;
+        this.refresh();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || err?.error?.error || 'Could not index game plies.';
+        this.indexingPlyGameId = null;
         this.cdr.detectChanges();
       },
     });
@@ -571,6 +624,10 @@ export class GamesExplorerPageComponent implements OnInit {
 
   analysedCount(): number {
     return this.filteredGames().filter((game) => game.analysis?.status === 'COMPLETED').length;
+  }
+
+  plyIndexedCount(): number {
+    return this.filteredGames().filter((game) => game.plyIndex?.status === 'INDEXED').length;
   }
 
   averageAccuracyLabel(): string {
@@ -695,5 +752,25 @@ export class GamesExplorerPageComponent implements OnInit {
 
   accuracyLabel(value?: number | null): string {
     return typeof value === 'number' ? `${Math.round(value)}%` : '—';
+  }
+
+  plyIndexLabel(game: ImportedGameListItem): string {
+    if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
+    if (game.plyIndex?.status === 'FAILED') return 'Failed';
+    return 'Not indexed';
+  }
+
+  plyIndexActionLabel(game: ImportedGameListItem): string {
+    return game.plyIndex?.status === 'FAILED' ? 'Retry ply index' : 'Index plies';
+  }
+
+  plyIndexClass(game: ImportedGameListItem): string {
+    if (game.plyIndex?.status === 'INDEXED') return 'ply-indexed';
+    if (game.plyIndex?.status === 'FAILED') return 'ply-failed';
+    return 'ply-not-indexed';
+  }
+
+  plyIndexDateLabel(game: ImportedGameListItem): string {
+    return game.plyIndex?.indexedAt ? `Indexed ${this.shortDate(game.plyIndex.indexedAt)}` : '';
   }
 }

@@ -11,6 +11,7 @@ import {
 } from './imported-games.repository.prisma';
 
 export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type ImportedGamePlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
 
 function encodeCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>) {
   const payload: ImportedGameCursor = {
@@ -44,6 +45,12 @@ function deriveAnalysisStatus(row: ImportedGameListRow | ImportedGameDetailRow):
   if (run.status === 'RUNNING') return 'RUNNING';
   if (run.status === 'COMPLETED') return 'COMPLETED';
   return 'FAILED';
+}
+
+function derivePlyIndexStatus(row: ImportedGameListRow | ImportedGameDetailRow): ImportedGamePlyIndexStatus {
+  if (row.plyIndexedAt) return 'INDEXED';
+  if (row.plyIndexError) return 'FAILED';
+  return 'NOT_INDEXED';
 }
 
 function userAccuracy(row: ImportedGameListRow | ImportedGameDetailRow) {
@@ -132,6 +139,11 @@ function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
     opening: {
       eco: row.openingEco,
       name: row.openingName,
+    },
+    plyIndex: {
+      status: derivePlyIndexStatus(row),
+      indexedAt: row.plyIndexedAt ?? null,
+      error: row.plyIndexError ?? null,
     },
     analysis: {
       status: deriveAnalysisStatus(row),
