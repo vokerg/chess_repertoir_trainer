@@ -37,6 +37,7 @@ export const importedGameSearchQuerySchema = z.object({
   openingEco: csvArray(z.string().min(1)),
   openingName: z.string().min(1).optional(),
   opponent: z.string().min(1).optional(),
+  timeControl: z.string().min(1).optional(),
   minUserRating: z.coerce.number().int().min(0).optional(),
   maxUserRating: z.coerce.number().int().min(0).optional(),
   minOpponentRating: z.coerce.number().int().min(0).optional(),
@@ -50,4 +51,9 @@ export const importedGameSearchQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
 });
 
+export const openingAnalysisQuerySchema = importedGameSearchQuerySchema.extend({
+  fen: z.string().min(1).default('startpos'),
+});
+
 export type ImportedGameSearchQuery = z.infer<typeof importedGameSearchQuerySchema>;
+export type OpeningAnalysisQuery = z.infer<typeof openingAnalysisQuerySchema>;
