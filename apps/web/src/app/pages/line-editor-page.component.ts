@@ -408,7 +408,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   }
 
   lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
-    if (line.mate !== undefined) return `M${line.mate}`;
+    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
     if (line.scoreCp === undefined) return '—';
     const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
     const pawns = whiteCp / 100;
@@ -424,7 +424,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   evalWhitePercent() {
     const displayed = this.displayedEvalLine();
     if (!displayed) return 50;
-    if (displayed.line.mate !== undefined) return displayed.line.mate > 0 ? 100 : 0;
+    if (displayed.line.mate !== undefined) return this.mateFromWhitePerspective(displayed.line.mate, displayed.fen) > 0 ? 100 : 0;
     const whiteCp = this.scoreFromWhitePerspective(displayed.line.scoreCp ?? 0, displayed.fen);
     const clamped = Math.max(-800, Math.min(800, whiteCp));
     return 50 + (clamped / 800) * 50;
@@ -437,6 +437,11 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   private scoreFromWhitePerspective(scoreCp: number, fen: string) {
     const turn = fen.split(' ')[1];
     return turn === 'b' ? -scoreCp : scoreCp;
+  }
+
+  private mateFromWhitePerspective(mate: number, fen: string) {
+    const turn = fen.split(' ')[1];
+    return turn === 'b' ? -mate : mate;
   }
 
   private displayedEvalLine() {

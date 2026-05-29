@@ -671,7 +671,7 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   }
 
   lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
-    if (line.mate !== undefined) return `M${line.mate}`;
+    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
     if (line.scoreCp === undefined) return '—';
     const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
     return this.cpLabel(whiteCp);
@@ -686,7 +686,9 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   evalWhitePercent() {
     if (!this.displayedEval) return 50;
     if (this.displayedEval.kind === 'browser') {
-      if (this.displayedEval.line.mate !== undefined) return this.displayedEval.line.mate > 0 ? 100 : 0;
+      if (this.displayedEval.line.mate !== undefined) {
+        return this.mateFromWhitePerspective(this.displayedEval.line.mate, this.displayedEval.fen) > 0 ? 100 : 0;
+      }
       const whiteCp = this.scoreFromWhitePerspective(this.displayedEval.line.scoreCp ?? 0, this.displayedEval.fen);
       return this.cpPercent(whiteCp);
     }
@@ -706,6 +708,11 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   scoreFromWhitePerspective(scoreCp: number, fen: string) {
     const turn = fen.split(' ')[1];
     return turn === 'b' ? -scoreCp : scoreCp;
+  }
+
+  mateFromWhitePerspective(mate: number, fen: string) {
+    const turn = fen.split(' ')[1];
+    return turn === 'b' ? -mate : mate;
   }
 
   selectedLabel() {
