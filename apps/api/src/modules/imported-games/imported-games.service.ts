@@ -158,7 +158,7 @@ function toDetail(row: ImportedGameDetailRow) {
 }
 
 function groupCount(row: Record<string, any>, valueKey?: string | number | symbol) {
-  const count = row._count;
+  const count = row['_count'];
   if (count && typeof count === 'object') {
     if (typeof count._all === 'number') return count._all;
     if (valueKey !== undefined && typeof count[valueKey] === 'number') return count[valueKey];

@@ -1,8 +1,16 @@
 # Chess Repertoire Trainer
 
-A local-first web app for authoring and training personal chess opening repertoires. The app is inspired by Chessable, but the focus is your own course/chapter/line hierarchy and a branching move tree rather than a flat PGN list.
+A local-first web app for authoring and training personal chess opening repertoires. The app is inspired by Chessable, but the focus is your own course/chapter/line hierarchy, a branching move tree, imported-game review, and backend Stockfish analysis rather than a flat PGN list.
 
 Repository spelling note: this GitHub repo is named `chess_repertoir_trainer`.
+
+## Live app
+
+- Web: https://chess-repertoir-trainer-web.vercel.app/
+- API docs, when the API is running: `/api/docs`
+- OpenAPI JSON, when the API is running: `/api/docs/openapi.json`
+
+The deployed web app expects a configured backend API through `WEB_API_BASE_URL` at build time. Locally, the Angular app defaults to `/api`.
 
 ## Current scope
 
@@ -17,11 +25,20 @@ This project is in stabilization/prototype stage. The intended v1 stack is:
 - Tests: Vitest
 - Package manager: npm workspaces
 
-The current priority is a reliable local authoring/training loop plus experimental imported-game workflows. Do not treat cloud sync, auth, mobile, full PGN import, or advanced spaced repetition as current v1 features.
+Current priorities:
 
-## Product model
+- Reliable repertoire authoring and training.
+- Imported game sync from Lichess and Chess.com accounts.
+- A filterable imported-games explorer.
+- One-game-at-a-time backend Stockfish analysis for imported games.
 
-The data hierarchy is:
+Do not treat auth, mobile, cloud multi-user sync, account-wide analysis queues, full PGN import, or advanced spaced repetition as current v1 features.
+
+## Product capabilities
+
+### Repertoire authoring and training
+
+The core data hierarchy is:
 
 ```text
 Course
@@ -40,6 +57,14 @@ The move tree is the core model:
 - At opponent positions, multiple branches may exist.
 
 During training, opponent branches are auto-played randomly and the trained side must play the single correct continuation.
+
+### Imported games and analysis
+
+The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A user can add multiple accounts, sync finished games from either provider, browse imported games, open a game replay/detail page, and start backend Stockfish analysis for an imported game.
+
+The Games explorer UI is available from the main `Games` navigation item and supports filtering by account, provider, result, colour, time-control class, rated/casual, opponent, opening, analysis status, accuracy range, and date range. Rows show provider, result, players, time control, opening, analysis accuracy, and actions such as Analyse, Force re-analysis, and provider-link navigation.
+
+Backend analysis stores the heavy reusable position result separately from per-game move analysis. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
 
 ## Project structure
 
@@ -109,6 +134,16 @@ DIRECT_URL="postgresql://USER:PASSWORD@YOUR-DIRECT-HOST/neondb?sslmode=require&c
 
 If you change database credentials or switch environments, restart the API dev server so it reloads the updated env file.
 
+Additional backend env knobs:
+
+```text
+PORT=3000
+CORS_ORIGIN=http://localhost:4200
+CHESS_COM_USER_AGENT="chess-repertoire-trainer/0.1 (+https://github.com/vokerg/chess_repertoir_trainer)"
+```
+
+Chess.com public API import requests should use a recognizable user agent with a project URL or contact email when deployed.
+
 Backend Stockfish analysis env knobs:
 
 ```text
@@ -124,6 +159,14 @@ STOCKFISH_HASH_MB=64
 ```
 
 `STOCKFISH_VERSION` is optional but recommended for deployed environments because it is part of the position-analysis cache identity. Keep it stable until you intentionally want new engine results.
+
+Frontend build-time API configuration:
+
+```text
+WEB_API_BASE_URL=/api
+```
+
+`apps/web` writes this into `src/app/app-config.ts` during `npm run dev` and `npm run build`.
 
 ## Database setup
 
@@ -150,7 +193,23 @@ The seed creates:
 
 The seed stores real move nodes only; it does not create a fake blank root node.
 
-## Imported games browser API
+## Main API surfaces
+
+### Current user and external accounts
+
+```http
+GET /api/me
+GET /api/me/accounts
+POST /api/me/accounts
+GET /api/me/accounts/:id
+PATCH /api/me/accounts/:id
+POST /api/me/accounts/:id/sync
+GET /api/me/accounts/:id/games
+```
+
+Accounts support `provider: "LICHESS"` and `provider: "CHESS_COM"`. Sync is currently synchronous. Lichess uses the public user games stream; Chess.com uses public monthly archives.
+
+### Imported games browser API
 
 The imported-games browser should use the dedicated search API rather than the account-scoped legacy list:
 
@@ -194,7 +253,7 @@ Optional body:
 
 This stores move facts only. It does not run Stockfish and does not build an explorer tree yet.
 
-## Backend imported-game analysis
+### Backend imported-game analysis
 
 The API can analyze one imported game at a time with server-side Stockfish:
 
@@ -232,8 +291,6 @@ Behavior:
 Frontend contract for analysis status:
 
 - The source of truth is `GameAnalysisRun`, not a boolean column on `ImportedGame`.
-- Future frontend DTOs may expose an `analysis` summary on imported-game list/detail responses, but that status should be derived from analysis runs.
-- Suggested frontend-facing status values are `NOT_ANALYZED`, `RUNNING`, `COMPLETED`, and `FAILED`.
 - A game with no analysis runs is `NOT_ANALYZED`.
 - A game with a latest `RUNNING` run is `RUNNING`.
 - A game with a latest `COMPLETED` run is `COMPLETED`.
@@ -253,6 +310,15 @@ Future opening-book and classification support:
 - Adding `BOOK`, `MISS`, or other human-facing classification changes should bump `classificationVersion` so old cached `PositionAnalysis` rows do not silently change meaning.
 
 This is a synchronous MVP endpoint. It is intended for one-game analysis and not yet for account-wide or queued batch analysis.
+
+### API documentation
+
+```http
+GET /api/docs
+GET /api/docs/openapi.json
+```
+
+Swagger UI is served by the API itself. The generated OpenAPI document combines legacy route metadata with module-level generated schemas and paths.
 
 ## Running locally
 
@@ -283,7 +349,7 @@ npm run test
 
 Current testing status:
 
-- `packages/chess-domain` contains Vitest test files, but the workspace test script is not fully wired yet.
+- `packages/chess-domain` contains Vitest test files.
 - `apps/api` and `apps/web` currently use placeholder test scripts.
 - Treat `npm test` as a lightweight repo check, not full behavioral coverage.
 
@@ -294,7 +360,19 @@ npm run build:domain
 npm run build:api
 npm run build:web
 npm run test --workspace=packages/chess-domain
+npm run lint
+npm run format
+npm run prisma:studio
 ```
+
+## Deployment notes
+
+- The web app is deployed at https://chess-repertoir-trainer-web.vercel.app/.
+- The web build writes `WEB_API_BASE_URL` into the Angular app config. Set it to the deployed API base URL for production.
+- The API is designed for a Node host such as Render.
+- Configure the deployed API with `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGIN`, `CHESS_COM_USER_AGENT`, and Stockfish-related variables.
+- `CORS_ORIGIN` should include the deployed Vercel web origin.
+- Ensure Stockfish is available to the deployed API and that `STOCKFISH_PATH` points to it.
 
 ## Current stabilization acceptance checklist
 
@@ -317,6 +395,9 @@ From a clean clone, the target is:
 15. Correct moves advance the line.
 16. Opponent moves are auto-played randomly from available branches.
 17. Data persists in PostgreSQL after restart.
+18. Adding a Lichess or Chess.com account and syncing it imports finished games.
+19. The Games explorer loads imported games and filters them through `/api/imported-games`.
+20. Starting analysis from a game row creates or reuses a `GameAnalysisRun` and exposes latest accuracy in the list.
 
 ## Migration history
 
@@ -326,9 +407,10 @@ From a clean clone, the target is:
 ## Known limitations
 
 - Active training session state is kept in API memory. Restarting the API loses active sessions.
-- Imported-game analysis is synchronous, CPU-bound, and limited to one game per request in this MVP.
+- Imported-game sync and analysis are synchronous MVP workflows, not queued background jobs.
+- Imported-game analysis is CPU-bound and limited to one game per request.
 - Imported-game search analysis filters are derived from latest run summaries at request time. If this becomes slow with large libraries, move those fields into a denormalized read model.
-- The UI is intentionally basic and needs a dedicated authoring UX pass after stabilization.
+- The UI is improving but still needs a dedicated authoring UX pass after stabilization.
 - JSON import/export exists but needs versioning and merge/deduplication before it should be trusted as a robust backup system.
 - The stats model is simple and not yet a spaced repetition scheduler.
-- Mobile, auth, cloud sync, account-wide analysis queues, and full PGN import are future work, not current scope.
+- Mobile, auth, cloud multi-user sync, account-wide analysis queues, and full PGN import are future work, not current scope.
