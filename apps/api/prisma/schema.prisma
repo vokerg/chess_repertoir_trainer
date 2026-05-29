@@ -75,15 +75,42 @@ model ImportedGame {
   status                String?
   openingName           String?
   openingEco            String?
+  plyIndexedAt          DateTime?
+  plyIndexError         String?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   analysisRuns          GameAnalysisRun[]
   moveAnalyses          GameMoveAnalysis[]
+  plies                 ImportedGamePly[]
 
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
   @@index([provider, providerGameId])
+}
+
+model ImportedGamePly {
+  id             Int          @id @default(autoincrement())
+  importedGameId Int
+  importedGame   ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+
+  plyNumber      Int
+  moveNumber     Int
+  side           String
+
+  fenBefore      String
+  normalizedFen  String
+  fenAfter       String
+
+  moveUci        String
+  moveSan        String?
+
+  createdAt      DateTime     @default(now())
+
+  @@unique([importedGameId, plyNumber])
+  @@index([importedGameId])
+  @@index([normalizedFen])
+  @@index([moveUci])
 }
 
 model ImportRun {

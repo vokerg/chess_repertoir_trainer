@@ -235,6 +235,24 @@ List and detail DTOs expose an `analysis` summary derived from the latest `GameA
 
 `GET /api/me/accounts/:id/games` remains available as an account-scoped compatibility route, but it is backed by the same imported-games search service.
 
+## Imported game ply indexing
+
+The API can parse one imported game PGN into lightweight move-by-move ply rows:
+
+```http
+POST /api/imported-games/:gameId/ply-index
+```
+
+Optional body:
+
+```json
+{
+  "force": false
+}
+```
+
+This stores move facts only. It does not run Stockfish and does not build an explorer tree yet.
+
 ### Backend imported-game analysis
 
 The API can analyze one imported game at a time with server-side Stockfish:
