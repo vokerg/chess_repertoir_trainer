@@ -3,12 +3,11 @@ import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
-import { Subscription } from 'rxjs';
 import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
-import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { EngineAnalysis } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -81,6 +80,26 @@ interface OpeningAnalysisResponse {
   games: OpeningWdl;
   nextMoves: OpeningNextMove[];
   appliedFilters: Record<string, unknown>;
+}
+
+interface BackendEngineLine {
+  multipv: number;
+  depth: number;
+  moveUci?: string;
+  scoreCpWhite?: number;
+  mateWhite?: number;
+  pvUci: string[];
+}
+
+interface BackendPositionAnalysis {
+  fen: string;
+  bestMoveUci?: string | null;
+  lines: BackendEngineLine[];
+  fromCache: boolean;
+}
+
+interface BackendPositionAnalysisResponse {
+  position: BackendPositionAnalysis;
 }
 
 interface PlayedMove {
@@ -434,14 +453,13 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   boardFlipped = false;
   currentFen = new Chess().fen();
 
-  private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
+  private engineRequestSeq = 0;
   private chess = new Chess();
 
   constructor(
     private api: ApiService,
     private cdr: ChangeDetectorRef,
-    private stockfish: StockfishAnalysisService,
   ) {}
 
   @HostListener('window:keydown', ['$event'])
@@ -460,10 +478,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
-      this.engine = analysis;
-      this.cdr.detectChanges();
-    });
     this.loadFacets();
     this.refresh();
     this.scheduleAnalysis();
@@ -471,8 +485,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
-    this.analysisSub?.unsubscribe();
-    this.stockfish.stop();
   }
 
   get wdl(): OpeningWdl {
@@ -668,7 +680,38 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
 
   rerunAnalysis() {
     if (!this.currentFen) return;
-    this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
+    const fen = this.currentFen;
+    const requestId = ++this.engineRequestSeq;
+    const keepCurrentLines = this.engine.fen === fen;
+
+    this.engine = {
+      fen,
+      running: true,
+      ready: false,
+      error: null,
+      bestMove: keepCurrentLines ? this.engine.bestMove : null,
+      lines: keepCurrentLines ? this.engine.lines : [],
+    };
+    this.cdr.detectChanges();
+
+    this.api.post<BackendPositionAnalysisResponse>('/position-analysis', { fen, depth: 12, multipv: 3 }).subscribe({
+      next: (response) => {
+        if (requestId !== this.engineRequestSeq) return;
+        this.engine = this.mapBackendPositionAnalysis(response.position, fen);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        if (requestId !== this.engineRequestSeq) return;
+        this.engine = {
+          ...this.engine,
+          fen,
+          running: false,
+          ready: false,
+          error: err?.error?.message || err?.error?.error || 'Could not load backend Stockfish analysis.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   scheduleAnalysis() {
@@ -720,6 +763,28 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     this.boardPositionVersion += 1;
     this.refresh();
     this.scheduleAnalysis();
+  }
+
+  private mapBackendPositionAnalysis(position: BackendPositionAnalysis, requestedFen: string): EngineAnalysis {
+    return {
+      fen: requestedFen,
+      running: false,
+      ready: true,
+      error: null,
+      bestMove: position.bestMoveUci ?? position.lines[0]?.moveUci ?? null,
+      lines: position.lines.map((line) => ({
+        multipv: line.multipv,
+        depth: line.depth,
+        scoreCp: this.scoreFromWhiteToSideToMove(line.scoreCpWhite, requestedFen),
+        mate: this.scoreFromWhiteToSideToMove(line.mateWhite, requestedFen),
+        pv: line.pvUci,
+      })),
+    };
+  }
+
+  private scoreFromWhiteToSideToMove(value: number | undefined, fen: string): number | undefined {
+    if (value === undefined) return undefined;
+    return fen.split(/\s+/)[1] === 'b' ? -value : value;
   }
 
 }

@@ -1,4 +1,44 @@
 export const analysisOpenApiSchemas = {
+  AnalyzePositionRequest: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
+      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
+    },
+    required: ['fen'],
+  },
+  AnalyzePositionResponse: {
+    type: 'object',
+    properties: {
+      position: { $ref: '#/components/schemas/PositionAnalysis' },
+    },
+    required: ['position'],
+  },
+  PositionAnalysis: {
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      cacheKey: { type: 'string' },
+      fromCache: { type: 'boolean' },
+      fen: { type: 'string' },
+      normalizedFen: { type: 'string' },
+      playedMoveUci: { type: 'string', nullable: true },
+      depth: { type: 'integer' },
+      multipv: { type: 'integer' },
+      engineName: { type: 'string' },
+      engineVersion: { type: 'string', nullable: true },
+      classificationVersion: { type: 'string' },
+      bestMoveUci: { type: 'string', nullable: true },
+      bestScoreCpWhite: { type: 'integer', nullable: true },
+      playedScoreCpWhite: { type: 'integer', nullable: true },
+      scoreLossCp: { type: 'integer', nullable: true },
+      classification: { type: 'string', nullable: true },
+      lines: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      playedLine: { type: 'object', nullable: true, additionalProperties: true },
+    },
+    required: ['id', 'cacheKey', 'fromCache', 'fen', 'normalizedFen', 'depth', 'multipv', 'engineName', 'classificationVersion', 'lines'],
+  },
   AnalyzeImportedGameRequest: {
     type: 'object',
     properties: {
@@ -82,6 +122,40 @@ const importedGameIdParameter = {
   in: 'path',
   required: true,
   schema: { type: 'integer' },
+};
+
+export const analyzePositionOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Analyze one board position with backend Stockfish',
+  description: 'Stores and reuses a pure position analysis row. This cached result is shared by opening analysis and imported-game analysis.',
+  requestBody: {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/AnalyzePositionRequest' },
+        examples: {
+          startPosition: {
+            value: {
+              fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+              depth: 12,
+              multipv: 3,
+            },
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    '200': {
+      description: 'Cached or newly-created position analysis',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },
+        },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
 };
 
 export const getImportedGameAnalysisOpenApiOperation = {
