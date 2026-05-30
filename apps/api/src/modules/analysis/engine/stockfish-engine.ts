@@ -116,7 +116,7 @@ export class StockfishSession {
     await session.waitFor((message) => message === 'uciok', initTimeoutMs, `Stockfish did not finish UCI init within ${initTimeoutMs}ms`);
 
     const threads = Number(process.env['STOCKFISH_THREADS'] || 1);
-    const hash = Number(process.env['STOCKFISH_HASH_MB'] || 64);
+    const hash = Number(process.env['STOCKFISH_HASH_MB'] || 16);
     if (Number.isFinite(threads) && threads > 0) child.stdin.write(`setoption name Threads value ${threads}\n`);
     if (Number.isFinite(hash) && hash > 0) child.stdin.write(`setoption name Hash value ${hash}\n`);
     child.stdin.write('isready\n');
