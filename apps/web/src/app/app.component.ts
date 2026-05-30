@@ -17,6 +17,7 @@ import { RouterModule } from '@angular/router';
             <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill">Accounts</a>
             <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill">Games</a>
             <a routerLink="/opening-analysis" routerLinkActive="nav-pill-active" class="nav-pill">Opening analysis</a>
+            <a routerLink="/lab" routerLinkActive="nav-pill-active" class="nav-pill">Lab</a>
             <a routerLink="/stats" routerLinkActive="nav-pill-active" class="nav-pill">Review</a>
             <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill">Courses</a>
           </nav>
