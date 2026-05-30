@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
+import { Subscription } from 'rxjs';
 import { ChessBoardComponent } from '../components/chess-board.component';
+import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
+import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -90,7 +93,7 @@ interface PlayedMove {
 @Component({
   selector: 'app-opening-analysis-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent, StockfishPanelComponent],
   template: `
     <section class="opening-page stack">
       <section class="section-card opening-hero">
@@ -118,12 +121,13 @@ interface PlayedMove {
       </section>
 
       <section class="section-card opening-filters" aria-label="Opening analysis filters">
-        <div class="opening-filter-heading">
-          <div>
-            <h3 class="opening-section-title">Game filters</h3>
-            <p class="opening-muted">These reuse the imported-games filters. Rated-only is always applied on top.</p>
-          </div>
-          <span class="rated-only-pill">Rated games only</span>
+        <div class="perspective-switch" role="group" aria-label="Opening analysis perspective">
+          <button type="button" class="perspective-option" [class.perspective-option-active]="filters.userColor === 'WHITE'" (click)="setPerspective('WHITE')">
+            <strong>White</strong>
+          </button>
+          <button type="button" class="perspective-option" [class.perspective-option-active]="filters.userColor === 'BLACK'" (click)="setPerspective('BLACK')">
+            <strong>Black</strong>
+          </button>
         </div>
 
         <div class="opening-filter-grid">
@@ -151,15 +155,6 @@ interface PlayedMove {
               <option value="WIN">Win</option>
               <option value="DRAW">Draw</option>
               <option value="LOSS">Loss</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Colour</span>
-            <select [(ngModel)]="filters.userColor" (ngModelChange)="refresh()">
-              <option value="">White or Black</option>
-              <option value="WHITE">White</option>
-              <option value="BLACK">Black</option>
             </select>
           </label>
 
@@ -241,17 +236,26 @@ interface PlayedMove {
           <div class="opening-panel-header">
             <div>
               <h3 class="workbench-panel-title">Board probe</h3>
-              <p class="workbench-panel-subtitle">Play legal moves to move through a position. The lookup updates after every move.</p>
+              <p class="workbench-panel-subtitle">{{ perspectiveHelpText() }}</p>
             </div>
-            <span class="side-pill">{{ analysis?.sideToMove || sideToMoveLabel() }} to move</span>
+            <div class="side-stack">
+              <span class="side-pill">{{ analysis?.sideToMove || sideToMoveLabel() }} to move</span>
+              <span class="turn-pill" [class.turn-pill-user]="isUserTurn()">{{ turnOwnerLabel() }}</span>
+            </div>
           </div>
 
           <div class="board-stage opening-board-stage">
+            <div class="eval-bar-modern" [class.eval-bar-modern-flipped]="isBlackPerspective()" title="Stockfish evaluation">
+              <div class="eval-black-modern" [style.height.%]="100 - evalWhitePercent()"></div>
+              <div class="eval-label-modern">{{ evalLabel() }}</div>
+            </div>
+
             <div class="board-shell">
               <app-chess-board
                 [fen]="currentFen"
                 [side]="boardSide()"
                 [lastMove]="lastMove"
+                [arrows]="analysisArrows()"
                 [sound]="false"
                 [positionVersion]="boardPositionVersion"
                 (move)="onBoardMove($event)"
@@ -261,8 +265,9 @@ interface PlayedMove {
 
           <div class="board-action-row">
             <button type="button" class="secondary" (click)="resetBoard()" [disabled]="history.length === 0">⏮ Start</button>
-            <button type="button" class="secondary" (click)="goBack()" [disabled]="history.length === 0">← Previous</button>
+            <button type="button" class="secondary" (click)="goBack()" [disabled]="history.length === 0" title="Left arrow">← Back</button>
             <button type="button" class="secondary" (click)="flipBoard()">Flip board</button>
+            <span class="keyboard-hint">Keyboard: ← to go back, Home for start</span>
           </div>
 
           <div class="opening-line-card">
@@ -284,10 +289,16 @@ interface PlayedMove {
             <div>
               <p class="metric-label">Position WDL</p>
               <p class="opening-wdl-line">{{ wdlLabel(wdl) }}</p>
-              <p class="opening-muted">{{ analysis?.occurrences || 0 }} indexed occurrence{{ (analysis?.occurrences || 0) === 1 ? '' : 's' }} · {{ analysis?.normalizedFen || '—' }}</p>
             </div>
-            <div class="opening-score-ring">{{ scoreLabel(wdl) }}</div>
           </div>
+
+          <section class="engine-summary-card" aria-label="Stockfish opening evaluation">
+            <app-stockfish-panel
+              [analysis]="engine"
+              [currentFen]="currentFen"
+              (analyze)="rerunAnalysis()"
+            ></app-stockfish-panel>
+          </section>
 
           <p *ngIf="loading" class="status-note">Loading opening analysis...</p>
 
@@ -305,7 +316,7 @@ interface PlayedMove {
               <span class="move-node-dot"></span>
               <span class="move-main">
                 <strong>{{ move.moveSan || move.moveUci }}</strong>
-                <small>{{ move.moveUci }} · {{ move.occurrences }} occurrence{{ move.occurrences === 1 ? '' : 's' }}</small>
+                <small>{{ move.moveUci }}</small>
               </span>
               <span class="move-wdl">
                 <span>{{ wdlLabel(move.games) }}</span>
@@ -324,10 +335,17 @@ interface PlayedMove {
       .opening-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(108px, 1fr)); gap: 0.8rem; min-width: min(430px, 100%); }
       .opening-mini-card { min-height: 112px; }
       .opening-filters { display: grid; gap: 1rem; }
-      .opening-filter-heading, .opening-panel-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
+      .opening-panel-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
       .opening-section-title { margin: 0; font-size: 1.15rem; }
       .opening-muted { margin: 0.25rem 0 0; color: var(--muted); line-height: 1.35; }
-      .rated-only-pill, .side-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.55rem 0.85rem; font-weight: 800; color: var(--accent-strong); background: var(--accent-soft); white-space: nowrap; }
+      .side-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.55rem 0.85rem; font-weight: 800; color: var(--accent-strong); background: var(--accent-soft); white-space: nowrap; }
+      .perspective-switch { display: inline-flex; width: fit-content; gap: 0.25rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem; background: rgba(35, 27, 21, 0.06); }
+      .perspective-option { min-height: 34px; border-radius: 999px; padding: 0.42rem 0.9rem; background: transparent; color: var(--muted-strong); box-shadow: none; font-size: 0.84rem; }
+      .perspective-option:hover:not(:disabled) { transform: none; background: rgba(255,255,255,0.55); }
+      .perspective-option-active { background: var(--surface-strong); color: var(--accent-strong); box-shadow: 0 6px 14px rgba(73, 48, 25, 0.08); }
+      .side-stack { display: grid; justify-items: end; gap: 0.45rem; }
+      .turn-pill { display: inline-flex; width: fit-content; align-items: center; border-radius: 999px; padding: 0.35rem 0.65rem; background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); font-size: 0.78rem; font-weight: 900; }
+      .turn-pill-user { background: var(--success-soft); color: var(--success); }
       .opening-filter-grid { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 0.75rem; }
       .opening-field { display: grid; gap: 0.35rem; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; }
       .opening-field span { text-transform: uppercase; letter-spacing: 0.06em; }
@@ -336,13 +354,18 @@ interface PlayedMove {
       .opening-filter-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
       .opening-workbench { display: grid; grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr); gap: 1rem; align-items: start; }
       .opening-board-panel, .opening-tree-panel { display: grid; gap: 1rem; }
-      .opening-board-stage { justify-content: center; }
+      .opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0, min(520px, calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
+      .opening-board-stage .eval-bar-modern { min-height: auto; height: 100%; min-width: 0; }
+      .opening-board-stage .board-shell { width: 100%; min-width: 0; }
+      .opening-board-stage app-chess-board { display: block; width: 100%; min-width: 0; }
+      .opening-board-stage app-chess-board ::ng-deep .board-shell { width: 100%; }
       .board-action-row { display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; }
       .opening-line-card { border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.6); padding: 0.9rem; }
       .opening-line-text { margin: 0.2rem 0 0; font-weight: 800; color: var(--text); line-height: 1.45; }
       .opening-position-summary { display: flex; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
       .opening-wdl-line { margin: 0.25rem 0 0; font-size: 1.35rem; font-weight: 900; color: var(--text); }
       .opening-score-ring { display: inline-grid; place-items: center; min-width: 74px; height: 74px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-weight: 900; }
+      .engine-summary-card { display: grid; gap: 0.65rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
       .opening-move-tree { position: relative; display: grid; gap: 0.65rem; }
       .opening-move-tree::before { content: ''; position: absolute; left: 12px; top: 10px; bottom: 10px; width: 2px; background: rgba(35, 27, 21, 0.1); }
       .opening-move-row { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 0.8rem; align-items: center; width: 100%; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.72); padding: 0.85rem; text-align: left; color: var(--text); cursor: pointer; }
@@ -357,17 +380,24 @@ interface PlayedMove {
       }
       @media (max-width: 680px) {
         .opening-hero-stats { grid-template-columns: 1fr; }
+        .perspective-switch { display: flex; width: 100%; }
+        .perspective-option { flex: 1; justify-content: center; }
         .opening-filter-grid { grid-template-columns: 1fr; }
-        .opening-filter-heading, .opening-panel-header, .opening-position-summary { display: grid; }
+        .opening-panel-header, .opening-position-summary { display: grid; }
+        .side-stack { justify-items: start; }
         .move-wdl { text-align: left; }
+      }
+      @media (max-width: 640px) {
+        .opening-board-stage { grid-template-columns: minmax(0, min(100%, 520px)); gap: 0; }
       }
     `,
   ],
 })
-export class OpeningAnalysisPageComponent implements OnInit {
+export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   facets: ImportedGameFacetsResponse = {};
   filters: OpeningFilters = this.defaultFilters();
   analysis: OpeningAnalysisResponse | null = null;
+  engine: EngineAnalysis = { fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] };
   loading = false;
   error: string | null = null;
   boardPositionVersion = 0;
@@ -376,13 +406,50 @@ export class OpeningAnalysisPageComponent implements OnInit {
   boardFlipped = false;
   currentFen = new Chess().fen();
 
+  private analysisSub?: Subscription;
+  private analysisTimer?: ReturnType<typeof setTimeout>;
   private chess = new Chess();
+  private displayedEval: { line: EngineLine; fen: string } | null = null;
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+    private stockfish: StockfishAnalysisService,
+  ) {}
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      this.goBack();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      this.resetBoard();
+    }
+  }
 
   ngOnInit() {
+    this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
+      this.engine = analysis;
+      const firstLine = analysis.lines[0];
+      if (firstLine && analysis.fen === this.currentFen) {
+        this.displayedEval = { line: firstLine, fen: analysis.fen };
+      }
+      this.cdr.detectChanges();
+    });
     this.loadFacets();
     this.refresh();
+    this.scheduleAnalysis();
+  }
+
+  ngOnDestroy() {
+    if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.analysisSub?.unsubscribe();
+    this.stockfish.stop();
   }
 
   get wdl(): OpeningWdl {
@@ -428,6 +495,13 @@ export class OpeningAnalysisPageComponent implements OnInit {
     this.commitPlayedMove(played, move.moveSan || undefined);
   }
 
+  setPerspective(color: UserColor) {
+    if (this.filters.userColor === color) return;
+    this.filters.userColor = color;
+    this.boardFlipped = false;
+    this.resetBoard();
+  }
+
   goBack() {
     const undone = this.chess.undo();
     if (!undone) return;
@@ -456,7 +530,8 @@ export class OpeningAnalysisPageComponent implements OnInit {
 
   resetFilters() {
     this.filters = this.defaultFilters();
-    this.refresh();
+    this.boardFlipped = false;
+    this.resetBoard();
   }
 
   queryString(): string {
@@ -468,7 +543,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
     if (this.filters.accountId) params.set('accountIds', this.filters.accountId);
     if (this.filters.provider && this.filters.provider !== 'ALL') params.set('providers', this.filters.provider);
     if (this.filters.resultForUser) params.set('resultForUser', this.filters.resultForUser);
-    if (this.filters.userColor) params.set('userColor', this.filters.userColor);
+    params.set('userColor', this.filters.userColor);
     if (this.filters.speedCategory) params.set('speedCategory', this.filters.speedCategory);
     if (this.filters.timeControl.trim()) params.set('timeControl', this.filters.timeControl.trim());
     if (this.filters.opponent.trim()) params.set('opponent', this.filters.opponent.trim());
@@ -495,7 +570,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
       accountId: '',
       provider: 'ALL',
       resultForUser: '',
-      userColor: '',
+      userColor: 'WHITE',
       speedCategory: '',
       timeControl: '',
       opponent: '',
@@ -538,7 +613,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
   }
 
   wdlLabel(wdl: OpeningWdl): string {
-    return `${wdl.wins}-${wdl.draws}-${wdl.losses}`;
+    return `${wdl.wins} ${wdl.draws} ${wdl.losses}`;
   }
 
   scoreLabel(wdl: OpeningWdl): string {
@@ -551,6 +626,69 @@ export class OpeningAnalysisPageComponent implements OnInit {
 
   sideToMoveLabel(): UserColor {
     return this.chess.turn() === 'w' ? 'WHITE' : 'BLACK';
+  }
+
+  isUserTurn(): boolean {
+    return this.sideToMoveLabel() === this.filters.userColor;
+  }
+
+  turnOwnerLabel(): string {
+    return this.isUserTurn() ? 'Your move' : 'Opponent move';
+  }
+
+  perspectiveHelpText(): string {
+    if (this.filters.userColor === 'BLACK') {
+      return 'Black perspective: start with the opponent move, then inspect your replies from indexed games.';
+    }
+    return 'White perspective: play your opening moves from the start position and inspect your indexed continuations.';
+  }
+
+  rerunAnalysis() {
+    if (!this.currentFen) return;
+    this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
+  }
+
+  scheduleAnalysis() {
+    if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.analysisTimer = setTimeout(() => this.rerunAnalysis(), 250);
+  }
+
+  analysisArrows() {
+    const move = this.bestMoveLabel();
+    if (!move || move === '(none)') return [];
+    return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
+  }
+
+  bestMoveLabel() {
+    if (this.engine.fen !== this.currentFen) return null;
+    return this.engine.bestMove || this.engine.lines[0]?.pv?.[0] || null;
+  }
+
+  lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
+    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
+    if (line.scoreCp === undefined) return '—';
+    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
+    const pawns = whiteCp / 100;
+    return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
+  }
+
+  evalLabel() {
+    const displayed = this.displayedEvalLine();
+    if (!displayed) return '—';
+    return this.lineScoreLabel(displayed.line, displayed.fen);
+  }
+
+  evalWhitePercent() {
+    const displayed = this.displayedEvalLine();
+    if (!displayed) return 50;
+    if (displayed.line.mate !== undefined) return this.mateFromWhitePerspective(displayed.line.mate, displayed.fen) > 0 ? 100 : 0;
+    const whiteCp = this.scoreFromWhitePerspective(displayed.line.scoreCp ?? 0, displayed.fen);
+    const clamped = Math.max(-800, Math.min(800, whiteCp));
+    return 50 + (clamped / 800) * 50;
+  }
+
+  isBlackPerspective() {
+    return this.boardSide() === 'BLACK';
   }
 
   private tryPlayUci(uci: string): any | null {
@@ -581,5 +719,22 @@ export class OpeningAnalysisPageComponent implements OnInit {
     this.currentFen = this.chess.fen();
     this.boardPositionVersion += 1;
     this.refresh();
+    this.scheduleAnalysis();
+  }
+
+  private scoreFromWhitePerspective(scoreCp: number, fen: string) {
+    const turn = fen.split(' ')[1];
+    return turn === 'b' ? -scoreCp : scoreCp;
+  }
+
+  private mateFromWhitePerspective(mate: number, fen: string) {
+    const turn = fen.split(' ')[1];
+    return turn === 'b' ? -mate : mate;
+  }
+
+  private displayedEvalLine() {
+    const currentLine = this.engine.fen === this.currentFen ? this.engine.lines[0] : null;
+    if (currentLine) return { line: currentLine, fen: this.currentFen };
+    return this.displayedEval?.fen === this.currentFen ? this.displayedEval : null;
   }
 }

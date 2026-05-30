@@ -6,6 +6,7 @@ import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { MoveNotesComponent } from '../components/move-notes.component';
+import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 interface EditableLine {
@@ -18,7 +19,7 @@ interface EditableLine {
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, MoveNotesComponent],
+  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
   template: `
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
@@ -83,27 +84,12 @@ interface EditableLine {
           </section>
 
           <section class="workbench-panel engine-panel-modern">
-            <div class="engine-panel-header">
-              <div>
-                <h3 class="workbench-panel-title">Stockfish</h3>
-                <p class="workbench-panel-subtitle">Secondary analysis for the selected position.</p>
-              </div>
-              <button type="button" class="secondary" (click)="rerunAnalysis()" [disabled]="analysis.running">Analyze</button>
-            </div>
-
-            <p *ngIf="analysis.error" class="status-error">{{ analysis.error }}</p>
-            <p *ngIf="analysis.running" class="status-note">Analyzing… depth {{ topDepth() || '…' }}</p>
-            <p *ngIf="!analysis.running && !analysis.bestMove && !analysis.error" class="status-note">Select a position to analyze.</p>
-            <p *ngIf="analysis.bestMove" class="status-note"><strong>Best:</strong> <code>{{ analysis.bestMove }}</code></p>
-
-            <div *ngIf="engineWarning()" class="engine-warning-modern">
-              {{ engineWarning() }}
-            </div>
-
-            <div *ngFor="let engineLine of analysis.lines.slice(0, 3)" class="engine-line-modern">
-              <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
-              <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
-            </div>
+            <app-stockfish-panel
+              [analysis]="analysis"
+              [currentFen]="currentFen"
+              [warning]="engineWarning()"
+              (analyze)="rerunAnalysis()"
+            ></app-stockfish-panel>
           </section>
 
           <app-move-notes [node]="selectedNode" (savedNode)="onNotesSaved($event)"></app-move-notes>
@@ -401,10 +387,6 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     if (!planned) return null;
     if (planned === this.analysis.bestMove) return null;
     return `Engine warning: your planned move is ${planned}, but Stockfish currently prefers ${this.analysis.bestMove}.`;
-  }
-
-  topDepth() {
-    return Math.max(0, ...this.analysis.lines.map((line) => line.depth));
   }
 
   lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
