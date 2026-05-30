@@ -12,8 +12,9 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "npm run build:domain && concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
+    "dev": "npm run build:domain && concurrently \"npm run dev --workspace=apps/api\" \"npm run dev:worker --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "dev:api": "npm run dev --workspace=apps/api",
+    "dev:worker": "npm run dev:worker --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "build": "npm run build:domain && npm run build:api && npm run build:web",
     "build:domain": "npm run build --workspace=packages/chess-domain",
