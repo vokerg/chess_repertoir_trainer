@@ -6,6 +6,7 @@ import {
   ImportedGameFacetsResponse,
   ImportedGamePlyIndexResult,
   ImportedGameSearchResponse,
+  StartImportedGameAnalysisResponse,
 } from './games.models';
 import { GameFilters } from '../filters/game-filter.model';
 import { mapGameFiltersToQueryString } from '../filters/game-filter-query.mapper';
@@ -22,8 +23,8 @@ export class GamesApiService {
     return this.api.get<ImportedGameSearchResponse>(`/imported-games${mapGameFiltersToQueryString(filters, cursor)}`);
   }
 
-  startAnalysis(gameId: number, force = false): Observable<ImportedGameAnalysisSummary> {
-    return this.api.post<ImportedGameAnalysisSummary>(`/imported-games/${gameId}/analysis-runs`, force ? { force: true } : {});
+  startAnalysis(gameId: number, force = false): Observable<StartImportedGameAnalysisResponse> {
+    return this.api.post<StartImportedGameAnalysisResponse>(`/imported-games/${gameId}/analysis-runs`, force ? { force: true } : {});
   }
 
   indexPlies(gameId: number, force = false): Observable<ImportedGamePlyIndexResult> {
