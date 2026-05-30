@@ -15,6 +15,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
   },
   {
+    path: 'opening-analysis',
+    loadComponent: () => import('./pages/opening-analysis-page.component').then((m) => m.OpeningAnalysisPageComponent),
+  },
+  {
     path: 'games/:gameId',
     loadComponent: () => import('./pages/game-detail-page.component').then((m) => m.GameDetailPageComponent),
   },

@@ -122,6 +122,45 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['importedGameId', 'status'],
   },
+  OpeningAnalysisWdl: {
+    type: 'object',
+    properties: {
+      total: { type: 'integer' },
+      wins: { type: 'integer' },
+      draws: { type: 'integer' },
+      losses: { type: 'integer' },
+      scorePct: { type: 'number', nullable: true },
+    },
+    required: ['total', 'wins', 'draws', 'losses', 'scorePct'],
+  },
+  OpeningAnalysisNextMove: {
+    type: 'object',
+    properties: {
+      moveUci: { type: 'string' },
+      moveSan: { type: 'string', nullable: true },
+      fenAfter: { type: 'string' },
+      side: { type: 'string', enum: ['WHITE', 'BLACK'] },
+      moveNumber: { type: 'integer' },
+      occurrences: { type: 'integer' },
+      games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
+    },
+    required: ['moveUci', 'fenAfter', 'side', 'moveNumber', 'occurrences', 'games'],
+  },
+  OpeningAnalysisResponse: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      normalizedFen: { type: 'string' },
+      sideToMove: { type: 'string', enum: ['WHITE', 'BLACK'] },
+      fullMoveNumber: { type: 'integer' },
+      ratedOnly: { type: 'boolean' },
+      occurrences: { type: 'integer' },
+      games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
+      nextMoves: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisNextMove' } },
+      appliedFilters: { type: 'object', additionalProperties: true },
+    },
+    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'appliedFilters'],
+  },
 };
 
 const importedGameIdParameter = {
@@ -144,6 +183,7 @@ const searchParameters = [
   { name: 'openingEco', in: 'query', schema: { type: 'string' } },
   { name: 'openingName', in: 'query', schema: { type: 'string' } },
   { name: 'opponent', in: 'query', schema: { type: 'string' } },
+  { name: 'timeControl', in: 'query', schema: { type: 'string' } },
   { name: 'minUserRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
   { name: 'maxUserRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
   { name: 'minOpponentRating', in: 'query', schema: { type: 'integer', minimum: 0 } },
@@ -167,6 +207,20 @@ export const listImportedGamesOpenApiOperation = {
       description: 'Imported game search results',
       content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameSearchResponse' } } },
     },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
+};
+
+export const getOpeningAnalysisOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Get personal opening analysis for one board position',
+  description: 'Aggregates indexed ply rows for rated imported games only. Reuses imported-game search filters, then returns WDL from the current user point of view and all next moves played from the requested position.',
+  parameters: [
+    { name: 'fen', in: 'query', schema: { type: 'string', default: 'startpos' } },
+    ...searchParameters,
+  ],
+  responses: {
+    '200': { description: 'Personal opening analysis for the position', content: { 'application/json': { schema: { $ref: '#/components/schemas/OpeningAnalysisResponse' } } } },
     '400': { $ref: '#/components/responses/BadRequest' },
   },
 };
