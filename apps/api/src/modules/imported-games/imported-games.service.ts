@@ -100,6 +100,14 @@ function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: ImportedGame
   return true;
 }
 
+function rowMatchesPlyIndexFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
+  if (query.plyIndexStatus?.length && !query.plyIndexStatus.includes(derivePlyIndexStatus(row))) {
+    return false;
+  }
+
+  return true;
+}
+
 function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGameCursor {
   return {
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
@@ -223,62 +231,81 @@ async function searchRows(query: ImportedGameSearchQuery) {
       const row = candidates[index];
       lastScannedRow = row;
       if (!rowMatchesAnalysisFilters(row, query)) continue;
+      if (!rowMatchesPlyIndexFilters(row, query)) continue;
+
       visibleRows.push(row);
       if (visibleRows.length === query.limit) {
+        const hasMore = batchHasMore || index < candidates.length - 1;
         return {
-          rows: visibleRows,
-          hasMore: batchHasMore || index < candidates.length - 1,
-          nextCursor: toCursor(row),
+          visibleRows,
+          nextCursor: hasMore ? encodeCursor(row) : null,
+          hasMore,
         };
       }
     }
 
-    if (!batchHasMore) {
-      return { rows: visibleRows, hasMore: false, nextCursor: null };
+    if (!candidates.length || !batchHasMore) {
+      return { visibleRows, nextCursor: null, hasMore: false };
     }
 
-    const cursorSource = candidates[candidates.length - 1] ?? lastScannedRow;
-    if (!cursorSource) return { rows: visibleRows, hasMore: false, nextCursor: null };
-    cursor = toCursor(cursorSource);
+    cursor = toCursor(candidates[candidates.length - 1]);
   }
 
   return {
-    rows: visibleRows,
-    hasMore: true,
-    nextCursor: lastScannedRow ? toCursor(lastScannedRow) : null,
+    visibleRows,
+    nextCursor: lastScannedRow ? encodeCursor(lastScannedRow) : null,
+    hasMore: lastScannedRow !== null,
   };
 }
 
 export const ImportedGamesService = {
   search: async (query: ImportedGameSearchQuery) => {
     await CurrentUserService.getOrCreate();
-    const result = await searchRows(query);
+    const { visibleRows, nextCursor, hasMore } = await searchRows(query);
+
     return {
-      items: result.rows.map(toListItem),
+      items: visibleRows.map(toListItem),
       pageInfo: {
-        hasMore: result.hasMore,
-        nextCursor: result.hasMore && result.nextCursor ? encodeCursor(result.nextCursor) : null,
+        nextCursor,
+        hasMore,
       },
       appliedFilters: query,
     };
   },
 
-  getById: async (id: number) => {
+  get: async (id: number) => {
     await CurrentUserService.getOrCreate();
     const row = await findImportedGameById(id);
-    if (!row) throw new Error('Imported game not found');
-    return toDetail(row);
+    return row ? toDetail(row) : null;
   },
 
   getPgn: async (id: number) => {
     await CurrentUserService.getOrCreate();
-    const row = await getImportedGamePgn(id);
-    if (!row?.pgn) throw new Error('Imported game PGN not found');
-    return row;
+    return getImportedGamePgn(id);
   },
 
   facets: async () => {
     await CurrentUserService.getOrCreate();
-    return getImportedGameFacets();
+    const facets = await getImportedGameFacets();
+    return {
+      accounts: facets.accounts.map((account) => ({
+        id: account.id,
+        provider: account.provider,
+        username: account.username,
+        displayName: account.displayName,
+        gameCount: account._count.importedGames,
+      })),
+      providers: countFacetRows(facets.providers, 'provider'),
+      speeds: countFacetRows(facets.speeds, 'speedCategory'),
+      variants: countFacetRows(facets.variants, 'variant'),
+      results: countFacetRows(facets.results, 'resultForUser'),
+      colors: countFacetRows(facets.colors, 'userColor'),
+      openings: facets.openings.map((opening) => ({
+        eco: opening.openingEco,
+        name: opening.openingName,
+        count: groupCount(opening, 'openingEco'),
+      })),
+      analysisStatuses: analysisStatusFacetRows(facets.latestAnalysisRows),
+    };
   },
 };
