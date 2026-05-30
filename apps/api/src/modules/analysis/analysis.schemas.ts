@@ -9,4 +9,7 @@ export const analyzeImportedGameSchema = z.object({
   depth: z.coerce.number().int().min(1).max(maxDepth).default(defaultDepth),
   multipv: z.coerce.number().int().min(1).max(maxMultipv).default(defaultMultipv),
   force: z.coerce.boolean().default(false),
+  async: z.coerce.boolean().default(true),
 });
+
+export type AnalyzeImportedGameRequest = z.infer<typeof analyzeImportedGameSchema>;
