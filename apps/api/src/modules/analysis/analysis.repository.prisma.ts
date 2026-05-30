@@ -3,7 +3,7 @@ import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { GameAccuracySummary } from './accuracy';
 import { PositionAnalysisResult } from './analysis.types';
 
-export const ANALYSIS_ACTIVE_STATUSES = ['QUEUED', 'RUNNING', 'COMPLETED'] as const;
+export const ANALYSIS_REUSABLE_STATUSES = ['QUEUED', 'RUNNING', 'COMPLETED'] as const;
 
 const compactGameAnalysisRunInclude = {
   moves: {
@@ -37,7 +37,7 @@ export async function getExistingGameAnalysis(importedGameId: number, settings: 
     where: {
       importedGameId,
       importedGame: { userId: SINGLETON_USER_ID },
-      status: { in: [...ANALYSIS_ACTIVE_STATUSES] },
+      status: { in: [...ANALYSIS_REUSABLE_STATUSES] },
       depth: settings.depth,
       multipv: settings.multipv,
       engineName: settings.engineName,
@@ -53,7 +53,6 @@ export async function getLatestGameAnalysisForImportedGame(importedGameId: numbe
     where: {
       importedGameId,
       importedGame: { userId: SINGLETON_USER_ID },
-      status: { in: [...ANALYSIS_ACTIVE_STATUSES] },
     },
     orderBy: { createdAt: 'desc' },
     include: compactGameAnalysisRunInclude,
@@ -104,14 +103,18 @@ export async function markGameAnalysisRunRunning(id: number) {
 
 export async function claimNextQueuedGameAnalysisRun() {
   return prisma.$transaction(async (tx) => {
-    const queued = await tx.gameAnalysisRun.findFirst({
-      where: {
-        status: 'QUEUED',
-        importedGame: { userId: SINGLETON_USER_ID },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    const rows = await tx.$queryRaw<Array<{ id: number }>>`
+      SELECT gar.id
+      FROM "GameAnalysisRun" gar
+      JOIN "ImportedGame" ig ON ig.id = gar."importedGameId"
+      WHERE gar.status = 'QUEUED'
+        AND ig."userId" = ${SINGLETON_USER_ID}
+      ORDER BY gar."createdAt" ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT 1
+    `;
 
+    const queued = rows[0];
     if (!queued) return null;
 
     return tx.gameAnalysisRun.update({
