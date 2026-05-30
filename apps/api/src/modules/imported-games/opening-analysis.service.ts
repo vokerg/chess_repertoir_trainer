@@ -157,7 +157,7 @@ export const OpeningAnalysisService = {
 
     const nextMoves: OpeningAnalysisNextMove[] = Array.from(moveBuckets.values())
       .map(({ gameIds: _gameIds, ...bucket }) => bucket)
-      .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || a.moveSan?.localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));
+      .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || (a.moveSan ?? '').localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));
 
     const chess = new Chess(fen);
 
