@@ -3,6 +3,8 @@ import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { GameAccuracySummary } from './accuracy';
 import { PositionAnalysisResult } from './analysis.types';
 
+export const ANALYSIS_ACTIVE_STATUSES = ['QUEUED', 'RUNNING', 'COMPLETED'] as const;
+
 const compactGameAnalysisRunInclude = {
   moves: {
     orderBy: { plyNumber: 'asc' as const },
@@ -35,7 +37,7 @@ export async function getExistingGameAnalysis(importedGameId: number, settings: 
     where: {
       importedGameId,
       importedGame: { userId: SINGLETON_USER_ID },
-      status: { in: ['RUNNING', 'COMPLETED'] },
+      status: { in: [...ANALYSIS_ACTIVE_STATUSES] },
       depth: settings.depth,
       multipv: settings.multipv,
       engineName: settings.engineName,
@@ -51,10 +53,16 @@ export async function getLatestGameAnalysisForImportedGame(importedGameId: numbe
     where: {
       importedGameId,
       importedGame: { userId: SINGLETON_USER_ID },
-      status: { in: ['RUNNING', 'COMPLETED'] },
+      status: { in: [...ANALYSIS_ACTIVE_STATUSES] },
     },
     orderBy: { createdAt: 'desc' },
     include: compactGameAnalysisRunInclude,
+  });
+}
+
+export async function getGameAnalysisRunForExecution(id: number) {
+  return prisma.gameAnalysisRun.findFirst({
+    where: { id, importedGame: { userId: SINGLETON_USER_ID } },
   });
 }
 
@@ -65,17 +73,69 @@ export async function createGameAnalysisRun(data: {
   engineName: string;
   engineVersion?: string;
   positionsTotal: number;
+  status?: 'QUEUED' | 'RUNNING';
 }) {
   return prisma.gameAnalysisRun.create({
     data: {
       importedGameId: data.importedGameId,
-      status: 'RUNNING',
+      status: data.status ?? 'RUNNING',
       depth: data.depth,
       multipv: data.multipv,
       engineName: data.engineName,
       engineVersion: data.engineVersion,
       positionsTotal: data.positionsTotal,
       positionsDone: 0,
+    },
+    include: compactGameAnalysisRunInclude,
+  });
+}
+
+export async function markGameAnalysisRunRunning(id: number) {
+  return prisma.gameAnalysisRun.update({
+    where: { id },
+    data: {
+      status: 'RUNNING',
+      startedAt: new Date(),
+      completedAt: null,
+      error: null,
+    },
+  });
+}
+
+export async function claimNextQueuedGameAnalysisRun() {
+  return prisma.$transaction(async (tx) => {
+    const queued = await tx.gameAnalysisRun.findFirst({
+      where: {
+        status: 'QUEUED',
+        importedGame: { userId: SINGLETON_USER_ID },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!queued) return null;
+
+    return tx.gameAnalysisRun.update({
+      where: { id: queued.id },
+      data: {
+        status: 'RUNNING',
+        startedAt: new Date(),
+        completedAt: null,
+        error: null,
+      },
+    });
+  });
+}
+
+export async function interruptRunningAnalysisRuns(message: string) {
+  return prisma.gameAnalysisRun.updateMany({
+    where: {
+      status: 'RUNNING',
+      importedGame: { userId: SINGLETON_USER_ID },
+    },
+    data: {
+      status: 'INTERRUPTED',
+      error: message,
+      completedAt: new Date(),
     },
   });
 }
@@ -97,6 +157,14 @@ export async function completeGameAnalysisRun(id: number, summary: unknown, posi
       completedAt: new Date(),
     },
     include: compactGameAnalysisRunInclude,
+  });
+}
+
+export async function updateGameAnalysisRunProgress(id: number, positionsDone: number) {
+  return prisma.gameAnalysisRun.update({
+    where: { id },
+    data: { positionsDone },
+    select: { id: true },
   });
 }
 
