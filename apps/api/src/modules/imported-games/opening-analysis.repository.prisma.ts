@@ -1,0 +1,57 @@
+import { Prisma } from '@prisma/client';
+import prisma from '../../prisma';
+import { ImportedGameSearchQuery } from './imported-games.schemas';
+import { buildImportedGameWhere } from './imported-games.repository.prisma';
+
+const openingAnalysisRunSelect = {
+  id: true,
+  status: true,
+  whiteAccuracy: true,
+  blackAccuracy: true,
+  summary: true,
+} satisfies Prisma.GameAnalysisRunSelect;
+
+const openingAnalysisGameSelect = {
+  id: true,
+  resultForUser: true,
+  userColor: true,
+  analysisRuns: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    select: openingAnalysisRunSelect,
+  },
+} satisfies Prisma.ImportedGameSelect;
+
+const openingAnalysisPlySelect = {
+  importedGameId: true,
+  plyNumber: true,
+  moveNumber: true,
+  side: true,
+  fenBefore: true,
+  normalizedFen: true,
+  fenAfter: true,
+  moveUci: true,
+  moveSan: true,
+  importedGame: {
+    select: openingAnalysisGameSelect,
+  },
+} satisfies Prisma.ImportedGamePlySelect;
+
+export type OpeningAnalysisPlyRow = Prisma.ImportedGamePlyGetPayload<{ select: typeof openingAnalysisPlySelect }>;
+
+export async function findOpeningAnalysisRows(query: ImportedGameSearchQuery, normalizedFen: string): Promise<OpeningAnalysisPlyRow[]> {
+  const ratedOnlyQuery: ImportedGameSearchQuery = {
+    ...query,
+    rated: true,
+    limit: Math.max(query.limit, 200),
+  };
+
+  return prisma.importedGamePly.findMany({
+    where: {
+      normalizedFen,
+      importedGame: buildImportedGameWhere(ratedOnlyQuery),
+    },
+    orderBy: [{ moveUci: 'asc' }, { importedGameId: 'asc' }, { plyNumber: 'asc' }],
+    select: openingAnalysisPlySelect,
+  });
+}
