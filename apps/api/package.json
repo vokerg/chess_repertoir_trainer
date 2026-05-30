@@ -5,8 +5,10 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "(cd ../.. && npm run build --workspace=packages/chess-domain) && prisma migrate deploy && prisma generate && ts-node-dev --respawn --transpile-only src/main.ts",
+    "dev:worker": "prisma migrate deploy && prisma generate && ts-node-dev --respawn --transpile-only src/analysis-worker.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/main.js",
+    "start:worker": "node dist/analysis-worker.js",
     "db:migrate": "prisma migrate deploy && prisma generate",
     "db:generate": "prisma generate",
     "db:seed": "ts-node prisma/seed.ts",
