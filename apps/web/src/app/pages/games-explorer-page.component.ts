@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../services/api.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
@@ -114,6 +115,7 @@ interface GameFilters {
   opponent: string;
   openingName: string;
   analysisStatus: '' | AnalysisStatus;
+  plyIndexStatus: '' | PlyIndexStatus;
   minAccuracy: string;
   maxAccuracy: string;
   minOpponentRating: string;
@@ -148,6 +150,15 @@ interface GameFilters {
             <p class="metric-label">Ply indexed</p>
             <p class="metric-value">{{ plyIndexedCount() }}</p>
           </div>
+          <button
+            type="button"
+            class="metric-card games-mini-card games-mini-action"
+            (click)="indexAllVisibleGames()"
+            [disabled]="loading || bulkIndexing || bulkIndexableGames().length === 0"
+          >
+            <span class="metric-label">Index all</span>
+            <span class="metric-value games-action-value">{{ bulkIndexing ? bulkIndexProgressLabel() : bulkIndexableGames().length }}</span>
+          </button>
         </div>
       </section>
 
@@ -220,6 +231,16 @@ interface GameFilters {
               <option value="NOT_ANALYZED">Not analysed</option>
               <option value="RUNNING">Running</option>
               <option value="COMPLETED">Completed</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </label>
+
+          <label class="games-field">
+            <span>Indexed</span>
+            <select [(ngModel)]="filters.plyIndexStatus" (ngModelChange)="refresh()">
+              <option value="">Any status</option>
+              <option value="NOT_INDEXED">Not indexed</option>
+              <option value="INDEXED">Indexed</option>
               <option value="FAILED">Failed</option>
             </select>
           </label>
@@ -404,9 +425,14 @@ interface GameFilters {
     `
       .games-page { gap: 1rem; }
       .games-hero { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: end; }
-      .games-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 0.75rem; min-width: min(100%, 440px); }
-      .games-mini-card { padding: 0.9rem; }
-      .games-mini-card .metric-value { font-size: 1.55rem; }
+      .games-hero-stats { display: grid; grid-template-columns: repeat(4, minmax(102px, 1fr)); gap: 0.55rem; min-width: min(100%, 520px); }
+      .games-mini-card { padding: 0.72rem 0.82rem; border-radius: 18px; }
+      .games-mini-card .metric-label { font-size: 0.7rem; letter-spacing: 0.08em; }
+      .games-mini-card .metric-value { font-size: 1.28rem; line-height: 1.05; }
+      .games-mini-action { display: grid; gap: 0.3rem; align-content: center; text-align: left; border: 1px solid var(--border); background: rgba(35, 27, 21, 0.05); color: var(--text); cursor: pointer; transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
+      .games-mini-action:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-strong); border-color: rgba(190, 126, 59, 0.35); }
+      .games-mini-action:disabled { opacity: 0.55; cursor: default; }
+      .games-action-value { font-size: 1rem; }
       .games-filters { display: grid; gap: 1rem; }
       .games-filter-grid { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 0.85rem; }
       .games-field { display: grid; gap: 0.35rem; color: var(--muted-strong); font-weight: 800; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -454,7 +480,7 @@ interface GameFilters {
       .games-empty { border: 1px dashed var(--border-strong); border-radius: 24px; padding: 1.4rem; color: var(--muted); }
       .status-error { color: var(--danger); font-weight: 800; }
       .status-note { color: var(--muted); font-weight: 700; }
-      @media (max-width: 980px) { .games-filter-grid { grid-template-columns: repeat(2, minmax(170px, 1fr)); } .games-hero-stats { grid-template-columns: repeat(3, 1fr); } }
+      @media (max-width: 980px) { .games-filter-grid { grid-template-columns: repeat(2, minmax(170px, 1fr)); } .games-hero-stats { grid-template-columns: repeat(2, minmax(120px, 1fr)); } }
       @media (max-width: 640px) { .games-filter-grid, .games-hero-stats { grid-template-columns: 1fr; } }
     `,
   ],
@@ -466,6 +492,9 @@ export class GamesExplorerPageComponent implements OnInit {
   error: string | null = null;
   analysingGameId: number | null = null;
   indexingPlyGameId: number | null = null;
+  bulkIndexing = false;
+  bulkIndexCompleted = 0;
+  bulkIndexTotal = 0;
   activeActionMenuGameId: number | null = null;
   pageInfo: ImportedGameSearchResponse['pageInfo'] = { nextCursor: null, hasMore: false };
 
@@ -501,6 +530,7 @@ export class GamesExplorerPageComponent implements OnInit {
 
   refresh() {
     this.closeActionMenu();
+    this.resetBulkIndexState();
     this.games = [];
     this.pageInfo = { nextCursor: null, hasMore: false };
     this.loadGames();
@@ -579,10 +609,61 @@ export class GamesExplorerPageComponent implements OnInit {
     });
   }
 
+  async indexAllVisibleGames() {
+    const games = this.bulkIndexableGames();
+    if (!games.length || this.bulkIndexing) return;
+
+    this.closeActionMenu();
+    this.error = null;
+    this.bulkIndexing = true;
+    this.bulkIndexCompleted = 0;
+    this.bulkIndexTotal = games.length;
+    this.cdr.detectChanges();
+
+    const concurrency = 4;
+    let nextIndex = 0;
+    const failures: string[] = [];
+
+    const runWorker = async () => {
+      while (nextIndex < games.length) {
+        const game = games[nextIndex];
+        nextIndex += 1;
+        try {
+          await this.indexSingleGame(game);
+        } catch (err: any) {
+          failures.push(err?.error?.message || err?.error?.error || err?.message || `Could not index game #${game.id}.`);
+        } finally {
+          this.bulkIndexCompleted += 1;
+          this.cdr.detectChanges();
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, games.length) }, () => runWorker()));
+
+    this.bulkIndexing = false;
+    this.indexingPlyGameId = null;
+    if (failures.length) {
+      this.error = failures[0];
+      this.cdr.detectChanges();
+      return;
+    }
+    this.refresh();
+  }
+
   resetFilters() {
     this.closeActionMenu();
     this.filters = this.defaultFilters();
     this.refresh();
+  }
+
+  bulkIndexableGames(): ImportedGameListItem[] {
+    return this.filteredGames().filter((game) => game.plyIndex?.status !== 'INDEXED');
+  }
+
+  bulkIndexProgressLabel(): string {
+    if (!this.bulkIndexing) return String(this.bulkIndexableGames().length);
+    return `${this.bulkIndexCompleted}/${this.bulkIndexTotal}`;
   }
 
   toggleActionMenu(gameId: number, event?: Event) {
@@ -612,6 +693,7 @@ export class GamesExplorerPageComponent implements OnInit {
     if (this.filters.opponent.trim()) params.set('opponent', this.filters.opponent.trim());
     if (this.filters.openingName.trim()) params.set('openingName', this.filters.openingName.trim());
     if (this.filters.analysisStatus) params.set('analysisStatus', this.filters.analysisStatus);
+    if (this.filters.plyIndexStatus) params.set('plyIndexStatus', this.filters.plyIndexStatus);
     if (this.filters.minAccuracy.trim()) params.set('minAccuracy', this.filters.minAccuracy.trim());
     if (this.filters.maxAccuracy.trim()) params.set('maxAccuracy', this.filters.maxAccuracy.trim());
     if (this.filters.minOpponentRating.trim()) params.set('minOpponentRating', this.filters.minOpponentRating.trim());
@@ -640,6 +722,7 @@ export class GamesExplorerPageComponent implements OnInit {
       opponent: '',
       openingName: '',
       analysisStatus: '',
+      plyIndexStatus: '',
       minAccuracy: '',
       maxAccuracy: '',
       minOpponentRating: '',
@@ -672,6 +755,29 @@ export class GamesExplorerPageComponent implements OnInit {
 
   plyIndexedCount(): number {
     return this.filteredGames().filter((game) => game.plyIndex?.status === 'INDEXED').length;
+  }
+
+  private async indexSingleGame(game: ImportedGameListItem) {
+    this.indexingPlyGameId = game.id;
+    const force = game.plyIndex?.status === 'FAILED';
+    const result = await firstValueFrom(
+      this.api.post<ImportedGamePlyIndexResult>(`/imported-games/${game.id}/ply-index`, force ? { force: true } : {})
+    );
+
+    if (result.status === 'FAILED') {
+      game.plyIndex.status = 'FAILED';
+      game.plyIndex.error = result.error || 'Could not index game plies.';
+      throw new Error(game.plyIndex.error);
+    }
+
+    game.plyIndex.status = 'INDEXED';
+    game.plyIndex.error = null;
+  }
+
+  private resetBulkIndexState() {
+    this.bulkIndexing = false;
+    this.bulkIndexCompleted = 0;
+    this.bulkIndexTotal = 0;
   }
 
   averageAccuracyLabel(): string {

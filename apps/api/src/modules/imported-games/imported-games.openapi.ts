@@ -191,6 +191,7 @@ const searchParameters = [
   { name: 'minAccuracy', in: 'query', schema: { type: 'number', minimum: 0, maximum: 100 } },
   { name: 'maxAccuracy', in: 'query', schema: { type: 'number', minimum: 0, maximum: 100 } },
   { name: 'analysisStatus', in: 'query', schema: { type: 'string' }, description: 'Comma-separated NOT_ANALYZED,RUNNING,COMPLETED,FAILED. Applied to the latest analysis run summary.' },
+  { name: 'plyIndexStatus', in: 'query', schema: { type: 'string' }, description: 'Comma-separated NOT_INDEXED,INDEXED,FAILED.' },
   { name: 'classification', in: 'query', schema: { type: 'string' }, description: 'Comma-separated move classifications to require in the latest analysis summary.' },
   { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 } },
   { name: 'cursor', in: 'query', schema: { type: 'string' } },

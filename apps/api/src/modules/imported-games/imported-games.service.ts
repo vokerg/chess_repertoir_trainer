@@ -98,6 +98,14 @@ function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: ImportedGame
   return true;
 }
 
+function rowMatchesPlyIndexFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
+  if (query.plyIndexStatus?.length && !query.plyIndexStatus.includes(derivePlyIndexStatus(row))) {
+    return false;
+  }
+
+  return true;
+}
+
 function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGameCursor {
   return {
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
@@ -217,6 +225,7 @@ async function searchRows(query: ImportedGameSearchQuery) {
       const row = candidates[index];
       lastScannedRow = row;
       if (!rowMatchesAnalysisFilters(row, query)) continue;
+      if (!rowMatchesPlyIndexFilters(row, query)) continue;
 
       visibleRows.push(row);
       if (visibleRows.length === query.limit) {
