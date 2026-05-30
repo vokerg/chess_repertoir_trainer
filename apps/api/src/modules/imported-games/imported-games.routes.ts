@@ -1,12 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import { ImportedGamesService } from './imported-games.service';
-import { importedGameSearchQuerySchema } from './imported-games.schemas';
+import { importedGameSearchQuerySchema, openingAnalysisQuerySchema } from './imported-games.schemas';
 import { ImportedGamePlyIndexService } from './ply-index.service';
+import { OpeningAnalysisService } from './opening-analysis.service';
 import {
   getImportedGameFacetsOpenApiOperation,
   getImportedGameOpenApiOperation,
   getImportedGamePgnOpenApiOperation,
+  getOpeningAnalysisOpenApiOperation,
   importedGamesOpenApiSchemas,
   indexImportedGamePlyOpenApiOperation,
   listImportedGamesOpenApiOperation,
@@ -38,6 +40,26 @@ export default async function importedGamesModule(app: FastifyInstance) {
 
       try {
         return await ImportedGamesService.search(parsed.data);
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'get',
+    url: '/api/opening-analysis',
+    operation: getOpeningAnalysisOpenApiOperation,
+    handler: async (request, reply) => {
+      const parsed = openingAnalysisQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        return await OpeningAnalysisService.getPosition(parsed.data);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
