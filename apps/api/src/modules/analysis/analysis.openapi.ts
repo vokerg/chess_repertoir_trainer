@@ -3,13 +3,15 @@ export const analysisOpenApiSchemas = {
     type: 'object',
     properties: {
       depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
-      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
-      force: { type: 'boolean', default: false, description: 'When true, creates a new analysis run even if a matching RUNNING or COMPLETED run already exists. PositionAnalysis cache is still reused.' },
+      multipv: { type: 'integer', minimum: 1, maximum: 1, default: 1 },
+      force: { type: 'boolean', default: false, description: 'When true, creates a new analysis run even if a matching QUEUED, RUNNING, or COMPLETED run already exists. PositionAnalysis cache is still reused.' },
+      async: { type: 'boolean', default: true, description: 'When true, creates a QUEUED run for the analysis worker. When false, runs synchronously in the API process for local/dev fallback only.' },
     },
   },
   AnalyzeImportedGameResponse: {
     type: 'object',
     properties: {
+      queued: { type: 'boolean', nullable: true },
       reusedExisting: { type: 'boolean' },
       run: { $ref: '#/components/schemas/CompactGameAnalysisRun' },
     },
@@ -27,7 +29,7 @@ export const analysisOpenApiSchemas = {
     properties: {
       id: { type: 'integer' },
       importedGameId: { type: 'integer' },
-      status: { type: 'string', enum: ['RUNNING', 'COMPLETED'] },
+      status: { type: 'string', enum: ['QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'INTERRUPTED'] },
       depth: { type: 'integer' },
       multipv: { type: 'integer' },
       engineName: { type: 'string' },
@@ -87,7 +89,7 @@ const importedGameIdParameter = {
 export const getImportedGameAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Get latest saved analysis for one imported game',
-  description: 'Returns the latest RUNNING or COMPLETED imported-game analysis run as a compact report. Full engine lines remain stored in PositionAnalysis and are not returned by this endpoint.',
+  description: 'Returns the latest QUEUED, RUNNING, or COMPLETED imported-game analysis run as a compact report. Full engine lines remain stored in PositionAnalysis and are not returned by this endpoint.',
   parameters: [importedGameIdParameter],
   responses: {
     '200': {
@@ -104,8 +106,8 @@ export const getImportedGameAnalysisOpenApiOperation = {
 
 export const analyzeImportedGameOpenApiOperation = {
   tags: ['Analysis'],
-  summary: 'Analyze one imported game with backend Stockfish',
-  description: 'Synchronously analyzes the stored PGN for one imported game. If force is false and a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and Stockfish is not executed again. If force is true, a new run is created while PositionAnalysis cache is still reused.',
+  summary: 'Queue or run imported-game Stockfish analysis',
+  description: 'By default, creates a QUEUED analysis run that is picked up by the portable analysis worker. Passing async=false keeps the old synchronous API execution path for local/dev fallback only. If force is false and a QUEUED, RUNNING, or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and no new run is created.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
@@ -113,18 +115,28 @@ export const analyzeImportedGameOpenApiOperation = {
       'application/json': {
         schema: { $ref: '#/components/schemas/AnalyzeImportedGameRequest' },
         examples: {
-          default: {
+          queueDefault: {
             value: {
               depth: 12,
-              multipv: 3,
+              multipv: 1,
               force: false,
+              async: true,
             },
           },
-          forceRerun: {
+          synchronousFallback: {
             value: {
               depth: 12,
-              multipv: 3,
+              multipv: 1,
+              force: false,
+              async: false,
+            },
+          },
+          forceQueuedRerun: {
+            value: {
+              depth: 12,
+              multipv: 1,
               force: true,
+              async: true,
             },
           },
         },
@@ -133,7 +145,7 @@ export const analyzeImportedGameOpenApiOperation = {
   },
   responses: {
     '200': {
-      description: 'Existing running or completed analysis run was returned; no re-analysis happened',
+      description: 'Existing queued, running, or completed analysis run was returned; no new run was created',
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
@@ -141,7 +153,15 @@ export const analyzeImportedGameOpenApiOperation = {
       },
     },
     '201': {
-      description: 'New analysis run was created and completed',
+      description: 'New synchronous analysis run was created and completed',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
+        },
+      },
+    },
+    '202': {
+      description: 'New asynchronous analysis run was queued for the analysis worker',
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
