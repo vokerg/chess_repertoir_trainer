@@ -125,11 +125,6 @@ function buildLichessUrl(gameId: string) {
   return `https://lichess.org/${gameId}`;
 }
 
-function compactRawGame(game: LichessGame) {
-  const { clocks, ...withoutClockSnapshots } = game;
-  return withoutClockSnapshots;
-}
-
 function parseRating(value: string | null) {
   if (!value) return null;
   const parsed = Number(value);
@@ -150,7 +145,6 @@ function normalizeGame(game: LichessGame, account: { id: number; userId: number;
     providerGameId: game.id,
     providerUrl: game.url ?? getPgnHeader(game.pgn, 'Site') ?? buildLichessUrl(game.id),
     pgn: game.pgn ?? null,
-    rawJson: compactRawGame(game) as any,
     rated: game.rated ?? null,
     variant: game.variant ?? getPgnHeader(game.pgn, 'Variant'),
     speedCategory: game.speed ?? game.perf ?? null,

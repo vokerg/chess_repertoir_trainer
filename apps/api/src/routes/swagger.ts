@@ -312,7 +312,6 @@ const legacyOpenApiDocument = {
           providerGameId: { type: 'string' },
           providerUrl: { type: 'string', nullable: true },
           pgn: { type: 'string', nullable: true },
-          rawJson: { type: 'object', nullable: true, additionalProperties: true },
           rated: { type: 'boolean', nullable: true },
           variant: { type: 'string', nullable: true },
           speedCategory: { type: 'string', nullable: true },

@@ -169,10 +169,6 @@ function getProviderGameId(game: ChessComGame) {
   return providerGameId;
 }
 
-function compactRawGame(game: ChessComGame) {
-  return game;
-}
-
 function normalizeGame(game: ChessComGame, account: { id: number; userId: number; username: string; provider: string }) {
   const timeControl = getTimeControl(game);
   const userColor = getUserColor(game, account.username);
@@ -187,7 +183,6 @@ function normalizeGame(game: ChessComGame, account: { id: number; userId: number
     providerGameId: getProviderGameId(game),
     providerUrl: buildChessComGameUrl(game),
     pgn: game.pgn ?? null,
-    rawJson: compactRawGame(game) as any,
     rated: game.rated ?? null,
     variant: game.rules ?? getPgnHeader(game.pgn, 'Variant'),
     speedCategory: game.time_class ?? null,
