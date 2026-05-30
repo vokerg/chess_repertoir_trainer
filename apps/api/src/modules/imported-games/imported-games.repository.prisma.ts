@@ -115,6 +115,19 @@ function buildOpponentRatingWhere(query: ImportedGameSearchQuery): Prisma.Import
   ];
 }
 
+function buildTimeControlWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput[] {
+  const search = query.timeControl?.trim();
+  if (!search) return [];
+  return [
+    {
+      OR: [
+        { timeControlRaw: { contains: search, mode: 'insensitive' } },
+        { timeControlRaw: { contains: search.replace('+', '|'), mode: 'insensitive' } },
+      ],
+    },
+  ];
+}
+
 function buildClassificationWhere(classifications?: string[]): Prisma.ImportedGameWhereInput[] {
   if (!classifications?.length) return [];
   return [{ moveAnalyses: { some: { classification: { in: classifications } } } }];
@@ -137,6 +150,7 @@ export function buildImportedGameWhere(query: ImportedGameSearchQuery): Prisma.I
     AND: [
       ...buildUserRatingWhere(query),
       ...buildOpponentRatingWhere(query),
+      ...buildTimeControlWhere(query),
       ...buildClassificationWhere(query.classification),
     ],
   };
