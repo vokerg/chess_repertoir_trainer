@@ -22,6 +22,7 @@ const providerSchema = z.enum(['LICHESS', 'CHESS_COM']);
 const resultForUserSchema = z.enum(['WIN', 'DRAW', 'LOSS']);
 const colorSchema = z.enum(['WHITE', 'BLACK']);
 const analysisStatusSchema = z.enum(['NOT_ANALYZED', 'QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'INTERRUPTED']);
+const plyIndexStatusSchema = z.enum(['NOT_INDEXED', 'INDEXED', 'FAILED']);
 const classificationSchema = z.enum(['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER', 'BOOK', 'MISS']);
 
 export const importedGameSearchQuerySchema = z.object({
@@ -43,6 +44,7 @@ export const importedGameSearchQuerySchema = z.object({
   minOpponentRating: z.coerce.number().int().min(0).optional(),
   maxOpponentRating: z.coerce.number().int().min(0).optional(),
   analysisStatus: csvArray(analysisStatusSchema),
+  plyIndexStatus: csvArray(plyIndexStatusSchema),
   classification: csvArray(classificationSchema),
   minAccuracy: z.coerce.number().min(0).max(100).optional(),
   maxAccuracy: z.coerce.number().min(0).max(100).optional(),
