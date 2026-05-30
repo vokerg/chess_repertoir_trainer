@@ -1,0 +1,58 @@
+<section class="games-page stack">
+  <section class="section-card games-hero">
+    <div>
+      <span class="eyebrow">Games explorer</span>
+      <h2 class="page-heading page-heading-library">Search imported games</h2>
+      <p class="page-subtitle">
+        Filter your Lichess and Chess.com archive, compare result and accuracy signals, then send any game into backend Stockfish analysis or lightweight ply indexing.
+      </p>
+    </div>
+    <div class="games-hero-stats" aria-label="Imported games summary">
+      <div class="metric-card games-mini-card">
+        <p class="metric-label">Loaded</p>
+        <p class="metric-value">{{ store.filteredGames().length }}</p>
+      </div>
+      <div class="metric-card games-mini-card">
+        <p class="metric-label">Analysed</p>
+        <p class="metric-value">{{ store.analysedCount() }}</p>
+      </div>
+      <div class="metric-card games-mini-card">
+        <p class="metric-label">Ply indexed</p>
+        <p class="metric-value">{{ store.plyIndexedCount() }}</p>
+      </div>
+      <button
+        type="button"
+        class="metric-card games-mini-card games-mini-action"
+        (click)="store.indexAllVisibleGames()"
+        [disabled]="store.loading() || store.bulkIndexing() || store.bulkIndexableGames().length === 0"
+      >
+        <span class="metric-label">Index all</span>
+        <span class="metric-value games-action-value">{{ store.bulkIndexProgressLabel() }}</span>
+      </button>
+    </div>
+  </section>
+
+  <app-game-filter-panel
+    [filters]="store.filters()"
+    [facets]="store.facets()"
+    [loading]="store.loading()"
+    (filtersChange)="store.setFilters($event)"
+    (apply)="store.refresh()"
+    (reset)="store.resetFilters()"
+  />
+
+  <app-games-table
+    [games]="store.filteredGames()"
+    [loading]="store.loading()"
+    [error]="store.error()"
+    [tableSubtitle]="store.tableSubtitle()"
+    [pageInfo]="store.pageInfo()"
+    [analysingGameId]="store.analysingGameId()"
+    [indexingPlyGameId]="store.indexingPlyGameId()"
+    (refresh)="store.refresh()"
+    (loadMore)="store.loadMore()"
+    (analyse)="store.analyse($event)"
+    (forceReanalyse)="store.forceReanalyse($event)"
+    (indexPlies)="store.indexPlies($event)"
+  />
+</section>

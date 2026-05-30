@@ -12,7 +12,7 @@ export const routes: Routes = [
   },
   {
     path: 'games',
-    loadComponent: () => import('./pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
+    loadComponent: () => import('./features/games/pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
   },
   {
     path: 'opening-analysis',
