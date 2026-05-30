@@ -9,7 +9,9 @@ export type ImportedGameForPlyIndex = {
   plyIndexError: string | null;
 };
 
-export type ImportedGamePlyCreateInput = Prisma.ImportedGamePlyCreateManyInput;
+export type ImportedGamePlyCreateInput = Pick<Prisma.ImportedGamePlyCreateManyInput, 'importedGameId' | 'plyNumber' | 'moveUci'> & {
+  normalizedFen: string;
+};
 
 export async function getImportedGameForPlyIndex(importedGameId: number): Promise<ImportedGameForPlyIndex | null> {
   return prisma.importedGame.findFirst({
@@ -41,7 +43,30 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
   return prisma.$transaction(async (tx) => {
     await tx.importedGamePly.deleteMany({ where: { importedGameId } });
     if (rows.length > 0) {
-      await tx.importedGamePly.createMany({ data: rows });
+      const normalizedFens = Array.from(new Set(rows.map((row) => row.normalizedFen)));
+      await tx.importedGamePosition.createMany({
+        data: normalizedFens.map((normalizedFen) => ({ normalizedFen })),
+        skipDuplicates: true,
+      });
+
+      const positions = await tx.importedGamePosition.findMany({
+        where: { normalizedFen: { in: normalizedFens } },
+        select: { id: true, normalizedFen: true },
+      });
+      const positionIdsByFen = new Map(positions.map((position) => [position.normalizedFen, position.id]));
+
+      await tx.importedGamePly.createMany({
+        data: rows.map((row) => {
+          const positionId = positionIdsByFen.get(row.normalizedFen);
+          if (!positionId) throw new Error(`Could not resolve imported game position for ${row.normalizedFen}`);
+          return {
+            importedGameId: row.importedGameId,
+            plyNumber: row.plyNumber,
+            positionId,
+            moveUci: row.moveUci,
+          };
+        }),
+      });
     }
 
     const game = await tx.importedGame.update({

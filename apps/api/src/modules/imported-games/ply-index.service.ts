@@ -47,13 +47,8 @@ function parsePlyRows(importedGameId: number, pgn: string): ImportedGamePlyCreat
     return {
       importedGameId,
       plyNumber,
-      moveNumber: Math.ceil(plyNumber / 2),
-      side: move.color === 'w' ? 'WHITE' : 'BLACK',
-      fenBefore: move.before,
       normalizedFen: normalizeFenForExplorer(move.before),
-      fenAfter: move.after,
       moveUci: toUci(move),
-      moveSan: move.san,
     };
   });
 }
