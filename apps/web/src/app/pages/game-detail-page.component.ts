@@ -13,7 +13,7 @@ import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
 type ResultForUser = 'WIN' | 'DRAW' | 'LOSS';
-type AnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+type AnalysisStatus = 'NOT_ANALYZED' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED';
 
 type Classification = 'BEST' | 'GOOD' | 'INACCURACY' | 'MISTAKE' | 'BLUNDER' | 'BOOK' | 'MISS';
 
@@ -654,8 +654,10 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
 
   analysisStatusLabel(): string {
     if (this.analysisRun?.status === 'COMPLETED' || this.game?.analysis?.status === 'COMPLETED') return 'Saved';
+    if (this.game?.analysis?.status === 'QUEUED') return 'Queued';
     if (this.game?.analysis?.status === 'RUNNING') return 'Running';
     if (this.game?.analysis?.status === 'FAILED') return 'Failed';
+    if (this.game?.analysis?.status === 'INTERRUPTED') return 'Interrupted';
     return 'None';
   }
 

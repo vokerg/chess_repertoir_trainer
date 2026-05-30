@@ -105,8 +105,10 @@ function latestRun(row: OpeningAnalysisPlyRow) {
 function deriveAnalysisStatus(row: OpeningAnalysisPlyRow) {
   const run = latestRun(row);
   if (!run) return 'NOT_ANALYZED';
+  if (run.status === 'QUEUED') return 'QUEUED';
   if (run.status === 'RUNNING') return 'RUNNING';
   if (run.status === 'COMPLETED') return 'COMPLETED';
+  if (run.status === 'INTERRUPTED') return 'INTERRUPTED';
   return 'FAILED';
 }
 

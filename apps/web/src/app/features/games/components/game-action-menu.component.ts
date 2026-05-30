@@ -24,9 +24,9 @@ import { ImportedGameListItem } from '../data-access/games.models';
           type="button"
           class="games-action-menu-item games-action-menu-item-button"
           (click)="analyse.emit()"
-          [disabled]="analysing() || game().analysis?.status === 'RUNNING'"
+          [disabled]="analysing() || analysisInProgress()"
         >
-          {{ analysing() || game().analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
+          {{ analyseActionLabel() }}
         </button>
         <ng-template #reanalyseAction>
           <button
@@ -85,7 +85,20 @@ export class GameActionMenuComponent {
 
   protected canForceReanalyse(): boolean {
     const status = this.game().analysis?.status;
-    return status === 'RUNNING' || status === 'FAILED' || status === 'COMPLETED';
+    return status === 'FAILED' || status === 'INTERRUPTED' || status === 'COMPLETED';
+  }
+
+  protected analysisInProgress(): boolean {
+    const status = this.game().analysis?.status;
+    return status === 'QUEUED' || status === 'RUNNING';
+  }
+
+  protected analyseActionLabel(): string {
+    if (this.analysing()) return 'Queueing...';
+    const status = this.game().analysis?.status;
+    if (status === 'QUEUED') return 'Queued';
+    if (status === 'RUNNING') return 'Analysing...';
+    return 'Analyse';
   }
 
   protected plyIndexActionLabel(): string {

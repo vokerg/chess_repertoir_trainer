@@ -21,7 +21,7 @@ const boolParam = z.preprocess((value) => {
 const providerSchema = z.enum(['LICHESS', 'CHESS_COM']);
 const resultForUserSchema = z.enum(['WIN', 'DRAW', 'LOSS']);
 const colorSchema = z.enum(['WHITE', 'BLACK']);
-const analysisStatusSchema = z.enum(['NOT_ANALYZED', 'RUNNING', 'COMPLETED', 'FAILED']);
+const analysisStatusSchema = z.enum(['NOT_ANALYZED', 'QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'INTERRUPTED']);
 const plyIndexStatusSchema = z.enum(['NOT_INDEXED', 'INDEXED', 'FAILED']);
 const classificationSchema = z.enum(['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER', 'BOOK', 'MISS']);
 

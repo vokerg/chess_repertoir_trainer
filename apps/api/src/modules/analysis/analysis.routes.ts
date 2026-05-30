@@ -82,6 +82,12 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
+        if (parsed.data.async) {
+          const result = await GameAnalysisService.queueImportedGameAnalysis(gameId, parsed.data);
+          reply.code(result.reusedExisting ? 200 : 202);
+          return result;
+        }
+
         const result = await GameAnalysisService.analyzeImportedGame(gameId, parsed.data);
         reply.code(result.reusedExisting ? 200 : 201);
         return result;

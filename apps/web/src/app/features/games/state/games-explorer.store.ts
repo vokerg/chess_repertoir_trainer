@@ -1,8 +1,9 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { GamesApiService } from '../data-access/games-api.service';
 import {
   ImportedGameFacetsResponse,
+  ImportedGameAnalysisRun,
   ImportedGameListItem,
   ImportedGamePageInfo,
   ImportedGamePlyIndexResult,
@@ -10,8 +11,9 @@ import {
 import { defaultGameFilters, GameFilters } from '../filters/game-filter.model';
 
 @Injectable()
-export class GamesExplorerStore {
+export class GamesExplorerStore implements OnDestroy {
   private readonly api = inject(GamesApiService);
+  private analysisPollTimer?: ReturnType<typeof setTimeout>;
 
   readonly games = signal<ImportedGameListItem[]>([]);
   readonly facets = signal<ImportedGameFacetsResponse>({});
@@ -72,7 +74,12 @@ export class GamesExplorerStore {
     });
   }
 
+  ngOnDestroy(): void {
+    this.clearAnalysisPolling();
+  }
+
   refresh(): void {
+    this.clearAnalysisPolling();
     this.resetBulkIndexState();
     this.games.set([]);
     this.pageInfo.set({ nextCursor: null, hasMore: false });
@@ -93,6 +100,7 @@ export class GamesExplorerStore {
         this.games.set(cursor ? [...this.games(), ...data.items] : data.items);
         this.pageInfo.set(data.pageInfo);
         this.loading.set(false);
+        this.scheduleAnalysisPolling();
       },
       error: (err) => {
         this.error.set(readApiError(err, 'Could not load imported games.'));
@@ -178,9 +186,14 @@ export class GamesExplorerStore {
     this.analysingGameId.set(game.id);
     this.error.set(null);
     this.api.startAnalysis(game.id, force).subscribe({
-      next: () => {
+      next: (result) => {
         this.analysingGameId.set(null);
-        this.refresh();
+        this.applyAnalysisRun(result.run);
+        if (this.filters().analysisStatus) {
+          this.loadGames();
+        } else {
+          this.scheduleAnalysisPolling();
+        }
       },
       error: (err) => {
         this.error.set(readApiError(err, 'Could not start game analysis.'));
@@ -209,10 +222,52 @@ export class GamesExplorerStore {
     game.plyIndex.error = null;
   }
 
+  private applyAnalysisRun(run: ImportedGameAnalysisRun): void {
+    this.games.update((games) => games.map((game) => {
+      if (game.id !== run.importedGameId) return game;
+      return {
+        ...game,
+        analysis: {
+          ...game.analysis,
+          status: run.status,
+          runId: run.id,
+          depth: run.depth ?? null,
+          completedAt: run.completedAt ?? null,
+          createdAt: run.createdAt ?? null,
+          whiteAccuracy: run.whiteAccuracy ?? null,
+          blackAccuracy: run.blackAccuracy ?? null,
+          userAccuracy: userAccuracyForGame(game, run),
+          summary: run.summary ?? null,
+          criticalMoveCount: Array.isArray(run.criticalMoves) ? run.criticalMoves.length : null,
+        },
+      };
+    }));
+  }
+
   private resetBulkIndexState(): void {
     this.bulkIndexing.set(false);
     this.bulkIndexCompleted.set(0);
     this.bulkIndexTotal.set(0);
+  }
+
+  private scheduleAnalysisPolling(): void {
+    this.clearAnalysisPolling();
+    if (!this.games().some((game) => isAnalysisActive(game))) return;
+
+    this.analysisPollTimer = setTimeout(() => {
+      this.analysisPollTimer = undefined;
+      if (this.loading()) {
+        this.scheduleAnalysisPolling();
+        return;
+      }
+      this.loadGames();
+    }, 3000);
+  }
+
+  private clearAnalysisPolling(): void {
+    if (!this.analysisPollTimer) return;
+    clearTimeout(this.analysisPollTimer);
+    this.analysisPollTimer = undefined;
   }
 
   private displayTimeControl(game: ImportedGameListItem): string {
@@ -250,4 +305,14 @@ function readApiError(err: unknown, fallback: string): string {
     return maybeHttp.error?.message || maybeHttp.error?.error || maybeHttp.message || fallback;
   }
   return fallback;
+}
+
+function isAnalysisActive(game: ImportedGameListItem): boolean {
+  return game.analysis?.status === 'QUEUED' || game.analysis?.status === 'RUNNING';
+}
+
+function userAccuracyForGame(game: ImportedGameListItem, run: ImportedGameAnalysisRun): number | null {
+  if (game.userColor === 'WHITE') return run.whiteAccuracy ?? null;
+  if (game.userColor === 'BLACK') return run.blackAccuracy ?? null;
+  return null;
 }

@@ -77,9 +77,11 @@ import { GameFilters } from './game-filter.model';
           <select [ngModel]="filters().analysisStatus" (ngModelChange)="setFilter('analysisStatus', $event)">
             <option value="">Any status</option>
             <option value="NOT_ANALYZED">Not analysed</option>
+            <option value="QUEUED">Queued</option>
             <option value="RUNNING">Running</option>
             <option value="COMPLETED">Completed</option>
             <option value="FAILED">Failed</option>
+            <option value="INTERRUPTED">Interrupted</option>
           </select>
         </label>
 

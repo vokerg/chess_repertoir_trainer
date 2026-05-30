@@ -10,7 +10,7 @@ import {
   ImportedGameListRow,
 } from './imported-games.repository.prisma';
 
-export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED';
 export type ImportedGamePlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
 
 function encodeCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>) {
@@ -42,8 +42,10 @@ function latestRun(row: ImportedGameListRow | ImportedGameDetailRow) {
 function deriveAnalysisStatus(row: ImportedGameListRow | ImportedGameDetailRow): ImportedGameAnalysisStatus {
   const run = latestRun(row);
   if (!run) return 'NOT_ANALYZED';
+  if (run.status === 'QUEUED') return 'QUEUED';
   if (run.status === 'RUNNING') return 'RUNNING';
   if (run.status === 'COMPLETED') return 'COMPLETED';
+  if (run.status === 'INTERRUPTED') return 'INTERRUPTED';
   return 'FAILED';
 }
 
@@ -195,16 +197,20 @@ function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyo
 function analysisStatusFacetRows(rows: Array<{ analysisRuns: Array<{ status: string }> }>) {
   const counts: Record<ImportedGameAnalysisStatus, number> = {
     NOT_ANALYZED: 0,
+    QUEUED: 0,
     RUNNING: 0,
     COMPLETED: 0,
     FAILED: 0,
+    INTERRUPTED: 0,
   };
 
   for (const row of rows) {
     const status = row.analysisRuns[0]?.status;
     if (!status) counts.NOT_ANALYZED += 1;
+    else if (status === 'QUEUED') counts.QUEUED += 1;
     else if (status === 'RUNNING') counts.RUNNING += 1;
     else if (status === 'COMPLETED') counts.COMPLETED += 1;
+    else if (status === 'INTERRUPTED') counts.INTERRUPTED += 1;
     else counts.FAILED += 1;
   }
 

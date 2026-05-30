@@ -1,7 +1,7 @@
 export type Provider = 'LICHESS' | 'CHESS_COM';
 export type UserColor = 'WHITE' | 'BLACK';
 export type ResultForUser = 'WIN' | 'DRAW' | 'LOSS';
-export type AnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type AnalysisStatus = 'NOT_ANALYZED' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED';
 export type PlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
 
 export interface ImportedGamePlayer {
@@ -20,6 +20,25 @@ export interface ImportedGameAnalysisSummary {
   userAccuracy?: number | null;
   summary?: Record<string, unknown> | null;
   criticalMoveCount?: number | null;
+}
+
+export interface ImportedGameAnalysisRun {
+  id: number;
+  importedGameId: number;
+  status: Exclude<AnalysisStatus, 'NOT_ANALYZED'>;
+  depth?: number | null;
+  completedAt?: string | null;
+  createdAt?: string | null;
+  whiteAccuracy?: number | null;
+  blackAccuracy?: number | null;
+  summary?: Record<string, unknown> | null;
+  criticalMoves?: unknown[] | null;
+}
+
+export interface StartImportedGameAnalysisResponse {
+  queued?: boolean | null;
+  reusedExisting: boolean;
+  run: ImportedGameAnalysisRun;
 }
 
 export interface ImportedGamePlyIndexSummary {

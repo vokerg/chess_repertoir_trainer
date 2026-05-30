@@ -297,8 +297,12 @@ export class GamesTableComponent {
   }
 
   protected analysisStatusLabel(game: ImportedGameListItem): string {
-    if (this.analysingGameId() === game.id || game.analysis?.status === 'RUNNING') return 'Analysing...';
+    if (this.analysingGameId() === game.id) return 'Queueing...';
+    if (game.analysis?.status === 'QUEUED') return 'Queued';
+    if (game.analysis?.status === 'RUNNING') return 'Analysing...';
     if (game.analysis?.status === 'COMPLETED') return 'Analysed';
+    if (game.analysis?.status === 'FAILED') return 'Failed';
+    if (game.analysis?.status === 'INTERRUPTED') return 'Interrupted';
     return 'Not analysed';
   }
 
