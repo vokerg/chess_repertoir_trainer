@@ -202,6 +202,26 @@ const legacyOpenApiDocument = {
         },
       },
     },
+    '/api/me/accounts/{id}/reset-cursor': {
+      post: {
+        tags: ['External accounts'],
+        summary: 'Reset the incremental sync cursor for an external account',
+        description:
+          'Clears the account sync cursor so the next sync re-scans the full provider history for that account. Previously imported games remain protected by per-account provider game upserts.',
+        parameters: [{ $ref: '#/components/parameters/AccountId' }],
+        responses: {
+          '200': {
+            description: 'Updated external account',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ExternalAccount' },
+              },
+            },
+          },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
     '/api/me/accounts/{id}/games': {
       get: {
         tags: ['Imported games'],

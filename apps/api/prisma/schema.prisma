@@ -86,6 +86,8 @@ model ImportedGame {
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
+  @@index([userId, speedCategory, endedAt])
+  @@index([accountId, speedCategory, endedAt])
   @@index([provider, providerGameId])
 }
 
@@ -110,6 +112,7 @@ model ImportedGamePly {
   @@unique([importedGameId, plyNumber])
   @@index([importedGameId])
   @@index([normalizedFen])
+  @@index([normalizedFen, moveUci, importedGameId, plyNumber])
   @@index([moveUci])
 }
 

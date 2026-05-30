@@ -69,6 +69,17 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return account;
   });
 
+  app.delete('/api/me/accounts/:id', async (request, reply) => {
+    const id = Number((request.params as any).id);
+    const account = await ExternalAccountService.deleteForCurrentUser(id);
+    if (!account) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    return { deleted: true, account };
+  });
+
   app.post('/api/me/accounts/:id/sync', async (request, reply) => {
     const id = Number((request.params as any).id);
     const account = await ExternalAccountService.getForCurrentUser(id);
@@ -91,6 +102,17 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
       reply.code(400);
       return { error: err.message ?? String(err) };
     }
+  });
+
+  app.post('/api/me/accounts/:id/reset-cursor', async (request, reply) => {
+    const id = Number((request.params as any).id);
+    const account = await ExternalAccountService.resetSyncCursorForCurrentUser(id);
+    if (!account) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    return account;
   });
 
   app.get('/api/me/accounts/:id/games', async (request, reply) => {

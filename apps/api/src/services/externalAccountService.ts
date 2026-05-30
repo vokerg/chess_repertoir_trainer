@@ -59,6 +59,31 @@ export const ExternalAccountService = {
     });
   },
 
+  resetSyncCursorForCurrentUser: async (id: number) => {
+    await CurrentUserService.getOrCreate();
+    const existing = await prisma.externalAccount.findFirst({ where: { id, userId: SINGLETON_USER_ID } });
+    if (!existing) return null;
+
+    return prisma.externalAccount.update({
+      where: { id },
+      data: {
+        syncCursorTime: null,
+      },
+    });
+  },
+
+  deleteForCurrentUser: async (id: number) => {
+    await CurrentUserService.getOrCreate();
+    const existing = await prisma.externalAccount.findFirst({ where: { id, userId: SINGLETON_USER_ID } });
+    if (!existing) return null;
+
+    await prisma.externalAccount.delete({
+      where: { id },
+    });
+
+    return existing;
+  },
+
   listGamesForCurrentUser: async (accountId: number, take = 50, skip = 0) => {
     await CurrentUserService.getOrCreate();
     return prisma.importedGame.findMany({
