@@ -5,9 +5,10 @@ import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { Subscription } from 'rxjs';
 import { ChessBoardComponent } from '../components/chess-board.component';
+import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
-import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -93,7 +94,7 @@ interface PlayedMove {
 @Component({
   selector: 'app-opening-analysis-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent, StockfishPanelComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
   template: `
     <section class="opening-page stack">
       <section class="section-card opening-hero">
@@ -245,10 +246,12 @@ interface PlayedMove {
           </div>
 
           <div class="board-stage opening-board-stage">
-            <div class="eval-bar-modern" [class.eval-bar-modern-flipped]="isBlackPerspective()" title="Stockfish evaluation">
-              <div class="eval-black-modern" [style.height.%]="100 - evalWhitePercent()"></div>
-              <div class="eval-label-modern">{{ evalLabel() }}</div>
-            </div>
+            <app-engine-eval-bar
+              [analysis]="engine"
+              [currentFen]="currentFen"
+              [flipped]="isBlackPerspective()"
+              [fitHeight]="true"
+            ></app-engine-eval-bar>
 
             <div class="board-shell">
               <app-chess-board
@@ -300,29 +303,46 @@ interface PlayedMove {
             ></app-stockfish-panel>
           </section>
 
-          <p *ngIf="loading" class="status-note">Loading opening analysis...</p>
+          <div class="opening-next-moves-frame" [class.opening-next-moves-loading]="loading">
+            <p *ngIf="loading" class="status-note opening-loading-note">Loading opening analysis...</p>
 
-          <div *ngIf="!loading && analysis && analysis.nextMoves.length === 0" class="empty-state compact-empty">
-            No indexed rated games reached this position with the current filters. Index more games or widen the filters.
-          </div>
+            <div *ngIf="analysis && analysis.nextMoves.length === 0" class="empty-state compact-empty opening-next-empty">
+              No indexed rated games reached this position with the current filters. Index more games or widen the filters.
+            </div>
 
-          <div class="opening-move-tree" *ngIf="!loading && analysis && analysis.nextMoves.length > 0">
-            <button
-              *ngFor="let move of analysis.nextMoves"
-              type="button"
-              class="opening-move-row"
-              (click)="playMove(move)"
-            >
-              <span class="move-node-dot"></span>
-              <span class="move-main">
-                <strong>{{ move.moveSan || move.moveUci }}</strong>
-                <small>{{ move.moveUci }}</small>
-              </span>
-              <span class="move-wdl">
-                <span>{{ wdlLabel(move.games) }}</span>
-                <small>{{ scoreLabel(move.games) }}</small>
-              </span>
-            </button>
+            <div class="opening-move-tree" *ngIf="analysis && analysis.nextMoves.length > 0">
+              <button
+                *ngFor="let move of analysis.nextMoves"
+                type="button"
+                class="opening-move-row"
+                (click)="playMove(move)"
+                [disabled]="loading"
+              >
+                <span class="move-node-dot"></span>
+                <span class="move-main">
+                  <strong>{{ move.moveSan || move.moveUci }}</strong>
+                  <small>{{ move.moveUci }}</small>
+                </span>
+                <span class="move-wdl">
+                  <span>{{ wdlLabel(move.games) }}</span>
+                  <small>{{ scoreLabel(move.games) }}</small>
+                </span>
+              </button>
+            </div>
+
+            <div class="opening-move-tree opening-move-tree-placeholder" *ngIf="loading && !analysis" aria-hidden="true">
+              <div *ngFor="let row of loadingMoveRows" class="opening-move-row opening-move-row-placeholder">
+                <span class="move-node-dot"></span>
+                <span class="move-main">
+                  <strong>&nbsp;</strong>
+                  <small>&nbsp;</small>
+                </span>
+                <span class="move-wdl">
+                  <span>&nbsp;</span>
+                  <small>&nbsp;</small>
+                </span>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -355,7 +375,7 @@ interface PlayedMove {
       .opening-workbench { display: grid; grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr); gap: 1rem; align-items: start; }
       .opening-board-panel, .opening-tree-panel { display: grid; gap: 1rem; }
       .opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0, min(520px, calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
-      .opening-board-stage .eval-bar-modern { min-height: auto; height: 100%; min-width: 0; }
+      .opening-board-stage app-engine-eval-bar { height: 100%; min-width: 0; }
       .opening-board-stage .board-shell { width: 100%; min-width: 0; }
       .opening-board-stage app-chess-board { display: block; width: 100%; min-width: 0; }
       .opening-board-stage app-chess-board ::ng-deep .board-shell { width: 100%; }
@@ -366,10 +386,16 @@ interface PlayedMove {
       .opening-wdl-line { margin: 0.25rem 0 0; font-size: 1.35rem; font-weight: 900; color: var(--text); }
       .opening-score-ring { display: inline-grid; place-items: center; min-width: 74px; height: 74px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-weight: 900; }
       .engine-summary-card { display: grid; gap: 0.65rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
+      .opening-next-moves-frame { position: relative; display: grid; gap: 0.65rem; min-height: 194px; }
+      .opening-loading-note { position: absolute; right: 0; top: -0.25rem; z-index: 2; border: 1px solid var(--border); border-radius: 999px; padding: 0.38rem 0.65rem; background: rgba(255, 252, 247, 0.96); box-shadow: 0 8px 18px rgba(35, 27, 21, 0.08); font-weight: 800; }
+      .opening-next-moves-loading .opening-move-tree, .opening-next-moves-loading .opening-next-empty { opacity: 0.52; }
       .opening-move-tree { position: relative; display: grid; gap: 0.65rem; }
       .opening-move-tree::before { content: ''; position: absolute; left: 12px; top: 10px; bottom: 10px; width: 2px; background: rgba(35, 27, 21, 0.1); }
       .opening-move-row { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 0.8rem; align-items: center; width: 100%; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.72); padding: 0.85rem; text-align: left; color: var(--text); cursor: pointer; }
       .opening-move-row:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(35, 27, 21, 0.1); }
+      .opening-move-row:disabled { cursor: wait; transform: none; box-shadow: none; }
+      .opening-move-tree-placeholder .opening-move-row-placeholder { cursor: wait; }
+      .opening-move-row-placeholder .move-main, .opening-move-row-placeholder .move-wdl { opacity: 0.28; background: linear-gradient(90deg, rgba(35,27,21,0.08), rgba(255,255,255,0.44), rgba(35,27,21,0.08)); border-radius: 10px; }
       .move-node-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); z-index: 1; }
       .move-main, .move-wdl { display: grid; gap: 0.18rem; }
       .move-main small, .move-wdl small { color: var(--muted); font-weight: 700; }
@@ -394,6 +420,8 @@ interface PlayedMove {
   ],
 })
 export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
+  readonly loadingMoveRows = [0, 1, 2];
+
   facets: ImportedGameFacetsResponse = {};
   filters: OpeningFilters = this.defaultFilters();
   analysis: OpeningAnalysisResponse | null = null;
@@ -409,7 +437,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
   private chess = new Chess();
-  private displayedEval: { line: EngineLine; fen: string } | null = null;
 
   constructor(
     private api: ApiService,
@@ -435,10 +462,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
       this.engine = analysis;
-      const firstLine = analysis.lines[0];
-      if (firstLine && analysis.fen === this.currentFen) {
-        this.displayedEval = { line: firstLine, fen: analysis.fen };
-      }
       this.cdr.detectChanges();
     });
     this.loadFacets();
@@ -664,29 +687,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     return this.engine.bestMove || this.engine.lines[0]?.pv?.[0] || null;
   }
 
-  lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
-    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
-    if (line.scoreCp === undefined) return '—';
-    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
-    const pawns = whiteCp / 100;
-    return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
-  }
-
-  evalLabel() {
-    const displayed = this.displayedEvalLine();
-    if (!displayed) return '—';
-    return this.lineScoreLabel(displayed.line, displayed.fen);
-  }
-
-  evalWhitePercent() {
-    const displayed = this.displayedEvalLine();
-    if (!displayed) return 50;
-    if (displayed.line.mate !== undefined) return this.mateFromWhitePerspective(displayed.line.mate, displayed.fen) > 0 ? 100 : 0;
-    const whiteCp = this.scoreFromWhitePerspective(displayed.line.scoreCp ?? 0, displayed.fen);
-    const clamped = Math.max(-800, Math.min(800, whiteCp));
-    return 50 + (clamped / 800) * 50;
-  }
-
   isBlackPerspective() {
     return this.boardSide() === 'BLACK';
   }
@@ -722,19 +722,4 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     this.scheduleAnalysis();
   }
 
-  private scoreFromWhitePerspective(scoreCp: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -scoreCp : scoreCp;
-  }
-
-  private mateFromWhitePerspective(mate: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -mate : mate;
-  }
-
-  private displayedEvalLine() {
-    const currentLine = this.engine.fen === this.currentFen ? this.engine.lines[0] : null;
-    if (currentLine) return { line: currentLine, fen: this.currentFen };
-    return this.displayedEval?.fen === this.currentFen ? this.displayedEval : null;
-  }
 }

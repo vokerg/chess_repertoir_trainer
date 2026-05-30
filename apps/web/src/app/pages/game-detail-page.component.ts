@@ -4,10 +4,11 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { Subscription } from 'rxjs';
 import { ChessBoardComponent } from '../components/chess-board.component';
+import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
-import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -129,14 +130,10 @@ interface GameTree {
   root: GameTreeNode;
 }
 
-type DisplayedEval =
-  | { kind: 'browser'; line: EngineLine; fen: string }
-  | { kind: 'saved'; scoreCpWhite: number };
-
 @Component({
   selector: 'app-game-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, MoveTreeComponent, StockfishPanelComponent],
   template: `
     <section class="game-detail-page stack">
       <header class="workbench-header">
@@ -197,10 +194,12 @@ type DisplayedEval =
             </div>
 
             <div class="board-stage">
-              <div class="eval-bar-modern" [class.eval-bar-modern-flipped]="isBlackPerspective()" title="Stockfish evaluation">
-                <div class="eval-black-modern" [style.height.%]="100 - evalWhitePercent()"></div>
-                <div class="eval-label-modern">{{ evalLabel() }}</div>
-              </div>
+              <app-engine-eval-bar
+                [analysis]="analysis"
+                [currentFen]="currentFen"
+                [flipped]="isBlackPerspective()"
+                [savedScoreCpWhite]="savedScoreCpWhiteForSelectedNode()"
+              ></app-engine-eval-bar>
 
               <div class="board-shell">
                 <app-chess-board
@@ -276,7 +275,6 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
 
   private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
-  private displayedEval: DisplayedEval | null = null;
   private nextLocalNodeId = 1000000;
 
   constructor(
@@ -310,10 +308,6 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
       this.analysis = analysis;
-      const firstLine = analysis.lines[0];
-      if (firstLine && analysis.fen === this.currentFen) {
-        this.displayedEval = { kind: 'browser', line: firstLine, fen: analysis.fen };
-      }
       this.cdr.detectChanges();
     });
 
@@ -339,7 +333,6 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
     this.currentNodeId = 0;
     this.currentFen = 'startpos';
     this.lastMove = null;
-    this.displayedEval = null;
     this.nextLocalNodeId = 1000000;
 
     this.api.get<ImportedGameDetail>(`/imported-games/${this.gameId}`).subscribe({
@@ -368,14 +361,12 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
         this.analysisRun = data.run;
         this.analysisByPly = Object.fromEntries((data.run.moves || []).map((move) => [move.plyNumber, move]));
         this.attachSavedAnalysis();
-        this.refreshDisplayedEval();
         this.cdr.detectChanges();
       },
       error: () => {
         this.analysisRun = null;
         this.analysisByPly = {};
         this.attachSavedAnalysis();
-        this.refreshDisplayedEval();
         this.cdr.detectChanges();
       },
     });
@@ -477,7 +468,6 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
     this.lastMove = selected.node.id === 0 || !selected.node.moveUci
       ? null
       : { from: selected.node.moveUci.substring(0, 2), to: selected.node.moveUci.substring(2, 4) };
-    this.refreshDisplayedEval();
   }
 
   onSelectNode(id: number) {
@@ -592,66 +582,15 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  refreshDisplayedEval() {
-    const fallback = this.savedEvalForSelectedNode();
-    if (this.analysis.fen === this.currentFen && this.analysis.lines[0]) return;
-    this.displayedEval = fallback;
-  }
-
-  savedEvalForSelectedNode(): DisplayedEval | null {
+  savedScoreCpWhiteForSelectedNode(): number | null {
     const scoreCpWhite = this.selectedNode?.node?.analysisMove?.playedScoreCpWhite;
-    return typeof scoreCpWhite === 'number' ? { kind: 'saved', scoreCpWhite } : null;
+    return typeof scoreCpWhite === 'number' ? scoreCpWhite : null;
   }
 
   analysisArrows(): Array<{ from: string; to: string; brush?: string }> {
     const move = this.analysis.bestMove;
     if (!move || this.analysis.fen !== this.currentFen || move === '(none)') return [];
     return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
-  }
-
-  lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
-    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
-    if (line.scoreCp === undefined) return '—';
-    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
-    return this.cpLabel(whiteCp);
-  }
-
-  evalLabel() {
-    if (!this.displayedEval) return '—';
-    if (this.displayedEval.kind === 'browser') return this.lineScoreLabel(this.displayedEval.line, this.displayedEval.fen);
-    return this.cpLabel(this.displayedEval.scoreCpWhite);
-  }
-
-  evalWhitePercent() {
-    if (!this.displayedEval) return 50;
-    if (this.displayedEval.kind === 'browser') {
-      if (this.displayedEval.line.mate !== undefined) {
-        return this.mateFromWhitePerspective(this.displayedEval.line.mate, this.displayedEval.fen) > 0 ? 100 : 0;
-      }
-      const whiteCp = this.scoreFromWhitePerspective(this.displayedEval.line.scoreCp ?? 0, this.displayedEval.fen);
-      return this.cpPercent(whiteCp);
-    }
-    return this.cpPercent(this.displayedEval.scoreCpWhite);
-  }
-
-  cpLabel(whiteCp: number) {
-    const pawns = whiteCp / 100;
-    return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
-  }
-
-  cpPercent(whiteCp: number) {
-    const clamped = Math.max(-800, Math.min(800, whiteCp));
-    return 50 + (clamped / 800) * 50;
-  }
-
-  scoreFromWhitePerspective(scoreCp: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -scoreCp : scoreCp;
-  }
-
-  mateFromWhitePerspective(mate: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -mate : mate;
   }
 
   selectedLabel() {

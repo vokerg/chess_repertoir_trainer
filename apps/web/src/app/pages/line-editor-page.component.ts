@@ -4,10 +4,11 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
+import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { MoveNotesComponent } from '../components/move-notes.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
-import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 interface EditableLine {
   id: number;
@@ -19,7 +20,7 @@ interface EditableLine {
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
   template: `
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
@@ -48,10 +49,7 @@ interface EditableLine {
           </div>
 
           <div class="board-stage">
-            <div class="eval-bar-modern" [class.eval-bar-modern-flipped]="isBlackPerspective()" title="Stockfish evaluation">
-              <div class="eval-black-modern" [style.height.%]="100 - evalWhitePercent()"></div>
-              <div class="eval-label-modern">{{ evalLabel() }}</div>
-            </div>
+            <app-engine-eval-bar [analysis]="analysis" [currentFen]="currentFen" [flipped]="isBlackPerspective()"></app-engine-eval-bar>
 
             <div class="board-shell">
               <app-chess-board
@@ -132,7 +130,6 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
   private creatingMove = false;
-  private displayedEval: { line: EngineLine; fen: string } | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -165,10 +162,6 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
       this.analysis = analysis;
-      const firstLine = analysis.lines[0];
-      if (firstLine && analysis.fen === this.currentFen) {
-        this.displayedEval = { line: firstLine, fen: analysis.fen };
-      }
       this.cdr.detectChanges();
     });
     this.route.paramMap.subscribe((params) => {
@@ -389,46 +382,8 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     return `Engine warning: your planned move is ${planned}, but Stockfish currently prefers ${this.analysis.bestMove}.`;
   }
 
-  lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
-    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
-    if (line.scoreCp === undefined) return '—';
-    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
-    const pawns = whiteCp / 100;
-    return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
-  }
-
-  evalLabel() {
-    const displayed = this.displayedEvalLine();
-    if (!displayed) return '—';
-    return this.lineScoreLabel(displayed.line, displayed.fen);
-  }
-
-  evalWhitePercent() {
-    const displayed = this.displayedEvalLine();
-    if (!displayed) return 50;
-    if (displayed.line.mate !== undefined) return this.mateFromWhitePerspective(displayed.line.mate, displayed.fen) > 0 ? 100 : 0;
-    const whiteCp = this.scoreFromWhitePerspective(displayed.line.scoreCp ?? 0, displayed.fen);
-    const clamped = Math.max(-800, Math.min(800, whiteCp));
-    return 50 + (clamped / 800) * 50;
-  }
-
   isBlackPerspective() {
     return this.line?.sideToTrain === 'BLACK';
-  }
-
-  private scoreFromWhitePerspective(scoreCp: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -scoreCp : scoreCp;
-  }
-
-  private mateFromWhitePerspective(mate: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -mate : mate;
-  }
-
-  private displayedEvalLine() {
-    const currentLine = this.analysis.fen === this.currentFen ? this.analysis.lines[0] : null;
-    return currentLine ? { line: currentLine, fen: this.currentFen } : this.displayedEval;
   }
 
   breadcrumbLink() {

@@ -20,16 +20,18 @@ import { EngineAnalysis, EngineLine } from '../services/stockfish-analysis.servi
       <p *ngIf="isCurrentFen() && analysis.error" class="status-error">{{ analysis.error }}</p>
       <div *ngIf="warning" class="engine-warning-modern">{{ warning }}</div>
 
-      <div *ngIf="visibleLines().length > 0; else emptyState" class="stockfish-lines">
-        <div *ngFor="let engineLine of visibleLines()" class="engine-line-modern">
-          <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
-          <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
+      <div class="stockfish-lines">
+        <div *ngFor="let slot of lineSlots; let i = index" class="engine-line-modern stockfish-line-slot" [class.stockfish-line-empty]="!visibleLines()[i]">
+          <ng-container *ngIf="visibleLines()[i] as engineLine; else linePlaceholder">
+            <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
+            <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
+          </ng-container>
+          <ng-template #linePlaceholder>
+            <span class="engine-score-modern stockfish-placeholder-score">{{ placeholderScoreLabel(i) }}</span>
+            <span class="stockfish-placeholder-text">{{ placeholderLineLabel(i) }}</span>
+          </ng-template>
         </div>
       </div>
-
-      <ng-template #emptyState>
-        <p *ngIf="!isCurrentFen() || (!analysis.running && !analysis.error)" class="status-note">No engine lines.</p>
-      </ng-template>
     </section>
   `,
   styles: [
@@ -82,6 +84,27 @@ import { EngineAnalysis, EngineLine } from '../services/stockfish-analysis.servi
         gap: 0.55rem;
       }
 
+      .stockfish-line-slot {
+        min-height: 45px;
+      }
+
+      .stockfish-line-empty {
+        color: var(--muted);
+      }
+
+      .stockfish-placeholder-score {
+        color: var(--muted);
+      }
+
+      .stockfish-placeholder-text {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.88rem;
+      }
+
       @media (max-width: 560px) {
         .stockfish-panel-header {
           display: grid;
@@ -95,6 +118,8 @@ import { EngineAnalysis, EngineLine } from '../services/stockfish-analysis.servi
   ],
 })
 export class StockfishPanelComponent {
+  protected readonly lineSlots = [0, 1, 2];
+
   @Input({ required: true }) analysis!: EngineAnalysis;
   @Input({ required: true }) currentFen!: string;
   @Input() warning: string | null = null;
@@ -117,6 +142,17 @@ export class StockfishPanelComponent {
 
   topDepth(): number {
     return Math.max(0, ...this.visibleLines().map((line) => line.depth));
+  }
+
+  placeholderScoreLabel(index: number): string {
+    return `#${index + 1}`;
+  }
+
+  placeholderLineLabel(index: number): string {
+    if (!this.isCurrentFen()) return index === 0 ? 'Waiting for this position...' : ' ';
+    if (this.analysis.running) return index === 0 ? 'Analysing position...' : ' ';
+    if (this.analysis.error) return ' ';
+    return index === 0 ? 'No engine lines.' : ' ';
   }
 
   lineScoreLabel(line: EngineLine): string {
