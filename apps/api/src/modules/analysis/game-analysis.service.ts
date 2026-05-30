@@ -4,13 +4,18 @@ import { ANALYSIS_ACCURACY_VERSION, GameAccuracyTracker } from './accuracy';
 import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
 import { PositionAnalysisService, PositionAnalysisStats } from './position-analysis.service';
 import {
+  claimNextQueuedGameAnalysisRun,
   completeGameAnalysisRun,
   createGameAnalysisRun,
   createGameMoveAnalysis,
   failGameAnalysisRun,
   getExistingGameAnalysis,
+  getGameAnalysisRunForExecution,
   getImportedGameForAnalysis,
   getLatestGameAnalysisForImportedGame,
+  interruptRunningAnalysisRuns,
+  markGameAnalysisRunRunning,
+  updateGameAnalysisRunProgress,
 } from './analysis.repository.prisma';
 import { MoveClassification, ParsedGameMove } from './analysis.types';
 
@@ -33,6 +38,7 @@ interface AnalyzeImportedGameOptions {
   depth: number;
   multipv: number;
   force: boolean;
+  async?: boolean;
 }
 
 function toUci(move: any): string {
@@ -145,6 +151,41 @@ function compactRun(run: any) {
   };
 }
 
+async function createRunForGame(importedGameId: number, options: AnalyzeImportedGameOptions, status: 'QUEUED' | 'RUNNING') {
+  const engineName = StockfishEngine.engineName;
+  const engineVersion = StockfishEngine.engineVersion();
+
+  if (!options.force) {
+    const existing = await getExistingGameAnalysis(importedGameId, {
+      depth: options.depth,
+      multipv: options.multipv,
+      engineName,
+      engineVersion,
+    });
+
+    if (existing) return { reusedExisting: true, run: existing };
+  }
+
+  const game = await getImportedGameForAnalysis(importedGameId);
+  if (!game) throw new Error('Imported game not found');
+  if (!game.pgn) throw new Error('Imported game has no PGN to analyze');
+
+  const moves = parsePgnMoves(game.pgn);
+  if (moves.length === 0) throw new Error('Imported game PGN has no moves to analyze');
+
+  const run = await createGameAnalysisRun({
+    importedGameId,
+    depth: options.depth,
+    multipv: options.multipv,
+    engineName,
+    engineVersion,
+    positionsTotal: moves.length,
+    status,
+  });
+
+  return { reusedExisting: false, run };
+}
+
 export const GameAnalysisService = {
   getImportedGameAnalysis: async (importedGameId: number) => {
     await CurrentUserService.getOrCreate();
@@ -158,64 +199,59 @@ export const GameAnalysisService = {
     return { run: compactRun(run) };
   },
 
+  queueImportedGameAnalysis: async (importedGameId: number, options: AnalyzeImportedGameOptions) => {
+    await CurrentUserService.getOrCreate();
+    const result = await createRunForGame(importedGameId, options, 'QUEUED');
+    return { queued: !result.reusedExisting, reusedExisting: result.reusedExisting, run: compactRun(result.run) };
+  },
+
   analyzeImportedGame: async (importedGameId: number, options: AnalyzeImportedGameOptions) => {
     await CurrentUserService.getOrCreate();
+    const result = await createRunForGame(importedGameId, options, 'RUNNING');
+    if (result.reusedExisting) return { reusedExisting: true, run: compactRun(result.run) };
 
-    const engineName = StockfishEngine.engineName;
-    const engineVersion = StockfishEngine.engineVersion();
+    const completed = await GameAnalysisService.executeAnalysisRun(result.run.id);
+    return { reusedExisting: false, run: completed.run };
+  },
 
-    if (!options.force) {
-      const existing = await getExistingGameAnalysis(importedGameId, {
-        depth: options.depth,
-        multipv: options.multipv,
-        engineName,
-        engineVersion,
-      });
+  executeAnalysisRun: async (analysisRunId: number, session?: StockfishSession) => {
+    await CurrentUserService.getOrCreate();
 
-      if (existing) {
-        return { reusedExisting: true, run: compactRun(existing) };
-      }
-    }
+    const run = await getGameAnalysisRunForExecution(analysisRunId);
+    if (!run) throw new Error('Game analysis run not found');
+    if (run.status === 'QUEUED') await markGameAnalysisRunRunning(run.id);
+    if (run.status !== 'QUEUED' && run.status !== 'RUNNING') return { run: compactRun(run) };
 
-    const game = await getImportedGameForAnalysis(importedGameId);
+    const game = await getImportedGameForAnalysis(run.importedGameId);
     if (!game) throw new Error('Imported game not found');
     if (!game.pgn) throw new Error('Imported game has no PGN to analyze');
 
     const moves = parsePgnMoves(game.pgn);
     if (moves.length === 0) throw new Error('Imported game PGN has no moves to analyze');
 
-    const run = await createGameAnalysisRun({
-      importedGameId,
-      depth: options.depth,
-      multipv: options.multipv,
-      engineName,
-      engineVersion,
-      positionsTotal: moves.length,
-    });
-
     const summary = emptySummary();
     const stats: PositionAnalysisStats = summary.performance;
     const accuracyTracker = new GameAccuracyTracker();
     const startedAtMs = Date.now();
     let positionsDone = 0;
-    let session: StockfishSession | undefined;
+    let ownedSession: StockfishSession | undefined;
 
     try {
-      session = await StockfishSession.start();
+      const engineSession = session ?? (ownedSession = await StockfishSession.start());
 
       for (const move of moves) {
         const position = await PositionAnalysisService.analyzePosition({
           fen: move.fenBefore,
           playedMoveUci: move.playedMoveUci,
-          depth: options.depth,
-          multipv: options.multipv,
-        }, session, stats);
+          depth: run.depth,
+          multipv: run.multipv,
+        }, engineSession, stats);
 
         accuracyTracker.add(move.side, position);
 
         await createGameMoveAnalysis({
           analysisRunId: run.id,
-          importedGameId,
+          importedGameId: run.importedGameId,
           positionAnalysisId: position.id,
           plyNumber: move.plyNumber,
           moveNumber: move.moveNumber,
@@ -230,19 +266,32 @@ export const GameAnalysisService = {
 
         positionsDone += 1;
         addToSummary(summary, move, position.classification);
+        await updateGameAnalysisRunProgress(run.id, positionsDone);
       }
 
       const accuracy = accuracyTracker.summarize(game.userColor);
       summary.accuracy = accuracy;
       summary.performance.durationMs = Date.now() - startedAtMs;
       const completed = await completeGameAnalysisRun(run.id, summary, positionsDone, accuracy);
-      return { reusedExisting: false, run: compactRun(completed) };
+      return { run: compactRun(completed) };
     } catch (err: any) {
       summary.performance.durationMs = Date.now() - startedAtMs;
       await failGameAnalysisRun(run.id, err?.message ?? String(err), positionsDone);
       throw err;
     } finally {
-      session?.close();
+      ownedSession?.close();
     }
+  },
+
+  claimAndExecuteNextQueuedRun: async (session?: StockfishSession) => {
+    await CurrentUserService.getOrCreate();
+    const run = await claimNextQueuedGameAnalysisRun();
+    if (!run) return null;
+    return GameAnalysisService.executeAnalysisRun(run.id, session);
+  },
+
+  markInterruptedRunsOnWorkerStartup: async () => {
+    await CurrentUserService.getOrCreate();
+    return interruptRunningAnalysisRuns('Analysis worker restarted before the run completed. Requeue the game to retry.');
   },
 };
