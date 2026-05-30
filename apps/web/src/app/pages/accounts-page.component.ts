@@ -31,6 +31,11 @@ interface ImportRunSummary {
   archivesFetched?: number | null;
 }
 
+interface DeleteAccountResponse {
+  deleted: true;
+  account: ExternalAccount;
+}
+
 interface AccountForm {
   provider: Provider;
   username: string;
@@ -162,12 +167,33 @@ interface AccountForm {
               <button
                 type="button"
                 (click)="syncAccount(account)"
-                [disabled]="syncingAccountId === account.id || !account.isActive"
+                [disabled]="syncingAccountId === account.id || resettingCursorAccountId === account.id || deletingAccountId === account.id || !account.isActive"
               >
                 {{ syncingAccountId === account.id ? 'Syncing...' : 'Sync' }}
               </button>
-              <button type="button" class="secondary" (click)="toggleActive(account)" [disabled]="syncingAccountId === account.id">
+              <button
+                type="button"
+                class="secondary"
+                (click)="resetCursor(account)"
+                [disabled]="syncingAccountId === account.id || resettingCursorAccountId === account.id || deletingAccountId === account.id"
+              >
+                {{ resettingCursorAccountId === account.id ? 'Resetting...' : 'Reset cursor' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="toggleActive(account)"
+                [disabled]="syncingAccountId === account.id || resettingCursorAccountId === account.id || deletingAccountId === account.id"
+              >
                 {{ account.isActive ? 'Disable' : 'Enable' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="deleteAccount(account)"
+                [disabled]="syncingAccountId === account.id || resettingCursorAccountId === account.id || deletingAccountId === account.id"
+              >
+                {{ deletingAccountId === account.id ? 'Deleting...' : 'Delete account' }}
               </button>
               <a routerLink="/games" class="accounts-link-button secondary-link">View games</a>
             </div>
@@ -364,6 +390,8 @@ export class AccountsPageComponent implements OnInit {
   loading = false;
   saving = false;
   syncingAccountId: number | null = null;
+  resettingCursorAccountId: number | null = null;
+  deletingAccountId: number | null = null;
   error: string | null = null;
   notice: string | null = null;
   syncResults: Record<number, ImportRunSummary> = {};
@@ -444,6 +472,31 @@ export class AccountsPageComponent implements OnInit {
     });
   }
 
+  resetCursor(account: ExternalAccount) {
+    const confirmed = window.confirm(
+      `Reset the import cursor for ${this.providerLabel(account.provider)} @${account.username}? The next sync will re-scan the full history for this account, but already imported games will be updated rather than duplicated.`,
+    );
+    if (!confirmed) return;
+
+    this.resettingCursorAccountId = account.id;
+    this.error = null;
+    this.notice = null;
+
+    this.api.post<ExternalAccount>(`/me/accounts/${account.id}/reset-cursor`, {}).subscribe({
+      next: (updated) => {
+        this.accounts = this.accounts.map((item) => (item.id === updated.id ? updated : item));
+        this.notice = `${this.providerLabel(updated.provider)} account ${updated.username} will fully re-scan on the next sync.`;
+        this.resettingCursorAccountId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = this.apiError(err, `Could not reset ${account.username}'s cursor.`);
+        this.resettingCursorAccountId = null;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   toggleActive(account: ExternalAccount) {
     this.error = null;
     this.notice = null;
@@ -456,6 +509,35 @@ export class AccountsPageComponent implements OnInit {
       },
       error: (err) => {
         this.error = this.apiError(err, 'Could not update account.');
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  deleteAccount(account: ExternalAccount) {
+    const label = `${this.providerLabel(account.provider)} @${account.username}`;
+    const confirmed = window.confirm(
+      `Delete ${label} and all imported games, ply indexes, analysis, and sync history linked to it? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    this.deletingAccountId = account.id;
+    this.error = null;
+    this.notice = null;
+
+    this.api.delete<DeleteAccountResponse>(`/me/accounts/${account.id}`).subscribe({
+      next: (result) => {
+        this.accounts = this.accounts.filter((item) => item.id !== account.id);
+        const { [account.id]: removedResult, ...remainingResults } = this.syncResults;
+        void removedResult;
+        this.syncResults = remainingResults;
+        this.notice = `${this.providerLabel(result.account.provider)} account ${result.account.username} was deleted with its imported data.`;
+        this.deletingAccountId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = this.apiError(err, `Could not delete ${account.username}.`);
+        this.deletingAccountId = null;
         this.cdr.detectChanges();
       },
     });

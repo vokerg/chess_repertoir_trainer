@@ -133,6 +133,20 @@ function buildClassificationWhere(classifications?: string[]): Prisma.ImportedGa
   return [{ moveAnalyses: { some: { classification: { in: classifications } } } }];
 }
 
+function buildPlyIndexStatusWhere(statuses?: ImportedGameSearchQuery['plyIndexStatus']): Prisma.ImportedGameWhereInput[] {
+  if (!statuses?.length) return [];
+
+  return [
+    {
+      OR: statuses.map((status) => {
+        if (status === 'INDEXED') return { plyIndexedAt: { not: null } };
+        if (status === 'FAILED') return { plyIndexedAt: null, plyIndexError: { not: null } };
+        return { plyIndexedAt: null, plyIndexError: null };
+      }),
+    },
+  ];
+}
+
 export function buildImportedGameWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput {
   return {
     userId: SINGLETON_USER_ID,
@@ -152,6 +166,7 @@ export function buildImportedGameWhere(query: ImportedGameSearchQuery): Prisma.I
       ...buildOpponentRatingWhere(query),
       ...buildTimeControlWhere(query),
       ...buildClassificationWhere(query.classification),
+      ...buildPlyIndexStatusWhere(query.plyIndexStatus),
     ],
   };
 }

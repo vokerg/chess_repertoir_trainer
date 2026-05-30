@@ -39,13 +39,7 @@ const openingAnalysisGameSelect = {
 const openingAnalysisPlySelect = {
   importedGameId: true,
   plyNumber: true,
-  moveNumber: true,
-  side: true,
-  fenBefore: true,
-  normalizedFen: true,
-  fenAfter: true,
   moveUci: true,
-  moveSan: true,
   importedGame: {
     select: openingAnalysisGameSelect,
   },
@@ -54,6 +48,12 @@ const openingAnalysisPlySelect = {
 export type OpeningAnalysisPlyRow = Prisma.ImportedGamePlyGetPayload<{ select: typeof openingAnalysisPlySelect }>;
 
 export async function findOpeningAnalysisRows(query: ImportedGameSearchQuery, normalizedFen: string): Promise<OpeningAnalysisPlyRow[]> {
+  const position = await prisma.importedGamePosition.findUnique({
+    where: { normalizedFen },
+    select: { id: true },
+  });
+  if (!position) return [];
+
   const ratedOnlyQuery: ImportedGameSearchQuery = {
     ...query,
     rated: true,
@@ -62,7 +62,7 @@ export async function findOpeningAnalysisRows(query: ImportedGameSearchQuery, no
 
   return prisma.importedGamePly.findMany({
     where: {
-      normalizedFen,
+      positionId: position.id,
       importedGame: buildImportedGameWhere(ratedOnlyQuery),
     },
     orderBy: [{ moveUci: 'asc' }, { importedGameId: 'asc' }, { plyNumber: 'asc' }],

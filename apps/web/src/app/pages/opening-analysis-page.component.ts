@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { ChessBoardComponent } from '../components/chess-board.component';
+import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
+import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
+import { EngineAnalysis } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -67,6 +70,38 @@ interface OpeningNextMove {
   games: OpeningWdl;
 }
 
+interface OpeningAnalysisGame {
+  id: number;
+  provider: Provider;
+  providerGameId: string;
+  providerUrl?: string | null;
+  endedAt?: string | null;
+  speedCategory?: string | null;
+  timeControl: {
+    raw?: string | null;
+    initial?: number | null;
+    increment?: number | null;
+  };
+  white?: {
+    username?: string | null;
+    rating?: number | null;
+  } | null;
+  black?: {
+    username?: string | null;
+    rating?: number | null;
+  } | null;
+  userColor?: UserColor | null;
+  resultForUser?: ResultForUser | null;
+  opening?: {
+    eco?: string | null;
+    name?: string | null;
+  } | null;
+  plyNumber: number;
+  moveNumber: number;
+  nextMoveUci: string;
+  nextMoveSan?: string | null;
+}
+
 interface OpeningAnalysisResponse {
   fen: string;
   normalizedFen: string;
@@ -76,7 +111,28 @@ interface OpeningAnalysisResponse {
   occurrences: number;
   games: OpeningWdl;
   nextMoves: OpeningNextMove[];
+  topGames: OpeningAnalysisGame[];
   appliedFilters: Record<string, unknown>;
+}
+
+interface BackendEngineLine {
+  multipv: number;
+  depth: number;
+  moveUci?: string;
+  scoreCpWhite?: number;
+  mateWhite?: number;
+  pvUci: string[];
+}
+
+interface BackendPositionAnalysis {
+  fen: string;
+  bestMoveUci?: string | null;
+  lines: BackendEngineLine[];
+  fromCache: boolean;
+}
+
+interface BackendPositionAnalysisResponse {
+  position: BackendPositionAnalysis;
 }
 
 interface PlayedMove {
@@ -90,7 +146,7 @@ interface PlayedMove {
 @Component({
   selector: 'app-opening-analysis-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
   template: `
     <section class="opening-page stack">
       <section class="section-card opening-hero">
@@ -118,12 +174,13 @@ interface PlayedMove {
       </section>
 
       <section class="section-card opening-filters" aria-label="Opening analysis filters">
-        <div class="opening-filter-heading">
-          <div>
-            <h3 class="opening-section-title">Game filters</h3>
-            <p class="opening-muted">These reuse the imported-games filters. Rated-only is always applied on top.</p>
-          </div>
-          <span class="rated-only-pill">Rated games only</span>
+        <div class="perspective-switch" role="group" aria-label="Opening analysis perspective">
+          <button type="button" class="perspective-option" [class.perspective-option-active]="filters.userColor === 'WHITE'" (click)="setPerspective('WHITE')">
+            <strong>White</strong>
+          </button>
+          <button type="button" class="perspective-option" [class.perspective-option-active]="filters.userColor === 'BLACK'" (click)="setPerspective('BLACK')">
+            <strong>Black</strong>
+          </button>
         </div>
 
         <div class="opening-filter-grid">
@@ -151,15 +208,6 @@ interface PlayedMove {
               <option value="WIN">Win</option>
               <option value="DRAW">Draw</option>
               <option value="LOSS">Loss</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Colour</span>
-            <select [(ngModel)]="filters.userColor" (ngModelChange)="refresh()">
-              <option value="">White or Black</option>
-              <option value="WHITE">White</option>
-              <option value="BLACK">Black</option>
             </select>
           </label>
 
@@ -241,17 +289,28 @@ interface PlayedMove {
           <div class="opening-panel-header">
             <div>
               <h3 class="workbench-panel-title">Board probe</h3>
-              <p class="workbench-panel-subtitle">Play legal moves to move through a position. The lookup updates after every move.</p>
+              <p class="workbench-panel-subtitle">{{ perspectiveHelpText() }}</p>
             </div>
-            <span class="side-pill">{{ analysis?.sideToMove || sideToMoveLabel() }} to move</span>
+            <div class="side-stack">
+              <span class="side-pill">{{ analysis?.sideToMove || sideToMoveLabel() }} to move</span>
+              <span class="turn-pill" [class.turn-pill-user]="isUserTurn()">{{ turnOwnerLabel() }}</span>
+            </div>
           </div>
 
           <div class="board-stage opening-board-stage">
+            <app-engine-eval-bar
+              [analysis]="engine"
+              [currentFen]="currentFen"
+              [flipped]="isBlackPerspective()"
+              [fitHeight]="true"
+            ></app-engine-eval-bar>
+
             <div class="board-shell">
               <app-chess-board
                 [fen]="currentFen"
                 [side]="boardSide()"
                 [lastMove]="lastMove"
+                [arrows]="analysisArrows()"
                 [sound]="false"
                 [positionVersion]="boardPositionVersion"
                 (move)="onBoardMove($event)"
@@ -261,8 +320,9 @@ interface PlayedMove {
 
           <div class="board-action-row">
             <button type="button" class="secondary" (click)="resetBoard()" [disabled]="history.length === 0">⏮ Start</button>
-            <button type="button" class="secondary" (click)="goBack()" [disabled]="history.length === 0">← Previous</button>
+            <button type="button" class="secondary" (click)="goBack()" [disabled]="history.length === 0" title="Left arrow">← Back</button>
             <button type="button" class="secondary" (click)="flipBoard()">Flip board</button>
+            <span class="keyboard-hint">Keyboard: ← to go back, Home for start</span>
           </div>
 
           <div class="opening-line-card">
@@ -284,35 +344,91 @@ interface PlayedMove {
             <div>
               <p class="metric-label">Position WDL</p>
               <p class="opening-wdl-line">{{ wdlLabel(wdl) }}</p>
-              <p class="opening-muted">{{ analysis?.occurrences || 0 }} indexed occurrence{{ (analysis?.occurrences || 0) === 1 ? '' : 's' }} · {{ analysis?.normalizedFen || '—' }}</p>
             </div>
-            <div class="opening-score-ring">{{ scoreLabel(wdl) }}</div>
           </div>
 
-          <p *ngIf="loading" class="status-note">Loading opening analysis...</p>
+          <section class="engine-summary-card" aria-label="Stockfish opening evaluation">
+            <app-stockfish-panel
+              [analysis]="engine"
+              [currentFen]="currentFen"
+              (analyze)="rerunAnalysis()"
+            ></app-stockfish-panel>
+          </section>
 
-          <div *ngIf="!loading && analysis && analysis.nextMoves.length === 0" class="empty-state compact-empty">
-            No indexed rated games reached this position with the current filters. Index more games or widen the filters.
+          <div class="opening-next-moves-frame" [class.opening-next-moves-loading]="loading">
+            <p *ngIf="loading" class="status-note opening-loading-note">Loading opening analysis...</p>
+
+            <div *ngIf="analysis && analysis.nextMoves.length === 0" class="empty-state compact-empty opening-next-empty">
+              No indexed rated games reached this position with the current filters. Index more games or widen the filters.
+            </div>
+
+            <div class="opening-move-tree" *ngIf="analysis && analysis.nextMoves.length > 0">
+              <button
+                *ngFor="let move of analysis.nextMoves"
+                type="button"
+                class="opening-move-row"
+                (click)="playMove(move)"
+                [disabled]="loading"
+              >
+                <span class="move-node-dot"></span>
+                <span class="move-main">
+                  <strong>{{ move.moveSan || move.moveUci }}</strong>
+                  <small>{{ move.moveUci }}</small>
+                </span>
+                <span class="move-wdl">
+                  <span>{{ wdlLabel(move.games) }}</span>
+                  <small>{{ scoreLabel(move.games) }}</small>
+                </span>
+              </button>
+            </div>
+
+            <div class="opening-move-tree opening-move-tree-placeholder" *ngIf="loading && !analysis" aria-hidden="true">
+              <div *ngFor="let row of loadingMoveRows" class="opening-move-row opening-move-row-placeholder">
+                <span class="move-node-dot"></span>
+                <span class="move-main">
+                  <strong>&nbsp;</strong>
+                  <small>&nbsp;</small>
+                </span>
+                <span class="move-wdl">
+                  <span>&nbsp;</span>
+                  <small>&nbsp;</small>
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div class="opening-move-tree" *ngIf="!loading && analysis && analysis.nextMoves.length > 0">
-            <button
-              *ngFor="let move of analysis.nextMoves"
-              type="button"
-              class="opening-move-row"
-              (click)="playMove(move)"
-            >
-              <span class="move-node-dot"></span>
-              <span class="move-main">
-                <strong>{{ move.moveSan || move.moveUci }}</strong>
-                <small>{{ move.moveUci }} · {{ move.occurrences }} occurrence{{ move.occurrences === 1 ? '' : 's' }}</small>
-              </span>
-              <span class="move-wdl">
-                <span>{{ wdlLabel(move.games) }}</span>
-                <small>{{ scoreLabel(move.games) }}</small>
-              </span>
-            </button>
-          </div>
+          <section class="opening-games-panel" aria-label="Top games in this position">
+            <div class="opening-panel-header compact-header">
+              <div>
+                <h3 class="workbench-panel-title">Top games in this position</h3>
+                <p class="workbench-panel-subtitle">Most recent rated games that reached this exact normalized position.</p>
+              </div>
+            </div>
+
+            <div *ngIf="analysis?.topGames?.length; else noTopGames" class="opening-games-list">
+              <a
+                *ngFor="let game of analysis?.topGames || []"
+                class="opening-game-row"
+                [routerLink]="['/games', game.id]"
+                [class.opening-game-row-loading]="loading"
+              >
+                <span class="provider-pill" [ngClass]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
+                <span class="opening-game-main">
+                  <strong>{{ gameDateLabel(game) }} · {{ playerPairLabel(game) }}</strong>
+                  <small>{{ gameMetaLabel(game) }}</small>
+                </span>
+                <span class="opening-game-result" [ngClass]="resultClass(game.resultForUser)">
+                  {{ resultLabel(game.resultForUser) }}
+                </span>
+              </a>
+            </div>
+
+            <ng-template #noTopGames>
+              <div class="empty-state compact-empty">
+                No matching games reached this position with the current filters.
+              </div>
+            </ng-template>
+          </section>
         </section>
       </div>
     </section>
@@ -324,10 +440,17 @@ interface PlayedMove {
       .opening-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(108px, 1fr)); gap: 0.8rem; min-width: min(430px, 100%); }
       .opening-mini-card { min-height: 112px; }
       .opening-filters { display: grid; gap: 1rem; }
-      .opening-filter-heading, .opening-panel-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
+      .opening-panel-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
       .opening-section-title { margin: 0; font-size: 1.15rem; }
       .opening-muted { margin: 0.25rem 0 0; color: var(--muted); line-height: 1.35; }
-      .rated-only-pill, .side-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.55rem 0.85rem; font-weight: 800; color: var(--accent-strong); background: var(--accent-soft); white-space: nowrap; }
+      .side-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.55rem 0.85rem; font-weight: 800; color: var(--accent-strong); background: var(--accent-soft); white-space: nowrap; }
+      .perspective-switch { display: inline-flex; width: fit-content; gap: 0.25rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem; background: rgba(35, 27, 21, 0.06); }
+      .perspective-option { min-height: 34px; border-radius: 999px; padding: 0.42rem 0.9rem; background: transparent; color: var(--muted-strong); box-shadow: none; font-size: 0.84rem; }
+      .perspective-option:hover:not(:disabled) { transform: none; background: rgba(255,255,255,0.55); }
+      .perspective-option-active { background: var(--surface-strong); color: var(--accent-strong); box-shadow: 0 6px 14px rgba(73, 48, 25, 0.08); }
+      .side-stack { display: grid; justify-items: end; gap: 0.45rem; }
+      .turn-pill { display: inline-flex; width: fit-content; align-items: center; border-radius: 999px; padding: 0.35rem 0.65rem; background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); font-size: 0.78rem; font-weight: 900; }
+      .turn-pill-user { background: var(--success-soft); color: var(--success); }
       .opening-filter-grid { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 0.75rem; }
       .opening-field { display: grid; gap: 0.35rem; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; }
       .opening-field span { text-transform: uppercase; letter-spacing: 0.06em; }
@@ -336,38 +459,76 @@ interface PlayedMove {
       .opening-filter-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
       .opening-workbench { display: grid; grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr); gap: 1rem; align-items: start; }
       .opening-board-panel, .opening-tree-panel { display: grid; gap: 1rem; }
-      .opening-board-stage { justify-content: center; }
+      .opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0, min(520px, calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
+      .opening-board-stage app-engine-eval-bar { height: 100%; min-width: 0; }
+      .opening-board-stage .board-shell { width: 100%; min-width: 0; }
+      .opening-board-stage app-chess-board { display: block; width: 100%; min-width: 0; }
+      .opening-board-stage app-chess-board ::ng-deep .board-shell { width: 100%; }
       .board-action-row { display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; }
       .opening-line-card { border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.6); padding: 0.9rem; }
       .opening-line-text { margin: 0.2rem 0 0; font-weight: 800; color: var(--text); line-height: 1.45; }
       .opening-position-summary { display: flex; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
       .opening-wdl-line { margin: 0.25rem 0 0; font-size: 1.35rem; font-weight: 900; color: var(--text); }
       .opening-score-ring { display: inline-grid; place-items: center; min-width: 74px; height: 74px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-weight: 900; }
+      .engine-summary-card { display: grid; gap: 0.65rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
+      .opening-next-moves-frame { position: relative; display: grid; gap: 0.65rem; min-height: 194px; }
+      .opening-loading-note { position: absolute; right: 0; top: -0.25rem; z-index: 2; border: 1px solid var(--border); border-radius: 999px; padding: 0.38rem 0.65rem; background: rgba(255, 252, 247, 0.96); box-shadow: 0 8px 18px rgba(35, 27, 21, 0.08); font-weight: 800; }
+      .opening-next-moves-loading .opening-move-tree, .opening-next-moves-loading .opening-next-empty { opacity: 0.52; }
       .opening-move-tree { position: relative; display: grid; gap: 0.65rem; }
       .opening-move-tree::before { content: ''; position: absolute; left: 12px; top: 10px; bottom: 10px; width: 2px; background: rgba(35, 27, 21, 0.1); }
       .opening-move-row { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 0.8rem; align-items: center; width: 100%; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.72); padding: 0.85rem; text-align: left; color: var(--text); cursor: pointer; }
       .opening-move-row:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(35, 27, 21, 0.1); }
+      .opening-move-row:disabled { cursor: wait; transform: none; box-shadow: none; }
+      .opening-move-tree-placeholder .opening-move-row-placeholder { cursor: wait; }
+      .opening-move-row-placeholder .move-main, .opening-move-row-placeholder .move-wdl { opacity: 0.28; background: linear-gradient(90deg, rgba(35,27,21,0.08), rgba(255,255,255,0.44), rgba(35,27,21,0.08)); border-radius: 10px; }
       .move-node-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); z-index: 1; }
       .move-main, .move-wdl { display: grid; gap: 0.18rem; }
       .move-main small, .move-wdl small { color: var(--muted); font-weight: 700; }
       .move-wdl { text-align: right; font-weight: 900; }
+      .opening-games-panel { display: grid; gap: 0.65rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+      .compact-header { align-items: start; }
+      .opening-games-list { display: grid; gap: 0.55rem; }
+      .opening-game-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.68); padding: 0.75rem; color: var(--text); text-decoration: none; transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease; }
+      .opening-game-row:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(35, 27, 21, 0.1); background: rgba(255,255,255,0.84); }
+      .opening-game-row-loading { opacity: 0.52; pointer-events: none; }
+      .opening-game-main { display: grid; gap: 0.18rem; min-width: 0; }
+      .opening-game-main strong, .opening-game-main small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .opening-game-main small { color: var(--muted); font-weight: 700; }
+      .opening-game-result { display: inline-flex; align-items: center; justify-content: center; min-width: 58px; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
+      .provider-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
+      .provider-lichess { background: rgba(35, 27, 21, 0.08); color: var(--text); }
+      .provider-chess-com, .result-win { background: var(--success-soft); color: var(--success); }
+      .result-draw { background: var(--warning-soft); color: var(--warning); }
+      .result-loss { background: var(--danger-soft); color: var(--danger); }
+      .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
       @media (max-width: 1050px) {
         .opening-hero, .opening-workbench { grid-template-columns: 1fr; display: grid; }
         .opening-filter-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
       }
       @media (max-width: 680px) {
         .opening-hero-stats { grid-template-columns: 1fr; }
+        .perspective-switch { display: flex; width: 100%; }
+        .perspective-option { flex: 1; justify-content: center; }
         .opening-filter-grid { grid-template-columns: 1fr; }
-        .opening-filter-heading, .opening-panel-header, .opening-position-summary { display: grid; }
+        .opening-panel-header, .opening-position-summary { display: grid; }
+        .side-stack { justify-items: start; }
         .move-wdl { text-align: left; }
+        .opening-game-row { grid-template-columns: 1fr; align-items: start; }
+        .opening-game-result { width: fit-content; }
+      }
+      @media (max-width: 640px) {
+        .opening-board-stage { grid-template-columns: minmax(0, min(100%, 520px)); gap: 0; }
       }
     `,
   ],
 })
-export class OpeningAnalysisPageComponent implements OnInit {
+export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
+  readonly loadingMoveRows = [0, 1, 2];
+
   facets: ImportedGameFacetsResponse = {};
   filters: OpeningFilters = this.defaultFilters();
   analysis: OpeningAnalysisResponse | null = null;
+  engine: EngineAnalysis = { fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] };
   loading = false;
   error: string | null = null;
   boardPositionVersion = 0;
@@ -376,13 +537,38 @@ export class OpeningAnalysisPageComponent implements OnInit {
   boardFlipped = false;
   currentFen = new Chess().fen();
 
+  private analysisTimer?: ReturnType<typeof setTimeout>;
+  private engineRequestSeq = 0;
   private chess = new Chess();
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      this.goBack();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      this.resetBoard();
+    }
+  }
 
   ngOnInit() {
     this.loadFacets();
     this.refresh();
+    this.scheduleAnalysis();
+  }
+
+  ngOnDestroy() {
+    if (this.analysisTimer) clearTimeout(this.analysisTimer);
   }
 
   get wdl(): OpeningWdl {
@@ -428,6 +614,13 @@ export class OpeningAnalysisPageComponent implements OnInit {
     this.commitPlayedMove(played, move.moveSan || undefined);
   }
 
+  setPerspective(color: UserColor) {
+    if (this.filters.userColor === color) return;
+    this.filters.userColor = color;
+    this.boardFlipped = false;
+    this.resetBoard();
+  }
+
   goBack() {
     const undone = this.chess.undo();
     if (!undone) return;
@@ -456,7 +649,8 @@ export class OpeningAnalysisPageComponent implements OnInit {
 
   resetFilters() {
     this.filters = this.defaultFilters();
-    this.refresh();
+    this.boardFlipped = false;
+    this.resetBoard();
   }
 
   queryString(): string {
@@ -468,7 +662,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
     if (this.filters.accountId) params.set('accountIds', this.filters.accountId);
     if (this.filters.provider && this.filters.provider !== 'ALL') params.set('providers', this.filters.provider);
     if (this.filters.resultForUser) params.set('resultForUser', this.filters.resultForUser);
-    if (this.filters.userColor) params.set('userColor', this.filters.userColor);
+    params.set('userColor', this.filters.userColor);
     if (this.filters.speedCategory) params.set('speedCategory', this.filters.speedCategory);
     if (this.filters.timeControl.trim()) params.set('timeControl', this.filters.timeControl.trim());
     if (this.filters.opponent.trim()) params.set('opponent', this.filters.opponent.trim());
@@ -495,7 +689,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
       accountId: '',
       provider: 'ALL',
       resultForUser: '',
-      userColor: '',
+      userColor: 'WHITE',
       speedCategory: '',
       timeControl: '',
       opponent: '',
@@ -537,8 +731,60 @@ export class OpeningAnalysisPageComponent implements OnInit {
     return 'Provider';
   }
 
+  providerClass(provider?: Provider | null): string {
+    return provider === 'CHESS_COM' ? 'provider-chess-com' : 'provider-lichess';
+  }
+
+  resultLabel(result?: ResultForUser | null): string {
+    if (result === 'WIN') return 'Win';
+    if (result === 'DRAW') return 'Draw';
+    if (result === 'LOSS') return 'Loss';
+    return 'Unknown';
+  }
+
+  resultClass(result?: ResultForUser | null): string {
+    if (result === 'WIN') return 'result-win';
+    if (result === 'DRAW') return 'result-draw';
+    if (result === 'LOSS') return 'result-loss';
+    return 'result-unknown';
+  }
+
+  playerPairLabel(game: OpeningAnalysisGame): string {
+    return `${this.playerLabel(game.white)} vs ${this.playerLabel(game.black)}`;
+  }
+
+  playerLabel(player?: { username?: string | null; rating?: number | null } | null): string {
+    if (!player) return 'Unknown';
+    return `${player.username || 'Unknown'}${player.rating ? ` (${player.rating})` : ''}`;
+  }
+
+  gameDateLabel(game: OpeningAnalysisGame): string {
+    if (!game.endedAt) return `#${game.id}`;
+    return this.shortDate(game.endedAt);
+  }
+
+  gameMetaLabel(game: OpeningAnalysisGame): string {
+    const move = game.nextMoveSan || game.nextMoveUci;
+    const control = this.timeClassLabel(game.speedCategory);
+    const opening = game.opening?.eco || game.opening?.name || 'Opening unavailable';
+    return `${control} · move ${game.moveNumber}: ${move} · ${opening}`;
+  }
+
+  shortDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
+  }
+
+  timeClassLabel(speed?: string | null): string {
+    return speed ? speed.charAt(0).toUpperCase() + speed.slice(1) : 'Unknown control';
+  }
+
   wdlLabel(wdl: OpeningWdl): string {
-    return `${wdl.wins}-${wdl.draws}-${wdl.losses}`;
+    return `${wdl.wins} ${wdl.draws} ${wdl.losses}`;
   }
 
   scoreLabel(wdl: OpeningWdl): string {
@@ -551,6 +797,77 @@ export class OpeningAnalysisPageComponent implements OnInit {
 
   sideToMoveLabel(): UserColor {
     return this.chess.turn() === 'w' ? 'WHITE' : 'BLACK';
+  }
+
+  isUserTurn(): boolean {
+    return this.sideToMoveLabel() === this.filters.userColor;
+  }
+
+  turnOwnerLabel(): string {
+    return this.isUserTurn() ? 'Your move' : 'Opponent move';
+  }
+
+  perspectiveHelpText(): string {
+    if (this.filters.userColor === 'BLACK') {
+      return 'Black perspective: start with the opponent move, then inspect your replies from indexed games.';
+    }
+    return 'White perspective: play your opening moves from the start position and inspect your indexed continuations.';
+  }
+
+  rerunAnalysis() {
+    if (!this.currentFen) return;
+    const fen = this.currentFen;
+    const requestId = ++this.engineRequestSeq;
+    const keepCurrentLines = this.engine.fen === fen;
+
+    this.engine = {
+      fen,
+      running: true,
+      ready: false,
+      error: null,
+      bestMove: keepCurrentLines ? this.engine.bestMove : null,
+      lines: keepCurrentLines ? this.engine.lines : [],
+    };
+    this.cdr.detectChanges();
+
+    this.api.post<BackendPositionAnalysisResponse>('/position-analysis', { fen, depth: 12, multipv: 3 }).subscribe({
+      next: (response) => {
+        if (requestId !== this.engineRequestSeq) return;
+        this.engine = this.mapBackendPositionAnalysis(response.position, fen);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        if (requestId !== this.engineRequestSeq) return;
+        this.engine = {
+          ...this.engine,
+          fen,
+          running: false,
+          ready: false,
+          error: err?.error?.message || err?.error?.error || 'Could not load backend Stockfish analysis.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  scheduleAnalysis() {
+    if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.analysisTimer = setTimeout(() => this.rerunAnalysis(), 250);
+  }
+
+  analysisArrows() {
+    const move = this.bestMoveLabel();
+    if (!move || move === '(none)') return [];
+    return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
+  }
+
+  bestMoveLabel() {
+    if (this.engine.fen !== this.currentFen) return null;
+    return this.engine.bestMove || this.engine.lines[0]?.pv?.[0] || null;
+  }
+
+  isBlackPerspective() {
+    return this.boardSide() === 'BLACK';
   }
 
   private tryPlayUci(uci: string): any | null {
@@ -581,5 +898,29 @@ export class OpeningAnalysisPageComponent implements OnInit {
     this.currentFen = this.chess.fen();
     this.boardPositionVersion += 1;
     this.refresh();
+    this.scheduleAnalysis();
   }
+
+  private mapBackendPositionAnalysis(position: BackendPositionAnalysis, requestedFen: string): EngineAnalysis {
+    return {
+      fen: requestedFen,
+      running: false,
+      ready: true,
+      error: null,
+      bestMove: position.bestMoveUci ?? position.lines[0]?.moveUci ?? null,
+      lines: position.lines.map((line) => ({
+        multipv: line.multipv,
+        depth: line.depth,
+        scoreCp: this.scoreFromWhiteToSideToMove(line.scoreCpWhite, requestedFen),
+        mate: this.scoreFromWhiteToSideToMove(line.mateWhite, requestedFen),
+        pv: line.pvUci,
+      })),
+    };
+  }
+
+  private scoreFromWhiteToSideToMove(value: number | undefined, fen: string): number | undefined {
+    if (value === undefined) return undefined;
+    return fen.split(/\s+/)[1] === 'b' ? -value : value;
+  }
+
 }

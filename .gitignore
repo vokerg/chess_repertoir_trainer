@@ -29,6 +29,8 @@ Thumbs.db
 apps/web/.angular/
 apps/web/node_modules/
 apps/api/node_modules/
+apps/mobile/node_modules/
+apps/mobile/.expo/
 apps/web/.agents/
 apps/web/skills-lock.json
 

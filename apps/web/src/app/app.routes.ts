@@ -12,11 +12,15 @@ export const routes: Routes = [
   },
   {
     path: 'games',
-    loadComponent: () => import('./pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
+    loadComponent: () => import('./features/games/pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
   },
   {
     path: 'opening-analysis',
     loadComponent: () => import('./pages/opening-analysis-page.component').then((m) => m.OpeningAnalysisPageComponent),
+  },
+  {
+    path: 'lab',
+    loadComponent: () => import('./pages/lab-page.component').then((m) => m.LabPageComponent),
   },
   {
     path: 'games/:gameId',

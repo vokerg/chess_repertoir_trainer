@@ -63,6 +63,27 @@ function boardFen(fen: string): string {
   return fen === 'startpos' ? new Chess().fen() : new Chess(fen).fen();
 }
 
+function moveNumberFromPly(plyNumber: number) {
+  return Math.ceil(plyNumber / 2);
+}
+
+function sideToMove(fen: string): 'WHITE' | 'BLACK' {
+  return fen.split(/\s+/)[1] === 'b' ? 'BLACK' : 'WHITE';
+}
+
+function playUci(fen: string, uci: string) {
+  const chess = new Chess(fen);
+  const move = chess.move({
+    from: uci.slice(0, 2),
+    to: uci.slice(2, 4),
+    promotion: uci.slice(4, 5) || undefined,
+  });
+  return {
+    fenAfter: chess.fen(),
+    moveSan: move.san ?? uci,
+  };
+}
+
 function emptyWdl(): OpeningAnalysisWdl {
   return { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 }
@@ -139,7 +160,7 @@ function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
   };
 }
 
-function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow): OpeningAnalysisGame {
+function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow, moveSan: string | null): OpeningAnalysisGame {
   const game = row.importedGame;
   return {
     id: game.id,
@@ -168,9 +189,9 @@ function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow): OpeningAnalysisGame 
       name: game.openingName,
     },
     plyNumber: row.plyNumber,
-    moveNumber: row.moveNumber,
+    moveNumber: moveNumberFromPly(row.plyNumber),
     nextMoveUci: row.moveUci,
-    nextMoveSan: row.moveSan,
+    nextMoveSan: moveSan,
   };
 }
 
@@ -197,6 +218,16 @@ export const OpeningAnalysisService = {
         games: OpeningAnalysisWdl;
       }
     >();
+    const moveDetailsByUci = new Map<string, { fenAfter: string; moveSan: string | null }>();
+
+    function detailsForMove(moveUci: string) {
+      const existing = moveDetailsByUci.get(moveUci);
+      if (existing) return existing;
+
+      const details = playUci(fen, moveUci);
+      moveDetailsByUci.set(moveUci, details);
+      return details;
+    }
 
     for (const row of rows) {
       if (!positionGames.has(row.importedGameId)) {
@@ -205,12 +236,13 @@ export const OpeningAnalysisService = {
       }
 
       const existing = moveBuckets.get(row.moveUci);
+      const moveDetails = detailsForMove(row.moveUci);
       const bucket = existing ?? {
         moveUci: row.moveUci,
-        moveSan: row.moveSan,
-        fenAfter: row.fenAfter,
-        side: row.side,
-        moveNumber: row.moveNumber,
+        moveSan: moveDetails.moveSan,
+        fenAfter: moveDetails.fenAfter,
+        side: sideToMove(fen),
+        moveNumber: moveNumberFromPly(row.plyNumber),
         occurrences: 0,
         gameIds: new Set<number>(),
         games: emptyWdl(),
@@ -242,7 +274,7 @@ export const OpeningAnalysisService = {
         return true;
       })
       .slice(0, 10)
-      .map(toOpeningAnalysisGame);
+      .map((row) => toOpeningAnalysisGame(row, detailsForMove(row.moveUci).moveSan));
 
     const chess = new Chess(fen);
 

@@ -86,31 +86,28 @@ model ImportedGame {
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
+  @@index([userId, speedCategory, endedAt])
+  @@index([accountId, speedCategory, endedAt])
   @@index([provider, providerGameId])
 }
 
+model ImportedGamePosition {
+  id            Int               @id @default(autoincrement())
+  normalizedFen String            @unique @db.VarChar(120)
+  plies         ImportedGamePly[]
+}
+
 model ImportedGamePly {
-  id             Int          @id @default(autoincrement())
   importedGameId Int
-  importedGame   ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  importedGame   ImportedGame         @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  positionId     Int
+  position       ImportedGamePosition @relation(fields: [positionId], references: [id])
 
-  plyNumber      Int
-  moveNumber     Int
-  side           String
+  plyNumber Int    @db.SmallInt
+  moveUci   String @db.VarChar(5)
 
-  fenBefore      String
-  normalizedFen  String
-  fenAfter       String
-
-  moveUci        String
-  moveSan        String?
-
-  createdAt      DateTime     @default(now())
-
-  @@unique([importedGameId, plyNumber])
-  @@index([importedGameId])
-  @@index([normalizedFen])
-  @@index([moveUci])
+  @@id([importedGameId, plyNumber])
+  @@index([positionId, moveUci, importedGameId, plyNumber])
 }
 
 model ImportRun {

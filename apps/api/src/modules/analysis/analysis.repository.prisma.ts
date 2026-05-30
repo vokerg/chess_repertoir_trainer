@@ -187,6 +187,37 @@ export async function findPositionAnalysis(cacheKey: string) {
   return prisma.positionAnalysis.findUnique({ where: { cacheKey } });
 }
 
+export async function findCompatiblePositionAnalysis(settings: {
+  normalizedFen: string;
+  depth: number;
+  multipv: number;
+  engineName: string;
+  engineVersion?: string;
+  classificationVersion: string;
+}) {
+  const rows = await prisma.positionAnalysis.findMany({
+    where: {
+      normalizedFen: settings.normalizedFen,
+      depth: settings.depth,
+      engineName: settings.engineName,
+      engineVersion: settings.engineVersion ?? null,
+      classificationVersion: settings.classificationVersion,
+    },
+    orderBy: [
+      { multipv: 'desc' },
+      { updatedAt: 'desc' },
+    ],
+    take: 50,
+  });
+
+  const withLines = rows.filter((row) => Array.isArray(row.lines) && row.lines.length > 0);
+  return withLines.find((row) => row.playedMoveUci === null && row.multipv >= settings.multipv)
+    ?? withLines.find((row) => row.multipv >= settings.multipv)
+    ?? withLines.find((row) => row.playedMoveUci === null)
+    ?? withLines[0]
+    ?? null;
+}
+
 export async function createPositionAnalysis(cacheKey: string, result: PositionAnalysisResult) {
   return prisma.positionAnalysis.create({
     data: {

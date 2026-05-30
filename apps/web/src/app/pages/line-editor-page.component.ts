@@ -4,9 +4,11 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../services/api.service';
 import { ChessBoardComponent } from '../components/chess-board.component';
+import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { MoveNotesComponent } from '../components/move-notes.component';
-import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { StockfishPanelComponent } from '../components/stockfish-panel.component';
+import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 interface EditableLine {
   id: number;
@@ -18,7 +20,7 @@ interface EditableLine {
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, MoveTreeComponent, MoveNotesComponent],
+  imports: [CommonModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
   template: `
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
@@ -47,10 +49,7 @@ interface EditableLine {
           </div>
 
           <div class="board-stage">
-            <div class="eval-bar-modern" [class.eval-bar-modern-flipped]="isBlackPerspective()" title="Stockfish evaluation">
-              <div class="eval-black-modern" [style.height.%]="100 - evalWhitePercent()"></div>
-              <div class="eval-label-modern">{{ evalLabel() }}</div>
-            </div>
+            <app-engine-eval-bar [analysis]="analysis" [currentFen]="currentFen" [flipped]="isBlackPerspective()"></app-engine-eval-bar>
 
             <div class="board-shell">
               <app-chess-board
@@ -83,27 +82,12 @@ interface EditableLine {
           </section>
 
           <section class="workbench-panel engine-panel-modern">
-            <div class="engine-panel-header">
-              <div>
-                <h3 class="workbench-panel-title">Stockfish</h3>
-                <p class="workbench-panel-subtitle">Secondary analysis for the selected position.</p>
-              </div>
-              <button type="button" class="secondary" (click)="rerunAnalysis()" [disabled]="analysis.running">Analyze</button>
-            </div>
-
-            <p *ngIf="analysis.error" class="status-error">{{ analysis.error }}</p>
-            <p *ngIf="analysis.running" class="status-note">Analyzing… depth {{ topDepth() || '…' }}</p>
-            <p *ngIf="!analysis.running && !analysis.bestMove && !analysis.error" class="status-note">Select a position to analyze.</p>
-            <p *ngIf="analysis.bestMove" class="status-note"><strong>Best:</strong> <code>{{ analysis.bestMove }}</code></p>
-
-            <div *ngIf="engineWarning()" class="engine-warning-modern">
-              {{ engineWarning() }}
-            </div>
-
-            <div *ngFor="let engineLine of analysis.lines.slice(0, 3)" class="engine-line-modern">
-              <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
-              <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
-            </div>
+            <app-stockfish-panel
+              [analysis]="analysis"
+              [currentFen]="currentFen"
+              [warning]="engineWarning()"
+              (analyze)="rerunAnalysis()"
+            ></app-stockfish-panel>
           </section>
 
           <app-move-notes [node]="selectedNode" (savedNode)="onNotesSaved($event)"></app-move-notes>
@@ -146,7 +130,6 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
   private creatingMove = false;
-  private displayedEval: { line: EngineLine; fen: string } | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -179,10 +162,6 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
       this.analysis = analysis;
-      const firstLine = analysis.lines[0];
-      if (firstLine && analysis.fen === this.currentFen) {
-        this.displayedEval = { line: firstLine, fen: analysis.fen };
-      }
       this.cdr.detectChanges();
     });
     this.route.paramMap.subscribe((params) => {
@@ -403,50 +382,8 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     return `Engine warning: your planned move is ${planned}, but Stockfish currently prefers ${this.analysis.bestMove}.`;
   }
 
-  topDepth() {
-    return Math.max(0, ...this.analysis.lines.map((line) => line.depth));
-  }
-
-  lineScoreLabel(line: EngineLine, fen: string = this.currentFen) {
-    if (line.mate !== undefined) return `M${this.mateFromWhitePerspective(line.mate, fen)}`;
-    if (line.scoreCp === undefined) return '—';
-    const whiteCp = this.scoreFromWhitePerspective(line.scoreCp, fen);
-    const pawns = whiteCp / 100;
-    return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
-  }
-
-  evalLabel() {
-    const displayed = this.displayedEvalLine();
-    if (!displayed) return '—';
-    return this.lineScoreLabel(displayed.line, displayed.fen);
-  }
-
-  evalWhitePercent() {
-    const displayed = this.displayedEvalLine();
-    if (!displayed) return 50;
-    if (displayed.line.mate !== undefined) return this.mateFromWhitePerspective(displayed.line.mate, displayed.fen) > 0 ? 100 : 0;
-    const whiteCp = this.scoreFromWhitePerspective(displayed.line.scoreCp ?? 0, displayed.fen);
-    const clamped = Math.max(-800, Math.min(800, whiteCp));
-    return 50 + (clamped / 800) * 50;
-  }
-
   isBlackPerspective() {
     return this.line?.sideToTrain === 'BLACK';
-  }
-
-  private scoreFromWhitePerspective(scoreCp: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -scoreCp : scoreCp;
-  }
-
-  private mateFromWhitePerspective(mate: number, fen: string) {
-    const turn = fen.split(' ')[1];
-    return turn === 'b' ? -mate : mate;
-  }
-
-  private displayedEvalLine() {
-    const currentLine = this.analysis.fen === this.currentFen ? this.analysis.lines[0] : null;
-    return currentLine ? { line: currentLine, fen: this.currentFen } : this.displayedEval;
   }
 
   breadcrumbLink() {
