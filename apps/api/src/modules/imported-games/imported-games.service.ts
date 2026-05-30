@@ -10,7 +10,7 @@ import {
   ImportedGameListRow,
 } from './imported-games.repository.prisma';
 
-export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED';
 export type ImportedGamePlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
 
 function encodeCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>) {
@@ -42,8 +42,10 @@ function latestRun(row: ImportedGameListRow | ImportedGameDetailRow) {
 function deriveAnalysisStatus(row: ImportedGameListRow | ImportedGameDetailRow): ImportedGameAnalysisStatus {
   const run = latestRun(row);
   if (!run) return 'NOT_ANALYZED';
+  if (run.status === 'QUEUED') return 'QUEUED';
   if (run.status === 'RUNNING') return 'RUNNING';
   if (run.status === 'COMPLETED') return 'COMPLETED';
+  if (run.status === 'INTERRUPTED') return 'INTERRUPTED';
   return 'FAILED';
 }
 
@@ -187,16 +189,20 @@ function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyo
 function analysisStatusFacetRows(rows: Array<{ analysisRuns: Array<{ status: string }> }>) {
   const counts: Record<ImportedGameAnalysisStatus, number> = {
     NOT_ANALYZED: 0,
+    QUEUED: 0,
     RUNNING: 0,
     COMPLETED: 0,
     FAILED: 0,
+    INTERRUPTED: 0,
   };
 
   for (const row of rows) {
     const status = row.analysisRuns[0]?.status;
     if (!status) counts.NOT_ANALYZED += 1;
+    else if (status === 'QUEUED') counts.QUEUED += 1;
     else if (status === 'RUNNING') counts.RUNNING += 1;
     else if (status === 'COMPLETED') counts.COMPLETED += 1;
+    else if (status === 'INTERRUPTED') counts.INTERRUPTED += 1;
     else counts.FAILED += 1;
   }
 
@@ -217,80 +223,62 @@ async function searchRows(query: ImportedGameSearchQuery) {
       const row = candidates[index];
       lastScannedRow = row;
       if (!rowMatchesAnalysisFilters(row, query)) continue;
-
       visibleRows.push(row);
       if (visibleRows.length === query.limit) {
-        const hasMore = batchHasMore || index < candidates.length - 1;
         return {
-          visibleRows,
-          nextCursor: hasMore ? encodeCursor(row) : null,
-          hasMore,
+          rows: visibleRows,
+          hasMore: batchHasMore || index < candidates.length - 1,
+          nextCursor: toCursor(row),
         };
       }
     }
 
-    if (!candidates.length || !batchHasMore) {
-      return { visibleRows, nextCursor: null, hasMore: false };
+    if (!batchHasMore) {
+      return { rows: visibleRows, hasMore: false, nextCursor: null };
     }
 
-    cursor = toCursor(candidates[candidates.length - 1]);
+    const cursorSource = candidates[candidates.length - 1] ?? lastScannedRow;
+    if (!cursorSource) return { rows: visibleRows, hasMore: false, nextCursor: null };
+    cursor = toCursor(cursorSource);
   }
 
   return {
-    visibleRows,
-    nextCursor: lastScannedRow ? encodeCursor(lastScannedRow) : null,
-    hasMore: lastScannedRow !== null,
+    rows: visibleRows,
+    hasMore: true,
+    nextCursor: lastScannedRow ? toCursor(lastScannedRow) : null,
   };
 }
 
 export const ImportedGamesService = {
   search: async (query: ImportedGameSearchQuery) => {
     await CurrentUserService.getOrCreate();
-    const { visibleRows, nextCursor, hasMore } = await searchRows(query);
-
+    const result = await searchRows(query);
     return {
-      items: visibleRows.map(toListItem),
+      items: result.rows.map(toListItem),
       pageInfo: {
-        nextCursor,
-        hasMore,
+        hasMore: result.hasMore,
+        nextCursor: result.hasMore && result.nextCursor ? encodeCursor(result.nextCursor) : null,
       },
       appliedFilters: query,
     };
   },
 
-  get: async (id: number) => {
+  getById: async (id: number) => {
     await CurrentUserService.getOrCreate();
     const row = await findImportedGameById(id);
-    return row ? toDetail(row) : null;
+    if (!row) throw new Error('Imported game not found');
+    return toDetail(row);
   },
 
   getPgn: async (id: number) => {
     await CurrentUserService.getOrCreate();
-    return getImportedGamePgn(id);
+    const row = await getImportedGamePgn(id);
+    if (!row?.pgn) throw new Error('Imported game PGN not found');
+    return row;
   },
 
   facets: async () => {
     await CurrentUserService.getOrCreate();
-    const facets = await getImportedGameFacets();
-    return {
-      accounts: facets.accounts.map((account) => ({
-        id: account.id,
-        provider: account.provider,
-        username: account.username,
-        displayName: account.displayName,
-        gameCount: account._count.importedGames,
-      })),
-      providers: countFacetRows(facets.providers, 'provider'),
-      speeds: countFacetRows(facets.speeds, 'speedCategory'),
-      variants: countFacetRows(facets.variants, 'variant'),
-      results: countFacetRows(facets.results, 'resultForUser'),
-      colors: countFacetRows(facets.colors, 'userColor'),
-      openings: facets.openings.map((opening) => ({
-        eco: opening.openingEco,
-        name: opening.openingName,
-        count: groupCount(opening, 'openingEco'),
-      })),
-      analysisStatuses: analysisStatusFacetRows(facets.latestAnalysisRows),
-    };
+    return getImportedGameFacets();
   },
 };
