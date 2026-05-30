@@ -21,6 +21,38 @@ export interface OpeningAnalysisNextMove {
   games: OpeningAnalysisWdl;
 }
 
+export interface OpeningAnalysisGame {
+  id: number;
+  provider: string;
+  providerGameId: string;
+  providerUrl: string | null;
+  endedAt: Date | null;
+  speedCategory: string | null;
+  timeControl: {
+    raw: string | null;
+    initial: number | null;
+    increment: number | null;
+  };
+  white: {
+    username: string | null;
+    rating: number | null;
+  };
+  black: {
+    username: string | null;
+    rating: number | null;
+  };
+  userColor: string | null;
+  resultForUser: string | null;
+  opening: {
+    eco: string | null;
+    name: string | null;
+  };
+  plyNumber: number;
+  moveNumber: number;
+  nextMoveUci: string;
+  nextMoveSan: string | null;
+}
+
 function normalizeFenForExplorer(fen: string): string {
   const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
   const parts = chess.fen().split(/\s+/);
@@ -105,6 +137,41 @@ function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
   };
 }
 
+function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow): OpeningAnalysisGame {
+  const game = row.importedGame;
+  return {
+    id: game.id,
+    provider: game.provider,
+    providerGameId: game.providerGameId,
+    providerUrl: game.providerUrl,
+    endedAt: game.endedAt,
+    speedCategory: game.speedCategory,
+    timeControl: {
+      raw: game.timeControlRaw,
+      initial: game.timeControlInitial,
+      increment: game.timeControlIncrement,
+    },
+    white: {
+      username: game.whiteUsername,
+      rating: game.whiteRating,
+    },
+    black: {
+      username: game.blackUsername,
+      rating: game.blackRating,
+    },
+    userColor: game.userColor,
+    resultForUser: game.resultForUser,
+    opening: {
+      eco: game.openingEco,
+      name: game.openingName,
+    },
+    plyNumber: row.plyNumber,
+    moveNumber: row.moveNumber,
+    nextMoveUci: row.moveUci,
+    nextMoveSan: row.moveSan,
+  };
+}
+
 export const OpeningAnalysisService = {
   getPosition: async (query: OpeningAnalysisQuery) => {
     await CurrentUserService.getOrCreate();
@@ -159,6 +226,22 @@ export const OpeningAnalysisService = {
       .map(({ gameIds: _gameIds, ...bucket }) => bucket)
       .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || (a.moveSan ?? '').localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));
 
+    const seenTopGameIds = new Set<number>();
+    const topGames = rows
+      .slice()
+      .sort((a, b) => {
+        const endedA = a.importedGame.endedAt?.getTime() ?? 0;
+        const endedB = b.importedGame.endedAt?.getTime() ?? 0;
+        return endedB - endedA || b.importedGameId - a.importedGameId || a.plyNumber - b.plyNumber;
+      })
+      .filter((row) => {
+        if (seenTopGameIds.has(row.importedGameId)) return false;
+        seenTopGameIds.add(row.importedGameId);
+        return true;
+      })
+      .slice(0, 10)
+      .map(toOpeningAnalysisGame);
+
     const chess = new Chess(fen);
 
     return {
@@ -170,6 +253,7 @@ export const OpeningAnalysisService = {
       occurrences: rows.length,
       games: positionWdl,
       nextMoves,
+      topGames,
       appliedFilters: toAppliedFilters(query, normalizedFen),
     };
   },

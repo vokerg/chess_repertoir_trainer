@@ -70,6 +70,38 @@ interface OpeningNextMove {
   games: OpeningWdl;
 }
 
+interface OpeningAnalysisGame {
+  id: number;
+  provider: Provider;
+  providerGameId: string;
+  providerUrl?: string | null;
+  endedAt?: string | null;
+  speedCategory?: string | null;
+  timeControl: {
+    raw?: string | null;
+    initial?: number | null;
+    increment?: number | null;
+  };
+  white?: {
+    username?: string | null;
+    rating?: number | null;
+  } | null;
+  black?: {
+    username?: string | null;
+    rating?: number | null;
+  } | null;
+  userColor?: UserColor | null;
+  resultForUser?: ResultForUser | null;
+  opening?: {
+    eco?: string | null;
+    name?: string | null;
+  } | null;
+  plyNumber: number;
+  moveNumber: number;
+  nextMoveUci: string;
+  nextMoveSan?: string | null;
+}
+
 interface OpeningAnalysisResponse {
   fen: string;
   normalizedFen: string;
@@ -79,6 +111,7 @@ interface OpeningAnalysisResponse {
   occurrences: number;
   games: OpeningWdl;
   nextMoves: OpeningNextMove[];
+  topGames: OpeningAnalysisGame[];
   appliedFilters: Record<string, unknown>;
 }
 
@@ -363,6 +396,39 @@ interface PlayedMove {
               </div>
             </div>
           </div>
+
+          <section class="opening-games-panel" aria-label="Top games in this position">
+            <div class="opening-panel-header compact-header">
+              <div>
+                <h3 class="workbench-panel-title">Top games in this position</h3>
+                <p class="workbench-panel-subtitle">Most recent rated games that reached this exact normalized position.</p>
+              </div>
+            </div>
+
+            <div *ngIf="analysis?.topGames?.length; else noTopGames" class="opening-games-list">
+              <a
+                *ngFor="let game of analysis?.topGames || []"
+                class="opening-game-row"
+                [routerLink]="['/games', game.id]"
+                [class.opening-game-row-loading]="loading"
+              >
+                <span class="provider-pill" [ngClass]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
+                <span class="opening-game-main">
+                  <strong>{{ gameDateLabel(game) }} · {{ playerPairLabel(game) }}</strong>
+                  <small>{{ gameMetaLabel(game) }}</small>
+                </span>
+                <span class="opening-game-result" [ngClass]="resultClass(game.resultForUser)">
+                  {{ resultLabel(game.resultForUser) }}
+                </span>
+              </a>
+            </div>
+
+            <ng-template #noTopGames>
+              <div class="empty-state compact-empty">
+                No matching games reached this position with the current filters.
+              </div>
+            </ng-template>
+          </section>
         </section>
       </div>
     </section>
@@ -419,6 +485,22 @@ interface PlayedMove {
       .move-main, .move-wdl { display: grid; gap: 0.18rem; }
       .move-main small, .move-wdl small { color: var(--muted); font-weight: 700; }
       .move-wdl { text-align: right; font-weight: 900; }
+      .opening-games-panel { display: grid; gap: 0.65rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+      .compact-header { align-items: start; }
+      .opening-games-list { display: grid; gap: 0.55rem; }
+      .opening-game-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.68); padding: 0.75rem; color: var(--text); text-decoration: none; transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease; }
+      .opening-game-row:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(35, 27, 21, 0.1); background: rgba(255,255,255,0.84); }
+      .opening-game-row-loading { opacity: 0.52; pointer-events: none; }
+      .opening-game-main { display: grid; gap: 0.18rem; min-width: 0; }
+      .opening-game-main strong, .opening-game-main small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .opening-game-main small { color: var(--muted); font-weight: 700; }
+      .opening-game-result { display: inline-flex; align-items: center; justify-content: center; min-width: 58px; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
+      .provider-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; }
+      .provider-lichess { background: rgba(35, 27, 21, 0.08); color: var(--text); }
+      .provider-chess-com, .result-win { background: var(--success-soft); color: var(--success); }
+      .result-draw { background: var(--warning-soft); color: var(--warning); }
+      .result-loss { background: var(--danger-soft); color: var(--danger); }
+      .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
       @media (max-width: 1050px) {
         .opening-hero, .opening-workbench { grid-template-columns: 1fr; display: grid; }
         .opening-filter-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
@@ -431,6 +513,8 @@ interface PlayedMove {
         .opening-panel-header, .opening-position-summary { display: grid; }
         .side-stack { justify-items: start; }
         .move-wdl { text-align: left; }
+        .opening-game-row { grid-template-columns: 1fr; align-items: start; }
+        .opening-game-result { width: fit-content; }
       }
       @media (max-width: 640px) {
         .opening-board-stage { grid-template-columns: minmax(0, min(100%, 520px)); gap: 0; }
@@ -645,6 +729,58 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     if (provider === 'CHESS_COM') return 'Chess.com';
     if (provider === 'LICHESS') return 'Lichess';
     return 'Provider';
+  }
+
+  providerClass(provider?: Provider | null): string {
+    return provider === 'CHESS_COM' ? 'provider-chess-com' : 'provider-lichess';
+  }
+
+  resultLabel(result?: ResultForUser | null): string {
+    if (result === 'WIN') return 'Win';
+    if (result === 'DRAW') return 'Draw';
+    if (result === 'LOSS') return 'Loss';
+    return 'Unknown';
+  }
+
+  resultClass(result?: ResultForUser | null): string {
+    if (result === 'WIN') return 'result-win';
+    if (result === 'DRAW') return 'result-draw';
+    if (result === 'LOSS') return 'result-loss';
+    return 'result-unknown';
+  }
+
+  playerPairLabel(game: OpeningAnalysisGame): string {
+    return `${this.playerLabel(game.white)} vs ${this.playerLabel(game.black)}`;
+  }
+
+  playerLabel(player?: { username?: string | null; rating?: number | null } | null): string {
+    if (!player) return 'Unknown';
+    return `${player.username || 'Unknown'}${player.rating ? ` (${player.rating})` : ''}`;
+  }
+
+  gameDateLabel(game: OpeningAnalysisGame): string {
+    if (!game.endedAt) return `#${game.id}`;
+    return this.shortDate(game.endedAt);
+  }
+
+  gameMetaLabel(game: OpeningAnalysisGame): string {
+    const move = game.nextMoveSan || game.nextMoveUci;
+    const control = this.timeClassLabel(game.speedCategory);
+    const opening = game.opening?.eco || game.opening?.name || 'Opening unavailable';
+    return `${control} · move ${game.moveNumber}: ${move} · ${opening}`;
+  }
+
+  shortDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
+  }
+
+  timeClassLabel(speed?: string | null): string {
+    return speed ? speed.charAt(0).toUpperCase() + speed.slice(1) : 'Unknown control';
   }
 
   wdlLabel(wdl: OpeningWdl): string {

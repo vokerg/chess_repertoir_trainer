@@ -146,6 +146,35 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['moveUci', 'fenAfter', 'side', 'moveNumber', 'occurrences', 'games'],
   },
+  OpeningAnalysisGame: {
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      provider: { type: 'string' },
+      providerGameId: { type: 'string' },
+      providerUrl: { type: 'string', nullable: true },
+      endedAt: { type: 'string', format: 'date-time', nullable: true },
+      speedCategory: { type: 'string', nullable: true },
+      timeControl: {
+        type: 'object',
+        properties: {
+          raw: { type: 'string', nullable: true },
+          initial: { type: 'integer', nullable: true },
+          increment: { type: 'integer', nullable: true },
+        },
+      },
+      white: { $ref: '#/components/schemas/ImportedGamePlayer' },
+      black: { $ref: '#/components/schemas/ImportedGamePlayer' },
+      userColor: { type: 'string', enum: ['WHITE', 'BLACK'], nullable: true },
+      resultForUser: { type: 'string', enum: ['WIN', 'DRAW', 'LOSS'], nullable: true },
+      opening: { $ref: '#/components/schemas/ImportedGameOpening' },
+      plyNumber: { type: 'integer' },
+      moveNumber: { type: 'integer' },
+      nextMoveUci: { type: 'string' },
+      nextMoveSan: { type: 'string', nullable: true },
+    },
+    required: ['id', 'provider', 'providerGameId', 'timeControl', 'white', 'black', 'opening', 'plyNumber', 'moveNumber', 'nextMoveUci'],
+  },
   OpeningAnalysisResponse: {
     type: 'object',
     properties: {
@@ -157,9 +186,10 @@ export const importedGamesOpenApiSchemas = {
       occurrences: { type: 'integer' },
       games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
       nextMoves: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisNextMove' } },
+      topGames: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisGame' } },
       appliedFilters: { type: 'object', additionalProperties: true },
     },
-    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'appliedFilters'],
+    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'topGames', 'appliedFilters'],
   },
 };
 
