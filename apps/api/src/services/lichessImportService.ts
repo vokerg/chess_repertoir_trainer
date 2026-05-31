@@ -219,7 +219,7 @@ export const LichessImportService = {
 
     let gamesSeen = 0;
     let gamesImported = 0;
-    let gamesUpdated = 0;
+    let gamesSkipped = 0;
     let gamesFailed = 0;
     let maxEndedAt = account.syncCursorTime ?? null;
 
@@ -255,19 +255,12 @@ export const LichessImportService = {
             select: { id: true },
           });
 
-          await prisma.importedGame.upsert({
-            where: {
-              accountId_providerGameId: {
-                accountId: account.id,
-                providerGameId: game.id,
-              },
-            },
-            create: data,
-            update: data,
-          });
-
-          if (existing) gamesUpdated += 1;
-          else gamesImported += 1;
+          if (existing) {
+            gamesSkipped += 1;
+          } else {
+            await prisma.importedGame.create({ data });
+            gamesImported += 1;
+          }
 
           if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
             maxEndedAt = data.endedAt;
@@ -285,7 +278,8 @@ export const LichessImportService = {
             status: 'COMPLETED',
             gamesSeen,
             gamesImported,
-            gamesUpdated,
+            gamesUpdated: 0,
+            gamesSkipped,
             gamesFailed,
             completedAt,
             syncUntil: maxEndedAt,
@@ -306,7 +300,8 @@ export const LichessImportService = {
         status: 'COMPLETED',
         gamesSeen,
         gamesImported,
-        gamesUpdated,
+        gamesUpdated: 0,
+        gamesSkipped,
         gamesFailed,
         syncSince,
         syncUntil: maxEndedAt,
@@ -318,7 +313,8 @@ export const LichessImportService = {
           status: 'FAILED',
           gamesSeen,
           gamesImported,
-          gamesUpdated,
+          gamesUpdated: 0,
+          gamesSkipped,
           gamesFailed,
           error: err.message ?? String(err),
           completedAt: new Date(),
