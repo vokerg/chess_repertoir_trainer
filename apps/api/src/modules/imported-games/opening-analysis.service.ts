@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { PositionAnalysisService } from '../analysis/position-analysis.service';
 import { CurrentUserService } from '../../services/currentUserService';
 import { ImportedGameSearchQuery, OpeningAnalysisQuery } from './imported-games.schemas';
 import { findOpeningAnalysisRows, OpeningAnalysisPlyRow } from './opening-analysis.repository.prisma';
@@ -51,6 +52,27 @@ export interface OpeningAnalysisGame {
   moveNumber: number;
   nextMoveUci: string;
   nextMoveSan: string | null;
+}
+
+export interface OpeningPositionAnalysis {
+  id: number;
+  cacheKey: string;
+  fromCache: boolean;
+  fen: string;
+  normalizedFen: string;
+  playedMoveUci?: string;
+  depth: number;
+  multipv: number;
+  engineName: string;
+  engineVersion?: string;
+  classificationVersion: string;
+  bestMoveUci?: string;
+  bestScoreCpWhite?: number;
+  playedScoreCpWhite?: number;
+  scoreLossCp?: number;
+  classification?: string;
+  lines: unknown[];
+  playedLine?: unknown;
 }
 
 function normalizeFenForExplorer(fen: string): string {
@@ -277,6 +299,11 @@ export const OpeningAnalysisService = {
       .map((row) => toOpeningAnalysisGame(row, detailsForMove(row.moveUci).moveSan));
 
     const chess = new Chess(fen);
+    const positionAnalysis = await PositionAnalysisService.getStoredPositionSearch({
+      fen,
+      depth: 12,
+      multipv: 3,
+    });
 
     return {
       fen,
@@ -288,6 +315,7 @@ export const OpeningAnalysisService = {
       games: positionWdl,
       nextMoves,
       topGames,
+      positionAnalysis,
       appliedFilters: toAppliedFilters(query, normalizedFen),
     };
   },
