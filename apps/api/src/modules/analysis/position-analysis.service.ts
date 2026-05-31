@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Chess } from 'chess.js';
-import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
+import { AnalysisEngineSession, configuredAnalysisEngineIdentity } from './engine/analysis-engine';
 import {
   ANALYSIS_CLASSIFICATION_VERSION,
   EngineLine,
@@ -46,8 +46,7 @@ function makeCacheKey(input: {
 
 function cacheContext(input: { fen: string; playedMoveUci?: string; depth: number; multipv: number }) {
   const normalizedFen = normalizeFenForCache(input.fen);
-  const engineName = StockfishEngine.engineName;
-  const engineVersion = StockfishEngine.engineVersion();
+  const { engineName, engineVersion } = configuredAnalysisEngineIdentity();
   const classificationVersion = ANALYSIS_CLASSIFICATION_VERSION;
   const cacheKey = makeCacheKey({
     normalizedFen,
@@ -141,19 +140,18 @@ function storedFromRow(row: any): StoredPositionAnalysis {
 }
 
 async function runSearch(
-  session: StockfishSession | undefined,
+  session: AnalysisEngineSession,
   input: { fen: string; depth: number; multipv: number; searchMoves?: string[] },
   stats?: PositionAnalysisStats,
 ) {
   stats && (stats.engineSearches += 1);
-  const search = session ? session.search.bind(session) : StockfishEngine.search.bind(StockfishEngine);
-  return search(input);
+  return session.search(input);
 }
 
 export const PositionAnalysisService = {
   analyzePositionSearch: async (
     input: { fen: string; depth: number; multipv: number },
-    session?: StockfishSession,
+    session?: AnalysisEngineSession,
     stats?: PositionAnalysisStats,
   ): Promise<StoredPositionAnalysis> => {
     const exact = await getCachedPositionAnalysis(input);
@@ -168,6 +166,8 @@ export const PositionAnalysisService = {
       return compatible;
     }
 
+    if (!session) throw new Error('No analysis engine session is available for a cache miss');
+
     return analyzeAndStorePosition({
       fen: input.fen,
       depth: input.depth,
@@ -177,7 +177,7 @@ export const PositionAnalysisService = {
 
   analyzePosition: async (
     input: { fen: string; playedMoveUci?: string; depth: number; multipv: number },
-    session?: StockfishSession,
+    session?: AnalysisEngineSession,
     stats?: PositionAnalysisStats,
   ): Promise<StoredPositionAnalysis> => {
     if (!input.playedMoveUci) {
@@ -189,6 +189,8 @@ export const PositionAnalysisService = {
       stats && (stats.positionCacheHits += 1);
       return cached;
     }
+
+    if (!session) throw new Error('No analysis engine session is available for a cache miss');
 
     const positionSearch = await PositionAnalysisService.analyzePositionSearch({
       fen: input.fen,
@@ -202,85 +204,85 @@ export const PositionAnalysisService = {
 
 async function analyzeAndStorePosition(
   input: { fen: string; playedMoveUci?: string; depth: number; multipv: number },
-  session?: StockfishSession,
+  session: AnalysisEngineSession,
   stats?: PositionAnalysisStats,
   positionSearch?: StoredPositionAnalysis,
 ): Promise<StoredPositionAnalysis> {
-    const { normalizedFen, engineName, engineVersion, classificationVersion, cacheKey } = cacheContext(input);
+  const { normalizedFen, engineName, engineVersion, classificationVersion, cacheKey } = cacheContext(input);
 
-    const cached = await findPositionAnalysis(cacheKey);
-    if (cached) {
-      stats && (stats.positionCacheHits += 1);
-      return storedFromRow(cached);
+  const cached = await findPositionAnalysis(cacheKey);
+  if (cached) {
+    stats && (stats.positionCacheHits += 1);
+    return storedFromRow(cached);
+  }
+
+  stats && (stats.positionCacheMisses += 1);
+
+  const mainLines = positionSearch?.lines;
+  const bestLine = mainLines?.[0];
+  const bestMoveUci = positionSearch?.bestMoveUci ?? bestLine?.moveUci;
+
+  const mainSearch = positionSearch
+    ? {
+      fen: positionSearch.fen,
+      depth: positionSearch.depth,
+      multipv: positionSearch.multipv,
+      bestMoveUci,
+      lines: positionSearch.lines,
     }
-
-    stats && (stats.positionCacheMisses += 1);
-
-    const mainLines = positionSearch?.lines;
-    const bestLine = mainLines?.[0];
-    const bestMoveUci = positionSearch?.bestMoveUci ?? bestLine?.moveUci;
-
-    const mainSearch = positionSearch
-      ? {
-        fen: positionSearch.fen,
-        depth: positionSearch.depth,
-        multipv: positionSearch.multipv,
-        bestMoveUci,
-        lines: positionSearch.lines,
-      }
-      : await runSearch(session, {
-        fen: input.fen,
-        depth: input.depth,
-        multipv: input.multipv,
-      }, stats);
-
-    const resolvedBestLine = mainSearch.lines[0];
-    const resolvedBestMoveUci = mainSearch.bestMoveUci ?? resolvedBestLine?.moveUci;
-    const resultLines = mainSearch.lines.slice(0, input.multipv);
-
-    let playedLine: EngineLine | undefined;
-    if (input.playedMoveUci) {
-      if (input.playedMoveUci === resolvedBestMoveUci) {
-        playedLine = resolvedBestLine;
-      } else {
-        stats && (stats.forcedMoveSearches += 1);
-        const forced = await runSearch(session, {
-          fen: input.fen,
-          depth: input.depth,
-          multipv: 1,
-          searchMoves: [input.playedMoveUci],
-        }, stats);
-        playedLine = forced.lines[0];
-      }
-    }
-
-    const scoreLossCp = computeScoreLossCp(input.fen, resolvedBestLine, playedLine);
-    const classification = classifyMove(scoreLossCp, input.playedMoveUci, resolvedBestMoveUci);
-
-    const result: PositionAnalysisResult = {
+    : await runSearch(session, {
       fen: input.fen,
-      normalizedFen,
-      playedMoveUci: input.playedMoveUci,
       depth: input.depth,
       multipv: input.multipv,
-      engineName,
-      engineVersion,
-      classificationVersion,
-      bestMoveUci: resolvedBestMoveUci,
-      bestScoreCpWhite: resolvedBestLine?.scoreCpWhite,
-      playedScoreCpWhite: playedLine?.scoreCpWhite,
-      scoreLossCp,
-      classification,
-      lines: resultLines,
-      playedLine,
-    };
+    }, stats);
 
-    try {
-      const created = await createPositionAnalysis(cacheKey, result);
-      return { ...storedFromRow(created), fromCache: false };
-    } catch {
-      const row = await findPositionAnalysis(cacheKey);
-      if (row) return storedFromRow(row);
-      throw new Error('Could not store position analysis');
+  const resolvedBestLine = mainSearch.lines[0];
+  const resolvedBestMoveUci = mainSearch.bestMoveUci ?? resolvedBestLine?.moveUci;
+  const resultLines = mainSearch.lines.slice(0, input.multipv);
+
+  let playedLine: EngineLine | undefined;
+  if (input.playedMoveUci) {
+    if (input.playedMoveUci === resolvedBestMoveUci) {
+      playedLine = resolvedBestLine;
+    } else {
+      stats && (stats.forcedMoveSearches += 1);
+      const forced = await runSearch(session, {
+        fen: input.fen,
+        depth: input.depth,
+        multipv: 1,
+        searchMoves: [input.playedMoveUci],
+      }, stats);
+      playedLine = forced.lines[0];
     }
+  }
+
+  const scoreLossCp = computeScoreLossCp(input.fen, resolvedBestLine, playedLine);
+  const classification = classifyMove(scoreLossCp, input.playedMoveUci, resolvedBestMoveUci);
+
+  const result: PositionAnalysisResult = {
+    fen: input.fen,
+    normalizedFen,
+    playedMoveUci: input.playedMoveUci,
+    depth: input.depth,
+    multipv: input.multipv,
+    engineName,
+    engineVersion,
+    classificationVersion,
+    bestMoveUci: resolvedBestMoveUci,
+    bestScoreCpWhite: resolvedBestLine?.scoreCpWhite,
+    playedScoreCpWhite: playedLine?.scoreCpWhite,
+    scoreLossCp,
+    classification,
+    lines: resultLines,
+    playedLine,
+  };
+
+  try {
+    const created = await createPositionAnalysis(cacheKey, result);
+    return { ...storedFromRow(created), fromCache: false };
+  } catch {
+    const row = await findPositionAnalysis(cacheKey);
+    if (row) return storedFromRow(row);
+    throw new Error('Could not store position analysis');
+  }
 }
