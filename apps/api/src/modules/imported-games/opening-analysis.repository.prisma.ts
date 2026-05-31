@@ -9,7 +9,7 @@ const openingAnalysisRunSelect = {
   whiteAccuracy: true,
   blackAccuracy: true,
   summary: true,
-} satisfies Prisma.GameAnalysisRunSelect;
+} as const;
 
 const openingAnalysisGameSelect = {
   id: true,
@@ -34,7 +34,7 @@ const openingAnalysisGameSelect = {
     take: 1,
     select: openingAnalysisRunSelect,
   },
-} satisfies Prisma.ImportedGameSelect;
+} as const;
 
 const openingAnalysisPlySelect = {
   importedGameId: true,
@@ -43,7 +43,7 @@ const openingAnalysisPlySelect = {
   importedGame: {
     select: openingAnalysisGameSelect,
   },
-} satisfies Prisma.ImportedGamePlySelect;
+} as const;
 
 export type OpeningAnalysisPlyRow = Prisma.ImportedGamePlyGetPayload<{ select: typeof openingAnalysisPlySelect }>;
 
