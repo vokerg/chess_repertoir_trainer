@@ -218,6 +218,31 @@ export async function findCompatiblePositionAnalysis(settings: {
     ?? null;
 }
 
+export async function findCompatiblePositionAnalysisAnyEngine(settings: {
+  normalizedFen: string;
+  depth: number;
+  multipv: number;
+}) {
+  const rows = await prisma.positionAnalysis.findMany({
+    where: {
+      normalizedFen: settings.normalizedFen,
+      depth: settings.depth,
+    },
+    orderBy: [
+      { multipv: 'desc' },
+      { updatedAt: 'desc' },
+    ],
+    take: 50,
+  });
+
+  const withLines = rows.filter((row) => Array.isArray(row.lines) && row.lines.length > 0);
+  return withLines.find((row) => row.playedMoveUci === null && row.multipv >= settings.multipv)
+    ?? withLines.find((row) => row.multipv >= settings.multipv)
+    ?? withLines.find((row) => row.playedMoveUci === null)
+    ?? withLines[0]
+    ?? null;
+}
+
 export async function createPositionAnalysis(cacheKey: string, result: PositionAnalysisResult) {
   return prisma.positionAnalysis.create({
     data: {
