@@ -5,8 +5,9 @@ import {
   analyzePositionOpenApiOperation,
   analysisOpenApiSchemas,
   getImportedGameAnalysisOpenApiOperation,
+  storePositionAnalysisOpenApiOperation,
 } from './analysis.openapi';
-import { analyzeImportedGameSchema, analyzePositionSchema } from './analysis.schemas';
+import { analyzeImportedGameSchema, analyzePositionSchema, storePositionAnalysisSchema } from './analysis.schemas';
 import { GameAnalysisService } from './game-analysis.service';
 import { PositionAnalysisService } from './position-analysis.service';
 
@@ -31,6 +32,27 @@ export default async function analysisModule(app: FastifyInstance) {
 
       try {
         const position = await PositionAnalysisService.analyzePositionSearch(parsed.data);
+        return { position };
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/position-analysis/store',
+    operation: storePositionAnalysisOpenApiOperation,
+    handler: async (request, reply) => {
+      const parsed = storePositionAnalysisSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        const position = await PositionAnalysisService.storePositionSearch(parsed.data);
         return { position };
       } catch (err: any) {
         reply.code(400);

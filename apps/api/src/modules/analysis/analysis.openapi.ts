@@ -15,6 +15,19 @@ export const analysisOpenApiSchemas = {
     },
     required: ['position'],
   },
+  StorePositionAnalysisRequest: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
+      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
+      bestMoveUci: { type: 'string', nullable: true },
+      engineName: { type: 'string', default: 'stockfish-web' },
+      engineVersion: { type: 'string', nullable: true, default: '18.0.7' },
+      lines: { type: 'array', items: { type: 'object', additionalProperties: true }, minItems: 1 },
+    },
+    required: ['fen', 'lines'],
+  },
   PositionAnalysis: {
     type: 'object',
     properties: {
@@ -148,6 +161,31 @@ export const analyzePositionOpenApiOperation = {
   responses: {
     '200': {
       description: 'Cached or newly-created position analysis',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },
+        },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
+};
+
+export const storePositionAnalysisOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Store one client-computed position analysis',
+  description: 'Accepts completed engine lines computed on the client and stores them in the shared PositionAnalysis cache without running backend Stockfish.',
+  requestBody: {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/StorePositionAnalysisRequest' },
+      },
+    },
+  },
+  responses: {
+    '200': {
+      description: 'Existing or newly-created cached position analysis',
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },

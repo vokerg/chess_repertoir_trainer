@@ -187,9 +187,10 @@ export const importedGamesOpenApiSchemas = {
       games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
       nextMoves: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisNextMove' } },
       topGames: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisGame' } },
+      positionAnalysis: { anyOf: [{ $ref: '#/components/schemas/PositionAnalysis' }, { type: 'null' }] },
       appliedFilters: { type: 'object', additionalProperties: true },
     },
-    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'topGames', 'appliedFilters'],
+    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
   },
 };
 

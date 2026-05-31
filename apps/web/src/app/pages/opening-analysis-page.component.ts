@@ -3,11 +3,12 @@ import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
+import { Subscription } from 'rxjs';
 import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
-import { EngineAnalysis } from '../services/stockfish-analysis.service';
+import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -112,6 +113,7 @@ interface OpeningAnalysisResponse {
   games: OpeningWdl;
   nextMoves: OpeningNextMove[];
   topGames: OpeningAnalysisGame[];
+  positionAnalysis: BackendStoredPositionAnalysis | null;
   appliedFilters: Record<string, unknown>;
 }
 
@@ -125,11 +127,20 @@ interface BackendEngineLine {
 }
 
 interface BackendPositionAnalysis {
+  id?: number;
+  cacheKey?: string;
   fen: string;
   bestMoveUci?: string | null;
+  depth?: number;
+  multipv?: number;
+  engineName?: string;
+  engineVersion?: string | null;
+  classificationVersion?: string;
   lines: BackendEngineLine[];
   fromCache: boolean;
 }
+
+type BackendStoredPositionAnalysis = BackendPositionAnalysis;
 
 interface BackendPositionAnalysisResponse {
   position: BackendPositionAnalysis;
@@ -538,12 +549,15 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   currentFen = new Chess().fen();
 
   private analysisTimer?: ReturnType<typeof setTimeout>;
-  private engineRequestSeq = 0;
+  private refreshRequestSeq = 0;
+  private engineSub?: Subscription;
+  private pendingLocalSave: { fen: string; depth: number; multipv: number } | null = null;
   private chess = new Chess();
 
   constructor(
     private api: ApiService,
     private cdr: ChangeDetectorRef,
+    private stockfish: StockfishAnalysisService,
   ) {}
 
   @HostListener('window:keydown', ['$event'])
@@ -562,13 +576,20 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.engineSub = this.stockfish.state$.subscribe((analysis) => {
+      this.engine = analysis;
+      this.maybePersistLocalAnalysis(analysis);
+      this.cdr.markForCheck();
+    });
     this.loadFacets();
     this.refresh();
-    this.scheduleAnalysis();
   }
 
   ngOnDestroy() {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.engineSub?.unsubscribe();
+    this.pendingLocalSave = null;
+    this.stockfish.stop();
   }
 
   get wdl(): OpeningWdl {
@@ -583,15 +604,19 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   }
 
   refresh() {
+    const requestId = ++this.refreshRequestSeq;
     this.loading = true;
     this.error = null;
     this.api.get<OpeningAnalysisResponse>(`/opening-analysis${this.queryString()}`).subscribe({
       next: (analysis) => {
+        if (requestId !== this.refreshRequestSeq) return;
         this.analysis = analysis;
         this.loading = false;
+        this.applyStoredAnalysis(analysis.positionAnalysis);
         this.cdr.markForCheck();
       },
       error: (err) => {
+        if (requestId !== this.refreshRequestSeq) return;
         this.error = err?.error?.error || 'Could not load opening analysis.';
         this.loading = false;
         this.cdr.markForCheck();
@@ -817,36 +842,13 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   rerunAnalysis() {
     if (!this.currentFen) return;
     const fen = this.currentFen;
-    const requestId = ++this.engineRequestSeq;
-    const keepCurrentLines = this.engine.fen === fen;
-
-    this.engine = {
-      fen,
-      running: true,
-      ready: false,
-      error: null,
-      bestMove: keepCurrentLines ? this.engine.bestMove : null,
-      lines: keepCurrentLines ? this.engine.lines : [],
-    };
-    this.cdr.detectChanges();
-
-    this.api.post<BackendPositionAnalysisResponse>('/position-analysis', { fen, depth: 12, multipv: 3 }).subscribe({
-      next: (response) => {
-        if (requestId !== this.engineRequestSeq) return;
-        this.engine = this.mapBackendPositionAnalysis(response.position, fen);
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        if (requestId !== this.engineRequestSeq) return;
-        this.engine = {
-          ...this.engine,
-          fen,
-          running: false,
-          ready: false,
-          error: err?.error?.message || err?.error?.error || 'Could not load backend Stockfish analysis.',
-        };
-        this.cdr.detectChanges();
-      },
+    const seed = this.engine.fen === fen ? this.engine : null;
+    this.pendingLocalSave = { fen, depth: 12, multipv: 3 };
+    this.stockfish.analyze(fen, {
+      depth: 12,
+      multipv: 3,
+      seedBestMove: seed?.bestMove ?? null,
+      seedLines: seed?.lines ?? [],
     });
   }
 
@@ -897,8 +899,21 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   private syncBoardState() {
     this.currentFen = this.chess.fen();
     this.boardPositionVersion += 1;
+    this.pendingLocalSave = null;
+    this.stockfish.stop();
+    this.engine = { fen: this.currentFen, running: false, ready: false, error: null, bestMove: null, lines: [] };
     this.refresh();
-    this.scheduleAnalysis();
+  }
+
+  private applyStoredAnalysis(position: BackendStoredPositionAnalysis | null) {
+    if (!position || position.fen !== this.currentFen || !position.lines?.length) {
+      this.engine = { fen: this.currentFen, running: false, ready: false, error: null, bestMove: null, lines: [] };
+      this.scheduleAnalysis();
+      return;
+    }
+
+    this.engine = this.mapBackendPositionAnalysis(position, this.currentFen);
+    if (position.lines.length < 3) this.scheduleAnalysis();
   }
 
   private mapBackendPositionAnalysis(position: BackendPositionAnalysis, requestedFen: string): EngineAnalysis {
@@ -918,7 +933,47 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     };
   }
 
+  private maybePersistLocalAnalysis(analysis: EngineAnalysis) {
+    const pending = this.pendingLocalSave;
+    if (!pending) return;
+    if (analysis.fen !== pending.fen || analysis.running || analysis.error) return;
+    if (!analysis.lines.length || analysis.lines.length < pending.multipv) return;
+
+    const body = {
+      fen: pending.fen,
+      depth: pending.depth,
+      multipv: pending.multipv,
+      bestMoveUci: analysis.bestMove || analysis.lines[0]?.pv?.[0] || undefined,
+      engineName: 'stockfish-web',
+      engineVersion: '18.0.7',
+      lines: analysis.lines.slice(0, pending.multipv).map((line) => this.toBackendEngineLine(line, pending.fen)),
+    };
+
+    this.pendingLocalSave = null;
+    this.api.post<BackendPositionAnalysisResponse>('/position-analysis/store', body).subscribe({
+      error: () => {
+        // Saving the cache is best-effort; the UI already has the local result.
+      },
+    });
+  }
+
+  private toBackendEngineLine(line: EngineLine, fen: string): BackendEngineLine {
+    return {
+      multipv: line.multipv,
+      depth: line.depth,
+      moveUci: line.pv[0] || undefined,
+      scoreCpWhite: this.scoreFromSideToMoveToWhite(line.scoreCp, fen),
+      mateWhite: this.scoreFromSideToMoveToWhite(line.mate, fen),
+      pvUci: line.pv,
+    };
+  }
+
   private scoreFromWhiteToSideToMove(value: number | undefined, fen: string): number | undefined {
+    if (value === undefined) return undefined;
+    return fen.split(/\s+/)[1] === 'b' ? -value : value;
+  }
+
+  private scoreFromSideToMoveToWhite(value: number | undefined, fen: string): number | undefined {
     if (value === undefined) return undefined;
     return fen.split(/\s+/)[1] === 'b' ? -value : value;
   }

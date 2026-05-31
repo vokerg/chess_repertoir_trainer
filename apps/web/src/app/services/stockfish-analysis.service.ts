@@ -53,7 +53,7 @@ export class StockfishAnalysisService implements OnDestroy {
     this.resetWorker();
   }
 
-  analyze(fen: string, options: { depth?: number; multipv?: number } = {}) {
+  analyze(fen: string, options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[] } = {}) {
     const depth = options.depth ?? 12;
     const multipv = options.multipv ?? 3;
     const runId = ++this.runSeq;
@@ -62,7 +62,14 @@ export class StockfishAnalysisService implements OnDestroy {
     // so each analysis gets a fresh worker process.
     this.resetWorker();
     this.currentRun = { id: runId, fen, depth, multipv, started: false, lines: new Map<number, EngineLine>() };
-    this.emit({ fen, running: true, ready: false, error: null, bestMove: null, lines: [] });
+    this.emit({
+      fen,
+      running: true,
+      ready: false,
+      error: null,
+      bestMove: options.seedBestMove ?? null,
+      lines: options.seedLines ?? [],
+    });
 
     this.ensureWorker();
     if (!this.worker) {

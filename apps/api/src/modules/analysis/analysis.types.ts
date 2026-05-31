@@ -21,11 +21,14 @@ export interface EngineSearchResult {
   lines: EngineLine[];
 }
 
-export interface AnalyzePositionInput {
+export interface StorePositionAnalysisInput {
   fen: string;
-  playedMoveUci?: string;
   depth: number;
   multipv: number;
+  bestMoveUci?: string;
+  engineName: string;
+  engineVersion?: string;
+  lines: EngineLine[];
 }
 
 export interface PositionAnalysisResult {
