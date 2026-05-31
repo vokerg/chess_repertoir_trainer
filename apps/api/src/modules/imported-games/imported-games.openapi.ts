@@ -187,9 +187,10 @@ export const importedGamesOpenApiSchemas = {
       games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
       nextMoves: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisNextMove' } },
       topGames: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisGame' } },
+      positionAnalysis: { anyOf: [{ $ref: '#/components/schemas/PositionAnalysis' }, { type: 'null' }] },
       appliedFilters: { type: 'object', additionalProperties: true },
     },
-    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'topGames', 'appliedFilters'],
+    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
   },
 };
 
@@ -245,20 +246,20 @@ export const listImportedGamesOpenApiOperation = {
 export const getOpeningAnalysisOpenApiOperation = {
   tags: ['Imported games'],
   summary: 'Get personal opening analysis for one board position',
-  description: 'Aggregates indexed ply rows for rated imported games only. Reuses imported-game search filters, then returns WDL from the current user point of view and all next moves played from the requested position.',
-  parameters: [
-    { name: 'fen', in: 'query', schema: { type: 'string', default: 'startpos' } },
-    ...searchParameters,
-  ],
+  description: 'Aggregates indexed ply rows for rated imported games only. Reuses imported-game search filters, then returns WDL from the current position plus candidate next moves.',
+  parameters: searchParameters,
   responses: {
-    '200': { description: 'Personal opening analysis for the position', content: { 'application/json': { schema: { $ref: '#/components/schemas/OpeningAnalysisResponse' } } } },
+    '200': {
+      description: 'Opening analysis result',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/OpeningAnalysisResponse' } } },
+    },
     '400': { $ref: '#/components/responses/BadRequest' },
   },
 };
 
 export const getImportedGameOpenApiOperation = {
   tags: ['Imported games'],
-  summary: 'Get one imported game',
+  summary: 'Get one imported game by id',
   parameters: [importedGameIdParameter],
   responses: {
     '200': { description: 'Imported game detail', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameDetail' } } } },
@@ -266,42 +267,26 @@ export const getImportedGameOpenApiOperation = {
   },
 };
 
-export const getImportedGamePgnOpenApiOperation = {
-  tags: ['Imported games'],
-  summary: 'Get PGN for one imported game',
-  parameters: [importedGameIdParameter],
-  responses: {
-    '200': { description: 'Imported game PGN', content: { 'application/json': { schema: { type: 'object', properties: { id: { type: 'integer' }, pgn: { type: 'string', nullable: true } } } } } },
-    '404': { $ref: '#/components/responses/NotFound' },
-  },
-};
-
-export const getImportedGameFacetsOpenApiOperation = {
-  tags: ['Imported games'],
-  summary: 'Get imported-game filter facets',
-  responses: {
-    '200': { description: 'Imported game filter facets', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameFacetsResponse' } } } },
-  },
-};
-
 export const indexImportedGamePlyOpenApiOperation = {
   tags: ['Imported games'],
-  summary: 'Parse one imported game into ply rows',
-  description: 'Parses one imported game PGN into lightweight move-by-move rows. This does not run Stockfish and does not build an explorer tree.',
+  summary: 'Create or refresh ply index rows for one imported game',
+  description: 'Parses the stored PGN and writes one ImportedGamePly row per move so personal opening analysis can query positions efficiently.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
     content: {
       'application/json': {
         schema: { $ref: '#/components/schemas/ImportedGamePlyIndexRequest' },
-        examples: { default: { value: { force: false } } },
+        examples: {
+          default: { value: { force: false } },
+          force: { value: { force: true } },
+        },
       },
     },
   },
   responses: {
-    '200': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
-    '201': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
-    '400': { $ref: '#/components/responses/BadRequest' },
+    '200': { description: 'Index result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
     '404': { $ref: '#/components/responses/NotFound' },
+    '400': { $ref: '#/components/responses/BadRequest' },
   },
 };
