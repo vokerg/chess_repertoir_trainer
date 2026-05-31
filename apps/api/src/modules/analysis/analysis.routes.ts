@@ -4,9 +4,11 @@ import {
   analyzeImportedGameOpenApiOperation,
   analysisOpenApiSchemas,
   getImportedGameAnalysisOpenApiOperation,
+  storePositionAnalysisOpenApiOperation,
 } from './analysis.openapi';
-import { analyzeImportedGameSchema } from './analysis.schemas';
+import { analyzeImportedGameSchema, storePositionAnalysisSchema } from './analysis.schemas';
 import { GameAnalysisService } from './game-analysis.service';
+import { PositionAnalysisService } from './position-analysis.service';
 
 function parseGameId(params: unknown): number | null {
   const gameId = Number((params as any).gameId);
@@ -15,6 +17,27 @@ function parseGameId(params: unknown): number | null {
 
 export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiSchemas(analysisOpenApiSchemas);
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/position-analysis/store',
+    operation: storePositionAnalysisOpenApiOperation,
+    handler: async (request, reply) => {
+      const parsed = storePositionAnalysisSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        const position = await PositionAnalysisService.storePositionSearch(parsed.data);
+        return { position };
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
 
   registerOpenApiRoute(app, {
     method: 'get',
@@ -61,7 +84,7 @@ export default async function analysisModule(app: FastifyInstance) {
       try {
         if (!parsed.data.async) {
           reply.code(400);
-          return { error: 'Synchronous backend analysis is no longer available from the API. Queue analysis and run an analysis executor instead.' };
+          return { error: 'Synchronous backend analysis is disabled. Queue analysis and run the executor instead.' };
         }
 
         const result = await GameAnalysisService.queueImportedGameAnalysis(gameId, parsed.data);
