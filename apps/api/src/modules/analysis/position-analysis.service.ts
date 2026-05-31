@@ -6,9 +6,10 @@ import {
   EngineLine,
   MoveClassification,
   PositionAnalysisResult,
+  StorePositionAnalysisInput,
   StoredPositionAnalysis,
 } from './analysis.types';
-import { createPositionAnalysis, findCompatiblePositionAnalysis, findPositionAnalysis } from './analysis.repository.prisma';
+import { createPositionAnalysis, findCompatiblePositionAnalysis, findCompatiblePositionAnalysisAnyEngine, findPositionAnalysis } from './analysis.repository.prisma';
 
 export interface PositionAnalysisStats {
   positionCacheHits: number;
@@ -61,6 +62,21 @@ function cacheContext(input: { fen: string; playedMoveUci?: string; depth: numbe
   return { normalizedFen, engineName, engineVersion, classificationVersion, cacheKey };
 }
 
+function clientCacheContext(input: StorePositionAnalysisInput) {
+  const normalizedFen = normalizeFenForCache(input.fen);
+  const classificationVersion = ANALYSIS_CLASSIFICATION_VERSION;
+  const cacheKey = makeCacheKey({
+    normalizedFen,
+    depth: input.depth,
+    multipv: input.multipv,
+    engineName: input.engineName,
+    engineVersion: input.engineVersion,
+    classificationVersion,
+  });
+
+  return { normalizedFen, classificationVersion, cacheKey };
+}
+
 async function getCachedPositionAnalysis(input: { fen: string; playedMoveUci?: string; depth: number; multipv: number }) {
   const { cacheKey } = cacheContext(input);
   const cached = await findPositionAnalysis(cacheKey);
@@ -76,6 +92,16 @@ async function getCompatiblePositionAnalysis(input: { fen: string; depth: number
     engineName,
     engineVersion,
     classificationVersion,
+  });
+  return cached ? storedFromRow(cached) : null;
+}
+
+async function getCompatiblePositionAnalysisFromAnyEngine(input: { fen: string; depth: number; multipv: number }) {
+  const normalizedFen = normalizeFenForCache(input.fen);
+  const cached = await findCompatiblePositionAnalysisAnyEngine({
+    normalizedFen,
+    depth: input.depth,
+    multipv: input.multipv,
   });
   return cached ? storedFromRow(cached) : null;
 }
@@ -173,6 +199,42 @@ export const PositionAnalysisService = {
       depth: input.depth,
       multipv: input.multipv,
     }, session, stats);
+  },
+
+  getStoredPositionSearch: async (
+    input: { fen: string; depth: number; multipv: number },
+  ): Promise<StoredPositionAnalysis | null> => {
+    const exact = await getCachedPositionAnalysis(input);
+    if (exact) return exact;
+    return getCompatiblePositionAnalysisFromAnyEngine(input);
+  },
+
+  storePositionSearch: async (input: StorePositionAnalysisInput): Promise<StoredPositionAnalysis> => {
+    const { normalizedFen, classificationVersion, cacheKey } = clientCacheContext(input);
+
+    const existing = await findPositionAnalysis(cacheKey);
+    if (existing) return storedFromRow(existing);
+
+    const result: PositionAnalysisResult = {
+      fen: input.fen,
+      normalizedFen,
+      depth: input.depth,
+      multipv: input.multipv,
+      engineName: input.engineName,
+      engineVersion: input.engineVersion,
+      classificationVersion,
+      bestMoveUci: input.bestMoveUci ?? input.lines[0]?.moveUci ?? input.lines[0]?.pvUci[0],
+      lines: input.lines.slice(0, input.multipv),
+    };
+
+    try {
+      const created = await createPositionAnalysis(cacheKey, result);
+      return { ...storedFromRow(created), fromCache: false };
+    } catch {
+      const row = await findPositionAnalysis(cacheKey);
+      if (row) return storedFromRow(row);
+      throw new Error('Could not store position analysis');
+    }
   },
 
   analyzePosition: async (
