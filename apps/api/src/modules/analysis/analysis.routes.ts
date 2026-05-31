@@ -2,13 +2,11 @@ import { FastifyInstance } from 'fastify';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import {
   analyzeImportedGameOpenApiOperation,
-  analyzePositionOpenApiOperation,
   analysisOpenApiSchemas,
   getImportedGameAnalysisOpenApiOperation,
 } from './analysis.openapi';
-import { analyzeImportedGameSchema, analyzePositionSchema } from './analysis.schemas';
+import { analyzeImportedGameSchema } from './analysis.schemas';
 import { GameAnalysisService } from './game-analysis.service';
-import { PositionAnalysisService } from './position-analysis.service';
 
 function parseGameId(params: unknown): number | null {
   const gameId = Number((params as any).gameId);
@@ -17,27 +15,6 @@ function parseGameId(params: unknown): number | null {
 
 export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiSchemas(analysisOpenApiSchemas);
-
-  registerOpenApiRoute(app, {
-    method: 'post',
-    url: '/api/position-analysis',
-    operation: analyzePositionOpenApiOperation,
-    handler: async (request, reply) => {
-      const parsed = analyzePositionSchema.safeParse(request.body ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
-
-      try {
-        const position = await PositionAnalysisService.analyzePositionSearch(parsed.data);
-        return { position };
-      } catch (err: any) {
-        reply.code(400);
-        return { error: err?.message ?? String(err) };
-      }
-    },
-  });
 
   registerOpenApiRoute(app, {
     method: 'get',
@@ -82,14 +59,13 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        if (parsed.data.async) {
-          const result = await GameAnalysisService.queueImportedGameAnalysis(gameId, parsed.data);
-          reply.code(result.reusedExisting ? 200 : 202);
-          return result;
+        if (!parsed.data.async) {
+          reply.code(400);
+          return { error: 'Synchronous backend analysis is no longer available from the API. Queue analysis and run an analysis executor instead.' };
         }
 
-        const result = await GameAnalysisService.analyzeImportedGame(gameId, parsed.data);
-        reply.code(result.reusedExisting ? 200 : 201);
+        const result = await GameAnalysisService.queueImportedGameAnalysis(gameId, parsed.data);
+        reply.code(result.reusedExisting ? 200 : 202);
         return result;
       } catch (err: any) {
         const message = err?.message ?? String(err);
