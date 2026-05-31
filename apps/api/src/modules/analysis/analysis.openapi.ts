@@ -1,19 +1,23 @@
 export const analysisOpenApiSchemas = {
-  AnalyzePositionRequest: {
-    type: 'object',
-    properties: {
-      fen: { type: 'string' },
-      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
-      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
-    },
-    required: ['fen'],
-  },
   AnalyzePositionResponse: {
     type: 'object',
     properties: {
       position: { $ref: '#/components/schemas/PositionAnalysis' },
     },
     required: ['position'],
+  },
+  StorePositionAnalysisRequest: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
+      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
+      bestMoveUci: { type: 'string', nullable: true },
+      engineName: { type: 'string', default: 'stockfish-web' },
+      engineVersion: { type: 'string', nullable: true, default: '18.0.7' },
+      lines: { type: 'array', items: { type: 'object', additionalProperties: true }, minItems: 1 },
+    },
+    required: ['fen', 'lines'],
   },
   PositionAnalysis: {
     type: 'object',
@@ -45,7 +49,7 @@ export const analysisOpenApiSchemas = {
       depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
       multipv: { type: 'integer', minimum: 1, maximum: 1, default: 1 },
       force: { type: 'boolean', default: false, description: 'When true, creates a new analysis run even if a matching QUEUED, RUNNING, or COMPLETED run already exists. PositionAnalysis cache is still reused.' },
-      async: { type: 'boolean', default: true, description: 'When true, creates a QUEUED run for the analysis worker. When false, runs synchronously in the API process for local/dev fallback only.' },
+      async: { type: 'boolean', default: true, description: 'When true, creates a QUEUED run for the analysis worker.' },
     },
   },
   AnalyzeImportedGameResponse: {
@@ -126,30 +130,21 @@ const importedGameIdParameter = {
   schema: { type: 'integer' },
 };
 
-export const analyzePositionOpenApiOperation = {
+export const storePositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
-  summary: 'Analyze one board position with backend Stockfish',
-  description: 'Stores and reuses a pure position analysis row. This cached result is shared by opening analysis and imported-game analysis.',
+  summary: 'Store one client-computed position analysis',
+  description: 'Accepts completed engine lines computed on the client and stores them in the shared PositionAnalysis cache without running backend Stockfish.',
   requestBody: {
     required: true,
     content: {
       'application/json': {
-        schema: { $ref: '#/components/schemas/AnalyzePositionRequest' },
-        examples: {
-          startPosition: {
-            value: {
-              fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-              depth: 12,
-              multipv: 3,
-            },
-          },
-        },
+        schema: { $ref: '#/components/schemas/StorePositionAnalysisRequest' },
       },
     },
   },
   responses: {
     '200': {
-      description: 'Cached or newly-created position analysis',
+      description: 'Existing or newly-created cached position analysis',
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },
@@ -163,7 +158,7 @@ export const analyzePositionOpenApiOperation = {
 export const getImportedGameAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Get latest saved analysis for one imported game',
-  description: 'Returns the latest QUEUED, RUNNING, or COMPLETED imported-game analysis run as a compact report. Full engine lines remain stored in PositionAnalysis and are not returned by this endpoint.',
+  description: 'Returns the latest imported-game analysis run as a compact report. Full engine lines remain stored in PositionAnalysis and are not returned by this endpoint.',
   parameters: [importedGameIdParameter],
   responses: {
     '200': {
@@ -180,8 +175,8 @@ export const getImportedGameAnalysisOpenApiOperation = {
 
 export const analyzeImportedGameOpenApiOperation = {
   tags: ['Analysis'],
-  summary: 'Queue or run imported-game Stockfish analysis',
-  description: 'By default, creates a QUEUED analysis run that is picked up by the portable analysis worker. Passing async=false keeps the old synchronous API execution path for local/dev fallback only. If force is false and a QUEUED, RUNNING, or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and no new run is created.',
+  summary: 'Queue imported-game Stockfish analysis',
+  description: 'Creates a QUEUED analysis run that is picked up by the analysis executor. If force is false and a QUEUED, RUNNING, or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and no new run is created.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
@@ -195,14 +190,6 @@ export const analyzeImportedGameOpenApiOperation = {
               multipv: 1,
               force: false,
               async: true,
-            },
-          },
-          synchronousFallback: {
-            value: {
-              depth: 12,
-              multipv: 1,
-              force: false,
-              async: false,
             },
           },
           forceQueuedRerun: {
@@ -220,14 +207,6 @@ export const analyzeImportedGameOpenApiOperation = {
   responses: {
     '200': {
       description: 'Existing queued, running, or completed analysis run was returned; no new run was created',
-      content: {
-        'application/json': {
-          schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
-        },
-      },
-    },
-    '201': {
-      description: 'New synchronous analysis run was created and completed',
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
