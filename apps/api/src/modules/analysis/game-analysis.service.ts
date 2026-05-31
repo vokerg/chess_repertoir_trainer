@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js';
 import { CurrentUserService } from '../../services/currentUserService';
 import { ANALYSIS_ACCURACY_VERSION, GameAccuracyTracker } from './accuracy';
-import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
+import { AnalysisEngineSession, configuredAnalysisEngineIdentity } from './engine/analysis-engine';
 import { PositionAnalysisService, PositionAnalysisStats } from './position-analysis.service';
 import {
   claimNextQueuedGameAnalysisRun,
@@ -152,8 +152,7 @@ function compactRun(run: any) {
 }
 
 async function createRunForGame(importedGameId: number, options: AnalyzeImportedGameOptions, status: 'QUEUED' | 'RUNNING') {
-  const engineName = StockfishEngine.engineName;
-  const engineVersion = StockfishEngine.engineVersion();
+  const { engineName, engineVersion } = configuredAnalysisEngineIdentity();
 
   if (!options.force) {
     const existing = await getExistingGameAnalysis(importedGameId, {
@@ -205,16 +204,7 @@ export const GameAnalysisService = {
     return { queued: !result.reusedExisting, reusedExisting: result.reusedExisting, run: compactRun(result.run) };
   },
 
-  analyzeImportedGame: async (importedGameId: number, options: AnalyzeImportedGameOptions) => {
-    await CurrentUserService.getOrCreate();
-    const result = await createRunForGame(importedGameId, options, 'RUNNING');
-    if (result.reusedExisting) return { reusedExisting: true, run: compactRun(result.run) };
-
-    const completed = await GameAnalysisService.executeAnalysisRun(result.run.id);
-    return { reusedExisting: false, run: completed.run };
-  },
-
-  executeAnalysisRun: async (analysisRunId: number, session?: StockfishSession) => {
+  executeAnalysisRun: async (analysisRunId: number, session: AnalysisEngineSession) => {
     await CurrentUserService.getOrCreate();
 
     const run = await getGameAnalysisRunForExecution(analysisRunId);
@@ -234,18 +224,15 @@ export const GameAnalysisService = {
     const accuracyTracker = new GameAccuracyTracker();
     const startedAtMs = Date.now();
     let positionsDone = 0;
-    let ownedSession: StockfishSession | undefined;
 
     try {
-      const engineSession = session ?? (ownedSession = await StockfishSession.start());
-
       for (const move of moves) {
         const position = await PositionAnalysisService.analyzePosition({
           fen: move.fenBefore,
           playedMoveUci: move.playedMoveUci,
           depth: run.depth,
           multipv: run.multipv,
-        }, engineSession, stats);
+        }, session, stats);
 
         accuracyTracker.add(move.side, position);
 
@@ -278,12 +265,10 @@ export const GameAnalysisService = {
       summary.performance.durationMs = Date.now() - startedAtMs;
       await failGameAnalysisRun(run.id, err?.message ?? String(err), positionsDone);
       throw err;
-    } finally {
-      ownedSession?.close();
     }
   },
 
-  claimAndExecuteNextQueuedRun: async (session?: StockfishSession) => {
+  claimAndExecuteNextQueuedRun: async (session: AnalysisEngineSession) => {
     await CurrentUserService.getOrCreate();
     const run = await claimNextQueuedGameAnalysisRun();
     if (!run) return null;
