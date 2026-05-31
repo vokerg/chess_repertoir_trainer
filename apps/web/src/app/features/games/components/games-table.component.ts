@@ -121,7 +121,7 @@ import { GameActionMenuComponent } from './game-action-menu.component';
       .games-section-title { margin: 0; font-size: 1.35rem; letter-spacing: -0.03em; }
       .games-muted { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.35; }
       .games-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 24px; background: rgba(255, 252, 247, 0.72); }
-      .games-table { width: 100%; min-width: 1220px; border-collapse: collapse; }
+      .games-table { width: 100%; min-width: 1040px; border-collapse: collapse; }
       .games-table th { text-align: left; padding: 0.85rem 0.9rem; color: var(--muted-strong); font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; background: rgba(35, 27, 21, 0.05); }
       .games-table td { padding: 0.95rem 0.9rem; border-top: 1px solid var(--border); vertical-align: top; }
       .game-title-cell { display: flex; gap: 0.7rem; align-items: flex-start; }
@@ -142,7 +142,7 @@ import { GameActionMenuComponent } from './game-action-menu.component';
       .result-loss { background: var(--danger-soft); color: var(--danger); }
       .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
       .games-status-secondary { margin-top: 0.15rem; }
-      .games-actions-heading { width: 240px; }
+      .games-actions-heading { width: 60px; text-align: right !important; }
       .games-row-actions { display: flex; gap: 0.45rem; align-items: center; justify-content: flex-end; }
       .games-pagination { display: flex; justify-content: center; padding-top: 0.25rem; }
       .games-empty { border: 1px dashed var(--border-strong); border-radius: 24px; padding: 1.4rem; color: var(--muted); }
