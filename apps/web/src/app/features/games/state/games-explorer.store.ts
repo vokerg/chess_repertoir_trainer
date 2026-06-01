@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { GamesApiService } from '../data-access/games-api.service';
 import {
@@ -11,9 +11,8 @@ import {
 import { defaultGameFilters, GameFilters } from '../filters/game-filter.model';
 
 @Injectable()
-export class GamesExplorerStore implements OnDestroy {
+export class GamesExplorerStore {
   private readonly api = inject(GamesApiService);
-  private analysisPollTimer?: ReturnType<typeof setTimeout>;
 
   readonly games = signal<ImportedGameListItem[]>([]);
   readonly facets = signal<ImportedGameFacetsResponse>({});
@@ -74,12 +73,7 @@ export class GamesExplorerStore implements OnDestroy {
     });
   }
 
-  ngOnDestroy(): void {
-    this.clearAnalysisPolling();
-  }
-
   refresh(): void {
-    this.clearAnalysisPolling();
     this.resetBulkIndexState();
     this.games.set([]);
     this.pageInfo.set({ nextCursor: null, hasMore: false });
@@ -100,7 +94,6 @@ export class GamesExplorerStore implements OnDestroy {
         this.games.set(cursor ? [...this.games(), ...data.items] : data.items);
         this.pageInfo.set(data.pageInfo);
         this.loading.set(false);
-        this.scheduleAnalysisPolling();
       },
       error: (err) => {
         this.error.set(readApiError(err, 'Could not load imported games.'));
@@ -191,8 +184,6 @@ export class GamesExplorerStore implements OnDestroy {
         this.applyAnalysisRun(result.run);
         if (this.filters().analysisStatus) {
           this.loadGames();
-        } else {
-          this.scheduleAnalysisPolling();
         }
       },
       error: (err) => {
@@ -250,26 +241,6 @@ export class GamesExplorerStore implements OnDestroy {
     this.bulkIndexTotal.set(0);
   }
 
-  private scheduleAnalysisPolling(): void {
-    this.clearAnalysisPolling();
-    if (!this.games().some((game) => isAnalysisActive(game))) return;
-
-    this.analysisPollTimer = setTimeout(() => {
-      this.analysisPollTimer = undefined;
-      if (this.loading()) {
-        this.scheduleAnalysisPolling();
-        return;
-      }
-      this.loadGames();
-    }, 3000);
-  }
-
-  private clearAnalysisPolling(): void {
-    if (!this.analysisPollTimer) return;
-    clearTimeout(this.analysisPollTimer);
-    this.analysisPollTimer = undefined;
-  }
-
   private displayTimeControl(game: ImportedGameListItem): string {
     const fromParts = this.formatTimeControl(game.timeControl?.initial, game.timeControl?.increment);
     if (fromParts) return fromParts;
@@ -305,10 +276,6 @@ function readApiError(err: unknown, fallback: string): string {
     return maybeHttp.error?.message || maybeHttp.error?.error || maybeHttp.message || fallback;
   }
   return fallback;
-}
-
-function isAnalysisActive(game: ImportedGameListItem): boolean {
-  return game.analysis?.status === 'QUEUED' || game.analysis?.status === 'RUNNING';
 }
 
 function userAccuracyForGame(game: ImportedGameListItem, run: ImportedGameAnalysisRun): number | null {
