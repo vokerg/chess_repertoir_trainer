@@ -92,6 +92,15 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['status', 'runId', 'depth', 'completedAt', 'createdAt', 'whiteAccuracy', 'blackAccuracy', 'userAccuracy', 'summary', 'criticalMoveCount'],
   },
+  ImportedGamePlyIndexSummary: {
+    type: 'object',
+    properties: {
+      status: { type: 'string', enum: ['NOT_INDEXED', 'INDEXED', 'FAILED'] },
+      indexedAt: { type: 'string', format: 'date-time', nullable: true },
+      error: { type: 'string', nullable: true },
+    },
+    required: ['status', 'indexedAt', 'error'],
+  },
   ImportedGameFacetsResponse: {
     type: 'object',
     properties: {
@@ -121,6 +130,14 @@ export const importedGamesOpenApiSchemas = {
       error: { type: 'string', nullable: true },
     },
     required: ['importedGameId', 'status'],
+  },
+  ImportedGamePgnResponse: {
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      pgn: { type: 'string', nullable: true },
+    },
+    required: ['id', 'pgn'],
   },
   OpeningAnalysisWdl: {
     type: 'object',
@@ -264,6 +281,30 @@ export const getImportedGameOpenApiOperation = {
   responses: {
     '200': { description: 'Imported game detail', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameDetail' } } } },
     '404': { $ref: '#/components/responses/NotFound' },
+  },
+};
+
+export const getImportedGamePgnOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Get the stored PGN for one imported game',
+  parameters: [importedGameIdParameter],
+  responses: {
+    '200': {
+      description: 'Imported game PGN payload',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePgnResponse' } } },
+    },
+    '404': { $ref: '#/components/responses/NotFound' },
+  },
+};
+
+export const getImportedGameFacetsOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Get filter facets for imported games',
+  responses: {
+    '200': {
+      description: 'Imported game facet counts',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameFacetsResponse' } } },
+    },
   },
 };
 

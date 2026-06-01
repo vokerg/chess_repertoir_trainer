@@ -2,11 +2,12 @@ import { FastifyInstance } from 'fastify';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import {
   analyzeImportedGameOpenApiOperation,
+  analyzePositionOpenApiOperation,
   analysisOpenApiSchemas,
   getImportedGameAnalysisOpenApiOperation,
   storePositionAnalysisOpenApiOperation,
 } from './analysis.openapi';
-import { analyzeImportedGameSchema, storePositionAnalysisSchema } from './analysis.schemas';
+import { analyzeImportedGameSchema, analyzePositionSchema, storePositionAnalysisSchema } from './analysis.schemas';
 import { GameAnalysisService } from './game-analysis.service';
 import { PositionAnalysisService } from './position-analysis.service';
 
@@ -17,6 +18,27 @@ function parseGameId(params: unknown): number | null {
 
 export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiSchemas(analysisOpenApiSchemas);
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/position-analysis',
+    operation: analyzePositionOpenApiOperation,
+    handler: async (request, reply) => {
+      const parsed = analyzePositionSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        const position = await PositionAnalysisService.getStoredPositionSearch(parsed.data);
+        return { position };
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
 
   registerOpenApiRoute(app, {
     method: 'post',

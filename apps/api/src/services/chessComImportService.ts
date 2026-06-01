@@ -169,10 +169,6 @@ function getProviderGameId(game: ChessComGame) {
   return providerGameId;
 }
 
-function compactRawGame(game: ChessComGame) {
-  return game;
-}
-
 function normalizeGame(game: ChessComGame, account: { id: number; userId: number; username: string; provider: string }) {
   const timeControl = getTimeControl(game);
   const userColor = getUserColor(game, account.username);
@@ -187,7 +183,6 @@ function normalizeGame(game: ChessComGame, account: { id: number; userId: number
     providerGameId: getProviderGameId(game),
     providerUrl: buildChessComGameUrl(game),
     pgn: game.pgn ?? null,
-    rawJson: compactRawGame(game) as any,
     rated: game.rated ?? null,
     variant: game.rules ?? getPgnHeader(game.pgn, 'Variant'),
     speedCategory: game.time_class ?? null,
@@ -273,7 +268,6 @@ export const ChessComImportService = {
 
     let gamesSeen = 0;
     let gamesImported = 0;
-    let gamesUpdated = 0;
     let gamesSkipped = 0;
     let gamesFailed = 0;
     let maxEndedAt = account.syncCursorTime ?? null;
@@ -307,19 +301,12 @@ export const ChessComImportService = {
               select: { id: true },
             });
 
-            await prisma.importedGame.upsert({
-              where: {
-                accountId_providerGameId: {
-                  accountId: account.id,
-                  providerGameId: data.providerGameId,
-                },
-              },
-              create: data,
-              update: data,
-            });
-
-            if (existing) gamesUpdated += 1;
-            else gamesImported += 1;
+            if (existing) {
+              gamesSkipped += 1;
+            } else {
+              await prisma.importedGame.create({ data });
+              gamesImported += 1;
+            }
 
             if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
               maxEndedAt = data.endedAt;
@@ -338,7 +325,6 @@ export const ChessComImportService = {
             status: 'COMPLETED',
             gamesSeen,
             gamesImported,
-            gamesUpdated,
             gamesSkipped,
             gamesFailed,
             completedAt,
@@ -360,7 +346,7 @@ export const ChessComImportService = {
         status: 'COMPLETED',
         gamesSeen,
         gamesImported,
-        gamesUpdated,
+        gamesUpdated: 0,
         gamesSkipped,
         gamesFailed,
         syncSince,
@@ -374,7 +360,7 @@ export const ChessComImportService = {
           status: 'FAILED',
           gamesSeen,
           gamesImported,
-          gamesUpdated,
+          gamesUpdated: 0,
           gamesSkipped,
           gamesFailed,
           error: err.message ?? String(err),

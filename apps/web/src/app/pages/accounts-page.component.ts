@@ -155,7 +155,7 @@ interface AccountForm {
               <div *ngIf="syncResults[account.id] as result" class="sync-result">
                 <strong>{{ syncStatusLabel(result.status) }}</strong>
                 <span>
-                  Seen {{ result.gamesSeen }}, imported {{ result.gamesImported }}, updated {{ result.gamesUpdated }}, skipped {{ result.gamesSkipped || 0 }}, failed {{ result.gamesFailed }}.
+                  Seen {{ result.gamesSeen }}, imported {{ result.gamesImported }}, already present {{ result.gamesSkipped || 0 }}, failed {{ result.gamesFailed }}.
                 </span>
                 <span *ngIf="result.archivesFetched !== null && result.archivesFetched !== undefined">
                   Archives fetched: {{ result.archivesFetched }}.
@@ -474,7 +474,7 @@ export class AccountsPageComponent implements OnInit {
 
   resetCursor(account: ExternalAccount) {
     const confirmed = window.confirm(
-      `Reset the import cursor for ${this.providerLabel(account.provider)} @${account.username}? The next sync will re-scan the full history for this account, but already imported games will be updated rather than duplicated.`,
+      `Reset the import cursor for ${this.providerLabel(account.provider)} @${account.username}? The next sync will re-scan the full history for this account, but already imported games will be skipped rather than duplicated.`,
     );
     if (!confirmed) return;
 

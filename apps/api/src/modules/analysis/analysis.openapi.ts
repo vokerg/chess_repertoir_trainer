@@ -2,9 +2,23 @@ export const analysisOpenApiSchemas = {
   AnalyzePositionResponse: {
     type: 'object',
     properties: {
-      position: { $ref: '#/components/schemas/PositionAnalysis' },
+      position: {
+        anyOf: [
+          { $ref: '#/components/schemas/PositionAnalysis' },
+          { type: 'null' },
+        ],
+      },
     },
     required: ['position'],
+  },
+  AnalyzePositionRequest: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
+      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
+    },
+    required: ['fen'],
   },
   StorePositionAnalysisRequest: {
     type: 'object',
@@ -128,6 +142,31 @@ const importedGameIdParameter = {
   in: 'path',
   required: true,
   schema: { type: 'integer' },
+};
+
+export const analyzePositionOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Get one cached position analysis',
+  description: 'Looks up an existing PositionAnalysis entry for the requested FEN, depth, and MultiPV settings. This endpoint does not run backend Stockfish.',
+  requestBody: {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/AnalyzePositionRequest' },
+      },
+    },
+  },
+  responses: {
+    '200': {
+      description: 'Cached position analysis, or null when nothing compatible is stored yet',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },
+        },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
 };
 
 export const storePositionAnalysisOpenApiOperation = {

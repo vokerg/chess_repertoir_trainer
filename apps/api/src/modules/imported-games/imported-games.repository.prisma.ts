@@ -19,7 +19,7 @@ const latestAnalysisRunSelect = {
   whiteAccuracy: true,
   blackAccuracy: true,
   summary: true,
-} satisfies Prisma.GameAnalysisRunSelect;
+} as const;
 
 export const importedGameListSelect = {
   id: true,
@@ -53,14 +53,14 @@ export const importedGameListSelect = {
     take: 1,
     select: latestAnalysisRunSelect,
   },
-} satisfies Prisma.ImportedGameSelect;
+} as const;
 
 export const importedGameDetailSelect = {
   ...importedGameListSelect,
   pgn: true,
   createdAt: true,
   updatedAt: true,
-} satisfies Prisma.ImportedGameSelect;
+} as const;
 
 export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameListSelect }>;
 export type ImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;

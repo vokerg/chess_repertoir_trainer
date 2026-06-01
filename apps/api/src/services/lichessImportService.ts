@@ -125,11 +125,6 @@ function buildLichessUrl(gameId: string) {
   return `https://lichess.org/${gameId}`;
 }
 
-function compactRawGame(game: LichessGame) {
-  const { clocks, ...withoutClockSnapshots } = game;
-  return withoutClockSnapshots;
-}
-
 function parseRating(value: string | null) {
   if (!value) return null;
   const parsed = Number(value);
@@ -150,7 +145,6 @@ function normalizeGame(game: LichessGame, account: { id: number; userId: number;
     providerGameId: game.id,
     providerUrl: game.url ?? getPgnHeader(game.pgn, 'Site') ?? buildLichessUrl(game.id),
     pgn: game.pgn ?? null,
-    rawJson: compactRawGame(game) as any,
     rated: game.rated ?? null,
     variant: game.variant ?? getPgnHeader(game.pgn, 'Variant'),
     speedCategory: game.speed ?? game.perf ?? null,
@@ -225,7 +219,7 @@ export const LichessImportService = {
 
     let gamesSeen = 0;
     let gamesImported = 0;
-    let gamesUpdated = 0;
+    let gamesSkipped = 0;
     let gamesFailed = 0;
     let maxEndedAt = account.syncCursorTime ?? null;
 
@@ -261,19 +255,12 @@ export const LichessImportService = {
             select: { id: true },
           });
 
-          await prisma.importedGame.upsert({
-            where: {
-              accountId_providerGameId: {
-                accountId: account.id,
-                providerGameId: game.id,
-              },
-            },
-            create: data,
-            update: data,
-          });
-
-          if (existing) gamesUpdated += 1;
-          else gamesImported += 1;
+          if (existing) {
+            gamesSkipped += 1;
+          } else {
+            await prisma.importedGame.create({ data });
+            gamesImported += 1;
+          }
 
           if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
             maxEndedAt = data.endedAt;
@@ -291,7 +278,8 @@ export const LichessImportService = {
             status: 'COMPLETED',
             gamesSeen,
             gamesImported,
-            gamesUpdated,
+            gamesUpdated: 0,
+            gamesSkipped,
             gamesFailed,
             completedAt,
             syncUntil: maxEndedAt,
@@ -312,7 +300,8 @@ export const LichessImportService = {
         status: 'COMPLETED',
         gamesSeen,
         gamesImported,
-        gamesUpdated,
+        gamesUpdated: 0,
+        gamesSkipped,
         gamesFailed,
         syncSince,
         syncUntil: maxEndedAt,
@@ -324,7 +313,8 @@ export const LichessImportService = {
           status: 'FAILED',
           gamesSeen,
           gamesImported,
-          gamesUpdated,
+          gamesUpdated: 0,
+          gamesSkipped,
           gamesFailed,
           error: err.message ?? String(err),
           completedAt: new Date(),
