@@ -139,6 +139,7 @@ const importedGameIdParameter = {
 
 export const analyzePositionOpenApiOperation = {
   tags: ['Analysis'],
+  // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: OpenAPI contract for backend Stockfish position analysis.
   summary: 'Analyze one board position with backend Stockfish',
   description: 'Stores and reuses a pure position analysis row. This cached result is shared by opening analysis and imported-game analysis.',
   requestBody: {
@@ -216,6 +217,7 @@ export const getImportedGameAnalysisOpenApiOperation = {
 
 export const analyzeImportedGameOpenApiOperation = {
   tags: ['Analysis'],
+  // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: OpenAPI contract for backend Stockfish imported-game analysis runs.
   summary: 'Analyze one imported game with backend Stockfish',
   description: 'Synchronously analyzes the stored PGN for one imported game. If force is false and a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and Stockfish is not executed again. If force is true, a new run is created while PositionAnalysis cache is still reused.',
   parameters: [importedGameIdParameter],

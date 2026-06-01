@@ -76,6 +76,7 @@ export interface StockfishSearchOptions {
   timeoutMs?: number;
 }
 
+// BACKEND_STOCKFISH_CLEANUP_CANDIDATE: server-side Stockfish process lifecycle and UCI command handling live here.
 export class StockfishSession {
   private child: ChildProcessWithoutNullStreams;
   private rl: Interface;
@@ -260,6 +261,7 @@ export class StockfishEngine {
   }
 
   static async search(options: StockfishSearchOptions): Promise<EngineSearchResult> {
+    // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: one-off backend Stockfish search entrypoint for API analysis flows.
     const session = await StockfishSession.start();
     try {
       return await session.search(options);

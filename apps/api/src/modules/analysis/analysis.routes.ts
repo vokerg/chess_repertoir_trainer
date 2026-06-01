@@ -24,6 +24,7 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/position-analysis',
     operation: analyzePositionOpenApiOperation,
     handler: async (request, reply) => {
+      // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: API endpoint that triggers backend Stockfish position analysis.
       const parsed = analyzePositionSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
@@ -91,6 +92,7 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/analysis-runs',
     operation: analyzeImportedGameOpenApiOperation,
     handler: async (request, reply) => {
+      // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: API endpoint that triggers backend Stockfish imported-game analysis runs.
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);

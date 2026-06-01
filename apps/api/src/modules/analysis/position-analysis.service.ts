@@ -156,6 +156,7 @@ async function runSearch(
   input: { fen: string; depth: number; multipv: number; searchMoves?: string[] },
   stats?: PositionAnalysisStats,
 ) {
+  // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: shared backend Stockfish dispatch for cached and uncached position analysis.
   stats && (stats.engineSearches += 1);
   const search = session ? session.search.bind(session) : StockfishEngine.search.bind(StockfishEngine);
   return search(input);
@@ -257,6 +258,7 @@ async function analyzeAndStorePosition(
   stats?: PositionAnalysisStats,
   positionSearch?: StoredPositionAnalysis,
 ): Promise<StoredPositionAnalysis> {
+    // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: backend Stockfish position analysis orchestration and persistence boundary.
     const { normalizedFen, engineName, engineVersion, classificationVersion, cacheKey } = cacheContext(input);
 
     const cached = await findPositionAnalysis(cacheKey);
@@ -294,6 +296,7 @@ async function analyzeAndStorePosition(
       if (input.playedMoveUci === resolvedBestMoveUci) {
         playedLine = resolvedBestLine;
       } else {
+        // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: forced-move backend Stockfish search for played-move scoring.
         stats && (stats.forcedMoveSearches += 1);
         const forced = await runSearch(session, {
           fen: input.fen,

@@ -159,6 +159,7 @@ export const GameAnalysisService = {
   },
 
   analyzeImportedGame: async (importedGameId: number, options: AnalyzeImportedGameOptions) => {
+    // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: imported-game batch analysis entrypoint using server-side Stockfish.
     await CurrentUserService.getOrCreate();
 
     const engineName = StockfishEngine.engineName;
@@ -201,6 +202,7 @@ export const GameAnalysisService = {
     let session: StockfishSession | undefined;
 
     try {
+      // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: long-lived backend Stockfish session reused across imported-game move analysis.
       session = await StockfishSession.start();
 
       for (const move of moves) {

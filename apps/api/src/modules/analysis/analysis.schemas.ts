@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// BACKEND_STOCKFISH_CLEANUP_CANDIDATE: validation defaults wired to backend Stockfish analysis settings.
 const defaultDepth = Number(process.env['ANALYSIS_DEFAULT_DEPTH'] || 12);
 const maxDepth = Number(process.env['ANALYSIS_MAX_DEPTH'] || 16);
 const defaultMultipv = Number(process.env['ANALYSIS_DEFAULT_MULTIPV'] || 1);
