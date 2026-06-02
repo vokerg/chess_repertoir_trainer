@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { normalizeFenForPosition } from 'chess-domain';
 import { CurrentUserService } from '../../services/currentUserService';
 import {
   clearPlyRowsForGame,
@@ -23,12 +24,6 @@ function toUci(move: any): string {
   return `${move.from}${move.to}${move.promotion ?? ''}`;
 }
 
-function normalizeFenForExplorer(fen: string): string {
-  const chess = new Chess(fen);
-  const parts = chess.fen().split(/\s+/);
-  return parts.slice(0, 4).join(' ');
-}
-
 function parsePlyRows(importedGameId: number, pgn: string): ImportedGamePlyCreateInput[] {
   const chess = new Chess();
   try {
@@ -47,7 +42,7 @@ function parsePlyRows(importedGameId: number, pgn: string): ImportedGamePlyCreat
     return {
       importedGameId,
       plyNumber,
-      normalizedFen: normalizeFenForExplorer(move.before),
+      normalizedFen: normalizeFenForPosition(move.before),
       moveUci: toUci(move),
     };
   });
