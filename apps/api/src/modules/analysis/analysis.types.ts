@@ -16,6 +16,7 @@ export interface StorePositionAnalysisInput {
 export interface StoredPositionAnalysis {
   id: number;
   positionId: number;
+  fen?: string;
   normalizedFen: string;
   bestMoveUci?: string;
   bestScoreCpWhite?: number;
