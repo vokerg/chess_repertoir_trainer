@@ -1,48 +1,118 @@
+import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
-import { GameAccuracySummary } from './accuracy';
-import { PositionAnalysisResult } from './analysis.types';
+import { PlyAnalysisUpdate, StorePositionAnalysisInput } from './analysis.types';
+
+const positionAnalysisInclude = {
+  position: {
+    select: {
+      normalizedFen: true,
+    },
+  },
+} as const;
 
 const compactGameAnalysisRunInclude = {
-  moves: {
-    orderBy: { plyNumber: 'asc' as const },
-    include: {
-      positionAnalysis: {
+  importedGame: {
+    select: {
+      plies: {
+        orderBy: { plyNumber: 'asc' as const },
         select: {
-          id: true,
-          bestMoveUci: true,
-          bestScoreCpWhite: true,
-          playedScoreCpWhite: true,
+          plyNumber: true,
+          moveUci: true,
+          scoreLossCp: true,
+          classificationCode: true,
+          position: {
+            select: {
+              analysis: {
+                select: {
+                  id: true,
+                  bestMoveUci: true,
+                  bestScoreCpWhite: true,
+                  bestMateWhite: true,
+                },
+              },
+            },
+          },
         },
       },
     },
   },
-};
+} as const;
+
+function compactPositionAnalysis(row: any, fromCache = true) {
+  return {
+    id: row.id,
+    positionId: row.positionId,
+    normalizedFen: row.position?.normalizedFen ?? '',
+    bestMoveUci: row.bestMoveUci ?? undefined,
+    bestScoreCpWhite: row.bestScoreCpWhite ?? undefined,
+    bestMateWhite: row.bestMateWhite ?? undefined,
+    lines: Array.isArray(row.lines) ? row.lines : [],
+    fromCache,
+  };
+}
+
+export async function findOrCreatePositionByNormalizedFen(normalizedFen: string) {
+  try {
+    return await prisma.position.create({ data: { normalizedFen } });
+  } catch {
+    const position = await prisma.position.findUnique({ where: { normalizedFen } });
+    if (position) return position;
+    throw new Error('Could not create or find position');
+  }
+}
+
+export async function findOrCreatePositionByFen(fen: string) {
+  return findOrCreatePositionByNormalizedFen(normalizeFenForPosition(fen));
+}
+
+export async function getPositionAnalysisByFen(fen: string) {
+  const normalizedFen = normalizeFenForPosition(fen);
+  const row = await prisma.positionAnalysis.findFirst({
+    where: { position: { normalizedFen } },
+    include: positionAnalysisInclude,
+  });
+  return row ? compactPositionAnalysis(row) : null;
+}
+
+export async function getPositionAnalysisByPositionId(positionId: number) {
+  const row = await prisma.positionAnalysis.findUnique({
+    where: { positionId },
+    include: positionAnalysisInclude,
+  });
+  return row ? compactPositionAnalysis(row) : null;
+}
+
+export async function upsertPositionAnalysis(positionId: number, data: StorePositionAnalysisInput) {
+  const lines = (data.lines ?? []).slice(0, 3);
+  const bestMoveUci = data.bestMoveUci ?? lines[0]?.moveUci ?? lines[0]?.pvUci?.[0];
+  const bestScoreCpWhite = data.bestScoreCpWhite ?? lines[0]?.scoreCpWhite;
+  const bestMateWhite = data.bestMateWhite ?? lines[0]?.mateWhite;
+
+  const row = await prisma.positionAnalysis.upsert({
+    where: { positionId },
+    create: {
+      positionId,
+      bestMoveUci,
+      bestScoreCpWhite,
+      bestMateWhite,
+      lines: lines as any,
+    },
+    update: {
+      bestMoveUci,
+      bestScoreCpWhite,
+      bestMateWhite,
+      lines: lines as any,
+    },
+    include: positionAnalysisInclude,
+  });
+
+  return compactPositionAnalysis(row, false);
+}
 
 export async function getImportedGameForAnalysis(importedGameId: number) {
   return prisma.importedGame.findFirst({
     where: { id: importedGameId, userId: SINGLETON_USER_ID },
-  });
-}
-
-export async function getExistingGameAnalysis(importedGameId: number, settings: {
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string;
-}) {
-  return prisma.gameAnalysisRun.findFirst({
-    where: {
-      importedGameId,
-      importedGame: { userId: SINGLETON_USER_ID },
-      status: { in: ['RUNNING', 'COMPLETED'] },
-      depth: settings.depth,
-      multipv: settings.multipv,
-      engineName: settings.engineName,
-      engineVersion: settings.engineVersion ?? null,
-    },
-    orderBy: { createdAt: 'desc' },
-    include: compactGameAnalysisRunInclude,
   });
 }
 
@@ -51,178 +121,94 @@ export async function getLatestGameAnalysisForImportedGame(importedGameId: numbe
     where: {
       importedGameId,
       importedGame: { userId: SINGLETON_USER_ID },
-      status: { in: ['RUNNING', 'COMPLETED'] },
+      status: { in: ['RUNNING', 'COMPLETED', 'FAILED'] },
     },
     orderBy: { createdAt: 'desc' },
     include: compactGameAnalysisRunInclude,
   });
 }
 
-export async function createGameAnalysisRun(data: {
+export async function createClientGameAnalysisRun(data: {
   importedGameId: number;
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string;
-  positionsTotal: number;
+  positionsDone: number;
+  summary: unknown;
 }) {
   return prisma.gameAnalysisRun.create({
     data: {
       importedGameId: data.importedGameId,
-      status: 'RUNNING',
-      depth: data.depth,
-      multipv: data.multipv,
-      engineName: data.engineName,
-      engineVersion: data.engineVersion,
-      positionsTotal: data.positionsTotal,
-      positionsDone: 0,
-    },
-  });
-}
-
-export async function completeGameAnalysisRun(id: number, summary: unknown, positionsDone: number, accuracy?: GameAccuracySummary) {
-  return prisma.gameAnalysisRun.update({
-    where: { id },
-    data: {
       status: 'COMPLETED',
-      summary: summary as any,
-      accuracyVersion: accuracy?.version,
-      whiteAccuracy: accuracy?.white.accuracy,
-      blackAccuracy: accuracy?.black.accuracy,
-      whiteAverageCentipawnLoss: accuracy?.white.averageCentipawnLoss,
-      blackAverageCentipawnLoss: accuracy?.black.averageCentipawnLoss,
-      whiteMovesAnalyzed: accuracy?.white.moves ?? 0,
-      blackMovesAnalyzed: accuracy?.black.moves ?? 0,
-      positionsDone,
+      positionsTotal: data.positionsDone,
+      positionsDone: data.positionsDone,
+      summary: data.summary as any,
+      accuracyVersion: 'client-side-v1',
       completedAt: new Date(),
     },
     include: compactGameAnalysisRunInclude,
   });
 }
 
-export async function failGameAnalysisRun(id: number, error: string, positionsDone: number) {
-  return prisma.gameAnalysisRun.update({
-    where: { id },
-    data: {
-      status: 'FAILED',
-      error,
-      positionsDone,
-      completedAt: new Date(),
-    },
+export async function updateImportedGamePlyAnalysis(gameId: number, updates: PlyAnalysisUpdate[]) {
+  return prisma.$transaction(async (tx) => {
+    const game = await tx.importedGame.findFirst({
+      where: { id: gameId, userId: SINGLETON_USER_ID },
+      select: { id: true },
+    });
+    if (!game) throw new Error('Imported game not found');
+
+    let updatedPlies = 0;
+    for (const update of updates) {
+      const result = await tx.importedGamePly.updateMany({
+        where: { importedGameId: gameId, plyNumber: update.plyNumber },
+        data: {
+          scoreLossCp: update.scoreLossCp,
+          classificationCode: update.classificationCode,
+        },
+      });
+      updatedPlies += result.count;
+    }
+
+    return { importedGameId: gameId, updatedPlies };
   });
 }
 
-export async function findPositionAnalysis(cacheKey: string) {
-  return prisma.positionAnalysis.findUnique({ where: { cacheKey } });
-}
+export async function clearImportedGamePlyAnalysis(gameId: number) {
+  return prisma.$transaction(async (tx) => {
+    const game = await tx.importedGame.findFirst({
+      where: { id: gameId, userId: SINGLETON_USER_ID },
+      select: { id: true },
+    });
+    if (!game) throw new Error('Imported game not found');
 
-export async function findCompatiblePositionAnalysis(settings: {
-  normalizedFen: string;
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string;
-  classificationVersion: string;
-}) {
-  const rows = await prisma.positionAnalysis.findMany({
-    where: {
-      normalizedFen: settings.normalizedFen,
-      depth: settings.depth,
-      engineName: settings.engineName,
-      engineVersion: settings.engineVersion ?? null,
-      classificationVersion: settings.classificationVersion,
-    },
-    orderBy: [
-      { multipv: 'desc' },
-      { updatedAt: 'desc' },
-    ],
-    take: 50,
-  });
+    const result = await tx.importedGamePly.updateMany({
+      where: { importedGameId: gameId },
+      data: { scoreLossCp: null, classificationCode: null },
+    });
 
-  const withLines = rows.filter((row) => Array.isArray(row.lines) && row.lines.length > 0);
-  return withLines.find((row) => row.playedMoveUci === null && row.multipv >= settings.multipv)
-    ?? withLines.find((row) => row.multipv >= settings.multipv)
-    ?? withLines.find((row) => row.playedMoveUci === null)
-    ?? withLines[0]
-    ?? null;
-}
-
-export async function findCompatiblePositionAnalysisAnyEngine(settings: {
-  normalizedFen: string;
-  depth: number;
-  multipv: number;
-}) {
-  const rows = await prisma.positionAnalysis.findMany({
-    where: {
-      normalizedFen: settings.normalizedFen,
-      depth: settings.depth,
-    },
-    orderBy: [
-      { multipv: 'desc' },
-      { updatedAt: 'desc' },
-    ],
-    take: 50,
-  });
-
-  const withLines = rows.filter((row) => Array.isArray(row.lines) && row.lines.length > 0);
-  return withLines.find((row) => row.playedMoveUci === null && row.multipv >= settings.multipv)
-    ?? withLines.find((row) => row.multipv >= settings.multipv)
-    ?? withLines.find((row) => row.playedMoveUci === null)
-    ?? withLines[0]
-    ?? null;
-}
-
-export async function createPositionAnalysis(cacheKey: string, result: PositionAnalysisResult) {
-  return prisma.positionAnalysis.create({
-    data: {
-      cacheKey,
-      fen: result.fen,
-      normalizedFen: result.normalizedFen,
-      playedMoveUci: result.playedMoveUci,
-      depth: result.depth,
-      multipv: result.multipv,
-      engineName: result.engineName,
-      engineVersion: result.engineVersion,
-      classificationVersion: result.classificationVersion,
-      bestMoveUci: result.bestMoveUci,
-      bestScoreCpWhite: result.bestScoreCpWhite,
-      playedScoreCpWhite: result.playedScoreCpWhite,
-      scoreLossCp: result.scoreLossCp,
-      classification: result.classification,
-      lines: result.lines as any,
-      playedLine: result.playedLine as any,
-    },
+    return { importedGameId: gameId, clearedPlies: result.count };
   });
 }
 
-export async function createGameMoveAnalysis(data: {
-  analysisRunId: number;
-  importedGameId: number;
-  positionAnalysisId: number;
-  plyNumber: number;
-  moveNumber: number;
-  side: string;
-  fenBefore: string;
-  fenAfter: string;
-  playedMoveUci: string;
-  playedMoveSan?: string;
-  classification?: string;
-  scoreLossCp?: number;
-}) {
-  return prisma.gameMoveAnalysis.create({
-    data: {
-      analysisRunId: data.analysisRunId,
-      importedGameId: data.importedGameId,
-      positionAnalysisId: data.positionAnalysisId,
-      plyNumber: data.plyNumber,
-      moveNumber: data.moveNumber,
-      side: data.side,
-      fenBefore: data.fenBefore,
-      fenAfter: data.fenAfter,
-      playedMoveUci: data.playedMoveUci,
-      playedMoveSan: data.playedMoveSan,
-      classification: data.classification,
-      scoreLossCp: data.scoreLossCp,
+export async function getImportedGamePliesForAnalysisSummary(gameId: number) {
+  return prisma.importedGamePly.findMany({
+    where: { importedGameId: gameId, importedGame: { userId: SINGLETON_USER_ID } },
+    orderBy: { plyNumber: 'asc' },
+    select: {
+      plyNumber: true,
+      moveUci: true,
+      scoreLossCp: true,
+      classificationCode: true,
+      position: {
+        select: {
+          analysis: {
+            select: {
+              id: true,
+              bestMoveUci: true,
+              bestScoreCpWhite: true,
+              bestMateWhite: true,
+            },
+          },
+        },
+      },
     },
   });
 }
