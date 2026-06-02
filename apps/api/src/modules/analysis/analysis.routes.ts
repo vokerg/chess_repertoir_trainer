@@ -1,15 +1,23 @@
 import { FastifyInstance } from 'fastify';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import {
-  analyzeImportedGameOpenApiOperation,
-  analyzePositionOpenApiOperation,
   analysisOpenApiSchemas,
+  clearPlyAnalysisOpenApiOperation,
+  createClientGameAnalysisRunOpenApiOperation,
   getImportedGameAnalysisOpenApiOperation,
+  getPositionAnalysisOpenApiOperation,
   storePositionAnalysisOpenApiOperation,
+  updatePlyAnalysisOpenApiOperation,
 } from './analysis.openapi';
-import { analyzeImportedGameSchema, analyzePositionSchema, storePositionAnalysisSchema } from './analysis.schemas';
+import {
+  clientGameAnalysisRunSchema,
+  positionAnalysisLookupSchema,
+  storePositionAnalysisSchema,
+  updatePlyAnalysisSchema,
+} from './analysis.schemas';
 import { GameAnalysisService } from './game-analysis.service';
 import { PositionAnalysisService } from './position-analysis.service';
+import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
 
 function parseGameId(params: unknown): number | null {
   const gameId = Number((params as any).gameId);
@@ -20,20 +28,19 @@ export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiSchemas(analysisOpenApiSchemas);
 
   registerOpenApiRoute(app, {
-    method: 'post',
+    method: 'get',
     url: '/api/position-analysis',
-    operation: analyzePositionOpenApiOperation,
+    operation: getPositionAnalysisOpenApiOperation,
     handler: async (request, reply) => {
-      // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: API endpoint that triggers backend Stockfish position analysis.
-      const parsed = analyzePositionSchema.safeParse(request.body ?? {});
+      const parsed = positionAnalysisLookupSchema.safeParse(request.query ?? {});
       if (!parsed.success) {
         reply.code(400);
         return { error: parsed.error.errors };
       }
 
       try {
-        const position = await PositionAnalysisService.analyzePositionSearch(parsed.data);
-        return { position };
+        const positionAnalysis = await PositionAnalysisService.getPositionAnalysis(parsed.data.fen);
+        return { positionAnalysis };
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -53,8 +60,8 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        const position = await PositionAnalysisService.storePositionSearch(parsed.data);
-        return { position };
+        const positionAnalysis = await PositionAnalysisService.storePositionSearch(parsed.data);
+        return { positionAnalysis, position: positionAnalysis };
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -90,25 +97,80 @@ export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiRoute(app, {
     method: 'post',
     url: '/api/imported-games/:gameId/analysis-runs',
-    operation: analyzeImportedGameOpenApiOperation,
+    operation: createClientGameAnalysisRunOpenApiOperation,
     handler: async (request, reply) => {
-      // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: API endpoint that triggers backend Stockfish imported-game analysis runs.
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
         return { error: 'Invalid imported game id' };
       }
 
-      const parsed = analyzeImportedGameSchema.safeParse(request.body ?? {});
+      const parsed = clientGameAnalysisRunSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
         return { error: parsed.error.errors };
       }
 
       try {
-        const result = await GameAnalysisService.analyzeImportedGame(gameId, parsed.data);
-        reply.code(result.reusedExisting ? 200 : 201);
+        const result = await GameAnalysisService.createClientAnalysisSummary(gameId, parsed.data);
+        reply.code(201);
         return result;
+      } catch (err: any) {
+        const message = err?.message ?? String(err);
+        if (message === 'Imported game not found') {
+          reply.code(404);
+          return { error: message };
+        }
+        reply.code(400);
+        return { error: message };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'patch',
+    url: '/api/imported-games/:gameId/plies/analysis',
+    operation: updatePlyAnalysisOpenApiOperation,
+    handler: async (request, reply) => {
+      const gameId = parseGameId(request.params);
+      if (!gameId) {
+        reply.code(400);
+        return { error: 'Invalid imported game id' };
+      }
+
+      const parsed = updatePlyAnalysisSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        return await updateImportedGamePlyAnalysis(gameId, parsed.data.plies);
+      } catch (err: any) {
+        const message = err?.message ?? String(err);
+        if (message === 'Imported game not found') {
+          reply.code(404);
+          return { error: message };
+        }
+        reply.code(400);
+        return { error: message };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/imported-games/:gameId/plies/analysis/clear',
+    operation: clearPlyAnalysisOpenApiOperation,
+    handler: async (request, reply) => {
+      const gameId = parseGameId(request.params);
+      if (!gameId) {
+        reply.code(400);
+        return { error: 'Invalid imported game id' };
+      }
+
+      try {
+        return await clearImportedGamePlyAnalysis(gameId);
       } catch (err: any) {
         const message = err?.message ?? String(err);
         if (message === 'Imported game not found') {
