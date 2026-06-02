@@ -1,66 +1,31 @@
-export const ANALYSIS_CLASSIFICATION_VERSION = 'v1';
-
-export type AnalysisSide = 'WHITE' | 'BLACK';
-
-export type MoveClassification = 'BEST' | 'GOOD' | 'INACCURACY' | 'MISTAKE' | 'BLUNDER';
-
-export interface EngineLine {
-  multipv: number;
-  depth: number;
+export interface StoredEngineLine {
   moveUci?: string;
   scoreCpWhite?: number;
   mateWhite?: number;
   pvUci: string[];
 }
 
-export interface EngineSearchResult {
-  fen: string;
-  depth: number;
-  multipv: number;
-  bestMoveUci?: string;
-  lines: EngineLine[];
-}
-
 export interface StorePositionAnalysisInput {
   fen: string;
-  depth: number;
-  multipv: number;
-  bestMoveUci?: string;
-  engineName: string;
-  engineVersion?: string;
-  lines: EngineLine[];
-}
-
-export interface PositionAnalysisResult {
-  fen: string;
-  normalizedFen: string;
-  playedMoveUci?: string;
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string;
-  classificationVersion: string;
   bestMoveUci?: string;
   bestScoreCpWhite?: number;
-  playedScoreCpWhite?: number;
-  scoreLossCp?: number;
-  classification?: MoveClassification;
-  lines: EngineLine[];
-  playedLine?: EngineLine;
+  bestMateWhite?: number;
+  lines?: StoredEngineLine[];
 }
 
-export interface StoredPositionAnalysis extends PositionAnalysisResult {
+export interface StoredPositionAnalysis {
   id: number;
-  cacheKey: string;
+  positionId: number;
+  normalizedFen: string;
+  bestMoveUci?: string;
+  bestScoreCpWhite?: number;
+  bestMateWhite?: number;
+  lines: StoredEngineLine[];
   fromCache: boolean;
 }
 
-export interface ParsedGameMove {
+export interface PlyAnalysisUpdate {
   plyNumber: number;
-  moveNumber: number;
-  side: AnalysisSide;
-  fenBefore: string;
-  fenAfter: string;
-  playedMoveUci: string;
-  playedMoveSan?: string;
+  scoreLossCp: number | null;
+  classificationCode: number | null;
 }
