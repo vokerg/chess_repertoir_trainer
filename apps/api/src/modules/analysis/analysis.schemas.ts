@@ -1,39 +1,38 @@
 import { z } from 'zod';
 
-// BACKEND_STOCKFISH_CLEANUP_CANDIDATE: validation defaults wired to backend Stockfish analysis settings.
-const defaultDepth = Number(process.env['ANALYSIS_DEFAULT_DEPTH'] || 12);
-const maxDepth = Number(process.env['ANALYSIS_MAX_DEPTH'] || 16);
-const defaultMultipv = Number(process.env['ANALYSIS_DEFAULT_MULTIPV'] || 1);
-const maxMultipv = Number(process.env['ANALYSIS_MAX_MULTIPV'] || 3);
-const defaultPositionMultipv = Math.min(3, maxMultipv);
-
-export const analyzeImportedGameSchema = z.object({
-  depth: z.coerce.number().int().min(1).max(maxDepth).default(defaultDepth),
-  multipv: z.coerce.number().int().min(1).max(maxMultipv).default(defaultMultipv),
-  force: z.coerce.boolean().default(false),
-});
-
-export const analyzePositionSchema = z.object({
-  fen: z.string().min(1),
-  depth: z.coerce.number().int().min(1).max(maxDepth).default(defaultDepth),
-  multipv: z.coerce.number().int().min(1).max(maxMultipv).default(defaultPositionMultipv),
-});
+const smallIntSchema = z.coerce.number().int().min(-32768).max(32767);
 
 const engineLineSchema = z.object({
-  multipv: z.coerce.number().int().min(1).max(maxMultipv),
-  depth: z.coerce.number().int().min(1).max(maxDepth),
   moveUci: z.string().min(4).max(5).optional(),
-  scoreCpWhite: z.coerce.number().int().optional(),
-  mateWhite: z.coerce.number().int().optional(),
+  scoreCpWhite: smallIntSchema.optional(),
+  mateWhite: smallIntSchema.optional(),
   pvUci: z.array(z.string().min(4).max(5)).min(1),
+});
+
+export const positionAnalysisLookupSchema = z.object({
+  fen: z.string().min(1),
 });
 
 export const storePositionAnalysisSchema = z.object({
   fen: z.string().min(1),
-  depth: z.coerce.number().int().min(1).max(maxDepth).default(defaultDepth),
-  multipv: z.coerce.number().int().min(1).max(maxMultipv).default(defaultPositionMultipv),
   bestMoveUci: z.string().min(4).max(5).optional(),
-  engineName: z.string().min(1).max(120).default('stockfish-web'),
-  engineVersion: z.string().min(1).max(120).default('18.0.7'),
-  lines: z.array(engineLineSchema).min(1),
+  bestScoreCpWhite: smallIntSchema.optional(),
+  bestMateWhite: smallIntSchema.optional(),
+  lines: z.array(engineLineSchema).max(3).optional(),
+});
+
+const nullableSmallIntSchema = z.union([smallIntSchema, z.null()]);
+const nullableClassificationCodeSchema = z.union([z.coerce.number().int().min(1).max(9), z.null()]);
+
+export const updatePlyAnalysisSchema = z.object({
+  plies: z.array(z.object({
+    plyNumber: z.coerce.number().int().min(1).max(32767),
+    scoreLossCp: nullableSmallIntSchema,
+    classificationCode: nullableClassificationCodeSchema,
+  })).min(1).max(500),
+});
+
+export const clientGameAnalysisRunSchema = z.object({
+  positionsDone: z.coerce.number().int().min(0).optional(),
+  summary: z.unknown().optional(),
 });

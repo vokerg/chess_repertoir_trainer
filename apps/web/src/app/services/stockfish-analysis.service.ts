@@ -23,6 +23,7 @@ interface PendingRun {
   fen: string;
   depth: number;
   multipv: number;
+  keepAlive: boolean;
   started: boolean;
   lines: Map<number, EngineLine>;
 }
@@ -53,15 +54,21 @@ export class StockfishAnalysisService implements OnDestroy {
     this.resetWorker();
   }
 
-  analyze(fen: string, options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[] } = {}) {
+  analyze(fen: string, options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; keepAlive?: boolean } = {}) {
     const depth = options.depth ?? 12;
     const multipv = options.multipv ?? 3;
+    const keepAlive = options.keepAlive ?? false;
     const runId = ++this.runSeq;
 
     // The asm.js engine appears to become unstable across repeated searches,
-    // so each analysis gets a fresh worker process.
-    this.resetWorker();
-    this.currentRun = { id: runId, fen, depth, multipv, started: false, lines: new Map<number, EngineLine>() };
+    // so interactive single-position analysis keeps using fresh workers. Batch
+    // game analysis can opt into one worker per batch to avoid repeated script loads.
+    if (!keepAlive) {
+      this.resetWorker();
+    } else {
+      this.post('stop');
+    }
+    this.currentRun = { id: runId, fen, depth, multipv, keepAlive, started: false, lines: new Map<number, EngineLine>() };
     this.emit({
       fen,
       running: true,
@@ -74,7 +81,63 @@ export class StockfishAnalysisService implements OnDestroy {
     this.ensureWorker();
     if (!this.worker) {
       this.emit({ fen, running: false, ready: false, error: 'Stockfish worker could not be loaded.', bestMove: null, lines: [] });
+      return;
     }
+    if (this.ready) {
+      this.startCurrentRun();
+    }
+  }
+
+  analyzeOnce(
+    fen: string,
+    options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; timeoutMs?: number; keepAlive?: boolean } = {},
+  ): Promise<EngineAnalysis> {
+    const depth = options.depth ?? 12;
+    const multipv = options.multipv ?? 3;
+    const timeoutMs = options.timeoutMs ?? Math.max(10000, depth * 2500);
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        subscription.unsubscribe();
+        this.stop();
+        reject(new Error('Stockfish analysis timed out.'));
+      }, timeoutMs);
+
+      const finish = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        subscription.unsubscribe();
+        callback();
+      };
+
+      const subscription = this.state$.subscribe((analysis) => {
+        if (analysis.fen !== fen) return;
+        if (analysis.error) {
+          finish(() => reject(new Error(analysis.error || 'Stockfish analysis failed.')));
+          return;
+        }
+        if (!analysis.running && (analysis.bestMove || analysis.lines.length > 0)) {
+          finish(() => resolve(analysis));
+        }
+      });
+
+      this.analyze(fen, {
+        depth,
+        multipv,
+        seedBestMove: options.seedBestMove,
+        seedLines: options.seedLines,
+        keepAlive: options.keepAlive,
+      });
+    });
+  }
+
+  shutdownWorker() {
+    this.stop();
+    this.resetWorker();
   }
 
   stop() {
@@ -151,9 +214,10 @@ export class StockfishAnalysisService implements OnDestroy {
     if (message.startsWith('bestmove ')) {
       const bestMove = message.split(/\s+/)[1] || null;
       const state = this.stateSubject.value;
+      const keepAlive = this.currentRun?.keepAlive ?? false;
       this.emit({ ...state, running: false, bestMove });
       this.currentRun = null;
-      this.resetWorker();
+      if (!keepAlive) this.resetWorker();
     }
   }
 

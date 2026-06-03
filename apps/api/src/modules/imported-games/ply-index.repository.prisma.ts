@@ -44,12 +44,12 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
     await tx.importedGamePly.deleteMany({ where: { importedGameId } });
     if (rows.length > 0) {
       const normalizedFens = Array.from(new Set(rows.map((row) => row.normalizedFen)));
-      await tx.importedGamePosition.createMany({
+      await tx.position.createMany({
         data: normalizedFens.map((normalizedFen) => ({ normalizedFen })),
         skipDuplicates: true,
       });
 
-      const positions = await tx.importedGamePosition.findMany({
+      const positions = await tx.position.findMany({
         where: { normalizedFen: { in: normalizedFens } },
         select: { id: true, normalizedFen: true },
       });
@@ -58,7 +58,7 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
       await tx.importedGamePly.createMany({
         data: rows.map((row) => {
           const positionId = positionIdsByFen.get(row.normalizedFen);
-          if (!positionId) throw new Error(`Could not resolve imported game position for ${row.normalizedFen}`);
+          if (!positionId) throw new Error(`Could not resolve position for ${row.normalizedFen}`);
           return {
             importedGameId: row.importedGameId,
             plyNumber: row.plyNumber,

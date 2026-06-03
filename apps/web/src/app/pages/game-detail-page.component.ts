@@ -7,6 +7,7 @@ import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
+import { ImportedGameAnalysisService } from '../features/games/data-access/imported-game-analysis.service';
 import { ApiService } from '../services/api.service';
 import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
 
@@ -54,6 +55,17 @@ interface ImportedGameDetail {
     blackAccuracy?: number | null;
   };
   pgn?: string | null;
+  plies: ImportedGamePly[];
+}
+
+interface ImportedGamePly {
+  plyNumber: number;
+  moveUci: string;
+  normalizedFen: string;
+  scoreLossCp?: number | null;
+  classificationCode?: number | null;
+  classification?: string | null;
+  positionAnalysis?: unknown;
 }
 
 interface AnalysisMove {
@@ -178,6 +190,17 @@ interface GameTree {
             <p class="metric-label">Analysis</p>
             <p class="metric-value compact-result">{{ analysisStatusLabel() }}</p>
             <p class="game-muted">{{ analysisSummaryLabel() }}</p>
+            <div class="game-analysis-actions">
+              <button type="button" class="secondary" (click)="analyzeImportedGame(false)" [disabled]="importedGameAnalysis.progress().running">
+                {{ importedGameAnalysis.progress().running ? 'Analysing...' : 'Analyze' }}
+              </button>
+              <button type="button" class="secondary" (click)="analyzeImportedGame(true)" [disabled]="importedGameAnalysis.progress().running">
+                Force re-analysis
+              </button>
+            </div>
+            <p *ngIf="importedGameAnalysis.progress().running || importedGameAnalysis.progress().error" class="game-muted">
+              {{ importedGameAnalysis.progress().error || (importedGameAnalysis.progress().message + ' (' + importedGameAnalysis.progress().currentPly + '/' + importedGameAnalysis.progress().totalPlies + ')') }}
+            </p>
           </div>
           <div class="metric-card">
             <p class="metric-label">Opening</p>
@@ -250,6 +273,7 @@ interface GameTree {
       .game-summary-grid { display: grid; gap: 1rem; grid-template-columns: repeat(4, minmax(160px, 1fr)); }
       .compact-result { font-size: 1.45rem; line-height: 1.1; }
       .game-muted { margin: 0.3rem 0 0; color: var(--muted); line-height: 1.35; }
+      .game-analysis-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: 0.7rem; }
       .game-board-panel { display: grid; gap: 1rem; }
       .compact-empty { padding: 1rem; border-radius: 18px; }
       @media (max-width: 760px) { .game-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -282,6 +306,7 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private cdr: ChangeDetectorRef,
     private stockfish: StockfishAnalysisService,
+    protected importedGameAnalysis: ImportedGameAnalysisService,
   ) {}
 
   @HostListener('window:keydown', ['$event'])
@@ -310,7 +335,6 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
       this.analysis = analysis;
       this.cdr.detectChanges();
     });
-
     this.route.paramMap.subscribe((params) => {
       this.gameId = Number(params.get('gameId'));
       this.loadGame();
@@ -572,6 +596,18 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   rerunAnalysis() {
     if (!this.currentFen) return;
     this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
+  }
+
+  async analyzeImportedGame(force: boolean) {
+    if (!this.gameId || this.importedGameAnalysis.progress().running) return;
+    this.error = null;
+    try {
+      await this.importedGameAnalysis.analyzeGame(this.gameId, force);
+      this.loadGame();
+    } catch (err: any) {
+      this.error = err?.error?.message || err?.error?.error || err?.message || 'Could not analyse imported game.';
+      this.cdr.detectChanges();
+    }
   }
 
   attachSavedAnalysis() {

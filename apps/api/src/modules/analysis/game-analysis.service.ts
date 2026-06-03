@@ -1,131 +1,89 @@
-import { Chess } from 'chess.js';
+import { moveClassificationLabel } from 'chess-domain';
 import { CurrentUserService } from '../../services/currentUserService';
-import { ANALYSIS_ACCURACY_VERSION, GameAccuracyTracker } from './accuracy';
-import { StockfishEngine, StockfishSession } from './engine/stockfish-engine';
-import { PositionAnalysisService, PositionAnalysisStats } from './position-analysis.service';
 import {
-  completeGameAnalysisRun,
-  createGameAnalysisRun,
-  createGameMoveAnalysis,
-  failGameAnalysisRun,
-  getExistingGameAnalysis,
+  createClientGameAnalysisRun,
   getImportedGameForAnalysis,
+  getImportedGamePliesForAnalysisSummary,
   getLatestGameAnalysisForImportedGame,
 } from './analysis.repository.prisma';
-import { MoveClassification, ParsedGameMove } from './analysis.types';
 
-interface CompactAnalysisMove {
-  id: number;
-  plyNumber: number;
-  moveNumber: number;
-  side: string;
-  playedMoveUci: string;
-  playedMoveSan: string | null;
-  classification: string | null;
-  scoreLossCp: number | null;
-  bestMoveUci: string | null;
-  bestScoreCpWhite: number | null;
-  playedScoreCpWhite: number | null;
-  positionAnalysisId: number;
+function sideForPly(plyNumber: number): 'WHITE' | 'BLACK' {
+  return plyNumber % 2 === 1 ? 'WHITE' : 'BLACK';
 }
 
-interface AnalyzeImportedGameOptions {
-  depth: number;
-  multipv: number;
-  force: boolean;
+function moveNumberFromPly(plyNumber: number): number {
+  return Math.ceil(plyNumber / 2);
 }
 
-function toUci(move: any): string {
-  return `${move.from}${move.to}${move.promotion ?? ''}`;
+function summaryKey(classificationCode: number | null | undefined): string | null {
+  if (!classificationCode) return null;
+  const label = moveClassificationLabel(classificationCode);
+  if (label === 'Not analysed') return null;
+  return label.toUpperCase().replace(/\s+/g, '_');
 }
 
-function parsePgnMoves(pgn: string): ParsedGameMove[] {
-  const chess = new Chess();
-  try {
-    chess.loadPgn(pgn);
-  } catch {
-    throw new Error('Could not parse imported game PGN');
-  }
-
-  const history = chess.history({ verbose: true }) as any[];
-  return history.map((move, index) => {
-    const plyNumber = index + 1;
-    if (!move.before || !move.after) {
-      throw new Error('Could not reconstruct move positions from imported game PGN');
-    }
-    return {
-      plyNumber,
-      moveNumber: Math.ceil(plyNumber / 2),
-      side: move.color === 'b' ? 'BLACK' : 'WHITE',
-      fenBefore: move.before,
-      fenAfter: move.after,
-      playedMoveUci: toUci(move),
-      playedMoveSan: move.san,
-    };
-  });
-}
-
-function emptySummary() {
+function compactMove(ply: any) {
+  const analysis = ply.position?.analysis;
   return {
-    totalMoves: 0,
-    white: { BEST: 0, GOOD: 0, INACCURACY: 0, MISTAKE: 0, BLUNDER: 0 },
-    black: { BEST: 0, GOOD: 0, INACCURACY: 0, MISTAKE: 0, BLUNDER: 0 },
+    plyNumber: ply.plyNumber,
+    moveNumber: moveNumberFromPly(ply.plyNumber),
+    side: sideForPly(ply.plyNumber),
+    playedMoveUci: ply.moveUci,
+    playedMoveSan: null,
+    classificationCode: ply.classificationCode ?? null,
+    classification: moveClassificationLabel(ply.classificationCode),
+    scoreLossCp: ply.scoreLossCp ?? null,
+    bestMoveUci: analysis?.bestMoveUci ?? null,
+    bestScoreCpWhite: analysis?.bestScoreCpWhite ?? null,
+    bestMateWhite: analysis?.bestMateWhite ?? null,
+    positionAnalysisId: analysis?.id ?? null,
+  };
+}
+
+function emptySideSummary() {
+  return {
+    BOOK: 0,
+    BEST: 0,
+    GOOD: 0,
+    INACCURACY: 0,
+    MISTAKE: 0,
+    BLUNDER: 0,
+    MISSED_OPPORTUNITY: 0,
+    BRILLIANT: 0,
+    FORCED: 0,
+  };
+}
+
+function buildSummary(plies: any[]) {
+  const summary = {
+    totalMoves: plies.length,
+    white: emptySideSummary(),
+    black: emptySideSummary(),
     criticalPlyNumbers: [] as number[],
-    accuracy: {
-      version: ANALYSIS_ACCURACY_VERSION,
-      white: { moves: 0, averageCentipawnLoss: null as number | null, accuracy: null as number | null },
-      black: { moves: 0, averageCentipawnLoss: null as number | null, accuracy: null as number | null },
-    },
-    performance: {
-      durationMs: 0,
-      positionCacheHits: 0,
-      positionCacheMisses: 0,
-      engineSearches: 0,
-      forcedMoveSearches: 0,
-    },
   };
-}
 
-function addToSummary(summary: ReturnType<typeof emptySummary>, move: ParsedGameMove, classification?: string) {
-  summary.totalMoves += 1;
-  const bucket = move.side === 'WHITE' ? summary.white : summary.black;
-  if (classification && classification in bucket) {
-    bucket[classification as MoveClassification] += 1;
+  for (const ply of plies) {
+    const key = summaryKey(ply.classificationCode);
+    if (!key) continue;
+    const bucket = sideForPly(ply.plyNumber) === 'WHITE' ? summary.white : summary.black;
+    if (key in bucket) bucket[key as keyof typeof bucket] += 1;
+    if (ply.classificationCode === 5 || ply.classificationCode === 6) {
+      summary.criticalPlyNumbers.push(ply.plyNumber);
+    }
   }
-  if (classification === 'MISTAKE' || classification === 'BLUNDER') {
-    summary.criticalPlyNumbers.push(move.plyNumber);
-  }
-}
 
-function compactMove(move: any): CompactAnalysisMove {
-  return {
-    id: move.id,
-    plyNumber: move.plyNumber,
-    moveNumber: move.moveNumber,
-    side: move.side,
-    playedMoveUci: move.playedMoveUci,
-    playedMoveSan: move.playedMoveSan ?? null,
-    classification: move.classification ?? null,
-    scoreLossCp: move.scoreLossCp ?? null,
-    bestMoveUci: move.positionAnalysis?.bestMoveUci ?? null,
-    bestScoreCpWhite: move.positionAnalysis?.bestScoreCpWhite ?? null,
-    playedScoreCpWhite: move.positionAnalysis?.playedScoreCpWhite ?? null,
-    positionAnalysisId: move.positionAnalysisId,
-  };
+  return summary;
 }
 
 function compactRun(run: any) {
-  const moves: CompactAnalysisMove[] = Array.isArray(run.moves) ? run.moves.map(compactMove) : [];
-  const criticalMoves = moves.filter((move: CompactAnalysisMove) => move.classification === 'MISTAKE' || move.classification === 'BLUNDER');
+  const plies = run.importedGame?.plies ?? [];
+  const moves = plies.map(compactMove);
+  const criticalMoves = moves.filter((move: any) => move.classificationCode === 5 || move.classificationCode === 6);
 
   return {
     id: run.id,
     importedGameId: run.importedGameId,
     status: run.status,
-    depth: run.depth,
-    multipv: run.multipv,
-    engineName: run.engineName,
-    engineVersion: run.engineVersion,
     positionsTotal: run.positionsTotal,
     positionsDone: run.positionsDone,
     accuracyVersion: run.accuracyVersion,
@@ -158,93 +116,22 @@ export const GameAnalysisService = {
     return { run: compactRun(run) };
   },
 
-  analyzeImportedGame: async (importedGameId: number, options: AnalyzeImportedGameOptions) => {
-    // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: imported-game batch analysis entrypoint using server-side Stockfish.
+  createClientAnalysisSummary: async (
+    importedGameId: number,
+    input: { positionsDone?: number; summary?: unknown } = {},
+  ) => {
     await CurrentUserService.getOrCreate();
-
-    const engineName = StockfishEngine.engineName;
-    const engineVersion = StockfishEngine.engineVersion();
-
-    if (!options.force) {
-      const existing = await getExistingGameAnalysis(importedGameId, {
-        depth: options.depth,
-        multipv: options.multipv,
-        engineName,
-        engineVersion,
-      });
-
-      if (existing) {
-        return { reusedExisting: true, run: compactRun(existing) };
-      }
-    }
 
     const game = await getImportedGameForAnalysis(importedGameId);
     if (!game) throw new Error('Imported game not found');
-    if (!game.pgn) throw new Error('Imported game has no PGN to analyze');
 
-    const moves = parsePgnMoves(game.pgn);
-    if (moves.length === 0) throw new Error('Imported game PGN has no moves to analyze');
-
-    const run = await createGameAnalysisRun({
+    const plies = await getImportedGamePliesForAnalysisSummary(importedGameId);
+    const run = await createClientGameAnalysisRun({
       importedGameId,
-      depth: options.depth,
-      multipv: options.multipv,
-      engineName,
-      engineVersion,
-      positionsTotal: moves.length,
+      positionsDone: input.positionsDone ?? plies.length,
+      summary: input.summary ?? buildSummary(plies),
     });
 
-    const summary = emptySummary();
-    const stats: PositionAnalysisStats = summary.performance;
-    const accuracyTracker = new GameAccuracyTracker();
-    const startedAtMs = Date.now();
-    let positionsDone = 0;
-    let session: StockfishSession | undefined;
-
-    try {
-      // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: long-lived backend Stockfish session reused across imported-game move analysis.
-      session = await StockfishSession.start();
-
-      for (const move of moves) {
-        const position = await PositionAnalysisService.analyzePosition({
-          fen: move.fenBefore,
-          playedMoveUci: move.playedMoveUci,
-          depth: options.depth,
-          multipv: options.multipv,
-        }, session, stats);
-
-        accuracyTracker.add(move.side, position);
-
-        await createGameMoveAnalysis({
-          analysisRunId: run.id,
-          importedGameId,
-          positionAnalysisId: position.id,
-          plyNumber: move.plyNumber,
-          moveNumber: move.moveNumber,
-          side: move.side,
-          fenBefore: move.fenBefore,
-          fenAfter: move.fenAfter,
-          playedMoveUci: move.playedMoveUci,
-          playedMoveSan: move.playedMoveSan,
-          classification: position.classification,
-          scoreLossCp: position.scoreLossCp,
-        });
-
-        positionsDone += 1;
-        addToSummary(summary, move, position.classification);
-      }
-
-      const accuracy = accuracyTracker.summarize(game.userColor);
-      summary.accuracy = accuracy;
-      summary.performance.durationMs = Date.now() - startedAtMs;
-      const completed = await completeGameAnalysisRun(run.id, summary, positionsDone, accuracy);
-      return { reusedExisting: false, run: compactRun(completed) };
-    } catch (err: any) {
-      summary.performance.durationMs = Date.now() - startedAtMs;
-      await failGameAnalysisRun(run.id, err?.message ?? String(err), positionsDone);
-      throw err;
-    } finally {
-      session?.close();
-    }
+    return { reusedExisting: false, run: compactRun(run) };
   },
 };

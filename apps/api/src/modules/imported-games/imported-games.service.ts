@@ -1,3 +1,4 @@
+import { moveClassificationLabel } from 'chess-domain';
 import { CurrentUserService } from '../../services/currentUserService';
 import { ImportedGameSearchQuery } from './imported-games.schemas';
 import {
@@ -113,6 +114,27 @@ function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGam
   };
 }
 
+function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
+  const analysis = ply.position.analysis;
+  return {
+    plyNumber: ply.plyNumber,
+    moveUci: ply.moveUci,
+    normalizedFen: ply.position.normalizedFen,
+    scoreLossCp: ply.scoreLossCp ?? null,
+    classificationCode: ply.classificationCode ?? null,
+    classification: moveClassificationLabel(ply.classificationCode),
+    positionAnalysis: analysis
+      ? {
+        id: analysis.id,
+        bestMoveUci: analysis.bestMoveUci ?? null,
+        bestScoreCpWhite: analysis.bestScoreCpWhite ?? null,
+        bestMateWhite: analysis.bestMateWhite ?? null,
+        lines: Array.isArray(analysis.lines) ? analysis.lines : [],
+      }
+      : null,
+  };
+}
+
 function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
   const run = latestRun(row);
   return {
@@ -156,7 +178,7 @@ function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
     analysis: {
       status: deriveAnalysisStatus(row),
       runId: run?.id ?? null,
-      depth: run?.depth ?? null,
+      depth: null,
       completedAt: run?.completedAt ?? null,
       createdAt: run?.createdAt ?? null,
       whiteAccuracy: run?.whiteAccuracy ?? null,
@@ -172,6 +194,7 @@ function toDetail(row: ImportedGameDetailRow) {
   return {
     ...toListItem(row),
     pgn: row.pgn,
+    plies: row.plies.map(toPlyItem),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

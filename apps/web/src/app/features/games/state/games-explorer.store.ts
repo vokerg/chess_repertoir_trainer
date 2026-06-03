@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { GamesApiService } from '../data-access/games-api.service';
+import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import {
   ImportedGameFacetsResponse,
   ImportedGameListItem,
@@ -12,6 +13,7 @@ import { defaultGameFilters, GameFilters } from '../filters/game-filter.model';
 @Injectable()
 export class GamesExplorerStore {
   private readonly api = inject(GamesApiService);
+  readonly importedGameAnalysis = inject(ImportedGameAnalysisService);
 
   readonly games = signal<ImportedGameListItem[]>([]);
   readonly facets = signal<ImportedGameFacetsResponse>({});
@@ -174,19 +176,17 @@ export class GamesExplorerStore {
     this.refresh();
   }
 
-  private runAnalysis(game: ImportedGameListItem, force = false): void {
+  private async runAnalysis(game: ImportedGameListItem, force = false): Promise<void> {
     this.analysingGameId.set(game.id);
     this.error.set(null);
-    this.api.startAnalysis(game.id, force).subscribe({
-      next: () => {
-        this.analysingGameId.set(null);
-        this.refresh();
-      },
-      error: (err) => {
-        this.error.set(readApiError(err, 'Could not start game analysis.'));
-        this.analysingGameId.set(null);
-      },
-    });
+    try {
+      await this.importedGameAnalysis.analyzeGame(game.id, force);
+      this.analysingGameId.set(null);
+      this.refresh();
+    } catch (err) {
+      this.error.set(readApiError(err, 'Could not analyse game.'));
+      this.analysingGameId.set(null);
+    }
   }
 
   private async indexSingleGame(game: ImportedGameListItem): Promise<void> {

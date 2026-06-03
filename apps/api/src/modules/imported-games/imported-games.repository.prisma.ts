@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { moveClassificationCodeFromLegacy } from 'chess-domain';
 import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { ImportedGameSearchQuery } from './imported-games.schemas';
@@ -13,12 +14,32 @@ export interface ImportedGameCursor {
 const latestAnalysisRunSelect = {
   id: true,
   status: true,
-  depth: true,
   completedAt: true,
   createdAt: true,
   whiteAccuracy: true,
   blackAccuracy: true,
   summary: true,
+} as const;
+
+const importedGamePlySelect = {
+  plyNumber: true,
+  moveUci: true,
+  scoreLossCp: true,
+  classificationCode: true,
+  position: {
+    select: {
+      normalizedFen: true,
+      analysis: {
+        select: {
+          id: true,
+          bestMoveUci: true,
+          bestScoreCpWhite: true,
+          bestMateWhite: true,
+          lines: true,
+        },
+      },
+    },
+  },
 } as const;
 
 export const importedGameListSelect = {
@@ -60,6 +81,10 @@ export const importedGameDetailSelect = {
   pgn: true,
   createdAt: true,
   updatedAt: true,
+  plies: {
+    orderBy: { plyNumber: 'asc' as const },
+    select: importedGamePlySelect,
+  },
 } as const;
 
 export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameListSelect }>;
@@ -130,7 +155,11 @@ function buildTimeControlWhere(query: ImportedGameSearchQuery): Prisma.ImportedG
 
 function buildClassificationWhere(classifications?: string[]): Prisma.ImportedGameWhereInput[] {
   if (!classifications?.length) return [];
-  return [{ moveAnalyses: { some: { classification: { in: classifications } } } }];
+  const codes = classifications
+    .map((classification) => moveClassificationCodeFromLegacy(classification))
+    .filter((code): code is number => typeof code === 'number');
+  if (!codes.length) return [];
+  return [{ plies: { some: { classificationCode: { in: codes } } } }];
 }
 
 function buildPlyIndexStatusWhere(statuses?: ImportedGameSearchQuery['plyIndexStatus']): Prisma.ImportedGameWhereInput[] {
