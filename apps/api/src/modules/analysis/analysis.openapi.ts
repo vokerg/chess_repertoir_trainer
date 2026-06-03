@@ -1,66 +1,63 @@
 export const analysisOpenApiSchemas = {
-  AnalyzePositionRequest: {
+  StoredEngineLine: {
     type: 'object',
     properties: {
-      fen: { type: 'string' },
-      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
-      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
+      moveUci: { type: 'string', nullable: true },
+      scoreCpWhite: { type: 'integer', nullable: true },
+      mateWhite: { type: 'integer', nullable: true },
+      pvUci: { type: 'array', items: { type: 'string' } },
     },
-    required: ['fen'],
+    required: ['pvUci'],
   },
-  AnalyzePositionResponse: {
+  PositionAnalysisLookupResponse: {
     type: 'object',
     properties: {
-      position: { $ref: '#/components/schemas/PositionAnalysis' },
+      positionAnalysis: { oneOf: [{ $ref: '#/components/schemas/PositionAnalysis' }, { type: 'null' }] },
     },
-    required: ['position'],
+    required: ['positionAnalysis'],
   },
   StorePositionAnalysisRequest: {
     type: 'object',
     properties: {
       fen: { type: 'string' },
-      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
-      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
       bestMoveUci: { type: 'string', nullable: true },
-      engineName: { type: 'string', default: 'stockfish-web' },
-      engineVersion: { type: 'string', nullable: true, default: '18.0.7' },
-      lines: { type: 'array', items: { type: 'object', additionalProperties: true }, minItems: 1 },
+      bestScoreCpWhite: { type: 'integer', nullable: true },
+      bestMateWhite: { type: 'integer', nullable: true },
+      lines: { type: 'array', items: { $ref: '#/components/schemas/StoredEngineLine' }, maxItems: 3 },
     },
-    required: ['fen', 'lines'],
+    required: ['fen'],
+  },
+  PositionAnalysisStoreResponse: {
+    type: 'object',
+    properties: {
+      positionAnalysis: { $ref: '#/components/schemas/PositionAnalysis' },
+      position: { $ref: '#/components/schemas/PositionAnalysis' },
+    },
+    required: ['positionAnalysis'],
   },
   PositionAnalysis: {
     type: 'object',
     properties: {
       id: { type: 'integer' },
-      cacheKey: { type: 'string' },
-      fromCache: { type: 'boolean' },
-      fen: { type: 'string' },
+      positionId: { type: 'integer' },
+      fen: { type: 'string', nullable: true },
       normalizedFen: { type: 'string' },
-      playedMoveUci: { type: 'string', nullable: true },
-      depth: { type: 'integer' },
-      multipv: { type: 'integer' },
-      engineName: { type: 'string' },
-      engineVersion: { type: 'string', nullable: true },
-      classificationVersion: { type: 'string' },
+      fromCache: { type: 'boolean' },
       bestMoveUci: { type: 'string', nullable: true },
       bestScoreCpWhite: { type: 'integer', nullable: true },
-      playedScoreCpWhite: { type: 'integer', nullable: true },
-      scoreLossCp: { type: 'integer', nullable: true },
-      classification: { type: 'string', nullable: true },
-      lines: { type: 'array', items: { type: 'object', additionalProperties: true } },
-      playedLine: { type: 'object', nullable: true, additionalProperties: true },
+      bestMateWhite: { type: 'integer', nullable: true },
+      lines: { type: 'array', items: { $ref: '#/components/schemas/StoredEngineLine' } },
     },
-    required: ['id', 'cacheKey', 'fromCache', 'fen', 'normalizedFen', 'depth', 'multipv', 'engineName', 'classificationVersion', 'lines'],
+    required: ['id', 'positionId', 'normalizedFen', 'fromCache', 'lines'],
   },
-  AnalyzeImportedGameRequest: {
+  ClientGameAnalysisRunRequest: {
     type: 'object',
     properties: {
-      depth: { type: 'integer', minimum: 1, maximum: 16, default: 12 },
-      multipv: { type: 'integer', minimum: 1, maximum: 3, default: 3 },
-      force: { type: 'boolean', default: false, description: 'When true, creates a new analysis run even if a matching RUNNING or COMPLETED run already exists. PositionAnalysis cache is still reused.' },
+      positionsDone: { type: 'integer', minimum: 0 },
+      summary: { type: 'object', nullable: true, additionalProperties: true },
     },
   },
-  AnalyzeImportedGameResponse: {
+  ClientGameAnalysisRunResponse: {
     type: 'object',
     properties: {
       reusedExisting: { type: 'boolean' },
@@ -80,11 +77,7 @@ export const analysisOpenApiSchemas = {
     properties: {
       id: { type: 'integer' },
       importedGameId: { type: 'integer' },
-      status: { type: 'string', enum: ['RUNNING', 'COMPLETED'] },
-      depth: { type: 'integer' },
-      multipv: { type: 'integer' },
-      engineName: { type: 'string' },
-      engineVersion: { type: 'string', nullable: true },
+      status: { type: 'string', enum: ['RUNNING', 'COMPLETED', 'FAILED'] },
       positionsTotal: { type: 'integer' },
       positionsDone: { type: 'integer' },
       accuracyVersion: { type: 'string', nullable: true },
@@ -101,32 +94,67 @@ export const analysisOpenApiSchemas = {
       createdAt: { type: 'string', format: 'date-time' },
       moves: {
         type: 'array',
-        items: { $ref: '#/components/schemas/CompactGameMoveAnalysis' },
+        items: { $ref: '#/components/schemas/CompactGamePlyAnalysis' },
       },
       criticalMoves: {
         type: 'array',
-        items: { $ref: '#/components/schemas/CompactGameMoveAnalysis' },
+        items: { $ref: '#/components/schemas/CompactGamePlyAnalysis' },
       },
     },
-    required: ['id', 'importedGameId', 'status', 'depth', 'multipv', 'engineName', 'positionsTotal', 'positionsDone', 'startedAt', 'createdAt', 'moves', 'criticalMoves'],
+    required: ['id', 'importedGameId', 'status', 'positionsTotal', 'positionsDone', 'startedAt', 'createdAt', 'moves', 'criticalMoves'],
   },
-  CompactGameMoveAnalysis: {
+  CompactGamePlyAnalysis: {
     type: 'object',
     properties: {
-      id: { type: 'integer' },
       plyNumber: { type: 'integer' },
       moveNumber: { type: 'integer' },
       side: { type: 'string', enum: ['WHITE', 'BLACK'] },
       playedMoveUci: { type: 'string' },
       playedMoveSan: { type: 'string', nullable: true },
-      classification: { type: 'string', enum: ['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER'], nullable: true },
+      classificationCode: { type: 'integer', nullable: true },
+      classification: { type: 'string' },
       scoreLossCp: { type: 'integer', nullable: true },
       bestMoveUci: { type: 'string', nullable: true },
       bestScoreCpWhite: { type: 'integer', nullable: true },
-      playedScoreCpWhite: { type: 'integer', nullable: true },
-      positionAnalysisId: { type: 'integer' },
+      bestMateWhite: { type: 'integer', nullable: true },
+      positionAnalysisId: { type: 'integer', nullable: true },
     },
-    required: ['id', 'plyNumber', 'moveNumber', 'side', 'playedMoveUci', 'positionAnalysisId'],
+    required: ['plyNumber', 'moveNumber', 'side', 'playedMoveUci', 'classification'],
+  },
+  UpdatePlyAnalysisRequest: {
+    type: 'object',
+    properties: {
+      plies: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            plyNumber: { type: 'integer' },
+            scoreLossCp: { type: 'integer', nullable: true },
+            classificationCode: { type: 'integer', nullable: true, minimum: 1, maximum: 9 },
+          },
+          required: ['plyNumber', 'scoreLossCp', 'classificationCode'],
+        },
+        minItems: 1,
+      },
+    },
+    required: ['plies'],
+  },
+  PlyAnalysisUpdateResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      updatedPlies: { type: 'integer' },
+    },
+    required: ['importedGameId', 'updatedPlies'],
+  },
+  PlyAnalysisClearResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      clearedPlies: { type: 'integer' },
+    },
+    required: ['importedGameId', 'clearedPlies'],
   },
 };
 
@@ -137,34 +165,24 @@ const importedGameIdParameter = {
   schema: { type: 'integer' },
 };
 
-export const analyzePositionOpenApiOperation = {
+export const getPositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
-  // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: OpenAPI contract for backend Stockfish position analysis.
-  summary: 'Analyze one board position with backend Stockfish',
-  description: 'Stores and reuses a pure position analysis row. This cached result is shared by opening analysis and imported-game analysis.',
-  requestBody: {
-    required: true,
-    content: {
-      'application/json': {
-        schema: { $ref: '#/components/schemas/AnalyzePositionRequest' },
-        examples: {
-          startPosition: {
-            value: {
-              fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-              depth: 12,
-              multipv: 3,
-            },
-          },
-        },
-      },
+  summary: 'Get cached position analysis',
+  description: 'Returns cached client-computed analysis for a normalized position, or null. This endpoint never runs an engine.',
+  parameters: [
+    {
+      name: 'fen',
+      in: 'query',
+      required: true,
+      schema: { type: 'string' },
     },
-  },
+  ],
   responses: {
     '200': {
-      description: 'Cached or newly-created position analysis',
+      description: 'Cached position analysis or null',
       content: {
         'application/json': {
-          schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },
+          schema: { $ref: '#/components/schemas/PositionAnalysisLookupResponse' },
         },
       },
     },
@@ -175,7 +193,7 @@ export const analyzePositionOpenApiOperation = {
 export const storePositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Store one client-computed position analysis',
-  description: 'Accepts completed engine lines computed on the client and stores them in the shared PositionAnalysis cache without running backend Stockfish.',
+  description: 'Accepts completed engine lines computed on the client and stores them in the shared PositionAnalysis cache.',
   requestBody: {
     required: true,
     content: {
@@ -186,10 +204,10 @@ export const storePositionAnalysisOpenApiOperation = {
   },
   responses: {
     '200': {
-      description: 'Existing or newly-created cached position analysis',
+      description: 'Existing or newly upserted cached position analysis',
       content: {
         'application/json': {
-          schema: { $ref: '#/components/schemas/AnalyzePositionResponse' },
+          schema: { $ref: '#/components/schemas/PositionAnalysisStoreResponse' },
         },
       },
     },
@@ -199,12 +217,12 @@ export const storePositionAnalysisOpenApiOperation = {
 
 export const getImportedGameAnalysisOpenApiOperation = {
   tags: ['Analysis'],
-  summary: 'Get latest saved analysis for one imported game',
-  description: 'Returns the latest RUNNING or COMPLETED imported-game analysis run as a compact report. Full engine lines remain stored in PositionAnalysis and are not returned by this endpoint.',
+  summary: 'Get latest saved analysis summary for one imported game',
+  description: 'Returns the latest saved client-side imported-game analysis summary and ply quality data.',
   parameters: [importedGameIdParameter],
   responses: {
     '200': {
-      description: 'Latest saved imported-game analysis',
+      description: 'Latest saved imported-game analysis summary',
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/ImportedGameAnalysisResponse' },
@@ -215,50 +233,71 @@ export const getImportedGameAnalysisOpenApiOperation = {
   },
 };
 
-export const analyzeImportedGameOpenApiOperation = {
+export const createClientGameAnalysisRunOpenApiOperation = {
   tags: ['Analysis'],
-  // BACKEND_STOCKFISH_CLEANUP_CANDIDATE: OpenAPI contract for backend Stockfish imported-game analysis runs.
-  summary: 'Analyze one imported game with backend Stockfish',
-  description: 'Synchronously analyzes the stored PGN for one imported game. If force is false and a RUNNING or COMPLETED run already exists for the same game/depth/MultiPV/engine settings, that compact run is returned and Stockfish is not executed again. If force is true, a new run is created while PositionAnalysis cache is still reused.',
+  summary: 'Create a client-side imported-game analysis summary',
+  description: 'Records a summary/progress row after the browser has analyzed a game locally. This endpoint never runs an engine.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
     content: {
       'application/json': {
-        schema: { $ref: '#/components/schemas/AnalyzeImportedGameRequest' },
-        examples: {
-          default: {
-            value: {
-              depth: 12,
-              multipv: 3,
-              force: false,
-            },
-          },
-          forceRerun: {
-            value: {
-              depth: 12,
-              multipv: 3,
-              force: true,
-            },
-          },
+        schema: { $ref: '#/components/schemas/ClientGameAnalysisRunRequest' },
+      },
+    },
+  },
+  responses: {
+    '201': {
+      description: 'Client-side analysis summary was saved',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/ClientGameAnalysisRunResponse' },
         },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+    '404': { $ref: '#/components/responses/NotFound' },
+  },
+};
+
+export const updatePlyAnalysisOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Bulk update imported-game ply analysis',
+  description: 'Stores client-computed centipawn loss and compact classification codes on existing imported-game ply rows.',
+  parameters: [importedGameIdParameter],
+  requestBody: {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/UpdatePlyAnalysisRequest' },
       },
     },
   },
   responses: {
     '200': {
-      description: 'Existing running or completed analysis run was returned; no re-analysis happened',
+      description: 'Ply analysis fields were updated',
       content: {
         'application/json': {
-          schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
+          schema: { $ref: '#/components/schemas/PlyAnalysisUpdateResponse' },
         },
       },
     },
-    '201': {
-      description: 'New analysis run was created and completed',
+    '400': { $ref: '#/components/responses/BadRequest' },
+    '404': { $ref: '#/components/responses/NotFound' },
+  },
+};
+
+export const clearPlyAnalysisOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Clear imported-game ply analysis',
+  description: 'Clears score loss and classification code fields for a game so the browser can re-analyze locally.',
+  parameters: [importedGameIdParameter],
+  responses: {
+    '200': {
+      description: 'Ply analysis fields were cleared',
       content: {
         'application/json': {
-          schema: { $ref: '#/components/schemas/AnalyzeImportedGameResponse' },
+          schema: { $ref: '#/components/schemas/PlyAnalysisClearResponse' },
         },
       },
     },
