@@ -77,6 +77,52 @@ export class StockfishAnalysisService implements OnDestroy {
     }
   }
 
+  analyzeOnce(
+    fen: string,
+    options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; timeoutMs?: number } = {},
+  ): Promise<EngineAnalysis> {
+    const depth = options.depth ?? 12;
+    const multipv = options.multipv ?? 3;
+    const timeoutMs = options.timeoutMs ?? Math.max(10000, depth * 2500);
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        subscription.unsubscribe();
+        this.stop();
+        reject(new Error('Stockfish analysis timed out.'));
+      }, timeoutMs);
+
+      const finish = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        subscription.unsubscribe();
+        callback();
+      };
+
+      const subscription = this.state$.subscribe((analysis) => {
+        if (analysis.fen !== fen) return;
+        if (analysis.error) {
+          finish(() => reject(new Error(analysis.error || 'Stockfish analysis failed.')));
+          return;
+        }
+        if (!analysis.running && (analysis.bestMove || analysis.lines.length > 0)) {
+          finish(() => resolve(analysis));
+        }
+      });
+
+      this.analyze(fen, {
+        depth,
+        multipv,
+        seedBestMove: options.seedBestMove,
+        seedLines: options.seedLines,
+      });
+    });
+  }
+
   stop() {
     this.post('stop');
     const state = this.stateSubject.value;

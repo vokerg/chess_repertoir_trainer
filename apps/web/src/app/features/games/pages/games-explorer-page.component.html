@@ -41,6 +41,10 @@
     (reset)="store.resetFilters()"
   />
 
+  <p *ngIf="store.importedGameAnalysis.progress().running || store.importedGameAnalysis.progress().error" class="status-note">
+    {{ store.importedGameAnalysis.progress().error || (store.importedGameAnalysis.progress().message + ' (' + store.importedGameAnalysis.progress().currentPly + '/' + store.importedGameAnalysis.progress().totalPlies + ')') }}
+  </p>
+
   <app-games-table
     [games]="store.filteredGames()"
     [loading]="store.loading()"

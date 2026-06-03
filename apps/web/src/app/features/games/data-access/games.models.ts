@@ -47,6 +47,37 @@ export interface ImportedGameOpening {
   name?: string | null;
 }
 
+export interface PositionAnalysisLine {
+  multipv?: number;
+  depth?: number;
+  moveUci?: string | null;
+  scoreCpWhite?: number | null;
+  mateWhite?: number | null;
+  pvUci?: string[];
+}
+
+export interface PositionAnalysisCache {
+  id?: number | null;
+  positionId?: number | null;
+  fen?: string | null;
+  normalizedFen?: string | null;
+  bestMoveUci?: string | null;
+  bestScoreCpWhite?: number | null;
+  bestMateWhite?: number | null;
+  lines: PositionAnalysisLine[];
+  fromCache?: boolean;
+}
+
+export interface ImportedGamePly {
+  plyNumber: number;
+  moveUci: string;
+  normalizedFen: string;
+  scoreLossCp?: number | null;
+  classificationCode?: number | null;
+  classification?: string | null;
+  positionAnalysis?: PositionAnalysisCache | null;
+}
+
 export interface ImportedGameListItem {
   id: number;
   accountId: number;
@@ -69,6 +100,13 @@ export interface ImportedGameListItem {
   opening?: ImportedGameOpening | null;
   plyIndex: ImportedGamePlyIndexSummary;
   analysis: ImportedGameAnalysisSummary;
+}
+
+export interface ImportedGameDetail extends ImportedGameListItem {
+  pgn?: string | null;
+  plies: ImportedGamePly[];
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface ImportedGameSearchResponse {
