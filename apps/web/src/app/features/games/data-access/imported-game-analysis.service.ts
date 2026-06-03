@@ -106,6 +106,8 @@ export class ImportedGameAnalysisService {
         message: null,
       });
       throw error;
+    } finally {
+      this.stockfish.shutdownWorker();
     }
   }
 
@@ -141,6 +143,7 @@ export class ImportedGameAnalysisService {
     const analysis = await this.stockfish.analyzeOnce(fen, {
       depth: 12,
       multipv: 3,
+      keepAlive: true,
       seedBestMove: this.bestMoveFromPosition(cached) ?? this.bestMoveFromPosition(seed) ?? null,
       seedLines: this.toEngineLines(cached || seed, fen),
     });
