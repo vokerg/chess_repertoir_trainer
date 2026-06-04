@@ -132,6 +132,13 @@ export async function createClientGameAnalysisRun(data: {
   importedGameId: number;
   positionsDone: number;
   summary: unknown;
+  accuracyVersion: string;
+  whiteAccuracy: number | null;
+  blackAccuracy: number | null;
+  whiteAverageCentipawnLoss: number | null;
+  blackAverageCentipawnLoss: number | null;
+  whiteMovesAnalyzed: number;
+  blackMovesAnalyzed: number;
 }) {
   return prisma.gameAnalysisRun.create({
     data: {
@@ -140,7 +147,13 @@ export async function createClientGameAnalysisRun(data: {
       positionsTotal: data.positionsDone,
       positionsDone: data.positionsDone,
       summary: data.summary as any,
-      accuracyVersion: 'client-side-v1',
+      accuracyVersion: data.accuracyVersion,
+      whiteAccuracy: data.whiteAccuracy,
+      blackAccuracy: data.blackAccuracy,
+      whiteAverageCentipawnLoss: data.whiteAverageCentipawnLoss,
+      blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
+      whiteMovesAnalyzed: data.whiteMovesAnalyzed,
+      blackMovesAnalyzed: data.blackMovesAnalyzed,
       completedAt: new Date(),
     },
     include: compactGameAnalysisRunInclude,
