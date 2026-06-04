@@ -6,6 +6,7 @@ import {
   getImportedGamePliesForAnalysisSummary,
   getLatestGameAnalysisForImportedGame,
 } from './analysis.repository.prisma';
+import { ANALYSIS_ACCURACY_VERSION, GameAccuracyTracker } from './accuracy';
 
 function sideForPly(plyNumber: number): 'WHITE' | 'BLACK' {
   return plyNumber % 2 === 1 ? 'WHITE' : 'BLACK';
@@ -75,6 +76,14 @@ function buildSummary(plies: any[]) {
   return summary;
 }
 
+function buildAccuracySummary(plies: any[], userColor?: string | null) {
+  const tracker = new GameAccuracyTracker();
+  for (const ply of plies) {
+    tracker.record(sideForPly(ply.plyNumber), ply.scoreLossCp);
+  }
+  return tracker.summarize(userColor);
+}
+
 function compactRun(run: any) {
   const plies = run.importedGame?.plies ?? [];
   const moves = plies.map(compactMove);
@@ -126,10 +135,18 @@ export const GameAnalysisService = {
     if (!game) throw new Error('Imported game not found');
 
     const plies = await getImportedGamePliesForAnalysisSummary(importedGameId);
+    const accuracy = buildAccuracySummary(plies, game.userColor);
     const run = await createClientGameAnalysisRun({
       importedGameId,
       positionsDone: input.positionsDone ?? plies.length,
       summary: input.summary ?? buildSummary(plies),
+      accuracyVersion: accuracy.version,
+      whiteAccuracy: accuracy.white.accuracy,
+      blackAccuracy: accuracy.black.accuracy,
+      whiteAverageCentipawnLoss: accuracy.white.averageCentipawnLoss,
+      blackAverageCentipawnLoss: accuracy.black.averageCentipawnLoss,
+      whiteMovesAnalyzed: accuracy.white.moves,
+      blackMovesAnalyzed: accuracy.black.moves,
     });
 
     return { reusedExisting: false, run: compactRun(run) };

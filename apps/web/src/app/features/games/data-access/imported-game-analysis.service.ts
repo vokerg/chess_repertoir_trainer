@@ -29,6 +29,8 @@ interface PlyAnalysisPatch {
   classificationCode: number | null;
 }
 
+const MAX_PERSISTED_SCORE_LOSS_CP = 300;
+
 @Injectable({ providedIn: 'root' })
 export class ImportedGameAnalysisService {
   readonly progress = signal<ImportedGameAnalysisProgress>({
@@ -218,7 +220,10 @@ export class ImportedGameAnalysisService {
     if (bestCpWhite === null || playedCpWhite === null) return null;
     const best = side === 'WHITE' ? bestCpWhite : -bestCpWhite;
     const played = side === 'WHITE' ? playedCpWhite : -playedCpWhite;
-    return clampSmallInt(Math.max(0, Math.round(best - played)));
+    const loss = Math.max(0, Math.round(best - played));
+    // Mate scores are represented as large synthetic centipawn values. Cap the
+    // persisted loss so one mating swing does not dominate whole-game accuracy.
+    return clampSmallInt(Math.min(MAX_PERSISTED_SCORE_LOSS_CP, loss));
   }
 
   private effectiveScoreCpWhite(scoreCpWhite?: number | null, mateWhite?: number | null): number | null {
