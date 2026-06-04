@@ -218,6 +218,7 @@ export async function getImportedGamePliesForAnalysisSummary(gameId: number) {
               bestMoveUci: true,
               bestScoreCpWhite: true,
               bestMateWhite: true,
+              lines: true,
             },
           },
         },
