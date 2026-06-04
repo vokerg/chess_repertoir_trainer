@@ -6,11 +6,7 @@ import {
   getImportedGamePliesForAnalysisSummary,
   getLatestGameAnalysisForImportedGame,
 } from './analysis.repository.prisma';
-import { ANALYSIS_ACCURACY_VERSION, GameAccuracyTracker } from './accuracy';
-
-function sideForPly(plyNumber: number): 'WHITE' | 'BLACK' {
-  return plyNumber % 2 === 1 ? 'WHITE' : 'BLACK';
-}
+import { buildGameAccuracySummary, sideForPly } from './accuracy';
 
 function moveNumberFromPly(plyNumber: number): number {
   return Math.ceil(plyNumber / 2);
@@ -77,11 +73,17 @@ function buildSummary(plies: any[]) {
 }
 
 function buildAccuracySummary(plies: any[], userColor?: string | null) {
-  const tracker = new GameAccuracyTracker();
-  for (const ply of plies) {
-    tracker.record(sideForPly(ply.plyNumber), ply.scoreLossCp);
-  }
-  return tracker.summarize(userColor);
+  return buildGameAccuracySummary(
+    plies.map((ply: any, index: number) => ({
+      plyNumber: ply.plyNumber,
+      moveUci: ply.moveUci,
+      scoreLossCp: ply.scoreLossCp ?? null,
+      classificationCode: ply.classificationCode ?? null,
+      positionAnalysis: ply.position?.analysis ?? null,
+      resultingPositionAnalysis: plies[index + 1]?.position?.analysis ?? null,
+    })),
+    userColor,
+  );
 }
 
 function compactRun(run: any) {

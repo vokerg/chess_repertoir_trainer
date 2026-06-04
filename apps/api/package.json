@@ -12,7 +12,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
-    "test": "node -e \"console.log('No api tests yet')\""
+    "test": "npm run build && node test/analysis/accuracy.test.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
