@@ -3,7 +3,7 @@ import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { Subscription } from 'rxjs';
-import { ChessBoardComponent } from '../components/chess-board.component';
+import { ChessgroundBoardComponent } from '../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
@@ -146,7 +146,7 @@ interface GameTree {
 @Component({
   selector: 'app-game-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, MoveTreeComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, ChessgroundBoardComponent, EngineEvalBarComponent, MoveTreeComponent, StockfishPanelComponent],
   template: `
     <section class="game-detail-page stack">
       <header class="workbench-header">
@@ -226,7 +226,7 @@ interface GameTree {
               ></app-engine-eval-bar>
 
               <div class="board-shell">
-                <app-chess-board
+                <app-chessground-board
                   [fen]="currentFen"
                   [side]="boardSide()"
                   [lastMove]="lastMove"
@@ -234,7 +234,7 @@ interface GameTree {
                   [sound]="false"
                   [positionVersion]="boardPositionVersion"
                   (move)="onBoardMove($event)"
-                ></app-chess-board>
+                ></app-chessground-board>
               </div>
             </div>
 

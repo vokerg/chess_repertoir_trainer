@@ -3,13 +3,13 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../services/api.service';
-import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { MoveNotesComponent } from '../components/move-notes.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { PositionAnalysisCacheService } from '../services/position-analysis-cache.service';
 import { EngineAnalysis } from '../services/stockfish-analysis.service';
+import { ChessgroundBoardComponent } from '../components/chessground-board.component';
 
 interface EditableLine {
   id: number;
@@ -21,7 +21,7 @@ interface EditableLine {
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, ChessgroundBoardComponent, EngineEvalBarComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
   template: `
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
@@ -53,14 +53,14 @@ interface EditableLine {
             <app-engine-eval-bar [analysis]="analysis" [currentFen]="currentFen" [flipped]="isBlackPerspective()"></app-engine-eval-bar>
 
             <div class="board-shell">
-              <app-chess-board
+              <app-chessground-board
                 [fen]="currentFen"
                 [side]="line?.sideToTrain"
                 [lastMove]="lastMove"
                 [arrows]="analysisArrows()"
                 [positionVersion]="boardPositionVersion"
                 (move)="onBoardMove($event)"
-              ></app-chess-board>
+              ></app-chessground-board>
             </div>
           </div>
 

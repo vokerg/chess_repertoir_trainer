@@ -3,7 +3,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Chess } from 'chess.js';
 import { ApiService } from '../services/api.service';
-import { ChessBoardComponent } from '../components/chess-board.component';
+import { ChessgroundBoardComponent } from '../components/chessground-board.component';
 
 interface MistakeReviewItem {
   id: number;
@@ -19,7 +19,7 @@ interface MistakeReviewItem {
 @Component({
   selector: 'app-line-train-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessBoardComponent],
+  imports: [CommonModule, RouterModule, ChessgroundBoardComponent],
   template: `
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
@@ -43,13 +43,13 @@ interface MistakeReviewItem {
       <div class="training-focus-layout">
         <section class="training-board-panel">
           <div class="training-board-inner">
-            <app-chess-board
+            <app-chessground-board
               [fen]="currentFen"
               [side]="sideToTrain"
               [lastMove]="lastMove"
               [positionVersion]="boardPositionVersion"
               (move)="onBoardMove($event)"
-            ></app-chess-board>
+            ></app-chessground-board>
 
             <div
               class="training-feedback"

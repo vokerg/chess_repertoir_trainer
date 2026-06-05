@@ -3,7 +3,6 @@ import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { Subscription } from 'rxjs';
-import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { ImportedGameFacetsResponse, Provider, ResultForUser, UserColor } from '../features/games/data-access/games.models';
 import { GameFilterPanelComponent } from '../shared/game-filters/game-filter-panel.component';
@@ -12,6 +11,7 @@ import { StockfishPanelComponent } from '../components/stockfish-panel.component
 import { ApiService } from '../services/api.service';
 import { PositionAnalysisCache, PositionAnalysisCacheService } from '../services/position-analysis-cache.service';
 import { EngineAnalysis } from '../services/stockfish-analysis.service';
+import { ChessgroundBoardComponent } from '../components/chessground-board.component';
 
 interface OpeningWdl {
   total: number;
@@ -88,7 +88,7 @@ interface PlayedMove {
 @Component({
   selector: 'app-opening-analysis-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, GameFilterPanelComponent, ChessBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, GameFilterPanelComponent, ChessgroundBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
   template: `
     <section class="opening-page stack">
       <section class="section-card opening-hero">
@@ -148,7 +148,7 @@ interface PlayedMove {
             ></app-engine-eval-bar>
 
             <div class="board-shell">
-              <app-chess-board
+              <app-chessground-board
                 [fen]="currentFen"
                 [side]="boardSide()"
                 [lastMove]="lastMove"
@@ -156,7 +156,7 @@ interface PlayedMove {
                 [sound]="false"
                 [positionVersion]="boardPositionVersion"
                 (move)="onBoardMove($event)"
-              ></app-chess-board>
+              ></app-chessground-board>
             </div>
           </div>
 
@@ -293,8 +293,8 @@ interface PlayedMove {
       .opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0, min(520px, calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
       .opening-board-stage app-engine-eval-bar { height: 100%; min-width: 0; }
       .opening-board-stage .board-shell { width: 100%; min-width: 0; }
-      .opening-board-stage app-chess-board { display: block; width: 100%; min-width: 0; }
-      .opening-board-stage app-chess-board ::ng-deep .board-shell { width: 100%; }
+      .opening-board-stage app-chessground-board { display: block; width: 100%; min-width: 0; }
+      .opening-board-stage app-chessground-board ::ng-deep .board-shell { width: 100%; }
       .board-action-row { display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; }
       .opening-line-card { border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.6); padding: 0.9rem; }
       .opening-line-text { margin: 0.2rem 0 0; font-weight: 800; color: var(--text); line-height: 1.45; }
