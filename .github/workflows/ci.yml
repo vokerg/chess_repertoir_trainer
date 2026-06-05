@@ -28,6 +28,7 @@ jobs:
     env:
       CI: true
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
       WEB_API_BASE_URL: /api
 
     steps:
