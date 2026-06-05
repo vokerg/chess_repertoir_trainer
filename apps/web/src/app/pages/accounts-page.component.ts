@@ -195,7 +195,6 @@ interface AccountForm {
               >
                 {{ deletingAccountId === account.id ? 'Deleting...' : 'Delete account' }}
               </button>
-              <a routerLink="/games" class="accounts-link-button secondary-link">View games</a>
             </div>
           </article>
         </div>
