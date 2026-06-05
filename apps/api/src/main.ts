@@ -14,6 +14,7 @@ async function bootstrap() {
   await app.register(cors, {
     origin: ORIGIN,
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   app.get('/health', async () => ({ ok: true }));
