@@ -2,6 +2,7 @@ import { normalizeFenForPosition } from 'chess-domain';
 import { StorePositionAnalysisInput, StoredPositionAnalysis } from './analysis.types';
 import {
   findOrCreatePositionByFen,
+  getPositionAnalysesByFens,
   getPositionAnalysisByFen,
   upsertPositionAnalysis,
 } from './analysis.repository.prisma';
@@ -15,6 +16,10 @@ export const PositionAnalysisService = {
   getPositionAnalysis: async (fen: string): Promise<StoredPositionAnalysis | null> => {
     normalizeFenForPosition(fen);
     return withRequestedFen(await getPositionAnalysisByFen(fen), fen);
+  },
+
+  getPositionAnalyses: async (fens: string[]): Promise<StoredPositionAnalysis[]> => {
+    return getPositionAnalysesByFens(fens);
   },
 
   getStoredPositionSearch: async (input: { fen: string; depth?: number; multipv?: number }): Promise<StoredPositionAnalysis | null> => {

@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import {
   analysisOpenApiSchemas,
+  bulkPositionAnalysisLookupOpenApiOperation,
   clearPlyAnalysisOpenApiOperation,
   createClientGameAnalysisRunOpenApiOperation,
   getImportedGameAnalysisOpenApiOperation,
@@ -10,6 +11,7 @@ import {
   updatePlyAnalysisOpenApiOperation,
 } from './analysis.openapi';
 import {
+  bulkPositionAnalysisLookupSchema,
   clientGameAnalysisRunSchema,
   positionAnalysisLookupSchema,
   storePositionAnalysisSchema,
@@ -41,6 +43,27 @@ export default async function analysisModule(app: FastifyInstance) {
       try {
         const positionAnalysis = await PositionAnalysisService.getPositionAnalysis(parsed.data.fen);
         return { positionAnalysis };
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/position-analysis/bulk-lookup',
+    operation: bulkPositionAnalysisLookupOpenApiOperation,
+    handler: async (request, reply) => {
+      const parsed = bulkPositionAnalysisLookupSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        const positionAnalyses = await PositionAnalysisService.getPositionAnalyses(parsed.data.fens);
+        return { positionAnalyses };
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };

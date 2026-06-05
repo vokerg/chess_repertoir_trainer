@@ -18,6 +18,28 @@ export const analysisOpenApiSchemas = {
     },
     required: ['positionAnalysis'],
   },
+  BulkPositionAnalysisLookupRequest: {
+    type: 'object',
+    properties: {
+      fens: {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 1,
+        maxItems: 1000,
+      },
+    },
+    required: ['fens'],
+  },
+  BulkPositionAnalysisLookupResponse: {
+    type: 'object',
+    properties: {
+      positionAnalyses: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/PositionAnalysis' },
+      },
+    },
+    required: ['positionAnalyses'],
+  },
   StorePositionAnalysisRequest: {
     type: 'object',
     properties: {
@@ -185,6 +207,31 @@ export const getPositionAnalysisOpenApiOperation = {
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/PositionAnalysisLookupResponse' },
+        },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
+};
+
+export const bulkPositionAnalysisLookupOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Bulk lookup cached position analysis',
+  description: 'Returns already-stored client-computed analysis rows for normalized positions. Missing positions are omitted and this endpoint never runs an engine.',
+  requestBody: {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/BulkPositionAnalysisLookupRequest' },
+      },
+    },
+  },
+  responses: {
+    '200': {
+      description: 'Cached position analyses that already exist',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/BulkPositionAnalysisLookupResponse' },
         },
       },
     },

@@ -15,6 +15,10 @@ export const positionAnalysisLookupSchema = z.object({
   fen: z.string().min(1),
 });
 
+export const bulkPositionAnalysisLookupSchema = z.object({
+  fens: z.array(z.string().min(1)).min(1).max(1000),
+});
+
 export const storePositionAnalysisSchema = z.object({
   fen: z.string().min(1),
   bestMoveUci: z.string().min(4).max(5).optional(),

@@ -75,6 +75,17 @@ export async function getPositionAnalysisByFen(fen: string) {
   return row ? compactPositionAnalysis(row) : null;
 }
 
+export async function getPositionAnalysesByFens(fens: string[]) {
+  const normalizedFens = Array.from(new Set(fens.map((fen) => normalizeFenForPosition(fen))));
+  if (!normalizedFens.length) return [];
+
+  const rows = await prisma.positionAnalysis.findMany({
+    where: { position: { normalizedFen: { in: normalizedFens } } },
+    include: positionAnalysisInclude,
+  });
+  return rows.map((row) => compactPositionAnalysis(row));
+}
+
 export async function getPositionAnalysisByPositionId(positionId: number) {
   const row = await prisma.positionAnalysis.findUnique({
     where: { positionId },

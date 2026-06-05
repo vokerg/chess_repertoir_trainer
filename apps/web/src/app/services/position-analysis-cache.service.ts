@@ -29,6 +29,10 @@ interface PositionAnalysisResponse {
   positionAnalysis: PositionAnalysisCache | null;
 }
 
+interface BulkPositionAnalysisResponse {
+  positionAnalyses: PositionAnalysisCache[];
+}
+
 export interface CachedPositionAnalysisOptions {
   depth?: number;
   multipv?: number;
@@ -47,6 +51,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
   private readonly stateSubject = new BehaviorSubject<EngineAnalysis>(this.emptyState);
   private readonly stockfishSub: Subscription;
   private readonly memoryCache = new Map<string, PositionAnalysisCache>();
+  private readonly knownRemoteMisses = new Set<string>();
   private requestSeq = 0;
   private pendingInteractiveSave: { fen: string; multipv: number } | null = null;
 
@@ -83,10 +88,12 @@ export class PositionAnalysisCacheService implements OnDestroy {
     const memoryCached = this.memoryPosition(fen, multipv);
     if (memoryCached) return memoryCached;
 
-    const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv);
-    if (cached) {
-      this.rememberPosition(fen, cached);
-      return cached;
+    if (!this.isKnownRemoteMiss(fen)) {
+      const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv);
+      if (cached) {
+        this.rememberPosition(fen, cached);
+        return cached;
+      }
     }
 
     const fallbackSeed = options.seedPosition;
@@ -116,6 +123,42 @@ export class PositionAnalysisCacheService implements OnDestroy {
 
   isUsablePosition(position?: PositionAnalysisCache | null): position is PositionAnalysisCache {
     return !!this.usablePosition(position);
+  }
+
+  rememberSeedPositions(candidates: PositionAnalysisSeedCandidate[] = []): void {
+    for (const candidate of candidates) {
+      if (!candidate.normalizedFen || !this.isUsablePosition(candidate.positionAnalysis)) continue;
+      this.memoryCache.set(candidate.normalizedFen, candidate.positionAnalysis);
+      this.knownRemoteMisses.delete(candidate.normalizedFen);
+    }
+  }
+
+  async bulkLookupPositions(fens: string[], requestedMultipv = 1): Promise<void> {
+    const requestedNormalizedFens = this.deduplicateNormalizedFens(fens);
+    const fensToLookup = requestedNormalizedFens.filter((fen) =>
+      !this.memoryPosition(fen, requestedMultipv) && !this.knownRemoteMisses.has(fen)
+    );
+    if (!fensToLookup.length) return;
+
+    try {
+      const response = await firstValueFrom(this.api.post<BulkPositionAnalysisResponse>('/position-analysis/bulk-lookup', {
+        fens: fensToLookup,
+      }));
+      const returnedNormalizedFens = new Set<string>();
+      for (const position of response.positionAnalyses ?? []) {
+        const normalizedFen = position.normalizedFen || (position.fen ? this.safeNormalizeFenForPosition(position.fen) : null);
+        if (!normalizedFen) continue;
+        this.memoryCache.set(normalizedFen, position);
+        this.knownRemoteMisses.delete(normalizedFen);
+        returnedNormalizedFens.add(normalizedFen);
+      }
+
+      for (const fen of fensToLookup) {
+        if (!returnedNormalizedFens.has(fen)) this.knownRemoteMisses.add(fen);
+      }
+    } catch {
+      // Keep the existing single-position lookup fallback if bulk preload fails.
+    }
   }
 
   seedForFen(fen: string, candidates: PositionAnalysisSeedCandidate[] = []): PositionAnalysisCache | null {
@@ -229,7 +272,23 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   private rememberPosition(fen: string, position: PositionAnalysisCache): void {
-    this.memoryCache.set(this.normalizeFenForPosition(fen), position);
+    const normalizedFen = this.normalizeFenForPosition(fen);
+    this.memoryCache.set(normalizedFen, position);
+    this.knownRemoteMisses.delete(normalizedFen);
+  }
+
+  private isKnownRemoteMiss(fen: string): boolean {
+    const normalizedFen = this.safeNormalizeFenForPosition(fen);
+    return normalizedFen ? this.knownRemoteMisses.has(normalizedFen) : false;
+  }
+
+  private deduplicateNormalizedFens(fens: string[]): string[] {
+    const normalizedFens = new Set<string>();
+    for (const fen of fens) {
+      const normalizedFen = this.safeNormalizeFenForPosition(fen);
+      if (normalizedFen) normalizedFens.add(normalizedFen);
+    }
+    return Array.from(normalizedFens);
   }
 
   private usablePosition(position?: PositionAnalysisCache | null, fen?: string, requestedMultipv = 1): PositionAnalysisCache | null {
@@ -314,6 +373,14 @@ export class PositionAnalysisCacheService implements OnDestroy {
     const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
     const parts = chess.fen().split(/\s+/);
     return parts.slice(0, 4).join(' ');
+  }
+
+  private safeNormalizeFenForPosition(fen: string): string | null {
+    try {
+      return this.normalizeFenForPosition(fen);
+    } catch {
+      return null;
+    }
   }
 
   private emit(state: EngineAnalysis): void {

@@ -48,11 +48,18 @@ export class ImportedGameAnalysisService {
     const plies = game.plies || [];
     if (!plies.length) throw new Error('This game has no indexed plies. Index plies before analysing.');
 
+    this.positionAnalysis.rememberSeedPositions(plies);
+
+    const totalPlies = plies.length;
+    const alreadyAnalysedCount = force ? 0 : plies.filter(isPlyAnalysisComplete).length;
+    const pliesToAnalyze = force ? plies : plies.filter((ply) => !isPlyAnalysisComplete(ply));
+    let analysedCount = alreadyAnalysedCount;
+
     this.progress.set({
       running: true,
       gameId,
-      currentPly: 0,
-      totalPlies: plies.length,
+      currentPly: analysedCount,
+      totalPlies,
       message: force ? 'Clearing previous analysis...' : 'Preparing analysis...',
       error: null,
     });
@@ -62,35 +69,48 @@ export class ImportedGameAnalysisService {
         await firstValueFrom(this.api.post(`/imported-games/${gameId}/plies/analysis/clear`, {}));
       }
 
-      const updates: PlyAnalysisPatch[] = [];
-      const seenPositions = new Set<string>();
+      const worksetFens = this.buildAnalysisWorksetFens(pliesToAnalyze);
+      await this.positionAnalysis.bulkLookupPositions(worksetFens, 1);
 
-      for (let index = 0; index < plies.length; index += 1) {
-        const ply = plies[index];
+      const updates: PlyAnalysisPatch[] = [];
+
+      for (const ply of pliesToAnalyze) {
         this.progress.set({
           running: true,
           gameId,
-          currentPly: index + 1,
-          totalPlies: plies.length,
-          message: `Analysing ply ${index + 1} of ${plies.length}`,
+          currentPly: analysedCount,
+          totalPlies,
+          message: `Analysing ply ${analysedCount + 1} of ${totalPlies}`,
           error: null,
         });
 
-        const update = await this.analyzePly(ply);
+        const update = await this.analyzePly(ply, plies);
         updates.push(update);
-        seenPositions.add(ply.normalizedFen);
+        analysedCount += 1;
+
+        this.progress.set({
+          running: true,
+          gameId,
+          currentPly: analysedCount,
+          totalPlies,
+          message: `Analysing ply ${analysedCount} of ${totalPlies}`,
+          error: null,
+        });
       }
 
-      await firstValueFrom(this.api.patch(`/imported-games/${gameId}/plies/analysis`, { plies: updates }));
+      if (updates.length) {
+        await firstValueFrom(this.api.patch(`/imported-games/${gameId}/plies/analysis`, { plies: updates }));
+      }
+      const positionsDone = new Set(plies.map((ply) => ply.normalizedFen)).size;
       const run = await firstValueFrom(this.api.post<AnalysisRunResponse>(`/imported-games/${gameId}/analysis-runs`, {
-        positionsDone: seenPositions.size,
+        positionsDone,
       }));
 
       this.progress.set({
         running: false,
         gameId,
-        currentPly: plies.length,
-        totalPlies: plies.length,
+        currentPly: totalPlies,
+        totalPlies,
         message: 'Analysis complete',
         error: null,
       });
@@ -109,14 +129,17 @@ export class ImportedGameAnalysisService {
     }
   }
 
-  private async analyzePly(ply: ImportedGamePly): Promise<PlyAnalysisPatch> {
+  private async analyzePly(
+    ply: ImportedGamePly,
+    seedCandidates: ImportedGamePly[],
+  ): Promise<PlyAnalysisPatch> {
     const beforeFen = ply.normalizedFen;
     const side = sideToMove(beforeFen);
     const legalMoves = legalMoveCount(beforeFen);
     const position = await this.getGamePositionAnalysis(beforeFen, ply.positionAnalysis);
     const bestMoveUci = position.bestMoveUci ?? position.lines[0]?.moveUci ?? position.lines[0]?.pvUci?.[0] ?? null;
     const bestScoreCpWhite = this.positionAnalysis.effectiveScoreCpWhite(position.bestScoreCpWhite, position.bestMateWhite);
-    const playedScoreCpWhite = await this.playedMoveScoreCpWhite(beforeFen, ply.moveUci, position);
+    const playedScoreCpWhite = await this.playedMoveScoreCpWhite(beforeFen, ply.moveUci, position, seedCandidates);
     const scoreLossCp = this.scoreLossCp(side, bestScoreCpWhite, playedScoreCpWhite);
     const classificationCode = classifyPly({
       moveUci: ply.moveUci,
@@ -141,7 +164,12 @@ export class ImportedGameAnalysisService {
     });
   }
 
-  private async playedMoveScoreCpWhite(fen: string, moveUci: string, position: PositionAnalysisCache): Promise<number | null> {
+  private async playedMoveScoreCpWhite(
+    fen: string,
+    moveUci: string,
+    position: PositionAnalysisCache,
+    seedCandidates: ImportedGamePly[],
+  ): Promise<number | null> {
     const matchingLine = position.lines.find((line) => (line.moveUci ?? line.pvUci?.[0]) === moveUci);
     if (matchingLine) return this.positionAnalysis.effectiveScoreCpWhite(matchingLine.scoreCpWhite, matchingLine.mateWhite);
 
@@ -152,7 +180,8 @@ export class ImportedGameAnalysisService {
 
     const afterFen = this.fenAfterMove(fen, moveUci);
     if (!afterFen) return null;
-    const afterPosition = await this.getGamePositionAnalysis(afterFen, null);
+    const afterSeed = this.positionAnalysis.seedForFen(afterFen, seedCandidates);
+    const afterPosition = await this.getGamePositionAnalysis(afterFen, afterSeed);
     return this.positionAnalysis.effectiveScoreCpWhite(afterPosition.bestScoreCpWhite, afterPosition.bestMateWhite);
   }
 
@@ -179,6 +208,16 @@ export class ImportedGameAnalysisService {
       return null;
     }
   }
+
+  private buildAnalysisWorksetFens(plies: ImportedGamePly[]): string[] {
+    const fens = new Set<string>();
+    for (const ply of plies) {
+      fens.add(ply.normalizedFen);
+      const afterFen = this.fenAfterMove(ply.normalizedFen, ply.moveUci);
+      if (afterFen) fens.add(afterFen);
+    }
+    return Array.from(fens);
+  }
 }
 
 function sideToMove(fen: string): UserColor {
@@ -191,6 +230,13 @@ function legalMoveCount(fen: string): number {
   } catch {
     return 0;
   }
+}
+
+function isPlyAnalysisComplete(ply: ImportedGamePly): boolean {
+  return ply.scoreLossCp !== null &&
+    ply.scoreLossCp !== undefined &&
+    ply.classificationCode !== null &&
+    ply.classificationCode !== undefined;
 }
 
 function clampSmallInt(value: number): number {
