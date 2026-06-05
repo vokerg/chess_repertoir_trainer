@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FacetValue, ImportedGameFacetsResponse, Provider } from '../data-access/games.models';
+import { FacetValue, ImportedGameFacetsResponse, Provider } from '../../features/games/data-access/games.models';
 import { GameFilters } from './game-filter.model';
 
 @Component({

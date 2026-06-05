@@ -7,8 +7,8 @@ import {
   ImportedGamePlyIndexResult,
   ImportedGameSearchResponse,
 } from './games.models';
-import { GameFilters } from '../filters/game-filter.model';
-import { mapGameFiltersToQueryString } from '../filters/game-filter-query.mapper';
+import { GameFilters } from '../../../shared/game-filters/game-filter.model';
+import { mapGameFiltersToQueryString } from '../../../shared/game-filters/game-filter-query.mapper';
 
 @Injectable({ providedIn: 'root' })
 export class GamesApiService {

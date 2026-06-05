@@ -54,16 +54,15 @@ export async function findOpeningAnalysisRows(query: ImportedGameSearchQuery, no
   });
   if (!position) return [];
 
-  const ratedOnlyQuery: ImportedGameSearchQuery = {
+  const searchQuery: ImportedGameSearchQuery = {
     ...query,
-    rated: true,
     limit: Math.max(query.limit, 200),
   };
 
   return prisma.importedGamePly.findMany({
     where: {
       positionId: position.id,
-      importedGame: buildImportedGameWhere(ratedOnlyQuery),
+      importedGame: buildImportedGameWhere(searchQuery),
     },
     orderBy: [{ moveUci: 'asc' }, { importedGameId: 'asc' }, { plyNumber: 'asc' }],
     select: openingAnalysisPlySelect,

@@ -176,7 +176,6 @@ function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
     ...query,
     fen: query.fen,
     normalizedFen,
-    rated: true,
   };
 }
 
@@ -221,7 +220,8 @@ export const OpeningAnalysisService = {
 
     const fen = boardFen(query.fen);
     const normalizedFen = normalizeFenForExplorer(fen);
-    const rows = (await findOpeningAnalysisRows(query, normalizedFen)).filter((row) => rowMatchesAnalysisFilters(row, query));
+    const effectiveQuery: OpeningAnalysisQuery = { ...query, rated: query.rated ?? true };
+    const rows = (await findOpeningAnalysisRows(effectiveQuery, normalizedFen)).filter((row) => rowMatchesAnalysisFilters(row, effectiveQuery));
 
     const positionGames = new Set<number>();
     const positionWdl = emptyWdl();
@@ -308,13 +308,13 @@ export const OpeningAnalysisService = {
       normalizedFen,
       sideToMove: chess.turn() === 'w' ? 'WHITE' : 'BLACK',
       fullMoveNumber: Number(fen.split(/\s+/)[5]) || 1,
-      ratedOnly: true,
+      ratedOnly: effectiveQuery.rated === true,
       occurrences: rows.length,
       games: positionWdl,
       nextMoves,
       topGames,
       positionAnalysis,
-      appliedFilters: toAppliedFilters(query, normalizedFen),
+      appliedFilters: toAppliedFilters(effectiveQuery, normalizedFen),
     };
   },
 };

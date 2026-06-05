@@ -1,58 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { Subscription } from 'rxjs';
 import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
+import { ImportedGameFacetsResponse, Provider, ResultForUser, UserColor } from '../features/games/data-access/games.models';
+import { GameFilterPanelComponent } from '../shared/game-filters/game-filter-panel.component';
+import { defaultGameFilters, GameFilters } from '../shared/game-filters/game-filter.model';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
 import { PositionAnalysisCache, PositionAnalysisCacheService } from '../services/position-analysis-cache.service';
 import { EngineAnalysis } from '../services/stockfish-analysis.service';
-
-type Provider = 'LICHESS' | 'CHESS_COM';
-type UserColor = 'WHITE' | 'BLACK';
-type ResultForUser = 'WIN' | 'DRAW' | 'LOSS';
-type AnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-
-interface FacetValue {
-  value?: string | number | boolean | null;
-  label?: string | null;
-  count?: number | null;
-  id?: number | string | null;
-  name?: string | null;
-  provider?: Provider | null;
-  username?: string | null;
-}
-
-interface ImportedGameFacetsResponse {
-  accounts?: FacetValue[];
-  providers?: FacetValue[];
-  speeds?: FacetValue[];
-  variants?: FacetValue[];
-  results?: FacetValue[];
-  colors?: FacetValue[];
-  openings?: FacetValue[];
-  analysisStatuses?: FacetValue[];
-}
-
-interface OpeningFilters {
-  accountId: string;
-  provider: '' | Provider | 'ALL';
-  resultForUser: '' | ResultForUser;
-  userColor: '' | UserColor;
-  speedCategory: string;
-  timeControl: string;
-  opponent: string;
-  openingName: string;
-  analysisStatus: '' | AnalysisStatus;
-  minAccuracy: string;
-  maxAccuracy: string;
-  minOpponentRating: string;
-  from: string;
-  to: string;
-}
 
 interface OpeningWdl {
   total: number;
@@ -129,15 +88,15 @@ interface PlayedMove {
 @Component({
   selector: 'app-opening-analysis-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ChessBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, GameFilterPanelComponent, ChessBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
   template: `
     <section class="opening-page stack">
       <section class="section-card opening-hero">
         <div>
           <span class="eyebrow">Personal opening analysis</span>
-          <h2 class="page-heading page-heading-library">Explore your rated opening results</h2>
+          <h2 class="page-heading page-heading-library">Explore your opening results</h2>
           <p class="page-subtitle">
-            Move on the board to ask: how often did this exact position appear in my indexed rated games, what was my WDL, and what did I play next?
+            Move on the board to ask: how often did this exact position appear in my indexed games, what was my WDL, and what did I play next?
           </p>
         </div>
         <div class="opening-hero-stats" aria-label="Position summary">
@@ -156,114 +115,14 @@ interface PlayedMove {
         </div>
       </section>
 
-      <section class="section-card opening-filters" aria-label="Opening analysis filters">
-        <div class="perspective-switch" role="group" aria-label="Opening analysis perspective">
-          <button type="button" class="perspective-option" [class.perspective-option-active]="filters.userColor === 'WHITE'" (click)="setPerspective('WHITE')">
-            <strong>White</strong>
-          </button>
-          <button type="button" class="perspective-option" [class.perspective-option-active]="filters.userColor === 'BLACK'" (click)="setPerspective('BLACK')">
-            <strong>Black</strong>
-          </button>
-        </div>
-
-        <div class="opening-filter-grid">
-          <label class="opening-field">
-            <span>Account</span>
-            <select [(ngModel)]="filters.accountId" (ngModelChange)="refresh()">
-              <option value="">All accounts</option>
-              <option *ngFor="let account of facets.accounts || []" [value]="facetKey(account)">{{ accountLabel(account) }}</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Provider</span>
-            <select [(ngModel)]="filters.provider" (ngModelChange)="refresh()">
-              <option value="ALL">Lichess + Chess.com</option>
-              <option value="LICHESS">Lichess</option>
-              <option value="CHESS_COM">Chess.com</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Result</span>
-            <select [(ngModel)]="filters.resultForUser" (ngModelChange)="refresh()">
-              <option value="">Any result</option>
-              <option value="WIN">Win</option>
-              <option value="DRAW">Draw</option>
-              <option value="LOSS">Loss</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Control</span>
-            <select [(ngModel)]="filters.speedCategory" (ngModelChange)="refresh()">
-              <option value="">Any control</option>
-              <option value="bullet">Bullet</option>
-              <option value="blitz,rapid">Blitz + rapid</option>
-              <option value="blitz">Blitz</option>
-              <option value="rapid">Rapid</option>
-              <option value="classical">Classical</option>
-              <option *ngFor="let speed of customSpeedFacets()" [value]="facetKey(speed)">{{ facetLabel(speed) }}</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Analysis</span>
-            <select [(ngModel)]="filters.analysisStatus" (ngModelChange)="refresh()">
-              <option value="">Any status</option>
-              <option value="NOT_ANALYZED">Not analysed</option>
-              <option value="RUNNING">Running</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="FAILED">Failed</option>
-            </select>
-          </label>
-
-          <label class="opening-field">
-            <span>Time control</span>
-            <input [(ngModel)]="filters.timeControl" (keyup.enter)="refresh()" placeholder="e.g. 10+5" />
-          </label>
-
-          <label class="opening-field">
-            <span>Opponent</span>
-            <input [(ngModel)]="filters.opponent" (keyup.enter)="refresh()" placeholder="Username" />
-          </label>
-
-          <label class="opening-field">
-            <span>Opening</span>
-            <input [(ngModel)]="filters.openingName" (keyup.enter)="refresh()" placeholder="Sicilian, London..." />
-          </label>
-
-          <label class="opening-field compact">
-            <span>Min accuracy</span>
-            <input [(ngModel)]="filters.minAccuracy" (keyup.enter)="refresh()" inputmode="decimal" placeholder="0" />
-          </label>
-
-          <label class="opening-field compact">
-            <span>Max accuracy</span>
-            <input [(ngModel)]="filters.maxAccuracy" (keyup.enter)="refresh()" inputmode="decimal" placeholder="100" />
-          </label>
-
-          <label class="opening-field compact">
-            <span>Opp. rating &gt;</span>
-            <input [(ngModel)]="filters.minOpponentRating" (keyup.enter)="refresh()" inputmode="numeric" placeholder="1200" />
-          </label>
-
-          <label class="opening-field compact">
-            <span>From</span>
-            <input type="date" [(ngModel)]="filters.from" (ngModelChange)="refresh()" />
-          </label>
-
-          <label class="opening-field compact">
-            <span>To</span>
-            <input type="date" [(ngModel)]="filters.to" (ngModelChange)="refresh()" />
-          </label>
-        </div>
-
-        <div class="opening-filter-actions">
-          <button type="button" (click)="refresh()" [disabled]="loading">{{ loading ? 'Loading...' : 'Apply filters' }}</button>
-          <button type="button" class="secondary" (click)="resetFilters()" [disabled]="loading">Reset filters</button>
-        </div>
-      </section>
+      <app-game-filter-panel
+        [filters]="filters"
+        [facets]="facets"
+        [loading]="loading"
+        (filtersChange)="setFilters($event)"
+        (apply)="refresh()"
+        (reset)="resetFilters()"
+      />
 
       <p *ngIf="error" class="status-error">{{ error }}</p>
 
@@ -342,7 +201,7 @@ interface PlayedMove {
             <p *ngIf="loading" class="status-note opening-loading-note">Loading opening analysis...</p>
 
             <div *ngIf="analysis && analysis.nextMoves.length === 0" class="empty-state compact-empty opening-next-empty">
-              No indexed rated games reached this position with the current filters. Index more games or widen the filters.
+              No indexed games reached this position with the current filters. Index more games or widen the filters.
             </div>
 
             <div class="opening-move-tree" *ngIf="analysis && analysis.nextMoves.length > 0">
@@ -384,7 +243,7 @@ interface PlayedMove {
             <div class="opening-panel-header compact-header">
               <div>
                 <h3 class="workbench-panel-title">Top games in this position</h3>
-                <p class="workbench-panel-subtitle">Most recent rated games that reached this exact normalized position.</p>
+                <p class="workbench-panel-subtitle">Most recent games that reached this exact normalized position.</p>
               </div>
             </div>
 
@@ -422,24 +281,13 @@ interface PlayedMove {
       .opening-hero { display: flex; gap: 1.25rem; align-items: stretch; justify-content: space-between; }
       .opening-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(108px, 1fr)); gap: 0.8rem; min-width: min(430px, 100%); }
       .opening-mini-card { min-height: 112px; }
-      .opening-filters { display: grid; gap: 1rem; }
       .opening-panel-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
       .opening-section-title { margin: 0; font-size: 1.15rem; }
       .opening-muted { margin: 0.25rem 0 0; color: var(--muted); line-height: 1.35; }
       .side-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.55rem 0.85rem; font-weight: 800; color: var(--accent-strong); background: var(--accent-soft); white-space: nowrap; }
-      .perspective-switch { display: inline-flex; width: fit-content; gap: 0.25rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem; background: rgba(35, 27, 21, 0.06); }
-      .perspective-option { min-height: 34px; border-radius: 999px; padding: 0.42rem 0.9rem; background: transparent; color: var(--muted-strong); box-shadow: none; font-size: 0.84rem; }
-      .perspective-option:hover:not(:disabled) { transform: none; background: rgba(255,255,255,0.55); }
-      .perspective-option-active { background: var(--surface-strong); color: var(--accent-strong); box-shadow: 0 6px 14px rgba(73, 48, 25, 0.08); }
       .side-stack { display: grid; justify-items: end; gap: 0.45rem; }
       .turn-pill { display: inline-flex; width: fit-content; align-items: center; border-radius: 999px; padding: 0.35rem 0.65rem; background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); font-size: 0.78rem; font-weight: 900; }
       .turn-pill-user { background: var(--success-soft); color: var(--success); }
-      .opening-filter-grid { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 0.75rem; }
-      .opening-field { display: grid; gap: 0.35rem; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; }
-      .opening-field span { text-transform: uppercase; letter-spacing: 0.06em; }
-      .opening-field input, .opening-field select { min-height: 42px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.78); padding: 0 0.75rem; color: var(--text); font-weight: 700; }
-      .opening-field.compact { min-width: 120px; }
-      .opening-filter-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
       .opening-workbench { display: grid; grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr); gap: 1rem; align-items: start; }
       .opening-board-panel, .opening-tree-panel { display: grid; gap: 1rem; }
       .opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0, min(520px, calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
@@ -486,13 +334,9 @@ interface PlayedMove {
       .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
       @media (max-width: 1050px) {
         .opening-hero, .opening-workbench { grid-template-columns: 1fr; display: grid; }
-        .opening-filter-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
       }
       @media (max-width: 680px) {
         .opening-hero-stats { grid-template-columns: 1fr; }
-        .perspective-switch { display: flex; width: 100%; }
-        .perspective-option { flex: 1; justify-content: center; }
-        .opening-filter-grid { grid-template-columns: 1fr; }
         .opening-panel-header, .opening-position-summary { display: grid; }
         .side-stack { justify-items: start; }
         .move-wdl { text-align: left; }
@@ -509,7 +353,7 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   readonly loadingMoveRows = [0, 1, 2];
 
   facets: ImportedGameFacetsResponse = {};
-  filters: OpeningFilters = this.defaultFilters();
+  filters: GameFilters = this.defaultFilters();
   analysis: OpeningAnalysisResponse | null = null;
   engine: EngineAnalysis = { fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] };
   loading = false;
@@ -608,11 +452,13 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     this.commitPlayedMove(played, move.moveSan || undefined);
   }
 
-  setPerspective(color: UserColor) {
-    if (this.filters.userColor === color) return;
-    this.filters.userColor = color;
-    this.boardFlipped = false;
-    this.resetBoard();
+  setFilters(filters: GameFilters) {
+    const perspectiveChanged = this.filters.userColor !== filters.userColor;
+    this.filters = filters;
+    if (perspectiveChanged) {
+      this.boardFlipped = false;
+      this.resetBoard();
+    }
   }
 
   goBack() {
@@ -650,18 +496,19 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   queryString(): string {
     const params = new URLSearchParams();
     params.set('fen', this.currentFen);
-    params.set('rated', 'true');
     params.set('limit', '200');
     params.set('sort', 'endedAtDesc');
     if (this.filters.accountId) params.set('accountIds', this.filters.accountId);
     if (this.filters.provider && this.filters.provider !== 'ALL') params.set('providers', this.filters.provider);
     if (this.filters.resultForUser) params.set('resultForUser', this.filters.resultForUser);
-    params.set('userColor', this.filters.userColor);
+    if (this.filters.userColor) params.set('userColor', this.filters.userColor);
     if (this.filters.speedCategory) params.set('speedCategory', this.filters.speedCategory);
+    if (this.filters.rated) params.set('rated', this.filters.rated);
     if (this.filters.timeControl.trim()) params.set('timeControl', this.filters.timeControl.trim());
     if (this.filters.opponent.trim()) params.set('opponent', this.filters.opponent.trim());
     if (this.filters.openingName.trim()) params.set('openingName', this.filters.openingName.trim());
     if (this.filters.analysisStatus) params.set('analysisStatus', this.filters.analysisStatus);
+    if (this.filters.plyIndexStatus) params.set('plyIndexStatus', this.filters.plyIndexStatus);
     if (this.filters.minAccuracy.trim()) params.set('minAccuracy', this.filters.minAccuracy.trim());
     if (this.filters.maxAccuracy.trim()) params.set('maxAccuracy', this.filters.maxAccuracy.trim());
     if (this.filters.minOpponentRating.trim()) params.set('minOpponentRating', this.filters.minOpponentRating.trim());
@@ -678,45 +525,12 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     return `${value}T23:59:59.999Z`;
   }
 
-  defaultFilters(): OpeningFilters {
+  defaultFilters(): GameFilters {
     return {
-      accountId: '',
-      provider: 'ALL',
-      resultForUser: '',
+      ...defaultGameFilters(),
       userColor: 'WHITE',
-      speedCategory: '',
-      timeControl: '',
-      opponent: '',
-      openingName: '',
-      analysisStatus: '',
-      minAccuracy: '',
-      maxAccuracy: '',
-      minOpponentRating: '',
-      from: '',
-      to: '',
+      rated: 'true',
     };
-  }
-
-  customSpeedFacets(): FacetValue[] {
-    const builtIns = new Set(['bullet', 'blitz', 'rapid', 'classical']);
-    return (this.facets.speeds || []).filter((speed) => !builtIns.has(String(this.facetKey(speed)).toLowerCase()));
-  }
-
-  facetKey(facet: FacetValue): string {
-    return String(facet.id ?? facet.value ?? facet.name ?? facet.username ?? '');
-  }
-
-  facetLabel(facet: FacetValue): string {
-    const value = facet.label ?? facet.name ?? facet.username ?? facet.value ?? facet.id ?? 'Unknown';
-    const count = typeof facet.count === 'number' ? ` (${facet.count})` : '';
-    return `${value}${count}`;
-  }
-
-  accountLabel(account: FacetValue): string {
-    const name = account.name || account.username || account.label || account.value || account.id;
-    const provider = account.provider ? this.providerLabel(account.provider) : '';
-    const count = typeof account.count === 'number' ? ` · ${account.count}` : '';
-    return `${provider ? provider + ' · ' : ''}${name}${count}`;
   }
 
   providerLabel(provider?: Provider | null): string {

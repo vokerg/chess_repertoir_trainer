@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { GameFilterPanelComponent } from '../filters/game-filter-panel.component';
+import { GameFilterPanelComponent } from '../../../shared/game-filters/game-filter-panel.component';
 import { GamesTableComponent } from '../components/games-table.component';
 import { GamesExplorerStore } from '../state/games-explorer.store';
 

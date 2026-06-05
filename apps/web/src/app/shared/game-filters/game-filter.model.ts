@@ -1,4 +1,4 @@
-import { AnalysisStatus, PlyIndexStatus, Provider, ResultForUser, UserColor } from '../data-access/games.models';
+import { AnalysisStatus, PlyIndexStatus, Provider, ResultForUser, UserColor } from '../../features/games/data-access/games.models';
 
 export interface GameFilters {
   accountId: string;
@@ -25,7 +25,7 @@ export function defaultGameFilters(): GameFilters {
     provider: 'ALL',
     resultForUser: '',
     userColor: '',
-    speedCategory: '',
+    speedCategory: 'blitz,rapid',
     rated: '',
     timeControl: '',
     opponent: '',
