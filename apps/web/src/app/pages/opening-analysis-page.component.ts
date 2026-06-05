@@ -8,7 +8,8 @@ import { ChessBoardComponent } from '../components/chess-board.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ApiService } from '../services/api.service';
-import { EngineAnalysis, EngineLine, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { PositionAnalysisCache, PositionAnalysisCacheService } from '../services/position-analysis-cache.service';
+import { EngineAnalysis } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -113,37 +114,8 @@ interface OpeningAnalysisResponse {
   games: OpeningWdl;
   nextMoves: OpeningNextMove[];
   topGames: OpeningAnalysisGame[];
-  positionAnalysis: BackendStoredPositionAnalysis | null;
+  positionAnalysis: PositionAnalysisCache | null;
   appliedFilters: Record<string, unknown>;
-}
-
-interface BackendEngineLine {
-  multipv: number;
-  depth: number;
-  moveUci?: string;
-  scoreCpWhite?: number;
-  mateWhite?: number;
-  pvUci: string[];
-}
-
-interface BackendPositionAnalysis {
-  id?: number;
-  cacheKey?: string;
-  fen: string;
-  bestMoveUci?: string | null;
-  depth?: number;
-  multipv?: number;
-  engineName?: string;
-  engineVersion?: string | null;
-  classificationVersion?: string;
-  lines: BackendEngineLine[];
-  fromCache: boolean;
-}
-
-type BackendStoredPositionAnalysis = BackendPositionAnalysis;
-
-interface BackendPositionAnalysisResponse {
-  position: BackendPositionAnalysis;
 }
 
 interface PlayedMove {
@@ -551,13 +523,12 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   private analysisTimer?: ReturnType<typeof setTimeout>;
   private refreshRequestSeq = 0;
   private engineSub?: Subscription;
-  private pendingLocalSave: { fen: string; depth: number; multipv: number } | null = null;
   private chess = new Chess();
 
   constructor(
     private api: ApiService,
     private cdr: ChangeDetectorRef,
-    private stockfish: StockfishAnalysisService,
+    private positionAnalysisCache: PositionAnalysisCacheService,
   ) {}
 
   @HostListener('window:keydown', ['$event'])
@@ -576,9 +547,8 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.engineSub = this.stockfish.state$.subscribe((analysis) => {
+    this.engineSub = this.positionAnalysisCache.state$.subscribe((analysis) => {
       this.engine = analysis;
-      this.maybePersistLocalAnalysis(analysis);
       this.cdr.markForCheck();
     });
     this.loadFacets();
@@ -588,8 +558,7 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.engineSub?.unsubscribe();
-    this.pendingLocalSave = null;
-    this.stockfish.stop();
+    this.positionAnalysisCache.stop();
   }
 
   get wdl(): OpeningWdl {
@@ -841,14 +810,10 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
 
   rerunAnalysis() {
     if (!this.currentFen) return;
-    const fen = this.currentFen;
-    const seed = this.engine.fen === fen ? this.engine : null;
-    this.pendingLocalSave = { fen, depth: 12, multipv: 3 };
-    this.stockfish.analyze(fen, {
+    this.positionAnalysisCache.analyze(this.currentFen, {
       depth: 12,
       multipv: 3,
-      seedBestMove: seed?.bestMove ?? null,
-      seedLines: seed?.lines ?? [],
+      seedPosition: this.analysis?.positionAnalysis ?? null,
     });
   }
 
@@ -899,83 +864,17 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   private syncBoardState() {
     this.currentFen = this.chess.fen();
     this.boardPositionVersion += 1;
-    this.pendingLocalSave = null;
-    this.stockfish.stop();
+    this.positionAnalysisCache.stop();
     this.engine = { fen: this.currentFen, running: false, ready: false, error: null, bestMove: null, lines: [] };
     this.refresh();
   }
 
-  private applyStoredAnalysis(position: BackendStoredPositionAnalysis | null) {
-    if (!position || position.fen !== this.currentFen || !position.lines?.length) {
-      this.engine = { fen: this.currentFen, running: false, ready: false, error: null, bestMove: null, lines: [] };
-      this.scheduleAnalysis();
-      return;
-    }
-
-    this.engine = this.mapBackendPositionAnalysis(position, this.currentFen);
-    if (position.lines.length < 3) this.scheduleAnalysis();
-  }
-
-  private mapBackendPositionAnalysis(position: BackendPositionAnalysis, requestedFen: string): EngineAnalysis {
-    return {
-      fen: requestedFen,
-      running: false,
-      ready: true,
-      error: null,
-      bestMove: position.bestMoveUci ?? position.lines[0]?.moveUci ?? null,
-      lines: position.lines.map((line) => ({
-        multipv: line.multipv,
-        depth: line.depth,
-        scoreCp: this.scoreFromWhiteToSideToMove(line.scoreCpWhite, requestedFen),
-        mate: this.scoreFromWhiteToSideToMove(line.mateWhite, requestedFen),
-        pv: line.pvUci,
-      })),
-    };
-  }
-
-  private maybePersistLocalAnalysis(analysis: EngineAnalysis) {
-    const pending = this.pendingLocalSave;
-    if (!pending) return;
-    if (analysis.fen !== pending.fen || analysis.running || analysis.error) return;
-    if (!analysis.lines.length || analysis.lines.length < pending.multipv) return;
-
-    const body = {
-      fen: pending.fen,
-      depth: pending.depth,
-      multipv: pending.multipv,
-      bestMoveUci: analysis.bestMove || analysis.lines[0]?.pv?.[0] || undefined,
-      engineName: 'stockfish-web',
-      engineVersion: '18.0.7',
-      lines: analysis.lines.slice(0, pending.multipv).map((line) => this.toBackendEngineLine(line, pending.fen)),
-    };
-
-    this.pendingLocalSave = null;
-    this.api.post<BackendPositionAnalysisResponse>('/position-analysis/store', body).subscribe({
-      error: () => {
-        // Saving the cache is best-effort; the UI already has the local result.
-      },
+  private applyStoredAnalysis(position: PositionAnalysisCache | null) {
+    this.positionAnalysisCache.analyze(this.currentFen, {
+      depth: 12,
+      multipv: 3,
+      seedPosition: position,
     });
-  }
-
-  private toBackendEngineLine(line: EngineLine, fen: string): BackendEngineLine {
-    return {
-      multipv: line.multipv,
-      depth: line.depth,
-      moveUci: line.pv[0] || undefined,
-      scoreCpWhite: this.scoreFromSideToMoveToWhite(line.scoreCp, fen),
-      mateWhite: this.scoreFromSideToMoveToWhite(line.mate, fen),
-      pvUci: line.pv,
-    };
-  }
-
-  private scoreFromWhiteToSideToMove(value: number | undefined, fen: string): number | undefined {
-    if (value === undefined) return undefined;
-    return fen.split(/\s+/)[1] === 'b' ? -value : value;
-  }
-
-  private scoreFromSideToMoveToWhite(value: number | undefined, fen: string): number | undefined {
-    if (value === undefined) return undefined;
-    return fen.split(/\s+/)[1] === 'b' ? -value : value;
   }
 
 }

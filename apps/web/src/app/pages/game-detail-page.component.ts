@@ -9,7 +9,8 @@ import { MoveTreeComponent } from '../components/move-tree.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
 import { ImportedGameAnalysisService } from '../features/games/data-access/imported-game-analysis.service';
 import { ApiService } from '../services/api.service';
-import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { PositionAnalysisCache, PositionAnalysisCacheService } from '../services/position-analysis-cache.service';
+import { EngineAnalysis } from '../services/stockfish-analysis.service';
 
 type Provider = 'LICHESS' | 'CHESS_COM';
 type UserColor = 'WHITE' | 'BLACK';
@@ -65,7 +66,7 @@ interface ImportedGamePly {
   scoreLossCp?: number | null;
   classificationCode?: number | null;
   classification?: string | null;
-  positionAnalysis?: unknown;
+  positionAnalysis?: PositionAnalysisCache | null;
 }
 
 interface AnalysisMove {
@@ -305,7 +306,7 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private api: ApiService,
     private cdr: ChangeDetectorRef,
-    private stockfish: StockfishAnalysisService,
+    private positionAnalysisCache: PositionAnalysisCacheService,
     protected importedGameAnalysis: ImportedGameAnalysisService,
   ) {}
 
@@ -331,7 +332,7 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
+    this.analysisSub = this.positionAnalysisCache.state$.subscribe((analysis) => {
       this.analysis = analysis;
       this.cdr.detectChanges();
     });
@@ -344,7 +345,7 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.analysisSub?.unsubscribe();
-    this.stockfish.stop();
+    this.positionAnalysisCache.stop();
   }
 
   loadGame() {
@@ -595,7 +596,11 @@ export class GameDetailPageComponent implements OnInit, OnDestroy {
 
   rerunAnalysis() {
     if (!this.currentFen) return;
-    this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
+    this.positionAnalysisCache.analyze(this.currentFen, {
+      depth: 12,
+      multipv: 3,
+      seedPosition: this.positionAnalysisCache.seedForFen(this.currentFen, this.game?.plies ?? []),
+    });
   }
 
   async analyzeImportedGame(force: boolean) {

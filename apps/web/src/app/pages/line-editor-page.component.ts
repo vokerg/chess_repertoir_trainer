@@ -8,7 +8,8 @@ import { EngineEvalBarComponent } from '../components/engine-eval-bar.component'
 import { MoveTreeComponent } from '../components/move-tree.component';
 import { MoveNotesComponent } from '../components/move-notes.component';
 import { StockfishPanelComponent } from '../components/stockfish-panel.component';
-import { EngineAnalysis, StockfishAnalysisService } from '../services/stockfish-analysis.service';
+import { PositionAnalysisCacheService } from '../services/position-analysis-cache.service';
+import { EngineAnalysis } from '../services/stockfish-analysis.service';
 
 interface EditableLine {
   id: number;
@@ -135,7 +136,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private api: ApiService,
     private cdr: ChangeDetectorRef,
-    private stockfish: StockfishAnalysisService,
+    private positionAnalysisCache: PositionAnalysisCacheService,
   ) {}
 
   @HostListener('window:keydown', ['$event'])
@@ -160,7 +161,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.analysisSub = this.stockfish.state$.subscribe((analysis) => {
+    this.analysisSub = this.positionAnalysisCache.state$.subscribe((analysis) => {
       this.analysis = analysis;
       this.cdr.detectChanges();
     });
@@ -173,7 +174,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.analysisSub?.unsubscribe();
-    this.stockfish.stop();
+    this.positionAnalysisCache.stop();
   }
 
   loadLineAndTree(selectNodeId?: number) {
@@ -356,7 +357,7 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
 
   rerunAnalysis() {
     if (!this.currentFen) return;
-    this.stockfish.analyze(this.currentFen, { depth: 12, multipv: 3 });
+    this.positionAnalysisCache.analyze(this.currentFen, { depth: 12, multipv: 3 });
   }
 
   scheduleAnalysis() {

@@ -1,8 +1,11 @@
+import type { PositionAnalysisCache, PositionAnalysisLine } from '../../../services/position-analysis-cache.service';
+
 export type Provider = 'LICHESS' | 'CHESS_COM';
 export type UserColor = 'WHITE' | 'BLACK';
 export type ResultForUser = 'WIN' | 'DRAW' | 'LOSS';
 export type AnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 export type PlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
+export type { PositionAnalysisCache, PositionAnalysisLine } from '../../../services/position-analysis-cache.service';
 
 export interface ImportedGamePlayer {
   username?: string | null;
@@ -45,27 +48,6 @@ export interface ImportedGameTimeControl {
 export interface ImportedGameOpening {
   eco?: string | null;
   name?: string | null;
-}
-
-export interface PositionAnalysisLine {
-  multipv?: number;
-  depth?: number;
-  moveUci?: string | null;
-  scoreCpWhite?: number | null;
-  mateWhite?: number | null;
-  pvUci?: string[];
-}
-
-export interface PositionAnalysisCache {
-  id?: number | null;
-  positionId?: number | null;
-  fen?: string | null;
-  normalizedFen?: string | null;
-  bestMoveUci?: string | null;
-  bestScoreCpWhite?: number | null;
-  bestMateWhite?: number | null;
-  lines: PositionAnalysisLine[];
-  fromCache?: boolean;
 }
 
 export interface ImportedGamePly {
