@@ -1,4 +1,6 @@
 export interface StoredEngineLine {
+  multipv?: number;
+  depth?: number;
   moveUci?: string;
   scoreCpWhite?: number;
   mateWhite?: number;

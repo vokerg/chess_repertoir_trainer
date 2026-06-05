@@ -74,16 +74,16 @@ export class PositionAnalysisCacheService implements OnDestroy {
   async getOrAnalyzePosition(fen: string, options: CachedPositionAnalysisOptions = {}): Promise<PositionAnalysisCache> {
     const depth = options.depth ?? 12;
     const multipv = options.multipv ?? 3;
-    const seed = this.usablePosition(options.seedPosition, fen);
+    const seed = this.usablePosition(options.seedPosition, fen, multipv);
     if (seed) {
       this.rememberPosition(fen, seed);
       return seed;
     }
 
-    const memoryCached = this.memoryPosition(fen);
+    const memoryCached = this.memoryPosition(fen, multipv);
     if (memoryCached) return memoryCached;
 
-    const cached = this.usablePosition(await this.lookupPosition(fen), fen);
+    const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv);
     if (cached) {
       this.rememberPosition(fen, cached);
       return cached;
@@ -157,20 +157,20 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.stockfish.stop();
     this.emit({ fen, running: false, ready: false, error: null, bestMove: null, lines: [] });
 
-    const seed = this.usablePosition(options.seedPosition, fen);
+    const seed = this.usablePosition(options.seedPosition, fen, multipv);
     if (seed) {
       this.rememberPosition(fen, seed);
       this.emit(this.mapPositionAnalysis(seed, fen));
       return;
     }
 
-    const memoryCached = this.memoryPosition(fen);
+    const memoryCached = this.memoryPosition(fen, multipv);
     if (memoryCached) {
       this.emit(this.mapPositionAnalysis(memoryCached, fen));
       return;
     }
 
-    const cached = this.usablePosition(await this.lookupPosition(fen), fen);
+    const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv);
     if (requestId !== this.requestSeq) return;
     if (cached) {
       this.rememberPosition(fen, cached);
@@ -224,19 +224,37 @@ export class PositionAnalysisCacheService implements OnDestroy {
     });
   }
 
-  private memoryPosition(fen: string): PositionAnalysisCache | null {
-    return this.memoryCache.get(this.normalizeFenForPosition(fen)) ?? null;
+  private memoryPosition(fen: string, requestedMultipv = 1): PositionAnalysisCache | null {
+    return this.usablePosition(this.memoryCache.get(this.normalizeFenForPosition(fen)), fen, requestedMultipv);
   }
 
   private rememberPosition(fen: string, position: PositionAnalysisCache): void {
     this.memoryCache.set(this.normalizeFenForPosition(fen), position);
   }
 
-  private usablePosition(position?: PositionAnalysisCache | null, fen?: string): PositionAnalysisCache | null {
+  private usablePosition(position?: PositionAnalysisCache | null, fen?: string, requestedMultipv = 1): PositionAnalysisCache | null {
     if (!position) return null;
     if (fen && !this.positionMatchesFen(position, fen)) return null;
     const bestMove = this.bestMoveFromPosition(position);
-    return bestMove || position.lines?.length ? position : null;
+    if (!bestMove && !position.lines?.length) return null;
+    return this.hasRequestedLines(position, requestedMultipv, fen) ? position : null;
+  }
+
+  private hasRequestedLines(position: PositionAnalysisCache, requestedMultipv: number, fen?: string): boolean {
+    const requiredLines = this.requiredLineCount(requestedMultipv, fen);
+    const lines = Array.isArray(position.lines) ? position.lines : [];
+    return lines.filter((line) => line.moveUci || line.pvUci?.[0]).length >= requiredLines;
+  }
+
+  private requiredLineCount(requestedMultipv: number, fen?: string): number {
+    const requestedLines = Math.max(1, Math.min(3, Math.floor(requestedMultipv || 1)));
+    if (!fen) return requestedLines;
+    try {
+      const legalMoves = new Chess(fen).moves().length;
+      return Math.max(1, Math.min(requestedLines, legalMoves || requestedLines));
+    } catch {
+      return requestedLines;
+    }
   }
 
   private positionMatchesFen(position: PositionAnalysisCache, fen: string): boolean {

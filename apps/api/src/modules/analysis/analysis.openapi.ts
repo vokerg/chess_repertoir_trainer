@@ -2,6 +2,8 @@ export const analysisOpenApiSchemas = {
   StoredEngineLine: {
     type: 'object',
     properties: {
+      multipv: { type: 'integer', minimum: 1, maximum: 3, nullable: true },
+      depth: { type: 'integer', minimum: 0, nullable: true },
       moveUci: { type: 'string', nullable: true },
       scoreCpWhite: { type: 'integer', nullable: true },
       mateWhite: { type: 'integer', nullable: true },

@@ -3,6 +3,8 @@ import { z } from 'zod';
 const smallIntSchema = z.coerce.number().int().min(-32768).max(32767);
 
 const engineLineSchema = z.object({
+  multipv: z.coerce.number().int().min(1).max(3).optional(),
+  depth: z.coerce.number().int().min(0).max(255).optional(),
   moveUci: z.string().min(4).max(5).optional(),
   scoreCpWhite: smallIntSchema.optional(),
   mateWhite: smallIntSchema.optional(),

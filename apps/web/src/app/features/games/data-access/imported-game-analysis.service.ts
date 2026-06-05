@@ -113,7 +113,7 @@ export class ImportedGameAnalysisService {
     const beforeFen = ply.normalizedFen;
     const side = sideToMove(beforeFen);
     const legalMoves = legalMoveCount(beforeFen);
-    const position = await this.getCompletePositionAnalysis(beforeFen, ply.positionAnalysis);
+    const position = await this.getGamePositionAnalysis(beforeFen, ply.positionAnalysis);
     const bestMoveUci = position.bestMoveUci ?? position.lines[0]?.moveUci ?? position.lines[0]?.pvUci?.[0] ?? null;
     const bestScoreCpWhite = this.positionAnalysis.effectiveScoreCpWhite(position.bestScoreCpWhite, position.bestMateWhite);
     const playedScoreCpWhite = await this.playedMoveScoreCpWhite(beforeFen, ply.moveUci, position);
@@ -132,10 +132,10 @@ export class ImportedGameAnalysisService {
     };
   }
 
-  private async getCompletePositionAnalysis(fen: string, seed?: PositionAnalysisCache | null): Promise<PositionAnalysisCache> {
+  private async getGamePositionAnalysis(fen: string, seed?: PositionAnalysisCache | null): Promise<PositionAnalysisCache> {
     return this.positionAnalysis.getOrAnalyzePosition(fen, {
       depth: 12,
-      multipv: 3,
+      multipv: 1,
       keepAlive: true,
       seedPosition: seed,
     });
@@ -152,7 +152,7 @@ export class ImportedGameAnalysisService {
 
     const afterFen = this.fenAfterMove(fen, moveUci);
     if (!afterFen) return null;
-    const afterPosition = await this.getCompletePositionAnalysis(afterFen, null);
+    const afterPosition = await this.getGamePositionAnalysis(afterFen, null);
     return this.positionAnalysis.effectiveScoreCpWhite(afterPosition.bestScoreCpWhite, afterPosition.bestMateWhite);
   }
 
