@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
@@ -52,13 +52,14 @@ interface Summary {
           <span class="pill" *ngIf="summary">{{ summary.weakestLines.length }} tracked</span>
         </div>
 
-        <p *ngIf="!summary" class="status-note">Loading statistics...</p>
+        <p *ngIf="loading" class="status-note">Loading statistics...</p>
+        <p *ngIf="error" class="status-error">{{ error }}</p>
 
-        <div *ngIf="summary && summary.weakestLines.length === 0" class="empty-state">
+        <div *ngIf="!loading && !error && summary && summary.weakestLines.length === 0" class="empty-state">
           No weak lines yet. Once training data accumulates, the lines that need attention will show up here.
         </div>
 
-        <div class="stack" *ngIf="summary && summary.weakestLines.length > 0">
+        <div class="stack" *ngIf="!loading && !error && summary && summary.weakestLines.length > 0">
           <article class="collection-card" *ngFor="let line of summary.weakestLines; let index = index">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
               <div>
@@ -92,12 +93,26 @@ interface Summary {
 })
 export class StatsPageComponent implements OnInit {
   summary: Summary | null = null;
+  loading = false;
+  error: string | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
-    this.api.get<Summary>('/stats/summary').subscribe((data) => {
-      this.summary = data;
+    this.loading = true;
+    this.error = null;
+    this.api.get<Summary>('/stats/summary').subscribe({
+      next: (data) => {
+        this.summary = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.summary = null;
+        this.error = err?.error?.message || err?.error?.error || 'Could not load training statistics.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 
@@ -225,6 +225,7 @@ interface LabMonthlyGamesResponse {
 })
 export class LabPageComponent {
   private readonly api = inject(ApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   selected: LabExperiment | null = null;
   excludeBullet = false;
@@ -261,10 +262,12 @@ export class LabPageComponent {
         this.topOpponents = response.items;
         this.topOpponentsLoaded = true;
         this.topOpponentsLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.topOpponentsError = 'Could not load top opponents.';
         this.topOpponentsLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -277,10 +280,12 @@ export class LabPageComponent {
         this.monthlyGames = response.items;
         this.monthlyGamesLoaded = true;
         this.monthlyGamesLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.monthlyGamesError = 'Could not load monthly games.';
         this.monthlyGamesLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }
