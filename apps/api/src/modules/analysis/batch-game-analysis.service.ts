@@ -276,6 +276,8 @@ async function drainQueue() {
             console.error(`Failed to batch analyse imported game ${gameId}`, err);
           }
         }
+      } catch (err) {
+        console.error('Could not start local Stockfish batch analysis', err);
       } finally {
         engine.dispose();
       }
@@ -299,7 +301,9 @@ export const ImportedGameBatchAnalysisService = {
     void CurrentUserService.getOrCreate()
       .then(() => {
         queue.push({ gameIds: uniqueGameIds });
-        void drainQueue();
+        void drainQueue().catch((err) => {
+          console.error('Local Stockfish batch analysis queue failed', err);
+        });
       })
       .catch((err) => {
         console.error('Could not enqueue local batch Stockfish analysis', err);

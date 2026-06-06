@@ -50,9 +50,18 @@ export class LocalStockfishEngineService {
     });
     child.on('exit', (code, signal) => {
       const reason = `Local Stockfish exited with code ${code ?? 'null'} and signal ${signal ?? 'null'}`;
+      if (this.process === child) this.process = null;
       this.rejectAll(new Error(reason));
     });
-    child.on('error', (err) => this.rejectAll(err));
+    child.on('error', (err) => {
+      if (this.process === child) this.process = null;
+      this.rejectAll(err);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      child.once('spawn', resolve);
+      child.once('error', reject);
+    });
 
     this.send('uci');
     await this.waitForLine((line) => line === 'uciok');
