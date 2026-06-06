@@ -83,17 +83,24 @@ type LineStatus = 'NEW' | 'WEAK' | 'CLEAN' | 'REVIEW';
             </div>
 
             <div class="library-list" *ngIf="filteredCourses().length > 0">
-              <button
-                type="button"
-                class="library-row"
+              <article
+                class="library-row library-line-row"
                 *ngFor="let course of filteredCourses()"
                 [class.library-row-active]="course.id === selectedCourseId"
+                role="button"
+                tabindex="0"
                 (click)="selectCourse(course.id)"
+                (keydown.enter)="selectCourse(course.id)"
               >
                 <p class="library-row-title">{{ course.name }}</p>
                 <p class="library-row-meta">{{ course.description || 'Personal repertoire' }}</p>
                 <p class="library-row-meta library-row-counts">{{ courseMeta(course) }}</p>
-              </button>
+                <div class="library-row-actions">
+                  <a class="library-button-link" [routerLink]="['/courses', course.id, 'marathon']" (click)="$event.stopPropagation()">
+                    Marathon
+                  </a>
+                </div>
+              </article>
             </div>
           </aside>
 

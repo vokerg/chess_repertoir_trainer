@@ -57,6 +57,9 @@ interface Chapter {
             </p>
           </div>
           <div class="collection-actions">
+            <a [routerLink]="['/courses', courseId, 'marathon']" style="text-decoration:none;">
+              <button type="button">Marathon</button>
+            </a>
             <button *ngIf="!editingCourseName" type="button" class="secondary" (click)="startCourseEdit()" [disabled]="!course">Rename course</button>
             <button type="button" class="secondary" (click)="deleteCourse()" [disabled]="deletingCourse">
               {{ deletingCourse ? 'Deleting...' : 'Delete course' }}
@@ -126,6 +129,9 @@ interface Chapter {
               <div class="collection-actions">
                 <a [routerLink]="['/chapters', chapter.id, 'lines']" style="text-decoration:none;">
                   <button type="button">Open lines</button>
+                </a>
+                <a [routerLink]="['/chapters', chapter.id, 'marathon']" style="text-decoration:none;">
+                  <button type="button" class="secondary">Train chapter</button>
                 </a>
                 <button type="button" class="secondary" (click)="startChapterEdit(chapter)" [disabled]="savingChapterId === chapter.id">
                   Rename

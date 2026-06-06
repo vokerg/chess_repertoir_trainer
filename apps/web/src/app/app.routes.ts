@@ -35,8 +35,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/course-detail-page.component').then((m) => m.CourseDetailPageComponent),
   },
   {
+    path: 'courses/:courseId/marathon',
+    loadComponent: () => import('./pages/training-marathon-page.component').then((m) => m.TrainingMarathonPageComponent),
+  },
+  {
     path: 'chapters/:chapterId/lines',
     loadComponent: () => import('./pages/lines-page.component').then((m) => m.LinesPageComponent),
+  },
+  {
+    path: 'chapters/:chapterId/marathon',
+    loadComponent: () => import('./pages/training-marathon-page.component').then((m) => m.TrainingMarathonPageComponent),
   },
   {
     path: 'lines/:lineId/edit',
