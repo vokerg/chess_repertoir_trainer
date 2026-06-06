@@ -171,6 +171,86 @@ export async function createClientGameAnalysisRun(data: {
   });
 }
 
+export async function createRunningGameAnalysisRun(data: {
+  importedGameId: number;
+  positionsTotal: number;
+  positionsDone?: number;
+}) {
+  return prisma.gameAnalysisRun.create({
+    data: {
+      importedGameId: data.importedGameId,
+      status: 'RUNNING',
+      positionsTotal: data.positionsTotal,
+      positionsDone: data.positionsDone ?? 0,
+    },
+    include: compactGameAnalysisRunInclude,
+  });
+}
+
+export async function updateGameAnalysisRunProgress(
+  runId: number,
+  data: {
+    positionsDone: number;
+    positionsTotal?: number;
+  },
+) {
+  return prisma.gameAnalysisRun.update({
+    where: { id: runId },
+    data: {
+      positionsDone: data.positionsDone,
+      ...(typeof data.positionsTotal === 'number' ? { positionsTotal: data.positionsTotal } : {}),
+    },
+  });
+}
+
+export async function completeGameAnalysisRun(
+  runId: number,
+  data: {
+    positionsTotal: number;
+    positionsDone: number;
+    summary: unknown;
+    accuracyVersion: string;
+    whiteAccuracy: number | null;
+    blackAccuracy: number | null;
+    whiteAverageCentipawnLoss: number | null;
+    blackAverageCentipawnLoss: number | null;
+    whiteMovesAnalyzed: number;
+    blackMovesAnalyzed: number;
+  },
+) {
+  return prisma.gameAnalysisRun.update({
+    where: { id: runId },
+    data: {
+      status: 'COMPLETED',
+      positionsTotal: data.positionsTotal,
+      positionsDone: data.positionsDone,
+      summary: data.summary as any,
+      accuracyVersion: data.accuracyVersion,
+      whiteAccuracy: data.whiteAccuracy,
+      blackAccuracy: data.blackAccuracy,
+      whiteAverageCentipawnLoss: data.whiteAverageCentipawnLoss,
+      blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
+      whiteMovesAnalyzed: data.whiteMovesAnalyzed,
+      blackMovesAnalyzed: data.blackMovesAnalyzed,
+      error: null,
+      completedAt: new Date(),
+    },
+    include: compactGameAnalysisRunInclude,
+  });
+}
+
+export async function failGameAnalysisRun(runId: number, error: string) {
+  return prisma.gameAnalysisRun.update({
+    where: { id: runId },
+    data: {
+      status: 'FAILED',
+      error,
+      completedAt: new Date(),
+    },
+    include: compactGameAnalysisRunInclude,
+  });
+}
+
 export async function updateImportedGamePlyAnalysis(gameId: number, updates: PlyAnalysisUpdate[]) {
   return prisma.$transaction(async (tx) => {
     const game = await tx.importedGame.findFirst({
@@ -230,6 +310,40 @@ export async function getImportedGamePliesForAnalysisSummary(gameId: number) {
               bestScoreCpWhite: true,
               bestMateWhite: true,
               lines: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function getImportedGamePliesForBatchAnalysis(gameId: number) {
+  return prisma.importedGamePly.findMany({
+    where: { importedGameId: gameId, importedGame: { userId: SINGLETON_USER_ID } },
+    orderBy: { plyNumber: 'asc' },
+    select: {
+      plyNumber: true,
+      moveUci: true,
+      scoreLossCp: true,
+      classificationCode: true,
+      positionId: true,
+      position: {
+        select: {
+          normalizedFen: true,
+          analysis: {
+            select: {
+              id: true,
+              positionId: true,
+              bestMoveUci: true,
+              bestScoreCpWhite: true,
+              bestMateWhite: true,
+              lines: true,
+              position: {
+                select: {
+                  normalizedFen: true,
+                },
+              },
             },
           },
         },

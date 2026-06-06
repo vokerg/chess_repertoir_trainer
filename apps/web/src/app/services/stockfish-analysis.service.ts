@@ -23,6 +23,7 @@ interface PendingRun {
   fen: string;
   depth: number;
   multipv: number;
+  pvMoveLimit?: number;
   keepAlive: boolean;
   started: boolean;
   lines: Map<number, EngineLine>;
@@ -54,9 +55,10 @@ export class StockfishAnalysisService implements OnDestroy {
     this.resetWorker();
   }
 
-  analyze(fen: string, options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; keepAlive?: boolean } = {}) {
+  analyze(fen: string, options: { depth?: number; multipv?: number; pvMoveLimit?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; keepAlive?: boolean } = {}) {
     const depth = options.depth ?? 12;
     const multipv = options.multipv ?? 3;
+    const pvMoveLimit = options.pvMoveLimit;
     const keepAlive = options.keepAlive ?? false;
     const runId = ++this.runSeq;
 
@@ -68,7 +70,7 @@ export class StockfishAnalysisService implements OnDestroy {
     } else {
       this.post('stop');
     }
-    this.currentRun = { id: runId, fen, depth, multipv, keepAlive, started: false, lines: new Map<number, EngineLine>() };
+    this.currentRun = { id: runId, fen, depth, multipv, pvMoveLimit, keepAlive, started: false, lines: new Map<number, EngineLine>() };
     this.emit({
       fen,
       running: true,
@@ -90,7 +92,7 @@ export class StockfishAnalysisService implements OnDestroy {
 
   analyzeOnce(
     fen: string,
-    options: { depth?: number; multipv?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; timeoutMs?: number; keepAlive?: boolean } = {},
+    options: { depth?: number; multipv?: number; pvMoveLimit?: number; seedBestMove?: string | null; seedLines?: EngineLine[]; timeoutMs?: number; keepAlive?: boolean } = {},
   ): Promise<EngineAnalysis> {
     const depth = options.depth ?? 12;
     const multipv = options.multipv ?? 3;
@@ -128,6 +130,7 @@ export class StockfishAnalysisService implements OnDestroy {
       this.analyze(fen, {
         depth,
         multipv,
+        pvMoveLimit: options.pvMoveLimit,
         seedBestMove: options.seedBestMove,
         seedLines: options.seedLines,
         keepAlive: options.keepAlive,
@@ -234,8 +237,9 @@ export class StockfishAnalysisService implements OnDestroy {
     const scoreKind = tokens[scoreIndex + 1];
     const scoreValue = Number(tokens[scoreIndex + 2]);
     const pv = tokens.slice(pvIndex + 1).filter(Boolean);
+    const limitedPv = this.currentRun?.pvMoveLimit ? pv.slice(0, this.currentRun.pvMoveLimit) : pv;
 
-    const line: EngineLine = { multipv, depth, pv };
+    const line: EngineLine = { multipv, depth, pv: limitedPv };
     if (scoreKind === 'cp') line.scoreCp = scoreValue;
     if (scoreKind === 'mate') line.mate = scoreValue;
     return line;

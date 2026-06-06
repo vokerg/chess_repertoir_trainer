@@ -159,6 +159,7 @@ export class ImportedGameAnalysisService {
     return this.positionAnalysis.getOrAnalyzePosition(fen, {
       depth: 12,
       multipv: 1,
+      pvMoveLimit: 1,
       keepAlive: true,
       seedPosition: seed,
     });

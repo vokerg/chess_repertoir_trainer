@@ -17,6 +17,7 @@ export class GamesExplorerPageComponent implements OnInit {
   protected readonly store = inject(GamesExplorerStore);
 
   ngOnInit(): void {
+    this.store.loadBatchAnalysisConfig();
     this.store.loadFacets();
     this.store.refresh();
   }

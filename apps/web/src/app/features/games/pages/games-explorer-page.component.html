@@ -29,6 +29,16 @@
         <span class="metric-label">Index all</span>
         <span class="metric-value games-action-value">{{ store.bulkIndexProgressLabel() }}</span>
       </button>
+      <button
+        *ngIf="store.batchAnalysisEnabled()"
+        type="button"
+        class="metric-card games-mini-card games-mini-action"
+        (click)="store.batchAnalyzeVisibleGames()"
+        [disabled]="store.loading() || store.batchAnalysisSubmitting() || store.filteredGames().length === 0"
+      >
+        <span class="metric-label">Batch analyse</span>
+        <span class="metric-value games-action-value">{{ store.batchAnalysisProgressLabel() }}</span>
+      </button>
     </div>
   </section>
 

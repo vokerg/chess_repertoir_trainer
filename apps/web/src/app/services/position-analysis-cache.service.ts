@@ -36,6 +36,7 @@ interface BulkPositionAnalysisResponse {
 export interface CachedPositionAnalysisOptions {
   depth?: number;
   multipv?: number;
+  pvMoveLimit?: number;
   seedPosition?: PositionAnalysisCache | null;
   keepAlive?: boolean;
 }
@@ -100,6 +101,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
     const analysis = await this.stockfish.analyzeOnce(fen, {
       depth,
       multipv,
+      pvMoveLimit: options.pvMoveLimit,
       keepAlive: options.keepAlive,
       seedBestMove: this.bestMoveFromPosition(this.usablePosition(fallbackSeed, fen)),
       seedLines: this.toEngineLines(this.usablePosition(fallbackSeed, fen), fen),
@@ -226,6 +228,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.stockfish.analyze(fen, {
       depth,
       multipv,
+      pvMoveLimit: options.pvMoveLimit,
       seedBestMove: this.bestMoveFromPosition(fallbackSeed),
       seedLines: this.toEngineLines(fallbackSeed, fen),
     });
