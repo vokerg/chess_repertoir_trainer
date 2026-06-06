@@ -58,7 +58,7 @@ interface Chapter {
           </div>
           <div class="collection-actions">
             <a [routerLink]="['/courses', courseId, 'marathon']" style="text-decoration:none;">
-              <button type="button">Train course marathon</button>
+              <button type="button">Marathon</button>
             </a>
             <button *ngIf="!editingCourseName" type="button" class="secondary" (click)="startCourseEdit()" [disabled]="!course">Rename course</button>
             <button type="button" class="secondary" (click)="deleteCourse()" [disabled]="deletingCourse">
