@@ -53,6 +53,9 @@ interface Line {
           </div>
           <div class="collection-actions">
             <span class="pill">{{ lines.length }} lines</span>
+            <a [routerLink]="['/chapters', chapterId, 'marathon']" style="text-decoration:none;">
+              <button type="button">Train chapter marathon</button>
+            </a>
             <button *ngIf="!editingChapterName" type="button" class="secondary" (click)="startChapterEdit()" [disabled]="!chapter">Rename chapter</button>
           </div>
         </div>

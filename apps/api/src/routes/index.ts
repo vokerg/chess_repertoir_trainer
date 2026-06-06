@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import coursesModule from '../modules/courses/courses.routes';
 import trainingModule from '../modules/training/training.routes';
+import trainingMarathonsModule from '../modules/training-marathons/training-marathons.routes';
 import statsModule from '../modules/stats/stats.routes';
 import analysisModule from '../modules/analysis/analysis.routes';
 import importedGamesModule from '../modules/imported-games/imported-games.routes';
@@ -12,6 +13,7 @@ import swaggerRoutes from './swagger';
 export default function registerRoutes(app: FastifyInstance): void {
   app.register(coursesModule);
   app.register(trainingModule);
+  app.register(trainingMarathonsModule);
   app.register(statsModule);
   app.register(analysisModule);
   app.register(importedGamesModule);
