@@ -1,18 +1,1 @@
-{
-  "name": "chess-repertoire-trainer",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "apps/web",
-    "apps/api",
-    "apps/mobile",
-    "apps/blunder-patterns-api",
-    "apps/blunder-patterns-web",
-    "packages/chess-domain"
-  ],
-  "engines": {
-    "node": ">=22.12.0",
-    "npm": ">=10.0.0"
-  },
-  "scripts": {
-    "dev": "npm run build:domain && concurrently \"npm run dev --workspace
+{"name":"chess-repertoire-trainer","version":"1.0.0","private":true,"workspaces":["apps/web","apps/api","apps/mobile","apps/blunder-patterns-api","apps/blunder-patterns-web","packages/chess-domain"],"engines":{"node":">=22.12.0","npm":">=10.0.0"},"devDependencies":{"concurrently":"^8.2.0"}}
