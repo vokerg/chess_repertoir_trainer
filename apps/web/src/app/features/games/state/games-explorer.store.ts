@@ -24,6 +24,8 @@ export class GamesExplorerStore {
   readonly bulkIndexing = signal(false);
   readonly bulkIndexCompleted = signal(0);
   readonly bulkIndexTotal = signal(0);
+  readonly batchAnalysisEnabled = signal(false);
+  readonly batchAnalysisSubmitting = signal(false);
   readonly pageInfo = signal<ImportedGamePageInfo>({ nextCursor: null, hasMore: false });
   readonly filters = signal<GameFilters>(defaultGameFilters());
 
@@ -58,6 +60,11 @@ export class GamesExplorerStore {
     return `${this.bulkIndexCompleted()}/${this.bulkIndexTotal()}`;
   });
 
+  readonly batchAnalysisProgressLabel = computed(() => {
+    if (this.batchAnalysisSubmitting()) return 'Starting...';
+    return String(this.filteredGames().length);
+  });
+
   readonly tableSubtitle = computed(() => {
     const filteredGames = this.filteredGames();
     const games = this.games();
@@ -71,6 +78,15 @@ export class GamesExplorerStore {
   loadFacets(): void {
     this.api.getFacets().subscribe({
       next: (data) => this.facets.set(data || {}),
+    });
+  }
+
+  loadBatchAnalysisConfig(): void {
+    this.api.getBatchAnalysisConfig().subscribe({
+      next: (config) => this.batchAnalysisEnabled.set(config.enabled === true),
+      error: () => {
+        this.batchAnalysisEnabled.set(false);
+      },
     });
   }
 
@@ -174,6 +190,24 @@ export class GamesExplorerStore {
       return;
     }
     this.refresh();
+  }
+
+  batchAnalyzeVisibleGames(): void {
+    const gameIds = this.filteredGames().map((game) => game.id);
+    if (!gameIds.length || this.batchAnalysisSubmitting()) return;
+
+    this.error.set(null);
+    this.batchAnalysisSubmitting.set(true);
+    this.api.startBatchAnalysis(gameIds).subscribe({
+      next: () => {
+        this.batchAnalysisSubmitting.set(false);
+        this.refresh();
+      },
+      error: (err) => {
+        this.error.set(readApiError(err, 'Could not start batch analysis.'));
+        this.batchAnalysisSubmitting.set(false);
+      },
+    });
   }
 
   private async runAnalysis(game: ImportedGameListItem, force = false): Promise<void> {

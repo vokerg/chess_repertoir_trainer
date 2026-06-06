@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import {
   analysisOpenApiSchemas,
@@ -17,6 +18,8 @@ import {
   storePositionAnalysisSchema,
   updatePlyAnalysisSchema,
 } from './analysis.schemas';
+import { isLocalBatchStockfishAnalysisEnabled } from './batch-analysis.config';
+import { ImportedGameBatchAnalysisService } from './batch-game-analysis.service';
 import { GameAnalysisService } from './game-analysis.service';
 import { PositionAnalysisService } from './position-analysis.service';
 import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
@@ -26,8 +29,42 @@ function parseGameId(params: unknown): number | null {
   return Number.isInteger(gameId) && gameId > 0 ? gameId : null;
 }
 
+const batchAnalysisRequestSchema = z.object({
+  gameIds: z.array(z.number().int().positive()).min(1).max(500),
+});
+
 export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiSchemas(analysisOpenApiSchemas);
+
+  app.get('/api/imported-games/batch-analysis/config', async () => ({
+    enabled: isLocalBatchStockfishAnalysisEnabled(),
+  }));
+
+  app.post('/api/imported-games/batch-analysis-runs', async (request, reply) => {
+    if (!isLocalBatchStockfishAnalysisEnabled()) {
+      reply.code(403);
+      return { error: 'Local batch Stockfish analysis is disabled' };
+    }
+
+    const parsed = batchAnalysisRequestSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+
+    const gameIds = Array.from(new Set(parsed.data.gameIds));
+    try {
+      ImportedGameBatchAnalysisService.enqueue(gameIds);
+      reply.code(200);
+      return {
+        accepted: true,
+        gameIds,
+      };
+    } catch (err: any) {
+      reply.code(400);
+      return { error: err?.message ?? String(err) };
+    }
+  });
 
   registerOpenApiRoute(app, {
     method: 'get',

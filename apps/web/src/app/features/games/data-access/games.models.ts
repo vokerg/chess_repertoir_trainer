@@ -39,6 +39,15 @@ export interface ImportedGamePlyIndexResult {
   error?: string;
 }
 
+export interface BatchAnalysisConfig {
+  enabled: boolean;
+}
+
+export interface BatchAnalysisAcceptedResponse {
+  accepted: boolean;
+  gameIds: number[];
+}
+
 export interface ImportedGameTimeControl {
   raw?: string | null;
   initial?: number | null;

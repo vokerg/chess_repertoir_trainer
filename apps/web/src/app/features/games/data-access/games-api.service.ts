@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import {
+  BatchAnalysisAcceptedResponse,
+  BatchAnalysisConfig,
   ImportedGameAnalysisSummary,
   ImportedGameFacetsResponse,
   ImportedGamePlyIndexResult,
@@ -20,6 +22,14 @@ export class GamesApiService {
 
   searchGames(filters: GameFilters, cursor?: string | null): Observable<ImportedGameSearchResponse> {
     return this.api.get<ImportedGameSearchResponse>(`/imported-games${mapGameFiltersToQueryString(filters, cursor)}`);
+  }
+
+  getBatchAnalysisConfig(): Observable<BatchAnalysisConfig> {
+    return this.api.get<BatchAnalysisConfig>('/imported-games/batch-analysis/config');
+  }
+
+  startBatchAnalysis(gameIds: number[]): Observable<BatchAnalysisAcceptedResponse> {
+    return this.api.post<BatchAnalysisAcceptedResponse>('/imported-games/batch-analysis-runs', { gameIds });
   }
 
   startAnalysis(gameId: number, force = false): Observable<ImportedGameAnalysisSummary> {
