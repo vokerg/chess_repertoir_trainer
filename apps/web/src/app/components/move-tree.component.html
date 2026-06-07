@@ -1,0 +1,36 @@
+@if (tree(); as currentTree) {
+  <div class="move-tree-modern">
+    <ng-container *ngTemplateOutlet="renderSequence; context: { $implicit: mainlineNodes(currentTree.root), branch: false }" />
+  </div>
+}
+
+<ng-template #renderSequence let-nodes let-branch="branch">
+  <section class="move-tree-line" [class.move-tree-line-branch]="branch">
+    @for (current of nodes; track current.node.id) {
+      <div class="move-tree-step">
+        <button
+          type="button"
+          class="move-tree-node-button"
+          [class.move-tree-node-selected]="current.node.id === selectedNodeId()"
+          [class.move-tree-node-trained]="current.node.id !== 0 && current.node.isUserMove"
+          [class.move-tree-node-opponent]="current.node.id !== 0 && !current.node.isUserMove"
+          [title]="nodeTitle(current)"
+          (click)="nodeSelected.emit(current.node.id)"
+        >
+          <span>{{ current.node.moveSan || 'Start' }}</span>
+          @if (current.node.id !== 0) {
+            <span class="move-tree-meta">{{ current.node.isUserMove ? 'you' : 'opp' }}</span>
+          }
+        </button>
+
+        @if (sidelines(current).length) {
+          <div class="move-tree-branches">
+            @for (branchNode of sidelines(current); track branchNode.node.id) {
+              <ng-container *ngTemplateOutlet="renderSequence; context: { $implicit: mainlineNodes(branchNode), branch: true }" />
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+</ng-template>

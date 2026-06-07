@@ -100,6 +100,49 @@ export interface ImportedGameDetail extends ImportedGameListItem {
   updatedAt?: string | null;
 }
 
+export type GameMoveClassification = 'BEST' | 'GOOD' | 'INACCURACY' | 'MISTAKE' | 'BLUNDER' | 'BOOK' | 'MISS';
+
+export interface ImportedGameAnalysisMove {
+  id: number;
+  plyNumber: number;
+  moveNumber: number;
+  side: UserColor;
+  playedMoveUci: string;
+  playedMoveSan: string | null;
+  classification: GameMoveClassification | string | null;
+  scoreLossCp: number | null;
+  bestMoveUci: string | null;
+  bestScoreCpWhite: number | null;
+  playedScoreCpWhite: number | null;
+  positionAnalysisId: number;
+}
+
+export interface ImportedGameAnalysisRun {
+  id: number;
+  importedGameId: number;
+  status: AnalysisStatus;
+  depth: number;
+  multipv: number;
+  engineName: string;
+  engineVersion?: string | null;
+  whiteAccuracy?: number | null;
+  blackAccuracy?: number | null;
+  whiteAverageCentipawnLoss?: number | null;
+  blackAverageCentipawnLoss?: number | null;
+  whiteMovesAnalyzed?: number | null;
+  blackMovesAnalyzed?: number | null;
+  summary?: Record<string, unknown> | null;
+  error?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  moves: ImportedGameAnalysisMove[];
+  criticalMoves: ImportedGameAnalysisMove[];
+}
+
+export interface ImportedGameAnalysisResponse {
+  run: ImportedGameAnalysisRun;
+}
+
 export interface ImportedGameSearchResponse {
   items: ImportedGameListItem[];
   pageInfo: ImportedGamePageInfo;

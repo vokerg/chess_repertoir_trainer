@@ -1,0 +1,38 @@
+<section class="game-summary-grid">
+  <div class="metric-card">
+    <p class="metric-label">Result</p>
+    <p class="metric-value compact-result">{{ result() }}</p>
+    <p class="game-muted">{{ color() }}</p>
+  </div>
+  <div class="metric-card">
+    <p class="metric-label">Accuracy</p>
+    <p class="metric-value compact-result">{{ userAccuracy() }}</p>
+    <p class="game-muted">W {{ whiteAccuracy() }} · B {{ blackAccuracy() }}</p>
+  </div>
+  <div class="metric-card">
+    <p class="metric-label">Analysis</p>
+    <p class="metric-value compact-result">{{ analysisStatus() }}</p>
+    <p class="game-muted">{{ analysisSummary() }}</p>
+    <div class="game-analysis-actions">
+      <button type="button" class="secondary" (click)="analyze.emit(false)" [disabled]="analysisProgress().running">
+        {{ analysisProgress().running ? 'Analysing...' : 'Analyze' }}
+      </button>
+      <button type="button" class="secondary" (click)="analyze.emit(true)" [disabled]="analysisProgress().running">
+        Force re-analysis
+      </button>
+    </div>
+    @if (analysisProgress().running || analysisProgress().error) {
+      <p class="game-muted">
+        {{ analysisProgress().error || analysisProgress().message }}
+        @if (analysisProgress().running) {
+          ({{ analysisProgress().currentPly }}/{{ analysisProgress().totalPlies }})
+        }
+      </p>
+    }
+  </div>
+  <div class="metric-card">
+    <p class="metric-label">Opening</p>
+    <p class="metric-value compact-result">{{ game().opening?.eco || '—' }}</p>
+    <p class="game-muted">{{ game().opening?.name || 'Opening unavailable' }}</p>
+  </div>
+</section>

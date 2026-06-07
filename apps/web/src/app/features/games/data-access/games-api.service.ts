@@ -5,6 +5,8 @@ import {
   BatchAnalysisAcceptedResponse,
   BatchAnalysisConfig,
   ImportedGameAnalysisSummary,
+  ImportedGameAnalysisResponse,
+  ImportedGameDetail,
   ImportedGameFacetsResponse,
   ImportedGamePlyIndexResult,
   ImportedGameSearchResponse,
@@ -15,6 +17,14 @@ import { mapGameFiltersToQueryString } from '../../../shared/game-filters/game-f
 @Injectable({ providedIn: 'root' })
 export class GamesApiService {
   private readonly api = inject(ApiService);
+
+  getGame(gameId: number): Observable<ImportedGameDetail> {
+    return this.api.get<ImportedGameDetail>(`/imported-games/${gameId}`);
+  }
+
+  getAnalysis(gameId: number): Observable<ImportedGameAnalysisResponse> {
+    return this.api.get<ImportedGameAnalysisResponse>(`/imported-games/${gameId}/analysis`);
+  }
 
   getFacets(): Observable<ImportedGameFacetsResponse> {
     return this.api.get<ImportedGameFacetsResponse>('/imported-games/facets');

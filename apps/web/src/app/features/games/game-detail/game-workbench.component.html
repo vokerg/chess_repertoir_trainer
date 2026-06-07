@@ -1,0 +1,50 @@
+<div class="line-workbench">
+  <section class="workbench-panel game-board-panel">
+    <div>
+      <h3 class="workbench-panel-title">Game board</h3>
+      <p class="workbench-panel-subtitle">Imported moves load as the main branch. Play extra legal moves to explore temporary sidelines.</p>
+    </div>
+
+    <div class="board-stage">
+      <app-engine-eval-bar
+        [analysis]="analysis()"
+        [currentFen]="currentFen()"
+        [flipped]="blackPerspective()"
+        [savedScoreCpWhite]="savedScoreCpWhite()"
+      />
+      <div class="board-shell">
+        <app-chessground-board
+          [fen]="currentFen()"
+          [side]="side()"
+          [lastMove]="lastMove()"
+          [arrows]="arrows()"
+          [sound]="false"
+          [positionVersion]="boardPositionVersion()"
+          (move)="boardMove.emit($event)"
+        />
+      </div>
+    </div>
+
+    <div class="board-action-row">
+      <button type="button" class="secondary" (click)="goStart.emit()" [disabled]="!canGoBackward()" title="Home">⏮ Start</button>
+      <button type="button" class="secondary" (click)="goPrevious.emit()" [disabled]="!canGoBackward()" title="Left arrow">← Previous</button>
+      <button type="button" class="secondary" (click)="goNext.emit()" [disabled]="!canGoForward()" title="Right arrow">Next →</button>
+      <button type="button" class="secondary" (click)="goEnd.emit()" [disabled]="!canGoForward()" title="End">End ⏭</button>
+      <span class="keyboard-hint">Keyboard: ←/→, Home/End</span>
+    </div>
+  </section>
+
+  <div class="workbench-side-stack">
+    <section class="workbench-panel move-tree-panel">
+      <div>
+        <h3 class="workbench-panel-title">Move tree</h3>
+        <p class="workbench-panel-subtitle">The imported game is the main line. Temporary sidelines appear as you explore.</p>
+      </div>
+      <app-move-tree [tree]="tree()" [selectedNodeId]="selectedNodeId()" (nodeSelected)="nodeSelected.emit($event)" />
+    </section>
+
+    <section class="workbench-panel engine-panel-modern">
+      <app-stockfish-panel [analysis]="analysis()" [currentFen]="currentFen()" (analyze)="analyze.emit()" />
+    </section>
+  </div>
+</div>

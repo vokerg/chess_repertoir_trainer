@@ -1,0 +1,69 @@
+<section class="game-detail-page stack">
+  <header class="workbench-header">
+    <div class="workbench-title-group">
+      <a routerLink="/games" class="workbench-breadcrumb">â† Games explorer</a>
+      <h2 class="workbench-title">{{ store.gameTitle() }}</h2>
+      @if (store.game(); as game) {
+        <div class="workbench-meta">
+          <span>White: {{ playerLabel(game.white) }}</span>
+          <span>Black: {{ playerLabel(game.black) }}</span>
+          <span>{{ providerLabel(game.provider) }}</span>
+          <span>{{ gameDateLabel(game.endedAt) }}</span>
+          <span>{{ game.speedCategory || 'unknown speed' }}</span>
+          <span>{{ game.timeControl.raw || timeControlLabel(game) }}</span>
+          <span>Selected: {{ store.selectedLabel() }}</span>
+        </div>
+      }
+    </div>
+    <nav class="workbench-mode-switch" aria-label="Game actions">
+      <a class="mode-pill" routerLink="/games">Explorer</a>
+      @if (store.game()?.providerUrl; as providerUrl) {
+        <a class="mode-pill" [href]="providerUrl" target="_blank" rel="noreferrer">
+          Open on {{ providerLabel(store.game()?.provider) }}
+        </a>
+      }
+    </nav>
+  </header>
+
+  @if (store.error(); as error) {
+    <p class="status-error">{{ error }}</p>
+  }
+
+  @if (store.loading()) {
+    <section class="section-card">
+      <p class="status-note">Loading imported game...</p>
+    </section>
+  } @else if (store.game(); as game) {
+    <app-game-summary
+      [game]="game"
+      [analysisProgress]="store.importedGameAnalysis.progress()"
+      [analysisStatus]="store.analysisStatusLabel()"
+      [analysisSummary]="store.analysisSummaryLabel()"
+      (analyze)="store.analyzeImportedGame($event)"
+    />
+
+    @if (store.tree(); as tree) {
+      <app-game-workbench
+        [tree]="tree"
+        [selectedNodeId]="store.selectedNodeId()"
+        [currentFen]="store.currentFen()"
+        [side]="store.boardSide()"
+        [blackPerspective]="store.blackPerspective()"
+        [lastMove]="store.lastMove()"
+        [arrows]="store.analysisArrows()"
+        [boardPositionVersion]="store.boardPositionVersion()"
+        [analysis]="store.engineAnalysis()"
+        [savedScoreCpWhite]="store.savedScoreCpWhite()"
+        [canGoBackward]="store.canGoBackward()"
+        [canGoForward]="store.canGoForward()"
+        (boardMove)="store.playBoardMove($event)"
+        (nodeSelected)="store.selectNode($event)"
+        (goStart)="store.goToStart()"
+        (goPrevious)="store.goToPrevious()"
+        (goNext)="store.goToNext()"
+        (goEnd)="store.goToEnd()"
+        (analyze)="store.rerunAnalysis()"
+      />
+    }
+  }
+</section>

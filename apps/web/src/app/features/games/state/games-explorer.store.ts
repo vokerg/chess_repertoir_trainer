@@ -141,14 +141,23 @@ export class GamesExplorerStore {
 
     this.indexingPlyGameId.set(game.id);
     this.error.set(null);
+    this.markGamePlyIndexing(game.id);
     const force = game.plyIndex?.status === 'FAILED';
     this.api.indexPlies(game.id, force).subscribe({
-      next: () => {
+      next: (result) => {
+        if (result.status === 'FAILED') {
+          const message = result.error || 'Could not index game plies.';
+          this.markGamePlyIndexFailed(game.id, message);
+          this.error.set(message);
+        } else {
+          this.markGamePlyIndexed(game.id, result);
+        }
         this.indexingPlyGameId.set(null);
-        this.refresh();
       },
       error: (err) => {
-        this.error.set(readApiError(err, 'Could not index game plies.'));
+        const message = readApiError(err, 'Could not index game plies.');
+        this.markGamePlyIndexFailed(game.id, message);
+        this.error.set(message);
         this.indexingPlyGameId.set(null);
       },
     });
@@ -187,9 +196,7 @@ export class GamesExplorerStore {
     this.indexingPlyGameId.set(null);
     if (failures.length) {
       this.error.set(failures[0]);
-      return;
     }
-    this.refresh();
   }
 
   batchAnalyzeVisibleGames(): void {
@@ -199,9 +206,9 @@ export class GamesExplorerStore {
     this.error.set(null);
     this.batchAnalysisSubmitting.set(true);
     this.api.startBatchAnalysis(gameIds).subscribe({
-      next: () => {
+      next: (result) => {
+        for (const gameId of result.gameIds) this.markGameAnalysisRunning(gameId);
         this.batchAnalysisSubmitting.set(false);
-        this.refresh();
       },
       error: (err) => {
         this.error.set(readApiError(err, 'Could not start batch analysis.'));
@@ -213,34 +220,90 @@ export class GamesExplorerStore {
   private async runAnalysis(game: ImportedGameListItem, force = false): Promise<void> {
     this.analysingGameId.set(game.id);
     this.error.set(null);
+    this.markGameAnalysisRunning(game.id);
     try {
       await this.importedGameAnalysis.analyzeGame(game.id, force);
+      this.markGameAnalysisCompleted(game.id);
       this.analysingGameId.set(null);
-      this.refresh();
     } catch (err) {
-      this.error.set(readApiError(err, 'Could not analyse game.'));
+      const message = readApiError(err, 'Could not analyse game.');
+      this.markGameAnalysisFailed(game.id);
+      this.error.set(message);
       this.analysingGameId.set(null);
     }
   }
 
   private async indexSingleGame(game: ImportedGameListItem): Promise<void> {
     this.indexingPlyGameId.set(game.id);
+    this.markGamePlyIndexing(game.id);
     const force = game.plyIndex?.status === 'FAILED';
-    const result = await firstValueFrom(this.api.indexPlies(game.id, force));
-
-    if (result.status === 'FAILED') {
-      game.plyIndex.status = 'FAILED';
-      game.plyIndex.error = result.error || 'Could not index game plies.';
-      throw new Error(game.plyIndex.error);
+    try {
+      const result = await firstValueFrom(this.api.indexPlies(game.id, force));
+      if (result.status === 'FAILED') {
+        const message = result.error || 'Could not index game plies.';
+        this.markGamePlyIndexFailed(game.id, message);
+        throw new Error(message);
+      }
+      this.markGamePlyIndexed(game.id, result);
+    } catch (error) {
+      const message = readApiError(error, `Could not index game #${game.id}.`);
+      this.markGamePlyIndexFailed(game.id, message);
+      throw error;
     }
-
-    this.markIndexed(game, result);
   }
 
-  private markIndexed(game: ImportedGameListItem, result: ImportedGamePlyIndexResult): void {
-    game.plyIndex.status = 'INDEXED';
-    game.plyIndex.indexedAt = result.plyIndexedAt ?? game.plyIndex.indexedAt ?? null;
-    game.plyIndex.error = null;
+  private patchGameById(
+    gameId: number,
+    updater: (game: ImportedGameListItem) => ImportedGameListItem,
+  ): void {
+    this.games.update((games) => games.map((game) => (game.id === gameId ? updater(game) : game)));
+  }
+
+  private markGameAnalysisRunning(gameId: number): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      analysis: { ...game.analysis, status: 'RUNNING' },
+    }));
+  }
+
+  private markGameAnalysisCompleted(gameId: number): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      analysis: { ...game.analysis, status: 'COMPLETED' },
+    }));
+  }
+
+  private markGameAnalysisFailed(gameId: number): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      analysis: { ...game.analysis, status: 'FAILED' },
+    }));
+  }
+
+  private markGamePlyIndexing(gameId: number): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      plyIndex: { ...game.plyIndex, status: 'NOT_INDEXED', error: null },
+    }));
+  }
+
+  private markGamePlyIndexed(gameId: number, result: ImportedGamePlyIndexResult): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      plyIndex: {
+        ...game.plyIndex,
+        status: 'INDEXED',
+        indexedAt: result.plyIndexedAt ?? game.plyIndex?.indexedAt ?? null,
+        error: null,
+      },
+    }));
+  }
+
+  private markGamePlyIndexFailed(gameId: number, error: string): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      plyIndex: { ...game.plyIndex, status: 'FAILED', error },
+    }));
   }
 
   private resetBulkIndexState(): void {

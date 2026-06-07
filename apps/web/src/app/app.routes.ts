@@ -4,30 +4,37 @@ export const routes: Routes = [
   { path: '', redirectTo: '/library', pathMatch: 'full' },
   {
     path: 'library',
+    title: 'Study | Chess Repertoire Trainer',
     loadComponent: () => import('./pages/library-browser-page.component').then((m) => m.LibraryBrowserPageComponent),
   },
   {
     path: 'accounts',
+    title: 'Accounts | Chess Repertoire Trainer',
     loadComponent: () => import('./pages/accounts-page.component').then((m) => m.AccountsPageComponent),
   },
   {
     path: 'games',
+    title: 'Games | Chess Repertoire Trainer',
     loadComponent: () => import('./features/games/pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
   },
   {
     path: 'opening-analysis',
+    title: 'Opening analysis | Chess Repertoire Trainer',
     loadComponent: () => import('./pages/opening-analysis-page.component').then((m) => m.OpeningAnalysisPageComponent),
   },
   {
     path: 'lab',
+    title: 'Lab | Chess Repertoire Trainer',
     loadComponent: () => import('./pages/lab-page.component').then((m) => m.LabPageComponent),
   },
   {
     path: 'games/:gameId',
-    loadComponent: () => import('./pages/game-detail-page.component').then((m) => m.GameDetailPageComponent),
+    title: 'Game review | Chess Repertoire Trainer',
+    loadComponent: () => import('./features/games/pages/game-detail-page.component').then((m) => m.GameDetailPageComponent),
   },
   {
     path: 'courses',
+    title: 'Courses | Chess Repertoire Trainer',
     loadComponent: () => import('./pages/courses-page.component').then((m) => m.CoursesPageComponent),
   },
   {
@@ -56,6 +63,7 @@ export const routes: Routes = [
   },
   {
     path: 'stats',
+    title: 'Review | Chess Repertoire Trainer',
     loadComponent: () => import('./pages/stats-page.component').then((m) => m.StatsPageComponent),
   },
   { path: '**', redirectTo: '/library' },

@@ -8,6 +8,7 @@ They are intentionally project-specific. Use them when adding features, reviewin
 
 - [API feature module](./api-feature-module.md): add or change backend features without returning to global route/service/repository soup.
 - [Frontend feature module](./frontend-feature-module.md): keep Angular features separated and prevent large page components from becoming orchestration sinks.
+- [Angular frontend guide](../frontend/angular-refactor-guide.md): standalone routing, signal stores, immutable row patching, and verification expectations.
 - [Lichess importer](./lichess-importer.md): split provider-specific import logic into client, NDJSON reader, mapper, and sync orchestration.
 - [Contracts](./contracts.md): use shared request/response schemas safely without confusing them with domain logic.
 - [Architecture review](./architecture-review.md): review changes for boundary violations before merge.

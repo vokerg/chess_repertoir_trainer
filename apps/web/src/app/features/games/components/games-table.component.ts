@@ -48,7 +48,7 @@ import { GameActionMenuComponent } from './game-action-menu.component';
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let game of games()">
+            <tr *ngFor="let game of games(); trackBy: trackGameById">
               <td>
                 <a class="game-title-cell game-detail-link" [routerLink]="['/games', game.id]" aria-label="Open imported game replay">
                   <span class="provider-pill" [ngClass]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
@@ -306,5 +306,9 @@ export class GamesTableComponent {
     if (this.indexingPlyGameId() === game.id) return 'Indexing...';
     if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
     return 'Not indexed';
+  }
+
+  protected trackGameById(_index: number, game: ImportedGameListItem): number {
+    return game.id;
   }
 }
