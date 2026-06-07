@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import prisma from '../prisma';
+import { touchLineRepertoireUpdatedAt } from '../modules/courses/line-repertoire-timestamp.service';
 
 function colorToMove(chess: Chess): 'WHITE' | 'BLACK' {
   return chess.turn() === 'w' ? 'WHITE' : 'BLACK';
@@ -21,9 +22,7 @@ function stripPgnMetadata(pgn: string) {
 }
 
 function tokenizePgn(pgn: string) {
-  const cleaned = stripPgnMetadata(pgn)
-    .replace(/\(/g, ' ( ')
-    .replace(/\)/g, ' ) ');
+  const cleaned = stripPgnMetadata(pgn).replace(/\(/g, ' ( ').replace(/\)/g, ' ) ');
   return cleaned
     .split(/\s+/)
     .map((token) => token.trim())
@@ -55,8 +54,12 @@ function exportNode(node: any, childrenByParent: Map<number | null, any[]>): str
   const continuation = exportNode(main, childrenByParent);
   const variationText = variations
     .map((variation) => {
-      const varPrefix = turn === 'w' ? `${Math.ceil((node.plyNumber + 1) / 2)}. ` : `${Math.ceil((node.plyNumber + 1) / 2)}... `;
-      const body = `${varPrefix}${variation.moveSan} ${exportNode(variation, childrenByParent)}`.trim();
+      const varPrefix =
+        turn === 'w'
+          ? `${Math.ceil((node.plyNumber + 1) / 2)}. `
+          : `${Math.ceil((node.plyNumber + 1) / 2)}... `;
+      const body =
+        `${varPrefix}${variation.moveSan} ${exportNode(variation, childrenByParent)}`.trim();
       return `(${body})`;
     })
     .join(' ');
@@ -64,7 +67,14 @@ function exportNode(node: any, childrenByParent: Map<number | null, any[]>): str
   return [mainText, variationText, continuation].filter(Boolean).join(' ').trim();
 }
 
-async function createImportedMove(line: any, parentId: number | null, fenBefore: string, san: string, plyNumber: number, sortOrder: number) {
+async function createImportedMove(
+  line: any,
+  parentId: number | null,
+  fenBefore: string,
+  san: string,
+  plyNumber: number,
+  sortOrder: number,
+) {
   const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
   const colorBefore = colorToMove(chess);
   const move = chess.move(san, { sloppy: true } as any);
@@ -72,7 +82,9 @@ async function createImportedMove(line: any, parentId: number | null, fenBefore:
 
   const isUserMove = colorBefore === line.sideToTrain;
   const existingCorrectUserMove = isUserMove
-    ? await prisma.moveNode.findFirst({ where: { lineId: line.id, parentId, isUserMove: true, isCorrectUserMove: true } })
+    ? await prisma.moveNode.findFirst({
+        where: { lineId: line.id, parentId, isUserMove: true, isCorrectUserMove: true },
+      })
     : null;
 
   return prisma.moveNode.create({
@@ -116,7 +128,10 @@ export const PgnService = {
     return `[Event "${line.name.replace(/"/g, '\\"')}"]\n[Site "Chess Repertoire Trainer"]\n[Result "*"]\n\n${moves} *\n`;
   },
 
-  importLine: async (chapterId: number, data: { name: string; sideToTrain: string; startingFen?: string; pgn: string }) => {
+  importLine: async (
+    chapterId: number,
+    data: { name: string; sideToTrain: string; startingFen?: string; pgn: string },
+  ) => {
     const tokens = tokenizePgn(data.pgn);
     if (!tokens.length) throw new Error('No PGN moves found');
 
@@ -129,7 +144,13 @@ export const PgnService = {
       },
     });
 
-    type Frame = { parentId: number | null; fen: string; ply: number; sortOrder: number; returnTo?: Frame };
+    type Frame = {
+      parentId: number | null;
+      fen: string;
+      ply: number;
+      sortOrder: number;
+      returnTo?: Frame;
+    };
     let frame: Frame = { parentId: null, fen: line.startingFen, ply: 1, sortOrder: 0 };
     let lastMoveStart: Frame | null = null;
     const stack: Frame[] = [];
@@ -150,7 +171,14 @@ export const PgnService = {
       if (/^\d+\.+$/.test(token)) continue;
 
       const before: Frame = { ...frame };
-      const created = await createImportedMove(line, frame.parentId, frame.fen, token, frame.ply, frame.sortOrder);
+      const created = await createImportedMove(
+        line,
+        frame.parentId,
+        frame.fen,
+        token,
+        frame.ply,
+        frame.sortOrder,
+      );
       lastMoveStart = before;
       frame = {
         parentId: created.id,
@@ -160,6 +188,7 @@ export const PgnService = {
       };
     }
 
-    return line;
+    await touchLineRepertoireUpdatedAt(prisma, line.id);
+    return prisma.line.findUniqueOrThrow({ where: { id: line.id } });
   },
 };

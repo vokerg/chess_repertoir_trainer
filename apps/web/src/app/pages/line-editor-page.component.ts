@@ -21,12 +21,22 @@ interface EditableLine {
 @Component({
   selector: 'app-line-editor-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChessgroundBoardComponent, EngineEvalBarComponent, MoveTreeComponent, MoveNotesComponent, StockfishPanelComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    ChessgroundBoardComponent,
+    EngineEvalBarComponent,
+    MoveTreeComponent,
+    MoveNotesComponent,
+    StockfishPanelComponent,
+  ],
   template: `
     <section *ngIf="loaded; else loadingState" class="stack">
       <header class="workbench-header">
         <div class="workbench-title-group">
-          <a [routerLink]="breadcrumbLink()" class="workbench-breadcrumb">{{ breadcrumbLabel() }}</a>
+          <a [routerLink]="breadcrumbLink()" class="workbench-breadcrumb">{{
+            breadcrumbLabel()
+          }}</a>
           <h2 class="workbench-title">{{ line?.name || 'Line editor' }}</h2>
           <div class="workbench-meta">
             <span>Train as {{ line?.sideToTrain === 'BLACK' ? 'Black' : 'White' }}</span>
@@ -37,6 +47,7 @@ interface EditableLine {
         <nav class="workbench-mode-switch" aria-label="Line mode">
           <span class="mode-pill mode-pill-active">Build</span>
           <a class="mode-pill" [routerLink]="['/lines', lineId, 'train']">Train</a>
+          <a class="mode-pill" [routerLink]="['/lines', lineId, 'review']">Review</a>
         </nav>
       </header>
 
@@ -46,11 +57,18 @@ interface EditableLine {
         <section class="workbench-panel">
           <div>
             <h3 class="workbench-panel-title">Board workbench</h3>
-            <p class="workbench-panel-subtitle">Play a move on the board to add it to the selected node. Use the keyboard to move through the main branch.</p>
+            <p class="workbench-panel-subtitle">
+              Play a move on the board to add it to the selected node. Use the keyboard to move
+              through the main branch.
+            </p>
           </div>
 
           <div class="board-stage">
-            <app-engine-eval-bar [analysis]="analysis" [currentFen]="currentFen" [flipped]="isBlackPerspective()"></app-engine-eval-bar>
+            <app-engine-eval-bar
+              [analysis]="analysis"
+              [currentFen]="currentFen"
+              [flipped]="isBlackPerspective()"
+            ></app-engine-eval-bar>
 
             <div class="board-shell">
               <app-chessground-board
@@ -65,10 +83,42 @@ interface EditableLine {
           </div>
 
           <div class="board-action-row">
-            <button type="button" class="secondary" (click)="goToStart()" [disabled]="currentNodeId === 0" title="Home">⏮ Start</button>
-            <button type="button" class="secondary" (click)="goToPrevious()" [disabled]="currentNodeId === 0" title="Left arrow">← Previous</button>
-            <button type="button" class="secondary" (click)="goToNext()" [disabled]="!selectedNode?.children?.length" title="Right arrow">Next →</button>
-            <button type="button" class="secondary" (click)="goToEnd()" [disabled]="!selectedNode?.children?.length" title="End">End ⏭</button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="goToStart()"
+              [disabled]="currentNodeId === 0"
+              title="Home"
+            >
+              ⏮ Start
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="goToPrevious()"
+              [disabled]="currentNodeId === 0"
+              title="Left arrow"
+            >
+              ← Previous
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="goToNext()"
+              [disabled]="!selectedNode?.children?.length"
+              title="Right arrow"
+            >
+              Next →
+            </button>
+            <button
+              type="button"
+              class="secondary"
+              (click)="goToEnd()"
+              [disabled]="!selectedNode?.children?.length"
+              title="End"
+            >
+              End ⏭
+            </button>
             <span class="keyboard-hint">Keyboard: ←/→, Home/End</span>
           </div>
         </section>
@@ -77,9 +127,16 @@ interface EditableLine {
           <section class="workbench-panel move-tree-panel">
             <div>
               <h3 class="workbench-panel-title">Move tree</h3>
-              <p class="workbench-panel-subtitle">Root is the start position. Green-outlined moves are trained-side moves; softer replies are opponent continuations.</p>
+              <p class="workbench-panel-subtitle">
+                Root is the start position. Green-outlined moves are trained-side moves; softer
+                replies are opponent continuations.
+              </p>
             </div>
-            <app-move-tree [tree]="tree" [selectedNodeId]="currentNodeId" (nodeSelected)="onSelectNode($event)"></app-move-tree>
+            <app-move-tree
+              [tree]="tree"
+              [selectedNodeId]="currentNodeId"
+              (nodeSelected)="onSelectNode($event)"
+            ></app-move-tree>
           </section>
 
           <section class="workbench-panel engine-panel-modern">
@@ -95,9 +152,17 @@ interface EditableLine {
 
           <section class="danger-zone">
             <h3 class="workbench-panel-title">Danger zone</h3>
-            <p class="workbench-panel-subtitle">Delete the selected move and every continuation below it. The start position cannot be deleted.</p>
+            <p class="workbench-panel-subtitle">
+              Delete the selected move and every continuation below it. The start position cannot be
+              deleted.
+            </p>
             <div class="board-action-row">
-              <button type="button" class="danger" (click)="deleteSelectedSubtree()" [disabled]="selectedNode?.node?.id === 0 || deleting">
+              <button
+                type="button"
+                class="danger"
+                (click)="deleteSelectedSubtree()"
+                [disabled]="selectedNode?.node?.id === 0 || deleting"
+              >
                 {{ deleting ? 'Deleting...' : 'Delete selected subtree' }}
               </button>
             </div>
@@ -126,7 +191,14 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   loaded = false;
   deleting = false;
   error: string | null = null;
-  analysis: EngineAnalysis = { fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] };
+  analysis: EngineAnalysis = {
+    fen: '',
+    running: false,
+    ready: false,
+    error: null,
+    bestMove: null,
+    lines: [],
+  };
 
   private analysisSub?: Subscription;
   private analysisTimer?: ReturnType<typeof setTimeout>;
@@ -143,7 +215,8 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   onKeyDown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable)
+      return;
 
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
@@ -232,9 +305,13 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     this.selectedNode = selected;
     this.currentNodeId = selected.node.id;
     this.currentFen = selected.node.fenAfter;
-    this.lastMove = selected.node.id === 0 || !selected.node.moveUci
-      ? null
-      : { from: selected.node.moveUci.substring(0, 2), to: selected.node.moveUci.substring(2, 4) };
+    this.lastMove =
+      selected.node.id === 0 || !selected.node.moveUci
+        ? null
+        : {
+            from: selected.node.moveUci.substring(0, 2),
+            to: selected.node.moveUci.substring(2, 4),
+          };
   }
 
   selectedLabel() {
@@ -244,7 +321,10 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
 
   countDescendants(node: any): number {
     if (!node) return 0;
-    return (node.children || []).reduce((sum: number, child: any) => sum + 1 + this.countDescendants(child), 0);
+    return (node.children || []).reduce(
+      (sum: number, child: any) => sum + 1 + this.countDescendants(child),
+      0,
+    );
   }
 
   onSelectNode(id: number) {
@@ -318,7 +398,8 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
       error: () => {
         this.creatingMove = false;
         this.boardPositionVersion++;
-        this.error = 'Could not add this move. It may be illegal or this position already has a trained-side move.';
+        this.error =
+          'Could not add this move. It may be illegal or this position already has a trained-side move.';
         this.cdr.detectChanges();
       },
     });
@@ -331,7 +412,9 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
     const parentId = parent?.node?.id ?? 0;
     const label = node.moveSan || node.moveUci;
     const descendantCount = this.countDescendants(this.selectedNode);
-    const confirmed = window.confirm(`Delete ${label} and ${descendantCount} following move(s)? This cannot be undone.`);
+    const confirmed = window.confirm(
+      `Delete ${label} and ${descendantCount} following move(s)? This cannot be undone.`,
+    );
     if (!confirmed) return;
 
     this.deleting = true;
@@ -372,11 +455,18 @@ export class LineEditorPageComponent implements OnInit, OnDestroy {
   }
 
   plannedTrainedMove() {
-    return (this.selectedNode?.children || []).find((child: any) => child.node.isUserMove && child.node.isCorrectUserMove)?.node?.moveUci;
+    return (this.selectedNode?.children || []).find(
+      (child: any) => child.node.isUserMove && child.node.isCorrectUserMove,
+    )?.node?.moveUci;
   }
 
   engineWarning() {
-    if (this.analysis.fen !== this.currentFen || !this.analysis.bestMove || this.analysis.bestMove === '(none)') return null;
+    if (
+      this.analysis.fen !== this.currentFen ||
+      !this.analysis.bestMove ||
+      this.analysis.bestMove === '(none)'
+    )
+      return null;
     const planned = this.plannedTrainedMove();
     if (!planned) return null;
     if (planned === this.analysis.bestMove) return null;

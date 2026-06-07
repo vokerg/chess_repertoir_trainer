@@ -5,22 +5,28 @@ export const routes: Routes = [
   {
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
-    loadComponent: () => import('./pages/library-browser-page.component').then((m) => m.LibraryBrowserPageComponent),
+    loadComponent: () =>
+      import('./pages/library-browser-page.component').then((m) => m.LibraryBrowserPageComponent),
   },
   {
     path: 'accounts',
     title: 'Accounts | Chess Repertoire Trainer',
-    loadComponent: () => import('./pages/accounts-page.component').then((m) => m.AccountsPageComponent),
+    loadComponent: () =>
+      import('./pages/accounts-page.component').then((m) => m.AccountsPageComponent),
   },
   {
     path: 'games',
     title: 'Games | Chess Repertoire Trainer',
-    loadComponent: () => import('./features/games/pages/games-explorer-page.component').then((m) => m.GamesExplorerPageComponent),
+    loadComponent: () =>
+      import('./features/games/pages/games-explorer-page.component').then(
+        (m) => m.GamesExplorerPageComponent,
+      ),
   },
   {
     path: 'opening-analysis',
     title: 'Opening analysis | Chess Repertoire Trainer',
-    loadComponent: () => import('./pages/opening-analysis-page.component').then((m) => m.OpeningAnalysisPageComponent),
+    loadComponent: () =>
+      import('./pages/opening-analysis-page.component').then((m) => m.OpeningAnalysisPageComponent),
   },
   {
     path: 'lab',
@@ -30,20 +36,28 @@ export const routes: Routes = [
   {
     path: 'games/:gameId',
     title: 'Game review | Chess Repertoire Trainer',
-    loadComponent: () => import('./features/games/pages/game-detail-page.component').then((m) => m.GameDetailPageComponent),
+    loadComponent: () =>
+      import('./features/games/pages/game-detail-page.component').then(
+        (m) => m.GameDetailPageComponent,
+      ),
   },
   {
     path: 'courses',
     title: 'Courses | Chess Repertoire Trainer',
-    loadComponent: () => import('./pages/courses-page.component').then((m) => m.CoursesPageComponent),
+    loadComponent: () =>
+      import('./pages/courses-page.component').then((m) => m.CoursesPageComponent),
   },
   {
     path: 'courses/:courseId',
-    loadComponent: () => import('./pages/course-detail-page.component').then((m) => m.CourseDetailPageComponent),
+    loadComponent: () =>
+      import('./pages/course-detail-page.component').then((m) => m.CourseDetailPageComponent),
   },
   {
     path: 'courses/:courseId/marathon',
-    loadComponent: () => import('./pages/training-marathon-page.component').then((m) => m.TrainingMarathonPageComponent),
+    loadComponent: () =>
+      import('./pages/training-marathon-page.component').then(
+        (m) => m.TrainingMarathonPageComponent,
+      ),
   },
   {
     path: 'chapters/:chapterId/lines',
@@ -51,15 +65,28 @@ export const routes: Routes = [
   },
   {
     path: 'chapters/:chapterId/marathon',
-    loadComponent: () => import('./pages/training-marathon-page.component').then((m) => m.TrainingMarathonPageComponent),
+    loadComponent: () =>
+      import('./pages/training-marathon-page.component').then(
+        (m) => m.TrainingMarathonPageComponent,
+      ),
   },
   {
     path: 'lines/:lineId/edit',
-    loadComponent: () => import('./pages/line-editor-page.component').then((m) => m.LineEditorPageComponent),
+    loadComponent: () =>
+      import('./pages/line-editor-page.component').then((m) => m.LineEditorPageComponent),
   },
   {
     path: 'lines/:lineId/train',
-    loadComponent: () => import('./pages/line-train-page.component').then((m) => m.LineTrainPageComponent),
+    loadComponent: () =>
+      import('./pages/line-train-page.component').then((m) => m.LineTrainPageComponent),
+  },
+  {
+    path: 'lines/:lineId/review',
+    title: 'Line review | Chess Repertoire Trainer',
+    loadComponent: () =>
+      import('./features/line-review/line-review-page.component').then(
+        (m) => m.LineReviewPageComponent,
+      ),
   },
   {
     path: 'stats',

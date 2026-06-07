@@ -10,6 +10,15 @@ import {
   updateLineSchema,
   updateNodeSchema,
 } from './courses.schemas';
+import { z } from 'zod';
+import { PgnService } from '../../services/pgnService';
+
+const importPgnSchema = z.object({
+  name: z.string().min(1),
+  sideToTrain: z.enum(['WHITE', 'BLACK']),
+  startingFen: z.string().optional(),
+  pgn: z.string().min(1),
+});
 
 export default async function coursesModule(app: FastifyInstance) {
   app.get('/api/courses', async () => CourseService.list());
@@ -107,6 +116,18 @@ export default async function coursesModule(app: FastifyInstance) {
     return line;
   });
 
+  app.post('/api/chapters/:chapterId/lines/import-pgn', async (request, reply) => {
+    const chapterId = Number((request.params as any).chapterId);
+    const parsed = importPgnSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    try {
+      const line = await PgnService.importLine(chapterId, parsed.data);
+      return reply.status(201).send(line);
+    } catch (err: any) {
+      return reply.status(400).send({ error: err.message });
+    }
+  });
+
   app.get('/api/lines/:id', async (request, reply) => {
     const id = Number((request.params as any).id);
     const line = await LineService.get(id);
@@ -125,6 +146,15 @@ export default async function coursesModule(app: FastifyInstance) {
       return { message: 'Line not found' };
     }
     return tree;
+  });
+
+  app.get('/api/lines/:id/export-pgn', async (request, reply) => {
+    const id = Number((request.params as any).id);
+    try {
+      return { pgn: await PgnService.exportLine(id) };
+    } catch (err: any) {
+      return reply.status(404).send({ message: err.message });
+    }
   });
 
   app.patch('/api/lines/:id', async (request, reply) => {

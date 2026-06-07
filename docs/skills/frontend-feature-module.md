@@ -2,6 +2,8 @@
 
 Use this skill when changing Angular code in `apps/web`.
 
+Normative Angular rules live in `docs/frontend/angular-architecture.md`. Implementation examples live in `docs/frontend/angular-patterns.md`. This playbook focuses on feature ownership and boundaries.
+
 ## Goal
 
 Keep the frontend organized by product features and prevent large page components from becoming a mix of UI, state, API orchestration, board behavior, and feature logic.
@@ -30,16 +32,12 @@ apps/web/src/app/
 ## Rules
 
 - Feature-specific code belongs under `features/<feature>`.
-- Route pages should be standalone and lazy-loaded with `loadComponent`.
-- Pages and presentational components should use `ChangeDetectionStrategy.OnPush`.
 - Reusable dumb UI belongs under `shared`.
 - Global API/config/infrastructure belongs under `core`.
 - Large pages should become shells.
 - Feature orchestration belongs in facades, state services, or feature-local utilities.
 - Components should prefer inputs/outputs over direct ownership of broad workflows.
 - Child UI components should not make unrelated API calls.
-- Page stores should use signals, computed state, and immutable updates.
-- Games row commands must patch by game id instead of clearing and reloading the list.
 - Do not import another feature's internals. Promote shared pieces to `shared` if truly reusable.
 
 ## Page component rule
@@ -90,7 +88,6 @@ features/line-editor/
 5. Put orchestration and state under `state` or a facade.
 6. Promote only genuinely reusable UI to `shared`.
 7. Keep direct `ApiService` usage close to data-access/facades, not scattered across child components.
-8. Keep non-trivial templates and styles in colocated external files.
 
 ## Review checklist
 

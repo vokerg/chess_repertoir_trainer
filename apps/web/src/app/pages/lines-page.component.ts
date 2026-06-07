@@ -28,19 +28,40 @@ interface Line {
   imports: [CommonModule, FormsModule, RouterModule, PgnToolsComponent],
   template: `
     <section class="stack" *ngIf="chapterId">
-      <a [routerLink]="courseId ? ['/courses', courseId] : ['/courses']" class="subtle-link">← Back to course</a>
+      <a [routerLink]="courseId ? ['/courses', courseId] : ['/courses']" class="subtle-link"
+        >← Back to course</a
+      >
 
       <section class="section-card stack">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div
+          style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;"
+        >
           <div class="stack" style="gap:0.7rem;">
             <span class="eyebrow">Line studio</span>
-            <div *ngIf="editingChapterName; else chapterTitle" class="inline-form" style="grid-template-columns:minmax(220px, 1fr) auto auto;">
+            <div
+              *ngIf="editingChapterName; else chapterTitle"
+              class="inline-form"
+              style="grid-template-columns:minmax(220px, 1fr) auto auto;"
+            >
               <div class="stack" style="gap:0.45rem;">
                 <label for="chapter-page-rename" class="metric-label">Chapter name</label>
-                <input id="chapter-page-rename" [(ngModel)]="chapterNameDraft" name="chapterPageRename" />
+                <input
+                  id="chapter-page-rename"
+                  [(ngModel)]="chapterNameDraft"
+                  name="chapterPageRename"
+                />
               </div>
-              <button type="button" (click)="saveChapterName()" [disabled]="savingChapterName">{{ savingChapterName ? 'Saving...' : 'Save' }}</button>
-              <button type="button" class="secondary" (click)="cancelChapterEdit()" [disabled]="savingChapterName">Cancel</button>
+              <button type="button" (click)="saveChapterName()" [disabled]="savingChapterName">
+                {{ savingChapterName ? 'Saving...' : 'Save' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="cancelChapterEdit()"
+                [disabled]="savingChapterName"
+              >
+                Cancel
+              </button>
             </div>
             <ng-template #chapterTitle>
               <h2 class="page-heading" style="font-size:clamp(1.8rem,3vw,2.9rem);">
@@ -48,7 +69,10 @@ interface Line {
               </h2>
             </ng-template>
             <p class="page-subtitle">
-              {{ chapter?.description || 'Shape concrete move orders, attach practice targets, and jump between edit and training quickly.' }}
+              {{
+                chapter?.description ||
+                  'Shape concrete move orders, attach practice targets, and jump between edit and training quickly.'
+              }}
             </p>
           </div>
           <div class="collection-actions">
@@ -56,7 +80,15 @@ interface Line {
             <a [routerLink]="['/chapters', chapterId, 'marathon']" style="text-decoration:none;">
               <button type="button">Train chapter marathon</button>
             </a>
-            <button *ngIf="!editingChapterName" type="button" class="secondary" (click)="startChapterEdit()" [disabled]="!chapter">Rename chapter</button>
+            <button
+              *ngIf="!editingChapterName"
+              type="button"
+              class="secondary"
+              (click)="startChapterEdit()"
+              [disabled]="!chapter"
+            >
+              Rename chapter
+            </button>
           </div>
         </div>
 
@@ -82,7 +114,9 @@ interface Line {
 
       <div class="detail-grid">
         <section class="section-card stack">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+          <div
+            style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;"
+          >
             <div>
               <span class="eyebrow">Training map</span>
               <h3 class="collection-title" style="font-size:1.7rem;">Lines</h3>
@@ -98,15 +132,38 @@ interface Line {
 
           <div class="stack" *ngIf="lines.length > 0">
             <article class="collection-card" *ngFor="let line of lines">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+              <div
+                style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;"
+              >
                 <div class="stack" style="gap:0.45rem;">
-                  <div *ngIf="editingLineId === line.id; else lineTitle" class="inline-form" style="grid-template-columns:minmax(220px, 1fr) auto auto;">
+                  <div
+                    *ngIf="editingLineId === line.id; else lineTitle"
+                    class="inline-form"
+                    style="grid-template-columns:minmax(220px, 1fr) auto auto;"
+                  >
                     <div class="stack" style="gap:0.45rem;">
                       <label [for]="'line-rename-' + line.id" class="metric-label">Line name</label>
-                      <input [id]="'line-rename-' + line.id" [(ngModel)]="lineNameDraft" [name]="'lineRename' + line.id" />
+                      <input
+                        [id]="'line-rename-' + line.id"
+                        [(ngModel)]="lineNameDraft"
+                        [name]="'lineRename' + line.id"
+                      />
                     </div>
-                    <button type="button" (click)="saveLineName(line)" [disabled]="savingLineId === line.id">{{ savingLineId === line.id ? 'Saving...' : 'Save' }}</button>
-                    <button type="button" class="secondary" (click)="cancelLineEdit()" [disabled]="savingLineId === line.id">Cancel</button>
+                    <button
+                      type="button"
+                      (click)="saveLineName(line)"
+                      [disabled]="savingLineId === line.id"
+                    >
+                      {{ savingLineId === line.id ? 'Saving...' : 'Save' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="secondary"
+                      (click)="cancelLineEdit()"
+                      [disabled]="savingLineId === line.id"
+                    >
+                      Cancel
+                    </button>
                   </div>
                   <ng-template #lineTitle>
                     <h4 class="collection-title">{{ line.name }}</h4>
@@ -119,18 +176,25 @@ interface Line {
                 <span class="pill">{{ line.sideToTrain }}</span>
               </div>
 
-              <div class="grid-auto" style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));">
+              <div
+                class="grid-auto"
+                style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));"
+              >
                 <div class="metric-card">
                   <p class="metric-label">Attempts</p>
                   <p class="metric-value" style="font-size:1.3rem;">{{ line.totalAttempts }}</p>
                 </div>
                 <div class="metric-card">
                   <p class="metric-label">Passed</p>
-                  <p class="metric-value" style="font-size:1.3rem;color:var(--success);">{{ line.passedCount }}</p>
+                  <p class="metric-value" style="font-size:1.3rem;color:var(--success);">
+                    {{ line.passedCount }}
+                  </p>
                 </div>
                 <div class="metric-card">
                   <p class="metric-label">Failed</p>
-                  <p class="metric-value" style="font-size:1.3rem;color:var(--danger);">{{ line.failedCount }}</p>
+                  <p class="metric-value" style="font-size:1.3rem;color:var(--danger);">
+                    {{ line.failedCount }}
+                  </p>
                 </div>
               </div>
 
@@ -141,7 +205,17 @@ interface Line {
                 <a [routerLink]="['/lines', line.id, 'train']" style="text-decoration:none;">
                   <button type="button" class="secondary">Train</button>
                 </a>
-                <button type="button" class="secondary" (click)="startLineEdit(line)" [disabled]="savingLineId === line.id">Rename</button>
+                <a [routerLink]="['/lines', line.id, 'review']" style="text-decoration:none;">
+                  <button type="button" class="secondary">Review</button>
+                </a>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="startLineEdit(line)"
+                  [disabled]="savingLineId === line.id"
+                >
+                  Rename
+                </button>
                 <button
                   type="button"
                   class="secondary"
@@ -160,14 +234,21 @@ interface Line {
             <span class="eyebrow">Add line</span>
             <h3 class="collection-title" style="font-size:1.7rem;">Create a line</h3>
             <p class="page-subtitle" style="font-size:0.98rem;">
-              Start from the initial position or from a custom FEN if you want to drill a branching middlegame structure.
+              Start from the initial position or from a custom FEN if you want to drill a branching
+              middlegame structure.
             </p>
           </div>
 
           <form (ngSubmit)="createLine()" class="stack">
             <div class="stack" style="gap:0.55rem;">
               <label for="line-name" class="metric-label">Line name</label>
-              <input id="line-name" [(ngModel)]="newLineName" name="name" placeholder="Mainline after 6...Bb4+" required />
+              <input
+                id="line-name"
+                [(ngModel)]="newLineName"
+                name="name"
+                placeholder="Mainline after 6...Bb4+"
+                required
+              />
             </div>
 
             <div class="stack" style="gap:0.55rem;">
@@ -180,19 +261,30 @@ interface Line {
 
             <div class="stack" style="gap:0.55rem;">
               <label for="line-fen" class="metric-label">Starting position</label>
-              <input id="line-fen" [(ngModel)]="newLineStartingFen" name="startingFen" placeholder="startpos" />
+              <input
+                id="line-fen"
+                [(ngModel)]="newLineStartingFen"
+                name="startingFen"
+                placeholder="startpos"
+              />
             </div>
 
             <div class="collection-actions">
-              <button type="submit" [disabled]="saving">{{ saving ? 'Creating...' : 'Add line' }}</button>
+              <button type="submit" [disabled]="saving">
+                {{ saving ? 'Creating...' : 'Add line' }}
+              </button>
             </div>
           </form>
 
-          <app-pgn-tools [chapterId]="chapterId" [lines]="lines" (changed)="loadLines()"></app-pgn-tools>
+          <app-pgn-tools
+            [chapterId]="chapterId"
+            [lines]="lines"
+            (changed)="loadLines()"
+          ></app-pgn-tools>
         </aside>
       </div>
     </section>
-  `
+  `,
 })
 export class LinesPageComponent implements OnInit {
   chapterId!: number;
@@ -213,7 +305,11 @@ export class LinesPageComponent implements OnInit {
   deletingLineId: number | null = null;
   error: string | null = null;
 
-  constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
@@ -256,7 +352,11 @@ export class LinesPageComponent implements OnInit {
   }
 
   createLine() {
-    const body = { name: this.newLineName, sideToTrain: this.newLineSide, startingFen: this.newLineStartingFen };
+    const body = {
+      name: this.newLineName,
+      sideToTrain: this.newLineSide,
+      startingFen: this.newLineStartingFen,
+    };
     this.saving = true;
     this.error = null;
     this.api.post<Line>(`/chapters/${this.chapterId}/lines`, body).subscribe({
@@ -275,7 +375,9 @@ export class LinesPageComponent implements OnInit {
   }
 
   deleteLine(line: Line) {
-    const confirmed = window.confirm(`Delete line "${line.name}" and its full move tree? This cannot be undone.`);
+    const confirmed = window.confirm(
+      `Delete line "${line.name}" and its full move tree? This cannot be undone.`,
+    );
     if (!confirmed) return;
 
     this.deletingLineId = line.id;
@@ -342,7 +444,9 @@ export class LinesPageComponent implements OnInit {
     this.error = null;
     this.api.patch<Line>(`/lines/${line.id}`, { name }).subscribe({
       next: (updated) => {
-        this.lines = this.lines.map((item) => (item.id === line.id ? { ...item, ...updated } : item));
+        this.lines = this.lines.map((item) =>
+          item.id === line.id ? { ...item, ...updated } : item,
+        );
         this.editingLineId = null;
         this.lineNameDraft = '';
         this.savingLineId = null;

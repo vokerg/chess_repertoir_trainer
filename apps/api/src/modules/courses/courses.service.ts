@@ -23,6 +23,10 @@ import {
   updateLine,
   updateMoveNode,
 } from './courses.repository.prisma';
+import {
+  lineUpdateChangesRepertoire,
+  touchLineRepertoireUpdatedAt,
+} from './line-repertoire-timestamp.service';
 
 function colorFromFen(fen: string): 'WHITE' | 'BLACK' {
   const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
@@ -101,26 +105,55 @@ export const CourseService = {
   list: async () => listCourses(),
   create: async (data: { name: string; description?: string | null }) => createCourse(data),
   get: async (id: number) => getCourseById(id),
-  update: async (id: number, data: { name?: string; description?: string | null }) => updateCourse(id, data),
+  update: async (id: number, data: { name?: string; description?: string | null }) =>
+    updateCourse(id, data),
   delete: async (id: number) => deleteCourse(id),
 };
 
 export const ChapterService = {
   list: async (courseId: number) => listChapters(courseId),
-  create: async (courseId: number, data: { name: string; description?: string | null; sortOrder?: number }) =>
-    createChapter(courseId, data),
-  update: async (id: number, data: { name?: string; description?: string | null; sortOrder?: number }) =>
-    updateChapter(id, data),
+  create: async (
+    courseId: number,
+    data: { name: string; description?: string | null; sortOrder?: number },
+  ) => createChapter(courseId, data),
+  update: async (
+    id: number,
+    data: { name?: string; description?: string | null; sortOrder?: number },
+  ) => updateChapter(id, data),
   delete: async (id: number) => deleteChapter(id),
 };
 
 export const LineService = {
   list: async (chapterId: number) => listLines(chapterId),
-  create: async (chapterId: number, data: { name: string; sideToTrain: string; startingFen: string; tags?: string | null; notes?: string | null }) =>
-    createLine(chapterId, data),
+  create: async (
+    chapterId: number,
+    data: {
+      name: string;
+      sideToTrain: string;
+      startingFen: string;
+      tags?: string | null;
+      notes?: string | null;
+    },
+  ) => createLine(chapterId, data),
   get: async (id: number) => getLineById(id),
-  update: async (id: number, data: Partial<{ name: string; sideToTrain: string; startingFen: string; tags: string | null; notes: string | null }>) =>
-    updateLine(id, data),
+  update: async (
+    id: number,
+    data: Partial<{
+      name: string;
+      sideToTrain: string;
+      startingFen: string;
+      tags: string | null;
+      notes: string | null;
+    }>,
+  ) =>
+    prisma.$transaction(async (tx) => {
+      const current = await getLineById(id, tx);
+      if (!current) throw new Error('Line not found');
+      const shouldTouch = lineUpdateChangesRepertoire(current, data);
+      const updated = await updateLine(id, data, tx);
+      if (shouldTouch) await touchLineRepertoireUpdatedAt(tx, id);
+      return shouldTouch ? getLineById(id, tx) : updated;
+    }),
   delete: async (id: number) => deleteLine(id),
   getMoveTree: async (lineId: number) => {
     const line = await getLineById(lineId);
@@ -131,104 +164,149 @@ export const LineService = {
 };
 
 export const MoveNodeService = {
-  create: async (lineId: number, body: {
-    parentId?: number | null;
-    moveUci: string;
-    comment?: string | null;
-    annotation?: string | null;
-    branchLabel?: string | null;
-    branchWeight?: number | null;
-    sortOrder?: number;
-  }) => {
-    const { parentId = null, moveUci, comment = null, annotation = null, branchLabel = null, branchWeight = null, sortOrder = 0 } = body;
-    const line = await getLineById(lineId);
-    if (!line) throw new Error('Line not found');
+  create: async (
+    lineId: number,
+    body: {
+      parentId?: number | null;
+      moveUci: string;
+      comment?: string | null;
+      annotation?: string | null;
+      branchLabel?: string | null;
+      branchWeight?: number | null;
+      sortOrder?: number;
+    },
+  ) => {
+    return prisma.$transaction(async (tx) => {
+      const {
+        parentId = null,
+        moveUci,
+        comment = null,
+        annotation = null,
+        branchLabel = null,
+        branchWeight = null,
+        sortOrder = 0,
+      } = body;
+      const line = await getLineById(lineId, tx);
+      if (!line) throw new Error('Line not found');
 
-    let fenBefore: string;
-    let plyNumber: number;
+      let fenBefore: string;
+      let plyNumber: number;
 
-    if (parentId != null) {
-      const parentNode = await getNodeById(parentId);
-      if (!parentNode) throw new Error('Parent node not found');
-      if (parentNode.lineId !== lineId) throw new Error('Parent node does not belong to this line');
-      fenBefore = parentNode.fenAfter;
-      plyNumber = parentNode.plyNumber + 1;
-    } else {
-      fenBefore = line.startingFen;
-      plyNumber = 1;
-    }
+      if (parentId != null) {
+        const parentNode = await getNodeById(parentId, tx);
+        if (!parentNode) throw new Error('Parent node not found');
+        if (parentNode.lineId !== lineId)
+          throw new Error('Parent node does not belong to this line');
+        fenBefore = parentNode.fenAfter;
+        plyNumber = parentNode.plyNumber + 1;
+      } else {
+        fenBefore = line.startingFen;
+        plyNumber = 1;
+      }
 
-    const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
-    const colorToMoveBefore: 'WHITE' | 'BLACK' = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
-    const isUserMove = colorToMoveBefore === line.sideToTrain;
+      const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
+      const colorToMoveBefore: 'WHITE' | 'BLACK' = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
+      const isUserMove = colorToMoveBefore === line.sideToTrain;
 
-    if (isUserMove) {
-      const exists = await existsCorrectUserMove(lineId, parentId);
-      if (exists) throw new Error('This position already has a correct trained-side move. Delete or replace it first.');
-    }
+      if (isUserMove) {
+        const exists = await existsCorrectUserMove(lineId, parentId, tx);
+        if (exists)
+          throw new Error(
+            'This position already has a correct trained-side move. Delete or replace it first.',
+          );
+      }
 
-    const move = chess.move(parseUci(moveUci));
-    if (!move) throw new Error('Illegal move');
+      const move = chess.move(parseUci(moveUci));
+      if (!move) throw new Error('Illegal move');
 
-    return createMoveNode({
-      lineId,
-      parentId,
-      plyNumber,
-      fenBefore,
-      fenAfter: chess.fen(),
-      moveUci,
-      moveSan: move.san,
-      moveNumber: Math.ceil(plyNumber / 2),
-      colorToMoveBefore,
-      side: colorToMoveBefore,
-      isUserMove,
-      isCorrectUserMove: isUserMove,
-      comment,
-      annotation,
-      branchLabel,
-      branchWeight,
-      sortOrder,
-      timesSeen: 0,
-      correctCount: 0,
-      incorrectCount: 0,
-      currentStreak: 0,
+      const node = await createMoveNode(
+        {
+          lineId,
+          parentId,
+          plyNumber,
+          fenBefore,
+          fenAfter: chess.fen(),
+          moveUci,
+          moveSan: move.san,
+          moveNumber: Math.ceil(plyNumber / 2),
+          colorToMoveBefore,
+          side: colorToMoveBefore,
+          isUserMove,
+          isCorrectUserMove: isUserMove,
+          comment,
+          annotation,
+          branchLabel,
+          branchWeight,
+          sortOrder,
+          timesSeen: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          currentStreak: 0,
+        },
+        tx,
+      );
+      await touchLineRepertoireUpdatedAt(tx, lineId);
+      return node;
     });
   },
 
-  update: async (id: number, body: {
-    comment?: string | null;
-    annotation?: string | null;
-    branchLabel?: string | null;
-    branchWeight?: number | null;
-    sortOrder?: number;
-    isCorrectUserMove?: boolean;
-  }) => {
-    const node = await getNodeById(id);
-    if (!node) throw new Error('Node not found');
-    const data: any = {};
-    if (body.comment !== undefined) data.comment = body.comment;
-    if (body.annotation !== undefined) data.annotation = body.annotation;
-    if (body.branchLabel !== undefined) data.branchLabel = body.branchLabel;
-    if (body.branchWeight !== undefined) data.branchWeight = body.branchWeight;
-    if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
-    if (body.isCorrectUserMove !== undefined && node.isUserMove) {
-      if (!body.isCorrectUserMove) {
-        throw new Error('A trained-side position must keep exactly one correct move. Delete or replace the node instead.');
+  update: async (
+    id: number,
+    body: {
+      comment?: string | null;
+      annotation?: string | null;
+      branchLabel?: string | null;
+      branchWeight?: number | null;
+      sortOrder?: number;
+      isCorrectUserMove?: boolean;
+    },
+  ) => {
+    return prisma.$transaction(async (tx) => {
+      const node = await getNodeById(id, tx);
+      if (!node) throw new Error('Node not found');
+      const data: any = {};
+      if (body.comment !== undefined && body.comment !== node.comment) data.comment = body.comment;
+      if (body.annotation !== undefined && body.annotation !== node.annotation)
+        data.annotation = body.annotation;
+      if (body.branchLabel !== undefined && body.branchLabel !== node.branchLabel)
+        data.branchLabel = body.branchLabel;
+      if (body.branchWeight !== undefined && body.branchWeight !== node.branchWeight)
+        data.branchWeight = body.branchWeight;
+      if (body.sortOrder !== undefined && body.sortOrder !== node.sortOrder)
+        data.sortOrder = body.sortOrder;
+      if (body.isCorrectUserMove !== undefined && node.isUserMove) {
+        if (!body.isCorrectUserMove) {
+          throw new Error(
+            'A trained-side position must keep exactly one correct move. Delete or replace the node instead.',
+          );
+        }
+        if (!node.isCorrectUserMove) {
+          await tx.moveNode.updateMany({
+            where: {
+              lineId: node.lineId,
+              parentId: node.parentId,
+              isUserMove: true,
+              isCorrectUserMove: true,
+              NOT: { id: node.id },
+            },
+            data: { isCorrectUserMove: false },
+          });
+          data.isCorrectUserMove = true;
+        }
       }
-      await prisma.moveNode.updateMany({
-        where: {
-          lineId: node.lineId,
-          parentId: node.parentId,
-          isUserMove: true,
-          isCorrectUserMove: true,
-          NOT: { id: node.id },
-        },
-        data: { isCorrectUserMove: false },
-      });
-      data.isCorrectUserMove = true;
-    }
-    return updateMoveNode(id, data);
+      if (Object.keys(data).length === 0) return node;
+      const updated = await updateMoveNode(id, data, tx);
+      await touchLineRepertoireUpdatedAt(tx, node.lineId);
+      return updated;
+    });
   },
 
-  deleteSubtree: async (id: number) => deleteNodeAndSubtree(id),
+  deleteSubtree: async (id: number) =>
+    prisma.$transaction(async (tx) => {
+      const node = await getNodeById(id, tx);
+      if (!node) throw new Error('Node not found');
+      const deleted = await deleteNodeAndSubtree(id, tx);
+      await touchLineRepertoireUpdatedAt(tx, node.lineId);
+      return deleted;
+    }),
 };

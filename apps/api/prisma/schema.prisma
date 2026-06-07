@@ -194,22 +194,25 @@ model Chapter {
 }
 
 model Line {
-  id              Int      @id @default(autoincrement())
-  chapterId       Int
-  chapter         Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  name            String
-  sideToTrain     String
-  startingFen     String
-  tags            String?
-  notes           String?
-  passedCount     Int      @default(0)
-  failedCount     Int      @default(0)
-  totalAttempts   Int      @default(0)
-  lastTrainedAt   DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  moves           MoveNode[]
-  sessions        TrainingSession[]
+  id                  Int      @id @default(autoincrement())
+  chapterId           Int
+  chapter             Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  name                String
+  sideToTrain         String
+  startingFen         String
+  tags                String?
+  notes               String?
+  passedCount         Int      @default(0)
+  failedCount         Int      @default(0)
+  totalAttempts       Int      @default(0)
+  lastTrainedAt       DateTime?
+  repertoireUpdatedAt DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  moves               MoveNode[]
+  sessions            TrainingSession[]
+
+  @@index([chapterId, repertoireUpdatedAt])
 }
 
 model MoveNode {
@@ -242,6 +245,9 @@ model MoveNode {
   lastSeenAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([lineId, parentId])
+  @@index([lineId, parentId, moveUci])
 }
 
 model TrainingSession {

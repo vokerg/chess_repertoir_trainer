@@ -7,6 +7,13 @@ description: Project-specific Angular guidance for the chess repertoire trainer 
 
 Use this skill for changes under `apps/web`.
 
+Before editing, read:
+
+- `docs/frontend/angular-architecture.md` for normative project rules.
+- `docs/frontend/angular-patterns.md` for approved implementation recipes.
+- `docs/frontend/angular-migration.md` for current migration status and ordering.
+- `docs/skills/frontend-feature-module.md` for feature-boundary review.
+
 ## Architecture
 
 - Build standalone components and lazy-load route pages with `loadComponent`.
@@ -16,6 +23,7 @@ Use this skill for changes under `apps/web`.
 - Put signals, derived state, async commands, and error handling in feature stores or facades.
 - Keep components presentational through typed inputs and outputs.
 - Use external templates and styles once component markup or CSS is non-trivial.
+- Prefer built-in `@if`, `@for`, and `@switch`; track repeated domain items by stable identity.
 
 ## State
 
@@ -25,6 +33,7 @@ Use this skill for changes under `apps/web`.
 - Do not reload or clear the Games explorer after analysing or indexing one game.
 - Reserve full reloads for initialization, filter application/reset, and explicit refresh.
 - Avoid `effect()` for command handling and avoid adding a global state library without a demonstrated need.
+- Use `toSignal` and `takeUntilDestroyed` instead of manual component subscription cleanup.
 
 ## Games Contracts
 
@@ -40,4 +49,4 @@ Use this skill for changes under `apps/web`.
 - Run `npm run build:web` after frontend changes.
 - Check that row rendering tracks by game id and that presentational components perform no HTTP work.
 
-See `docs/frontend/angular-refactor-guide.md` and `docs/skills/frontend-feature-module.md` for repository boundaries.
+Treat the repository architecture document as authoritative if this skill and the docs diverge.

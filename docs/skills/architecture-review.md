@@ -37,12 +37,15 @@ Check backend changes:
 
 Check Angular changes:
 
+- Changes comply with `docs/frontend/angular-architecture.md` or document an explicit exception.
 - Feature code is moving toward `features/<feature>`.
 - Large page components are not growing more orchestration.
 - Child components are mostly presentational.
 - API calls are not scattered across unrelated UI components.
 - Shared components do not import feature internals.
 - Feature components do not import other feature internals.
+- Repeated domain data uses stable tracking and refactored templates use built-in control flow.
+- Signal-owned state and API DTOs are updated immutably.
 
 ## Review pass 4: packages
 

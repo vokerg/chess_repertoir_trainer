@@ -1,4 +1,5 @@
 import prisma from '../prisma';
+import { touchLineRepertoireUpdatedAt } from '../modules/courses/line-repertoire-timestamp.service';
 
 export const ImportExportService = {
   /**
@@ -82,7 +83,7 @@ export const ImportExportService = {
                 // Sort moves by id ascending to ensure parents are created before children
                 const sortedMoves = [...line.moves].sort((a: any, b: any) => a.id - b.id);
                 for (const move of sortedMoves) {
-                  const newParentId = move.parentId ? idMap.get(move.parentId) ?? null : null;
+                  const newParentId = move.parentId ? (idMap.get(move.parentId) ?? null) : null;
                   const created = await prisma.moveNode.create({
                     data: {
                       lineId: newLine.id,
@@ -112,6 +113,7 @@ export const ImportExportService = {
                   idMap.set(move.id, created.id);
                 }
               }
+              await touchLineRepertoireUpdatedAt(prisma, newLine.id);
             }
           }
         }

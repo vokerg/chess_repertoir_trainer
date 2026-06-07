@@ -9,6 +9,7 @@ import labModule from '../modules/lab/lab.routes';
 import importExportRoutes from './importExport';
 import externalAccountsRoutes from './externalAccounts';
 import swaggerRoutes from './swagger';
+import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
 
 export default function registerRoutes(app: FastifyInstance): void {
   app.register(coursesModule);
@@ -18,6 +19,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(analysisModule);
   app.register(importedGamesModule);
   app.register(labModule);
+  app.register(repertoireCoverageModule);
   app.register(importExportRoutes);
   app.register(externalAccountsRoutes);
   app.register(swaggerRoutes);

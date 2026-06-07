@@ -2,7 +2,11 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../services/api.service';
-import { ActiveTrainingSession, TrainingSessionComponent, TrainingSessionCompletedEvent } from '../components/training-session.component';
+import {
+  ActiveTrainingSession,
+  TrainingSessionComponent,
+  TrainingSessionCompletedEvent,
+} from '../components/training-session.component';
 
 @Component({
   selector: 'app-line-train-page',
@@ -23,6 +27,7 @@ import { ActiveTrainingSession, TrainingSessionComponent, TrainingSessionComplet
         <nav class="workbench-mode-switch" aria-label="Line mode">
           <span class="mode-pill mode-pill-active">Train</span>
           <a class="mode-pill" [routerLink]="['/lines', lineId, 'edit']">Edit tree</a>
+          <a class="mode-pill" [routerLink]="['/lines', lineId, 'review']">Review</a>
         </nav>
       </header>
 
@@ -56,7 +61,11 @@ export class LineTrainPageComponent implements OnInit {
   loaded = false;
   error: string | null = null;
 
-  constructor(private route: ActivatedRoute, private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
