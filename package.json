@@ -34,6 +34,14 @@
     "prisma:studio": "npm run prisma:studio --workspace=apps/api"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "@angular-devkit/build-angular": "^21.2.14",
+    "@angular/cli": "^21.2.12",
+    "@angular/compiler-cli": "^21.2.14",
+    "concurrently": "^8.2.0",
+    "prisma": "^7.8.0",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
   }
 }
