@@ -1,7 +1,14 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, inject, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  HostListener,
+  inject,
+  OnInit,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { distinctUntilChanged, map } from 'rxjs';
+import { combineLatest, distinctUntilChanged, map } from 'rxjs';
 import { LineEditorWorkbenchComponent } from '../components/line-editor-workbench.component';
 import { LineEditorStore } from '../state/line-editor.store';
 
@@ -20,13 +27,19 @@ export class LineEditorPageComponent implements OnInit {
   protected readonly store = inject(LineEditorStore);
 
   ngOnInit(): void {
-    this.route.paramMap
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(
-        map((params) => Number(params.get('lineId'))),
-        distinctUntilChanged(),
+        map(([params, query]) => ({
+          lineId: Number(params.get('lineId')),
+          nodeId: Number(query.get('nodeId')) || undefined,
+        })),
+        distinctUntilChanged(
+          (previous, current) =>
+            previous.lineId === current.lineId && previous.nodeId === current.nodeId,
+        ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((lineId) => this.store.initialize(lineId));
+      .subscribe(({ lineId, nodeId }) => this.store.initialize(lineId, nodeId));
   }
 
   @HostListener('window:keydown', ['$event'])

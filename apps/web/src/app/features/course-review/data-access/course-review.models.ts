@@ -32,7 +32,12 @@ export interface CourseReviewConflict {
   moves: Array<{
     moveUci: string;
     moveSan: string;
-    lineRefs: Array<{ lineId: number; lineName: string; nodeId: number }>;
+    lineRefs: Array<{
+      lineId: number;
+      lineName: string;
+      nodeId: number;
+      moveSequenceSan: string | null;
+    }>;
   }>;
 }
 

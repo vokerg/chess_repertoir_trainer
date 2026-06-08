@@ -6,3 +6,35 @@
 code {
   overflow-wrap: anywhere;
 }
+
+.conflict-move {
+  gap: 0.65rem;
+}
+
+.conflict-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.72);
+}
+
+.conflict-line-copy {
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.move-sequence {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .conflict-line {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

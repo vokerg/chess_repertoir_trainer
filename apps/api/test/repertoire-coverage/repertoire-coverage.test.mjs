@@ -68,20 +68,22 @@ const siblingGraph = buildCourseRepertoireGraph([
   makeLine(1, 'Sicilian d6', 'WHITE', ['e2e4', 'c7c5', 'g1f3', 'd7d6']),
   makeLine(2, 'Sicilian Nc6', 'WHITE', ['e2e4', 'c7c5', 'g1f3', 'b8c6']),
 ]);
-assert.equal(classify(siblingGraph, ['e2e4', 'c7c5', 'g1f3', 'd7d6'], { sideToTrain: 'WHITE' }).status, 'GAME_ENDED_INSIDE_REPERTOIRE');
-assert.equal(classify(siblingGraph, ['e2e4', 'c7c5', 'g1f3', 'b8c6'], { sideToTrain: 'WHITE' }).status, 'GAME_ENDED_INSIDE_REPERTOIRE');
+assert.equal(
+  classify(siblingGraph, ['e2e4', 'c7c5', 'g1f3', 'd7d6'], { sideToTrain: 'WHITE' }).status,
+  'GAME_ENDED_INSIDE_REPERTOIRE',
+);
+assert.equal(
+  classify(siblingGraph, ['e2e4', 'c7c5', 'g1f3', 'b8c6'], { sideToTrain: 'WHITE' }).status,
+  'GAME_ENDED_INSIDE_REPERTOIRE',
+);
 
-const blackGraph = buildCourseRepertoireGraph([
-  makeLine(3, 'Sicilian', 'BLACK', ['e2e4', 'c7c5']),
-]);
+const blackGraph = buildCourseRepertoireGraph([makeLine(3, 'Sicilian', 'BLACK', ['e2e4', 'c7c5'])]);
 const deviation = classify(blackGraph, ['e2e4', 'e7e5']);
 assert.equal(deviation.status, 'MY_DEVIATION');
 assert.equal(deviation.expectedMoveUci, 'c7c5');
 assert.equal(deviation.playedMoveUci, 'e7e5');
 
-const whiteGraph = buildCourseRepertoireGraph([
-  makeLine(4, 'English', 'WHITE', ['c2c4', 'e7e5']),
-]);
+const whiteGraph = buildCourseRepertoireGraph([makeLine(4, 'English', 'WHITE', ['c2c4', 'e7e5'])]);
 const uncovered = classifyCourseReviewGame({
   game: { ...game, userColor: 'WHITE' },
   indexed: true,
@@ -109,8 +111,18 @@ const conflict = classify(conflictGraph, ['e2e4', 'c7c5']);
 assert.equal(conflict.status, 'COURSE_CONFLICT');
 const conflicts = getCourseReviewConflicts(conflictGraph);
 assert.equal(conflicts.length, 1);
-assert.deepEqual(new Set(conflicts[0].moves.map((move) => move.moveUci)), new Set(['c7c5', 'e7e5']));
-assert.deepEqual(new Set(conflicts[0].moves.flatMap((move) => move.lineRefs.map((ref) => ref.lineName))), new Set(['Sicilian', 'Open game']));
+assert.deepEqual(
+  new Set(conflicts[0].moves.map((move) => move.moveUci)),
+  new Set(['c7c5', 'e7e5']),
+);
+assert.deepEqual(
+  new Set(conflicts[0].moves.flatMap((move) => move.lineRefs.map((ref) => ref.lineName))),
+  new Set(['Sicilian', 'Open game']),
+);
+assert.deepEqual(
+  new Set(conflicts[0].moves.flatMap((move) => move.lineRefs.map((ref) => ref.moveSequenceSan))),
+  new Set(['1. e4 c5', '1. e4 e5']),
+);
 
 assert.equal(classify(blackGraph, [], { indexed: false }).status, 'UNINDEXED_GAME');
 

@@ -41,10 +41,16 @@ export class LineEditorStore implements OnDestroy {
   readonly notesSaving = signal(false);
   readonly notesSaved = signal(false);
   readonly notesError = signal<string | null>(null);
-  readonly engineAnalysis = toSignal(this.positionAnalysis.state$, { initialValue: EMPTY_ENGINE_ANALYSIS });
+  readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
+    initialValue: EMPTY_ENGINE_ANALYSIS,
+  });
 
-  readonly selectedNode = computed(() => findLineTreeNode(this.selectedNodeId(), this.tree()?.root));
-  readonly currentFen = computed(() => this.selectedNode()?.node.fenAfter || this.line()?.startingFen || 'startpos');
+  readonly selectedNode = computed(() =>
+    findLineTreeNode(this.selectedNodeId(), this.tree()?.root),
+  );
+  readonly currentFen = computed(
+    () => this.selectedNode()?.node.fenAfter || this.line()?.startingFen || 'startpos',
+  );
   readonly lastMove = computed(() => {
     const move = this.selectedNode()?.node.moveUci;
     if (!move || this.selectedNodeId() === 0) return null;
@@ -72,7 +78,11 @@ export class LineEditorStore implements OnDestroy {
   readonly engineWarning = computed(() => {
     const analysis = this.engineAnalysis();
     const planned = this.plannedTrainedMove();
-    if (analysis.fen !== this.currentFen() || !analysis.bestMove || analysis.bestMove === '(none)') {
+    if (
+      analysis.fen !== this.currentFen() ||
+      !analysis.bestMove ||
+      analysis.bestMove === '(none)'
+    ) {
       return null;
     }
     if (!planned || planned === analysis.bestMove) return null;
@@ -92,14 +102,14 @@ export class LineEditorStore implements OnDestroy {
     return `Delete ${label} and ${descendantCount} following move(s)? This cannot be undone.`;
   });
 
-  initialize(lineId: number): void {
+  initialize(lineId: number, selectNodeId?: number): void {
     if (!Number.isFinite(lineId) || lineId <= 0) {
       this.error.set('Invalid line id.');
       this.loading.set(false);
       return;
     }
     this.lineId.set(lineId);
-    void this.loadLineAndTree();
+    void this.loadLineAndTree(selectNodeId);
   }
 
   async loadLineAndTree(selectNodeId?: number): Promise<void> {
@@ -166,7 +176,9 @@ export class LineEditorStore implements OnDestroy {
     const parentId = this.selectedNodeId() === 0 ? null : this.selectedNodeId();
 
     try {
-      const created = await firstValueFrom(this.api.createLineNode(lineId, { parentId, moveUci: uci }));
+      const created = await firstValueFrom(
+        this.api.createLineNode(lineId, { parentId, moveUci: uci }),
+      );
       await this.refreshTree(created.id);
     } catch (error) {
       this.boardPositionVersion.update((version) => version + 1);

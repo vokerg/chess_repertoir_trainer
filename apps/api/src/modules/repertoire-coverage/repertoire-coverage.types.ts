@@ -13,6 +13,7 @@ export interface CourseReviewLineRef {
   lineId: number;
   lineName: string;
   nodeId?: number | null;
+  moveSequenceSan?: string | null;
 }
 
 export interface CourseGraphMove {

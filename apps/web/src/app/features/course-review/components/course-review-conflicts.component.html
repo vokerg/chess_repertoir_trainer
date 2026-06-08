@@ -12,9 +12,23 @@
     <article class="collection-card stack">
       <code>{{ conflict.normalizedFenBefore }}</code>
       @for (move of conflict.moves; track move.moveUci) {
-        <div>
+        <div class="conflict-move stack">
           <strong>{{ move.moveSan || move.moveUci }}</strong>
-          in {{ lineNames(move.lineRefs) }}
+          @for (ref of move.lineRefs; track ref.lineId + ':' + ref.nodeId) {
+            <div class="conflict-line">
+              <div class="stack conflict-line-copy">
+                <span class="metric-label">{{ ref.lineName }}</span>
+                <span class="move-sequence">{{ ref.moveSequenceSan || move.moveSan }}</span>
+              </div>
+              <a
+                class="button-link"
+                [routerLink]="['/lines', ref.lineId, 'edit']"
+                [queryParams]="{ nodeId: ref.nodeId }"
+              >
+                <button type="button" class="secondary">Edit line</button>
+              </a>
+            </div>
+          }
         </div>
       }
     </article>

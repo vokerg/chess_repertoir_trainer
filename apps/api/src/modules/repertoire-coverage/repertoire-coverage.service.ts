@@ -33,6 +33,29 @@ function addLineRef(position: CourseGraphPosition, line: ReviewLine, nodeId?: nu
   }
 }
 
+function formatMoveSequence(nodes: ReviewLine['moves'], nodeId: number): string {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const path: ReviewLine['moves'] = [];
+  let current = nodesById.get(nodeId);
+  const visited = new Set<number>();
+
+  while (current && !visited.has(current.id)) {
+    visited.add(current.id);
+    path.push(current);
+    current = current.parentId === null ? undefined : nodesById.get(current.parentId);
+  }
+
+  return path
+    .reverse()
+    .map((node, index) => {
+      const moveNumber = Math.ceil(node.plyNumber / 2);
+      if (node.plyNumber % 2 === 1) return `${moveNumber}. ${node.moveSan}`;
+      if (index === 0) return `${moveNumber}... ${node.moveSan}`;
+      return node.moveSan;
+    })
+    .join(' ');
+}
+
 export function buildCourseRepertoireGraph(lines: ReviewLine[]): CourseRepertoireGraph {
   const graph: CourseRepertoireGraph = { startPositions: new Set(), positions: new Map() };
 
@@ -65,9 +88,8 @@ export function buildCourseRepertoireGraph(lines: ReviewLine[]): CourseRepertoir
       }
       addLineRef(position, line, node.id);
 
-      const moveMap = node.isUserMove && node.isCorrectUserMove
-        ? position.userMoves
-        : position.opponentMoves;
+      const moveMap =
+        node.isUserMove && node.isCorrectUserMove ? position.userMoves : position.opponentMoves;
       let move = moveMap.get(node.moveUci);
       if (!move) {
         move = {
@@ -80,7 +102,12 @@ export function buildCourseRepertoireGraph(lines: ReviewLine[]): CourseRepertoir
         moveMap.set(node.moveUci, move);
       }
       if (!move.lineRefs.some((ref) => ref.lineId === line.id && ref.nodeId === node.id)) {
-        move.lineRefs.push({ lineId: line.id, lineName: line.name, nodeId: node.id });
+        move.lineRefs.push({
+          lineId: line.id,
+          lineName: line.name,
+          nodeId: node.id,
+          moveSequenceSan: formatMoveSequence(line.moves, node.id),
+        });
       }
     }
   }
@@ -105,11 +132,13 @@ function playedSan(result: CourseReviewGameResult): string | null {
   if (!result.normalizedFenBefore || !result.playedMoveUci) return null;
   try {
     const chess = new Chess(result.normalizedFenBefore);
-    return chess.move({
-      from: result.playedMoveUci.slice(0, 2),
-      to: result.playedMoveUci.slice(2, 4),
-      promotion: result.playedMoveUci[4],
-    })?.san ?? null;
+    return (
+      chess.move({
+        from: result.playedMoveUci.slice(0, 2),
+        to: result.playedMoveUci.slice(2, 4),
+        promotion: result.playedMoveUci[4],
+      })?.san ?? null
+    );
   } catch {
     return null;
   }
@@ -162,7 +191,10 @@ function groupResults(results: CourseReviewGameResult[], status: CourseReviewGro
 }
 
 export const CourseReviewService = {
-  calculate: async (courseId: number, input: { from: Date; to?: Date; limit: number; offset: number }) => {
+  calculate: async (
+    courseId: number,
+    input: { from: Date; to?: Date; limit: number; offset: number },
+  ) => {
     const course = await getCoverageCourse(courseId);
     if (!course) return null;
     const lines = await getCourseReviewLines(courseId);
@@ -172,7 +204,9 @@ export const CourseReviewService = {
     const graph = buildCourseRepertoireGraph(lines);
     const conflicts = getCourseReviewConflicts(graph);
     const games = await getCourseReviewCandidateGames({ ...input, sideToTrain });
-    const plies = await getCourseReviewPlies(games.filter((game) => game.plyIndexedAt).map((game) => game.id));
+    const plies = await getCourseReviewPlies(
+      games.filter((game) => game.plyIndexedAt).map((game) => game.id),
+    );
     const pliesByGameId = new Map<number, typeof plies>();
     for (const ply of plies) {
       const grouped = pliesByGameId.get(ply.importedGameId) ?? [];
@@ -180,26 +214,28 @@ export const CourseReviewService = {
       pliesByGameId.set(ply.importedGameId, grouped);
     }
 
-    const results = games.map((game) => classifyCourseReviewGame({
-      game: {
-        gameId: game.id,
-        provider: game.provider,
-        providerGameId: game.providerGameId,
-        providerUrl: game.providerUrl,
-        endedAt: game.endedAt,
-        userColor: asColor(game.userColor),
-        opponentUsername: game.opponentUsername,
-        resultForUser: resultForUser(game.resultForUser),
-      },
-      indexed: game.plyIndexedAt !== null,
-      plies: (pliesByGameId.get(game.id) ?? []).map((ply) => ({
-        plyNumber: ply.plyNumber,
-        moveUci: ply.moveUci,
-        normalizedFenBefore: ply.position.normalizedFen,
-      })),
-      graph,
-      sideToTrain,
-    }));
+    const results = games.map((game) =>
+      classifyCourseReviewGame({
+        game: {
+          gameId: game.id,
+          provider: game.provider,
+          providerGameId: game.providerGameId,
+          providerUrl: game.providerUrl,
+          endedAt: game.endedAt,
+          userColor: asColor(game.userColor),
+          opponentUsername: game.opponentUsername,
+          resultForUser: resultForUser(game.resultForUser),
+        },
+        indexed: game.plyIndexedAt !== null,
+        plies: (pliesByGameId.get(game.id) ?? []).map((ply) => ({
+          plyNumber: ply.plyNumber,
+          moveUci: ply.moveUci,
+          normalizedFenBefore: ply.position.normalizedFen,
+        })),
+        graph,
+        sideToTrain,
+      }),
+    );
     const count = (status: CourseReviewGameResult['status']) =>
       results.filter((result) => result.status === status).length;
     const unindexedGames = count('UNINDEXED_GAME');
