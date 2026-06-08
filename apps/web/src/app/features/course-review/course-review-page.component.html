@@ -11,7 +11,10 @@
       <div class="stack review-hero-copy">
         <span class="eyebrow">Course review</span>
         <h2 class="page-heading">{{ store.course()?.name || 'Course review' }}</h2>
-        <p class="page-subtitle">Review imported games against this course repertoire.</p>
+        <p class="page-subtitle">
+          Review imported games after they enter this course repertoire, then find your deviations
+          and uncovered opponent moves.
+        </p>
       </div>
 
       @if (store.course(); as course) {
@@ -46,6 +49,22 @@
           [ngModel]="store.to()"
           (ngModelChange)="store.setTo($event)"
         />
+      </div>
+      <div class="stack form-field">
+        <label for="review-min-covered-plies" class="metric-label">Minimum course overlap</label>
+        <input
+          id="review-min-covered-plies"
+          type="number"
+          name="minCoveredPlies"
+          min="0"
+          max="20"
+          step="1"
+          [ngModel]="store.minCoveredPlies()"
+          (ngModelChange)="store.setMinCoveredPlies($event)"
+        />
+        <small class="field-hint">
+          Only review games after this many half-moves matched the course.
+        </small>
       </div>
       <button type="submit" [disabled]="!store.canReview()">
         {{ store.loading() ? 'Reviewing...' : 'Review' }}

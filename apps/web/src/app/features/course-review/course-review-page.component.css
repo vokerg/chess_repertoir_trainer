@@ -21,12 +21,23 @@
 }
 
 .review-filters {
-  align-items: end;
+  align-items: flex-start;
 }
 
 .review-filters .form-field {
   min-width: min(100%, 190px);
   gap: 0.45rem;
+}
+
+.field-hint {
+  max-width: 14rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.review-filters > button {
+  margin-top: 1.7rem;
 }
 
 .review-results {

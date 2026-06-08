@@ -61,6 +61,7 @@ function classify(graph, gameMoves, options = {}) {
     plies: options.indexed === false ? null : buildPlies(gameMoves, options.startingFen),
     graph,
     sideToTrain: options.sideToTrain ?? 'BLACK',
+    minCoveredPlies: options.minCoveredPlies ?? 2,
   });
 }
 
@@ -78,7 +79,7 @@ assert.equal(
 );
 
 const blackGraph = buildCourseRepertoireGraph([makeLine(3, 'Sicilian', 'BLACK', ['e2e4', 'c7c5'])]);
-const deviation = classify(blackGraph, ['e2e4', 'e7e5']);
+const deviation = classify(blackGraph, ['e2e4', 'e7e5'], { minCoveredPlies: 1 });
 assert.equal(deviation.status, 'MY_DEVIATION');
 assert.equal(deviation.expectedMoveUci, 'c7c5');
 assert.equal(deviation.playedMoveUci, 'e7e5');
@@ -90,18 +91,60 @@ const uncovered = classifyCourseReviewGame({
   plies: buildPlies(['g1f3']),
   graph: whiteGraph,
   sideToTrain: 'WHITE',
+  minCoveredPlies: 0,
 });
 assert.equal(uncovered.status, 'MY_DEVIATION');
 
 const opponentGraph = buildCourseRepertoireGraph([
   makeLine(5, 'English response', 'BLACK', ['c2c4', 'e7e5']),
 ]);
-const opponentUncovered = classify(opponentGraph, ['g1f3']);
+const opponentUncovered = classify(opponentGraph, ['g1f3'], { minCoveredPlies: 0 });
 assert.equal(opponentUncovered.status, 'OPPONENT_UNCOVERED');
 assert.equal(opponentUncovered.playedMoveUci, 'g1f3');
 
 assert.equal(classify(blackGraph, ['e2e4', 'c7c5', 'g1f3']).status, 'REPERTOIRE_ENDED');
 assert.equal(classify(blackGraph, ['e2e4', 'c7c5']).status, 'GAME_ENDED_INSIDE_REPERTOIRE');
+
+const sicilianGraph = buildCourseRepertoireGraph([
+  makeLine(10, 'Sicilian d6', 'BLACK', ['e2e4', 'c7c5', 'g1f3', 'd7d6']),
+]);
+
+const d4 = classify(sicilianGraph, ['d2d4'], { minCoveredPlies: 2 });
+assert.equal(d4.status, 'OUT_OF_SCOPE');
+assert.notEqual(d4.status, 'OPPONENT_UNCOVERED');
+
+const e4e5Min2 = classify(sicilianGraph, ['e2e4', 'e7e5'], { minCoveredPlies: 2 });
+assert.equal(e4e5Min2.status, 'OUT_OF_SCOPE');
+
+const e4e5Min1 = classify(sicilianGraph, ['e2e4', 'e7e5'], { minCoveredPlies: 1 });
+assert.equal(e4e5Min1.status, 'MY_DEVIATION');
+assert.equal(e4e5Min1.expectedMoveUci, 'c7c5');
+assert.equal(e4e5Min1.playedMoveUci, 'e7e5');
+
+const b3 = classify(sicilianGraph, ['e2e4', 'c7c5', 'b2b3'], { minCoveredPlies: 2 });
+assert.equal(b3.status, 'OPPONENT_UNCOVERED');
+assert.equal(b3.playedMoveUci, 'b2b3');
+
+const nc6InsteadOfD6 = classify(
+  sicilianGraph,
+  ['e2e4', 'c7c5', 'g1f3', 'b8c6'],
+  { minCoveredPlies: 2 },
+);
+assert.equal(nc6InsteadOfD6.status, 'MY_DEVIATION');
+assert.equal(nc6InsteadOfD6.expectedMoveUci, 'd7d6');
+assert.equal(nc6InsteadOfD6.playedMoveUci, 'b8c6');
+
+const d4Min0 = classify(sicilianGraph, ['d2d4'], { minCoveredPlies: 0 });
+assert.equal(d4Min0.status, 'OPPONENT_UNCOVERED');
+
+const shortWhiteGraph = buildCourseRepertoireGraph([
+  makeLine(11, 'Short white line', 'WHITE', ['e2e4']),
+]);
+const endedBeforeMinimum = classify(shortWhiteGraph, ['e2e4', 'e7e5'], {
+  sideToTrain: 'WHITE',
+  minCoveredPlies: 2,
+});
+assert.equal(endedBeforeMinimum.status, 'OUT_OF_SCOPE');
 
 const conflictGraph = buildCourseRepertoireGraph([
   makeLine(6, 'Sicilian', 'BLACK', ['e2e4', 'c7c5']),

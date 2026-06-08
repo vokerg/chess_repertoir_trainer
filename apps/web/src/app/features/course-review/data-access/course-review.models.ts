@@ -51,7 +51,13 @@ export interface CourseReviewResponse {
     lineCount: number;
     moveCount: number;
   };
-  filters: { from: string; to: string | null; limit: number; offset: number };
+  filters: {
+    from: string;
+    to: string | null;
+    limit: number;
+    offset: number;
+    minCoveredPlies: number;
+  };
   summary: {
     gamesChecked: number;
     indexedGames: number;

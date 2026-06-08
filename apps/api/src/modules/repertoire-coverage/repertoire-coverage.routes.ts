@@ -9,6 +9,7 @@ const querySchema = z.object({
   to: dateSchema.optional(),
   limit: z.coerce.number().int().min(1).max(500).default(100),
   offset: z.coerce.number().int().min(0).default(0),
+  minCoveredPlies: z.coerce.number().int().min(0).max(20).default(2),
 }).refine((value) => !value.to || Date.parse(value.to) >= Date.parse(value.from), {
   message: 'to must be greater than or equal to from',
   path: ['to'],
@@ -26,6 +27,7 @@ export default async function repertoireCoverageModule(app: FastifyInstance) {
       to: query.data.to ? new Date(query.data.to) : undefined,
       limit: query.data.limit,
       offset: query.data.offset,
+      minCoveredPlies: query.data.minCoveredPlies,
     });
     if (!review) return reply.status(404).send({ message: 'Course not found' });
     return review;

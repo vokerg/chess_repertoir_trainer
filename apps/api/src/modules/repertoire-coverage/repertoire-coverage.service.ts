@@ -193,7 +193,7 @@ function groupResults(results: CourseReviewGameResult[], status: CourseReviewGro
 export const CourseReviewService = {
   calculate: async (
     courseId: number,
-    input: { from: Date; to?: Date; limit: number; offset: number },
+    input: { from: Date; to?: Date; limit: number; offset: number; minCoveredPlies: number },
   ) => {
     const course = await getCoverageCourse(courseId);
     if (!course) return null;
@@ -203,7 +203,13 @@ export const CourseReviewService = {
     const hasMixedSides = sides.size > 1;
     const graph = buildCourseRepertoireGraph(lines);
     const conflicts = getCourseReviewConflicts(graph);
-    const games = await getCourseReviewCandidateGames({ ...input, sideToTrain });
+    const games = await getCourseReviewCandidateGames({
+      from: input.from,
+      to: input.to,
+      limit: input.limit,
+      offset: input.offset,
+      sideToTrain,
+    });
     const plies = await getCourseReviewPlies(
       games.filter((game) => game.plyIndexedAt).map((game) => game.id),
     );
@@ -234,6 +240,7 @@ export const CourseReviewService = {
         })),
         graph,
         sideToTrain,
+        minCoveredPlies: input.minCoveredPlies,
       }),
     );
     const count = (status: CourseReviewGameResult['status']) =>
@@ -254,6 +261,7 @@ export const CourseReviewService = {
         to: input.to?.toISOString() ?? null,
         limit: input.limit,
         offset: input.offset,
+        minCoveredPlies: input.minCoveredPlies,
       },
       summary: {
         gamesChecked: results.length,

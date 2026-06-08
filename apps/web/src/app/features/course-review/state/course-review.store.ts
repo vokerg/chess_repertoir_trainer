@@ -18,6 +18,7 @@ export class CourseReviewStore {
 
   readonly from = signal(localDate(-7));
   readonly to = signal('');
+  readonly minCoveredPlies = signal(2);
   readonly review = signal<CourseReviewResponse | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -47,6 +48,12 @@ export class CourseReviewStore {
     this.to.set(value);
   }
 
+  setMinCoveredPlies(value: string | number): void {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    this.minCoveredPlies.set(Math.max(0, Math.min(20, Math.trunc(parsed))));
+  }
+
   async loadReview(): Promise<void> {
     const courseId = this.courseId();
     if (!courseId || !this.canReview()) return;
@@ -62,6 +69,7 @@ export class CourseReviewStore {
           to: this.to() || undefined,
           limit: 100,
           offset: 0,
+          minCoveredPlies: this.minCoveredPlies(),
         }),
       );
       if (requestVersion !== this.requestVersion) return;

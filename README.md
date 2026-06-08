@@ -66,6 +66,12 @@ The Games explorer UI is available from the main `Games` navigation item and sup
 
 Backend analysis stores the heavy reusable position result separately from per-game move analysis. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
 
+### Course review / repertoire coverage
+
+Course review compares imported games with a course repertoire graph. It reports trained-side deviations and opponent moves that are not represented by the course.
+
+To keep unrelated openings out of review results, `minCoveredPlies` sets the minimum number of actual played half-moves that must match the course before a game is considered in scope. The default is `2`.
+
 ## Project structure
 
 ```text
@@ -234,6 +240,14 @@ Supported query parameters include:
 List and detail DTOs expose an `analysis` summary derived from the latest `GameAnalysisRun` with status values `NOT_ANALYZED`, `RUNNING`, `COMPLETED`, and `FAILED`.
 
 `GET /api/me/accounts/:id/games` remains available as an account-scoped compatibility route, but it is backed by the same imported-games search service.
+
+### Course review API
+
+```http
+GET /api/courses/:courseId/review
+```
+
+Supported query parameters are `from`, `to`, `limit`, `offset`, and `minCoveredPlies`. The overlap filter defaults to `2` and accepts values from `0` through `20`.
 
 ## Imported game ply indexing
 
