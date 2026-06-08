@@ -30,6 +30,10 @@ export async function listChapters(courseId: number) {
   return prisma.chapter.findMany({ where: { courseId }, orderBy: { sortOrder: 'asc' } });
 }
 
+export async function getChapterById(id: number) {
+  return prisma.chapter.findUnique({ where: { id } });
+}
+
 export async function createChapter(
   courseId: number,
   data: { name: string; description?: string | null; sortOrder?: number },

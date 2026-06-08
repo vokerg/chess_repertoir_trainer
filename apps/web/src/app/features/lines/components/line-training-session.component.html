@@ -1,0 +1,143 @@
+@if (sessionId()) {
+  <div class="training-focus-layout">
+    <section class="training-board-panel">
+      <div class="training-board-inner">
+        <app-chessground-board
+          [fen]="currentFen()"
+          [side]="sideToTrain()"
+          [lastMove]="lastMove()"
+          [positionVersion]="boardPositionVersion()"
+          (move)="boardMove.emit($event)"
+        />
+
+        <div
+          class="training-feedback"
+          [class.correct]="feedback() && feedbackCorrect()"
+          [class.incorrect]="feedback() && !feedbackCorrect()"
+        >
+          {{ feedback() || 'Find the next trained move on the board.' }}
+        </div>
+      </div>
+    </section>
+
+    <aside class="training-side-panel">
+      <div>
+        <h3 class="training-goal-title">{{ goalTitle() }}</h3>
+        <p class="training-goal-subtitle">{{ goalSubtitle() }}</p>
+      </div>
+
+      <div class="expected-move-card">
+        <p class="expected-move-label">Expected move</p>
+        @if (showExpectedMove()) {
+          <p class="expected-move-value">
+            <span>{{ expectedMovePiece() }}</span>
+            <code>{{ expectedMoveLabel() }}</code>
+          </p>
+        } @else {
+          <p class="training-goal-subtitle">Hidden. Reveal only when you need a hint.</p>
+        }
+      </div>
+
+      <div class="training-progress-block">
+        <div class="training-progress-labels">
+          <span>{{ progressTitle() }}</span>
+          <span>{{ progressLabel() }}</span>
+        </div>
+        <div class="training-progress-track">
+          <div class="training-progress-fill" [style.width.%]="progressPercent()"></div>
+        </div>
+      </div>
+
+      <div class="library-stat-grid">
+        <div class="library-mini-stat">
+          <p class="library-mini-stat-label">Mistakes</p>
+          <p class="library-mini-stat-value">{{ mistakesCount() }}</p>
+        </div>
+        <div class="library-mini-stat">
+          <p class="library-mini-stat-label">Accuracy</p>
+          <p class="library-mini-stat-value">{{ accuracyLabel() }}</p>
+        </div>
+      </div>
+
+      @if (error(); as errorMessage) {
+        <p class="status-error">{{ errorMessage }}</p>
+      }
+
+      <div class="library-actions">
+        <button type="button" class="secondary" (click)="toggleExpectedMove.emit()">
+          {{ showExpectedMove() ? 'Hide expected move' : 'Reveal expected move' }}
+        </button>
+        <button type="button" (click)="finish.emit()" [disabled]="completed()">
+          {{ finishButtonLabel() }}
+        </button>
+      </div>
+
+      @if (completed()) {
+        <section class="training-result-panel" [class.failed]="!passed() || mistakesCount() > 0">
+          <h3 class="training-result-title">
+            {{ passed() && mistakesCount() === 0 ? 'Clean run' : 'Needs review' }}
+          </h3>
+          <div class="training-result-meta">
+            <span>Accuracy: {{ accuracyLabel() }}</span>
+            <span>Mistakes: {{ mistakesCount() }}</span>
+          </div>
+          <div class="library-actions">
+            <button type="button" (click)="primaryAction.emit()">{{ primaryActionLabel() }}</button>
+            @if (secondaryActionLink(); as secondaryActionLink) {
+              <a class="library-button-link secondary" [routerLink]="secondaryActionLink">
+                {{ secondaryActionLabel() }}
+              </a>
+            }
+            @if (editActionLink(); as editActionLink) {
+              <a class="library-button-link secondary" [routerLink]="editActionLink">
+                {{ editActionLabel() }}
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </aside>
+  </div>
+
+  @if (completed()) {
+    <section class="workbench-panel">
+      <h3 class="workbench-panel-title">Mistake review</h3>
+      <p class="workbench-panel-subtitle">{{ reviewSubtitle() }}</p>
+
+      @if (reviewLoading()) {
+        <p class="status-note">Loading mistake review...</p>
+      } @else if (mistakes().length === 0) {
+        <div class="empty-state">
+          {{
+            passed()
+              ? 'No mistakes. Clean session.'
+              : 'No move-level mistakes to review, but the session did not finish cleanly.'
+          }}
+        </div>
+      } @else {
+        <div class="mistake-review-grid">
+          @for (mistake of mistakes(); track mistake.id) {
+            <article class="mistake-card">
+              <h4 class="mistake-card-title">
+                Expected <code>{{ mistake.expectedMoveUci || '-' }}</code>
+                @if (mistake.moveSan) {
+                  <span>({{ mistake.moveSan }})</span>
+                }
+              </h4>
+              <p class="mistake-card-meta">Played <code>{{ mistake.playedMoveUci || '-' }}</code></p>
+              @if (mistake.branchLabel) {
+                <p class="mistake-card-meta">Branch: {{ mistake.branchLabel }}</p>
+              }
+              @if (mistake.comment) {
+                <p class="mistake-card-meta">Note: {{ mistake.comment }}</p>
+              }
+              @if (mistake.annotation) {
+                <p class="mistake-card-meta">Annotation: {{ mistake.annotation }}</p>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+}

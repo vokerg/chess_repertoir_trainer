@@ -1,0 +1,57 @@
+<section class="line-train-page stack">
+  @if (store.loading()) {
+    <section class="section-card stack">
+      <p class="status-note">Loading training focus...</p>
+      @if (store.error(); as error) {
+        <p class="status-error">{{ error }}</p>
+      }
+    </section>
+  } @else {
+    <header class="workbench-header">
+      <div class="workbench-title-group">
+        <a routerLink="/library" class="workbench-breadcrumb">&larr; Library / Training focus</a>
+        <h2 class="workbench-title">{{ store.lineName() }}</h2>
+        <div class="workbench-meta">
+          <span>Train as {{ store.sideToTrain() === 'BLACK' ? 'Black' : 'White' }}</span>
+          <span>{{ store.sessionStatusLabel() }}</span>
+        </div>
+      </div>
+
+      <nav class="workbench-mode-switch" aria-label="Line mode">
+        <span class="mode-pill mode-pill-active">Train</span>
+        <a class="mode-pill" [routerLink]="['/lines', store.line()?.id, 'edit']">Edit tree</a>
+        <a class="mode-pill" [routerLink]="['/lines', store.line()?.id, 'review']">Review</a>
+      </nav>
+    </header>
+
+    @if (store.error(); as error) {
+      <p class="status-error">{{ error }}</p>
+    }
+
+    <app-line-training-session
+      [sessionId]="store.sessionId()"
+      [currentFen]="store.currentFen()"
+      [expectedMove]="store.expectedMove()"
+      [sideToTrain]="store.sideToTrain()"
+      [feedback]="store.feedback()"
+      [feedbackCorrect]="store.feedbackCorrect()"
+      [mistakesCount]="store.mistakesCount()"
+      [completed]="store.completed()"
+      [passed]="store.passed()"
+      [accuracy]="store.accuracy()"
+      [showExpectedMove]="store.showExpectedMove()"
+      [reviewLoading]="store.reviewLoading()"
+      [mistakes]="store.mistakes()"
+      [error]="store.error()"
+      [lastMove]="store.lastMove()"
+      [boardPositionVersion]="store.boardPositionVersion()"
+      [secondaryActionLink]="['/library']"
+      secondaryActionLabel="Back to library"
+      [editActionLink]="['/lines', store.line()?.id, 'edit']"
+      (boardMove)="store.playBoardMove($event)"
+      (toggleExpectedMove)="store.toggleExpectedMove()"
+      (finish)="store.finishTraining()"
+      (primaryAction)="store.startTraining()"
+    />
+  }
+</section>

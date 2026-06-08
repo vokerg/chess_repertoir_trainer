@@ -1,0 +1,29 @@
+.move-notes-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.move-notes-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.move-notes-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.save-state {
+  color: var(--muted);
+}
+
+.save-state.error {
+  color: var(--danger);
+}

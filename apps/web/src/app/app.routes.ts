@@ -61,7 +61,8 @@ export const routes: Routes = [
   },
   {
     path: 'chapters/:chapterId/lines',
-    loadComponent: () => import('./pages/lines-page.component').then((m) => m.LinesPageComponent),
+    loadComponent: () =>
+      import('./features/lines/pages/lines-page.component').then((m) => m.LinesPageComponent),
   },
   {
     path: 'chapters/:chapterId/marathon',
@@ -73,12 +74,16 @@ export const routes: Routes = [
   {
     path: 'lines/:lineId/edit',
     loadComponent: () =>
-      import('./pages/line-editor-page.component').then((m) => m.LineEditorPageComponent),
+      import('./features/lines/pages/line-editor-page.component').then(
+        (m) => m.LineEditorPageComponent,
+      ),
   },
   {
     path: 'lines/:lineId/train',
     loadComponent: () =>
-      import('./pages/line-train-page.component').then((m) => m.LineTrainPageComponent),
+      import('./features/lines/pages/line-train-page.component').then(
+        (m) => m.LineTrainPageComponent,
+      ),
   },
   {
     path: 'lines/:lineId/review',

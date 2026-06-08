@@ -1,1 +1,1 @@
-export { LineEditorPageComponent } from '../../pages/line-editor-page.component';
+export { LineEditorPageComponent } from '../lines/pages/line-editor-page.component';

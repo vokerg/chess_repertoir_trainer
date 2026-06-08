@@ -11,6 +11,7 @@ import {
   deleteLine,
   deleteNodeAndSubtree,
   existsCorrectUserMove,
+  getChapterById,
   getCourseById,
   getLineById,
   getLineMoveNodes,
@@ -112,6 +113,7 @@ export const CourseService = {
 
 export const ChapterService = {
   list: async (courseId: number) => listChapters(courseId),
+  get: async (id: number) => getChapterById(id),
   create: async (
     courseId: number,
     data: { name: string; description?: string | null; sortOrder?: number },

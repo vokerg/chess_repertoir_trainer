@@ -1,0 +1,67 @@
+<section class="line-editor-page stack">
+  @if (store.loading()) {
+    <section class="section-card stack">
+      <p class="status-note">Loading editor...</p>
+      @if (store.error(); as error) {
+        <p class="status-error">{{ error }}</p>
+      }
+    </section>
+  } @else {
+    <header class="workbench-header">
+      <div class="workbench-title-group">
+        <a [routerLink]="store.breadcrumbLink()" class="workbench-breadcrumb">
+          {{ store.breadcrumbLabel() }}
+        </a>
+        <h2 class="workbench-title">{{ store.line()?.name || 'Line editor' }}</h2>
+        <div class="workbench-meta">
+          <span>Train as {{ store.line()?.sideToTrain === 'BLACK' ? 'Black' : 'White' }}</span>
+          <span>Selected: {{ store.selectedLabel() }}</span>
+        </div>
+      </div>
+
+      <nav class="workbench-mode-switch" aria-label="Line mode">
+        <span class="mode-pill mode-pill-active">Build</span>
+        <a class="mode-pill" [routerLink]="['/lines', store.line()?.id, 'train']">Train</a>
+        <a class="mode-pill" [routerLink]="['/lines', store.line()?.id, 'review']">Review</a>
+      </nav>
+    </header>
+
+    @if (store.error(); as error) {
+      <p class="status-error">{{ error }}</p>
+    }
+
+    @if (store.tree(); as tree) {
+      <app-line-editor-workbench
+        [tree]="tree"
+        [selectedNodeId]="store.selectedNodeId()"
+        [nodeId]="store.selectedNode()?.node?.id ?? null"
+        [branchLabel]="store.selectedNode()?.node?.branchLabel"
+        [comment]="store.selectedNode()?.node?.comment"
+        [annotation]="store.selectedNode()?.node?.annotation"
+        [currentFen]="store.currentFen()"
+        [side]="store.line()?.sideToTrain || 'WHITE'"
+        [blackPerspective]="store.blackPerspective()"
+        [lastMove]="store.lastMove()"
+        [arrows]="store.analysisArrows()"
+        [boardPositionVersion]="store.boardPositionVersion()"
+        [analysis]="store.engineAnalysis()"
+        [engineWarning]="store.engineWarning()"
+        [canGoBackward]="store.canGoBackward()"
+        [canGoForward]="store.canGoForward()"
+        [deleting]="store.deleting()"
+        [notesSaving]="store.notesSaving()"
+        [notesSaved]="store.notesSaved()"
+        [notesError]="store.notesError()"
+        (boardMove)="store.playBoardMove($event)"
+        (nodeSelected)="store.selectNode($event)"
+        (goStart)="store.goToStart()"
+        (goPrevious)="store.goToPrevious()"
+        (goNext)="store.goToNext()"
+        (goEnd)="store.goToEnd()"
+        (analyze)="store.rerunAnalysis()"
+        (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
+        (saveNotes)="store.saveNotes($event)"
+      />
+    }
+  }
+</section>

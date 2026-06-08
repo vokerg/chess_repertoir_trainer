@@ -20,6 +20,17 @@ function resultForUser(value: string | null): 'WIN' | 'DRAW' | 'LOSS' | null {
   return value === 'WIN' || value === 'DRAW' || value === 'LOSS' ? value : null;
 }
 
+function getLineRepertoireUpdatedAt(line: {
+  repertoireUpdatedAt?: Date;
+  updatedAt?: Date;
+}): Date {
+  const timestamp = line.repertoireUpdatedAt ?? line.updatedAt;
+  if (!timestamp) {
+    throw new Error('Line is missing both repertoireUpdatedAt and updatedAt');
+  }
+  return timestamp;
+}
+
 export const LineCoverageService = {
   statuses: COVERAGE_STATUSES,
   calculate: async (
@@ -32,11 +43,12 @@ export const LineCoverageService = {
       throw new Error(`Unsupported line side: ${line.sideToTrain}`);
     }
 
+    const repertoireUpdatedAt = getLineRepertoireUpdatedAt(line);
     const sideToTrain = line.sideToTrain as RepertoireColor;
     const normalizedStartFen = normalizeFenForPosition(line.startingFen || 'startpos');
     const games = await getCoverageCandidateGames({
       sideToTrain,
-      since: line.repertoireUpdatedAt,
+      since: repertoireUpdatedAt,
       limit: options.limit,
       offset: options.offset,
     });
@@ -90,7 +102,7 @@ export const LineCoverageService = {
         name: line.name,
         sideToTrain,
         startingFen: line.startingFen,
-        repertoireUpdatedAt: line.repertoireUpdatedAt.toISOString(),
+        repertoireUpdatedAt: repertoireUpdatedAt.toISOString(),
         hasMoves: line.moves.length > 0,
       },
       summary: {

@@ -1,0 +1,105 @@
+.lines-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.lines-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.lines-hero-copy {
+  gap: 0.7rem;
+}
+
+.lines-page-title {
+  font-size: clamp(1.8rem, 3vw, 2.9rem);
+}
+
+.section-header,
+.line-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.line-card-copy {
+  gap: 0.45rem;
+}
+
+.rename-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.form-field {
+  gap: 0.55rem;
+}
+
+.lines-section-title {
+  font-size: 1.7rem;
+}
+
+.line-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.line-stat-value {
+  font-size: 1.3rem;
+}
+
+.line-stat-success {
+  color: var(--success);
+}
+
+.line-stat-danger {
+  color: var(--danger);
+}
+
+.button-link {
+  text-decoration: none;
+}
+
+.lines-aside-subtitle,
+.pgn-subtitle {
+  font-size: 0.98rem;
+}
+
+.pgn-tools {
+  display: grid;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.pgn-title {
+  font-size: 1.35rem;
+}
+
+.pgn-subtitle {
+  font-size: 0.92rem;
+}
+
+.pgn-textarea {
+  width: 100%;
+  font-family: monospace;
+}
+
+.status-success {
+  color: var(--success);
+}
+
+@media (max-width: 720px) {
+  .rename-form {
+    grid-template-columns: 1fr;
+  }
+}
