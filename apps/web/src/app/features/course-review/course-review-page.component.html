@@ -1,0 +1,125 @@
+<section class="course-review-page stack">
+  <a
+    [routerLink]="store.course()?.id ? ['/courses', store.course()!.id] : ['/courses']"
+    class="subtle-link"
+  >
+    &larr; Back to course
+  </a>
+
+  <header class="section-card stack">
+    <div class="review-hero">
+      <div class="stack review-hero-copy">
+        <span class="eyebrow">Course review</span>
+        <h2 class="page-heading">{{ store.course()?.name || 'Course review' }}</h2>
+        <p class="page-subtitle">Review imported games against this course repertoire.</p>
+      </div>
+
+      @if (store.course(); as course) {
+        <div class="review-course-meta">
+          <span class="pill">{{ course.lineCount }} lines</span>
+          <span class="pill">{{ course.moveCount }} moves</span>
+          @if (course.sideToTrain) {
+            <span class="pill">Train {{ course.sideToTrain === 'WHITE' ? 'White' : 'Black' }}</span>
+          }
+        </div>
+      }
+    </div>
+
+    <form class="review-filters" (ngSubmit)="store.loadReview()">
+      <div class="stack form-field">
+        <label for="review-from" class="metric-label">Games from</label>
+        <input
+          id="review-from"
+          type="date"
+          name="from"
+          [ngModel]="store.from()"
+          (ngModelChange)="store.setFrom($event)"
+          required
+        />
+      </div>
+      <div class="stack form-field">
+        <label for="review-to" class="metric-label">To (optional)</label>
+        <input
+          id="review-to"
+          type="date"
+          name="to"
+          [ngModel]="store.to()"
+          (ngModelChange)="store.setTo($event)"
+        />
+      </div>
+      <button type="submit" [disabled]="!store.canReview()">
+        {{ store.loading() ? 'Reviewing...' : 'Review' }}
+      </button>
+    </form>
+  </header>
+
+  @if (store.error(); as error) {
+    <p class="status-error">{{ error }}</p>
+  }
+
+  @if (store.review(); as review) {
+    @if (review.course.hasMixedSides) {
+      <p class="status-note">
+        This course contains both White and Black lines. Review works best for a single-side
+        repertoire.
+      </p>
+    }
+
+    <div class="grid-auto">
+      <div class="metric-card">
+        <p class="metric-label">Games checked</p>
+        <p class="metric-value">{{ review.summary.gamesChecked }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">In course scope</p>
+        <p class="metric-value">{{ review.summary.inScopeGames }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">My deviations</p>
+        <p class="metric-value">{{ review.summary.myDeviations }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Opponent uncovered</p>
+        <p class="metric-value">{{ review.summary.opponentUncovered }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Repertoire ended</p>
+        <p class="metric-value">{{ review.summary.repertoireEnded }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Out of scope</p>
+        <p class="metric-value">{{ review.summary.outOfScopeGames }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Unindexed</p>
+        <p class="metric-value">{{ review.summary.unindexedGames }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Course conflicts</p>
+        <p class="metric-value">{{ review.summary.courseConflicts }}</p>
+      </div>
+    </div>
+
+    @if (review.conflicts.length > 0) {
+      <app-course-review-conflicts [conflicts]="review.conflicts" />
+    }
+
+    <div class="review-results">
+      <app-course-review-issue-list
+        eyebrow="My play"
+        title="My deviations"
+        emptyMessage="No personal deviations found in this date range."
+        [groups]="review.myDeviations"
+      />
+      <app-course-review-issue-list
+        eyebrow="Opponent play"
+        title="Opponent uncovered"
+        emptyMessage="No uncovered opponent moves found in this date range."
+        [groups]="review.opponentUncovered"
+        [opponent]="true"
+      />
+    </div>
+  } @else if (store.loading()) {
+    <p class="status-note">Reviewing imported games...</p>
+  }
+</section>

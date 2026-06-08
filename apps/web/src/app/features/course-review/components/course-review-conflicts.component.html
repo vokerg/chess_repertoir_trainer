@@ -1,0 +1,22 @@
+<section class="section-card stack conflict-panel">
+  <div>
+    <span class="eyebrow">Course conflicts</span>
+    <h3 class="collection-title">Fix conflicting repertoire moves</h3>
+    <p class="collection-description">
+      This course has multiple repertoire moves for the same trained-side position. Fix these before
+      trusting review results.
+    </p>
+  </div>
+
+  @for (conflict of conflicts(); track conflict.normalizedFenBefore) {
+    <article class="collection-card stack">
+      <code>{{ conflict.normalizedFenBefore }}</code>
+      @for (move of conflict.moves; track move.moveUci) {
+        <div>
+          <strong>{{ move.moveSan || move.moveUci }}</strong>
+          in {{ lineNames(move.lineRefs) }}
+        </div>
+      }
+    </article>
+  }
+</section>

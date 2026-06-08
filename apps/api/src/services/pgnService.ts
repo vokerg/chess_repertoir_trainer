@@ -1,6 +1,5 @@
 import { Chess } from 'chess.js';
 import prisma from '../prisma';
-import { touchLineRepertoireUpdatedAt } from '../modules/courses/line-repertoire-timestamp.service';
 
 function colorToMove(chess: Chess): 'WHITE' | 'BLACK' {
   return chess.turn() === 'w' ? 'WHITE' : 'BLACK';
@@ -188,7 +187,6 @@ export const PgnService = {
       };
     }
 
-    await touchLineRepertoireUpdatedAt(prisma, line.id);
     return prisma.line.findUniqueOrThrow({ where: { id: line.id } });
   },
 };

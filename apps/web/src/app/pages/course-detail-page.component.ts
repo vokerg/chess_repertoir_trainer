@@ -60,6 +60,9 @@ interface Chapter {
             <a [routerLink]="['/courses', courseId, 'marathon']" style="text-decoration:none;">
               <button type="button">Marathon</button>
             </a>
+            <a [routerLink]="['/courses', courseId, 'review']" style="text-decoration:none;">
+              <button type="button" class="secondary">Review repertoire</button>
+            </a>
             <button *ngIf="!editingCourseName" type="button" class="secondary" (click)="startCourseEdit()" [disabled]="!course">Rename course</button>
             <button type="button" class="secondary" (click)="deleteCourse()" [disabled]="deletingCourse">
               {{ deletingCourse ? 'Deleting...' : 'Delete course' }}

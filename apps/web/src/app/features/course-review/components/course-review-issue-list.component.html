@@ -1,0 +1,60 @@
+<section class="section-card stack">
+  <div>
+    <span class="eyebrow">{{ eyebrow() }}</span>
+    <h3 class="collection-title">{{ title() }}</h3>
+  </div>
+
+  @if (groups().length === 0) {
+    <div class="empty-state">{{ emptyMessage() }}</div>
+  } @else {
+    @for (group of groups(); track group.key) {
+      <article class="collection-card stack">
+        <div class="position-label">
+          <span class="metric-label">Position</span>
+          <code>{{ group.normalizedFenBefore }}</code>
+        </div>
+
+        @if (opponent()) {
+          <p class="collection-description">
+            Opponent played: <strong>{{ group.playedSan || group.playedMoveUci }}</strong>
+          </p>
+        } @else {
+          <p class="collection-description">
+            Expected: <strong>{{ expectedMoves(group) }}</strong
+            ><br />
+            You played: <strong>{{ group.playedSan || group.playedMoveUci }}</strong>
+          </p>
+        }
+
+        <div class="issue-summary">
+          <span>Seen in {{ group.count }} games</span>
+          <span class="pill">
+            {{ group.results.win }}W {{ group.results.draw }}D {{ group.results.loss }}L
+          </span>
+        </div>
+
+        <div class="example-list">
+          @for (example of group.examples; track example.gameId) {
+            <div class="example-row">
+              <span>
+                {{ example.endedAt | date: 'mediumDate' }} vs
+                {{ example.opponentUsername || 'Unknown opponent' }}
+                @if (example.resultForUser) {
+                  <span class="pill">{{ example.resultForUser }}</span>
+                }
+              </span>
+              <div class="collection-actions">
+                <a [routerLink]="['/games', example.gameId]">Open review</a>
+                @if (example.providerUrl) {
+                  <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer">
+                    Open on {{ example.provider }}
+                  </a>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </article>
+    }
+  }
+</section>

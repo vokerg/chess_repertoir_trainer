@@ -1,5 +1,4 @@
 import prisma from '../prisma';
-import { touchLineRepertoireUpdatedAt } from '../modules/courses/line-repertoire-timestamp.service';
 
 export const ImportExportService = {
   /**
@@ -113,7 +112,6 @@ export const ImportExportService = {
                   idMap.set(move.id, created.id);
                 }
               }
-              await touchLineRepertoireUpdatedAt(prisma, newLine.id);
             }
           }
         }

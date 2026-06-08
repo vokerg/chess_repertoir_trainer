@@ -206,13 +206,12 @@ model Line {
   failedCount         Int      @default(0)
   totalAttempts       Int      @default(0)
   lastTrainedAt       DateTime?
-  repertoireUpdatedAt DateTime @default(now())
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   moves               MoveNode[]
   sessions            TrainingSession[]
 
-  @@index([chapterId, repertoireUpdatedAt])
+  @@index([chapterId])
 }
 
 model MoveNode {

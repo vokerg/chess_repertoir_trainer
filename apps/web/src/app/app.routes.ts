@@ -60,6 +60,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'courses/:courseId/review',
+    title: 'Course review | Chess Repertoire Trainer',
+    loadComponent: () =>
+      import('./features/course-review/course-review-page.component').then(
+        (m) => m.CourseReviewPageComponent,
+      ),
+  },
+  {
     path: 'chapters/:chapterId/lines',
     loadComponent: () =>
       import('./features/lines/pages/lines-page.component').then((m) => m.LinesPageComponent),
@@ -83,14 +91,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/lines/pages/line-train-page.component').then(
         (m) => m.LineTrainPageComponent,
-      ),
-  },
-  {
-    path: 'lines/:lineId/review',
-    title: 'Line review | Chess Repertoire Trainer',
-    loadComponent: () =>
-      import('./features/line-review/line-review-page.component').then(
-        (m) => m.LineReviewPageComponent,
       ),
   },
   {

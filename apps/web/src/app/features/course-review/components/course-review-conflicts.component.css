@@ -1,0 +1,8 @@
+.conflict-panel {
+  border-color: rgba(181, 69, 53, 0.4);
+  background: rgba(181, 69, 53, 0.06);
+}
+
+code {
+  overflow-wrap: anywhere;
+}

@@ -2,16 +2,35 @@ import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { RepertoireColor } from './repertoire-coverage.types';
 
-export async function getCoverageLine(lineId: number) {
-  return prisma.line.findUnique({
-    where: { id: lineId },
-    include: {
+export async function getCoverageCourse(courseId: number) {
+  return prisma.course.findUnique({
+    where: { id: courseId },
+    select: { id: true, name: true, description: true },
+  });
+}
+
+export async function getCourseReviewLines(courseId: number) {
+  return prisma.line.findMany({
+    where: { chapter: { courseId } },
+    orderBy: [{ chapter: { sortOrder: 'asc' } }, { id: 'asc' }],
+    select: {
+      id: true,
+      chapterId: true,
+      name: true,
+      sideToTrain: true,
+      startingFen: true,
       moves: {
+        orderBy: [{ plyNumber: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
         select: {
           id: true,
+          lineId: true,
           parentId: true,
+          plyNumber: true,
+          fenBefore: true,
+          fenAfter: true,
           moveUci: true,
           moveSan: true,
+          colorToMoveBefore: true,
           isUserMove: true,
           isCorrectUserMove: true,
         },
@@ -20,17 +39,18 @@ export async function getCoverageLine(lineId: number) {
   });
 }
 
-export async function getCoverageCandidateGames(input: {
-  sideToTrain: RepertoireColor;
-  since: Date;
+export async function getCourseReviewCandidateGames(input: {
+  sideToTrain: RepertoireColor | null;
+  from: Date;
+  to?: Date;
   limit: number;
   offset: number;
 }) {
   return prisma.importedGame.findMany({
     where: {
       userId: SINGLETON_USER_ID,
-      userColor: input.sideToTrain,
-      endedAt: { gte: input.since },
+      endedAt: { gte: input.from, ...(input.to ? { lte: input.to } : {}) },
+      ...(input.sideToTrain ? { userColor: input.sideToTrain } : {}),
     },
     orderBy: [{ endedAt: 'desc' }, { id: 'desc' }],
     skip: input.offset,
@@ -50,7 +70,7 @@ export async function getCoverageCandidateGames(input: {
   });
 }
 
-export async function getCoveragePlies(importedGameIds: number[]) {
+export async function getCourseReviewPlies(importedGameIds: number[]) {
   if (importedGameIds.length === 0) return [];
   return prisma.importedGamePly.findMany({
     where: { importedGameId: { in: importedGameIds } },

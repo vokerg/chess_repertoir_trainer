@@ -1,0 +1,43 @@
+.course-review-page {
+  min-width: 0;
+}
+
+.review-hero,
+.review-course-meta,
+.review-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.review-hero {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.review-hero-copy {
+  gap: 0.65rem;
+}
+
+.review-filters {
+  align-items: end;
+}
+
+.review-filters .form-field {
+  min-width: min(100%, 190px);
+  gap: 0.45rem;
+}
+
+.review-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .review-results {
+    grid-template-columns: 1fr;
+  }
+}

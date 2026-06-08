@@ -24,10 +24,6 @@ import {
   updateLine,
   updateMoveNode,
 } from './courses.repository.prisma';
-import {
-  lineUpdateChangesRepertoire,
-  touchLineRepertoireUpdatedAt,
-} from './line-repertoire-timestamp.service';
 
 function colorFromFen(fen: string): 'WHITE' | 'BLACK' {
   const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
@@ -147,15 +143,7 @@ export const LineService = {
       tags: string | null;
       notes: string | null;
     }>,
-  ) =>
-    prisma.$transaction(async (tx) => {
-      const current = await getLineById(id, tx);
-      if (!current) throw new Error('Line not found');
-      const shouldTouch = lineUpdateChangesRepertoire(current, data);
-      const updated = await updateLine(id, data, tx);
-      if (shouldTouch) await touchLineRepertoireUpdatedAt(tx, id);
-      return shouldTouch ? getLineById(id, tx) : updated;
-    }),
+  ) => updateLine(id, data),
   delete: async (id: number) => deleteLine(id),
   getMoveTree: async (lineId: number) => {
     const line = await getLineById(lineId);
@@ -221,7 +209,7 @@ export const MoveNodeService = {
       const move = chess.move(parseUci(moveUci));
       if (!move) throw new Error('Illegal move');
 
-      const node = await createMoveNode(
+      return createMoveNode(
         {
           lineId,
           parentId,
@@ -247,8 +235,6 @@ export const MoveNodeService = {
         },
         tx,
       );
-      await touchLineRepertoireUpdatedAt(tx, lineId);
-      return node;
     });
   },
 
@@ -297,18 +283,9 @@ export const MoveNodeService = {
         }
       }
       if (Object.keys(data).length === 0) return node;
-      const updated = await updateMoveNode(id, data, tx);
-      await touchLineRepertoireUpdatedAt(tx, node.lineId);
-      return updated;
+      return updateMoveNode(id, data, tx);
     });
   },
 
-  deleteSubtree: async (id: number) =>
-    prisma.$transaction(async (tx) => {
-      const node = await getNodeById(id, tx);
-      if (!node) throw new Error('Node not found');
-      const deleted = await deleteNodeAndSubtree(id, tx);
-      await touchLineRepertoireUpdatedAt(tx, node.lineId);
-      return deleted;
-    }),
+  deleteSubtree: async (id: number) => deleteNodeAndSubtree(id),
 };

@@ -1,53 +1,69 @@
 export type RepertoireColor = 'WHITE' | 'BLACK';
 
-export type LineCoverageStatus =
-  | 'MATCHED_LINE'
-  | 'USER_DEVIATION'
+export type CourseReviewGameStatus =
+  | 'MY_DEVIATION'
   | 'OPPONENT_UNCOVERED'
-  | 'LINE_ENDED'
-  | 'NOT_REACHED'
-  | 'UNINDEXED_GAME';
+  | 'REPERTOIRE_ENDED'
+  | 'GAME_ENDED_INSIDE_REPERTOIRE'
+  | 'OUT_OF_SCOPE'
+  | 'UNINDEXED_GAME'
+  | 'COURSE_CONFLICT';
 
-export interface CoverageLineNode {
-  id: number;
-  parentId: number | null;
-  moveUci: string;
-  moveSan: string;
-  isUserMove: boolean;
-  isCorrectUserMove: boolean;
+export interface CourseReviewLineRef {
+  lineId: number;
+  lineName: string;
+  nodeId?: number | null;
 }
 
-export interface CoveragePly {
+export interface CourseGraphMove {
+  moveUci: string;
+  moveSan: string;
+  fenAfter: string;
+  normalizedFenAfter: string;
+  lineRefs: Array<CourseReviewLineRef & { nodeId: number }>;
+}
+
+export interface CourseGraphPosition {
+  normalizedFen: string;
+  sideToMove: RepertoireColor;
+  lineRefs: CourseReviewLineRef[];
+  userMoves: Map<string, CourseGraphMove>;
+  opponentMoves: Map<string, CourseGraphMove>;
+}
+
+export interface CourseRepertoireGraph {
+  startPositions: Set<string>;
+  positions: Map<string, CourseGraphPosition>;
+}
+
+export interface CourseReviewPly {
   plyNumber: number;
   moveUci: string;
   normalizedFenBefore: string;
 }
 
-export interface CoverageGameMetadata {
+export interface CourseReviewGameMetadata {
   gameId: number;
   provider: string;
   providerGameId: string | null;
   providerUrl: string | null;
   endedAt: Date | null;
-  importedAt: Date | null;
   userColor: RepertoireColor | null;
   opponentUsername: string | null;
   resultForUser: 'WIN' | 'DRAW' | 'LOSS' | null;
 }
 
-export interface LineCoverageGame {
+export interface CourseReviewGameResult {
   gameId: number;
   provider: string;
   providerGameId: string | null;
   providerUrl: string | null;
   endedAt: string | null;
-  importedAt: string | null;
   userColor: RepertoireColor | null;
   opponentUsername: string | null;
   resultForUser: 'WIN' | 'DRAW' | 'LOSS' | null;
-  status: LineCoverageStatus;
+  status: CourseReviewGameStatus;
   plyNumber: number | null;
-  fenBefore: string | null;
   normalizedFenBefore: string | null;
   sideToMove: RepertoireColor | null;
   expectedMoveUci: string | null;
@@ -55,6 +71,40 @@ export interface LineCoverageGame {
   expectedMoveSans: string[];
   playedMoveUci: string | null;
   playedSan: string | null;
-  matchedLineNodeId: number | null;
-  parentLineNodeId: number | null;
+}
+
+export interface CourseReviewConflict {
+  normalizedFenBefore: string;
+  sideToMove: RepertoireColor;
+  moves: Array<{
+    moveUci: string;
+    moveSan: string;
+    lineRefs: Array<CourseReviewLineRef & { nodeId: number }>;
+  }>;
+}
+
+export interface CourseReviewGameExample {
+  gameId: number;
+  provider: string;
+  providerGameId: string | null;
+  providerUrl: string | null;
+  endedAt: string | null;
+  opponentUsername: string | null;
+  resultForUser: 'WIN' | 'DRAW' | 'LOSS' | null;
+  plyNumber: number | null;
+}
+
+export interface CourseReviewGroup {
+  key: string;
+  status: 'MY_DEVIATION' | 'OPPONENT_UNCOVERED';
+  normalizedFenBefore: string;
+  sideToMove: RepertoireColor;
+  playedMoveUci: string;
+  playedSan: string | null;
+  expectedMoveUci: string | null;
+  expectedMoveUcis: string[];
+  expectedMoveSans: string[];
+  count: number;
+  results: { win: number; draw: number; loss: number; unknown: number };
+  examples: CourseReviewGameExample[];
 }
