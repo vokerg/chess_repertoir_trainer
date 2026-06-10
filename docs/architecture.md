@@ -35,6 +35,8 @@ The API is only partly migrated to feature modules. These registered routes rema
 
 Several modules also still call services under `apps/api/src/services`. This is accepted legacy debt, not the preferred structure for new features. Do not invent `games` or `importers` modules in documentation until those boundaries exist in code.
 
+The imported-games module has a feature-local query service that shares filtering and pagination semantics across backend consumers while keeping REST response mapping in `ImportedGamesService`.
+
 For new backend work, extend the owning directory under `apps/api/src/modules` when one exists. Keep routes thin and place feature orchestration and Prisma access next to the owning module where practical. Make narrow changes to legacy global code when that is safer than an unrelated migration; do not copy the global layout into new features.
 
 ## Boundaries

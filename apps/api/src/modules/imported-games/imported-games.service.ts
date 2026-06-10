@@ -1,118 +1,18 @@
 import { moveClassificationLabel } from 'chess-domain';
-import { CurrentUserService } from '../../services/currentUserService';
-import { ImportedGameSearchQuery } from './imported-games.schemas';
 import {
-  findImportedGameById,
-  findImportedGames,
-  getImportedGameFacets,
-  getImportedGamePgn,
-  ImportedGameCursor,
+  criticalMoveCount,
+  deriveAnalysisStatus,
+  derivePlyIndexStatus,
+  ImportedGameAnalysisStatus,
+  latestRun,
+  userAccuracy,
+} from './imported-game-analysis.helpers';
+import { ImportedGameQueryService } from './imported-game-query.service';
+import {
   ImportedGameDetailRow,
   ImportedGameListRow,
 } from './imported-games.repository.prisma';
-
-export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-export type ImportedGamePlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
-
-function encodeCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>) {
-  const payload: ImportedGameCursor = {
-    endedAt: row.endedAt ? row.endedAt.toISOString() : null,
-    id: row.id,
-  };
-  return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
-}
-
-function decodeCursor(cursor?: string): ImportedGameCursor | null {
-  if (!cursor) return null;
-  try {
-    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
-    if (!parsed || typeof parsed.id !== 'number') throw new Error('Invalid imported-games cursor');
-    return {
-      endedAt: typeof parsed.endedAt === 'string' ? parsed.endedAt : null,
-      id: parsed.id,
-    };
-  } catch {
-    throw new Error('Invalid imported-games cursor');
-  }
-}
-
-function latestRun(row: ImportedGameListRow | ImportedGameDetailRow) {
-  return row.analysisRuns[0] ?? null;
-}
-
-function deriveAnalysisStatus(row: ImportedGameListRow | ImportedGameDetailRow): ImportedGameAnalysisStatus {
-  const run = latestRun(row);
-  if (!run) return 'NOT_ANALYZED';
-  if (run.status === 'RUNNING') return 'RUNNING';
-  if (run.status === 'COMPLETED') return 'COMPLETED';
-  return 'FAILED';
-}
-
-function derivePlyIndexStatus(row: ImportedGameListRow | ImportedGameDetailRow): ImportedGamePlyIndexStatus {
-  if (row.plyIndexedAt) return 'INDEXED';
-  if (row.plyIndexError) return 'FAILED';
-  return 'NOT_INDEXED';
-}
-
-function userAccuracy(row: ImportedGameListRow | ImportedGameDetailRow) {
-  const run = latestRun(row);
-  if (!run) return null;
-  if (row.userColor === 'WHITE') return run.whiteAccuracy;
-  if (row.userColor === 'BLACK') return run.blackAccuracy;
-  return null;
-}
-
-function criticalMoveCount(summary: unknown) {
-  if (!summary || typeof summary !== 'object') return null;
-  const critical = (summary as any).criticalPlyNumbers;
-  return Array.isArray(critical) ? critical.length : null;
-}
-
-function classificationCount(summary: unknown, classification: string) {
-  if (!summary || typeof summary !== 'object') return 0;
-  const white = (summary as any).white;
-  const black = (summary as any).black;
-  const whiteCount = white && typeof white === 'object' && typeof white[classification] === 'number' ? white[classification] : 0;
-  const blackCount = black && typeof black === 'object' && typeof black[classification] === 'number' ? black[classification] : 0;
-  return whiteCount + blackCount;
-}
-
-function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
-  if (query.analysisStatus?.length && !query.analysisStatus.includes(deriveAnalysisStatus(row))) {
-    return false;
-  }
-
-  const accuracy = userAccuracy(row);
-  if (query.minAccuracy !== undefined && (accuracy === null || accuracy < query.minAccuracy)) {
-    return false;
-  }
-  if (query.maxAccuracy !== undefined && (accuracy === null || accuracy > query.maxAccuracy)) {
-    return false;
-  }
-
-  if (query.classification?.length) {
-    const run = latestRun(row);
-    if (!run) return false;
-    return query.classification.some((classification) => classificationCount(run.summary, classification) > 0);
-  }
-
-  return true;
-}
-
-function rowMatchesPlyIndexFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
-  if (query.plyIndexStatus?.length && !query.plyIndexStatus.includes(derivePlyIndexStatus(row))) {
-    return false;
-  }
-
-  return true;
-}
-
-function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGameCursor {
-  return {
-    endedAt: row.endedAt ? row.endedAt.toISOString() : null,
-    id: row.id,
-  };
-}
+import { ImportedGameSearchQuery } from './imported-games.schemas';
 
 function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
   const analysis = ply.position.analysis;
@@ -234,76 +134,26 @@ function analysisStatusFacetRows(rows: Array<{ analysisRuns: Array<{ status: str
   return Object.entries(counts).map(([value, count]) => ({ value, count }));
 }
 
-async function searchRows(query: ImportedGameSearchQuery) {
-  let cursor = decodeCursor(query.cursor);
-  const visibleRows: ImportedGameListRow[] = [];
-  let lastScannedRow: ImportedGameListRow | null = null;
-
-  for (let page = 0; page < 25; page += 1) {
-    const rows = await findImportedGames(query, cursor);
-    const candidates = rows.slice(0, query.limit);
-    const batchHasMore = rows.length > query.limit;
-
-    for (let index = 0; index < candidates.length; index += 1) {
-      const row = candidates[index];
-      lastScannedRow = row;
-      if (!rowMatchesAnalysisFilters(row, query)) continue;
-      if (!rowMatchesPlyIndexFilters(row, query)) continue;
-
-      visibleRows.push(row);
-      if (visibleRows.length === query.limit) {
-        const hasMore = batchHasMore || index < candidates.length - 1;
-        return {
-          visibleRows,
-          nextCursor: hasMore ? encodeCursor(row) : null,
-          hasMore,
-        };
-      }
-    }
-
-    if (!candidates.length || !batchHasMore) {
-      return { visibleRows, nextCursor: null, hasMore: false };
-    }
-
-    cursor = toCursor(candidates[candidates.length - 1]);
-  }
-
-  return {
-    visibleRows,
-    nextCursor: lastScannedRow ? encodeCursor(lastScannedRow) : null,
-    hasMore: lastScannedRow !== null,
-  };
-}
-
 export const ImportedGamesService = {
   search: async (query: ImportedGameSearchQuery) => {
-    await CurrentUserService.getOrCreate();
-    const { visibleRows, nextCursor, hasMore } = await searchRows(query);
+    const page = await ImportedGameQueryService.searchPage(query);
 
     return {
-      items: visibleRows.map(toListItem),
-      pageInfo: {
-        nextCursor,
-        hasMore,
-      },
-      appliedFilters: query,
+      items: page.rows.map(toListItem),
+      pageInfo: page.pageInfo,
+      appliedFilters: page.appliedCriteria,
     };
   },
 
   get: async (id: number) => {
-    await CurrentUserService.getOrCreate();
-    const row = await findImportedGameById(id);
+    const row = await ImportedGameQueryService.getDetail(id);
     return row ? toDetail(row) : null;
   },
 
-  getPgn: async (id: number) => {
-    await CurrentUserService.getOrCreate();
-    return getImportedGamePgn(id);
-  },
+  getPgn: async (id: number) => ImportedGameQueryService.getPgn(id),
 
   facets: async () => {
-    await CurrentUserService.getOrCreate();
-    const facets = await getImportedGameFacets();
+    const facets = await ImportedGameQueryService.getFacets();
     return {
       accounts: facets.accounts.map((account) => ({
         id: account.id,

@@ -1,93 +1,41 @@
-# Imported game query reuse direction
+# Imported game query reuse
 
-The imported-games browser API introduced on `feature/imported-games-api` follows the current route → service → Prisma repository layering, but the browser service should not become the shared dependency for every future feature.
-
-## Current shape
+Imported-games query behavior is split into feature-local layers under `apps/api/src/modules/imported-games`:
 
 ```text
 imported-games.routes.ts
-  API layer: validates HTTP query params and calls the service
-
-imported-games.service.ts
-  Browser/use-case layer: cursor pagination, list/detail DTOs, facets, latest-analysis summary mapping
-
-imported-games.repository.prisma.ts
-  Persistence layer: Prisma selects, filters, sorting, cursor predicates
+  HTTP validation and response status handling
+    -> ImportedGamesService
+      REST/browser DTO and facet response mapping
+        -> ImportedGameQueryService
+          current-user setup, cursor pagination, post-filtering, detail/PGN/facet use cases
+            -> imported-games.repository.prisma.ts
+              Prisma selects, filters, sorting, cursor predicates, and database calls
 ```
 
-This is fine for the games browser, but it mixes reusable game selection with browser response concerns.
+`imported-game-analysis.helpers.ts` contains pure row-derived analysis and ply-index status calculations plus imported-game post-filter matching. `ImportedGameQueryService` uses those helpers while returning repository rows and query criteria rather than browser response DTOs.
 
-## Next refactor before opening explorer or batch jobs
+## Reuse rule
 
-Extract a neutral query/criteria layer before another feature depends on `ImportedGamesService.search(...)` directly:
+Consumers that need imported-game selection semantics should call `ImportedGameQueryService` directly from the backend process. They should not call imported-games REST endpoints over HTTP and should not depend on `ImportedGamesService`, which is intentionally browser-shaped.
+
+Current REST flow:
 
 ```text
-ImportedGameQueryService
-  criteria -> matching game ids / minimal rows / counts
-
-ImportedGamesService
-  browser API only: maps query rows to list/detail DTOs, pageInfo, facets
-
-PersonalOpeningExplorerService
-  explorer API only: reuses ImportedGameQueryService criteria, builds explorer-specific output
-
-BatchAnalysisService
-  batch API/workers only: reuses ImportedGameQueryService criteria, queues matching ids
+imported-games.routes.ts
+  -> ImportedGamesService
+    -> ImportedGameQueryService
+      -> imported-games.repository.prisma.ts
 ```
 
-## Rule of thumb
-
-Reuse the same **criteria semantics** everywhere, but do not reuse browser DTOs for non-browser features.
-
-Good:
+A future backend consumer can use the same query layer without sharing transport-specific DTOs:
 
 ```text
-OpeningExplorerService -> ImportedGameQueryService.findIds(criteria)
-BatchAnalysisService    -> ImportedGameQueryService.iterateIds(criteria)
-ImportedGamesService    -> ImportedGameQueryService.findPage(criteria)
+future consumer service
+  -> ImportedGameQueryService
+    -> imported-games.repository.prisma.ts
 ```
 
-Avoid:
+The query service currently exposes paged search rows, detail rows, PGN lookup, and raw facet results. Each consumer owns its own output mapping. New query operations should remain feature-local and should be added only when a concrete consumer needs them; this is not a global query framework.
 
-```text
-OpeningExplorerService -> ImportedGamesService.search(...)
-BatchAnalysisService    -> ImportedGamesService.search(...)
-```
-
-`ImportedGamesService.search(...)` is intentionally browser-shaped: it returns `items`, `pageInfo`, display DTOs, facets-related behavior, and API-compatible response fields. Opening explorer and batch processing should receive minimal internal rows or ids and produce their own output.
-
-## Why this matters
-
-The same filters should mean the same thing across features:
-
-- `speedCategory=blitz`
-- `rated=true`
-- `userColor=WHITE`
-- `providers=LICHESS,CHESS_COM`
-- `minUserRating=1600`
-- `analysisStatus=COMPLETED`
-
-A user should not get one set of games in the browser and a subtly different set in opening explorer or batch analysis.
-
-## Suggested first extraction
-
-Move these concepts out of the browser service/repository pair into reusable module-level pieces:
-
-```text
-ImportedGameCriteria
-ImportedGameCursor
-buildImportedGameWhere(criteria)
-findImportedGamePage(criteria, cursor, projection)
-findImportedGameIds(criteria, cursor)
-countImportedGames(criteria)
-```
-
-Keep only one mapping boundary per consumer:
-
-```text
-Prisma row -> browser DTO
-Prisma row/id -> explorer aggregate
-Prisma id -> batch queue item
-```
-
-Do not introduce a large DTO hierarchy until the second consumer exists. The opening explorer is likely that second consumer.
+MCP tools and MCP-specific types are not implemented here.
