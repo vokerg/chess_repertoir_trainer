@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { normalizeFenForPosition } from 'chess-domain';
+import { formatMoveSequence as domainFormatMoveSequence, normalizeFenForPosition } from 'chess-domain';
 import { classifyCourseReviewGame, sideToMove } from './course-review.matcher';
 import {
   getCoverageCourse,
@@ -45,15 +45,9 @@ function formatMoveSequence(nodes: ReviewLine['moves'], nodeId: number): string 
     current = current.parentId === null ? undefined : nodesById.get(current.parentId);
   }
 
-  return path
-    .reverse()
-    .map((node, index) => {
-      const moveNumber = Math.ceil(node.plyNumber / 2);
-      if (node.plyNumber % 2 === 1) return `${moveNumber}. ${node.moveSan}`;
-      if (index === 0) return `${moveNumber}... ${node.moveSan}`;
-      return node.moveSan;
-    })
-    .join(' ');
+  return domainFormatMoveSequence(
+    path.reverse().map((node) => ({ san: node.moveSan, plyNumber: node.plyNumber })),
+  );
 }
 
 export function buildCourseRepertoireGraph(lines: ReviewLine[]): CourseRepertoireGraph {
@@ -158,6 +152,7 @@ function groupResults(results: CourseReviewGameResult[], status: CourseReviewGro
         sideToMove: result.sideToMove,
         playedMoveUci: result.playedMoveUci,
         playedSan: playedSan(result),
+        moveSequenceSan: result.moveSequenceSan,
         expectedMoveUci: result.expectedMoveUci,
         expectedMoveUcis: result.expectedMoveUcis,
         expectedMoveSans: result.expectedMoveSans,

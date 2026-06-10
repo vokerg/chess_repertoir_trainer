@@ -72,6 +72,7 @@ export interface CourseReviewGameResult {
   expectedMoveSans: string[];
   playedMoveUci: string | null;
   playedSan: string | null;
+  moveSequenceSan: string | null;
 }
 
 export interface CourseReviewConflict {
@@ -102,6 +103,7 @@ export interface CourseReviewGroup {
   sideToMove: RepertoireColor;
   playedMoveUci: string;
   playedSan: string | null;
+  moveSequenceSan: string | null;
   expectedMoveUci: string | null;
   expectedMoveUcis: string[];
   expectedMoveSans: string[];

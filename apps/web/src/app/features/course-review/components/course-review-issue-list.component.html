@@ -10,8 +10,8 @@
     @for (group of groups(); track group.key) {
       <article class="collection-card stack">
         <div class="position-label">
-          <span class="metric-label">Position</span>
-          <code>{{ group.normalizedFenBefore }}</code>
+          <span class="metric-label">{{ group.moveSequenceSan ? 'Sequence' : 'Position' }}</span>
+          <code>{{ group.moveSequenceSan || group.normalizedFenBefore }}</code>
         </div>
 
         @if (opponent()) {

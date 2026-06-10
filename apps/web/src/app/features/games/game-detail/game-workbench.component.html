@@ -25,13 +25,16 @@
       </div>
     </div>
 
-    <div class="board-action-row">
-      <button type="button" class="secondary" (click)="goStart.emit()" [disabled]="!canGoBackward()" title="Home">⏮ Start</button>
-      <button type="button" class="secondary" (click)="goPrevious.emit()" [disabled]="!canGoBackward()" title="Left arrow">← Previous</button>
-      <button type="button" class="secondary" (click)="goNext.emit()" [disabled]="!canGoForward()" title="Right arrow">Next →</button>
-      <button type="button" class="secondary" (click)="goEnd.emit()" [disabled]="!canGoForward()" title="End">End ⏭</button>
-      <span class="keyboard-hint">Keyboard: ←/→, Home/End</span>
-    </div>
+    <app-board-action-toolbar
+      [canGoBackward]="canGoBackward()"
+      [canGoForward]="canGoForward()"
+      [fen]="currentFen()"
+      keyboardHint="Keyboard: ←/→, Home/End"
+      (goStart)="goStart.emit()"
+      (goPrevious)="goPrevious.emit()"
+      (goNext)="goNext.emit()"
+      (goEnd)="goEnd.emit()"
+    />
   </section>
 
   <div class="workbench-side-stack">

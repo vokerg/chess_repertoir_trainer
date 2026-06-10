@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../../../components/move-tree.component';
@@ -10,7 +11,7 @@ import { BoardArrow, BoardLastMove, GameTree } from './game-detail.models';
 @Component({
   selector: 'app-game-workbench',
   standalone: true,
-  imports: [ChessgroundBoardComponent, EngineEvalBarComponent, MoveTreeComponent, StockfishPanelComponent],
+  imports: [ChessgroundBoardComponent, EngineEvalBarComponent, MoveTreeComponent, StockfishPanelComponent, BoardActionToolbarComponent],
   templateUrl: './game-workbench.component.html',
   styleUrl: './game-workbench.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

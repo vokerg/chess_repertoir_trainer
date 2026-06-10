@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
 import { MoveTreeComponent } from '../../../components/move-tree.component';
@@ -16,6 +17,7 @@ import { LineNotesEditorComponent } from './line-notes-editor.component';
     MoveTreeComponent,
     StockfishPanelComponent,
     LineNotesEditorComponent,
+    BoardActionToolbarComponent,
   ],
   templateUrl: './line-editor-workbench.component.html',
   styleUrl: './line-editor-workbench.component.css',

@@ -1,0 +1,58 @@
+<div class="board-action-row">
+  <button
+    *ngIf="showStart()"
+    type="button"
+    class="secondary"
+    (click)="goStart.emit()"
+    [disabled]="!canGoBackward()"
+    title="Home"
+  >
+    ⏮ Start
+  </button>
+  <button
+    *ngIf="showPrevious()"
+    type="button"
+    class="secondary"
+    (click)="goPrevious.emit()"
+    [disabled]="!canGoBackward()"
+    title="Left arrow"
+  >
+    ← Previous
+  </button>
+  <button
+    *ngIf="showNext()"
+    type="button"
+    class="secondary"
+    (click)="goNext.emit()"
+    [disabled]="!canGoForward()"
+    title="Right arrow"
+  >
+    Next →
+  </button>
+  <button
+    *ngIf="showEnd()"
+    type="button"
+    class="secondary"
+    (click)="goEnd.emit()"
+    [disabled]="!canGoForward()"
+    title="End"
+  >
+    End ⏭
+  </button>
+
+  <div *ngIf="fen()" class="fen-copy-group">
+    <span class="fen-copy-label">FEN</span>
+    <input class="fen-copy-field" [value]="fen()" readonly aria-label="Current FEN" />
+    <button
+      type="button"
+      class="fen-copy-button"
+      [attr.aria-label]="copyButtonLabel()"
+      [title]="copyButtonLabel()"
+      (click)="copyFen()"
+    >
+      ⧉
+    </button>
+  </div>
+
+  <span *ngIf="keyboardHint()" class="keyboard-hint">{{ keyboardHint() }}</span>
+</div>

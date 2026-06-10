@@ -18,6 +18,7 @@ export interface CourseReviewGroup {
   sideToMove: CourseReviewColor;
   playedMoveUci: string;
   playedSan: string | null;
+  moveSequenceSan: string | null;
   expectedMoveUci: string | null;
   expectedMoveUcis: string[];
   expectedMoveSans: string[];

@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@
 import { RouterModule } from '@angular/router';
 import { Chess } from 'chess.js';
 import { Subscription } from 'rxjs';
+import { BoardActionToolbarComponent } from '../components/board-action-toolbar.component';
 import { EngineEvalBarComponent } from '../components/engine-eval-bar.component';
 import { ImportedGameFacetsResponse, Provider, ResultForUser, UserColor } from '../features/games/data-access/games.models';
 import { GameFilterPanelComponent } from '../shared/game-filters/game-filter-panel.component';
@@ -88,7 +89,7 @@ interface PlayedMove {
 @Component({
   selector: 'app-opening-analysis-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, GameFilterPanelComponent, ChessgroundBoardComponent, EngineEvalBarComponent, StockfishPanelComponent],
+  imports: [CommonModule, RouterModule, GameFilterPanelComponent, ChessgroundBoardComponent, EngineEvalBarComponent, StockfishPanelComponent, BoardActionToolbarComponent],
   template: `
     <section class="opening-page stack">
       <section class="section-card opening-hero">
@@ -160,12 +161,15 @@ interface PlayedMove {
             </div>
           </div>
 
-          <div class="board-action-row">
-            <button type="button" class="secondary" (click)="resetBoard()" [disabled]="history.length === 0">⏮ Start</button>
-            <button type="button" class="secondary" (click)="goBack()" [disabled]="history.length === 0" title="Left arrow">← Back</button>
-            <button type="button" class="secondary" (click)="flipBoard()">Flip board</button>
-            <span class="keyboard-hint">Keyboard: ← to go back, Home for start</span>
-          </div>
+          <app-board-action-toolbar
+            [canGoBackward]="history.length > 0"
+            [showNext]="false"
+            [showEnd]="false"
+            [fen]="currentFen"
+            keyboardHint="Keyboard: ← to go back, Home for start"
+            (goStart)="resetBoard()"
+            (goPrevious)="goBack()"
+          />
 
           <div class="opening-line-card">
             <p class="metric-label">Current line</p>
@@ -295,7 +299,6 @@ interface PlayedMove {
       .opening-board-stage .board-shell { width: 100%; min-width: 0; }
       .opening-board-stage app-chessground-board { display: block; width: 100%; min-width: 0; }
       .opening-board-stage app-chessground-board ::ng-deep .board-shell { width: 100%; }
-      .board-action-row { display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; }
       .opening-line-card { border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.6); padding: 0.9rem; }
       .opening-line-text { margin: 0.2rem 0 0; font-weight: 800; color: var(--text); line-height: 1.45; }
       .opening-position-summary { display: flex; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
@@ -361,7 +364,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
   boardPositionVersion = 0;
   lastMove: { from: string; to: string } | null = null;
   history: PlayedMove[] = [];
-  boardFlipped = false;
   currentFen = new Chess().fen();
 
   private analysisTimer?: ReturnType<typeof setTimeout>;
@@ -456,7 +458,6 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     const perspectiveChanged = this.filters.userColor !== filters.userColor;
     this.filters = filters;
     if (perspectiveChanged) {
-      this.boardFlipped = false;
       this.resetBoard();
     }
   }
@@ -477,19 +478,12 @@ export class OpeningAnalysisPageComponent implements OnInit, OnDestroy {
     this.syncBoardState();
   }
 
-  flipBoard() {
-    this.boardFlipped = !this.boardFlipped;
-    this.boardPositionVersion += 1;
-  }
-
   boardSide(): UserColor {
-    if (this.boardFlipped) return this.filters.userColor === 'BLACK' ? 'WHITE' : 'BLACK';
     return this.filters.userColor === 'BLACK' ? 'BLACK' : 'WHITE';
   }
 
   resetFilters() {
     this.filters = this.defaultFilters();
-    this.boardFlipped = false;
     this.resetBoard();
   }
 

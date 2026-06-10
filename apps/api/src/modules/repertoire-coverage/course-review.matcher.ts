@@ -1,3 +1,4 @@
+import { getMoveSequenceFromUci } from 'chess-domain';
 import {
   CourseRepertoireGraph,
   CourseReviewGameMetadata,
@@ -30,7 +31,18 @@ function baseResult(
     expectedMoveSans: [],
     playedMoveUci: null,
     playedSan: null,
+    moveSequenceSan: null,
   };
+}
+
+function getMoveSequence(plies: CourseReviewPly[], upToPlyIndex: number): string {
+  const sorted = [...plies].sort((a, b) => a.plyNumber - b.plyNumber);
+  const relevantPlies = sorted.slice(0, upToPlyIndex + 1);
+  if (relevantPlies.length === 0) return '';
+
+  const startingFen = relevantPlies[0].normalizedFenBefore;
+  const ucis = relevantPlies.map((p) => p.moveUci);
+  return getMoveSequenceFromUci(startingFen, ucis);
 }
 
 function atPly(
@@ -38,6 +50,8 @@ function atPly(
   status: CourseReviewGameStatus,
   ply: CourseReviewPly,
   side: RepertoireColor,
+  plies: CourseReviewPly[],
+  plyIndex: number,
 ): CourseReviewGameResult {
   return {
     ...baseResult(game, status),
@@ -45,6 +59,7 @@ function atPly(
     normalizedFenBefore: ply.normalizedFenBefore,
     sideToMove: side,
     playedMoveUci: ply.moveUci,
+    moveSequenceSan: getMoveSequence(plies, plyIndex),
   };
 }
 
@@ -86,13 +101,13 @@ export function classifyCourseReviewGame(input: {
       if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
         return baseResult(input.game, 'OUT_OF_SCOPE');
       }
-      return atPly(input.game, 'REPERTOIRE_ENDED', ply, side);
+      return atPly(input.game, 'REPERTOIRE_ENDED', ply, side, plies, index);
     }
 
     if (trainedSide !== null && side === trainedSide) {
       const correctMoves = [...position.userMoves.values()];
       if (correctMoves.length > 1) {
-        const result = atPly(input.game, 'COURSE_CONFLICT', ply, side);
+        const result = atPly(input.game, 'COURSE_CONFLICT', ply, side, plies, index);
         result.expectedMoveUcis = correctMoves.map((move) => move.moveUci);
         result.expectedMoveSans = correctMoves.map((move) => move.moveSan);
         return result;
@@ -101,7 +116,7 @@ export function classifyCourseReviewGame(input: {
         if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
           return baseResult(input.game, 'OUT_OF_SCOPE');
         }
-        return atPly(input.game, 'REPERTOIRE_ENDED', ply, side);
+        return atPly(input.game, 'REPERTOIRE_ENDED', ply, side, plies, index);
       }
 
       const expected = correctMoves[0];
@@ -109,7 +124,7 @@ export function classifyCourseReviewGame(input: {
         if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
           return baseResult(input.game, 'OUT_OF_SCOPE');
         }
-        const result = atPly(input.game, 'MY_DEVIATION', ply, side);
+        const result = atPly(input.game, 'MY_DEVIATION', ply, side, plies, index);
         result.expectedMoveUci = expected.moveUci;
         result.expectedMoveUcis = [expected.moveUci];
         result.expectedMoveSans = [expected.moveSan];
@@ -123,7 +138,7 @@ export function classifyCourseReviewGame(input: {
       if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
         return baseResult(input.game, 'OUT_OF_SCOPE');
       }
-      return atPly(input.game, 'OPPONENT_UNCOVERED', ply, side);
+      return atPly(input.game, 'OPPONENT_UNCOVERED', ply, side, plies, index);
     }
     coveredPlies += 1;
   }
