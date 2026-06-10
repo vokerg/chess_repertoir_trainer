@@ -1,10 +1,18 @@
 import { timingSafeEqual } from 'node:crypto';
 import { FastifyRequest } from 'fastify';
 
-let warnedAboutMissingToken = false;
+export type McpAuthMode = 'token' | 'none';
+
+let warnedAboutNoAuth = false;
+let warnedAboutInvalidAuthConfig = false;
 
 export function isMcpEnabled() {
   return process.env['MCP_ENABLED'] === 'true';
+}
+
+export function getMcpAuthMode(): McpAuthMode | null {
+  const mode = process.env['MCP_AUTH_MODE'] ?? 'token';
+  return mode === 'token' || mode === 'none' ? mode : null;
 }
 
 function tokensMatch(actual: string, expected: string) {
@@ -14,13 +22,22 @@ function tokensMatch(actual: string, expected: string) {
 }
 
 export function requireMcpAuth(request: FastifyRequest): { ok: boolean } {
-  const expectedToken = process.env['MCP_BEARER_TOKEN'];
-  if (!expectedToken) {
-    if (!warnedAboutMissingToken) {
-      warnedAboutMissingToken = true;
-      request.log.warn('MCP is enabled without MCP_BEARER_TOKEN; access is unauthenticated');
+  const mode = getMcpAuthMode();
+  if (mode === 'none') {
+    if (!warnedAboutNoAuth) {
+      warnedAboutNoAuth = true;
+      request.log.warn('MCP authentication is disabled by MCP_AUTH_MODE=none');
     }
     return { ok: true };
+  }
+
+  const expectedToken = process.env['MCP_BEARER_TOKEN'];
+  if (mode !== 'token' || !expectedToken) {
+    if (!warnedAboutInvalidAuthConfig) {
+      warnedAboutInvalidAuthConfig = true;
+      request.log.error('MCP authentication configuration is invalid; use MCP_AUTH_MODE=token with MCP_BEARER_TOKEN or MCP_AUTH_MODE=none');
+    }
+    return { ok: false };
   }
 
   const authorization = request.headers.authorization;

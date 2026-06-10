@@ -5,6 +5,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import mcpModule from '../../dist/modules/mcp/mcp.routes.js';
 
 const originalEnabled = process.env.MCP_ENABLED;
+const originalAuthMode = process.env.MCP_AUTH_MODE;
 const originalToken = process.env.MCP_BEARER_TOKEN;
 const app = Fastify({ logger: false });
 
@@ -16,6 +17,7 @@ try {
   assert.equal(disabled.statusCode, 404);
 
   process.env.MCP_ENABLED = 'true';
+  process.env.MCP_AUTH_MODE = 'token';
   process.env.MCP_BEARER_TOKEN = 'test-secret';
   const unauthorized = await app.inject({
     method: 'POST',
@@ -25,11 +27,17 @@ try {
   });
   assert.equal(unauthorized.statusCode, 401);
 
+  delete process.env.MCP_BEARER_TOKEN;
+  const missingToken = await app.inject({ method: 'POST', url: '/mcp', payload: {} });
+  assert.equal(missingToken.statusCode, 401);
+
+  process.env.MCP_AUTH_MODE = 'none';
+  const noAuthGet = await app.inject({ method: 'GET', url: '/mcp' });
+  assert.equal(noAuthGet.statusCode, 405);
+
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   const client = new Client({ name: 'mcp-transport-test', version: '1.0.0' });
-  const transport = new StreamableHTTPClientTransport(new URL('/mcp', address), {
-    requestInit: { headers: { authorization: 'Bearer test-secret' } },
-  });
+  const transport = new StreamableHTTPClientTransport(new URL('/mcp', address));
 
   await client.connect(transport);
   const tools = await client.listTools();
@@ -50,6 +58,8 @@ try {
   await app.close();
   if (originalEnabled === undefined) delete process.env.MCP_ENABLED;
   else process.env.MCP_ENABLED = originalEnabled;
+  if (originalAuthMode === undefined) delete process.env.MCP_AUTH_MODE;
+  else process.env.MCP_AUTH_MODE = originalAuthMode;
   if (originalToken === undefined) delete process.env.MCP_BEARER_TOKEN;
   else process.env.MCP_BEARER_TOKEN = originalToken;
 }

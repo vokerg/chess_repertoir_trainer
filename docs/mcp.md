@@ -7,9 +7,11 @@ MCP tool handlers run inside `apps/api` and call backend application/query servi
 ## Configuration
 
 - `MCP_ENABLED=true` enables the endpoint. Any other value leaves `/mcp` disabled.
-- `MCP_BEARER_TOKEN` optionally requires `Authorization: Bearer <token>`.
+- `MCP_AUTH_MODE=token` requires `Authorization: Bearer <token>` and a configured `MCP_BEARER_TOKEN`. This is the default mode.
+- `MCP_AUTH_MODE=none` explicitly allows unauthenticated access and should only be used for trusted local development.
+- `MCP_BEARER_TOKEN` contains the required token when `MCP_AUTH_MODE=token`.
 
-When MCP is enabled without a bearer token, the API allows unauthenticated local/development access and logs a warning. A public connector or app deployment should use proper authentication; OAuth is not implemented in this task.
+Invalid or incomplete token configuration fails closed. No-auth mode logs a warning. A public connector or app deployment should use proper authentication; OAuth is not implemented in this task.
 
 ## Read-only tools
 
