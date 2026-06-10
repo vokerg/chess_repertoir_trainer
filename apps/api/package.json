@@ -15,17 +15,18 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
-    "test": "npm run build && node test/analysis/accuracy.test.mjs && node test/analysis/local-stockfish-engine.test.mjs && node test/repertoire-coverage/repertoire-coverage.test.mjs"
+    "test": "npm run build && node test/analysis/accuracy.test.mjs && node test/analysis/local-stockfish-engine.test.mjs && node test/repertoire-coverage/repertoire-coverage.test.mjs && node test/mcp/mcp-transport.test.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@prisma/client": "^5.6.0",
     "chess-domain": "file:../../packages/chess-domain",
     "chess.js": "^1.0.0",
     "dotenv": "^16.3.1",
     "fastify": "^5.8.5",
     "prisma": "^5.6.0",
-    "zod": "^3.22.4"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

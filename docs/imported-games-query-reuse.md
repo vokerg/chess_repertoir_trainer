@@ -28,14 +28,14 @@ imported-games.routes.ts
       -> imported-games.repository.prisma.ts
 ```
 
-A future backend consumer can use the same query layer without sharing transport-specific DTOs:
+The MCP backend transport uses the same query layer without sharing REST DTOs:
 
 ```text
-future consumer service
+MCP tool handler
   -> ImportedGameQueryService
     -> imported-games.repository.prisma.ts
 ```
 
 The query service currently exposes paged search rows, detail rows, PGN lookup, and raw facet results. Each consumer owns its own output mapping. New query operations should remain feature-local and should be added only when a concrete consumer needs them; this is not a global query framework.
 
-MCP tools and MCP-specific types are not implemented here.
+MCP-specific input schemas and output mappers remain under `apps/api/src/modules/mcp`; imported-games query semantics remain owned by the imported-games module.
