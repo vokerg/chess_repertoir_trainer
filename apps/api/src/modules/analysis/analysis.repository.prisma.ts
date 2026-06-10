@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
@@ -50,6 +51,14 @@ function compactPositionAnalysis(row: any, fromCache = true) {
     lines: Array.isArray(row.lines) ? row.lines : [],
     fromCache,
   };
+}
+
+function dedupePlyAnalysisUpdates(updates: PlyAnalysisUpdate[]) {
+  const updatesByPlyNumber = new Map<number, PlyAnalysisUpdate>();
+  for (const update of updates) {
+    updatesByPlyNumber.set(update.plyNumber, update);
+  }
+  return Array.from(updatesByPlyNumber.values()).sort((left, right) => left.plyNumber - right.plyNumber);
 }
 
 export async function findOrCreatePositionByNormalizedFen(normalizedFen: string) {
@@ -252,27 +261,35 @@ export async function failGameAnalysisRun(runId: number, error: string) {
 }
 
 export async function updateImportedGamePlyAnalysis(gameId: number, updates: PlyAnalysisUpdate[]) {
-  return prisma.$transaction(async (tx) => {
-    const game = await tx.importedGame.findFirst({
-      where: { id: gameId, userId: SINGLETON_USER_ID },
-      select: { id: true },
-    });
-    if (!game) throw new Error('Imported game not found');
-
-    let updatedPlies = 0;
-    for (const update of updates) {
-      const result = await tx.importedGamePly.updateMany({
-        where: { importedGameId: gameId, plyNumber: update.plyNumber },
-        data: {
-          scoreLossCp: update.scoreLossCp,
-          classificationCode: update.classificationCode,
-        },
-      });
-      updatedPlies += result.count;
-    }
-
-    return { importedGameId: gameId, updatedPlies };
+  const game = await prisma.importedGame.findFirst({
+    where: { id: gameId, userId: SINGLETON_USER_ID },
+    select: { id: true },
   });
+  if (!game) throw new Error('Imported game not found');
+
+  const dedupedUpdates = dedupePlyAnalysisUpdates(updates);
+  const updatedRows = dedupedUpdates.length
+    ? await prisma.$queryRaw<Array<{ plyNumber: number }>>(Prisma.sql`
+        WITH payload AS (
+          SELECT *
+          FROM unnest(
+            ARRAY[${Prisma.join(dedupedUpdates.map((update) => Prisma.sql`${update.plyNumber}`))}]::smallint[],
+            ARRAY[${Prisma.join(dedupedUpdates.map((update) => Prisma.sql`${update.scoreLossCp}`))}]::smallint[],
+            ARRAY[${Prisma.join(dedupedUpdates.map((update) => Prisma.sql`${update.classificationCode}`))}]::smallint[]
+          ) AS input("plyNumber", "scoreLossCp", "classificationCode")
+        )
+        UPDATE "ImportedGamePly" AS ply
+        SET
+          "scoreLossCp" = payload."scoreLossCp",
+          "classificationCode" = payload."classificationCode"
+        FROM payload
+        WHERE ply."importedGameId" = ${gameId}
+          AND ply."plyNumber" = payload."plyNumber"
+        RETURNING ply."plyNumber"
+      `)
+    : [];
+
+  return { importedGameId: gameId, updatedPlies: updatedRows.length };
 }
 
 export async function clearImportedGamePlyAnalysis(gameId: number) {
