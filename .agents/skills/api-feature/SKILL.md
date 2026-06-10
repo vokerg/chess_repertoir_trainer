@@ -13,8 +13,10 @@ Before editing:
 
 * Inspect the relevant route/module/service.
 * Trace the request flow from route to service to database/domain helpers.
-* Check existing DTOs, Prisma models, and tests before introducing new shapes.
+* Check existing DTOs and Prisma models before introducing new shapes.
 * Prefer extending existing feature-local patterns over adding a new architecture style.
+
+The API is partly migrated. Current feature modules live under `apps/api/src/modules`, while external-account/import routes and several services remain global. Treat those global files as accepted legacy debt; make narrow changes when needed, but do not copy that layout for new features.
 
 ## Core rules
 
@@ -49,10 +51,4 @@ When changing Prisma-related code:
 
 ## Before finishing
 
-Run the relevant backend validation from `package.json`.
-
-If unsure which command applies:
-
-* inspect `package.json`;
-* run the narrowest relevant build/test command;
-* clearly report what was and was not run.
+Run the narrowest relevant validation when practical and report what was and was not run. Do not block documentation-only cleanup on broad test runs.

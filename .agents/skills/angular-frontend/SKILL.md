@@ -93,8 +93,4 @@ Presentational components should:
 
 ## Before finishing
 
-For frontend changes:
-
-* Run `npm run build:web`.
-* If tests exist for the touched feature/store/helper, run them too.
-* Report warnings or skipped validation.
+Run the narrowest relevant validation when practical and report what was and was not run. Do not block documentation-only cleanup on broad test runs.

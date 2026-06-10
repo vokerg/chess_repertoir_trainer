@@ -1,81 +1,47 @@
-# Architecture boundaries
+# Architecture
 
-This repo stays a monorepo, but code should be grouped by product feature rather than only by technical layer.
-
-## Top-level shape
+This monorepo contains the Fastify API, Angular web app, and shared chess-domain code.
 
 ```text
 apps/
-  api/    Fastify + Prisma application
-  web/    Angular application
+  api/    Fastify + Prisma
+  web/    Angular
 packages/
   chess-domain/  pure chess and training logic
-  contracts/     shared DTO/schema scaffold, not wired into workspaces yet
+  contracts/     scaffolded API contracts; not wired into the workspace
 ```
 
-`packages/contracts` is intentionally scaffold-only in this refactor. It is not added to the root workspaces yet because CI uses `npm ci`, so wiring it in should happen together with a regenerated lockfile.
+## Current API structure
 
-## API modules
-
-Feature code should live under `apps/api/src/modules`.
-
-Current target modules:
+`apps/api/src/routes/index.ts` is the route composition source of truth. It currently registers these feature modules:
 
 ```text
-modules/
-  courses/       course, chapter, line, move-node authoring
-  training/      training sessions and attempts
-  games/         linked accounts, imported games, import runs
-  importers/     provider-specific importers such as Lichess
-  stats/         reporting and aggregated read models
-  import-export/ JSON backup/import flows
+apps/api/src/modules/
+  analysis/              engine and imported-game analysis
+  courses/               courses, chapters, lines, and move nodes
+  imported-games/        game browsing, facets, PGN, and opening data
+  lab/                   exploratory game reports
+  repertoire-coverage/   course review against imported games
+  stats/                 summary, line, and course statistics
+  training/              line training sessions
+  training-marathons/    marathon next-item workflow
 ```
 
-Rules:
+The API is only partly migrated to feature modules. These registered routes remain global:
 
-- Module routes compose feature endpoints.
-- Module services own business orchestration for that feature.
-- Module repositories hide Prisma calls for that feature.
-- Cross-module access should go through public module exports or explicit ports, not deep imports.
-- Infrastructure code may compose modules, but modules should not import HTTP bootstrapping details.
+- `routes/externalAccounts.ts` owns current-user accounts and provider sync endpoints.
+- `routes/importExport.ts` owns JSON import/export endpoints.
+- `routes/swagger.ts` serves API documentation.
 
-## Course/repertoire boundary
+Several modules also still call services under `apps/api/src/services`. This is accepted legacy debt, not the preferred structure for new features. Do not invent `games` or `importers` modules in documentation until those boundaries exist in code.
 
-The courses module owns:
+For new backend work, extend the owning directory under `apps/api/src/modules` when one exists. Keep routes thin and place feature orchestration and Prisma access next to the owning module where practical. Make narrow changes to legacy global code when that is safer than an unrelated migration; do not copy the global layout into new features.
 
-- Course
-- Chapter
-- Line
-- MoveNode authoring
-- Move-tree persistence and reconstruction
+## Boundaries
 
-It does not own training sessions, imported games, or external provider sync.
+- `apps/web` owns Angular UI, feature state, and frontend data access.
+- `apps/api` owns HTTP routes, application workflows, provider integration, and Prisma access.
+- `packages/chess-domain` stays framework- and infrastructure-free.
+- `packages/contracts` is scaffolded future work and must not be treated as an active shared dependency.
 
-## Games/import boundary
-
-The games module owns normalized imported games and external chess accounts. Provider-specific code belongs under importers, for example `importers/lichess`.
-
-Lichess code should eventually be split into:
-
-- client: HTTP calls and response status handling
-- ndjson reader: streaming parse mechanics
-- mapper: Lichess payload to normalized ImportedGame data
-- sync service: import-run orchestration and persistence
-
-## Frontend modules
-
-Angular code should follow the same product feature boundaries:
-
-```text
-features/
-  courses/
-  line-editor/
-  training/
-  games/
-  lichess-importer/
-  stats/
-shared/
-core/
-```
-
-Large page components should become shells. State/navigation/orchestration should move into feature facades or utilities; reusable visual pieces should live in components.
+Frontend conventions and accepted debt are documented under `docs/frontend`.

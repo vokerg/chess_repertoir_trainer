@@ -20,6 +20,8 @@ core/             application-wide infrastructure and configuration
 
 Existing code may be migrated incrementally. New code must follow this structure unless a documented exception makes the additional files less maintainable.
 
+Some older `pages/*` files and large route components still own too much state or workflow. This is accepted legacy debt, not a pattern for new features. When touching one, make a narrow safe change or refactor it deliberately; do not reproduce its structure elsewhere.
+
 ## Ownership rules
 
 - Route pages compose the feature, read route state, and delegate commands.
@@ -67,13 +69,9 @@ Existing code may be migrated incrementally. New code must follow this structure
 - Large inline style blocks are not permitted in route pages.
 - Components should use existing tokens rather than adding isolated colors, spacing values, or shadows without reason.
 
-## Testing and verification
+## Validation
 
-- Test pure helpers directly.
-- Test stores around state transitions, immutability, errors, and preservation of unrelated state.
-- Test component behavior through stable user-facing contracts rather than template snapshots.
-- Every frontend refactor must pass application TypeScript, spec TypeScript, and Angular template compilation.
-- A build warning must be reported even when the build succeeds.
+Run the narrowest relevant frontend validation when practical. Report commands run, skipped checks, and build warnings.
 
 ## Documenting exceptions
 

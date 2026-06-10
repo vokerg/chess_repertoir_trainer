@@ -2,6 +2,8 @@
 
 This document tracks existing frontend debt while `angular-architecture.md` remains the stable target. Remove entries as components are migrated; do not weaken architecture rules to match legacy code.
 
+Old page-heavy code is intentionally allowed to remain until touched. New features must not copy it. Changes to legacy pages should be narrow, or should explicitly include the relevant feature-local refactor.
+
 ## Completed
 
 - Application shell: external template/styles and OnPush.
@@ -31,14 +33,11 @@ Prioritize by responsibility count and user-facing risk:
 - Has no direct HTTP workflow in a presentational component.
 - Uses signals/computed state and lifecycle-safe observable interop.
 - Uses immutable updates and stable repeated-item tracking.
-- Extracted pure logic and high-risk state transitions have tests.
-- Application TypeScript, spec TypeScript, and Angular template compilation pass.
+- Relevant validation has been run and reported.
 
-## Tooling debt
+## Accepted tooling debt
 
 - `apps/web` has an `ng lint` script but no Angular lint target.
-- `angular-eslint` and Angular template lint rules are not installed.
 - The web test script is currently a placeholder even though Jasmine/Karma scaffolding exists.
-- Karma execution requires missing packages such as `karma-jasmine` before committed specs can run in CI.
 
-Add lint/test dependencies in a dedicated tooling change. Enable rules in warning mode first, migrate existing violations, then promote stable rules to errors in CI.
+Address tooling separately from feature migrations. Do not block documentation or narrow legacy cleanup on broad test setup.

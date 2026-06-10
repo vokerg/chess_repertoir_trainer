@@ -2,6 +2,8 @@
 
 Use this skill before merging any PR that changes source code, project structure, deployment configuration, or shared packages.
 
+Existing global API services and page-heavy Angular components are accepted debt. Review changes for unnecessary expansion of that debt; do not require unrelated migration work.
+
 ## Goal
 
 Catch boundary erosion early. The repo should stay a monorepo with clear apps, modules, and packages.
@@ -30,8 +32,8 @@ Check backend changes:
 - Service files do not depend on Fastify reply/request objects.
 - Prisma access is hidden behind repositories or feature services.
 - Cross-module imports go through public boundaries or explicit ports.
-- Importers do not import courses/training internals.
 - `routes/index.ts` remains composition-only.
+- New feature work does not copy legacy global routes/services as its default structure.
 
 ## Review pass 3: frontend modules
 
@@ -67,21 +69,15 @@ Check operational impact:
 - Runtime code binds to `process.env.PORT` where needed.
 - CORS changes do not break Vercel-to-Render communication.
 
-## Review pass 6: tests and validation
+## Review pass 6: validation
 
-Check confidence:
-
-- Request bodies have schemas.
-- Pure logic has unit-testable functions.
-- Provider-specific mappers/parsers can be tested without network/database.
-- Critical route contracts are not typed as `any` in new code when avoidable.
-- Existing behavior is preserved unless the PR explicitly says otherwise.
+Run the narrowest relevant validation when practical. Report what ran, what was skipped, and any warnings. Documentation-only changes do not require broad application test runs.
 
 ## Red flags
 
 - New global service that only one feature uses.
 - Frontend page component gains another unrelated responsibility.
-- Lichess importer writes course/training data directly.
+- New docs describe planned modules as current code.
 - Contracts expose entire Prisma models by default.
 - `chess-domain` imports framework code.
 - Build scripts change without lockfile or deployment doc updates.

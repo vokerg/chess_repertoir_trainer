@@ -73,13 +73,9 @@ Do not expose a Prisma model by default just because it exists. Decide what the 
 
 ## Wiring contracts into the repo
 
-Only wire `packages/contracts` into root workspaces together with a lockfile update:
+This is future integration work, not current architecture. When it is explicitly requested, add the package to the root workspace and regenerate the lockfile in the same change. Do not partially adopt contract imports before that work is complete.
 
-1. Add `packages/contracts` to root `package.json` workspaces.
-2. Add root scripts such as `build:contracts` if needed.
-3. Run `npm install` locally to regenerate `package-lock.json`.
-4. Run `npm ci` from a clean checkout if possible.
-5. Run `npm run build` and `npm test`.
+Run the narrowest relevant validation when practical and report what was and was not run.
 
 ## Review checklist
 

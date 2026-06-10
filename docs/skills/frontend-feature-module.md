@@ -8,7 +8,9 @@ Normative Angular rules live in `docs/frontend/angular-architecture.md`. Impleme
 
 Keep the frontend organized by product features and prevent large page components from becoming a mix of UI, state, API orchestration, board behavior, and feature logic.
 
-## Target shape
+Some existing pages still have that mixed responsibility. They are accepted legacy debt, not examples to copy. Make narrow changes when appropriate, or refactor deliberately within the owning feature.
+
+## Feature-local shape
 
 ```text
 apps/web/src/app/
@@ -21,13 +23,15 @@ apps/web/src/app/
     ui/
 
   features/
-    courses/
-    line-editor/
-    training/
-    games/
-    lichess-importer/
-    stats/
+    <feature>/
+      pages/
+      components/
+      state/
+      data-access/
+      helpers/
 ```
+
+Use only the directories the feature needs. Existing features may be incomplete or use older layouts.
 
 ## Rules
 

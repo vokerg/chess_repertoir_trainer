@@ -1,96 +1,43 @@
-# Skill: API feature module
+# API feature module
 
-Use this skill when adding or changing backend behavior in `apps/api`.
+Use this guide when changing backend behavior under `apps/api`.
 
-## Goal
+## Current structure
 
-Keep backend code grouped by product feature instead of drifting back to flat technical buckets like global `routes/`, `services`, and `repositories`.
-
-## First decision: who owns the behavior?
-
-Choose exactly one owning module:
+The registered feature modules are:
 
 ```text
-apps/api/src/modules/
-  courses/       course, chapter, line, move-node authoring
-  training/      training sessions and attempts
-  games/         linked accounts, imported games, import runs
-  importers/     provider-specific importers
-  analysis/      backend engine analysis and imported-game analysis
-  stats/         reporting and aggregated read models
-  import-export/ JSON backup/import flows
+modules/
+  analysis/              engine and game analysis
+  courses/               repertoire authoring
+  imported-games/        game queries and derived opening data
+  lab/                   exploratory reports
+  repertoire-coverage/   course review matching
+  stats/                 aggregate statistics
+  training/              line training sessions
+  training-marathons/    marathon workflow
 ```
 
-If no module fits, pause and name the product concept before adding files.
+`apps/api/src/routes/index.ts` is the source of truth. It also registers global `externalAccounts`, `importExport`, and Swagger routes. Global services and repositories remain in use, including provider import services and some training, stats, PGN, and current-user logic.
 
-## Preferred module shape
+These global files are accepted legacy debt. They describe the current implementation, not the preferred shape for new work. In particular, there are no current `games` or `importers` modules.
 
-```text
-modules/<feature>/
-  <feature>.routes.ts
-  <feature>.schemas.ts
-  <feature>.openapi.ts          route-local OpenAPI metadata when the feature exposes HTTP endpoints
-  <feature>.service.ts
-  <feature>.repository.prisma.ts
-  index.ts                      optional public module exports
-```
+## New work
 
-Not every module needs every file immediately. Add files only when they clarify ownership.
+- Extend the owning module under `apps/api/src/modules` when one exists.
+- Keep route handlers focused on HTTP parsing, validation, service calls, and expected error mapping.
+- Put feature workflow and Prisma access in feature-local services/repositories where practical.
+- Keep route-local schemas and OpenAPI metadata with modules that already use that pattern.
+- Register module routes only in `apps/api/src/routes/index.ts`.
+- Avoid deep imports into another module's internals.
+- Reuse chess logic from `packages/chess-domain` instead of duplicating it.
 
-## Rules
+Not every module needs the same file layout. Follow the owning module's current pattern and add a new abstraction only when it clarifies real ownership.
 
-- Route files should only parse HTTP concerns, validate input, call services, map expected errors, and register route-local API documentation.
-- Service files own feature orchestration and business workflow.
-- Repository files hide Prisma queries for that feature.
-- OpenAPI metadata belongs next to the owning route/module, not in a growing central hand-written Swagger object.
-- New routes should use the OpenAPI route registry/helper or the current generated-docs mechanism so `/api/docs` cannot drift from registered routes.
-- Do not deep-import another module's internal files.
-- If cross-module access is needed, expose a public function, explicit port, or small read service.
-- Modules may import shared packages such as `chess-domain` and, later, `contracts`.
-- Modules must not import app bootstrapping details such as `main.ts`.
-- Infrastructure may compose modules; modules should not compose infrastructure.
+## Legacy changes
 
-## Adding a new endpoint
+When a task touches a global route or service, either make a narrow change there or perform an explicit, scoped migration. Do not create a nominal feature module that still leaves ownership split across duplicate implementations, and do not copy global technical buckets as the default for new features.
 
-1. Identify the owning module.
-2. Add or reuse a Zod schema in `<feature>.schemas.ts`.
-3. Add route-local OpenAPI metadata in `<feature>.openapi.ts` when the endpoint should appear in `/api/docs`.
-4. Add the route in `<feature>.routes.ts` and register the OpenAPI operation through the route-local docs mechanism.
-5. Put orchestration in `<feature>.service.ts`.
-6. Put Prisma reads/writes in `<feature>.repository.prisma.ts`.
-7. Register only the module route file from `apps/api/src/routes/index.ts`.
-8. Verify no old global route/service file was expanded unnecessarily.
-9. Verify `/api/docs/openapi.json` contains the endpoint after route registration.
+## Validation
 
-## Cross-module examples
-
-Good:
-
-```text
-training service asks a courses public read function for a line tree
-lichess importer writes normalized games through a games repository/service boundary
-stats reads through dedicated query functions or reporting repositories
-analysis service reads imported games through its own repository boundary and stores analysis-owned rows
-```
-
-Bad:
-
-```text
-training deep-imports courses.repository.prisma.ts and mutates move nodes directly
-lichess importer imports course services
-frontend-shaped DTOs leak into Prisma models
-new endpoint exists in Fastify routes but is missing from /api/docs
-new endpoint is documented only by editing a central monolithic Swagger object
-```
-
-## Review checklist
-
-- Does this change have one clear owning module?
-- Did Prisma access stay behind repository/service boundaries?
-- Did route files avoid business logic?
-- Did services avoid HTTP response objects?
-- Did module code avoid importing another module's internals?
-- Did HTTP endpoints carry route-local docs/schema metadata when applicable?
-- Did `/api/docs/openapi.json` update through the generated/registered route-docs mechanism?
-- Did the global route registry remain boring?
-- Did the change avoid introducing a new global utility or service without a strong reason?
+Run the narrowest relevant validation when practical and report what was and was not run. Documentation-only cleanup does not require broad application test runs.
