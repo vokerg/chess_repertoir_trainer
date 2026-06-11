@@ -1,0 +1,156 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { AccountsApiService } from '../data-access/accounts-api.service';
+import { AccountForm, ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
+import { providerLabel } from '../helpers/account-labels';
+
+@Injectable()
+export class AccountsStore {
+  private readonly api = inject(AccountsApiService);
+
+  readonly accounts = signal<ExternalAccount[]>([]);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly syncingAccountId = signal<number | null>(null);
+  readonly resettingCursorAccountId = signal<number | null>(null);
+  readonly deletingAccountId = signal<number | null>(null);
+  readonly error = signal<string | null>(null);
+  readonly notice = signal<string | null>(null);
+  readonly syncResults = signal<Record<number, ImportRunSummary>>({});
+  readonly form = signal<AccountForm>(defaultForm());
+
+  async loadAccounts(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      this.accounts.set((await firstValueFrom(this.api.getAccounts())) || []);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not load accounts.'));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  updateForm<K extends keyof AccountForm>(key: K, value: AccountForm[K]): void {
+    this.form.update((form) => ({ ...form, [key]: value }));
+  }
+
+  async createAccount(): Promise<void> {
+    const form = this.form();
+    const username = form.username.trim();
+    if (!username) return;
+    this.saving.set(true);
+    this.clearMessages();
+    try {
+      const displayName = form.displayName.trim();
+      const account = await firstValueFrom(
+        this.api.createAccount({ provider: form.provider, username, ...(displayName ? { displayName } : {}) }),
+      );
+      this.accounts.update((accounts) =>
+        [account, ...accounts.filter((item) => item.id !== account.id)].sort(
+          (a, b) => providerLabel(a.provider).localeCompare(providerLabel(b.provider)) || a.username.localeCompare(b.username),
+        ),
+      );
+      this.notice.set(`Account ${account.username} is ready to sync.`);
+      this.resetForm();
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not add account.'));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  async syncAccount(account: ExternalAccount): Promise<void> {
+    this.syncingAccountId.set(account.id);
+    this.clearMessages();
+    try {
+      const result = await firstValueFrom(this.api.syncAccount(account.id));
+      this.syncResults.update((results) => ({ ...results, [account.id]: result }));
+      this.notice.set(`${providerLabel(account.provider)} account ${account.username} synced.`);
+      await this.loadAccounts();
+    } catch (error) {
+      this.error.set(readApiError(error, `Could not sync ${account.username}.`));
+    } finally {
+      this.syncingAccountId.set(null);
+    }
+  }
+
+  async resetCursor(account: ExternalAccount): Promise<void> {
+    const confirmed = window.confirm(
+      `Reset the import cursor for ${providerLabel(account.provider)} @${account.username}? The next sync will re-scan the full history for this account, but already imported games will be skipped rather than duplicated.`,
+    );
+    if (!confirmed) return;
+    this.resettingCursorAccountId.set(account.id);
+    this.clearMessages();
+    try {
+      const updated = await firstValueFrom(this.api.resetCursor(account.id));
+      this.patchAccount(updated);
+      this.notice.set(`${providerLabel(updated.provider)} account ${updated.username} will fully re-scan on the next sync.`);
+    } catch (error) {
+      this.error.set(readApiError(error, `Could not reset ${account.username}'s cursor.`));
+    } finally {
+      this.resettingCursorAccountId.set(null);
+    }
+  }
+
+  async toggleActive(account: ExternalAccount): Promise<void> {
+    this.clearMessages();
+    try {
+      const updated = await firstValueFrom(this.api.setActive(account.id, !account.isActive));
+      this.patchAccount(updated);
+      this.notice.set(`${updated.username} is now ${updated.isActive ? 'active' : 'inactive'}.`);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not update account.'));
+    }
+  }
+
+  async deleteAccount(account: ExternalAccount): Promise<void> {
+    const label = `${providerLabel(account.provider)} @${account.username}`;
+    if (!window.confirm(`Delete ${label} and all imported games, ply indexes, analysis, and sync history linked to it? This cannot be undone.`)) return;
+    this.deletingAccountId.set(account.id);
+    this.clearMessages();
+    try {
+      const result = await firstValueFrom(this.api.deleteAccount(account.id));
+      this.accounts.update((accounts) => accounts.filter((item) => item.id !== account.id));
+      this.syncResults.update((results) => {
+        const next = { ...results };
+        delete next[account.id];
+        return next;
+      });
+      this.notice.set(`${providerLabel(result.account.provider)} account ${result.account.username} was deleted with its imported data.`);
+    } catch (error) {
+      this.error.set(readApiError(error, `Could not delete ${account.username}.`));
+    } finally {
+      this.deletingAccountId.set(null);
+    }
+  }
+
+  resetForm(): void {
+    this.form.set(defaultForm());
+  }
+
+  private patchAccount(updated: ExternalAccount): void {
+    this.accounts.update((accounts) => accounts.map((account) => (account.id === updated.id ? updated : account)));
+  }
+
+  private clearMessages(): void {
+    this.error.set(null);
+    this.notice.set(null);
+  }
+}
+
+function defaultForm(): AccountForm {
+  return { provider: 'LICHESS', username: '', displayName: '' };
+}
+
+function readApiError(error: unknown, fallback: string): string {
+  const payload = (error as { error?: unknown })?.error;
+  if (typeof payload === 'string') return payload;
+  const structured = payload as { message?: string; error?: unknown } | undefined;
+  if (structured?.message) return structured.message;
+  if (Array.isArray(structured?.error)) {
+    return structured.error.map((item) => (item as { message?: string })?.message || String(item)).join(', ');
+  }
+  if (typeof structured?.error === 'string') return structured.error;
+  return fallback;
+}

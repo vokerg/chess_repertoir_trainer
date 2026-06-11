@@ -1,0 +1,171 @@
+<section class="accounts-page stack">
+  <section class="section-card accounts-hero">
+    <div>
+      <span class="eyebrow">Game imports</span>
+      <h2 class="page-heading page-heading-library">External accounts</h2>
+      <p class="page-subtitle">
+        Add Lichess and Chess.com usernames, then sync each account independently into your imported games library.
+      </p>
+    </div>
+    <div class="accounts-hero-actions">
+      <a routerLink="/games" class="accounts-link-button">Open games explorer</a>
+      <button type="button" class="secondary" (click)="store.loadAccounts()" [disabled]="store.loading()">
+        {{ store.loading() ? 'Refreshing...' : 'Refresh accounts' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="section-card accounts-grid-card">
+    <div>
+      <span class="eyebrow">New account</span>
+      <h3 class="accounts-section-title">Add import source</h3>
+      <p class="accounts-muted">
+        Use the public username. The app keeps accounts provider-aware, so the same username can exist on both providers.
+      </p>
+    </div>
+
+    <form class="account-form" (ngSubmit)="store.createAccount()">
+      <label class="account-field">
+        <span>Provider</span>
+        <select
+          [ngModel]="store.form().provider"
+          (ngModelChange)="store.updateForm('provider', $event)"
+          name="provider"
+        >
+          <option value="LICHESS">Lichess</option>
+          <option value="CHESS_COM">Chess.com</option>
+        </select>
+      </label>
+
+      <label class="account-field">
+        <span>Username</span>
+        <input
+          [ngModel]="store.form().username"
+          (ngModelChange)="store.updateForm('username', $event)"
+          name="username"
+          placeholder="e.g. magnuscarlsen"
+          required
+        />
+      </label>
+
+      <label class="account-field">
+        <span>Display name</span>
+        <input
+          [ngModel]="store.form().displayName"
+          (ngModelChange)="store.updateForm('displayName', $event)"
+          name="displayName"
+          placeholder="Optional label"
+        />
+      </label>
+
+      <div class="account-form-actions">
+        <button type="submit" [disabled]="store.saving() || !store.form().username.trim()">
+          {{ store.saving() ? 'Adding...' : 'Add account' }}
+        </button>
+        <button type="button" class="secondary" (click)="store.resetForm()" [disabled]="store.saving()">Clear</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="section-card accounts-list-card">
+    <div class="accounts-list-header">
+      <div>
+        <span class="eyebrow">Configured accounts</span>
+        <h3 class="accounts-section-title">Sync games by account</h3>
+        <p class="accounts-muted">Sync is deliberately per-account so a large archive import does not block every other source.</p>
+      </div>
+      <div class="metric-card accounts-mini-card">
+        <p class="metric-label">Accounts</p>
+        <p class="metric-value">{{ store.accounts().length }}</p>
+      </div>
+    </div>
+
+    @if (store.error()) {
+      <p class="status-error">{{ store.error() }}</p>
+    }
+    @if (store.notice()) {
+      <p class="status-note">{{ store.notice() }}</p>
+    }
+    @if (store.loading() && store.accounts().length === 0) {
+      <p class="status-note">Loading accounts...</p>
+    }
+
+    @if (!store.loading() && store.accounts().length === 0) {
+      <div class="empty-state accounts-empty">
+        No accounts configured yet. Add a Lichess or Chess.com username above, then press Sync on the account card.
+      </div>
+    }
+
+    @if (store.accounts().length > 0) {
+      <div class="accounts-list">
+        @for (account of store.accounts(); track account.id) {
+          <article class="account-card">
+            <div class="account-card-main">
+              <div class="account-title-row">
+                <span class="provider-pill" [ngClass]="providerClass(account.provider)">{{ providerLabel(account.provider) }}</span>
+                <span class="account-state-pill" [class.account-state-inactive]="!account.isActive">
+                  {{ account.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+
+              <h4 class="account-title">{{ account.displayName || account.username }}</h4>
+              <p class="accounts-muted account-username">&#64;{{ account.username }}</p>
+
+              <div class="account-meta-grid">
+                <div><span>Last sync</span><strong>{{ dateLabel(account.lastSyncAt) }}</strong></div>
+                <div><span>Import cursor</span><strong>{{ dateLabel(account.syncCursorTime) }}</strong></div>
+                <div><span>Created</span><strong>{{ dateLabel(account.createdAt) }}</strong></div>
+              </div>
+
+              @if (store.syncResults()[account.id]; as result) {
+                <div class="sync-result">
+                  <strong>{{ syncStatusLabel(result.status) }}</strong>
+                  <span>
+                    Seen {{ result.gamesSeen }}, imported {{ result.gamesImported }}, already present {{ result.gamesSkipped || 0 }}, failed {{ result.gamesFailed }}.
+                  </span>
+                  @if (result.archivesFetched !== null && result.archivesFetched !== undefined) {
+                    <span>Archives fetched: {{ result.archivesFetched }}.</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="account-card-actions">
+              <button
+                type="button"
+                (click)="store.syncAccount(account)"
+                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+              >
+                {{ store.syncingAccountId() === account.id ? 'Syncing...' : 'Sync' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="store.resetCursor(account)"
+                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+              >
+                {{ store.resettingCursorAccountId() === account.id ? 'Resetting...' : 'Reset cursor' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="store.toggleActive(account)"
+                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+              >
+                {{ account.isActive ? 'Disable' : 'Enable' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="store.deleteAccount(account)"
+                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+              >
+                {{ store.deletingAccountId() === account.id ? 'Deleting...' : 'Delete account' }}
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</section>

@@ -12,7 +12,9 @@ export const routes: Routes = [
     path: 'accounts',
     title: 'Accounts | Chess Repertoire Trainer',
     loadComponent: () =>
-      import('./pages/accounts-page.component').then((m) => m.AccountsPageComponent),
+      import('./features/accounts/pages/accounts-page.component').then(
+        (m) => m.AccountsPageComponent,
+      ),
   },
   {
     path: 'games',
@@ -26,7 +28,9 @@ export const routes: Routes = [
     path: 'opening-analysis',
     title: 'Opening analysis | Chess Repertoire Trainer',
     loadComponent: () =>
-      import('./pages/opening-analysis-page.component').then((m) => m.OpeningAnalysisPageComponent),
+      import('./features/opening-analysis/pages/opening-analysis-page.component').then(
+        (m) => m.OpeningAnalysisPageComponent,
+      ),
   },
   {
     path: 'lab',

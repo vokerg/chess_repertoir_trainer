@@ -10,19 +10,19 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Games explorer store: immutable row patching without row-action list reloads.
 - Game detail: feature-local route page, signal store, typed data access, pure tree helpers, presentational summary/workbench components, and built-in control flow.
 - Move tree: OnPush, signal inputs/outputs, built-in control flow, and stable tracking.
+- Opening analysis: feature-local route page, signal store, typed data access, pure query/label helpers, external template/styles, and built-in control flow.
+- Accounts: feature-local route page, signal store, typed data access, immutable row updates, external template/styles, and built-in control flow.
 
 ## Migration order
 
 Prioritize by responsibility count and user-facing risk:
 
-1. Opening analysis page.
-2. Accounts page.
-3. Library browser page.
-4. Line editor and course detail pages.
-5. Training session and lines pages.
-6. Games table and filter panel.
-7. Lab, courses, training marathon, and stats pages.
-8. Remaining shared board, engine, PGN, and note components.
+1. Library browser page.
+2. Line editor and course detail pages.
+3. Training session and lines pages.
+4. Games table and filter panel.
+5. Lab, courses, training marathon, and stats pages.
+6. Remaining shared board, engine, PGN, and note components.
 
 ## Per-component completion criteria
 
