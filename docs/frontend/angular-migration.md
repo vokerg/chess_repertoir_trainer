@@ -16,14 +16,14 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Course detail: feature-local route page, signal store, typed data access, immutable chapter updates, external template/styles, and lifecycle-safe route handling.
 - Line training and marathon: feature-local pages/stores, shared presentational session UI within the lines feature, typed training APIs, and no HTTP-owning child component.
 - Courses and stats: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
+- Games table presentation: external templates/styles, built-in control flow with stable row tracking, signal-based action-menu state, and tested feature-local display helpers.
 
 ## Migration order
 
 Prioritize by responsibility count and user-facing risk:
 
-1. Games table presentation.
-2. Lab page.
-3. Remaining shared board, engine, PGN, and note components.
+1. Lab page.
+2. Remaining shared board, engine, PGN, and note components.
 
 ## Per-component completion criteria
 

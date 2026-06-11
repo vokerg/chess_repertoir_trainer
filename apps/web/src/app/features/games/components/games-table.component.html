@@ -1,0 +1,160 @@
+<section class="section-card games-table-card">
+  <div class="games-table-header">
+    <div>
+      <h3 class="games-section-title">Imported games</h3>
+      <p class="games-muted">{{ tableSubtitle() }}</p>
+    </div>
+    <button type="button" class="secondary" (click)="refresh.emit()" [disabled]="loading()">
+      Refresh
+    </button>
+  </div>
+
+  @if (error()) {
+    <p class="status-error">{{ error() }}</p>
+  }
+  @if (loading() && games().length === 0) {
+    <p class="status-note">Loading imported games...</p>
+  }
+  @if (!loading() && !error() && games().length === 0) {
+    <div class="empty-state games-empty">
+      No imported games match these filters. Try widening provider, control, or analysis filters.
+    </div>
+  }
+
+  @if (games().length > 0) {
+    <div class="games-table-wrap">
+      <table class="games-table">
+        <thead>
+          <tr>
+            <th>Game</th>
+            <th>Result</th>
+            <th>Players</th>
+            <th>Control</th>
+            <th>Opening</th>
+            <th>Accuracy</th>
+            <th aria-label="Status"></th>
+            <th class="games-actions-heading">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (game of games(); track game.id) {
+            <tr>
+              <td>
+                <a
+                  class="game-title-cell game-detail-link"
+                  [routerLink]="['/games', game.id]"
+                  aria-label="Open imported game replay"
+                >
+                  <span class="provider-pill" [class]="providerClass(game.provider)">{{
+                    providerLabel(game.provider)
+                  }}</span>
+                  <div>
+                    <p class="game-main">{{ gameDateLabel(game) }}</p>
+                    <p class="games-muted">
+                      {{ displayTimeControl(game) }} &middot;
+                      {{
+                        game.rated === true
+                          ? 'Rated'
+                          : game.rated === false
+                            ? 'Casual'
+                            : 'Rating unknown'
+                      }}
+                    </p>
+                  </div>
+                </a>
+              </td>
+              <td>
+                <span class="result-pill" [class]="resultClass(game.resultForUser)">{{
+                  resultLabel(game.resultForUser)
+                }}</span>
+                <p class="games-muted">{{ colorLabel(game.userColor) }}</p>
+              </td>
+              <td>
+                <p class="game-main players-line">
+                  @if (profileUrl(game.provider, game.white?.username); as whiteProfileUrl) {
+                    <a
+                      class="profile-link"
+                      [href]="whiteProfileUrl"
+                      target="_blank"
+                      rel="noreferrer"
+                      >{{ playerLabel(game.white) }}</a
+                    >
+                  } @else {
+                    <span>{{ playerLabel(game.white) }}</span>
+                  }
+                  <span class="games-muted players-separator">vs</span>
+                  @if (profileUrl(game.provider, game.black?.username); as blackProfileUrl) {
+                    <a
+                      class="profile-link"
+                      [href]="blackProfileUrl"
+                      target="_blank"
+                      rel="noreferrer"
+                      >{{ playerLabel(game.black) }}</a
+                    >
+                  } @else {
+                    <span>{{ playerLabel(game.black) }}</span>
+                  }
+                </p>
+              </td>
+              <td>
+                <p class="game-main">{{ timeClassLabel(game.speedCategory) }}</p>
+                <p class="games-muted">{{ displayTimeControl(game) }}</p>
+              </td>
+              <td>
+                <p class="game-main">{{ game.opening?.eco || '—' }}</p>
+                <p class="games-muted opening-name">
+                  {{ game.opening?.name || 'Opening unavailable' }}
+                </p>
+              </td>
+              <td>
+                <p class="game-main">{{ accuracyLabel(game.analysis?.userAccuracy) }}</p>
+                <p class="games-muted">
+                  W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} &middot; B
+                  {{ accuracyLabel(game.analysis?.blackAccuracy) }}
+                </p>
+              </td>
+              <td>
+                <p class="game-main">{{ analysisStatusLabel(game) }}</p>
+                <p class="games-muted games-status-secondary">{{ plyIndexStatusLabel(game) }}</p>
+              </td>
+              <td>
+                <div class="games-row-actions">
+                  <app-game-action-menu
+                    [game]="game"
+                    [open]="activeActionMenuGameId() === game.id"
+                    [analysing]="analysingGameId() === game.id"
+                    [indexing]="indexingPlyGameId() === game.id"
+                    (toggle)="toggleActionMenu(game.id, $event)"
+                    (close)="closeActionMenu()"
+                    (analyse)="analyseGame(game)"
+                    (forceReanalyse)="forceReanalyseGame(game)"
+                    (indexPlies)="indexGamePlies(game)"
+                  />
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (pageInfo().hasMore || games().length > 0) {
+    <div class="games-pagination">
+      <button
+        type="button"
+        class="secondary"
+        (click)="loadMore.emit()"
+        [disabled]="loading() || !pageInfo().hasMore"
+      >
+        {{
+          pageInfo().hasMore
+            ? loading()
+              ? 'Loading...'
+              : 'Load more'
+            : 'All matching games loaded'
+        }}
+      </button>
+    </div>
+  }
+</section>

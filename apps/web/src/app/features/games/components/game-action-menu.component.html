@@ -1,0 +1,55 @@
+<div class="games-action-menu">
+  <button
+    type="button"
+    class="games-action-menu-trigger"
+    aria-label="More actions"
+    [attr.aria-expanded]="open()"
+    (click)="toggle.emit($event)"
+  >
+    ...
+  </button>
+  @if (open()) {
+    <div class="games-action-menu-panel">
+      @if (canForceReanalyse()) {
+        <button
+          type="button"
+          class="games-action-menu-item games-action-menu-item-button"
+          (click)="forceReanalyse.emit()"
+          [disabled]="analysing()"
+        >
+          {{ analysing() ? 'Re-analysing...' : 'Force re-analysis' }}
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="games-action-menu-item games-action-menu-item-button"
+          (click)="analyse.emit()"
+          [disabled]="analysing() || game().analysis?.status === 'RUNNING'"
+        >
+          {{ analysing() || game().analysis?.status === 'RUNNING' ? 'Analysing...' : 'Analyse' }}
+        </button>
+      }
+      @if (game().plyIndex?.status !== 'INDEXED') {
+        <button
+          type="button"
+          class="games-action-menu-item games-action-menu-item-button"
+          (click)="indexPlies.emit()"
+          [disabled]="indexing()"
+        >
+          {{ indexing() ? 'Indexing...' : plyIndexActionLabel() }}
+        </button>
+      }
+      @if (game().providerUrl) {
+        <a
+          class="games-action-menu-item"
+          [href]="game().providerUrl"
+          target="_blank"
+          rel="noreferrer"
+          (click)="close.emit()"
+        >
+          Open on {{ providerLabel() }}
+        </a>
+      }
+    </div>
+  }
+</div>
