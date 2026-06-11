@@ -1,0 +1,34 @@
+<section class="stack">
+  <section class="section-card stack">
+    <span class="eyebrow">Performance board</span>
+    <h2 class="page-heading stats-title">Training stats</h2>
+    <p class="page-subtitle">See how much material exists, how often it gets practiced, and which lines are currently the easiest to break under pressure.</p>
+    @if (store.summary(); as summary) {
+      <div class="grid-auto">
+        <div class="metric-card"><p class="metric-label">Courses</p><p class="metric-value">{{ summary.totalCourses }}</p></div>
+        <div class="metric-card"><p class="metric-label">Lines</p><p class="metric-value">{{ summary.totalLines }}</p></div>
+        <div class="metric-card"><p class="metric-label">Sessions</p><p class="metric-value">{{ summary.totalTrainingSessions }}</p></div>
+        <div class="metric-card"><p class="metric-label">Pressure points</p><p class="metric-value">{{ summary.weakestLines.length }}</p></div>
+      </div>
+    }
+  </section>
+  <section class="section-card stack">
+    <div class="stats-list-header"><div><span class="eyebrow">Priority review</span><h3 class="collection-title section-title">Weakest lines</h3></div>@if (store.summary(); as summary) { <span class="pill">{{ summary.weakestLines.length }} tracked</span> }</div>
+    @if (store.loading()) { <p class="status-note">Loading statistics...</p> }
+    @if (store.error()) { <p class="status-error">{{ store.error() }}</p> }
+    @if (!store.loading() && !store.error() && store.summary(); as summary) {
+      @if (summary.weakestLines.length === 0) {
+        <div class="empty-state">No weak lines yet. Once training data accumulates, the lines that need attention will show up here.</div>
+      } @else {
+        <div class="stack">
+          @for (line of summary.weakestLines; track line.id; let index = $index) {
+            <article class="collection-card">
+              <div class="weak-line-header"><div><div class="pill priority-pill">Priority {{ index + 1 }}</div><h4 class="collection-title">{{ line.name }}</h4><p class="collection-description">Failure rate {{ line.failureRate * 100 | number:'1.0-1' }}%. This line needs another pass before it feels dependable.</p></div><div class="metric-card failure-card"><p class="metric-label">Failure rate</p><p class="metric-value failure-value">{{ line.failureRate * 100 | number:'1.0-0' }}%</p></div></div>
+              <div class="collection-actions"><a [routerLink]="['/lines', line.id, 'edit']" class="button-link"><button type="button">Open line</button></a><a [routerLink]="['/lines', line.id, 'train']" class="button-link"><button type="button" class="secondary">Train now</button></a></div>
+            </article>
+          }
+        </div>
+      }
+    }
+  </section>
+</section>

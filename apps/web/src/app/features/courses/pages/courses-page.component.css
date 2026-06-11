@@ -1,0 +1,9 @@
+.courses-title { font-size: clamp(1.9rem, 3vw, 2.8rem); }
+.courses-metrics { margin-top: 1.1rem; }
+.mode-value { font-size: 1.3rem; }
+.section-title { font-size: 1.7rem; }
+.aside-subtitle { font-size: 0.98rem; }
+.field-stack { gap: 0.55rem; }
+.button-link { text-decoration: none; }
+.courses-list-header, .course-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.courses-list-header { align-items: center; }

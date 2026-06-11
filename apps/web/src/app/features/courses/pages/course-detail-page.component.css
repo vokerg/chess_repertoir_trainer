@@ -1,0 +1,25 @@
+.course-header,
+.chapter-list-header,
+.chapter-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.chapter-list-header { align-items: center; }
+.course-heading { gap: 0.7rem; }
+.chapter-heading,
+.field-stack { gap: 0.55rem; }
+.course-title { font-size: clamp(1.8rem, 3vw, 2.9rem); }
+.section-title { font-size: 1.7rem; }
+.aside-subtitle { font-size: 0.98rem; }
+.button-link { text-decoration: none; }
+.course-rename-form,
+.chapter-rename-form { grid-template-columns: minmax(220px, 1fr) auto auto; }
+
+@media (max-width: 680px) {
+  .course-rename-form,
+  .chapter-rename-form { grid-template-columns: 1fr; }
+}

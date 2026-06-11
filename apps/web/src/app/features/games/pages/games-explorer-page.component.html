@@ -29,16 +29,17 @@
         <span class="metric-label">Index all</span>
         <span class="metric-value games-action-value">{{ store.bulkIndexProgressLabel() }}</span>
       </button>
-      <button
-        *ngIf="store.batchAnalysisEnabled()"
-        type="button"
-        class="metric-card games-mini-card games-mini-action"
-        (click)="store.batchAnalyzeVisibleGames()"
-        [disabled]="store.loading() || store.batchAnalysisSubmitting() || store.filteredGames().length === 0"
-      >
-        <span class="metric-label">Batch analyse</span>
-        <span class="metric-value games-action-value">{{ store.batchAnalysisProgressLabel() }}</span>
-      </button>
+      @if (store.batchAnalysisEnabled()) {
+        <button
+          type="button"
+          class="metric-card games-mini-card games-mini-action"
+          (click)="store.batchAnalyzeVisibleGames()"
+          [disabled]="store.loading() || store.batchAnalysisSubmitting() || store.filteredGames().length === 0"
+        >
+          <span class="metric-label">Batch analyse</span>
+          <span class="metric-value games-action-value">{{ store.batchAnalysisProgressLabel() }}</span>
+        </button>
+      }
     </div>
   </section>
 
@@ -51,9 +52,11 @@
     (reset)="store.resetFilters()"
   />
 
-  <p *ngIf="store.importedGameAnalysis.progress().running || store.importedGameAnalysis.progress().error" class="status-note">
-    {{ store.importedGameAnalysis.progress().error || (store.importedGameAnalysis.progress().message + ' (' + store.importedGameAnalysis.progress().currentPly + '/' + store.importedGameAnalysis.progress().totalPlies + ')') }}
-  </p>
+  @if (store.importedGameAnalysis.progress().running || store.importedGameAnalysis.progress().error) {
+    <p class="status-note">
+      {{ store.importedGameAnalysis.progress().error || (store.importedGameAnalysis.progress().message + ' (' + store.importedGameAnalysis.progress().currentPly + '/' + store.importedGameAnalysis.progress().totalPlies + ')') }}
+    </p>
+  }
 
   <app-games-table
     [games]="store.filteredGames()"

@@ -1,0 +1,174 @@
+<section class="stack">
+  <section class="section-card stack">
+    <span class="eyebrow">Study library</span>
+    <h2 class="page-heading page-heading-library">Choose what to study</h2>
+    <p class="page-subtitle">
+      Browse repertoires, sections, and trainable lines in one workspace. Pick a line, then jump straight into focused training or the tree editor.
+    </p>
+  </section>
+
+  <section class="library-browser">
+    <div class="library-toolbar">
+      <input
+        class="library-search"
+        [ngModel]="store.searchText()"
+        (ngModelChange)="store.searchText.set($event)"
+        placeholder="Search repertoires, sections, lines..."
+      />
+      <div class="library-actions library-toolbar-actions">
+        <button type="button" class="secondary" (click)="store.toggleReviewOnly()" [class.library-filter-active]="store.reviewOnly()">
+          {{ store.reviewOnly() ? 'Review filter on' : 'Filters' }}
+        </button>
+        <button type="button" (click)="store.createLineInSelectedChapter()" [disabled]="!store.selectedChapterId() || store.lineLoading()">
+          New line
+        </button>
+      </div>
+    </div>
+
+    <div class="library-columns">
+      <aside class="library-column">
+        <div class="library-column-header">Repertoires</div>
+        @if (store.courseLoading()) { <p class="status-note">Loading repertoires...</p> }
+        @if (store.courseError()) { <p class="status-error">{{ store.courseError() }}</p> }
+        @if (!store.courseLoading() && !store.courseError() && store.filteredCourses().length === 0) {
+          <div class="empty-state">No repertoires match this search.</div>
+        }
+        @if (store.filteredCourses().length > 0) {
+          <div class="library-list">
+            @for (course of store.filteredCourses(); track course.id) {
+              <article
+                class="library-row library-line-row"
+                [class.library-row-active]="course.id === store.selectedCourseId()"
+                role="button"
+                tabindex="0"
+                (click)="store.selectCourse(course.id)"
+                (keydown.enter)="store.selectCourse(course.id)"
+              >
+                <p class="library-row-title">{{ course.name }}</p>
+                <p class="library-row-meta">{{ course.description || 'Personal repertoire' }}</p>
+                <p class="library-row-meta library-row-counts">{{ store.courseMeta(course) }}</p>
+                <div class="library-row-actions">
+                  <a class="library-button-link" [routerLink]="['/courses', course.id, 'marathon']" (click)="$event.stopPropagation()">Marathon</a>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </aside>
+
+      <aside class="library-column">
+        <div class="library-column-header">Sections</div>
+        @if (store.chapterLoading()) { <p class="status-note">Loading sections...</p> }
+        @if (store.chapterError()) { <p class="status-error">{{ store.chapterError() }}</p> }
+        @if (!store.selectedCourseId() && !store.chapterLoading()) {
+          <div class="empty-state">Select a repertoire to see sections.</div>
+        }
+        @if (store.selectedCourseId() && !store.chapterLoading() && !store.chapterError() && store.filteredChapters().length === 0) {
+          <div class="empty-state">No sections match this search.</div>
+        }
+        @if (store.filteredChapters().length > 0) {
+          <div class="library-list">
+            @for (chapter of store.filteredChapters(); track chapter.id) {
+              <button
+                type="button"
+                class="library-row"
+                [class.library-row-active]="chapter.id === store.selectedChapterId()"
+                (click)="store.selectChapter(chapter.id)"
+              >
+                <p class="library-row-title">{{ chapter.name }}</p>
+                <p class="library-row-meta">{{ chapter.description || 'Opening section' }}</p>
+                <p class="library-row-meta library-row-counts">
+                  {{ store.chapterLineMeta(chapter) }}
+                  @if (chapter.sortOrder !== null && chapter.sortOrder !== undefined) { <span> · Order {{ chapter.sortOrder }}</span> }
+                </p>
+              </button>
+            }
+          </div>
+        }
+      </aside>
+
+      <main class="library-column">
+        <div class="library-column-header">Lines</div>
+        @if (store.lineLoading()) { <p class="status-note">Loading lines...</p> }
+        @if (store.lineError()) { <p class="status-error">{{ store.lineError() }}</p> }
+        @if (!store.selectedChapterId() && !store.lineLoading()) {
+          <div class="empty-state">Select a section to see trainable lines.</div>
+        }
+        @if (store.selectedChapterId() && !store.lineLoading() && !store.lineError() && store.filteredLines().length === 0) {
+          <div class="empty-state">No lines match this search or filter.</div>
+        }
+        @if (store.filteredLines().length > 0) {
+          <div class="library-list">
+            @for (line of store.filteredLines(); track line.id) {
+              <article
+                class="library-row library-line-row"
+                [class.library-row-active]="line.id === store.selectedLineId()"
+                role="button"
+                tabindex="0"
+                (click)="store.selectLine(line.id)"
+                (keydown.enter)="store.selectLine(line.id)"
+              >
+                <div class="library-row-main">
+                  <p class="library-row-title">{{ line.name }}</p>
+                  <span class="library-status-pill" [ngClass]="statusClass(lineStatus(line))">{{ statusLabel(lineStatus(line)) }}</span>
+                </div>
+                <p class="library-row-meta">Train as {{ sideLabel(line.sideToTrain) }} · {{ startingPositionLabel(line) }}</p>
+                <p class="library-row-meta library-row-counts">
+                  {{ line.totalAttempts }} attempts · {{ line.passedCount }} passed · {{ line.failedCount }} failed
+                </p>
+                <div class="library-row-actions">
+                  <a class="library-button-link" [routerLink]="['/lines', line.id, 'train']" (click)="$event.stopPropagation()">Train</a>
+                  <a class="library-button-link secondary" [routerLink]="['/lines', line.id, 'edit']" (click)="$event.stopPropagation()">Edit tree</a>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </main>
+
+      <aside class="library-column library-detail">
+        @if (store.selectedLine(); as line) {
+          <div class="library-detail-heading">
+            <span class="library-status-pill" [ngClass]="statusClass(lineStatus(line))">{{ statusLabel(lineStatus(line)) }}</span>
+            <h3 class="library-detail-title">{{ line.name }}</h3>
+            <p class="library-row-meta">{{ store.selectedCourse()?.name || 'Repertoire' }} · {{ store.selectedChapter()?.name || 'Section' }}</p>
+            <p class="library-row-meta">Train as {{ sideLabel(line.sideToTrain) }}</p>
+          </div>
+          <div class="library-stat-grid">
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Attempts</p><p class="library-mini-stat-value">{{ line.totalAttempts }}</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Passed</p><p class="library-mini-stat-value">{{ line.passedCount }}</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Failed</p><p class="library-mini-stat-value">{{ line.failedCount }}</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Failure</p><p class="library-mini-stat-value">{{ failureRate(line) * 100 | number:'1.0-0' }}%</p></div>
+          </div>
+          <section class="library-info-card">
+            <p class="library-mini-stat-label">Starting position</p>
+            <p class="library-row-meta">{{ startingPositionLabel(line) }}</p>
+            <code class="library-fen">{{ line.startingFen || 'startpos' }}</code>
+          </section>
+          <div class="library-actions">
+            <a class="library-button-link" [routerLink]="['/lines', line.id, 'train']">Train</a>
+            <a class="library-button-link secondary" [routerLink]="['/lines', line.id, 'edit']">Edit tree</a>
+            <button type="button" class="secondary" (click)="store.exportPgn(line)" [disabled]="store.pgnExporting() && store.pgnExportLineId() === line.id">
+              {{ store.pgnExporting() && store.pgnExportLineId() === line.id ? 'Exporting...' : 'Export PGN' }}
+            </button>
+            <button type="button" class="secondary danger-text" (click)="store.deleteLine(line)" [disabled]="store.deletingLineId() === line.id">
+              {{ store.deletingLineId() === line.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
+          @if (store.pgnExportError()) { <p class="status-error">{{ store.pgnExportError() }}</p> }
+          @if (store.pgnExportLineId() === line.id && store.exportedPgn()) {
+            <textarea
+              class="library-pgn-output"
+              [ngModel]="store.exportedPgn()"
+              (ngModelChange)="store.exportedPgn.set($event)"
+              rows="8"
+              aria-label="Exported PGN"
+            ></textarea>
+          }
+        } @else {
+          <div class="empty-state">Select a line to train or edit. Use the columns from left to right: repertoire, section, line, then action.</div>
+        }
+      </aside>
+    </div>
+  </section>
+</section>

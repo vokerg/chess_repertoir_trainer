@@ -15,6 +15,8 @@ import {
   TrainingReview,
   TrainingSessionResult,
   UpdateLineNodePayload,
+  MarathonNextResponse,
+  MarathonScopeType,
 } from './lines.models';
 
 @Injectable({ providedIn: 'root' })
@@ -87,6 +89,13 @@ export class LinesApiService {
 
   getTrainingReview(sessionId: number): Observable<TrainingReview> {
     return this.api.get<TrainingReview>(`/training/${sessionId}/review`);
+  }
+
+  startNextMarathonLine(
+    scope: { type: MarathonScopeType; id: number },
+    recentLineIds: number[],
+  ): Observable<MarathonNextResponse> {
+    return this.api.post<MarathonNextResponse>('/training-marathons/next', { scope, recentLineIds });
   }
 }
 

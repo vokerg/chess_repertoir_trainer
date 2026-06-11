@@ -140,3 +140,18 @@ export interface TrainingReviewItem {
 export interface TrainingReview {
   mistakes: TrainingReviewItem[];
 }
+
+export type MarathonScopeType = 'CHAPTER' | 'COURSE';
+
+export interface MarathonNextResponse {
+  line: {
+    id: number;
+    name: string;
+    sideToTrain: RepertoireColor;
+    startingFen: string;
+    chapterId: number;
+    chapterName: string;
+    courseId: number;
+  };
+  session: LineTrainingSession;
+}

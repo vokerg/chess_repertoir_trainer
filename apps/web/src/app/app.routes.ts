@@ -6,7 +6,9 @@ export const routes: Routes = [
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
     loadComponent: () =>
-      import('./pages/library-browser-page.component').then((m) => m.LibraryBrowserPageComponent),
+      import('./features/library/pages/library-browser-page.component').then(
+        (m) => m.LibraryBrowserPageComponent,
+      ),
   },
   {
     path: 'accounts',
@@ -49,17 +51,19 @@ export const routes: Routes = [
     path: 'courses',
     title: 'Courses | Chess Repertoire Trainer',
     loadComponent: () =>
-      import('./pages/courses-page.component').then((m) => m.CoursesPageComponent),
+      import('./features/courses/pages/courses-page.component').then((m) => m.CoursesPageComponent),
   },
   {
     path: 'courses/:courseId',
     loadComponent: () =>
-      import('./pages/course-detail-page.component').then((m) => m.CourseDetailPageComponent),
+      import('./features/courses/pages/course-detail-page.component').then(
+        (m) => m.CourseDetailPageComponent,
+      ),
   },
   {
     path: 'courses/:courseId/marathon',
     loadComponent: () =>
-      import('./pages/training-marathon-page.component').then(
+      import('./features/lines/pages/training-marathon-page.component').then(
         (m) => m.TrainingMarathonPageComponent,
       ),
   },
@@ -79,7 +83,7 @@ export const routes: Routes = [
   {
     path: 'chapters/:chapterId/marathon',
     loadComponent: () =>
-      import('./pages/training-marathon-page.component').then(
+      import('./features/lines/pages/training-marathon-page.component').then(
         (m) => m.TrainingMarathonPageComponent,
       ),
   },
@@ -100,7 +104,8 @@ export const routes: Routes = [
   {
     path: 'stats',
     title: 'Review | Chess Repertoire Trainer',
-    loadComponent: () => import('./pages/stats-page.component').then((m) => m.StatsPageComponent),
+    loadComponent: () =>
+      import('./features/stats/pages/stats-page.component').then((m) => m.StatsPageComponent),
   },
   { path: '**', redirectTo: '/library' },
 ];

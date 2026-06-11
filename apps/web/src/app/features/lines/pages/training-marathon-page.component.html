@@ -1,0 +1,64 @@
+@if (store.loaded()) {
+  <section class="stack">
+    <header class="workbench-header">
+      <div class="workbench-title-group">
+        <a [routerLink]="store.backLink()" class="workbench-breadcrumb">&larr; {{ store.backLabel() }}</a>
+        <h2 class="workbench-title">{{ store.marathonTitle() }}</h2>
+        <div class="workbench-meta">
+          <span>Current line: {{ store.lineName() }}</span>
+          <span>Train as {{ store.sideToTrain() === 'BLACK' ? 'Black' : 'White' }}</span>
+          <span>{{ store.completedThisRun() }} completed this run</span>
+          <span>{{ store.completed() ? 'Session complete' : 'In progress' }}</span>
+        </div>
+      </div>
+      <nav class="workbench-mode-switch" aria-label="Marathon mode">
+        <span class="mode-pill mode-pill-active">Marathon</span>
+        @if (store.lineId()) {
+          <a class="mode-pill" [routerLink]="['/lines', store.lineId(), 'edit']">Edit current tree</a>
+        }
+      </nav>
+    </header>
+
+    @if (store.error()) { <p class="status-error">{{ store.error() }}</p> }
+
+    <app-line-training-session
+      [sessionId]="store.sessionId()"
+      [currentFen]="store.currentFen()"
+      [expectedMove]="store.expectedMove()"
+      [sideToTrain]="store.sideToTrain()"
+      [feedback]="store.feedback()"
+      [feedbackCorrect]="store.feedbackCorrect()"
+      [mistakesCount]="store.mistakesCount()"
+      [completed]="store.completed()"
+      [passed]="store.passed()"
+      [accuracy]="store.accuracy()"
+      [showExpectedMove]="store.showExpectedMove()"
+      [reviewLoading]="store.reviewLoading()"
+      [mistakes]="store.mistakes()"
+      [error]="store.error()"
+      [lastMove]="store.lastMove()"
+      [boardPositionVersion]="store.boardPositionVersion()"
+      goalTitle="Marathon goal"
+      goalSubtitle="Train one normal line session at a time. Line stats are updated exactly like regular line training."
+      progressTitle="Current line progress"
+      finishButtonLabel="Finish current line"
+      primaryActionLabel="Next line"
+      secondaryActionLabel="Stop marathon"
+      [secondaryActionLink]="store.backLink()"
+      [editActionLink]="['/lines', store.lineId(), 'edit']"
+      reviewSubtitle="Review missed moves for this line before moving to the next marathon line."
+      (boardMove)="store.playBoardMove($event)"
+      (toggleExpectedMove)="store.toggleExpectedMove()"
+      (finish)="store.finishTraining()"
+      (primaryAction)="store.startNextLine()"
+    />
+  </section>
+} @else {
+  <section class="section-card stack">
+    <p class="status-note">Loading marathon training...</p>
+    @if (store.error()) {
+      <p class="status-error">{{ store.error() }}</p>
+      <a class="library-button-link secondary" [routerLink]="store.backLink()">Back</a>
+    }
+  </section>
+}

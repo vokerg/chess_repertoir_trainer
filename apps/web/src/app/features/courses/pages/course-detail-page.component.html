@@ -1,0 +1,112 @@
+@if (store.courseId(); as courseId) {
+  <section class="stack">
+    <a routerLink="/courses" class="subtle-link">&larr; Back to courses</a>
+
+    <section class="section-card stack">
+      <div class="course-header">
+        <div class="stack course-heading">
+          <span class="eyebrow">Course detail</span>
+          @if (store.editingCourseName()) {
+            <div class="inline-form course-rename-form">
+              <div class="stack field-stack">
+                <label for="course-rename" class="metric-label">Course name</label>
+                <input id="course-rename" [ngModel]="store.courseNameDraft()" (ngModelChange)="store.courseNameDraft.set($event)" name="courseRename" />
+              </div>
+              <button type="button" (click)="store.saveCourseName()" [disabled]="store.savingCourseName()">{{ store.savingCourseName() ? 'Saving...' : 'Save' }}</button>
+              <button type="button" class="secondary" (click)="store.cancelCourseEdit()" [disabled]="store.savingCourseName()">Cancel</button>
+            </div>
+          } @else {
+            <h2 class="page-heading course-title">{{ store.course()?.name || 'Course' }}</h2>
+          }
+          <p class="page-subtitle">
+            {{ store.course()?.description || 'Group related chapters into a single focused opening system and track how much of it is actually getting trained.' }}
+          </p>
+        </div>
+        <div class="collection-actions">
+          <a [routerLink]="['/courses', courseId, 'marathon']" class="button-link"><button type="button">Marathon</button></a>
+          <a [routerLink]="['/courses', courseId, 'review']" class="button-link"><button type="button" class="secondary">Review repertoire</button></a>
+          @if (!store.editingCourseName()) {
+            <button type="button" class="secondary" (click)="store.startCourseEdit()" [disabled]="!store.course()">Rename course</button>
+          }
+          <button type="button" class="secondary" (click)="store.deleteCourse()" [disabled]="store.deletingCourse()">
+            {{ store.deletingCourse() ? 'Deleting...' : 'Delete course' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-auto">
+        <div class="metric-card"><p class="metric-label">Chapters</p><p class="metric-value">{{ store.chapters().length }}</p></div>
+        <div class="metric-card"><p class="metric-label">Lines in course</p><p class="metric-value">{{ store.stats()?.totalLines ?? 0 }}</p></div>
+        <div class="metric-card"><p class="metric-label">Training attempts</p><p class="metric-value">{{ store.stats()?.totalAttempts ?? 0 }}</p></div>
+        <div class="metric-card"><p class="metric-label">Pass rate</p><p class="metric-value">{{ ((store.stats()?.passRate ?? 0) * 100) | number:'1.0-0' }}%</p></div>
+      </div>
+    </section>
+
+    <div class="detail-grid">
+      <section class="section-card stack">
+        <div class="chapter-list-header">
+          <div><span class="eyebrow">Chapter map</span><h3 class="collection-title section-title">Chapters</h3></div>
+          <span class="pill">{{ store.chapters().length }} total</span>
+        </div>
+        @if (store.loading()) { <p class="status-note">Loading chapters...</p> }
+        @if (store.error()) { <p class="status-error">{{ store.error() }}</p> }
+        @if (!store.loading() && !store.error() && store.chapters().length === 0) {
+          <div class="empty-state">No chapters yet. Add the first chapter on the right to start structuring this course.</div>
+        }
+        @if (store.chapters().length > 0) {
+          <div class="stack">
+            @for (chapter of store.chapters(); track chapter.id) {
+              <article class="collection-card">
+                <div class="chapter-card-header">
+                  <div class="stack chapter-heading">
+                    @if (store.editingChapterId() === chapter.id) {
+                      <div class="inline-form chapter-rename-form">
+                        <div class="stack field-stack">
+                          <label [for]="'chapter-rename-' + chapter.id" class="metric-label">Chapter name</label>
+                          <input [id]="'chapter-rename-' + chapter.id" [ngModel]="store.chapterNameDraft()" (ngModelChange)="store.chapterNameDraft.set($event)" [name]="'chapterRename' + chapter.id" />
+                        </div>
+                        <button type="button" (click)="store.saveChapterName(chapter)" [disabled]="store.savingChapterId() === chapter.id">{{ store.savingChapterId() === chapter.id ? 'Saving...' : 'Save' }}</button>
+                        <button type="button" class="secondary" (click)="store.cancelChapterEdit()" [disabled]="store.savingChapterId() === chapter.id">Cancel</button>
+                      </div>
+                    } @else {
+                      <h4 class="collection-title">{{ chapter.name }}</h4>
+                    }
+                    <p class="collection-description">{{ chapter.description || 'A chapter for a key branch, model structure, or opponent system.' }}</p>
+                  </div>
+                  <span class="pill">Order {{ chapter.sortOrder }}</span>
+                </div>
+                <div class="collection-actions">
+                  <a [routerLink]="['/chapters', chapter.id, 'lines']" class="button-link"><button type="button">Open lines</button></a>
+                  <a [routerLink]="['/chapters', chapter.id, 'marathon']" class="button-link"><button type="button" class="secondary">Train chapter</button></a>
+                  <button type="button" class="secondary" (click)="store.startChapterEdit(chapter)" [disabled]="store.savingChapterId() === chapter.id">Rename</button>
+                  <button type="button" class="secondary" (click)="store.deleteChapter(chapter)" [disabled]="store.deletingChapterId() === chapter.id">
+                    {{ store.deletingChapterId() === chapter.id ? 'Deleting...' : 'Delete' }}
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <aside class="section-card stack">
+        <div>
+          <span class="eyebrow">Add chapter</span>
+          <h3 class="collection-title section-title">Create a chapter</h3>
+          <p class="page-subtitle aside-subtitle">Split the course into digestible chunks like Main line, Sidelines, or Anti-Sicilian.</p>
+        </div>
+        <form (ngSubmit)="store.createChapter()" class="stack">
+          <div class="stack field-stack">
+            <label for="chapter-name" class="metric-label">Chapter name</label>
+            <input id="chapter-name" [ngModel]="store.newChapterName()" (ngModelChange)="store.newChapterName.set($event)" name="name" placeholder="Main line ideas" required />
+          </div>
+          <div class="stack field-stack">
+            <label for="chapter-description" class="metric-label">Description</label>
+            <textarea id="chapter-description" [ngModel]="store.newChapterDescription()" (ngModelChange)="store.newChapterDescription.set($event)" name="description" rows="4" placeholder="What this chapter covers and when it appears."></textarea>
+          </div>
+          <div class="collection-actions"><button type="submit" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Add chapter' }}</button></div>
+        </form>
+      </aside>
+    </div>
+  </section>
+}
