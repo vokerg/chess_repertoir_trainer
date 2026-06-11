@@ -11,6 +11,7 @@ import externalAccountsRoutes from './externalAccounts';
 import swaggerRoutes from './swagger';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
 import mcpModule from '../modules/mcp/mcp.routes';
+import boardImagesModule from '../modules/board-images/board-images.routes';
 
 export default function registerRoutes(app: FastifyInstance): void {
   app.register(coursesModule);
@@ -22,6 +23,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(labModule);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);
+  app.register(boardImagesModule);
   app.register(importExportRoutes);
   app.register(externalAccountsRoutes);
   app.register(swaggerRoutes);

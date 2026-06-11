@@ -43,6 +43,7 @@ try {
   const tools = await client.listTools();
   const toolNames = tools.tools.map((tool) => tool.name).sort();
   assert.deepEqual(toolNames, [
+    'get_board_image_url',
     'get_imported_game',
     'get_imported_game_analysis',
     'get_imported_game_facets',
@@ -51,6 +52,22 @@ try {
     'search_imported_games',
   ]);
   assert.ok(tools.tools.every((tool) => tool.annotations?.readOnlyHint === true));
+
+  const boardImage = await client.callTool({
+    name: 'get_board_image_url',
+    arguments: { fen: 'startpos', turn: 'auto' },
+  });
+  assert.equal(boardImage.isError, undefined);
+  assert.equal(boardImage.structuredContent.pov, 'white');
+  assert.equal(boardImage.structuredContent.turn, 'white');
+  assert.match(boardImage.structuredContent.url, /fen2image\.chessvision\.ai/);
+
+  const invalidBoardImage = await client.callTool({
+    name: 'get_board_image_url',
+    arguments: { fen: 'invalid' },
+  });
+  assert.equal(invalidBoardImage.isError, true);
+  assert.equal(invalidBoardImage.structuredContent.code, 'BAD_REQUEST');
   await client.close();
 
   console.log('MCP transport tests passed');

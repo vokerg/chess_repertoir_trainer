@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { GameAnalysisService } from '../analysis/game-analysis.service';
 import { ImportedGameQueryService } from '../imported-games/imported-game-query.service';
 import { OpeningAnalysisService } from '../imported-games/opening-analysis.service';
+import { BoardImagesService, BoardImageValidationError } from '../board-images/board-images.service';
 import {
   toJsonValue,
   toMcpError,
@@ -15,6 +16,7 @@ import {
   getImportedGameInputSchema,
   getImportedGamePgnInputSchema,
   getOpeningAnalysisInputSchema,
+  getBoardImageUrlInputSchema,
   searchImportedGamesInputSchema,
   toImportedGameSearchQuery,
   toOpeningAnalysisQuery,
@@ -51,6 +53,21 @@ export function createChessMcpServer(logger: McpLogger) {
   const server = new McpServer({
     name: 'chess-repertoire-trainer',
     version: '0.1.0',
+  });
+
+  server.registerTool('get_board_image_url', {
+    description: 'Validate a chess FEN and build a Chessvision board image URL without fetching the image.',
+    inputSchema: getBoardImageUrlInputSchema,
+    annotations: readOnlyAnnotations,
+  }, async (input) => {
+    try {
+      const result = BoardImagesService.buildBoardImageUrl(input);
+      return structuredResult(`Built board image URL for ${result.normalizedFen}.`, result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (error instanceof BoardImageValidationError) return toMcpError(message, 'BAD_REQUEST');
+      return unexpectedToolError(logger, 'get_board_image_url', error);
+    }
   });
 
   server.registerTool('search_imported_games', {

@@ -5,6 +5,7 @@ import {
   openingAnalysisQuerySchema,
   OpeningAnalysisQuery,
 } from '../imported-games/imported-games.schemas';
+import { boardImagePovSchema, boardImageTurnSchema } from '../board-images/board-images.schemas';
 
 const providerSchema = z.enum(['LICHESS', 'CHESS_COM']);
 const resultSchema = z.enum(['WIN', 'DRAW', 'LOSS']);
@@ -63,6 +64,12 @@ export const getOpeningAnalysisInputSchema = z.object({
   ...importedGameFilterShape,
   fen: z.string().min(1).default('startpos'),
   limit: z.number().int().min(1).max(100).default(50),
+});
+
+export const getBoardImageUrlInputSchema = z.object({
+  fen: z.string().min(1).default('startpos'),
+  pov: boardImagePovSchema.default('white'),
+  turn: boardImageTurnSchema.default('none'),
 });
 
 type ImportedGameFilterInput = z.infer<typeof searchImportedGamesInputSchema>;
