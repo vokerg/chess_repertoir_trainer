@@ -5,3 +5,5 @@ export * from './pgn-export';
 export * from './position';
 export * from './move-classification';
 export * from './move-sequence';
+export * from './repertoire-graph';
+export * from './repertoire-merge-planner';

@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
-type DbClient = typeof prisma | Prisma.TransactionClient;
+export type DbClient = typeof prisma | Prisma.TransactionClient;
 
 export async function listCourses() {
   return prisma.course.findMany({ orderBy: { id: 'asc' } });
@@ -65,8 +65,26 @@ export async function createLine(
     tags?: string | null;
     notes?: string | null;
   },
+  db: DbClient = prisma,
 ) {
-  return prisma.line.create({ data: { chapterId, ...data } });
+  return db.line.create({ data: { chapterId, ...data } });
+}
+
+export async function getChapterWithCourse(chapterId: number, db: DbClient = prisma) {
+  return db.chapter.findUnique({ where: { id: chapterId }, include: { course: true } });
+}
+
+export async function getCourseLinesWithMoves(courseId: number, db: DbClient = prisma) {
+  return db.line.findMany({ where: { chapter: { courseId } }, include: { chapter: true, moves: true },
+    orderBy: [{ chapterId: 'asc' }, { id: 'asc' }] });
+}
+
+export async function getChapterLinesWithMoves(chapterId: number, db: DbClient = prisma) {
+  return db.line.findMany({ where: { chapterId }, include: { moves: true }, orderBy: { id: 'asc' } });
+}
+
+export async function getLineWithMoves(lineId: number, db: DbClient = prisma) {
+  return db.line.findUnique({ where: { id: lineId }, include: { chapter: true, moves: true } });
 }
 
 export async function getLineById(id: number, db: DbClient = prisma) {

@@ -46,6 +46,7 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - `apps/web` owns Angular UI, feature state, and frontend data access.
 - `apps/api` owns HTTP routes, application workflows, provider integration, and Prisma access.
 - `packages/chess-domain` stays framework- and infrastructure-free.
+- Reusable repertoire graph, normalized-FEN matching, conflict detection, and reintegration planning live in `packages/chess-domain`; API modules own persistence and transactions.
 - `packages/contracts` is scaffolded future work and must not be treated as an active shared dependency.
 
 Frontend conventions and accepted debt are documented under `docs/frontend`.

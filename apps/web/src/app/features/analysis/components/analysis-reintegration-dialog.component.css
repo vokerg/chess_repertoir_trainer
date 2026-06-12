@@ -1,0 +1,10 @@
+.reintegration-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(28, 26, 24, 0.58); }
+.reintegration-dialog { width: min(900px, 100%); max-height: calc(100vh - 2rem); overflow: auto; padding: 1.4rem; border-radius: var(--radius-lg); background: var(--surface-strong); box-shadow: var(--shadow-lifted); }
+.dialog-header, .dialog-actions, .mode-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.dialog-header h2 { margin: 0; }.selection-grid, .new-line-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+label { display: grid; gap: .4rem; font-weight: 700; }.mode-row { justify-content: flex-start; margin: 1rem 0; }.mode-row label { display: flex; }.mode-row input { width: auto; }
+.candidate-list, .candidate-entry { display: grid; gap: .7rem; }.candidate-card { display: grid; gap: .25rem; width: 100%; text-align: left; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-muted); color: var(--text); box-shadow: none; }
+.candidate-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }.candidate-card.blocked { background: var(--danger-soft); }.warning { color: var(--warning); }
+.conflicts { margin-top: 1rem; padding: 1rem; border-radius: var(--radius-md); background: var(--danger-soft); }.conflicts article { display: grid; gap: .3rem; margin-top: .7rem; }.conflicts code { overflow-wrap: anywhere; }.conflicts p { margin: 0; }.conflicts small { display: block; }
+.counts { padding: .8rem; border-radius: var(--radius-sm); background: var(--surface-muted); }.dialog-actions { justify-content: flex-end; margin-top: 1.2rem; }
+@media (max-width: 640px) { .selection-grid, .new-line-form { grid-template-columns: 1fr; }.dialog-header { align-items: flex-start; } }

@@ -12,12 +12,16 @@ import { distinctUntilChanged, map } from 'rxjs';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
+import { AnalysisReintegrationDialogComponent } from '../components/analysis-reintegration-dialog.component';
+import { AnalysisReintegrationApiService } from '../data-access/analysis-reintegration-api.service';
+import { AnalysisReintegrationStore } from '../state/analysis-reintegration.store';
+import { buildAnalysisReintegrationPayload } from '../helpers/analysis-reintegration-payload.helpers';
 
 @Component({
   selector: 'app-free-analysis-page',
   standalone: true,
-  imports: [RouterLink, AnalysisWorkbenchComponent],
-  providers: [FreeAnalysisStore, FreeAnalysisApiService],
+  imports: [RouterLink, AnalysisWorkbenchComponent, AnalysisReintegrationDialogComponent],
+  providers: [FreeAnalysisStore, FreeAnalysisApiService, AnalysisReintegrationStore, AnalysisReintegrationApiService],
   templateUrl: './free-analysis-page.component.html',
   styleUrl: './free-analysis-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,6 +30,7 @@ export class FreeAnalysisPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(FreeAnalysisStore);
+  protected readonly reintegrationStore = inject(AnalysisReintegrationStore);
 
   ngOnInit(): void {
     this.route.queryParamMap
@@ -55,6 +60,11 @@ export class FreeAnalysisPageComponent implements OnInit {
     const message = this.store.deleteConfirmationText();
     if (!message || !window.confirm(message)) return;
     this.store.deleteSelectedSubtree();
+  }
+
+  protected openReintegrationDialog(): void {
+    const tree = this.store.tree();
+    if (tree) void this.reintegrationStore.openForTree(buildAnalysisReintegrationPayload(tree));
   }
 }
 

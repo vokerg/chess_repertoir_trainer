@@ -12,6 +12,8 @@ import {
 } from './courses.schemas';
 import { z } from 'zod';
 import { PgnService } from '../../services/pgnService';
+import { applyAnalysisReintegrationSchema, previewAnalysisReintegrationSchema } from './analysis-reintegration.schemas';
+import { AnalysisReintegrationError, AnalysisReintegrationService } from './analysis-reintegration.service';
 
 const importPgnSchema = z.object({
   name: z.string().min(1),
@@ -112,6 +114,33 @@ export default async function coursesModule(app: FastifyInstance) {
   app.get('/api/chapters/:chapterId/lines', async (request) => {
     const chapterId = Number((request.params as any).chapterId);
     return LineService.list(chapterId);
+  });
+
+  app.post('/api/chapters/:chapterId/analysis-reintegration/preview', async (request, reply) => {
+    const chapterId = Number((request.params as any).chapterId);
+    if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
+    const parsed = previewAnalysisReintegrationSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    try {
+      return await AnalysisReintegrationService.previewChapter(chapterId, parsed.data);
+    } catch (error) {
+      const status = error instanceof AnalysisReintegrationError ? error.status : 400;
+      return reply.status(status).send({ error: error instanceof Error ? error.message : 'Could not preview analysis reintegration.' });
+    }
+  });
+
+  app.post('/api/chapters/:chapterId/analysis-reintegration/apply', async (request, reply) => {
+    const chapterId = Number((request.params as any).chapterId);
+    if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
+    const parsed = applyAnalysisReintegrationSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    try {
+      return await AnalysisReintegrationService.applyToChapter(chapterId, parsed.data);
+    } catch (error) {
+      const status = error instanceof AnalysisReintegrationError ? error.status : 400;
+      return reply.status(status).send({ error: error instanceof Error ? error.message : 'Could not apply analysis reintegration.',
+        conflicts: error instanceof AnalysisReintegrationError ? error.conflicts : undefined });
+    }
   });
 
   app.post('/api/chapters/:chapterId/lines', async (request, reply) => {

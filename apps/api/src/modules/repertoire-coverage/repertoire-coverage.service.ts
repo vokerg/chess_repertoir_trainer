@@ -1,6 +1,10 @@
 import { Chess } from 'chess.js';
-import { formatMoveSequence as domainFormatMoveSequence, normalizeFenForPosition } from 'chess-domain';
-import { classifyCourseReviewGame, sideToMove } from './course-review.matcher';
+import {
+  buildRepertoireGraph,
+  getRepertoireConflicts,
+  RepertoireLineInput,
+} from 'chess-domain';
+import { classifyCourseReviewGame } from './course-review.matcher';
 import {
   getCoverageCourse,
   getCourseReviewCandidateGames,
@@ -8,16 +12,10 @@ import {
   getCourseReviewPlies,
 } from './repertoire-coverage.repository.prisma';
 import {
-  CourseGraphMove,
-  CourseGraphPosition,
-  CourseRepertoireGraph,
-  CourseReviewConflict,
   CourseReviewGameResult,
   CourseReviewGroup,
   RepertoireColor,
 } from './repertoire-coverage.types';
-
-type ReviewLine = Awaited<ReturnType<typeof getCourseReviewLines>>[number];
 
 function asColor(value: string | null): RepertoireColor | null {
   return value === 'WHITE' || value === 'BLACK' ? value : null;
@@ -25,101 +23,6 @@ function asColor(value: string | null): RepertoireColor | null {
 
 function resultForUser(value: string | null): 'WIN' | 'DRAW' | 'LOSS' | null {
   return value === 'WIN' || value === 'DRAW' || value === 'LOSS' ? value : null;
-}
-
-function addLineRef(position: CourseGraphPosition, line: ReviewLine, nodeId?: number) {
-  if (!position.lineRefs.some((ref) => ref.lineId === line.id && ref.nodeId === nodeId)) {
-    position.lineRefs.push({ lineId: line.id, lineName: line.name, nodeId: nodeId ?? null });
-  }
-}
-
-function formatMoveSequence(nodes: ReviewLine['moves'], nodeId: number): string {
-  const nodesById = new Map(nodes.map((node) => [node.id, node]));
-  const path: ReviewLine['moves'] = [];
-  let current = nodesById.get(nodeId);
-  const visited = new Set<number>();
-
-  while (current && !visited.has(current.id)) {
-    visited.add(current.id);
-    path.push(current);
-    current = current.parentId === null ? undefined : nodesById.get(current.parentId);
-  }
-
-  return domainFormatMoveSequence(
-    path.reverse().map((node) => ({ san: node.moveSan, plyNumber: node.plyNumber })),
-  );
-}
-
-export function buildCourseRepertoireGraph(lines: ReviewLine[]): CourseRepertoireGraph {
-  const graph: CourseRepertoireGraph = { startPositions: new Set(), positions: new Map() };
-
-  for (const line of lines) {
-    const startKey = normalizeFenForPosition(line.startingFen || 'startpos');
-    graph.startPositions.add(startKey);
-    if (!graph.positions.has(startKey)) {
-      graph.positions.set(startKey, {
-        normalizedFen: startKey,
-        sideToMove: sideToMove(startKey),
-        lineRefs: [],
-        userMoves: new Map(),
-        opponentMoves: new Map(),
-      });
-    }
-    addLineRef(graph.positions.get(startKey)!, line);
-
-    for (const node of line.moves) {
-      const key = normalizeFenForPosition(node.fenBefore);
-      let position = graph.positions.get(key);
-      if (!position) {
-        position = {
-          normalizedFen: key,
-          sideToMove: asColor(node.colorToMoveBefore) ?? sideToMove(key),
-          lineRefs: [],
-          userMoves: new Map(),
-          opponentMoves: new Map(),
-        };
-        graph.positions.set(key, position);
-      }
-      addLineRef(position, line, node.id);
-
-      const moveMap =
-        node.isUserMove && node.isCorrectUserMove ? position.userMoves : position.opponentMoves;
-      let move = moveMap.get(node.moveUci);
-      if (!move) {
-        move = {
-          moveUci: node.moveUci,
-          moveSan: node.moveSan,
-          fenAfter: node.fenAfter,
-          normalizedFenAfter: normalizeFenForPosition(node.fenAfter),
-          lineRefs: [],
-        };
-        moveMap.set(node.moveUci, move);
-      }
-      if (!move.lineRefs.some((ref) => ref.lineId === line.id && ref.nodeId === node.id)) {
-        move.lineRefs.push({
-          lineId: line.id,
-          lineName: line.name,
-          nodeId: node.id,
-          moveSequenceSan: formatMoveSequence(line.moves, node.id),
-        });
-      }
-    }
-  }
-  return graph;
-}
-
-export function getCourseReviewConflicts(graph: CourseRepertoireGraph): CourseReviewConflict[] {
-  return [...graph.positions.values()]
-    .filter((position) => position.userMoves.size > 1)
-    .map((position) => ({
-      normalizedFenBefore: position.normalizedFen,
-      sideToMove: position.sideToMove,
-      moves: [...position.userMoves.values()].map((move) => ({
-        moveUci: move.moveUci,
-        moveSan: move.moveSan,
-        lineRefs: move.lineRefs,
-      })),
-    }));
 }
 
 function playedSan(result: CourseReviewGameResult): string | null {
@@ -196,8 +99,12 @@ export const CourseReviewService = {
     const sides = new Set(lines.map((line) => asColor(line.sideToTrain)).filter(Boolean));
     const sideToTrain = sides.size === 1 ? ([...sides][0] as RepertoireColor) : null;
     const hasMixedSides = sides.size > 1;
-    const graph = buildCourseRepertoireGraph(lines);
-    const conflicts = getCourseReviewConflicts(graph);
+    const domainLines: RepertoireLineInput[] = lines.map((line) => ({
+      ...line,
+      sideToTrain: asColor(line.sideToTrain) ?? 'WHITE',
+    }));
+    const graph = buildRepertoireGraph(domainLines);
+    const conflicts = getRepertoireConflicts(graph);
     const games = await getCourseReviewCandidateGames({
       from: input.from,
       to: input.to,

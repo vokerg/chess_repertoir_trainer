@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { Prisma } from '@prisma/client';
 import { MoveTree, MoveTreeNode } from 'chess-domain';
 import prisma from '../../prisma';
 import {
@@ -98,6 +99,52 @@ function parseUci(moveUci: string): { from: string; to: string; promotion?: stri
   };
 }
 
+export async function createMoveNodeInTransaction(
+  tx: Prisma.TransactionClient,
+  lineId: number,
+  body: {
+    parentId?: number | null;
+    moveUci: string;
+    comment?: string | null;
+    annotation?: string | null;
+    branchLabel?: string | null;
+    branchWeight?: number | null;
+    sortOrder?: number;
+  },
+) {
+  const { parentId = null, moveUci, comment = null, annotation = null, branchLabel = null,
+    branchWeight = null, sortOrder = 0 } = body;
+  const line = await getLineById(lineId, tx);
+  if (!line) throw new Error('Line not found');
+
+  let fenBefore: string;
+  let plyNumber: number;
+  if (parentId != null) {
+    const parentNode = await getNodeById(parentId, tx);
+    if (!parentNode) throw new Error('Parent node not found');
+    if (parentNode.lineId !== lineId) throw new Error('Parent node does not belong to this line');
+    fenBefore = parentNode.fenAfter;
+    plyNumber = parentNode.plyNumber + 1;
+  } else {
+    fenBefore = line.startingFen;
+    plyNumber = 1;
+  }
+
+  const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
+  const colorToMoveBefore: 'WHITE' | 'BLACK' = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
+  const isUserMove = colorToMoveBefore === line.sideToTrain;
+  if (isUserMove && await existsCorrectUserMove(lineId, parentId, tx)) {
+    throw new Error('This position already has a correct trained-side move. Delete or replace it first.');
+  }
+  const move = chess.move(parseUci(moveUci));
+  if (!move) throw new Error('Illegal move');
+  return createMoveNode({ lineId, parentId, plyNumber, fenBefore, fenAfter: chess.fen(), moveUci,
+    moveSan: move.san, moveNumber: Math.ceil(plyNumber / 2), colorToMoveBefore,
+    side: colorToMoveBefore, isUserMove, isCorrectUserMove: isUserMove, comment, annotation,
+    branchLabel, branchWeight, sortOrder, timesSeen: 0, correctCount: 0, incorrectCount: 0,
+    currentStreak: 0 }, tx);
+}
+
 export const CourseService = {
   list: async () => listCourses(),
   create: async (data: { name: string; description?: string | null }) => createCourse(data),
@@ -166,76 +213,7 @@ export const MoveNodeService = {
       sortOrder?: number;
     },
   ) => {
-    return prisma.$transaction(async (tx) => {
-      const {
-        parentId = null,
-        moveUci,
-        comment = null,
-        annotation = null,
-        branchLabel = null,
-        branchWeight = null,
-        sortOrder = 0,
-      } = body;
-      const line = await getLineById(lineId, tx);
-      if (!line) throw new Error('Line not found');
-
-      let fenBefore: string;
-      let plyNumber: number;
-
-      if (parentId != null) {
-        const parentNode = await getNodeById(parentId, tx);
-        if (!parentNode) throw new Error('Parent node not found');
-        if (parentNode.lineId !== lineId)
-          throw new Error('Parent node does not belong to this line');
-        fenBefore = parentNode.fenAfter;
-        plyNumber = parentNode.plyNumber + 1;
-      } else {
-        fenBefore = line.startingFen;
-        plyNumber = 1;
-      }
-
-      const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
-      const colorToMoveBefore: 'WHITE' | 'BLACK' = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
-      const isUserMove = colorToMoveBefore === line.sideToTrain;
-
-      if (isUserMove) {
-        const exists = await existsCorrectUserMove(lineId, parentId, tx);
-        if (exists)
-          throw new Error(
-            'This position already has a correct trained-side move. Delete or replace it first.',
-          );
-      }
-
-      const move = chess.move(parseUci(moveUci));
-      if (!move) throw new Error('Illegal move');
-
-      return createMoveNode(
-        {
-          lineId,
-          parentId,
-          plyNumber,
-          fenBefore,
-          fenAfter: chess.fen(),
-          moveUci,
-          moveSan: move.san,
-          moveNumber: Math.ceil(plyNumber / 2),
-          colorToMoveBefore,
-          side: colorToMoveBefore,
-          isUserMove,
-          isCorrectUserMove: isUserMove,
-          comment,
-          annotation,
-          branchLabel,
-          branchWeight,
-          sortOrder,
-          timesSeen: 0,
-          correctCount: 0,
-          incorrectCount: 0,
-          currentStreak: 0,
-        },
-        tx,
-      );
-    });
+    return prisma.$transaction((tx) => createMoveNodeInTransaction(tx, lineId, body));
   },
 
   update: async (

@@ -1,6 +1,5 @@
-import { getMoveSequenceFromUci } from 'chess-domain';
+import { getMoveSequenceFromUci, RepertoireGraph } from 'chess-domain';
 import {
-  CourseRepertoireGraph,
   CourseReviewGameMetadata,
   CourseReviewGameResult,
   CourseReviewGameStatus,
@@ -71,7 +70,7 @@ export function classifyCourseReviewGame(input: {
   game: CourseReviewGameMetadata;
   indexed: boolean;
   plies: CourseReviewPly[] | null;
-  graph: CourseRepertoireGraph;
+  graph: RepertoireGraph;
   sideToTrain: RepertoireColor | null;
   minCoveredPlies: number;
 }): CourseReviewGameResult {

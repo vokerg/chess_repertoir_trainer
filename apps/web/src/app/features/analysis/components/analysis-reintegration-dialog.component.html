@@ -1,0 +1,45 @@
+@if (store.open()) {
+  <div class="reintegration-overlay" (click)="store.close()">
+    <section class="reintegration-dialog" role="dialog" aria-modal="true" aria-labelledby="reintegration-title" (click)="$event.stopPropagation()">
+      <header class="dialog-header"><div><p class="eyebrow">Course merge</p><h2 id="reintegration-title">Reintegrate analysis tree</h2></div><button type="button" class="secondary" (click)="store.close()">Close</button></header>
+      <div class="selection-grid">
+        <label>Course<select [ngModel]="store.selectedCourseId() ?? ''" (ngModelChange)="selectCourse($event)"><option value="">Select course</option>@for (course of store.courses(); track course.id) { <option [value]="course.id">{{ course.name }}</option> }</select></label>
+        <label>Chapter<select [disabled]="!store.selectedCourseId() || store.loadingChapters()" [ngModel]="store.selectedChapterId() ?? ''" (ngModelChange)="selectChapter($event)"><option value="">Select chapter</option>@for (chapter of store.chapters(); track chapter.id) { <option [value]="chapter.id">{{ chapter.name }}</option> }</select></label>
+      </div>
+      @if (store.previewLoading()) { <p class="status-note">Computing merge preview...</p> }
+      @if (store.error(); as error) { <p class="status-error">{{ error }}</p> }
+      @if (store.success(); as success) { <p class="status-success">{{ success }}</p> }
+      @if (store.preview(); as preview) {
+        <div class="mode-row"><label><input type="radio" name="mode" [checked]="store.targetMode() === 'EXISTING_LINE'" (change)="store.setTargetMode('EXISTING_LINE')"> Existing line</label><label><input type="radio" name="mode" [checked]="store.targetMode() === 'NEW_LINE'" (change)="store.setTargetMode('NEW_LINE')"> New line</label></div>
+        @switch (store.targetMode()) {
+          @case ('EXISTING_LINE') {
+            <div class="candidate-list">
+              @for (candidate of store.candidates(); track candidateKey(candidate)) {
+                <div class="candidate-entry">
+                  <button type="button" class="candidate-card" [class.selected]="store.selectedCandidateKey() === candidateKey(candidate)" [class.blocked]="candidate.counts.conflictingMoves" [disabled]="candidate.counts.conflictingMoves > 0" (click)="store.selectCandidate(candidateKey(candidate))">
+                    <strong>{{ candidate.lineName }}</strong><span>{{ candidate.sideToTrain }} to train</span>
+                    <span>{{ candidate.anchor.kind === 'LINE_START' ? 'Line start' : 'After: ' + (candidate.anchor.moveSequenceSan || 'selected node') }}</span>
+                    <span>Total {{ candidate.counts.totalAnalysisMoves }} | Reuse {{ candidate.counts.reusedMoves }} | Add {{ candidate.counts.createdMoves }} | Conflicts {{ candidate.counts.conflictingMoves }}</span>
+                    @for (warning of candidate.warnings; track warning) { <span class="warning">{{ warning }}</span> }
+                  </button>
+                  <ng-container *ngTemplateOutlet="conflicts; context: { items: candidate.conflicts }" />
+                </div>
+              } @empty { <p class="status-note">No compatible line anchors were found in this chapter.</p> }
+            </div>
+          }
+          @case ('NEW_LINE') {
+            <div class="new-line-form"><label>Line name<input [ngModel]="store.newLineName()" (ngModelChange)="store.setNewLineName($event)" placeholder="Analysis line"></label><label>Side to train<select [ngModel]="store.newLineSideToTrain()" (ngModelChange)="selectSide($event)"><option value="WHITE">White</option><option value="BLACK">Black</option></select></label></div>
+            <p class="counts">Total {{ preview.newLine.counts.totalAnalysisMoves }} | Add {{ preview.newLine.counts.createdMoves }} | Conflicts {{ preview.newLine.counts.conflictingMoves }}</p>
+            @for (warning of preview.newLine.warnings; track warning) { <p class="warning">{{ warning }}</p> }
+            <ng-container *ngTemplateOutlet="conflicts; context: { items: preview.newLine.conflicts }" />
+          }
+        }
+      }
+      <footer class="dialog-actions"><button type="button" class="secondary" (click)="store.close()">Cancel</button><button type="button" [disabled]="!store.canApply()" (click)="store.apply()">{{ store.applying() ? 'Applying...' : 'Apply merge' }}</button></footer>
+    </section>
+  </div>
+}
+
+<ng-template #conflicts let-items="items">
+  @if (items.length) { <section class="conflicts"><h3>Conflicts</h3>@for (conflict of items; track conflict.normalizedFenBefore + conflict.proposedMoveUci) { <article><strong>{{ conflict.proposedMoveSan || conflict.proposedMoveUci }}</strong><code>{{ conflict.normalizedFenBefore }}</code>@for (move of conflict.existingMoves; track move.moveUci) { <p>Existing: {{ move.moveSan }} ({{ move.moveUci }})</p>@for (ref of move.lineRefs; track ref.lineId + ':' + ref.nodeId) { <small>{{ ref.lineName }}{{ ref.moveSequenceSan ? ' - ' + ref.moveSequenceSan : '' }}</small> } }</article> }</section> }
+</ng-template>
