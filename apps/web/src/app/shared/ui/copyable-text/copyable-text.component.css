@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.copyable-text {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 0;
+}
+.copyable-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.copyable-field {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0.48rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(35, 27, 21, 0.05);
+  font-size: 0.8rem;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+}
+.copyable-button {
+  padding: 0.48rem 0.7rem;
+  background: rgba(35, 27, 21, 0.08);
+  color: var(--muted-strong);
+  box-shadow: none;
+  font-size: 0.78rem;
+}
+.copyable-button:hover:not(:disabled) {
+  background: rgba(35, 27, 21, 0.13);
+}

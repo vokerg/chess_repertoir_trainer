@@ -1,0 +1,68 @@
+<article class="collection-card issue-card">
+  <div class="issue-board">
+    <app-board-image
+      [fen]="displayedFen()"
+      [pov]="boardPov()"
+      turn="auto"
+      [alt]="'Position after ' + (group().playedSan || group().playedMoveUci)"
+    />
+  </div>
+
+  <div class="issue-content stack">
+    @if (group().moveSequenceSan; as sequence) {
+      <div class="position-label">
+        <span class="metric-label">Sequence</span>
+        <strong class="move-sequence">{{ sequence }}</strong>
+      </div>
+    } @else {
+      <span class="metric-label">Position</span>
+    }
+
+    <app-copyable-text
+      label="FEN"
+      [value]="displayedFen()"
+      accessibleName="Displayed position FEN"
+    />
+
+    @if (opponent()) {
+      <p class="collection-description">
+        Opponent played: <strong>{{ group().playedSan || group().playedMoveUci }}</strong>
+      </p>
+    } @else {
+      <p class="collection-description">
+        Expected: <strong>{{ expectedMoves() }}</strong
+        ><br />
+        You played: <strong>{{ group().playedSan || group().playedMoveUci }}</strong>
+      </p>
+    }
+
+    <div class="issue-summary">
+      <span>Seen in {{ group().count }} games</span>
+      <span class="pill"
+        >{{ group().results.win }}W {{ group().results.draw }}D {{ group().results.loss }}L</span
+      >
+    </div>
+
+    <div class="example-list">
+      @for (example of group().examples; track example.gameId) {
+        <div class="example-row">
+          <span>
+            {{ example.endedAt | date: 'mediumDate' }} vs
+            {{ example.opponentUsername || 'Unknown opponent' }}
+            @if (example.resultForUser) {
+              <span class="pill">{{ example.resultForUser }}</span>
+            }
+          </span>
+          <div class="collection-actions">
+            <a [routerLink]="['/games', example.gameId]">Open review</a>
+            @if (example.providerUrl) {
+              <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer"
+                >Open on {{ example.provider }}</a
+              >
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</article>

@@ -1,0 +1,55 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.issue-card {
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: start;
+}
+.issue-content,
+.position-label,
+.example-list {
+  min-width: 0;
+}
+.issue-content {
+  grid-column: 1;
+  grid-row: 1;
+}
+.issue-board {
+  grid-column: 2;
+  grid-row: 1;
+}
+.position-label,
+.example-list {
+  display: grid;
+  gap: 0.45rem;
+}
+.move-sequence {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.issue-summary,
+.example-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.example-row {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 560px) {
+  .issue-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .issue-board {
+    grid-column: 1;
+  }
+  .issue-content {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

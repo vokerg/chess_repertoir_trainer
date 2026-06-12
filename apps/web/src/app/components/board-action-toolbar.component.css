@@ -12,47 +12,8 @@
 }
 
 .fen-copy-group {
-  display: flex;
-  gap: 0.45rem;
-  align-items: center;
   flex: 1 1 320px;
   min-width: min(100%, 320px);
-}
-
-.fen-copy-label {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.fen-copy-field {
-  min-width: 0;
-  flex: 1 1 auto;
-  padding: 0.48rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(35, 27, 21, 0.05);
-  font-size: 0.8rem;
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-}
-
-.fen-copy-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border-radius: 999px;
-  background: rgba(35, 27, 21, 0.08);
-  color: var(--muted-strong);
-  box-shadow: none;
-  font-size: 0.88rem;
-}
-
-.fen-copy-button:hover:not(:disabled) {
-  background: rgba(35, 27, 21, 0.13);
 }
 
 @media (max-width: 680px) {

@@ -1,0 +1,18 @@
+<div class="copyable-text">
+  <span class="copyable-label">{{ label() }}</span>
+  <input
+    class="copyable-field"
+    [value]="value()"
+    readonly
+    [attr.aria-label]="accessibleName() || label()"
+  />
+  <button
+    type="button"
+    class="copyable-button"
+    [attr.aria-label]="copyButtonLabel()"
+    [title]="copyButtonLabel()"
+    (click)="copy()"
+  >
+    Copy
+  </button>
+</div>

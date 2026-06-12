@@ -1,0 +1,15 @@
+@if (state(); as imageState) {
+  <div class="board-image-frame" [attr.aria-busy]="imageState.status === 'loading'">
+    @switch (imageState.status) {
+      @case ('loaded') {
+        <img [src]="imageState.url" [alt]="alt()" />
+      }
+      @case ('error') {
+        <span class="board-image-message">Board unavailable</span>
+      }
+      @default {
+        <span class="board-image-message">Loading board...</span>
+      }
+    }
+  </div>
+}
