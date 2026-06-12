@@ -50,6 +50,7 @@ try {
     'get_imported_game_pgn',
     'get_opening_analysis',
     'search_imported_games',
+    'summarize_imported_games',
   ]);
   assert.ok(tools.tools.every((tool) => tool.annotations?.readOnlyHint === true));
 

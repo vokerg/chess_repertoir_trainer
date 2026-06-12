@@ -53,6 +53,8 @@ export const importedGameSearchQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
 });
 
+export type ImportedGameSummaryQuery = Omit<z.infer<typeof importedGameSearchQuerySchema>, 'sort' | 'limit' | 'cursor'>;
+
 export const openingAnalysisQuerySchema = importedGameSearchQuerySchema.extend({
   fen: z.string().min(1).default('startpos'),
 });

@@ -18,7 +18,9 @@ import {
   getOpeningAnalysisInputSchema,
   getBoardImageUrlInputSchema,
   searchImportedGamesInputSchema,
+  summarizeImportedGamesInputSchema,
   toImportedGameSearchQuery,
+  toImportedGameSummaryQuery,
   toOpeningAnalysisQuery,
 } from './mcp.schemas';
 
@@ -40,6 +42,17 @@ function structuredResult(text: string, value: unknown) {
   }
   return {
     content: [{ type: 'text' as const, text }],
+    structuredContent,
+  };
+}
+
+function structuredContentOnly(value: unknown) {
+  const structuredContent = toJsonValue(value);
+  if (!structuredContent || Array.isArray(structuredContent) || typeof structuredContent !== 'object') {
+    throw new Error('MCP structured result must be an object');
+  }
+  return {
+    content: [],
     structuredContent,
   };
 }
@@ -86,6 +99,19 @@ export function createChessMcpServer(logger: McpLogger) {
       return structuredResult(`Found ${result.items.length} imported games.${suffix}`, result);
     } catch (error) {
       return unexpectedToolError(logger, 'search_imported_games', error);
+    }
+  });
+
+  server.registerTool('summarize_imported_games', {
+    description: 'Summarize already-imported chess games using the same filters as imported-game search, without pagination.',
+    inputSchema: summarizeImportedGamesInputSchema,
+    annotations: readOnlyAnnotations,
+  }, async (input) => {
+    try {
+      const result = await ImportedGameQueryService.summarize(toImportedGameSummaryQuery(input));
+      return structuredContentOnly(result);
+    } catch (error) {
+      return unexpectedToolError(logger, 'summarize_imported_games', error);
     }
   });
 

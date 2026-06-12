@@ -1,5 +1,7 @@
-import { ImportedGameSearchQuery } from './imported-games.schemas';
+import { ImportedGameSearchQuery, ImportedGameSummaryQuery } from './imported-games.schemas';
 import { ImportedGameDetailRow, ImportedGameListRow } from './imported-games.repository.prisma';
+
+type ImportedGameFilterQuery = ImportedGameSearchQuery | ImportedGameSummaryQuery;
 
 export type ImportedGameAnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 export type ImportedGamePlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
@@ -45,7 +47,7 @@ export function classificationCount(summary: unknown, classification: string) {
   return whiteCount + blackCount;
 }
 
-export function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
+export function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: ImportedGameFilterQuery) {
   if (query.analysisStatus?.length && !query.analysisStatus.includes(deriveAnalysisStatus(row))) {
     return false;
   }
@@ -67,7 +69,7 @@ export function rowMatchesAnalysisFilters(row: ImportedGameListRow, query: Impor
   return true;
 }
 
-export function rowMatchesPlyIndexFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
+export function rowMatchesPlyIndexFilters(row: ImportedGameListRow, query: ImportedGameFilterQuery) {
   if (query.plyIndexStatus?.length && !query.plyIndexStatus.includes(derivePlyIndexStatus(row))) {
     return false;
   }
@@ -75,6 +77,6 @@ export function rowMatchesPlyIndexFilters(row: ImportedGameListRow, query: Impor
   return true;
 }
 
-export function rowMatchesImportedGamePostFilters(row: ImportedGameListRow, query: ImportedGameSearchQuery) {
+export function rowMatchesImportedGamePostFilters(row: ImportedGameListRow, query: ImportedGameFilterQuery) {
   return rowMatchesAnalysisFilters(row, query) && rowMatchesPlyIndexFilters(row, query);
 }

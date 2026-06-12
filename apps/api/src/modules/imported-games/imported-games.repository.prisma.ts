@@ -2,9 +2,10 @@ import { Prisma } from '@prisma/client';
 import { moveClassificationCodeFromLegacy } from 'chess-domain';
 import prisma from '../../prisma';
 import { SINGLETON_USER_ID } from '../../services/currentUserService';
-import { ImportedGameSearchQuery } from './imported-games.schemas';
+import { ImportedGameSearchQuery, ImportedGameSummaryQuery } from './imported-games.schemas';
 
 export type ImportedGameSort = ImportedGameSearchQuery['sort'];
+type ImportedGameFilterQuery = ImportedGameSearchQuery | ImportedGameSummaryQuery;
 
 export interface ImportedGameCursor {
   endedAt: string | null;
@@ -106,7 +107,7 @@ function ratingRange(min?: number, max?: number) {
   };
 }
 
-function buildEndedAtRange(query: ImportedGameSearchQuery) {
+function buildEndedAtRange(query: ImportedGameFilterQuery) {
   if (!query.from && !query.to) return undefined;
   return {
     ...(query.from ? { gte: query.from } : {}),
@@ -114,7 +115,7 @@ function buildEndedAtRange(query: ImportedGameSearchQuery) {
   };
 }
 
-function buildUserRatingWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput[] {
+function buildUserRatingWhere(query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput[] {
   const range = ratingRange(query.minUserRating, query.maxUserRating);
   if (!range) return [];
   return [
@@ -127,7 +128,7 @@ function buildUserRatingWhere(query: ImportedGameSearchQuery): Prisma.ImportedGa
   ];
 }
 
-function buildOpponentRatingWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput[] {
+function buildOpponentRatingWhere(query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput[] {
   const range = ratingRange(query.minOpponentRating, query.maxOpponentRating);
   if (!range) return [];
   return [
@@ -140,7 +141,7 @@ function buildOpponentRatingWhere(query: ImportedGameSearchQuery): Prisma.Import
   ];
 }
 
-function buildTimeControlWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput[] {
+function buildTimeControlWhere(query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput[] {
   const search = query.timeControl?.trim();
   if (!search) return [];
   return [
@@ -176,7 +177,7 @@ function buildPlyIndexStatusWhere(statuses?: ImportedGameSearchQuery['plyIndexSt
   ];
 }
 
-export function buildImportedGameWhere(query: ImportedGameSearchQuery): Prisma.ImportedGameWhereInput {
+export function buildImportedGameWhere(query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput {
   return {
     userId: SINGLETON_USER_ID,
     accountId: accountInFilter(query.accountIds),
@@ -237,6 +238,13 @@ export async function findImportedGames(query: ImportedGameSearchQuery, cursor: 
     where: cursorWhere ? { AND: [where, cursorWhere] } : where,
     orderBy: buildOrderBy(query.sort),
     take: query.limit + 1,
+    select: importedGameListSelect,
+  });
+}
+
+export async function findImportedGamesForSummary(query: ImportedGameSummaryQuery) {
+  return prisma.importedGame.findMany({
+    where: buildImportedGameWhere(query),
     select: importedGameListSelect,
   });
 }

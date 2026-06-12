@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   importedGameSearchQuerySchema,
   ImportedGameSearchQuery,
+  ImportedGameSummaryQuery,
   openingAnalysisQuerySchema,
   OpeningAnalysisQuery,
 } from '../imported-games/imported-games.schemas';
@@ -47,6 +48,10 @@ export const searchImportedGamesInputSchema = z.object({
   cursor: z.string().min(1).optional(),
 });
 
+export const summarizeImportedGamesInputSchema = z.object({
+  ...importedGameFilterShape,
+});
+
 export const getImportedGameInputSchema = z.object({
   gameId: z.number().int().positive(),
   includePlies: z.boolean().default(true),
@@ -72,7 +77,8 @@ export const getBoardImageUrlInputSchema = z.object({
   turn: boardImageTurnSchema.default('none'),
 });
 
-type ImportedGameFilterInput = z.infer<typeof searchImportedGamesInputSchema>;
+type ImportedGameFilterInput = z.infer<typeof summarizeImportedGamesInputSchema> &
+  Partial<Pick<z.infer<typeof searchImportedGamesInputSchema>, 'sort' | 'limit' | 'cursor'>>;
 
 function toBackendFilterInput(input: ImportedGameFilterInput) {
   const { result, from, to, ...filters } = input;
@@ -86,6 +92,16 @@ function toBackendFilterInput(input: ImportedGameFilterInput) {
 
 export function toImportedGameSearchQuery(input: z.infer<typeof searchImportedGamesInputSchema>): ImportedGameSearchQuery {
   return importedGameSearchQuerySchema.parse(toBackendFilterInput(input));
+}
+
+export function toImportedGameSummaryQuery(input: z.infer<typeof summarizeImportedGamesInputSchema>): ImportedGameSummaryQuery {
+  const { sort: _sort, limit: _limit, cursor: _cursor, ...query } = importedGameSearchQuerySchema.parse(
+    toBackendFilterInput({
+      ...input,
+      sort: 'endedAtDesc',
+    }),
+  );
+  return query;
 }
 
 export function toOpeningAnalysisQuery(input: z.infer<typeof getOpeningAnalysisInputSchema>): OpeningAnalysisQuery {
