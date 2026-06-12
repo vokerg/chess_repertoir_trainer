@@ -1,17 +1,13 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
-import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
-import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
-import { MoveTreeComponent } from '../../../components/move-tree.component';
-import { StockfishPanelComponent } from '../../../components/stockfish-panel.component';
 import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
 import { UserColor } from '../data-access/games.models';
 import { BoardArrow, BoardLastMove, GameTree } from './game-detail.models';
 
 @Component({
   selector: 'app-game-workbench',
   standalone: true,
-  imports: [ChessgroundBoardComponent, EngineEvalBarComponent, MoveTreeComponent, StockfishPanelComponent, BoardActionToolbarComponent],
+  imports: [AnalysisWorkbenchComponent],
   templateUrl: './game-workbench.component.html',
   styleUrl: './game-workbench.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +25,9 @@ export class GameWorkbenchComponent {
   readonly savedScoreCpWhite = input<number | null>(null);
   readonly canGoBackward = input(false);
   readonly canGoForward = input(false);
+  readonly deleteDisabled = input(true);
+  readonly deleting = input(false);
+  readonly showDangerZone = input(true);
 
   readonly boardMove = output<string>();
   readonly nodeSelected = output<number>();
@@ -37,4 +36,5 @@ export class GameWorkbenchComponent {
   readonly goNext = output<void>();
   readonly goEnd = output<void>();
   readonly analyze = output<void>();
+  readonly deleteSelectedSubtree = output<void>();
 }

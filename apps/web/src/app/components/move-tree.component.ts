@@ -1,6 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { GameTree, GameTreeNode } from '../features/games/game-detail/game-detail.models';
+import {
+  AnalysisTree,
+  AnalysisTreeNode,
+} from '../shared/analysis-workbench/analysis-tree.models';
 
 @Component({
   selector: 'app-move-tree',
@@ -10,12 +13,13 @@ import { GameTree, GameTreeNode } from '../features/games/game-detail/game-detai
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MoveTreeComponent {
-  readonly tree = input<GameTree | null>(null);
+  readonly tree = input<AnalysisTree | null>(null);
   readonly selectedNodeId = input<number | null>(null);
+  readonly rootLabel = input('Start');
   readonly nodeSelected = output<number>();
 
-  protected mainlineNodes(start: GameTreeNode | null | undefined): GameTreeNode[] {
-    const nodes: GameTreeNode[] = [];
+  protected mainlineNodes(start: AnalysisTreeNode | null | undefined): AnalysisTreeNode[] {
+    const nodes: AnalysisTreeNode[] = [];
     let current = start || null;
     while (current) {
       nodes.push(current);
@@ -24,11 +28,19 @@ export class MoveTreeComponent {
     return nodes;
   }
 
-  protected sidelines(node: GameTreeNode): GameTreeNode[] {
+  protected sidelines(node: AnalysisTreeNode): AnalysisTreeNode[] {
     return node.children.slice(1);
   }
 
-  protected nodeTitle(node: GameTreeNode): string {
-    return node.node.id === 0 ? 'Starting position' : `${node.node.moveSan} (${node.node.moveUci})`;
+  protected nodeTitle(node: AnalysisTreeNode): string {
+    return node.node.id === 0 ? this.rootLabel() : `${node.node.moveSan} (${node.node.moveUci})`;
+  }
+
+  protected nodeLabel(node: AnalysisTreeNode): string {
+    return node.node.id === 0 ? this.rootLabel() : node.node.moveSan || node.node.moveUci || 'Move';
+  }
+
+  protected nodeMeta(node: AnalysisTreeNode): string {
+    return node.node.moveMeta || (node.node.isUserMove ? 'you' : 'opp');
   }
 }

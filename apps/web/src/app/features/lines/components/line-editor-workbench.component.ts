@@ -1,10 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
-import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
-import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
-import { MoveTreeComponent } from '../../../components/move-tree.component';
-import { StockfishPanelComponent } from '../../../components/stockfish-panel.component';
 import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
 import { LineTree, RepertoireColor, UpdateLineNodePayload } from '../data-access/lines.models';
 import { LineNotesEditorComponent } from './line-notes-editor.component';
 
@@ -12,12 +8,8 @@ import { LineNotesEditorComponent } from './line-notes-editor.component';
   selector: 'app-line-editor-workbench',
   standalone: true,
   imports: [
-    ChessgroundBoardComponent,
-    EngineEvalBarComponent,
-    MoveTreeComponent,
-    StockfishPanelComponent,
+    AnalysisWorkbenchComponent,
     LineNotesEditorComponent,
-    BoardActionToolbarComponent,
   ],
   templateUrl: './line-editor-workbench.component.html',
   styleUrl: './line-editor-workbench.component.css',

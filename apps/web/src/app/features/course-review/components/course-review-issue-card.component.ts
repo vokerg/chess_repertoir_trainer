@@ -39,6 +39,23 @@ export class CourseReviewIssueCardComponent {
     return sideToMove === 'white' ? 'black' : 'white';
   });
 
+  protected readonly analysisQueryParams = computed(() => {
+    const example = this.group().examples[0];
+    return {
+      fen: this.displayedFen(),
+      gameId: example?.gameId ?? null,
+      ply: example?.plyNumber ?? null,
+    };
+  });
+
+  protected exampleAnalysisQueryParams(example: CourseReviewGroup['examples'][number]) {
+    return {
+      fen: this.displayedFen(),
+      gameId: example.gameId,
+      ply: example.plyNumber,
+    };
+  }
+
   protected expectedMoves(): string {
     const group = this.group();
     return (

@@ -66,9 +66,15 @@ The Games explorer UI is available from the main `Games` navigation item and sup
 
 Backend analysis stores the heavy reusable position result separately from per-game move analysis. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
 
+### Free analysis
+
+The frontend provides a free analysis board at `/analysis`. A position can be opened directly with `/analysis?fen=...`. The page supports local variations, move-tree navigation, Stockfish analysis, and local subtree deletion. It does not persist repertoire lines or modify imported games.
+
 ### Course review / repertoire coverage
 
 Course review compares imported games with a course repertoire graph. It reports trained-side deviations and opponent moves that are not represented by the course.
+
+Each review issue card can open the resulting position after the played move in free analysis.
 
 To keep unrelated openings out of review results, `minCoveredPlies` sets the minimum number of actual played half-moves that must match the course before a game is considered in scope. The default is `2`.
 
@@ -412,6 +418,10 @@ From a clean clone, the target is:
 18. Adding a Lichess or Chess.com account and syncing it imports finished games.
 19. The Games explorer loads imported games and filters them through `/api/imported-games`.
 20. Starting analysis from a game row creates or reuses a `GameAnalysisRun` and exposes latest accuracy in the list.
+21. A course review issue card's `Analyze position` link opens `/analysis?fen=...` at the resulting position.
+22. Free analysis loads a provided valid FEN and falls back visibly for an invalid FEN.
+23. Playing moves in free analysis creates local variations and Danger zone deletes local subtrees.
+24. Line editor move creation and subtree deletion still persist through the existing line APIs.
 
 ## Migration history
 

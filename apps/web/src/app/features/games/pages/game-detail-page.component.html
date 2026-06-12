@@ -56,6 +56,7 @@
         [savedScoreCpWhite]="store.savedScoreCpWhite()"
         [canGoBackward]="store.canGoBackward()"
         [canGoForward]="store.canGoForward()"
+        [deleteDisabled]="!store.canDeleteSelectedSubtree()"
         (boardMove)="store.playBoardMove($event)"
         (nodeSelected)="store.selectNode($event)"
         (goStart)="store.goToStart()"
@@ -63,6 +64,7 @@
         (goNext)="store.goToNext()"
         (goEnd)="store.goToEnd()"
         (analyze)="store.rerunAnalysis()"
+        (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
       />
     }
   }

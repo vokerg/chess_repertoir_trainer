@@ -1,0 +1,55 @@
+<section class="free-analysis-page stack">
+  <header class="section-card analysis-header">
+    <div>
+      <a routerLink="/library" class="subtle-link">&larr; Back to study</a>
+      <h2 class="page-heading">Analysis board</h2>
+      <p class="page-subtitle">
+        Explore a position from FEN or an imported game. New variations on this page are local only.
+      </p>
+    </div>
+  </header>
+
+  @if (store.error(); as error) {
+    <p class="status-error">{{ error }}</p>
+  }
+
+  @if (store.loading()) {
+    <section class="section-card">
+      <p class="status-note">Loading imported game moves...</p>
+    </section>
+  } @else if (store.tree(); as tree) {
+    <app-analysis-workbench
+      [tree]="tree"
+      [selectedNodeId]="store.selectedNodeId()"
+      [currentFen]="store.currentFen()"
+      [side]="store.boardSide()"
+      [blackPerspective]="store.blackPerspective()"
+      [lastMove]="store.lastMove()"
+      [arrows]="store.analysisArrows()"
+      [boardPositionVersion]="store.boardPositionVersion()"
+      [analysis]="store.engineAnalysis()"
+      [canGoBackward]="store.canGoBackward()"
+      [canGoForward]="store.canGoForward()"
+      boardTitle="Analysis board"
+      boardHelp="Play legal moves to create local variations from this position."
+      treeTitle="Move tree"
+      [treeHelp]="store.loadedFromGame()
+        ? 'The imported game is the main line. New variations remain local to this analysis page.'
+        : 'FEN contains the current position, not its move history. New local variations appear below the loaded position.'"
+      [treeRootLabel]="store.loadedFromGame() ? 'Game start' : 'Loaded position'"
+      dangerTitle="Danger zone"
+      dangerHelp="Delete a selected local variation and every continuation below it. Imported game moves and the start position cannot be deleted."
+      deleteButtonLabel="Delete selected subtree"
+      [deleteDisabled]="!store.canDeleteSelectedSubtree()"
+      [deleting]="false"
+      (boardMove)="store.playBoardMove($event)"
+      (nodeSelected)="store.selectNode($event)"
+      (goStart)="store.goToStart()"
+      (goPrevious)="store.goToPrevious()"
+      (goNext)="store.goToNext()"
+      (goEnd)="store.goToEnd()"
+      (analyze)="store.rerunAnalysis()"
+      (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
+    />
+  }
+</section>

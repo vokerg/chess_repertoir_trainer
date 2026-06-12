@@ -1,0 +1,14 @@
+.free-analysis-page {
+  padding-bottom: var(--space-5);
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.analysis-header .page-heading {
+  margin-top: var(--space-2);
+}

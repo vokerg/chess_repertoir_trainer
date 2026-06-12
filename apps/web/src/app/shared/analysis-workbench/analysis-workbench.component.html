@@ -1,0 +1,82 @@
+<div class="analysis-workbench">
+  <section class="workbench-panel board-panel">
+    <div>
+      <h3 class="workbench-panel-title">{{ boardTitle() }}</h3>
+      <p class="workbench-panel-subtitle">{{ boardHelp() }}</p>
+    </div>
+
+    <div class="board-stage">
+      <app-engine-eval-bar
+        [analysis]="analysis()"
+        [currentFen]="currentFen()"
+        [flipped]="blackPerspective()"
+        [savedScoreCpWhite]="savedScoreCpWhite()"
+      />
+      <div class="board-shell">
+        <app-chessground-board
+          [fen]="currentFen()"
+          [side]="side()"
+          [lastMove]="lastMove()"
+          [arrows]="arrows()"
+          [sound]="false"
+          [positionVersion]="boardPositionVersion()"
+          (move)="boardMove.emit($event)"
+        />
+      </div>
+    </div>
+
+    <app-board-action-toolbar
+      [canGoBackward]="canGoBackward()"
+      [canGoForward]="canGoForward()"
+      [fen]="currentFen()"
+      [keyboardHint]="keyboardHint()"
+      (goStart)="goStart.emit()"
+      (goPrevious)="goPrevious.emit()"
+      (goNext)="goNext.emit()"
+      (goEnd)="goEnd.emit()"
+    />
+  </section>
+
+  <div class="workbench-side-stack">
+    <section class="workbench-panel move-tree-panel">
+      <div>
+        <h3 class="workbench-panel-title">{{ treeTitle() }}</h3>
+        <p class="workbench-panel-subtitle">{{ treeHelp() }}</p>
+      </div>
+      <app-move-tree
+        [tree]="tree()"
+        [selectedNodeId]="selectedNodeId()"
+        [rootLabel]="treeRootLabel()"
+        (nodeSelected)="nodeSelected.emit($event)"
+      />
+    </section>
+
+    <section class="workbench-panel engine-panel-modern">
+      <app-stockfish-panel
+        [analysis]="analysis()"
+        [currentFen]="currentFen()"
+        [warning]="engineWarning()"
+        (analyze)="analyze.emit()"
+      />
+    </section>
+
+    <ng-content select="[analysisWorkbenchSideExtra]"></ng-content>
+
+    @if (showDangerZone()) {
+      <section class="danger-zone">
+        <h3 class="workbench-panel-title">{{ dangerTitle() }}</h3>
+        <p class="workbench-panel-subtitle">{{ dangerHelp() }}</p>
+        <div class="board-action-row">
+          <button
+            type="button"
+            class="danger"
+            [disabled]="deleteDisabled() || deleting()"
+            (click)="deleteSelectedSubtree.emit()"
+          >
+            {{ deleteButtonLabel() }}
+          </button>
+        </div>
+      </section>
+    }
+  </div>
+</div>

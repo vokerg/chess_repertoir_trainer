@@ -1,12 +1,17 @@
 <article class="collection-card issue-card">
-  <div class="issue-board">
+  <a
+    class="issue-board issue-board-link"
+    [routerLink]="['/analysis']"
+    [queryParams]="analysisQueryParams()"
+    aria-label="Analyze this position"
+  >
     <app-board-image
       [fen]="displayedFen()"
       [pov]="boardPov()"
       turn="auto"
       [alt]="'Position after ' + (group().playedSan || group().playedMoveUci)"
     />
-  </div>
+  </a>
 
   <div class="issue-content stack">
     @if (group().moveSequenceSan; as sequence) {
@@ -23,6 +28,16 @@
       [value]="displayedFen()"
       accessibleName="Displayed position FEN"
     />
+
+    <div class="collection-actions">
+      <a
+        class="subtle-link"
+        [routerLink]="['/analysis']"
+        [queryParams]="analysisQueryParams()"
+      >
+        Analyze position
+      </a>
+    </div>
 
     @if (opponent()) {
       <p class="collection-description">
@@ -55,6 +70,12 @@
           </span>
           <div class="collection-actions">
             <a [routerLink]="['/games', example.gameId]">Open review</a>
+            <a
+              [routerLink]="['/analysis']"
+              [queryParams]="exampleAnalysisQueryParams(example)"
+            >
+              Analyze position
+            </a>
             @if (example.providerUrl) {
               <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer"
                 >Open on {{ example.provider }}</a

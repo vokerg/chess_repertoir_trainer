@@ -37,5 +37,10 @@ export class GameDetailPageComponent implements OnInit {
   protected onKeyDown(event: KeyboardEvent): void {
     this.store.handleKeyboard(event);
   }
-}
 
+  protected confirmDeleteSelectedSubtree(): void {
+    const message = this.store.deleteConfirmationText();
+    if (!message || !window.confirm(message)) return;
+    this.store.deleteSelectedSubtree();
+  }
+}

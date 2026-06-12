@@ -30,6 +30,7 @@ Some older `pages/*` files and large route components still own too much state o
 - Presentational components receive typed inputs and emit typed user intents. They do not call HTTP services.
 - Pure parsing, traversal, mapping, and formatting logic belongs in helpers when it can be tested without Angular.
 - A feature must not import another feature's internals. Promote genuinely reusable code to `shared` or expose a deliberate public boundary.
+- The shared analysis workbench is presentational UI only. Feature stores own persistence and workflow semantics: the line editor persists repertoire changes, while game and free analysis own local-only variation trees.
 
 ## Angular defaults
 

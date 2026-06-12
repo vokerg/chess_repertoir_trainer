@@ -107,5 +107,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/stats/pages/stats-page.component').then((m) => m.StatsPageComponent),
   },
+  {
+    path: 'analysis',
+    title: 'Analysis | Chess Repertoire Trainer',
+    loadComponent: () =>
+      import('./features/analysis/pages/free-analysis-page.component').then(
+        (m) => m.FreeAnalysisPageComponent,
+      ),
+  },
   { path: '**', redirectTo: '/library' },
 ];

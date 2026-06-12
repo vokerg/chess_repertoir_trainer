@@ -16,7 +16,15 @@ import {
   UserColor,
 } from '../data-access/games.models';
 import { BoardArrow, BoardLastMove, GameTree, GameTreeNode } from './game-detail.models';
-import { appendGameTreeChild, attachGameTreeAnalysis, buildGameTree, findGameTreeNode, findGameTreeParent, parseGamePgn } from './game-tree.helpers';
+import {
+  appendGameTreeChild,
+  attachGameTreeAnalysis,
+  buildGameTree,
+  findGameTreeNode,
+  findGameTreeParent,
+  parseGamePgn,
+  removeGameTreeSubtree,
+} from './game-tree.helpers';
 
 const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
   fen: '',
@@ -56,6 +64,19 @@ export class GameDetailStore implements OnDestroy {
   readonly blackPerspective = computed(() => this.boardSide() === 'BLACK');
   readonly canGoBackward = computed(() => this.selectedNodeId() !== 0);
   readonly canGoForward = computed(() => Boolean(this.selectedNode()?.children.length));
+  readonly canDeleteSelectedSubtree = computed(() => {
+    const node = this.selectedNode();
+    return Boolean(node && node.node.id !== 0 && node.node.source === 'LOCAL');
+  });
+  readonly deleteConfirmationText = computed(() => {
+    const node = this.selectedNode();
+    if (!node || node.node.id === 0) return null;
+    if (node.node.source !== 'LOCAL') {
+      return 'Imported game moves cannot be deleted. Select a local variation instead.';
+    }
+    const label = node.node.moveSan || node.node.moveUci || 'this move';
+    return `Delete ${label} and every local continuation below it?`;
+  });
   readonly savedScoreCpWhite = computed(() => {
     const score = this.selectedNode()?.node.analysisMove?.playedScoreCpWhite;
     return typeof score === 'number' ? score : null;
@@ -181,6 +202,18 @@ export class GameDetailStore implements OnDestroy {
     let node = this.selectedNode();
     while (node?.children.length) node = node.children[0];
     if (node) this.selectNode(node.node.id);
+  }
+
+  deleteSelectedSubtree(): void {
+    const selected = this.selectedNode();
+    const tree = this.tree();
+    if (!selected || !tree || selected.node.id === 0 || selected.node.source !== 'LOCAL') return;
+
+    const parentId = findGameTreeParent(selected.node.id, tree.root)?.node.id ?? 0;
+    this.tree.set({ root: removeGameTreeSubtree(tree.root, selected.node.id) });
+    this.selectedNodeId.set(parentId);
+    this.boardPositionVersion.update((version) => version + 1);
+    this.scheduleAnalysis();
   }
 
   rerunAnalysis(): void {

@@ -81,6 +81,20 @@ export function appendGameTreeChild(root: GameTreeNode, parentId: number, child:
   return { ...root, children: root.children.map((current) => appendGameTreeChild(current, parentId, child)) };
 }
 
+export function removeGameTreeSubtree(root: GameTreeNode, nodeId: number): GameTreeNode {
+  const removeFromNode = (node: GameTreeNode): GameTreeNode => {
+    const retainedChildren = node.children.filter((child) => child.node.id !== nodeId);
+    const children = retainedChildren.map((child) => removeFromNode(child));
+    const changed =
+      retainedChildren.length !== node.children.length ||
+      children.some((child, index) => child !== retainedChildren[index]);
+    return changed ? { ...node, children } : node;
+  };
+
+  const updated = removeFromNode(root);
+  return updated === root ? { ...root } : updated;
+}
+
 export function attachGameTreeAnalysis(
   root: GameTreeNode,
   analysisByPly: Readonly<Record<number, ImportedGameAnalysisMove>>,

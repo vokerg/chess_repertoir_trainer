@@ -1,0 +1,34 @@
+.analysis-workbench {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(420px, 1.08fr) minmax(340px, 0.92fr);
+  align-items: start;
+}
+
+.board-panel,
+.move-tree-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.workbench-side-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.danger-zone {
+  border: 1px solid rgba(179, 58, 43, 0.22);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: var(--danger-soft);
+}
+
+.board-action-row {
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 980px) {
+  .analysis-workbench {
+    grid-template-columns: 1fr;
+  }
+}

@@ -17,9 +17,9 @@
           [title]="nodeTitle(current)"
           (click)="nodeSelected.emit(current.node.id)"
         >
-          <span>{{ current.node.moveSan || 'Start' }}</span>
+          <span>{{ nodeLabel(current) }}</span>
           @if (current.node.id !== 0) {
-            <span class="move-tree-meta">{{ current.node.isUserMove ? 'you' : 'opp' }}</span>
+            <span class="move-tree-meta">{{ nodeMeta(current) }}</span>
           }
         </button>
 
