@@ -135,8 +135,8 @@ function analysisStatusFacetRows(rows: Array<{ analysisRuns: Array<{ status: str
 }
 
 export const ImportedGamesService = {
-  search: async (query: ImportedGameSearchQuery) => {
-    const page = await ImportedGameQueryService.searchPage(query);
+  search: async (userId: number, query: ImportedGameSearchQuery) => {
+    const page = await ImportedGameQueryService.searchPage(userId, query);
 
     return {
       items: page.rows.map(toListItem),
@@ -145,15 +145,15 @@ export const ImportedGamesService = {
     };
   },
 
-  get: async (id: number) => {
-    const row = await ImportedGameQueryService.getDetail(id);
+  get: async (userId: number, id: number) => {
+    const row = await ImportedGameQueryService.getDetail(userId, id);
     return row ? toDetail(row) : null;
   },
 
-  getPgn: async (id: number) => ImportedGameQueryService.getPgn(id),
+  getPgn: async (userId: number, id: number) => ImportedGameQueryService.getPgn(userId, id),
 
-  facets: async () => {
-    const facets = await ImportedGameQueryService.getFacets();
+  facets: async (userId: number) => {
+    const facets = await ImportedGameQueryService.getFacets(userId);
     return {
       accounts: facets.accounts.map((account) => ({
         id: account.id,

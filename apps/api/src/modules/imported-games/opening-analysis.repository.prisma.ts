@@ -47,7 +47,7 @@ const openingAnalysisPlySelect = {
 
 export type OpeningAnalysisPlyRow = Prisma.ImportedGamePlyGetPayload<{ select: typeof openingAnalysisPlySelect }>;
 
-export async function findOpeningAnalysisRows(query: ImportedGameSearchQuery, normalizedFen: string): Promise<OpeningAnalysisPlyRow[]> {
+export async function findOpeningAnalysisRows(userId: number, query: ImportedGameSearchQuery, normalizedFen: string): Promise<OpeningAnalysisPlyRow[]> {
   const position = await prisma.position.findUnique({
     where: { normalizedFen },
     select: { id: true },
@@ -62,7 +62,7 @@ export async function findOpeningAnalysisRows(query: ImportedGameSearchQuery, no
   return prisma.importedGamePly.findMany({
     where: {
       positionId: position.id,
-      importedGame: buildImportedGameWhere(searchQuery),
+      importedGame: buildImportedGameWhere(userId, searchQuery),
     },
     orderBy: [{ moveUci: 'asc' }, { importedGameId: 'asc' }, { plyNumber: 'asc' }],
     select: openingAnalysisPlySelect,

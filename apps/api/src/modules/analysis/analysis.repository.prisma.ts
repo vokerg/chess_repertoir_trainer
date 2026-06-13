@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
-import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { PlyAnalysisUpdate, StorePositionAnalysisInput } from './analysis.types';
 
 const positionAnalysisInclude = {
@@ -130,17 +129,17 @@ export async function upsertPositionAnalysis(positionId: number, data: StorePosi
   return compactPositionAnalysis(row, false);
 }
 
-export async function getImportedGameForAnalysis(importedGameId: number) {
+export async function getImportedGameForAnalysis(userId: number, importedGameId: number) {
   return prisma.importedGame.findFirst({
-    where: { id: importedGameId, userId: SINGLETON_USER_ID },
+    where: { id: importedGameId, userId },
   });
 }
 
-export async function getLatestGameAnalysisForImportedGame(importedGameId: number) {
+export async function getLatestGameAnalysisForImportedGame(userId: number, importedGameId: number) {
   return prisma.gameAnalysisRun.findFirst({
     where: {
       importedGameId,
-      importedGame: { userId: SINGLETON_USER_ID },
+      importedGame: { userId },
       status: { in: ['RUNNING', 'COMPLETED', 'FAILED'] },
     },
     orderBy: { createdAt: 'desc' },
@@ -260,9 +259,9 @@ export async function failGameAnalysisRun(runId: number, error: string) {
   });
 }
 
-export async function updateImportedGamePlyAnalysis(gameId: number, updates: PlyAnalysisUpdate[]) {
+export async function updateImportedGamePlyAnalysis(userId: number, gameId: number, updates: PlyAnalysisUpdate[]) {
   const game = await prisma.importedGame.findFirst({
-    where: { id: gameId, userId: SINGLETON_USER_ID },
+    where: { id: gameId, userId },
     select: { id: true },
   });
   if (!game) throw new Error('Imported game not found');
@@ -292,10 +291,10 @@ export async function updateImportedGamePlyAnalysis(gameId: number, updates: Ply
   return { importedGameId: gameId, updatedPlies: updatedRows.length };
 }
 
-export async function clearImportedGamePlyAnalysis(gameId: number) {
+export async function clearImportedGamePlyAnalysis(userId: number, gameId: number) {
   return prisma.$transaction(async (tx) => {
     const game = await tx.importedGame.findFirst({
-      where: { id: gameId, userId: SINGLETON_USER_ID },
+      where: { id: gameId, userId },
       select: { id: true },
     });
     if (!game) throw new Error('Imported game not found');
@@ -309,9 +308,9 @@ export async function clearImportedGamePlyAnalysis(gameId: number) {
   });
 }
 
-export async function getImportedGamePliesForAnalysisSummary(gameId: number) {
+export async function getImportedGamePliesForAnalysisSummary(userId: number, gameId: number) {
   return prisma.importedGamePly.findMany({
-    where: { importedGameId: gameId, importedGame: { userId: SINGLETON_USER_ID } },
+    where: { importedGameId: gameId, importedGame: { userId } },
     orderBy: { plyNumber: 'asc' },
     select: {
       plyNumber: true,
@@ -335,9 +334,9 @@ export async function getImportedGamePliesForAnalysisSummary(gameId: number) {
   });
 }
 
-export async function getImportedGamePliesForBatchAnalysis(gameId: number) {
+export async function getImportedGamePliesForBatchAnalysis(userId: number, gameId: number) {
   return prisma.importedGamePly.findMany({
-    where: { importedGameId: gameId, importedGame: { userId: SINGLETON_USER_ID } },
+    where: { importedGameId: gameId, importedGame: { userId } },
     orderBy: { plyNumber: 'asc' },
     select: {
       plyNumber: true,

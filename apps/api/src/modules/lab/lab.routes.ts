@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { requireAuth } from '../../auth/request-auth';
 import { LabService } from './lab.service';
 
 function parseLimit(value: unknown) {
@@ -12,13 +13,17 @@ function parseBoolean(value: unknown) {
 }
 
 export default async function labModule(app: FastifyInstance) {
-  app.get('/api/lab/top-opponents', async (request) => {
+  app.get('/api/lab/top-opponents', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const query = request.query as { limit?: string };
-    return LabService.topOpponents(parseLimit(query.limit));
+    return LabService.topOpponents(auth.userId, parseLimit(query.limit));
   });
 
-  app.get('/api/lab/monthly-games', async (request) => {
+  app.get('/api/lab/monthly-games', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const query = request.query as { excludeBullet?: string };
-    return LabService.monthlyGames({ excludeBullet: parseBoolean(query.excludeBullet) });
+    return LabService.monthlyGames(auth.userId, { excludeBullet: parseBoolean(query.excludeBullet) });
   });
 }

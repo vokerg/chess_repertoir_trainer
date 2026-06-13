@@ -90,6 +90,7 @@ function groupResults(results: CourseReviewGameResult[], status: CourseReviewGro
 
 export const CourseReviewService = {
   calculate: async (
+    userId: number,
     courseId: number,
     input: { from: Date; to?: Date; limit: number; offset: number; minCoveredPlies: number },
   ) => {
@@ -106,6 +107,7 @@ export const CourseReviewService = {
     const graph = buildRepertoireGraph(domainLines);
     const conflicts = getRepertoireConflicts(graph);
     const games = await getCourseReviewCandidateGames({
+      userId,
       from: input.from,
       to: input.to,
       limit: input.limit,

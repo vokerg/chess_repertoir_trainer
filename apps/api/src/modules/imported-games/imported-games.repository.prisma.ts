@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { moveClassificationCodeFromLegacy } from 'chess-domain';
 import prisma from '../../prisma';
-import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { ImportedGameSearchQuery, ImportedGameSummaryQuery } from './imported-games.schemas';
 
 export type ImportedGameSort = ImportedGameSearchQuery['sort'];
@@ -177,9 +176,9 @@ function buildPlyIndexStatusWhere(statuses?: ImportedGameSearchQuery['plyIndexSt
   ];
 }
 
-export function buildImportedGameWhere(query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput {
+export function buildImportedGameWhere(userId: number, query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput {
   return {
-    userId: SINGLETON_USER_ID,
+    userId,
     accountId: accountInFilter(query.accountIds),
     provider: inFilter(query.providers),
     endedAt: buildEndedAtRange(query),
@@ -230,8 +229,8 @@ function buildOrderBy(sort: ImportedGameSort): Prisma.ImportedGameOrderByWithRel
   return [{ endedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }];
 }
 
-export async function findImportedGames(query: ImportedGameSearchQuery, cursor: ImportedGameCursor | null) {
-  const where = buildImportedGameWhere(query);
+export async function findImportedGames(userId: number, query: ImportedGameSearchQuery, cursor: ImportedGameCursor | null) {
+  const where = buildImportedGameWhere(userId, query);
   const cursorWhere = buildCursorWhere(cursor, query.sort);
 
   return prisma.importedGame.findMany({
@@ -242,31 +241,31 @@ export async function findImportedGames(query: ImportedGameSearchQuery, cursor: 
   });
 }
 
-export async function findImportedGamesForSummary(query: ImportedGameSummaryQuery) {
+export async function findImportedGamesForSummary(userId: number, query: ImportedGameSummaryQuery) {
   return prisma.importedGame.findMany({
-    where: buildImportedGameWhere(query),
+    where: buildImportedGameWhere(userId, query),
     select: importedGameListSelect,
   });
 }
 
-export async function findImportedGameById(id: number) {
+export async function findImportedGameById(userId: number, id: number) {
   return prisma.importedGame.findFirst({
-    where: { id, userId: SINGLETON_USER_ID },
+    where: { id, userId },
     select: importedGameDetailSelect,
   });
 }
 
-export async function getImportedGamePgn(id: number) {
+export async function getImportedGamePgn(userId: number, id: number) {
   return prisma.importedGame.findFirst({
-    where: { id, userId: SINGLETON_USER_ID },
+    where: { id, userId },
     select: { id: true, pgn: true },
   });
 }
 
-export async function getImportedGameFacets() {
+export async function getImportedGameFacets(userId: number) {
   const [accounts, speeds, variants, results, colors, providers, openings, latestAnalysisRows] = await Promise.all([
     prisma.externalAccount.findMany({
-      where: { userId: SINGLETON_USER_ID },
+      where: { userId },
       select: {
         id: true,
         provider: true,
@@ -276,14 +275,14 @@ export async function getImportedGameFacets() {
       },
       orderBy: [{ provider: 'asc' }, { username: 'asc' }],
     }),
-    prisma.importedGame.groupBy({ by: ['speedCategory'], where: { userId: SINGLETON_USER_ID }, _count: true, orderBy: { _count: { speedCategory: 'desc' } } }),
-    prisma.importedGame.groupBy({ by: ['variant'], where: { userId: SINGLETON_USER_ID }, _count: true, orderBy: { _count: { variant: 'desc' } } }),
-    prisma.importedGame.groupBy({ by: ['resultForUser'], where: { userId: SINGLETON_USER_ID }, _count: true }),
-    prisma.importedGame.groupBy({ by: ['userColor'], where: { userId: SINGLETON_USER_ID }, _count: true }),
-    prisma.importedGame.groupBy({ by: ['provider'], where: { userId: SINGLETON_USER_ID }, _count: true }),
-    prisma.importedGame.groupBy({ by: ['openingEco', 'openingName'], where: { userId: SINGLETON_USER_ID, openingEco: { not: null } }, _count: true, orderBy: { _count: { openingEco: 'desc' } }, take: 50 }),
+    prisma.importedGame.groupBy({ by: ['speedCategory'], where: { userId }, _count: true, orderBy: { _count: { speedCategory: 'desc' } } }),
+    prisma.importedGame.groupBy({ by: ['variant'], where: { userId }, _count: true, orderBy: { _count: { variant: 'desc' } } }),
+    prisma.importedGame.groupBy({ by: ['resultForUser'], where: { userId }, _count: true }),
+    prisma.importedGame.groupBy({ by: ['userColor'], where: { userId }, _count: true }),
+    prisma.importedGame.groupBy({ by: ['provider'], where: { userId }, _count: true }),
+    prisma.importedGame.groupBy({ by: ['openingEco', 'openingName'], where: { userId, openingEco: { not: null } }, _count: true, orderBy: { _count: { openingEco: 'desc' } }, take: 50 }),
     prisma.importedGame.findMany({
-      where: { userId: SINGLETON_USER_ID },
+      where: { userId },
       select: {
         analysisRuns: {
           orderBy: { createdAt: 'desc' },

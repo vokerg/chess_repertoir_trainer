@@ -1,6 +1,5 @@
 import { Chess } from 'chess.js';
 import { normalizeFenForPosition } from 'chess-domain';
-import { CurrentUserService } from '../../services/currentUserService';
 import {
   clearPlyRowsForGame,
   countPlyRowsForGame,
@@ -49,10 +48,8 @@ function parsePlyRows(importedGameId: number, pgn: string): ImportedGamePlyCreat
 }
 
 export const ImportedGamePlyIndexService = {
-  indexOne: async (importedGameId: number, options: { force?: boolean } = {}): Promise<ImportedGamePlyIndexResult> => {
-    await CurrentUserService.getOrCreate();
-
-    const game = await getImportedGameForPlyIndex(importedGameId);
+  indexOne: async (userId: number, importedGameId: number, options: { force?: boolean } = {}): Promise<ImportedGamePlyIndexResult> => {
+    const game = await getImportedGameForPlyIndex(userId, importedGameId);
     if (!game) throw new Error('Imported game not found');
 
     if (game.plyIndexedAt && !options.force) {

@@ -1,6 +1,5 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
-import { SINGLETON_USER_ID } from '../../services/currentUserService';
 
 export type ImportedGameForPlyIndex = {
   id: number;
@@ -13,9 +12,9 @@ export type ImportedGamePlyCreateInput = Pick<Prisma.ImportedGamePlyCreateManyIn
   normalizedFen: string;
 };
 
-export async function getImportedGameForPlyIndex(importedGameId: number): Promise<ImportedGameForPlyIndex | null> {
+export async function getImportedGameForPlyIndex(userId: number, importedGameId: number): Promise<ImportedGameForPlyIndex | null> {
   return prisma.importedGame.findFirst({
-    where: { id: importedGameId, userId: SINGLETON_USER_ID },
+    where: { id: importedGameId, userId },
     select: {
       id: true,
       pgn: true,

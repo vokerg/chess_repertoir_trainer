@@ -32,25 +32,31 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return { user, auth };
   });
 
-  app.get('/api/me/accounts', async () => {
-    return ExternalAccountService.listForCurrentUser();
+  app.get('/api/me/accounts', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return ExternalAccountService.listForUser(auth.userId);
   });
 
   app.post('/api/me/accounts', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const parsed = createAccountSchema.safeParse(request.body);
     if (!parsed.success) {
       reply.code(400);
       return { error: parsed.error.errors };
     }
 
-    const account = await ExternalAccountService.createForCurrentUser(parsed.data);
+    const account = await ExternalAccountService.createForUser(auth.userId, parsed.data);
     reply.code(201);
     return account;
   });
 
   app.get('/api/me/accounts/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const account = await ExternalAccountService.getForCurrentUser(id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -59,6 +65,8 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
   });
 
   app.patch('/api/me/accounts/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     const parsed = updateAccountSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -66,7 +74,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
       return { error: parsed.error.errors };
     }
 
-    const account = await ExternalAccountService.updateForCurrentUser(id, parsed.data);
+    const account = await ExternalAccountService.updateForUser(auth.userId, id, parsed.data);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -75,8 +83,10 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
   });
 
   app.delete('/api/me/accounts/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const account = await ExternalAccountService.deleteForCurrentUser(id);
+    const account = await ExternalAccountService.deleteForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -86,8 +96,10 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/me/accounts/:id/sync', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const account = await ExternalAccountService.getForCurrentUser(id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -95,10 +107,10 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
 
     try {
       if (account.provider === 'LICHESS') {
-        return await LichessImportService.syncAccount(id);
+        return await LichessImportService.syncAccount(auth.userId, id);
       }
       if (account.provider === 'CHESS_COM') {
-        return await ChessComImportService.syncAccount(id);
+        return await ChessComImportService.syncAccount(auth.userId, id);
       }
 
       reply.code(400);
@@ -110,8 +122,10 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/me/accounts/:id/reset-cursor', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const account = await ExternalAccountService.resetSyncCursorForCurrentUser(id);
+    const account = await ExternalAccountService.resetSyncCursorForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -121,8 +135,10 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
   });
 
   app.get('/api/me/accounts/:id/games', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const account = await ExternalAccountService.getForCurrentUser(id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -135,7 +151,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     }
 
     const { take, ...query } = parsed.data;
-    return ImportedGamesService.search({
+    return ImportedGamesService.search(auth.userId, {
       ...query,
       accountIds: [id],
       limit: take ?? query.limit,

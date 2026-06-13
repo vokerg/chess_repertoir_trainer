@@ -62,7 +62,7 @@ function unexpectedToolError(logger: McpLogger, toolName: string, error: unknown
   return toMcpError('The MCP tool could not complete the request.', 'INTERNAL_ERROR');
 }
 
-export function createChessMcpServer(logger: McpLogger) {
+export function createChessMcpServer(logger: McpLogger, userId?: number) {
   const server = new McpServer({
     name: 'chess-repertoire-trainer',
     version: '0.1.0',
@@ -88,8 +88,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: searchImportedGamesInputSchema,
     annotations: readOnlyAnnotations,
   }, async (input) => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const page = await ImportedGameQueryService.searchPage(toImportedGameSearchQuery(input));
+      const page = await ImportedGameQueryService.searchPage(userId, toImportedGameSearchQuery(input));
       const result = {
         items: page.rows.map(toMcpGameSummary),
         pageInfo: page.pageInfo,
@@ -107,8 +108,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: summarizeImportedGamesInputSchema,
     annotations: readOnlyAnnotations,
   }, async (input) => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const result = await ImportedGameQueryService.summarize(toImportedGameSummaryQuery(input));
+      const result = await ImportedGameQueryService.summarize(userId, toImportedGameSummaryQuery(input));
       return structuredContentOnly(result);
     } catch (error) {
       return unexpectedToolError(logger, 'summarize_imported_games', error);
@@ -120,8 +122,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: getImportedGameInputSchema,
     annotations: readOnlyAnnotations,
   }, async ({ gameId, includePlies }) => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const row = await ImportedGameQueryService.getDetail(gameId);
+      const row = await ImportedGameQueryService.getDetail(userId, gameId);
       if (!row) return toMcpError(`Imported game ${gameId} was not found.`, 'NOT_FOUND');
       return structuredResult(
         `Loaded imported game ${gameId}. Use get_imported_game_pgn for raw PGN.`,
@@ -137,8 +140,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: getImportedGamePgnInputSchema,
     annotations: readOnlyAnnotations,
   }, async ({ gameId }) => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const game = await ImportedGameQueryService.getPgn(gameId);
+      const game = await ImportedGameQueryService.getPgn(userId, gameId);
       if (!game) return toMcpError(`Imported game ${gameId} was not found.`, 'NOT_FOUND');
       const text = game.pgn
         ? `PGN for imported game ${gameId}:\n\n${game.pgn}`
@@ -154,8 +158,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: getImportedGameFacetsInputSchema,
     annotations: readOnlyAnnotations,
   }, async () => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const facets = toMcpFacets(await ImportedGameQueryService.getFacets());
+      const facets = toMcpFacets(await ImportedGameQueryService.getFacets(userId));
       return structuredResult('Loaded imported-game filter facets.', facets);
     } catch (error) {
       return unexpectedToolError(logger, 'get_imported_game_facets', error);
@@ -167,8 +172,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: getImportedGameAnalysisInputSchema,
     annotations: readOnlyAnnotations,
   }, async ({ gameId }) => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const analysis = await GameAnalysisService.getImportedGameAnalysis(gameId);
+      const analysis = await GameAnalysisService.getImportedGameAnalysis(userId, gameId);
       return structuredResult(`Loaded stored analysis for imported game ${gameId}.`, analysis);
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
@@ -184,8 +190,9 @@ export function createChessMcpServer(logger: McpLogger) {
     inputSchema: getOpeningAnalysisInputSchema,
     annotations: readOnlyAnnotations,
   }, async (input) => {
+    if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const analysis = await OpeningAnalysisService.getPosition(toOpeningAnalysisQuery(input));
+      const analysis = await OpeningAnalysisService.getPosition(userId, toOpeningAnalysisQuery(input));
       return structuredResult(
         `Loaded opening analysis for ${analysis.normalizedFen} from ${analysis.games.total} games.`,
         analysis,

@@ -1,5 +1,4 @@
 import { moveClassificationLabel } from 'chess-domain';
-import { CurrentUserService } from '../../services/currentUserService';
 import {
   createClientGameAnalysisRun,
   getImportedGameForAnalysis,
@@ -115,28 +114,25 @@ function compactRun(run: any) {
 }
 
 export const GameAnalysisService = {
-  getImportedGameAnalysis: async (importedGameId: number) => {
-    await CurrentUserService.getOrCreate();
-
-    const game = await getImportedGameForAnalysis(importedGameId);
+  getImportedGameAnalysis: async (userId: number, importedGameId: number) => {
+    const game = await getImportedGameForAnalysis(userId, importedGameId);
     if (!game) throw new Error('Imported game not found');
 
-    const run = await getLatestGameAnalysisForImportedGame(importedGameId);
+    const run = await getLatestGameAnalysisForImportedGame(userId, importedGameId);
     if (!run) throw new Error('Imported game analysis not found');
 
     return { run: compactRun(run) };
   },
 
   createClientAnalysisSummary: async (
+    userId: number,
     importedGameId: number,
     input: { positionsDone?: number; summary?: unknown } = {},
   ) => {
-    await CurrentUserService.getOrCreate();
-
-    const game = await getImportedGameForAnalysis(importedGameId);
+    const game = await getImportedGameForAnalysis(userId, importedGameId);
     if (!game) throw new Error('Imported game not found');
 
-    const plies = await getImportedGamePliesForAnalysisSummary(importedGameId);
+    const plies = await getImportedGamePliesForAnalysisSummary(userId, importedGameId);
     const accuracy = buildAccuracySummary(plies, game.userColor);
     const run = await createClientGameAnalysisRun({
       importedGameId,

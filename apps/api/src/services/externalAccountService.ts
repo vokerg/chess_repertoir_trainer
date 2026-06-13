@@ -1,5 +1,4 @@
 import prisma from '../prisma';
-import { CurrentUserService, SINGLETON_USER_ID } from './currentUserService';
 
 export type ExternalProvider = 'LICHESS' | 'CHESS_COM';
 
@@ -8,22 +7,20 @@ function normalizeUsername(username: string) {
 }
 
 export const ExternalAccountService = {
-  listForCurrentUser: async () => {
-    await CurrentUserService.getOrCreate();
+  listForUser: async (userId: number) => {
     return prisma.externalAccount.findMany({
-      where: { userId: SINGLETON_USER_ID },
+      where: { userId },
       orderBy: [{ provider: 'asc' }, { username: 'asc' }],
     });
   },
 
-  createForCurrentUser: async (data: { provider: ExternalProvider; username: string; displayName?: string }) => {
-    await CurrentUserService.getOrCreate();
+  createForUser: async (userId: number, data: { provider: ExternalProvider; username: string; displayName?: string }) => {
     const username = normalizeUsername(data.username);
 
     return prisma.externalAccount.upsert({
       where: {
         userId_provider_username: {
-          userId: SINGLETON_USER_ID,
+          userId,
           provider: data.provider,
           username,
         },
@@ -33,7 +30,7 @@ export const ExternalAccountService = {
         isActive: true,
       },
       create: {
-        userId: SINGLETON_USER_ID,
+        userId,
         provider: data.provider,
         username,
         displayName: data.displayName,
@@ -41,16 +38,14 @@ export const ExternalAccountService = {
     });
   },
 
-  getForCurrentUser: async (id: number) => {
-    await CurrentUserService.getOrCreate();
+  getForUser: async (userId: number, id: number) => {
     return prisma.externalAccount.findFirst({
-      where: { id, userId: SINGLETON_USER_ID },
+      where: { id, userId },
     });
   },
 
-  updateForCurrentUser: async (id: number, data: { displayName?: string | null; isActive?: boolean }) => {
-    await CurrentUserService.getOrCreate();
-    const existing = await prisma.externalAccount.findFirst({ where: { id, userId: SINGLETON_USER_ID } });
+  updateForUser: async (userId: number, id: number, data: { displayName?: string | null; isActive?: boolean }) => {
+    const existing = await prisma.externalAccount.findFirst({ where: { id, userId } });
     if (!existing) return null;
 
     return prisma.externalAccount.update({
@@ -59,9 +54,8 @@ export const ExternalAccountService = {
     });
   },
 
-  resetSyncCursorForCurrentUser: async (id: number) => {
-    await CurrentUserService.getOrCreate();
-    const existing = await prisma.externalAccount.findFirst({ where: { id, userId: SINGLETON_USER_ID } });
+  resetSyncCursorForUser: async (userId: number, id: number) => {
+    const existing = await prisma.externalAccount.findFirst({ where: { id, userId } });
     if (!existing) return null;
 
     return prisma.externalAccount.update({
@@ -72,9 +66,8 @@ export const ExternalAccountService = {
     });
   },
 
-  deleteForCurrentUser: async (id: number) => {
-    await CurrentUserService.getOrCreate();
-    const existing = await prisma.externalAccount.findFirst({ where: { id, userId: SINGLETON_USER_ID } });
+  deleteForUser: async (userId: number, id: number) => {
+    const existing = await prisma.externalAccount.findFirst({ where: { id, userId } });
     if (!existing) return null;
 
     await prisma.externalAccount.delete({
@@ -84,10 +77,9 @@ export const ExternalAccountService = {
     return existing;
   },
 
-  listGamesForCurrentUser: async (accountId: number, take = 50, skip = 0) => {
-    await CurrentUserService.getOrCreate();
+  listGamesForUser: async (userId: number, accountId: number, take = 50, skip = 0) => {
     return prisma.importedGame.findMany({
-      where: { userId: SINGLETON_USER_ID, accountId },
+      where: { userId, accountId },
       orderBy: [{ endedAt: 'desc' }, { id: 'desc' }],
       take,
       skip,

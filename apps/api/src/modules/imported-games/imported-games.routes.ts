@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { requireAuth } from '../../auth/request-auth';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import { ImportedGamesService } from './imported-games.service';
 import { importedGameSearchQuerySchema, openingAnalysisQuerySchema } from './imported-games.schemas';
@@ -32,6 +33,8 @@ export default async function importedGamesModule(app: FastifyInstance) {
     url: '/api/imported-games',
     operation: listImportedGamesOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const parsed = importedGameSearchQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         reply.code(400);
@@ -39,7 +42,7 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
 
       try {
-        return await ImportedGamesService.search(parsed.data);
+        return await ImportedGamesService.search(auth.userId, parsed.data);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -52,6 +55,8 @@ export default async function importedGamesModule(app: FastifyInstance) {
     url: '/api/opening-analysis',
     operation: getOpeningAnalysisOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const parsed = openingAnalysisQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         reply.code(400);
@@ -59,7 +64,7 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
 
       try {
-        return await OpeningAnalysisService.getPosition(parsed.data);
+        return await OpeningAnalysisService.getPosition(auth.userId, parsed.data);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -71,7 +76,11 @@ export default async function importedGamesModule(app: FastifyInstance) {
     method: 'get',
     url: '/api/imported-games/facets',
     operation: getImportedGameFacetsOpenApiOperation,
-    handler: async () => ImportedGamesService.facets(),
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      return ImportedGamesService.facets(auth.userId);
+    },
   });
 
   registerOpenApiRoute(app, {
@@ -79,13 +88,15 @@ export default async function importedGamesModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId',
     operation: getImportedGameOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
         return { error: 'Invalid imported game id' };
       }
 
-      const game = await ImportedGamesService.get(gameId);
+      const game = await ImportedGamesService.get(auth.userId, gameId);
       if (!game) {
         reply.code(404);
         return { message: 'Imported game not found' };
@@ -99,13 +110,15 @@ export default async function importedGamesModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/pgn',
     operation: getImportedGamePgnOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
         return { error: 'Invalid imported game id' };
       }
 
-      const game = await ImportedGamesService.getPgn(gameId);
+      const game = await ImportedGamesService.getPgn(auth.userId, gameId);
       if (!game) {
         reply.code(404);
         return { message: 'Imported game not found' };
@@ -119,6 +132,8 @@ export default async function importedGamesModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/ply-index',
     operation: indexImportedGamePlyOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
@@ -126,7 +141,7 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
 
       try {
-        const result = await ImportedGamePlyIndexService.indexOne(gameId, { force: parseForce(request.body) });
+        const result = await ImportedGamePlyIndexService.indexOne(auth.userId, gameId, { force: parseForce(request.body) });
         if (result.status === 'INDEXED') reply.code(201);
         if (result.status === 'FAILED') reply.code(400);
         return result;

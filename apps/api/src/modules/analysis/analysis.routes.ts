@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { requireAuth } from '../../auth/request-auth';
 import { z } from 'zod';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import {
@@ -36,11 +37,15 @@ const batchAnalysisRequestSchema = z.object({
 export default async function analysisModule(app: FastifyInstance) {
   registerOpenApiSchemas(analysisOpenApiSchemas);
 
-  app.get('/api/imported-games/batch-analysis/config', async () => ({
-    enabled: isLocalBatchStockfishAnalysisEnabled(),
-  }));
+  app.get('/api/imported-games/batch-analysis/config', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return { enabled: isLocalBatchStockfishAnalysisEnabled() };
+  });
 
   app.post('/api/imported-games/batch-analysis-runs', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     if (!isLocalBatchStockfishAnalysisEnabled()) {
       reply.code(403);
       return { error: 'Local batch Stockfish analysis is disabled' };
@@ -54,7 +59,7 @@ export default async function analysisModule(app: FastifyInstance) {
 
     const gameIds = Array.from(new Set(parsed.data.gameIds));
     try {
-      ImportedGameBatchAnalysisService.enqueue(gameIds);
+      ImportedGameBatchAnalysisService.enqueue(auth.userId, gameIds);
       reply.code(200);
       return {
         accepted: true,
@@ -71,6 +76,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/position-analysis',
     operation: getPositionAnalysisOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const parsed = positionAnalysisLookupSchema.safeParse(request.query ?? {});
       if (!parsed.success) {
         reply.code(400);
@@ -92,6 +99,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/position-analysis/bulk-lookup',
     operation: bulkPositionAnalysisLookupOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const parsed = bulkPositionAnalysisLookupSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
@@ -113,6 +122,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/position-analysis/store',
     operation: storePositionAnalysisOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const parsed = storePositionAnalysisSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
@@ -134,6 +145,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/analysis',
     operation: getImportedGameAnalysisOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
@@ -141,7 +154,7 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        return await GameAnalysisService.getImportedGameAnalysis(gameId);
+        return await GameAnalysisService.getImportedGameAnalysis(auth.userId, gameId);
       } catch (err: any) {
         const message = err?.message ?? String(err);
         if (message === 'Imported game not found' || message === 'Imported game analysis not found') {
@@ -159,6 +172,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/analysis-runs',
     operation: createClientGameAnalysisRunOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
@@ -172,7 +187,7 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        const result = await GameAnalysisService.createClientAnalysisSummary(gameId, parsed.data);
+        const result = await GameAnalysisService.createClientAnalysisSummary(auth.userId, gameId, parsed.data);
         reply.code(201);
         return result;
       } catch (err: any) {
@@ -192,6 +207,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/plies/analysis',
     operation: updatePlyAnalysisOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
@@ -205,7 +222,7 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        return await updateImportedGamePlyAnalysis(gameId, parsed.data.plies);
+        return await updateImportedGamePlyAnalysis(auth.userId, gameId, parsed.data.plies);
       } catch (err: any) {
         const message = err?.message ?? String(err);
         if (message === 'Imported game not found') {
@@ -223,6 +240,8 @@ export default async function analysisModule(app: FastifyInstance) {
     url: '/api/imported-games/:gameId/plies/analysis/clear',
     operation: clearPlyAnalysisOpenApiOperation,
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const gameId = parseGameId(request.params);
       if (!gameId) {
         reply.code(400);
@@ -230,7 +249,7 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        return await clearImportedGamePlyAnalysis(gameId);
+        return await clearImportedGamePlyAnalysis(auth.userId, gameId);
       } catch (err: any) {
         const message = err?.message ?? String(err);
         if (message === 'Imported game not found') {

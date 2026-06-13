@@ -1,5 +1,4 @@
 import prisma from '../prisma';
-import { SINGLETON_USER_ID } from './currentUserService';
 
 const LICHESS_GAMES_URL = 'https://lichess.org/api/games/user';
 const OVERLAP_MS = 24 * 60 * 60 * 1000;
@@ -199,9 +198,9 @@ function buildSince(cursor?: Date | null) {
 }
 
 export const LichessImportService = {
-  syncAccount: async (accountId: number) => {
+  syncAccount: async (userId: number, accountId: number) => {
     const account = await prisma.externalAccount.findFirst({
-      where: { id: accountId, userId: SINGLETON_USER_ID, provider: 'LICHESS', isActive: true },
+      where: { id: accountId, userId, provider: 'LICHESS', isActive: true },
     });
 
     if (!account) throw new Error('Active Lichess account not found');

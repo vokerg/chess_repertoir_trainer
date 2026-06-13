@@ -1,7 +1,5 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
-import { CurrentUserService } from '../../services/currentUserService';
-import { SINGLETON_USER_ID } from '../../services/currentUserService';
 
 interface TopOpponentRow {
   opponentUsername: string;
@@ -41,15 +39,13 @@ function excludeBulletSql(excludeBullet: boolean) {
 }
 
 export const LabService = {
-  topOpponents: async (limit: number) => {
-    await CurrentUserService.getOrCreate();
-
+  topOpponents: async (userId: number, limit: number) => {
     const rows = await prisma.$queryRaw<TopOpponentRow[]>(Prisma.sql`
       SELECT
         "opponentUsername",
         count(*)::int AS "games"
       FROM "ImportedGame"
-      WHERE "userId" = ${SINGLETON_USER_ID}
+      WHERE "userId" = ${userId}
         AND "opponentUsername" IS NOT NULL
         AND "opponentUsername" <> ''
       GROUP BY "opponentUsername"
@@ -65,9 +61,7 @@ export const LabService = {
     };
   },
 
-  monthlyGames: async (options: { excludeBullet: boolean }) => {
-    await CurrentUserService.getOrCreate();
-
+  monthlyGames: async (userId: number, options: { excludeBullet: boolean }) => {
     const rows = await prisma.$queryRaw<MonthlyGamesRow[]>(Prisma.sql`
       WITH games AS (
         SELECT
@@ -80,7 +74,7 @@ export const LabService = {
             ELSE NULL
           END AS "opponentRating"
         FROM "ImportedGame"
-        WHERE "userId" = ${SINGLETON_USER_ID}
+        WHERE "userId" = ${userId}
           AND "endedAt" IS NOT NULL
           ${excludeBulletSql(options.excludeBullet)}
       )

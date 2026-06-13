@@ -1,4 +1,3 @@
-import { CurrentUserService } from '../../services/currentUserService';
 import { rowMatchesImportedGamePostFilters } from './imported-game-analysis.helpers';
 import {
   findImportedGameById,
@@ -40,13 +39,13 @@ function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGam
   };
 }
 
-async function searchRows(query: ImportedGameSearchQuery) {
+async function searchRows(userId: number, query: ImportedGameSearchQuery) {
   let cursor = decodeCursor(query.cursor);
   const visibleRows: ImportedGameListRow[] = [];
   let lastScannedRow: ImportedGameListRow | null = null;
 
   for (let page = 0; page < 25; page += 1) {
-    const rows = await findImportedGames(query, cursor);
+    const rows = await findImportedGames(userId, query, cursor);
     const candidates = rows.slice(0, query.limit);
     const batchHasMore = rows.length > query.limit;
 
@@ -175,35 +174,31 @@ function summarizeRows(rows: ImportedGameListRow[]) {
 }
 
 export const ImportedGameQueryService = {
-  searchPage: async (query: ImportedGameSearchQuery) => {
-    await CurrentUserService.getOrCreate();
-    const page = await searchRows(query);
+  searchPage: async (userId: number, query: ImportedGameSearchQuery) => {
+    const page = await searchRows(userId, query);
     return {
       ...page,
       appliedCriteria: query,
     };
   },
 
-  summarize: async (query: ImportedGameSummaryQuery) => {
-    const rows = await findImportedGamesForSummary(query);
+  summarize: async (userId: number, query: ImportedGameSummaryQuery) => {
+    const rows = await findImportedGamesForSummary(userId, query);
     return {
       summary: summarizeRows(rows.filter((row) => rowMatchesImportedGamePostFilters(row, query))),
       appliedCriteria: query,
     };
   },
 
-  getDetail: async (id: number) => {
-    await CurrentUserService.getOrCreate();
-    return findImportedGameById(id);
+  getDetail: async (userId: number, id: number) => {
+    return findImportedGameById(userId, id);
   },
 
-  getPgn: async (id: number) => {
-    await CurrentUserService.getOrCreate();
-    return getImportedGamePgn(id);
+  getPgn: async (userId: number, id: number) => {
+    return getImportedGamePgn(userId, id);
   },
 
-  getFacets: async () => {
-    await CurrentUserService.getOrCreate();
-    return getImportedGameFacets();
+  getFacets: async (userId: number) => {
+    return getImportedGameFacets(userId);
   },
 };

@@ -1,6 +1,5 @@
 import { Chess } from 'chess.js';
 import { classifyPly, moveClassificationLabel } from 'chess-domain';
-import { CurrentUserService } from '../../services/currentUserService';
 import { ImportedGamePlyIndexService } from '../imported-games/ply-index.service';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
 import {
@@ -19,6 +18,7 @@ import { StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
 import { PositionAnalysisService } from './position-analysis.service';
 
 interface BatchQueueItem {
+  userId: number;
   gameIds: number[];
 }
 
@@ -161,6 +161,7 @@ async function getOrCreatePositionAnalysis(
 
 async function analysePly(
   engine: LocalStockfishEngineService,
+  userId: number,
   gameId: number,
   ply: any,
   options: { depth: number; multipv: number },
@@ -193,7 +194,7 @@ async function analysePly(
     scoreLossCp,
   });
 
-  await updateImportedGamePlyAnalysis(gameId, [
+  await updateImportedGamePlyAnalysis(userId, gameId, [
     {
       plyNumber: ply.plyNumber,
       scoreLossCp,
@@ -202,8 +203,8 @@ async function analysePly(
   ]);
 }
 
-async function completeRun(runId: number, importedGameId: number, positionsTotal: number, userColor?: string | null) {
-  const plies = await getImportedGamePliesForAnalysisSummary(importedGameId);
+async function completeRun(userId: number, runId: number, importedGameId: number, positionsTotal: number, userColor?: string | null) {
+  const plies = await getImportedGamePliesForAnalysisSummary(userId, importedGameId);
   const accuracy = buildAccuracySummary(plies, userColor);
 
   await completeGameAnalysisRun(runId, {
@@ -220,16 +221,16 @@ async function completeRun(runId: number, importedGameId: number, positionsTotal
   });
 }
 
-async function analyseGame(engine: LocalStockfishEngineService, importedGameId: number, options: { depth: number; multipv: number }) {
-  const game = await getImportedGameForAnalysis(importedGameId);
+async function analyseGame(engine: LocalStockfishEngineService, userId: number, importedGameId: number, options: { depth: number; multipv: number }) {
+  const game = await getImportedGameForAnalysis(userId, importedGameId);
   if (!game) throw new Error('Imported game not found');
 
-  const indexResult = await ImportedGamePlyIndexService.indexOne(importedGameId, { force: false });
+  const indexResult = await ImportedGamePlyIndexService.indexOne(userId, importedGameId, { force: false });
   if (indexResult.status === 'FAILED') {
     throw new Error(indexResult.error || 'Could not index game plies');
   }
 
-  const plies = await getImportedGamePliesForBatchAnalysis(importedGameId);
+  const plies = await getImportedGamePliesForBatchAnalysis(userId, importedGameId);
   const alreadyDone = plies.filter(isPlyAnalysed).length;
   const run = await createRunningGameAnalysisRun({
     importedGameId,
@@ -241,12 +242,12 @@ async function analyseGame(engine: LocalStockfishEngineService, importedGameId: 
   try {
     for (const ply of plies) {
       if (isPlyAnalysed(ply)) continue;
-      await analysePly(engine, importedGameId, ply, options);
+      await analysePly(engine, userId, importedGameId, ply, options);
       done += 1;
       await updateGameAnalysisRunProgress(run.id, { positionsDone: done, positionsTotal: plies.length });
     }
 
-    await completeRun(run.id, importedGameId, plies.length, game.userColor);
+    await completeRun(userId, run.id, importedGameId, plies.length, game.userColor);
   } catch (err: any) {
     await failGameAnalysisRun(run.id, err?.message ?? String(err));
     throw err;
@@ -271,7 +272,7 @@ async function drainQueue() {
         await engine.init();
         for (const gameId of item.gameIds) {
           try {
-            await analyseGame(engine, gameId, { depth: config.depth, multipv: config.multipv });
+            await analyseGame(engine, item.userId, gameId, { depth: config.depth, multipv: config.multipv });
           } catch (err) {
             console.error(`Failed to batch analyse imported game ${gameId}`, err);
           }
@@ -288,7 +289,7 @@ async function drainQueue() {
 }
 
 export const ImportedGameBatchAnalysisService = {
-  enqueue: (gameIds: number[]) => {
+  enqueue: (userId: number, gameIds: number[]) => {
     if (!isLocalBatchStockfishAnalysisEnabled()) {
       throw new Error('Local batch Stockfish analysis is disabled');
     }
@@ -298,15 +299,9 @@ export const ImportedGameBatchAnalysisService = {
       throw new Error('No imported games selected for batch analysis');
     }
 
-    void CurrentUserService.getOrCreate()
-      .then(() => {
-        queue.push({ gameIds: uniqueGameIds });
-        void drainQueue().catch((err) => {
-          console.error('Local Stockfish batch analysis queue failed', err);
-        });
-      })
-      .catch((err) => {
-        console.error('Could not enqueue local batch Stockfish analysis', err);
-      });
+    queue.push({ userId, gameIds: uniqueGameIds });
+    void drainQueue().catch((err) => {
+      console.error('Local Stockfish batch analysis queue failed', err);
+    });
   },
 };

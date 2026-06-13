@@ -1,5 +1,4 @@
 import prisma from '../../prisma';
-import { SINGLETON_USER_ID } from '../../services/currentUserService';
 import { RepertoireColor } from './repertoire-coverage.types';
 
 export async function getCoverageCourse(courseId: number) {
@@ -40,6 +39,7 @@ export async function getCourseReviewLines(courseId: number) {
 }
 
 export async function getCourseReviewCandidateGames(input: {
+  userId: number;
   sideToTrain: RepertoireColor | null;
   from: Date;
   to?: Date;
@@ -48,7 +48,7 @@ export async function getCourseReviewCandidateGames(input: {
 }) {
   return prisma.importedGame.findMany({
     where: {
-      userId: SINGLETON_USER_ID,
+      userId: input.userId,
       endedAt: { gte: input.from, ...(input.to ? { lte: input.to } : {}) },
       ...(input.sideToTrain ? { userColor: input.sideToTrain } : {}),
     },

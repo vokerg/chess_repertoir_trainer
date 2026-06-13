@@ -1,6 +1,5 @@
 import { Chess } from 'chess.js';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
-import { CurrentUserService } from '../../services/currentUserService';
 import { ImportedGameSearchQuery, OpeningAnalysisQuery } from './imported-games.schemas';
 import { findOpeningAnalysisRows, OpeningAnalysisPlyRow } from './opening-analysis.repository.prisma';
 
@@ -215,13 +214,11 @@ function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow, moveSan: string | nul
 }
 
 export const OpeningAnalysisService = {
-  getPosition: async (query: OpeningAnalysisQuery) => {
-    await CurrentUserService.getOrCreate();
-
+  getPosition: async (userId: number, query: OpeningAnalysisQuery) => {
     const fen = boardFen(query.fen);
     const normalizedFen = normalizeFenForExplorer(fen);
     const effectiveQuery: OpeningAnalysisQuery = { ...query, rated: query.rated ?? true };
-    const rows = (await findOpeningAnalysisRows(effectiveQuery, normalizedFen)).filter((row) => rowMatchesAnalysisFilters(row, effectiveQuery));
+    const rows = (await findOpeningAnalysisRows(userId, effectiveQuery, normalizedFen)).filter((row) => rowMatchesAnalysisFilters(row, effectiveQuery));
 
     const positionGames = new Set<number>();
     const positionWdl = emptyWdl();

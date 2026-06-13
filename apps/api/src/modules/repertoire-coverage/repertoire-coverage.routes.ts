@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { requireAuth } from '../../auth/request-auth';
 import { CourseReviewService } from './repertoire-coverage.service';
 
 const paramsSchema = z.object({ courseId: z.coerce.number().int().positive() });
@@ -17,12 +18,14 @@ const querySchema = z.object({
 
 export default async function repertoireCoverageModule(app: FastifyInstance) {
   app.get('/api/courses/:courseId/review', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const params = paramsSchema.safeParse(request.params);
     const query = querySchema.safeParse(request.query);
     if (!params.success) return reply.status(400).send({ error: params.error.errors });
     if (!query.success) return reply.status(400).send({ error: query.error.errors });
 
-    const review = await CourseReviewService.calculate(params.data.courseId, {
+    const review = await CourseReviewService.calculate(auth.userId, params.data.courseId, {
       from: new Date(query.data.from),
       to: query.data.to ? new Date(query.data.to) : undefined,
       limit: query.data.limit,

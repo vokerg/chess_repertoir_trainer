@@ -1,5 +1,4 @@
 import prisma from '../prisma';
-import { SINGLETON_USER_ID } from './currentUserService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
 const MONTH_OVERLAP_MS = 31 * 24 * 60 * 60 * 1000;
@@ -248,9 +247,9 @@ function buildArchivesUrl(username: string) {
 }
 
 export const ChessComImportService = {
-  syncAccount: async (accountId: number) => {
+  syncAccount: async (userId: number, accountId: number) => {
     const account = await prisma.externalAccount.findFirst({
-      where: { id: accountId, userId: SINGLETON_USER_ID, provider: 'CHESS_COM', isActive: true },
+      where: { id: accountId, userId, provider: 'CHESS_COM', isActive: true },
     });
 
     if (!account) throw new Error('Active Chess.com account not found');
