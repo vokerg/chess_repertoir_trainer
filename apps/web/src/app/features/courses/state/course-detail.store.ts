@@ -3,17 +3,23 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseChapter, CourseDetail, CourseStats } from '../data-access/course-detail.models';
+import { SublinesApiService } from '../../sublines/data-access/sublines-api.service';
+import { AvailableSubline } from '../../sublines/data-access/sublines.models';
 
 @Injectable()
 export class CourseDetailStore {
   private readonly api = inject(CourseDetailApiService);
   private readonly router = inject(Router);
+  private readonly sublinesApi = inject(SublinesApiService);
   private requestVersion = 0;
 
   readonly courseId = signal<number | null>(null);
   readonly course = signal<CourseDetail | null>(null);
   readonly stats = signal<CourseStats | null>(null);
   readonly chapters = signal<CourseChapter[]>([]);
+  readonly sublines = signal<AvailableSubline[]>([]);
+  readonly sublinesLoading = signal(false);
+  readonly sublinesError = signal<string | null>(null);
   readonly newChapterName = signal('');
   readonly newChapterDescription = signal<string | null>(null);
   readonly loading = signal(false);
@@ -42,11 +48,14 @@ export class CourseDetailStore {
     if (!courseId) return;
     const version = ++this.requestVersion;
     this.loading.set(true);
+    this.sublinesLoading.set(true);
     this.error.set(null);
-    const [courseResult, statsResult, chaptersResult] = await Promise.allSettled([
+    this.sublinesError.set(null);
+    const [courseResult, statsResult, chaptersResult, sublinesResult] = await Promise.allSettled([
       firstValueFrom(this.api.getCourse(courseId)),
       firstValueFrom(this.api.getStats(courseId)),
       firstValueFrom(this.api.getChapters(courseId)),
+      firstValueFrom(this.sublinesApi.getCourseSublines(courseId)),
     ]);
     if (version !== this.requestVersion) return;
     if (courseResult.status === 'fulfilled') {
@@ -61,7 +70,14 @@ export class CourseDetailStore {
     } else {
       this.error.set(readError(chaptersResult.reason, 'Could not load chapters.'));
     }
+    if (sublinesResult.status === 'fulfilled') {
+      this.sublines.set(sublinesResult.value);
+    } else {
+      this.sublines.set([]);
+      this.sublinesError.set(readError(sublinesResult.reason, 'Could not load available sublines.'));
+    }
     this.loading.set(false);
+    this.sublinesLoading.set(false);
   }
 
   async createChapter(): Promise<void> {

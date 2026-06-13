@@ -58,6 +58,8 @@ The move tree is the core model:
 
 During training, opponent branches are auto-played randomly and the trained side must play the single correct continuation.
 
+Available sublines are the complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple available sublines.
+
 ### Imported games and analysis
 
 The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A user can add multiple accounts, sync finished games from either provider, browse imported games, open a game replay/detail page, and start backend Stockfish analysis for an imported game.
@@ -206,6 +208,14 @@ The seed creates:
 The seed stores real move nodes only; it does not create a fake blank root node.
 
 ## Main API surfaces
+
+### Course sublines API
+
+```http
+GET /api/courses/:courseId/sublines
+```
+
+This returns one row per terminal variation in course chapter and line order. The same line may appear multiple times with different move text when its move tree branches.
 
 ### Current user and external accounts
 

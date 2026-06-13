@@ -1,7 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import prisma from '../../prisma';
 import { TrainingService } from '../../services/trainingService';
+import { extractAvailableSublines } from 'chess-domain';
+import { buildMoveTreeFromNodes } from '../../utils/move-tree-builder';
+import { getChapterLinesWithMoves, getCourseLinesWithMoves } from '../courses/courses.repository.prisma';
 
 const marathonScopeSchema = z.object({
   type: z.enum(['CHAPTER', 'COURSE']),
@@ -14,30 +16,11 @@ const nextLineSchema = z.object({
 });
 
 async function findTrainableLines(scope: z.infer<typeof marathonScopeSchema>) {
-  const where =
-    scope.type === 'CHAPTER'
-      ? {
-          chapterId: scope.id,
-          moves: { some: {} },
-        }
-      : {
-          chapter: { courseId: scope.id },
-          moves: { some: {} },
-        };
-
-  return prisma.line.findMany({
-    where,
-    orderBy: { id: 'asc' },
-    include: {
-      chapter: {
-        select: {
-          id: true,
-          courseId: true,
-          name: true,
-        },
-      },
-    },
-  });
+  const lines = scope.type === 'CHAPTER'
+    ? await getChapterLinesWithMoves(scope.id)
+    : await getCourseLinesWithMoves(scope.id);
+  return lines.filter((line) =>
+    extractAvailableSublines(buildMoveTreeFromNodes(line.moves, line)).length > 0);
 }
 
 function pickLine<T extends { id: number }>(lines: T[], recentLineIds: number[]) {

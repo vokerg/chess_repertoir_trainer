@@ -1,0 +1,44 @@
+<section class="section-card stack">
+  <div>
+    <span class="eyebrow">Move tree variations</span>
+    <h3 class="collection-title sublines-title">{{ title() }}</h3>
+  </div>
+
+  @if (loading()) {
+    <p class="status-note">Loading sublines...</p>
+  } @else if (error()) {
+    <p class="status-error">{{ error() }}</p>
+  } @else if (items().length === 0) {
+    <div class="empty-state">No available sublines yet.</div>
+  } @else {
+    <div class="sublines-table-wrap">
+      <table class="sublines-table">
+        <thead>
+          <tr>
+            <th scope="col">Line</th>
+            <th scope="col">Moves</th>
+            <th scope="col" class="action-column"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.lineId + '-' + item.leafNodeId) {
+            <tr>
+              <td class="line-name">{{ item.lineName }}</td>
+              <td class="move-text">{{ item.moveText }}</td>
+              <td class="action-cell">
+                <button
+                  type="button"
+                  class="copy-button secondary"
+                  [attr.aria-label]="'Copy moves for ' + item.lineName"
+                  (click)="copyMoves(item)"
+                >
+                  {{ copiedLeafNodeId() === item.leafNodeId ? 'Copied' : 'Copy' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

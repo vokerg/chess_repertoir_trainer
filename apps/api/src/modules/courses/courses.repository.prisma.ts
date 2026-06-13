@@ -76,11 +76,17 @@ export async function getChapterWithCourse(chapterId: number, db: DbClient = pri
 
 export async function getCourseLinesWithMoves(courseId: number, db: DbClient = prisma) {
   return db.line.findMany({ where: { chapter: { courseId } }, include: { chapter: true, moves: true },
-    orderBy: [{ chapterId: 'asc' }, { id: 'asc' }] });
+    orderBy: [
+      { chapter: { sortOrder: 'asc' } },
+      { chapterId: 'asc' },
+      { name: 'asc' },
+      { id: 'asc' },
+    ] });
 }
 
 export async function getChapterLinesWithMoves(chapterId: number, db: DbClient = prisma) {
-  return db.line.findMany({ where: { chapterId }, include: { moves: true }, orderBy: { id: 'asc' } });
+  return db.line.findMany({ where: { chapterId }, include: { chapter: true, moves: true },
+    orderBy: { id: 'asc' } });
 }
 
 export async function getLineWithMoves(lineId: number, db: DbClient = prisma) {

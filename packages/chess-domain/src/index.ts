@@ -7,3 +7,4 @@ export * from './move-classification';
 export * from './move-sequence';
 export * from './repertoire-graph';
 export * from './repertoire-merge-planner';
+export * from './sublines';

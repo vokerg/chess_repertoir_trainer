@@ -3,6 +3,7 @@ import {
   TrainingState,
   playUserMove,
   getExpectedUserMoveUci,
+  extractAvailableSublines,
 } from 'chess-domain';
 import { LineService } from './lineService';
 import prisma from '../prisma';
@@ -91,6 +92,9 @@ export const TrainingService = {
   start: async (lineId: number) => {
     const tree = await LineService.getMoveTree(lineId);
     if (!tree) throw new Error('Line not found');
+    if (extractAvailableSublines(tree).length === 0) {
+      throw new Error('Line has no available sublines to train.');
+    }
 
     const trainingState = startTraining(tree);
     const session = await prisma.trainingSession.create({

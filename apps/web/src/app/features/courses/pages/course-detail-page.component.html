@@ -108,5 +108,12 @@
         </form>
       </aside>
     </div>
+
+    <app-sublines-list
+      [items]="store.sublines()"
+      [loading]="store.sublinesLoading()"
+      [error]="store.sublinesError()"
+      title="Available sublines"
+    />
   </section>
 }

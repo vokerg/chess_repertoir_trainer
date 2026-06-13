@@ -6,11 +6,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseDetailStore } from '../state/course-detail.store';
+import { SublinesListComponent } from '../../sublines/components/sublines-list.component';
 
 @Component({
   selector: 'app-course-detail-page',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [DecimalPipe, FormsModule, RouterLink, SublinesListComponent],
   providers: [CourseDetailApiService, CourseDetailStore],
   templateUrl: './course-detail-page.component.html',
   styleUrl: './course-detail-page.component.css',

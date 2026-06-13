@@ -20,6 +20,7 @@ const legacyOpenApiDocument = {
     { name: 'External accounts' },
     { name: 'Imported games' },
     { name: 'Analysis' },
+    { name: 'Courses' },
   ],
   paths: {
     '/health': {

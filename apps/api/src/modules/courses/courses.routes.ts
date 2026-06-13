@@ -15,6 +15,8 @@ import { z } from 'zod';
 import { PgnService } from '../../services/pgnService';
 import { applyAnalysisReintegrationSchema, previewAnalysisReintegrationSchema } from './analysis-reintegration.schemas';
 import { AnalysisReintegrationError, AnalysisReintegrationService } from './analysis-reintegration.service';
+import { getAvailableSublineRows } from './sublines.service';
+import { registerOpenApiRoute } from '../../openapi/route-registry';
 
 const importPgnSchema = z.object({
   name: z.string().min(1),
@@ -115,6 +117,47 @@ export default async function coursesModule(app: FastifyInstance) {
   app.get('/api/chapters/:chapterId/lines', async (request) => {
     const chapterId = Number((request.params as any).chapterId);
     return LineService.list(chapterId);
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'get',
+    url: '/api/courses/:courseId/sublines',
+    operation: {
+      tags: ['Courses'],
+      summary: 'List all terminal move-tree variations in a course',
+      parameters: [{ name: 'courseId', in: 'path', required: true,
+        schema: { type: 'integer', minimum: 1 } }],
+      responses: {
+        '200': {
+          description: 'One row per available terminal variation',
+          content: { 'application/json': { schema: { type: 'array', items: {
+            type: 'object',
+            required: ['lineId', 'lineName', 'chapterId', 'chapterName', 'leafNodeId', 'moves', 'moveText'],
+            properties: {
+              lineId: { type: 'integer' }, lineName: { type: 'string' },
+              chapterId: { type: 'integer' }, chapterName: { type: 'string' },
+              leafNodeId: { type: 'integer' }, moveText: { type: 'string' },
+              moves: { type: 'array', items: { type: 'object',
+                required: ['nodeId', 'moveUci', 'moveSan', 'plyNumber', 'sortOrder'],
+                properties: { nodeId: { type: 'integer' }, moveUci: { type: 'string' },
+                  moveSan: { type: 'string' }, plyNumber: { type: 'integer' },
+                  sortOrder: { type: 'integer' } } } },
+            },
+          } } } },
+        },
+        '400': { description: 'Invalid course id' },
+        '404': { description: 'Course not found' },
+      },
+    },
+    handler: async (request, reply) => {
+      const courseId = Number((request.params as any).courseId);
+      if (!Number.isInteger(courseId) || courseId <= 0) {
+        return reply.status(400).send({ error: 'Invalid course id' });
+      }
+      const sublines = await getAvailableSublineRows({ type: 'COURSE', id: courseId });
+      if (sublines === null) return reply.status(404).send({ error: 'Course not found' });
+      return reply.send(sublines);
+    },
   });
 
   app.post('/api/chapters/:chapterId/analysis-reintegration/preview', async (request, reply) => {
