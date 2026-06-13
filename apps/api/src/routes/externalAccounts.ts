@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { CurrentUserService } from '../services/currentUserService';
+import { CurrentAppUserService } from '../auth/current-app-user.service';
+import { requireAuth } from '../auth/request-auth';
 import { ExternalAccountService } from '../services/externalAccountService';
 import { LichessImportService } from '../services/lichessImportService';
 import { ChessComImportService } from '../services/chessComImportService';
@@ -23,8 +24,12 @@ const listAccountGamesQuerySchema = importedGameSearchQuerySchema.omit({ account
 });
 
 export default async function externalAccountsRoutes(app: FastifyInstance) {
-  app.get('/api/me', async () => {
-    return CurrentUserService.getOrCreate();
+  app.get('/api/me', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+
+    const user = await CurrentAppUserService.getById(auth.userId);
+    return { user, auth };
   });
 
   app.get('/api/me/accounts', async () => {

@@ -46,13 +46,20 @@ const legacyOpenApiDocument = {
     '/api/me': {
       get: {
         tags: ['Current user'],
-        summary: 'Get or create the singleton local user',
+        summary: 'Get the authenticated application user',
         responses: {
           '200': {
-            description: 'Current singleton user',
+            description: 'Resolved application user and authentication summary',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/AppUser' },
+                schema: {
+                  type: 'object',
+                  properties: {
+                    user: { $ref: '#/components/schemas/AppUser' },
+                    auth: { $ref: '#/components/schemas/AuthSummary' },
+                  },
+                  required: ['user', 'auth'],
+                },
               },
             },
           },
@@ -280,10 +287,23 @@ const legacyOpenApiDocument = {
         properties: {
           id: { type: 'integer' },
           displayName: { type: 'string', nullable: true },
+          authProvider: { type: 'string', nullable: true },
+          authSubject: { type: 'string', nullable: true },
+          email: { type: 'string', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
         required: ['id', 'createdAt', 'updatedAt'],
+      },
+      AuthSummary: {
+        type: 'object',
+        properties: {
+          userId: { type: 'integer' },
+          provider: { type: 'string', enum: ['clerk', 'dev'] },
+          externalSubject: { type: 'string' },
+          email: { type: 'string' },
+        },
+        required: ['userId', 'provider', 'externalSubject'],
       },
       ExternalAccount: {
         type: 'object',

@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import dotenv from 'dotenv';
 import registerRoutes from './routes';
+import authPlugin from './auth/auth.plugin';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ async function bootstrap() {
 
   app.get('/health', async () => ({ ok: true }));
 
+  await app.register(authPlugin);
   registerRoutes(app);
 
   try {

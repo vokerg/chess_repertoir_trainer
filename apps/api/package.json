@@ -25,6 +25,8 @@
     "chess.js": "^1.0.0",
     "dotenv": "^16.3.1",
     "fastify": "^5.8.5",
+    "fastify-plugin": "^5.1.0",
+    "jose": "^6.2.3",
     "prisma": "^5.6.0",
     "zod": "^3.25.76"
   },

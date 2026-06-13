@@ -16,11 +16,16 @@ datasource db {
 model AppUser {
   id               Int               @id @default(autoincrement())
   displayName      String?
+  authProvider     String?
+  authSubject      String?
+  email            String?
   externalAccounts ExternalAccount[]
   importedGames    ImportedGame[]
   importRuns       ImportRun[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+
+  @@unique([authProvider, authSubject])
 }
 
 model ExternalAccount {
