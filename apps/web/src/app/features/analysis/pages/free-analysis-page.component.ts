@@ -15,7 +15,7 @@ import { FreeAnalysisStore } from '../state/free-analysis.store';
 import { AnalysisReintegrationDialogComponent } from '../components/analysis-reintegration-dialog.component';
 import { AnalysisReintegrationApiService } from '../data-access/analysis-reintegration-api.service';
 import { AnalysisReintegrationStore } from '../state/analysis-reintegration.store';
-import { buildAnalysisReintegrationPayload } from '../helpers/analysis-reintegration-payload.helpers';
+import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reintegration-payload.helpers';
 
 @Component({
   selector: 'app-free-analysis-page',
@@ -64,7 +64,11 @@ export class FreeAnalysisPageComponent implements OnInit {
 
   protected openReintegrationDialog(): void {
     const tree = this.store.tree();
-    if (tree) void this.reintegrationStore.openForTree(buildAnalysisReintegrationPayload(tree));
+    if (tree) {
+      void this.reintegrationStore.openForTree(
+        buildAnalysisReintegrationLinePayload(tree, this.store.selectedNodeId()),
+      );
+    }
   }
 }
 

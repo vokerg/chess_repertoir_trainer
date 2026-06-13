@@ -33,7 +33,7 @@ describe('repertoire merge planner', () => {
     expect(preview.previewTree.map((move) => move.status)).toEqual(['REUSED', 'CREATES']);
   });
 
-  it('detects course-level and new-line conflicts', () => {
+  it('detects course-level conflicts for existing-line and new-line merges', () => {
     const target = line(1, [], 'BLACK');
     const existing = line(2, ['e2e4', 'c7c5'], 'BLACK');
     const rootAfterE4 = existing.moves[0].fenAfter;

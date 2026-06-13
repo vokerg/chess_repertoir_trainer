@@ -4,7 +4,7 @@ export interface AnalysisReintegrationTreePayload { rootFen: string; children: A
 export interface AnalysisReintegrationPreviewRequest { analysisTree: AnalysisReintegrationTreePayload; newLineName?: string; newLineSideToTrain?: RepertoireColor; }
 export interface AnalysisReintegrationApplyRequest { analysisTree: AnalysisReintegrationTreePayload; target:
   | { kind: 'EXISTING_LINE'; lineId: number; anchor: { kind: 'LINE_START' | 'NODE'; nodeId: number | null; normalizedFen: string }; allowConflicts?: false }
-  | { kind: 'NEW_LINE'; name: string; sideToTrain: RepertoireColor; allowConflicts?: false }; }
+  | { kind: 'NEW_LINE'; name: string; sideToTrain: RepertoireColor; allowConflicts?: boolean }; }
 export interface AnalysisReintegrationLineRef { lineId: number; lineName: string; nodeId: number | null; moveSequenceSan?: string | null; }
 export interface AnalysisReintegrationConflict { normalizedFenBefore: string; sideToMove: RepertoireColor; proposedMoveUci: string; proposedMoveSan: string | null; existingMoves: Array<{ moveUci: string; moveSan: string; lineRefs: AnalysisReintegrationLineRef[] }>; }
 export interface AnalysisReintegrationCounts { reusedMoves: number; createdMoves: number; conflictingMoves: number; totalAnalysisMoves: number; }

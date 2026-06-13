@@ -28,7 +28,7 @@ export const applyAnalysisReintegrationSchema = z.object({
       allowConflicts: z.literal(false).optional().default(false) }),
     z.object({ kind: z.literal('NEW_LINE'), name: z.string().min(1),
       sideToTrain: z.enum(['WHITE', 'BLACK']),
-      allowConflicts: z.literal(false).optional().default(false) }),
+      allowConflicts: z.boolean().optional().default(false) }),
   ]),
 });
 

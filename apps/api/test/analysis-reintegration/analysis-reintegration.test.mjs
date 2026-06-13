@@ -46,6 +46,12 @@ try {
   assert.equal(apply.json().createdMoves, 1);
   assert.equal(applyCall.body.target.allowConflicts, false);
 
+  const newLineApply = await app.inject({ method: 'POST', url: '/api/chapters/7/analysis-reintegration/apply', payload: {
+    analysisTree: tree, target: { kind: 'NEW_LINE', name: 'New', sideToTrain: 'WHITE', allowConflicts: true },
+  } });
+  assert.equal(newLineApply.statusCode, 200);
+  assert.equal(applyCall.body.target.allowConflicts, true);
+
   AnalysisReintegrationService.applyToChapter = async () => {
     throw new AnalysisReintegrationError('Analysis tree has repertoire conflicts.', 409, [{ proposedMoveUci: 'e2e4' }]);
   };

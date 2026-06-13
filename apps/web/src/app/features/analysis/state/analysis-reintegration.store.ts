@@ -23,7 +23,7 @@ export class AnalysisReintegrationStore {
   readonly canApply = computed(() => {
     if (!this.selectedChapterId() || !this.preview() || this.previewLoading() || this.applying()) return false;
     if (this.targetMode() === 'EXISTING_LINE') return Boolean(this.selectedCandidate() && !this.selectedCandidate()!.counts.conflictingMoves);
-    return Boolean(this.newLineName().trim() && this.preview()!.newLine.allowed && !this.preview()!.newLine.counts.conflictingMoves);
+    return Boolean(this.newLineName().trim());
   });
   private requestVersion = 0;
 
@@ -44,7 +44,12 @@ export class AnalysisReintegrationStore {
     const courseId = positiveNumber(value); const version = ++this.requestVersion;
     this.selectedCourseId.set(courseId); this.selectedChapterId.set(null); this.chapters.set([]); this.preview.set(null); this.selectedCandidateKey.set(null);
     if (!courseId) return; this.loadingChapters.set(true); this.error.set(null);
-    try { const chapters = await firstValueFrom(this.api.getChapters(courseId)); if (version === this.requestVersion) this.chapters.set(chapters); }
+    try { const chapters = await firstValueFrom(this.api.getChapters(courseId));
+      if (version !== this.requestVersion) return;
+      this.chapters.set(chapters);
+      this.selectedChapterId.set(chapters[0]?.id ?? null);
+      this.loadingChapters.set(false);
+      if (this.canPreview()) await this.previewSelectedChapter(); }
     catch (error) { if (version === this.requestVersion) this.error.set(readAnalysisReintegrationError(error, 'Could not load chapters.')); }
     finally { if (version === this.requestVersion) this.loadingChapters.set(false); }
   }
@@ -72,11 +77,14 @@ export class AnalysisReintegrationStore {
     const target = this.targetMode() === 'EXISTING_LINE'
       ? (() => { const candidate = this.selectedCandidate()!; return { kind: 'EXISTING_LINE' as const, lineId: candidate.lineId,
           anchor: { kind: candidate.anchor.kind, nodeId: candidate.anchor.nodeId, normalizedFen: candidate.anchor.normalizedFen } }; })()
-      : { kind: 'NEW_LINE' as const, name: this.newLineName().trim(), sideToTrain: this.newLineSideToTrain() };
+      : { kind: 'NEW_LINE' as const, name: this.newLineName().trim(), sideToTrain: this.newLineSideToTrain(),
+          allowConflicts: true };
     const version = ++this.requestVersion; this.applying.set(true); this.error.set(null); this.success.set(null);
     try { const result = await firstValueFrom(this.api.apply(chapterId, { analysisTree, target }));
       if (version === this.requestVersion) { this.applying.set(false); await this.previewSelectedChapter();
-        this.success.set(`Merged into ${result.lineName}: ${result.createdMoves} added, ${result.reusedMoves} reused.`); } }
+        this.success.set(result.targetKind === 'NEW_LINE'
+          ? `Created ${result.lineName}: ${result.createdMoves} added.`
+          : `Merged into ${result.lineName}: ${result.createdMoves} added, ${result.reusedMoves} reused.`); } }
     catch (error) { if (version === this.requestVersion) this.error.set(readAnalysisReintegrationError(error, 'Could not apply reintegration.')); }
     finally { if (version === this.requestVersion) this.applying.set(false); }
   }

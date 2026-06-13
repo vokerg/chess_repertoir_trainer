@@ -51,7 +51,7 @@ export const AnalysisReintegrationService = {
       if (input.target.kind === 'NEW_LINE') {
         const preview = previewCreateNewLine({ analysisTree: input.analysisTree,
           lineName: input.target.name, sideToTrain: input.target.sideToTrain, courseLines });
-        rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
+        if (!input.target.allowConflicts) rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
         const line = await createLine(chapterId, { name: input.target.name,
           sideToTrain: input.target.sideToTrain, startingFen: input.analysisTree.rootFen }, tx);
         const counts = await applyChildren(tx, line.id, null, input.analysisTree.children, []);
