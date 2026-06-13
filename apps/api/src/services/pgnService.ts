@@ -106,8 +106,11 @@ async function createImportedMove(
 }
 
 export const PgnService = {
-  exportLine: async (lineId: number) => {
-    const line = await prisma.line.findUnique({ where: { id: lineId }, include: { moves: true } });
+  exportLine: async (userId: number, lineId: number) => {
+    const line = await prisma.line.findFirst({
+      where: { id: lineId, chapter: { course: { userId } } },
+      include: { moves: true },
+    });
     if (!line) throw new Error('Line not found');
 
     const childrenByParent = new Map<number | null, any[]>();
@@ -128,9 +131,15 @@ export const PgnService = {
   },
 
   importLine: async (
+    userId: number,
     chapterId: number,
     data: { name: string; sideToTrain: string; startingFen?: string; pgn: string },
   ) => {
+    const chapter = await prisma.chapter.findFirst({
+      where: { id: chapterId, course: { userId } },
+      select: { id: true },
+    });
+    if (!chapter) throw new Error('Chapter not found');
     const tokens = tokenizePgn(data.pgn);
     if (!tokens.length) throw new Error('No PGN moves found');
 

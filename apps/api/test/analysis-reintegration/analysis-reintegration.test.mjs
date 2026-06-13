@@ -4,6 +4,10 @@ import coursesModule from '../../dist/modules/courses/courses.routes.js';
 import { AnalysisReintegrationError, AnalysisReintegrationService } from '../../dist/modules/courses/analysis-reintegration.service.js';
 
 const app = Fastify();
+app.decorateRequest('auth', null);
+app.addHook('onRequest', async (request) => {
+  request.auth = { userId: 42, provider: 'dev', externalSubject: 'test-user' };
+});
 await app.register(coursesModule);
 await app.ready();
 
@@ -13,8 +17,8 @@ const originalApply = AnalysisReintegrationService.applyToChapter;
 
 try {
   let previewCall;
-  AnalysisReintegrationService.previewChapter = async (chapterId, body) => {
-    previewCall = { chapterId, body };
+  AnalysisReintegrationService.previewChapter = async (userId, chapterId, body) => {
+    previewCall = { userId, chapterId, body };
     return { analysisRootFen: tree.rootFen, analysisRootNormalizedFen: 'normalized', candidates: [
       { lineId: 10, lineName: 'Target', sideToTrain: 'WHITE', anchor: { kind: 'NODE', lineId: 10,
         lineName: 'Target', nodeId: 99, fen: 'fen', normalizedFen: 'normalized', moveSequenceSan: '1. e4' },
@@ -28,14 +32,15 @@ try {
   assert.equal(preview.statusCode, 200);
   assert.equal(preview.json().candidates[0].anchor.kind, 'NODE');
   assert.equal(previewCall.chapterId, 7);
+  assert.equal(previewCall.userId, 42);
 
   const invalid = await app.inject({ method: 'POST', url: '/api/chapters/7/analysis-reintegration/preview',
     payload: { analysisTree: { rootFen: '', children: [] } } });
   assert.equal(invalid.statusCode, 400);
 
   let applyCall;
-  AnalysisReintegrationService.applyToChapter = async (chapterId, body) => {
-    applyCall = { chapterId, body };
+  AnalysisReintegrationService.applyToChapter = async (userId, chapterId, body) => {
+    applyCall = { userId, chapterId, body };
     return { targetKind: body.target.kind, lineId: 10, lineName: 'Target', createdMoves: 1, reusedMoves: 0 };
   };
   const apply = await app.inject({ method: 'POST', url: '/api/chapters/7/analysis-reintegration/apply', payload: {
@@ -45,6 +50,7 @@ try {
   assert.equal(apply.statusCode, 200);
   assert.equal(apply.json().createdMoves, 1);
   assert.equal(applyCall.body.target.allowConflicts, false);
+  assert.equal(applyCall.userId, 42);
 
   const newLineApply = await app.inject({ method: 'POST', url: '/api/chapters/7/analysis-reintegration/apply', payload: {
     analysisTree: tree, target: { kind: 'NEW_LINE', name: 'New', sideToTrain: 'WHITE', allowConflicts: true },

@@ -3,60 +3,69 @@ import prisma from '../../prisma';
 
 export type DbClient = typeof prisma | Prisma.TransactionClient;
 
-export async function listCourses() {
-  return prisma.course.findMany({ orderBy: { id: 'asc' } });
+export async function listCourses(userId: number) {
+  return prisma.course.findMany({ where: { userId }, orderBy: { id: 'asc' } });
 }
 
-export async function createCourse(data: { name: string; description?: string | null }) {
-  return prisma.course.create({ data });
+export async function createCourse(userId: number, data: { name: string; description?: string | null }) {
+  return prisma.course.create({ data: { userId, ...data } });
 }
 
-export async function getCourseById(id: number) {
-  return prisma.course.findUnique({ where: { id } });
+export async function getCourseById(userId: number, id: number, db: DbClient = prisma) {
+  return db.course.findFirst({ where: { id, userId } });
 }
 
 export async function updateCourse(
+  userId: number,
   id: number,
   data: { name?: string; description?: string | null },
 ) {
+  if (!await getCourseById(userId, id)) return null;
   return prisma.course.update({ where: { id }, data });
 }
 
-export async function deleteCourse(id: number) {
+export async function deleteCourse(userId: number, id: number) {
+  if (!await getCourseById(userId, id)) return null;
   return prisma.course.delete({ where: { id } });
 }
 
-export async function listChapters(courseId: number) {
-  return prisma.chapter.findMany({ where: { courseId }, orderBy: { sortOrder: 'asc' } });
+export async function listChapters(userId: number, courseId: number) {
+  return prisma.chapter.findMany({ where: { courseId, course: { userId } }, orderBy: { sortOrder: 'asc' } });
 }
 
-export async function getChapterById(id: number) {
-  return prisma.chapter.findUnique({ where: { id } });
+export async function getChapterById(userId: number, id: number, db: DbClient = prisma) {
+  return db.chapter.findFirst({ where: { id, course: { userId } } });
 }
 
 export async function createChapter(
+  userId: number,
   courseId: number,
   data: { name: string; description?: string | null; sortOrder?: number },
 ) {
+  if (!await getCourseById(userId, courseId)) return null;
   return prisma.chapter.create({ data: { courseId, ...data } });
 }
 
 export async function updateChapter(
+  userId: number,
   id: number,
   data: { name?: string; description?: string | null; sortOrder?: number },
 ) {
+  if (!await getChapterById(userId, id)) return null;
   return prisma.chapter.update({ where: { id }, data });
 }
 
-export async function deleteChapter(id: number) {
+export async function deleteChapter(userId: number, id: number) {
+  if (!await getChapterById(userId, id)) return null;
   return prisma.chapter.delete({ where: { id } });
 }
 
-export async function listLines(chapterId: number) {
-  return prisma.line.findMany({ where: { chapterId }, orderBy: { id: 'asc' } });
+export async function listLines(userId: number, chapterId: number) {
+  return prisma.line.findMany({ where: { chapterId, chapter: { course: { userId } } }, orderBy: { id: 'asc' } });
 }
 
 export async function createLine(
+  userId: number,
   chapterId: number,
   data: {
     name: string;
@@ -67,15 +76,16 @@ export async function createLine(
   },
   db: DbClient = prisma,
 ) {
+  if (!await getChapterById(userId, chapterId, db)) return null;
   return db.line.create({ data: { chapterId, ...data } });
 }
 
-export async function getChapterWithCourse(chapterId: number, db: DbClient = prisma) {
-  return db.chapter.findUnique({ where: { id: chapterId }, include: { course: true } });
+export async function getChapterWithCourse(userId: number, chapterId: number, db: DbClient = prisma) {
+  return db.chapter.findFirst({ where: { id: chapterId, course: { userId } }, include: { course: true } });
 }
 
-export async function getCourseLinesWithMoves(courseId: number, db: DbClient = prisma) {
-  return db.line.findMany({ where: { chapter: { courseId } }, include: { chapter: true, moves: true },
+export async function getCourseLinesWithMoves(userId: number, courseId: number, db: DbClient = prisma) {
+  return db.line.findMany({ where: { chapter: { courseId, course: { userId } } }, include: { chapter: true, moves: true },
     orderBy: [
       { chapter: { sortOrder: 'asc' } },
       { chapterId: 'asc' },
@@ -84,20 +94,21 @@ export async function getCourseLinesWithMoves(courseId: number, db: DbClient = p
     ] });
 }
 
-export async function getChapterLinesWithMoves(chapterId: number, db: DbClient = prisma) {
-  return db.line.findMany({ where: { chapterId }, include: { chapter: true, moves: true },
+export async function getChapterLinesWithMoves(userId: number, chapterId: number, db: DbClient = prisma) {
+  return db.line.findMany({ where: { chapterId, chapter: { course: { userId } } }, include: { chapter: true, moves: true },
     orderBy: { id: 'asc' } });
 }
 
-export async function getLineWithMoves(lineId: number, db: DbClient = prisma) {
-  return db.line.findUnique({ where: { id: lineId }, include: { chapter: true, moves: true } });
+export async function getLineWithMoves(userId: number, lineId: number, db: DbClient = prisma) {
+  return db.line.findFirst({ where: { id: lineId, chapter: { course: { userId } } }, include: { chapter: true, moves: true } });
 }
 
-export async function getLineById(id: number, db: DbClient = prisma) {
-  return db.line.findUnique({ where: { id } });
+export async function getLineById(userId: number, id: number, db: DbClient = prisma) {
+  return db.line.findFirst({ where: { id, chapter: { course: { userId } } } });
 }
 
 export async function updateLine(
+  userId: number,
   id: number,
   data: Partial<{
     chapterId: number;
@@ -109,25 +120,28 @@ export async function updateLine(
   }>,
   db: DbClient = prisma,
 ) {
+  if (!await getLineById(userId, id, db)) return null;
+  if (data.chapterId !== undefined && !await getChapterById(userId, data.chapterId, db)) return null;
   return db.line.update({ where: { id }, data });
 }
 
 export async function copyLineToChapter(
+  userId: number,
   sourceLineId: number,
   targetChapterId: number,
   name?: string,
 ) {
   return prisma.$transaction(async (tx) => {
     const [source, targetChapter] = await Promise.all([
-      tx.line.findUnique({
-        where: { id: sourceLineId },
+      tx.line.findFirst({
+        where: { id: sourceLineId, chapter: { course: { userId } } },
         include: {
           moves: {
             orderBy: [{ plyNumber: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
           },
         },
       }),
-      tx.chapter.findUnique({ where: { id: targetChapterId }, select: { id: true } }),
+      tx.chapter.findFirst({ where: { id: targetChapterId, course: { userId } }, select: { id: true } }),
     ]);
     if (!source || !targetChapter) return null;
 
@@ -199,40 +213,44 @@ export async function copyLineToChapter(
   });
 }
 
-export async function deleteLine(id: number) {
+export async function deleteLine(userId: number, id: number) {
+  if (!await getLineById(userId, id)) return null;
   return prisma.line.delete({ where: { id } });
 }
 
-export async function getLineMoveNodes(lineId: number) {
+export async function getLineMoveNodes(userId: number, lineId: number) {
   return prisma.moveNode.findMany({
-    where: { lineId },
+    where: { lineId, line: { chapter: { course: { userId } } } },
     orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
   });
 }
 
-export async function getNodeById(id: number, db: DbClient = prisma) {
-  return db.moveNode.findUnique({ where: { id } });
+export async function getNodeById(userId: number, id: number, db: DbClient = prisma) {
+  return db.moveNode.findFirst({ where: { id, line: { chapter: { course: { userId } } } } });
 }
 
 export async function createMoveNode(data: any, db: DbClient = prisma) {
   return db.moveNode.create({ data });
 }
 
-export async function updateMoveNode(id: number, data: any, db: DbClient = prisma) {
+export async function updateMoveNode(userId: number, id: number, data: any, db: DbClient = prisma) {
+  if (!await getNodeById(userId, id, db)) return null;
   return db.moveNode.update({ where: { id }, data });
 }
 
-export async function deleteNodeAndSubtree(id: number, db: DbClient = prisma) {
+export async function deleteNodeAndSubtree(userId: number, id: number, db: DbClient = prisma) {
+  if (!await getNodeById(userId, id, db)) return null;
   return db.moveNode.delete({ where: { id } });
 }
 
 export async function existsCorrectUserMove(
+  userId: number,
   lineId: number,
   parentId: number | null,
   db: DbClient = prisma,
 ) {
   const count = await db.moveNode.count({
-    where: { lineId, parentId, isUserMove: true, isCorrectUserMove: true },
+    where: { lineId, parentId, line: { chapter: { course: { userId } } }, isUserMove: true, isCorrectUserMove: true },
   });
   return count > 0;
 }

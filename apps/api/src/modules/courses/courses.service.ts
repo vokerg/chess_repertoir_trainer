@@ -37,6 +37,7 @@ function parseUci(moveUci: string): { from: string; to: string; promotion?: stri
 
 export async function createMoveNodeInTransaction(
   tx: Prisma.TransactionClient,
+  userId: number,
   lineId: number,
   body: {
     parentId?: number | null;
@@ -50,13 +51,13 @@ export async function createMoveNodeInTransaction(
 ) {
   const { parentId = null, moveUci, comment = null, annotation = null, branchLabel = null,
     branchWeight = null, sortOrder = 0 } = body;
-  const line = await getLineById(lineId, tx);
+  const line = await getLineById(userId, lineId, tx);
   if (!line) throw new Error('Line not found');
 
   let fenBefore: string;
   let plyNumber: number;
   if (parentId != null) {
-    const parentNode = await getNodeById(parentId, tx);
+    const parentNode = await getNodeById(userId, parentId, tx);
     if (!parentNode) throw new Error('Parent node not found');
     if (parentNode.lineId !== lineId) throw new Error('Parent node does not belong to this line');
     fenBefore = parentNode.fenAfter;
@@ -69,7 +70,7 @@ export async function createMoveNodeInTransaction(
   const chess = fenBefore === 'startpos' ? new Chess() : new Chess(fenBefore);
   const colorToMoveBefore: 'WHITE' | 'BLACK' = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
   const isUserMove = colorToMoveBefore === line.sideToTrain;
-  if (isUserMove && await existsCorrectUserMove(lineId, parentId, tx)) {
+  if (isUserMove && await existsCorrectUserMove(userId, lineId, parentId, tx)) {
     throw new Error('This position already has a correct trained-side move. Delete or replace it first.');
   }
   const move = chess.move(parseUci(moveUci));
@@ -82,31 +83,40 @@ export async function createMoveNodeInTransaction(
 }
 
 export const CourseService = {
-  list: async () => listCourses(),
-  create: async (data: { name: string; description?: string | null }) => createCourse(data),
-  get: async (id: number) => getCourseById(id),
-  update: async (id: number, data: { name?: string; description?: string | null }) =>
-    updateCourse(id, data),
-  delete: async (id: number) => deleteCourse(id),
+  list: async (userId: number) => listCourses(userId),
+  create: async (userId: number, data: { name: string; description?: string | null }) => createCourse(userId, data),
+  get: async (userId: number, id: number) => getCourseById(userId, id),
+  update: async (userId: number, id: number, data: { name?: string; description?: string | null }) =>
+    updateCourse(userId, id, data),
+  delete: async (userId: number, id: number) => deleteCourse(userId, id),
 };
 
 export const ChapterService = {
-  list: async (courseId: number) => listChapters(courseId),
-  get: async (id: number) => getChapterById(id),
+  list: async (userId: number, courseId: number) => {
+    if (!await getCourseById(userId, courseId)) return null;
+    return listChapters(userId, courseId);
+  },
+  get: async (userId: number, id: number) => getChapterById(userId, id),
   create: async (
+    userId: number,
     courseId: number,
     data: { name: string; description?: string | null; sortOrder?: number },
-  ) => createChapter(courseId, data),
+  ) => createChapter(userId, courseId, data),
   update: async (
+    userId: number,
     id: number,
     data: { name?: string; description?: string | null; sortOrder?: number },
-  ) => updateChapter(id, data),
-  delete: async (id: number) => deleteChapter(id),
+  ) => updateChapter(userId, id, data),
+  delete: async (userId: number, id: number) => deleteChapter(userId, id),
 };
 
 export const LineService = {
-  list: async (chapterId: number) => listLines(chapterId),
+  list: async (userId: number, chapterId: number) => {
+    if (!await getChapterById(userId, chapterId)) return null;
+    return listLines(userId, chapterId);
+  },
   create: async (
+    userId: number,
     chapterId: number,
     data: {
       name: string;
@@ -115,9 +125,10 @@ export const LineService = {
       tags?: string | null;
       notes?: string | null;
     },
-  ) => createLine(chapterId, data),
-  get: async (id: number) => getLineById(id),
+  ) => createLine(userId, chapterId, data),
+  get: async (userId: number, id: number) => getLineById(userId, id),
   update: async (
+    userId: number,
     id: number,
     data: Partial<{
       chapterId: number;
@@ -127,20 +138,21 @@ export const LineService = {
       tags: string | null;
       notes: string | null;
     }>,
-  ) => updateLine(id, data),
-  copy: async (sourceLineId: number, targetChapterId: number, name?: string) =>
-    copyLineToChapter(sourceLineId, targetChapterId, name),
-  delete: async (id: number) => deleteLine(id),
-  getMoveTree: async (lineId: number) => {
-    const line = await getLineById(lineId);
+  ) => updateLine(userId, id, data),
+  copy: async (userId: number, sourceLineId: number, targetChapterId: number, name?: string) =>
+    copyLineToChapter(userId, sourceLineId, targetChapterId, name),
+  delete: async (userId: number, id: number) => deleteLine(userId, id),
+  getMoveTree: async (userId: number, lineId: number) => {
+    const line = await getLineById(userId, lineId);
     if (!line) return null;
-    const nodes = await getLineMoveNodes(lineId);
+    const nodes = await getLineMoveNodes(userId, lineId);
     return buildMoveTreeFromNodes(nodes, line);
   },
 };
 
 export const MoveNodeService = {
   create: async (
+    userId: number,
     lineId: number,
     body: {
       parentId?: number | null;
@@ -152,10 +164,11 @@ export const MoveNodeService = {
       sortOrder?: number;
     },
   ) => {
-    return prisma.$transaction((tx) => createMoveNodeInTransaction(tx, lineId, body));
+    return prisma.$transaction((tx) => createMoveNodeInTransaction(tx, userId, lineId, body));
   },
 
   update: async (
+    userId: number,
     id: number,
     body: {
       comment?: string | null;
@@ -167,8 +180,8 @@ export const MoveNodeService = {
     },
   ) => {
     return prisma.$transaction(async (tx) => {
-      const node = await getNodeById(id, tx);
-      if (!node) throw new Error('Node not found');
+      const node = await getNodeById(userId, id, tx);
+      if (!node) return null;
       const data: any = {};
       if (body.comment !== undefined && body.comment !== node.comment) data.comment = body.comment;
       if (body.annotation !== undefined && body.annotation !== node.annotation)
@@ -200,9 +213,9 @@ export const MoveNodeService = {
         }
       }
       if (Object.keys(data).length === 0) return node;
-      return updateMoveNode(id, data, tx);
+      return updateMoveNode(userId, id, data, tx);
     });
   },
 
-  deleteSubtree: async (id: number) => deleteNodeAndSubtree(id),
+  deleteSubtree: async (userId: number, id: number) => deleteNodeAndSubtree(userId, id),
 };

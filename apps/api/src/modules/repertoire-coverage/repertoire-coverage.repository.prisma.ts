@@ -1,16 +1,16 @@
 import prisma from '../../prisma';
 import { RepertoireColor } from './repertoire-coverage.types';
 
-export async function getCoverageCourse(courseId: number) {
-  return prisma.course.findUnique({
-    where: { id: courseId },
+export async function getCoverageCourse(userId: number, courseId: number) {
+  return prisma.course.findFirst({
+    where: { id: courseId, userId },
     select: { id: true, name: true, description: true },
   });
 }
 
-export async function getCourseReviewLines(courseId: number) {
+export async function getCourseReviewLines(userId: number, courseId: number) {
   return prisma.line.findMany({
-    where: { chapter: { courseId } },
+    where: { chapter: { courseId, course: { userId } } },
     orderBy: [{ chapter: { sortOrder: 'asc' } }, { id: 'asc' }],
     select: {
       id: true,

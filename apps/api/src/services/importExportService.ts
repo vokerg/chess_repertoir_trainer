@@ -5,9 +5,10 @@ export const ImportExportService = {
    * Export all data (courses, chapters, lines, move nodes, sessions) to JSON. Stats and sessions
    * are included for completeness. The structure is versioned for future compatibility.
    */
-  exportAll: async () => {
+  exportAll: async (userId: number) => {
     // Fetch courses with chapters, lines and moves
     const courses = await prisma.course.findMany({
+      where: { userId },
       include: {
         chapters: {
           include: {
@@ -21,6 +22,7 @@ export const ImportExportService = {
       },
     });
     const sessions = await prisma.trainingSession.findMany({
+      where: { line: { chapter: { course: { userId } } } },
       include: {
         attempts: true,
       },
@@ -36,7 +38,7 @@ export const ImportExportService = {
    * Import data from a JSON object. This will insert new courses, chapters, lines and move nodes.
    * Training sessions are not imported to avoid conflicts. Existing data is not deleted by default.
    */
-  importAll: async (data: any) => {
+  importAll: async (userId: number, data: any) => {
     // Validate basic structure
     if (!data || typeof data !== 'object' || data.version !== 1) {
       throw new Error('Unsupported export format');
@@ -46,6 +48,7 @@ export const ImportExportService = {
     for (const course of courses) {
       const newCourse = await prisma.course.create({
         data: {
+          userId,
           name: course.name,
           description: course.description ?? null,
         },

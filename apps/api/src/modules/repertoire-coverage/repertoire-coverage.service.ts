@@ -94,9 +94,9 @@ export const CourseReviewService = {
     courseId: number,
     input: { from: Date; to?: Date; limit: number; offset: number; minCoveredPlies: number },
   ) => {
-    const course = await getCoverageCourse(courseId);
+    const course = await getCoverageCourse(userId, courseId);
     if (!course) return null;
-    const lines = await getCourseReviewLines(courseId);
+    const lines = await getCourseReviewLines(userId, courseId);
     const sides = new Set(lines.map((line) => asColor(line.sideToTrain)).filter(Boolean));
     const sideToTrain = sides.size === 1 ? ([...sides][0] as RepertoireColor) : null;
     const hasMixedSides = sides.size > 1;

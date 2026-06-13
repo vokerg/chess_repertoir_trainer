@@ -4,14 +4,15 @@ export const StatsService = {
   /**
    * Returns a summary of overall counts and some weak line indicators.
    */
-  summary: async () => {
+  summary: async (userId: number) => {
     const [courses, lines, sessions] = await Promise.all([
-      prisma.course.count(),
-      prisma.line.count(),
-      prisma.trainingSession.count(),
+      prisma.course.count({ where: { userId } }),
+      prisma.line.count({ where: { chapter: { course: { userId } } } }),
+      prisma.trainingSession.count({ where: { line: { chapter: { course: { userId } } } } }),
     ]);
     // Weakest lines: highest failure rate or lines not trained recently
     const weakestLines = await prisma.line.findMany({
+      where: { chapter: { course: { userId } } },
       orderBy: [
         {
           // order by failure rate descending
@@ -39,8 +40,8 @@ export const StatsService = {
   /**
    * Returns statistics for a specific line including pass/fail counts and recent performance.
    */
-  lineStats: async (lineId: number) => {
-    const line = await prisma.line.findUnique({ where: { id: lineId } });
+  lineStats: async (userId: number, lineId: number) => {
+    const line = await prisma.line.findFirst({ where: { id: lineId, chapter: { course: { userId } } } });
     if (!line) return null;
     const passRate = line.totalAttempts > 0 ? line.passedCount / line.totalAttempts : 0;
     const failureRate = line.totalAttempts > 0 ? line.failedCount / line.totalAttempts : 0;
@@ -58,8 +59,10 @@ export const StatsService = {
   /**
    * Aggregate stats for a course: sum across all lines in the course.
    */
-  courseStats: async (courseId: number) => {
-    const lines = await prisma.line.findMany({ where: { chapter: { courseId } } });
+  courseStats: async (userId: number, courseId: number) => {
+    const course = await prisma.course.findFirst({ where: { id: courseId, userId }, select: { id: true } });
+    if (!course) return null;
+    const lines = await prisma.line.findMany({ where: { chapter: { courseId, course: { userId } } } });
     const totalAttempts = lines.reduce((sum: number, l: any) => sum + l.totalAttempts, 0);
     const passed = lines.reduce((sum: number, l: any) => sum + l.passedCount, 0);
     const failed = lines.reduce((sum: number, l: any) => sum + l.failedCount, 0);

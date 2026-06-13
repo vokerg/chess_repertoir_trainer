@@ -5,7 +5,7 @@ import {
   getExpectedUserMoveUci,
   extractAvailableSublines,
 } from 'chess-domain';
-import { LineService } from './lineService';
+import { LineService } from '../modules/courses/courses.service';
 import prisma from '../prisma';
 
 /**
@@ -89,8 +89,8 @@ export const TrainingService = {
    * Start a new training session on the given line. This builds the move tree, creates a session row
    * in the database, and returns initial data including the session ID and current board FEN.
    */
-  start: async (lineId: number) => {
-    const tree = await LineService.getMoveTree(lineId);
+  start: async (userId: number, lineId: number) => {
+    const tree = await LineService.getMoveTree(userId, lineId);
     if (!tree) throw new Error('Line not found');
     if (extractAvailableSublines(tree).length === 0) {
       throw new Error('Line has no available sublines to train.');

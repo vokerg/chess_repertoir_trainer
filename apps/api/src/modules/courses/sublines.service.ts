@@ -29,21 +29,21 @@ export interface AvailableSublineDto {
   moveText: string;
 }
 
-async function loadLines(scope: SublineScope) {
+async function loadLines(userId: number, scope: SublineScope) {
   if (scope.type === 'LINE') {
-    const line = await getLineWithMoves(scope.id);
+    const line = await getLineWithMoves(userId, scope.id);
     return line ? [line] : null;
   }
   if (scope.type === 'CHAPTER') {
-    if (!await getChapterById(scope.id)) return null;
-    return getChapterLinesWithMoves(scope.id);
+    if (!await getChapterById(userId, scope.id)) return null;
+    return getChapterLinesWithMoves(userId, scope.id);
   }
-  if (!await getCourseById(scope.id)) return null;
-  return getCourseLinesWithMoves(scope.id);
+  if (!await getCourseById(userId, scope.id)) return null;
+  return getCourseLinesWithMoves(userId, scope.id);
 }
 
-export async function getAvailableSublineRows(scope: SublineScope): Promise<AvailableSublineDto[] | null> {
-  const lines = await loadLines(scope);
+export async function getAvailableSublineRows(userId: number, scope: SublineScope): Promise<AvailableSublineDto[] | null> {
+  const lines = await loadLines(userId, scope);
   if (!lines) return null;
 
   return lines.flatMap((line) => {

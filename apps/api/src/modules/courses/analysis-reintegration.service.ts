@@ -29,12 +29,12 @@ export class AnalysisReintegrationError extends Error {
 }
 
 export const AnalysisReintegrationService = {
-  previewChapter: async (chapterId: number, input: PreviewAnalysisReintegrationInput) => {
-    const chapter = await getChapterWithCourse(chapterId);
+  previewChapter: async (userId: number, chapterId: number, input: PreviewAnalysisReintegrationInput) => {
+    const chapter = await getChapterWithCourse(userId, chapterId);
     if (!chapter) throw new AnalysisReintegrationError('Chapter not found', 404);
     const [chapterLines, courseLines] = await Promise.all([
-      getChapterLinesWithMoves(chapterId),
-      getCourseLinesWithMoves(chapter.courseId),
+      getChapterLinesWithMoves(userId, chapterId),
+      getCourseLinesWithMoves(userId, chapter.courseId),
     ]);
     return previewChapterReintegration({ analysisTree: input.analysisTree,
       chapterLines: chapterLines.map(toRepertoireLineInput),
@@ -42,24 +42,25 @@ export const AnalysisReintegrationService = {
       newLineName: input.newLineName, newLineSideToTrain: input.newLineSideToTrain });
   },
 
-  applyToChapter: async (chapterId: number, input: ApplyAnalysisReintegrationInput) =>
+  applyToChapter: async (userId: number, chapterId: number, input: ApplyAnalysisReintegrationInput) =>
     prisma.$transaction(async (tx) => {
-      const chapter = await getChapterWithCourse(chapterId, tx);
+      const chapter = await getChapterWithCourse(userId, chapterId, tx);
       if (!chapter) throw new AnalysisReintegrationError('Chapter not found', 404);
-      const courseLines = (await getCourseLinesWithMoves(chapter.courseId, tx)).map(toRepertoireLineInput);
+      const courseLines = (await getCourseLinesWithMoves(userId, chapter.courseId, tx)).map(toRepertoireLineInput);
 
       if (input.target.kind === 'NEW_LINE') {
         const preview = previewCreateNewLine({ analysisTree: input.analysisTree,
           lineName: input.target.name, sideToTrain: input.target.sideToTrain, courseLines });
         if (!input.target.allowConflicts) rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
-        const line = await createLine(chapterId, { name: input.target.name,
+        const line = await createLine(userId, chapterId, { name: input.target.name,
           sideToTrain: input.target.sideToTrain, startingFen: input.analysisTree.rootFen }, tx);
-        const counts = await applyChildren(tx, line.id, null, input.analysisTree.children, []);
+        if (!line) throw new AnalysisReintegrationError('Chapter not found', 404);
+        const counts = await applyChildren(tx, userId, line.id, null, input.analysisTree.children, []);
         return { targetKind: 'NEW_LINE' as const, lineId: line.id, lineName: line.name,
           createdMoves: counts.created, reusedMoves: counts.reused };
       }
 
-      const selected = await getLineWithMoves(input.target.lineId, tx);
+      const selected = await getLineWithMoves(userId, input.target.lineId, tx);
       if (!selected) throw new AnalysisReintegrationError('Line not found', 404);
       if (selected.chapterId !== chapterId || selected.chapter.courseId !== chapter.courseId) {
         throw new AnalysisReintegrationError('Selected line does not belong to this chapter.', 409);
@@ -68,7 +69,7 @@ export const AnalysisReintegrationService = {
       const anchor = resolveAnchor(line, input.target.anchor);
       const preview = previewMergeIntoLine({ analysisTree: input.analysisTree, line, anchor, courseLines });
       rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
-      const counts = await applyChildren(tx, line.id, anchor.nodeId, input.analysisTree.children,
+      const counts = await applyChildren(tx, userId, line.id, anchor.nodeId, input.analysisTree.children,
         selected.moves.map((node) => ({ id: node.id, parentId: node.parentId, moveUci: node.moveUci })));
       return { targetKind: 'EXISTING_LINE' as const, lineId: line.id, lineName: line.name,
         createdMoves: counts.created, reusedMoves: counts.reused };
@@ -93,7 +94,7 @@ function resolveAnchor(line: RepertoireLineInput, submitted: {
     fen: node.fenAfter, normalizedFen: submitted.normalizedFen, moveSequenceSan: null };
 }
 
-async function applyChildren(tx: Prisma.TransactionClient, lineId: number, parentId: number | null,
+async function applyChildren(tx: Prisma.TransactionClient, userId: number, lineId: number, parentId: number | null,
   children: AnalysisMergeMove[], knownNodes: Array<{ id: number; parentId: number | null; moveUci: string }>) {
   let created = 0;
   let reused = 0;
@@ -102,12 +103,12 @@ async function applyChildren(tx: Prisma.TransactionClient, lineId: number, paren
     if (node) {
       reused += 1;
     } else {
-      const createdNode = await createMoveNodeInTransaction(tx, lineId, { parentId, moveUci: child.moveUci });
+      const createdNode = await createMoveNodeInTransaction(tx, userId, lineId, { parentId, moveUci: child.moveUci });
       node = { id: createdNode.id, parentId: createdNode.parentId, moveUci: createdNode.moveUci };
       knownNodes.push(node);
       created += 1;
     }
-    const nested = await applyChildren(tx, lineId, node.id, child.children, knownNodes);
+    const nested = await applyChildren(tx, userId, lineId, node.id, child.children, knownNodes);
     created += nested.created;
     reused += nested.reused;
   }

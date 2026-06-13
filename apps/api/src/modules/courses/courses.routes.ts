@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { requireAuth } from '../../auth/request-auth';
 import { ChapterService, CourseService, LineService, MoveNodeService } from './courses.service';
 import {
   createChapterSchema,
@@ -26,18 +27,26 @@ const importPgnSchema = z.object({
 });
 
 export default async function coursesModule(app: FastifyInstance) {
-  app.get('/api/courses', async () => CourseService.list());
+  app.get('/api/courses', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return CourseService.list(auth.userId);
+  });
 
   app.post('/api/courses', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const data = createCourseSchema.parse(request.body);
-    const course = await CourseService.create(data);
+    const course = await CourseService.create(auth.userId, data);
     reply.code(201);
     return course;
   });
 
   app.get('/api/courses/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const course = await CourseService.get(id);
+    const course = await CourseService.get(auth.userId, id);
     if (!course) {
       reply.code(404);
       return { message: 'Course not found' };
@@ -46,10 +55,14 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.patch('/api/courses/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     const data = updateCourseSchema.parse(request.body);
     try {
-      return await CourseService.update(id, data);
+      const course = await CourseService.update(auth.userId, id, data);
+      if (!course) return reply.status(404).send({ message: 'Course not found' });
+      return course;
     } catch {
       reply.code(404);
       return { message: 'Course not found' };
@@ -57,9 +70,12 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.delete('/api/courses/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     try {
-      await CourseService.delete(id);
+      const course = await CourseService.delete(auth.userId, id);
+      if (!course) return reply.status(404).send({ message: 'Course not found' });
       reply.code(204);
       return;
     } catch {
@@ -68,22 +84,31 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.get('/api/courses/:courseId/chapters', async (request) => {
+  app.get('/api/courses/:courseId/chapters', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const courseId = Number((request.params as any).courseId);
-    return ChapterService.list(courseId);
+    const chapters = await ChapterService.list(auth.userId, courseId);
+    if (!chapters) return reply.status(404).send({ message: 'Course not found' });
+    return chapters;
   });
 
   app.post('/api/courses/:courseId/chapters', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const courseId = Number((request.params as any).courseId);
     const data = createChapterSchema.parse(request.body);
-    const chapter = await ChapterService.create(courseId, data);
+    const chapter = await ChapterService.create(auth.userId, courseId, data);
+    if (!chapter) return reply.status(404).send({ message: 'Course not found' });
     reply.code(201);
     return chapter;
   });
 
   app.get('/api/chapters/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const chapter = await ChapterService.get(id);
+    const chapter = await ChapterService.get(auth.userId, id);
     if (!chapter) {
       reply.code(404);
       return { message: 'Chapter not found' };
@@ -92,10 +117,14 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.patch('/api/chapters/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     const data = updateChapterSchema.parse(request.body);
     try {
-      return await ChapterService.update(id, data);
+      const chapter = await ChapterService.update(auth.userId, id, data);
+      if (!chapter) return reply.status(404).send({ message: 'Chapter not found' });
+      return chapter;
     } catch {
       reply.code(404);
       return { message: 'Chapter not found' };
@@ -103,9 +132,12 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.delete('/api/chapters/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     try {
-      await ChapterService.delete(id);
+      const chapter = await ChapterService.delete(auth.userId, id);
+      if (!chapter) return reply.status(404).send({ message: 'Chapter not found' });
       reply.code(204);
       return;
     } catch {
@@ -114,9 +146,13 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.get('/api/chapters/:chapterId/lines', async (request) => {
+  app.get('/api/chapters/:chapterId/lines', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const chapterId = Number((request.params as any).chapterId);
-    return LineService.list(chapterId);
+    const lines = await LineService.list(auth.userId, chapterId);
+    if (!lines) return reply.status(404).send({ message: 'Chapter not found' });
+    return lines;
   });
 
   registerOpenApiRoute(app, {
@@ -150,23 +186,27 @@ export default async function coursesModule(app: FastifyInstance) {
       },
     },
     handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
       const courseId = Number((request.params as any).courseId);
       if (!Number.isInteger(courseId) || courseId <= 0) {
         return reply.status(400).send({ error: 'Invalid course id' });
       }
-      const sublines = await getAvailableSublineRows({ type: 'COURSE', id: courseId });
+      const sublines = await getAvailableSublineRows(auth.userId, { type: 'COURSE', id: courseId });
       if (sublines === null) return reply.status(404).send({ error: 'Course not found' });
       return reply.send(sublines);
     },
   });
 
   app.post('/api/chapters/:chapterId/analysis-reintegration/preview', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const chapterId = Number((request.params as any).chapterId);
     if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
     const parsed = previewAnalysisReintegrationSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
     try {
-      return await AnalysisReintegrationService.previewChapter(chapterId, parsed.data);
+      return await AnalysisReintegrationService.previewChapter(auth.userId, chapterId, parsed.data);
     } catch (error) {
       const status = error instanceof AnalysisReintegrationError ? error.status : 400;
       return reply.status(status).send({ error: error instanceof Error ? error.message : 'Could not preview analysis reintegration.' });
@@ -174,12 +214,14 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.post('/api/chapters/:chapterId/analysis-reintegration/apply', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const chapterId = Number((request.params as any).chapterId);
     if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
     const parsed = applyAnalysisReintegrationSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
     try {
-      return await AnalysisReintegrationService.applyToChapter(chapterId, parsed.data);
+      return await AnalysisReintegrationService.applyToChapter(auth.userId, chapterId, parsed.data);
     } catch (error) {
       const status = error instanceof AnalysisReintegrationError ? error.status : 400;
       return reply.status(status).send({ error: error instanceof Error ? error.message : 'Could not apply analysis reintegration.',
@@ -188,23 +230,28 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.post('/api/chapters/:chapterId/lines', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const chapterId = Number((request.params as any).chapterId);
     const data = createLineSchema.parse(request.body);
     const { tags, ...rest } = data;
-    const line = await LineService.create(chapterId, {
+    const line = await LineService.create(auth.userId, chapterId, {
       ...rest,
       tags: tags ? JSON.stringify(tags) : undefined,
     });
+    if (!line) return reply.status(404).send({ message: 'Chapter not found' });
     reply.code(201);
     return line;
   });
 
   app.post('/api/chapters/:chapterId/lines/import-pgn', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const chapterId = Number((request.params as any).chapterId);
     const parsed = importPgnSchema.safeParse(request.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
     try {
-      const line = await PgnService.importLine(chapterId, parsed.data);
+      const line = await PgnService.importLine(auth.userId, chapterId, parsed.data);
       return reply.status(201).send(line);
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });
@@ -212,8 +259,10 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.get('/api/lines/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const line = await LineService.get(id);
+    const line = await LineService.get(auth.userId, id);
     if (!line) {
       reply.code(404);
       return { message: 'Line not found' };
@@ -222,8 +271,10 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.get('/api/lines/:id/tree', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
-    const tree = await LineService.getMoveTree(id);
+    const tree = await LineService.getMoveTree(auth.userId, id);
     if (!tree) {
       reply.code(404);
       return { message: 'Line not found' };
@@ -232,23 +283,29 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.get('/api/lines/:id/export-pgn', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     try {
-      return { pgn: await PgnService.exportLine(id) };
+      return { pgn: await PgnService.exportLine(auth.userId, id) };
     } catch (err: any) {
       return reply.status(404).send({ message: err.message });
     }
   });
 
   app.patch('/api/lines/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     const data = updateLineSchema.parse(request.body);
     const { tags, ...rest } = data;
     try {
-      return await LineService.update(id, {
+      const line = await LineService.update(auth.userId, id, {
         ...rest,
         tags: tags ? JSON.stringify(tags) : undefined,
       });
+      if (!line) return reply.status(404).send({ message: 'Line not found' });
+      return line;
     } catch {
       reply.code(404);
       return { message: 'Line not found' };
@@ -256,9 +313,11 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.post('/api/lines/:id/copy', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     const data = copyLineSchema.parse(request.body);
-    const copied = await LineService.copy(id, data.targetChapterId, data.name);
+    const copied = await LineService.copy(auth.userId, id, data.targetChapterId, data.name);
     if (!copied) {
       return reply.status(404).send({ message: 'Source line or target chapter not found' });
     }
@@ -266,9 +325,12 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.delete('/api/lines/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     try {
-      await LineService.delete(id);
+      const line = await LineService.delete(auth.userId, id);
+      if (!line) return reply.status(404).send({ message: 'Line not found' });
       reply.code(204);
       return;
     } catch {
@@ -278,32 +340,44 @@ export default async function coursesModule(app: FastifyInstance) {
   });
 
   app.post('/api/lines/:lineId/nodes', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const lineId = Number((request.params as any).lineId);
     const bodyResult = createNodeSchema.safeParse(request.body);
     if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.errors });
     try {
-      const node = await MoveNodeService.create(lineId, bodyResult.data);
+      const node = await MoveNodeService.create(auth.userId, lineId, bodyResult.data);
       return reply.status(201).send(node);
     } catch (err: any) {
+      if (err.message === 'Line not found' || err.message === 'Parent node not found') {
+        return reply.status(404).send({ error: err.message });
+      }
       return reply.status(400).send({ error: err.message });
     }
   });
 
   app.patch('/api/nodes/:id', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     const bodyResult = updateNodeSchema.safeParse(request.body);
     if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.errors });
     try {
-      return await MoveNodeService.update(id, bodyResult.data);
+      const node = await MoveNodeService.update(auth.userId, id, bodyResult.data);
+      if (!node) return reply.status(404).send({ message: 'Node not found' });
+      return node;
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });
     }
   });
 
   app.delete('/api/nodes/:id/subtree', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const id = Number((request.params as any).id);
     try {
-      await MoveNodeService.deleteSubtree(id);
+      const node = await MoveNodeService.deleteSubtree(auth.userId, id);
+      if (!node) return reply.status(404).send({ message: 'Node not found' });
       return reply.status(204).send();
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });

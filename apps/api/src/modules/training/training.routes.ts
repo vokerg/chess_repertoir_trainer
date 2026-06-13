@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { TrainingService } from '../../services/trainingService';
 import prisma from '../../prisma';
+import { requireAuth } from '../../auth/request-auth';
 
 const playMoveSchema = z.object({
   moveUci: z.string().min(4).max(5),
@@ -47,9 +48,11 @@ async function buildReview(sessionId: number) {
 
 export default async function trainingModule(app: FastifyInstance) {
   app.post('/api/lines/:lineId/training/start', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const { lineId } = request.params as { lineId: string };
     try {
-      const session = await TrainingService.start(parseInt(lineId, 10));
+      const session = await TrainingService.start(auth.userId, parseInt(lineId, 10));
       reply.send(session);
     } catch (err: any) {
       reply.status(400).send({ error: err.message });
