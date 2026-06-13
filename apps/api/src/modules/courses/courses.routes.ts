@@ -4,6 +4,7 @@ import {
   createChapterSchema,
   createCourseSchema,
   createLineSchema,
+  copyLineSchema,
   createNodeSchema,
   updateChapterSchema,
   updateCourseSchema,
@@ -209,6 +210,16 @@ export default async function coursesModule(app: FastifyInstance) {
       reply.code(404);
       return { message: 'Line not found' };
     }
+  });
+
+  app.post('/api/lines/:id/copy', async (request, reply) => {
+    const id = Number((request.params as any).id);
+    const data = copyLineSchema.parse(request.body);
+    const copied = await LineService.copy(id, data.targetChapterId, data.name);
+    if (!copied) {
+      return reply.status(404).send({ message: 'Source line or target chapter not found' });
+    }
+    return reply.status(201).send(copied);
   });
 
   app.delete('/api/lines/:id', async (request, reply) => {

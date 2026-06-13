@@ -1,14 +1,18 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { CourseDetailApiService } from '../../courses/data-access/course-detail-api.service';
+import { CourseChapter, CourseDetail } from '../../courses/data-access/course-detail.models';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
 import { ChapterDetail, LineSummary, RepertoireColor } from '../data-access/lines.models';
 
 @Injectable()
 export class LinesPageStore {
   private readonly api = inject(LinesApiService);
+  private readonly courseApi = inject(CourseDetailApiService);
 
   private readonly chapterId = signal<number | null>(null);
   private requestVersion = 0;
+  private targetChapterRequestVersion = 0;
 
   readonly courseId = signal<number | null>(null);
   readonly chapter = signal<ChapterDetail | null>(null);
@@ -23,6 +27,15 @@ export class LinesPageStore {
   readonly savingLineId = signal<number | null>(null);
   readonly deletingLineId = signal<number | null>(null);
   readonly error = signal<string | null>(null);
+  readonly transferLineId = signal<number | null>(null);
+  readonly transferMode = signal<'MOVE' | 'COPY' | null>(null);
+  readonly targetCourses = signal<CourseDetail[]>([]);
+  readonly targetChapters = signal<CourseChapter[]>([]);
+  readonly targetCourseId = signal<number | null>(null);
+  readonly targetChapterId = signal<number | null>(null);
+  readonly loadingTransferTargets = signal(false);
+  readonly transferringLineId = signal<number | null>(null);
+  readonly transferMessage = signal<string | null>(null);
 
   readonly newLineName = signal('');
   readonly newLineSide = signal<RepertoireColor>('WHITE');
@@ -122,6 +135,17 @@ export class LinesPageStore {
 
   setImportPgnText(value: string): void {
     this.importPgnText.set(value);
+  }
+
+  setTargetCourseId(value: number | null): void {
+    this.targetCourseId.set(value);
+    this.targetChapterId.set(null);
+    this.targetChapters.set([]);
+    if (value) void this.loadTargetChapters(value);
+  }
+
+  setTargetChapterId(value: number | null): void {
+    this.targetChapterId.set(value);
   }
 
   async createLine(): Promise<void> {
@@ -226,6 +250,113 @@ export class LinesPageStore {
       this.error.set(readLinesError(error, 'Could not rename line.'));
     } finally {
       this.savingLineId.set(null);
+    }
+  }
+
+  async openLineTransfer(line: LineSummary, mode: 'MOVE' | 'COPY'): Promise<void> {
+    const courseId = this.courseId();
+    const chapterId = this.chapterId();
+    if (!courseId || !chapterId) return;
+
+    this.transferLineId.set(line.id);
+    this.transferMode.set(mode);
+    this.targetCourseId.set(courseId);
+    this.targetChapterId.set(chapterId);
+    this.transferMessage.set(null);
+    this.error.set(null);
+    this.loadingTransferTargets.set(true);
+
+    const requestVersion = ++this.targetChapterRequestVersion;
+    try {
+      const [courses, chapters] = await Promise.all([
+        firstValueFrom(this.courseApi.getCourses()),
+        firstValueFrom(this.courseApi.getChapters(courseId)),
+      ]);
+      if (requestVersion !== this.targetChapterRequestVersion) return;
+      this.targetCourses.set(courses);
+      this.targetChapters.set(chapters);
+    } catch (error) {
+      if (requestVersion !== this.targetChapterRequestVersion) return;
+      this.error.set(readLinesError(error, 'Could not load target chapters.'));
+    } finally {
+      if (requestVersion === this.targetChapterRequestVersion) {
+        this.loadingTransferTargets.set(false);
+      }
+    }
+  }
+
+  closeLineTransfer(): void {
+    this.targetChapterRequestVersion += 1;
+    this.transferLineId.set(null);
+    this.transferMode.set(null);
+    this.targetCourseId.set(null);
+    this.targetChapterId.set(null);
+    this.targetChapters.set([]);
+    this.loadingTransferTargets.set(false);
+  }
+
+  async moveLine(line: LineSummary, targetChapterId: number): Promise<void> {
+    const currentChapterId = this.chapterId();
+    if (!currentChapterId || targetChapterId === currentChapterId) return;
+
+    this.transferringLineId.set(line.id);
+    this.error.set(null);
+    this.transferMessage.set(null);
+    try {
+      await firstValueFrom(this.api.updateLine(line.id, { chapterId: targetChapterId }));
+      this.lines.update((lines) => lines.filter((item) => item.id !== line.id));
+      if (this.exportLineId() === line.id) {
+        this.exportLineId.set(null);
+        this.exportedPgn.set('');
+      }
+      this.transferMessage.set(`Moved "${line.name}" to the selected chapter.`);
+      this.closeLineTransfer();
+    } catch (error) {
+      this.error.set(readLinesError(error, 'Could not move line.'));
+    } finally {
+      this.transferringLineId.set(null);
+    }
+  }
+
+  async copyLine(line: LineSummary, targetChapterId: number): Promise<void> {
+    const currentChapterId = this.chapterId();
+    if (!currentChapterId) return;
+
+    this.transferringLineId.set(line.id);
+    this.error.set(null);
+    this.transferMessage.set(null);
+    try {
+      const copied = await firstValueFrom(
+        this.api.copyLine(line.id, { targetChapterId }),
+      );
+      if (targetChapterId === currentChapterId) {
+        this.lines.update((lines) => [...lines, copied]);
+      }
+      this.transferMessage.set(`Copied "${line.name}" to the selected chapter.`);
+      this.closeLineTransfer();
+    } catch (error) {
+      this.error.set(readLinesError(error, 'Could not copy line.'));
+    } finally {
+      this.transferringLineId.set(null);
+    }
+  }
+
+  private async loadTargetChapters(courseId: number): Promise<void> {
+    const requestVersion = ++this.targetChapterRequestVersion;
+    this.loadingTransferTargets.set(true);
+    this.error.set(null);
+    try {
+      const chapters = await firstValueFrom(this.courseApi.getChapters(courseId));
+      if (requestVersion !== this.targetChapterRequestVersion) return;
+      this.targetChapters.set(chapters);
+      this.targetChapterId.set(chapters[0]?.id ?? null);
+    } catch (error) {
+      if (requestVersion !== this.targetChapterRequestVersion) return;
+      this.error.set(readLinesError(error, 'Could not load target chapters.'));
+    } finally {
+      if (requestVersion === this.targetChapterRequestVersion) {
+        this.loadingTransferTargets.set(false);
+      }
     }
   }
 

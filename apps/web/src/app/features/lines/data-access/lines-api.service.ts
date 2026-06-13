@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import {
   ChapterDetail,
+  CopyLinePayload,
   CreateLineNodePayload,
   CreateLinePayload,
   ImportLinePgnPayload,
@@ -47,8 +48,15 @@ export class LinesApiService {
     return this.api.get<LineDetail>(`/lines/${lineId}`);
   }
 
-  updateLine(lineId: number, body: { name: string }): Observable<LineSummary> {
+  updateLine(
+    lineId: number,
+    body: Partial<{ name: string; chapterId: number }>,
+  ): Observable<LineSummary> {
     return this.api.patch<LineSummary>(`/lines/${lineId}`, body);
+  }
+
+  copyLine(lineId: number, body: CopyLinePayload): Observable<LineSummary> {
+    return this.api.post<LineSummary>(`/lines/${lineId}/copy`, body);
   }
 
   deleteLine(lineId: number): Observable<void> {

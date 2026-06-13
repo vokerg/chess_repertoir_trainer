@@ -93,12 +93,19 @@ export function previewChapterReintegration(input: {
   courseLines: RepertoireLineInput[]; newLineSideToTrain?: RepertoireColor; newLineName?: string;
 }): ChapterMergePreview {
   const anchors = findLineAnchors(input.analysisTree.rootFen, input.chapterLines);
+  const candidates = anchors.map((anchor) => previewMergeIntoLine({
+    analysisTree: input.analysisTree,
+    line: input.chapterLines.find((line) => line.id === anchor.lineId)!,
+    anchor,
+    courseLines: input.courseLines,
+  }));
+  const maxReusedMoves = Math.max(0, ...candidates.map((candidate) => candidate.counts.reusedMoves));
   return {
     analysisRootFen: input.analysisTree.rootFen,
     analysisRootNormalizedFen: normalizeFenForPosition(input.analysisTree.rootFen),
-    candidates: anchors.map((anchor) => previewMergeIntoLine({ analysisTree: input.analysisTree,
-      line: input.chapterLines.find((line) => line.id === anchor.lineId)!, anchor,
-      courseLines: input.courseLines })),
+    candidates: maxReusedMoves === 0
+      ? candidates
+      : candidates.filter((candidate) => candidate.counts.reusedMoves === maxReusedMoves),
     newLine: input.newLineSideToTrain
       ? previewCreateNewLine({ analysisTree: input.analysisTree,
           lineName: input.newLineName?.trim() || 'New analysis line',

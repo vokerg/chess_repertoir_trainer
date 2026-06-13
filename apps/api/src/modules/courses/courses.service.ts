@@ -6,6 +6,7 @@ import {
   createChapter,
   createCourse,
   createLine,
+  copyLineToChapter,
   createMoveNode,
   deleteChapter,
   deleteCourse,
@@ -184,6 +185,7 @@ export const LineService = {
   update: async (
     id: number,
     data: Partial<{
+      chapterId: number;
       name: string;
       sideToTrain: string;
       startingFen: string;
@@ -191,6 +193,8 @@ export const LineService = {
       notes: string | null;
     }>,
   ) => updateLine(id, data),
+  copy: async (sourceLineId: number, targetChapterId: number, name?: string) =>
+    copyLineToChapter(sourceLineId, targetChapterId, name),
   delete: async (id: number) => deleteLine(id),
   getMoveTree: async (lineId: number) => {
     const line = await getLineById(lineId);

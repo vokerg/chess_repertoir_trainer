@@ -90,6 +90,9 @@
         @if (store.error(); as error) {
           <p class="status-error">{{ error }}</p>
         }
+        @if (store.transferMessage(); as message) {
+          <p class="status-success">{{ message }}</p>
+        }
 
         @if (!store.loading() && !store.error() && store.lines().length === 0) {
           <div class="empty-state">No lines yet. Add your first trainable branch on the right.</div>
@@ -172,12 +175,91 @@
                   <button
                     type="button"
                     class="secondary"
+                    (click)="store.openLineTransfer(line, 'MOVE')"
+                    [disabled]="store.transferringLineId() === line.id"
+                  >
+                    Move
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="store.openLineTransfer(line, 'COPY')"
+                    [disabled]="store.transferringLineId() === line.id"
+                  >
+                    Copy
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary"
                     (click)="confirmDeleteLine(line.id)"
                     [disabled]="store.deletingLineId() === line.id"
                   >
                     {{ store.deletingLineId() === line.id ? 'Deleting...' : 'Delete' }}
                   </button>
                 </div>
+
+                @if (store.transferLineId() === line.id) {
+                  <div class="line-transfer-form">
+                    <div class="stack form-field">
+                      <label [for]="'target-course-' + line.id" class="metric-label">Target course</label>
+                      <select
+                        [id]="'target-course-' + line.id"
+                        [ngModel]="store.targetCourseId()"
+                        (ngModelChange)="store.setTargetCourseId($event)"
+                        [name]="'targetCourse' + line.id"
+                        [disabled]="store.loadingTransferTargets() || store.transferringLineId() === line.id"
+                      >
+                        @for (course of store.targetCourses(); track course.id) {
+                          <option [ngValue]="course.id">{{ course.name }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="stack form-field">
+                      <label [for]="'target-chapter-' + line.id" class="metric-label">Target chapter</label>
+                      <select
+                        [id]="'target-chapter-' + line.id"
+                        [ngModel]="store.targetChapterId()"
+                        (ngModelChange)="store.setTargetChapterId($event)"
+                        [name]="'targetChapter' + line.id"
+                        [disabled]="store.loadingTransferTargets() || store.transferringLineId() === line.id"
+                      >
+                        <option [ngValue]="null">Choose a chapter...</option>
+                        @for (targetChapter of store.targetChapters(); track targetChapter.id) {
+                          <option [ngValue]="targetChapter.id">{{ targetChapter.name }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="collection-actions line-transfer-actions">
+                      @if (store.targetChapterId(); as targetChapterId) {
+                        @if (store.transferMode() === 'MOVE') {
+                          <button
+                            type="button"
+                            (click)="store.moveLine(line, targetChapterId)"
+                            [disabled]="targetChapterId === chapter.id || store.transferringLineId() === line.id"
+                          >
+                            {{ store.transferringLineId() === line.id ? 'Moving...' : 'Move line' }}
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            (click)="store.copyLine(line, targetChapterId)"
+                            [disabled]="store.transferringLineId() === line.id"
+                          >
+                            {{ store.transferringLineId() === line.id ? 'Copying...' : 'Copy line' }}
+                          </button>
+                        }
+                      }
+                      <button
+                        type="button"
+                        class="secondary"
+                        (click)="store.closeLineTransfer()"
+                        [disabled]="store.transferringLineId() === line.id"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                }
               </article>
             }
           </div>

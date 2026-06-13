@@ -141,6 +141,15 @@ export interface TrainingReview {
   mistakes: TrainingReviewItem[];
 }
 
+export interface MoveLinePayload {
+  chapterId: number;
+}
+
+export interface CopyLinePayload {
+  targetChapterId: number;
+  name?: string;
+}
+
 export type MarathonScopeType = 'CHAPTER' | 'COURSE';
 
 export interface MarathonNextResponse {

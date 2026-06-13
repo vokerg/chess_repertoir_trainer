@@ -5,6 +5,7 @@ import {
   updateLine,
   deleteLine,
   getLineMoveNodes,
+  copyLineToChapter,
 } from '../repositories/lineRepository';
 import { MoveTree, MoveTreeNode } from 'chess-domain';
 import { Chess } from 'chess.js';
@@ -83,8 +84,10 @@ export const LineService = {
   create: async (chapterId: number, data: { name: string; sideToTrain: string; startingFen: string; tags?: string | null; notes?: string | null }) =>
     createLine(chapterId, data),
   get: async (id: number) => getLineById(id),
-  update: async (id: number, data: Partial<{ name: string; sideToTrain: string; startingFen: string; tags: string | null; notes: string | null }>) =>
+  update: async (id: number, data: Partial<{ chapterId: number; name: string; sideToTrain: string; startingFen: string; tags: string | null; notes: string | null }>) =>
     updateLine(id, data),
+  copy: async (sourceLineId: number, targetChapterId: number, name?: string) =>
+    copyLineToChapter(sourceLineId, targetChapterId, name),
   delete: async (id: number) => deleteLine(id),
   getMoveTree: async (lineId: number) => {
     const line = await getLineById(lineId);

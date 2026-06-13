@@ -23,7 +23,14 @@ export const createLineSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-export const updateLineSchema = createLineSchema.partial();
+export const updateLineSchema = createLineSchema.partial().extend({
+  chapterId: z.number().int().positive().optional(),
+});
+
+export const copyLineSchema = z.object({
+  targetChapterId: z.number().int().positive(),
+  name: z.string().min(1).optional(),
+});
 
 export const createNodeSchema = z.object({
   parentId: z.number().int().optional().nullable(),

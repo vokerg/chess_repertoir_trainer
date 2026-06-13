@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { LineService } from '../services/lineService';
 import { PgnService } from '../services/pgnService';
-import { createLineSchema, updateLineSchema } from '../schemas/lineSchemas';
+import { copyLineSchema, createLineSchema, updateLineSchema } from '../schemas/lineSchemas';
 import { z } from 'zod';
 
 const importPgnSchema = z.object({
@@ -92,6 +92,18 @@ export default async function linesRoutes(app: FastifyInstance, opts: FastifyPlu
       reply.code(404);
       return { message: 'Line not found' };
     }
+  });
+
+  app.post('/api/lines/:id/copy', async (request, reply) => {
+    const id = Number((request.params as any).id);
+    const data = copyLineSchema.parse(request.body);
+    const copied = await LineService.copy(id, data.targetChapterId, data.name);
+    if (!copied) {
+      reply.code(404);
+      return { message: 'Source line or target chapter not found' };
+    }
+    reply.code(201);
+    return copied;
   });
 
   app.delete('/api/lines/:id', async (request, reply) => {
