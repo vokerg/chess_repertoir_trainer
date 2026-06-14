@@ -12,6 +12,8 @@ import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
+import { GameFilterPanelComponent } from '../../../shared/game-filters/game-filter-panel.component';
+import { PositionTopGamesComponent } from '../../../shared/position-game-moves/position-top-games.component';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
 import { AnalysisReintegrationDialogComponent } from '../components/analysis-reintegration-dialog.component';
@@ -22,7 +24,13 @@ import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reint
 @Component({
   selector: 'app-free-analysis-page',
   standalone: true,
-  imports: [PageHeaderComponent, AnalysisWorkbenchComponent, AnalysisReintegrationDialogComponent],
+  imports: [
+    PageHeaderComponent,
+    AnalysisWorkbenchComponent,
+    AnalysisReintegrationDialogComponent,
+    GameFilterPanelComponent,
+    PositionTopGamesComponent,
+  ],
   providers: [FreeAnalysisStore, FreeAnalysisApiService, AnalysisReintegrationStore, AnalysisReintegrationApiService],
   templateUrl: './free-analysis-page.component.html',
   styleUrl: './free-analysis-page.component.css',
@@ -34,7 +42,11 @@ export class FreeAnalysisPageComponent implements OnInit {
   protected readonly store = inject(FreeAnalysisStore);
   protected readonly reintegrationStore = inject(AnalysisReintegrationStore);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
-    { id: 'back', label: 'Back to study', link: '/library' },
+    {
+      id: 'my-games',
+      label: this.store.myGamesOpen() ? 'Hide my games' : 'My games',
+      run: () => this.store.toggleMyGames(),
+    },
     {
       id: 'reintegrate',
       label: 'Reintegrate into course',

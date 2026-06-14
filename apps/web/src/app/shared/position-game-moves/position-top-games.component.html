@@ -1,0 +1,23 @@
+<section class="position-games-top" aria-label="Top games in this position">
+  <div>
+    <h3 class="workbench-panel-title">{{ title() }}</h3>
+    <p class="workbench-panel-subtitle">{{ subtitle() }}</p>
+  </div>
+
+  @if (games().length) {
+    <div class="position-games-game-list">
+      @for (game of games(); track game.id) {
+        <a class="position-games-game-row" [routerLink]="['/games', game.id]" [class.position-games-game-row-loading]="loading()">
+          <span class="provider-pill" [class]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
+          <span class="position-games-game-main">
+            <strong>{{ gameDateLabel(game) }} - {{ playerPairLabel(game) }}</strong>
+            <small>{{ gameMetaLabel(game) }}</small>
+          </span>
+          <span class="position-games-result" [class]="resultClass(game.resultForUser)">{{ resultLabel(game.resultForUser) }}</span>
+        </a>
+      }
+    </div>
+  } @else if (!loading()) {
+    <div class="empty-state compact-empty">No matching games reached this position with the current filters.</div>
+  }
+</section>

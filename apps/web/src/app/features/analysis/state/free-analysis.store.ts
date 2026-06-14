@@ -2,6 +2,11 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
+import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
+import { defaultGameFilters, GameFilters } from '../../../shared/game-filters/game-filter.model';
+import { PositionGameMovesApiService } from '../../../shared/position-game-moves/position-game-moves-api.service';
+import { buildOpeningAnalysisQuery } from '../../../shared/position-game-moves/position-game-moves.helpers';
+import { OpeningAnalysisResponse } from '../../../shared/position-game-moves/position-game-moves.models';
 import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
@@ -31,6 +36,7 @@ const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
 export class FreeAnalysisStore implements OnDestroy {
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
   private readonly api = inject(FreeAnalysisApiService);
+  private readonly positionGamesApi = inject(PositionGameMovesApiService);
 
   readonly tree = signal<FreeAnalysisTree | null>(null);
   readonly selectedNodeId = signal(0);
@@ -39,6 +45,12 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly loading = signal(false);
   readonly loadedFromGame = signal(false);
   readonly boardSide = signal<'WHITE' | 'BLACK'>('WHITE');
+  readonly myGamesOpen = signal(false);
+  readonly myGamesFilters = signal<GameFilters>(defaultGameFilters());
+  readonly myGamesFacets = signal<ImportedGameFacetsResponse>({});
+  readonly myGamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
+  readonly myGamesLoading = signal(false);
+  readonly myGamesError = signal<string | null>(null);
   readonly startingFen = signal(new Chess().fen());
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
     initialValue: EMPTY_ENGINE_ANALYSIS,
@@ -47,6 +59,8 @@ export class FreeAnalysisStore implements OnDestroy {
   private nextLocalNodeId = 1_000_000;
   private analysisTimer?: ReturnType<typeof setTimeout>;
   private requestVersion = 0;
+  private myGamesRequestVersion = 0;
+  private myGamesFacetsLoaded = false;
 
   readonly selectedNode = computed(() =>
     findFreeAnalysisNode(this.selectedNodeId(), this.tree()?.root),
@@ -114,12 +128,49 @@ export class FreeAnalysisStore implements OnDestroy {
     this.nextLocalNodeId = 1_000_000;
     this.boardPositionVersion.update((version) => version + 1);
     this.scheduleAnalysis();
+    this.refreshMyGamesIfOpen();
   }
 
   selectNode(nodeId: number): void {
     if (!findFreeAnalysisNode(nodeId, this.tree()?.root)) return;
     this.selectedNodeId.set(nodeId);
     this.scheduleAnalysis();
+    this.refreshMyGamesIfOpen();
+  }
+
+  toggleMyGames(): void {
+    const open = !this.myGamesOpen();
+    this.myGamesOpen.set(open);
+    if (!open) return;
+    void this.loadMyGamesFacets();
+    void this.refreshMyGames();
+  }
+
+  setMyGamesFilters(filters: GameFilters): void {
+    this.myGamesFilters.set(filters);
+  }
+
+  resetMyGamesFilters(): void {
+    this.myGamesFilters.set(defaultGameFilters());
+    void this.refreshMyGames();
+  }
+
+  async refreshMyGames(): Promise<void> {
+    if (!this.myGamesOpen()) return;
+    const requestVersion = ++this.myGamesRequestVersion;
+    this.myGamesLoading.set(true);
+    this.myGamesError.set(null);
+    try {
+      const query = buildOpeningAnalysisQuery(this.currentFen(), this.myGamesFilters());
+      const analysis = await firstValueFrom(this.positionGamesApi.getAnalysis(query));
+      if (requestVersion !== this.myGamesRequestVersion) return;
+      this.myGamesAnalysis.set(analysis);
+    } catch (error) {
+      if (requestVersion !== this.myGamesRequestVersion) return;
+      this.myGamesError.set(readError(error, 'Could not load games for this position.'));
+    } finally {
+      if (requestVersion === this.myGamesRequestVersion) this.myGamesLoading.set(false);
+    }
   }
 
   playBoardMove(uci: string): void {
@@ -234,6 +285,20 @@ export class FreeAnalysisStore implements OnDestroy {
     this.analysisTimer = setTimeout(() => this.rerunAnalysis(), 250);
   }
 
+  private refreshMyGamesIfOpen(): void {
+    if (this.myGamesOpen()) void this.refreshMyGames();
+  }
+
+  private async loadMyGamesFacets(): Promise<void> {
+    if (this.myGamesFacetsLoaded) return;
+    try {
+      this.myGamesFacets.set((await firstValueFrom(this.positionGamesApi.getFacets())) || {});
+      this.myGamesFacetsLoaded = true;
+    } catch {
+      this.myGamesFacets.set({});
+    }
+  }
+
   private async initializeFromGame(
     gameId: number,
     selectedPly: number | null,
@@ -263,6 +328,7 @@ export class FreeAnalysisStore implements OnDestroy {
       this.loading.set(false);
       this.boardPositionVersion.update((version) => version + 1);
       this.scheduleAnalysis();
+      this.refreshMyGamesIfOpen();
     } catch (error) {
       if (requestVersion !== this.requestVersion) return;
       this.initializeFromFen(fallbackFen);
@@ -280,4 +346,9 @@ export class FreeAnalysisStore implements OnDestroy {
   private resetBoardPosition(): void {
     this.boardPositionVersion.update((version) => version + 1);
   }
+}
+
+function readError(error: unknown, fallback: string): string {
+  const response = error as { error?: { error?: string; message?: string }; message?: string };
+  return response?.error?.error || response?.error?.message || response?.message || fallback;
 }

@@ -44,5 +44,38 @@
       (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
     />
   }
+
+  @if (store.myGamesOpen()) {
+    <section class="section-card my-games-panel stack" aria-label="My games in this position">
+      <div class="my-games-header">
+        <div>
+          <span class="eyebrow">Imported games</span>
+          <h2 class="collection-title">My games in this position</h2>
+          <p class="workbench-panel-subtitle">Filter imported games that reached the currently selected analysis position.</p>
+        </div>
+        <button type="button" class="compact-action secondary" (click)="store.refreshMyGames()" [disabled]="store.myGamesLoading()">
+          {{ store.myGamesLoading() ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <app-game-filter-panel
+        [filters]="store.myGamesFilters()"
+        [facets]="store.myGamesFacets()"
+        [loading]="store.myGamesLoading()"
+        (filtersChange)="store.setMyGamesFilters($event)"
+        (apply)="store.refreshMyGames()"
+        (reset)="store.resetMyGamesFilters()"
+      />
+
+      @if (store.myGamesError(); as error) {
+        <p class="status-error">{{ error }}</p>
+      }
+
+      <app-position-top-games
+        [games]="store.myGamesAnalysis()?.topGames || []"
+        [loading]="store.myGamesLoading()"
+      />
+    </section>
+  }
   <app-analysis-reintegration-dialog />
 </section>

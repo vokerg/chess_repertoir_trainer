@@ -19,20 +19,7 @@ button.position-games-move-row:hover { transform: translateY(-1px); box-shadow: 
 .move-main, .move-wdl { display: grid; gap: 0.18rem; }
 .move-main small, .move-wdl small { color: var(--muted); font-weight: 700; }
 .move-wdl { text-align: right; font-weight: 900; }
-.position-games-top { display: grid; gap: 0.65rem; border-top: 1px solid var(--border); padding-top: 1rem; }
-.position-games-game-list { display: grid; gap: 0.55rem; }
-.position-games-game-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 0.75rem; align-items: center; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.68); padding: 0.75rem; color: var(--text); text-decoration: none; transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease; }
-.position-games-game-row:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(35,27,21,0.1); background: rgba(255,255,255,0.84); }
-.position-games-game-row-loading { opacity: 0.52; pointer-events: none; }
-.position-games-game-main { display: grid; gap: 0.18rem; min-width: 0; }
-.position-games-game-main strong, .position-games-game-main small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.position-games-game-main small { color: var(--muted); font-weight: 700; }
-.position-games-result, .provider-pill { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 0.32rem 0.6rem; font-size: 0.76rem; font-weight: 900; white-space: nowrap; }
-.provider-lichess { background: rgba(35,27,21,0.08); color: var(--text); }
-.provider-chess-com, .result-win { background: var(--success-soft); color: var(--success); }
-.result-draw { background: var(--warning-soft); color: var(--warning); }
-.result-loss { background: var(--danger-soft); color: var(--danger); }
-.result-unknown { background: rgba(35,27,21,0.08); color: var(--muted-strong); }
+.position-games-panel app-position-top-games { border-top: 1px solid var(--border); padding-top: 1rem; }
 .position-games-compact { gap: 0.7rem; padding: 1rem; }
 .position-games-compact .position-games-summary { padding: 0.7rem 0.85rem; }
 .position-games-compact .position-games-wdl { font-size: 1.1rem; }
@@ -43,6 +30,4 @@ button.position-games-move-row:hover { transform: translateY(-1px); box-shadow: 
   .position-games-filter-toggle { grid-template-columns: 1fr auto; }
   .position-games-filter-toggle small { grid-column: 1 / -1; grid-row: 2; }
   .move-wdl { text-align: left; }
-  .position-games-game-row { grid-template-columns: 1fr; align-items: start; }
-  .position-games-result { width: fit-content; }
 }

@@ -1,16 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, input, output, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ImportedGameFacetsResponse } from '../../features/games/data-access/games.models';
 import { GameFilterPanelComponent } from '../game-filters/game-filter-panel.component';
 import { GameFilters } from '../game-filters/game-filter.model';
+import { PositionTopGamesComponent } from './position-top-games.component';
 import {
-  gameDateLabel,
-  gameMetaLabel,
-  playerPairLabel,
-  providerClass,
   providerLabel,
-  resultClass,
-  resultLabel,
   scoreLabel,
   wdlLabel,
 } from './position-game-moves.helpers';
@@ -21,7 +15,7 @@ const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct
 @Component({
   selector: 'app-position-game-moves-panel',
   standalone: true,
-  imports: [RouterLink, GameFilterPanelComponent],
+  imports: [GameFilterPanelComponent, PositionTopGamesComponent],
   templateUrl: './position-game-moves-panel.component.html',
   styleUrl: './position-game-moves-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,12 +43,6 @@ export class PositionGameMovesPanelComponent implements OnInit {
   protected readonly positionWdl = computed(() => this.analysis()?.games ?? EMPTY_WDL);
   protected readonly filterSummary = computed(() => summarizeFilters(this.filters()));
   protected readonly providerLabel = providerLabel;
-  protected readonly providerClass = providerClass;
-  protected readonly resultLabel = resultLabel;
-  protected readonly resultClass = resultClass;
-  protected readonly playerPairLabel = playerPairLabel;
-  protected readonly gameDateLabel = gameDateLabel;
-  protected readonly gameMetaLabel = gameMetaLabel;
   protected readonly wdlLabel = wdlLabel;
   protected readonly scoreLabel = scoreLabel;
 
