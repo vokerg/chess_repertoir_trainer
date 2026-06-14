@@ -23,6 +23,7 @@ model AppUser {
   importedGames    ImportedGame[]
   importRuns       ImportRun[]
   courses          Course[]
+  trainingSessions TrainingSession[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -261,6 +262,8 @@ model MoveNode {
 
 model TrainingSession {
   id                 Int      @id @default(autoincrement())
+  userId             Int
+  user               AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
   lineId             Int
   line               Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
   attempts           TrainingAttemptMove[]
@@ -271,6 +274,10 @@ model TrainingSession {
   totalExpectedMoves Int      @default(0)
   correctMoves       Int      @default(0)
   accuracy           Float?
+
+  @@index([userId, startedAt])
+  @@index([userId, result])
+  @@index([userId, lineId])
 }
 
 model TrainingAttemptMove {

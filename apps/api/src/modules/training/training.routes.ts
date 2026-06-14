@@ -1,49 +1,14 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { TrainingService } from '../../services/trainingService';
-import prisma from '../../prisma';
 import { requireAuth } from '../../auth/request-auth';
 
 const playMoveSchema = z.object({
   moveUci: z.string().min(4).max(5),
 });
 
-async function buildReview(sessionId: number) {
-  const session = await prisma.trainingSession.findUnique({ where: { id: sessionId } });
-  if (!session) throw new Error('Training session not found');
-
-  const mistakes = await prisma.trainingAttemptMove.findMany({
-    where: { sessionId, wasCorrect: false },
-    orderBy: { createdAt: 'asc' },
-    include: {
-      moveNode: {
-        select: {
-          id: true,
-          moveSan: true,
-          moveUci: true,
-          comment: true,
-          annotation: true,
-          branchLabel: true,
-        },
-      },
-    },
-  });
-
-  return {
-    ...session,
-    mistakes: mistakes.map((attempt: any) => ({
-      id: attempt.id,
-      moveNodeId: attempt.moveNodeId,
-      fenBefore: attempt.fenBefore,
-      expectedMoveUci: attempt.expectedMoveUci,
-      playedMoveUci: attempt.playedMoveUci,
-      moveSan: attempt.moveNode?.moveSan ?? null,
-      comment: attempt.moveNode?.comment ?? null,
-      annotation: attempt.moveNode?.annotation ?? null,
-      branchLabel: attempt.moveNode?.branchLabel ?? null,
-      createdAt: attempt.createdAt,
-    })),
-  };
+function isNotFound(error: unknown) {
+  return error instanceof Error && (error.message === 'Line not found' || error.message === 'Training session not found');
 }
 
 export default async function trainingModule(app: FastifyInstance) {
@@ -55,51 +20,71 @@ export default async function trainingModule(app: FastifyInstance) {
       const session = await TrainingService.start(auth.userId, parseInt(lineId, 10));
       reply.send(session);
     } catch (err: any) {
-      reply.status(400).send({ error: err.message });
+      reply.status(isNotFound(err) ? 404 : 400).send({ error: err.message });
     }
   });
 
+  app.get('/api/training/history', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    reply.send(await TrainingService.listHistory(auth.userId));
+  });
+
+  app.get('/api/training/:sessionId', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const { sessionId } = request.params as { sessionId: string };
+    const session = await TrainingService.getSession(auth.userId, parseInt(sessionId, 10));
+    if (!session) return reply.status(404).send({ error: 'Training session not found' });
+    reply.send(session);
+  });
+
   app.post('/api/training/:sessionId/move', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const { sessionId } = request.params as { sessionId: string };
     const bodyResult = playMoveSchema.safeParse(request.body);
     if (!bodyResult.success) {
       return reply.status(400).send({ error: bodyResult.error.errors });
     }
     try {
-      const result = await TrainingService.playMove(parseInt(sessionId, 10), bodyResult.data.moveUci);
+      const result = await TrainingService.playMove(auth.userId, parseInt(sessionId, 10), bodyResult.data.moveUci);
       reply.send(result);
     } catch (err: any) {
-      reply.status(400).send({ error: err.message });
+      reply.status(isNotFound(err) ? 404 : 400).send({ error: err.message });
     }
   });
 
   app.get('/api/training/:sessionId/review', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const { sessionId } = request.params as { sessionId: string };
-    try {
-      const review = await buildReview(parseInt(sessionId, 10));
-      reply.send(review);
-    } catch (err: any) {
-      reply.status(404).send({ error: err.message });
-    }
+    const review = await TrainingService.getReview(auth.userId, parseInt(sessionId, 10));
+    if (!review) return reply.status(404).send({ error: 'Training session not found' });
+    reply.send(review);
   });
 
   app.post('/api/training/:sessionId/complete', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const { sessionId } = request.params as { sessionId: string };
     try {
-      const session = await TrainingService.complete(parseInt(sessionId, 10));
+      const session = await TrainingService.complete(auth.userId, parseInt(sessionId, 10));
       reply.send(session);
     } catch (err: any) {
-      reply.status(400).send({ error: err.message });
+      reply.status(isNotFound(err) ? 404 : 400).send({ error: err.message });
     }
   });
 
   app.post('/api/training/:sessionId/abandon', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
     const { sessionId } = request.params as { sessionId: string };
     try {
-      const session = await TrainingService.abandon(parseInt(sessionId, 10));
+      const session = await TrainingService.abandon(auth.userId, parseInt(sessionId, 10));
       reply.send(session);
     } catch (err: any) {
-      reply.status(400).send({ error: err.message });
+      reply.status(isNotFound(err) ? 404 : 400).send({ error: err.message });
     }
   });
 }

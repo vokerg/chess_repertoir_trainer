@@ -8,7 +8,7 @@ export const StatsService = {
     const [courses, lines, sessions] = await Promise.all([
       prisma.course.count({ where: { userId } }),
       prisma.line.count({ where: { chapter: { course: { userId } } } }),
-      prisma.trainingSession.count({ where: { line: { chapter: { course: { userId } } } } }),
+      prisma.trainingSession.count({ where: { userId, line: { chapter: { course: { userId } } } } }),
     ]);
     // Weakest lines: highest failure rate or lines not trained recently
     const weakestLines = await prisma.line.findMany({

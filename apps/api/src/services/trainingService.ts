@@ -15,7 +15,24 @@ import prisma from '../prisma';
  */
 const activeSessions: Map<number, { state: TrainingState }> = new Map();
 
-async function recordMissedExpectedMove(sessionId: number, state: TrainingState) {
+async function getOwnedSession(userId: number, sessionId: number) {
+  return prisma.trainingSession.findFirst({
+    where: {
+      id: sessionId,
+      userId,
+      line: { chapter: { course: { userId } } },
+    },
+  });
+}
+
+async function requireOwnedSession(userId: number, sessionId: number) {
+  const session = await getOwnedSession(userId, sessionId);
+  if (!session) throw new Error('Training session not found');
+  return session;
+}
+
+async function recordMissedExpectedMove(userId: number, sessionId: number, state: TrainingState) {
+  await requireOwnedSession(userId, sessionId);
   const expectedChild = state.expectedUserMove;
   const expectedMove = expectedChild?.node.moveUci;
   if (!expectedChild || !expectedMove) return;
@@ -52,9 +69,8 @@ async function recordMissedExpectedMove(sessionId: number, state: TrainingState)
   });
 }
 
-async function finalizeSession(sessionId: number) {
-  const sessionRow = await prisma.trainingSession.findUnique({ where: { id: sessionId } });
-  if (!sessionRow) throw new Error('Training session not found');
+async function finalizeSession(userId: number, sessionId: number) {
+  const sessionRow = await requireOwnedSession(userId, sessionId);
 
   const resultStatus = sessionRow.mistakesCount > 0 ? 'FAILED' : 'PASSED';
   const accuracy = sessionRow.totalExpectedMoves > 0
@@ -99,6 +115,7 @@ export const TrainingService = {
     const trainingState = startTraining(tree);
     const session = await prisma.trainingSession.create({
       data: {
+        userId,
         lineId,
         result: 'IN_PROGRESS',
         mistakesCount: 0,
@@ -123,7 +140,8 @@ export const TrainingService = {
    * Play a user move in an active session. Each attempt is counted exactly once
    * against the expected trained-side move node.
    */
-  playMove: async (sessionId: number, moveUci: string) => {
+  playMove: async (userId: number, sessionId: number, moveUci: string) => {
+    await requireOwnedSession(userId, sessionId);
     const sessionMeta = activeSessions.get(sessionId);
     if (!sessionMeta) throw new Error('Session not found or already completed');
 
@@ -180,7 +198,7 @@ export const TrainingService = {
 
     let finalSession = null;
     if (result.completed) {
-      finalSession = await finalizeSession(sessionId);
+      finalSession = await finalizeSession(userId, sessionId);
     }
 
     return {
@@ -201,25 +219,27 @@ export const TrainingService = {
   /**
    * Explicitly complete a session early. The current counters are finalized as-is.
    */
-  complete: async (sessionId: number) => {
+  complete: async (userId: number, sessionId: number) => {
+    await requireOwnedSession(userId, sessionId);
     const sessionMeta = activeSessions.get(sessionId);
     if (!sessionMeta) {
-      return prisma.trainingSession.findUnique({ where: { id: sessionId } });
+      return getOwnedSession(userId, sessionId);
     }
 
     if (!sessionMeta.state.completed) {
-      await recordMissedExpectedMove(sessionId, sessionMeta.state);
+      await recordMissedExpectedMove(userId, sessionId, sessionMeta.state);
       sessionMeta.state.completed = true;
       sessionMeta.state.expectedUserMove = undefined;
     }
 
-    return finalizeSession(sessionId);
+    return finalizeSession(userId, sessionId);
   },
 
   /**
    * Abandon a session. The session will be marked as ABANDONED. Statistics are not updated for lines.
    */
-  abandon: async (sessionId: number) => {
+  abandon: async (userId: number, sessionId: number) => {
+    await requireOwnedSession(userId, sessionId);
     activeSessions.delete(sessionId);
     return prisma.trainingSession.update({
       where: { id: sessionId },
@@ -229,4 +249,58 @@ export const TrainingService = {
       },
     });
   },
+
+  getSession: async (userId: number, sessionId: number) => getOwnedSession(userId, sessionId),
+
+  getReview: async (userId: number, sessionId: number) => {
+    const session = await getOwnedSession(userId, sessionId);
+    if (!session) return null;
+
+    const mistakes = await prisma.trainingAttemptMove.findMany({
+      where: { sessionId, session: { userId }, wasCorrect: false },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        moveNode: {
+          select: {
+            id: true,
+            moveSan: true,
+            moveUci: true,
+            comment: true,
+            annotation: true,
+            branchLabel: true,
+          },
+        },
+      },
+    });
+
+    return {
+      ...session,
+      mistakes: mistakes.map((attempt) => ({
+        id: attempt.id,
+        moveNodeId: attempt.moveNodeId,
+        fenBefore: attempt.fenBefore,
+        expectedMoveUci: attempt.expectedMoveUci,
+        playedMoveUci: attempt.playedMoveUci,
+        moveSan: attempt.moveNode?.moveSan ?? null,
+        comment: attempt.moveNode?.comment ?? null,
+        annotation: attempt.moveNode?.annotation ?? null,
+        branchLabel: attempt.moveNode?.branchLabel ?? null,
+        createdAt: attempt.createdAt,
+      })),
+    };
+  },
+
+  listHistory: async (userId: number) => prisma.trainingSession.findMany({
+    where: { userId, line: { chapter: { course: { userId } } } },
+    orderBy: { startedAt: 'desc' },
+    include: {
+      line: {
+        select: {
+          id: true,
+          name: true,
+          chapter: { select: { id: true, name: true, courseId: true } },
+        },
+      },
+    },
+  }),
 };

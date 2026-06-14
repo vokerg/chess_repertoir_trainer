@@ -22,7 +22,7 @@ export const ImportExportService = {
       },
     });
     const sessions = await prisma.trainingSession.findMany({
-      where: { line: { chapter: { course: { userId } } } },
+      where: { userId, line: { chapter: { course: { userId } } } },
       include: {
         attempts: true,
       },
