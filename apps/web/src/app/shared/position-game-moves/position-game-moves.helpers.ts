@@ -1,5 +1,5 @@
-import { defaultGameFilters, GameFilters } from '../../../shared/game-filters/game-filter.model';
-import { OpeningAnalysisGame, OpeningWdl, Provider, ResultForUser } from '../data-access/opening-analysis.models';
+import { defaultGameFilters, GameFilters } from '../game-filters/game-filter.model';
+import { OpeningAnalysisGame, OpeningWdl, Provider, ResultForUser } from './position-game-moves.models';
 
 export function defaultOpeningFilters(): GameFilters {
   return { ...defaultGameFilters(), userColor: 'WHITE', rated: 'true' };
@@ -65,7 +65,7 @@ export function gameMetaLabel(game: OpeningAnalysisGame): string {
     ? game.speedCategory.charAt(0).toUpperCase() + game.speedCategory.slice(1)
     : 'Unknown control';
   const opening = game.opening?.eco || game.opening?.name || 'Opening unavailable';
-  return `${control} · move ${game.moveNumber}: ${game.nextMoveSan || game.nextMoveUci} · ${opening}`;
+  return `${control} - move ${game.moveNumber}: ${game.nextMoveSan || game.nextMoveUci} - ${opening}`;
 }
 
 export function wdlLabel(wdl: OpeningWdl): string {

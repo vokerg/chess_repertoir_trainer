@@ -1,0 +1,110 @@
+<section class="workbench-panel position-games-panel" [class.position-games-compact]="compact()">
+  <div class="position-games-header">
+    <div>
+      <h3 class="workbench-panel-title">{{ title() }}</h3>
+      <p class="workbench-panel-subtitle">{{ subtitle() }}</p>
+    </div>
+    <button type="button" class="compact-action secondary" (click)="refresh.emit()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  <div class="position-games-summary">
+    <div>
+      <p class="metric-label">Position WDL</p>
+      <p class="position-games-wdl">{{ wdlLabel(positionWdl()) }}</p>
+    </div>
+  </div>
+
+  <section class="position-games-filters" aria-label="Game filters">
+    <button
+      type="button"
+      class="position-games-filter-toggle secondary"
+      (click)="filtersCollapsed.set(!filtersCollapsed())"
+      [attr.aria-expanded]="!filtersCollapsed()"
+    >
+      <span>Filters</span>
+      <small>{{ filterSummary() }}</small>
+      <strong>{{ filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
+    </button>
+
+    @if (!filtersCollapsed()) {
+      <app-game-filter-panel
+        [filters]="filters()"
+        [facets]="facets()"
+        [loading]="loading()"
+        (filtersChange)="filtersChange.emit($event)"
+        (apply)="applyFilters.emit()"
+        (reset)="resetFilters.emit()"
+      />
+    }
+  </section>
+
+  @if (error(); as message) {
+    <p class="status-error">{{ message }}</p>
+  }
+
+  <div class="position-games-moves-frame" [class.position-games-loading]="loading()">
+    @if (loading()) {
+      <p class="status-note position-games-loading-note">Loading games...</p>
+    }
+
+    @if (analysis(); as currentAnalysis) {
+      @if (currentAnalysis.nextMoves.length === 0) {
+        <div class="empty-state compact-empty">
+          No indexed games reached this position with the current filters. Index more games or widen the filters.
+        </div>
+      } @else {
+        <div class="position-games-move-list">
+          @for (move of currentAnalysis.nextMoves; track move.moveUci) {
+            <button type="button" class="position-games-move-row" (click)="moveSelected.emit(move)" [disabled]="loading()">
+              <span class="move-node-dot"></span>
+              <span class="move-main">
+                <strong>{{ move.moveSan || move.moveUci }}</strong>
+                <small>{{ move.moveUci }}</small>
+              </span>
+              <span class="move-wdl">
+                <span>{{ wdlLabel(move.games) }}</span>
+                <small>{{ scoreLabel(move.games) }}</small>
+              </span>
+            </button>
+          }
+        </div>
+      }
+    } @else if (loading()) {
+      <div class="position-games-move-list position-games-placeholder" aria-hidden="true">
+        @for (row of loadingMoveRows; track row) {
+          <div class="position-games-move-row">
+            <span class="move-node-dot"></span>
+            <span class="move-main"><strong>&nbsp;</strong><small>&nbsp;</small></span>
+            <span class="move-wdl"><span>&nbsp;</span><small>&nbsp;</small></span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  @if (showTopGames()) {
+    <section class="position-games-top" aria-label="Top games in this position">
+      <div>
+        <h3 class="workbench-panel-title">Top games in this position</h3>
+        <p class="workbench-panel-subtitle">Most recent games that reached this exact normalized position.</p>
+      </div>
+
+      @if (analysis()?.topGames?.length) {
+        <div class="position-games-game-list">
+          @for (game of analysis()?.topGames || []; track game.id) {
+            <a class="position-games-game-row" [routerLink]="['/games', game.id]" [class.position-games-game-row-loading]="loading()">
+              <span class="provider-pill" [class]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
+              <span class="position-games-game-main">
+                <strong>{{ gameDateLabel(game) }} - {{ playerPairLabel(game) }}</strong>
+                <small>{{ gameMetaLabel(game) }}</small>
+              </span>
+              <span class="position-games-result" [class]="resultClass(game.resultForUser)">{{ resultLabel(game.resultForUser) }}</span>
+            </a>
+          }
+        </div>
+      } @else if (!loading()) {
+        <div class="empty-state compact-empty">No matching games reached this position with the current filters.</div>
+      }
+    </section>
+  }
+</section>

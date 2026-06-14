@@ -2,19 +2,19 @@ import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
+import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
 import { GameFilters } from '../../../shared/game-filters/game-filter.model';
-import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
-import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
-import { OpeningAnalysisApiService } from '../data-access/opening-analysis-api.service';
+import { PositionGameMovesApiService } from '../../../shared/position-game-moves/position-game-moves-api.service';
+import { buildOpeningAnalysisQuery, defaultOpeningFilters } from '../../../shared/position-game-moves/position-game-moves.helpers';
 import {
-  OpeningAnalysisFacets,
   OpeningAnalysisResponse,
   OpeningNextMove,
   OpeningWdl,
   PlayedMove,
   UserColor,
-} from '../data-access/opening-analysis.models';
-import { buildOpeningAnalysisQuery, defaultOpeningFilters } from '../helpers/opening-analysis.helpers';
+} from '../../../shared/position-game-moves/position-game-moves.models';
+import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
+import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 const EMPTY_ENGINE: EngineAnalysis = {
@@ -35,10 +35,10 @@ interface ChessMove {
 
 @Injectable()
 export class OpeningAnalysisStore implements OnDestroy {
-  private readonly api = inject(OpeningAnalysisApiService);
+  private readonly api = inject(PositionGameMovesApiService);
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
 
-  readonly facets = signal<OpeningAnalysisFacets>({});
+  readonly facets = signal<ImportedGameFacetsResponse>({});
   readonly filters = signal<GameFilters>(defaultOpeningFilters());
   readonly analysis = signal<OpeningAnalysisResponse | null>(null);
   readonly loading = signal(false);

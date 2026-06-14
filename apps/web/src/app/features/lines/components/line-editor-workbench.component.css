@@ -1,3 +1,8 @@
 :host {
   display: block;
 }
+
+.line-side-extra-stack {
+  display: grid;
+  gap: 1rem;
+}

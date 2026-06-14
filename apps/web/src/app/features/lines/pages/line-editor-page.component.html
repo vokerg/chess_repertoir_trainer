@@ -51,6 +51,11 @@
         [notesSaving]="store.notesSaving()"
         [notesSaved]="store.notesSaved()"
         [notesError]="store.notesError()"
+        [gamesAnalysis]="store.gamesAnalysis()"
+        [gamesLoading]="store.gamesLoading()"
+        [gamesError]="store.gamesError()"
+        [gamesFilters]="store.gamesFilters()"
+        [gamesFacets]="store.gamesFacets()"
         (boardMove)="store.playBoardMove($event)"
         (nodeSelected)="store.selectNode($event)"
         (goStart)="store.goToStart()"
@@ -60,6 +65,10 @@
         (analyze)="store.rerunAnalysis()"
         (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
         (saveNotes)="store.saveNotes($event)"
+        (gamesFiltersChange)="store.setGamesFilters($event)"
+        (gamesApplyFilters)="store.refreshGamesAnalysis()"
+        (gamesResetFilters)="store.resetGamesFilters()"
+        (gamesRefresh)="store.refreshGamesAnalysis()"
       />
     }
   }

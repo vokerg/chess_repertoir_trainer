@@ -1,8 +1,13 @@
 import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
+import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
 import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
+import { GameFilters } from '../../../shared/game-filters/game-filter.model';
+import { PositionGameMovesApiService } from '../../../shared/position-game-moves/position-game-moves-api.service';
+import { buildOpeningAnalysisQuery, defaultOpeningFilters } from '../../../shared/position-game-moves/position-game-moves.helpers';
+import { OpeningAnalysisResponse } from '../../../shared/position-game-moves/position-game-moves.models';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
 import { LineDetail, LineTree, UpdateLineNodePayload } from '../data-access/lines.models';
 import {
@@ -25,10 +30,13 @@ const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
 export class LineEditorStore implements OnDestroy {
   private readonly api = inject(LinesApiService);
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
+  private readonly positionGameMovesApi = inject(PositionGameMovesApiService);
 
   private readonly lineId = signal<number | null>(null);
   private requestVersion = 0;
   private analysisTimer?: ReturnType<typeof setTimeout>;
+  private gamesRequestSeq = 0;
+  private gamesFacetsLoaded = false;
 
   readonly line = signal<LineDetail | null>(null);
   readonly tree = signal<LineTree | null>(null);
@@ -41,6 +49,11 @@ export class LineEditorStore implements OnDestroy {
   readonly notesSaving = signal(false);
   readonly notesSaved = signal(false);
   readonly notesError = signal<string | null>(null);
+  readonly gamesFacets = signal<ImportedGameFacetsResponse>({});
+  readonly gamesFilters = signal<GameFilters>(defaultOpeningFilters());
+  readonly gamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
+  readonly gamesLoading = signal(false);
+  readonly gamesError = signal<string | null>(null);
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
     initialValue: EMPTY_ENGINE_ANALYSIS,
   });
@@ -109,6 +122,7 @@ export class LineEditorStore implements OnDestroy {
       return;
     }
     this.lineId.set(lineId);
+    void this.loadGamesFacets();
     void this.loadLineAndTree(selectNodeId);
   }
 
@@ -129,6 +143,7 @@ export class LineEditorStore implements OnDestroy {
       ]);
       if (requestVersion !== this.requestVersion) return;
       this.line.set(line);
+      this.gamesFilters.update((filters) => ({ ...filters, userColor: line.sideToTrain }));
       this.applyTree(tree, selectNodeId ?? tree.root.node.id);
       this.loading.set(false);
     } catch (error) {
@@ -144,6 +159,39 @@ export class LineEditorStore implements OnDestroy {
     this.notesSaved.set(false);
     this.notesError.set(null);
     this.scheduleAnalysis();
+    void this.refreshGamesAnalysis();
+  }
+
+  setGamesFilters(filters: GameFilters): void {
+    this.gamesFilters.set(filters);
+  }
+
+  resetGamesFilters(): void {
+    this.gamesFilters.set({
+      ...defaultOpeningFilters(),
+      userColor: this.line()?.sideToTrain || 'WHITE',
+    });
+    void this.refreshGamesAnalysis();
+  }
+
+  async refreshGamesAnalysis(): Promise<void> {
+    const fen = this.currentFen();
+    if (!fen) return;
+
+    const requestId = ++this.gamesRequestSeq;
+    this.gamesLoading.set(true);
+    this.gamesError.set(null);
+    try {
+      const query = buildOpeningAnalysisQuery(fen, this.gamesFilters());
+      const analysis = await firstValueFrom(this.positionGameMovesApi.getAnalysis(query));
+      if (requestId !== this.gamesRequestSeq) return;
+      this.gamesAnalysis.set(analysis);
+      this.gamesLoading.set(false);
+    } catch (error) {
+      if (requestId !== this.gamesRequestSeq) return;
+      this.gamesError.set(readLinesError(error, 'Could not load moves from your games.'));
+      this.gamesLoading.set(false);
+    }
   }
 
   goToStart(): void {
@@ -260,6 +308,7 @@ export class LineEditorStore implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
+    this.gamesRequestSeq += 1;
     this.positionAnalysis.stop();
   }
 
@@ -278,10 +327,21 @@ export class LineEditorStore implements OnDestroy {
     this.selectedNodeId.set(selectedNodeId);
     this.boardPositionVersion.update((version) => version + 1);
     this.scheduleAnalysis();
+    void this.refreshGamesAnalysis();
   }
 
   private scheduleAnalysis(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.analysisTimer = setTimeout(() => this.rerunAnalysis(), 250);
+  }
+
+  private async loadGamesFacets(): Promise<void> {
+    if (this.gamesFacetsLoaded) return;
+    this.gamesFacetsLoaded = true;
+    try {
+      this.gamesFacets.set((await firstValueFrom(this.positionGameMovesApi.getFacets())) || {});
+    } catch {
+      this.gamesFacets.set({});
+    }
   }
 }

@@ -60,6 +60,8 @@ During training, opponent branches are auto-played randomly and the trained side
 
 Available sublines are the complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple available sublines.
 
+The line editor can also show filtered next moves from indexed imported games for the selected repertoire position. Selecting a suggested move adds it through the normal line-editor move persistence flow.
+
 ### Imported games and analysis
 
 The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A user can add multiple accounts, sync finished games from either provider, browse imported games, open a game replay/detail page, and start backend Stockfish analysis for an imported game.
@@ -67,6 +69,8 @@ The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A u
 The Games explorer UI is available from the main `Games` navigation item and supports filtering by account, provider, result, colour, time-control class, rated/casual, opponent, opening, analysis status, accuracy range, and date range. Rows show provider, result, players, time control, opening, analysis accuracy, and actions such as Analyse, Force re-analysis, and provider-link navigation.
 
 Backend analysis stores the heavy reusable position result separately from per-game move analysis. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
+
+`GET /api/opening-analysis` powers both the opening-analysis explorer and the line-editor games assistant, so position-based imported-game continuations use one backend aggregation path.
 
 ### Free analysis
 
@@ -432,6 +436,9 @@ From a clean clone, the target is:
 22. Free analysis loads a provided valid FEN and falls back visibly for an invalid FEN.
 23. Playing moves in free analysis creates local variations and Danger zone deletes local subtrees.
 24. Line editor move creation and subtree deletion still persist through the existing line APIs.
+25. The line editor shows the imported-games filter collapsed by default.
+26. Changing the selected repertoire node refreshes next moves for that node's FEN.
+27. Selecting a suggested imported-game move persists through the existing line APIs.
 
 ## Migration history
 

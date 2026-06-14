@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
+import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
+import { GameFilters } from '../../../shared/game-filters/game-filter.model';
+import { PositionGameMovesPanelComponent } from '../../../shared/position-game-moves/position-game-moves-panel.component';
+import { OpeningAnalysisResponse } from '../../../shared/position-game-moves/position-game-moves.models';
 import { LineTree, RepertoireColor, UpdateLineNodePayload } from '../data-access/lines.models';
 import { LineNotesEditorComponent } from './line-notes-editor.component';
 
@@ -10,6 +14,7 @@ import { LineNotesEditorComponent } from './line-notes-editor.component';
   imports: [
     AnalysisWorkbenchComponent,
     LineNotesEditorComponent,
+    PositionGameMovesPanelComponent,
   ],
   templateUrl: './line-editor-workbench.component.html',
   styleUrl: './line-editor-workbench.component.css',
@@ -36,6 +41,11 @@ export class LineEditorWorkbenchComponent {
   readonly notesSaving = input(false);
   readonly notesSaved = input(false);
   readonly notesError = input<string | null>(null);
+  readonly gamesAnalysis = input<OpeningAnalysisResponse | null>(null);
+  readonly gamesLoading = input(false);
+  readonly gamesError = input<string | null>(null);
+  readonly gamesFilters = input.required<GameFilters>();
+  readonly gamesFacets = input<ImportedGameFacetsResponse>({});
 
   readonly boardMove = output<string>();
   readonly nodeSelected = output<number>();
@@ -46,4 +56,8 @@ export class LineEditorWorkbenchComponent {
   readonly analyze = output<void>();
   readonly deleteSelectedSubtree = output<void>();
   readonly saveNotes = output<UpdateLineNodePayload>();
+  readonly gamesFiltersChange = output<GameFilters>();
+  readonly gamesApplyFilters = output<void>();
+  readonly gamesResetFilters = output<void>();
+  readonly gamesRefresh = output<void>();
 }

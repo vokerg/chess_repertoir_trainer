@@ -29,15 +29,34 @@
   (analyze)="analyze.emit()"
   (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
 >
-  <app-line-notes-editor
-    analysisWorkbenchSideExtra
-    [nodeId]="nodeId()"
-    [branchLabelValue]="branchLabel()"
-    [commentValue]="comment()"
-    [annotationValue]="annotation()"
-    [saving]="notesSaving()"
-    [saved]="notesSaved()"
-    [error]="notesError()"
-    (saveNotes)="saveNotes.emit($event)"
-  />
+  <div analysisWorkbenchSideExtra class="line-side-extra-stack">
+    <app-position-game-moves-panel
+      title="Moves from your games"
+      subtitle="Use your indexed games to add repertoire continuations from this exact position."
+      [analysis]="gamesAnalysis()"
+      [loading]="gamesLoading()"
+      [error]="gamesError()"
+      [filters]="gamesFilters()"
+      [facets]="gamesFacets()"
+      [filtersCollapsedInitially]="true"
+      [compact]="true"
+      [showTopGames]="false"
+      (filtersChange)="gamesFiltersChange.emit($event)"
+      (applyFilters)="gamesApplyFilters.emit()"
+      (resetFilters)="gamesResetFilters.emit()"
+      (refresh)="gamesRefresh.emit()"
+      (moveSelected)="boardMove.emit($event.moveUci)"
+    />
+
+    <app-line-notes-editor
+      [nodeId]="nodeId()"
+      [branchLabelValue]="branchLabel()"
+      [commentValue]="comment()"
+      [annotationValue]="annotation()"
+      [saving]="notesSaving()"
+      [saved]="notesSaved()"
+      [error]="notesError()"
+      (saveNotes)="saveNotes.emit($event)"
+    />
+  </div>
 </app-analysis-workbench>

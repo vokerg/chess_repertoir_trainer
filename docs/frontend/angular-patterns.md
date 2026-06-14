@@ -70,6 +70,8 @@ Outputs communicate user intent. The parent store decides whether that intent ca
 
 The shared analysis workbench receives board, move-tree, engine, navigation, and delete state as inputs and emits user intents as outputs. Feature wrappers and pages provide feature-specific copy, projected UI such as line notes, and confirmation dialogs. Feature stores decide whether an emitted move or delete command calls an API or updates a local-only tree. Shared analysis components must not import feature internals.
 
+Projected side content may compose the shared position-game-moves panel with feature-owned UI such as line notes. Shared and presentational components emit user intent only; persistence and async workflow remain owned by the feature store. Shared components must not import feature internals to reach feature state or commands.
+
 ## Template control flow
 
 ```html

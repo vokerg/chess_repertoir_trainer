@@ -1,19 +1,6 @@
 <section class="opening-page stack">
   <app-page-header title="Opening analysis" subtitle="Explore positions from your indexed games." [stats]="headerStats()" />
 
-  <app-game-filter-panel
-    [filters]="store.filters()"
-    [facets]="store.facets()"
-    [loading]="store.loading()"
-    (filtersChange)="store.setFilters($event)"
-    (apply)="store.refresh()"
-    (reset)="store.resetFilters()"
-  />
-
-  @if (store.error()) {
-    <p class="status-error">{{ store.error() }}</p>
-  }
-
   <div class="opening-workbench">
     <section class="workbench-panel opening-board-panel">
       <div class="opening-panel-header">
@@ -64,21 +51,24 @@
       </div>
     </section>
 
-    <section class="workbench-panel opening-tree-panel">
-      <div class="opening-panel-header">
-        <div>
-          <h3 class="workbench-panel-title">Next moves from your games</h3>
-          <p class="workbench-panel-subtitle">Each row is a move you actually played or faced from this exact normalized position.</p>
-        </div>
-        <button type="button" class="compact-action secondary" (click)="store.refresh()" [disabled]="store.loading()">Refresh</button>
-      </div>
-
-      <div class="opening-position-summary">
-        <div>
-          <p class="metric-label">Position WDL</p>
-          <p class="opening-wdl-line">{{ wdlLabel(store.wdl()) }}</p>
-        </div>
-      </div>
+    <div class="opening-tree-panel">
+      <app-position-game-moves-panel
+        title="Next moves from your games"
+        subtitle="Each row is a move you actually played or faced from this exact normalized position."
+        [analysis]="store.analysis()"
+        [loading]="store.loading()"
+        [error]="store.error()"
+        [filters]="store.filters()"
+        [facets]="store.facets()"
+        [filtersCollapsedInitially]="false"
+        [compact]="false"
+        [showTopGames]="true"
+        (filtersChange)="store.setFilters($event)"
+        (applyFilters)="store.refresh()"
+        (resetFilters)="store.resetFilters()"
+        (refresh)="store.refresh()"
+        (moveSelected)="store.playNextMove($event)"
+      />
 
       <section class="engine-summary-card" aria-label="Stockfish opening evaluation">
         <app-stockfish-panel
@@ -87,78 +77,6 @@
           (analyze)="store.rerunAnalysis()"
         />
       </section>
-
-      <div class="opening-next-moves-frame" [class.opening-next-moves-loading]="store.loading()">
-        @if (store.loading()) {
-          <p class="status-note opening-loading-note">Loading opening analysis...</p>
-        }
-
-        @if (store.analysis(); as analysis) {
-          @if (analysis.nextMoves.length === 0) {
-            <div class="empty-state compact-empty opening-next-empty">
-              No indexed games reached this position with the current filters. Index more games or widen the filters.
-            </div>
-          } @else {
-            <div class="opening-move-tree">
-              @for (move of analysis.nextMoves; track move.moveUci) {
-                <button type="button" class="opening-move-row" (click)="store.playNextMove(move)" [disabled]="store.loading()">
-                  <span class="move-node-dot"></span>
-                  <span class="move-main">
-                    <strong>{{ move.moveSan || move.moveUci }}</strong>
-                    <small>{{ move.moveUci }}</small>
-                  </span>
-                  <span class="move-wdl">
-                    <span>{{ wdlLabel(move.games) }}</span>
-                    <small>{{ scoreLabel(move.games) }}</small>
-                  </span>
-                </button>
-              }
-            </div>
-          }
-        } @else if (store.loading()) {
-          <div class="opening-move-tree opening-move-tree-placeholder" aria-hidden="true">
-            @for (row of loadingMoveRows; track row) {
-              <div class="opening-move-row opening-move-row-placeholder">
-                <span class="move-node-dot"></span>
-                <span class="move-main"><strong>&nbsp;</strong><small>&nbsp;</small></span>
-                <span class="move-wdl"><span>&nbsp;</span><small>&nbsp;</small></span>
-              </div>
-            }
-          </div>
-        }
-      </div>
-
-      <section class="opening-games-panel" aria-label="Top games in this position">
-        <div class="opening-panel-header compact-header">
-          <div>
-            <h3 class="workbench-panel-title">Top games in this position</h3>
-            <p class="workbench-panel-subtitle">Most recent games that reached this exact normalized position.</p>
-          </div>
-        </div>
-
-        @if (store.analysis()?.topGames?.length) {
-          <div class="opening-games-list">
-            @for (game of store.analysis()?.topGames || []; track game.id) {
-              <a
-                class="opening-game-row"
-                [routerLink]="['/games', game.id]"
-                [class.opening-game-row-loading]="store.loading()"
-              >
-                <span class="provider-pill" [ngClass]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
-                <span class="opening-game-main">
-                  <strong>{{ gameDateLabel(game) }} - {{ playerPairLabel(game) }}</strong>
-                  <small>{{ gameMetaLabel(game) }}</small>
-                </span>
-                <span class="opening-game-result" [ngClass]="resultClass(game.resultForUser)">
-                  {{ resultLabel(game.resultForUser) }}
-                </span>
-              </a>
-            }
-          </div>
-        } @else {
-          <div class="empty-state compact-empty">No matching games reached this position with the current filters.</div>
-        }
-      </section>
-    </section>
+    </div>
   </div>
 </section>
