@@ -51,15 +51,25 @@ async function createMove(lineId: number, parentId: number | null, fenBefore: st
 }
 
 async function main() {
-  await prisma.trainingAttemptMove.deleteMany();
-  await prisma.trainingSession.deleteMany();
-  await prisma.moveNode.deleteMany();
-  await prisma.line.deleteMany();
-  await prisma.chapter.deleteMany();
-  await prisma.course.deleteMany();
+  const devUser = await prisma.appUser.upsert({
+    where: { id: 1 },
+    update: {
+      authProvider: 'dev',
+      authSubject: 'dev-single-user',
+    },
+    create: {
+      id: 1,
+      displayName: 'Local user',
+      authProvider: 'dev',
+      authSubject: 'dev-single-user',
+    },
+  });
+
+  await prisma.course.deleteMany({ where: { userId: devUser.id } });
 
   const course = await prisma.course.create({
     data: {
+      userId: devUser.id,
       name: 'My White Repertoire',
       description: 'Sample repertoire for White.',
     },

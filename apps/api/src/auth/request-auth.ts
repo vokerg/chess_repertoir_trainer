@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 
 export interface RequestAuth {
   userId: number;
-  provider: 'clerk' | 'dev';
+  provider: string;
   externalSubject: string;
   email?: string;
 }

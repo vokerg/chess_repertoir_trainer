@@ -46,6 +46,11 @@ function readEmail(payload: Record<string, unknown>) {
   return typeof email === 'string' && email.length > 0 ? email : undefined;
 }
 
+function readDisplayName(payload: Record<string, unknown>) {
+  const name = payload['name'];
+  return typeof name === 'string' && name.length > 0 ? name : undefined;
+}
+
 export default fp(async function authPlugin(app) {
   const config = loadAuthConfig();
   const { createRemoteJWKSet, jwtVerify } = config.mode === 'clerk'
@@ -79,9 +84,11 @@ export default fp(async function authPlugin(app) {
         return reply.code(401).send({ message: 'Unauthorized' });
       }
 
-      const resolved = await CurrentAppUserService.resolveClerkUser({
+      const resolved = await CurrentAppUserService.resolveExternalUser({
+        provider: 'clerk',
         externalSubject: payload.sub,
         email: readEmail(payload),
+        displayName: readDisplayName(payload),
       });
       request.auth = resolved.auth;
     } catch (error) {

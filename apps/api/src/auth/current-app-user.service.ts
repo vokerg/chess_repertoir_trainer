@@ -1,9 +1,11 @@
 import prisma from '../prisma';
 import { RequestAuth } from './request-auth';
 
-interface ClerkIdentity {
+export interface ExternalIdentity {
+  provider: string;
   externalSubject: string;
   email?: string;
+  displayName?: string;
 }
 
 export const CurrentAppUserService = {
@@ -32,19 +34,23 @@ export const CurrentAppUserService = {
     };
   },
 
-  resolveClerkUser: async (identity: ClerkIdentity) => {
+  resolveExternalUser: async (identity: ExternalIdentity) => {
     const user = await prisma.appUser.upsert({
       where: {
         authProvider_authSubject: {
-          authProvider: 'clerk',
+          authProvider: identity.provider,
           authSubject: identity.externalSubject,
         },
       },
-      update: { email: identity.email },
+      update: {
+        email: identity.email,
+        displayName: identity.displayName,
+      },
       create: {
-        authProvider: 'clerk',
+        authProvider: identity.provider,
         authSubject: identity.externalSubject,
         email: identity.email,
+        displayName: identity.displayName,
       },
     });
 
@@ -52,7 +58,7 @@ export const CurrentAppUserService = {
       user,
       auth: {
         userId: user.id,
-        provider: 'clerk',
+        provider: identity.provider,
         externalSubject: identity.externalSubject,
         ...(identity.email ? { email: identity.email } : {}),
       } satisfies RequestAuth,
