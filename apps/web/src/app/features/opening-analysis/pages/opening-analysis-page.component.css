@@ -1,7 +1,4 @@
 .opening-page { gap: 1rem; }
-      .opening-hero { display: flex; gap: 1.25rem; align-items: stretch; justify-content: space-between; }
-      .opening-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(108px, 1fr)); gap: 0.8rem; min-width: min(430px, 100%); }
-      .opening-mini-card { min-height: 112px; }
       .opening-panel-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
       .opening-section-title { margin: 0; font-size: 1.15rem; }
       .opening-muted { margin: 0.25rem 0 0; color: var(--muted); line-height: 1.35; }
@@ -53,10 +50,9 @@
       .result-loss { background: var(--danger-soft); color: var(--danger); }
       .result-unknown { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
       @media (max-width: 1050px) {
-        .opening-hero, .opening-workbench { grid-template-columns: 1fr; display: grid; }
+        .opening-workbench { grid-template-columns: 1fr; display: grid; }
       }
       @media (max-width: 680px) {
-        .opening-hero-stats { grid-template-columns: 1fr; }
         .opening-panel-header, .opening-position-summary { display: grid; }
         .side-stack { justify-items: start; }
         .move-wdl { text-align: left; }

@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
+import { PageHeaderComponent } from '../../../components/page-header.component';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
@@ -20,7 +21,7 @@ import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reint
 @Component({
   selector: 'app-free-analysis-page',
   standalone: true,
-  imports: [RouterLink, AnalysisWorkbenchComponent, AnalysisReintegrationDialogComponent],
+  imports: [RouterLink, PageHeaderComponent, AnalysisWorkbenchComponent, AnalysisReintegrationDialogComponent],
   providers: [FreeAnalysisStore, FreeAnalysisApiService, AnalysisReintegrationStore, AnalysisReintegrationApiService],
   templateUrl: './free-analysis-page.component.html',
   styleUrl: './free-analysis-page.component.css',

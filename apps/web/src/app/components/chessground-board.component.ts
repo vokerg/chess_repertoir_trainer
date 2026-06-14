@@ -32,9 +32,16 @@ type BoardArrowShape = { orig: Key; dest: Key; brush: string };
   `,
   styles: [
     `
+    :host {
+      display: block;
+      width: min(100%, var(--chess-board-size, 520px));
+      min-width: 0;
+      aspect-ratio: 1 / 1;
+    }
+
     .board-shell {
-      width: min(76vw, 520px);
-      max-width: 100%;
+      width: 100%;
+      height: 100%;
       aspect-ratio: 1 / 1;
     }
 

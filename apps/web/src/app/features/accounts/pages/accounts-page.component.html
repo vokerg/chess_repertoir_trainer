@@ -1,19 +1,9 @@
 <section class="accounts-page stack">
-  <section class="section-card accounts-hero">
-    <div>
-      <span class="eyebrow">Game imports</span>
-      <h2 class="page-heading page-heading-library">External accounts</h2>
-      <p class="page-subtitle">
-        Add Lichess and Chess.com usernames, then sync each account independently into your imported games library.
-      </p>
-    </div>
-    <div class="accounts-hero-actions">
-      <a routerLink="/games" class="accounts-link-button">Open games explorer</a>
-      <button type="button" class="secondary" (click)="store.loadAccounts()" [disabled]="store.loading()">
-        {{ store.loading() ? 'Refreshing...' : 'Refresh accounts' }}
-      </button>
-    </div>
-  </section>
+  <app-page-header title="Accounts" subtitle="Connect accounts and sync imported games.">
+    <button type="button" class="page-header-action secondary" (click)="store.loadAccounts()" [disabled]="store.loading()">
+      {{ store.loading() ? 'Refreshing...' : 'Refresh accounts' }}
+    </button>
+  </app-page-header>
 
   <section class="section-card accounts-grid-card">
     <div>

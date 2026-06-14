@@ -1,14 +1,8 @@
 <section class="free-analysis-page stack">
-  <header class="section-card analysis-header">
-    <div>
-      <a routerLink="/library" class="subtle-link">&larr; Back to study</a>
-      <h2 class="page-heading">Analysis board</h2>
-      <p class="page-subtitle">
-        Explore a position from FEN or an imported game. New variations on this page are local only.
-      </p>
-    </div>
-    <button type="button" [disabled]="!store.tree()" (click)="openReintegrationDialog()">Reintegrate into course</button>
-  </header>
+  <app-page-header title="Analysis" subtitle="Explore a position from FEN or an imported game.">
+    <a routerLink="/library" class="page-header-action secondary">Back to study</a>
+    <button type="button" class="page-header-action" [disabled]="!store.tree()" (click)="openReintegrationDialog()">Reintegrate into course</button>
+  </app-page-header>
 
   @if (store.error(); as error) {
     <p class="status-error">{{ error }}</p>

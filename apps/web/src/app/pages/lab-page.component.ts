@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { PageHeaderComponent } from '../components/page-header.component';
 import { ApiService } from '../services/api.service';
 
 type LabExperiment = 'top-opponents' | 'monthly-games';
@@ -37,19 +38,12 @@ interface LabMonthlyGamesResponse {
 @Component({
   selector: 'app-lab-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
     <section class="lab-page stack">
-      <section class="section-card lab-hero">
-        <div>
-          <span class="eyebrow">Experimental features</span>
-          <h2 class="page-heading page-heading-library">Lab</h2>
-          <p class="page-subtitle">
-            Pick one report to load. These are intentionally separate so heavier experiments do not run until selected.
-          </p>
-        </div>
-        <button type="button" class="secondary lab-back" *ngIf="selected" (click)="clearSelection()">All experiments</button>
-      </section>
+      <app-page-header title="Lab" subtitle="Run focused reports from imported games.">
+        <button type="button" class="page-header-action secondary lab-back" *ngIf="selected" (click)="clearSelection()">All experiments</button>
+      </app-page-header>
 
       <section class="lab-layout">
         <aside class="section-card lab-menu" aria-label="Lab experiments">
@@ -92,7 +86,7 @@ interface LabMonthlyGamesResponse {
               <span class="eyebrow">Opponent frequency</span>
               <h3 class="collection-title">Top opponents by source</h3>
             </div>
-            <button type="button" class="secondary" (click)="loadTopOpponents()" [disabled]="topOpponentsLoading">
+            <button type="button" class="page-header-action secondary" (click)="loadTopOpponents()" [disabled]="topOpponentsLoading">
               {{ topOpponentsLoading ? 'Loading...' : 'Refresh' }}
             </button>
           </div>
@@ -133,7 +127,7 @@ interface LabMonthlyGamesResponse {
                 <input type="checkbox" [(ngModel)]="excludeBullet" (ngModelChange)="loadMonthlyGames()" />
                 <span>Exclude bullet</span>
               </label>
-              <button type="button" class="secondary" (click)="loadMonthlyGames()" [disabled]="monthlyGamesLoading">
+              <button type="button" class="page-header-action secondary" (click)="loadMonthlyGames()" [disabled]="monthlyGamesLoading">
                 {{ monthlyGamesLoading ? 'Loading...' : 'Refresh' }}
               </button>
             </div>
@@ -181,7 +175,6 @@ interface LabMonthlyGamesResponse {
   styles: [
     `
     .lab-page { gap: 1rem; }
-    .lab-hero { display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
     .lab-back { flex: 0 0 auto; }
     .lab-layout { display: grid; grid-template-columns: minmax(230px, 310px) minmax(0, 1fr); gap: 1rem; align-items: start; }
     .lab-menu { display: grid; gap: 0.65rem; padding: 0.8rem; }
@@ -221,7 +214,8 @@ interface LabMonthlyGamesResponse {
       .lab-layout { grid-template-columns: 1fr; }
     }
     `
-  ]
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LabPageComponent {
   private readonly api = inject(ApiService);

@@ -3,22 +3,6 @@
   gap: 1rem;
 }
 
-.lines-hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.lines-hero-copy {
-  gap: 0.7rem;
-}
-
-.lines-page-title {
-  font-size: clamp(1.8rem, 3vw, 2.9rem);
-}
-
 .section-header,
 .line-card-header {
   display: flex;

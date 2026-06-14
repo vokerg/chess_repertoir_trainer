@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
+import { PageHeaderComponent } from '../../../components/page-header.component';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseDetailStore } from '../state/course-detail.store';
 import { SublinesListComponent } from '../../sublines/components/sublines-list.component';
@@ -11,7 +12,7 @@ import { SublinesListComponent } from '../../sublines/components/sublines-list.c
 @Component({
   selector: 'app-course-detail-page',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink, SublinesListComponent],
+  imports: [DecimalPipe, FormsModule, RouterLink, PageHeaderComponent, SublinesListComponent],
   providers: [CourseDetailApiService, CourseDetailStore],
   templateUrl: './course-detail-page.component.html',
   styleUrl: './course-detail-page.component.css',

@@ -1,11 +1,12 @@
 <section class="stack">
-  <section class="section-card stack">
-    <span class="eyebrow">Study library</span>
-    <h2 class="page-heading page-heading-library">Choose what to study</h2>
-    <p class="page-subtitle">
-      Browse repertoires, sections, and trainable lines in one workspace. Pick a line, then jump straight into focused training or the tree editor.
-    </p>
-  </section>
+  <app-page-header title="Study" subtitle="Choose a repertoire, section, or line to train.">
+    <button type="button" class="page-header-action secondary" (click)="store.toggleReviewOnly()" [class.library-filter-active]="store.reviewOnly()">
+      {{ store.reviewOnly() ? 'Review filter on' : 'Filters' }}
+    </button>
+    <button type="button" class="page-header-action" (click)="store.createLineInSelectedChapter()" [disabled]="!store.selectedChapterId() || store.lineLoading()">
+      New line
+    </button>
+  </app-page-header>
 
   <section class="library-browser">
     <div class="library-toolbar">
@@ -15,14 +16,6 @@
         (ngModelChange)="store.searchText.set($event)"
         placeholder="Search repertoires, sections, lines..."
       />
-      <div class="library-actions library-toolbar-actions">
-        <button type="button" class="secondary" (click)="store.toggleReviewOnly()" [class.library-filter-active]="store.reviewOnly()">
-          {{ store.reviewOnly() ? 'Review filter on' : 'Filters' }}
-        </button>
-        <button type="button" (click)="store.createLineInSelectedChapter()" [disabled]="!store.selectedChapterId() || store.lineLoading()">
-          New line
-        </button>
-      </div>
     </div>
 
     <div class="library-columns">

@@ -2,6 +2,7 @@ import { DecimalPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { PageHeaderComponent } from '../../../components/page-header.component';
 import { LibraryApiService } from '../data-access/library-api.service';
 import {
   failureRate,
@@ -16,7 +17,7 @@ import { LibraryBrowserStore } from '../state/library-browser.store';
 @Component({
   selector: 'app-library-browser-page',
   standalone: true,
-  imports: [DecimalPipe, NgClass, FormsModule, RouterLink],
+  imports: [DecimalPipe, NgClass, FormsModule, RouterLink, PageHeaderComponent],
   providers: [LibraryApiService, LibraryBrowserStore],
   templateUrl: './library-browser-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

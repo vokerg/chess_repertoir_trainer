@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
+import { PageHeaderComponent } from '../../../components/page-header.component';
 import { StockfishPanelComponent } from '../../../components/stockfish-panel.component';
 import { GameFilterPanelComponent } from '../../../shared/game-filters/game-filter-panel.component';
 import { OpeningAnalysisApiService } from '../data-access/opening-analysis-api.service';
@@ -31,6 +32,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     EngineEvalBarComponent,
     StockfishPanelComponent,
     BoardActionToolbarComponent,
+    PageHeaderComponent,
   ],
   providers: [OpeningAnalysisApiService, OpeningAnalysisStore],
   templateUrl: './opening-analysis-page.component.html',
