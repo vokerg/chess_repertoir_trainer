@@ -37,7 +37,8 @@ export const routes: Routes = [
   {
     path: 'lab',
     title: 'Lab | Chess Repertoire Trainer',
-    loadComponent: () => import('./pages/lab-page.component').then((m) => m.LabPageComponent),
+    loadComponent: () =>
+      import('./features/lab/pages/lab-page.component').then((m) => m.LabPageComponent),
   },
   {
     path: 'games/:gameId',

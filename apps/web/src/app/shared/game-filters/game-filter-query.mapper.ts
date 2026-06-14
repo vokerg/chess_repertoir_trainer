@@ -18,6 +18,7 @@ export function mapGameFiltersToQueryString(filters: GameFilters, cursor?: strin
   if (filters.minAccuracy.trim()) params.set('minAccuracy', filters.minAccuracy.trim());
   if (filters.maxAccuracy.trim()) params.set('maxAccuracy', filters.maxAccuracy.trim());
   if (filters.minOpponentRating.trim()) params.set('minOpponentRating', filters.minOpponentRating.trim());
+  if (filters.maxOpponentRating.trim()) params.set('maxOpponentRating', filters.maxOpponentRating.trim());
   if (filters.from) params.set('from', dayStartIso(filters.from));
   if (filters.to) params.set('to', dayEndIso(filters.to));
   return `?${params.toString()}`;

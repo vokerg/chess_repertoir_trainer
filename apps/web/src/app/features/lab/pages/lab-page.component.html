@@ -1,0 +1,31 @@
+<section class="lab-page stack">
+  <app-page-header title="Lab" subtitle="Run focused reports from imported games." [actions]="headerActions()" />
+
+  <section class="lab-layout">
+    <aside class="section-card lab-menu" aria-label="Lab experiments">
+      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'top-opponents'" (click)="selectExperiment('top-opponents')">
+        <span><strong>Top opponents</strong><small>Grouped by opponent name</small></span>
+        <span class="pill">List</span>
+      </button>
+      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'monthly-games'" (click)="selectExperiment('monthly-games')">
+        <span><strong>Monthly games</strong><small>Year/month WDL and rating snapshots</small></span>
+        <span class="pill">Table</span>
+      </button>
+      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'opening-struggles'" (click)="selectExperiment('opening-struggles')">
+        <span><strong>Opening struggles</strong><small>Loss rate and eval traps by line</small></span>
+        <span class="pill">Table</span>
+      </button>
+    </aside>
+
+    @switch (selected()) {
+      @case ('top-opponents') { <app-lab-top-opponents /> }
+      @case ('monthly-games') { <app-lab-monthly-games /> }
+      @case ('opening-struggles') { <app-lab-opening-struggles /> }
+      @default {
+        <section class="section-card lab-panel">
+          <div class="empty-state lab-empty">Choose an experiment from the Lab menu.</div>
+        </section>
+      }
+    }
+  </section>
+</section>

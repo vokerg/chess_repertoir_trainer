@@ -1,0 +1,53 @@
+<section class="section-card lab-panel stack">
+  <div class="lab-panel-header">
+    <div><span class="eyebrow">Move-prefix report</span><h3 class="collection-title">Opening struggles</h3></div>
+    <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading()">{{ store.loading() ? 'Loading...' : 'Run report' }}</button>
+  </div>
+
+  <app-game-filter-panel
+    [filters]="store.gameFilters()"
+    [facets]="store.facets()"
+    [loading]="store.loading()"
+    (filtersChange)="store.setGameFilters($event)"
+    (apply)="store.load()"
+    (reset)="store.resetGameFilters()"
+  />
+
+  <section class="criteria-panel stack" aria-label="Opening struggle criteria">
+    <div><span class="eyebrow">Struggle criteria</span><h4 class="criteria-title">Line thresholds</h4></div>
+    <div class="lab-controls">
+    <label><span>Min games</span><input type="number" min="1" [value]="store.criteria().minGames" (input)="store.updateCriteria('minGames', numberValue($event))" /></label>
+    <label><span>Max ply</span><input type="number" min="1" max="60" [value]="store.criteria().maxPly" (input)="store.updateCriteria('maxPly', numberValue($event))" /></label>
+    <label><span>Result limit</span><input type="number" min="1" max="500" [value]="store.criteria().limit" (input)="store.updateCriteria('limit', numberValue($event))" /></label>
+    <label><span>Result metric</span><select [value]="store.criteria().resultMetric" (change)="store.updateCriteria('resultMetric', resultMetricValue($event))"><option value="none">None</option><option value="lossRate">Minimum loss rate</option><option value="winRate">Maximum win rate</option><option value="scorePct">Maximum score</option></select></label>
+    @switch (store.criteria().resultMetric) {
+      @case ('lossRate') { <label><span>Min loss %</span><input type="number" min="0" max="100" [value]="store.criteria().minLossRate" (input)="store.updateCriteria('minLossRate', numberValue($event))" /></label> }
+      @case ('winRate') { <label><span>Max win %</span><input type="number" min="0" max="100" [value]="store.criteria().maxWinRate" (input)="store.updateCriteria('maxWinRate', numberValue($event))" /></label> }
+      @case ('scorePct') { <label><span>Max score %</span><input type="number" min="0" max="100" [value]="store.criteria().maxScorePct" (input)="store.updateCriteria('maxScorePct', numberValue($event))" /></label> }
+    }
+    <label><span>Eval metric</span><select [value]="store.criteria().evalMetric" (change)="store.updateCriteria('evalMetric', evalMetricValue($event))"><option value="none">None</option><option value="userEvalCp">Maximum user eval</option></select></label>
+    @if (store.criteria().evalMetric === 'userEvalCp') { <label><span>Max user eval (cp)</span><input type="number" [value]="store.criteria().maxUserEvalCp" (input)="store.updateCriteria('maxUserEvalCp', numberValue($event))" /></label> }
+    </div>
+  </section>
+
+  <p class="status-note">Only games with indexed plies are included. Eval filters only count positions with cached analysis.</p>
+  @if (store.metricsDisabled()) { <p class="status-note warning-copy">This will list common lines without struggle filtering; enable loss/score or eval filter for useful results.</p> }
+  @if (store.loading()) { <p class="status-note">Building opening line report...</p> }
+  @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
+  @if (store.loaded() && !store.loading() && !store.error()) { <p class="status-note">{{ store.indexedFilteredGames() }} indexed games from {{ store.totalFilteredGames() }} filtered games.</p> }
+
+  @if (!store.loading() && store.items().length > 0) {
+    <div class="table-wrap"><table class="lab-table"><thead><tr><th>Line</th><th>Played as</th><th>W-D-L</th><th>Loss %</th><th>Avg eval</th></tr></thead><tbody>
+      @for (item of store.items(); track item.key) {
+        <tr>
+          <td class="primary-cell line-cell"><div class="line-content"><a class="line-link" routerLink="/analysis" [queryParams]="analysisQueryParams(item)">{{ lineLabel(item) }}</a><button type="button" class="copy-line-button secondary" (click)="copyLine(item.key)" [attr.aria-label]="'Copy line ' + lineLabel(item)">{{ copiedKey() === item.key ? 'Copied' : 'Copy' }}</button></div></td>
+          <td>{{ userColorLabel(item) }}</td><td>{{ wdlLabel(item) }}</td><td>{{ percentLabel(item.lossRate) }}</td><td>{{ evalLabel(item.avgUserEvalCp) }}</td>
+        </tr>
+      }
+    </tbody></table></div>
+  } @else if (store.loaded() && !store.loading() && !store.error()) {
+    <div class="empty-state">No opening lines matched the selected thresholds.</div>
+  } @else if (!store.loaded() && !store.loading()) {
+    <div class="empty-state">Apply game filters to build the opening struggles report.</div>
+  }
+</section>

@@ -14,6 +14,7 @@
     <label class="games-field compact"><span>Min accuracy</span><input [ngModel]="filters().minAccuracy" (ngModelChange)="setFilterValue('minAccuracy', $event)" (keyup.enter)="apply.emit()" inputmode="decimal" placeholder="0" /></label>
     <label class="games-field compact"><span>Max accuracy</span><input [ngModel]="filters().maxAccuracy" (ngModelChange)="setFilterValue('maxAccuracy', $event)" (keyup.enter)="apply.emit()" inputmode="decimal" placeholder="100" /></label>
     <label class="games-field compact"><span>Opp. rating &gt;</span><input [ngModel]="filters().minOpponentRating" (ngModelChange)="setFilterValue('minOpponentRating', $event)" (keyup.enter)="apply.emit()" inputmode="numeric" placeholder="1200" /></label>
+    <label class="games-field compact"><span>Opp. rating &lt;</span><input [ngModel]="filters().maxOpponentRating" (ngModelChange)="setFilterValue('maxOpponentRating', $event)" (keyup.enter)="apply.emit()" inputmode="numeric" placeholder="2200" /></label>
     <label class="games-field compact"><span>From</span><input type="date" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)" /></label>
     <label class="games-field compact"><span>To</span><input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" /></label>
   </div>

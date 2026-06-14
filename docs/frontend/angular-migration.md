@@ -17,13 +17,13 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Line training and marathon: feature-local pages/stores, shared presentational session UI within the lines feature, typed training APIs, and no HTTP-owning child component.
 - Courses and stats: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
 - Games table presentation: external templates/styles, built-in control flow with stable row tracking, signal-based action-menu state, and tested feature-local display helpers.
+- Lab: composition-only shell with isolated experiment components, page-scoped signal stores, typed experiment data access, external templates/styles, and built-in control flow.
 
 ## Migration order
 
 Prioritize by responsibility count and user-facing risk:
 
-1. Lab page.
-2. Remaining shared board, engine, PGN, and note components.
+1. Remaining shared board, engine, PGN, and note components.
 
 ## Per-component completion criteria
 

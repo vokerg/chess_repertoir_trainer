@@ -90,6 +90,36 @@ export const importedGameDetailSelect = {
 export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameListSelect }>;
 export type ImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;
 
+const openingStrugglesPlySelect = {
+  importedGameId: true,
+  plyNumber: true,
+  moveUci: true,
+  positionId: true,
+  position: {
+    select: {
+      normalizedFen: true,
+      analysis: {
+        select: {
+          id: true,
+          bestMoveUci: true,
+          bestScoreCpWhite: true,
+          bestMateWhite: true,
+        },
+      },
+    },
+  },
+} as const;
+
+const openingStrugglesGameSelect = {
+  ...importedGameListSelect,
+  plies: {
+    orderBy: { plyNumber: 'asc' as const },
+    select: openingStrugglesPlySelect,
+  },
+} as const;
+
+export type OpeningStrugglesGameRow = Prisma.ImportedGameGetPayload<{ select: typeof openingStrugglesGameSelect }>;
+
 function inFilter(values?: string[]) {
   return values && values.length ? { in: values } : undefined;
 }
@@ -245,6 +275,25 @@ export async function findImportedGamesForSummary(userId: number, query: Importe
   return prisma.importedGame.findMany({
     where: buildImportedGameWhere(userId, query),
     select: importedGameListSelect,
+  });
+}
+
+export async function findImportedGamesForOpeningStruggles(
+  userId: number,
+  query: ImportedGameSummaryQuery,
+  maxPly: number,
+) {
+  return prisma.importedGame.findMany({
+    where: buildImportedGameWhere(userId, query),
+    orderBy: { id: 'asc' },
+    select: {
+      ...importedGameListSelect,
+      plies: {
+        where: { plyNumber: { lte: maxPly + 1 } },
+        orderBy: { plyNumber: 'asc' },
+        select: openingStrugglesPlySelect,
+      },
+    },
   });
 }
 

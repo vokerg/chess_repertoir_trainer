@@ -15,6 +15,7 @@ export interface GameFilters {
   minAccuracy: string;
   maxAccuracy: string;
   minOpponentRating: string;
+  maxOpponentRating: string;
   from: string;
   to: string;
 }
@@ -35,6 +36,7 @@ export function defaultGameFilters(): GameFilters {
     minAccuracy: '',
     maxAccuracy: '',
     minOpponentRating: '',
+    maxOpponentRating: '',
     from: '',
     to: '',
   };

@@ -1,6 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../auth/request-auth';
-import { LabService } from './lab.service';
+import { getMonthlyGames } from './monthly-games/monthly-games.service';
+import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
+import { getOpeningStruggles } from './opening-struggles/opening-struggles.service';
+import { getTopOpponents } from './top-opponents/top-opponents.service';
 
 function parseLimit(value: unknown) {
   const limit = Number(value ?? 50);
@@ -17,13 +20,24 @@ export default async function labModule(app: FastifyInstance) {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     const query = request.query as { limit?: string };
-    return LabService.topOpponents(auth.userId, parseLimit(query.limit));
+    return getTopOpponents(auth.userId, parseLimit(query.limit));
   });
 
   app.get('/api/lab/monthly-games', async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     const query = request.query as { excludeBullet?: string };
-    return LabService.monthlyGames(auth.userId, { excludeBullet: parseBoolean(query.excludeBullet) });
+    return getMonthlyGames(auth.userId, { excludeBullet: parseBoolean(query.excludeBullet) });
+  });
+
+  app.get('/api/lab/opening-struggles', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = openingStrugglesQuerySchema.safeParse(request.query ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+    return getOpeningStruggles(auth.userId, parsed.data);
   });
 }

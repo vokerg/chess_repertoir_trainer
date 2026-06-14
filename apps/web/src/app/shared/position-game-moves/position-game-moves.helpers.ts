@@ -21,6 +21,7 @@ export function buildOpeningAnalysisQuery(fen: string, filters: GameFilters): st
   setParam(params, 'minAccuracy', filters.minAccuracy.trim());
   setParam(params, 'maxAccuracy', filters.maxAccuracy.trim());
   setParam(params, 'minOpponentRating', filters.minOpponentRating.trim());
+  setParam(params, 'maxOpponentRating', filters.maxOpponentRating.trim());
   setParam(params, 'from', filters.from ? `${filters.from}T00:00:00.000Z` : '');
   setParam(params, 'to', filters.to ? `${filters.to}T23:59:59.999Z` : '');
   return `?${params.toString()}`;

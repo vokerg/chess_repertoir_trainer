@@ -1,0 +1,11 @@
+.lab-page { gap: 1rem; }
+.lab-layout { display: grid; grid-template-columns: minmax(230px, 310px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.lab-menu { display: grid; gap: 0.65rem; padding: 0.8rem; }
+.lab-menu-item { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.9rem; padding: 0.9rem; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,0.56); color: var(--text); box-shadow: none; text-align: left; }
+.lab-menu-item:hover { transform: none; background: rgba(35, 27, 21, 0.05); }
+.lab-menu-item-active { border-color: rgba(183, 121, 39, 0.35); background: var(--accent-soft); color: var(--accent-strong); }
+.lab-menu-item strong { display: block; font-size: 0.98rem; line-height: 1.2; }
+.lab-menu-item small { display: block; margin-top: 0.24rem; color: var(--muted); font-weight: 700; line-height: 1.25; }
+.lab-panel { min-width: 0; }
+.lab-empty { min-height: 220px; display: grid; place-items: center; }
+@media (max-width: 840px) { .lab-layout { grid-template-columns: 1fr; } }
