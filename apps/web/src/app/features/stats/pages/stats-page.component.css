@@ -1,6 +1,0 @@
-.section-title { font-size: 1.7rem; }
-.stats-list-header, .weak-line-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.stats-list-header { align-items: center; }
-.priority-pill { margin-bottom: 0.7rem; }
-.failure-card { min-width: 140px; }
-.failure-value { font-size: 1.55rem; color: var(--danger); }

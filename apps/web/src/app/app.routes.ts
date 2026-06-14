@@ -103,12 +103,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'stats',
-    title: 'Review | Chess Repertoire Trainer',
-    loadComponent: () =>
-      import('./features/stats/pages/stats-page.component').then((m) => m.StatsPageComponent),
-  },
-  {
     path: 'analysis',
     title: 'Analysis | Chess Repertoire Trainer',
     loadComponent: () =>

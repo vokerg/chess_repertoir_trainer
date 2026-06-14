@@ -15,7 +15,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Library browser: feature-local route page, signal store, typed data access, computed filtering/selection, stale-request guards, and built-in control flow.
 - Course detail: feature-local route page, signal store, typed data access, immutable chapter updates, external template/styles, and lifecycle-safe route handling.
 - Line training and marathon: feature-local pages/stores, shared presentational session UI within the lines feature, typed training APIs, and no HTTP-owning child component.
-- Courses and stats: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
+- Courses: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
 - Games table presentation: external templates/styles, built-in control flow with stable row tracking, signal-based action-menu state, and tested feature-local display helpers.
 - Lab: composition-only shell with isolated experiment components, page-scoped signal stores, typed experiment data access, external templates/styles, and built-in control flow.
 
