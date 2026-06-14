@@ -3,13 +3,14 @@ import {
   Component,
   DestroyRef,
   HostListener,
+  computed,
   inject,
   OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
@@ -21,7 +22,7 @@ import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reint
 @Component({
   selector: 'app-free-analysis-page',
   standalone: true,
-  imports: [RouterLink, PageHeaderComponent, AnalysisWorkbenchComponent, AnalysisReintegrationDialogComponent],
+  imports: [PageHeaderComponent, AnalysisWorkbenchComponent, AnalysisReintegrationDialogComponent],
   providers: [FreeAnalysisStore, FreeAnalysisApiService, AnalysisReintegrationStore, AnalysisReintegrationApiService],
   templateUrl: './free-analysis-page.component.html',
   styleUrl: './free-analysis-page.component.css',
@@ -32,6 +33,15 @@ export class FreeAnalysisPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(FreeAnalysisStore);
   protected readonly reintegrationStore = inject(AnalysisReintegrationStore);
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+    { id: 'back', label: 'Back to study', link: '/library' },
+    {
+      id: 'reintegrate',
+      label: 'Reintegrate into course',
+      disabled: !this.store.tree(),
+      run: () => this.openReintegrationDialog(),
+    },
+  ]);
 
   ngOnInit(): void {
     this.route.queryParamMap

@@ -1,12 +1,5 @@
 <section class="stack">
-  <app-page-header title="Study" subtitle="Choose a repertoire, section, or line to train.">
-    <button type="button" class="page-header-action secondary" (click)="store.toggleReviewOnly()" [class.library-filter-active]="store.reviewOnly()">
-      {{ store.reviewOnly() ? 'Review filter on' : 'Filters' }}
-    </button>
-    <button type="button" class="page-header-action" (click)="store.createLineInSelectedChapter()" [disabled]="!store.selectedChapterId() || store.lineLoading()">
-      New line
-    </button>
-  </app-page-header>
+  <app-page-header title="Study" subtitle="Choose a repertoire, section, or line to train." [actions]="headerActions()" />
 
   <section class="library-browser">
     <div class="library-toolbar">

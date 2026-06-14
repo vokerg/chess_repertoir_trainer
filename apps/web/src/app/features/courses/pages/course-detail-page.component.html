@@ -3,21 +3,9 @@
     <app-page-header
       [title]="store.course()?.name || 'Course'"
       [subtitle]="store.course()?.description || 'Manage chapters and training lines.'"
-    >
-      <div class="page-header-stat"><span class="metric-label">Chapters</span><span class="metric-value">{{ store.chapters().length }}</span></div>
-      <div class="page-header-stat"><span class="metric-label">Lines</span><span class="metric-value">{{ store.stats()?.totalLines ?? 0 }}</span></div>
-      <div class="page-header-stat"><span class="metric-label">Attempts</span><span class="metric-value">{{ store.stats()?.totalAttempts ?? 0 }}</span></div>
-      <div class="page-header-stat"><span class="metric-label">Pass rate</span><span class="metric-value">{{ ((store.stats()?.passRate ?? 0) * 100) | number:'1.0-0' }}%</span></div>
-      <a routerLink="/courses" class="page-header-action secondary">Back</a>
-      <a [routerLink]="['/courses', courseId, 'marathon']" class="page-header-action">Marathon</a>
-      <a [routerLink]="['/courses', courseId, 'review']" class="page-header-action secondary">Review</a>
-      @if (!store.editingCourseName()) {
-        <button type="button" class="page-header-action secondary" (click)="store.startCourseEdit()" [disabled]="!store.course()">Rename</button>
-      }
-      <button type="button" class="page-header-action secondary" (click)="store.deleteCourse()" [disabled]="store.deletingCourse()">
-        {{ store.deletingCourse() ? 'Deleting...' : 'Delete' }}
-      </button>
-    </app-page-header>
+      [stats]="headerStats()"
+      [actions]="headerActions()"
+    />
 
     @if (store.editingCourseName()) {
       <section class="section-card">

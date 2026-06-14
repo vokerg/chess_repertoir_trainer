@@ -1,10 +1,10 @@
 import { NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
-import { PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
 import { StockfishPanelComponent } from '../../../components/stockfish-panel.component';
 import { GameFilterPanelComponent } from '../../../shared/game-filters/game-filter-panel.component';
 import { OpeningAnalysisApiService } from '../data-access/opening-analysis-api.service';
@@ -51,6 +51,11 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected readonly gameMetaLabel = gameMetaLabel;
   protected readonly wdlLabel = wdlLabel;
   protected readonly scoreLabel = scoreLabel;
+  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
+    { id: 'games', label: 'Games', value: this.store.wdl().total },
+    { id: 'score', label: 'Score', value: this.scoreLabel(this.store.wdl()) },
+    { id: 'next-moves', label: 'Next moves', value: this.store.analysis()?.nextMoves?.length || 0 },
+  ]);
 
   ngOnInit(): void {
     this.store.initialize();

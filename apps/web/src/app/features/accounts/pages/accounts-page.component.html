@@ -1,9 +1,5 @@
 <section class="accounts-page stack">
-  <app-page-header title="Accounts" subtitle="Connect accounts and sync imported games.">
-    <button type="button" class="page-header-action secondary" (click)="store.loadAccounts()" [disabled]="store.loading()">
-      {{ store.loading() ? 'Refreshing...' : 'Refresh accounts' }}
-    </button>
-  </app-page-header>
+  <app-page-header title="Accounts" subtitle="Connect accounts and sync imported games." [actions]="headerActions()" />
 
   <section class="section-card accounts-grid-card">
     <div>

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PageHeaderComponent } from '../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../components/page-header.component';
 import { ApiService } from '../services/api.service';
 
 type LabExperiment = 'top-opponents' | 'monthly-games';
@@ -41,9 +41,7 @@ interface LabMonthlyGamesResponse {
   imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
     <section class="lab-page stack">
-      <app-page-header title="Lab" subtitle="Run focused reports from imported games.">
-        <button type="button" class="page-header-action secondary lab-back" *ngIf="selected" (click)="clearSelection()">All experiments</button>
-      </app-page-header>
+      <app-page-header title="Lab" subtitle="Run focused reports from imported games." [actions]="headerActions()" />
 
       <section class="lab-layout">
         <aside class="section-card lab-menu" aria-label="Lab experiments">
@@ -86,7 +84,7 @@ interface LabMonthlyGamesResponse {
               <span class="eyebrow">Opponent frequency</span>
               <h3 class="collection-title">Top opponents by source</h3>
             </div>
-            <button type="button" class="page-header-action secondary" (click)="loadTopOpponents()" [disabled]="topOpponentsLoading">
+            <button type="button" class="compact-action secondary" (click)="loadTopOpponents()" [disabled]="topOpponentsLoading">
               {{ topOpponentsLoading ? 'Loading...' : 'Refresh' }}
             </button>
           </div>
@@ -127,7 +125,7 @@ interface LabMonthlyGamesResponse {
                 <input type="checkbox" [(ngModel)]="excludeBullet" (ngModelChange)="loadMonthlyGames()" />
                 <span>Exclude bullet</span>
               </label>
-              <button type="button" class="page-header-action secondary" (click)="loadMonthlyGames()" [disabled]="monthlyGamesLoading">
+              <button type="button" class="compact-action secondary" (click)="loadMonthlyGames()" [disabled]="monthlyGamesLoading">
                 {{ monthlyGamesLoading ? 'Loading...' : 'Refresh' }}
               </button>
             </div>
@@ -233,6 +231,12 @@ export class LabPageComponent {
   monthlyGamesLoading = false;
   monthlyGamesLoaded = false;
   monthlyGamesError = '';
+
+  protected headerActions(): readonly PageHeaderAction[] {
+    return this.selected
+      ? [{ id: 'all-experiments', label: 'All experiments', run: () => this.clearSelection() }]
+      : [];
+  }
 
   selectExperiment(experiment: LabExperiment) {
     this.selected = experiment;

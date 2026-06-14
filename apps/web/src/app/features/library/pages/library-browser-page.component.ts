@@ -1,8 +1,8 @@
 import { DecimalPipe, NgClass } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
 import { LibraryApiService } from '../data-access/library-api.service';
 import {
   failureRate,
@@ -30,6 +30,20 @@ export class LibraryBrowserPageComponent implements OnInit {
   protected readonly statusClass = statusClass;
   protected readonly sideLabel = sideLabel;
   protected readonly startingPositionLabel = startingPositionLabel;
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+    {
+      id: 'filters',
+      label: this.store.reviewOnly() ? 'Review filter on' : 'Filters',
+      active: this.store.reviewOnly(),
+      run: () => this.store.toggleReviewOnly(),
+    },
+    {
+      id: 'new-line',
+      label: 'New line',
+      disabled: !this.store.selectedChapterId() || this.store.lineLoading(),
+      run: () => this.store.createLineInSelectedChapter(),
+    },
+  ]);
 
   ngOnInit(): void {
     void this.store.loadCourses();

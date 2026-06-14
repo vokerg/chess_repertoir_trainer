@@ -1,17 +1,10 @@
 <section class="games-page stack">
-  <app-page-header title="Games" subtitle="Filter imported games and send selected games to analysis.">
-    <div class="page-header-stat"><span class="metric-label">Loaded</span><span class="metric-value">{{ store.filteredGames().length }}</span></div>
-    <div class="page-header-stat"><span class="metric-label">Analysed</span><span class="metric-value">{{ store.analysedCount() }}</span></div>
-    <div class="page-header-stat"><span class="metric-label">Ply indexed</span><span class="metric-value">{{ store.plyIndexedCount() }}</span></div>
-    <button type="button" class="page-header-action secondary" (click)="store.indexAllVisibleGames()" [disabled]="store.loading() || store.bulkIndexing() || store.bulkIndexableGames().length === 0">
-      Index all: {{ store.bulkIndexProgressLabel() }}
-    </button>
-    @if (store.batchAnalysisEnabled()) {
-      <button type="button" class="page-header-action secondary" (click)="store.batchAnalyzeVisibleGames()" [disabled]="store.loading() || store.batchAnalysisSubmitting() || store.filteredGames().length === 0">
-        Batch analyse: {{ store.batchAnalysisProgressLabel() }}
-      </button>
-    }
-  </app-page-header>
+  <app-page-header
+    title="Games"
+    subtitle="Filter imported games and send selected games to analysis."
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
 
   <app-game-filter-panel
     [filters]="store.filters()"

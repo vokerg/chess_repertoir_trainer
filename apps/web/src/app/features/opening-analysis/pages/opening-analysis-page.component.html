@@ -1,9 +1,5 @@
 <section class="opening-page stack">
-  <app-page-header title="Opening analysis" subtitle="Explore positions from your indexed games.">
-    <div class="page-header-stat"><span class="metric-label">Games</span><span class="metric-value">{{ store.wdl().total }}</span></div>
-    <div class="page-header-stat"><span class="metric-label">Score</span><span class="metric-value">{{ scoreLabel(store.wdl()) }}</span></div>
-    <div class="page-header-stat"><span class="metric-label">Next moves</span><span class="metric-value">{{ store.analysis()?.nextMoves?.length || 0 }}</span></div>
-  </app-page-header>
+  <app-page-header title="Opening analysis" subtitle="Explore positions from your indexed games." [stats]="headerStats()" />
 
   <app-game-filter-panel
     [filters]="store.filters()"
@@ -74,7 +70,7 @@
           <h3 class="workbench-panel-title">Next moves from your games</h3>
           <p class="workbench-panel-subtitle">Each row is a move you actually played or faced from this exact normalized position.</p>
         </div>
-        <button type="button" class="page-header-action secondary" (click)="store.refresh()" [disabled]="store.loading()">Refresh</button>
+        <button type="button" class="compact-action secondary" (click)="store.refresh()" [disabled]="store.loading()">Refresh</button>
       </div>
 
       <div class="opening-position-summary">

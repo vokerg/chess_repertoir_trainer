@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
 import { CourseDetailApiService } from '../../courses/data-access/course-detail-api.service';
 import { LinesPageStore } from '../state/lines-page.store';
 
@@ -20,6 +20,28 @@ export class LinesPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(LinesPageStore);
+  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
+    { id: 'lines', label: 'Lines', value: this.store.lines().length },
+    { id: 'attempts', label: 'Attempts', value: this.store.totalAttempts() },
+    { id: 'passes', label: 'Passes', value: this.store.totalPassed() },
+    { id: 'fails', label: 'Fails', value: this.store.totalFailed() },
+  ]);
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
+    const chapter = this.store.chapter();
+    if (!chapter) return [];
+    const courseId = this.store.courseId();
+    return [
+      {
+        id: 'back',
+        label: 'Back',
+        link: courseId ? ['/courses', courseId] : ['/courses'],
+      },
+      { id: 'marathon', label: 'Marathon', link: ['/chapters', chapter.id, 'marathon'] },
+      ...(!this.store.editingChapterName()
+        ? [{ id: 'rename', label: 'Rename', run: () => this.store.startChapterEdit() }]
+        : []),
+    ];
+  });
 
   ngOnInit(): void {
     this.route.paramMap

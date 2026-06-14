@@ -3,17 +3,9 @@
     <app-page-header
       [title]="chapter.name || 'Chapter lines'"
       [subtitle]="chapter.description || 'Manage trainable lines and practice targets.'"
-    >
-      <div class="page-header-stat"><span class="metric-label">Lines</span><span class="metric-value">{{ store.lines().length }}</span></div>
-      <div class="page-header-stat"><span class="metric-label">Attempts</span><span class="metric-value">{{ store.totalAttempts() }}</span></div>
-      <div class="page-header-stat"><span class="metric-label">Passes</span><span class="metric-value">{{ store.totalPassed() }}</span></div>
-      <div class="page-header-stat"><span class="metric-label">Fails</span><span class="metric-value">{{ store.totalFailed() }}</span></div>
-      <a [routerLink]="store.courseId() ? ['/courses', store.courseId()] : ['/courses']" class="page-header-action secondary">Back</a>
-      <a [routerLink]="['/chapters', chapter.id, 'marathon']" class="page-header-action">Marathon</a>
-      @if (!store.editingChapterName()) {
-        <button type="button" class="page-header-action secondary" (click)="store.startChapterEdit()">Rename</button>
-      }
-    </app-page-header>
+      [stats]="headerStats()"
+      [actions]="headerActions()"
+    />
 
     @if (store.editingChapterName()) {
       <section class="section-card">

@@ -1,8 +1,5 @@
 <section class="free-analysis-page stack">
-  <app-page-header title="Analysis" subtitle="Explore a position from FEN or an imported game.">
-    <a routerLink="/library" class="page-header-action secondary">Back to study</a>
-    <button type="button" class="page-header-action" [disabled]="!store.tree()" (click)="openReintegrationDialog()">Reintegrate into course</button>
-  </app-page-header>
+  <app-page-header title="Analysis" subtitle="Explore a position from FEN or an imported game." [actions]="headerActions()" />
 
   @if (store.error(); as error) {
     <p class="status-error">{{ error }}</p>

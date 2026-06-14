@@ -2,7 +2,7 @@
   @if (showStart()) {
     <button
       type="button"
-      class="page-header-action secondary"
+      class="compact-action secondary"
       (click)="goStart.emit()"
       [disabled]="!canGoBackward()"
       title="Home"
@@ -13,7 +13,7 @@
   @if (showPrevious()) {
     <button
       type="button"
-      class="page-header-action secondary"
+      class="compact-action secondary"
       (click)="goPrevious.emit()"
       [disabled]="!canGoBackward()"
       title="Left arrow"
@@ -24,7 +24,7 @@
   @if (showNext()) {
     <button
       type="button"
-      class="page-header-action secondary"
+      class="compact-action secondary"
       (click)="goNext.emit()"
       [disabled]="!canGoForward()"
       title="Right arrow"
@@ -35,7 +35,7 @@
   @if (showEnd()) {
     <button
       type="button"
-      class="page-header-action secondary"
+      class="compact-action secondary"
       (click)="goEnd.emit()"
       [disabled]="!canGoForward()"
       title="End"
