@@ -1,0 +1,120 @@
+{
+  "formatVersion": 2,
+  "course": {
+    "name": "Sicil for the kill",
+    "chapters": [
+      {
+        "name": "Taimanov-ish",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "Open sic",
+            "sideToTrain": "BLACK",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "e2e4",
+                "children": [
+                  {
+                    "moveUci": "c7c5",
+                    "children": [
+                      {
+                        "moveUci": "g1f3",
+                        "children": [
+                          {
+                            "moveUci": "b8c6",
+                            "children": [
+                              {
+                                "moveUci": "d2d4",
+                                "children": [
+                                  {
+                                    "moveUci": "c5d4",
+                                    "children": [
+                                      {
+                                        "moveUci": "f3d4",
+                                        "children": [
+                                          {
+                                            "moveUci": "e7e6",
+                                            "children": [
+                                              {
+                                                "moveUci": "d4c6",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "b7c6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "g8f6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "c1g5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "f8e7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e4e5",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "f6d5",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "g5e7",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "d8e7",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "c3d5",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "c6d5",
+                                                                                            "children": []
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
