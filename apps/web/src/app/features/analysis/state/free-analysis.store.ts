@@ -13,6 +13,7 @@ import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service
 import {
   appendFreeAnalysisChild,
   buildFreeAnalysisGameTree,
+  buildFreeAnalysisLineTree,
   buildFreeAnalysisRoot,
   findFreeAnalysisNode,
   findFreeAnalysisParent,
@@ -96,12 +97,43 @@ export class FreeAnalysisStore implements OnDestroy {
     return `Delete ${label} and every local continuation below it?`;
   });
 
-  initialize(input: { fen: string | null; gameId: number | null; ply: number | null }): void {
+  initialize(input: {
+    fen: string | null;
+    gameId: number | null;
+    ply: number | null;
+    moves: readonly string[];
+  }): void {
     if (input.gameId && Number.isFinite(input.gameId) && input.gameId > 0) {
       void this.initializeFromGame(input.gameId, input.ply, input.fen);
       return;
     }
+    if (input.moves.length) {
+      this.initializeFromMoves(input.moves);
+      return;
+    }
     this.initializeFromFen(input.fen);
+  }
+
+  initializeFromMoves(moves: readonly string[]): void {
+    this.requestVersion += 1;
+    this.error.set(null);
+    this.loading.set(false);
+    this.loadedFromGame.set(false);
+    this.boardSide.set('WHITE');
+
+    try {
+      const root = buildFreeAnalysisLineTree(moves);
+      this.startingFen.set(root.node.fenAfter);
+      this.tree.set({ root });
+      this.selectedNodeId.set(moves.length);
+      this.nextLocalNodeId = 1_000_000;
+      this.boardPositionVersion.update((version) => version + 1);
+      this.scheduleAnalysis();
+      this.refreshMyGamesIfOpen();
+    } catch {
+      this.initializeFromFen(null);
+      this.error.set('Invalid analysis line. Loaded the normal start position instead.');
+    }
   }
 
   initializeFromFen(fenParam: string | null): void {

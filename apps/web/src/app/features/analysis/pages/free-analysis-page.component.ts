@@ -62,12 +62,14 @@ export class FreeAnalysisPageComponent implements OnInit {
           fen: query.get('fen'),
           gameId: parsePositiveNumber(query.get('gameId')),
           ply: parsePositiveNumber(query.get('ply')),
+          moves: parseMoves(query.get('moves')),
         })),
         distinctUntilChanged(
           (previous, current) =>
             previous.fen === current.fen &&
             previous.gameId === current.gameId &&
-            previous.ply === current.ply,
+            previous.ply === current.ply &&
+            previous.moves.join(',') === current.moves.join(','),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -98,4 +100,12 @@ export class FreeAnalysisPageComponent implements OnInit {
 function parsePositiveNumber(value: string | null): number | null {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseMoves(value: string | null): string[] {
+  if (!value?.trim()) return [];
+  return value
+    .split(',')
+    .map((move) => move.trim())
+    .filter(Boolean);
 }

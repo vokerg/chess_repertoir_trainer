@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
@@ -18,6 +19,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     StockfishPanelComponent,
     BoardActionToolbarComponent,
     PageHeaderComponent,
+    RouterLink,
   ],
   providers: [OpeningAnalysisStore],
   templateUrl: './opening-analysis-page.component.html',
@@ -25,8 +27,14 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OpeningAnalysisPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private copyResetTimer: ReturnType<typeof setTimeout> | null = null;
   protected readonly store = inject(OpeningAnalysisStore);
   protected readonly scoreLabel = scoreLabel;
+  protected readonly copyState = signal<'idle' | 'copied' | 'error'>('idle');
+  protected readonly analysisQueryParams = computed(() => ({
+    moves: this.store.history().map((move) => move.uci).join(','),
+  }));
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'games', label: 'Games', value: this.store.wdl().total },
     { id: 'score', label: 'Score', value: this.scoreLabel(this.store.wdl()) },
@@ -34,7 +42,25 @@ export class OpeningAnalysisPageComponent implements OnInit {
   ]);
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => {
+      if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
+    });
     this.store.initialize();
+  }
+
+  protected async copyCurrentLine(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.store.lineLabel());
+      this.setCopyState('copied');
+    } catch {
+      this.setCopyState('error');
+    }
+  }
+
+  protected copyButtonLabel(): string {
+    if (this.copyState() === 'copied') return 'Copied';
+    if (this.copyState() === 'error') return 'Copy failed';
+    return 'Copy';
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -50,5 +76,14 @@ export class OpeningAnalysisPageComponent implements OnInit {
       event.preventDefault();
       this.store.resetBoard();
     }
+  }
+
+  private setCopyState(state: 'copied' | 'error'): void {
+    this.copyState.set(state);
+    if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
+    this.copyResetTimer = setTimeout(() => {
+      this.copyState.set('idle');
+      this.copyResetTimer = null;
+    }, 1800);
   }
 }

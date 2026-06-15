@@ -21,6 +21,43 @@ export function buildFreeAnalysisRoot(fen: string): FreeAnalysisTreeNode {
   };
 }
 
+export function buildFreeAnalysisLineTree(moves: readonly string[]): FreeAnalysisTreeNode {
+  const chess = new Chess();
+  const root = buildFreeAnalysisRoot(chess.fen());
+  let parent = root;
+
+  moves.forEach((uci, index) => {
+    const fenBefore = chess.fen();
+    const side = chess.turn() === 'b' ? 'BLACK' : 'WHITE';
+    const move = chess.move({
+      from: uci.substring(0, 2),
+      to: uci.substring(2, 4),
+      promotion: uci.substring(4, 5) || undefined,
+    });
+    if (!move) throw new Error(`Invalid move at ply ${index + 1}.`);
+
+    const child: FreeAnalysisTreeNode = {
+      node: {
+        id: index + 1,
+        moveNumber: Number(fenBefore.split(' ')[5]) || Math.ceil((index + 1) / 2),
+        side,
+        moveSan: move.san,
+        moveUci: uci,
+        fenBefore,
+        fenAfter: chess.fen(),
+        isUserMove: side === 'WHITE',
+        moveMeta: side === 'WHITE' ? 'white' : 'black',
+        source: 'LOCAL',
+      },
+      children: [],
+    };
+    parent.children = [child];
+    parent = child;
+  });
+
+  return root;
+}
+
 export function buildFreeAnalysisGameTree(
   pgn: string,
   userColor?: 'WHITE' | 'BLACK' | null,
