@@ -47,5 +47,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Apply database migrations
+        run: npm run db:migrate --workspace=apps/api
+
       - name: Test
         run: npm test
