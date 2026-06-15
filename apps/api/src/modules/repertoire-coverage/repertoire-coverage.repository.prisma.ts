@@ -1,4 +1,10 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import {
+  buildImportedGameWhere,
+  importedGameListSelect,
+} from '../imported-games/imported-games.repository.prisma';
+import { ImportedGameSummaryQuery } from '../imported-games/imported-games.schemas';
 import { RepertoireColor } from './repertoire-coverage.types';
 
 export async function getCoverageCourse(userId: number, courseId: number) {
@@ -41,32 +47,17 @@ export async function getCourseReviewLines(userId: number, courseId: number) {
 export async function getCourseReviewCandidateGames(input: {
   userId: number;
   sideToTrain: RepertoireColor | null;
-  from: Date;
-  to?: Date;
-  limit: number;
-  offset: number;
+  filters: ImportedGameSummaryQuery;
 }) {
+  const baseWhere = buildImportedGameWhere(input.userId, input.filters);
+  const sideWhere: Prisma.ImportedGameWhereInput | null = input.sideToTrain
+    ? { userColor: input.sideToTrain }
+    : null;
+
   return prisma.importedGame.findMany({
-    where: {
-      userId: input.userId,
-      endedAt: { gte: input.from, ...(input.to ? { lte: input.to } : {}) },
-      ...(input.sideToTrain ? { userColor: input.sideToTrain } : {}),
-    },
+    where: sideWhere ? { AND: [baseWhere, sideWhere] } : baseWhere,
     orderBy: [{ endedAt: 'desc' }, { id: 'desc' }],
-    skip: input.offset,
-    take: input.limit,
-    select: {
-      id: true,
-      provider: true,
-      providerGameId: true,
-      providerUrl: true,
-      endedAt: true,
-      createdAt: true,
-      userColor: true,
-      opponentUsername: true,
-      resultForUser: true,
-      plyIndexedAt: true,
-    },
+    select: importedGameListSelect,
   });
 }
 

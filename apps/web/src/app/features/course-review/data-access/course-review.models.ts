@@ -1,3 +1,10 @@
+import {
+  AnalysisStatus,
+  PlyIndexStatus,
+  Provider,
+  ResultForUser,
+} from '../../games/data-access/games.models';
+
 export type CourseReviewColor = 'WHITE' | 'BLACK';
 
 export interface CourseReviewExample {
@@ -54,7 +61,22 @@ export interface CourseReviewResponse {
   };
   filters: {
     from: string;
-    to: string | null;
+    to?: string;
+    accountIds?: number[];
+    providers?: Provider[];
+    resultForUser?: ResultForUser[];
+    userColor?: CourseReviewColor[];
+    speedCategory?: string[];
+    rated?: boolean;
+    timeControl?: string;
+    opponent?: string;
+    openingName?: string;
+    analysisStatus?: AnalysisStatus[];
+    plyIndexStatus?: PlyIndexStatus[];
+    minAccuracy?: number;
+    maxAccuracy?: number;
+    minOpponentRating?: number;
+    maxOpponentRating?: number;
     limit: number;
     offset: number;
     minCoveredPlies: number;

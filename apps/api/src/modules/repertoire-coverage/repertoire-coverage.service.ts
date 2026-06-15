@@ -16,6 +16,11 @@ import {
   CourseReviewGroup,
   RepertoireColor,
 } from './repertoire-coverage.types';
+import { rowMatchesImportedGamePostFilters } from '../imported-games/imported-game-analysis.helpers';
+import {
+  courseReviewGameFilters,
+  CourseReviewQuery,
+} from './course-review.schema';
 
 function asColor(value: string | null): RepertoireColor | null {
   return value === 'WHITE' || value === 'BLACK' ? value : null;
@@ -92,7 +97,7 @@ export const CourseReviewService = {
   calculate: async (
     userId: number,
     courseId: number,
-    input: { from: Date; to?: Date; limit: number; offset: number; minCoveredPlies: number },
+    input: CourseReviewQuery,
   ) => {
     const course = await getCoverageCourse(userId, courseId);
     if (!course) return null;
@@ -106,14 +111,18 @@ export const CourseReviewService = {
     }));
     const graph = buildRepertoireGraph(domainLines);
     const conflicts = getRepertoireConflicts(graph);
-    const games = await getCourseReviewCandidateGames({
+    const requestedGameFilters = courseReviewGameFilters(input);
+    const gameFilters = sideToTrain
+      ? { ...requestedGameFilters, userColor: [sideToTrain] }
+      : requestedGameFilters;
+    const candidateGames = await getCourseReviewCandidateGames({
       userId,
-      from: input.from,
-      to: input.to,
-      limit: input.limit,
-      offset: input.offset,
+      filters: gameFilters,
       sideToTrain,
     });
+    const games = candidateGames
+      .filter((game) => rowMatchesImportedGamePostFilters(game, gameFilters))
+      .slice(input.offset, input.offset + input.limit);
     const plies = await getCourseReviewPlies(
       games.filter((game) => game.plyIndexedAt).map((game) => game.id),
     );
@@ -161,8 +170,7 @@ export const CourseReviewService = {
         moveCount: lines.reduce((sum, line) => sum + line.moves.length, 0),
       },
       filters: {
-        from: input.from.toISOString(),
-        to: input.to?.toISOString() ?? null,
+        ...serializeGameFilters(gameFilters),
         limit: input.limit,
         offset: input.offset,
         minCoveredPlies: input.minCoveredPlies,
@@ -186,3 +194,11 @@ export const CourseReviewService = {
     };
   },
 };
+
+function serializeGameFilters(filters: ReturnType<typeof courseReviewGameFilters>) {
+  return {
+    ...filters,
+    from: filters.from?.toISOString(),
+    to: filters.to?.toISOString(),
+  };
+}

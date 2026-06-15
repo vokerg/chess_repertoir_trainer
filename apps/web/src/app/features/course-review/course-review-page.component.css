@@ -1,54 +1,63 @@
 .course-review-page {
   min-width: 0;
 }
-
-.review-hero,
-.review-course-meta,
-.review-filters {
-  display: flex;
+.review-filter-card {
+  display: grid;
+  gap: 1rem;
+}
+.review-filter-toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
+  text-align: left;
 }
-
-.review-hero {
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.review-hero-copy {
-  gap: 0.65rem;
-}
-
-.review-filters {
-  align-items: flex-start;
-}
-
-.review-filters .form-field {
-  min-width: min(100%, 190px);
-  gap: 0.45rem;
-}
-
-.field-hint {
-  max-width: 14rem;
+.review-filter-toggle small {
   color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.35;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.review-filters > button {
-  margin-top: 1.7rem;
+.review-criteria {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  align-items: end;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
-
+.review-criteria-copy {
+  gap: 0.35rem;
+}
+.field-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
 .review-results {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   align-items: start;
 }
-
 @media (max-width: 900px) {
   .review-results {
     grid-template-columns: 1fr;
+  }
+  .review-criteria {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+@media (max-width: 640px) {
+  .review-filter-toggle {
+    grid-template-columns: 1fr auto;
+  }
+  .review-filter-toggle small {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
   }
 }

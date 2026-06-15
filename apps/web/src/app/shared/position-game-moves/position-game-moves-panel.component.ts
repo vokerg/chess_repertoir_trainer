@@ -1,13 +1,18 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { ImportedGameFacetsResponse } from '../../features/games/data-access/games.models';
 import { GameFilterPanelComponent } from '../game-filters/game-filter-panel.component';
 import { GameFilters } from '../game-filters/game-filter.model';
+import { summaryGameFilters } from '../game-filters/game-filter-summary';
 import { PositionTopGamesComponent } from './position-top-games.component';
-import {
-  providerLabel,
-  scoreLabel,
-  wdlLabel,
-} from './position-game-moves.helpers';
+import { providerLabel, scoreLabel, wdlLabel } from './position-game-moves.helpers';
 import { OpeningAnalysisResponse, OpeningNextMove, OpeningWdl } from './position-game-moves.models';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
@@ -30,7 +35,9 @@ export class PositionGameMovesPanelComponent implements OnInit {
   readonly compact = input(false);
   readonly showTopGames = input(false);
   readonly title = input('Moves from your games');
-  readonly subtitle = input('Each row is a move you actually played or faced from this exact normalized position.');
+  readonly subtitle = input(
+    'Each row is a move you actually played or faced from this exact normalized position.',
+  );
 
   readonly filtersChange = output<GameFilters>();
   readonly applyFilters = output<void>();
@@ -41,7 +48,7 @@ export class PositionGameMovesPanelComponent implements OnInit {
   protected readonly filtersCollapsed = signal(false);
   protected readonly loadingMoveRows = [0, 1, 2];
   protected readonly positionWdl = computed(() => this.analysis()?.games ?? EMPTY_WDL);
-  protected readonly filterSummary = computed(() => summarizeFilters(this.filters()));
+  protected readonly filterSummary = computed(() => summaryGameFilters(this.filters()));
   protected readonly providerLabel = providerLabel;
   protected readonly wdlLabel = wdlLabel;
   protected readonly scoreLabel = scoreLabel;
@@ -49,17 +56,4 @@ export class PositionGameMovesPanelComponent implements OnInit {
   ngOnInit(): void {
     this.filtersCollapsed.set(this.filtersCollapsedInitially());
   }
-}
-
-function summarizeFilters(filters: GameFilters): string {
-  const parts = [
-    filters.userColor ? (filters.userColor === 'WHITE' ? 'White' : 'Black') : 'Either colour',
-    filters.speedCategory ? filters.speedCategory.replace(',', ' + ') : 'Any speed',
-    filters.rated === 'true' ? 'Rated' : filters.rated === 'false' ? 'Casual' : 'Rated or casual',
-  ];
-  if (filters.minOpponentRating) parts.push(`Opponent ${filters.minOpponentRating}+`);
-  if (filters.accountId) parts.push('Selected account');
-  else if (filters.provider && filters.provider !== 'ALL') parts.push(providerLabel(filters.provider));
-  if (filters.openingName) parts.push(filters.openingName);
-  return parts.join(' - ');
 }

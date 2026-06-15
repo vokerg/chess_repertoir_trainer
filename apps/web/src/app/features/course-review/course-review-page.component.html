@@ -6,71 +6,56 @@
     &larr; Back to course
   </a>
 
-  <header class="section-card stack">
-    <div class="review-hero">
-      <div class="stack review-hero-copy">
-        <span class="eyebrow">Course review</span>
-        <h2 class="page-heading">{{ store.course()?.name || 'Course review' }}</h2>
-        <p class="page-subtitle">
-          Review imported games after they enter this course repertoire, then find your deviations
-          and uncovered opponent moves.
-        </p>
-      </div>
+  <app-page-header
+    [title]="store.course()?.name || 'Course review'"
+    subtitle="Review imported games after they enter this course repertoire, then find your deviations and uncovered opponent moves."
+    [stats]="headerStats()"
+  />
 
-      @if (store.course(); as course) {
-        <div class="review-course-meta">
-          <span class="pill">{{ course.lineCount }} lines</span>
-          <span class="pill">{{ course.moveCount }} moves</span>
-          @if (course.sideToTrain) {
-            <span class="pill">Train {{ course.sideToTrain === 'WHITE' ? 'White' : 'Black' }}</span>
-          }
+  <section class="section-card review-filter-card" aria-label="Course review filters">
+    <button
+      type="button"
+      class="review-filter-toggle secondary"
+      (click)="store.toggleFilters()"
+      [attr.aria-expanded]="!store.filtersCollapsed()"
+    >
+      <span>Filters</span>
+      <small>{{ store.filterSummary() }}</small>
+      <strong>{{ store.filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
+    </button>
+
+    @if (!store.filtersCollapsed()) {
+      <app-game-filter-panel
+        [filters]="store.gameFilters()"
+        [facets]="store.facets()"
+        [loading]="store.loading()"
+        [lockedUserColor]="store.lockedUserColor()"
+        (filtersChange)="store.setGameFilters($event)"
+        (apply)="store.loadReview()"
+        (reset)="store.resetGameFilters()"
+      />
+
+      <div class="review-criteria">
+        <div class="stack review-criteria-copy">
+          <span class="eyebrow">Course review criteria</span>
+          <label for="review-min-covered-plies" class="metric-label">Minimum course overlap</label>
+          <p class="field-hint">Only review games after this many half-moves matched the course.</p>
         </div>
-      }
-    </div>
-
-    <form class="review-filters" (ngSubmit)="store.loadReview()">
-      <div class="stack form-field">
-        <label for="review-from" class="metric-label">Games from</label>
-        <input
-          id="review-from"
-          type="date"
-          name="from"
-          [ngModel]="store.from()"
-          (ngModelChange)="store.setFrom($event)"
-          required
-        />
-      </div>
-      <div class="stack form-field">
-        <label for="review-to" class="metric-label">To (optional)</label>
-        <input
-          id="review-to"
-          type="date"
-          name="to"
-          [ngModel]="store.to()"
-          (ngModelChange)="store.setTo($event)"
-        />
-      </div>
-      <div class="stack form-field">
-        <label for="review-min-covered-plies" class="metric-label">Minimum course overlap</label>
         <input
           id="review-min-covered-plies"
           type="number"
-          name="minCoveredPlies"
           min="0"
           max="20"
           step="1"
           [ngModel]="store.minCoveredPlies()"
           (ngModelChange)="store.setMinCoveredPlies($event)"
         />
-        <small class="field-hint">
-          Only review games after this many half-moves matched the course.
-        </small>
+        <button type="button" (click)="store.loadReview()" [disabled]="!store.canReview()">
+          {{ store.loading() ? 'Reviewing...' : 'Review' }}
+        </button>
       </div>
-      <button type="submit" [disabled]="!store.canReview()">
-        {{ store.loading() ? 'Reviewing...' : 'Review' }}
-      </button>
-    </form>
-  </header>
+    }
+  </section>
 
   @if (store.error(); as error) {
     <p class="status-error">{{ error }}</p>
@@ -127,13 +112,13 @@
       <app-course-review-issue-list
         eyebrow="My play"
         title="My deviations"
-        emptyMessage="No personal deviations found in this date range."
+        emptyMessage="No personal deviations found with the current filters."
         [groups]="review.myDeviations"
       />
       <app-course-review-issue-list
         eyebrow="Opponent play"
         title="Opponent uncovered"
-        emptyMessage="No uncovered opponent moves found in this date range."
+        emptyMessage="No uncovered opponent moves found with the current filters."
         [groups]="review.opponentUncovered"
         [opponent]="true"
       />
