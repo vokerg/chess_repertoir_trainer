@@ -31,9 +31,11 @@ export function loadAuthConfig(): AuthConfig {
   const mode = process.env['AUTH_MODE'];
 
   if (mode === 'dev-single-user') {
-    if (process.env['NODE_ENV'] === 'production') {
-      throw new Error('AUTH_MODE=dev-single-user is not allowed when NODE_ENV=production');
-    }
+    // TEMPORARY: Allow dev-single-user in production while auth rollout is in progress.
+    // Restore this guard before enabling production Clerk-only auth:
+    // if (process.env['NODE_ENV'] === 'production') {
+    //   throw new Error('AUTH_MODE=dev-single-user is not allowed when NODE_ENV=production');
+    // }
 
     const rawUserId = process.env['DEV_SINGLE_USER_ID'] ?? '1';
     const userId = Number(rawUserId);
