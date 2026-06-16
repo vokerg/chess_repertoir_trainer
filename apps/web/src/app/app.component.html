@@ -4,15 +4,27 @@
       <div class="app-header-copy">
         <h1 class="app-title">Chess Repertoire Trainer</h1>
       </div>
-      <nav class="app-nav" aria-label="Main navigation">
-        <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill">Study</a>
-        <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill">Accounts</a>
-        <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill">Games</a>
-        <a routerLink="/opening-analysis" routerLinkActive="nav-pill-active" class="nav-pill">Opening analysis</a>
-        <a routerLink="/analysis" routerLinkActive="nav-pill-active" class="nav-pill">Analysis</a>
-        <a routerLink="/lab" routerLinkActive="nav-pill-active" class="nav-pill">Lab</a>
-        <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill">Courses</a>
-      </nav>
+      <div class="app-header-actions">
+        @if (auth.isSignedIn()) {
+          <nav class="app-nav" aria-label="Main navigation">
+            <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill">Study</a>
+            <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill">Accounts</a>
+            <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill">Games</a>
+            <a routerLink="/opening-analysis" routerLinkActive="nav-pill-active" class="nav-pill">Opening analysis</a>
+            <a routerLink="/analysis" routerLinkActive="nav-pill-active" class="nav-pill">Analysis</a>
+            <a routerLink="/lab" routerLinkActive="nav-pill-active" class="nav-pill">Lab</a>
+            <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill">Courses</a>
+          </nav>
+          <div class="auth-status">
+            <span class="auth-name">{{ auth.displayName() }}</span>
+            @if (!auth.isDevAuth()) {
+              <button type="button" class="nav-pill nav-button" (click)="signOut()">Sign out</button>
+            }
+          </div>
+        } @else {
+          <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill">Sign in</a>
+        }
+      </div>
     </div>
   </header>
 

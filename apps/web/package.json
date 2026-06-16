@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "config": "node -e \"require('fs').writeFileSync('src/app/app-config.ts', 'export const appConfig = {\\n  apiBaseUrl: ' + JSON.stringify(process.env.WEB_API_BASE_URL || '/api') + ',\\n};\\n')\"",
+    "config": "node -e \"require('fs').writeFileSync('src/app/app-config.ts', 'export const appConfig = {\\n  apiBaseUrl: ' + JSON.stringify(process.env.WEB_API_BASE_URL || '/api') + ',\\n  clerkPublishableKey: ' + JSON.stringify(process.env.WEB_CLERK_PUBLISHABLE_KEY || '') + ',\\n};\\n')\"",
     "dev": "npm run config && ng serve",
     "build": "npm run config && ng build",
     "test": "node -e \"console.log('No web tests yet')\"",
@@ -19,6 +19,7 @@
     "@angular/platform-browser": "^21.2.14",
     "@angular/platform-browser-dynamic": "^21.2.14",
     "@angular/router": "^21.2.14",
+    "@clerk/clerk-js": "^6.17.0",
     "@lichess-org/chessground": "^10.1.0",
     "chess.js": "^1.0.0",
     "rxjs": "^7.8.1",

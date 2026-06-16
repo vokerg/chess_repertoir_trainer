@@ -3,9 +3,13 @@
 .app-header-inner { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; justify-content: space-between; }
 .app-header-copy { flex: 1 1 260px; min-width: 0; }
 .app-title { margin: 0; color: var(--text); font-size: clamp(1.05rem, 1.8vw, 1.35rem); font-weight: 900; line-height: 1.15; }
+.app-header-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: flex-end; }
 .app-nav { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: flex-end; }
 .app-main { min-width: 0; padding: 14px 0 40px; }
 .nav-pill { display: inline-flex; align-items: center; min-height: 34px; padding: 0.45rem 0.7rem; border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--muted-strong); font-size: 0.86rem; font-weight: 800; text-decoration: none; transition: background 140ms ease, color 140ms ease, border-color 140ms ease; }
 .nav-pill:hover { color: var(--text); background: rgba(35, 27, 21, 0.06); }
 .nav-pill-active { color: var(--accent-strong); background: var(--accent-soft); border-color: rgba(183, 121, 39, 0.18); }
-@media (max-width: 760px) { .app-header-inner { align-items: stretch; } .app-nav { justify-content: flex-start; } }
+.nav-button { cursor: pointer; font-family: inherit; }
+.auth-status { display: inline-flex; align-items: center; gap: 0.35rem; }
+.auth-name { max-width: 180px; overflow: hidden; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) { .app-header-inner { align-items: stretch; } .app-header-actions, .app-nav { justify-content: flex-start; } }

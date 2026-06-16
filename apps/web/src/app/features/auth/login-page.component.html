@@ -1,0 +1,21 @@
+<section class="login-page">
+  <div class="login-panel">
+    <div class="login-copy">
+      <p class="eyebrow">Account</p>
+      <h2>Sign in</h2>
+      @if (isDevAuth()) {
+        <p>Clerk is not configured for this web build. Local dev auth is active.</p>
+        <a routerLink="/library" class="login-link">Continue to library</a>
+      } @else {
+        <p>Use your Clerk session to access your repertoire, games, courses, and analysis.</p>
+      }
+      @if (appUserError()) {
+        <p class="login-error">{{ appUserError() }}</p>
+      }
+    </div>
+
+    @if (!isDevAuth()) {
+      <div #signInMount class="clerk-mount" aria-label="Sign in"></div>
+    }
+  </div>
+</section>

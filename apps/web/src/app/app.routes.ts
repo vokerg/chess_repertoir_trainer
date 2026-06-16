@@ -1,10 +1,18 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/library', pathMatch: 'full' },
   {
+    path: 'login',
+    title: 'Sign in | Chess Repertoire Trainer',
+    loadComponent: () =>
+      import('./features/auth/login-page.component').then((m) => m.LoginPageComponent),
+  },
+  {
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/library/pages/library-browser-page.component').then(
         (m) => m.LibraryBrowserPageComponent,
@@ -13,6 +21,7 @@ export const routes: Routes = [
   {
     path: 'accounts',
     title: 'Accounts | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/accounts/pages/accounts-page.component').then(
         (m) => m.AccountsPageComponent,
@@ -21,6 +30,7 @@ export const routes: Routes = [
   {
     path: 'games',
     title: 'Games | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/games/pages/games-explorer-page.component').then(
         (m) => m.GamesExplorerPageComponent,
@@ -29,6 +39,7 @@ export const routes: Routes = [
   {
     path: 'opening-analysis',
     title: 'Opening analysis | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/opening-analysis/pages/opening-analysis-page.component').then(
         (m) => m.OpeningAnalysisPageComponent,
@@ -37,12 +48,14 @@ export const routes: Routes = [
   {
     path: 'lab',
     title: 'Lab | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lab/pages/lab-page.component').then((m) => m.LabPageComponent),
   },
   {
     path: 'games/:gameId',
     title: 'Game review | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/games/pages/game-detail-page.component').then(
         (m) => m.GameDetailPageComponent,
@@ -51,11 +64,13 @@ export const routes: Routes = [
   {
     path: 'courses',
     title: 'Courses | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/courses/pages/courses-page.component').then((m) => m.CoursesPageComponent),
   },
   {
     path: 'courses/:courseId',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/courses/pages/course-detail-page.component').then(
         (m) => m.CourseDetailPageComponent,
@@ -63,6 +78,7 @@ export const routes: Routes = [
   },
   {
     path: 'courses/:courseId/marathon',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lines/pages/training-marathon-page.component').then(
         (m) => m.TrainingMarathonPageComponent,
@@ -71,6 +87,7 @@ export const routes: Routes = [
   {
     path: 'courses/:courseId/review',
     title: 'Course review | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/course-review/course-review-page.component').then(
         (m) => m.CourseReviewPageComponent,
@@ -78,11 +95,13 @@ export const routes: Routes = [
   },
   {
     path: 'chapters/:chapterId/lines',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lines/pages/lines-page.component').then((m) => m.LinesPageComponent),
   },
   {
     path: 'chapters/:chapterId/marathon',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lines/pages/training-marathon-page.component').then(
         (m) => m.TrainingMarathonPageComponent,
@@ -90,6 +109,7 @@ export const routes: Routes = [
   },
   {
     path: 'lines/:lineId/edit',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lines/pages/line-editor-page.component').then(
         (m) => m.LineEditorPageComponent,
@@ -97,6 +117,7 @@ export const routes: Routes = [
   },
   {
     path: 'lines/:lineId/train',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lines/pages/line-train-page.component').then(
         (m) => m.LineTrainPageComponent,
@@ -105,6 +126,7 @@ export const routes: Routes = [
   {
     path: 'analysis',
     title: 'Analysis | Chess Repertoire Trainer',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/analysis/pages/free-analysis-page.component').then(
         (m) => m.FreeAnalysisPageComponent,
