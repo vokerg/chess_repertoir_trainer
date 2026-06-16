@@ -312,7 +312,7 @@ export async function getImportedGamePgn(userId: number, id: number) {
 }
 
 export async function getImportedGameFacets(userId: number) {
-  const [accounts, speeds, variants, results, colors, providers, openings, latestAnalysisRows] = await Promise.all([
+  const [accounts, speeds, variants, results, colors, providers, openings, totalGames, analysisRunRows] = await Promise.all([
     prisma.externalAccount.findMany({
       where: { userId },
       select: {
@@ -330,17 +330,20 @@ export async function getImportedGameFacets(userId: number) {
     prisma.importedGame.groupBy({ by: ['userColor'], where: { userId }, _count: true }),
     prisma.importedGame.groupBy({ by: ['provider'], where: { userId }, _count: true }),
     prisma.importedGame.groupBy({ by: ['openingEco', 'openingName'], where: { userId, openingEco: { not: null } }, _count: true, orderBy: { _count: { openingEco: 'desc' } }, take: 50 }),
-    prisma.importedGame.findMany({
-      where: { userId },
+    prisma.importedGame.count({ where: { userId } }),
+    prisma.gameAnalysisRun.findMany({
+      where: { importedGame: { userId } },
+      orderBy: [
+        { importedGameId: 'asc' },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
       select: {
-        analysisRuns: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { status: true },
-        },
+        importedGameId: true,
+        status: true,
       },
     }),
   ]);
 
-  return { accounts, speeds, variants, results, colors, providers, openings, latestAnalysisRows };
+  return { accounts, speeds, variants, results, colors, providers, openings, totalGames, analysisRunRows };
 }

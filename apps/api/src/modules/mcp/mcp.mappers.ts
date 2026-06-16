@@ -108,18 +108,21 @@ function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyo
 
 export function toMcpFacets(facets: Awaited<ReturnType<typeof getImportedGameFacets>>) {
   const analysisCounts: Record<ImportedGameAnalysisStatus, number> = {
-    NOT_ANALYZED: 0,
+    NOT_ANALYZED: facets.totalGames,
     RUNNING: 0,
     COMPLETED: 0,
     FAILED: 0,
   };
+  const seenGameIds = new Set<number>();
 
-  for (const row of facets.latestAnalysisRows) {
-    const status = row.analysisRuns[0]?.status;
-    if (!status) analysisCounts.NOT_ANALYZED += 1;
-    else if (status === 'RUNNING') analysisCounts.RUNNING += 1;
-    else if (status === 'COMPLETED') analysisCounts.COMPLETED += 1;
-    else analysisCounts.FAILED += 1;
+  for (const row of facets.analysisRunRows) {
+    if (seenGameIds.has(row.importedGameId)) continue;
+    seenGameIds.add(row.importedGameId);
+    analysisCounts.NOT_ANALYZED -= 1;
+
+    if (row.status === 'RUNNING') analysisCounts.RUNNING += 1;
+    else if (row.status === 'COMPLETED') analysisCounts.COMPLETED += 1;
+    else if (row.status) analysisCounts.FAILED += 1;
   }
 
   return {

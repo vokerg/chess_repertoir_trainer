@@ -115,20 +115,23 @@ function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyo
     .map((row) => ({ value: row[valueKey], count: groupCount(row, valueKey) }));
 }
 
-function analysisStatusFacetRows(rows: Array<{ analysisRuns: Array<{ status: string }> }>) {
+function analysisStatusFacetRows(totalGames: number, rows: Array<{ importedGameId: number; status: string }>) {
   const counts: Record<ImportedGameAnalysisStatus, number> = {
-    NOT_ANALYZED: 0,
+    NOT_ANALYZED: totalGames,
     RUNNING: 0,
     COMPLETED: 0,
     FAILED: 0,
   };
+  const seenGameIds = new Set<number>();
 
   for (const row of rows) {
-    const status = row.analysisRuns[0]?.status;
-    if (!status) counts.NOT_ANALYZED += 1;
-    else if (status === 'RUNNING') counts.RUNNING += 1;
-    else if (status === 'COMPLETED') counts.COMPLETED += 1;
-    else counts.FAILED += 1;
+    if (seenGameIds.has(row.importedGameId)) continue;
+    seenGameIds.add(row.importedGameId);
+    counts.NOT_ANALYZED -= 1;
+
+    if (row.status === 'RUNNING') counts.RUNNING += 1;
+    else if (row.status === 'COMPLETED') counts.COMPLETED += 1;
+    else if (row.status) counts.FAILED += 1;
   }
 
   return Object.entries(counts).map(([value, count]) => ({ value, count }));
@@ -172,7 +175,7 @@ export const ImportedGamesService = {
         name: opening.openingName,
         count: groupCount(opening, 'openingEco'),
       })),
-      analysisStatuses: analysisStatusFacetRows(facets.latestAnalysisRows),
+      analysisStatuses: analysisStatusFacetRows(facets.totalGames, facets.analysisRunRows),
     };
   },
 };
