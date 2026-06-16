@@ -39,7 +39,7 @@
         <tbody>
           @for (game of games(); track game.id) {
             <tr>
-              <td>
+              <td data-label="Game">
                 <a
                   class="game-title-cell game-detail-link"
                   [routerLink]="['/games', game.id]"
@@ -63,13 +63,13 @@
                   </div>
                 </a>
               </td>
-              <td>
+              <td data-label="Result">
                 <span class="result-pill" [class]="resultClass(game.resultForUser)">{{
                   resultLabel(game.resultForUser)
                 }}</span>
                 <p class="games-muted">{{ colorLabel(game.userColor) }}</p>
               </td>
-              <td>
+              <td data-label="Players">
                 <p class="game-main players-line">
                   @if (profileUrl(game.provider, game.white?.username); as whiteProfileUrl) {
                     <a
@@ -96,28 +96,28 @@
                   }
                 </p>
               </td>
-              <td>
+              <td data-label="Control">
                 <p class="game-main">{{ timeClassLabel(game.speedCategory) }}</p>
                 <p class="games-muted">{{ displayTimeControl(game) }}</p>
               </td>
-              <td>
+              <td data-label="Opening">
                 <p class="game-main">{{ game.opening?.eco || '—' }}</p>
                 <p class="games-muted opening-name">
                   {{ game.opening?.name || 'Opening unavailable' }}
                 </p>
               </td>
-              <td>
+              <td data-label="Accuracy">
                 <p class="game-main">{{ accuracyLabel(game.analysis?.userAccuracy) }}</p>
                 <p class="games-muted">
                   W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} &middot; B
                   {{ accuracyLabel(game.analysis?.blackAccuracy) }}
                 </p>
               </td>
-              <td>
+              <td data-label="Status">
                 <p class="game-main">{{ analysisStatusLabel(game) }}</p>
                 <p class="games-muted games-status-secondary">{{ plyIndexStatusLabel(game) }}</p>
               </td>
-              <td>
+              <td data-label="Actions">
                 <div class="games-row-actions">
                   <app-game-action-menu
                     [game]="game"

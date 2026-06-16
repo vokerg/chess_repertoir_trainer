@@ -160,3 +160,107 @@
   color: var(--muted);
   font-weight: 700;
 }
+
+@media (max-width: 760px) {
+  .games-table-card {
+    gap: 0.85rem;
+  }
+
+  .games-table-header {
+    align-items: stretch;
+  }
+
+  .games-table-header > div,
+  .games-table-header button {
+    width: 100%;
+  }
+
+  .games-section-title {
+    font-size: 1.15rem;
+    letter-spacing: 0;
+  }
+
+  .games-table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .games-table,
+  .games-table tbody,
+  .games-table tr,
+  .games-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .games-table {
+    min-width: 0;
+  }
+
+  .games-table thead {
+    display: none;
+  }
+
+  .games-table tbody {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .games-table tr {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: rgba(255, 252, 247, 0.78);
+    overflow: visible;
+  }
+
+  .games-table td {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 32%) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    padding: 0.7rem 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .games-table td:first-child {
+    border-top: 0;
+  }
+
+  .games-table td::before {
+    content: attr(data-label);
+    color: var(--muted-strong);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+
+  .game-title-cell {
+    gap: 0.55rem;
+  }
+
+  .game-detail-link {
+    min-width: 0;
+  }
+
+  .game-main,
+  .games-muted,
+  .profile-link {
+    overflow-wrap: anywhere;
+  }
+
+  .players-line {
+    display: flex;
+  }
+
+  .opening-name {
+    max-width: none;
+  }
+
+  .games-row-actions {
+    justify-content: flex-start;
+  }
+}
