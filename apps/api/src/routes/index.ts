@@ -6,7 +6,6 @@ import statsModule from '../modules/stats/stats.routes';
 import analysisModule from '../modules/analysis/analysis.routes';
 import importedGamesModule from '../modules/imported-games/imported-games.routes';
 import labModule from '../modules/lab/lab.routes';
-import importExportRoutes from './importExport';
 import externalAccountsRoutes from './externalAccounts';
 import swaggerRoutes from './swagger';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
@@ -24,7 +23,6 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(repertoireCoverageModule);
   app.register(mcpModule);
   app.register(boardImagesModule);
-  app.register(importExportRoutes);
   app.register(externalAccountsRoutes);
   app.register(swaggerRoutes);
 }

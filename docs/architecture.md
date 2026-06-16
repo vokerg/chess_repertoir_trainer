@@ -30,7 +30,6 @@ apps/api/src/modules/
 The API is only partly migrated to feature modules. These registered routes remain global:
 
 - `routes/externalAccounts.ts` owns current-user accounts and provider sync endpoints.
-- `routes/importExport.ts` owns JSON import/export endpoints.
 - `routes/swagger.ts` serves API documentation.
 
 Several modules also still call services under `apps/api/src/services`. This is accepted legacy debt, not the preferred structure for new features. Do not invent `games` or `importers` modules in documentation until those boundaries exist in code.

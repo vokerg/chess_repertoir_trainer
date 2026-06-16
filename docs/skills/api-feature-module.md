@@ -18,7 +18,7 @@ modules/
   training-marathons/    marathon workflow
 ```
 
-`apps/api/src/routes/index.ts` is the source of truth. It also registers global `externalAccounts`, `importExport`, and Swagger routes. Global services and repositories remain in use, including provider import services and some training, stats, PGN, and current-user logic.
+`apps/api/src/routes/index.ts` is the source of truth. It also registers global `externalAccounts` and Swagger routes. Global services and repositories remain in use, including provider import services and some training, stats, PGN, and current-user logic.
 
 These global files are accepted legacy debt. They describe the current implementation, not the preferred shape for new work. In particular, there are no current `games` or `importers` modules.
 
