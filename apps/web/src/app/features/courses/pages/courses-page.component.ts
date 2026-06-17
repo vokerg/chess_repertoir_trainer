@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CoursesStore } from '../state/courses.store';
 

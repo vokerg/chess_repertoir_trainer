@@ -1,0 +1,35 @@
+@let currentNode = node();
+@if (currentNode?.node?.id && currentNode?.node?.id !== 0) {
+  <section class="workbench-panel move-notes-card">
+    <div>
+      <h3 class="workbench-panel-title">Notes</h3>
+      <p class="workbench-panel-subtitle">Capture why this move belongs in the line.</p>
+    </div>
+
+    <div class="move-notes-form">
+      <label class="form-field">
+        <span class="metric-label">Branch label</span>
+        <input [(ngModel)]="branchLabel" placeholder="Main line, rare reply, trap..." />
+      </label>
+      <label class="form-field">
+        <span class="metric-label">Comment</span>
+        <textarea [(ngModel)]="comment" rows="3" placeholder="Why this move matters"></textarea>
+      </label>
+      <label class="form-field">
+        <span class="metric-label">Annotation</span>
+        <input [(ngModel)]="annotation" placeholder="!, ?, +=, practical note..." />
+      </label>
+      <div class="move-notes-actions">
+        <button type="button" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save notes' }}
+        </button>
+        @if (saved()) {
+          <span class="save-state">Saved</span>
+        }
+        @if (error()) {
+          <span class="save-state error">{{ error() }}</span>
+        }
+      </div>
+    </div>
+  </section>
+}

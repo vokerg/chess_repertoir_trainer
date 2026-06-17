@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../../../games/data-access/games.models';
-import { GameFilters } from '../../../../../shared/game-filters/game-filter.model';
-import { ApiService } from '../../../../../services/api.service';
+import { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
+import { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import { ApiService } from '../../../../../core/api/api.service';
 import { buildOpeningStrugglesQuery } from '../helpers/opening-struggles-query';
 import { OpeningStrugglesCriteria, OpeningStrugglesResponse } from './opening-struggles.models';
 

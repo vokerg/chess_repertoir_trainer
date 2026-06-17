@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Chess } from 'chess.js';
-import { BoardImageComponent } from '../../../shared/chess-board/board-image/board-image.component';
+import { BoardImageComponent } from '../../../shared/chess/board-image/board-image.component';
 import { CopyableFenComponent } from '../../../shared/ui/copyable-fen/copyable-fen.component';
 import { CourseReviewGroup } from '../data-access/course-review.models';
 

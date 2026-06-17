@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../../services/api.service';
-import { appendGameFilterParams } from '../../../shared/game-filters/game-filter-query.mapper';
-import { GameFilters } from '../../../shared/game-filters/game-filter.model';
+import { ApiService } from '../../../core/api/api.service';
+import { appendGameFilterParams } from '../../../shared/games/filters/game-filter-query.mapper';
+import { GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import { CourseReviewResponse } from './course-review.models';
 
 @Injectable({ providedIn: 'root' })
@@ -26,5 +27,9 @@ export class CourseReviewApiService {
       query.set('minCoveredPlies', String(params.minCoveredPlies));
     }
     return this.api.get<CourseReviewResponse>(`/courses/${courseId}/review?${query.toString()}`);
+  }
+
+  getFacets(): Observable<ImportedGameFacetsResponse> {
+    return this.api.get<ImportedGameFacetsResponse>('/imported-games/facets');
   }
 }

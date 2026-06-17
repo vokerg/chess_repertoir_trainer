@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
-import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
+import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { UserColor } from '../data-access/games.models';
 import { BoardArrow, BoardLastMove, GameTree } from './game-detail.models';
 

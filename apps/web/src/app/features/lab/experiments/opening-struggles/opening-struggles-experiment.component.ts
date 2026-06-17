@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { CopyableLineComponent } from '../../../../shared/ui/copyable-line/copyable-line.component';
-import { GameFilterPanelComponent } from '../../../../shared/game-filters/game-filter-panel.component';
+import { GameFilterPanelComponent } from '../../../../shared/games/filters/game-filter-panel.component';
 import { OpeningStrugglesApiService } from './data-access/opening-struggles-api.service';
 import {
   OpeningStrugglesEvalMetric,

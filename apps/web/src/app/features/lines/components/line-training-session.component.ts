@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Chess } from 'chess.js';
-import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
+import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
 import { RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
 
 @Component({

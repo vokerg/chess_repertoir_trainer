@@ -1,7 +1,7 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { dateLabel, providerClass, providerLabel, syncStatusLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';

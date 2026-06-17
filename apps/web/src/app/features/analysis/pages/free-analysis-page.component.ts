@@ -10,10 +10,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
-import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
-import { GameFilterPanelComponent } from '../../../shared/game-filters/game-filter-panel.component';
-import { PositionTopGamesComponent } from '../../../shared/position-game-moves/position-top-games.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
+import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
+import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
 import { AnalysisReintegrationDialogComponent } from '../components/analysis-reintegration-dialog.component';

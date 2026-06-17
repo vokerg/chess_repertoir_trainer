@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
-import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
-import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
-import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
-import { PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
-import { StockfishPanelComponent } from '../../../components/stockfish-panel.component';
+import { BoardActionToolbarComponent } from '../../../shared/chess/board/board-action-toolbar.component';
+import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
+import { EngineEvalBarComponent } from '../../../shared/chess/engine/engine-eval-bar.component';
+import { PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { StockfishPanelComponent } from '../../../shared/chess/engine/stockfish-panel.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
-import { PositionGameMovesPanelComponent } from '../../../shared/position-game-moves/position-game-moves-panel.component';
-import { scoreLabel } from '../../../shared/position-game-moves/position-game-moves.helpers';
+import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
+import { scoreLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 
 @Component({

@@ -8,7 +8,7 @@ import {
   ImportedGamePageInfo,
   ImportedGamePlyIndexResult,
 } from '../data-access/games.models';
-import { defaultGameFilters, GameFilters } from '../../../shared/game-filters/game-filter.model';
+import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 
 @Injectable()
 export class GamesExplorerStore {

@@ -1,5 +1,5 @@
-import { GameFilters } from '../../../../../shared/game-filters/game-filter.model';
-import { appendGameFilterParams } from '../../../../../shared/game-filters/game-filter-query.mapper';
+import { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import { appendGameFilterParams } from '../../../../../shared/games/filters/game-filter-query.mapper';
 import { OpeningStrugglesCriteria } from '../data-access/opening-struggles.models';
 
 export function buildOpeningStrugglesQuery(

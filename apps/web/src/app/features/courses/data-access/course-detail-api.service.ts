@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../../services/api.service';
+import { ApiService } from '../../../core/api/api.service';
 import { CourseChapter, CourseDetail, CourseStats } from './course-detail.models';
 
 @Injectable()

@@ -2,7 +2,7 @@ import { DecimalPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { CopyableFenComponent } from '../../../shared/ui/copyable-fen/copyable-fen.component';
 import { LibraryApiService } from '../data-access/library-api.service';
 import {

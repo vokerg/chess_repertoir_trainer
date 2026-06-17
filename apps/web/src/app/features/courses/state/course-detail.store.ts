@@ -3,8 +3,8 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseChapter, CourseDetail, CourseStats } from '../data-access/course-detail.models';
-import { SublinesApiService } from '../../sublines/data-access/sublines-api.service';
-import { AvailableSubline } from '../../sublines/data-access/sublines.models';
+import { SublinesApiService } from '../data-access/sublines/sublines-api.service';
+import { AvailableSubline } from '../data-access/sublines/sublines.models';
 
 @Injectable()
 export class CourseDetailStore {

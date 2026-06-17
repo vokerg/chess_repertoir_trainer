@@ -3,10 +3,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseDetailStore } from '../state/course-detail.store';
-import { SublinesListComponent } from '../../sublines/components/sublines-list.component';
+import { SublinesListComponent } from '../components/sublines/sublines-list.component';
 
 @Component({
   selector: 'app-course-detail-page',

@@ -1,14 +1,17 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CourseDetailApiService } from '../../courses/data-access/course-detail-api.service';
-import { CourseChapter, CourseDetail } from '../../courses/data-access/course-detail.models';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
-import { ChapterDetail, LineSummary, RepertoireColor } from '../data-access/lines.models';
+import {
+  ChapterDetail,
+  LineSummary,
+  LineTransferTargetChapter,
+  LineTransferTargetCourse,
+  RepertoireColor,
+} from '../data-access/lines.models';
 
 @Injectable()
 export class LinesPageStore {
   private readonly api = inject(LinesApiService);
-  private readonly courseApi = inject(CourseDetailApiService);
 
   private readonly chapterId = signal<number | null>(null);
   private requestVersion = 0;
@@ -29,8 +32,8 @@ export class LinesPageStore {
   readonly error = signal<string | null>(null);
   readonly transferLineId = signal<number | null>(null);
   readonly transferMode = signal<'MOVE' | 'COPY' | null>(null);
-  readonly targetCourses = signal<CourseDetail[]>([]);
-  readonly targetChapters = signal<CourseChapter[]>([]);
+  readonly targetCourses = signal<LineTransferTargetCourse[]>([]);
+  readonly targetChapters = signal<LineTransferTargetChapter[]>([]);
   readonly targetCourseId = signal<number | null>(null);
   readonly targetChapterId = signal<number | null>(null);
   readonly loadingTransferTargets = signal(false);
@@ -269,8 +272,8 @@ export class LinesPageStore {
     const requestVersion = ++this.targetChapterRequestVersion;
     try {
       const [courses, chapters] = await Promise.all([
-        firstValueFrom(this.courseApi.getCourses()),
-        firstValueFrom(this.courseApi.getChapters(courseId)),
+        firstValueFrom(this.api.getTransferTargetCourses()),
+        firstValueFrom(this.api.getTransferTargetChapters(courseId)),
       ]);
       if (requestVersion !== this.targetChapterRequestVersion) return;
       this.targetCourses.set(courses);
@@ -346,7 +349,7 @@ export class LinesPageStore {
     this.loadingTransferTargets.set(true);
     this.error.set(null);
     try {
-      const chapters = await firstValueFrom(this.courseApi.getChapters(courseId));
+      const chapters = await firstValueFrom(this.api.getTransferTargetChapters(courseId));
       if (requestVersion !== this.targetChapterRequestVersion) return;
       this.targetChapters.set(chapters);
       this.targetChapterId.set(chapters[0]?.id ?? null);

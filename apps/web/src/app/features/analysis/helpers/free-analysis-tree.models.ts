@@ -1,4 +1,4 @@
-import { AnalysisTree, AnalysisTreeNode } from '../../../shared/analysis-workbench/analysis-tree.models';
+import { AnalysisTree, AnalysisTreeNode } from '../../../shared/analysis/workbench/analysis-tree.models';
 
 export interface FreeAnalysisTreeNodeData {
   id: number;

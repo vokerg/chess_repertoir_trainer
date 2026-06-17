@@ -3,15 +3,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
-import { CourseDetailApiService } from '../../courses/data-access/course-detail-api.service';
+import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { LinesPageStore } from '../state/lines-page.store';
 
 @Component({
   selector: 'app-lines-page',
   standalone: true,
   imports: [FormsModule, RouterLink, PageHeaderComponent],
-  providers: [CourseDetailApiService, LinesPageStore],
+  providers: [LinesPageStore],
   templateUrl: './lines-page.component.html',
   styleUrl: './lines-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

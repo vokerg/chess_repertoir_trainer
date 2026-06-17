@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../../../games/data-access/games.models';
-import { defaultGameFilters, GameFilters } from '../../../../../shared/game-filters/game-filter.model';
+import { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
+import { defaultGameFilters, GameFilters } from '../../../../../shared/games/filters/game-filter.model';
 import { OpeningStrugglesApiService } from '../data-access/opening-struggles-api.service';
 import {
   OpeningStruggleItem,

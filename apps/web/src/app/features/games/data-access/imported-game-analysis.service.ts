@@ -2,8 +2,8 @@ import { Injectable, signal } from '@angular/core';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
 import { classifyPly } from 'chess-domain';
-import { ApiService } from '../../../services/api.service';
-import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
+import { ApiService } from '../../../core/api/api.service';
+import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { ImportedGameDetail, ImportedGamePly, PositionAnalysisCache, UserColor } from './games.models';
 
 interface AnalysisRunResponse {

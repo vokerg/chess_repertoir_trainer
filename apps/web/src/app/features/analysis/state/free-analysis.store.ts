@@ -2,13 +2,13 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
-import { defaultGameFilters, GameFilters } from '../../../shared/game-filters/game-filter.model';
-import { PositionGameMovesApiService } from '../../../shared/position-game-moves/position-game-moves-api.service';
-import { buildOpeningAnalysisQuery } from '../../../shared/position-game-moves/position-game-moves.helpers';
-import { OpeningAnalysisResponse } from '../../../shared/position-game-moves/position-game-moves.models';
-import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
-import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
+import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
+import { buildOpeningAnalysisQuery } from '../../../shared/games/position-moves/position-game-moves.helpers';
+import { OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
+import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import {
   appendFreeAnalysisChild,

@@ -7,6 +7,19 @@ export interface ChapterDetail {
   description?: string | null;
 }
 
+export interface LineTransferTargetCourse {
+  id: number;
+  name: string;
+  description?: string | null;
+}
+
+export interface LineTransferTargetChapter {
+  id: number;
+  name: string;
+  description?: string | null;
+  sortOrder: number;
+}
+
 export interface LineSummary {
   id: number;
   chapterId: number;

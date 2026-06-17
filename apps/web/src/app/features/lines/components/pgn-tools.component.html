@@ -1,0 +1,47 @@
+<section class="stack" style="border-top:1px solid var(--border);padding-top:1rem;">
+  <div>
+    <span class="eyebrow">PGN</span>
+    <h3 class="collection-title" style="font-size:1.35rem;">Import / export</h3>
+    <p class="page-subtitle" style="font-size:0.92rem;">
+      Import one PGN into a new line, or export an existing line as PGN with basic variations.
+    </p>
+  </div>
+
+  <div class="stack" style="gap:0.55rem;">
+    <label class="metric-label">Export line</label>
+    <select [(ngModel)]="exportLineId">
+      <option [ngValue]="null">Choose a line...</option>
+      @for (line of lines(); track line.id) {
+        <option [ngValue]="line.id">{{ line.name }}</option>
+      }
+    </select>
+    <button type="button" class="secondary" (click)="exportPgn()" [disabled]="!exportLineId || exporting()">
+      {{ exporting() ? 'Exporting...' : 'Export PGN' }}
+    </button>
+  </div>
+
+  @if (exportedPgn()) {
+    <textarea [ngModel]="exportedPgn()" (ngModelChange)="exportedPgn.set($event)" rows="7" style="width:100%;font-family:monospace;"></textarea>
+  }
+
+  <div class="stack" style="gap:0.55rem;">
+    <label class="metric-label">Import PGN as new line</label>
+    <input [(ngModel)]="importName" placeholder="Imported line name" />
+    <select [(ngModel)]="importSide">
+      <option value="WHITE">Train White</option>
+      <option value="BLACK">Train Black</option>
+    </select>
+    <input [(ngModel)]="importStartingFen" placeholder="startpos" />
+    <textarea [(ngModel)]="importPgnText" rows="8" placeholder="Paste PGN here" style="width:100%;font-family:monospace;"></textarea>
+    <button type="button" (click)="importPgn()" [disabled]="importing() || !chapterId() || !importName || !importPgnText">
+      {{ importing() ? 'Importing...' : 'Import PGN' }}
+    </button>
+  </div>
+
+  @if (message()) {
+    <p style="color:green;">{{ message() }}</p>
+  }
+  @if (error()) {
+    <p class="status-error">{{ error() }}</p>
+  }
+</section>

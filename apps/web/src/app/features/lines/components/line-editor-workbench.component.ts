@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
-import { AnalysisWorkbenchComponent } from '../../../shared/analysis-workbench/analysis-workbench.component';
-import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
-import { GameFilters } from '../../../shared/game-filters/game-filter.model';
-import { PositionGameMovesPanelComponent } from '../../../shared/position-game-moves/position-game-moves-panel.component';
-import { OpeningAnalysisResponse } from '../../../shared/position-game-moves/position-game-moves.models';
+import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
+import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
+import { OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
 import { LineTree, RepertoireColor, UpdateLineNodePayload } from '../data-access/lines.models';
 import { LineNotesEditorComponent } from './line-notes-editor.component';
 

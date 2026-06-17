@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { MonthlyGamesExperimentComponent } from '../experiments/monthly-games/monthly-games-experiment.component';
 import { OpeningStrugglesExperimentComponent } from '../experiments/opening-struggles/opening-struggles-experiment.component';
 import { TopOpponentsExperimentComponent } from '../experiments/top-opponents/top-opponents-experiment.component';

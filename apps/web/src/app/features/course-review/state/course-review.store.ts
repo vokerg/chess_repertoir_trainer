@@ -2,10 +2,9 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CourseReviewApiService } from '../data-access/course-review-api.service';
 import { CourseReviewResponse } from '../data-access/course-review.models';
-import { GamesApiService } from '../../games/data-access/games-api.service';
-import { ImportedGameFacetsResponse } from '../../games/data-access/games.models';
-import { defaultGameFilters, GameFilters } from '../../../shared/game-filters/game-filter.model';
-import { summaryGameFilters } from '../../../shared/game-filters/game-filter-summary';
+import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { summaryGameFilters } from '../../../shared/games/filters/game-filter-summary';
 
 function localDate(daysFromToday = 0): string {
   const date = new Date();
@@ -21,7 +20,6 @@ export function defaultCourseReviewGameFilters(): GameFilters {
 @Injectable()
 export class CourseReviewStore {
   private readonly api = inject(CourseReviewApiService);
-  private readonly gamesApi = inject(GamesApiService);
   private readonly courseId = signal<number | null>(null);
   private requestVersion = 0;
 
@@ -78,7 +76,7 @@ export class CourseReviewStore {
   }
 
   loadFacets(): void {
-    this.gamesApi.getFacets().subscribe({
+    this.api.getFacets().subscribe({
       next: (facets) => this.facets.set(facets || {}),
     });
   }

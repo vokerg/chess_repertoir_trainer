@@ -3,7 +3,7 @@ import {
   PlyIndexStatus,
   Provider,
   ResultForUser,
-} from '../../games/data-access/games.models';
+} from '../../../shared/games/game.models';
 
 export type CourseReviewColor = 'WHITE' | 'BLACK';
 

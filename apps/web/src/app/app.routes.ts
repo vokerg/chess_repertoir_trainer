@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './guards/auth.guard';
+import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/library', pathMatch: 'full' },
@@ -89,7 +89,7 @@ export const routes: Routes = [
     title: 'Course review | Chess Repertoire Trainer',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/course-review/course-review-page.component').then(
+      import('./features/course-review/pages/course-review-page.component').then(
         (m) => m.CourseReviewPageComponent,
       ),
   },

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../../services/api.service';
+import { ApiService } from '../../../core/api/api.service';
 import {
   ChapterDetail,
   CopyLinePayload,
@@ -9,6 +9,8 @@ import {
   ImportLinePgnPayload,
   LineDetail,
   LineSummary,
+  LineTransferTargetChapter,
+  LineTransferTargetCourse,
   LineTrainingSession,
   LineTree,
   LineTreeNodeData,
@@ -34,6 +36,14 @@ export class LinesApiService {
 
   getChapterLines(chapterId: number): Observable<LineSummary[]> {
     return this.api.get<LineSummary[]>(`/chapters/${chapterId}/lines`);
+  }
+
+  getTransferTargetCourses(): Observable<LineTransferTargetCourse[]> {
+    return this.api.get<LineTransferTargetCourse[]>('/courses');
+  }
+
+  getTransferTargetChapters(courseId: number): Observable<LineTransferTargetChapter[]> {
+    return this.api.get<LineTransferTargetChapter[]>(`/courses/${courseId}/chapters`);
   }
 
   createLine(chapterId: number, body: CreateLinePayload): Observable<LineSummary> {

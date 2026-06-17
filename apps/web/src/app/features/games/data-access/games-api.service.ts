@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiService } from '../../../services/api.service';
+import { ApiService } from '../../../core/api/api.service';
 import {
   BatchAnalysisAcceptedResponse,
   BatchAnalysisConfig,
@@ -11,8 +11,8 @@ import {
   ImportedGamePlyIndexResult,
   ImportedGameSearchResponse,
 } from './games.models';
-import { GameFilters } from '../../../shared/game-filters/game-filter.model';
-import { mapGameFiltersToQueryString } from '../../../shared/game-filters/game-filter-query.mapper';
+import { GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { mapGameFiltersToQueryString } from '../../../shared/games/filters/game-filter-query.mapper';
 
 @Injectable({ providedIn: 'root' })
 export class GamesApiService {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
-import { GameFilterPanelComponent } from '../../../shared/game-filters/game-filter-panel.component';
+import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
 import { GamesTableComponent } from '../components/games-table.component';
 import { GamesExplorerStore } from '../state/games-explorer.store';
 

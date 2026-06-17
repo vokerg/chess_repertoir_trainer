@@ -2,8 +2,8 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
-import { PositionAnalysisCacheService } from '../../../services/position-analysis-cache.service';
-import { EngineAnalysis } from '../../../services/stockfish-analysis.service';
+import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import { GamesApiService } from '../data-access/games-api.service';
 import {
