@@ -6,13 +6,10 @@
     readonly
     [attr.aria-label]="accessibleName() || label()"
   />
-  <button
-    type="button"
+  <app-copy-button
     class="copyable-button"
-    [attr.aria-label]="copyButtonLabel()"
-    [title]="copyButtonLabel()"
-    (click)="copy()"
-  >
-    Copy
-  </button>
+    [value]="value()"
+    [label]="'Copy ' + label()"
+    [ariaLabel]="ariaLabel()"
+  />
 </div>

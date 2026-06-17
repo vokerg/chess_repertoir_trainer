@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CopyableTextComponent } from '../shared/ui/copyable-text/copyable-text.component';
+import { CopyableFenComponent } from '../shared/ui/copyable-fen/copyable-fen.component';
 
 @Component({
   selector: 'app-board-action-toolbar',
   standalone: true,
-  imports: [CopyableTextComponent],
+  imports: [CopyableFenComponent],
   templateUrl: './board-action-toolbar.component.html',
   styleUrl: './board-action-toolbar.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

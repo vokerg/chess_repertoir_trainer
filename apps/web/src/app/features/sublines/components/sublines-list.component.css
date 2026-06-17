@@ -27,11 +27,6 @@
 .move-text { font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace; }
 .action-column,
 .action-cell { width: 1%; white-space: nowrap; text-align: right; }
-.copy-button {
-  padding: 0.3rem 0.55rem;
-  font-size: 0.72rem;
-  box-shadow: none;
-}
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -132,9 +132,10 @@
             <div class="library-mini-stat"><p class="library-mini-stat-label">Failure</p><p class="library-mini-stat-value">{{ failureRate(line) * 100 | number:'1.0-0' }}%</p></div>
           </div>
           <section class="library-info-card">
-            <p class="library-mini-stat-label">Starting position</p>
-            <p class="library-row-meta">{{ startingPositionLabel(line) }}</p>
-            <code class="library-fen">{{ line.startingFen || 'startpos' }}</code>
+            <app-copyable-fen
+              label="Starting position"
+              [fen]="line.startingFen || 'startpos'"
+            />
           </section>
           <div class="library-actions">
             <a class="library-button-link" [routerLink]="['/lines', line.id, 'train']">Train</a>

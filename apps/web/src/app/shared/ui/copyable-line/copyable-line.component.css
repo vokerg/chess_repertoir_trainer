@@ -1,0 +1,35 @@
+.copyable-line-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.line-link, .line-display {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-decoration: none;
+  color: inherit;
+}
+
+.line-link:hover .line-text {
+  color: var(--accent-strong);
+}
+
+.line-text {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9rem;
+}
+
+app-copy-button ::ng-deep button {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  height: auto;
+  min-height: 0;
+}

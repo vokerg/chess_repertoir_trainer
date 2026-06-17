@@ -23,9 +23,8 @@
       <span class="metric-label">Position</span>
     }
 
-    <app-copyable-text
-      label="FEN"
-      [value]="displayedFen()"
+    <app-copyable-fen
+      [fen]="displayedFen()"
       accessibleName="Displayed position FEN"
     />
 

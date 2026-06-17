@@ -3,13 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { Chess } from 'chess.js';
 import { BoardImageComponent } from '../../../shared/chess-board/board-image/board-image.component';
-import { CopyableTextComponent } from '../../../shared/ui/copyable-text/copyable-text.component';
+import { CopyableFenComponent } from '../../../shared/ui/copyable-fen/copyable-fen.component';
 import { CourseReviewGroup } from '../data-access/course-review.models';
 
 @Component({
   selector: 'app-course-review-issue-card',
   standalone: true,
-  imports: [BoardImageComponent, CopyableTextComponent, DatePipe, RouterLink],
+  imports: [BoardImageComponent, CopyableFenComponent, DatePipe, RouterLink],
   templateUrl: './course-review-issue-card.component.html',
   styleUrl: './course-review-issue-card.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

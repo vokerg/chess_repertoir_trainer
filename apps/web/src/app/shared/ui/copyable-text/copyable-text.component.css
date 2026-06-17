@@ -24,13 +24,14 @@
   font-size: 0.8rem;
   font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
 }
-.copyable-button {
+.copyable-button ::ng-deep button {
   padding: 0.48rem 0.7rem;
   background: rgba(35, 27, 21, 0.08);
   color: var(--muted-strong);
   box-shadow: none;
   font-size: 0.78rem;
+  border-radius: 999px;
 }
-.copyable-button:hover:not(:disabled) {
+.copyable-button ::ng-deep button:hover:not(:disabled) {
   background: rgba(35, 27, 21, 0.13);
 }

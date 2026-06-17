@@ -40,7 +40,14 @@
     <div class="table-wrap"><table class="lab-table"><thead><tr><th>Line</th><th>Played as</th><th>W-D-L</th><th>Loss %</th><th>Avg eval</th></tr></thead><tbody>
       @for (item of store.items(); track item.key) {
         <tr>
-          <td class="primary-cell line-cell"><div class="line-content"><a class="line-link" routerLink="/analysis" [queryParams]="analysisQueryParams(item)">{{ lineLabel(item) }}</a><button type="button" class="copy-line-button secondary" (click)="copyLine(item.key)" [attr.aria-label]="'Copy line ' + lineLabel(item)">{{ copiedKey() === item.key ? 'Copied' : 'Copy' }}</button></div></td>
+          <td class="primary-cell line-cell">
+            <app-copyable-line
+              [line]="lineLabel(item)"
+              [link]="['/analysis']"
+              [queryParams]="analysisQueryParams(item)"
+              [ariaLabel]="'Copy line ' + lineLabel(item)"
+            />
+          </td>
           <td>{{ userColorLabel(item) }}</td><td>{{ wdlLabel(item) }}</td><td>{{ percentLabel(item.lossRate) }}</td><td>{{ evalLabel(item.avgUserEvalCp) }}</td>
         </tr>
       }

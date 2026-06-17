@@ -1,0 +1,28 @@
+@if (!buttonOnly()) {
+  <div class="copyable-line-content">
+    @if (link()) {
+      <a class="line-link" [routerLink]="link()" [queryParams]="queryParams()">
+        @if (name()) { <span class="metric-label">{{ name() }}</span> }
+        <span class="line-text">{{ line() }}</span>
+      </a>
+    } @else {
+      <div class="line-display">
+        @if (name()) { <span class="metric-label">{{ name() }}</span> }
+        <span class="line-text">{{ line() }}</span>
+      </div>
+    }
+    <app-copy-button
+      [value]="line()"
+      [buttonClass]="buttonClass()"
+      [label]="label()"
+      [ariaLabel]="ariaLabel()"
+    />
+  </div>
+} @else {
+  <app-copy-button
+    [value]="line()"
+    [buttonClass]="buttonClass()"
+    [label]="label()"
+    [ariaLabel]="ariaLabel()"
+  />
+}

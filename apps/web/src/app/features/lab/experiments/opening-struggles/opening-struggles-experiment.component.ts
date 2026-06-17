@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { CopyableLineComponent } from '../../../../shared/ui/copyable-line/copyable-line.component';
 import { GameFilterPanelComponent } from '../../../../shared/game-filters/game-filter-panel.component';
 import { OpeningStrugglesApiService } from './data-access/opening-struggles-api.service';
 import {
@@ -12,7 +12,7 @@ import { OpeningStrugglesStore } from './state/opening-struggles.store';
 @Component({
   selector: 'app-lab-opening-struggles',
   standalone: true,
-  imports: [GameFilterPanelComponent, RouterLink],
+  imports: [GameFilterPanelComponent, CopyableLineComponent],
   providers: [OpeningStrugglesApiService, OpeningStrugglesStore],
   templateUrl: './opening-struggles-experiment.component.html',
   styleUrl: './opening-struggles-experiment.component.css',
@@ -26,7 +26,6 @@ export class OpeningStrugglesExperimentComponent implements OnInit {
   protected readonly percentLabel = percentLabel;
   protected readonly evalLabel = evalLabel;
   protected readonly analysisQueryParams = analysisQueryParams;
-  protected readonly copiedKey = signal<string | null>(null);
 
   ngOnInit(): void { void this.store.initialize(); }
 
@@ -41,15 +40,4 @@ export class OpeningStrugglesExperimentComponent implements OnInit {
   protected evalMetricValue(event: Event): OpeningStrugglesEvalMetric {
     return (event.target as HTMLSelectElement).value as OpeningStrugglesEvalMetric;
   }
-
-  protected async copyLine(key: string): Promise<void> {
-    const item = this.store.items().find((candidate) => candidate.key === key);
-    if (!item) return;
-    await navigator.clipboard.writeText(lineLabel(item));
-    this.copiedKey.set(key);
-    window.setTimeout(() => {
-      if (this.copiedKey() === key) this.copiedKey.set(null);
-    }, 1500);
-  }
-
 }

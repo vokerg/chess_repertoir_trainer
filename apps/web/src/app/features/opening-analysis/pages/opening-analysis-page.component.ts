@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { BoardActionToolbarComponent } from '../../../components/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../components/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../components/engine-eval-bar.component';
 import { PageHeaderComponent, PageHeaderStat } from '../../../components/page-header.component';
 import { StockfishPanelComponent } from '../../../components/stockfish-panel.component';
+import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/position-game-moves/position-game-moves-panel.component';
 import { scoreLabel } from '../../../shared/position-game-moves/position-game-moves.helpers';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
@@ -19,7 +19,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     StockfishPanelComponent,
     BoardActionToolbarComponent,
     PageHeaderComponent,
-    RouterLink,
+    CopyableLineComponent,
   ],
   providers: [OpeningAnalysisStore],
   templateUrl: './opening-analysis-page.component.html',
@@ -28,10 +28,8 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 })
 export class OpeningAnalysisPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
-  private copyResetTimer: ReturnType<typeof setTimeout> | null = null;
   protected readonly store = inject(OpeningAnalysisStore);
   protected readonly scoreLabel = scoreLabel;
-  protected readonly copyState = signal<'idle' | 'copied' | 'error'>('idle');
   protected readonly analysisQueryParams = computed(() => ({
     moves: this.store.history().map((move) => move.uci).join(','),
   }));
@@ -42,25 +40,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
   ]);
 
   ngOnInit(): void {
-    this.destroyRef.onDestroy(() => {
-      if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
-    });
     this.store.initialize();
-  }
-
-  protected async copyCurrentLine(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.store.lineLabel());
-      this.setCopyState('copied');
-    } catch {
-      this.setCopyState('error');
-    }
-  }
-
-  protected copyButtonLabel(): string {
-    if (this.copyState() === 'copied') return 'Copied';
-    if (this.copyState() === 'error') return 'Copy failed';
-    return 'Copy';
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -76,14 +56,5 @@ export class OpeningAnalysisPageComponent implements OnInit {
       event.preventDefault();
       this.store.resetBoard();
     }
-  }
-
-  private setCopyState(state: 'copied' | 'error'): void {
-    this.copyState.set(state);
-    if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
-    this.copyResetTimer = setTimeout(() => {
-      this.copyState.set('idle');
-      this.copyResetTimer = null;
-    }, 1800);
   }
 }

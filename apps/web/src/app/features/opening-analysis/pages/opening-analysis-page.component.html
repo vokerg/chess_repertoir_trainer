@@ -45,21 +45,13 @@
         (goPrevious)="store.goBack()"
       />
 
-      <div class="opening-line-card">
-        <a class="opening-line-link" [routerLink]="['/analysis']" [queryParams]="analysisQueryParams()">
-          <span class="metric-label">Current line</span>
-          <span class="opening-line-text">{{ store.lineLabel() }}</span>
-        </a>
-        <button
-          type="button"
-          class="opening-line-copy secondary"
-          [attr.aria-label]="copyButtonLabel() + ' current line'"
-          [title]="copyButtonLabel() + ' current line'"
-          (click)="copyCurrentLine()"
-        >
-          {{ copyButtonLabel() }}
-        </button>
-      </div>
+      <app-copyable-line
+        class="opening-line-card"
+        name="Current line"
+        [line]="store.lineLabel()"
+        [link]="['/analysis']"
+        [queryParams]="analysisQueryParams()"
+      />
     </section>
 
     <div class="opening-tree-panel">

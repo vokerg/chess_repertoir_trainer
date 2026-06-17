@@ -26,14 +26,12 @@
               <td class="line-name">{{ item.lineName }}</td>
               <td class="move-text">{{ item.moveText }}</td>
               <td class="action-cell">
-                <button
-                  type="button"
-                  class="copy-button secondary"
-                  [attr.aria-label]="'Copy moves for ' + item.lineName"
-                  (click)="copyMoves(item)"
-                >
-                  {{ copiedLeafNodeId() === item.leafNodeId ? 'Copied' : 'Copy' }}
-                </button>
+                <app-copyable-line
+                  [line]="item.moveText"
+                  [buttonOnly]="true"
+                  label="Copy"
+                  [ariaLabel]="'Copy moves for ' + item.lineName"
+                />
               </td>
             </tr>
           }

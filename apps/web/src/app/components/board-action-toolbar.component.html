@@ -45,10 +45,9 @@
   }
 
   @if (fen(); as currentFen) {
-    <app-copyable-text
+    <app-copyable-fen
       class="fen-copy-group"
-      label="FEN"
-      [value]="currentFen"
+      [fen]="currentFen"
       accessibleName="Current FEN"
     />
   }

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@a
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { PageHeaderAction, PageHeaderComponent } from '../../../components/page-header.component';
+import { CopyableFenComponent } from '../../../shared/ui/copyable-fen/copyable-fen.component';
 import { LibraryApiService } from '../data-access/library-api.service';
 import {
   failureRate,
@@ -17,7 +18,7 @@ import { LibraryBrowserStore } from '../state/library-browser.store';
 @Component({
   selector: 'app-library-browser-page',
   standalone: true,
-  imports: [DecimalPipe, NgClass, FormsModule, RouterLink, PageHeaderComponent],
+  imports: [DecimalPipe, NgClass, FormsModule, RouterLink, PageHeaderComponent, CopyableFenComponent],
   providers: [LibraryApiService, LibraryBrowserStore],
   templateUrl: './library-browser-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

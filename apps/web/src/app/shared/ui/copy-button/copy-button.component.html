@@ -1,0 +1,9 @@
+<button
+  type="button"
+  [class]="buttonClass()"
+  [attr.aria-label]="(ariaLabel() || label()) + (state() === 'copied' ? ' - Copied' : '')"
+  [title]="ariaLabel() || label()"
+  (click)="copy($event)"
+>
+  {{ buttonLabel() }}
+</button>
