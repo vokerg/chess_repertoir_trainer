@@ -55,11 +55,13 @@
         @if (store.filteredChapters().length > 0) {
           <div class="library-list">
             @for (chapter of store.filteredChapters(); track chapter.id) {
-              <button
-                type="button"
-                class="library-row"
+              <article
+                class="library-row library-line-row"
                 [class.library-row-active]="chapter.id === store.selectedChapterId()"
+                role="button"
+                tabindex="0"
                 (click)="store.selectChapter(chapter.id)"
+                (keydown.enter)="store.selectChapter(chapter.id)"
               >
                 <p class="library-row-title">{{ chapter.name }}</p>
                 <p class="library-row-meta">{{ chapter.description || 'Opening section' }}</p>
@@ -67,7 +69,10 @@
                   {{ store.chapterLineMeta(chapter) }}
                   @if (chapter.sortOrder !== null && chapter.sortOrder !== undefined) { <span> · Order {{ chapter.sortOrder }}</span> }
                 </p>
-              </button>
+                <div class="library-row-actions">
+                  <a class="library-button-link" [routerLink]="['/chapters', chapter.id, 'marathon']" (click)="$event.stopPropagation()">Marathon</a>
+                </div>
+              </article>
             }
           </div>
         }
