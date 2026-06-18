@@ -12,7 +12,7 @@
     </div>
 
     <div class="library-columns">
-      <aside class="library-column">
+      <aside class="library-column library-scope-column library-course-column">
         <div class="library-column-header">Repertoires</div>
         @if (store.courseLoading()) { <p class="status-note">Loading repertoires...</p> }
         @if (store.courseError()) { <p class="status-error">{{ store.courseError() }}</p> }
@@ -33,16 +33,23 @@
                 <p class="library-row-title">{{ course.name }}</p>
                 <p class="library-row-meta">{{ course.description || 'Personal repertoire' }}</p>
                 <p class="library-row-meta library-row-counts">{{ store.courseMeta(course) }}</p>
-                <div class="library-row-actions">
-                  <a class="library-button-link" [routerLink]="['/courses', course.id, 'marathon']" (click)="$event.stopPropagation()">Marathon</a>
-                </div>
               </article>
             }
           </div>
         }
+        @if (store.selectedCourse(); as course) {
+          <div class="library-scope-footer">
+            <section class="library-scope-card">
+              <p class="library-scope-label">Selected repertoire</p>
+              <p class="library-scope-title">{{ course.name }}</p>
+              <p class="library-row-meta">{{ store.courseMeta(course) }}</p>
+              <a class="library-button-link library-scope-action" [routerLink]="['/courses', course.id, 'marathon']">Course marathon</a>
+            </section>
+          </div>
+        }
       </aside>
 
-      <aside class="library-column">
+      <aside class="library-column library-scope-column library-chapter-column">
         <div class="library-column-header">Sections</div>
         @if (store.chapterLoading()) { <p class="status-note">Loading sections...</p> }
         @if (store.chapterError()) { <p class="status-error">{{ store.chapterError() }}</p> }
@@ -69,16 +76,23 @@
                   {{ store.chapterLineMeta(chapter) }}
                   @if (chapter.sortOrder !== null && chapter.sortOrder !== undefined) { <span> · Order {{ chapter.sortOrder }}</span> }
                 </p>
-                <div class="library-row-actions">
-                  <a class="library-button-link" [routerLink]="['/chapters', chapter.id, 'marathon']" (click)="$event.stopPropagation()">Marathon</a>
-                </div>
               </article>
             }
           </div>
         }
+        @if (store.selectedChapter(); as chapter) {
+          <div class="library-scope-footer">
+            <section class="library-scope-card">
+              <p class="library-scope-label">Selected section</p>
+              <p class="library-scope-title">{{ chapter.name }}</p>
+              <p class="library-row-meta">{{ store.chapterLineMeta(chapter) }}</p>
+              <a class="library-button-link library-scope-action" [routerLink]="['/chapters', chapter.id, 'marathon']">Section marathon</a>
+            </section>
+          </div>
+        }
       </aside>
 
-      <main class="library-column">
+      <main class="library-column library-lines-column">
         <div class="library-column-header">Lines</div>
         @if (store.lineLoading()) { <p class="status-note">Loading lines...</p> }
         @if (store.lineError()) { <p class="status-error">{{ store.lineError() }}</p> }
@@ -109,7 +123,6 @@
                 </p>
                 <div class="library-row-actions">
                   <a class="library-button-link" [routerLink]="['/lines', line.id, 'train']" (click)="$event.stopPropagation()">Train</a>
-                  <a class="library-button-link secondary" [routerLink]="['/lines', line.id, 'edit']" (click)="$event.stopPropagation()">Edit tree</a>
                 </div>
               </article>
             }
