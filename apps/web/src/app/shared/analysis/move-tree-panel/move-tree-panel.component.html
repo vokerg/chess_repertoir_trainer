@@ -1,0 +1,24 @@
+<section class="workbench-panel move-tree-panel">
+  <div class="move-tree-panel-header">
+    <div class="move-tree-panel-copy">
+      <h3 class="workbench-panel-title">{{ title() }}</h3>
+      <p class="workbench-panel-subtitle">{{ help() }}</p>
+    </div>
+
+    @if (copyLine()) {
+      <app-copy-button
+        [value]="copyLine()"
+        [label]="copyLabel()"
+        [ariaLabel]="copyLabel()"
+        buttonClass="secondary"
+      />
+    }
+  </div>
+
+  <app-move-tree
+    [tree]="tree()"
+    [selectedNodeId]="selectedNodeId()"
+    [rootLabel]="rootLabel()"
+    (nodeSelected)="nodeSelected.emit($event)"
+  />
+</section>

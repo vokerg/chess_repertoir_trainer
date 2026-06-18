@@ -1,0 +1,36 @@
+.move-tree-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.move-tree-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.move-tree-panel-copy {
+  min-width: 0;
+}
+
+app-copy-button {
+  flex: 0 0 auto;
+}
+
+app-copy-button ::ng-deep button {
+  padding: 0.35rem 0.65rem;
+  min-height: 0;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 520px) {
+  .move-tree-panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  app-copy-button {
+    justify-self: start;
+  }
+}

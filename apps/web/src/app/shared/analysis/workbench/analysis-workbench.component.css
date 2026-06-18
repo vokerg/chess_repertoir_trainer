@@ -12,8 +12,7 @@
   align-items: start;
 }
 
-.board-panel,
-.move-tree-panel {
+.board-panel {
   display: grid;
   gap: 1rem;
 }

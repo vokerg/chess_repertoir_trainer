@@ -38,18 +38,14 @@
   </section>
 
   <div class="workbench-side-stack">
-    <section class="workbench-panel move-tree-panel">
-      <div>
-        <h3 class="workbench-panel-title">{{ treeTitle() }}</h3>
-        <p class="workbench-panel-subtitle">{{ treeHelp() }}</p>
-      </div>
-      <app-move-tree
-        [tree]="tree()"
-        [selectedNodeId]="selectedNodeId()"
-        [rootLabel]="treeRootLabel()"
-        (nodeSelected)="nodeSelected.emit($event)"
-      />
-    </section>
+    <app-move-tree-panel
+      [tree]="tree()"
+      [selectedNodeId]="selectedNodeId()"
+      [title]="treeTitle()"
+      [help]="treeHelp()"
+      [rootLabel]="treeRootLabel()"
+      (nodeSelected)="nodeSelected.emit($event)"
+    />
 
     <section class="workbench-panel engine-panel-modern">
       <app-stockfish-panel

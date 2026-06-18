@@ -3,7 +3,7 @@ import { BoardActionToolbarComponent } from '../../chess/board/board-action-tool
 import { ChessgroundBoardComponent } from '../../chess/board/chessground-board.component';
 import { EngineEvalBarComponent } from '../../chess/engine/engine-eval-bar.component';
 import { EngineAnalysis } from '../../chess/engine/stockfish-analysis.service';
-import { MoveTreeComponent } from '../move-tree/move-tree.component';
+import { MoveTreePanelComponent } from '../move-tree-panel/move-tree-panel.component';
 import { StockfishPanelComponent } from '../../chess/engine/stockfish-panel.component';
 import { AnalysisTree } from './analysis-tree.models';
 
@@ -13,7 +13,7 @@ import { AnalysisTree } from './analysis-tree.models';
   imports: [
     ChessgroundBoardComponent,
     EngineEvalBarComponent,
-    MoveTreeComponent,
+    MoveTreePanelComponent,
     StockfishPanelComponent,
     BoardActionToolbarComponent,
   ],
