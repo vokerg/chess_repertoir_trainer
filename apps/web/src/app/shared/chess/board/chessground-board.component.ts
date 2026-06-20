@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  HostBinding,
   Input,
   OnChanges,
   OnDestroy,
@@ -32,32 +33,33 @@ type BoardArrowShape = { orig: Key; dest: Key; brush: string };
   `,
   styles: [
     `
-    :host {
-      display: block;
-      width: min(100%, var(--chess-board-size, 520px));
-      min-width: 0;
-      aspect-ratio: 1 / 1;
-    }
+      :host {
+        display: block;
+        width: min(100%, var(--chess-board-size, 520px));
+        min-width: 0;
+        aspect-ratio: 1 / 1;
+      }
 
-    .board-shell {
-      width: 100%;
-      height: 100%;
-      aspect-ratio: 1 / 1;
-    }
+      .board-shell {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 1 / 1;
+      }
 
-    .chessground-board {
-      width: 100%;
-      height: 100%;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    `
-  ]
+      .chessground-board {
+        width: 100%;
+        height: 100%;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+    `,
+  ],
 })
 export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() fen: string = '';
   @Input() side: BoardSide = 'WHITE';
+  @Input() size: string | null = null;
   @Input() lastMove: { from: string; to: string } | null = null;
   @Input() arrows: Array<{ from: string; to: string; brush?: string }> = [];
   @Input() showCoordinates = true;
@@ -66,6 +68,9 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   @Output() move = new EventEmitter<string>();
 
   @ViewChild('board', { static: true }) boardElement!: ElementRef<HTMLElement>;
+  @HostBinding('style.--chess-board-size') get boardSize(): string | null {
+    return this.size;
+  }
 
   private ground: Api | null = null;
   private game = new Chess();

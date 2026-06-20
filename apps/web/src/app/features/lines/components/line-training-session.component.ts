@@ -54,12 +54,6 @@ export class LineTrainingSessionComponent {
     return move?.san || moveUci || '(waiting...)';
   }
 
-  protected expectedMovePiece(moveUci: string | null | undefined = this.expectedMove()): string {
-    const move = this.describeExpectedMove(moveUci);
-    if (!move) return '';
-    return this.pieceSymbol(move.piece, move.color);
-  }
-
   protected progressLabel(): string {
     if (this.completed()) return 'Complete';
     return this.mistakesCount() === 0
@@ -87,17 +81,9 @@ export class LineTrainingSessionComponent {
         from: moveUci.substring(0, 2),
         to: moveUci.substring(2, 4),
         promotion: moveUci.substring(4, 5) || 'q',
-      }) as { san: string; piece: string; color: string };
+      }) as { san: string };
     } catch {
       return null;
     }
-  }
-
-  private pieceSymbol(piece: string, color: string): string {
-    const symbols: Record<string, Record<string, string>> = {
-      w: { p: 'P', n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' },
-      b: { p: 'p', n: 'n', b: 'b', r: 'r', q: 'q', k: 'k' },
-    };
-    return symbols[color]?.[piece] || '';
   }
 }

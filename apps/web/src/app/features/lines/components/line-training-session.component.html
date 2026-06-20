@@ -5,6 +5,7 @@
         <app-chessground-board
           [fen]="currentFen()"
           [side]="sideToTrain()"
+          size="clamp(520px, min(72vh, 58vw), 760px)"
           [lastMove]="lastMove()"
           [positionVersion]="boardPositionVersion()"
           (move)="boardMove.emit($event)"
@@ -30,7 +31,6 @@
         <p class="expected-move-label">Expected move</p>
         @if (showExpectedMove()) {
           <p class="expected-move-value">
-            <span>{{ expectedMovePiece() }}</span>
             <code>{{ expectedMoveLabel() }}</code>
           </p>
         } @else {
@@ -124,7 +124,9 @@
                   <span>({{ mistake.moveSan }})</span>
                 }
               </h4>
-              <p class="mistake-card-meta">Played <code>{{ mistake.playedMoveUci || '-' }}</code></p>
+              <p class="mistake-card-meta">
+                Played <code>{{ mistake.playedMoveUci || '-' }}</code>
+              </p>
               @if (mistake.branchLabel) {
                 <p class="mistake-card-meta">Branch: {{ mistake.branchLabel }}</p>
               }

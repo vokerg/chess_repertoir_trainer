@@ -16,11 +16,6 @@
           <span>{{ store.sessionStatusLabel() }}</span>
         </div>
       </div>
-
-      <nav class="workbench-mode-switch" aria-label="Line mode">
-        <span class="mode-pill mode-pill-active">Train</span>
-        <a class="mode-pill" [routerLink]="['/lines', store.line()?.id, 'edit']">Edit tree</a>
-      </nav>
     </header>
 
     @if (store.error(); as error) {
