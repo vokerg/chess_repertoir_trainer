@@ -73,7 +73,6 @@
     "expo-linking": "56.0.14",
     "expo-router": "56.2.11",
     "hono": "4.12.26",
-    "http-proxy-middleware": "3.0.7",
     "jayson": {
       "uuid": "11.1.1",
       "ws": "8.21.0"
