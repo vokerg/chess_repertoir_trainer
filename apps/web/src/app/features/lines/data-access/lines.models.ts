@@ -26,6 +26,7 @@ export interface ActiveTrainingStats {
   activeSublineCount: number;
   trainedSublineCount: number;
   untrainedSublineCount: number;
+  weakSublineCount: number;
   statsWindowSize: number;
   totalAttempts: number;
   passedCount: number;
@@ -33,6 +34,7 @@ export interface ActiveTrainingStats {
   passRate: number;
   failureRate: number;
   attemptPassRate: number | null;
+  status: LineTrainingStatusValue;
 }
 
 export interface LineRowTrainingStats {
@@ -41,6 +43,10 @@ export interface LineRowTrainingStats {
   failedCount: number;
   passRate: number;
   activeSublineCount: number;
+  trainedSublineCount: number;
+  untrainedSublineCount: number;
+  weakSublineCount: number;
+  status: LineTrainingStatusValue;
 }
 
 export interface LineSummary {
@@ -180,9 +186,36 @@ export interface CopyLinePayload {
 }
 
 export type MarathonScopeType = 'CHAPTER' | 'COURSE';
-export type MarathonMode = 'ALL' | 'WEAK_SUBLINES';
+export type MarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';
+
+export type LineTrainingStatusValue = 'NEW' | 'WEAK' | 'REVIEW' | 'STABLE' | 'STRONG';
+
+export interface MarathonNextRequest {
+  scope?: { type: MarathonScopeType; id: number };
+  mode?: MarathonMode;
+  lineIds?: number[];
+  sublineHashes?: string[];
+  recentSublineHashes?: string[];
+}
+
+export interface SublineTrainingStatus {
+  hash: string;
+  canonicalKeyVersion: number;
+  lineId: number;
+  lineName: string;
+  chapterId: number;
+  chapterName: string;
+  moveText: string;
+  leafNodeId: number;
+  recentAttempts: number;
+  passedCount: number;
+  failedCount: number;
+  passRate: number | null;
+  status: LineTrainingStatusValue;
+}
 
 export interface MarathonNextResponse {
+  scope?: { type: MarathonScopeType; id: number } | null;
   mode: MarathonMode;
   line: {
     id: number;

@@ -1,0 +1,45 @@
+<div class="study-column-header">Lines</div>
+@if (loading()) {
+  <p class="status-note">Loading lines...</p>
+} @else if (error()) {
+  <p class="status-error">{{ error() }}</p>
+} @else if (lines().length === 0) {
+  <div class="empty-state">No lines match this search or filter.</div>
+} @else {
+  <div class="study-list">
+    @for (line of lines(); track line.id) {
+      <article class="study-line-row" [class.active]="line.id === selectedLineId()" (click)="selectLine.emit(line.id)">
+        <label class="line-check" (click)="$event.stopPropagation()">
+          <input type="checkbox" [checked]="isChecked(line.id)" (change)="toggleLine.emit(line.id)" />
+          <span class="visually-hidden">Select {{ line.name }} for marathon</span>
+        </label>
+        <div class="line-copy">
+          <div class="line-title-row">
+            <strong>{{ line.name }}</strong>
+            <span
+              class="status-pill"
+              [class.new]="lineStatus(line) === 'NEW'"
+              [class.weak]="lineStatus(line) === 'WEAK'"
+              [class.review]="lineStatus(line) === 'REVIEW'"
+              [class.stable]="lineStatus(line) === 'STABLE'"
+              [class.strong]="lineStatus(line) === 'STRONG'"
+            >
+              {{ statusLabel(lineStatus(line)) }}
+            </span>
+          </div>
+          <p>Train as {{ sideLabel(line.sideToTrain) }} · {{ line.trainingStats.activeSublineCount }} active sublines</p>
+          <p>
+            Coverage {{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }} ·
+            Mastery {{ masteryLabel(line.trainingStats.passRate) }} ·
+            Weak {{ line.trainingStats.weakSublineCount }} ·
+            Untrained {{ line.trainingStats.untrainedSublineCount }}
+          </p>
+        </div>
+        <div class="line-actions" (click)="$event.stopPropagation()">
+          <a class="compact-action" [routerLink]="['/lines', line.id, 'train']">Train</a>
+          <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
+        </div>
+      </article>
+    }
+  </div>
+}

@@ -19,6 +19,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'library/marathon',
+    title: 'Selected marathon | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lines/pages/training-marathon-page.component').then(
+        (m) => m.TrainingMarathonPageComponent,
+      ),
+  },
+  {
     path: 'accounts',
     title: 'Accounts | Chess Repertoire Trainer',
     canActivate: [authGuard],

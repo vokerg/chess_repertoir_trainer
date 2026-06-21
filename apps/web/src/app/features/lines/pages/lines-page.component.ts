@@ -1,15 +1,17 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { LineHealthTableComponent } from '../components/line-health-table/line-health-table.component';
+import { LineSummary } from '../data-access/lines.models';
 import { LinesPageStore } from '../state/lines-page.store';
 
 @Component({
   selector: 'app-lines-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, PageHeaderComponent],
+  imports: [FormsModule, PageHeaderComponent, LineHealthTableComponent],
   providers: [LinesPageStore],
   templateUrl: './lines-page.component.html',
   styleUrl: './lines-page.component.css',
@@ -29,13 +31,26 @@ export class LinesPageComponent implements OnInit {
     const chapter = this.store.chapter();
     if (!chapter) return [];
     const courseId = this.store.courseId();
+    const marathonAction: PageHeaderAction = this.store.selectedLineCount() > 0
+      ? {
+          id: 'selected-marathon',
+          label: `Train selected (${this.store.selectedLineCount()})`,
+          run: () => this.store.startSelectedLinesMarathon('ALL'),
+        }
+      : { id: 'marathon', label: 'Train chapter', link: ['/chapters', chapter.id, 'marathon'] };
     return [
       {
         id: 'back',
         label: 'Back',
         link: courseId ? ['/courses', courseId] : ['/courses'],
       },
-      { id: 'marathon', label: 'Marathon', link: ['/chapters', chapter.id, 'marathon'] },
+      marathonAction,
+      {
+        id: 'select-all',
+        label: 'Select all',
+        disabled: this.store.lines().length === 0,
+        run: () => this.store.selectAllLines(),
+      },
       ...(!this.store.editingChapterName()
         ? [{ id: 'rename', label: 'Rename', run: () => this.store.startChapterEdit() }]
         : []),
@@ -52,9 +67,7 @@ export class LinesPageComponent implements OnInit {
       .subscribe((chapterId) => this.store.initialize(chapterId));
   }
 
-  protected confirmDeleteLine(lineId: number): void {
-    const line = this.store.lines().find((item) => item.id === lineId);
-    if (!line) return;
+  protected confirmDeleteLine(line: LineSummary): void {
     const confirmed = window.confirm(
       `Delete line "${line.name}" and its full move tree? This cannot be undone.`,
     );

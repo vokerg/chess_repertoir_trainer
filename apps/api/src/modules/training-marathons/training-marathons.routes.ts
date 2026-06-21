@@ -1,13 +1,13 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { TrainingService } from '../../services/trainingService';
-import {
-  getAvailableSublineRows,
-  getWeakSublinePool,
-  pickRandomSubline,
-} from '../courses/sublines.service';
-import { TRAINING_MODE_MARATHON, TRAINING_MODE_WEAK_SUBLINES } from '../training/training.constants';
 import { requireAuth } from '../../auth/request-auth';
+import {
+  buildMarathonNextResponse,
+  filterCandidatesByMode,
+  MarathonCandidateError,
+  pickMarathonSubline,
+  resolveMarathonCandidates,
+} from './training-marathon-candidates.service';
 
 const marathonScopeSchema = z.object({
   type: z.enum(['CHAPTER', 'COURSE']),
@@ -15,9 +15,15 @@ const marathonScopeSchema = z.object({
 });
 
 const nextLineSchema = z.object({
-  scope: marathonScopeSchema,
-  mode: z.enum(['ALL', 'WEAK_SUBLINES']).optional().default('ALL'),
+  scope: marathonScopeSchema.optional(),
+  mode: z
+    .enum(['ALL', 'WEAK_SUBLINES', 'UNTRAINED_SUBLINES', 'MIXED_WEAK_UNTRAINED'])
+    .optional()
+    .default('ALL'),
+  lineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
+  sublineHashes: z.array(z.string().length(64)).optional().default([]),
   recentSublineHashes: z.array(z.string().length(64)).optional().default([]),
+  recentLineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
 });
 
 export default async function trainingMarathonsModule(app: FastifyInstance) {
@@ -29,53 +35,25 @@ export default async function trainingMarathonsModule(app: FastifyInstance) {
       return reply.status(400).send({ error: bodyResult.error.errors });
     }
 
-    const { scope, mode, recentSublineHashes } = bodyResult.data;
+    const requestBody = bodyResult.data;
 
     try {
-      const sublines = await getAvailableSublineRows(auth.userId, scope);
-      if (sublines === null) {
-        return reply.status(404).send({ error: `${scope.type === 'COURSE' ? 'Course' : 'Chapter'} not found.` });
+      const { scope, scopeLabel, sublines } = await resolveMarathonCandidates(auth.userId, requestBody);
+      const pool = await filterCandidatesByMode(auth.userId, sublines, requestBody.mode);
+      if (pool.length === 0) {
+        return reply.status(404).send({ error: `No weak or untrained candidates found for ${scopeLabel}.` });
       }
-      if (sublines.length === 0) {
-        return reply.status(404).send({ error: `No trainable sublines found for this ${scope.type.toLowerCase()}.` });
-      }
-
-      const pool = mode === 'WEAK_SUBLINES'
-        ? await getWeakSublinePool(auth.userId, sublines)
-        : sublines;
-      const subline = pickRandomSubline(pool, recentSublineHashes);
+      const subline = pickMarathonSubline(pool, requestBody.recentSublineHashes);
 
       if (!subline) {
-        return reply.status(404).send({ error: `No trainable sublines found for this ${scope.type.toLowerCase()}.` });
+        return reply.status(404).send({ error: `No trainable sublines found for ${scopeLabel}.` });
       }
 
-      const session = await TrainingService.startForSubline(
-        auth.userId,
-        subline,
-        mode === 'WEAK_SUBLINES' ? TRAINING_MODE_WEAK_SUBLINES : TRAINING_MODE_MARATHON,
-      );
-      return reply.send({
-        scope,
-        mode,
-        line: {
-          id: subline.lineId,
-          name: subline.lineName,
-          sideToTrain: subline.lineSideToTrain,
-          startingFen: subline.lineStartingFen,
-          chapterId: subline.chapterId,
-          chapterName: subline.chapterName,
-          courseId: subline.courseId,
-        },
-        subline: {
-          hash: subline.hash,
-          canonicalKeyVersion: subline.canonicalKeyVersion,
-          moveText: subline.moveText,
-          leafNodeId: subline.leafNodeId,
-          moves: subline.moves,
-        },
-        session,
-      });
+      return reply.send(await buildMarathonNextResponse(auth.userId, scope, requestBody.mode, subline));
     } catch (err: any) {
+      if (err instanceof MarathonCandidateError) {
+        return reply.status(err.statusCode).send({ error: err.message });
+      }
       return reply.status(400).send({ error: err.message });
     }
   });

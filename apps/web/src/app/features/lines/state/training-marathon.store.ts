@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
 import { MarathonMode, MarathonScopeType, RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
+import { MarathonInitializeOptions } from '../helpers/marathon-query.helpers';
 
 @Injectable()
 export class TrainingMarathonStore {
@@ -11,7 +12,9 @@ export class TrainingMarathonStore {
   private requestVersion = 0;
 
   readonly scopeType = signal<MarathonScopeType>('CHAPTER');
-  readonly scopeId = signal(0);
+  readonly scopeId = signal<number | null>(null);
+  readonly selectedLineIds = signal<number[]>([]);
+  readonly selectedSublineHashes = signal<string[]>([]);
   readonly lineId = signal(0);
   readonly lineName = signal('');
   readonly mode = signal<MarathonMode>('ALL');
@@ -37,18 +40,38 @@ export class TrainingMarathonStore {
   readonly completedThisRun = signal(0);
 
   readonly backLink = computed<readonly (string | number)[]>(() =>
-    this.scopeType() === 'COURSE' ? ['/courses', this.scopeId()] : ['/chapters', this.scopeId(), 'lines'],
+    this.scopeId()
+      ? this.scopeType() === 'COURSE'
+        ? ['/courses', this.scopeId()!]
+        : ['/chapters', this.scopeId()!, 'lines']
+      : ['/library'],
   );
-  readonly backLabel = computed(() => (this.scopeType() === 'COURSE' ? 'Course' : 'Chapter lines'));
-  readonly marathonTitle = computed(() => (this.scopeType() === 'COURSE' ? 'Course marathon' : 'Chapter marathon'));
+  readonly backLabel = computed(() => (this.scopeId() ? (this.scopeType() === 'COURSE' ? 'Course' : 'Chapter lines') : 'Study'));
+  readonly marathonTitle = computed(() => {
+    if (this.selectedSublineHashes().length > 0) return 'Selected subline marathon';
+    if (this.selectedLineIds().length > 0) return 'Selected line marathon';
+    return this.scopeType() === 'COURSE' ? 'Course marathon' : 'Chapter marathon';
+  });
+  readonly sourceSummary = computed(() => {
+    if (this.selectedSublineHashes().length > 0) return `${this.selectedSublineHashes().length} selected sublines`;
+    if (this.selectedLineIds().length > 0) return `${this.selectedLineIds().length} selected lines`;
+    return this.scopeType() === 'COURSE' ? 'Whole course' : 'Whole chapter';
+  });
 
-  initialize(scopeType: MarathonScopeType, scopeId: number): void {
-    if (!Number.isFinite(scopeId) || scopeId <= 0) {
+  initialize(options: MarathonInitializeOptions): void {
+    if (!options.scope && !options.lineIds?.length && !options.sublineHashes?.length) {
       this.error.set('Invalid marathon scope.');
       return;
     }
-    this.scopeType.set(scopeType);
-    this.scopeId.set(scopeId);
+    if (options.scope) {
+      this.scopeType.set(options.scope.type);
+      this.scopeId.set(options.scope.id);
+    } else {
+      this.scopeId.set(null);
+    }
+    this.mode.set(options.mode ?? 'ALL');
+    this.selectedLineIds.set(options.lineIds ?? []);
+    this.selectedSublineHashes.set(options.sublineHashes ?? []);
     this.recentSublineHashes.set([]);
     this.completedThisRun.set(0);
     this.countedCompletedSessionIds.clear();
@@ -61,11 +84,13 @@ export class TrainingMarathonStore {
     this.error.set(null);
     try {
       const response = await firstValueFrom(
-        this.api.startNextMarathonLine(
-          { type: this.scopeType(), id: this.scopeId() },
-          this.mode(),
-          this.recentSublineHashes(),
-        ),
+        this.api.startNextMarathonLine({
+          scope: this.scopeId() ? { type: this.scopeType(), id: this.scopeId()! } : undefined,
+          mode: this.mode(),
+          lineIds: this.selectedLineIds(),
+          sublineHashes: this.selectedSublineHashes(),
+          recentSublineHashes: this.recentSublineHashes(),
+        }),
       );
       if (requestVersion !== this.requestVersion) return;
       this.lineId.set(response.line.id);
@@ -122,13 +147,17 @@ export class TrainingMarathonStore {
     this.showExpectedMove.update((value) => !value);
   }
 
-  switchMode(mode: MarathonMode): void {
+  setMode(mode: MarathonMode): void {
     if (this.mode() === mode) return;
     this.mode.set(mode);
     this.recentSublineHashes.set([]);
     this.completedThisRun.set(0);
     this.countedCompletedSessionIds.clear();
     void this.startNextLine();
+  }
+
+  switchMode(mode: MarathonMode): void {
+    this.setMode(mode);
   }
 
   async finishTraining(): Promise<void> {

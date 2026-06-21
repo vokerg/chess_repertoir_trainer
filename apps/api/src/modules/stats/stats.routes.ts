@@ -22,6 +22,18 @@ export default async function statsModule(app: FastifyInstance) {
     }
   });
 
+  app.get('/api/lines/:lineId/sublines/status', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const { lineId } = request.params as { lineId: string };
+    const statuses = await StatsService.lineSublineStatus(auth.userId, parseInt(lineId, 10));
+    if (!statuses) {
+      reply.status(404).send({ error: 'Line not found' });
+    } else {
+      reply.send(statuses);
+    }
+  });
+
   app.get('/api/courses/:courseId/stats', async (request: FastifyRequest, reply: FastifyReply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;

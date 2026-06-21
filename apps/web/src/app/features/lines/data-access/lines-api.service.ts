@@ -15,13 +15,14 @@ import {
   LineTree,
   LineTreeNodeData,
   MarathonMode,
+  MarathonNextRequest,
   TrainingMoveResult,
   TrainingReview,
   TrainingSessionResult,
   UpdateLineNodePayload,
   MarathonNextResponse,
-  MarathonScopeType,
   ActiveTrainingStats,
+  SublineTrainingStatus,
 } from './lines.models';
 
 @Injectable({ providedIn: 'root' })
@@ -115,12 +116,18 @@ export class LinesApiService {
     return this.api.get<TrainingReview>(`/training/${sessionId}/review`);
   }
 
-  startNextMarathonLine(
-    scope: { type: MarathonScopeType; id: number },
-    mode: MarathonMode,
-    recentSublineHashes: string[],
-  ): Observable<MarathonNextResponse> {
-    return this.api.post<MarathonNextResponse>('/training-marathons/next', { scope, mode, recentSublineHashes });
+  getLineSublineStatus(lineId: number): Observable<SublineTrainingStatus[]> {
+    return this.api.get<SublineTrainingStatus[]>(`/lines/${lineId}/sublines/status`);
+  }
+
+  startNextMarathonLine(request: MarathonNextRequest): Observable<MarathonNextResponse> {
+    return this.api.post<MarathonNextResponse>('/training-marathons/next', {
+      scope: request.scope,
+      mode: request.mode,
+      lineIds: request.lineIds ?? [],
+      sublineHashes: request.sublineHashes ?? [],
+      recentSublineHashes: request.recentSublineHashes ?? [],
+    });
   }
 }
 

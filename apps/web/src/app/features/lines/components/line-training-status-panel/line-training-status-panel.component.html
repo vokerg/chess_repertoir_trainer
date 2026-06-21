@@ -1,0 +1,57 @@
+<section class="status-panel">
+  <div class="status-panel-header">
+    <div>
+      <strong>Subline status</strong>
+      <p>Select exact sublines to drill, or train the whole line.</p>
+    </div>
+    <div class="status-panel-actions">
+      <button type="button" class="secondary" (click)="trainWholeLine.emit()">Train line</button>
+      <button type="button" [disabled]="selectedHashes().length === 0" (click)="drillSelected.emit()">Drill selected</button>
+      <a class="compact-action secondary" [routerLink]="['/lines', line().id, 'edit']">Edit tree</a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="status-note">Loading subline status...</p>
+  } @else if (error()) {
+    <p class="status-error">{{ error() }}</p>
+  } @else if (sublines().length === 0) {
+    <div class="empty-state">No active sublines for this line.</div>
+  } @else {
+    <div class="subline-table-wrap">
+      <table class="subline-table">
+        <thead>
+          <tr>
+            <th scope="col">Select</th>
+            <th scope="col">Status</th>
+            <th scope="col">Moves</th>
+            <th scope="col">Recent</th>
+            <th scope="col">Pass rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (subline of sublines(); track subline.hash) {
+            <tr>
+              <td><input type="checkbox" [checked]="isSelected(subline.hash)" (change)="toggleSubline.emit(subline.hash)" /></td>
+              <td>
+                <span
+                  class="status-chip"
+                  [class.new]="subline.status === 'NEW'"
+                  [class.weak]="subline.status === 'WEAK'"
+                  [class.review]="subline.status === 'REVIEW'"
+                  [class.stable]="subline.status === 'STABLE'"
+                  [class.strong]="subline.status === 'STRONG'"
+                >
+                  {{ trainingStatusLabel(subline.status) }}
+                </span>
+              </td>
+              <td class="move-text">{{ subline.moveText }}</td>
+              <td>{{ subline.recentAttempts }}</td>
+              <td>{{ percentLabel(subline.passRate) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

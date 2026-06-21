@@ -1,0 +1,36 @@
+.status-panel {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+}
+.status-panel-header {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.status-panel-header p { margin: 0.25rem 0 0; color: var(--muted); }
+.status-panel-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.subline-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+.subline-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.subline-table th,
+.subline-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--border); text-align: left; }
+.subline-table tr:last-child td { border-bottom: 0; }
+.move-text { font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace; }
+.status-chip {
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  background: rgba(35, 27, 21, 0.08);
+  color: var(--muted-strong);
+  font-weight: 900;
+  white-space: nowrap;
+}
+.status-chip.weak { background: var(--danger-soft); color: var(--danger); }
+.status-chip.review { background: var(--warning-soft); color: var(--warning); }
+.status-chip.stable,
+.status-chip.strong { background: var(--success-soft); color: var(--success); }

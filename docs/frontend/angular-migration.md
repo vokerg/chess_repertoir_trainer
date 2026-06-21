@@ -18,6 +18,12 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Courses: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
 - Games table presentation: external templates/styles, built-in control flow with stable row tracking, signal-based action-menu state, and tested feature-local display helpers.
 - Lab: composition-only shell with isolated experiment components, page-scoped signal stores, typed experiment data access, external templates/styles, and built-in control flow.
+- Study planner refactor: `/library` now uses feature-local presentational components for scope columns, line selection, and the training basket, with selected-line marathon navigation owned by the store.
+- Chapter line health table: chapter lines now use feature-local table/status/action components, store-owned expanded row state, selected line ids, selected subline hashes, and typed subline status data access.
+
+## Accepted feature debt
+
+- Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
 
 ## Migration order
 

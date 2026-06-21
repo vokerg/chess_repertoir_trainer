@@ -1,0 +1,23 @@
+<div class="study-column-header">{{ title() }}</div>
+@if (loading()) {
+  <p class="status-note">Loading...</p>
+} @else if (error()) {
+  <p class="status-error">{{ error() }}</p>
+} @else if (items().length === 0) {
+  <div class="empty-state">{{ emptyText() }}</div>
+} @else {
+  <div class="study-list">
+    @for (item of items(); track item.id) {
+      <button
+        type="button"
+        class="study-row"
+        [class.study-row-active]="item.id === selectedId()"
+        (click)="selectItem.emit(item.id)"
+      >
+        <span class="study-row-title">{{ item.title }}</span>
+        <span class="study-row-meta">{{ item.description }}</span>
+        <span class="study-row-meta strong">{{ item.meta }}</span>
+      </button>
+    }
+  </div>
+}

@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
 import {
@@ -7,12 +8,15 @@ import {
   LineSummary,
   LineTransferTargetChapter,
   LineTransferTargetCourse,
+  MarathonMode,
   RepertoireColor,
+  SublineTrainingStatus,
 } from '../data-access/lines.models';
 
 @Injectable()
 export class LinesPageStore {
   private readonly api = inject(LinesApiService);
+  private readonly router = inject(Router);
 
   private readonly chapterId = signal<number | null>(null);
   private requestVersion = 0;
@@ -22,6 +26,12 @@ export class LinesPageStore {
   readonly chapter = signal<ChapterDetail | null>(null);
   readonly chapterStats = signal<ActiveTrainingStats | null>(null);
   readonly lines = signal<LineSummary[]>([]);
+  readonly selectedLineIds = signal<number[]>([]);
+  readonly expandedLineId = signal<number | null>(null);
+  readonly lineSublineStatusByLineId = signal<Record<number, SublineTrainingStatus[]>>({});
+  readonly loadingSublineStatusLineId = signal<number | null>(null);
+  readonly sublineStatusError = signal<string | null>(null);
+  readonly selectedSublineHashesByLineId = signal<Record<number, string[]>>({});
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly editingChapterName = signal(false);
@@ -67,6 +77,17 @@ export class LinesPageStore {
     this.chapterStats()?.failedCount ?? 0,
   );
   readonly activeSublineCount = computed(() => this.chapterStats()?.activeSublineCount ?? 0);
+  readonly selectedLines = computed(() => {
+    const selectedIds = new Set(this.selectedLineIds());
+    return this.lines().filter((line) => selectedIds.has(line.id));
+  });
+  readonly selectedLineCount = computed(() => this.selectedLines().length);
+  readonly selectedActiveSublineCount = computed(() =>
+    this.selectedLines().reduce((sum, line) => sum + line.trainingStats.activeSublineCount, 0),
+  );
+  readonly canStartSelectedMarathon = computed(() => this.selectedLineCount() > 0);
+  readonly editingLine = computed(() => this.lines().find((line) => line.id === this.editingLineId()) ?? null);
+  readonly transferLine = computed(() => this.lines().find((line) => line.id === this.transferLineId()) ?? null);
 
   initialize(chapterId: number): void {
     if (!Number.isFinite(chapterId) || chapterId <= 0) {
@@ -95,6 +116,7 @@ export class LinesPageStore {
       this.chapter.set(chapter);
       this.courseId.set(chapter.courseId);
       this.lines.set(lines);
+      this.selectedLineIds.update((ids) => ids.filter((id) => lines.some((line) => line.id === id)));
       this.chapterStats.set(stats);
       if (!this.editingChapterName()) this.chapterNameDraft.set(chapter.name);
       this.loading.set(false);
@@ -156,6 +178,82 @@ export class LinesPageStore {
     this.targetChapterId.set(value);
   }
 
+  toggleLineSelection(lineId: number): void {
+    this.selectedLineIds.update((ids) =>
+      ids.includes(lineId) ? ids.filter((id) => id !== lineId) : [...ids, lineId],
+    );
+  }
+
+  selectAllLines(): void {
+    this.selectedLineIds.set(this.lines().map((line) => line.id));
+  }
+
+  clearLineSelection(): void {
+    this.selectedLineIds.set([]);
+  }
+
+  toggleLineExpanded(lineId: number): void {
+    if (this.expandedLineId() === lineId) {
+      this.expandedLineId.set(null);
+      return;
+    }
+    this.expandedLineId.set(lineId);
+    void this.loadLineSublineStatus(lineId);
+  }
+
+  async loadLineSublineStatus(lineId: number): Promise<void> {
+    if (this.lineSublineStatusByLineId()[lineId]) return;
+    this.loadingSublineStatusLineId.set(lineId);
+    this.sublineStatusError.set(null);
+    try {
+      const statuses = await firstValueFrom(this.api.getLineSublineStatus(lineId));
+      this.lineSublineStatusByLineId.update((all) => ({ ...all, [lineId]: statuses }));
+    } catch (error) {
+      this.sublineStatusError.set(readLinesError(error, 'Could not load subline status.'));
+    } finally {
+      this.loadingSublineStatusLineId.set(null);
+    }
+  }
+
+  toggleSublineSelection(lineId: number, hash: string): void {
+    this.selectedSublineHashesByLineId.update((all) => {
+      const current = all[lineId] ?? [];
+      const next = current.includes(hash) ? current.filter((item) => item !== hash) : [...current, hash];
+      return { ...all, [lineId]: next };
+    });
+  }
+
+  startSelectedLinesMarathon(mode: MarathonMode = 'ALL'): void {
+    const lineIds = this.selectedLineIds();
+    if (lineIds.length === 0) return;
+    void this.router.navigate(['/library/marathon'], {
+      queryParams: { lineIds: lineIds.join(','), mode },
+    });
+  }
+
+  drillSelectedSublines(lineId: number): void {
+    const hashes = this.selectedSublineHashesByLineId()[lineId] ?? [];
+    if (hashes.length > 0) {
+      void this.router.navigate(['/library/marathon'], {
+        queryParams: { sublineHashes: hashes.join(','), mode: 'ALL' },
+      });
+      return;
+    }
+    void this.router.navigate(['/library/marathon'], {
+      queryParams: { lineIds: String(lineId), mode: 'WEAK_SUBLINES' },
+    });
+  }
+
+  trainSingleLine(line: LineSummary): void {
+    void this.router.navigate(['/library/marathon'], {
+      queryParams: { lineIds: String(line.id), mode: 'ALL' },
+    });
+  }
+
+  editLineTree(line: LineSummary): void {
+    void this.router.navigate(['/lines', line.id, 'edit']);
+  }
+
   async createLine(): Promise<void> {
     const chapterId = this.chapterId();
     if (!chapterId) return;
@@ -188,6 +286,7 @@ export class LinesPageStore {
     try {
       await firstValueFrom(this.api.deleteLine(line.id));
       this.lines.update((lines) => lines.filter((item) => item.id !== line.id));
+      this.selectedLineIds.update((ids) => ids.filter((id) => id !== line.id));
       if (this.exportLineId() === line.id) {
         this.exportLineId.set(null);
         this.exportedPgn.set('');

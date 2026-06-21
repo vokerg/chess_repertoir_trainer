@@ -5,6 +5,7 @@
         <a [routerLink]="store.backLink()" class="workbench-breadcrumb">&larr; {{ store.backLabel() }}</a>
         <h2 class="workbench-title">{{ store.marathonTitle() }}</h2>
         <div class="workbench-meta">
+          <span>{{ store.sourceSummary() }}</span>
           <span>Current line: {{ store.lineName() }}</span>
           @if (store.sublineMoveText(); as sublineMoveText) {
             <span>{{ sublineMoveText }}</span>
@@ -16,10 +17,16 @@
       </div>
       <nav class="workbench-mode-switch" aria-label="Marathon mode">
         <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'ALL'" (click)="store.switchMode('ALL')">
-          All sublines
+          All
         </button>
         <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'WEAK_SUBLINES'" (click)="store.switchMode('WEAK_SUBLINES')">
-          Weak sublines
+          Weak
+        </button>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'UNTRAINED_SUBLINES'" (click)="store.switchMode('UNTRAINED_SUBLINES')">
+          Untrained
+        </button>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'MIXED_WEAK_UNTRAINED'" (click)="store.switchMode('MIXED_WEAK_UNTRAINED')">
+          Mixed
         </button>
         @if (store.lineId()) {
           <a class="mode-pill" [routerLink]="['/lines', store.lineId(), 'edit']">Edit current tree</a>

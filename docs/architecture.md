@@ -24,7 +24,7 @@ apps/api/src/modules/
   repertoire-coverage/   course review against imported games
   stats/                 summary, line, and course statistics
   training/              line training sessions
-  training-marathons/    marathon next-item workflow
+  training-marathons/    marathon next-item workflow and selected candidate resolution
 ```
 
 The API is only partly migrated to feature modules. These registered routes remain global:
@@ -50,7 +50,16 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - `packages/chess-domain` owns extraction and canonical subline key generation. The canonical key is semantic and includes version, line id, starting FEN, side to train, and ordered UCI moves; it does not depend on node ids or SAN.
 - The API owns SHA-256 hashing, active subline DTOs, and persistence. Sublines are not persisted as source-of-truth rows.
 - Training first selects one active terminal subline, then the training engine follows exactly that path. Opponent moves are auto-played only when they are the next node in the selected subline.
+- Marathon candidate selection supports a course/chapter scope, selected line ids, selected active subline hashes, and recent subline hashes. Scope-only requests preserve whole-course/chapter marathon behavior. Selected lines are ownership checked and, when a scope is also provided, must belong to that scope. Selected subline hashes are filtered against active owned sublines, so inactive hashes remain historical and are not trained.
+- Marathon modes are `ALL`, `WEAK_SUBLINES`, `UNTRAINED_SUBLINES`, and `MIXED_WEAK_UNTRAINED`. Weak and untrained filtering uses the same active subline extraction and last-5 scored-attempt window as stats.
 - Persisted training stats live in `TrainingSublineAttempt`, keyed by user, line, and subline hash. Line, chapter, and course stats count only active hashes and the last 5 scored attempts per active subline; old hashes remain historical but inactive after move-tree edits.
 - `packages/contracts` is scaffolded future work and must not be treated as an active shared dependency.
 
 Frontend conventions and accepted debt are documented under `docs/frontend`.
+
+## Frontend product ownership
+
+- `/library` is the Study planner. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`.
+- `/chapters/:chapterId/lines` is the line/subline training-health diagnosis page. It owns line selection, expandable per-line subline status, and selected-subline drill launch.
+- `/courses/:courseId` stays course/content oriented. Its available-sublines section is a structural repertoire dump, not a user-specific training-health dashboard.
+- `/library/marathon`, `/courses/:courseId/marathon`, and `/chapters/:chapterId/marathon` share the line marathon page. Query parameters can provide `lineIds`, `sublineHashes`, and `mode`; route params provide optional course/chapter scope.

@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { distinctUntilChanged, map } from 'rxjs';
+import { combineLatest, distinctUntilChanged, map } from 'rxjs';
 import { LineTrainingSessionComponent } from '../components/line-training-session.component';
+import { parseMarathonOptions } from '../helpers/marathon-query.helpers';
 import { TrainingMarathonStore } from '../state/training-marathon.store';
 
 @Component({
@@ -19,17 +20,12 @@ export class TrainingMarathonPageComponent implements OnInit {
   protected readonly store = inject(TrainingMarathonStore);
 
   ngOnInit(): void {
-    this.route.paramMap
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
       .pipe(
-        map((params) => {
-          const courseId = Number(params.get('courseId'));
-          return courseId > 0
-            ? { type: 'COURSE' as const, id: courseId }
-            : { type: 'CHAPTER' as const, id: Number(params.get('chapterId')) };
-        }),
-        distinctUntilChanged((previous, current) => previous.type === current.type && previous.id === current.id),
+        map(([params, query]) => parseMarathonOptions(params, query)),
+        distinctUntilChanged((previous, current) => JSON.stringify(previous) === JSON.stringify(current)),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((scope) => this.store.initialize(scope.type, scope.id));
+      .subscribe((options) => this.store.initialize(options));
   }
 }

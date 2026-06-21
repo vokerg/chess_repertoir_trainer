@@ -1,0 +1,74 @@
+<div class="health-table-wrap">
+  <table class="health-table">
+    <thead>
+      <tr>
+        <th scope="col">Select</th>
+        <th scope="col">Line</th>
+        <th scope="col">Side</th>
+        <th scope="col">Active sublines</th>
+        <th scope="col">Coverage</th>
+        <th scope="col">Mastery</th>
+        <th scope="col">Weak</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (line of lines(); track line.id) {
+        <tr>
+          <td><input type="checkbox" [checked]="isSelected(line.id)" (change)="toggleLineSelected.emit(line.id)" /></td>
+          <td>
+            <button type="button" class="line-expand" (click)="toggleExpandedLine.emit(line.id)">
+              {{ expandedLineId() === line.id ? 'Hide' : 'Show' }}
+            </button>
+            <strong>{{ line.name }}</strong>
+            <span
+              class="status-chip"
+              [class.new]="line.trainingStats.status === 'NEW'"
+              [class.weak]="line.trainingStats.status === 'WEAK'"
+              [class.review]="line.trainingStats.status === 'REVIEW'"
+              [class.stable]="line.trainingStats.status === 'STABLE'"
+              [class.strong]="line.trainingStats.status === 'STRONG'"
+            >
+              {{ trainingStatusLabel(line.trainingStats.status) }}
+            </span>
+          </td>
+          <td>{{ line.sideToTrain }}</td>
+          <td>{{ line.trainingStats.activeSublineCount }}</td>
+          <td>{{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }}</td>
+          <td>{{ percentLabel(line.trainingStats.passRate) }}</td>
+          <td>{{ line.trainingStats.weakSublineCount }}</td>
+          <td>
+            <div class="primary-actions">
+              <button type="button" (click)="trainLine.emit(line)">Train</button>
+              <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
+            </div>
+            <app-line-action-menu
+              [line]="line"
+              [deleting]="deletingLineId() === line.id"
+              (rename)="renameLine.emit($event)"
+              (move)="moveLine.emit($event)"
+              (copy)="copyLine.emit($event)"
+              (delete)="deleteLine.emit($event)"
+            />
+          </td>
+        </tr>
+        @if (expandedLineId() === line.id) {
+          <tr class="expanded-row">
+            <td colspan="8">
+              <app-line-training-status-panel
+                [line]="line"
+                [sublines]="sublineStatusByLineId()[line.id] ?? []"
+                [selectedHashes]="selectedSublineHashesByLineId()[line.id] ?? []"
+                [loading]="loadingSublineStatusLineId() === line.id"
+                [error]="sublineStatusError()"
+                (toggleSubline)="toggleSublineHash.emit({ lineId: line.id, hash: $event })"
+                (drillSelected)="drillSelectedSublines.emit(line.id)"
+                (trainWholeLine)="trainLine.emit(line)"
+              />
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

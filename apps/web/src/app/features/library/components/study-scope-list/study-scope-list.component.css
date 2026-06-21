@@ -1,0 +1,30 @@
+.study-column-header {
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.study-list { display: grid; gap: var(--space-2); }
+.study-row {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.68rem;
+  background: rgba(35, 27, 21, 0.045);
+  color: var(--text);
+  text-align: left;
+  box-shadow: none;
+}
+.study-row:hover,
+.study-row-active {
+  border-color: rgba(183, 121, 39, 0.42);
+  background: var(--accent-soft);
+  transform: none;
+}
+.study-row-title { font-weight: 900; }
+.study-row-meta { color: var(--muted); font-size: 0.82rem; line-height: 1.35; }
+.study-row-meta.strong { color: var(--muted-strong); font-weight: 700; }

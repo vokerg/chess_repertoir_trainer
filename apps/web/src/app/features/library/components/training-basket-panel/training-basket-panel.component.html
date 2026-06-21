@@ -1,0 +1,25 @@
+<div class="basket-heading">
+  <span class="eyebrow">Training basket</span>
+  <h3>{{ sourceLabel() }}</h3>
+  <p>Coverage {{ coverageLabel() }} · Mastery {{ masteryLabel() }}</p>
+</div>
+
+<div class="basket-stats">
+  <div><span>Lines</span><strong>{{ lineCount() }}</strong></div>
+  <div><span>Sublines</span><strong>{{ activeSublineCount() }}</strong></div>
+  <div><span>Attempts</span><strong>{{ recentAttempts() }}</strong></div>
+  <div><span>Weak</span><strong>{{ weakSublineCount() }}</strong></div>
+  <div><span>Untrained</span><strong>{{ untrainedSublineCount() }}</strong></div>
+</div>
+
+<div class="mode-group" aria-label="Marathon mode">
+  <button type="button" class="secondary" [class.active]="mode() === 'ALL'" (click)="modeChange.emit('ALL')">All</button>
+  <button type="button" class="secondary" [class.active]="mode() === 'WEAK_SUBLINES'" (click)="modeChange.emit('WEAK_SUBLINES')">Weak</button>
+  <button type="button" class="secondary" [class.active]="mode() === 'UNTRAINED_SUBLINES'" (click)="modeChange.emit('UNTRAINED_SUBLINES')">Untrained</button>
+  <button type="button" class="secondary" [class.active]="mode() === 'MIXED_WEAK_UNTRAINED'" (click)="modeChange.emit('MIXED_WEAK_UNTRAINED')">Mixed</button>
+</div>
+
+<div class="basket-actions">
+  <button type="button" [disabled]="!canStart()" (click)="start.emit()">Start marathon</button>
+  <button type="button" class="secondary" [disabled]="lineCount() === 0" (click)="clear.emit()">Clear lines</button>
+</div>

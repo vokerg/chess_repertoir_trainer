@@ -56,9 +56,20 @@ The move tree is the core model:
 - At trained-side positions, exactly one correct move should exist.
 - At opponent positions, multiple branches may exist.
 
-Available sublines are the current complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple active sublines.
+Available sublines are the current complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple active sublines. The course sublines view is structural/content oriented: it shows repertoire variations, not user-specific training health.
 
 During training, the backend first selects one active terminal subline, identifies it with a deterministic SHA-256 hash of a semantic canonical key, and then follows that exact path. Opponent moves are auto-played only from the selected subline. Training stats are persisted in `TrainingSublineAttempt` per user, line, and subline hash. If a move-tree edit changes or removes a subline, the old hash remains historical but no longer counts in current line, chapter, or course stats.
+
+The Study page at `/library` is the training planner. It keeps the repertoire/section/line columns, adds line checkboxes, and uses a right-side training basket to show exactly what will be trained. The basket can start a selected-line marathon, or fall back to the current section/course when no individual lines are selected.
+
+Marathon training can be started for a whole course, a whole chapter, selected line ids, or selected active subline hashes. Modes are:
+
+- All: train all active candidate sublines.
+- Weak: train the weakest active sublines by recent pass rate.
+- Untrained: train active sublines with no scored attempts in the recent stats window.
+- Mixed: train the union of weak and untrained active sublines.
+
+The chapter lines page is the line/subline diagnosis surface. It shows a compact health table with coverage, mastery, weak counts, expandable per-subline status, and selected-subline drill actions.
 
 The line editor can also show filtered next moves from indexed imported games for the selected repertoire position. Selecting a suggested move adds it through the normal line-editor move persistence flow.
 
@@ -222,6 +233,15 @@ GET /api/courses/:courseId/sublines
 This returns one row per active terminal variation in course chapter and line order. Each row includes `hash` and `canonicalKeyVersion` plus line/chapter metadata, leaf node id, ordered moves, and display move text. The same line may appear multiple times with different move text when its move tree branches.
 
 The hash is derived from a canonical key containing version, line id, starting FEN, side to train, and ordered UCI moves. It intentionally ignores node ids, SAN, timestamps, and sort order.
+
+### Marathon training API
+
+```http
+POST /api/training-marathons/next
+GET /api/lines/:lineId/sublines/status
+```
+
+`POST /api/training-marathons/next` accepts an optional course/chapter `scope`, selected `lineIds`, selected `sublineHashes`, a `mode`, and `recentSublineHashes`. At least one of `scope`, `lineIds`, or `sublineHashes` is required. When both scope and selected lines are provided, the selected lines must belong to that scope. The frontend sends subline recency by hash rather than by line id.
 
 ### Current user and external accounts
 

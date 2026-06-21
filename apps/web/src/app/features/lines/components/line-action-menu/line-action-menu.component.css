@@ -1,0 +1,2 @@
+.action-menu { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.action-menu button { padding: 0.55rem 0.75rem; font-size: 0.82rem; }

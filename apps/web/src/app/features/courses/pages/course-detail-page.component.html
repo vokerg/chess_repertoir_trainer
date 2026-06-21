@@ -87,11 +87,14 @@
       </aside>
     </div>
 
-    <app-sublines-list
-      [items]="store.sublines()"
-      [loading]="store.sublinesLoading()"
-      [error]="store.sublinesError()"
-      title="Available sublines"
-    />
+    <details class="section-card stack sublines-details">
+      <summary><span class="eyebrow">Repertoire structure</span> Available sublines / repertoire structure</summary>
+      <app-sublines-list
+        [items]="store.sublines()"
+        [loading]="store.sublinesLoading()"
+        [error]="store.sublinesError()"
+        title="Available sublines"
+      />
+    </details>
   </section>
 }

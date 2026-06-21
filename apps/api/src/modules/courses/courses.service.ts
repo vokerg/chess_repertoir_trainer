@@ -125,6 +125,10 @@ export const LineService = {
         failedCount: 0,
         passRate: 0,
         activeSublineCount: 0,
+        trainedSublineCount: 0,
+        untrainedSublineCount: 0,
+        weakSublineCount: 0,
+        status: 'NEW',
       },
     }));
   },

@@ -10,6 +10,7 @@ export interface LibraryCourseStats {
   activeSublineCount: number;
   trainedSublineCount: number;
   untrainedSublineCount: number;
+  weakSublineCount: number;
   statsWindowSize: number;
   totalAttempts: number;
   passedCount: number;
@@ -17,6 +18,7 @@ export interface LibraryCourseStats {
   passRate: number;
   failureRate: number;
   attemptPassRate: number | null;
+  status: LibraryLineStatus;
 }
 
 export interface LibraryChapter {
@@ -37,7 +39,12 @@ export interface LibraryLine {
     failedCount: number;
     passRate: number;
     activeSublineCount: number;
+    trainedSublineCount: number;
+    untrainedSublineCount: number;
+    weakSublineCount: number;
+    status: LibraryLineStatus;
   };
 }
 
-export type LibraryLineStatus = 'NEW' | 'WEAK' | 'CLEAN' | 'REVIEW';
+export type LibraryLineStatus = 'NEW' | 'WEAK' | 'REVIEW' | 'STABLE' | 'STRONG';
+export type LibraryMarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';

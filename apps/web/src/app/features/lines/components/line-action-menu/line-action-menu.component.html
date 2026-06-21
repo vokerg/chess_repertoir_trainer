@@ -1,0 +1,8 @@
+<div class="action-menu">
+  <button type="button" class="secondary" (click)="rename.emit(line())">Rename</button>
+  <button type="button" class="secondary" (click)="move.emit(line())">Move</button>
+  <button type="button" class="secondary" (click)="copy.emit(line())">Copy</button>
+  <button type="button" class="secondary danger-text" [disabled]="deleting()" (click)="delete.emit(line())">
+    {{ deleting() ? 'Deleting...' : 'Delete' }}
+  </button>
+</div>

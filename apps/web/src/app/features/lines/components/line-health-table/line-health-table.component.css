@@ -1,0 +1,47 @@
+.health-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.health-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  min-width: 920px;
+}
+.health-table th,
+.health-table td {
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.health-table th {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(35, 27, 21, 0.035);
+}
+.line-expand {
+  margin-right: 0.45rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.78rem;
+}
+.primary-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.45rem; }
+.primary-actions button { padding: 0.55rem 0.75rem; font-size: 0.82rem; }
+.status-chip {
+  margin-left: 0.45rem;
+  border-radius: 999px;
+  padding: 0.24rem 0.5rem;
+  background: rgba(35, 27, 21, 0.08);
+  color: var(--muted-strong);
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.status-chip.weak { background: var(--danger-soft); color: var(--danger); }
+.status-chip.review { background: var(--warning-soft); color: var(--warning); }
+.status-chip.stable,
+.status-chip.strong { background: var(--success-soft); color: var(--success); }
+.expanded-row td { background: rgba(255, 255, 255, 0.36); }

@@ -1,0 +1,26 @@
+:host { display: grid; gap: var(--space-3); }
+.basket-heading { display: grid; gap: var(--space-1); }
+.basket-heading h3 { margin: 0; font-size: 1.35rem; line-height: 1.1; }
+.basket-heading p { margin: 0; color: var(--muted); line-height: 1.4; }
+.basket-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.basket-stats div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.basket-stats span { color: var(--muted); font-size: 0.74rem; font-weight: 800; text-transform: uppercase; }
+.basket-stats strong { font-size: 1.25rem; }
+.mode-group,
+.basket-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.mode-group button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  outline: 1px solid rgba(183, 121, 39, 0.32);
+}

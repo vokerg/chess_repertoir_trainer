@@ -74,8 +74,20 @@
 .pgn-tools {
   display: grid;
   gap: 1rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
+}
+
+details.section-card > summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+details.section-card > summary .eyebrow {
+  margin-bottom: 0;
+  margin-right: 0.45rem;
+}
+
+details.section-card[open] > summary {
+  margin-bottom: 1rem;
 }
 
 .pgn-title {
