@@ -39,6 +39,7 @@
       [error]="store.error()"
       [lastMove]="store.lastMove()"
       [boardPositionVersion]="store.boardPositionVersion()"
+      [goalSubtitle]="store.sublineMoveText() || 'Play the selected active subline from memory. Keep the expected move hidden unless you are stuck.'"
       [secondaryActionLink]="['/library']"
       secondaryActionLabel="Back to library"
       [editActionLink]="['/lines', store.line()?.id, 'edit']"

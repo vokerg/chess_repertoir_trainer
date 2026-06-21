@@ -119,7 +119,7 @@
                 </div>
                 <p class="library-row-meta">Train as {{ sideLabel(line.sideToTrain) }} · {{ startingPositionLabel(line) }}</p>
                 <p class="library-row-meta library-row-counts">
-                  {{ line.totalAttempts }} attempts · {{ line.passedCount }} passed · {{ line.failedCount }} failed
+                  {{ line.trainingStats.activeSublineCount }} active sublines · {{ line.trainingStats.totalAttempts }} recent attempts
                 </p>
                 <div class="library-row-actions">
                   <a class="library-button-link" [routerLink]="['/lines', line.id, 'train']" (click)="$event.stopPropagation()">Train</a>
@@ -139,10 +139,10 @@
             <p class="library-row-meta">Train as {{ sideLabel(line.sideToTrain) }}</p>
           </div>
           <div class="library-stat-grid">
-            <div class="library-mini-stat"><p class="library-mini-stat-label">Attempts</p><p class="library-mini-stat-value">{{ line.totalAttempts }}</p></div>
-            <div class="library-mini-stat"><p class="library-mini-stat-label">Passed</p><p class="library-mini-stat-value">{{ line.passedCount }}</p></div>
-            <div class="library-mini-stat"><p class="library-mini-stat-label">Failed</p><p class="library-mini-stat-value">{{ line.failedCount }}</p></div>
-            <div class="library-mini-stat"><p class="library-mini-stat-label">Failure</p><p class="library-mini-stat-value">{{ failureRate(line) * 100 | number:'1.0-0' }}%</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Active sublines</p><p class="library-mini-stat-value">{{ line.trainingStats.activeSublineCount }}</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Recent attempts</p><p class="library-mini-stat-value">{{ line.trainingStats.totalAttempts }}</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Recent passed</p><p class="library-mini-stat-value">{{ line.trainingStats.passedCount }}</p></div>
+            <div class="library-mini-stat"><p class="library-mini-stat-label">Recent pass rate</p><p class="library-mini-stat-value">{{ line.trainingStats.passRate * 100 | number:'1.0-0' }}%</p></div>
           </div>
           <section class="library-info-card">
             <app-copyable-fen

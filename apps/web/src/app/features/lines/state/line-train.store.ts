@@ -12,6 +12,8 @@ export class LineTrainStore {
 
   readonly line = signal<LineDetail | null>(null);
   readonly sessionId = signal(0);
+  readonly sublineHash = signal<string | null>(null);
+  readonly sublineMoveText = signal<string | null>(null);
   readonly currentFen = signal('');
   readonly expectedMove = signal<string | null | undefined>(undefined);
   readonly feedback = signal<string | null>(null);
@@ -74,6 +76,8 @@ export class LineTrainStore {
       const session = await firstValueFrom(this.api.startLineTraining(lineId));
       if (expectedRequestVersion !== this.requestVersion) return;
       this.sessionId.set(session.sessionId);
+      this.sublineHash.set(session.sublineHash ?? null);
+      this.sublineMoveText.set(session.sublineMoveText ?? null);
       this.currentFen.set(session.fen);
       this.expectedMove.set(session.expectedMove);
       this.completed.set(session.completed ?? false);
@@ -174,6 +178,8 @@ export class LineTrainStore {
 
   private resetSessionState(): void {
     this.sessionId.set(0);
+    this.sublineHash.set(null);
+    this.sublineMoveText.set(null);
     this.currentFen.set('');
     this.expectedMove.set(undefined);
     this.feedback.set(null);

@@ -5,13 +5,18 @@ export interface CourseDetail {
 }
 
 export interface CourseStats {
-  courseId: number;
-  totalLines: number;
+  scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
+  scopeId: number;
+  activeSublineCount: number;
+  trainedSublineCount: number;
+  untrainedSublineCount: number;
+  statsWindowSize: number;
   totalAttempts: number;
   passedCount: number;
   failedCount: number;
   passRate: number;
   failureRate: number;
+  attemptPassRate: number | null;
 }
 
 export interface CourseChapter {

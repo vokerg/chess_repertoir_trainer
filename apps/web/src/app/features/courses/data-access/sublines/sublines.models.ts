@@ -7,6 +7,8 @@ export interface AvailableSublineMove {
 }
 
 export interface AvailableSubline {
+  hash: string;
+  canonicalKeyVersion: number;
   lineId: number;
   lineName: string;
   chapterId: number;

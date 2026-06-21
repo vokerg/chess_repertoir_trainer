@@ -168,8 +168,9 @@ export default async function coursesModule(app: FastifyInstance) {
           description: 'One row per available terminal variation',
           content: { 'application/json': { schema: { type: 'array', items: {
             type: 'object',
-            required: ['lineId', 'lineName', 'chapterId', 'chapterName', 'leafNodeId', 'moves', 'moveText'],
+            required: ['hash', 'canonicalKeyVersion', 'lineId', 'lineName', 'chapterId', 'chapterName', 'leafNodeId', 'moves', 'moveText'],
             properties: {
+              hash: { type: 'string' }, canonicalKeyVersion: { type: 'integer' },
               lineId: { type: 'integer' }, lineName: { type: 'string' },
               chapterId: { type: 'integer' }, chapterName: { type: 'string' },
               leafNodeId: { type: 'integer' }, moveText: { type: 'string' },

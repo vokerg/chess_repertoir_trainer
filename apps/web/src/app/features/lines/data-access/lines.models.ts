@@ -20,15 +20,36 @@ export interface LineTransferTargetChapter {
   sortOrder: number;
 }
 
+export interface ActiveTrainingStats {
+  scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
+  scopeId: number;
+  activeSublineCount: number;
+  trainedSublineCount: number;
+  untrainedSublineCount: number;
+  statsWindowSize: number;
+  totalAttempts: number;
+  passedCount: number;
+  failedCount: number;
+  passRate: number;
+  failureRate: number;
+  attemptPassRate: number | null;
+}
+
+export interface LineRowTrainingStats {
+  totalAttempts: number;
+  passedCount: number;
+  failedCount: number;
+  passRate: number;
+  activeSublineCount: number;
+}
+
 export interface LineSummary {
   id: number;
   chapterId: number;
   name: string;
   sideToTrain: RepertoireColor;
   startingFen: string;
-  passedCount: number;
-  failedCount: number;
-  totalAttempts: number;
+  trainingStats: LineRowTrainingStats;
 }
 
 export interface LineDetail {
@@ -37,9 +58,6 @@ export interface LineDetail {
   name: string;
   sideToTrain: RepertoireColor;
   startingFen: string;
-  passedCount: number;
-  failedCount: number;
-  totalAttempts: number;
 }
 
 export interface LineTreeNodeData {
@@ -57,10 +75,6 @@ export interface LineTreeNodeData {
   isUserMove: boolean;
   isCorrectUserMove: boolean;
   sortOrder: number;
-  timesSeen: number;
-  correctCount: number;
-  incorrectCount: number;
-  currentStreak: number;
   branchLabel?: string | null;
   branchWeight?: number | null;
   comment?: string | null;
@@ -104,6 +118,8 @@ export interface LineTrainingSession {
   fen: string;
   expectedMove?: string | null;
   completed: boolean;
+  sublineHash?: string;
+  sublineMoveText?: string | null;
 }
 
 export interface PlayedTrainingMove {
@@ -164,8 +180,10 @@ export interface CopyLinePayload {
 }
 
 export type MarathonScopeType = 'CHAPTER' | 'COURSE';
+export type MarathonMode = 'ALL' | 'WEAK_SUBLINES';
 
 export interface MarathonNextResponse {
+  mode: MarathonMode;
   line: {
     id: number;
     name: string;
@@ -174,6 +192,19 @@ export interface MarathonNextResponse {
     chapterId: number;
     chapterName: string;
     courseId: number;
+  };
+  subline: {
+    hash: string;
+    canonicalKeyVersion: number;
+    moveText: string;
+    leafNodeId: number;
+    moves: {
+      nodeId: number;
+      moveUci: string;
+      moveSan: string;
+      plyNumber: number;
+      sortOrder: number;
+    }[];
   };
   session: LineTrainingSession;
 }

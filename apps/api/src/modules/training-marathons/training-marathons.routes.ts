@@ -1,9 +1,12 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { TrainingService } from '../../services/trainingService';
-import { extractAvailableSublines } from 'chess-domain';
-import { buildMoveTreeFromNodes } from '../../utils/move-tree-builder';
-import { getChapterLinesWithMoves, getCourseLinesWithMoves } from '../courses/courses.repository.prisma';
+import {
+  getAvailableSublineRows,
+  getWeakSublinePool,
+  pickRandomSubline,
+} from '../courses/sublines.service';
+import { TRAINING_MODE_MARATHON, TRAINING_MODE_WEAK_SUBLINES } from '../training/training.constants';
 import { requireAuth } from '../../auth/request-auth';
 
 const marathonScopeSchema = z.object({
@@ -13,23 +16,9 @@ const marathonScopeSchema = z.object({
 
 const nextLineSchema = z.object({
   scope: marathonScopeSchema,
-  recentLineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
+  mode: z.enum(['ALL', 'WEAK_SUBLINES']).optional().default('ALL'),
+  recentSublineHashes: z.array(z.string().length(64)).optional().default([]),
 });
-
-async function findTrainableLines(userId: number, scope: z.infer<typeof marathonScopeSchema>) {
-  const lines = scope.type === 'CHAPTER'
-    ? await getChapterLinesWithMoves(userId, scope.id)
-    : await getCourseLinesWithMoves(userId, scope.id);
-  return lines.filter((line) =>
-    extractAvailableSublines(buildMoveTreeFromNodes(line.moves, line)).length > 0);
-}
-
-function pickLine<T extends { id: number }>(lines: T[], recentLineIds: number[]) {
-  const recent = new Set(recentLineIds);
-  const fresh = lines.filter((line) => !recent.has(line.id));
-  const candidates = fresh.length > 0 ? fresh : lines;
-  return candidates[Math.floor(Math.random() * candidates.length)];
-}
 
 export default async function trainingMarathonsModule(app: FastifyInstance) {
   app.post('/api/training-marathons/next', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -40,27 +29,49 @@ export default async function trainingMarathonsModule(app: FastifyInstance) {
       return reply.status(400).send({ error: bodyResult.error.errors });
     }
 
-    const { scope, recentLineIds } = bodyResult.data;
+    const { scope, mode, recentSublineHashes } = bodyResult.data;
 
     try {
-      const lines = await findTrainableLines(auth.userId, scope);
-      if (lines.length === 0) {
-        return reply.status(404).send({ error: `No trainable lines found for this ${scope.type.toLowerCase()}.` });
+      const sublines = await getAvailableSublineRows(auth.userId, scope);
+      if (sublines === null) {
+        return reply.status(404).send({ error: `${scope.type === 'COURSE' ? 'Course' : 'Chapter'} not found.` });
+      }
+      if (sublines.length === 0) {
+        return reply.status(404).send({ error: `No trainable sublines found for this ${scope.type.toLowerCase()}.` });
       }
 
-      const line = pickLine(lines, recentLineIds);
-      const session = await TrainingService.start(auth.userId, line.id);
+      const pool = mode === 'WEAK_SUBLINES'
+        ? await getWeakSublinePool(auth.userId, sublines)
+        : sublines;
+      const subline = pickRandomSubline(pool, recentSublineHashes);
 
+      if (!subline) {
+        return reply.status(404).send({ error: `No trainable sublines found for this ${scope.type.toLowerCase()}.` });
+      }
+
+      const session = await TrainingService.startForSubline(
+        auth.userId,
+        subline,
+        mode === 'WEAK_SUBLINES' ? TRAINING_MODE_WEAK_SUBLINES : TRAINING_MODE_MARATHON,
+      );
       return reply.send({
         scope,
+        mode,
         line: {
-          id: line.id,
-          name: line.name,
-          sideToTrain: line.sideToTrain,
-          startingFen: line.startingFen,
-          chapterId: line.chapterId,
-          chapterName: line.chapter.name,
-          courseId: line.chapter.courseId,
+          id: subline.lineId,
+          name: subline.lineName,
+          sideToTrain: subline.lineSideToTrain,
+          startingFen: subline.lineStartingFen,
+          chapterId: subline.chapterId,
+          chapterName: subline.chapterName,
+          courseId: subline.courseId,
+        },
+        subline: {
+          hash: subline.hash,
+          canonicalKeyVersion: subline.canonicalKeyVersion,
+          moveText: subline.moveText,
+          leafNodeId: subline.leafNodeId,
+          moves: subline.moves,
         },
         session,
       });

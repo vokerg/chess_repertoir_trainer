@@ -153,7 +153,7 @@ export class LibraryBrowserStore {
   courseMeta(course: LibraryCourse): string {
     const stats = this.courseStatsById()[course.id];
     const sections = course.id === this.selectedCourseId() ? `${this.chapters().length} sections` : 'Open for sections';
-    return `${sections} · ${stats ? `${stats.totalLines} lines` : 'Lines loading'}`;
+    return `${sections} · ${stats ? `${stats.activeSublineCount} active sublines` : 'Stats loading'}`;
   }
 
   chapterLineMeta(chapter: LibraryChapter): string {

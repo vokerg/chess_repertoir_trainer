@@ -4,7 +4,6 @@ import {
   getLegalMoves,
   getCorrectUserMove,
   getOpponentBranches,
-  chooseRandomOpponentBranch,
 } from '../src/move-tree';
 import { MoveTreeNode } from '../src/types';
 
@@ -25,10 +24,6 @@ function makeNode(overrides: Partial<MoveTreeNode['node']>): MoveTreeNode {
       isUserMove: true,
       isCorrectUserMove: true,
       sortOrder: 0,
-      timesSeen: 0,
-      correctCount: 0,
-      incorrectCount: 0,
-      currentStreak: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
       ...overrides,
@@ -75,7 +70,5 @@ describe('move-tree helpers', () => {
     expect(correct).toBe(userNode);
     const branches = getOpponentBranches(tree.root);
     expect(branches).toContain(opponentNode);
-    const random = chooseRandomOpponentBranch(branches);
-    expect(branches).toContain(random!);
   });
 });

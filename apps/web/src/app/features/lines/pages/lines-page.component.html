@@ -89,16 +89,16 @@
 
                 <div class="line-stat-grid">
                   <div class="metric-card">
-                    <p class="metric-label">Attempts</p>
-                    <p class="metric-value line-stat-value">{{ line.totalAttempts }}</p>
+                    <p class="metric-label">Recent attempts</p>
+                    <p class="metric-value line-stat-value">{{ line.trainingStats.totalAttempts }}</p>
                   </div>
                   <div class="metric-card">
-                    <p class="metric-label">Passed</p>
-                    <p class="metric-value line-stat-value line-stat-success">{{ line.passedCount }}</p>
+                    <p class="metric-label">Active sublines</p>
+                    <p class="metric-value line-stat-value line-stat-success">{{ line.trainingStats.activeSublineCount }}</p>
                   </div>
                   <div class="metric-card">
-                    <p class="metric-label">Failed</p>
-                    <p class="metric-value line-stat-value line-stat-danger">{{ line.failedCount }}</p>
+                    <p class="metric-label">Recent pass rate</p>
+                    <p class="metric-value line-stat-value line-stat-danger">{{ (line.trainingStats.passRate * 100).toFixed(0) }}%</p>
                   </div>
                 </div>
 

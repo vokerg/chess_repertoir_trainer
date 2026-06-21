@@ -21,9 +21,9 @@ export class LinesPageComponent implements OnInit {
   protected readonly store = inject(LinesPageStore);
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'lines', label: 'Lines', value: this.store.lines().length },
-    { id: 'attempts', label: 'Attempts', value: this.store.totalAttempts() },
-    { id: 'passes', label: 'Passes', value: this.store.totalPassed() },
-    { id: 'fails', label: 'Fails', value: this.store.totalFailed() },
+    { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
+    { id: 'attempts', label: 'Recent attempts', value: this.store.totalAttempts() },
+    { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%` },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const chapter = this.store.chapter();

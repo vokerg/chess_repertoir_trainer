@@ -21,6 +21,12 @@ import { ChessSoundService } from '../services/chess-sound.service';
 
 type BoardSide = 'WHITE' | 'BLACK';
 type BoardArrowShape = { orig: Key; dest: Key; brush: string };
+type VerboseMove = {
+  from: string;
+  to: string;
+  captured?: string;
+  promotion?: string;
+};
 
 @Component({
   selector: 'app-chessground-board',
@@ -86,6 +92,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   ngOnChanges(changes: SimpleChanges) {
     if (!this.ground) return;
     if (changes['fen'] || changes['side'] || changes['positionVersion']) {
+      this.playExternalMoveSound(changes);
       this.game = this.createGame(this.fen);
       this.pendingMove = null;
       this.ground.set(this.config());
@@ -162,7 +169,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   private legalDests(): Map<Key, Key[]> {
     const dests = new Map<Key, Key[]>();
-    for (const move of this.game.moves({ verbose: true }) as any[]) {
+    for (const move of this.game.moves({ verbose: true }) as VerboseMove[]) {
       const from = move.from as Key;
       const to = move.to as Key;
       const existing = dests.get(from) ?? [];
@@ -175,7 +182,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   private handleMove(from: Key, to: Key) {
     if (this.pendingMove) return;
 
-    const legalMoves = this.game.moves({ verbose: true }) as any[];
+    const legalMoves = this.game.moves({ verbose: true }) as VerboseMove[];
     const matching = legalMoves.find((m) => m.from === from && m.to === to);
     if (!matching) {
       this.ground?.set(this.config());
@@ -189,5 +196,33 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
     if (this.sound) this.sounds.play(matching.captured ? 'capture' : 'move');
     this.ground?.set(this.config());
     this.move.emit(uci);
+  }
+
+  private playExternalMoveSound(changes: SimpleChanges): void {
+    if (!this.sound || !changes['fen'] || changes['fen'].firstChange) return;
+    if (!this.lastMove || changes['fen'].currentValue === changes['fen'].previousValue) return;
+
+    const lastMoveUci = `${this.lastMove.from}${this.lastMove.to}`;
+    if (this.pendingMove && lastMoveUci === this.pendingMove.substring(0, 4)) return;
+
+    const legalMoves = this.game.moves({ verbose: true }) as VerboseMove[];
+    const matching = legalMoves.find(
+      (move) => move.from === this.lastMove?.from && move.to === this.lastMove?.to,
+    );
+    if (!matching) return;
+
+    const preview = this.createGame(this.game.fen());
+    try {
+      preview.move({
+        from: matching.from,
+        to: matching.to,
+        promotion: matching.promotion || 'q',
+      });
+    } catch {
+      return;
+    }
+
+    if (preview.fen() !== this.createGame(this.fen).fen()) return;
+    this.sounds.play(matching.captured ? 'capture' : 'move');
   }
 }

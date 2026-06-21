@@ -153,10 +153,6 @@ export async function copyLineToChapter(
         startingFen: source.startingFen,
         tags: source.tags,
         notes: source.notes,
-        passedCount: 0,
-        failedCount: 0,
-        totalAttempts: 0,
-        lastTrainedAt: null,
       },
     });
 
@@ -193,11 +189,6 @@ export async function copyLineToChapter(
             branchLabel: sourceNode.branchLabel,
             branchWeight: sourceNode.branchWeight,
             sortOrder: sourceNode.sortOrder,
-            timesSeen: 0,
-            correctCount: 0,
-            incorrectCount: 0,
-            currentStreak: 0,
-            lastSeenAt: null,
           },
         });
         newNodeIds.set(sourceNode.id, copiedNode.id);

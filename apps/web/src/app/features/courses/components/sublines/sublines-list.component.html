@@ -21,7 +21,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (item of items(); track item.lineId + '-' + item.leafNodeId) {
+          @for (item of items(); track item.hash) {
             <tr>
               <td class="line-name">{{ item.lineName }}</td>
               <td class="move-text">{{ item.moveText }}</td>

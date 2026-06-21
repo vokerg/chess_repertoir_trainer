@@ -23,10 +23,6 @@ describe('line tree helpers', () => {
       isUserMove: false,
       isCorrectUserMove: false,
       sortOrder: 0,
-      timesSeen: 0,
-      correctCount: 0,
-      incorrectCount: 0,
-      currentStreak: 0,
     },
     children: [
       {
@@ -45,10 +41,6 @@ describe('line tree helpers', () => {
           isUserMove: true,
           isCorrectUserMove: true,
           sortOrder: 0,
-          timesSeen: 0,
-          correctCount: 0,
-          incorrectCount: 0,
-          currentStreak: 0,
         },
         children: [
           {
@@ -67,10 +59,6 @@ describe('line tree helpers', () => {
               isUserMove: false,
               isCorrectUserMove: false,
               sortOrder: 0,
-              timesSeen: 0,
-              correctCount: 0,
-              incorrectCount: 0,
-              currentStreak: 0,
             },
             children: [],
           },

@@ -5,13 +5,18 @@ export interface LibraryCourse {
 }
 
 export interface LibraryCourseStats {
-  courseId: number;
-  totalLines: number;
+  scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
+  scopeId: number;
+  activeSublineCount: number;
+  trainedSublineCount: number;
+  untrainedSublineCount: number;
+  statsWindowSize: number;
   totalAttempts: number;
   passedCount: number;
   failedCount: number;
   passRate: number;
   failureRate: number;
+  attemptPassRate: number | null;
 }
 
 export interface LibraryChapter {
@@ -26,9 +31,13 @@ export interface LibraryLine {
   name: string;
   sideToTrain: 'WHITE' | 'BLACK';
   startingFen: string;
-  passedCount: number;
-  failedCount: number;
-  totalAttempts: number;
+  trainingStats: {
+    totalAttempts: number;
+    passedCount: number;
+    failedCount: number;
+    passRate: number;
+    activeSublineCount: number;
+  };
 }
 
 export type LibraryLineStatus = 'NEW' | 'WEAK' | 'CLEAN' | 'REVIEW';

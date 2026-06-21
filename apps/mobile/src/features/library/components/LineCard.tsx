@@ -20,7 +20,7 @@ export function LineCard({ line, onDelete, onExport }: { line: LineDto; onDelete
             Train as {line.sideToTrain === 'WHITE' ? 'White' : 'Black'} · {line.startingFen === 'startpos' ? 'startpos' : 'custom FEN'}
           </Text>
           <Text style={styles.meta}>
-            {line.totalAttempts ?? 0} attempts · {line.passedCount ?? 0} passed · {line.failedCount ?? 0} failed
+            {line.trainingStats?.activeSublineCount ?? 0} active sublines · {line.trainingStats?.totalAttempts ?? 0} recent attempts
           </Text>
         </View>
         <Pill label={status} tone={status === 'WEAK' ? 'danger' : status === 'CLEAN' ? 'success' : 'neutral'} />

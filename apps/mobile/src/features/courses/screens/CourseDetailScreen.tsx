@@ -58,8 +58,8 @@ export function CourseDetailScreen() {
       <Header title={course.data?.name ?? 'Course'} subtitle={course.data?.description} />
       {stats.data ? (
         <View style={styles.metrics}>
-          <Metric label="Lines" value={String(stats.data.totalLines)} />
-          <Metric label="Attempts" value={String(stats.data.totalAttempts)} />
+          <Metric label="Active sublines" value={String(stats.data.activeSublineCount)} />
+          <Metric label="Recent attempts" value={String(stats.data.totalAttempts)} />
           <Metric label="Pass rate" value={`${Math.round(stats.data.passRate ?? 0)}%`} />
         </View>
       ) : null}

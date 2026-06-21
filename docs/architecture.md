@@ -46,8 +46,11 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - `apps/api` owns HTTP routes, application workflows, provider integration, and Prisma access.
 - `packages/chess-domain` stays framework- and infrastructure-free.
 - Reusable repertoire graph, normalized-FEN matching, conflict detection, and reintegration planning live in `packages/chess-domain`; API modules own persistence and transactions.
-- Available subline extraction lives in `packages/chess-domain/src/sublines.ts`. API consumers build `MoveTree` instances and call this shared extractor for course display, marathon trainability, and line-training validation.
-- Subline extraction is separate from the training engine. Training continues to walk the move tree dynamically, including random opponent branches, rather than preselecting a fixed terminal variation.
+- Available subline extraction lives in `packages/chess-domain/src/sublines.ts`. It is the source for the course sublines widget, line-training candidate selection, marathon candidate selection, weak-subline candidate selection, and active line/chapter/course stats scopes.
+- `packages/chess-domain` owns extraction and canonical subline key generation. The canonical key is semantic and includes version, line id, starting FEN, side to train, and ordered UCI moves; it does not depend on node ids or SAN.
+- The API owns SHA-256 hashing, active subline DTOs, and persistence. Sublines are not persisted as source-of-truth rows.
+- Training first selects one active terminal subline, then the training engine follows exactly that path. Opponent moves are auto-played only when they are the next node in the selected subline.
+- Persisted training stats live in `TrainingSublineAttempt`, keyed by user, line, and subline hash. Line, chapter, and course stats count only active hashes and the last 5 scored attempts per active subline; old hashes remain historical but inactive after move-tree edits.
 - `packages/contracts` is scaffolded future work and must not be treated as an active shared dependency.
 
 Frontend conventions and accepted debt are documented under `docs/frontend`.

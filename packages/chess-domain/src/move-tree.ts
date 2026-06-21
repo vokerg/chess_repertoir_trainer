@@ -24,10 +24,6 @@ export function createInitialTreeState(startingFen: string, sideToTrain: Color):
     isUserMove: false,
     isCorrectUserMove: false,
     sortOrder: 0,
-    timesSeen: 0,
-    correctCount: 0,
-    incorrectCount: 0,
-    currentStreak: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -81,53 +77,12 @@ export function getOpponentBranches(parent: MoveTreeNode): MoveTreeNode[] {
 }
 
 /**
- * Choose a random opponent branch from a list of children. This uses
- * Math.random() to pick uniformly at random. If no opponent branches are
- * available, undefined is returned.
- */
-export function chooseRandomOpponentBranch(children: MoveTreeNode[]): MoveTreeNode | undefined {
-  if (children.length === 0) return undefined;
-  const index = Math.floor(Math.random() * children.length);
-  return children[index];
-}
-
-/**
- * Choose a random trained-side continuation from the list of valid user
- * moves. If no moves are available, undefined is returned.
- */
-export function chooseRandomUserMove(children: MoveTreeNode[]): MoveTreeNode | undefined {
-  if (children.length === 0) return undefined;
-  const index = Math.floor(Math.random() * children.length);
-  return children[index];
-}
-
-/**
  * Evaluate whether the user played the correct move. The expected move is
  * provided in UCI notation; the played move is also in UCI notation. A
  * match indicates a correct move.
  */
 export function evaluateTrainingMove(expectedMoveUci: string | undefined, playedMoveUci: string): boolean {
   return expectedMoveUci !== undefined && expectedMoveUci === playedMoveUci;
-}
-
-/**
- * Apply the result of a training attempt to a move node. Updates the
- * timesSeen, correctCount, incorrectCount, currentStreak, and lastSeenAt
- * properties. Returns the updated node object (a new object is returned
- * rather than mutating the original for functional purity). Note that the
- * returned node must be persisted by the caller.
- */
-export function applyTrainingResult(node: MoveNode, wasCorrect: boolean): MoveNode {
-  const now = new Date();
-  return {
-    ...node,
-    timesSeen: node.timesSeen + 1,
-    correctCount: node.correctCount + (wasCorrect ? 1 : 0),
-    incorrectCount: node.incorrectCount + (wasCorrect ? 0 : 1),
-    currentStreak: wasCorrect ? node.currentStreak + 1 : 0,
-    lastSeenAt: now,
-    updatedAt: now,
-  };
 }
 
 /**

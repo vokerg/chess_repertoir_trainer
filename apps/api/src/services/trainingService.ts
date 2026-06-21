@@ -1,11 +1,16 @@
 import {
-  startTraining,
+  startSublineTraining,
   TrainingState,
   playUserMove,
   getExpectedUserMoveUci,
-  extractAvailableSublines,
 } from 'chess-domain';
 import { LineService } from '../modules/courses/courses.service';
+import {
+  HashedAvailableSublineDto,
+  getAvailableSublineRows,
+  pickRandomSubline,
+} from '../modules/courses/sublines.service';
+import { TRAINING_MODE_LINE } from '../modules/training/training.constants';
 import prisma from '../prisma';
 
 /**
@@ -13,7 +18,7 @@ import prisma from '../prisma';
  * holds the TrainingState from chess-domain. This map is not persisted across server restarts,
  * which is acceptable for v1 as sessions are short-lived.
  */
-const activeSessions: Map<number, { state: TrainingState }> = new Map();
+const activeSessions: Map<number, { state: TrainingState; subline: HashedAvailableSublineDto }> = new Map();
 
 async function getOwnedSession(userId: number, sessionId: number) {
   return prisma.trainingSession.findFirst({
@@ -50,16 +55,6 @@ async function recordMissedExpectedMove(userId: number, sessionId: number, state
     },
   });
 
-  await prisma.moveNode.update({
-    where: { id: expectedChild.node.id },
-    data: {
-      timesSeen: { increment: 1 },
-      incorrectCount: { increment: 1 },
-      currentStreak: 0,
-      lastSeenAt: new Date(),
-    },
-  });
-
   await prisma.trainingSession.update({
     where: { id: sessionId },
     data: {
@@ -86,18 +81,77 @@ async function finalizeSession(userId: number, sessionId: number) {
     },
   });
 
-  await prisma.line.update({
-    where: { id: sessionRow.lineId },
+  await prisma.trainingSublineAttempt.updateMany({
+    where: { userId, trainingSessionId: sessionId },
     data: {
-      totalAttempts: { increment: 1 },
-      passedCount: { increment: resultStatus === 'PASSED' ? 1 : 0 },
-      failedCount: { increment: resultStatus === 'PASSED' ? 0 : 1 },
-      lastTrainedAt: new Date(),
+      result: resultStatus,
+      passed: resultStatus === 'PASSED',
+      mistakesCount: sessionRow.mistakesCount,
+      totalExpectedMoves: sessionRow.totalExpectedMoves,
+      correctMoves: sessionRow.correctMoves,
+      accuracy: accuracy ?? undefined,
+      completedAt: new Date(),
     },
   });
 
   activeSessions.delete(sessionId);
   return updated;
+}
+
+async function startForSubline(
+  userId: number,
+  subline: HashedAvailableSublineDto,
+  trainingMode: string,
+) {
+  const tree = await LineService.getMoveTree(userId, subline.lineId);
+  if (!tree) throw new Error('Line not found');
+
+  const trainingState = startSublineTraining(tree, {
+    leafNodeId: subline.leafNodeId,
+    moves: subline.moves,
+  });
+  const session = await prisma.trainingSession.create({
+    data: {
+      userId,
+      lineId: subline.lineId,
+      result: 'IN_PROGRESS',
+      mistakesCount: 0,
+      totalExpectedMoves: 0,
+      correctMoves: 0,
+    },
+  });
+
+  await prisma.trainingSublineAttempt.create({
+    data: {
+      userId,
+      lineId: subline.lineId,
+      trainingSessionId: session.id,
+      sublineHash: subline.hash,
+      sublineKeyVersion: subline.canonicalKeyVersion,
+      movesJson: subline.moves,
+      moveText: subline.moveText,
+      trainingMode,
+      result: 'IN_PROGRESS',
+      mistakesCount: 0,
+      totalExpectedMoves: 0,
+      correctMoves: 0,
+    },
+  });
+
+  activeSessions.set(session.id, { state: trainingState, subline });
+
+  if (trainingState.completed) {
+    await finalizeSession(userId, session.id);
+  }
+
+  return {
+    sessionId: session.id,
+    fen: trainingState.current.node.fenAfter,
+    expectedMove: getExpectedUserMoveUci(trainingState),
+    completed: trainingState.completed,
+    sublineHash: subline.hash,
+    sublineMoveText: subline.moveText,
+  };
 }
 
 export const TrainingService = {
@@ -106,35 +160,17 @@ export const TrainingService = {
    * in the database, and returns initial data including the session ID and current board FEN.
    */
   start: async (userId: number, lineId: number) => {
-    const tree = await LineService.getMoveTree(userId, lineId);
-    if (!tree) throw new Error('Line not found');
-    if (extractAvailableSublines(tree).length === 0) {
+    const sublines = await getAvailableSublineRows(userId, { type: 'LINE', id: lineId });
+    if (sublines === null) throw new Error('Line not found');
+    const subline = pickRandomSubline(sublines);
+    if (!subline) {
       throw new Error('Line has no available sublines to train.');
     }
 
-    const trainingState = startTraining(tree);
-    const session = await prisma.trainingSession.create({
-      data: {
-        userId,
-        lineId,
-        result: 'IN_PROGRESS',
-        mistakesCount: 0,
-        totalExpectedMoves: 0,
-        correctMoves: 0,
-      },
-    });
-
-    activeSessions.set(session.id, { state: trainingState });
-
-    const initialFen = trainingState.current.node.fenAfter;
-    const expectedMove = getExpectedUserMoveUci(trainingState);
-    return {
-      sessionId: session.id,
-      fen: initialFen,
-      expectedMove,
-      completed: trainingState.completed,
-    };
+    return startForSubline(userId, subline, TRAINING_MODE_LINE);
   },
+
+  startForSubline,
 
   /**
    * Play a user move in an active session. Each attempt is counted exactly once
@@ -170,17 +206,6 @@ export const TrainingService = {
         expectedMoveUci: expectedMove,
         playedMoveUci: moveUci,
         wasCorrect,
-      },
-    });
-
-    await prisma.moveNode.update({
-      where: { id: expectedChild.node.id },
-      data: {
-        timesSeen: { increment: 1 },
-        correctCount: { increment: wasCorrect ? 1 : 0 },
-        incorrectCount: { increment: wasCorrect ? 0 : 1 },
-        currentStreak: wasCorrect ? { increment: 1 } : 0,
-        lastSeenAt: new Date(),
       },
     });
 
@@ -223,7 +248,9 @@ export const TrainingService = {
     await requireOwnedSession(userId, sessionId);
     const sessionMeta = activeSessions.get(sessionId);
     if (!sessionMeta) {
-      return getOwnedSession(userId, sessionId);
+      const session = await getOwnedSession(userId, sessionId);
+      if (session?.result === 'IN_PROGRESS') return finalizeSession(userId, sessionId);
+      return session;
     }
 
     if (!sessionMeta.state.completed) {
@@ -241,13 +268,23 @@ export const TrainingService = {
   abandon: async (userId: number, sessionId: number) => {
     await requireOwnedSession(userId, sessionId);
     activeSessions.delete(sessionId);
-    return prisma.trainingSession.update({
+    const completedAt = new Date();
+    const session = await prisma.trainingSession.update({
       where: { id: sessionId },
       data: {
-        completedAt: new Date(),
+        completedAt,
         result: 'ABANDONED',
       },
     });
+    await prisma.trainingSublineAttempt.updateMany({
+      where: { userId, trainingSessionId: sessionId },
+      data: {
+        result: 'ABANDONED',
+        passed: null,
+        completedAt,
+      },
+    });
+    return session;
   },
 
   getSession: async (userId: number, sessionId: number) => getOwnedSession(userId, sessionId),
@@ -299,6 +336,14 @@ export const TrainingService = {
           id: true,
           name: true,
           chapter: { select: { id: true, name: true, courseId: true } },
+        },
+      },
+      sublineAttempt: {
+        select: {
+          sublineHash: true,
+          sublineKeyVersion: true,
+          moveText: true,
+          trainingMode: true,
         },
       },
     },

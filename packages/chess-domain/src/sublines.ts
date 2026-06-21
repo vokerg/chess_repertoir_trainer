@@ -1,5 +1,7 @@
 import { MoveTree, MoveTreeNode } from './types';
 
+export const SUBLINE_KEY_VERSION = 1;
+
 export interface AvailableSublineMove {
   nodeId: number;
   moveUci: string;
@@ -11,6 +13,23 @@ export interface AvailableSublineMove {
 export interface AvailableSubline {
   leafNodeId: number;
   moves: AvailableSublineMove[];
+}
+
+export interface SublineIdentityInput {
+  lineId: number;
+  startingFen: string;
+  sideToTrain: 'WHITE' | 'BLACK';
+  moves: Pick<AvailableSublineMove, 'moveUci'>[];
+}
+
+export function buildSublineCanonicalKey(input: SublineIdentityInput): string {
+  return [
+    `subline:v${SUBLINE_KEY_VERSION}`,
+    `lineId:${input.lineId}`,
+    `startingFen:${input.startingFen}`,
+    `sideToTrain:${input.sideToTrain}`,
+    `moves:${input.moves.map((move) => move.moveUci).join(' ')}`,
+  ].join('\n');
 }
 
 function compareNodes(a: MoveTreeNode, b: MoveTreeNode): number {

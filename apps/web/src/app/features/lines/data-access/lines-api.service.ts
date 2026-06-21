@@ -14,12 +14,14 @@ import {
   LineTrainingSession,
   LineTree,
   LineTreeNodeData,
+  MarathonMode,
   TrainingMoveResult,
   TrainingReview,
   TrainingSessionResult,
   UpdateLineNodePayload,
   MarathonNextResponse,
   MarathonScopeType,
+  ActiveTrainingStats,
 } from './lines.models';
 
 @Injectable({ providedIn: 'root' })
@@ -28,6 +30,10 @@ export class LinesApiService {
 
   getChapter(chapterId: number): Observable<ChapterDetail> {
     return this.api.get<ChapterDetail>(`/chapters/${chapterId}`);
+  }
+
+  getChapterStats(chapterId: number): Observable<ActiveTrainingStats> {
+    return this.api.get<ActiveTrainingStats>(`/chapters/${chapterId}/stats`);
   }
 
   updateChapter(chapterId: number, body: { name: string }): Observable<ChapterDetail> {
@@ -111,9 +117,10 @@ export class LinesApiService {
 
   startNextMarathonLine(
     scope: { type: MarathonScopeType; id: number },
-    recentLineIds: number[],
+    mode: MarathonMode,
+    recentSublineHashes: string[],
   ): Observable<MarathonNextResponse> {
-    return this.api.post<MarathonNextResponse>('/training-marathons/next', { scope, recentLineIds });
+    return this.api.post<MarathonNextResponse>('/training-marathons/next', { scope, mode, recentSublineHashes });
   }
 }
 

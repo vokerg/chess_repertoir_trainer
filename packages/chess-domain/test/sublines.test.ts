@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialTreeState } from '../src/move-tree';
-import { extractAvailableSublines } from '../src/sublines';
+import { buildSublineCanonicalKey, extractAvailableSublines } from '../src/sublines';
 import { MoveTreeNode } from '../src/types';
 
 function makeNode(id: number, parentId: number | null, plyNumber: number, moveSan: string,
@@ -21,10 +21,6 @@ function makeNode(id: number, parentId: number | null, plyNumber: number, moveSa
       isUserMove: plyNumber % 2 === 1,
       isCorrectUserMove: plyNumber % 2 === 1,
       sortOrder,
-      timesSeen: 0,
-      correctCount: 0,
-      incorrectCount: 0,
-      currentStreak: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -76,5 +72,63 @@ describe('extractAvailableSublines', () => {
       'e4 later-ply',
       'e4 c5 Nf3',
     ]);
+  });
+});
+
+describe('buildSublineCanonicalKey', () => {
+  const base = {
+    lineId: 42,
+    startingFen: 'startpos',
+    sideToTrain: 'WHITE' as const,
+    moves: [
+      { nodeId: 1, moveUci: 'e2e4', moveSan: 'e4', plyNumber: 1, sortOrder: 0 },
+      { nodeId: 2, moveUci: 'e7e5', moveSan: 'e5', plyNumber: 2, sortOrder: 0 },
+    ],
+  };
+
+  it('ignores node ids, SAN, and ordering metadata', () => {
+    expect(buildSublineCanonicalKey(base)).toBe(buildSublineCanonicalKey({
+      ...base,
+      moves: [
+        { nodeId: 99, moveUci: 'e2e4', moveSan: 'Pawn thing', plyNumber: 8, sortOrder: 4 },
+        { nodeId: 100, moveUci: 'e7e5', moveSan: 'Other thing', plyNumber: 9, sortOrder: 5 },
+      ],
+    }));
+  });
+
+  it('changes when the UCI sequence changes', () => {
+    expect(buildSublineCanonicalKey(base)).not.toBe(buildSublineCanonicalKey({
+      ...base,
+      moves: [
+        { nodeId: 1, moveUci: 'd2d4', moveSan: 'd4', plyNumber: 1, sortOrder: 0 },
+        { nodeId: 2, moveUci: 'e7e5', moveSan: 'e5', plyNumber: 2, sortOrder: 0 },
+      ],
+    }));
+  });
+
+  it('changes when line id, starting FEN, or side to train changes', () => {
+    const canonical = buildSublineCanonicalKey(base);
+    expect(canonical).not.toBe(buildSublineCanonicalKey({ ...base, lineId: 43 }));
+    expect(canonical).not.toBe(buildSublineCanonicalKey({ ...base, startingFen: '8/8/8/8/8/8/8/8 w - - 0 1' }));
+    expect(canonical).not.toBe(buildSublineCanonicalKey({ ...base, sideToTrain: 'BLACK' }));
+  });
+
+  it('does not include the synthetic root in moves or identity', () => {
+    const tree = createInitialTreeState('startpos', 'WHITE');
+    const e4 = makeNode(1, null, 1, 'e4');
+    tree.root.children.push(e4);
+
+    const [subline] = extractAvailableSublines(tree);
+    const canonical = buildSublineCanonicalKey({
+      lineId: 1,
+      startingFen: 'startpos',
+      sideToTrain: 'WHITE',
+      moves: subline.moves,
+    });
+
+    expect(subline.moves.map((move) => move.nodeId)).toEqual([1]);
+    expect(canonical).toContain('moves:move-1');
+    expect(canonical).not.toContain('moves: ');
+    expect(canonical).not.toContain('nodeId:0');
   });
 });

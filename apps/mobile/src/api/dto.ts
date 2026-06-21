@@ -11,13 +11,18 @@ export interface CourseDto {
 }
 
 export interface CourseStatsDto {
-  courseId: number;
-  totalLines: number;
+  scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
+  scopeId: number;
+  activeSublineCount: number;
+  trainedSublineCount: number;
+  untrainedSublineCount: number;
+  statsWindowSize: number;
   totalAttempts: number;
   passedCount: number;
   failedCount: number;
   passRate: number;
   failureRate: number;
+  attemptPassRate: number | null;
 }
 
 export interface ChapterDto {
@@ -33,9 +38,13 @@ export interface LineDto {
   name: string;
   sideToTrain: UserColor;
   startingFen: string;
-  passedCount?: number;
-  failedCount?: number;
-  totalAttempts?: number;
+  trainingStats?: {
+    totalAttempts: number;
+    passedCount: number;
+    failedCount: number;
+    passRate: number;
+    activeSublineCount: number;
+  };
 }
 
 export interface MoveNodeDto {

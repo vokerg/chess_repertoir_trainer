@@ -72,7 +72,7 @@ function StudyCourse({
         <View style={styles.grow}>
           <Text style={styles.courseName}>{name}</Text>
           {description ? <Text style={styles.muted}>{description}</Text> : null}
-          {stats.data ? <Text style={styles.muted}>{stats.data.totalLines} lines · {stats.data.totalAttempts} attempts</Text> : null}
+          {stats.data ? <Text style={styles.muted}>{stats.data.activeSublineCount} active sublines · {stats.data.totalAttempts} recent attempts</Text> : null}
         </View>
         <Text style={styles.expand}>{expanded ? 'Close' : 'Open'}</Text>
       </Pressable>

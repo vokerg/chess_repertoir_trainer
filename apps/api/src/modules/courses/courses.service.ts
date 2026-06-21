@@ -2,6 +2,7 @@ import { Chess } from 'chess.js';
 import { Prisma } from '@prisma/client';
 import { buildMoveTreeFromNodes } from '../../utils/move-tree-builder';
 import prisma from '../../prisma';
+import { StatsService } from '../../services/statsService';
 import {
   createChapter,
   createCourse,
@@ -78,8 +79,7 @@ export async function createMoveNodeInTransaction(
   return createMoveNode({ lineId, parentId, plyNumber, fenBefore, fenAfter: chess.fen(), moveUci,
     moveSan: move.san, moveNumber: Math.ceil(plyNumber / 2), colorToMoveBefore,
     side: colorToMoveBefore, isUserMove, isCorrectUserMove: isUserMove, comment, annotation,
-    branchLabel, branchWeight, sortOrder, timesSeen: 0, correctCount: 0, incorrectCount: 0,
-    currentStreak: 0 }, tx);
+    branchLabel, branchWeight, sortOrder }, tx);
 }
 
 export const CourseService = {
@@ -113,7 +113,20 @@ export const ChapterService = {
 export const LineService = {
   list: async (userId: number, chapterId: number) => {
     if (!await getChapterById(userId, chapterId)) return null;
-    return listLines(userId, chapterId);
+    const [lines, statsByLine] = await Promise.all([
+      listLines(userId, chapterId),
+      StatsService.lineStatsForChapter(userId, chapterId),
+    ]);
+    return lines.map((line) => ({
+      ...line,
+      trainingStats: statsByLine?.get(line.id) ?? {
+        totalAttempts: 0,
+        passedCount: 0,
+        failedCount: 0,
+        passRate: 0,
+        activeSublineCount: 0,
+      },
+    }));
   },
   create: async (
     userId: number,

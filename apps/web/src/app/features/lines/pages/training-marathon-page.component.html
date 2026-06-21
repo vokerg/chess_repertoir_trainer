@@ -6,13 +6,21 @@
         <h2 class="workbench-title">{{ store.marathonTitle() }}</h2>
         <div class="workbench-meta">
           <span>Current line: {{ store.lineName() }}</span>
+          @if (store.sublineMoveText(); as sublineMoveText) {
+            <span>{{ sublineMoveText }}</span>
+          }
           <span>Train as {{ store.sideToTrain() === 'BLACK' ? 'Black' : 'White' }}</span>
           <span>{{ store.completedThisRun() }} completed this run</span>
           <span>{{ store.completed() ? 'Session complete' : 'In progress' }}</span>
         </div>
       </div>
       <nav class="workbench-mode-switch" aria-label="Marathon mode">
-        <span class="mode-pill mode-pill-active">Marathon</span>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'ALL'" (click)="store.switchMode('ALL')">
+          All sublines
+        </button>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'WEAK_SUBLINES'" (click)="store.switchMode('WEAK_SUBLINES')">
+          Weak sublines
+        </button>
         @if (store.lineId()) {
           <a class="mode-pill" [routerLink]="['/lines', store.lineId(), 'edit']">Edit current tree</a>
         }
@@ -39,7 +47,7 @@
       [lastMove]="store.lastMove()"
       [boardPositionVersion]="store.boardPositionVersion()"
       [goalTitle]="store.lineName()"
-      goalSubtitle="Current marathon line. Line stats are updated exactly like regular line training."
+      [goalSubtitle]="store.sublineMoveText() || 'Current marathon subline. Recent stats are recorded per active subline hash.'"
       progressTitle="Current line progress"
       finishButtonLabel="Finish current line"
       primaryActionLabel="Next line"

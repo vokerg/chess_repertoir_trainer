@@ -56,9 +56,9 @@ The move tree is the core model:
 - At trained-side positions, exactly one correct move should exist.
 - At opponent positions, multiple branches may exist.
 
-During training, opponent branches are auto-played randomly and the trained side must play the single correct continuation.
+Available sublines are the current complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple active sublines.
 
-Available sublines are the complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple available sublines.
+During training, the backend first selects one active terminal subline, identifies it with a deterministic SHA-256 hash of a semantic canonical key, and then follows that exact path. Opponent moves are auto-played only from the selected subline. Training stats are persisted in `TrainingSublineAttempt` per user, line, and subline hash. If a move-tree edit changes or removes a subline, the old hash remains historical but no longer counts in current line, chapter, or course stats.
 
 The line editor can also show filtered next moves from indexed imported games for the selected repertoire position. Selecting a suggested move adds it through the normal line-editor move persistence flow.
 
@@ -219,7 +219,9 @@ The seed stores real move nodes only; it does not create a fake blank root node.
 GET /api/courses/:courseId/sublines
 ```
 
-This returns one row per terminal variation in course chapter and line order. The same line may appear multiple times with different move text when its move tree branches.
+This returns one row per active terminal variation in course chapter and line order. Each row includes `hash` and `canonicalKeyVersion` plus line/chapter metadata, leaf node id, ordered moves, and display move text. The same line may appear multiple times with different move text when its move tree branches.
+
+The hash is derived from a canonical key containing version, line id, starting FEN, side to train, and ordered UCI moves. It intentionally ignores node ids, SAN, timestamps, and sort order.
 
 ### Current user and external accounts
 
@@ -424,10 +426,10 @@ From a clean clone, the target is:
 10. Training a new White line from the initial position asks for `e4` first.
 11. Adding multiple Black replies after `e4` is allowed.
 12. Adding two different White moves from the same White-to-move position is rejected.
-13. Completing a line updates stats once.
+13. Completing a line creates and finalizes a `TrainingSublineAttempt`.
 14. Wrong moves do not advance the line.
 15. Correct moves advance the line.
-16. Opponent moves are auto-played randomly from available branches.
+16. Opponent moves are auto-played deterministically from the selected active subline.
 17. Data persists in PostgreSQL after restart.
 18. Adding a Lichess or Chess.com account and syncing it imports finished games.
 19. The Games explorer loads imported games and filters them through `/api/imported-games`.
@@ -439,6 +441,10 @@ From a clean clone, the target is:
 25. The line editor shows the imported-games filter collapsed by default.
 26. Changing the selected repertoire node refreshes next moves for that node's FEN.
 27. Selecting a suggested imported-game move persists through the existing line APIs.
+28. Marathon training samples active sublines equally, not lines equally.
+29. Editing a subline changes its hash and excludes old-hash attempts from current line/chapter/course stats.
+30. Course stats are based on active sublines and the last 5 scored attempts per subline.
+31. Weak mode drills the weakest 30% of active sublines by recent pass rate.
 
 ## Migration history
 
@@ -453,5 +459,6 @@ From a clean clone, the target is:
 - Imported-game search analysis filters are derived from latest run summaries at request time. If this becomes slow with large libraries, move those fields into a denormalized read model.
 - The UI is improving but still needs a dedicated authoring UX pass after stabilization.
 - JSON import/export exists but needs versioning and merge/deduplication before it should be trusted as a robust backup system.
-- The stats model is simple and not yet a spaced repetition scheduler.
+- Stats are based on active subline hashes and the last 5 scored attempts per active subline. Historical attempts for hashes that disappeared after move-tree edits remain in the database but are excluded from current line, chapter, and course stats.
+- The stats model is not yet a spaced repetition scheduler.
 - Mobile, auth, cloud multi-user sync, account-wide analysis queues, and full PGN import are future work, not current scope.

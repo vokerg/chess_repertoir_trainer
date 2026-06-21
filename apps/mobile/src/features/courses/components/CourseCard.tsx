@@ -22,7 +22,7 @@ export function CourseCard({
         <View style={styles.textWrap}>
           <Text style={styles.name}>{course.name}</Text>
           {course.description ? <Text style={styles.description}>{course.description}</Text> : null}
-          {stats ? <Text style={styles.meta}>{stats.totalLines} lines · {Math.round(stats.passRate ?? 0)}% pass</Text> : null}
+          {stats ? <Text style={styles.meta}>{stats.activeSublineCount} active sublines · {Math.round((stats.passRate ?? 0) * 100)}% pass</Text> : null}
         </View>
       </View>
       <View style={styles.actions}>

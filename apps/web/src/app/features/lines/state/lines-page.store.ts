@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
 import {
   ChapterDetail,
+  ActiveTrainingStats,
   LineSummary,
   LineTransferTargetChapter,
   LineTransferTargetCourse,
@@ -19,6 +20,7 @@ export class LinesPageStore {
 
   readonly courseId = signal<number | null>(null);
   readonly chapter = signal<ChapterDetail | null>(null);
+  readonly chapterStats = signal<ActiveTrainingStats | null>(null);
   readonly lines = signal<LineSummary[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -56,14 +58,15 @@ export class LinesPageStore {
   readonly pgnError = signal<string | null>(null);
 
   readonly totalAttempts = computed(() =>
-    this.lines().reduce((sum, line) => sum + line.totalAttempts, 0),
+    this.chapterStats()?.totalAttempts ?? 0,
   );
   readonly totalPassed = computed(() =>
-    this.lines().reduce((sum, line) => sum + line.passedCount, 0),
+    this.chapterStats()?.passedCount ?? 0,
   );
   readonly totalFailed = computed(() =>
-    this.lines().reduce((sum, line) => sum + line.failedCount, 0),
+    this.chapterStats()?.failedCount ?? 0,
   );
+  readonly activeSublineCount = computed(() => this.chapterStats()?.activeSublineCount ?? 0);
 
   initialize(chapterId: number): void {
     if (!Number.isFinite(chapterId) || chapterId <= 0) {
@@ -83,14 +86,16 @@ export class LinesPageStore {
     this.error.set(null);
 
     try {
-      const [chapter, lines] = await Promise.all([
+      const [chapter, lines, stats] = await Promise.all([
         firstValueFrom(this.api.getChapter(chapterId)),
         firstValueFrom(this.api.getChapterLines(chapterId)),
+        firstValueFrom(this.api.getChapterStats(chapterId)),
       ]);
       if (requestVersion !== this.requestVersion) return;
       this.chapter.set(chapter);
       this.courseId.set(chapter.courseId);
       this.lines.set(lines);
+      this.chapterStats.set(stats);
       if (!this.editingChapterName()) this.chapterNameDraft.set(chapter.name);
       this.loading.set(false);
     } catch (error) {

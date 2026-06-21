@@ -8,10 +8,10 @@ import { lineStatus } from '@/utils/lineStatus';
 
 describe('lineStatus', () => {
   it('maps status buckets', () => {
-    expect(lineStatus({ totalAttempts: 0 })).toBe('NEW');
-    expect(lineStatus({ totalAttempts: 3, passedCount: 1, failedCount: 2 })).toBe('WEAK');
-    expect(lineStatus({ totalAttempts: 3, passedCount: 3, failedCount: 0 })).toBe('CLEAN');
-    expect(lineStatus({ totalAttempts: 3, passedCount: 2, failedCount: 1 })).toBe('REVIEW');
+    expect(lineStatus({ trainingStats: { totalAttempts: 0, passedCount: 0, failedCount: 0, passRate: 0, activeSublineCount: 0 } })).toBe('NEW');
+    expect(lineStatus({ trainingStats: { totalAttempts: 3, passedCount: 1, failedCount: 2, passRate: 1 / 3, activeSublineCount: 1 } })).toBe('WEAK');
+    expect(lineStatus({ trainingStats: { totalAttempts: 3, passedCount: 3, failedCount: 0, passRate: 1, activeSublineCount: 1 } })).toBe('CLEAN');
+    expect(lineStatus({ trainingStats: { totalAttempts: 3, passedCount: 2, failedCount: 1, passRate: 2 / 3, activeSublineCount: 1 } })).toBe('REVIEW');
   });
 });
 

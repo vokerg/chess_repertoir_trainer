@@ -30,4 +30,13 @@ export default async function statsModule(app: FastifyInstance) {
     if (!stats) return reply.status(404).send({ error: 'Course not found' });
     reply.send(stats);
   });
+
+  app.get('/api/chapters/:chapterId/stats', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const { chapterId } = request.params as { chapterId: string };
+    const stats = await StatsService.chapterStats(auth.userId, parseInt(chapterId, 10));
+    if (!stats) return reply.status(404).send({ error: 'Chapter not found' });
+    reply.send(stats);
+  });
 }

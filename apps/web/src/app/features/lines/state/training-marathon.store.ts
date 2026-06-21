@@ -1,12 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
-import { MarathonScopeType, RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
+import { MarathonMode, MarathonScopeType, RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
 
 @Injectable()
 export class TrainingMarathonStore {
   private readonly api = inject(LinesApiService);
-  private readonly recentLineIds = signal<number[]>([]);
+  private readonly recentSublineHashes = signal<string[]>([]);
   private readonly countedCompletedSessionIds = new Set<number>();
   private requestVersion = 0;
 
@@ -14,6 +14,9 @@ export class TrainingMarathonStore {
   readonly scopeId = signal(0);
   readonly lineId = signal(0);
   readonly lineName = signal('');
+  readonly mode = signal<MarathonMode>('ALL');
+  readonly sublineHash = signal<string | null>(null);
+  readonly sublineMoveText = signal<string | null>(null);
   readonly sideToTrain = signal<RepertoireColor>('WHITE');
   readonly sessionId = signal(0);
   readonly currentFen = signal('');
@@ -46,7 +49,7 @@ export class TrainingMarathonStore {
     }
     this.scopeType.set(scopeType);
     this.scopeId.set(scopeId);
-    this.recentLineIds.set([]);
+    this.recentSublineHashes.set([]);
     this.completedThisRun.set(0);
     this.countedCompletedSessionIds.clear();
     void this.startNextLine();
@@ -60,7 +63,8 @@ export class TrainingMarathonStore {
       const response = await firstValueFrom(
         this.api.startNextMarathonLine(
           { type: this.scopeType(), id: this.scopeId() },
-          this.recentLineIds(),
+          this.mode(),
+          this.recentSublineHashes(),
         ),
       );
       if (requestVersion !== this.requestVersion) return;
@@ -69,11 +73,13 @@ export class TrainingMarathonStore {
       this.sideToTrain.set(response.line.sideToTrain);
       this.resetSessionState();
       this.sessionId.set(response.session.sessionId);
+      this.sublineHash.set(response.subline.hash);
+      this.sublineMoveText.set(response.subline.moveText || response.session.sublineMoveText || null);
       this.currentFen.set(response.session.fen);
       this.expectedMove.set(response.session.expectedMove);
       this.completed.set(response.session.completed ?? false);
       this.boardPositionVersion.update((version) => version + 1);
-      this.rememberLine(response.line.id);
+      this.rememberSubline(response.subline.hash);
       this.loaded.set(true);
       if (response.session.completed) await this.completeSession(false, null, 0);
     } catch (error) {
@@ -116,6 +122,15 @@ export class TrainingMarathonStore {
     this.showExpectedMove.update((value) => !value);
   }
 
+  switchMode(mode: MarathonMode): void {
+    if (this.mode() === mode) return;
+    this.mode.set(mode);
+    this.recentSublineHashes.set([]);
+    this.completedThisRun.set(0);
+    this.countedCompletedSessionIds.clear();
+    void this.startNextLine();
+  }
+
   async finishTraining(): Promise<void> {
     const sessionId = this.sessionId();
     if (!sessionId || this.completed()) return;
@@ -153,12 +168,14 @@ export class TrainingMarathonStore {
     }
   }
 
-  private rememberLine(lineId: number): void {
-    this.recentLineIds.update((ids) => [...ids.filter((id) => id !== lineId), lineId].slice(-20));
+  private rememberSubline(hash: string): void {
+    this.recentSublineHashes.update((hashes) => [...hashes.filter((item) => item !== hash), hash].slice(-20));
   }
 
   private resetSessionState(): void {
     this.feedback.set(null);
+    this.sublineHash.set(null);
+    this.sublineMoveText.set(null);
     this.feedbackCorrect.set(false);
     this.mistakesCount.set(0);
     this.completed.set(false);

@@ -30,10 +30,6 @@ export interface Line {
   startingFen: string;
   tags?: string[];
   notes?: string | null;
-  passedCount: number;
-  failedCount: number;
-  totalAttempts: number;
-  lastTrainedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,11 +53,6 @@ export interface MoveNode {
   branchLabel?: string | null;
   branchWeight?: number | null;
   sortOrder: number;
-  timesSeen: number;
-  correctCount: number;
-  incorrectCount: number;
-  currentStreak: number;
-  lastSeenAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
