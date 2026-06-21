@@ -1,20 +1,3 @@
-.games-table-card {
-  display: grid;
-  gap: 1rem;
-  overflow: hidden;
-}
-.games-table-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.games-section-title {
-  margin: 0;
-  font-size: 1.35rem;
-  letter-spacing: -0.03em;
-}
 .games-muted {
   margin: 0.25rem 0 0;
   color: var(--muted);
@@ -162,24 +145,6 @@
 }
 
 @media (max-width: 760px) {
-  .games-table-card {
-    gap: 0.85rem;
-  }
-
-  .games-table-header {
-    align-items: stretch;
-  }
-
-  .games-table-header > div,
-  .games-table-header button {
-    width: 100%;
-  }
-
-  .games-section-title {
-    font-size: 1.15rem;
-    letter-spacing: 0;
-  }
-
   .games-table-wrap {
     overflow: visible;
     border: 0;

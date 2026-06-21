@@ -2,6 +2,8 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { type UiShellStat } from '../../../shared/ui/ui-shell.model';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { dateLabel, providerClass, providerLabel, syncStatusLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
@@ -9,7 +11,7 @@ import { AccountsStore } from '../state/accounts.store';
 @Component({
   selector: 'app-accounts-page',
   standalone: true,
-  imports: [NgClass, FormsModule, PageHeaderComponent],
+  imports: [NgClass, FormsModule, PageHeaderComponent, PanelComponent],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',
   styleUrl: './accounts-page.component.css',
@@ -28,6 +30,9 @@ export class AccountsPageComponent implements OnInit {
       disabled: this.store.loading(),
       run: () => this.store.loadAccounts(),
     },
+  ]);
+  protected readonly accountStats = computed<readonly UiShellStat[]>(() => [
+    { id: 'accounts', label: 'Accounts', value: this.store.accounts().length },
   ]);
 
   ngOnInit(): void {

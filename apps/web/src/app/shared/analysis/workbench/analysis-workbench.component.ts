@@ -5,6 +5,7 @@ import { EngineEvalBarComponent } from '../../chess/engine/engine-eval-bar.compo
 import { EngineAnalysis } from '../../chess/engine/stockfish-analysis.service';
 import { MoveTreePanelComponent } from '../move-tree-panel/move-tree-panel.component';
 import { StockfishPanelComponent } from '../../chess/engine/stockfish-panel.component';
+import { PanelComponent } from '../../ui/panel/panel.component';
 import { AnalysisTree } from './analysis-tree.models';
 
 @Component({
@@ -16,6 +17,7 @@ import { AnalysisTree } from './analysis-tree.models';
     MoveTreePanelComponent,
     StockfishPanelComponent,
     BoardActionToolbarComponent,
+    PanelComponent,
   ],
   templateUrl: './analysis-workbench.component.html',
   styleUrl: './analysis-workbench.component.css',

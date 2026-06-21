@@ -48,23 +48,22 @@
         />
       </main>
 
-      <aside class="study-column study-basket-column">
-        <app-training-basket-panel
-          [lineCount]="store.basketLineCount()"
-          [activeSublineCount]="store.basketActiveSublineCount()"
-          [recentAttempts]="store.basketRecentAttempts()"
-          [weakSublineCount]="store.basketWeakSublineCount()"
-          [untrainedSublineCount]="store.basketUntrainedSublineCount()"
-          [coverageLabel]="store.basketCoverageLabel()"
-          [masteryLabel]="store.basketMasteryLabel()"
-          [sourceLabel]="store.basketCoverageSourceLabel()"
-          [mode]="store.marathonMode()"
-          [canStart]="store.canStartBasket()"
-          (modeChange)="store.setMarathonMode($event)"
-          (start)="store.startSelectedMarathon()"
-          (clear)="store.clearLineSelection()"
-        />
-      </aside>
+      <app-training-basket-panel
+        class="study-column study-basket-column"
+        [lineCount]="store.basketLineCount()"
+        [activeSublineCount]="store.basketActiveSublineCount()"
+        [recentAttempts]="store.basketRecentAttempts()"
+        [weakSublineCount]="store.basketWeakSublineCount()"
+        [untrainedSublineCount]="store.basketUntrainedSublineCount()"
+        [coverageLabel]="store.basketCoverageLabel()"
+        [masteryLabel]="store.basketMasteryLabel()"
+        [sourceLabel]="store.basketCoverageSourceLabel()"
+        [mode]="store.marathonMode()"
+        [canStart]="store.canStartBasket()"
+        (modeChange)="store.setMarathonMode($event)"
+        (start)="store.startSelectedMarathon()"
+        (clear)="store.clearLineSelection()"
+      />
     </div>
   </section>
 </section>

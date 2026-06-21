@@ -1,27 +1,10 @@
 .accounts-page { gap: 1rem; }
-      .accounts-list-header {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        align-items: end;
-      }
       .account-form-actions,
       .account-card-actions {
         display: flex;
         gap: 0.65rem;
         flex-wrap: wrap;
         align-items: center;
-      }
-      .accounts-grid-card,
-      .accounts-list-card {
-        display: grid;
-        gap: 1rem;
-      }
-      .accounts-section-title {
-        margin: 0.25rem 0 0;
-        font-size: 1.35rem;
-        letter-spacing: -0.03em;
       }
       .accounts-muted {
         margin: 0.35rem 0 0;
@@ -48,13 +31,6 @@
         text-transform: none;
         letter-spacing: 0;
         font-weight: 600;
-      }
-      .accounts-mini-card {
-        min-width: 130px;
-        padding: 0.9rem;
-      }
-      .accounts-mini-card .metric-value {
-        font-size: 1.55rem;
       }
       .accounts-empty {
         border: 1px dashed var(--border-strong);

@@ -1,10 +1,5 @@
 <div class="analysis-workbench">
-  <section class="workbench-panel board-panel">
-    <div>
-      <h3 class="workbench-panel-title">{{ boardTitle() }}</h3>
-      <p class="workbench-panel-subtitle">{{ boardHelp() }}</p>
-    </div>
-
+  <app-panel class="board-panel" [title]="boardTitle()" [subtitle]="boardHelp()">
     <div class="board-stage">
       <app-engine-eval-bar
         [analysis]="analysis()"
@@ -35,7 +30,7 @@
       (goNext)="goNext.emit()"
       (goEnd)="goEnd.emit()"
     />
-  </section>
+  </app-panel>
 
   <div class="workbench-side-stack">
     <app-move-tree-panel
@@ -47,14 +42,12 @@
       (nodeSelected)="nodeSelected.emit($event)"
     />
 
-    <section class="workbench-panel engine-panel-modern">
-      <app-stockfish-panel
-        [analysis]="analysis()"
-        [currentFen]="currentFen()"
-        [warning]="engineWarning()"
-        (analyze)="analyze.emit()"
-      />
-    </section>
+    <app-stockfish-panel
+      [analysis]="analysis()"
+      [currentFen]="currentFen()"
+      [warning]="engineWarning()"
+      (analyze)="analyze.emit()"
+    />
 
     <ng-content select="[analysisWorkbenchSideExtra]"></ng-content>
 

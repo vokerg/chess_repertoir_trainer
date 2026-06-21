@@ -2,11 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  computed,
   input,
   output,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
 import { ImportedGameListItem, ImportedGamePageInfo } from '../data-access/games.models';
 import {
   accuracyLabel,
@@ -26,7 +29,7 @@ import { GameActionMenuComponent } from './game-action-menu.component';
 @Component({
   selector: 'app-games-table',
   standalone: true,
-  imports: [RouterLink, GameActionMenuComponent],
+  imports: [RouterLink, PanelComponent, GameActionMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './games-table.component.html',
   styleUrl: './games-table.component.css',
@@ -57,6 +60,14 @@ export class GamesTableComponent {
   protected readonly resultClass = resultClass;
   protected readonly resultLabel = resultLabel;
   protected readonly timeClassLabel = timeClassLabel;
+  protected readonly tableActions = computed<readonly UiShellAction[]>(() => [
+    {
+      id: 'refresh',
+      label: 'Refresh',
+      disabled: this.loading(),
+      run: () => this.refresh.emit(),
+    },
+  ]);
 
   @HostListener('document:click', ['$event'])
   protected handleDocumentClick(event: MouseEvent): void {

@@ -1,8 +1,7 @@
 <section class="stack">
   <app-page-header title="Courses" subtitle="Manage repertoires, chapters, and training lines." />
   <div class="detail-grid">
-    <section class="section-card stack">
-      <div class="courses-list-header"><div><span class="eyebrow">Collection</span><h3 class="collection-title section-title">Your courses</h3></div><span class="pill">{{ store.courses().length }} loaded</span></div>
+    <app-panel title="Your courses" subtitle="A focused training space for complete repertoire branches." [stats]="loadedCourseStats()">
       @if (store.loading()) { <p class="status-note">Loading courses...</p> }
       @if (store.error()) { <p class="status-error">{{ store.error() }}</p> }
       @if (!store.loading() && !store.error() && store.courses().length === 0) { <div class="empty-state">No courses yet. Create your first repertoire on the right.</div> }
@@ -16,14 +15,13 @@
           }
         </div>
       }
-    </section>
-    <aside class="section-card stack">
-      <div><span class="eyebrow">Create</span><h3 class="collection-title section-title">New course</h3><p class="page-subtitle aside-subtitle">Give the repertoire a memorable identity so it still feels obvious months from now.</p></div>
+    </app-panel>
+    <app-panel title="New course" subtitle="Give the repertoire a memorable identity so it still feels obvious months from now.">
       <form (ngSubmit)="store.createCourse()" class="stack">
         <div class="stack field-stack"><label for="course-name" class="metric-label">Course name</label><input id="course-name" [ngModel]="store.newCourseName()" (ngModelChange)="store.newCourseName.set($event)" name="name" placeholder="Italian Game for White" required /></div>
         <div class="stack field-stack"><label for="course-description" class="metric-label">Description</label><textarea id="course-description" [ngModel]="store.newCourseDescription()" (ngModelChange)="store.newCourseDescription.set($event)" name="description" rows="4" placeholder="What this course is for, what structures it covers, and why it matters."></textarea></div>
         <div class="collection-actions"><button type="submit" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Create course' }}</button></div>
       </form>
-    </aside>
+    </app-panel>
   </div>
 </section>

@@ -1,0 +1,25 @@
+.stockfish-lines {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.stockfish-line-slot {
+  min-height: 45px;
+}
+
+.stockfish-line-empty {
+  color: var(--muted);
+}
+
+.stockfish-placeholder-score {
+  color: var(--muted);
+}
+
+.stockfish-placeholder-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.88rem;
+}

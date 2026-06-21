@@ -1,0 +1,52 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.app-panel {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 1.35rem;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.app-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.app-panel-copy {
+  min-width: min(100%, 240px);
+}
+
+.app-panel-title {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.app-panel-subtitle {
+  margin: 0.35rem 0 0;
+  max-width: 58ch;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.app-panel-body {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .app-panel {
+    border-radius: 22px;
+  }
+}

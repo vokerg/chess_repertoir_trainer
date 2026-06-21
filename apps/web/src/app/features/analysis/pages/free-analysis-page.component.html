@@ -6,9 +6,9 @@
   }
 
   @if (store.loading()) {
-    <section class="section-card">
+    <app-panel title="Loading analysis">
       <p class="status-note">Loading imported game moves...</p>
-    </section>
+    </app-panel>
   } @else if (store.tree(); as tree) {
     <app-analysis-workbench
       [tree]="tree"
@@ -46,18 +46,11 @@
   }
 
   @if (store.myGamesOpen()) {
-    <section class="section-card my-games-panel stack" aria-label="My games in this position">
-      <div class="my-games-header">
-        <div>
-          <span class="eyebrow">Imported games</span>
-          <h2 class="collection-title">My games in this position</h2>
-          <p class="workbench-panel-subtitle">Filter imported games that reached the currently selected analysis position.</p>
-        </div>
-        <button type="button" class="compact-action secondary" (click)="store.refreshMyGames()" [disabled]="store.myGamesLoading()">
-          {{ store.myGamesLoading() ? 'Loading...' : 'Refresh' }}
-        </button>
-      </div>
-
+    <app-panel
+      title="My games in this position"
+      subtitle="Filter imported games that reached the currently selected analysis position."
+      [actions]="myGamesActions()"
+    >
       <app-game-filter-panel
         [filters]="store.myGamesFilters()"
         [facets]="store.myGamesFacets()"
@@ -75,7 +68,7 @@
         [games]="store.myGamesAnalysis()?.topGames || []"
         [loading]="store.myGamesLoading()"
       />
-    </section>
+    </app-panel>
   }
   <app-analysis-reintegration-dialog />
 </section>

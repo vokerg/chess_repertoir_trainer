@@ -1,14 +1,4 @@
-<section class="section-card games-table-card">
-  <div class="games-table-header">
-    <div>
-      <h3 class="games-section-title">Imported games</h3>
-      <p class="games-muted">{{ tableSubtitle() }}</p>
-    </div>
-    <button type="button" class="secondary" (click)="refresh.emit()" [disabled]="loading()">
-      Refresh
-    </button>
-  </div>
-
+<app-panel title="Imported games" [subtitle]="tableSubtitle()" [actions]="tableActions()">
   @if (error()) {
     <p class="status-error">{{ error() }}</p>
   }
@@ -157,4 +147,4 @@
       </button>
     </div>
   }
-</section>
+</app-panel>

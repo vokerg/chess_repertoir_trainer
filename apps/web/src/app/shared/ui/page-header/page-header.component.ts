@@ -1,29 +1,14 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ShellActionsComponent } from '../shell-actions/shell-actions.component';
+import { type UiShellAction, type UiShellStat } from '../ui-shell.model';
 
-export interface PageHeaderStat {
-  id: string;
-  label: string;
-  value: string | number;
-}
-
-interface PageHeaderActionBase {
-  id: string;
-  label: string;
-  disabled?: boolean;
-  active?: boolean;
-}
-
-export type PageHeaderAction = PageHeaderActionBase &
-  (
-    | { link: string | Array<string | number>; run?: never }
-    | { link?: never; run: () => void }
-  );
+export type PageHeaderAction = UiShellAction;
+export type PageHeaderStat = UiShellStat;
 
 @Component({
   selector: 'app-page-header',
   standalone: true,
-  imports: [RouterLink],
+  imports: [ShellActionsComponent],
   template: `
     <header class="page-header">
       <div class="page-header-copy">
@@ -33,40 +18,7 @@ export type PageHeaderAction = PageHeaderActionBase &
         }
       </div>
 
-      @if (stats().length || actions().length) {
-        <div class="page-header-actions">
-          @for (stat of stats(); track stat.id) {
-            <div class="page-header-stat">
-              <span class="page-header-stat-label">{{ stat.label }}</span>
-              <span class="page-header-stat-value">{{ stat.value }}</span>
-            </div>
-          }
-
-          @for (action of actions(); track action.id) {
-            @if (action.link) {
-              <a
-                class="page-header-action"
-                [class.active]="action.active"
-                [class.disabled]="action.disabled"
-                [attr.aria-disabled]="action.disabled || null"
-                [routerLink]="action.disabled ? null : action.link"
-              >
-                {{ action.label }}
-              </a>
-            } @else {
-              <button
-                type="button"
-                class="page-header-action"
-                [class.active]="action.active"
-                [disabled]="action.disabled"
-                (click)="run(action)"
-              >
-                {{ action.label }}
-              </button>
-            }
-          }
-        </div>
-      }
+      <app-ui-shell-actions [stats]="stats()" [actions]="actions()" />
     </header>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,8 +28,4 @@ export class PageHeaderComponent {
   readonly subtitle = input<string>();
   readonly stats = input<readonly PageHeaderStat[]>([]);
   readonly actions = input<readonly PageHeaderAction[]>([]);
-
-  protected run(action: PageHeaderAction): void {
-    if (!action.disabled) action.run?.();
-  }
 }

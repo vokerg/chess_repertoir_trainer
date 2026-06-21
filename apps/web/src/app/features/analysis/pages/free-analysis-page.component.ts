@@ -14,6 +14,8 @@ import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-h
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
 import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
 import { AnalysisReintegrationDialogComponent } from '../components/analysis-reintegration-dialog.component';
@@ -26,6 +28,7 @@ import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reint
   standalone: true,
   imports: [
     PageHeaderComponent,
+    PanelComponent,
     AnalysisWorkbenchComponent,
     AnalysisReintegrationDialogComponent,
     GameFilterPanelComponent,
@@ -52,6 +55,14 @@ export class FreeAnalysisPageComponent implements OnInit {
       label: 'Reintegrate into course',
       disabled: !this.store.tree(),
       run: () => this.openReintegrationDialog(),
+    },
+  ]);
+  protected readonly myGamesActions = computed<readonly UiShellAction[]>(() => [
+    {
+      id: 'refresh',
+      label: this.store.myGamesLoading() ? 'Loading...' : 'Refresh',
+      disabled: this.store.myGamesLoading(),
+      run: () => this.store.refreshMyGames(),
     },
   ]);
 

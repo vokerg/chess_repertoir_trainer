@@ -1,15 +1,7 @@
 <section class="accounts-page stack">
   <app-page-header title="Accounts" subtitle="Connect accounts and sync imported games." [actions]="headerActions()" />
 
-  <section class="section-card accounts-grid-card">
-    <div>
-      <span class="eyebrow">New account</span>
-      <h3 class="accounts-section-title">Add import source</h3>
-      <p class="accounts-muted">
-        Use the public username. The app keeps accounts provider-aware, so the same username can exist on both providers.
-      </p>
-    </div>
-
+  <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account.">
     <form class="account-form" (ngSubmit)="store.createAccount()">
       <label class="account-field">
         <span>Provider</span>
@@ -51,21 +43,13 @@
         <button type="button" class="secondary" (click)="store.resetForm()" [disabled]="store.saving()">Clear</button>
       </div>
     </form>
-  </section>
+  </app-panel>
 
-  <section class="section-card accounts-list-card">
-    <div class="accounts-list-header">
-      <div>
-        <span class="eyebrow">Configured accounts</span>
-        <h3 class="accounts-section-title">Sync games by account</h3>
-        <p class="accounts-muted">Sync is deliberately per-account so a large archive import does not block every other source.</p>
-      </div>
-      <div class="metric-card accounts-mini-card">
-        <p class="metric-label">Accounts</p>
-        <p class="metric-value">{{ store.accounts().length }}</p>
-      </div>
-    </div>
-
+  <app-panel
+    title="Sync games by account"
+    subtitle="Sync is deliberately per-account so a large archive import does not block every other source."
+    [stats]="accountStats()"
+  >
     @if (store.error()) {
       <p class="status-error">{{ store.error() }}</p>
     }
@@ -153,5 +137,5 @@
         }
       </div>
     }
-  </section>
+  </app-panel>
 </section>

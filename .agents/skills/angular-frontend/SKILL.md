@@ -91,6 +91,14 @@ Presentational components should:
 * Avoid backend DTO knowledge when a UI model is more appropriate.
 * Avoid reaching into parent state directly.
 
+## Presentational/shared UI
+
+* Use `app-page-header` for route-level page headers.
+* Use `app-panel` for card/panel shells.
+* Do not hand-roll `section-card` or custom card shells for new feature panels.
+* Panel headers should use title plus optional subtitle only; avoid eyebrow/kicker labels unless a specific design requires it.
+* Put compact stats/actions into panel inputs instead of large pills inside the body.
+
 ## Before finishing
 
 Run the narrowest relevant validation when practical and report what was and was not run. Do not block documentation-only cleanup on broad test runs.

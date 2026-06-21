@@ -1,0 +1,25 @@
+<app-panel title="Stockfish" [stats]="stockfishStats()" [actions]="stockfishActions()">
+  @if (isCurrentFen() && analysis().error) {
+    <p class="status-error">{{ analysis().error }}</p>
+  }
+  @if (warning()) {
+    <div class="engine-warning-modern">{{ warning() }}</div>
+  }
+
+  <div class="stockfish-lines">
+    @for (slot of lineSlots; track slot) {
+      <div
+        class="engine-line-modern stockfish-line-slot"
+        [class.stockfish-line-empty]="!visibleLines()[slot]"
+      >
+        @if (visibleLines()[slot]; as engineLine) {
+          <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
+          <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
+        } @else {
+          <span class="engine-score-modern stockfish-placeholder-score">{{ placeholderScoreLabel(slot) }}</span>
+          <span class="stockfish-placeholder-text">{{ placeholderLineLabel(slot) }}</span>
+        }
+      </div>
+    }
+  </div>
+</app-panel>

@@ -1,0 +1,34 @@
+@if (stats().length || actions().length) {
+  <div class="ui-shell-actions">
+    @for (stat of stats(); track stat.id) {
+      <div class="ui-shell-stat">
+        <span class="ui-shell-stat-label">{{ stat.label }}</span>
+        <span class="ui-shell-stat-value">{{ stat.value }}</span>
+      </div>
+    }
+
+    @for (action of actions(); track action.id) {
+      @if (action.link) {
+        <a
+          class="ui-shell-action"
+          [class.active]="action.active"
+          [class.disabled]="action.disabled"
+          [attr.aria-disabled]="action.disabled || null"
+          [routerLink]="action.disabled ? null : action.link"
+        >
+          {{ action.label }}
+        </a>
+      } @else {
+        <button
+          type="button"
+          class="ui-shell-action"
+          [class.active]="action.active"
+          [disabled]="action.disabled"
+          (click)="run(action)"
+        >
+          {{ action.label }}
+        </button>
+      }
+    }
+  </div>
+}

@@ -1,0 +1,16 @@
+<section class="app-panel">
+  <header class="app-panel-header">
+    <div class="app-panel-copy">
+      <h3 class="app-panel-title">{{ title() }}</h3>
+      @if (subtitle(); as subtitle) {
+        <p class="app-panel-subtitle">{{ subtitle }}</p>
+      }
+    </div>
+
+    <app-ui-shell-actions [stats]="stats()" [actions]="actions()" />
+  </header>
+
+  <div class="app-panel-body">
+    <ng-content />
+  </div>
+</section>
