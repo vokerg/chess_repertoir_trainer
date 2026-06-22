@@ -25,7 +25,7 @@ export class LibraryBrowserStore {
   readonly selectedLineId = signal<number | null>(null);
   readonly selectedLineIds = signal<number[]>([]);
   readonly marathonMode = signal<LibraryMarathonMode>('ALL');
-  readonly trainingScope = signal<LibraryTrainingScope>('CHAPTER');
+  readonly trainingScope = signal<LibraryTrainingScope>('COURSE');
   readonly courseLoading = signal(false);
   readonly chapterLoading = signal(false);
   readonly lineLoading = signal(false);
@@ -157,7 +157,7 @@ export class LibraryBrowserStore {
     this.selectedChapterId.set(null);
     this.selectedLineId.set(null);
     this.selectedLineIds.set([]);
-    this.trainingScope.set('CHAPTER');
+    this.trainingScope.set('COURSE');
     this.chapters.set([]);
     this.lines.set([]);
     this.clearExport();
@@ -169,7 +169,7 @@ export class LibraryBrowserStore {
     this.selectedChapterId.set(chapterId);
     this.selectedLineId.set(null);
     this.selectedLineIds.set([]);
-    this.trainingScope.set('CHAPTER');
+    this.trainingScope.set('COURSE');
     this.lines.set([]);
     this.clearExport();
     await this.loadLines(chapterId);
@@ -188,7 +188,7 @@ export class LibraryBrowserStore {
       this.trainingScope.set('SELECTED_LINES');
     }
     if (nextIds.length === 0 && this.trainingScope() === 'SELECTED_LINES') {
-      this.trainingScope.set(this.selectedChapterId() ? 'CHAPTER' : 'COURSE');
+      this.trainingScope.set('COURSE');
     }
   }
 
@@ -199,7 +199,7 @@ export class LibraryBrowserStore {
 
   clearLineSelection(): void {
     this.selectedLineIds.set([]);
-    if (this.trainingScope() === 'SELECTED_LINES') this.trainingScope.set(this.selectedChapterId() ? 'CHAPTER' : 'COURSE');
+    if (this.trainingScope() === 'SELECTED_LINES') this.trainingScope.set('COURSE');
   }
 
   setMarathonMode(mode: LibraryMarathonMode): void {
@@ -329,7 +329,7 @@ export class LibraryBrowserStore {
       this.lines.set(lines);
       this.selectedLineIds.update((ids) => ids.filter((id) => lines.some((line) => line.id === id)));
       if (this.selectedLineIds().length === 0 && this.trainingScope() === 'SELECTED_LINES') {
-        this.trainingScope.set(this.selectedChapterId() ? 'CHAPTER' : 'COURSE');
+        this.trainingScope.set('COURSE');
       }
       this.selectedLineId.set(
         lines.some((line) => line.id === this.selectedLineId()) ? this.selectedLineId() : lines[0]?.id ?? null,
@@ -355,7 +355,7 @@ export class LibraryBrowserStore {
     this.selectedChapterId.set(null);
     this.selectedLineId.set(null);
     this.selectedLineIds.set([]);
-    this.trainingScope.set('CHAPTER');
+    this.trainingScope.set('COURSE');
     this.chapters.set([]);
     this.lines.set([]);
   }
