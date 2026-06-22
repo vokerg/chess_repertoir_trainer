@@ -50,6 +50,7 @@
 
       <app-training-basket-panel
         class="study-column study-basket-column"
+        [lineCountLabel]="store.basketLineCountLabel()"
         [lineCount]="store.basketLineCount()"
         [activeSublineCount]="store.basketActiveSublineCount()"
         [recentAttempts]="store.basketRecentAttempts()"
@@ -58,11 +59,13 @@
         [coverageLabel]="store.basketCoverageLabel()"
         [masteryLabel]="store.basketMasteryLabel()"
         [sourceLabel]="store.basketCoverageSourceLabel()"
-        [mode]="store.marathonMode()"
+        [scope]="store.trainingScope()"
+        [canUseCourseScope]="store.canUseCourseScope()"
+        [canUseChapterScope]="store.canUseChapterScope()"
+        [canUseSelectedLinesScope]="store.canUseSelectedLinesScope()"
         [canStart]="store.canStartBasket()"
-        (modeChange)="store.setMarathonMode($event)"
-        (start)="store.startSelectedMarathon()"
-        (clear)="store.clearLineSelection()"
+        (scopeChange)="store.setTrainingScope($event)"
+        (startMode)="store.startSelectedMarathon($event.mode, $event.scope)"
       />
     </div>
   </section>

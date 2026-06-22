@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PanelComponent } from '../../../../shared/ui/panel/panel.component';
-import { type UiShellAction, type UiShellStat } from '../../../../shared/ui/ui-shell.model';
-import { LibraryMarathonMode } from '../../data-access/library.models';
+import { LibraryMarathonMode, LibraryTrainingScope } from '../../data-access/library.models';
+
+export interface TrainingBasketStart {
+  mode: LibraryMarathonMode;
+  scope: LibraryTrainingScope;
+}
 
 @Component({
   selector: 'app-training-basket-panel',
@@ -12,6 +16,7 @@ import { LibraryMarathonMode } from '../../data-access/library.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TrainingBasketPanelComponent {
+  readonly lineCountLabel = input('Lines');
   readonly lineCount = input.required<number>();
   readonly activeSublineCount = input.required<number>();
   readonly recentAttempts = input.required<number>();
@@ -20,34 +25,39 @@ export class TrainingBasketPanelComponent {
   readonly coverageLabel = input.required<string>();
   readonly masteryLabel = input.required<string>();
   readonly sourceLabel = input.required<string>();
-  readonly mode = input.required<LibraryMarathonMode>();
+  readonly scope = input.required<LibraryTrainingScope>();
+  readonly canUseCourseScope = input.required<boolean>();
+  readonly canUseChapterScope = input.required<boolean>();
+  readonly canUseSelectedLinesScope = input.required<boolean>();
   readonly canStart = input.required<boolean>();
-  readonly start = output<void>();
-  readonly clear = output<void>();
-  readonly modeChange = output<LibraryMarathonMode>();
+  readonly scopeChange = output<LibraryTrainingScope>();
+  readonly startMode = output<TrainingBasketStart>();
 
   protected readonly basketSubtitle = computed(
     () => `Coverage ${this.coverageLabel()} - Mastery ${this.masteryLabel()}`,
   );
-  protected readonly basketStats = computed<readonly UiShellStat[]>(() => [
-    { id: 'lines', label: 'Lines', value: this.lineCount() },
+  protected readonly basketStats = computed(() => [
+    { id: 'lines', label: this.lineCountLabel(), value: this.lineCount() },
     { id: 'sublines', label: 'Sublines', value: this.activeSublineCount() },
     { id: 'attempts', label: 'Attempts', value: this.recentAttempts() },
     { id: 'weak', label: 'Weak', value: this.weakSublineCount() },
     { id: 'untrained', label: 'Untrained', value: this.untrainedSublineCount() },
   ]);
-  protected readonly basketActions = computed<readonly UiShellAction[]>(() => [
-    {
-      id: 'start',
-      label: 'Start marathon',
-      disabled: !this.canStart(),
-      run: () => this.start.emit(),
-    },
-    {
-      id: 'clear',
-      label: 'Clear lines',
-      disabled: this.lineCount() === 0,
-      run: () => this.clear.emit(),
-    },
+  protected readonly canStartAll = computed(() => this.canStart());
+  protected readonly canStartWeak = computed(() => this.canStart() && this.weakSublineCount() > 0);
+  protected readonly canStartUntrained = computed(() => this.canStart() && this.untrainedSublineCount() > 0);
+
+  protected readonly scopeOptions = computed(() => [
+    { id: 'COURSE' as const, label: 'Course', disabled: !this.canUseCourseScope() },
+    { id: 'CHAPTER' as const, label: 'Section', disabled: !this.canUseChapterScope() },
+    { id: 'SELECTED_LINES' as const, label: 'Selected', disabled: !this.canUseSelectedLinesScope() },
   ]);
+
+  protected selectScope(scope: LibraryTrainingScope): void {
+    this.scopeChange.emit(scope);
+  }
+
+  protected startMarathon(mode: LibraryMarathonMode): void {
+    this.startMode.emit({ mode, scope: this.scope() });
+  }
 }

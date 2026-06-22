@@ -1,4 +1,5 @@
-import { getMoveSequenceFromUci, RepertoireGraph } from 'chess-domain';
+import { Chess } from 'chess.js';
+import { getMoveSequenceFromUci, normalizeFenForPosition, RepertoireGraph } from 'chess-domain';
 import {
   CourseReviewGameMetadata,
   CourseReviewGameResult,
@@ -64,6 +65,25 @@ function atPly(
 
 function belowMinimumOverlap(coveredPlies: number, minCoveredPlies: number): boolean {
   return coveredPlies < minCoveredPlies;
+}
+
+function opponentMoveTransposesToKnownPosition(
+  graph: RepertoireGraph,
+  normalizedFenBefore: string,
+  moveUci: string,
+): boolean {
+  try {
+    const chess = new Chess(`${normalizedFenBefore} 0 1`);
+    chess.move({
+      from: moveUci.slice(0, 2),
+      to: moveUci.slice(2, 4),
+      promotion: moveUci[4],
+    });
+    const normalizedFenAfter = normalizeFenForPosition(chess.fen());
+    return graph.positions.has(normalizedFenAfter);
+  } catch {
+    return false;
+  }
 }
 
 export function classifyCourseReviewGame(input: {
@@ -134,6 +154,16 @@ export function classifyCourseReviewGame(input: {
     }
 
     if (!position.opponentMoves.has(ply.moveUci)) {
+      if (
+        opponentMoveTransposesToKnownPosition(
+          input.graph,
+          ply.normalizedFenBefore,
+          ply.moveUci,
+        )
+      ) {
+        coveredPlies += 1;
+        continue;
+      }
       if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
         return baseResult(input.game, 'OUT_OF_SCOPE');
       }

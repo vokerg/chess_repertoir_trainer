@@ -2,7 +2,14 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LibraryApiService } from '../data-access/library-api.service';
-import { LibraryChapter, LibraryCourse, LibraryCourseStats, LibraryLine, LibraryMarathonMode } from '../data-access/library.models';
+import {
+  LibraryChapter,
+  LibraryCourse,
+  LibraryCourseStats,
+  LibraryLine,
+  LibraryMarathonMode,
+  LibraryTrainingScope,
+} from '../data-access/library.models';
 import { coverageLabel, lineStatus, masteryLabel, statusLabel } from '../helpers/library-line.helpers';
 
 @Injectable()
@@ -18,6 +25,7 @@ export class LibraryBrowserStore {
   readonly selectedLineId = signal<number | null>(null);
   readonly selectedLineIds = signal<number[]>([]);
   readonly marathonMode = signal<LibraryMarathonMode>('ALL');
+  readonly trainingScope = signal<LibraryTrainingScope>('CHAPTER');
   readonly courseLoading = signal(false);
   readonly chapterLoading = signal(false);
   readonly lineLoading = signal(false);
@@ -40,31 +48,70 @@ export class LibraryBrowserStore {
     const selectedIds = new Set(this.selectedLineIds());
     return this.lines().filter((line) => selectedIds.has(line.id));
   });
-  readonly basketLines = computed(() => this.selectedLines().length > 0 ? this.selectedLines() : this.lines());
-  readonly basketLineCount = computed(() => this.basketLines().length);
-  readonly basketActiveSublineCount = computed(() => this.basketLines().reduce((sum, line) => sum + line.trainingStats.activeSublineCount, 0));
-  readonly basketRecentAttempts = computed(() => this.basketLines().reduce((sum, line) => sum + line.trainingStats.totalAttempts, 0));
-  readonly basketWeakSublineCount = computed(() => this.basketLines().reduce((sum, line) => sum + line.trainingStats.weakSublineCount, 0));
-  readonly basketUntrainedSublineCount = computed(() => this.basketLines().reduce((sum, line) => sum + line.trainingStats.untrainedSublineCount, 0));
+  readonly selectedCourseStats = computed(() => {
+    const courseId = this.selectedCourseId();
+    return courseId ? this.courseStatsById()[courseId] ?? null : null;
+  });
+  readonly basketLines = computed(() => this.trainingScope() === 'SELECTED_LINES' ? this.selectedLines() : this.lines());
+  readonly basketLineCountLabel = computed(() => this.trainingScope() === 'COURSE' ? 'Sections' : 'Lines');
+  readonly basketLineCount = computed(() => this.trainingScope() === 'COURSE' ? this.chapters().length : this.basketLines().length);
+  readonly basketActiveSublineCount = computed(() =>
+    this.trainingScope() === 'COURSE'
+      ? this.selectedCourseStats()?.activeSublineCount ?? 0
+      : this.basketLines().reduce((sum, line) => sum + line.trainingStats.activeSublineCount, 0),
+  );
+  readonly basketRecentAttempts = computed(() =>
+    this.trainingScope() === 'COURSE'
+      ? this.selectedCourseStats()?.totalAttempts ?? 0
+      : this.basketLines().reduce((sum, line) => sum + line.trainingStats.totalAttempts, 0),
+  );
+  readonly basketWeakSublineCount = computed(() =>
+    this.trainingScope() === 'COURSE'
+      ? this.selectedCourseStats()?.weakSublineCount ?? 0
+      : this.basketLines().reduce((sum, line) => sum + line.trainingStats.weakSublineCount, 0),
+  );
+  readonly basketUntrainedSublineCount = computed(() =>
+    this.trainingScope() === 'COURSE'
+      ? this.selectedCourseStats()?.untrainedSublineCount ?? 0
+      : this.basketLines().reduce((sum, line) => sum + line.trainingStats.untrainedSublineCount, 0),
+  );
   readonly basketCoverageLabel = computed(() => {
+    if (this.trainingScope() === 'COURSE') {
+      const stats = this.selectedCourseStats();
+      return stats ? coverageLabel(stats.trainedSublineCount, stats.activeSublineCount) : 'Stats loading';
+    }
     const trained = this.basketLines().reduce((sum, line) => sum + line.trainingStats.trainedSublineCount, 0);
     return coverageLabel(trained, this.basketActiveSublineCount());
   });
   readonly basketMasteryLabel = computed(() => {
+    if (this.trainingScope() === 'COURSE') {
+      const stats = this.selectedCourseStats();
+      return stats ? masteryLabel(stats.passRate) : 'Stats loading';
+    }
     const active = this.basketActiveSublineCount();
     if (active === 0) return 'No attempts';
     const weighted = this.basketLines().reduce((sum, line) => sum + (line.trainingStats.passRate * line.trainingStats.activeSublineCount), 0);
     return masteryLabel(weighted / active);
   });
   readonly basketCoverageSourceLabel = computed(() => {
-    if (this.selectedLines().length > 0) return `${this.selectedLines().length} selected lines`;
-    if (this.selectedChapter()) return `Section: ${this.selectedChapter()!.name}`;
+    if (this.trainingScope() === 'SELECTED_LINES') return `${this.selectedLines().length} selected lines`;
+    if (this.trainingScope() === 'CHAPTER' && this.selectedChapter()) return `Section: ${this.selectedChapter()!.name}`;
     if (this.selectedCourse()) return `Repertoire: ${this.selectedCourse()!.name}`;
     return 'Select training scope';
   });
-  readonly canStartBasket = computed(() =>
-    this.selectedLines().length > 0 || Boolean(this.selectedChapterId()) || Boolean(this.selectedCourseId()),
-  );
+  readonly canUseCourseScope = computed(() => Boolean(this.selectedCourseId()));
+  readonly canUseChapterScope = computed(() => Boolean(this.selectedChapterId()));
+  readonly canUseSelectedLinesScope = computed(() => this.selectedLineIds().length > 0);
+  readonly canStartBasket = computed(() => {
+    switch (this.trainingScope()) {
+      case 'COURSE':
+        return this.canUseCourseScope();
+      case 'CHAPTER':
+        return this.canUseChapterScope();
+      case 'SELECTED_LINES':
+        return this.canUseSelectedLinesScope();
+    }
+  });
   readonly filteredCourses = computed(() => {
     const query = this.normalizedSearch();
     return query ? this.courses().filter((course) => matches(query, course.name, course.description)) : this.courses();
@@ -110,6 +157,7 @@ export class LibraryBrowserStore {
     this.selectedChapterId.set(null);
     this.selectedLineId.set(null);
     this.selectedLineIds.set([]);
+    this.trainingScope.set('CHAPTER');
     this.chapters.set([]);
     this.lines.set([]);
     this.clearExport();
@@ -121,6 +169,7 @@ export class LibraryBrowserStore {
     this.selectedChapterId.set(chapterId);
     this.selectedLineId.set(null);
     this.selectedLineIds.set([]);
+    this.trainingScope.set('CHAPTER');
     this.lines.set([]);
     this.clearExport();
     await this.loadLines(chapterId);
@@ -132,37 +181,52 @@ export class LibraryBrowserStore {
   }
 
   toggleLineSelection(lineId: number): void {
-    this.selectedLineIds.update((ids) =>
-      ids.includes(lineId) ? ids.filter((id) => id !== lineId) : [...ids, lineId],
-    );
+    const currentIds = this.selectedLineIds();
+    const nextIds = currentIds.includes(lineId) ? currentIds.filter((id) => id !== lineId) : [...currentIds, lineId];
+    this.selectedLineIds.set(nextIds);
+    if (nextIds.length > 0 && nextIds.length > currentIds.length) {
+      this.trainingScope.set('SELECTED_LINES');
+    }
+    if (nextIds.length === 0 && this.trainingScope() === 'SELECTED_LINES') {
+      this.trainingScope.set(this.selectedChapterId() ? 'CHAPTER' : 'COURSE');
+    }
   }
 
   selectAllVisibleLines(): void {
     this.selectedLineIds.set(this.filteredLines().map((line) => line.id));
+    if (this.selectedLineIds().length > 0) this.trainingScope.set('SELECTED_LINES');
   }
 
   clearLineSelection(): void {
     this.selectedLineIds.set([]);
+    if (this.trainingScope() === 'SELECTED_LINES') this.trainingScope.set(this.selectedChapterId() ? 'CHAPTER' : 'COURSE');
   }
 
   setMarathonMode(mode: LibraryMarathonMode): void {
     this.marathonMode.set(mode);
   }
 
-  startSelectedMarathon(): void {
-    const queryParams = { mode: this.marathonMode() };
+  setTrainingScope(scope: LibraryTrainingScope): void {
+    this.trainingScope.set(scope);
+  }
+
+  startSelectedMarathon(mode: LibraryMarathonMode = this.marathonMode(), scope: LibraryTrainingScope = this.trainingScope()): void {
+    this.marathonMode.set(mode);
+    this.trainingScope.set(scope);
+
+    const queryParams = { mode };
     const selectedLineIds = this.selectedLineIds();
-    if (selectedLineIds.length > 0) {
+    if (scope === 'SELECTED_LINES' && selectedLineIds.length > 0) {
       void this.router.navigate(['/library/marathon'], {
         queryParams: { ...queryParams, lineIds: selectedLineIds.join(',') },
       });
       return;
     }
-    if (this.selectedChapterId()) {
+    if (scope === 'CHAPTER' && this.selectedChapterId()) {
       void this.router.navigate(['/chapters', this.selectedChapterId(), 'marathon'], { queryParams });
       return;
     }
-    if (this.selectedCourseId()) {
+    if (scope === 'COURSE' && this.selectedCourseId()) {
       void this.router.navigate(['/courses', this.selectedCourseId(), 'marathon'], { queryParams });
     }
   }
@@ -264,6 +328,9 @@ export class LibraryBrowserStore {
       if (this.selectedChapterId() !== chapterId) return;
       this.lines.set(lines);
       this.selectedLineIds.update((ids) => ids.filter((id) => lines.some((line) => line.id === id)));
+      if (this.selectedLineIds().length === 0 && this.trainingScope() === 'SELECTED_LINES') {
+        this.trainingScope.set(this.selectedChapterId() ? 'CHAPTER' : 'COURSE');
+      }
       this.selectedLineId.set(
         lines.some((line) => line.id === this.selectedLineId()) ? this.selectedLineId() : lines[0]?.id ?? null,
       );
@@ -287,6 +354,8 @@ export class LibraryBrowserStore {
     this.selectedCourseId.set(null);
     this.selectedChapterId.set(null);
     this.selectedLineId.set(null);
+    this.selectedLineIds.set([]);
+    this.trainingScope.set('CHAPTER');
     this.chapters.set([]);
     this.lines.set([]);
   }

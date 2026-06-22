@@ -1,8 +1,49 @@
-<app-panel [title]="sourceLabel()" [subtitle]="basketSubtitle()" [stats]="basketStats()" [actions]="basketActions()">
-  <div class="mode-group" aria-label="Marathon mode">
-    <button type="button" class="secondary" [class.active]="mode() === 'ALL'" (click)="modeChange.emit('ALL')">All</button>
-    <button type="button" class="secondary" [class.active]="mode() === 'WEAK_SUBLINES'" (click)="modeChange.emit('WEAK_SUBLINES')">Weak</button>
-    <button type="button" class="secondary" [class.active]="mode() === 'UNTRAINED_SUBLINES'" (click)="modeChange.emit('UNTRAINED_SUBLINES')">Untrained</button>
-    <button type="button" class="secondary" [class.active]="mode() === 'MIXED_WEAK_UNTRAINED'" (click)="modeChange.emit('MIXED_WEAK_UNTRAINED')">Mixed</button>
+<app-panel [title]="sourceLabel()" [subtitle]="basketSubtitle()">
+  <dl class="basket-stats" aria-label="Training scope summary">
+    @for (stat of basketStats(); track stat.id) {
+      <div class="basket-stat-row">
+        <dt>{{ stat.label }}</dt>
+        <dd>{{ stat.value }}</dd>
+      </div>
+    }
+  </dl>
+
+  <div class="basket-train">
+    <p class="basket-train-label">Scope</p>
+
+    <div class="basket-scope-actions" aria-label="Training scope">
+      @for (option of scopeOptions(); track option.id) {
+        <button
+          type="button"
+          class="secondary"
+          [class.active]="scope() === option.id"
+          [disabled]="option.disabled"
+          (click)="selectScope(option.id)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+
+    <p class="basket-train-label">Train</p>
+
+    <div class="basket-train-actions" aria-label="Start marathon">
+      <button type="button" [disabled]="!canStartAll()" (click)="startMarathon('ALL')">
+        All
+      </button>
+
+      <button type="button" class="secondary" [disabled]="!canStartWeak()" (click)="startMarathon('WEAK_SUBLINES')">
+        Weak
+      </button>
+
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="!canStartUntrained()"
+        (click)="startMarathon('UNTRAINED_SUBLINES')"
+      >
+        Untrained
+      </button>
+    </div>
   </div>
 </app-panel>

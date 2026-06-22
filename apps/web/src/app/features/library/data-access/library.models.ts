@@ -48,3 +48,4 @@ export interface LibraryLine {
 
 export type LibraryLineStatus = 'NEW' | 'WEAK' | 'REVIEW' | 'STABLE' | 'STRONG';
 export type LibraryMarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';
+export type LibraryTrainingScope = 'COURSE' | 'CHAPTER' | 'SELECTED_LINES';

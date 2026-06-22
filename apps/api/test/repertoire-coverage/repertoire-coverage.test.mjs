@@ -98,6 +98,20 @@ const opponentUncovered = classify(opponentGraph, ['g1f3'], { minCoveredPlies: 0
 assert.equal(opponentUncovered.status, 'OPPONENT_UNCOVERED');
 assert.equal(opponentUncovered.playedMoveUci, 'g1f3');
 
+const nimzoTranspositionGraph = buildRepertoireGraph([
+  makeLine(12, 'Nimzo via e6', 'WHITE', ['d2d4', 'e7e6', 'c2c4', 'g8f6', 'b1c3']),
+  makeLine(13, 'KID setup', 'WHITE', ['d2d4', 'g8f6', 'c2c4', 'g7g6']),
+]);
+const nimzoTranspositionPositionCount = nimzoTranspositionGraph.positions.size;
+const nimzoTransposition = classify(
+  nimzoTranspositionGraph,
+  ['d2d4', 'g8f6', 'c2c4', 'e7e6', 'b1c3'],
+  { sideToTrain: 'WHITE' },
+);
+assert.equal(nimzoTransposition.status, 'GAME_ENDED_INSIDE_REPERTOIRE');
+assert.notEqual(nimzoTransposition.status, 'OPPONENT_UNCOVERED');
+assert.equal(nimzoTranspositionGraph.positions.size, nimzoTranspositionPositionCount);
+
 assert.equal(classify(blackGraph, ['e2e4', 'c7c5', 'g1f3']).status, 'REPERTOIRE_ENDED');
 assert.equal(classify(blackGraph, ['e2e4', 'c7c5']).status, 'GAME_ENDED_INSIDE_REPERTOIRE');
 
