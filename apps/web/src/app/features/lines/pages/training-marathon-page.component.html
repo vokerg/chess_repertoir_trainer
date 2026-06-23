@@ -1,46 +1,7 @@
 @if (store.loaded()) {
-  <section class="marathon-page stack">
-    <header class="workbench-header marathon-header">
-      <div class="workbench-title-group marathon-title-group">
-        <a [routerLink]="store.backLink()" class="workbench-breadcrumb">&larr; {{ store.backLabel() }}</a>
-        <h2 class="workbench-title">{{ store.marathonTitle() }}</h2>
-        <div class="workbench-meta marathon-meta">
-          <span>{{ store.sourceSummary() }}</span>
-          <span>Current line: {{ store.lineName() }}</span>
-          @if (store.sublineMoveText(); as sublineMoveText) {
-            <span>{{ sublineMoveText }}</span>
-          }
-          <span>Train as {{ store.sideToTrain() === 'BLACK' ? 'Black' : 'White' }}</span>
-          <span>{{ store.completedThisRun() }} completed this run</span>
-          <span>{{ store.completed() ? 'Session complete' : 'In progress' }}</span>
-        </div>
-        <div class="marathon-mobile-summary">
-          <span>{{ store.lineName() }}</span>
-          <span>{{ store.completedThisRun() }} done · {{ store.completed() ? 'Complete' : 'In progress' }}</span>
-        </div>
-      </div>
-      <nav class="workbench-mode-switch marathon-mode-switch" aria-label="Marathon mode">
-        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'ALL'" (click)="store.switchMode('ALL')">
-          All
-        </button>
-        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'WEAK_SUBLINES'" (click)="store.switchMode('WEAK_SUBLINES')">
-          Weak
-        </button>
-        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'UNTRAINED_SUBLINES'" (click)="store.switchMode('UNTRAINED_SUBLINES')">
-          Untrained
-        </button>
-        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'MIXED_WEAK_UNTRAINED'" (click)="store.switchMode('MIXED_WEAK_UNTRAINED')">
-          Mixed
-        </button>
-        @if (store.lineId()) {
-          <a class="mode-pill" [routerLink]="['/lines', store.lineId(), 'edit']">Edit current tree</a>
-        }
-      </nav>
-    </header>
-
-    @if (store.error()) { <p class="status-error">{{ store.error() }}</p> }
-
+  <section class="marathon-training-page">
     <app-line-training-session
+      class="marathon-session"
       [sessionId]="store.sessionId()"
       [currentFen]="store.currentFen()"
       [expectedMove]="store.expectedMove()"
@@ -71,6 +32,45 @@
       (finish)="store.finishTraining()"
       (primaryAction)="store.startNextLine()"
     />
+
+    <header class="workbench-header marathon-header">
+      <div class="workbench-title-group marathon-title-group">
+        <a [routerLink]="store.backLink()" class="workbench-breadcrumb">&larr; {{ store.backLabel() }}</a>
+        <h2 class="workbench-title">{{ store.marathonTitle() }}</h2>
+        <div class="workbench-meta marathon-meta">
+          <span>{{ store.sourceSummary() }}</span>
+          <span>Current line: {{ store.lineName() }}</span>
+          @if (store.sublineMoveText(); as sublineMoveText) {
+            <span>{{ sublineMoveText }}</span>
+          }
+          <span>Train as {{ store.sideToTrain() === 'BLACK' ? 'Black' : 'White' }}</span>
+          <span>{{ store.completedThisRun() }} completed this run</span>
+          <span>{{ store.completed() ? 'Session complete' : 'In progress' }}</span>
+        </div>
+        <div class="marathon-mobile-summary">
+          <span>{{ store.lineName() }}</span>
+        </div>
+      </div>
+      <nav class="workbench-mode-switch marathon-mode-switch" aria-label="Marathon mode">
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'ALL'" (click)="store.switchMode('ALL')">
+          All
+        </button>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'WEAK_SUBLINES'" (click)="store.switchMode('WEAK_SUBLINES')">
+          Weak
+        </button>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'UNTRAINED_SUBLINES'" (click)="store.switchMode('UNTRAINED_SUBLINES')">
+          Untrained
+        </button>
+        <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'MIXED_WEAK_UNTRAINED'" (click)="store.switchMode('MIXED_WEAK_UNTRAINED')">
+          Mixed
+        </button>
+        @if (store.lineId()) {
+          <a class="mode-pill" [routerLink]="['/lines', store.lineId(), 'edit']">Edit current tree</a>
+        }
+      </nav>
+    </header>
+
+    @if (store.error()) { <p class="status-error marathon-error">{{ store.error() }}</p> }
   </section>
 } @else {
   <section class="section-card stack">
