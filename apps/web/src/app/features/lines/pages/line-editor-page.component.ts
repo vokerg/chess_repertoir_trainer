@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { combineLatest, distinctUntilChanged, map } from 'rxjs';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { LineEditorWorkbenchComponent } from '../components/line-editor-workbench.component';
 import { LineEditorStore } from '../state/line-editor.store';
 
@@ -24,6 +25,7 @@ import { LineEditorStore } from '../state/line-editor.store';
 export class LineEditorPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(LineEditorStore);
 
   ngOnInit(): void {
@@ -47,9 +49,18 @@ export class LineEditorPageComponent implements OnInit {
     this.store.handleKeyboard(event);
   }
 
-  protected confirmDeleteSelectedSubtree(): void {
+  protected async confirmDeleteSelectedSubtree(): Promise<void> {
     const message = this.store.deleteConfirmationText();
-    if (!message || !window.confirm(message)) return;
-    void this.store.deleteSelectedSubtree();
+    if (!message) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete variation?',
+      message,
+      tone: 'danger',
+      confirmLabel: 'Delete variation',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) void this.store.deleteSelectedSubtree();
   }
 }

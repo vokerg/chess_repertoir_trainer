@@ -76,10 +76,6 @@ export class AccountsStore {
   }
 
   async resetCursor(account: ExternalAccount): Promise<void> {
-    const confirmed = window.confirm(
-      `Reset the import cursor for ${providerLabel(account.provider)} @${account.username}? The next sync will re-scan the full history for this account, but already imported games will be skipped rather than duplicated.`,
-    );
-    if (!confirmed) return;
     this.resettingCursorAccountId.set(account.id);
     this.clearMessages();
     try {
@@ -105,8 +101,6 @@ export class AccountsStore {
   }
 
   async deleteAccount(account: ExternalAccount): Promise<void> {
-    const label = `${providerLabel(account.provider)} @${account.username}`;
-    if (!window.confirm(`Delete ${label} and all imported games, ply indexes, analysis, and sync history linked to it? This cannot be undone.`)) return;
     this.deletingAccountId.set(account.id);
     this.clearMessages();
     try {

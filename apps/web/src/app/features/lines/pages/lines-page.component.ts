@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { LineHealthTableComponent } from '../components/line-health-table/line-health-table.component';
 import { LineSummary } from '../data-access/lines.models';
 import { LinesPageStore } from '../state/lines-page.store';
@@ -20,6 +21,7 @@ import { LinesPageStore } from '../state/lines-page.store';
 export class LinesPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(LinesPageStore);
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'lines', label: 'Lines', value: this.store.lines().length },
@@ -67,11 +69,15 @@ export class LinesPageComponent implements OnInit {
       .subscribe((chapterId) => this.store.initialize(chapterId));
   }
 
-  protected confirmDeleteLine(line: LineSummary): void {
-    const confirmed = window.confirm(
-      `Delete line "${line.name}" and its full move tree? This cannot be undone.`,
-    );
-    if (!confirmed) return;
-    void this.store.deleteLine(line);
+  protected async confirmDeleteLine(line: LineSummary): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete line?',
+      message: `Delete line "${line.name}" and its full move tree? This cannot be undone.`,
+      tone: 'danger',
+      confirmLabel: 'Delete line',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) void this.store.deleteLine(line);
   }
 }

@@ -15,6 +15,7 @@ import {
   PageHeaderComponent,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
@@ -52,6 +53,7 @@ import {
 export class FreeAnalysisPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(FreeAnalysisStore);
   protected readonly reintegrationStore = inject(AnalysisReintegrationStore);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
@@ -91,10 +93,19 @@ export class FreeAnalysisPageComponent implements OnInit {
     this.store.handleKeyboard(event);
   }
 
-  protected confirmDeleteSelectedSubtree(): void {
+  protected async confirmDeleteSelectedSubtree(): Promise<void> {
     const message = this.store.deleteConfirmationText();
-    if (!message || !window.confirm(message)) return;
-    this.store.deleteSelectedSubtree();
+    if (!message) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete local variation?',
+      message,
+      tone: 'danger',
+      confirmLabel: 'Delete variation',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) this.store.deleteSelectedSubtree();
   }
 
   protected openReintegrationDialog(): void {

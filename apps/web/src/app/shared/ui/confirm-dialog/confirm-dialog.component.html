@@ -1,0 +1,53 @@
+<dialog
+  #dialog
+  class="confirm-dialog"
+  [class.confirm-dialog-warning]="tone() === 'warning'"
+  [class.confirm-dialog-danger]="tone() === 'danger'"
+  [attr.aria-labelledby]="dialogTitleId"
+  [attr.aria-describedby]="dialogDescriptionId"
+  (cancel)="onCancel($event)"
+  (mousedown)="onBackdropPointerDown($event)"
+>
+  @if (request(); as dialogRequest) {
+    <form class="confirm-dialog-panel" [class.confirm-dialog-panel-danger]="tone() === 'danger'" (submit)="onConfirmSubmit($event)">
+      <div class="confirm-dialog-header">
+        <span class="confirm-dialog-tone" aria-hidden="true"></span>
+        <div>
+          <h2 [id]="dialogTitleId">{{ dialogRequest.title }}</h2>
+          <p [id]="dialogDescriptionId">{{ dialogRequest.message }}</p>
+        </div>
+      </div>
+
+      @if (dialogRequest.details?.length) {
+        <ul class="confirm-dialog-details">
+          @for (detail of dialogRequest.details; track detail) {
+            <li>{{ detail }}</li>
+          }
+        </ul>
+      }
+
+      @if (hasTypedConfirmation()) {
+        <label class="confirm-dialog-field">
+          <span>Type <strong>{{ typedConfirmation() }}</strong> to confirm.</span>
+          <input
+            #typedInput
+            type="text"
+            autocomplete="off"
+            [formControl]="confirmationControl"
+          />
+        </label>
+      }
+
+      <div class="confirm-dialog-actions">
+        <button #cancelButton type="button" class="secondary" (click)="cancel()">{{ cancelLabel() }}</button>
+        <button
+          type="submit"
+          [class.danger]="tone() === 'danger'"
+          [disabled]="!canConfirm()"
+        >
+          {{ confirmLabel() }}
+        </button>
+      </div>
+    </form>
+  }
+</dialog>

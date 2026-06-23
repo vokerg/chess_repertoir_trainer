@@ -57,7 +57,7 @@
                   <a [routerLink]="['/chapters', chapter.id, 'lines']" class="button-link"><button type="button">Open lines</button></a>
                   <a [routerLink]="['/chapters', chapter.id, 'marathon']" class="button-link"><button type="button" class="secondary">Train chapter</button></a>
                   <button type="button" class="secondary" (click)="store.startChapterEdit(chapter)" [disabled]="store.savingChapterId() === chapter.id">Rename</button>
-                  <button type="button" class="secondary" (click)="store.deleteChapter(chapter)" [disabled]="store.deletingChapterId() === chapter.id">
+                  <button type="button" class="secondary" (click)="confirmDeleteChapter(chapter)" [disabled]="store.deletingChapterId() === chapter.id">
                     {{ store.deletingChapterId() === chapter.id ? 'Deleting...' : 'Delete' }}
                   </button>
                 </div>

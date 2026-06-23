@@ -6,7 +6,7 @@
     "config": "node -e \"require('fs').writeFileSync('src/app/app-config.ts', 'export const appConfig = {\\n  apiBaseUrl: ' + JSON.stringify(process.env.WEB_API_BASE_URL || '/api') + ',\\n  clerkPublishableKey: ' + JSON.stringify(process.env.WEB_CLERK_PUBLISHABLE_KEY || '') + ',\\n};\\n')\"",
     "dev": "npm run config && ng serve",
     "build": "npm run config && ng build",
-    "test": "node -e \"console.log('No web tests yet')\"",
+    "test": "ng test --watch=false",
     "lint": "ng lint",
     "format": "prettier --write ."
   },
@@ -35,6 +35,10 @@
     "autoprefixer": "^10.4.14",
     "jasmine-core": "^4.5.0",
     "karma": "^6.4.0",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage": "^2.2.1",
+    "karma-jasmine": "^5.1.0",
+    "karma-jasmine-html-reporter": "^2.2.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.9.0"

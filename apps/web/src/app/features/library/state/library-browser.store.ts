@@ -35,7 +35,6 @@ export class LibraryBrowserStore {
   readonly searchText = signal('');
   readonly reviewOnly = signal(false);
   readonly courseStatsById = signal<Record<number, LibraryCourseStats>>({});
-  readonly deletingLineId = signal<number | null>(null);
   readonly exportedPgn = signal('');
   readonly pgnExportLineId = signal<number | null>(null);
   readonly pgnExporting = signal(false);
@@ -233,43 +232,6 @@ export class LibraryBrowserStore {
 
   toggleReviewOnly(): void {
     this.reviewOnly.update((value) => !value);
-  }
-
-  async createLineInSelectedChapter(): Promise<void> {
-    const chapterId = this.selectedChapterId();
-    if (!chapterId) return;
-    const name = window.prompt('Line name', 'New repertoire line')?.trim();
-    if (!name) return;
-    const sideInput = window.prompt('Side to train: WHITE or BLACK', 'WHITE')?.trim().toUpperCase();
-    const sideToTrain = sideInput === 'BLACK' ? 'BLACK' : 'WHITE';
-    const startingFen = window.prompt('Starting position: use startpos or paste a FEN', 'startpos')?.trim() || 'startpos';
-    this.lineLoading.set(true);
-    this.lineError.set(null);
-    try {
-      const line = await firstValueFrom(this.api.createLine(chapterId, { name, sideToTrain, startingFen }));
-      this.selectedLineId.set(line.id);
-      await this.loadLines(chapterId);
-    } catch (error) {
-      this.lineError.set(readError(error, 'Could not create line.'));
-      this.lineLoading.set(false);
-    }
-  }
-
-  async deleteLine(line: LibraryLine): Promise<void> {
-    if (!window.confirm(`Delete line "${line.name}" and its full move tree? This cannot be undone.`)) return;
-    this.deletingLineId.set(line.id);
-    this.lineError.set(null);
-    try {
-      await firstValueFrom(this.api.deleteLine(line.id));
-      this.lines.update((lines) => lines.filter((item) => item.id !== line.id));
-      this.selectedLineIds.update((ids) => ids.filter((id) => id !== line.id));
-      if (this.selectedLineId() === line.id) this.selectedLineId.set(this.lines()[0]?.id ?? null);
-      this.clearExport();
-    } catch (error) {
-      this.lineError.set(readError(error, 'Could not delete line.'));
-    } finally {
-      this.deletingLineId.set(null);
-    }
   }
 
   async exportPgn(line: LibraryLine): Promise<void> {

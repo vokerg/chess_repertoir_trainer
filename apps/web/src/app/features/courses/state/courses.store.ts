@@ -46,7 +46,6 @@ export class CoursesStore {
   }
 
   async deleteCourse(course: CourseDetail): Promise<void> {
-    if (!window.confirm(`Delete "${course.name}" and all of its chapters and lines? This cannot be undone.`)) return;
     this.deletingId.set(course.id);
     this.error.set(null);
     try {

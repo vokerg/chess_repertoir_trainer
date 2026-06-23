@@ -10,7 +10,7 @@
           @for (course of store.courses(); track course.id) {
             <article class="collection-card">
               <div class="course-card-header"><div><h4 class="collection-title">{{ course.name }}</h4><p class="collection-description">{{ course.description || 'A focused training space for a complete repertoire branch.' }}</p></div><span class="pill">Course #{{ course.id }}</span></div>
-              <div class="collection-actions"><a [routerLink]="['/courses', course.id]" class="button-link"><button type="button">Open course</button></a><button type="button" class="secondary" (click)="store.deleteCourse(course)" [disabled]="store.deletingId() === course.id">{{ store.deletingId() === course.id ? 'Deleting...' : 'Delete' }}</button></div>
+              <div class="collection-actions"><a [routerLink]="['/courses', course.id]" class="button-link"><button type="button">Open course</button></a><button type="button" class="secondary" (click)="confirmDeleteCourse(course)" [disabled]="store.deletingId() === course.id">{{ store.deletingId() === course.id ? 'Deleting...' : 'Delete' }}</button></div>
             </article>
           }
         </div>

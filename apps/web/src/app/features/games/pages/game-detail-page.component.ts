@@ -14,6 +14,7 @@ import { GameSummaryComponent } from '../components/game-summary.component';
 import { GameWorkbenchComponent } from '../components/game-workbench.component';
 import { GameDetailStore } from '../state/game-detail.store';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 
 @Component({
   selector: 'app-game-detail-page',
@@ -32,6 +33,7 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 export class GameDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(GameDetailStore);
 
   ngOnInit(): void {
@@ -49,9 +51,18 @@ export class GameDetailPageComponent implements OnInit {
     this.store.handleKeyboard(event);
   }
 
-  protected confirmDeleteSelectedSubtree(): void {
+  protected async confirmDeleteSelectedSubtree(): Promise<void> {
     const message = this.store.deleteConfirmationText();
-    if (!message || !window.confirm(message)) return;
-    this.store.deleteSelectedSubtree();
+    if (!message) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete local variation?',
+      message,
+      tone: 'danger',
+      confirmLabel: 'Delete variation',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) this.store.deleteSelectedSubtree();
   }
 }

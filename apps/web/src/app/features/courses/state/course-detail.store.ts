@@ -158,7 +158,6 @@ export class CourseDetailStore {
   }
 
   async deleteChapter(chapter: CourseChapter): Promise<void> {
-    if (!window.confirm(`Delete chapter "${chapter.name}" and all lines inside it? This cannot be undone.`)) return;
     this.deletingChapterId.set(chapter.id);
     this.error.set(null);
     try {
@@ -174,7 +173,7 @@ export class CourseDetailStore {
 
   async deleteCourse(): Promise<void> {
     const courseId = this.courseId();
-    if (!courseId || !window.confirm(`Delete "${this.course()?.name || 'this course'}" and everything inside it? This cannot be undone.`)) return;
+    if (!courseId) return;
     this.deletingCourse.set(true);
     this.error.set(null);
     try {

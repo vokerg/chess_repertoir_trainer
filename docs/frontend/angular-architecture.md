@@ -31,6 +31,7 @@ Some older `pages/*` files and large route components still own too much state o
 - Pure parsing, traversal, mapping, and formatting logic belongs in helpers when it can be tested without Angular.
 - A feature must not import another feature's internals. Promote genuinely reusable code to `shared` or expose a deliberate public boundary.
 - The shared analysis workbench is presentational UI only. Feature stores own persistence and workflow semantics: the line editor persists repertoire changes, while game and free analysis own local-only variation trees.
+- Dialogs are UI composition concerns. Shared generic confirmation belongs in `shared/ui`; feature-specific input dialogs belong in `features/<feature>/components`; stores must not call browser-native dialogs or collect user input.
 
 ## Angular defaults
 

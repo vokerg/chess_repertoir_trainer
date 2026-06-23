@@ -72,6 +72,16 @@ The shared analysis workbench receives board, move-tree, engine, navigation, and
 
 Projected side content may compose the shared position-game-moves panel with feature-owned UI such as line notes. Shared and presentational components emit user intent only; persistence and async workflow remain owned by the feature store. Shared components must not import feature internals to reach feature state or commands.
 
+## Dialogs and destructive confirmations
+
+Do not use `window.alert`, `window.confirm`, `window.prompt`, raw `alert`, raw `confirm`, or raw `prompt` in `apps/web`.
+
+Use `shared/ui/confirm-dialog` for confirmation-only flows. Route/page components ask for confirmation, then call store commands. Stores must not collect browser-native confirmation from users.
+
+Use feature-local standalone dialog components with typed reactive forms for input flows. Dialog forms own validation and emit typed submit/cancel intents. Stores receive already-validated payloads and own API/state workflow.
+
+Destructive irreversible actions should use danger styling and may require typed confirmation for high-impact deletes such as accounts, courses, and imported data.
+
 ## Template control flow
 
 ```html

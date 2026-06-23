@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
+import { CourseChapter } from '../data-access/course-detail.models';
 import { CourseDetailStore } from '../state/course-detail.store';
 import { SublinesListComponent } from '../components/sublines/sublines-list.component';
 
@@ -20,6 +22,7 @@ import { SublinesListComponent } from '../components/sublines/sublines-list.comp
 export class CourseDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(CourseDetailStore);
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'chapters', label: 'Chapters', value: this.store.chapters().length },
@@ -41,7 +44,7 @@ export class CourseDetailPageComponent implements OnInit {
         id: 'delete',
         label: this.store.deletingCourse() ? 'Deleting...' : 'Delete',
         disabled: this.store.deletingCourse(),
-        run: () => this.store.deleteCourse(),
+        run: () => void this.confirmDeleteCurrentCourse(),
       },
     ];
   });
@@ -54,5 +57,33 @@ export class CourseDetailPageComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((courseId) => this.store.initialize(courseId));
+  }
+
+  protected async confirmDeleteChapter(chapter: CourseChapter): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete chapter?',
+      message: `Delete chapter "${chapter.name}" and all lines inside it? This cannot be undone.`,
+      tone: 'danger',
+      confirmLabel: 'Delete chapter',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) void this.store.deleteChapter(chapter);
+  }
+
+  protected async confirmDeleteCurrentCourse(): Promise<void> {
+    const course = this.store.course();
+    if (!course) return;
+
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Delete course?',
+      message: `Delete "${course.name}" and everything inside it? This cannot be undone.`,
+      tone: 'danger',
+      confirmLabel: 'Delete course',
+      cancelLabel: 'Cancel',
+      requireTypedConfirmation: course.name,
+    });
+
+    if (confirmed) void this.store.deleteCourse();
   }
 }
