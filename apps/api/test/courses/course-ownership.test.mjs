@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import prismaModule from '../../dist/prisma.js';
 import {
   ChapterService,
+  CoursePositionSuggestionService,
   CourseService,
   LineService,
   MoveNodeService,
@@ -40,6 +41,41 @@ try {
   });
   assert.ok(lineB);
   const nodeB = await MoveNodeService.create(userB.id, lineB.id, { moveUci: 'e2e4' });
+
+  const chapterA = await ChapterService.create(userA.id, courseA.id, { name: 'User A chapter', sortOrder: 2 });
+  assert.ok(chapterA);
+  const lineA = await LineService.create(userA.id, chapterA.id, {
+    name: 'Alpha line',
+    sideToTrain: 'WHITE',
+    startingFen: 'startpos',
+  });
+  assert.ok(lineA);
+  await MoveNodeService.create(userA.id, lineA.id, { moveUci: 'e2e4' });
+
+  const secondCourseA = await CourseService.create(userA.id, { name: 'Another user A course' });
+  const secondChapterA = await ChapterService.create(userA.id, secondCourseA.id, { name: 'Earlier chapter', sortOrder: 1 });
+  assert.ok(secondChapterA);
+  const secondLineA = await LineService.create(userA.id, secondChapterA.id, {
+    name: 'Beta line',
+    sideToTrain: 'WHITE',
+    startingFen: 'startpos',
+  });
+  assert.ok(secondLineA);
+  await MoveNodeService.create(userA.id, secondLineA.id, { moveUci: 'd2d4' });
+
+  const positionSuggestions = await CoursePositionSuggestionService.listForFen(userA.id, 'startpos');
+  assert.equal(positionSuggestions.normalizedFen, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -');
+  assert.deepEqual(
+    positionSuggestions.suggestions.map((suggestion) => ({
+      courseName: suggestion.courseName,
+      lineName: suggestion.lineName,
+      moveUci: suggestion.moveUci,
+    })),
+    [
+      { courseName: 'Another user A course', lineName: 'Beta line', moveUci: 'd2d4' },
+      { courseName: 'User A course', lineName: 'Alpha line', moveUci: 'e2e4' },
+    ],
+  );
 
   assert.equal(await ChapterService.get(userA.id, chapterB.id), null);
   assert.equal(await ChapterService.list(userA.id, courseB.id), null);

@@ -5,6 +5,7 @@
 .turn-pill { display: inline-flex; width: fit-content; align-items: center; border-radius: 999px; padding: 0.35rem 0.65rem; background: rgba(35,27,21,0.08); color: var(--muted-strong); font-size: 0.78rem; font-weight: 900; }
 .turn-pill-user { background: var(--success-soft); color: var(--success); }
 .opening-workbench { display: grid; grid-template-columns: minmax(320px,0.9fr) minmax(360px,1.1fr); gap: 1rem; align-items: start; }
+.opening-board-column { display: grid; gap: 1rem; }
 .opening-board-panel, .opening-tree-panel { display: grid; gap: 1rem; }
 .opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0,min(520px,calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
 .opening-board-stage app-engine-eval-bar { height: 100%; min-width: 0; }

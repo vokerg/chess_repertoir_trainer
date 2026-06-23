@@ -2,57 +2,64 @@
   <app-page-header title="Opening analysis" subtitle="Explore positions from your indexed games." [stats]="headerStats()" />
 
   <div class="opening-workbench">
-    <section class="workbench-panel opening-board-panel">
-      <div class="opening-panel-header">
-        <div>
-          <h3 class="workbench-panel-title">Board probe</h3>
-          <p class="workbench-panel-subtitle">{{ store.perspectiveHelpText() }}</p>
+    <div class="opening-board-column">
+      <section class="workbench-panel opening-board-panel">
+        <div class="opening-panel-header">
+          <div>
+            <h3 class="workbench-panel-title">Board probe</h3>
+            <p class="workbench-panel-subtitle">{{ store.perspectiveHelpText() }}</p>
+          </div>
+          <div class="side-stack">
+            <span class="side-pill">{{ store.analysis()?.sideToMove || store.sideToMove() }} to move</span>
+            <span class="turn-pill" [class.turn-pill-user]="store.userTurn()">{{ store.turnOwnerLabel() }}</span>
+          </div>
         </div>
-        <div class="side-stack">
-          <span class="side-pill">{{ store.analysis()?.sideToMove || store.sideToMove() }} to move</span>
-          <span class="turn-pill" [class.turn-pill-user]="store.userTurn()">{{ store.turnOwnerLabel() }}</span>
-        </div>
-      </div>
 
-      <div class="board-stage opening-board-stage">
-        <app-engine-eval-bar
-          [analysis]="store.engine()"
-          [currentFen]="store.currentFen()"
-          [flipped]="store.blackPerspective()"
-          [fitHeight]="true"
+        <div class="board-stage opening-board-stage">
+          <app-engine-eval-bar
+            [analysis]="store.engine()"
+            [currentFen]="store.currentFen()"
+            [flipped]="store.blackPerspective()"
+            [fitHeight]="true"
+          />
+
+          <div class="board-shell">
+            <app-chessground-board
+              [fen]="store.currentFen()"
+              [side]="store.boardSide()"
+              [lastMove]="store.lastMove()"
+              [arrows]="store.analysisArrows()"
+              [sound]="false"
+              [positionVersion]="store.boardPositionVersion()"
+              (move)="store.playBoardMove($event)"
+            />
+          </div>
+        </div>
+
+        <app-board-action-toolbar
+          [canGoBackward]="store.history().length > 0"
+          [showNext]="false"
+          [showEnd]="false"
+          [fen]="store.currentFen()"
+          keyboardHint="Keyboard: Left arrow to go back, Home for start"
+          (goStart)="store.resetBoard()"
+          (goPrevious)="store.goBack()"
         />
 
-        <div class="board-shell">
-          <app-chessground-board
-            [fen]="store.currentFen()"
-            [side]="store.boardSide()"
-            [lastMove]="store.lastMove()"
-            [arrows]="store.analysisArrows()"
-            [sound]="false"
-            [positionVersion]="store.boardPositionVersion()"
-            (move)="store.playBoardMove($event)"
-          />
-        </div>
-      </div>
+        <app-copyable-line
+          class="opening-line-card"
+          name="Current line"
+          [line]="store.lineLabel()"
+          [link]="['/analysis']"
+          [queryParams]="analysisQueryParams()"
+        />
+      </section>
 
-      <app-board-action-toolbar
-        [canGoBackward]="store.history().length > 0"
-        [showNext]="false"
-        [showEnd]="false"
+      <app-course-position-suggestions-widget
         [fen]="store.currentFen()"
-        keyboardHint="Keyboard: Left arrow to go back, Home for start"
-        (goStart)="store.resetBoard()"
-        (goPrevious)="store.goBack()"
+        (moveSelected)="store.playBoardMove($event.moveUci)"
       />
-
-      <app-copyable-line
-        class="opening-line-card"
-        name="Current line"
-        [line]="store.lineLabel()"
-        [link]="['/analysis']"
-        [queryParams]="analysisQueryParams()"
-      />
-    </section>
+    </div>
 
     <div class="opening-tree-panel">
       <app-position-game-moves-panel

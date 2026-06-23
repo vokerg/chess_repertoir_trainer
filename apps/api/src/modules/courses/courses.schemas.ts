@@ -7,6 +7,10 @@ export const createCourseSchema = z.object({
 
 export const updateCourseSchema = createCourseSchema.partial();
 
+export const positionSuggestionsQuerySchema = z.object({
+  fen: z.string().min(1).default('startpos'),
+});
+
 export const createChapterSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional().nullable(),

@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { Prisma } from '@prisma/client';
+import { normalizeFenForPosition } from 'chess-domain';
 import { buildMoveTreeFromNodes } from '../../utils/move-tree-builder';
 import prisma from '../../prisma';
 import { StatsService } from '../../services/statsService';
@@ -18,6 +19,7 @@ import {
   getCourseById,
   getLineById,
   getLineMoveNodes,
+  listCourseMoveNodeCandidatesForUser,
   getNodeById,
   listChapters,
   listCourses,
@@ -90,6 +92,63 @@ export const CourseService = {
     updateCourse(userId, id, data),
   delete: async (userId: number, id: number) => deleteCourse(userId, id),
 };
+
+interface CoursePositionSuggestion {
+  nodeId: number;
+  fenBefore: string;
+  fenAfter: string;
+  moveUci: string;
+  moveSan: string;
+  isUserMove: boolean;
+  isCorrectUserMove: boolean;
+  sortOrder: number;
+  lineId: number;
+  lineName: string;
+  chapterId: number;
+  chapterName: string;
+  chapterSortOrder: number;
+  courseId: number;
+  courseName: string;
+}
+
+export const CoursePositionSuggestionService = {
+  listForFen: async (userId: number, fen: string) => {
+    const normalizedFen = normalizeFenForPosition(fen);
+    const candidates = await listCourseMoveNodeCandidatesForUser(userId);
+    const suggestions: CoursePositionSuggestion[] = candidates
+      .filter((node) => normalizeFenForPosition(node.fenBefore) === normalizedFen)
+      .map((node) => ({
+        nodeId: node.id,
+        fenBefore: node.fenBefore,
+        fenAfter: node.fenAfter,
+        moveUci: node.moveUci,
+        moveSan: node.moveSan,
+        isUserMove: node.isUserMove,
+        isCorrectUserMove: node.isCorrectUserMove,
+        sortOrder: node.sortOrder,
+        lineId: node.line.id,
+        lineName: node.line.name,
+        chapterId: node.line.chapter.id,
+        chapterName: node.line.chapter.name,
+        chapterSortOrder: node.line.chapter.sortOrder,
+        courseId: node.line.chapter.course.id,
+        courseName: node.line.chapter.course.name,
+      }))
+      .sort(compareCoursePositionSuggestions);
+
+    return { normalizedFen, suggestions };
+  },
+};
+
+function compareCoursePositionSuggestions(a: CoursePositionSuggestion, b: CoursePositionSuggestion): number {
+  return a.courseName.localeCompare(b.courseName)
+    || a.chapterSortOrder - b.chapterSortOrder
+    || a.chapterName.localeCompare(b.chapterName)
+    || a.lineName.localeCompare(b.lineName)
+    || a.moveSan.localeCompare(b.moveSan)
+    || a.sortOrder - b.sortOrder
+    || a.nodeId - b.nodeId;
+}
 
 export const ChapterService = {
   list: async (userId: number, courseId: number) => {

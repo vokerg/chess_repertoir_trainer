@@ -1,12 +1,19 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../auth/request-auth';
-import { ChapterService, CourseService, LineService, MoveNodeService } from './courses.service';
+import {
+  ChapterService,
+  CoursePositionSuggestionService,
+  CourseService,
+  LineService,
+  MoveNodeService,
+} from './courses.service';
 import {
   createChapterSchema,
   createCourseSchema,
   createLineSchema,
   copyLineSchema,
   createNodeSchema,
+  positionSuggestionsQuerySchema,
   updateChapterSchema,
   updateCourseSchema,
   updateLineSchema,
@@ -40,6 +47,18 @@ export default async function coursesModule(app: FastifyInstance) {
     const course = await CourseService.create(auth.userId, data);
     reply.code(201);
     return course;
+  });
+
+  app.get('/api/courses/position-suggestions', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = positionSuggestionsQuerySchema.safeParse(request.query ?? {});
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    try {
+      return await CoursePositionSuggestionService.listForFen(auth.userId, parsed.data.fen);
+    } catch (err: any) {
+      return reply.status(400).send({ error: err?.message ?? String(err) });
+    }
   });
 
   app.get('/api/courses/:id', async (request, reply) => {

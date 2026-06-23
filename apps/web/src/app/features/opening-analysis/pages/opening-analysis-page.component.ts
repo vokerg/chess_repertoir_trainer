@@ -5,6 +5,7 @@ import { EngineEvalBarComponent } from '../../../shared/chess/engine/engine-eval
 import { PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { StockfishPanelComponent } from '../../../shared/chess/engine/stockfish-panel.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
+import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { scoreLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
@@ -13,6 +14,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   selector: 'app-opening-analysis-page',
   standalone: true,
   imports: [
+    CoursePositionSuggestionsWidgetComponent,
     PositionGameMovesPanelComponent,
     ChessgroundBoardComponent,
     EngineEvalBarComponent,

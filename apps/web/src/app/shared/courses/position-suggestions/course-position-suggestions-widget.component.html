@@ -1,0 +1,37 @@
+<section class="workbench-panel course-suggestions-panel">
+  <div class="course-suggestions-header">
+    <div>
+      <h3 class="workbench-panel-title">{{ title() }}</h3>
+    </div>
+    @if (loading()) {
+      <span class="course-suggestions-loading">Loading</span>
+    }
+  </div>
+
+  @if (error(); as message) {
+    <p class="status-error">{{ message }}</p>
+  }
+
+  @if (!loading() && !error() && suggestionGroups().length === 0) {
+    <div class="empty-state compact-empty">No course move found for this position.</div>
+  } @else if (suggestionGroups().length > 0) {
+    <div class="course-suggestions-list" [class.course-suggestions-list-loading]="loading()">
+      @for (group of suggestionGroups(); track group.id) {
+        <button
+          type="button"
+          class="course-suggestion-row"
+          (click)="moveSelected.emit(group.suggestion)"
+          [disabled]="loading()"
+        >
+          <span class="suggestion-move">
+            <strong>{{ group.moveLabel }}</strong>
+            <small>{{ group.moveUci }}</small>
+          </span>
+          <span class="suggestion-context">
+            {{ group.contextLabel }}
+          </span>
+        </button>
+      }
+    </div>
+  }
+</section>

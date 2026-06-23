@@ -216,6 +216,41 @@ export async function getLineMoveNodes(userId: number, lineId: number) {
   });
 }
 
+export async function listCourseMoveNodeCandidatesForUser(userId: number) {
+  return prisma.moveNode.findMany({
+    where: { line: { chapter: { course: { userId } } } },
+    select: {
+      id: true,
+      fenBefore: true,
+      fenAfter: true,
+      moveUci: true,
+      moveSan: true,
+      isUserMove: true,
+      isCorrectUserMove: true,
+      sortOrder: true,
+      line: {
+        select: {
+          id: true,
+          name: true,
+          chapter: {
+            select: {
+              id: true,
+              name: true,
+              sortOrder: true,
+              course: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 export async function getNodeById(userId: number, id: number, db: DbClient = prisma) {
   return db.moveNode.findFirst({ where: { id, line: { chapter: { course: { userId } } } } });
 }
