@@ -1,10 +1,10 @@
 @if (store.loaded()) {
-  <section class="stack">
-    <header class="workbench-header">
-      <div class="workbench-title-group">
+  <section class="marathon-page stack">
+    <header class="workbench-header marathon-header">
+      <div class="workbench-title-group marathon-title-group">
         <a [routerLink]="store.backLink()" class="workbench-breadcrumb">&larr; {{ store.backLabel() }}</a>
         <h2 class="workbench-title">{{ store.marathonTitle() }}</h2>
-        <div class="workbench-meta">
+        <div class="workbench-meta marathon-meta">
           <span>{{ store.sourceSummary() }}</span>
           <span>Current line: {{ store.lineName() }}</span>
           @if (store.sublineMoveText(); as sublineMoveText) {
@@ -14,8 +14,12 @@
           <span>{{ store.completedThisRun() }} completed this run</span>
           <span>{{ store.completed() ? 'Session complete' : 'In progress' }}</span>
         </div>
+        <div class="marathon-mobile-summary">
+          <span>{{ store.lineName() }}</span>
+          <span>{{ store.completedThisRun() }} done · {{ store.completed() ? 'Complete' : 'In progress' }}</span>
+        </div>
       </div>
-      <nav class="workbench-mode-switch" aria-label="Marathon mode">
+      <nav class="workbench-mode-switch marathon-mode-switch" aria-label="Marathon mode">
         <button type="button" class="mode-pill" [class.mode-pill-active]="store.mode() === 'ALL'" (click)="store.switchMode('ALL')">
           All
         </button>

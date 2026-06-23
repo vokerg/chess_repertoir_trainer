@@ -25,8 +25,50 @@
           <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill">Sign in</a>
         }
       </div>
+      <button
+        type="button"
+        class="mobile-menu-button"
+        [attr.aria-expanded]="mobileMenuOpen"
+        aria-controls="mobile-main-menu"
+        aria-label="Open main menu"
+        (click)="toggleMobileMenu()"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
   </header>
+
+  @if (mobileMenuOpen) {
+    <button
+      type="button"
+      class="mobile-menu-backdrop"
+      aria-label="Close main menu"
+      (click)="closeMobileMenu()"
+    ></button>
+    <aside id="mobile-main-menu" class="mobile-menu-sheet" aria-label="Main navigation">
+      @if (auth.isSignedIn()) {
+        <nav class="mobile-nav" aria-label="Main navigation">
+          <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Study</a>
+          <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Accounts</a>
+          <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Games</a>
+          <a routerLink="/opening-analysis" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Opening analysis</a>
+          <a routerLink="/analysis" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Analysis</a>
+          <a routerLink="/lab" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Lab</a>
+          <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Courses</a>
+        </nav>
+        <div class="mobile-auth-status">
+          <span class="auth-name">{{ auth.displayName() }}</span>
+          @if (!auth.isDevAuth()) {
+            <button type="button" class="nav-pill nav-button" (click)="signOut()">Sign out</button>
+          }
+        </div>
+      } @else {
+        <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Sign in</a>
+      }
+    </aside>
+  }
 
   <main class="app-main">
     <router-outlet />

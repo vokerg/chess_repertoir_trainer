@@ -5,14 +5,32 @@
         <app-chessground-board
           [fen]="currentFen()"
           [side]="sideToTrain()"
-          size="clamp(520px, min(72vh, 58vw), 760px)"
+          size="var(--training-board-size, clamp(520px, min(72vh, 58vw), 760px))"
           [lastMove]="lastMove()"
           [positionVersion]="boardPositionVersion()"
           (move)="boardMove.emit($event)"
         />
 
+        <div class="training-mobile-primary-actions">
+          @if (completed()) {
+            <button type="button" (click)="primaryAction.emit()">{{ primaryActionLabel() }}</button>
+            @if (secondaryActionLink(); as secondaryActionLink) {
+              <a class="library-button-link secondary" [routerLink]="secondaryActionLink">
+                {{ secondaryActionLabel() }}
+              </a>
+            }
+          } @else {
+            <button type="button" (click)="finish.emit()" [disabled]="completed()">
+              {{ finishButtonLabel() }}
+            </button>
+            <button type="button" class="secondary" (click)="toggleExpectedMove.emit()">
+              {{ showExpectedMove() ? 'Hide expected move' : 'Reveal expected move' }}
+            </button>
+          }
+        </div>
+
         <div
-          class="training-feedback"
+          class="training-feedback training-compact-status"
           [class.correct]="feedback() && feedbackCorrect()"
           [class.incorrect]="feedback() && !feedbackCorrect()"
         >
@@ -22,7 +40,7 @@
     </section>
 
     <aside class="training-side-panel">
-      <div>
+      <div class="training-details">
         <h3 class="training-goal-title">{{ goalTitle() }}</h3>
         <p class="training-goal-subtitle">{{ goalSubtitle() }}</p>
       </div>
@@ -63,7 +81,7 @@
         <p class="status-error">{{ errorMessage }}</p>
       }
 
-      <div class="library-actions">
+      <div class="library-actions training-board-actions">
         <button type="button" class="secondary" (click)="toggleExpectedMove.emit()">
           {{ showExpectedMove() ? 'Hide expected move' : 'Reveal expected move' }}
         </button>
@@ -81,7 +99,7 @@
             <span>Accuracy: {{ accuracyLabel() }}</span>
             <span>Mistakes: {{ mistakesCount() }}</span>
           </div>
-          <div class="library-actions">
+          <div class="library-actions training-result-actions">
             <button type="button" (click)="primaryAction.emit()">{{ primaryActionLabel() }}</button>
             @if (secondaryActionLink(); as secondaryActionLink) {
               <a class="library-button-link secondary" [routerLink]="secondaryActionLink">

@@ -22,6 +22,7 @@
 .training-board-inner {
   display: grid;
   justify-items: center;
+  gap: var(--space-3);
   width: 100%;
   min-width: 0;
   margin: 0 auto;
@@ -83,13 +84,17 @@
 
 .training-feedback {
   width: 100%;
-  margin-top: var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
   background: rgba(35, 27, 21, 0.045);
   text-align: center;
   font-weight: 900;
+}
+
+.training-mobile-primary-actions {
+  display: none;
+  width: 100%;
 }
 
 .training-feedback.correct {
@@ -186,16 +191,100 @@
 }
 
 @media (max-width: 640px) {
+  :host {
+    gap: var(--space-2);
+  }
+
+  .training-focus-layout {
+    gap: var(--space-2);
+  }
+
   .training-board-panel,
   .training-side-panel {
     border-radius: var(--radius-lg);
-    padding: var(--space-3);
+    padding: var(--space-2);
+  }
+
+  .training-board-panel {
+    --training-board-size: min(calc(100vw - 20px), 420px);
+    border-radius: 18px;
+  }
+
+  .training-board-inner {
+    gap: var(--space-2);
+  }
+
+  .training-mobile-primary-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .training-mobile-primary-actions > * {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+
+  .training-board-actions,
+  .training-result-actions {
+    display: none;
+  }
+
+  .training-compact-status {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  .training-side-panel {
+    gap: var(--space-2);
+  }
+
+  .training-details {
+    display: none;
+  }
+
+  .expected-move-card,
+  .training-result-panel {
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+  }
+
+  .training-result-title {
+    font-size: 1.25rem;
+    letter-spacing: 0;
+  }
+
+  .training-result-meta,
+  .training-progress-labels {
+    font-size: 0.8rem;
+  }
+
+  .mistake-review-grid {
+    gap: var(--space-2);
+  }
+
+  .mistake-card {
+    padding: var(--space-2);
   }
 }
 
 @media (max-width: 420px) {
   .training-board-panel,
   .training-side-panel {
-    padding: var(--space-2);
+    padding: 0.5rem;
+  }
+
+  .training-board-panel {
+    --training-board-size: calc(100vw - 16px);
+  }
+
+  .training-mobile-primary-actions {
+    gap: 0.5rem;
+  }
+
+  .training-mobile-primary-actions > * {
+    flex-basis: 100%;
   }
 }

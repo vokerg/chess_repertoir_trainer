@@ -12,6 +12,7 @@ import { TrainingMarathonStore } from '../state/training-marathon.store';
   imports: [RouterLink, LineTrainingSessionComponent],
   providers: [TrainingMarathonStore],
   templateUrl: './training-marathon-page.component.html',
+  styleUrl: './training-marathon-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TrainingMarathonPageComponent implements OnInit {

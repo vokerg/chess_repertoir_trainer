@@ -12,12 +12,22 @@ import { AuthService } from './core/auth/auth.service';
 })
 export class AppComponent implements OnInit {
   protected readonly auth = inject(AuthService);
+  protected mobileMenuOpen = false;
 
   ngOnInit(): void {
     void this.auth.initialize();
   }
 
+  protected toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  protected closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+  }
+
   protected signOut(): void {
+    this.closeMobileMenu();
     void this.auth.signOut();
   }
 }
