@@ -1,0 +1,20 @@
+<app-panel
+  title="My games in this position"
+  subtitle="Filter imported games that reached the currently selected analysis position."
+  [actions]="actions()"
+>
+  <app-game-filter-panel
+    [filters]="filters()"
+    [facets]="facets()"
+    [loading]="loading()"
+    (filtersChange)="filtersChange.emit($event)"
+    (apply)="apply.emit()"
+    (reset)="reset.emit()"
+  />
+
+  @if (error(); as currentError) {
+    <p class="status-error">{{ currentError }}</p>
+  }
+
+  <app-position-top-games [games]="analysis()?.topGames || []" [loading]="loading()" />
+</app-panel>

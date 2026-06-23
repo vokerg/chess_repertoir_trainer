@@ -6,9 +6,17 @@ export function parseGamePgn(pgn: string): PlayedGameMove[] {
   if (!pgn.trim()) return [];
   const chess = new Chess();
   chess.loadPgn(pgn);
-  return (chess.history({ verbose: true }) as Array<{
-    color: string; san: string; from: string; to: string; promotion?: string; before: string; after: string;
-  }>).map((move, index) => {
+  return (
+    chess.history({ verbose: true }) as Array<{
+      color: string;
+      san: string;
+      from: string;
+      to: string;
+      promotion?: string;
+      before: string;
+      after: string;
+    }>
+  ).map((move, index) => {
     const plyNumber = index + 1;
     return {
       plyNumber,
@@ -29,7 +37,19 @@ export function buildGameTree(
 ): GameTree {
   const startFen = moves[0]?.fenBefore || new Chess().fen();
   const root: GameTreeNode = {
-    node: { id: 0, plyNumber: null, moveNumber: null, side: null, moveSan: null, moveUci: null, fenBefore: startFen, fenAfter: startFen, isUserMove: false, source: 'GAME', analysisMove: null },
+    node: {
+      id: 0,
+      plyNumber: null,
+      moveNumber: null,
+      side: null,
+      moveSan: null,
+      moveUci: null,
+      fenBefore: startFen,
+      fenAfter: startFen,
+      isUserMove: false,
+      source: 'GAME',
+      analysisMove: null,
+    },
     children: [],
   };
   let parent = root;
@@ -66,7 +86,11 @@ export function findGameTreeNode(id: number, node?: GameTreeNode | null): GameTr
   return null;
 }
 
-export function findGameTreeParent(id: number, node?: GameTreeNode | null, parent: GameTreeNode | null = null): GameTreeNode | null {
+export function findGameTreeParent(
+  id: number,
+  node?: GameTreeNode | null,
+  parent: GameTreeNode | null = null,
+): GameTreeNode | null {
   if (!node) return null;
   if (node.node.id === id) return parent;
   for (const child of node.children) {
@@ -76,9 +100,16 @@ export function findGameTreeParent(id: number, node?: GameTreeNode | null, paren
   return null;
 }
 
-export function appendGameTreeChild(root: GameTreeNode, parentId: number, child: GameTreeNode): GameTreeNode {
+export function appendGameTreeChild(
+  root: GameTreeNode,
+  parentId: number,
+  child: GameTreeNode,
+): GameTreeNode {
   if (root.node.id === parentId) return { ...root, children: [...root.children, child] };
-  return { ...root, children: root.children.map((current) => appendGameTreeChild(current, parentId, child)) };
+  return {
+    ...root,
+    children: root.children.map((current) => appendGameTreeChild(current, parentId, child)),
+  };
 }
 
 export function removeGameTreeSubtree(root: GameTreeNode, nodeId: number): GameTreeNode {

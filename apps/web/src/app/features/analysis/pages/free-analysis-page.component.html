@@ -1,5 +1,9 @@
 <section class="free-analysis-page stack">
-  <app-page-header title="Analysis" subtitle="Explore a position from FEN or an imported game." [actions]="headerActions()" />
+  <app-page-header
+    title="Analysis"
+    subtitle="Explore a position from FEN or an imported game."
+    [actions]="headerActions()"
+  />
 
   @if (store.error(); as error) {
     <p class="status-error">{{ error }}</p>
@@ -10,7 +14,7 @@
       <p class="status-note">Loading imported game moves...</p>
     </app-panel>
   } @else if (store.tree(); as tree) {
-    <app-analysis-workbench
+    <app-free-analysis-workbench
       [tree]="tree"
       [selectedNodeId]="store.selectedNodeId()"
       [currentFen]="store.currentFen()"
@@ -20,20 +24,10 @@
       [arrows]="store.analysisArrows()"
       [boardPositionVersion]="store.boardPositionVersion()"
       [analysis]="store.engineAnalysis()"
+      [loadedFromGame]="store.loadedFromGame()"
       [canGoBackward]="store.canGoBackward()"
       [canGoForward]="store.canGoForward()"
-      boardTitle="Analysis board"
-      boardHelp="Play legal moves to create local variations from this position."
-      treeTitle="Move tree"
-      [treeHelp]="store.loadedFromGame()
-        ? 'The imported game is the main line. New variations remain local to this analysis page.'
-        : 'FEN contains the current position, not its move history. New local variations appear below the loaded position.'"
-      [treeRootLabel]="store.loadedFromGame() ? 'Game start' : 'Loaded position'"
-      dangerTitle="Danger zone"
-      dangerHelp="Delete a selected local variation and every continuation below it. Imported game moves and the start position cannot be deleted."
-      deleteButtonLabel="Delete selected subtree"
       [deleteDisabled]="!store.canDeleteSelectedSubtree()"
-      [deleting]="false"
       (boardMove)="store.playBoardMove($event)"
       (nodeSelected)="store.selectNode($event)"
       (goStart)="store.goToStart()"
@@ -46,29 +40,17 @@
   }
 
   @if (store.myGamesOpen()) {
-    <app-panel
-      title="My games in this position"
-      subtitle="Filter imported games that reached the currently selected analysis position."
+    <app-free-analysis-my-games-panel
       [actions]="myGamesActions()"
-    >
-      <app-game-filter-panel
-        [filters]="store.myGamesFilters()"
-        [facets]="store.myGamesFacets()"
-        [loading]="store.myGamesLoading()"
-        (filtersChange)="store.setMyGamesFilters($event)"
-        (apply)="store.refreshMyGames()"
-        (reset)="store.resetMyGamesFilters()"
-      />
-
-      @if (store.myGamesError(); as error) {
-        <p class="status-error">{{ error }}</p>
-      }
-
-      <app-position-top-games
-        [games]="store.myGamesAnalysis()?.topGames || []"
-        [loading]="store.myGamesLoading()"
-      />
-    </app-panel>
+      [filters]="store.myGamesFilters()"
+      [facets]="store.myGamesFacets()"
+      [analysis]="store.myGamesAnalysis()"
+      [error]="store.myGamesError()"
+      [loading]="store.myGamesLoading()"
+      (filtersChange)="store.setMyGamesFilters($event)"
+      (apply)="store.refreshMyGames()"
+      (reset)="store.resetMyGamesFilters()"
+    />
   }
   <app-analysis-reintegration-dialog />
 </section>

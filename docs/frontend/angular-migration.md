@@ -20,6 +20,8 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Lab: composition-only shell with isolated experiment components, page-scoped signal stores, typed experiment data access, external templates/styles, and built-in control flow.
 - Study planner refactor: `/library` now uses feature-local presentational components for scope columns, line selection, and the training basket, with selected-line marathon navigation owned by the store.
 - Chapter line health table: chapter lines now use feature-local table/status/action components, store-owned expanded row state, selected line ids, selected subline hashes, and typed subline status data access.
+- Free analysis: `/analysis` now uses a composition-focused route page, feature-local workbench and my-games panel components, signal store workflow state, typed route-query helpers, and built-in control flow.
+- Game detail analysis: `/games/:gameId` now uses `components`, `state`, and `helpers` folders for the route header, summary, shared workbench wrapper, signal store, labels, and game-tree helpers.
 
 ## Accepted feature debt
 

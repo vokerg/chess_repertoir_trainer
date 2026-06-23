@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+.game-header-action {
+  border: 0;
+  cursor: pointer;
+}
+
+.game-header-action:disabled {
+  cursor: default;
+  opacity: 0.62;
+}

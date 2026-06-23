@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
+import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
+import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { UserColor } from '../data-access/games.models';
-import { BoardArrow, BoardLastMove, GameTree } from './game-detail.models';
+import { BoardArrow, BoardLastMove, GameTree } from '../helpers/game-detail.models';
 
 @Component({
   selector: 'app-game-workbench',
   standalone: true,
-  imports: [AnalysisWorkbenchComponent],
+  imports: [AnalysisWorkbenchComponent, CoursePositionSuggestionsWidgetComponent],
   templateUrl: './game-workbench.component.html',
   styleUrl: './game-workbench.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

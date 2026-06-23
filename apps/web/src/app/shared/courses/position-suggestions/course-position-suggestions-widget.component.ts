@@ -24,7 +24,7 @@ export class CoursePositionSuggestionsWidgetComponent {
   private readonly api = inject(CoursePositionSuggestionsApiService);
 
   readonly fen = input.required<string>();
-  readonly title = input('Suggested moves from your courses');
+  readonly title = input('Moves from your courses');
   readonly moveSelected = output<CoursePositionSuggestion>();
 
   protected readonly suggestions = signal<CoursePositionSuggestion[]>([]);
@@ -75,7 +75,9 @@ interface CoursePositionSuggestionGroup {
   suggestion: CoursePositionSuggestion;
 }
 
-function groupSuggestions(suggestions: CoursePositionSuggestion[]): CoursePositionSuggestionGroup[] {
+function groupSuggestions(
+  suggestions: CoursePositionSuggestion[],
+): CoursePositionSuggestionGroup[] {
   const groups = new Map<string, CoursePositionSuggestion[]>();
   for (const suggestion of suggestions) {
     const key = `${suggestion.courseId}:${suggestion.moveUci}`;

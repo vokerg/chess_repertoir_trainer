@@ -10,12 +10,10 @@ import {
   ImportedGameAnalysisMove,
   ImportedGameAnalysisRun,
   ImportedGameDetail,
-  ImportedGamePlayer,
-  Provider,
-  ResultForUser,
   UserColor,
 } from '../data-access/games.models';
-import { BoardArrow, BoardLastMove, GameTree, GameTreeNode } from './game-detail.models';
+import { BoardArrow, BoardLastMove, GameTree, GameTreeNode } from '../helpers/game-detail.models';
+import { playerLabel } from '../helpers/game-detail-labels';
 import {
   appendGameTreeChild,
   attachGameTreeAnalysis,
@@ -24,7 +22,7 @@ import {
   findGameTreeParent,
   parseGamePgn,
   removeGameTreeSubtree,
-} from './game-tree.helpers';
+} from '../helpers/game-tree.helpers';
 
 const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
   fen: '',
@@ -49,12 +47,16 @@ export class GameDetailStore implements OnDestroy {
   readonly boardPositionVersion = signal(0);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
-  readonly engineAnalysis = toSignal(this.positionAnalysis.state$, { initialValue: EMPTY_ENGINE_ANALYSIS });
+  readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
+    initialValue: EMPTY_ENGINE_ANALYSIS,
+  });
 
   private nextLocalNodeId = 1_000_000;
   private analysisTimer?: ReturnType<typeof setTimeout>;
 
-  readonly selectedNode = computed(() => findGameTreeNode(this.selectedNodeId(), this.tree()?.root));
+  readonly selectedNode = computed(() =>
+    findGameTreeNode(this.selectedNodeId(), this.tree()?.root),
+  );
   readonly currentFen = computed(() => this.selectedNode()?.node.fenAfter || new Chess().fen());
   readonly lastMove = computed<BoardLastMove | null>(() => {
     const move = this.selectedNode()?.node.moveUci;
@@ -98,14 +100,17 @@ export class GameDetailStore implements OnDestroy {
     return `${selected.node.moveNumber}${side} ${selected.node.moveSan || selected.node.moveUci}`;
   });
   readonly analysisStatusLabel = computed(() => {
-    if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED') return 'Saved';
+    if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED')
+      return 'Saved';
     if (this.game()?.analysis.status === 'RUNNING') return 'Running';
     if (this.game()?.analysis.status === 'FAILED') return 'Failed';
     return 'None';
   });
   readonly analysisSummaryLabel = computed(() => {
     const run = this.analysisRun();
-    return run ? `${run.moves.length} analysed moves · ${run.criticalMoves.length} critical` : 'No saved analysis loaded';
+    return run
+      ? `${run.moves.length} analysed moves · ${run.criticalMoves.length} critical`
+      : 'No saved analysis loaded';
   });
 
   initialize(gameId: number): void {
@@ -158,7 +163,11 @@ export class GameDetailStore implements OnDestroy {
       const chess = new Chess(this.currentFen());
       const beforeFen = chess.fen();
       const side: UserColor = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
-      const move = chess.move({ from: uci.substring(0, 2), to: uci.substring(2, 4), promotion: uci.substring(4, 5) || undefined });
+      const move = chess.move({
+        from: uci.substring(0, 2),
+        to: uci.substring(2, 4),
+        promotion: uci.substring(4, 5) || undefined,
+      });
       if (!move) return this.resetBoardPosition();
 
       const child: GameTreeNode = {
@@ -240,7 +249,8 @@ export class GameDetailStore implements OnDestroy {
   handleKeyboard(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable)
+      return;
     const commands: Record<string, () => void> = {
       ArrowLeft: () => this.goToPrevious(),
       ArrowRight: () => this.goToNext(),
@@ -264,9 +274,13 @@ export class GameDetailStore implements OnDestroy {
     if (!gameId || !game) return;
     try {
       const response = await firstValueFrom(this.api.getAnalysis(gameId));
-      const analysisByPly = Object.fromEntries(response.run.moves.map((move) => [move.plyNumber, move])) as Record<number, ImportedGameAnalysisMove>;
+      const analysisByPly = Object.fromEntries(
+        response.run.moves.map((move) => [move.plyNumber, move]),
+      ) as Record<number, ImportedGameAnalysisMove>;
       this.analysisRun.set(response.run);
-      this.tree.update((tree) => tree ? { root: attachGameTreeAnalysis(tree.root, analysisByPly) } : tree);
+      this.tree.update((tree) =>
+        tree ? { root: attachGameTreeAnalysis(tree.root, analysisByPly) } : tree,
+      );
     } catch {
       this.analysisRun.set(null);
     }
@@ -291,45 +305,6 @@ export class GameDetailStore implements OnDestroy {
   private resetBoardPosition(): void {
     this.boardPositionVersion.update((version) => version + 1);
   }
-}
-
-export function providerLabel(provider?: Provider | null): string {
-  if (provider === 'CHESS_COM') return 'Chess.com';
-  if (provider === 'LICHESS') return 'Lichess';
-  return 'Provider';
-}
-
-export function playerLabel(player?: ImportedGamePlayer | null): string {
-  if (!player) return 'Unknown';
-  return `${player.username || 'Unknown'}${player.rating ? ` (${player.rating})` : ''}`;
-}
-
-export function resultLabel(result?: ResultForUser | null): string {
-  if (result === 'WIN') return 'Win';
-  if (result === 'DRAW') return 'Draw';
-  if (result === 'LOSS') return 'Loss';
-  return 'Unknown';
-}
-
-export function colorLabel(color?: UserColor | null): string {
-  if (color === 'WHITE') return 'You had White';
-  if (color === 'BLACK') return 'You had Black';
-  return 'Colour unknown';
-}
-
-export function accuracyLabel(value?: number | null): string {
-  return typeof value === 'number' ? `${Math.round(value)}%` : '—';
-}
-
-export function gameDateLabel(value?: string | null): string {
-  if (!value) return 'Date unknown';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Date unknown' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-}
-
-export function timeControlLabel(game: ImportedGameDetail): string {
-  const { initial, increment } = game.timeControl;
-  return typeof initial === 'number' && typeof increment === 'number' ? `${initial}+${increment}` : 'Time control unknown';
 }
 
 function readError(error: unknown, fallback: string): string {

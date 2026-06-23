@@ -29,4 +29,10 @@
   (goEnd)="goEnd.emit()"
   (analyze)="analyze.emit()"
   (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
-/>
+>
+  <app-course-position-suggestions-widget
+    analysisWorkbenchSideExtra
+    [fen]="currentFen()"
+    (moveSelected)="boardMove.emit($event.moveUci)"
+  />
+</app-analysis-workbench>

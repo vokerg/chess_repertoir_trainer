@@ -10,10 +10,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
-import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
-import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
-import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+} from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
@@ -22,6 +22,12 @@ import { AnalysisReintegrationDialogComponent } from '../components/analysis-rei
 import { AnalysisReintegrationApiService } from '../data-access/analysis-reintegration-api.service';
 import { AnalysisReintegrationStore } from '../state/analysis-reintegration.store';
 import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reintegration-payload.helpers';
+import { FreeAnalysisWorkbenchComponent } from '../components/free-analysis-workbench.component';
+import { FreeAnalysisMyGamesPanelComponent } from '../components/free-analysis-my-games-panel.component';
+import {
+  freeAnalysisRouteInputFromQuery,
+  sameFreeAnalysisRouteInput,
+} from '../helpers/free-analysis-route-query.helpers';
 
 @Component({
   selector: 'app-free-analysis-page',
@@ -29,12 +35,16 @@ import { buildAnalysisReintegrationLinePayload } from '../helpers/analysis-reint
   imports: [
     PageHeaderComponent,
     PanelComponent,
-    AnalysisWorkbenchComponent,
+    FreeAnalysisWorkbenchComponent,
     AnalysisReintegrationDialogComponent,
-    GameFilterPanelComponent,
-    PositionTopGamesComponent,
+    FreeAnalysisMyGamesPanelComponent,
   ],
-  providers: [FreeAnalysisStore, FreeAnalysisApiService, AnalysisReintegrationStore, AnalysisReintegrationApiService],
+  providers: [
+    FreeAnalysisStore,
+    FreeAnalysisApiService,
+    AnalysisReintegrationStore,
+    AnalysisReintegrationApiService,
+  ],
   templateUrl: './free-analysis-page.component.html',
   styleUrl: './free-analysis-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,19 +79,8 @@ export class FreeAnalysisPageComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParamMap
       .pipe(
-        map((query) => ({
-          fen: query.get('fen'),
-          gameId: parsePositiveNumber(query.get('gameId')),
-          ply: parsePositiveNumber(query.get('ply')),
-          moves: parseMoves(query.get('moves')),
-        })),
-        distinctUntilChanged(
-          (previous, current) =>
-            previous.fen === current.fen &&
-            previous.gameId === current.gameId &&
-            previous.ply === current.ply &&
-            previous.moves.join(',') === current.moves.join(','),
-        ),
+        map(freeAnalysisRouteInputFromQuery),
+        distinctUntilChanged(sameFreeAnalysisRouteInput),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((input) => this.store.initialize(input));
@@ -106,17 +105,4 @@ export class FreeAnalysisPageComponent implements OnInit {
       );
     }
   }
-}
-
-function parsePositiveNumber(value: string | null): number | null {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function parseMoves(value: string | null): string[] {
-  if (!value?.trim()) return [];
-  return value
-    .split(',')
-    .map((move) => move.trim())
-    .filter(Boolean);
 }

@@ -13,14 +13,6 @@
     <p class="metric-label">Analysis</p>
     <p class="metric-value compact-result">{{ analysisStatus() }}</p>
     <p class="game-muted">{{ analysisSummary() }}</p>
-    <div class="game-analysis-actions">
-      <button type="button" class="secondary" (click)="analyze.emit(false)" [disabled]="analysisProgress().running">
-        {{ analysisProgress().running ? 'Analysing...' : 'Analyze' }}
-      </button>
-      <button type="button" class="secondary" (click)="analyze.emit(true)" [disabled]="analysisProgress().running">
-        Force re-analysis
-      </button>
-    </div>
     @if (analysisProgress().running || analysisProgress().error) {
       <p class="game-muted">
         {{ analysisProgress().error || analysisProgress().message }}

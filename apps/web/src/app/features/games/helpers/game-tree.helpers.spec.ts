@@ -1,4 +1,10 @@
-import { appendGameTreeChild, attachGameTreeAnalysis, buildGameTree, findGameTreeNode, parseGamePgn } from './game-tree.helpers';
+import {
+  appendGameTreeChild,
+  attachGameTreeAnalysis,
+  buildGameTree,
+  findGameTreeNode,
+  parseGamePgn,
+} from './game-tree.helpers';
 
 describe('game tree helpers', () => {
   it('parses PGN and builds a tracked main line', () => {
@@ -6,10 +12,12 @@ describe('game tree helpers', () => {
     const tree = buildGameTree(moves, 'WHITE', {});
 
     expect(moves.map((move) => move.uci)).toEqual(['e2e4', 'e7e5', 'g1f3']);
-    expect(findGameTreeNode(1, tree.root)?.node).toEqual(jasmine.objectContaining({
-      moveSan: 'e4',
-      isUserMove: true,
-    }));
+    expect(findGameTreeNode(1, tree.root)?.node).toEqual(
+      jasmine.objectContaining({
+        moveSan: 'e4',
+        isUserMove: true,
+      }),
+    );
     expect(findGameTreeNode(2, tree.root)?.node.isUserMove).toBeFalse();
   });
 
