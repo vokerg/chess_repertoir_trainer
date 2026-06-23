@@ -12,7 +12,7 @@
   }
 
   @if (games().length > 0) {
-    <div class="games-table-wrap">
+    <div class="games-table-wrap games-desktop-table">
       <table class="games-table">
         <thead>
           <tr>
@@ -41,14 +41,7 @@
                   <div>
                     <p class="game-main">{{ gameDateLabel(game) }}</p>
                     <p class="games-muted">
-                      {{ displayTimeControl(game) }} &middot;
-                      {{
-                        game.rated === true
-                          ? 'Rated'
-                          : game.rated === false
-                            ? 'Casual'
-                            : 'Rating unknown'
-                      }}
+                      {{ displayTimeControl(game) }} &middot; {{ ratedLabel(game) }}
                     </p>
                   </div>
                 </a>
@@ -126,6 +119,46 @@
           }
         </tbody>
       </table>
+    </div>
+
+    <div class="games-mobile-list" aria-label="Imported games">
+      @for (game of games(); track game.id) {
+        <article class="games-mobile-card">
+          <div class="games-mobile-card-header">
+            <div class="games-mobile-card-badges">
+              <span class="result-pill" [class]="resultClass(game.resultForUser)">{{
+                resultLabel(game.resultForUser)
+              }}</span>
+              <span class="provider-pill" [class]="providerClass(game.provider)">{{
+                providerLabel(game.provider)
+              }}</span>
+            </div>
+
+            <div class="games-mobile-actions">
+              <app-game-action-menu
+                class="games-action-menu"
+                [game]="game"
+                [open]="activeActionMenuGameId() === game.id"
+                [analysing]="analysingGameId() === game.id"
+                [indexing]="indexingPlyGameId() === game.id"
+                (toggle)="toggleActionMenu(game.id, $event)"
+                (close)="closeActionMenu()"
+                (analyse)="analyseGame(game)"
+                (forceReanalyse)="forceReanalyseGame(game)"
+                (indexPlies)="indexGamePlies(game)"
+              />
+            </div>
+          </div>
+
+          <a class="games-mobile-main-link" [routerLink]="['/games', game.id]">
+            <p class="game-main">
+              {{ playerLabel(game.white) }} vs {{ playerLabel(game.black) }}
+            </p>
+
+            <p class="games-mobile-date">{{ gameDateLabel(game) }}</p>
+          </a>
+        </article>
+      }
     </div>
   }
 

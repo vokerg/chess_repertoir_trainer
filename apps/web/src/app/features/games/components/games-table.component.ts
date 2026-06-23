@@ -117,4 +117,10 @@ export class GamesTableComponent {
     if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
     return 'Not indexed';
   }
+
+  protected ratedLabel(game: ImportedGameListItem): string {
+    if (game.rated === true) return 'Rated';
+    if (game.rated === false) return 'Casual';
+    return 'Rating unknown';
+  }
 }

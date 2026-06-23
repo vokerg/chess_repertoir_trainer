@@ -10,6 +10,9 @@
   border-radius: 24px;
   background: rgba(255, 252, 247, 0.72);
 }
+.games-mobile-list {
+  display: none;
+}
 .games-table {
   width: 100%;
   min-width: 1040px;
@@ -145,87 +148,74 @@
 }
 
 @media (max-width: 760px) {
-  .games-table-wrap {
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .games-table,
-  .games-table tbody,
-  .games-table tr,
-  .games-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .games-table {
-    min-width: 0;
-  }
-
-  .games-table thead {
+  .games-desktop-table {
     display: none;
   }
 
-  .games-table tbody {
+  .games-mobile-list {
     display: grid;
-    gap: 0.8rem;
-  }
-
-  .games-table tr {
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: rgba(255, 252, 247, 0.78);
-    overflow: visible;
-  }
-
-  .games-table td {
-    display: grid;
-    grid-template-columns: minmax(5.5rem, 32%) minmax(0, 1fr);
-    gap: 0.75rem;
-    align-items: start;
-    padding: 0.7rem 0.85rem;
-    border-top: 1px solid var(--border);
-  }
-
-  .games-table td:first-child {
-    border-top: 0;
-  }
-
-  .games-table td::before {
-    content: attr(data-label);
-    color: var(--muted-strong);
-    font-size: 0.7rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    line-height: 1.35;
-    text-transform: uppercase;
-  }
-
-  .game-title-cell {
     gap: 0.55rem;
   }
 
-  .game-detail-link {
+  .games-mobile-card {
+    position: relative;
+    display: grid;
+    gap: 0.45rem;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 0.7rem;
+    background: rgba(255, 252, 247, 0.82);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .games-mobile-card-header {
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    justify-content: space-between;
     min-width: 0;
   }
 
-  .game-main,
-  .games-muted,
-  .profile-link {
+  .games-mobile-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .games-mobile-date {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .games-mobile-main-link {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .games-mobile-main-link .game-main {
     overflow-wrap: anywhere;
   }
 
-  .players-line {
+  .games-mobile-main-link .games-muted {
+    margin-top: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .games-mobile-actions {
     display: flex;
+    justify-content: flex-end;
   }
 
-  .opening-name {
-    max-width: none;
-  }
-
-  .games-row-actions {
-    justify-content: flex-start;
+  .provider-pill,
+  .result-pill {
+    padding: 0.28rem 0.55rem;
+    font-size: 0.72rem;
   }
 }
