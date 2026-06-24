@@ -12,18 +12,23 @@ const TAG_THRESHOLDS = {
   ratingMismatch: 200,
   shortDecisiveMaxPlies: 30,
   longGrindMinPlies: 100,
-  openingCheckpointPly: 11,
+  earlyCheckpointPly: 11,
+  openingOutcomePly: 21,
   openingPhaseMaxMove: 10,
   midgameMinMove: 11,
   midgameMaxMove: 35,
   endgameMinMove: 36,
+  slightEdgeCp: 200,
   clearlyBetterCp: 300,
   winningCp: 700,
   decisiveCp: 800,
   equalishCp: 150,
-  missedKnockoutAfterMaxCp: 200,
+  earlyMistakeCp: 150,
   bigLossCp: 300,
   hugeLossCp: 500,
+  missedKnockoutAfterMaxCp: 200,
+  preserveKnockoutMinCp: 700,
+  cleanPunishMaxLossCp: 100,
   highAccuracy: 85,
   lowAccuracy: 60,
 } as const;
@@ -52,7 +57,10 @@ function moveNumberFromPly(plyNumber: number): number {
   return Math.ceil(plyNumber / 2);
 }
 
-function isUserMove(game: Pick<ImportedGameForTagging, 'userColor'>, ply: Pick<ImportedGameForTagging['plies'][number], 'plyNumber'>) {
+function isUserMove(
+  game: Pick<ImportedGameForTagging, 'userColor'>,
+  ply: Pick<ImportedGameForTagging['plies'][number], 'plyNumber'>,
+) {
   return game.userColor ? sideForPly(ply.plyNumber) === game.userColor : false;
 }
 
@@ -84,8 +92,12 @@ function latestRun(game: Pick<ImportedGameForTagging, 'analysisRuns'>) {
   return game.analysisRuns[0] ?? null;
 }
 
+function latestCompletedRun(game: Pick<ImportedGameForTagging, 'analysisRuns'>) {
+  return game.analysisRuns.find((run) => run.status === 'COMPLETED') ?? null;
+}
+
 function userAccuracy(game: Pick<ImportedGameForTagging, 'analysisRuns' | 'userColor'>) {
-  const run = latestRun(game);
+  const run = latestCompletedRun(game);
   if (!run) return null;
   if (game.userColor === 'WHITE') return run.whiteAccuracy;
   if (game.userColor === 'BLACK') return run.blackAccuracy;
@@ -127,9 +139,69 @@ function buildAnalysedMoves(game: ImportedGameForTagging): AnalysedMoveRecord[] 
   });
 }
 
-function firstOpeningCheckpointScore(game: ImportedGameForTagging) {
-  const checkpoint = game.plies.find((ply) => ply.plyNumber === TAG_THRESHOLDS.openingCheckpointPly);
+function scoreAtPly(game: ImportedGameForTagging, plyNumber: number) {
+  const checkpoint = game.plies.find((ply) => ply.plyNumber === plyNumber);
   return scoreFromAnalysisForUser(game, checkpoint?.position.analysis ?? null);
+}
+
+function swingTowardUser(record: AnalysedMoveRecord) {
+  if (typeof record.beforeScoreForUser !== 'number' || typeof record.afterScoreForUser !== 'number') return null;
+  return record.afterScoreForUser - record.beforeScoreForUser;
+}
+
+function swingAgainstUser(record: AnalysedMoveRecord) {
+  if (typeof record.beforeScoreForUser !== 'number' || typeof record.afterScoreForUser !== 'number') return null;
+  return record.beforeScoreForUser - record.afterScoreForUser;
+}
+
+function isOpponentMove(record: AnalysedMoveRecord) {
+  return !record.isUserMove;
+}
+
+function isUserActualBlunder(record: AnalysedMoveRecord) {
+  const classification = record.classificationLabel?.toUpperCase();
+  return record.isUserMove && (
+    classification === 'BLUNDER' ||
+    (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
+    (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp
+  );
+}
+
+function isUserEarlyMistake(record: AnalysedMoveRecord) {
+  const classification = record.classificationLabel?.toUpperCase();
+  return record.isUserMove &&
+    record.moveNumber <= TAG_THRESHOLDS.openingPhaseMaxMove &&
+    !isUserActualBlunder(record) &&
+    (
+      classification === 'MISTAKE' ||
+      (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.earlyMistakeCp
+    );
+}
+
+function isUserEarlyBlunder(record: AnalysedMoveRecord) {
+  const classification = record.classificationLabel?.toUpperCase();
+  return record.isUserMove &&
+    record.moveNumber <= TAG_THRESHOLDS.openingPhaseMaxMove &&
+    (
+      classification === 'BLUNDER' ||
+      (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
+      (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp
+    );
+}
+
+function isBestOrNearBestUserMove(record: AnalysedMoveRecord) {
+  if (!record.isUserMove) return false;
+  if ((record.scoreLossCp ?? Number.POSITIVE_INFINITY) > TAG_THRESHOLDS.cleanPunishMaxLossCp) return false;
+  if (!record.beforeBestMoveUci) return true;
+  return record.beforeBestMoveUci === record.ply.moveUci || (record.scoreLossCp ?? Number.POSITIVE_INFINITY) <= TAG_THRESHOLDS.cleanPunishMaxLossCp;
+}
+
+function hasDecisiveUserOpportunity(record: AnalysedMoveRecord) {
+  return (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.decisiveCp;
+}
+
+function hasDecisiveOpponentOpportunity(record: AnalysedMoveRecord) {
+  return (record.beforeScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.decisiveCp;
 }
 
 function criticalPlyNumbers(summary: unknown): number[] {
@@ -245,12 +317,15 @@ function addTimeControlTags(game: ImportedGameForTagging, tags: Set<number>) {
 }
 
 function addIndexAndAnalysisStateTags(game: ImportedGameForTagging, tags: Set<number>) {
-  const run = latestRun(game);
+  const newestRun = latestRun(game);
+  const completedRun = latestCompletedRun(game);
 
   if (!game.plyIndexedAt && !game.plyIndexError) addTag(tags, GAME_TAG.NOT_INDEXED);
-  if (game.plyIndexedAt && run?.status !== 'COMPLETED') addTag(tags, GAME_TAG.INDEXED_ONLY);
-  if (run?.status === 'COMPLETED') addTag(tags, GAME_TAG.ANALYSED);
-  if (run && run.status !== 'RUNNING' && run.status !== 'COMPLETED') addTag(tags, GAME_TAG.ANALYSIS_FAILED);
+  if (game.plyIndexedAt && !completedRun) addTag(tags, GAME_TAG.INDEXED_ONLY);
+  if (completedRun) addTag(tags, GAME_TAG.ANALYSED);
+  if (newestRun && newestRun.status !== 'RUNNING' && newestRun.status !== 'COMPLETED') {
+    addTag(tags, GAME_TAG.ANALYSIS_FAILED);
+  }
 }
 
 function addRatingTags(game: ImportedGameForTagging, tags: Set<number>) {
@@ -278,128 +353,210 @@ function addOpeningAndShapeTags(game: ImportedGameForTagging, tags: Set<number>)
   if (pliesCount >= TAG_THRESHOLDS.longGrindMinPlies) addTag(tags, GAME_TAG.LONG_GRIND);
 
   if (game.resultForUser === 'WIN' && pliesCount <= TAG_THRESHOLDS.shortDecisiveMaxPlies) {
-    addTag(tags, GAME_TAG.OPENING_SUCCESS_LIGHT);
+    addTag(tags, GAME_TAG.QUICK_WIN);
   }
   if (game.resultForUser === 'LOSS' && pliesCount <= TAG_THRESHOLDS.shortDecisiveMaxPlies) {
-    addTag(tags, GAME_TAG.OPENING_DISASTER_LIGHT);
+    addTag(tags, GAME_TAG.QUICK_LOSS);
   }
 }
 
+function maxAnalysedScoreForUser(records: AnalysedMoveRecord[], fallback: number | null) {
+  return records.reduce<number | null>((max, record) => {
+    const candidates = [record.beforeScoreForUser, record.afterScoreForUser].filter((value): value is number => typeof value === 'number');
+    if (!candidates.length) return max;
+    const localMax = Math.max(...candidates);
+    return max === null ? localMax : Math.max(max, localMax);
+  }, fallback);
+}
+
+function minAnalysedScoreForUser(records: AnalysedMoveRecord[], fallback: number | null) {
+  return records.reduce<number | null>((min, record) => {
+    const candidates = [record.beforeScoreForUser, record.afterScoreForUser].filter((value): value is number => typeof value === 'number');
+    if (!candidates.length) return min;
+    const localMin = Math.min(...candidates);
+    return min === null ? localMin : Math.min(min, localMin);
+  }, fallback);
+}
+
+function openingOutcomeScore(records: AnalysedMoveRecord[], game: ImportedGameForTagging) {
+  const direct = scoreAtPly(game, TAG_THRESHOLDS.openingOutcomePly);
+  if (typeof direct === 'number') return direct;
+
+  let bestAvailable: number | null = null;
+  for (const record of records) {
+    if (record.moveNumber > TAG_THRESHOLDS.openingPhaseMaxMove) break;
+    if (typeof record.beforeScoreForUser === 'number') {
+      bestAvailable = record.beforeScoreForUser;
+    }
+    if (typeof record.afterScoreForUser === 'number') {
+      bestAvailable = record.afterScoreForUser;
+    }
+  }
+
+  return bestAvailable;
+}
+
+function scoreTimeline(records: AnalysedMoveRecord[]) {
+  return records.flatMap((record, index) => {
+    const values: Array<{ score: number; order: number }> = [];
+    if (typeof record.beforeScoreForUser === 'number') {
+      values.push({ score: record.beforeScoreForUser, order: index * 2 });
+    }
+    if (typeof record.afterScoreForUser === 'number') {
+      values.push({ score: record.afterScoreForUser, order: index * 2 + 1 });
+    }
+    return values;
+  });
+}
+
 function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
-  const run = latestRun(game);
-  if (!run || run.status !== 'COMPLETED') return;
+  const completedRun = latestCompletedRun(game);
+  if (!completedRun) return;
 
   const records = buildAnalysedMoves(game);
   if (!records.some((record) => typeof record.beforeScoreForUser === 'number' || typeof record.afterScoreForUser === 'number')) {
     return;
   }
 
-  const checkpointScore = firstOpeningCheckpointScore(game);
+  const earlyCheckpointScore = scoreAtPly(game, TAG_THRESHOLDS.earlyCheckpointPly);
+  const openingScore = openingOutcomeScore(records, game);
   const enemyRating = opponentRating(game);
-  const maxScoreForUser = records.reduce<number | null>((max, record) => {
-    const candidates = [record.beforeScoreForUser, record.afterScoreForUser].filter((value): value is number => typeof value === 'number');
-    if (!candidates.length) return max;
-    const localMax = Math.max(...candidates);
-    return max === null ? localMax : Math.max(max, localMax);
-  }, checkpointScore);
-  const minScoreForUser = records.reduce<number | null>((min, record) => {
-    const candidates = [record.beforeScoreForUser, record.afterScoreForUser].filter((value): value is number => typeof value === 'number');
-    if (!candidates.length) return min;
-    const localMin = Math.min(...candidates);
-    return min === null ? localMin : Math.min(min, localMin);
-  }, checkpointScore);
+  const maxScoreForUser = maxAnalysedScoreForUser(records, earlyCheckpointScore);
+  const minScoreForUser = minAnalysedScoreForUser(records, earlyCheckpointScore);
   const userAcc = userAccuracy(game);
+  const openingWindow = records.filter((record) => record.moveNumber <= TAG_THRESHOLDS.openingPhaseMaxMove);
+  const userEarlyBlunder = openingWindow.some(isUserEarlyBlunder);
+  const opponentEarlyBlunder = openingWindow.some((record) => {
+    const classification = record.classificationLabel?.toUpperCase();
+    return isOpponentMove(record) &&
+      record.moveNumber <= TAG_THRESHOLDS.openingPhaseMaxMove &&
+      (
+        classification === 'BLUNDER' ||
+        (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
+        (swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp
+      );
+  });
 
   if (typeof enemyRating === 'number' && enemyRating < TAG_THRESHOLDS.lowRatedOpponent) {
-    if ((checkpointScore ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp) {
+    if ((earlyCheckpointScore ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp) {
       addTag(tags, GAME_TAG.LOW_RATED_OPPONENT_EARLY_LOST_POSITION);
     }
-    if ((checkpointScore ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp) {
+    if ((earlyCheckpointScore ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp) {
       addTag(tags, GAME_TAG.LOW_RATED_OPPONENT_EARLY_WINNING_POSITION);
     }
   }
 
-  const openingWindow = records.filter((record) => record.moveNumber <= TAG_THRESHOLDS.openingPhaseMaxMove);
-  if (
-    openingWindow.some((record) =>
-      record.isUserMove &&
-      (
-        (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.bigLossCp ||
-        (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp
-      ),
-    ) ||
-    (checkpointScore ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp
-  ) {
-    addTag(tags, GAME_TAG.OPENING_DISASTER);
-  }
-  if (
-    openingWindow.some((record) =>
-      !record.isUserMove &&
-      typeof record.beforeScoreForUser === 'number' &&
-      typeof record.afterScoreForUser === 'number' &&
-      record.afterScoreForUser - record.beforeScoreForUser >= TAG_THRESHOLDS.clearlyBetterCp,
-    ) ||
-    (checkpointScore ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp
-  ) {
-    addTag(tags, GAME_TAG.OPENING_SUCCESS);
+  if (typeof openingScore === 'number') {
+    if (
+      openingScore <= -TAG_THRESHOLDS.winningCp ||
+      (userEarlyBlunder && openingScore <= -TAG_THRESHOLDS.clearlyBetterCp)
+    ) {
+      addTag(tags, GAME_TAG.OPENING_DISASTER);
+    } else if (openingScore <= -TAG_THRESHOLDS.clearlyBetterCp) {
+      addTag(tags, GAME_TAG.OPENING_TROUBLE);
+    } else if (
+      openingScore >= TAG_THRESHOLDS.clearlyBetterCp ||
+      (opponentEarlyBlunder && openingScore >= TAG_THRESHOLDS.clearlyBetterCp)
+    ) {
+      addTag(tags, GAME_TAG.OPENING_SUCCESS);
+    }
   }
 
-  if (
-    openingWindow.some((record) => {
-      const classification = record.classificationLabel?.toUpperCase();
-      return record.isUserMove && (
-        (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.bigLossCp ||
-        classification === 'MISTAKE' ||
-        classification === 'BLUNDER'
-      );
-    })
-  ) {
-    addTag(tags, GAME_TAG.EARLY_BLUNDER);
-  }
+  if (openingWindow.some(isUserEarlyMistake)) addTag(tags, GAME_TAG.EARLY_MISTAKE);
+  if (userEarlyBlunder) addTag(tags, GAME_TAG.EARLY_BLUNDER);
 
-  const oneMoveBlunder = records.some((record) =>
-    record.isUserMove &&
-    (
-      (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
-      (
-        typeof record.beforeScoreForUser === 'number' &&
-        typeof record.afterScoreForUser === 'number' &&
-        record.beforeScoreForUser - record.afterScoreForUser >= TAG_THRESHOLDS.hugeLossCp
-      )
-    ),
-  );
+  const oneMoveBlunder = records.some((record) => isUserActualBlunder(record));
   if (oneMoveBlunder) addTag(tags, GAME_TAG.ONE_MOVE_BLUNDER);
 
-  if (
-    records.some((record) =>
-      record.isUserMove &&
-      (
-        (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
-        (
-          typeof record.beforeScoreForUser === 'number' &&
-          typeof record.afterScoreForUser === 'number' &&
-          record.beforeScoreForUser - record.afterScoreForUser >= TAG_THRESHOLDS.hugeLossCp
-        )
-      ) &&
-      (!record.beforeBestMoveUci || record.beforeBestMoveUci !== record.ply.moveUci),
-    )
-  ) {
-    addTag(tags, GAME_TAG.TACTICAL_BLUNDER);
-  }
+  // TACTICAL_BLUNDER is reserved until we can distinguish tactical errors from generic large eval losses.
 
   if (
-    records.some((record) =>
-      record.isUserMove &&
-      (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.decisiveCp &&
-      (
+    records.some((record) => {
+      if (!record.isUserMove || !hasDecisiveUserOpportunity(record)) return false;
+
+      const failedToConvert =
         (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= TAG_THRESHOLDS.missedKnockoutAfterMaxCp ||
-        (record.afterScoreForUser === null && (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp)
-      ) &&
-      (!record.beforeBestMoveUci || record.beforeBestMoveUci !== record.ply.moveUci),
-    )
+        (record.afterScoreForUser === null && (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp);
+
+      if (!failedToConvert) return false;
+      if (record.beforeBestMoveUci) return record.ply.moveUci !== record.beforeBestMoveUci;
+      return (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp;
+    })
   ) {
     addTag(tags, GAME_TAG.MISSED_KNOCKOUT);
   }
+
+  if (
+    records.some((record) =>
+      isOpponentMove(record) &&
+      (record.beforeScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp &&
+      (
+        (record.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.equalishCp ||
+        (swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.clearlyBetterCp
+      ),
+    )
+  ) {
+    addTag(tags, GAME_TAG.OPPONENT_MISSED_CHANCE);
+  }
+
+  if (
+    records.some((record) =>
+      isOpponentMove(record) &&
+      hasDecisiveOpponentOpportunity(record) &&
+      (
+        (record.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.missedKnockoutAfterMaxCp ||
+        (swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp
+      ),
+    )
+  ) {
+    addTag(tags, GAME_TAG.OPPONENT_MISSED_KNOCKOUT);
+  }
+
+  if (
+    records.some((record) =>
+      isOpponentMove(record) &&
+      (
+        (swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
+        (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp
+      ),
+    )
+  ) {
+    addTag(tags, GAME_TAG.OPPONENT_BLUNDERED);
+  }
+
+  let foundKnockout = false;
+  let punishedOpponentBlunder = false;
+  records.forEach((record, index) => {
+    if (
+      record.isUserMove &&
+      hasDecisiveUserOpportunity(record) &&
+      (record.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.preserveKnockoutMinCp &&
+      isBestOrNearBestUserMove(record)
+    ) {
+      foundKnockout = true;
+    }
+
+    if (!isOpponentMove(record)) return;
+    const nextRecord = records[index + 1];
+    if (!nextRecord?.isUserMove) return;
+
+    const opponentBlewIt =
+      (swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp ||
+      (record.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.decisiveCp;
+    if (!opponentBlewIt) return;
+
+    if (
+      (nextRecord.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.decisiveCp &&
+      (nextRecord.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.preserveKnockoutMinCp &&
+      (nextRecord.scoreLossCp ?? Number.POSITIVE_INFINITY) <= TAG_THRESHOLDS.cleanPunishMaxLossCp
+    ) {
+      punishedOpponentBlunder = true;
+      if (isBestOrNearBestUserMove(nextRecord)) foundKnockout = true;
+    }
+  });
+
+  if (foundKnockout) addTag(tags, GAME_TAG.FOUND_KNOCKOUT);
+  if (punishedOpponentBlunder) addTag(tags, GAME_TAG.PUNISHED_OPPONENT_BLUNDER);
 
   if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp && game.resultForUser !== 'WIN') {
     addTag(tags, GAME_TAG.MISSED_WIN);
@@ -425,6 +582,12 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   if ((minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp && game.resultForUser === 'DRAW') {
     addTag(tags, GAME_TAG.SAVED_LOST_POSITION);
   }
+  if ((minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp && game.resultForUser === 'WIN') {
+    addTag(tags, GAME_TAG.WON_FROM_WORSE_POSITION);
+  }
+  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp && game.resultForUser === 'LOSS') {
+    addTag(tags, GAME_TAG.LOST_FROM_BETTER_POSITION);
+  }
   if (
     game.resultForUser === 'LOSS' &&
     records.some((record) =>
@@ -442,7 +605,7 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
       record.isUserMove &&
       record.moveNumber >= TAG_THRESHOLDS.midgameMinMove &&
       record.moveNumber <= TAG_THRESHOLDS.midgameMaxMove &&
-      (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp &&
+      (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp &&
       (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp,
     )
   ) {
@@ -450,10 +613,10 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   }
   if (
     records.some((record) =>
-      !record.isUserMove &&
+      isOpponentMove(record) &&
       record.moveNumber >= TAG_THRESHOLDS.midgameMinMove &&
       record.moveNumber <= TAG_THRESHOLDS.midgameMaxMove &&
-      (record.beforeScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp &&
+      (swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp &&
       (record.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp,
     )
   ) {
@@ -511,22 +674,6 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
     addTag(tags, GAME_TAG.SLOW_BLEED_LOSS);
   }
 
-  if (
-    records.some((record) =>
-      !record.isUserMove &&
-      (
-        (
-          typeof record.beforeScoreForUser === 'number' &&
-          typeof record.afterScoreForUser === 'number' &&
-          record.afterScoreForUser - record.beforeScoreForUser >= TAG_THRESHOLDS.hugeLossCp
-        ) ||
-        (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.hugeLossCp
-      ),
-    )
-  ) {
-    addTag(tags, GAME_TAG.OPPONENT_BLUNDERED);
-  }
-
   if (game.resultForUser === 'LOSS' && (userAcc ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.highAccuracy) {
     addTag(tags, GAME_TAG.HIGH_ACCURACY_LOSS);
   }
@@ -534,13 +681,27 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
     addTag(tags, GAME_TAG.LOW_ACCURACY_WIN);
   }
 
-  const majorSwings = records.filter((record) =>
-    typeof record.beforeScoreForUser === 'number' &&
-    typeof record.afterScoreForUser === 'number' &&
-    Math.abs(record.afterScoreForUser - record.beforeScoreForUser) >= TAG_THRESHOLDS.hugeLossCp,
-  ).length;
-  if (majorSwings >= 3 || criticalPlyNumbers(run.summary).length >= 3) {
+  const majorSwings = records.filter((record) => Math.abs(swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp).length;
+  if (majorSwings >= 3 || criticalPlyNumbers(completedRun.summary).length >= 3) {
     addTag(tags, GAME_TAG.CHAOTIC_GAME);
+  }
+
+  const timeline = scoreTimeline(records);
+  const firstWorsePhase = timeline.find((entry) => entry.score <= -TAG_THRESHOLDS.clearlyBetterCp);
+  if (
+    game.resultForUser === 'WIN' &&
+    firstWorsePhase &&
+    timeline.some((entry) => entry.order > firstWorsePhase.order && entry.score >= TAG_THRESHOLDS.clearlyBetterCp)
+  ) {
+    addTag(tags, GAME_TAG.COMEBACK_WIN);
+  }
+  const firstLostPhase = timeline.find((entry) => entry.score <= -TAG_THRESHOLDS.winningCp);
+  if (
+    game.resultForUser === 'DRAW' &&
+    firstLostPhase &&
+    timeline.some((entry) => entry.order > firstLostPhase.order && entry.score >= -TAG_THRESHOLDS.equalishCp)
+  ) {
+    addTag(tags, GAME_TAG.COMEBACK_DRAW);
   }
 
   const lastScore = lastAvailableAnalysedScore(records);
@@ -552,49 +713,6 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   }
   if (tags.has(GAME_TAG.WON_ON_TIME) && (lastScore ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp) {
     addTag(tags, GAME_TAG.OPPONENT_FLAGGED_IN_LOST_POSITION);
-  }
-
-  const terminalExplanationTags = new Set([
-    GAME_TAG.WON_ON_TIME,
-    GAME_TAG.LOST_ON_TIME,
-    GAME_TAG.WON_BY_RESIGNATION,
-    GAME_TAG.LOST_BY_RESIGNATION,
-    GAME_TAG.WON_BY_CHECKMATE,
-    GAME_TAG.LOST_BY_CHECKMATE,
-    GAME_TAG.GAME_ABANDONED,
-  ]);
-  const majorStoryTags = new Set([
-    GAME_TAG.OPENING_DISASTER,
-    GAME_TAG.OPENING_SUCCESS,
-    GAME_TAG.EARLY_BLUNDER,
-    GAME_TAG.ONE_MOVE_BLUNDER,
-    GAME_TAG.TACTICAL_BLUNDER,
-    GAME_TAG.MISSED_KNOCKOUT,
-    GAME_TAG.MISSED_WIN,
-    GAME_TAG.MISSED_DRAW,
-    GAME_TAG.LOST_WINNING_POSITION,
-    GAME_TAG.WON_LOST_POSITION,
-    GAME_TAG.SAVED_LOST_POSITION,
-    GAME_TAG.THREW_DRAW,
-    GAME_TAG.MIDGAME_TURNAROUND_TO_LOSS,
-    GAME_TAG.MIDGAME_TURNAROUND_TO_WIN,
-    GAME_TAG.ENDGAME_THROW,
-    GAME_TAG.ENDGAME_SAVE,
-    GAME_TAG.CLEAN_CONVERSION,
-    GAME_TAG.FAILED_CONVERSION,
-    GAME_TAG.SLOW_BLEED_LOSS,
-    GAME_TAG.OPPONENT_BLUNDERED,
-    GAME_TAG.FLAGGED_IN_WINNING_POSITION,
-    GAME_TAG.OPPONENT_FLAGGED_IN_WINNING_POSITION,
-    GAME_TAG.OPPONENT_FLAGGED_IN_LOST_POSITION,
-  ]);
-
-  if (
-    gameResultIsDecisive(game.resultForUser) &&
-    !Array.from(terminalExplanationTags).some((tag) => tags.has(tag)) &&
-    !Array.from(majorStoryTags).some((tag) => tags.has(tag))
-  ) {
-    addTag(tags, GAME_TAG.NO_CLEAR_REASON);
   }
 
   // Reserved for future use once ImportedGamePly stores per-move clocks:

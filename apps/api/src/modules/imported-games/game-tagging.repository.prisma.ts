@@ -30,7 +30,7 @@ const importedGameForTaggingSelect = {
   tagCodes: true,
   analysisRuns: {
     orderBy: { createdAt: 'desc' as const },
-    take: 1,
+    take: 5,
     select: latestAnalysisRunForTaggingSelect,
   },
   plies: {
