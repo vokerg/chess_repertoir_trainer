@@ -11,9 +11,9 @@ Imported game tags are lightweight integer codes stored on `ImportedGame.tagCode
 Examples:
 
 - `OPENING_SUCCESS` means the imported user came out of the opening clearly better.
-- `OPENING_TROUBLE` means the imported user came out of the opening clearly worse.
+- `OPENING_TROUBLE` means the imported user came out of the opening worse.
 - `OPPONENT_BLUNDERED` means the opponent made a mistake that improved the imported user's position.
-- `WON_FROM_WORSE_POSITION` means the imported user recovered from a worse position and still won.
+- `WON_FROM_WORSE_POSITION` means the imported user recovered from a measurably worse position and still won.
 - `LOST_FROM_BETTER_POSITION` means the imported user had a better position and still lost.
 
 ## Database shape
@@ -99,26 +99,26 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 | 112 | SAVED_LOST_POSITION | Imported user was lost by threshold but still drew. | Whole-game eval range plus result. | User reached `<= -700` and result was `DRAW`. |
 | 113 | THREW_DRAW | Imported user had a drawable or acceptable position and spoiled it with a bad move. | User move eval swing. | In a loss, user moved from roughly equal or slightly better to `<= -700`. |
 | 114 | MIDGAME_TURNAROUND_TO_LOSS | In the middlegame, imported user's move caused a major swing to a clearly worse position. | User middlegame move eval swing. | User move in moves `11-35` swings `>= 500` cp against user and leaves score `<= -300`. |
-| 115 | MIDGAME_TURNAROUND_TO_WIN | In the middlegame, opponent's move caused a major swing in the imported user's favor. | Opponent middlegame move eval swing. | Opponent move in moves `11-35` swings `>= 500` cp toward user and leaves score `>= +300`. |
+| 115 | MIDGAME_TURNAROUND_TO_WIN | In the middlegame, opponent's move caused a practical major swing in the imported user's favor. | Opponent middlegame move eval swing. | Opponent move in moves `11-35` swings `>= 400` cp toward user and leaves score `>= +300`. |
 | 116 | ENDGAME_THROW | In the endgame, imported user spoiled a good or drawable position. | User endgame move eval swing. | After move `36`, user drops from `>= +300` to `<= -300` and does not win the game. |
 | 117 | ENDGAME_SAVE | In the endgame, imported user saved a lost position into draw or win. | Endgame eval plus result. | In a draw or win, some endgame position before or after a move was `<= -700`. |
 | 118 | CLEAN_CONVERSION | Imported user got a winning advantage and converted without later big mistakes. | Whole-game eval range plus later move quality. | User reached `>= +700`, won the game, and no later user move loses `>= 300` cp. |
 | 119 | FAILED_CONVERSION | Imported user got a winning advantage but failed to win. | Whole-game eval range plus result. | User reached `>= +700` and result was not `WIN`. |
 | 120 | SLOW_BLEED_LOSS | Imported user lost without one giant blunder, through accumulated smaller losses. | User score-loss sequence. | In a loss, no user move loses `>= 300` cp, but several smaller losses pile up. |
-| 121 | OPPONENT_BLUNDERED | Opponent made a large mistake that improved the imported user's position. | Opponent move eval swing. | Opponent move swings `>= 500` cp toward user, or opponent move score loss is `>= 500` cp. |
+| 121 | OPPONENT_BLUNDERED | Opponent made a large mistake that improved the imported user's position. | Opponent move classification, score loss, and eval swing. | Opponent move swings `>= 400` cp toward user, or is classified as `BLUNDER` / loses `>= 300` cp while also producing a meaningful swing or clearly better user position. |
 | 122 | HIGH_ACCURACY_LOSS | Imported user had high accuracy but still lost. | Accuracy plus result. | User accuracy is `>= 85` and result is `LOSS`. |
 | 123 | LOW_ACCURACY_WIN | Imported user had low accuracy but still won. | Accuracy plus result. | User accuracy is `<= 60` and result is `WIN`. |
 | 124 | CHAOTIC_GAME | Game had multiple major swings or many critical moves. | Eval swings plus analysis summary. | At least `3` major swings of `>= 500` cp, or at least `3` critical ply numbers in completed analysis summary. |
 | 125 | NO_CLEAR_REASON | Reserved and disabled. | Disabled for now. | Definition remains for compatibility, but service does not generate it. |
-| 126 | OPENING_TROUBLE | Imported user came out of the opening clearly worse, but not necessarily lost. | User-perspective opening eval. | Opening outcome score is `<= -300` and `> -700`, unless stronger disaster rule applies. |
-| 127 | WON_FROM_WORSE_POSITION | Imported user was clearly worse at some point but still won. | Whole-game eval range plus result. | Minimum user score reached `<= -300` and result was `WIN`. |
+| 126 | OPENING_TROUBLE | Imported user came out of the opening worse, but not lost. | User-perspective opening eval. | Opening outcome score is `<= -150` and `> -700`, unless stronger disaster rule applies. |
+| 127 | WON_FROM_WORSE_POSITION | Imported user was measurably worse at some point, later clearly turned the game around, and won. | Whole-game eval range plus result. | Minimum user score reached `<= -150`, maximum user score later reached at least `+300`, and result was `WIN`. This does not mean the user was lost. |
 | 128 | LOST_FROM_BETTER_POSITION | Imported user was clearly better at some point but still lost. | Whole-game eval range plus result. | Maximum user score reached `>= +300` and result was `LOSS`. |
-| 129 | COMEBACK_WIN | Imported user was worse, later became better, and won. | Ordered eval timeline plus result. | User first reaches `<= -300`, later reaches `>= +300`, and result is `WIN`. |
+| 129 | COMEBACK_WIN | Imported user was worse, later became clearly better, and won. | Ordered eval timeline plus result. | User first reaches `<= -150`, later reaches `>= +300`, and result is `WIN`. |
 | 130 | COMEBACK_DRAW | Imported user was lost, later recovered to draw. | Ordered eval timeline plus result. | User first reaches `<= -700`, later reaches at least `-150`, and result is `DRAW`. |
 | 131 | OPPONENT_MISSED_CHANCE | Opponent had a good chance or advantage and let the imported user back into the game. | Opponent move eval swing. | Opponent moved from user score `<= -300` to near equal/better for user, or gave back at least `300` cp. |
 | 132 | OPPONENT_MISSED_KNOCKOUT | Opponent had a decisive chance against the imported user and missed it. | Opponent move eval swing. | Opponent moved from user score `<= -800` to at least `-200`, or gave back at least `500` cp. |
-| 133 | FOUND_KNOCKOUT | Imported user found or preserved a decisive continuation. | User decisive move quality. | User already had `>= +800`, then played a best-or-near-best move that kept the score at `>= +700`. |
-| 134 | PUNISHED_OPPONENT_BLUNDER | Opponent blundered and imported user immediately punished it with a strong reply. | Two-ply sequence. | Opponent creates decisive user chance, then user's next move keeps `>= +700` with at most `100` cp loss. |
+| 133 | FOUND_KNOCKOUT | Imported user found or preserved a practically decisive continuation. | User move quality after a practical decisive position or immediate opponent blunder. | User move keeps a practical decisive score around `>= +400` with at most `100` cp loss, or immediately punishes an opponent blunder and preserves that practical advantage. This does not mean mate was forced. |
+| 134 | PUNISHED_OPPONENT_BLUNDER | Opponent blundered and imported user immediately punished it with a strong reply. | Two-ply sequence. | Opponent creates a clearly better or practically decisive user chance, then user's next move keeps at least `+300` with at most `100` cp loss. |
 | 135 | EARLY_MISTAKE | Imported user made an early mistake that was not a full blunder. | Early move classification and score loss. | User move in moves `1-10` is `MISTAKE` or loses `>= 150` cp, but does not qualify as `EARLY_BLUNDER`. |
 | 140 | FLAGGED_IN_WINNING_POSITION | Imported user lost on time while the last analysed position still favored the user. | Terminal tag plus last analysed score. | `LOST_ON_TIME` and latest analysed user score is `>= +700`. |
 | 141 | OPPONENT_FLAGGED_IN_WINNING_POSITION | Imported user won on time while the last analysed position still favored the opponent. | Terminal tag plus last analysed score. | `WON_ON_TIME` and latest analysed user score is `<= -700`. |
@@ -141,6 +141,9 @@ Current service thresholds:
 - Middlegame window: moves `11-35`
 - Endgame starts: move `36`
 - Slight edge: `200` cp
+- Opening trouble: `150` cp
+- Worse-position story: `150` cp
+- Comeback worse phase: `150` cp
 - Clearly better/worse: `300` cp
 - Winning/lost: `700` cp
 - Decisive opportunity: `800` cp
@@ -148,11 +151,34 @@ Current service thresholds:
 - Early mistake threshold: `150` cp
 - Big loss: `300` cp
 - Huge loss: `500` cp
+- Opponent blunder swing: `400` cp
+- Practical decisive: `400` cp
+- Punishment minimum: `300` cp
 - Missed knockout fallback after-score ceiling: `200` cp
-- Preserve knockout minimum: `700` cp
 - Clean punishment / near-best tolerance: `100` cp
 - High accuracy: `85`
 - Low accuracy: `60`
+
+## Strict vs practical thresholds
+
+Some tags intentionally stay strict because their names imply a severe or near-winning concept:
+
+- `OPENING_DISASTER`
+- `WON_LOST_POSITION`
+- `LOST_WINNING_POSITION`
+- `MISSED_KNOCKOUT`
+- `CLEAN_CONVERSION`
+- `FAILED_CONVERSION`
+
+Other tags are practical review stories. They use lighter thresholds so games with real, review-worthy swings are not hidden just because the position never reached `+700` or `+800`:
+
+- `OPENING_TROUBLE`
+- `WON_FROM_WORSE_POSITION`
+- `COMEBACK_WIN`
+- `OPPONENT_BLUNDERED`
+- `MIDGAME_TURNAROUND_TO_WIN`
+- `PUNISHED_OPPONENT_BLUNDER`
+- `FOUND_KNOCKOUT`
 
 ## How to add/update a tag
 
@@ -180,16 +206,16 @@ Current service thresholds:
 5. Short win gets `QUICK_WIN`, not `OPENING_SUCCESS`.
 6. Short loss gets `QUICK_LOSS`, not `OPENING_DISASTER`.
 7. A game only gets `OPENING_SUCCESS` if user-perspective opening outcome eval is `>= +300`.
-8. A game gets `OPENING_TROUBLE` if user-perspective opening outcome eval is `<= -300` and `> -700`.
+8. A game gets `OPENING_TROUBLE` if user-perspective opening outcome eval is `<= -150` and `> -700`.
 9. A game gets `OPENING_DISASTER` if user-perspective opening outcome eval is `<= -700`.
 10. `MISTAKE` in first 10 moves gives `EARLY_MISTAKE`, not `EARLY_BLUNDER`.
 11. `BLUNDER` or huge early score loss gives `EARLY_BLUNDER`.
 12. `TACTICAL_BLUNDER` is not generated.
 13. `NO_CLEAR_REASON` is not generated.
-14. Opponent move causing `>= 500` cp swing toward user gives `OPPONENT_BLUNDERED`.
-15. If opponent blunders and user's immediate reply preserves decisive advantage, add `PUNISHED_OPPONENT_BLUNDER`.
-16. If user's reply to a decisive opportunity is strong, add `FOUND_KNOCKOUT`.
-17. If user was worse by `-300` and won, add `WON_FROM_WORSE_POSITION`.
+14. Opponent move causing `>= 400` cp swing toward user gives `OPPONENT_BLUNDERED`.
+15. If opponent blunders and user's immediate reply preserves at least a clearly better advantage, add `PUNISHED_OPPONENT_BLUNDER`.
+16. If user's reply to a practical decisive opportunity is strong, add `FOUND_KNOCKOUT`.
+17. If user was worse by `-150`, later reached at least `+300`, and won, add `WON_FROM_WORSE_POSITION`.
 18. If user was better by `+300` and lost, add `LOST_FROM_BETTER_POSITION`.
 
 ## Specific sample acceptance
@@ -204,10 +230,17 @@ For `lichess.org/vf3Y2aNi` after tag refresh:
 - Must contain `ANALYSED`.
 - Must contain `OPENING_FAMILY_KNOWN`.
 - Must contain `SHORT_DECISIVE_GAME`.
-- Should contain `OPENING_TROUBLE` or `OPENING_DISASTER` if stored analysis agrees the imported user as Black was worse after the opening.
-- Should contain `OPPONENT_BLUNDERED` if stored analysis sees the large swing after White's blunder.
-- Should contain `PUNISHED_OPPONENT_BLUNDER` and/or `FOUND_KNOCKOUT` if stored analysis sees Black's forcing punishment.
-- Should contain `WON_FROM_WORSE_POSITION` if stored analysis sees Black at `<= -300` earlier.
+- Must contain `OPENING_TROUBLE` when stored user-perspective opening outcome is around `-175`.
+- Must contain `OPPONENT_BLUNDERED` when stored analysis sees White's ply 27 blunder swing from `-11` to `+428` for the imported user.
+- Must contain `MIDGAME_TURNAROUND_TO_WIN` for the same ply 27 middlegame swing.
+- Must contain `PUNISHED_OPPONENT_BLUNDER` when Black's ply 28 reply preserves the advantage from about `+428` to `+460` with `0` cp loss.
+- Must contain `FOUND_KNOCKOUT` for that same practical decisive reply.
+- Must contain `WON_FROM_WORSE_POSITION` if stored analysis sees Black at about `-175` earlier and later at least `+300`.
+- Must contain `COMEBACK_WIN` when the worse phase happens before the later clearly better phase.
 - Should not contain `OPENING_SUCCESS` unless imported user as Black actually had `>= +300` at the opening outcome checkpoint.
+- Should not contain `OPENING_DISASTER`.
+- Should not contain `WON_LOST_POSITION`.
+- Should not contain `CLEAN_CONVERSION`.
+- Should not contain `MISSED_KNOCKOUT`.
 - Should not contain `TACTICAL_BLUNDER`.
 - Should not contain `NO_CLEAR_REASON`.
