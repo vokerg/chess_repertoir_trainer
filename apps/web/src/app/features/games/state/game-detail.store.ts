@@ -184,6 +184,8 @@ export class GameDetailStore implements OnDestroy {
           isUserMove: side === this.game()?.userColor,
           source: 'LOCAL',
           analysisMove: null,
+          classification: null,
+          evalCpWhite: null,
         },
         children: [],
       };

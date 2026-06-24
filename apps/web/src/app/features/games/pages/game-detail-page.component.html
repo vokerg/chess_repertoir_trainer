@@ -20,6 +20,7 @@
   } @else if (store.game(); as game) {
     <app-game-summary
       [game]="game"
+      [analysisRun]="store.analysisRun()"
       [analysisProgress]="store.importedGameAnalysis.progress()"
       [analysisStatus]="store.analysisStatusLabel()"
       [analysisSummary]="store.analysisSummaryLabel()"

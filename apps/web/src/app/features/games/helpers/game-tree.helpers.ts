@@ -49,6 +49,8 @@ export function buildGameTree(
       isUserMove: false,
       source: 'GAME',
       analysisMove: null,
+      classification: null,
+      evalCpWhite: null,
     },
     children: [],
   };
@@ -67,6 +69,8 @@ export function buildGameTree(
         isUserMove: move.side === userColor,
         source: 'GAME',
         analysisMove: analysisByPly[move.plyNumber] || null,
+        classification: analysisByPly[move.plyNumber]?.classification || null,
+        evalCpWhite: analysisByPly[move.plyNumber]?.playedScoreCpWhite ?? null,
       },
       children: [],
     };
@@ -136,6 +140,8 @@ export function attachGameTreeAnalysis(
     node: {
       ...root.node,
       analysisMove: plyNumber === null ? null : analysisByPly[plyNumber] || null,
+      classification: plyNumber === null ? null : analysisByPly[plyNumber]?.classification || null,
+      evalCpWhite: plyNumber === null ? null : analysisByPly[plyNumber]?.playedScoreCpWhite ?? null,
     },
     children: root.children.map((child) => attachGameTreeAnalysis(child, analysisByPly)),
   };

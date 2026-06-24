@@ -13,8 +13,8 @@ export interface PlayedGameMove {
 export interface GameTreeNodeData {
   id: number;
   plyNumber: number | null;
-  moveNumber: number | null;
-  side: UserColor | null;
+  moveNumber?: number | null;
+  side?: UserColor | null;
   moveSan: string | null;
   moveUci: string | null;
   fenBefore: string;
@@ -22,6 +22,8 @@ export interface GameTreeNodeData {
   isUserMove: boolean;
   source: 'GAME' | 'LOCAL';
   analysisMove: ImportedGameAnalysisMove | null;
+  classification?: string | null;
+  evalCpWhite?: number | null;
 }
 
 export interface GameTreeNode {

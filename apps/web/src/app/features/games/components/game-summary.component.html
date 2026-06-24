@@ -1,43 +1,111 @@
-<section class="game-summary-grid">
-  <div class="metric-card">
-    <p class="metric-label">Result</p>
-    <p class="metric-value compact-result">{{ result() }}</p>
-    <p class="game-muted">{{ color() }}</p>
-  </div>
-  <div class="metric-card">
-    <p class="metric-label">Accuracy</p>
-    <p class="metric-value compact-result">{{ userAccuracy() }}</p>
-    <p class="game-muted">W {{ whiteAccuracy() }} · B {{ blackAccuracy() }}</p>
-  </div>
-  <div class="metric-card">
-    <p class="metric-label">Analysis</p>
-    <p class="metric-value compact-result">{{ analysisStatus() }}</p>
-    <p class="game-muted">{{ analysisSummary() }}</p>
-    @if (analysisProgress().running || analysisProgress().error) {
-      <p class="game-muted">
-        {{ analysisProgress().error || analysisProgress().message }}
-        @if (analysisProgress().running) {
-          ({{ analysisProgress().currentPly }}/{{ analysisProgress().totalPlies }})
-        }
-      </p>
-    }
-  </div>
-  <div class="metric-card">
-    <p class="metric-label">Opening</p>
-    <p class="metric-value compact-result">{{ game().opening?.eco || '—' }}</p>
-    <p class="game-muted">{{ game().opening?.name || 'Opening unavailable' }}</p>
-  </div>
-</section>
+<app-panel title="Game stats">
+  <section class="game-stats-grid">
+    <div class="stats-column">
+      <div class="stats-section">
+        <p class="metric-label">Outcome</p>
+        <div class="outcome-block">
+          <p class="result-value" [class.result-win]="resultTone() === 'win'" [class.result-loss]="resultTone() === 'loss'" [class.result-draw]="resultTone() === 'draw'">
+            {{ result() }}
+          </p>
+          <div class="stats-facts">
+            <div class="stats-fact">
+              <span class="stats-fact-label">Opponent</span>
+              @if (opponentUrl(); as url) {
+                <a class="stats-link" [href]="url" target="_blank" rel="noopener noreferrer">{{ opponentLabel() }}</a>
+              } @else {
+                <span class="stats-fact-value">{{ opponentLabel() }}</span>
+              }
+            </div>
+            <div class="stats-fact">
+              <span class="stats-fact-label">You</span>
+              <span class="stats-fact-value">{{ color() }}</span>
+            </div>
+            <div class="stats-fact">
+              <span class="stats-fact-label">Game</span>
+              <span class="stats-fact-value">{{ ratedLabel() }} · {{ speedLabel() }} · {{ timeControl() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-<section class="tags-card metric-card">
-  <p class="metric-label">Tags</p>
-  @if (game().tags?.length) {
-    <div class="tag-chip-list">
-      @for (tag of game().tags ?? []; track tag.code) {
-        <span class="tag-chip">{{ tag.name }}</span>
-      }
+      <div class="stats-section">
+        <p class="metric-label">Opening</p>
+        <div class="stats-facts">
+          <div class="stats-fact">
+            <span class="stats-fact-label">ECO</span>
+            <span class="stats-fact-value">{{ game().opening?.eco || '—' }}</span>
+          </div>
+          <div class="stats-fact">
+            <span class="stats-fact-label">Name</span>
+            <span class="stats-fact-value">{{ game().opening?.name || 'Opening unavailable' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-section">
+        <p class="metric-label">Signals</p>
+        @if (game().tags?.length) {
+          <div class="tag-chip-list">
+            @for (tag of game().tags ?? []; track tag.code) {
+              <span class="tag-chip" [class.tag-chip-positive]="tagTone(tag) === 'positive'" [class.tag-chip-negative]="tagTone(tag) === 'negative'" [class.tag-chip-neutral]="tagTone(tag) === 'neutral'">
+                {{ tagLabel(tag) }}
+              </span>
+            }
+          </div>
+        } @else {
+          <p class="game-muted">No tags yet</p>
+        }
+      </div>
     </div>
-  } @else {
-    <p class="game-muted">No tags yet</p>
-  }
-</section>
+
+    <div class="stats-column">
+      <div class="stats-section">
+        <p class="metric-label">Accuracy</p>
+        <div class="accuracy-rows">
+          @for (row of accuracyRows(); track row.label) {
+            <div class="accuracy-row">
+              <span class="stats-fact-label">{{ row.label }}</span>
+              <span class="stats-fact-value accuracy-value">{{ row.value }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="stats-section">
+        <p class="metric-label">Analysis</p>
+        <p class="analysis-status-line">
+          <strong>{{ analysisStatus() }}</strong>
+          <span>{{ analysisSummary() }}</span>
+        </p>
+        @if (analysisMessage(); as message) {
+          <p class="analysis-message" [class.analysis-message-error]="analysisMessageIsError()">{{ message }}</p>
+        }
+        <div class="stats-facts stats-facts-compact">
+          @for (fact of analysisFacts(); track fact.label) {
+            <div class="stats-fact">
+              <span class="stats-fact-label">{{ fact.label }}</span>
+              <span class="stats-fact-value">{{ fact.value }}</span>
+            </div>
+          }
+        </div>
+        @if (sideAnalysisRows().length) {
+          <div class="side-analysis-list">
+            @for (row of sideAnalysisRows(); track row.side) {
+              <div class="side-analysis-row">
+                <div>
+                  <p class="side-analysis-title">{{ row.label }}</p>
+                  <p class="game-muted">{{ row.issues }}</p>
+                </div>
+                <div class="side-analysis-metrics">
+                  <span>{{ row.accuracy }} acc</span>
+                  <span>{{ row.acpl }} ACPL</span>
+                  <span>{{ row.critical }} critical</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+</app-panel>

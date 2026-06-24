@@ -1,4 +1,5 @@
 import { moveClassificationLabel } from 'chess-domain';
+import type { StoredEngineLine } from './analysis.types';
 import {
   createClientGameAnalysisRun,
   getImportedGameForAnalysis,
@@ -18,7 +19,36 @@ function summaryKey(classificationCode: number | null | undefined): string | nul
   return label.toUpperCase().replace(/\s+/g, '_');
 }
 
-function compactMove(ply: any) {
+function effectiveScoreCpWhite(scoreCpWhite?: number | null, mateWhite?: number | null): number | null {
+  if (typeof scoreCpWhite === 'number' && Number.isFinite(scoreCpWhite)) return scoreCpWhite;
+  if (typeof mateWhite !== 'number' || !Number.isFinite(mateWhite)) return null;
+  return mateWhite >= 0 ? 1000 : -1000;
+}
+
+function linesFor(analysis: any): StoredEngineLine[] {
+  return Array.isArray(analysis?.lines) ? analysis.lines : [];
+}
+
+function bestMoveFor(analysis: any): string | null {
+  return analysis?.bestMoveUci ?? linesFor(analysis)[0]?.moveUci ?? linesFor(analysis)[0]?.pvUci?.[0] ?? null;
+}
+
+function playedScoreCpWhite(ply: any, nextPly: any): number | null {
+  const analysis = ply.position?.analysis;
+  const matchingLine = linesFor(analysis).find((line) => (line.moveUci ?? line.pvUci?.[0]) === ply.moveUci);
+  if (matchingLine) return effectiveScoreCpWhite(matchingLine.scoreCpWhite, matchingLine.mateWhite);
+
+  if (bestMoveFor(analysis) === ply.moveUci) {
+    return effectiveScoreCpWhite(analysis?.bestScoreCpWhite, analysis?.bestMateWhite);
+  }
+
+  return effectiveScoreCpWhite(
+    nextPly?.position?.analysis?.bestScoreCpWhite,
+    nextPly?.position?.analysis?.bestMateWhite,
+  );
+}
+
+function compactMove(ply: any, nextPly: any) {
   const analysis = ply.position?.analysis;
   return {
     plyNumber: ply.plyNumber,
@@ -31,6 +61,7 @@ function compactMove(ply: any) {
     scoreLossCp: ply.scoreLossCp ?? null,
     bestMoveUci: analysis?.bestMoveUci ?? null,
     bestScoreCpWhite: analysis?.bestScoreCpWhite ?? null,
+    playedScoreCpWhite: playedScoreCpWhite(ply, nextPly),
     bestMateWhite: analysis?.bestMateWhite ?? null,
     positionAnalysisId: analysis?.id ?? null,
   };
@@ -87,7 +118,7 @@ function buildAccuracySummary(plies: any[], userColor?: string | null) {
 
 function compactRun(run: any) {
   const plies = run.importedGame?.plies ?? [];
-  const moves = plies.map(compactMove);
+  const moves = plies.map((ply: any, index: number) => compactMove(ply, plies[index + 1] ?? null));
   const criticalMoves = moves.filter((move: any) => move.classificationCode === 5 || move.classificationCode === 6);
 
   return {

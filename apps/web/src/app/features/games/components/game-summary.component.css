@@ -1,42 +1,206 @@
-.game-summary-grid {
+.game-stats-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stats-column {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  min-width: 0;
 }
+
+.stats-section {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.stats-facts {
+  display: grid;
+  gap: 0.35rem 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stats-facts-compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stats-fact {
+  display: grid;
+  gap: 0.14rem;
+  padding: 0;
+}
+
+.stats-fact-label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stats-fact-value {
+  line-height: 1.35;
+}
+
+.outcome-block {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.result-value {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.result-win {
+  color: #24663f;
+}
+
+.result-loss {
+  color: #8c2f2f;
+}
+
+.result-draw {
+  color: #5d564a;
+}
+
+.stats-link {
+  color: inherit;
+  font-weight: 800;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 0.18em;
+}
+
 .compact-result {
   font-size: 1.45rem;
   line-height: 1.1;
+  margin: 0;
 }
+
 .game-muted {
-  margin: 0.3rem 0 0;
+  margin: 0;
   color: var(--muted);
   line-height: 1.35;
 }
-.tags-card {
-  margin-top: 1rem;
+
+.accuracy-rows {
+  display: grid;
+  gap: 0.35rem;
 }
+
+.accuracy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 18rem;
+}
+
+.accuracy-value {
+  font-size: 1.05rem;
+  font-weight: 850;
+}
+
+.analysis-status-line {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.analysis-status-line span {
+  color: var(--muted);
+}
+
+.analysis-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.analysis-message-error {
+  color: var(--danger, #ff6b6b);
+}
+
+.side-analysis-list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.side-analysis-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.35rem;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+}
+
+.side-analysis-title {
+  margin: 0;
+  font-weight: 850;
+}
+
+.side-analysis-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
 .tag-chip-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
 }
+
 .tag-chip {
-  padding: 0.35rem 0.65rem;
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  padding: 0.28rem 0.58rem;
   border-radius: 999px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.04));
-  color: var(--text, inherit);
-  font-size: 0.82rem;
+  border: 1px solid transparent;
+  font-size: 0.78rem;
   line-height: 1.2;
 }
+
+.tag-chip-positive {
+  border-color: color-mix(in srgb, #57c785 45%, transparent);
+  background: color-mix(in srgb, #57c785 14%, var(--surface-2, rgba(255, 255, 255, 0.04)));
+  color: #255c3d;
+}
+
+.tag-chip-negative {
+  border-color: color-mix(in srgb, #ff7d7d 45%, transparent);
+  background: color-mix(in srgb, #ff7d7d 14%, var(--surface-2, rgba(255, 255, 255, 0.04)));
+  color: #7a2f2f;
+}
+
+.tag-chip-neutral {
+  border-color: var(--border-subtle, rgba(255, 255, 255, 0.12));
+  background: color-mix(in srgb, #69a7ff 10%, var(--surface-2, rgba(255, 255, 255, 0.04)));
+  color: #334d76;
+}
+
 @media (max-width: 760px) {
-  .game-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .game-stats-grid {
+    grid-template-columns: 1fr;
   }
 }
+
 @media (max-width: 520px) {
-  .game-summary-grid {
+  .stats-facts {
     grid-template-columns: 1fr;
+  }
+
+  .stats-facts-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

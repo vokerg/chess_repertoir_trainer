@@ -10,6 +10,7 @@ import {
   standalone: true,
   imports: [NgTemplateOutlet],
   templateUrl: './move-tree.component.html',
+  styleUrl: './move-tree.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MoveTreeComponent {
@@ -42,5 +43,55 @@ export class MoveTreeComponent {
 
   protected nodeMeta(node: AnalysisTreeNode): string {
     return node.node.moveMeta || (node.node.isUserMove ? 'you' : 'opp');
+  }
+
+  protected moveNumberLabel(node: AnalysisTreeNode): string {
+    if (node.node.id === 0) return '';
+    if (typeof node.node.moveNumber !== 'number' || !node.node.side) return '';
+    return node.node.side === 'WHITE' ? `${node.node.moveNumber}.` : '';
+  }
+
+  protected classificationLabel(node: AnalysisTreeNode): string | null {
+    switch (this.normalizedClassification(node)) {
+      case 'INACCURACY':
+        return '?!';
+      case 'MISTAKE':
+        return '?';
+      case 'BLUNDER':
+        return '??';
+      case 'MISSED_OPPORTUNITY':
+        return '□';
+      default:
+        return null;
+    }
+  }
+
+  protected classificationTitle(node: AnalysisTreeNode): string | null {
+    return node.node.classification || null;
+  }
+
+  protected classificationTone(node: AnalysisTreeNode): 'good' | 'warning' | 'bad' | 'neutral' {
+    switch (this.normalizedClassification(node)) {
+      case 'INACCURACY':
+      case 'MISSED_OPPORTUNITY':
+        return 'warning';
+      case 'MISTAKE':
+      case 'BLUNDER':
+        return 'bad';
+      default:
+        return 'neutral';
+    }
+  }
+
+  protected evalLabel(node: AnalysisTreeNode): string | null {
+    if (typeof node.node.evalCpWhite !== 'number') return null;
+    const pawns = node.node.evalCpWhite / 100;
+    return pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
+  }
+
+  private normalizedClassification(node: AnalysisTreeNode): string | null {
+    const value = node.node.classification?.trim();
+    if (!value || value === 'Not analysed') return null;
+    return value.toUpperCase().replace(/\s+/g, '_');
   }
 }

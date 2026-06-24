@@ -8,20 +8,42 @@
   <section class="move-tree-line" [class.move-tree-line-branch]="branch">
     @for (current of nodes; track current.node.id) {
       <div class="move-tree-step">
-        <button
-          type="button"
-          class="move-tree-node-button"
-          [class.move-tree-node-selected]="current.node.id === selectedNodeId()"
-          [class.move-tree-node-trained]="current.node.id !== 0 && current.node.isUserMove"
-          [class.move-tree-node-opponent]="current.node.id !== 0 && !current.node.isUserMove"
-          [title]="nodeTitle(current)"
-          (click)="nodeSelected.emit(current.node.id)"
-        >
-          <span>{{ nodeLabel(current) }}</span>
-          @if (current.node.id !== 0) {
-            <span class="move-tree-meta">{{ nodeMeta(current) }}</span>
-          }
-        </button>
+        <div class="move-tree-step-row">
+          <span class="move-tree-move-number" aria-hidden="true">{{ moveNumberLabel(current) }}</span>
+
+          <button
+            type="button"
+            class="move-tree-node-button"
+            [class.move-tree-node-pilled]="current.node.id !== 0 && current.node.isUserMove"
+            [class.move-tree-node-selected]="current.node.id === selectedNodeId()"
+            [class.move-tree-node-trained]="current.node.id !== 0 && current.node.isUserMove"
+            [class.move-tree-node-opponent]="current.node.id !== 0 && !current.node.isUserMove"
+            [title]="nodeTitle(current)"
+            (click)="nodeSelected.emit(current.node.id)"
+          >
+            <span>{{ nodeLabel(current) }}</span>
+            @if (evalLabel(current); as label) {
+              <span class="move-tree-eval" [attr.aria-label]="'Evaluation ' + label">
+                {{ label }}
+              </span>
+            }
+            @if (current.node.id !== 0) {
+              <span class="move-tree-meta">{{ nodeMeta(current) }}</span>
+            }
+            @if (classificationLabel(current); as label) {
+              <span
+                class="move-tree-classification"
+                [class.move-tree-classification-good]="classificationTone(current) === 'good'"
+                [class.move-tree-classification-warning]="classificationTone(current) === 'warning'"
+                [class.move-tree-classification-bad]="classificationTone(current) === 'bad'"
+                [attr.title]="classificationTitle(current)"
+                [attr.aria-label]="classificationTitle(current)"
+              >
+                {{ label }}
+              </span>
+            }
+          </button>
+        </div>
 
         @if (sidelines(current).length) {
           <div class="move-tree-branches">
