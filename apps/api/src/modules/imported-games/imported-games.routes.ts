@@ -5,7 +5,10 @@ import { ImportedGamesService } from './imported-games.service';
 import { importedGameSearchQuerySchema, openingAnalysisQuerySchema } from './imported-games.schemas';
 import { ImportedGamePlyIndexService } from './ply-index.service';
 import { OpeningAnalysisService } from './opening-analysis.service';
+import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis.config';
+import { ImportedGameBatchAnalysisService } from '../analysis/batch-game-analysis.service';
 import {
+  createImportedGameFullRefreshRunOpenApiOperation,
   getImportedGameFacetsOpenApiOperation,
   getImportedGameOpenApiOperation,
   getImportedGamePgnOpenApiOperation,
@@ -141,6 +144,37 @@ export default async function importedGamesModule(app: FastifyInstance) {
         }
         reply.code(400);
         return { error: message };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/imported-games/:gameId/full-refresh-runs',
+    operation: createImportedGameFullRefreshRunOpenApiOperation,
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const gameId = parseGameId(request.params);
+      if (!gameId) {
+        reply.code(400);
+        return { error: 'Invalid imported game id' };
+      }
+      if (!isLocalBatchStockfishAnalysisEnabled()) {
+        reply.code(403);
+        return { error: 'Local batch Stockfish analysis is disabled' };
+      }
+
+      try {
+        ImportedGameBatchAnalysisService.enqueueFullRefresh(auth.userId, gameId);
+        return {
+          accepted: true,
+          importedGameId: gameId,
+          steps: ['PLY_INDEX', 'ANALYSIS', 'TAGS'],
+        };
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
       }
     },
   });

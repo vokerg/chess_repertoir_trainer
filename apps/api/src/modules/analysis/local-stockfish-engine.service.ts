@@ -1,4 +1,6 @@
 import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { delimiter, extname, isAbsolute, join } from 'node:path';
 import { createInterface, Interface } from 'node:readline';
 import { StorePositionAnalysisInput, StoredEngineLine } from './analysis.types';
 
@@ -41,7 +43,12 @@ export class LocalStockfishEngineService {
   async init(): Promise<void> {
     if (this.process) return;
 
-    const child = spawn(this.options.stockfishPath, [], { stdio: 'pipe' });
+    const stockfishPath = resolveStockfishPath(this.options.stockfishPath);
+    const child = spawn(stockfishPath, [], {
+      stdio: 'pipe',
+      shell: process.platform === 'win32' && ['.bat', '.cmd'].includes(extname(stockfishPath).toLowerCase()),
+      windowsHide: true,
+    });
     this.process = child;
     this.stdout = createInterface({ input: child.stdout });
     this.stdout.on('line', (line) => this.handleLine(line.trim()));
@@ -213,6 +220,35 @@ export class LocalStockfishEngineService {
       this.activeAnalysis = null;
     }
   }
+}
+
+function resolveStockfishPath(stockfishPath: string): string {
+  if (process.platform !== 'win32') return stockfishPath;
+  if (isAbsolute(stockfishPath) || stockfishPath.includes('/') || stockfishPath.includes('\\')) {
+    if (existsSync(stockfishPath)) return stockfishPath;
+    throw missingExecutableError(stockfishPath);
+  }
+
+  const extensions = extname(stockfishPath)
+    ? ['']
+    : (process.env['PATHEXT'] || '.COM;.EXE;.BAT;.CMD').split(';');
+  for (const directory of (process.env['PATH'] || '').split(delimiter).filter(Boolean)) {
+    for (const extension of extensions) {
+      const candidate = join(directory, `${stockfishPath}${extension}`);
+      if (existsSync(candidate)) return candidate;
+    }
+  }
+
+  throw missingExecutableError(stockfishPath);
+}
+
+function missingExecutableError(stockfishPath: string): NodeJS.ErrnoException {
+  const error = new Error(`spawn ${stockfishPath} ENOENT`) as NodeJS.ErrnoException;
+  error.code = 'ENOENT';
+  error.errno = -4058;
+  error.syscall = `spawn ${stockfishPath}`;
+  error.path = stockfishPath;
+  return error;
 }
 
 function activeColorFromFen(fen: string): 'w' | 'b' {

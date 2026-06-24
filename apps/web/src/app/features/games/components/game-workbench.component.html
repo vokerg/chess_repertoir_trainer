@@ -12,9 +12,7 @@
   [canGoBackward]="canGoBackward()"
   [canGoForward]="canGoForward()"
   boardTitle="Game board"
-  boardHelp="Imported moves load as the main branch. Play extra legal moves to explore temporary sidelines."
   treeTitle="Move tree"
-  treeHelp="The imported game is the main line. Temporary sidelines appear as you explore."
   dangerTitle="Danger zone"
   dangerHelp="Delete the selected local variation and every continuation below it. Imported game moves cannot be deleted."
   [deleteButtonLabel]="deleting() ? 'Deleting...' : 'Delete selected subtree'"
@@ -30,6 +28,15 @@
   (analyze)="analyze.emit()"
   (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
 >
+  <app-panel analysisWorkbenchSideExtra title="Evaluation graph">
+    <app-game-evaluation-graph
+      [tree]="tree()"
+      [selectedNodeId]="selectedNodeId()"
+      [blackPerspective]="blackPerspective()"
+      (nodeSelected)="nodeSelected.emit($event)"
+    />
+  </app-panel>
+
   <app-course-position-suggestions-widget
     analysisWorkbenchSideExtra
     [fen]="currentFen()"

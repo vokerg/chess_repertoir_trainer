@@ -23,8 +23,10 @@ export class GameDetailHeaderComponent {
   readonly selectedLabel = input.required<string>();
   readonly analysisProgress = input.required<ImportedGameAnalysisProgress>();
   readonly refreshingTags = input(false);
+  readonly fullRefreshing = input(false);
   readonly analyze = output<boolean>();
   readonly refreshTags = output<void>();
+  readonly fullRefresh = output<void>();
 
   protected readonly analysisAction = computed(() => {
     const game = this.game();
@@ -48,6 +50,17 @@ export class GameDetailHeaderComponent {
     return {
       disabled: !game || this.refreshingTags(),
       label: this.refreshingTags() ? 'Refreshing tags...' : 'Refresh tags',
+    };
+  });
+
+  protected readonly fullRefreshAction = computed(() => {
+    const game = this.game();
+    const analysisRunning =
+      this.analysisProgress().running || game?.analysis.status === 'RUNNING';
+    return {
+      disabled:
+        !game || analysisRunning || this.refreshingTags() || this.fullRefreshing(),
+      label: this.fullRefreshing() ? 'Submitting...' : 'Full refresh',
     };
   });
 

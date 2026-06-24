@@ -9,6 +9,7 @@ import {
   ImportedGameAnalysisResponse,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
+  ImportedGameFullRefreshAcceptedResponse,
   ImportedGamePlyIndexResult,
   ImportedGameSearchResponse,
   ImportedGameTagsRefreshResponse,
@@ -58,5 +59,12 @@ export class GamesApiService {
 
   refreshGameTags(gameId: number): Observable<ImportedGameTagsRefreshResponse> {
     return this.api.post<ImportedGameTagsRefreshResponse>(`/imported-games/${gameId}/tags/refresh`, {});
+  }
+
+  fullRefreshGame(gameId: number): Observable<ImportedGameFullRefreshAcceptedResponse> {
+    return this.api.post<ImportedGameFullRefreshAcceptedResponse>(
+      `/imported-games/${gameId}/full-refresh-runs`,
+      {},
+    );
   }
 }

@@ -40,9 +40,9 @@ export class AnalysisWorkbenchComponent {
   readonly keyboardHint = input<string | null>('Keyboard: ←/→, Home/End');
 
   readonly boardTitle = input.required<string>();
-  readonly boardHelp = input.required<string>();
+  readonly boardHelp = input<string>();
   readonly treeTitle = input.required<string>();
-  readonly treeHelp = input.required<string>();
+  readonly treeHelp = input<string>();
   readonly treeRootLabel = input('Start');
 
   readonly showDangerZone = input(true);

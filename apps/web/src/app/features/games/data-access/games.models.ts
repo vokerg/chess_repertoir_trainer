@@ -172,6 +172,12 @@ export interface ImportedGameTagsRefreshResponse {
   tags: ImportedGameTag[];
 }
 
+export interface ImportedGameFullRefreshAcceptedResponse {
+  accepted: true;
+  importedGameId: number;
+  steps: ['PLY_INDEX', 'ANALYSIS', 'TAGS'];
+}
+
 export interface ImportedGameSearchResponse {
   items: ImportedGameListItem[];
   pageInfo: ImportedGamePageInfo;

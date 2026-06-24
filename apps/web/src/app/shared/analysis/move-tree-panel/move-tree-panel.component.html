@@ -2,7 +2,9 @@
   <div class="move-tree-panel-header">
     <div class="move-tree-panel-copy">
       <h3 class="workbench-panel-title">{{ title() }}</h3>
-      <p class="workbench-panel-subtitle">{{ help() }}</p>
+      @if (help(); as helpText) {
+        <p class="workbench-panel-subtitle">{{ helpText }}</p>
+      }
     </div>
 
     @if (copyLine()) {

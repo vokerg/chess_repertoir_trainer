@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { classifyPly, moveClassificationLabel } from 'chess-domain';
+import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { ImportedGamePlyIndexService } from '../imported-games/ply-index.service';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
 import {
@@ -20,6 +21,12 @@ import { PositionAnalysisService } from './position-analysis.service';
 interface BatchQueueItem {
   userId: number;
   gameIds: number[];
+  force: boolean;
+  refreshTagsAfterAnalysis: boolean;
+}
+
+interface EngineAvailability {
+  unavailable: boolean;
 }
 
 const queue: BatchQueueItem[] = [];
@@ -151,12 +158,22 @@ function buildAccuracySummary(plies: any[], userColor?: string | null) {
 async function getOrCreatePositionAnalysis(
   engine: LocalStockfishEngineService,
   fen: string,
-  options: { depth: number; multipv: number },
-): Promise<StoredPositionAnalysis> {
+  options: { depth: number; multipv: number; continueWithoutEngine: boolean },
+  engineAvailability: EngineAvailability,
+): Promise<StoredPositionAnalysis | null> {
   const cached = await PositionAnalysisService.getStoredPositionSearch(fen ? { fen, depth: options.depth, multipv: options.multipv } : { fen });
   if (cached) return cached;
-  const engineResult = await engine.analyzePosition(toEngineFen(fen), options);
-  return PositionAnalysisService.storePositionSearch(engineResult);
+  if (engineAvailability.unavailable) return null;
+
+  try {
+    const engineResult = await engine.analyzePosition(toEngineFen(fen), options);
+    return PositionAnalysisService.storePositionSearch(engineResult);
+  } catch (error) {
+    if (!options.continueWithoutEngine || !isEngineUnavailableError(error)) throw error;
+    engineAvailability.unavailable = true;
+    console.warn('Local Stockfish is unavailable; continuing full refresh with cached position analysis only');
+    return null;
+  }
 }
 
 async function analysePly(
@@ -164,12 +181,14 @@ async function analysePly(
   userId: number,
   gameId: number,
   ply: any,
-  options: { depth: number; multipv: number },
-) {
+  options: { depth: number; multipv: number; continueWithoutEngine: boolean },
+  engineAvailability: EngineAvailability,
+): Promise<boolean> {
   const beforeFen = ply.position.normalizedFen;
   const beforeAnalysis =
     compactPositionAnalysis(ply.position.analysis) ??
-    (await getOrCreatePositionAnalysis(engine, beforeFen, options));
+    (await getOrCreatePositionAnalysis(engine, beforeFen, options, engineAvailability));
+  if (!beforeAnalysis) return false;
 
   const playedMoveUci = ply.moveUci;
   const bestMoveUci = bestMoveFor(beforeAnalysis);
@@ -183,7 +202,13 @@ async function analysePly(
 
   if (playedEvalCpWhite === null) {
     const afterFen = fenAfterMove(beforeFen, playedMoveUci);
-    const afterAnalysis = await getOrCreatePositionAnalysis(engine, afterFen, options);
+    const afterAnalysis = await getOrCreatePositionAnalysis(
+      engine,
+      afterFen,
+      options,
+      engineAvailability,
+    );
+    if (!afterAnalysis) return false;
     playedEvalCpWhite = bestEvalCpWhite(afterAnalysis);
   }
 
@@ -201,15 +226,23 @@ async function analysePly(
       classificationCode,
     },
   ]);
+  return true;
 }
 
-async function completeRun(userId: number, runId: number, importedGameId: number, positionsTotal: number, userColor?: string | null) {
+async function completeRun(
+  userId: number,
+  runId: number,
+  importedGameId: number,
+  positionsTotal: number,
+  positionsDone: number,
+  userColor?: string | null,
+) {
   const plies = await getImportedGamePliesForAnalysisSummary(userId, importedGameId);
   const accuracy = buildAccuracySummary(plies, userColor);
 
   await completeGameAnalysisRun(runId, {
     positionsTotal,
-    positionsDone: positionsTotal,
+    positionsDone,
     summary: buildSummary(plies),
     accuracyVersion: accuracy.version,
     whiteAccuracy: accuracy.white.accuracy,
@@ -221,17 +254,29 @@ async function completeRun(userId: number, runId: number, importedGameId: number
   });
 }
 
-async function analyseGame(engine: LocalStockfishEngineService, userId: number, importedGameId: number, options: { depth: number; multipv: number }) {
+async function analyseGame(
+  engine: LocalStockfishEngineService,
+  userId: number,
+  importedGameId: number,
+  options: {
+    depth: number;
+    multipv: number;
+    force: boolean;
+    refreshTagsAfterAnalysis: boolean;
+  },
+) {
   const game = await getImportedGameForAnalysis(userId, importedGameId);
   if (!game) throw new Error('Imported game not found');
 
-  const indexResult = await ImportedGamePlyIndexService.indexOne(userId, importedGameId, { force: false });
+  const indexResult = await ImportedGamePlyIndexService.indexOne(userId, importedGameId, {
+    force: options.force,
+  });
   if (indexResult.status === 'FAILED') {
     throw new Error(indexResult.error || 'Could not index game plies');
   }
 
   const plies = await getImportedGamePliesForBatchAnalysis(userId, importedGameId);
-  const alreadyDone = plies.filter(isPlyAnalysed).length;
+  const alreadyDone = options.force ? 0 : plies.filter(isPlyAnalysed).length;
   const run = await createRunningGameAnalysisRun({
     importedGameId,
     positionsTotal: plies.length,
@@ -239,18 +284,34 @@ async function analyseGame(engine: LocalStockfishEngineService, userId: number, 
   });
 
   let done = alreadyDone;
+  const engineAvailability: EngineAvailability = { unavailable: false };
   try {
     for (const ply of plies) {
-      if (isPlyAnalysed(ply)) continue;
-      await analysePly(engine, userId, importedGameId, ply, options);
+      if (!options.force && isPlyAnalysed(ply)) continue;
+      const analysed = await analysePly(
+        engine,
+        userId,
+        importedGameId,
+        ply,
+        {
+          ...options,
+          continueWithoutEngine: options.force && options.refreshTagsAfterAnalysis,
+        },
+        engineAvailability,
+      );
+      if (!analysed) continue;
       done += 1;
       await updateGameAnalysisRunProgress(run.id, { positionsDone: done, positionsTotal: plies.length });
     }
 
-    await completeRun(userId, run.id, importedGameId, plies.length, game.userColor);
+    await completeRun(userId, run.id, importedGameId, plies.length, done, game.userColor);
   } catch (err: any) {
     await failGameAnalysisRun(run.id, err?.message ?? String(err));
     throw err;
+  }
+
+  if (options.refreshTagsAfterAnalysis) {
+    await ImportedGamesService.refreshTags(userId, importedGameId);
   }
 }
 
@@ -269,10 +330,14 @@ async function drainQueue() {
       });
 
       try {
-        await engine.init();
         for (const gameId of item.gameIds) {
           try {
-            await analyseGame(engine, item.userId, gameId, { depth: config.depth, multipv: config.multipv });
+            await analyseGame(engine, item.userId, gameId, {
+              depth: config.depth,
+              multipv: config.multipv,
+              force: item.force,
+              refreshTagsAfterAnalysis: item.refreshTagsAfterAnalysis,
+            });
           } catch (err) {
             console.error(`Failed to batch analyse imported game ${gameId}`, err);
           }
@@ -299,9 +364,38 @@ export const ImportedGameBatchAnalysisService = {
       throw new Error('No imported games selected for batch analysis');
     }
 
-    queue.push({ userId, gameIds: uniqueGameIds });
+    queue.push({
+      userId,
+      gameIds: uniqueGameIds,
+      force: false,
+      refreshTagsAfterAnalysis: false,
+    });
     void drainQueue().catch((err) => {
       console.error('Local Stockfish batch analysis queue failed', err);
     });
   },
+  enqueueFullRefresh: (userId: number, gameId: number) => {
+    if (!isLocalBatchStockfishAnalysisEnabled()) {
+      throw new Error('Local batch Stockfish analysis is disabled');
+    }
+    if (!Number.isInteger(gameId) || gameId <= 0) {
+      throw new Error('Invalid imported game id');
+    }
+
+    queue.push({
+      userId,
+      gameIds: [gameId],
+      force: true,
+      refreshTagsAfterAnalysis: true,
+    });
+    void drainQueue().catch((err) => {
+      console.error('Local Stockfish full refresh queue failed', err);
+    });
+  },
 };
+
+function isEngineUnavailableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as NodeJS.ErrnoException;
+  return candidate.code === 'ENOENT' || candidate.code === 'EACCES' || candidate.code === 'EPERM';
+}

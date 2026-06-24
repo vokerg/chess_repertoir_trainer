@@ -32,6 +32,14 @@
       >
         {{ refreshTagsAction().label }}
       </button>
+      <button
+        type="button"
+        class="mode-pill game-header-action"
+        [disabled]="fullRefreshAction().disabled"
+        (click)="fullRefresh.emit()"
+      >
+        {{ fullRefreshAction().label }}
+      </button>
     }
     @if (game()?.providerUrl; as providerUrl) {
       <a class="mode-pill" [href]="providerUrl" target="_blank" rel="noreferrer">

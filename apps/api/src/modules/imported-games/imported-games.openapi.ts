@@ -128,6 +128,18 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['importedGameId', 'tagCodes', 'tags'],
   },
+  ImportedGameFullRefreshAcceptedResponse: {
+    type: 'object',
+    properties: {
+      accepted: { type: 'boolean' },
+      importedGameId: { type: 'integer' },
+      steps: {
+        type: 'array',
+        items: { type: 'string', enum: ['PLY_INDEX', 'ANALYSIS', 'TAGS'] },
+      },
+    },
+    required: ['accepted', 'importedGameId', 'steps'],
+  },
   ImportedGameFacetsResponse: {
     type: 'object',
     properties: {
@@ -365,5 +377,31 @@ export const refreshImportedGameTagsOpenApiOperation = {
     },
     '400': { $ref: '#/components/responses/BadRequest' },
     '404': { $ref: '#/components/responses/NotFound' },
+  },
+};
+
+export const createImportedGameFullRefreshRunOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Queue a full refresh for one imported game',
+  description: 'Force re-indexes plies, recalculates Stockfish analysis, and refreshes tags after analysis succeeds.',
+  parameters: [importedGameIdParameter],
+  responses: {
+    '200': {
+      description: 'Full refresh accepted',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/ImportedGameFullRefreshAcceptedResponse' },
+        },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+    '403': {
+      description: 'Local batch Stockfish analysis is disabled',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/ErrorResponse' },
+        },
+      },
+    },
   },
 };

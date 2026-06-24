@@ -60,6 +60,8 @@ describe('GameDetailPageComponent', () => {
   });
 
   function page(): { confirmDeleteSelectedSubtree(): Promise<void> } {
-    return fixture.componentInstance as unknown as { confirmDeleteSelectedSubtree(): Promise<void> };
+    return fixture.componentInstance as unknown as {
+      confirmDeleteSelectedSubtree(): Promise<void>;
+    };
   }
 });

@@ -5,8 +5,10 @@
     [selectedLabel]="store.selectedLabel()"
     [analysisProgress]="store.importedGameAnalysis.progress()"
     [refreshingTags]="store.refreshingTags()"
+    [fullRefreshing]="store.fullRefreshing()"
     (analyze)="store.analyzeImportedGame($event)"
     (refreshTags)="store.refreshTags()"
+    (fullRefresh)="store.fullRefreshGame()"
   />
 
   @if (store.error(); as error) {

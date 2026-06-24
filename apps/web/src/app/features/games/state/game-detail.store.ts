@@ -47,6 +47,7 @@ export class GameDetailStore implements OnDestroy {
   readonly boardPositionVersion = signal(0);
   readonly loading = signal(true);
   readonly refreshingTags = signal(false);
+  readonly fullRefreshing = signal(false);
   readonly error = signal<string | null>(null);
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
     initialValue: EMPTY_ENGINE_ANALYSIS,
@@ -270,6 +271,29 @@ export class GameDetailStore implements OnDestroy {
     }
   }
 
+  async fullRefreshGame(): Promise<void> {
+    const gameId = this.gameId();
+    if (
+      !gameId ||
+      this.fullRefreshing() ||
+      this.refreshingTags() ||
+      this.importedGameAnalysis.progress().running ||
+      this.game()?.analysis.status === 'RUNNING'
+    ) {
+      return;
+    }
+
+    this.error.set(null);
+    this.fullRefreshing.set(true);
+    try {
+      await firstValueFrom(this.api.fullRefreshGame(gameId));
+    } catch (error) {
+      this.error.set(readError(error, 'Could not start full refresh.'));
+    } finally {
+      this.fullRefreshing.set(false);
+    }
+  }
+
   handleKeyboard(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();
@@ -319,6 +343,7 @@ export class GameDetailStore implements OnDestroy {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.loading.set(true);
     this.refreshingTags.set(false);
+    this.fullRefreshing.set(false);
     this.error.set(null);
     this.game.set(null);
     this.analysisRun.set(null);

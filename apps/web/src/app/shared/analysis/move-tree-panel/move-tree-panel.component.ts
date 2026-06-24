@@ -15,7 +15,7 @@ export class MoveTreePanelComponent {
   readonly tree = input<AnalysisTree | null>(null);
   readonly selectedNodeId = input<number | null>(null);
   readonly title = input.required<string>();
-  readonly help = input.required<string>();
+  readonly help = input<string>();
   readonly rootLabel = input('Start');
   readonly copyLabel = input('Copy line');
 
