@@ -77,6 +77,28 @@ function addTag(tags: Set<number>, code: number) {
   tags.add(code);
 }
 
+function isDisplayedGameTag(code: number) {
+  const hiddenMetadataTags = new Set<number>([
+    GAME_TAG.NO_INCREMENT,
+    GAME_TAG.HAS_INCREMENT,
+    GAME_TAG.UNKNOWN_TIME_CONTROL,
+    GAME_TAG.BULLET_GAME,
+    GAME_TAG.BLITZ_GAME,
+    GAME_TAG.RAPID_GAME,
+    GAME_TAG.CLASSICAL_GAME,
+    GAME_TAG.NOT_INDEXED,
+    GAME_TAG.INDEXED_ONLY,
+    GAME_TAG.ANALYSED,
+    GAME_TAG.ANALYSIS_FAILED,
+    GAME_TAG.LOW_RATED_OPPONENT,
+    GAME_TAG.RATING_MISMATCH_UP,
+    GAME_TAG.RATING_MISMATCH_DOWN,
+    GAME_TAG.OPENING_FAMILY_KNOWN,
+  ]);
+
+  return !hiddenMetadataTags.has(code);
+}
+
 function gameResultIsDecisive(resultForUser: ResultForUser) {
   return resultForUser === 'WIN' || resultForUser === 'LOSS';
 }
@@ -229,12 +251,6 @@ function isPracticalOpponentBlunderToPunish(record: AnalysedMoveRecord) {
   ) && (record.afterScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp;
 }
 
-function criticalPlyNumbers(summary: unknown): number[] {
-  if (!summary || typeof summary !== 'object') return [];
-  const values = (summary as { criticalPlyNumbers?: unknown }).criticalPlyNumbers;
-  return Array.isArray(values) ? values.filter((value): value is number => Number.isInteger(value)) : [];
-}
-
 function lastAvailableAnalysedScore(records: AnalysedMoveRecord[]) {
   for (let index = records.length - 1; index >= 0; index -= 1) {
     const record = records[index];
@@ -246,6 +262,24 @@ function lastAvailableAnalysedScore(records: AnalysedMoveRecord[]) {
 
 function noLaterLargeUserMistake(records: AnalysedMoveRecord[], startIndex: number) {
   return !records.slice(startIndex + 1).some((record) => record.isUserMove && (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.bigLossCp);
+}
+
+function hasActionableLossTag(tags: Set<number>) {
+  return [
+    GAME_TAG.EARLY_BLUNDER,
+    GAME_TAG.ONE_MOVE_BLUNDER,
+    GAME_TAG.MISSED_KNOCKOUT,
+    GAME_TAG.MISSED_WIN,
+    GAME_TAG.MISSED_DRAW,
+    GAME_TAG.LOST_WINNING_POSITION,
+    GAME_TAG.LOST_FROM_BETTER_POSITION,
+    GAME_TAG.THREW_DRAW,
+    GAME_TAG.MIDGAME_TURNAROUND_TO_LOSS,
+    GAME_TAG.ENDGAME_THROW,
+    GAME_TAG.FAILED_CONVERSION,
+    GAME_TAG.SLOW_BLEED_LOSS,
+    GAME_TAG.FLAGGED_IN_WINNING_POSITION,
+  ].some((tag) => tags.has(tag));
 }
 
 function addTerminalTags(game: ImportedGameForTagging, tags: Set<number>) {
@@ -682,7 +716,11 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
     addTag(tags, GAME_TAG.SLOW_BLEED_LOSS);
   }
 
-  if (game.resultForUser === 'LOSS' && (userAcc ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.highAccuracy) {
+  if (
+    game.resultForUser === 'LOSS' &&
+    (userAcc ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.highAccuracy &&
+    !hasActionableLossTag(tags)
+  ) {
     addTag(tags, GAME_TAG.HIGH_ACCURACY_LOSS);
   }
   if (game.resultForUser === 'WIN' && (userAcc ?? Number.POSITIVE_INFINITY) <= TAG_THRESHOLDS.lowAccuracy) {
@@ -690,7 +728,7 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   }
 
   const majorSwings = records.filter((record) => Math.abs(swingTowardUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp).length;
-  if (majorSwings >= 3 || criticalPlyNumbers(completedRun.summary).length >= 3) {
+  if (majorSwings >= 3) {
     addTag(tags, GAME_TAG.CHAOTIC_GAME);
   }
 
@@ -745,7 +783,9 @@ function calculateTagCodes(game: ImportedGameForTagging) {
   addRatingTags(game, tags);
   addOpeningAndShapeTags(game, tags);
   addAnalysisTags(game, tags);
-  return Array.from(tags).sort((left, right) => left - right);
+  return Array.from(tags)
+    .filter(isDisplayedGameTag)
+    .sort((left, right) => left - right);
 }
 
 export const GameTaggingService = {
