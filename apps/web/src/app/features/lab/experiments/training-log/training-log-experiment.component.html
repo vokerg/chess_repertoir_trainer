@@ -1,0 +1,29 @@
+<section class="section-card lab-panel stack">
+  <div class="lab-panel-header">
+    <div><span class="eyebrow">Training attempts</span><h3 class="collection-title">Training log</h3></div>
+    <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading()">{{ store.loading() ? 'Loading...' : 'Refresh' }}</button>
+  </div>
+  @if (store.loading()) { <p class="status-note">Loading training log...</p> }
+  @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
+  @if (!store.loading() && store.items().length > 0) {
+    <div class="table-wrap"><table class="lab-table"><thead><tr><th>Started</th><th>Repertoire</th><th>Sequence</th><th>Result</th><th>Active</th><th>Accuracy</th><th>Mistakes</th></tr></thead><tbody>
+      @for (item of store.items(); track item.id) {
+        <tr>
+          <td>{{ item.startedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+          <td class="primary-cell">{{ item.courseName }}, {{ item.lineName }}</td>
+          <td class="sequence-cell">
+            @for (line of sequenceLines(item.sequence); track $index) {
+              <span class="sequence-line">{{ line }}</span>
+            }
+          </td>
+          <td>{{ resultLabel(item.result) }}</td>
+          <td>{{ activeLabel(item) }}</td>
+          <td>{{ accuracyLabel(item.accuracy) }}</td>
+          <td>{{ item.mistakesCount }}</td>
+        </tr>
+      }
+    </tbody></table></div>
+  } @else if (store.loaded() && !store.loading() && !store.error()) {
+    <div class="empty-state">No training attempts found yet.</div>
+  }
+</section>

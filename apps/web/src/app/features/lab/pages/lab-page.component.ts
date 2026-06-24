@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/c
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { MonthlyGamesExperimentComponent } from '../experiments/monthly-games/monthly-games-experiment.component';
 import { OpeningStrugglesExperimentComponent } from '../experiments/opening-struggles/opening-struggles-experiment.component';
+import { TrainingLogExperimentComponent } from '../experiments/training-log/training-log-experiment.component';
 import { TopOpponentsExperimentComponent } from '../experiments/top-opponents/top-opponents-experiment.component';
 
-type LabExperiment = 'top-opponents' | 'monthly-games' | 'opening-struggles';
+type LabExperiment = 'top-opponents' | 'monthly-games' | 'opening-struggles' | 'training-log';
 
 @Component({
   selector: 'app-lab-page',
@@ -14,6 +15,7 @@ type LabExperiment = 'top-opponents' | 'monthly-games' | 'opening-struggles';
     TopOpponentsExperimentComponent,
     MonthlyGamesExperimentComponent,
     OpeningStrugglesExperimentComponent,
+    TrainingLogExperimentComponent,
   ],
   templateUrl: './lab-page.component.html',
   styleUrl: './lab-page.component.css',

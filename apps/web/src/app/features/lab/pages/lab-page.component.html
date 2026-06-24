@@ -1,8 +1,12 @@
 <section class="lab-page stack">
   <app-page-header title="Lab" subtitle="Run focused reports from imported games." [actions]="headerActions()" />
 
-  <section class="lab-layout">
-    <aside class="section-card lab-menu" aria-label="Lab experiments">
+  <section class="section-card lab-menu" aria-label="Lab experiments">
+    <div class="lab-menu-copy">
+      <h3 class="collection-title">Experiments</h3>
+      <p class="status-note">Pick a focused report, then use the full panel below to inspect the results.</p>
+    </div>
+    <div class="lab-menu-grid">
       <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'top-opponents'" (click)="selectExperiment('top-opponents')">
         <span><strong>Top opponents</strong><small>Grouped by opponent name</small></span>
         <span class="pill">List</span>
@@ -15,17 +19,22 @@
         <span><strong>Opening struggles</strong><small>Loss rate and eval traps by line</small></span>
         <span class="pill">Table</span>
       </button>
-    </aside>
-
-    @switch (selected()) {
-      @case ('top-opponents') { <app-lab-top-opponents /> }
-      @case ('monthly-games') { <app-lab-monthly-games /> }
-      @case ('opening-struggles') { <app-lab-opening-struggles /> }
-      @default {
-        <section class="section-card lab-panel">
-          <div class="empty-state lab-empty">Choose an experiment from the Lab menu.</div>
-        </section>
-      }
-    }
+      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'training-log'" (click)="selectExperiment('training-log')">
+        <span><strong>Training log</strong><small>Course/chapter/line sequence attempts</small></span>
+        <span class="pill">Table</span>
+      </button>
+    </div>
   </section>
+
+  @switch (selected()) {
+    @case ('top-opponents') { <app-lab-top-opponents /> }
+    @case ('monthly-games') { <app-lab-monthly-games /> }
+    @case ('opening-struggles') { <app-lab-opening-struggles /> }
+    @case ('training-log') { <app-lab-training-log /> }
+    @default {
+      <section class="section-card lab-panel">
+        <div class="empty-state lab-empty">Choose an experiment above to open it full width.</div>
+      </section>
+    }
+  }
 </section>

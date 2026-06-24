@@ -3,6 +3,8 @@ import { requireAuth } from '../../auth/request-auth';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
 import { getOpeningStruggles } from './opening-struggles/opening-struggles.service';
+import { trainingLogQuerySchema } from './training-log/training-log.schema';
+import { getTrainingLog } from './training-log/training-log.service';
 import { getTopOpponents } from './top-opponents/top-opponents.service';
 
 function parseLimit(value: unknown) {
@@ -39,5 +41,16 @@ export default async function labModule(app: FastifyInstance) {
       return { error: parsed.error.errors };
     }
     return getOpeningStruggles(auth.userId, parsed.data);
+  });
+
+  app.get('/api/lab/training-log', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = trainingLogQuerySchema.safeParse(request.query ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+    return getTrainingLog(auth.userId, parsed.data);
   });
 }
