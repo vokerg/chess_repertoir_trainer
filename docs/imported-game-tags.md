@@ -89,7 +89,7 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 | 102 | OPENING_DISASTER | Imported user came out of the opening lost or nearly lost. | User-perspective opening eval plus early-blunder override. | Opening outcome score is `<= -700`, or user made an actual early blunder and opening outcome score is still `<= -300`. |
 | 103 | OPENING_SUCCESS | Imported user came out of the opening clearly better. | User-perspective opening eval. | Opening outcome score is `>= +300`. Opponent early blunder can support the story, but the score threshold still has to be met. |
 | 104 | EARLY_BLUNDER | Imported user made an actual early blunder. | Early move classification and eval loss. | User move in moves `1-10` is `BLUNDER`, or loses `>= 500` cp by score loss or eval drop. |
-| 105 | ONE_MOVE_BLUNDER | Imported user made one move that changed the game story with a major collapse. | Move loss and eval swing. | User move falls from roughly equal to lost, or from not-clearly-lost with a `>= 500` cp swing against user. A blunder label alone is not enough. |
+| 105 | ONE_MOVE_BLUNDER | Imported user made one move that changed the game story with a major collapse. | Move loss and eval swing. | User move falls from roughly equal to lost, from roughly equal to clearly worse with a big loss, or from not-clearly-lost with a `>= 500` cp swing against user. A blunder label alone is not enough. |
 | 106 | TACTICAL_BLUNDER | Reserved for future stricter tactical detection. | Disabled for now. | Definition exists, but service does not generate this tag in v1.1. |
 | 107 | MISSED_KNOCKOUT | Imported user had a decisive chance and failed to keep or convert it. | User move eval before/after plus best move if available. | User to move with score `>= +800`, then move drops the position to `<= +200` or loses huge value; if best move is known, played move must differ from it. |
 | 108 | MISSED_WIN | Imported user reached a winning position but did not win. | Whole-game eval range plus result. | User reached `>= +700` at some point and result was draw or loss. |
@@ -97,10 +97,10 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 | 110 | LOST_WINNING_POSITION | Imported user was winning by threshold but still lost. | Whole-game eval range plus result. | User reached `>= +700` and result was `LOSS`. |
 | 111 | WON_LOST_POSITION | Imported user was lost by threshold but still won. | Whole-game eval range plus result. | User reached `<= -700` and result was `WIN`. |
 | 112 | SAVED_LOST_POSITION | Imported user was lost by threshold but still drew. | Whole-game eval range plus result. | User reached `<= -700` and result was `DRAW`. |
-| 113 | THREW_DRAW | Imported user had a drawable or acceptable position and spoiled it with a bad move. | User move eval swing. | In a loss, user moved from roughly equal or slightly better to `<= -700`. |
+| 113 | THREW_DRAW | Imported user had a drawable or acceptable position and spoiled it with a bad move. | User move eval swing. | In a loss, user moved from roughly equal to lost, or from roughly equal to clearly worse with a big score loss or eval swing. |
 | 114 | MIDGAME_TURNAROUND_TO_LOSS | In the middlegame, imported user's move caused a major swing to a clearly worse position. | User middlegame move eval swing. | User move in moves `11-35` swings `>= 500` cp against user and leaves score `<= -300`. |
 | 115 | MIDGAME_TURNAROUND_TO_WIN | In the middlegame, opponent's move caused a practical major swing in the imported user's favor. | Opponent middlegame move eval swing. | Opponent move in moves `11-35` swings `>= 400` cp toward user and leaves score `>= +300`. |
-| 116 | ENDGAME_THROW | In the endgame, imported user spoiled a good or drawable position. | User endgame move eval swing. | After move `36`, user drops from `>= +300` to `<= -300` and does not win the game. |
+| 116 | ENDGAME_THROW | In the endgame or late simplified phase, imported user spoiled a good or drawable position. | User endgame move eval swing. | After move `36`, user drops from `>= +300` to `<= -300`, or after move `30` user throws a drawable position into clearly worse/lost territory. |
 | 117 | ENDGAME_SAVE | In the endgame, imported user saved a lost position into draw or win. | Endgame eval plus result. | In a draw or win, some endgame position before or after a move was `<= -700`. |
 | 118 | CLEAN_CONVERSION | Imported user got a winning advantage and converted without later big mistakes. | Whole-game eval range plus later move quality. | User reached `>= +700`, won the game, and no later user move loses `>= 300` cp. |
 | 119 | FAILED_CONVERSION | Imported user got a winning advantage but failed to win. | Whole-game eval range plus result. | User reached `>= +700` and result was not `WIN`. |
@@ -144,6 +144,7 @@ Current service thresholds:
 - Opening phase: moves `1-10`
 - Middlegame window: moves `11-35`
 - Endgame starts: move `36`
+- Late endgame throw window starts: move `30`
 - Slight edge: `200` cp
 - Opening trouble: `150` cp
 - Worse-position story: `150` cp

@@ -39,6 +39,7 @@ export interface CachedPositionAnalysisOptions {
   pvMoveLimit?: number;
   seedPosition?: PositionAnalysisCache | null;
   keepAlive?: boolean;
+  persistMode?: 'await' | 'background';
 }
 
 export interface PositionAnalysisSeedCandidate {
@@ -55,6 +56,8 @@ export class PositionAnalysisCacheService implements OnDestroy {
   private readonly knownRemoteMisses = new Set<string>();
   private requestSeq = 0;
   private pendingInteractiveSave: { fen: string; multipv: number } | null = null;
+  private backgroundSaveQueue: Promise<void> = Promise.resolve();
+  private pendingBackgroundSaveCount = 0;
 
   readonly state$ = this.stateSubject.asObservable();
 
@@ -80,6 +83,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
   async getOrAnalyzePosition(fen: string, options: CachedPositionAnalysisOptions = {}): Promise<PositionAnalysisCache> {
     const depth = options.depth ?? 12;
     const multipv = options.multipv ?? 3;
+    const persistMode = options.persistMode ?? 'await';
     const seed = this.usablePosition(options.seedPosition, fen, multipv);
     if (seed) {
       this.rememberPosition(fen, seed);
@@ -106,7 +110,13 @@ export class PositionAnalysisCacheService implements OnDestroy {
       seedBestMove: this.bestMoveFromPosition(this.usablePosition(fallbackSeed, fen)),
       seedLines: this.toEngineLines(this.usablePosition(fallbackSeed, fen), fen),
     });
-    return this.storePositionAnalysis(fen, analysis, multipv);
+    return this.storePositionAnalysis(fen, analysis, multipv, persistMode);
+  }
+
+  async flushPendingPositionAnalysisSaves(): Promise<void> {
+    while (this.pendingBackgroundSaveCount > 0) {
+      await this.backgroundSaveQueue;
+    }
   }
 
   stop(): void {
@@ -244,13 +254,21 @@ export class PositionAnalysisCacheService implements OnDestroy {
     }
   }
 
-  private async storePositionAnalysis(fen: string, analysis: EngineAnalysis, multipv: number): Promise<PositionAnalysisCache> {
-    const body = this.cacheFromAnalysis(fen, analysis, multipv);
-    this.rememberPosition(fen, body);
-    const response = await firstValueFrom(this.api.post<PositionAnalysisResponse>('/position-analysis/store', body));
-    if (!response.positionAnalysis) throw new Error('Position analysis was not stored.');
-    this.rememberPosition(fen, response.positionAnalysis);
-    return response.positionAnalysis;
+  private async storePositionAnalysis(
+    fen: string,
+    analysis: EngineAnalysis,
+    multipv: number,
+    persistMode: 'await' | 'background' = 'await',
+  ): Promise<PositionAnalysisCache> {
+    const positionAnalysis = this.cacheFromAnalysis(fen, analysis, multipv);
+    this.rememberPosition(fen, positionAnalysis);
+
+    if (persistMode === 'background') {
+      this.enqueueBackgroundSave(fen, positionAnalysis);
+      return positionAnalysis;
+    }
+
+    return this.persistPositionAnalysis(fen, positionAnalysis);
   }
 
   private maybePersistInteractiveAnalysis(analysis: EngineAnalysis): void {
@@ -268,6 +286,28 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.storePositionAnalysis(pending.fen, analysis, pending.multipv).catch(() => {
       // The UI already has the engine result; cache persistence is best-effort.
     });
+  }
+
+  private async persistPositionAnalysis(fen: string, positionAnalysis: PositionAnalysisCache): Promise<PositionAnalysisCache> {
+    const response = await firstValueFrom(this.api.post<PositionAnalysisResponse>('/position-analysis/store', positionAnalysis));
+    if (!response.positionAnalysis) throw new Error('Position analysis was not stored.');
+    this.rememberPosition(fen, response.positionAnalysis);
+    return response.positionAnalysis;
+  }
+
+  private enqueueBackgroundSave(fen: string, positionAnalysis: PositionAnalysisCache): void {
+    this.pendingBackgroundSaveCount += 1;
+    this.backgroundSaveQueue = this.backgroundSaveQueue
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          await this.persistPositionAnalysis(fen, positionAnalysis);
+        } catch (error) {
+          console.warn('Background position-analysis save failed.', { fen, error });
+        } finally {
+          this.pendingBackgroundSaveCount -= 1;
+        }
+      });
   }
 
   private memoryPosition(fen: string, requestedMultipv = 1): PositionAnalysisCache | null {

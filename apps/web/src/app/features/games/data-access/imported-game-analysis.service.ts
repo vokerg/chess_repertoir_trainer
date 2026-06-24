@@ -98,6 +98,8 @@ export class ImportedGameAnalysisService {
         });
       }
 
+      await this.positionAnalysis.flushPendingPositionAnalysisSaves();
+
       if (updates.length) {
         await firstValueFrom(this.api.patch(`/imported-games/${gameId}/plies/analysis`, { plies: updates }));
       }
@@ -162,6 +164,7 @@ export class ImportedGameAnalysisService {
       pvMoveLimit: 1,
       keepAlive: true,
       seedPosition: seed,
+      persistMode: 'background',
     });
   }
 

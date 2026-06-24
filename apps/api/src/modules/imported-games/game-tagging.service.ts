@@ -18,6 +18,7 @@ const TAG_THRESHOLDS = {
   midgameMinMove: 11,
   midgameMaxMove: 35,
   endgameMinMove: 36,
+  endgameThrowMinMove: 30,
   slightEdgeCp: 200,
   openingTroubleCp: 150,
   worsePositionCp: 150,
@@ -286,6 +287,15 @@ function hasActionableLossTag(tags: Set<number>) {
 function isStoryChangingUserBlunder(record: AnalysedMoveRecord) {
   if (!record.isUserMove) return false;
 
+  return isUserThrowFromDrawable(record) || (
+    (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.clearlyBetterCp &&
+    (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp
+  );
+}
+
+function isUserThrowFromDrawable(record: AnalysedMoveRecord) {
+  if (!record.isUserMove) return false;
+
   if (
     (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.equalishCp &&
     (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp
@@ -293,10 +303,18 @@ function isStoryChangingUserBlunder(record: AnalysedMoveRecord) {
     return true;
   }
 
-  return (
-    (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.clearlyBetterCp &&
-    (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.hugeLossCp
-  );
+  if (
+    (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.equalishCp &&
+    (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp &&
+    (
+      (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.bigLossCp ||
+      (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.clearlyBetterCp
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function addTerminalTags(game: ImportedGameForTagging, tags: Set<number>) {
@@ -734,13 +752,7 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   }
   if (
     game.resultForUser === 'LOSS' &&
-    records.some((record) =>
-      record.isUserMove &&
-      typeof record.beforeScoreForUser === 'number' &&
-      record.beforeScoreForUser >= -TAG_THRESHOLDS.equalishCp &&
-      record.beforeScoreForUser <= TAG_THRESHOLDS.clearlyBetterCp &&
-      (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp,
-    )
+    records.some((record) => isUserThrowFromDrawable(record))
   ) {
     addTag(tags, GAME_TAG.THREW_DRAW);
   }
@@ -770,9 +782,17 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
     game.resultForUser !== 'WIN' &&
     records.some((record) =>
       record.isUserMove &&
-      record.moveNumber >= TAG_THRESHOLDS.endgameMinMove &&
-      (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp &&
-      (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp,
+      (
+        (
+          record.moveNumber >= TAG_THRESHOLDS.endgameMinMove &&
+          (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp &&
+          (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp
+        ) ||
+        (
+          record.moveNumber >= TAG_THRESHOLDS.endgameThrowMinMove &&
+          isUserThrowFromDrawable(record)
+        )
+      ),
     )
   ) {
     addTag(tags, GAME_TAG.ENDGAME_THROW);
@@ -811,7 +831,16 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   const userLossCpSum = userLossRecords.reduce((sum, record) => sum + (record.scoreLossCp ?? 0), 0);
   const decisiveSingleCause = userLossRecords.some((record) =>
     (record.beforeScoreForUser ?? Number.NEGATIVE_INFINITY) >= -TAG_THRESHOLDS.equalishCp &&
-    (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp,
+    (
+      (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp ||
+      (
+        (record.afterScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp &&
+        (
+          (record.scoreLossCp ?? 0) >= TAG_THRESHOLDS.bigLossCp ||
+          (swingAgainstUser(record) ?? 0) >= TAG_THRESHOLDS.clearlyBetterCp
+        )
+      )
+    ),
   );
 
   if (
