@@ -81,6 +81,8 @@ function game(id: number): ImportedGameListItem {
     provider: 'LICHESS',
     providerGameId: `game-${id}`,
     timeControl: {},
+    tagCodes: [],
+    tags: [],
     plyIndex: { status: 'NOT_INDEXED', error: null },
     analysis: { status: 'NOT_ANALYZED' },
   };

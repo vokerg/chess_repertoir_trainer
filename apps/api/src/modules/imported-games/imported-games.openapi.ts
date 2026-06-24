@@ -45,9 +45,12 @@ export const importedGamesOpenApiSchemas = {
       resultForUser: { type: 'string', enum: ['WIN', 'DRAW', 'LOSS'], nullable: true },
       status: { type: 'string', nullable: true },
       opening: { $ref: '#/components/schemas/ImportedGameOpening' },
+      tagCodes: { type: 'array', items: { type: 'integer' } },
+      tags: { type: 'array', items: { $ref: '#/components/schemas/GameTagDefinition' } },
+      plyIndex: { $ref: '#/components/schemas/ImportedGamePlyIndexSummary' },
       analysis: { $ref: '#/components/schemas/ImportedGameAnalysisSummary' },
     },
-    required: ['id', 'accountId', 'provider', 'providerGameId', 'timeControl', 'white', 'black', 'opening', 'analysis'],
+    required: ['id', 'accountId', 'provider', 'providerGameId', 'timeControl', 'white', 'black', 'opening', 'tagCodes', 'tags', 'plyIndex', 'analysis'],
   },
   ImportedGameDetail: {
     allOf: [
@@ -91,6 +94,39 @@ export const importedGamesOpenApiSchemas = {
       criticalMoveCount: { type: 'integer', nullable: true },
     },
     required: ['status', 'runId', 'depth', 'completedAt', 'createdAt', 'whiteAccuracy', 'blackAccuracy', 'userAccuracy', 'summary', 'criticalMoveCount'],
+  },
+  ImportedGamePlyIndexSummary: {
+    type: 'object',
+    properties: {
+      status: { type: 'string', enum: ['NOT_INDEXED', 'INDEXED', 'FAILED'] },
+      indexedAt: { type: 'string', format: 'date-time', nullable: true },
+      error: { type: 'string', nullable: true },
+    },
+    required: ['status', 'indexedAt', 'error'],
+  },
+  GameTagDefinition: {
+    type: 'object',
+    properties: {
+      code: { type: 'integer' },
+      name: { type: 'string' },
+    },
+    required: ['code', 'name'],
+  },
+  GameTagDefinitionsResponse: {
+    type: 'object',
+    properties: {
+      items: { type: 'array', items: { $ref: '#/components/schemas/GameTagDefinition' } },
+    },
+    required: ['items'],
+  },
+  ImportedGameTagsRefreshResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      tagCodes: { type: 'array', items: { type: 'integer' } },
+      tags: { type: 'array', items: { $ref: '#/components/schemas/GameTagDefinition' } },
+    },
+    required: ['importedGameId', 'tagCodes', 'tags'],
   },
   ImportedGameFacetsResponse: {
     type: 'object',
@@ -285,6 +321,17 @@ export const getImportedGameFacetsOpenApiOperation = {
   },
 };
 
+export const getImportedGameTagDefinitionsOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Get imported-game tag definitions',
+  responses: {
+    '200': {
+      description: 'Imported-game tag definitions',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/GameTagDefinitionsResponse' } } },
+    },
+  },
+};
+
 export const indexImportedGamePlyOpenApiOperation = {
   tags: ['Imported games'],
   summary: 'Parse one imported game into ply rows',
@@ -302,6 +349,20 @@ export const indexImportedGamePlyOpenApiOperation = {
   responses: {
     '200': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
     '201': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
+    '400': { $ref: '#/components/responses/BadRequest' },
+    '404': { $ref: '#/components/responses/NotFound' },
+  },
+};
+
+export const refreshImportedGameTagsOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Refresh imported-game tags for one game',
+  parameters: [importedGameIdParameter],
+  responses: {
+    '200': {
+      description: 'Imported-game tags refreshed',
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameTagsRefreshResponse' } } },
+    },
     '400': { $ref: '#/components/responses/BadRequest' },
     '404': { $ref: '#/components/responses/NotFound' },
   },

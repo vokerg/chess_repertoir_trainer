@@ -4,7 +4,9 @@
     [title]="store.gameTitle()"
     [selectedLabel]="store.selectedLabel()"
     [analysisProgress]="store.importedGameAnalysis.progress()"
+    [refreshingTags]="store.refreshingTags()"
     (analyze)="store.analyzeImportedGame($event)"
+    (refreshTags)="store.refreshTags()"
   />
 
   @if (store.error(); as error) {

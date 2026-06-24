@@ -33,6 +33,8 @@ function game(timeControl: ImportedGameListItem['timeControl']): ImportedGameLis
     provider: 'LICHESS',
     providerGameId: 'game-1',
     timeControl,
+    tagCodes: [],
+    tags: [],
     plyIndex: { status: 'NOT_INDEXED' },
     analysis: { status: 'NOT_ANALYZED' },
   };

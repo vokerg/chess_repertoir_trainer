@@ -84,6 +84,7 @@ model ImportedGame {
   openingEco            String?
   plyIndexedAt          DateTime?
   plyIndexError         String?
+  tagCodes              Int[]              @default([])
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   analysisRuns          GameAnalysisRun[]
@@ -92,6 +93,11 @@ model ImportedGame {
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
+}
+
+model GameTagDefinition {
+  code Int    @id
+  name String @unique @db.VarChar(80)
 }
 
 model Position {

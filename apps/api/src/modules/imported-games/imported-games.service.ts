@@ -7,6 +7,7 @@ import {
   latestRun,
   userAccuracy,
 } from './imported-game-analysis.helpers';
+import { GameTaggingService } from './game-tagging.service';
 import { ImportedGameQueryService } from './imported-game-query.service';
 import {
   ImportedGameDetailRow,
@@ -35,7 +36,16 @@ function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
   };
 }
 
-function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
+function resolveTags(tagCodes: number[] | null | undefined, tagNamesByCode: Map<number, string>) {
+  return (tagCodes ?? [])
+    .map((code) => {
+      const name = tagNamesByCode.get(code);
+      return name ? { code, name } : null;
+    })
+    .filter((tag): tag is { code: number; name: string } => tag !== null);
+}
+
+function toListItem(row: ImportedGameListRow | ImportedGameDetailRow, tagNamesByCode: Map<number, string>) {
   const run = latestRun(row);
   return {
     id: row.id,
@@ -70,6 +80,8 @@ function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
       eco: row.openingEco,
       name: row.openingName,
     },
+    tagCodes: row.tagCodes ?? [],
+    tags: resolveTags(row.tagCodes, tagNamesByCode),
     plyIndex: {
       status: derivePlyIndexStatus(row),
       indexedAt: row.plyIndexedAt ?? null,
@@ -90,9 +102,9 @@ function toListItem(row: ImportedGameListRow | ImportedGameDetailRow) {
   };
 }
 
-function toDetail(row: ImportedGameDetailRow) {
+function toDetail(row: ImportedGameDetailRow, tagNamesByCode: Map<number, string>) {
   return {
-    ...toListItem(row),
+    ...toListItem(row, tagNamesByCode),
     pgn: row.pgn,
     plies: row.plies.map(toPlyItem),
     createdAt: row.createdAt,
@@ -139,21 +151,34 @@ function analysisStatusFacetRows(totalGames: number, rows: Array<{ importedGameI
 
 export const ImportedGamesService = {
   search: async (userId: number, query: ImportedGameSearchQuery) => {
-    const page = await ImportedGameQueryService.searchPage(userId, query);
+    const [page, definitionsResponse] = await Promise.all([
+      ImportedGameQueryService.searchPage(userId, query),
+      GameTaggingService.definitions(),
+    ]);
+    const tagNamesByCode = new Map(definitionsResponse.items.map((item) => [item.code, item.name]));
 
     return {
-      items: page.rows.map(toListItem),
+      items: page.rows.map((row) => toListItem(row, tagNamesByCode)),
       pageInfo: page.pageInfo,
       appliedFilters: page.appliedCriteria,
     };
   },
 
   get: async (userId: number, id: number) => {
-    const row = await ImportedGameQueryService.getDetail(userId, id);
-    return row ? toDetail(row) : null;
+    const [row, definitionsResponse] = await Promise.all([
+      ImportedGameQueryService.getDetail(userId, id),
+      GameTaggingService.definitions(),
+    ]);
+    if (!row) return null;
+    const tagNamesByCode = new Map(definitionsResponse.items.map((item) => [item.code, item.name]));
+    return toDetail(row, tagNamesByCode);
   },
 
   getPgn: async (userId: number, id: number) => ImportedGameQueryService.getPgn(userId, id),
+
+  tagDefinitions: async () => GameTaggingService.definitions(),
+
+  refreshTags: async (userId: number, id: number) => GameTaggingService.refreshOne(userId, id),
 
   facets: async (userId: number) => {
     const facets = await ImportedGameQueryService.getFacets(userId);

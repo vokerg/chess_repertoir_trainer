@@ -69,6 +69,7 @@ export const importedGameListSelect = {
   openingEco: true,
   plyIndexedAt: true,
   plyIndexError: true,
+  tagCodes: true,
   analysisRuns: {
     orderBy: { createdAt: 'desc' as const },
     take: 1,

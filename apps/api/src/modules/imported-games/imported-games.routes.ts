@@ -9,10 +9,12 @@ import {
   getImportedGameFacetsOpenApiOperation,
   getImportedGameOpenApiOperation,
   getImportedGamePgnOpenApiOperation,
+  getImportedGameTagDefinitionsOpenApiOperation,
   getOpeningAnalysisOpenApiOperation,
   importedGamesOpenApiSchemas,
   indexImportedGamePlyOpenApiOperation,
   listImportedGamesOpenApiOperation,
+  refreshImportedGameTagsOpenApiOperation,
 } from './imported-games.openapi';
 
 function parseGameId(params: unknown): number | null {
@@ -85,6 +87,17 @@ export default async function importedGamesModule(app: FastifyInstance) {
 
   registerOpenApiRoute(app, {
     method: 'get',
+    url: '/api/imported-games/tag-definitions',
+    operation: getImportedGameTagDefinitionsOpenApiOperation,
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      return ImportedGamesService.tagDefinitions();
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'get',
     url: '/api/imported-games/:gameId',
     operation: getImportedGameOpenApiOperation,
     handler: async (request, reply) => {
@@ -102,6 +115,33 @@ export default async function importedGamesModule(app: FastifyInstance) {
         return { message: 'Imported game not found' };
       }
       return game;
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/imported-games/:gameId/tags/refresh',
+    operation: refreshImportedGameTagsOpenApiOperation,
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const gameId = parseGameId(request.params);
+      if (!gameId) {
+        reply.code(400);
+        return { error: 'Invalid imported game id' };
+      }
+
+      try {
+        return await ImportedGamesService.refreshTags(auth.userId, gameId);
+      } catch (err: any) {
+        const message = err?.message ?? String(err);
+        if (message === 'Imported game not found') {
+          reply.code(404);
+          return { error: message };
+        }
+        reply.code(400);
+        return { error: message };
+      }
     },
   });
 

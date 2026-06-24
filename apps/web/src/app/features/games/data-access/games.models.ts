@@ -71,6 +71,11 @@ export interface ImportedGameOpening {
   name?: string | null;
 }
 
+export interface ImportedGameTag {
+  code: number;
+  name: string;
+}
+
 export interface ImportedGamePly {
   plyNumber: number;
   moveUci: string;
@@ -101,6 +106,8 @@ export interface ImportedGameListItem {
   resultForUser?: ResultForUser | null;
   status?: string | null;
   opening?: ImportedGameOpening | null;
+  tagCodes: number[];
+  tags?: ImportedGameTag[];
   plyIndex: ImportedGamePlyIndexSummary;
   analysis: ImportedGameAnalysisSummary;
 }
@@ -153,6 +160,16 @@ export interface ImportedGameAnalysisRun {
 
 export interface ImportedGameAnalysisResponse {
   run: ImportedGameAnalysisRun;
+}
+
+export interface GameTagDefinitionsResponse {
+  items: ImportedGameTag[];
+}
+
+export interface ImportedGameTagsRefreshResponse {
+  importedGameId: number;
+  tagCodes: number[];
+  tags: ImportedGameTag[];
 }
 
 export interface ImportedGameSearchResponse {

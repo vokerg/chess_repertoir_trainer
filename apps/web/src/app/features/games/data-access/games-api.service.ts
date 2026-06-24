@@ -4,12 +4,14 @@ import { ApiService } from '../../../core/api/api.service';
 import {
   BatchAnalysisAcceptedResponse,
   BatchAnalysisConfig,
+  GameTagDefinitionsResponse,
   ImportedGameAnalysisSummary,
   ImportedGameAnalysisResponse,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
   ImportedGamePlyIndexResult,
   ImportedGameSearchResponse,
+  ImportedGameTagsRefreshResponse,
 } from './games.models';
 import { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { mapGameFiltersToQueryString } from '../../../shared/games/filters/game-filter-query.mapper';
@@ -30,6 +32,10 @@ export class GamesApiService {
     return this.api.get<ImportedGameFacetsResponse>('/imported-games/facets');
   }
 
+  getGameTagDefinitions(): Observable<GameTagDefinitionsResponse> {
+    return this.api.get<GameTagDefinitionsResponse>('/imported-games/tag-definitions');
+  }
+
   searchGames(filters: GameFilters, cursor?: string | null): Observable<ImportedGameSearchResponse> {
     return this.api.get<ImportedGameSearchResponse>(`/imported-games${mapGameFiltersToQueryString(filters, cursor)}`);
   }
@@ -48,5 +54,9 @@ export class GamesApiService {
 
   indexPlies(gameId: number, force = false): Observable<ImportedGamePlyIndexResult> {
     return this.api.post<ImportedGamePlyIndexResult>(`/imported-games/${gameId}/ply-index`, force ? { force: true } : {});
+  }
+
+  refreshGameTags(gameId: number): Observable<ImportedGameTagsRefreshResponse> {
+    return this.api.post<ImportedGameTagsRefreshResponse>(`/imported-games/${gameId}/tags/refresh`, {});
   }
 }

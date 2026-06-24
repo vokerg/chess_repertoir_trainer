@@ -22,7 +22,9 @@ export class GameDetailHeaderComponent {
   readonly title = input.required<string>();
   readonly selectedLabel = input.required<string>();
   readonly analysisProgress = input.required<ImportedGameAnalysisProgress>();
+  readonly refreshingTags = input(false);
   readonly analyze = output<boolean>();
+  readonly refreshTags = output<void>();
 
   protected readonly analysisAction = computed(() => {
     const game = this.game();
@@ -38,6 +40,14 @@ export class GameDetailHeaderComponent {
           : force
             ? 'Force re-analysis'
             : 'Analyse',
+    };
+  });
+
+  protected readonly refreshTagsAction = computed(() => {
+    const game = this.game();
+    return {
+      disabled: !game || this.refreshingTags(),
+      label: this.refreshingTags() ? 'Refreshing tags...' : 'Refresh tags',
     };
   });
 

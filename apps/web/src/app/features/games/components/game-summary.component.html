@@ -28,3 +28,16 @@
     <p class="game-muted">{{ game().opening?.name || 'Opening unavailable' }}</p>
   </div>
 </section>
+
+<section class="tags-card metric-card">
+  <p class="metric-label">Tags</p>
+  @if (game().tags?.length) {
+    <div class="tag-chip-list">
+      @for (tag of game().tags ?? []; track tag.code) {
+        <span class="tag-chip">{{ tag.name }}</span>
+      }
+    </div>
+  } @else {
+    <p class="game-muted">No tags yet</p>
+  }
+</section>

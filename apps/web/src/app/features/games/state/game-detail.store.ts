@@ -46,6 +46,7 @@ export class GameDetailStore implements OnDestroy {
   readonly selectedNodeId = signal(0);
   readonly boardPositionVersion = signal(0);
   readonly loading = signal(true);
+  readonly refreshingTags = signal(false);
   readonly error = signal<string | null>(null);
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
     initialValue: EMPTY_ENGINE_ANALYSIS,
@@ -240,9 +241,30 @@ export class GameDetailStore implements OnDestroy {
     this.error.set(null);
     try {
       await this.importedGameAnalysis.analyzeGame(gameId, force);
+      await this.refreshTags();
       await this.loadGame();
     } catch (error) {
       this.error.set(readError(error, 'Could not analyse imported game.'));
+    }
+  }
+
+  async refreshTags(): Promise<void> {
+    const gameId = this.gameId();
+    if (!gameId || this.refreshingTags()) return;
+    this.error.set(null);
+    this.refreshingTags.set(true);
+    try {
+      const response = await firstValueFrom(this.api.refreshGameTags(gameId));
+      this.game.update((game) =>
+        game
+          ? { ...game, tagCodes: response.tagCodes, tags: response.tags }
+          : game,
+      );
+    } catch (error) {
+      this.error.set(readError(error, 'Could not refresh tags.'));
+      throw error;
+    } finally {
+      this.refreshingTags.set(false);
     }
   }
 
@@ -294,6 +316,7 @@ export class GameDetailStore implements OnDestroy {
   private resetViewState(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.loading.set(true);
+    this.refreshingTags.set(false);
     this.error.set(null);
     this.game.set(null);
     this.analysisRun.set(null);
