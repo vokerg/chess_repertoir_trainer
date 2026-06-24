@@ -1,5 +1,5 @@
 <section class="accounts-page stack">
-  <app-page-header title="Accounts" subtitle="Connect accounts and sync imported games." [actions]="headerActions()" />
+  <app-page-header title="Accounts" subtitle="Connect accounts and refresh imported games." [actions]="headerActions()" />
 
   <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account.">
     <form class="account-form" (ngSubmit)="store.createAccount()">
@@ -59,6 +59,9 @@
     @if (store.loading() && store.accounts().length === 0) {
       <p class="status-note">Loading accounts...</p>
     }
+    @if (store.syncingAllAccounts()) {
+      <p class="status-note">Refreshing games across active accounts...</p>
+    }
 
     @if (!store.loading() && store.accounts().length === 0) {
       <div class="empty-state accounts-empty">
@@ -104,7 +107,7 @@
               <button
                 type="button"
                 (click)="store.syncAccount(account)"
-                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
               >
                 {{ store.syncingAccountId() === account.id ? 'Syncing...' : 'Sync' }}
               </button>
@@ -112,7 +115,7 @@
                 type="button"
                 class="secondary"
                 (click)="confirmResetCursor(account)"
-                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
               >
                 {{ store.resettingCursorAccountId() === account.id ? 'Resetting...' : 'Reset cursor' }}
               </button>
@@ -120,7 +123,7 @@
                 type="button"
                 class="secondary"
                 (click)="store.toggleActive(account)"
-                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
               >
                 {{ account.isActive ? 'Disable' : 'Enable' }}
               </button>
@@ -128,7 +131,7 @@
                 type="button"
                 class="secondary"
                 (click)="confirmDeleteAccount(account)"
-                [disabled]="store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
               >
                 {{ store.deletingAccountId() === account.id ? 'Deleting...' : 'Delete account' }}
               </button>

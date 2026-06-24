@@ -18,9 +18,14 @@ describe('AccountsPageComponent', () => {
   };
 
   beforeEach(async () => {
-    store = jasmine.createSpyObj<AccountsStore>('AccountsStore', ['deleteAccount', 'resetCursor', 'loadAccounts'], {
+    store = jasmine.createSpyObj<AccountsStore>('AccountsStore', ['deleteAccount', 'resetCursor', 'loadAccounts', 'syncActiveAccounts'], {
       accounts: signal<ExternalAccount[]>([]),
       loading: signal(false),
+      saving: signal(false),
+      syncingAllAccounts: signal(false),
+      syncingAccountId: signal<number | null>(null),
+      resettingCursorAccountId: signal<number | null>(null),
+      deletingAccountId: signal<number | null>(null),
     });
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
 
@@ -71,13 +76,21 @@ describe('AccountsPageComponent', () => {
     expect(store.resetCursor).not.toHaveBeenCalled();
   });
 
+  it('runs the header refresh action through bulk game sync', () => {
+    page().headerActions()[0].run();
+
+    expect(store.syncActiveAccounts).toHaveBeenCalled();
+  });
+
   function page(): {
     confirmDeleteAccount(account: ExternalAccount): Promise<void>;
     confirmResetCursor(account: ExternalAccount): Promise<void>;
+    headerActions(): readonly { run: () => void }[];
   } {
     return fixture.componentInstance as unknown as {
       confirmDeleteAccount(account: ExternalAccount): Promise<void>;
       confirmResetCursor(account: ExternalAccount): Promise<void>;
+      headerActions(): readonly { run: () => void }[];
     };
   }
 });

@@ -11,6 +11,7 @@ export class AccountsStore {
   readonly accounts = signal<ExternalAccount[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
+  readonly syncingAllAccounts = signal(false);
   readonly syncingAccountId = signal<number | null>(null);
   readonly resettingCursorAccountId = signal<number | null>(null);
   readonly deletingAccountId = signal<number | null>(null);
@@ -75,6 +76,47 @@ export class AccountsStore {
     }
   }
 
+  async syncActiveAccounts(): Promise<void> {
+    const activeAccounts = this.accounts().filter((account) => account.isActive);
+    this.clearMessages();
+
+    if (activeAccounts.length === 0) {
+      this.notice.set('No active accounts are enabled for game refresh.');
+      return;
+    }
+
+    this.syncingAllAccounts.set(true);
+    const failedAccounts: string[] = [];
+    let syncedCount = 0;
+
+    try {
+      for (const account of activeAccounts) {
+        this.syncingAccountId.set(account.id);
+        try {
+          const result = await firstValueFrom(this.api.syncAccount(account.id));
+          this.syncResults.update((results) => ({ ...results, [account.id]: result }));
+          syncedCount += 1;
+        } catch (error) {
+          failedAccounts.push(`${accountSummary(account)} (${readApiError(error, 'sync failed')})`);
+        }
+      }
+
+      await this.loadAccounts();
+
+      if (failedAccounts.length > 0) {
+        const summary = `Refreshed games for ${syncedCount} ${syncedCount === 1 ? 'account' : 'accounts'}.`;
+        this.error.set(`${summary} Failed: ${failedAccounts.join('; ')}.`);
+      } else {
+        this.notice.set(
+          `Refreshed games for ${syncedCount} active ${syncedCount === 1 ? 'account' : 'accounts'}.`,
+        );
+      }
+    } finally {
+      this.syncingAccountId.set(null);
+      this.syncingAllAccounts.set(false);
+    }
+  }
+
   async resetCursor(account: ExternalAccount): Promise<void> {
     this.resettingCursorAccountId.set(account.id);
     this.clearMessages();
@@ -135,6 +177,10 @@ export class AccountsStore {
 
 function defaultForm(): AccountForm {
   return { provider: 'LICHESS', username: '', displayName: '' };
+}
+
+function accountSummary(account: ExternalAccount): string {
+  return `${providerLabel(account.provider)} @${account.username}`;
 }
 
 function readApiError(error: unknown, fallback: string): string {

@@ -28,10 +28,16 @@ export class AccountsPageComponent implements OnInit {
   protected readonly dateLabel = dateLabel;
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
-      id: 'refresh',
-      label: this.store.loading() ? 'Refreshing...' : 'Refresh accounts',
-      disabled: this.store.loading(),
-      run: () => this.store.loadAccounts(),
+      id: 'refresh-games',
+      label: this.store.syncingAllAccounts() ? 'Refreshing games...' : 'Refresh games',
+      disabled:
+        this.store.loading() ||
+        this.store.saving() ||
+        this.store.syncingAllAccounts() ||
+        this.store.syncingAccountId() !== null ||
+        this.store.resettingCursorAccountId() !== null ||
+        this.store.deletingAccountId() !== null,
+      run: () => this.store.syncActiveAccounts(),
     },
   ]);
   protected readonly accountStats = computed<readonly UiShellStat[]>(() => [
