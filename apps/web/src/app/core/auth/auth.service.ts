@@ -92,6 +92,15 @@ export class AuthService {
     this.clerk?.unmountSignIn(node);
   }
 
+  async mountSignUp(node: HTMLDivElement): Promise<void> {
+    await this.initialize();
+    this.clerk?.mountSignUp(node);
+  }
+
+  unmountSignUp(node: HTMLDivElement): void {
+    this.clerk?.unmountSignUp(node);
+  }
+
   async mountUserButton(node: HTMLDivElement): Promise<void> {
     await this.initialize();
     this.clerk?.mountUserButton(node);

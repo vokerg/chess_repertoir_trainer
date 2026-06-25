@@ -12,14 +12,14 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
-  selector: 'app-login-page',
+  selector: 'app-signup-page',
   standalone: true,
   imports: [RouterLink],
-  templateUrl: './login-page.component.html',
+  templateUrl: './signup-page.component.html',
   styleUrl: './login-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginPageComponent implements AfterViewInit, OnDestroy {
+export class SignupPageComponent implements AfterViewInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -29,7 +29,7 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
   protected readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/library';
   protected readonly authQueryParams = { returnUrl: this.returnUrl };
 
-  @ViewChild('signInMount') private signInMount?: ElementRef<HTMLDivElement>;
+  @ViewChild('signUpMount') private signUpMount?: ElementRef<HTMLDivElement>;
 
   constructor() {
     effect(() => {
@@ -41,14 +41,14 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     await this.auth.initialize();
-    const mount = this.signInMount?.nativeElement;
+    const mount = this.signUpMount?.nativeElement;
     if (mount && !this.auth.isDevAuth()) {
-      await this.auth.mountSignIn(mount);
+      await this.auth.mountSignUp(mount);
     }
   }
 
   ngOnDestroy(): void {
-    const mount = this.signInMount?.nativeElement;
-    if (mount) this.auth.unmountSignIn(mount);
+    const mount = this.signUpMount?.nativeElement;
+    if (mount) this.auth.unmountSignUp(mount);
   }
 }

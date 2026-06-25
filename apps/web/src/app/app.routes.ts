@@ -10,6 +10,12 @@ export const routes: Routes = [
       import('./features/auth/login-page.component').then((m) => m.LoginPageComponent),
   },
   {
+    path: 'signup',
+    title: 'Create account | Chess Repertoire Trainer',
+    loadComponent: () =>
+      import('./features/auth/signup-page.component').then((m) => m.SignupPageComponent),
+  },
+  {
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
     canActivate: [authGuard],

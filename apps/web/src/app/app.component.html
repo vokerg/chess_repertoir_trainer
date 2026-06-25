@@ -22,7 +22,10 @@
             }
           </div>
         } @else {
-          <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill">Sign in</a>
+          <nav class="app-nav" aria-label="Authentication navigation">
+            <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill">Sign in</a>
+            <a routerLink="/signup" routerLinkActive="nav-pill-active" class="nav-pill">Sign up</a>
+          </nav>
         }
       </div>
       <button
@@ -65,7 +68,10 @@
           }
         </div>
       } @else {
-        <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Sign in</a>
+        <nav class="mobile-nav" aria-label="Authentication navigation">
+          <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Sign in</a>
+          <a routerLink="/signup" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Sign up</a>
+        </nav>
       }
     </aside>
   }

@@ -2,13 +2,13 @@
   <div class="login-panel">
     <div class="login-copy">
       <p class="eyebrow">Account</p>
-      <h2>Sign in</h2>
+      <h2>Create account</h2>
       @if (isDevAuth()) {
         <p>Clerk is not configured for this web build. Local dev auth is active.</p>
         <a routerLink="/library" class="login-link">Continue to library</a>
       } @else {
-        <p>Use your Clerk session to access your repertoire, games, courses, and analysis.</p>
-        <a routerLink="/signup" [queryParams]="authQueryParams" class="login-link">Create account</a>
+        <p>Create your Clerk account to sync your repertoire, games, courses, and analysis.</p>
+        <a routerLink="/login" [queryParams]="authQueryParams" class="login-link">Sign in</a>
       }
       @if (appUserError()) {
         <p class="login-error">{{ appUserError() }}</p>
@@ -16,7 +16,7 @@
     </div>
 
     @if (!isDevAuth()) {
-      <div #signInMount class="clerk-mount" aria-label="Sign in"></div>
+      <div #signUpMount class="clerk-mount" aria-label="Create account"></div>
     }
   </div>
 </section>
