@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import {
+  assertPositionKeyMatchesFen,
+  positionKeyHex,
+} from '../positions/position-key';
 
 export type ImportedGameForPlyIndex = {
   id: number;
@@ -10,6 +14,7 @@ export type ImportedGameForPlyIndex = {
 
 export type ImportedGamePlyCreateInput = Pick<Prisma.ImportedGamePlyCreateManyInput, 'importedGameId' | 'plyNumber' | 'moveUci'> & {
   normalizedFen: string;
+  positionKey: Buffer;
 };
 
 export async function getImportedGameForPlyIndex(userId: number, importedGameId: number): Promise<ImportedGameForPlyIndex | null> {
@@ -42,21 +47,80 @@ export async function replacePlyRowsForGame(importedGameId: number, rows: Import
   return prisma.$transaction(async (tx) => {
     await tx.importedGamePly.deleteMany({ where: { importedGameId } });
     if (rows.length > 0) {
-      const normalizedFens = Array.from(new Set(rows.map((row) => row.normalizedFen)));
+      const positionsByKey = new Map<string, { normalizedFen: string; positionKey: Buffer }>();
+
+      for (const row of rows) {
+        const keyHex = positionKeyHex(row.positionKey);
+        const existing = positionsByKey.get(keyHex);
+
+        if (existing && existing.normalizedFen !== row.normalizedFen) {
+          throw new Error(
+            `Position key collision before DB write for key ${keyHex}: ${existing.normalizedFen} vs ${row.normalizedFen}`,
+          );
+        }
+
+        positionsByKey.set(keyHex, {
+          normalizedFen: row.normalizedFen,
+          positionKey: row.positionKey,
+        });
+      }
+
+      const uniquePositions = Array.from(positionsByKey.values());
+
       await tx.position.createMany({
-        data: normalizedFens.map((normalizedFen) => ({ normalizedFen })),
+        data: uniquePositions.map((position) => ({
+          normalizedFen: position.normalizedFen,
+          positionKey: new Uint8Array(position.positionKey),
+        })),
         skipDuplicates: true,
       });
 
       const positions = await tx.position.findMany({
-        where: { normalizedFen: { in: normalizedFens } },
-        select: { id: true, normalizedFen: true },
+        where: {
+          positionKey: {
+            in: uniquePositions.map((position) => new Uint8Array(position.positionKey)),
+          },
+        },
+        select: {
+          id: true,
+          positionKey: true,
+          normalizedFen: true,
+        },
       });
-      const positionIdsByFen = new Map(positions.map((position) => [position.normalizedFen, position.id]));
+
+      const expectedFenByKey = new Map(
+        uniquePositions.map((position) => [
+          positionKeyHex(position.positionKey),
+          position.normalizedFen,
+        ]),
+      );
+
+      const positionIdsByKey = new Map<string, number>();
+
+      for (const position of positions) {
+        if (!position.positionKey) {
+          throw new Error(`Resolved position ${position.id} has null positionKey`);
+        }
+
+        const keyHex = positionKeyHex(position.positionKey);
+        const expectedNormalizedFen = expectedFenByKey.get(keyHex);
+
+        if (!expectedNormalizedFen) {
+          throw new Error(`Resolved unexpected position key ${keyHex}`);
+        }
+
+        assertPositionKeyMatchesFen({
+          expectedNormalizedFen,
+          actualNormalizedFen: position.normalizedFen,
+          positionKey: position.positionKey,
+        });
+
+        positionIdsByKey.set(keyHex, position.id);
+      }
 
       await tx.importedGamePly.createMany({
         data: rows.map((row) => {
-          const positionId = positionIdsByFen.get(row.normalizedFen);
+          const positionId = positionIdsByKey.get(positionKeyHex(row.positionKey));
           if (!positionId) throw new Error(`Could not resolve position for ${row.normalizedFen}`);
           return {
             importedGameId: row.importedGameId,

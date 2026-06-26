@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { normalizeFenForPosition } from 'chess-domain';
+import { positionKeyForNormalizedFen } from '../positions/position-key';
 import {
   clearPlyRowsForGame,
   countPlyRowsForGame,
@@ -38,10 +39,13 @@ function parsePlyRows(importedGameId: number, pgn: string): ImportedGamePlyCreat
       throw new Error('Could not reconstruct move positions from imported game PGN');
     }
 
+    const normalizedFen = normalizeFenForPosition(move.before);
+
     return {
       importedGameId,
       plyNumber,
-      normalizedFen: normalizeFenForPosition(move.before),
+      normalizedFen,
+      positionKey: positionKeyForNormalizedFen(normalizedFen),
       moveUci: toUci(move),
     };
   });

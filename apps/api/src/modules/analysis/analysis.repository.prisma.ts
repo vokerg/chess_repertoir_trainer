@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
+import {
+  assertPositionKeyMatchesFen,
+  positionKeyForNormalizedFen,
+  positionKeyHex,
+} from '../positions/position-key';
 import { PlyAnalysisUpdate, StorePositionAnalysisInput } from './analysis.types';
 
 const positionAnalysisInclude = {
@@ -61,11 +66,48 @@ function dedupePlyAnalysisUpdates(updates: PlyAnalysisUpdate[]) {
 }
 
 export async function findOrCreatePositionByNormalizedFen(normalizedFen: string) {
+  const positionKey = positionKeyForNormalizedFen(normalizedFen);
+
   try {
-    return await prisma.position.create({ data: { normalizedFen } });
+    return await prisma.position.create({
+      data: { normalizedFen, positionKey: new Uint8Array(positionKey) },
+    });
   } catch {
-    const position = await prisma.position.findUnique({ where: { normalizedFen } });
-    if (position) return position;
+    const byKey = await prisma.position.findUnique({
+      where: { positionKey: new Uint8Array(positionKey) },
+    });
+
+    if (byKey) {
+      assertPositionKeyMatchesFen({
+        expectedNormalizedFen: normalizedFen,
+        actualNormalizedFen: byKey.normalizedFen,
+        positionKey,
+      });
+
+      return byKey;
+    }
+
+    const byFen = await prisma.position.findFirst({
+      where: { normalizedFen },
+    });
+
+    if (byFen) {
+      if (!byFen.positionKey) {
+        return prisma.position.update({
+          where: { id: byFen.id },
+          data: { positionKey: new Uint8Array(positionKey) },
+        });
+      }
+
+      assertPositionKeyMatchesFen({
+        expectedNormalizedFen: normalizedFen,
+        actualNormalizedFen: byFen.normalizedFen,
+        positionKey: byFen.positionKey,
+      });
+
+      return byFen;
+    }
+
     throw new Error('Could not create or find position');
   }
 }
@@ -76,19 +118,29 @@ export async function findOrCreatePositionByFen(fen: string) {
 
 export async function getPositionAnalysisByFen(fen: string) {
   const normalizedFen = normalizeFenForPosition(fen);
+  const positionKey = positionKeyForNormalizedFen(normalizedFen);
+
   const row = await prisma.positionAnalysis.findFirst({
-    where: { position: { normalizedFen } },
+    where: { position: { positionKey: new Uint8Array(positionKey) } },
     include: positionAnalysisInclude,
   });
   return row ? compactPositionAnalysis(row) : null;
 }
 
 export async function getPositionAnalysesByFens(fens: string[]) {
-  const normalizedFens = Array.from(new Set(fens.map((fen) => normalizeFenForPosition(fen))));
-  if (!normalizedFens.length) return [];
+  const positionsByKey = new Map<string, Buffer>();
+
+  for (const fen of fens) {
+    const normalizedFen = normalizeFenForPosition(fen);
+    const positionKey = positionKeyForNormalizedFen(normalizedFen);
+    positionsByKey.set(positionKeyHex(positionKey), positionKey);
+  }
+
+  const positionKeys = Array.from(positionsByKey.values()).map((positionKey) => new Uint8Array(positionKey));
+  if (!positionKeys.length) return [];
 
   const rows = await prisma.positionAnalysis.findMany({
-    where: { position: { normalizedFen: { in: normalizedFens } } },
+    where: { position: { positionKey: { in: positionKeys } } },
     include: positionAnalysisInclude,
   });
   return rows.map((row) => compactPositionAnalysis(row));

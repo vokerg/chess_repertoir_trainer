@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
+import { positionKeyForNormalizedFen } from '../positions/position-key';
 import { ImportedGameSearchQuery } from './imported-games.schemas';
 import { buildImportedGameWhere } from './imported-games.repository.prisma';
 
@@ -49,7 +50,7 @@ export type OpeningAnalysisPlyRow = Prisma.ImportedGamePlyGetPayload<{ select: t
 
 export async function findOpeningAnalysisRows(userId: number, query: ImportedGameSearchQuery, normalizedFen: string): Promise<OpeningAnalysisPlyRow[]> {
   const position = await prisma.position.findUnique({
-    where: { normalizedFen },
+    where: { positionKey: new Uint8Array(positionKeyForNormalizedFen(normalizedFen)) },
     select: { id: true },
   });
   if (!position) return [];

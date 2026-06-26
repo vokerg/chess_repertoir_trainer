@@ -102,6 +102,7 @@ model GameTagDefinition {
 
 model Position {
   id            Int               @id @default(autoincrement())
+  positionKey   Bytes?            @unique @db.ByteA
   normalizedFen String            @unique @db.VarChar(120)
 
   plies         ImportedGamePly[]
@@ -125,7 +126,6 @@ model ImportedGamePly {
 
   @@id([importedGameId, plyNumber])
   @@index([positionId, moveUci, importedGameId, plyNumber])
-  @@index([classificationCode])
 }
 
 model ImportRun {
