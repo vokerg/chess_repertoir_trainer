@@ -197,6 +197,34 @@ WEB_API_BASE_URL=/api
 
 `apps/web` writes this into `src/app/app-config.ts` during `npm run dev` and `npm run build`.
 
+### Clerk authentication
+
+This repo already contains a manual Clerk integration for the Angular frontend and Fastify API. The Clerk CLI currently cannot scaffold this workspace automatically: on June 26, 2026, `clerk init --app app_3Ff6uJYPdSH1n8IYkWVN2ceB47z` returned `Could not detect a framework`, so use the existing repo wiring instead of waiting for generated files.
+
+For local Clerk-backed auth:
+
+```text
+WEB_CLERK_PUBLISHABLE_KEY=pk_test_...
+AUTH_MODE=clerk
+CLERK_JWT_ISSUER=https://<your-clerk-domain>
+CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json
+CLERK_AUTHORIZED_PARTIES=http://localhost:4200
+```
+
+- `WEB_CLERK_PUBLISHABLE_KEY` is consumed by the Angular build and must be present in the web build environment.
+- `AUTH_MODE=clerk` switches the API from the local single-user fallback to Clerk JWT verification.
+- `CLERK_AUTHORIZED_PARTIES` should include the web app origin that is allowed to mint session tokens for this API.
+- This repo does not expose `CLERK_SECRET_KEY` to the client. The backend validates Clerk session JWTs with the configured issuer and JWKS URL.
+
+Helpful CLI checks:
+
+```bash
+clerk auth login
+clerk doctor
+```
+
+Once the app is running, use the `Sign up` link in the nav to create the first user. A Clerk profile button should appear in the header after sign-up/sign-in succeeds.
+
 ## Database setup
 
 ```bash

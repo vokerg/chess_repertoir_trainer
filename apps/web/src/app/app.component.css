@@ -9,9 +9,13 @@
 .nav-pill { display: inline-flex; align-items: center; min-height: 34px; padding: 0.45rem 0.7rem; border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--muted-strong); font-size: 0.86rem; font-weight: 800; text-decoration: none; transition: background 140ms ease, color 140ms ease, border-color 140ms ease; }
 .nav-pill:hover { color: var(--text); background: rgba(35, 27, 21, 0.06); }
 .nav-pill-active { color: var(--accent-strong); background: var(--accent-soft); border-color: rgba(183, 121, 39, 0.18); }
-.nav-button { cursor: pointer; font-family: inherit; }
 .auth-status { display: inline-flex; align-items: center; gap: 0.35rem; }
 .auth-name { max-width: 180px; overflow: hidden; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.auth-status app-clerk-user-button,
+.mobile-auth-status app-clerk-user-button {
+  display: inline-flex;
+  align-items: center;
+}
 .mobile-menu-button,
 .mobile-menu-backdrop,
 .mobile-menu-sheet {

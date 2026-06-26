@@ -18,7 +18,7 @@
           <div class="auth-status">
             <span class="auth-name">{{ auth.displayName() }}</span>
             @if (!auth.isDevAuth()) {
-              <button type="button" class="nav-pill nav-button" (click)="signOut()">Sign out</button>
+              <app-clerk-user-button />
             }
           </div>
         } @else {
@@ -64,7 +64,7 @@
         <div class="mobile-auth-status">
           <span class="auth-name">{{ auth.displayName() }}</span>
           @if (!auth.isDevAuth()) {
-            <button type="button" class="nav-pill nav-button" (click)="signOut()">Sign out</button>
+            <app-clerk-user-button />
           }
         </div>
       } @else {
