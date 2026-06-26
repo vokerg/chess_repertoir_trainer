@@ -1,7 +1,13 @@
 import crypto from 'node:crypto';
 
-export function positionKeyForNormalizedFen(normalizedFen: string): Buffer {
+export const POSITION_KEY_BYTES = 16;
+
+function sha256ForNormalizedFen(normalizedFen: string): Buffer {
   return crypto.createHash('sha256').update(normalizedFen, 'utf8').digest();
+}
+
+export function positionKeyForNormalizedFen(normalizedFen: string): Buffer {
+  return sha256ForNormalizedFen(normalizedFen).subarray(0, POSITION_KEY_BYTES);
 }
 
 export function positionKeyHex(positionKey: Buffer | Uint8Array): string {
