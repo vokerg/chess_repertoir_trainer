@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "config": "env -u WEB_API_BASE_URL -u WEB_CLERK_PUBLISHABLE_KEY node --env-file=../api/.env -e \"require('fs').writeFileSync('src/app/app-config.ts', 'export const appConfig = {\\n  apiBaseUrl: ' + JSON.stringify(process.env.WEB_API_BASE_URL || '/api') + ',\\n  clerkPublishableKey: ' + JSON.stringify(process.env.WEB_CLERK_PUBLISHABLE_KEY || '') + ',\\n};\\n')\"",
+    "config": "node -e \"const fs=require('fs'); const env='../api/.env'; if (fs.existsSync(env)) process.loadEnvFile(env); require('fs').writeFileSync('src/app/app-config.ts', 'export const appConfig = {\\n  apiBaseUrl: ' + JSON.stringify(process.env.WEB_API_BASE_URL || '/api') + ',\\n  clerkPublishableKey: ' + JSON.stringify(process.env.WEB_CLERK_PUBLISHABLE_KEY || '') + ',\\n};\\n')\"",
     "dev": "npm run config && ng serve",
     "build": "npm run config && ng build",
     "test": "ng test --watch=false",
