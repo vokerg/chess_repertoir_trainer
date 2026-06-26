@@ -5,19 +5,22 @@ import { positionKeyForNormalizedFen } from '../modules/positions/position-key';
 
 const BATCH_SIZE = 1000;
 
+type PositionBackfillRow = {
+  id: number;
+  normalizedFen: string;
+};
+
 async function main() {
   let total = 0;
 
   for (;;) {
-    const rows = await prisma.position.findMany({
-      where: { positionKey: null },
-      orderBy: { id: 'asc' },
-      take: BATCH_SIZE,
-      select: {
-        id: true,
-        normalizedFen: true,
-      },
-    });
+    const rows = await prisma.$queryRaw<PositionBackfillRow[]>`
+      SELECT "id", "normalizedFen"
+      FROM "ImportedGamePosition"
+      WHERE "positionKey" IS NULL
+      ORDER BY "id" ASC
+      LIMIT ${BATCH_SIZE}
+    `;
 
     if (!rows.length) break;
 
@@ -38,9 +41,12 @@ async function main() {
     console.log(`Backfilled ${total} positions`);
   }
 
-  const remaining = await prisma.position.count({
-    where: { positionKey: null },
-  });
+  const remainingRows = await prisma.$queryRaw<Array<{ count: number }>>`
+    SELECT COUNT(*)::int AS count
+    FROM "ImportedGamePosition"
+    WHERE "positionKey" IS NULL
+  `;
+  const remaining = remainingRows[0]?.count ?? 0;
 
   if (remaining !== 0) {
     throw new Error(`Backfill incomplete: ${remaining} positions still have null positionKey`);
