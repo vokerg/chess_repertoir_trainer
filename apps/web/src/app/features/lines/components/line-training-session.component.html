@@ -29,13 +29,15 @@
           }
         </div>
 
-        <div
-          class="training-feedback training-compact-status"
-          [class.correct]="feedback() && feedbackCorrect()"
-          [class.incorrect]="feedback() && !feedbackCorrect()"
-        >
-          {{ feedback() || 'Find the next trained move on the board.' }}
-        </div>
+        @if (feedback(); as feedbackMessage) {
+          <div
+            class="training-feedback training-compact-status"
+            [class.correct]="feedbackCorrect()"
+            [class.incorrect]="!feedbackCorrect()"
+          >
+            {{ feedbackMessage }}
+          </div>
+        }
       </div>
     </section>
 
