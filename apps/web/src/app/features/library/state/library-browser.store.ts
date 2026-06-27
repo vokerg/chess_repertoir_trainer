@@ -230,6 +230,17 @@ export class LibraryBrowserStore {
     }
   }
 
+  startSingleLineMarathon(lineId: number, mode: LibraryMarathonMode): void {
+    this.selectedLineId.set(lineId);
+    this.selectedLineIds.set([lineId]);
+    this.marathonMode.set(mode);
+    this.trainingScope.set('SELECTED_LINES');
+    this.clearExport();
+    void this.router.navigate(['/library/marathon'], {
+      queryParams: { mode, lineIds: String(lineId) },
+    });
+  }
+
   toggleReviewOnly(): void {
     this.reviewOnly.update((value) => !value);
   }

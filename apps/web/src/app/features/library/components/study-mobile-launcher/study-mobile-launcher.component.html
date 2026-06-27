@@ -1,0 +1,149 @@
+<div class="launcher-backdrop" role="presentation" (click)="onBackdropClick($event)">
+  <section
+    class="launcher-sheet"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="study-mobile-launcher-title"
+    tabindex="-1"
+  >
+    <header class="launcher-header">
+      <div>
+        <p class="launcher-kicker">Training plan</p>
+        <h2 id="study-mobile-launcher-title">Plan training</h2>
+      </div>
+      <button type="button" class="launcher-close secondary" aria-label="Close training planner" (click)="close.emit()">
+        Close
+      </button>
+    </header>
+
+    <div class="launcher-tabs" aria-label="Training scope">
+      <button type="button" [class.active]="activeScope() === 'COURSE'" (click)="setScope('COURSE')">Course</button>
+      <button type="button" [class.active]="activeScope() === 'CHAPTER'" (click)="setScope('CHAPTER')">Section</button>
+      <button type="button" [class.active]="activeScope() === 'LINE'" (click)="setScope('LINE')">Line</button>
+    </div>
+
+    <div class="launcher-body">
+      @switch (activeScope()) {
+        @case ('COURSE') {
+          <section class="launcher-card">
+            <p class="launcher-label">Selected course</p>
+            @if (selectedCourse(); as course) {
+              <h3>{{ course.name }}</h3>
+              <p>{{ course.description || 'Personal repertoire' }}</p>
+            } @else {
+              <p>Select a course before starting training.</p>
+            }
+          </section>
+        }
+        @case ('CHAPTER') {
+          <section class="launcher-card">
+            <p class="launcher-label">Choose section</p>
+            @if (visibleChapters().length > 0) {
+              <div class="launcher-choice-list">
+                @for (chapter of visibleChapters(); track chapter.id) {
+                  <button
+                    type="button"
+                    class="launcher-choice"
+                    [class.active]="chapter.id === selectedChapter()?.id"
+                    (click)="selectChapter.emit(chapter.id)"
+                  >
+                    <strong>{{ chapter.name }}</strong>
+                    <span>{{ chapter.description || 'Opening section' }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <p>No sections match this search.</p>
+            }
+          </section>
+        }
+        @case ('LINE') {
+          <section class="launcher-card">
+            <p class="launcher-label">Choose section</p>
+            @if (visibleChapters().length > 0) {
+              <div class="launcher-choice-list compact">
+                @for (chapter of visibleChapters(); track chapter.id) {
+                  <button
+                    type="button"
+                    class="launcher-choice"
+                    [class.active]="chapter.id === selectedChapter()?.id"
+                    (click)="selectChapter.emit(chapter.id)"
+                  >
+                    <strong>{{ chapter.name }}</strong>
+                    <span>{{ chapter.description || 'Opening section' }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <p>No sections match this search.</p>
+            }
+
+            <p class="launcher-label">Choose line</p>
+            @if (!selectedChapter()) {
+              <p>Select a section first.</p>
+            } @else if (visibleLines().length > 0) {
+              <div class="launcher-choice-list">
+                @for (line of visibleLines(); track line.id) {
+                  <button
+                    type="button"
+                    class="launcher-choice"
+                    [class.active]="line.id === selectedLineId()"
+                    (click)="selectLine.emit(line.id)"
+                  >
+                    <strong>{{ line.name }}</strong>
+                    <span>
+                      {{ sideLabel(line.sideToTrain) }} ·
+                      {{ line.trainingStats.activeSublineCount }} active ·
+                      Weak {{ line.trainingStats.weakSublineCount }} ·
+                      Untrained {{ line.trainingStats.untrainedSublineCount }}
+                    </span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <p>No lines match this search or filter.</p>
+            }
+          </section>
+        }
+      }
+
+      <section class="launcher-summary" aria-label="Selected training summary">
+        <div>
+          <p class="launcher-label">{{ activeSummary().title }}</p>
+          <p>{{ activeSummary().description }}</p>
+        </div>
+
+        <dl class="launcher-stats">
+          <div>
+            <dt>{{ activeSummary().lineCountLabel }}</dt>
+            <dd>{{ activeSummary().lineCount }}</dd>
+          </div>
+          <div>
+            <dt>Sublines</dt>
+            <dd>{{ activeSummary().activeSublineCount }}</dd>
+          </div>
+          <div>
+            <dt>Weak</dt>
+            <dd>{{ activeSummary().weakSublineCount }}</dd>
+          </div>
+          <div>
+            <dt>Untrained</dt>
+            <dd>{{ activeSummary().untrainedSublineCount }}</dd>
+          </div>
+        </dl>
+
+        <p class="launcher-health">
+          Coverage {{ activeSummary().coverageLabel }} · Mastery {{ activeSummary().masteryLabel }}
+        </p>
+
+        <div class="launcher-train-actions" aria-label="Start selected training">
+          @for (mode of trainingModes(); track mode.id) {
+            <button type="button" [class.secondary]="mode.id !== 'ALL'" [disabled]="mode.disabled" (click)="start(mode.id)">
+              {{ mode.label }}
+            </button>
+          }
+        </div>
+      </section>
+    </div>
+  </section>
+</div>

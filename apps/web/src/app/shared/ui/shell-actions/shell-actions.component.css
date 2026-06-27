@@ -67,6 +67,7 @@
   pointer-events: none;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .ui-shell-actions {
     justify-content: flex-start;

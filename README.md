@@ -60,7 +60,7 @@ Available sublines are the current complete root-to-leaf variations in a line mo
 
 During training, the backend first selects one active terminal subline, identifies it with a deterministic SHA-256 hash of a semantic canonical key, and then follows that exact path. Opponent moves are auto-played only from the selected subline. Training stats are persisted in `TrainingSublineAttempt` per user, line, and subline hash. If a move-tree edit changes or removes a subline, the old hash remains historical but no longer counts in current line, chapter, or course stats.
 
-The Study page at `/library` is the training planner. It keeps the repertoire/section/line columns, adds line checkboxes, and uses a right-side training basket to show exactly what will be trained. The basket can start a selected-line marathon, or fall back to the current section/course when no individual lines are selected.
+The Study page at `/library` is the training planner. It keeps the repertoire/section/line columns, adds line checkboxes, and uses a right-side training basket on desktop to show exactly what will be trained. On mobile, selecting a course opens the Study Launcher for course, section, or single-line marathon training with the same All, Weak, and Untrained filters.
 
 Marathon training can be started for a whole course, a whole chapter, selected line ids, or selected active subline hashes. Modes are:
 

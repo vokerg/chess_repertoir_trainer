@@ -66,6 +66,12 @@ export class ItemRowComponent {
 
 Outputs communicate user intent. The parent store decides whether that intent causes HTTP, navigation, or state changes.
 
+## Feature-local mobile workflows
+
+Mobile-specific workflow UI should still follow the page/store/presentational split. The route page wires store state into a feature-local presentational launcher or sheet, the launcher emits typed intents such as select item or start training, and the feature store owns navigation and workflow state transitions.
+
+Keep the launcher HTTP-free and router-free. If the launcher needs derived stats or labels that would duplicate page/store calculations, move the pure calculation into the feature `helpers` folder and feed the resulting typed view model through inputs.
+
 ## Shared analysis workbench
 
 The shared analysis workbench receives board, move-tree, engine, navigation, and delete state as inputs and emits user intents as outputs. Feature wrappers and pages provide feature-specific copy, projected UI such as line notes, and confirmation dialogs. Feature stores decide whether an emitted move or delete command calls an API or updates a local-only tree. Shared analysis components must not import feature internals.

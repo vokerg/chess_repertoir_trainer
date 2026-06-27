@@ -40,6 +40,7 @@
 .study-lines-column { background: rgba(255, 255, 255, 0.36); }
 .study-basket-column { background: rgba(255, 255, 255, 0.46); }
 
+/* Keep in sync with LIBRARY_BREAKPOINTS.studyBasketWrapMaxPx. */
 @media (max-width: 1100px) {
   .study-columns {
     grid-template-columns: minmax(220px, 0.95fr) minmax(240px, 1fr) minmax(300px, 1.15fr);
@@ -50,12 +51,12 @@
   }
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
 @media (max-width: 760px) {
   .study-browser { min-height: unset; }
   .study-columns { display: block; }
   .study-column {
     border-right: 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 0;
   }
-  .study-column:last-child { border-bottom: 0; }
 }

@@ -49,6 +49,7 @@
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
+/* Keep in sync with LIBRARY_BREAKPOINTS.studyLineActionsMaxPx. */
 @media (max-width: 700px) {
   .study-line-row { grid-template-columns: auto minmax(0, 1fr); }
   .line-actions { grid-column: 2; justify-content: flex-start; }

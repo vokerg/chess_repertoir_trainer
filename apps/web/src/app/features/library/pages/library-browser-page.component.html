@@ -1,8 +1,13 @@
 <section class="stack">
-  <app-page-header title="Study" subtitle="Build a training basket from a repertoire, section, or selected lines." [actions]="headerActions()" />
+  <app-page-header
+    class="desktop-only"
+    title="Study"
+    subtitle="Build a training basket from a repertoire, section, or selected lines."
+    [actions]="headerActions()"
+  />
 
   <section class="study-browser">
-    <div class="study-toolbar">
+    <div class="study-toolbar desktop-only">
       <input
         class="study-search"
         [ngModel]="store.searchText()"
@@ -20,11 +25,11 @@
           [loading]="store.courseLoading()"
           [error]="store.courseError()"
           emptyText="No repertoires match this search."
-          (selectItem)="store.selectCourse($event)"
+          (selectItem)="selectCourse($event)"
         />
       </aside>
 
-      <aside class="study-column">
+      <aside class="study-column desktop-only">
         <app-study-scope-list
           title="Sections"
           [items]="chapterItems()"
@@ -36,7 +41,7 @@
         />
       </aside>
 
-      <main class="study-column study-lines-column">
+      <main class="study-column study-lines-column desktop-only">
         <app-study-line-list
           [lines]="store.filteredLines()"
           [selectedLineId]="store.selectedLineId()"
@@ -49,7 +54,7 @@
       </main>
 
       <app-training-basket-panel
-        class="study-column study-basket-column"
+        class="study-column study-basket-column desktop-only"
         [lineCountLabel]="store.basketLineCountLabel()"
         [lineCount]="store.basketLineCount()"
         [activeSublineCount]="store.basketActiveSublineCount()"
@@ -70,3 +75,21 @@
     </div>
   </section>
 </section>
+
+@if (mobileLauncherOpen()) {
+  <app-study-mobile-launcher
+    class="mobile-only"
+    [selectedCourse]="store.selectedCourse()"
+    [selectedChapter]="store.selectedChapter()"
+    [visibleChapters]="store.filteredChapters()"
+    [visibleLines]="store.filteredLines()"
+    [selectedLineId]="store.selectedLineId()"
+    [courseSummary]="courseSummary()"
+    [chapterSummary]="chapterSummary()"
+    [lineSummary]="lineSummary()"
+    (selectChapter)="store.selectChapter($event)"
+    (selectLine)="store.selectLine($event)"
+    (startTraining)="startTraining($event)"
+    (close)="closeMobileLauncher()"
+  />
+}

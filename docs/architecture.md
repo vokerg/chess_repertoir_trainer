@@ -59,7 +59,7 @@ Frontend conventions and accepted debt are documented under `docs/frontend`.
 
 ## Frontend product ownership
 
-- `/library` is the Study planner. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`.
+- `/library` is the Study planner. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`. Desktop keeps the right-side study planner basket; mobile keeps browsing visible and uses the Study Launcher for course, section, or single-line marathon launch.
 - `/chapters/:chapterId/lines` is the line/subline training-health diagnosis page. It owns line selection, expandable per-line subline status, and selected-subline drill launch.
 - `/courses/:courseId` stays course/content oriented. Its available-sublines section is a structural repertoire dump, not a user-specific training-health dashboard.
 - `/library/marathon`, `/courses/:courseId/marathon`, and `/chapters/:chapterId/marathon` share the line marathon page. Query parameters can provide `lineIds`, `sublineHashes`, and `mode`; route params provide optional course/chapter scope.

@@ -70,6 +70,7 @@ Some older `pages/*` files and large route components still own too much state o
 - Feature-specific selectors remain colocated with their component.
 - Large inline style blocks are not permitted in route pages.
 - Components should use existing tokens rather than adding isolated colors, spacing values, or shadows without reason.
+- Responsive viewport constants live in `apps/web/src/app/shared/ui/responsive/breakpoints.ts`; shared CSS visibility/alignment utilities live in `apps/web/src/responsive.css`. Numeric CSS media queries should include a nearby sync comment because CSS custom properties cannot be used as breakpoint thresholds.
 
 ## Validation
 

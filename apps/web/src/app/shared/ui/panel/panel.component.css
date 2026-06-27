@@ -45,6 +45,7 @@
   min-width: 0;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .app-panel {
     border-radius: 22px;
