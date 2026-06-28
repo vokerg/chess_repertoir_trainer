@@ -74,3 +74,47 @@ export interface AccountRatingHistoryQuery {
   to?: string;
   speeds?: RatingSpeed[];
 }
+
+export interface AccountRatingStatsPeak {
+  rating: number;
+  ratingAt: string;
+  gameId: number;
+}
+
+export interface AccountRatingStatsYearlyPeak extends AccountRatingStatsPeak {
+  year: number;
+}
+
+export interface AccountRatingStatsMilestone {
+  rating: number;
+  reachedAt: string;
+  actualRating: number;
+  gameId: number;
+}
+
+export interface AccountRatingStatsSpeedProjection {
+  key: RatingSpeed;
+  label: 'Bullet' | 'Blitz' | 'Rapid';
+  gamesCount: number;
+  highest: AccountRatingStatsPeak | null;
+  yearlyHighs: AccountRatingStatsYearlyPeak[];
+  milestones: AccountRatingStatsMilestone[];
+}
+
+export interface AccountRatingStatsProjection {
+  version: 1;
+  ratingSource: 'gameRecordedRating';
+  speeds: AccountRatingStatsSpeedProjection[];
+}
+
+export interface AccountRatingStatsResponse {
+  account: {
+    id: number;
+    provider: AccountProvider;
+    username: string;
+    displayName?: string | null;
+  };
+  computedAt: string;
+  gamesCount: number;
+  data: AccountRatingStatsProjection;
+}

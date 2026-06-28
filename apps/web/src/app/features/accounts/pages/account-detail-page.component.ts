@@ -5,10 +5,12 @@ import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { AccountRatingStatsComponent } from '../components/account-rating-stats.component';
 import { RatingHistoryChartComponent } from '../components/rating-history-chart.component';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import {
   AccountRatingHistoryResponse,
+  AccountRatingStatsResponse,
   ExternalAccount,
   RatingRangeKey,
 } from '../data-access/accounts.models';
@@ -18,7 +20,7 @@ import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
 @Component({
   selector: 'app-account-detail-page',
   standalone: true,
-  imports: [RouterLink, PageHeaderComponent, PanelComponent, RatingHistoryChartComponent],
+  imports: [RouterLink, PageHeaderComponent, PanelComponent, AccountRatingStatsComponent, RatingHistoryChartComponent],
   providers: [AccountsApiService],
   templateUrl: './account-detail-page.component.html',
   styleUrl: './account-detail-page.component.css',
@@ -30,6 +32,7 @@ export class AccountDetailPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly accountsApi = inject(AccountsApiService);
   private requestId = 0;
+  private statsRequestId = 0;
 
   protected readonly accountId = signal<number | null>(null);
   protected readonly accounts = signal<ExternalAccount[]>([]);
@@ -38,6 +41,9 @@ export class AccountDetailPageComponent implements OnInit {
   protected readonly account = signal<ExternalAccount | null>(null);
   protected readonly accountLoading = signal(false);
   protected readonly accountError = signal<string | null>(null);
+  protected readonly ratingStats = signal<AccountRatingStatsResponse | null>(null);
+  protected readonly ratingStatsLoading = signal(false);
+  protected readonly ratingStatsError = signal<string | null>(null);
   protected readonly history = signal<AccountRatingHistoryResponse | null>(null);
   protected readonly historyLoading = signal(false);
   protected readonly historyError = signal<string | null>(null);
@@ -59,6 +65,7 @@ export class AccountDetailPageComponent implements OnInit {
       if (!Number.isInteger(id) || id <= 0) {
         this.accountId.set(null);
         this.account.set(null);
+        this.ratingStats.set(null);
         this.history.set(null);
         this.accountError.set('Invalid account id.');
         return;
@@ -66,6 +73,7 @@ export class AccountDetailPageComponent implements OnInit {
 
       this.accountId.set(id);
       void this.loadAccount(id);
+      void this.loadRatingStats(id);
       void this.loadHistory(id);
     });
   }
@@ -112,6 +120,24 @@ export class AccountDetailPageComponent implements OnInit {
       this.accountError.set(this.errorMessage(error, 'Unable to load account.'));
     } finally {
       this.accountLoading.set(false);
+    }
+  }
+
+  private async loadRatingStats(accountId: number): Promise<void> {
+    const currentRequest = ++this.statsRequestId;
+    this.ratingStatsLoading.set(true);
+    this.ratingStatsError.set(null);
+
+    try {
+      const stats = await firstValueFrom(this.accountsApi.getRatingStats(accountId));
+      if (currentRequest === this.statsRequestId) this.ratingStats.set(stats);
+    } catch (error) {
+      if (currentRequest === this.statsRequestId) {
+        this.ratingStats.set(null);
+        this.ratingStatsError.set(this.errorMessage(error, 'Unable to load rating stats.'));
+      }
+    } finally {
+      if (currentRequest === this.statsRequestId) this.ratingStatsLoading.set(false);
     }
   }
 

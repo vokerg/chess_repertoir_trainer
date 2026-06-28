@@ -1,4 +1,5 @@
 import prisma from '../prisma';
+import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const LICHESS_GAMES_URL = 'https://lichess.org/api/games/user';
 const OVERLAP_MS = 24 * 60 * 60 * 1000;
@@ -293,6 +294,10 @@ export const LichessImportService = {
           },
         }),
       ]);
+
+      if (gamesImported > 0) {
+        await AccountRatingStatsService.recomputeForAccount(account.userId, account.id);
+      }
 
       return {
         importRunId: importRun.id,

@@ -4,6 +4,7 @@ import { ApiService } from '../../../core/api/api.service';
 import {
   AccountRatingHistoryQuery,
   AccountRatingHistoryResponse,
+  AccountRatingStatsResponse,
   DeleteAccountResponse,
   ExternalAccount,
   ImportRunSummary,
@@ -34,6 +35,10 @@ export class AccountsApiService {
     return this.api.get<AccountRatingHistoryResponse>(
       `/me/accounts/${accountId}/rating-history${search ? `?${search}` : ''}`,
     );
+  }
+
+  getRatingStats(accountId: number): Observable<AccountRatingStatsResponse> {
+    return this.api.get<AccountRatingStatsResponse>(`/me/accounts/${accountId}/rating-stats`);
   }
 
   createAccount(body: { provider: string; username: string; displayName?: string }): Observable<ExternalAccount> {

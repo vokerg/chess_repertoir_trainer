@@ -45,12 +45,21 @@ model ExternalAccount {
   lastSyncRunId       Int?
   importedGames       ImportedGame[]
   importRuns          ImportRun[]
+  ratingStats         AccountRatingStats?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
   @@unique([userId, provider, username])
   @@index([userId])
   @@index([provider, username])
+}
+
+model AccountRatingStats {
+  accountId  Int             @id
+  account    ExternalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  computedAt DateTime        @default(now())
+  gamesCount Int             @default(0)
+  data       Json
 }
 
 model ImportedGame {

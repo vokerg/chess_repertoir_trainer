@@ -53,7 +53,15 @@
       }
     </app-panel>
 
-    <app-panel title="Ratings" subtitle="Bullet, blitz, and rapid ratings from imported games.">
+    <app-panel title="Rating stats" subtitle="Stored highs and milestones from imported games.">
+      <app-account-rating-stats
+        [stats]="ratingStats()"
+        [loading]="ratingStatsLoading()"
+        [error]="ratingStatsError()"
+      />
+    </app-panel>
+
+    <app-panel title="Rating history" subtitle="Daily maximum recorded rating from imported games.">
       <app-rating-history-chart
         [history]="history()"
         [loading]="historyLoading()"

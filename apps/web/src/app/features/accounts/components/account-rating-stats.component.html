@@ -1,0 +1,68 @@
+@if (error()) {
+  <p class="rating-stats-status rating-stats-error">{{ error() }}</p>
+}
+
+<div class="rating-stats" [class.rating-stats-loading]="loading()">
+  @if (!loading() && !hasStats()) {
+    <p class="rating-stats-empty">No bullet, blitz, or rapid ratings are stored for this account yet.</p>
+  }
+
+  @if (hasStats()) {
+    <div class="rating-stat-grid">
+      @for (view of speedViews(); track view.speed.key) {
+        <article class="rating-stat-card">
+          <header>
+            <h3>{{ view.speed.label }}</h3>
+            <span>{{ view.speed.gamesCount }} game{{ view.speed.gamesCount === 1 ? '' : 's' }}</span>
+          </header>
+
+          <dl class="rating-stat-facts">
+            <div>
+              <dt>All-time high</dt>
+              <dd>
+                @if (view.speed.highest; as highest) {
+                  <strong>{{ highest.rating }}</strong>
+                  <span>{{ formatDate(highest.ratingAt) }}</span>
+                } @else {
+                  <span>None</span>
+                }
+              </dd>
+            </div>
+
+            <div>
+              <dt>Latest yearly high</dt>
+              <dd>
+                @if (view.latestYearlyHigh; as yearlyHigh) {
+                  <strong>{{ yearlyHigh.rating }}</strong>
+                  <span>{{ yearlyHigh.year }}</span>
+                } @else {
+                  <span>None</span>
+                }
+              </dd>
+            </div>
+          </dl>
+
+          <div class="milestones">
+            <h4>Milestones</h4>
+            @if (view.topMilestones.length > 0) {
+              <ol>
+                @for (milestone of view.topMilestones; track milestone.rating) {
+                  <li>
+                    <strong>{{ milestone.rating }}</strong>
+                    <span>{{ formatDate(milestone.reachedAt) }}</span>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p>No milestones reached.</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="rating-stats-overlay">Loading rating stats...</div>
+  }
+</div>

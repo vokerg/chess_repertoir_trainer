@@ -4,6 +4,7 @@ import { CurrentAppUserService } from '../auth/current-app-user.service';
 import { requireAuth } from '../auth/request-auth';
 import { ExternalAccountService } from '../services/externalAccountService';
 import { AccountRatingHistoryService, RatingSpeed } from '../services/accountRatingHistoryService';
+import { AccountRatingStatsService } from '../services/accountRatingStatsService';
 import { LichessImportService } from '../services/lichessImportService';
 import { ChessComImportService } from '../services/chessComImportService';
 import { ImportedGamesService } from '../modules/imported-games/imported-games.service';
@@ -118,6 +119,19 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     }
 
     return AccountRatingHistoryService.getForAccount(auth.userId, account, parsed.data);
+  });
+
+  app.get('/api/me/accounts/:id/rating-stats', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const id = Number((request.params as any).id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
+    if (!account) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    return AccountRatingStatsService.getForAccount(auth.userId, id);
   });
 
   app.patch('/api/me/accounts/:id', async (request, reply) => {

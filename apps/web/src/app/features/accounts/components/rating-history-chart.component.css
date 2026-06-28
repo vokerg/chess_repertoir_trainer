@@ -12,24 +12,9 @@
 .rating-chart-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   flex-wrap: wrap;
-}
-
-.rating-chart-copy {
-  min-width: min(100%, 280px);
-}
-
-.rating-chart-copy h3 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.rating-chart-copy p {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  line-height: 1.45;
 }
 
 .range-selector {

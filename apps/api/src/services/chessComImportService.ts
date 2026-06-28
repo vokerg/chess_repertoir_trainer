@@ -1,4 +1,5 @@
 import prisma from '../prisma';
+import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
 const MONTH_OVERLAP_MS = 31 * 24 * 60 * 60 * 1000;
@@ -339,6 +340,10 @@ export const ChessComImportService = {
           },
         }),
       ]);
+
+      if (gamesImported > 0) {
+        await AccountRatingStatsService.recomputeForAccount(account.userId, account.id);
+      }
 
       return {
         importRunId: importRun.id,
