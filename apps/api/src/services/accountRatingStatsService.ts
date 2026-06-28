@@ -25,13 +25,14 @@ export interface AccountRatingStatsSpeedProjection {
   key: RatingStatsSpeed;
   label: 'Bullet' | 'Blitz' | 'Rapid';
   gamesCount: number;
+  current: AccountRatingStatsPeak | null;
   highest: AccountRatingStatsPeak | null;
   yearlyHighs: AccountRatingStatsYearlyPeak[];
   milestones: AccountRatingStatsMilestone[];
 }
 
 export interface AccountRatingStatsProjection {
-  version: 1;
+  version: 2;
   ratingSource: 'gameRecordedRating';
   speeds: AccountRatingStatsSpeedProjection[];
 }
@@ -105,6 +106,7 @@ function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; dat
     RatingStatsSpeed,
     {
       gamesCount: number;
+      current: AccountRatingStatsPeak | null;
       highest: AccountRatingStatsPeak | null;
       yearlyHighs: Map<number, AccountRatingStatsYearlyPeak>;
       milestones: Map<number, AccountRatingStatsMilestone>;
@@ -114,6 +116,7 @@ function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; dat
   for (const speed of SPEEDS) {
     bySpeed.set(speed, {
       gamesCount: 0,
+      current: null,
       highest: null,
       yearlyHighs: new Map(),
       milestones: new Map(),
@@ -132,6 +135,8 @@ function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; dat
     speedStats.gamesCount += 1;
 
     const peak = toPeak({ id: game.id, endedAt: game.endedAt }, rating);
+    speedStats.current = peak;
+
     if (!speedStats.highest || isEarlierPeak(peak, speedStats.highest)) {
       speedStats.highest = peak;
     }
@@ -161,6 +166,7 @@ function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; dat
       key: speed,
       label: SPEED_LABELS[speed],
       gamesCount: stats.gamesCount,
+      current: stats.current,
       highest: stats.highest,
       yearlyHighs: Array.from(stats.yearlyHighs.values()).sort((left, right) => left.year - right.year),
       milestones: Array.from(stats.milestones.values()).sort((left, right) => left.rating - right.rating),
@@ -170,7 +176,7 @@ function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; dat
   return {
     gamesCount: speeds.reduce((total, speed) => total + speed.gamesCount, 0),
     data: {
-      version: 1,
+      version: 2,
       ratingSource: 'gameRecordedRating',
       speeds,
     },
@@ -192,6 +198,10 @@ function toResponse(
     gamesCount: stats.gamesCount,
     data: stats.data as unknown as AccountRatingStatsProjection,
   };
+}
+
+function isCurrentProjection(data: Prisma.JsonValue): boolean {
+  return Boolean(data && typeof data === 'object' && !Array.isArray(data) && (data as { version?: unknown }).version === 2);
 }
 
 export const AccountRatingStatsService = {
@@ -246,7 +256,7 @@ export const AccountRatingStatsService = {
       where: { accountId },
     });
 
-    if (stats) return toResponse(account, stats);
+    if (stats && isCurrentProjection(stats.data)) return toResponse(account, stats);
 
     return AccountRatingStatsService.recomputeForAccount(userId, accountId);
   },

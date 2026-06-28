@@ -18,6 +18,18 @@
 
           <dl class="rating-stat-facts">
             <div>
+              <dt>Current</dt>
+              <dd>
+                @if (view.speed.current; as current) {
+                  <strong>{{ current.rating }}</strong>
+                  <span>{{ formatDate(current.ratingAt) }}</span>
+                } @else {
+                  <span>None</span>
+                }
+              </dd>
+            </div>
+
+            <div>
               <dt>All-time high</dt>
               <dd>
                 @if (view.speed.highest; as highest) {
@@ -28,25 +40,13 @@
                 }
               </dd>
             </div>
-
-            <div>
-              <dt>Latest yearly high</dt>
-              <dd>
-                @if (view.latestYearlyHigh; as yearlyHigh) {
-                  <strong>{{ yearlyHigh.rating }}</strong>
-                  <span>{{ yearlyHigh.year }}</span>
-                } @else {
-                  <span>None</span>
-                }
-              </dd>
-            </div>
           </dl>
 
           <div class="milestones">
             <h4>Milestones</h4>
-            @if (view.topMilestones.length > 0) {
+            @if (view.speed.milestones.length > 0) {
               <ol>
-                @for (milestone of view.topMilestones; track milestone.rating) {
+                @for (milestone of view.speed.milestones; track milestone.rating) {
                   <li>
                     <strong>{{ milestone.rating }}</strong>
                     <span>{{ formatDate(milestone.reachedAt) }}</span>

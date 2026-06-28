@@ -1,0 +1,69 @@
+:host {
+  display: block;
+}
+
+.yearly-highs-status {
+  margin: 0 0 0.85rem;
+  font-weight: 800;
+}
+
+.yearly-highs-error {
+  color: var(--danger);
+}
+
+.yearly-highs {
+  position: relative;
+  min-height: 128px;
+}
+
+.yearly-highs-loading {
+  opacity: 0.72;
+}
+
+.yearly-highs-empty,
+.yearly-highs-overlay {
+  min-height: 128px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
+.yearly-highs-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 252, 247, 0.72);
+}
+
+.yearly-highs-table-wrap {
+  overflow-x: auto;
+}
+
+.yearly-highs-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+}
+
+.yearly-highs-table th,
+.yearly-highs-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-weight: 850;
+}
+
+.yearly-highs-table th:first-child,
+.yearly-highs-table td:first-child {
+  text-align: left;
+}
+
+.yearly-highs-table thead th {
+  color: var(--muted-strong);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}

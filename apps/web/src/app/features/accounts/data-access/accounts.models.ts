@@ -37,6 +37,7 @@ export interface AccountForm {
 }
 
 export type RatingSpeed = 'bullet' | 'blitz' | 'rapid';
+export type RatingSpeedFilter = 'all' | RatingSpeed;
 export type RatingRangeKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
 
 export interface RatingHistoryPoint {
@@ -96,13 +97,14 @@ export interface AccountRatingStatsSpeedProjection {
   key: RatingSpeed;
   label: 'Bullet' | 'Blitz' | 'Rapid';
   gamesCount: number;
+  current: AccountRatingStatsPeak | null;
   highest: AccountRatingStatsPeak | null;
   yearlyHighs: AccountRatingStatsYearlyPeak[];
   milestones: AccountRatingStatsMilestone[];
 }
 
 export interface AccountRatingStatsProjection {
-  version: 1;
+  version: 2;
   ratingSource: 'gameRecordedRating';
   speeds: AccountRatingStatsSpeedProjection[];
 }
@@ -117,4 +119,41 @@ export interface AccountRatingStatsResponse {
   computedAt: string;
   gamesCount: number;
   data: AccountRatingStatsProjection;
+}
+
+export interface AccountPerformanceGameHighlight {
+  gameId: number;
+  endedAt: string;
+  speed: RatingSpeed;
+  userRating: number | null;
+  opponentRating: number | null;
+  opponentUsername: string | null;
+  providerUrl: string | null;
+}
+
+export interface AccountPerformanceStatsResponse {
+  account: {
+    id: number;
+    provider: AccountProvider;
+    username: string;
+    displayName?: string | null;
+  };
+  range: {
+    from?: string;
+    to?: string;
+  };
+  speeds: RatingSpeed[];
+  gamesCount: number;
+  wdl: {
+    wins: number;
+    draws: number;
+    losses: number;
+  };
+  averageOpponentRating: {
+    wins: number | null;
+    draws: number | null;
+    losses: number | null;
+  };
+  bestVictory: AccountPerformanceGameHighlight | null;
+  mostEmbarrassingDefeat: AccountPerformanceGameHighlight | null;
 }

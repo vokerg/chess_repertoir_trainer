@@ -46,6 +46,7 @@
 
 .rating-stat-card {
   display: grid;
+  grid-template-rows: auto auto 1fr;
   gap: 0.85rem;
   padding: 0.95rem;
   border: 1px solid var(--border);
@@ -58,6 +59,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
+  min-height: 1.5rem;
 }
 
 .rating-stat-card h3,
@@ -83,6 +85,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
   margin: 0;
+  min-height: 3.4rem;
 }
 
 .rating-stat-facts div {
@@ -109,6 +112,7 @@
 
 .milestones {
   display: grid;
+  align-content: start;
   gap: 0.45rem;
 }
 

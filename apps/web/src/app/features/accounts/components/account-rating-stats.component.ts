@@ -1,15 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import {
-  AccountRatingStatsMilestone,
-  AccountRatingStatsResponse,
-  AccountRatingStatsSpeedProjection,
-  AccountRatingStatsYearlyPeak,
-} from '../data-access/accounts.models';
+import { AccountRatingStatsResponse, AccountRatingStatsSpeedProjection } from '../data-access/accounts.models';
 
 interface RatingStatsSpeedView {
   speed: AccountRatingStatsSpeedProjection;
-  latestYearlyHigh: AccountRatingStatsYearlyPeak | null;
-  topMilestones: AccountRatingStatsMilestone[];
 }
 
 @Component({
@@ -27,8 +20,6 @@ export class AccountRatingStatsComponent {
   protected readonly speedViews = computed<RatingStatsSpeedView[]>(() =>
     (this.stats()?.data.speeds ?? []).map((speed) => ({
       speed,
-      latestYearlyHigh: speed.yearlyHighs.at(-1) ?? null,
-      topMilestones: speed.milestones.slice(-4).reverse(),
     })),
   );
 

@@ -61,13 +61,31 @@
       />
     </app-panel>
 
+    <app-panel title="Yearly highs" subtitle="Stored annual peak rating by speed.">
+      <app-account-yearly-highs
+        [stats]="ratingStats()"
+        [loading]="ratingStatsLoading()"
+        [error]="ratingStatsError()"
+      />
+    </app-panel>
+
+    <app-panel title="Period performance" subtitle="Results and opponent ratings for the selected graph period.">
+      <app-account-performance-stats
+        [stats]="performanceStats()"
+        [loading]="performanceStatsLoading()"
+        [error]="performanceStatsError()"
+      />
+    </app-panel>
+
     <app-panel title="Rating history" subtitle="Daily maximum recorded rating from imported games.">
       <app-rating-history-chart
         [history]="history()"
         [loading]="historyLoading()"
         [error]="historyError()"
         [selectedRange]="selectedRange()"
+        [selectedSpeed]="selectedSpeed()"
         (selectedRangeChange)="onSelectedRangeChange($event)"
+        (selectedSpeedChange)="onSelectedSpeedChange($event)"
       />
     </app-panel>
   }

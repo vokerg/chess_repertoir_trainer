@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import {
+  AccountPerformanceStatsResponse,
   AccountRatingHistoryQuery,
   AccountRatingHistoryResponse,
   AccountRatingStatsResponse,
@@ -39,6 +40,21 @@ export class AccountsApiService {
 
   getRatingStats(accountId: number): Observable<AccountRatingStatsResponse> {
     return this.api.get<AccountRatingStatsResponse>(`/me/accounts/${accountId}/rating-stats`);
+  }
+
+  getPerformanceStats(
+    accountId: number,
+    query: AccountRatingHistoryQuery = {},
+  ): Observable<AccountPerformanceStatsResponse> {
+    const params = new URLSearchParams();
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    if (query.speeds?.length) params.set('speeds', query.speeds.join(','));
+
+    const search = params.toString();
+    return this.api.get<AccountPerformanceStatsResponse>(
+      `/me/accounts/${accountId}/performance-stats${search ? `?${search}` : ''}`,
+    );
   }
 
   createAccount(body: { provider: string; username: string; displayName?: string }): Observable<ExternalAccount> {

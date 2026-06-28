@@ -1,0 +1,57 @@
+@if (error()) {
+  <p class="performance-status performance-error">{{ error() }}</p>
+}
+
+<div class="performance" [class.performance-loading]="loading()">
+  @if (!loading() && !stats()) {
+    <p class="performance-empty">No performance stats are available for this range.</p>
+  }
+
+  @if (stats(); as stats) {
+    <div class="performance-grid">
+      <section class="performance-card performance-card-score">
+        <h3>WDL</h3>
+        <strong>{{ stats.wdl.wins }} / {{ stats.wdl.draws }} / {{ stats.wdl.losses }}</strong>
+        <span>{{ scorePercent() ?? '—' }}% score · {{ stats.gamesCount }} games</span>
+      </section>
+
+      <section class="performance-card">
+        <h3>Avg opponent</h3>
+        <dl class="avg-list">
+          <div>
+            <dt>Wins</dt>
+            <dd>{{ stats.averageOpponentRating.wins ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Draws</dt>
+            <dd>{{ stats.averageOpponentRating.draws ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Losses</dt>
+            <dd>{{ stats.averageOpponentRating.losses ?? '—' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="performance-card">
+        <h3>Best victory</h3>
+        <strong>{{ highlightLabel(stats.bestVictory) }}</strong>
+        @if (stats.bestVictory; as game) {
+          <span>{{ game.speed }} · {{ formatDate(game.endedAt) }}</span>
+        }
+      </section>
+
+      <section class="performance-card">
+        <h3>Most embarrassing defeat</h3>
+        <strong>{{ highlightLabel(stats.mostEmbarrassingDefeat) }}</strong>
+        @if (stats.mostEmbarrassingDefeat; as game) {
+          <span>{{ game.speed }} · {{ formatDate(game.endedAt) }}</span>
+        }
+      </section>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="performance-overlay">Loading performance stats...</div>
+  }
+</div>

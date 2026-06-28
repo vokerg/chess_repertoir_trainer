@@ -4,6 +4,7 @@ import { CurrentAppUserService } from '../auth/current-app-user.service';
 import { requireAuth } from '../auth/request-auth';
 import { ExternalAccountService } from '../services/externalAccountService';
 import { AccountRatingHistoryService, RatingSpeed } from '../services/accountRatingHistoryService';
+import { AccountPerformanceStatsService } from '../services/accountPerformanceStatsService';
 import { AccountRatingStatsService } from '../services/accountRatingStatsService';
 import { LichessImportService } from '../services/lichessImportService';
 import { ChessComImportService } from '../services/chessComImportService';
@@ -60,6 +61,8 @@ const ratingHistoryQuerySchema = z.object({
       return Array.from(new Set(parsedSpeeds));
     }),
 });
+
+const accountPerformanceStatsQuerySchema = ratingHistoryQuerySchema;
 
 export default async function externalAccountsRoutes(app: FastifyInstance) {
   app.get('/api/me', async (request, reply) => {
@@ -132,6 +135,25 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     }
 
     return AccountRatingStatsService.getForAccount(auth.userId, id);
+  });
+
+  app.get('/api/me/accounts/:id/performance-stats', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const id = Number((request.params as any).id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
+    if (!account) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    const parsed = accountPerformanceStatsQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+
+    return AccountPerformanceStatsService.getForAccount(auth.userId, id, parsed.data);
   });
 
   app.patch('/api/me/accounts/:id', async (request, reply) => {

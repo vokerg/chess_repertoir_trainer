@@ -1,6 +1,11 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { AccountRatingHistoryResponse, RatingRangeKey, RatingSpeed } from '../data-access/accounts.models';
+import {
+  AccountRatingHistoryResponse,
+  RatingRangeKey,
+  RatingSpeed,
+  RatingSpeedFilter,
+} from '../data-access/accounts.models';
 import { RATING_RANGE_OPTIONS } from '../helpers/rating-history-ranges';
 import {
   TooltipData,
@@ -31,9 +36,17 @@ export class RatingHistoryChartComponent {
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly selectedRange = input<RatingRangeKey>('1Y');
+  readonly selectedSpeed = input<RatingSpeedFilter>('all');
   readonly selectedRangeChange = output<RatingRangeKey>();
+  readonly selectedSpeedChange = output<RatingSpeedFilter>();
 
   protected readonly rangeOptions = RATING_RANGE_OPTIONS;
+  protected readonly speedOptions: readonly { key: RatingSpeedFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'bullet', label: 'Bullet' },
+    { key: 'blitz', label: 'Blitz' },
+    { key: 'rapid', label: 'Rapid' },
+  ];
   protected readonly width = 920;
   protected readonly height = 380;
   protected readonly margin = { top: 18, right: 22, bottom: 42, left: 54 };
@@ -86,6 +99,13 @@ export class RatingHistoryChartComponent {
     if (range !== this.selectedRange()) {
       this.hoveredDate.set(null);
       this.selectedRangeChange.emit(range);
+    }
+  }
+
+  protected selectSpeed(speed: RatingSpeedFilter): void {
+    if (speed !== this.selectedSpeed()) {
+      this.hoveredDate.set(null);
+      this.selectedSpeedChange.emit(speed);
     }
   }
 

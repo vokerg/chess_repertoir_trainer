@@ -1,5 +1,18 @@
 <section class="rating-chart">
   <header class="rating-chart-header">
+    <div class="speed-selector" aria-label="Rating speed">
+      @for (speed of speedOptions; track speed.key) {
+        <button
+          type="button"
+          class="speed-button"
+          [class.speed-button-active]="selectedSpeed() === speed.key"
+          (click)="selectSpeed(speed.key)"
+        >
+          {{ speed.label }}
+        </button>
+      }
+    </div>
+
     <div class="range-selector" aria-label="Rating history range">
       @for (range of rangeOptions; track range) {
         <button

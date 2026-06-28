@@ -1,0 +1,38 @@
+@if (error()) {
+  <p class="yearly-highs-status yearly-highs-error">{{ error() }}</p>
+}
+
+<div class="yearly-highs" [class.yearly-highs-loading]="loading()">
+  @if (!loading() && rows().length === 0) {
+    <p class="yearly-highs-empty">No yearly highs are stored for this account yet.</p>
+  }
+
+  @if (rows().length > 0) {
+    <div class="yearly-highs-table-wrap">
+      <table class="yearly-highs-table">
+        <thead>
+          <tr>
+            <th scope="col">Year</th>
+            <th scope="col">Bullet</th>
+            <th scope="col">Blitz</th>
+            <th scope="col">Rapid</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.year) {
+            <tr>
+              <th scope="row">{{ row.year }}</th>
+              @for (speed of speeds; track speed) {
+                <td>{{ row.values[speed] ?? '—' }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="yearly-highs-overlay">Loading yearly highs...</div>
+  }
+</div>
