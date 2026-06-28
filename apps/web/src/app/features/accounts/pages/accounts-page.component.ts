@@ -1,6 +1,7 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
@@ -13,7 +14,7 @@ import { AccountsStore } from '../state/accounts.store';
 @Component({
   selector: 'app-accounts-page',
   standalone: true,
-  imports: [NgClass, FormsModule, PageHeaderComponent, PanelComponent],
+  imports: [NgClass, FormsModule, RouterLink, PageHeaderComponent, PanelComponent],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',
   styleUrl: './accounts-page.component.css',

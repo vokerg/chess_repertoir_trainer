@@ -1,0 +1,96 @@
+<section class="rating-chart">
+  <header class="rating-chart-header">
+    <div class="rating-chart-copy">
+      <h3>Rating history</h3>
+      <p>Daily maximum recorded rating from imported games.</p>
+    </div>
+
+    <div class="range-selector" aria-label="Rating history range">
+      @for (range of rangeOptions; track range) {
+        <button
+          type="button"
+          class="range-button"
+          [class.range-button-active]="selectedRange() === range"
+          (click)="selectRange(range)"
+        >
+          {{ range }}
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="chart-status chart-status-error">{{ error() }}</p>
+  }
+
+  <div class="chart-frame" [class.chart-frame-loading]="loading()">
+    @if (!loading() && !hasPoints()) {
+      <div class="chart-empty">No bullet, blitz, or rapid rating history is available for this range.</div>
+    }
+
+    @if (hasPoints()) {
+      <div class="legend" aria-label="Rating series">
+        @for (series of history()?.series ?? []; track series.key) {
+          <span class="legend-item" [ngClass]="speedClass(series.key)">
+            <span class="legend-swatch"></span>
+            {{ series.label }}
+          </span>
+        }
+      </div>
+
+      <div class="chart-plot">
+        <svg
+          class="rating-svg"
+          [attr.viewBox]="viewBox"
+          role="img"
+          aria-label="Rating history line chart"
+          (pointermove)="onPointerMove($event)"
+          (pointerleave)="clearHover()"
+        >
+          <g class="grid">
+            @for (tick of yTicks(); track tick) {
+              @if (yForTick(tick); as y) {
+                <line [attr.x1]="plotLeft" [attr.x2]="plotRight" [attr.y1]="y" [attr.y2]="y" />
+                <text [attr.x]="plotLeft - 10" [attr.y]="y + 4">{{ tick }}</text>
+              }
+            }
+          </g>
+
+          <line class="axis axis-x" [attr.x1]="plotLeft" [attr.x2]="plotRight" [attr.y1]="plotBottom" [attr.y2]="plotBottom" />
+          <line class="axis axis-y" [attr.x1]="plotLeft" [attr.x2]="plotLeft" [attr.y1]="plotTop" [attr.y2]="plotBottom" />
+
+          @for (series of seriesPaths(); track series.key) {
+            <path class="rating-line" [ngClass]="speedClass(series.key)" [attr.d]="series.path" />
+          }
+
+          @if (crosshairX(); as x) {
+            <line class="crosshair" [attr.x1]="x" [attr.x2]="x" [attr.y1]="plotTop" [attr.y2]="plotBottom" />
+          }
+
+          @if (dateLabels(); as labels) {
+            <text class="date-label" [attr.x]="plotLeft" [attr.y]="height - 10">{{ labels.start }}</text>
+            <text class="date-label date-label-end" [attr.x]="plotRight" [attr.y]="height - 10">{{ labels.end }}</text>
+          }
+        </svg>
+
+        @if (tooltip(); as tip) {
+          <div class="tooltip" [style.left.px]="tooltipLeft()">
+            <strong>{{ formatDate(tip.date) }}</strong>
+            @for (row of tip.rows; track row.key) {
+              <div class="tooltip-row" [ngClass]="speedClass(row.key)">
+                <span class="tooltip-dot"></span>
+                <span>{{ row.label }}</span>
+                <strong>{{ row.rating }}</strong>
+                <small>{{ row.gameCount }} game{{ row.gameCount === 1 ? '' : 's' }}</small>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="chart-loading">Loading rating history...</div>
+    }
+  </div>
+</section>

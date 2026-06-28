@@ -81,7 +81,9 @@
                 </span>
               </div>
 
-              <h4 class="account-title">{{ account.displayName || account.username }}</h4>
+              <h4 class="account-title">
+                <a [routerLink]="['/accounts', account.id]">{{ account.displayName || account.username }}</a>
+              </h4>
               <p class="accounts-muted account-username">&#64;{{ account.username }}</p>
 
               <div class="account-meta-grid">

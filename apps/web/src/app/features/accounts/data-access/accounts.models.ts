@@ -35,3 +35,42 @@ export interface AccountForm {
   username: string;
   displayName: string;
 }
+
+export type RatingSpeed = 'bullet' | 'blitz' | 'rapid';
+export type RatingRangeKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
+
+export interface RatingHistoryPoint {
+  date: string;
+  rating: number;
+  gameCount: number;
+  ratingAt: string;
+}
+
+export interface RatingHistorySeries {
+  key: RatingSpeed;
+  label: 'Bullet' | 'Blitz' | 'Rapid';
+  points: RatingHistoryPoint[];
+}
+
+export interface AccountRatingHistoryResponse {
+  account: {
+    id: number;
+    provider: AccountProvider;
+    username: string;
+    displayName?: string | null;
+  };
+  bucket: 'day';
+  aggregation: 'max';
+  ratingSource: 'gameRecordedRating';
+  series: RatingHistorySeries[];
+  yDomain: {
+    min: number;
+    max: number;
+  } | null;
+}
+
+export interface AccountRatingHistoryQuery {
+  from?: string;
+  to?: string;
+  speeds?: RatingSpeed[];
+}

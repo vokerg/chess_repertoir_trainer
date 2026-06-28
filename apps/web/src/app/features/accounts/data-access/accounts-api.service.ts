@@ -1,7 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
-import { DeleteAccountResponse, ExternalAccount, ImportRunSummary } from './accounts.models';
+import {
+  AccountRatingHistoryQuery,
+  AccountRatingHistoryResponse,
+  DeleteAccountResponse,
+  ExternalAccount,
+  ImportRunSummary,
+} from './accounts.models';
 
 @Injectable()
 export class AccountsApiService {
@@ -9,6 +15,25 @@ export class AccountsApiService {
 
   getAccounts(): Observable<ExternalAccount[]> {
     return this.api.get<ExternalAccount[]>('/me/accounts');
+  }
+
+  getAccount(accountId: number): Observable<ExternalAccount> {
+    return this.api.get<ExternalAccount>(`/me/accounts/${accountId}`);
+  }
+
+  getRatingHistory(
+    accountId: number,
+    query: AccountRatingHistoryQuery = {},
+  ): Observable<AccountRatingHistoryResponse> {
+    const params = new URLSearchParams();
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    if (query.speeds?.length) params.set('speeds', query.speeds.join(','));
+
+    const search = params.toString();
+    return this.api.get<AccountRatingHistoryResponse>(
+      `/me/accounts/${accountId}/rating-history${search ? `?${search}` : ''}`,
+    );
   }
 
   createAccount(body: { provider: string; username: string; displayName?: string }): Observable<ExternalAccount> {

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CurrentAppUserService } from '../auth/current-app-user.service';
 import { requireAuth } from '../auth/request-auth';
 import { ExternalAccountService } from '../services/externalAccountService';
+import { AccountRatingHistoryService, RatingSpeed } from '../services/accountRatingHistoryService';
 import { LichessImportService } from '../services/lichessImportService';
 import { ChessComImportService } from '../services/chessComImportService';
 import { ImportedGamesService } from '../modules/imported-games/imported-games.service';
@@ -21,6 +22,42 @@ const updateAccountSchema = z.object({
 
 const listAccountGamesQuerySchema = importedGameSearchQuerySchema.omit({ accountIds: true }).extend({
   take: z.coerce.number().int().min(1).max(200).optional(),
+});
+
+const ratingSpeedSchema = z.enum(['bullet', 'blitz', 'rapid']);
+const defaultRatingSpeeds: RatingSpeed[] = ['bullet', 'blitz', 'rapid'];
+
+const ratingHistoryQuerySchema = z.object({
+  from: z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'Invalid from date').optional(),
+  to: z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'Invalid to date').optional(),
+  speeds: z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      if (!value) return defaultRatingSpeeds;
+
+      const speeds = value
+        .split(',')
+        .map((speed) => speed.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (speeds.length === 0) return defaultRatingSpeeds;
+
+      const parsedSpeeds: RatingSpeed[] = [];
+      for (const speed of speeds) {
+        const parsed = ratingSpeedSchema.safeParse(speed);
+        if (!parsed.success) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Unsupported speed: ${speed}`,
+          });
+          return z.NEVER;
+        }
+        parsedSpeeds.push(parsed.data);
+      }
+
+      return Array.from(new Set(parsedSpeeds));
+    }),
 });
 
 export default async function externalAccountsRoutes(app: FastifyInstance) {
@@ -62,6 +99,25 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
       return { message: 'External account not found' };
     }
     return account;
+  });
+
+  app.get('/api/me/accounts/:id/rating-history', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const id = Number((request.params as any).id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
+    if (!account) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    const parsed = ratingHistoryQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+
+    return AccountRatingHistoryService.getForAccount(auth.userId, account, parsed.data);
   });
 
   app.patch('/api/me/accounts/:id', async (request, reply) => {
