@@ -36,6 +36,8 @@ Several modules also still call services under `apps/api/src/services`. This is 
 
 The imported-games module has a feature-local query service that shares filtering and pagination semantics across backend consumers while keeping REST response mapping in `ImportedGamesService`.
 
+Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position engine results are stored in the analysis module's position-analysis cache with bulk writes, while per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
+
 MCP is a backend transport under `apps/api`; its read-only tools call feature/application services directly rather than calling REST endpoints.
 
 For new backend work, extend the owning directory under `apps/api/src/modules` when one exists. Keep routes thin and place feature orchestration and Prisma access next to the owning module where practical. Make narrow changes to legacy global code when that is safer than an unrelated migration; do not copy the global layout into new features.

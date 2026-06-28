@@ -51,6 +51,18 @@ export const analysisOpenApiSchemas = {
     },
     required: ['fen'],
   },
+  BulkPositionAnalysisStoreRequest: {
+    type: 'object',
+    properties: {
+      positions: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/StorePositionAnalysisRequest' },
+        minItems: 1,
+        maxItems: 500,
+      },
+    },
+    required: ['positions'],
+  },
   PositionAnalysisStoreResponse: {
     type: 'object',
     properties: {
@@ -58,6 +70,16 @@ export const analysisOpenApiSchemas = {
       position: { $ref: '#/components/schemas/PositionAnalysis' },
     },
     required: ['positionAnalysis'],
+  },
+  BulkPositionAnalysisStoreResponse: {
+    type: 'object',
+    properties: {
+      positionAnalyses: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/PositionAnalysis' },
+      },
+    },
+    required: ['positionAnalyses'],
   },
   PositionAnalysis: {
     type: 'object',
@@ -257,6 +279,31 @@ export const storePositionAnalysisOpenApiOperation = {
       content: {
         'application/json': {
           schema: { $ref: '#/components/schemas/PositionAnalysisStoreResponse' },
+        },
+      },
+    },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
+};
+
+export const bulkStorePositionAnalysisOpenApiOperation = {
+  tags: ['Analysis'],
+  summary: 'Store multiple client-computed position analyses',
+  description: 'Accepts completed engine lines computed by a client or local engine and upserts them into the shared PositionAnalysis cache in bulk.',
+  requestBody: {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { $ref: '#/components/schemas/BulkPositionAnalysisStoreRequest' },
+      },
+    },
+  },
+  responses: {
+    '200': {
+      description: 'Existing or newly upserted cached position analyses',
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/BulkPositionAnalysisStoreResponse' },
         },
       },
     },

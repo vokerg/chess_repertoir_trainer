@@ -6,7 +6,7 @@ import {
   positionKeyForNormalizedFen,
   positionKeyHex,
 } from '../positions/position-key';
-import { PlyAnalysisUpdate, StorePositionAnalysisInput } from './analysis.types';
+import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredPositionAnalysis } from './analysis.types';
 
 const positionAnalysisInclude = {
   position: {
@@ -63,6 +63,33 @@ function dedupePlyAnalysisUpdates(updates: PlyAnalysisUpdate[]) {
     updatesByPlyNumber.set(update.plyNumber, update);
   }
   return Array.from(updatesByPlyNumber.values()).sort((left, right) => left.plyNumber - right.plyNumber);
+}
+
+function normalizedPositionAnalysisInput(input: StorePositionAnalysisInput) {
+  const normalizedFen = normalizeFenForPosition(input.fen);
+  const positionKey = positionKeyForNormalizedFen(normalizedFen);
+  const lines = (input.lines ?? []).slice(0, 3);
+
+  return {
+    input,
+    normalizedFen,
+    positionKey,
+    bestMoveUci: input.bestMoveUci ?? lines[0]?.moveUci ?? lines[0]?.pvUci?.[0] ?? null,
+    bestScoreCpWhite: input.bestScoreCpWhite ?? lines[0]?.scoreCpWhite ?? null,
+    bestMateWhite: input.bestMateWhite ?? lines[0]?.mateWhite ?? null,
+    lines,
+  };
+}
+
+function dedupePositionAnalysisInputs(inputs: StorePositionAnalysisInput[]) {
+  const byPositionKey = new Map<string, ReturnType<typeof normalizedPositionAnalysisInput>>();
+
+  for (const input of inputs) {
+    const normalized = normalizedPositionAnalysisInput(input);
+    byPositionKey.set(positionKeyHex(normalized.positionKey), normalized);
+  }
+
+  return Array.from(byPositionKey.values());
 }
 
 export async function findOrCreatePositionByNormalizedFen(normalizedFen: string) {
@@ -179,6 +206,86 @@ export async function upsertPositionAnalysis(positionId: number, data: StorePosi
   });
 
   return compactPositionAnalysis(row, false);
+}
+
+export async function upsertPositionAnalysesBulk(inputs: StorePositionAnalysisInput[]): Promise<StoredPositionAnalysis[]> {
+  const deduped = dedupePositionAnalysisInputs(inputs);
+  if (!deduped.length) return [];
+
+  return prisma.$transaction(async (tx) => {
+    await tx.position.createMany({
+      data: deduped.map(({ normalizedFen, positionKey }) => ({
+        normalizedFen,
+        positionKey: new Uint8Array(positionKey),
+      })),
+      skipDuplicates: true,
+    });
+
+    const positions = await tx.position.findMany({
+      where: {
+        positionKey: {
+          in: deduped.map(({ positionKey }) => new Uint8Array(positionKey)),
+        },
+      },
+      select: {
+        id: true,
+        normalizedFen: true,
+        positionKey: true,
+      },
+    });
+
+    const positionsByKey = new Map(positions.map((position) => [positionKeyHex(position.positionKey), position]));
+    const upsertRows = deduped.map((item) => {
+      const position = positionsByKey.get(positionKeyHex(item.positionKey));
+      if (!position) throw new Error('Could not create or find position');
+
+      assertPositionKeyMatchesFen({
+        expectedNormalizedFen: item.normalizedFen,
+        actualNormalizedFen: position.normalizedFen,
+        positionKey: item.positionKey,
+      });
+
+      return {
+        positionId: position.id,
+        bestMoveUci: item.bestMoveUci,
+        bestScoreCpWhite: item.bestScoreCpWhite,
+        bestMateWhite: item.bestMateWhite,
+        lines: item.lines,
+      };
+    });
+
+    await tx.$executeRaw(Prisma.sql`
+      INSERT INTO "PositionAnalysis" (
+        "positionId",
+        "bestMoveUci",
+        "bestScoreCpWhite",
+        "bestMateWhite",
+        "lines"
+      )
+      VALUES ${Prisma.join(upsertRows.map((row) => Prisma.sql`(
+        ${row.positionId},
+        ${row.bestMoveUci},
+        ${row.bestScoreCpWhite},
+        ${row.bestMateWhite},
+        ${JSON.stringify(row.lines)}::jsonb
+      )`))}
+      ON CONFLICT ("positionId") DO UPDATE
+      SET
+        "bestMoveUci" = EXCLUDED."bestMoveUci",
+        "bestScoreCpWhite" = EXCLUDED."bestScoreCpWhite",
+        "bestMateWhite" = EXCLUDED."bestMateWhite",
+        "lines" = EXCLUDED."lines"
+    `);
+
+    const rows = await tx.positionAnalysis.findMany({
+      where: {
+        positionId: { in: upsertRows.map((row) => row.positionId) },
+      },
+      include: positionAnalysisInclude,
+    });
+
+    return rows.map((row) => compactPositionAnalysis(row, false));
+  });
 }
 
 export async function getImportedGameForAnalysis(userId: number, importedGameId: number) {

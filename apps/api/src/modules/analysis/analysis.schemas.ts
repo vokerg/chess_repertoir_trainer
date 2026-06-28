@@ -27,6 +27,10 @@ export const storePositionAnalysisSchema = z.object({
   lines: z.array(engineLineSchema).max(3).optional(),
 });
 
+export const bulkStorePositionAnalysisSchema = z.object({
+  positions: z.array(storePositionAnalysisSchema).min(1).max(500),
+});
+
 const nullableSmallIntSchema = z.union([smallIntSchema, z.null()]);
 const nullableClassificationCodeSchema = z.union([z.coerce.number().int().min(1).max(9), z.null()]);
 

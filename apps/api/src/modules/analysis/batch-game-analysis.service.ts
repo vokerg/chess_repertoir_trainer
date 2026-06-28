@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { classifyPly, moveClassificationLabel } from 'chess-domain';
+import { classifyPly, moveClassificationLabel, normalizeFenForPosition } from 'chess-domain';
 import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { ImportedGamePlyIndexService } from '../imported-games/ply-index.service';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
@@ -15,7 +15,7 @@ import {
 } from './analysis.repository.prisma';
 import { getLocalBatchStockfishAnalysisConfig, isLocalBatchStockfishAnalysisEnabled } from './batch-analysis.config';
 import { LocalStockfishEngineService } from './local-stockfish-engine.service';
-import { StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
+import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
 import { PositionAnalysisService } from './position-analysis.service';
 
 interface BatchQueueItem {
@@ -31,6 +31,7 @@ interface EngineAvailability {
 
 const queue: BatchQueueItem[] = [];
 let queueRunning = false;
+const BATCH_ANALYSIS_WRITE_CHUNK_SIZE = 25;
 
 function isPlyAnalysed(ply: { scoreLossCp: number | null; classificationCode: number | null }): boolean {
   return ply.scoreLossCp !== null && ply.scoreLossCp !== undefined && ply.classificationCode !== null && ply.classificationCode !== undefined;
@@ -99,6 +100,21 @@ function compactPositionAnalysis(row: any): StoredPositionAnalysis | null {
   };
 }
 
+function transientPositionAnalysis(input: StorePositionAnalysisInput): StoredPositionAnalysis {
+  const lines = (input.lines ?? []).slice(0, 3);
+  return {
+    id: 0,
+    positionId: 0,
+    fen: input.fen,
+    normalizedFen: normalizeFenForPosition(input.fen),
+    bestMoveUci: input.bestMoveUci ?? lines[0]?.moveUci ?? lines[0]?.pvUci?.[0],
+    bestScoreCpWhite: input.bestScoreCpWhite ?? lines[0]?.scoreCpWhite,
+    bestMateWhite: input.bestMateWhite ?? lines[0]?.mateWhite,
+    lines,
+    fromCache: false,
+  };
+}
+
 function summaryKey(classificationCode: number | null | undefined): string | null {
   if (!classificationCode) return null;
   const label = moveClassificationLabel(classificationCode);
@@ -155,19 +171,64 @@ function buildAccuracySummary(plies: any[], userColor?: string | null) {
   );
 }
 
+class BatchAnalysisWriteBuffer {
+  readonly pendingPositionInputs = new Map<string, StorePositionAnalysisInput>();
+  readonly transientPositionCache = new Map<string, StoredPositionAnalysis>();
+  readonly pendingPlyUpdates: PlyAnalysisUpdate[] = [];
+
+  enqueuePosition(input: StorePositionAnalysisInput): StoredPositionAnalysis {
+    const normalizedFen = normalizeFenForPosition(input.fen);
+    const transient = transientPositionAnalysis(input);
+    this.pendingPositionInputs.set(normalizedFen, input);
+    this.transientPositionCache.set(normalizedFen, transient);
+    return transient;
+  }
+
+  transientPosition(fen: string): StoredPositionAnalysis | null {
+    return this.transientPositionCache.get(normalizeFenForPosition(fen)) ?? null;
+  }
+
+  async flushPendingPositionAnalyses(): Promise<void> {
+    if (!this.pendingPositionInputs.size) return;
+
+    const inputs = Array.from(this.pendingPositionInputs.entries()).slice(0, BATCH_ANALYSIS_WRITE_CHUNK_SIZE);
+    for (const [normalizedFen] of inputs) {
+      this.pendingPositionInputs.delete(normalizedFen);
+    }
+
+    const stored = await PositionAnalysisService.storePositionSearches(inputs.map(([, input]) => input));
+    for (const position of stored) {
+      if (position.normalizedFen) this.transientPositionCache.set(position.normalizedFen, position);
+    }
+  }
+
+  enqueuePlyUpdate(update: PlyAnalysisUpdate): void {
+    this.pendingPlyUpdates.push(update);
+  }
+
+  async flushPendingPlyUpdates(userId: number, gameId: number): Promise<void> {
+    if (!this.pendingPlyUpdates.length) return;
+    const updates = this.pendingPlyUpdates.splice(0, BATCH_ANALYSIS_WRITE_CHUNK_SIZE);
+    await updateImportedGamePlyAnalysis(userId, gameId, updates);
+  }
+}
+
 async function getOrCreatePositionAnalysis(
   engine: LocalStockfishEngineService,
   fen: string,
   options: { depth: number; multipv: number; continueWithoutEngine: boolean },
   engineAvailability: EngineAvailability,
+  buffer: BatchAnalysisWriteBuffer,
 ): Promise<StoredPositionAnalysis | null> {
   const cached = await PositionAnalysisService.getStoredPositionSearch(fen ? { fen, depth: options.depth, multipv: options.multipv } : { fen });
   if (cached) return cached;
+  const transient = buffer.transientPosition(fen);
+  if (transient) return transient;
   if (engineAvailability.unavailable) return null;
 
   try {
     const engineResult = await engine.analyzePosition(toEngineFen(fen), options);
-    return PositionAnalysisService.storePositionSearch(engineResult);
+    return buffer.enqueuePosition(engineResult);
   } catch (error) {
     if (!options.continueWithoutEngine || !isEngineUnavailableError(error)) throw error;
     engineAvailability.unavailable = true;
@@ -178,17 +239,16 @@ async function getOrCreatePositionAnalysis(
 
 async function analysePly(
   engine: LocalStockfishEngineService,
-  userId: number,
-  gameId: number,
   ply: any,
   options: { depth: number; multipv: number; continueWithoutEngine: boolean },
   engineAvailability: EngineAvailability,
-): Promise<boolean> {
+  buffer: BatchAnalysisWriteBuffer,
+): Promise<PlyAnalysisUpdate | null> {
   const beforeFen = ply.position.normalizedFen;
   const beforeAnalysis =
     compactPositionAnalysis(ply.position.analysis) ??
-    (await getOrCreatePositionAnalysis(engine, beforeFen, options, engineAvailability));
-  if (!beforeAnalysis) return false;
+    (await getOrCreatePositionAnalysis(engine, beforeFen, options, engineAvailability, buffer));
+  if (!beforeAnalysis) return null;
 
   const playedMoveUci = ply.moveUci;
   const bestMoveUci = bestMoveFor(beforeAnalysis);
@@ -207,8 +267,9 @@ async function analysePly(
       afterFen,
       options,
       engineAvailability,
+      buffer,
     );
-    if (!afterAnalysis) return false;
+    if (!afterAnalysis) return null;
     playedEvalCpWhite = bestEvalCpWhite(afterAnalysis);
   }
 
@@ -219,14 +280,11 @@ async function analysePly(
     scoreLossCp,
   });
 
-  await updateImportedGamePlyAnalysis(userId, gameId, [
-    {
-      plyNumber: ply.plyNumber,
-      scoreLossCp,
-      classificationCode,
-    },
-  ]);
-  return true;
+  return {
+    plyNumber: ply.plyNumber,
+    scoreLossCp,
+    classificationCode,
+  };
 }
 
 async function completeRun(
@@ -285,25 +343,57 @@ async function analyseGame(
 
   let done = alreadyDone;
   const engineAvailability: EngineAvailability = { unavailable: false };
+  const buffer = new BatchAnalysisWriteBuffer();
+
+  const flushPositionChunks = async () => {
+    let flushed = false;
+    while (buffer.pendingPositionInputs.size >= BATCH_ANALYSIS_WRITE_CHUNK_SIZE) {
+      await buffer.flushPendingPositionAnalyses();
+      flushed = true;
+    }
+    return flushed;
+  };
+
+  const flushPlyChunks = async () => {
+    let flushed = false;
+    while (buffer.pendingPlyUpdates.length >= BATCH_ANALYSIS_WRITE_CHUNK_SIZE) {
+      await buffer.flushPendingPlyUpdates(userId, importedGameId);
+      flushed = true;
+    }
+    return flushed;
+  };
+
   try {
     for (const ply of plies) {
       if (!options.force && isPlyAnalysed(ply)) continue;
-      const analysed = await analysePly(
+      const update = await analysePly(
         engine,
-        userId,
-        importedGameId,
         ply,
         {
           ...options,
           continueWithoutEngine: options.force && options.refreshTagsAfterAnalysis,
         },
         engineAvailability,
+        buffer,
       );
-      if (!analysed) continue;
+      if (!update) continue;
+      buffer.enqueuePlyUpdate(update);
       done += 1;
-      await updateGameAnalysisRunProgress(run.id, { positionsDone: done, positionsTotal: plies.length });
+
+      const flushedPositions = await flushPositionChunks();
+      const flushedPlies = await flushPlyChunks();
+      if (flushedPositions || flushedPlies) {
+        await updateGameAnalysisRunProgress(run.id, { positionsDone: done, positionsTotal: plies.length });
+      }
     }
 
+    while (buffer.pendingPositionInputs.size > 0) {
+      await buffer.flushPendingPositionAnalyses();
+    }
+    while (buffer.pendingPlyUpdates.length > 0) {
+      await buffer.flushPendingPlyUpdates(userId, importedGameId);
+    }
+    await updateGameAnalysisRunProgress(run.id, { positionsDone: done, positionsTotal: plies.length });
     await completeRun(userId, run.id, importedGameId, plies.length, done, game.userColor);
   } catch (err: any) {
     await failGameAnalysisRun(run.id, err?.message ?? String(err));

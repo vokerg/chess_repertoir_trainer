@@ -5,6 +5,7 @@ import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/rout
 import {
   analysisOpenApiSchemas,
   bulkPositionAnalysisLookupOpenApiOperation,
+  bulkStorePositionAnalysisOpenApiOperation,
   clearPlyAnalysisOpenApiOperation,
   createClientGameAnalysisRunOpenApiOperation,
   getImportedGameAnalysisOpenApiOperation,
@@ -14,6 +15,7 @@ import {
 } from './analysis.openapi';
 import {
   bulkPositionAnalysisLookupSchema,
+  bulkStorePositionAnalysisSchema,
   clientGameAnalysisRunSchema,
   positionAnalysisLookupSchema,
   storePositionAnalysisSchema,
@@ -132,7 +134,31 @@ export default async function analysisModule(app: FastifyInstance) {
 
       try {
         const positionAnalysis = await PositionAnalysisService.storePositionSearch(parsed.data);
+        // Legacy compatibility for older clients. Bulk-store intentionally returns only positionAnalyses.
         return { positionAnalysis, position: positionAnalysis };
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'post',
+    url: '/api/position-analysis/bulk-store',
+    operation: bulkStorePositionAnalysisOpenApiOperation,
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const parsed = bulkStorePositionAnalysisSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        const positionAnalyses = await PositionAnalysisService.storePositionSearches(parsed.data.positions);
+        return { positionAnalyses };
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };

@@ -33,6 +33,14 @@ interface BulkPositionAnalysisResponse {
   positionAnalyses: PositionAnalysisCache[];
 }
 
+interface PositionAnalysisStoreRequest {
+  fen: string;
+  bestMoveUci?: string | null;
+  bestScoreCpWhite?: number | null;
+  bestMateWhite?: number | null;
+  lines?: PositionAnalysisLine[];
+}
+
 export interface CachedPositionAnalysisOptions {
   depth?: number;
   multipv?: number;
@@ -49,6 +57,7 @@ export interface PositionAnalysisSeedCandidate {
 
 @Injectable({ providedIn: 'root' })
 export class PositionAnalysisCacheService implements OnDestroy {
+  private static readonly bulkSaveChunkSize = 25;
   private readonly emptyState: EngineAnalysis = { fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] };
   private readonly stateSubject = new BehaviorSubject<EngineAnalysis>(this.emptyState);
   private readonly stockfishSub: Subscription;
@@ -56,8 +65,8 @@ export class PositionAnalysisCacheService implements OnDestroy {
   private readonly knownRemoteMisses = new Set<string>();
   private requestSeq = 0;
   private pendingInteractiveSave: { fen: string; multipv: number } | null = null;
-  private backgroundSaveQueue: Promise<void> = Promise.resolve();
-  private pendingBackgroundSaveCount = 0;
+  private readonly pendingBulkSaves = new Map<string, PositionAnalysisCache>();
+  private inflightBulkSave: Promise<void> | null = null;
 
   readonly state$ = this.stateSubject.asObservable();
 
@@ -114,8 +123,12 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   async flushPendingPositionAnalysisSaves(): Promise<void> {
-    while (this.pendingBackgroundSaveCount > 0) {
-      await this.backgroundSaveQueue;
+    while (this.inflightBulkSave || this.pendingBulkSaves.size > 0) {
+      if (this.inflightBulkSave) {
+        await this.inflightBulkSave;
+      } else {
+        await this.flushOneBulkSaveChunk();
+      }
     }
   }
 
@@ -289,25 +302,78 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   private async persistPositionAnalysis(fen: string, positionAnalysis: PositionAnalysisCache): Promise<PositionAnalysisCache> {
-    const response = await firstValueFrom(this.api.post<PositionAnalysisResponse>('/position-analysis/store', positionAnalysis));
+    const response = await firstValueFrom(this.api.post<PositionAnalysisResponse>(
+      '/position-analysis/store',
+      this.toStoreRequest(fen, positionAnalysis),
+    ));
     if (!response.positionAnalysis) throw new Error('Position analysis was not stored.');
     this.rememberPosition(fen, response.positionAnalysis);
     return response.positionAnalysis;
   }
 
   private enqueueBackgroundSave(fen: string, positionAnalysis: PositionAnalysisCache): void {
-    this.pendingBackgroundSaveCount += 1;
-    this.backgroundSaveQueue = this.backgroundSaveQueue
-      .catch(() => undefined)
-      .then(async () => {
-        try {
-          await this.persistPositionAnalysis(fen, positionAnalysis);
-        } catch (error) {
-          console.warn('Background position-analysis save failed.', { fen, error });
-        } finally {
-          this.pendingBackgroundSaveCount -= 1;
-        }
-      });
+    const normalizedFen = this.normalizeFenForPosition(fen);
+    this.pendingBulkSaves.set(normalizedFen, {
+      ...positionAnalysis,
+      fen,
+      normalizedFen,
+    });
+
+    if (this.pendingBulkSaves.size >= PositionAnalysisCacheService.bulkSaveChunkSize) {
+      this.triggerBackgroundBulkFlush();
+    }
+  }
+
+  private triggerBackgroundBulkFlush(): void {
+    if (this.inflightBulkSave) return;
+
+    this.inflightBulkSave = (async () => {
+      while (this.pendingBulkSaves.size >= PositionAnalysisCacheService.bulkSaveChunkSize) {
+        await this.flushOneBulkSaveChunk();
+      }
+    })().finally(() => {
+      this.inflightBulkSave = null;
+    });
+  }
+
+  private async flushOneBulkSaveChunk(): Promise<void> {
+    const items = Array.from(this.pendingBulkSaves.entries())
+      .slice(0, PositionAnalysisCacheService.bulkSaveChunkSize)
+      .map(([normalizedFen, positionAnalysis]) => ({ normalizedFen, positionAnalysis }));
+
+    if (!items.length) return;
+
+    for (const item of items) {
+      this.pendingBulkSaves.delete(item.normalizedFen);
+    }
+
+    try {
+      const stored = await this.persistPositionAnalysesBulk(items.map((item) => item.positionAnalysis));
+      for (const position of stored) {
+        const fen = position.fen ?? position.normalizedFen;
+        if (fen) this.rememberPosition(fen, position);
+      }
+    } catch (error) {
+      console.warn('Background position-analysis bulk save failed.', { count: items.length, error });
+    }
+  }
+
+  private async persistPositionAnalysesBulk(items: PositionAnalysisCache[]): Promise<PositionAnalysisCache[]> {
+    const positions = items.map((item) => this.toStoreRequest(item.fen ?? item.normalizedFen ?? '', item));
+    const response = await firstValueFrom(this.api.post<BulkPositionAnalysisResponse>('/position-analysis/bulk-store', {
+      positions,
+    }));
+    return response.positionAnalyses ?? [];
+  }
+
+  private toStoreRequest(fen: string, positionAnalysis: PositionAnalysisCache): PositionAnalysisStoreRequest {
+    return {
+      fen,
+      bestMoveUci: positionAnalysis.bestMoveUci,
+      bestScoreCpWhite: positionAnalysis.bestScoreCpWhite,
+      bestMateWhite: positionAnalysis.bestMateWhite,
+      lines: positionAnalysis.lines,
+    };
   }
 
   private memoryPosition(fen: string, requestedMultipv = 1): PositionAnalysisCache | null {

@@ -5,6 +5,7 @@ import {
   getPositionAnalysesByFens,
   getPositionAnalysisByFen,
   upsertPositionAnalysis,
+  upsertPositionAnalysesBulk,
 } from './analysis.repository.prisma';
 
 function withRequestedFen<T extends StoredPositionAnalysis | null>(analysis: T, fen: string): T {
@@ -31,5 +32,18 @@ export const PositionAnalysisService = {
     normalizeFenForPosition(input.fen);
     const position = await findOrCreatePositionByFen(input.fen);
     return withRequestedFen(await upsertPositionAnalysis(position.id, input), input.fen);
+  },
+
+  storePositionSearches: async (inputs: StorePositionAnalysisInput[]): Promise<StoredPositionAnalysis[]> => {
+    const requestedFenByNormalizedFen = new Map<string, string>();
+    for (const input of inputs) {
+      requestedFenByNormalizedFen.set(normalizeFenForPosition(input.fen), input.fen);
+    }
+
+    const rows = await upsertPositionAnalysesBulk(inputs);
+    return rows.map((row) => {
+      const requestedFen = requestedFenByNormalizedFen.get(row.normalizedFen);
+      return requestedFen ? withRequestedFen(row, requestedFen) : row;
+    });
   },
 };
