@@ -285,12 +285,7 @@ export class LinesPageStore {
 
     try {
       await firstValueFrom(this.api.deleteLine(line.id));
-      this.lines.update((lines) => lines.filter((item) => item.id !== line.id));
-      this.selectedLineIds.update((ids) => ids.filter((id) => id !== line.id));
-      if (this.exportLineId() === line.id) {
-        this.exportLineId.set(null);
-        this.exportedPgn.set('');
-      }
+      this.removeLineFromPageState(line.id);
     } catch (error) {
       this.error.set(readLinesError(error, 'Could not delete line.'));
     } finally {
@@ -368,7 +363,7 @@ export class LinesPageStore {
     this.transferLineId.set(line.id);
     this.transferMode.set(mode);
     this.targetCourseId.set(courseId);
-    this.targetChapterId.set(chapterId);
+    this.targetChapterId.set(mode === 'MOVE' ? null : chapterId);
     this.transferMessage.set(null);
     this.error.set(null);
     this.loadingTransferTargets.set(true);
@@ -382,6 +377,7 @@ export class LinesPageStore {
       if (requestVersion !== this.targetChapterRequestVersion) return;
       this.targetCourses.set(courses);
       this.targetChapters.set(chapters);
+      this.targetChapterId.set(this.defaultTransferChapterId(chapters, mode, chapterId));
     } catch (error) {
       if (requestVersion !== this.targetChapterRequestVersion) return;
       this.error.set(readLinesError(error, 'Could not load target chapters.'));
@@ -411,11 +407,7 @@ export class LinesPageStore {
     this.transferMessage.set(null);
     try {
       await firstValueFrom(this.api.updateLine(line.id, { chapterId: targetChapterId }));
-      this.lines.update((lines) => lines.filter((item) => item.id !== line.id));
-      if (this.exportLineId() === line.id) {
-        this.exportLineId.set(null);
-        this.exportedPgn.set('');
-      }
+      this.removeLineFromPageState(line.id);
       this.transferMessage.set(`Moved "${line.name}" to the selected chapter.`);
       this.closeLineTransfer();
     } catch (error) {
@@ -456,7 +448,7 @@ export class LinesPageStore {
       const chapters = await firstValueFrom(this.api.getTransferTargetChapters(courseId));
       if (requestVersion !== this.targetChapterRequestVersion) return;
       this.targetChapters.set(chapters);
-      this.targetChapterId.set(chapters[0]?.id ?? null);
+      this.targetChapterId.set(this.defaultTransferChapterId(chapters, this.transferMode(), this.chapterId()));
     } catch (error) {
       if (requestVersion !== this.targetChapterRequestVersion) return;
       this.error.set(readLinesError(error, 'Could not load target chapters.'));
@@ -511,6 +503,37 @@ export class LinesPageStore {
       this.pgnError.set(readLinesError(error, 'Could not import PGN.'));
     } finally {
       this.importing.set(false);
+    }
+  }
+
+  private defaultTransferChapterId(
+    chapters: readonly LineTransferTargetChapter[],
+    mode: 'MOVE' | 'COPY' | null,
+    currentChapterId: number | null,
+  ): number | null {
+    if (mode === 'MOVE' && currentChapterId) {
+      return chapters.find((chapter) => chapter.id !== currentChapterId)?.id ?? null;
+    }
+    return chapters[0]?.id ?? null;
+  }
+
+  private removeLineFromPageState(lineId: number): void {
+    this.lines.update((lines) => lines.filter((item) => item.id !== lineId));
+    this.selectedLineIds.update((ids) => ids.filter((id) => id !== lineId));
+    if (this.expandedLineId() === lineId) this.expandedLineId.set(null);
+    this.lineSublineStatusByLineId.update((statuses) => {
+      const remaining = { ...statuses };
+      delete remaining[lineId];
+      return remaining;
+    });
+    this.selectedSublineHashesByLineId.update((hashes) => {
+      const remaining = { ...hashes };
+      delete remaining[lineId];
+      return remaining;
+    });
+    if (this.exportLineId() === lineId) {
+      this.exportLineId.set(null);
+      this.exportedPgn.set('');
     }
   }
 }

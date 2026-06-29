@@ -14,7 +14,7 @@
     </thead>
     <tbody>
       @for (line of lines(); track line.id) {
-        <tr>
+        <tr [class.transfer-active]="transferLineId() === line.id">
           <td><input type="checkbox" [checked]="isSelected(line.id)" (change)="toggleLineSelected.emit(line.id)" /></td>
           <td>
             <button type="button" class="line-expand" (click)="toggleExpandedLine.emit(line.id)">
@@ -45,10 +45,10 @@
             <app-line-action-menu
               [line]="line"
               [deleting]="deletingLineId() === line.id"
-              (rename)="renameLine.emit($event)"
-              (move)="moveLine.emit($event)"
-              (copy)="copyLine.emit($event)"
-              (delete)="deleteLine.emit($event)"
+              (renameLine)="renameLine.emit($event)"
+              (moveLine)="moveLine.emit($event)"
+              (copyLine)="copyLine.emit($event)"
+              (deleteLine)="deleteLine.emit($event)"
             />
           </td>
         </tr>

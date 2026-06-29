@@ -11,8 +11,8 @@ import { LineSummary } from '../../data-access/lines.models';
 export class LineActionMenuComponent {
   readonly line = input.required<LineSummary>();
   readonly deleting = input(false);
-  readonly rename = output<LineSummary>();
-  readonly move = output<LineSummary>();
-  readonly copy = output<LineSummary>();
-  readonly delete = output<LineSummary>();
+  readonly renameLine = output<LineSummary>();
+  readonly moveLine = output<LineSummary>();
+  readonly copyLine = output<LineSummary>();
+  readonly deleteLine = output<LineSummary>();
 }

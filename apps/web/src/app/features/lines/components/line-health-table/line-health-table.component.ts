@@ -19,6 +19,7 @@ export class LineHealthTableComponent {
   readonly expandedLineId = input<number | null>(null);
   readonly sublineStatusByLineId = input<Record<number, SublineTrainingStatus[]>>({});
   readonly selectedSublineHashesByLineId = input<Record<number, string[]>>({});
+  readonly transferLineId = input<number | null>(null);
   readonly loadingSublineStatusLineId = input<number | null>(null);
   readonly sublineStatusError = input<string | null>(null);
   readonly deletingLineId = input<number | null>(null);

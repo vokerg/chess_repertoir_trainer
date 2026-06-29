@@ -1,0 +1,2637 @@
+{
+  "formatVersion": 2,
+  "course": {
+    "name": "D4 for the score",
+    "chapters": [
+      {
+        "name": "Queens gambit",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "QG accepted",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "d5c4",
+                            "children": [
+                              {
+                                "moveUci": "e2e4",
+                                "children": [
+                                  {
+                                    "moveUci": "e7e6",
+                                    "children": [
+                                      {
+                                        "moveUci": "f1c4",
+                                        "children": [
+                                          {
+                                            "moveUci": "g8f6",
+                                            "children": [
+                                              {
+                                                "moveUci": "b1c3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f8b4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "e4e5",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "f6d5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "g1e2",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e8g8",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e1g1",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "c7c5",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "a2a3",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "b4c3",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "b2c3",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "moveUci": "c7c5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e1g1",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "e8g8",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "a2a3",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "b4c3",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "b2c3",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "f6e4",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "g1e2",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e4c3",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "b2c3",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "b8c6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "c8g4",
+                                            "children": [
+                                              {
+                                                "moveUci": "d4d5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "c6e5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "c1f4",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e5g6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f4g3",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e7e5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "f1c4",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "e5f3",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "g2f3",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "g4d7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "f1c4",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "g8f6",
+                                    "children": [
+                                      {
+                                        "moveUci": "e4e5",
+                                        "children": [
+                                          {
+                                            "moveUci": "f6d5",
+                                            "children": [
+                                              {
+                                                "moveUci": "f1c4",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "b8c6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "moveUci": "c8f5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "d1b3",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "e7e5",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "e5d4",
+                                            "children": [
+                                              {
+                                                "moveUci": "f1c4",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f8b4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1d2",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "moveUci": "c7c5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "d1b3",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "a7a6",
+                                    "children": [
+                                      {
+                                        "moveUci": "f1c4",
+                                        "children": [
+                                          {
+                                            "moveUci": "b7b5",
+                                            "children": [
+                                              {
+                                                "moveUci": "c4b3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "c8b7",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "g1f3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b7e4",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f3g5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e4g6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "d1f3",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "f7f6",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "g5e6",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "d8c8",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "f3a8",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "e6 lines",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "e7e6",
+                            "children": [
+                              {
+                                "moveUci": "b1c3",
+                                "children": [
+                                  {
+                                    "moveUci": "g8f6",
+                                    "children": [
+                                      {
+                                        "moveUci": "c1g5",
+                                        "children": [
+                                          {
+                                            "moveUci": "f8e7",
+                                            "children": [
+                                              {
+                                                "moveUci": "e2e3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e8g8",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "g1f3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b7b6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f1d3",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "c8b7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e1g1",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "f8b4",
+                                            "children": [
+                                              {
+                                                "moveUci": "e2e3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e8g8",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "g1f3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "c7c5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "c4d5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e6d5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "d4c5",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "b4c3",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "b2c3",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "c8e6",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "f1b5",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "d5c4",
+                                    "children": [
+                                      {
+                                        "moveUci": "e2e4",
+                                        "children": [
+                                          {
+                                            "moveUci": "b8c6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f8b4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1c4",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b4c3",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "b2c3",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "f8b4",
+                                    "children": [
+                                      {
+                                        "moveUci": "c4d5",
+                                        "children": [
+                                          {
+                                            "moveUci": "e6d5",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": []
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "c7c6",
+                                    "children": [
+                                      {
+                                        "moveUci": "e2e3",
+                                        "children": [
+                                          {
+                                            "moveUci": "f8b4",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "g8f6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1d3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e8g8",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "b4c3",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "b2c3",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "g8f6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f8b4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1d3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e8g8",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "b8d7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "d1c2",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "QG accepted - pawn grabber",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "d5c4",
+                            "children": [
+                              {
+                                "moveUci": "e2e4",
+                                "children": [
+                                  {
+                                    "moveUci": "b7b5",
+                                    "children": [
+                                      {
+                                        "moveUci": "a2a4",
+                                        "children": [
+                                          {
+                                            "moveUci": "c7c6",
+                                            "children": [
+                                              {
+                                                "moveUci": "a4b5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "c6b5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b5b4",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "c3b5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "a7a6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "c1f4",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "a6b5",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "a1a8",
+                                                                                "children": []
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "c8d7",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "d4d5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e7e6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "d5e6",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "d7e6",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "d1d8",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "e8d8",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "c3b5",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "moveUci": "a7a5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "g1f3",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "moveUci": "g7g6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "d1d4",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "d8d7",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "d4d5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "c8b7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "g1f3",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "a7a6",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "b2b3",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "e7e6",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "b3c4",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "b5c4",
+                                                                                            "children": [
+                                                                                              {
+                                                                                                "moveUci": "f1c4",
+                                                                                                "children": [
+                                                                                                  {
+                                                                                                    "moveUci": "e6d5",
+                                                                                                    "children": [
+                                                                                                      {
+                                                                                                        "moveUci": "c3d5",
+                                                                                                        "children": []
+                                                                                                      }
+                                                                                                    ]
+                                                                                                  }
+                                                                                                ]
+                                                                                              }
+                                                                                            ]
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  },
+                                                                                  {
+                                                                                    "moveUci": "c4b3",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "d1b3",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "e7e6",
+                                                                                            "children": [
+                                                                                              {
+                                                                                                "moveUci": "c3b5",
+                                                                                                "children": [
+                                                                                                  {
+                                                                                                    "moveUci": "a6b5",
+                                                                                                    "children": [
+                                                                                                      {
+                                                                                                        "moveUci": "a1a8",
+                                                                                                        "children": [
+                                                                                                          {
+                                                                                                            "moveUci": "b7a8",
+                                                                                                            "children": [
+                                                                                                              {
+                                                                                                                "moveUci": "f1b5",
+                                                                                                                "children": []
+                                                                                                              }
+                                                                                                            ]
+                                                                                                          }
+                                                                                                        ]
+                                                                                                      }
+                                                                                                    ]
+                                                                                                  }
+                                                                                                ]
+                                                                                              }
+                                                                                            ]
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "c8d7",
+                                            "children": [
+                                              {
+                                                "moveUci": "a4b5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d7b5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1a3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b5d7",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f1c4",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "c6 lines",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "c7c6",
+                            "children": [
+                              {
+                                "moveUci": "e2e3",
+                                "children": [
+                                  {
+                                    "moveUci": "g8f6",
+                                    "children": [
+                                      {
+                                        "moveUci": "b1c3",
+                                        "children": [
+                                          {
+                                            "moveUci": "c8f5",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e7e6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f3h4",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "f5g6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f1e2",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "d5c4",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "h4g6",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "h7g6",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "e2c4",
+                                                                                "children": []
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "moveUci": "f8e7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e1g1",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "e8g8",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "h4g6",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "h7g6",
+                                                                                    "children": []
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "moveUci": "b8d7",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e1g1",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "d5c4",
+                                                                            "children": []
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "f5g4",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "d1b3",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "d5c4",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "b3b7",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "b8d7",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "b7c6",
+                                                                                "children": []
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "moveUci": "d8b6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "h2h3",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "g4h5",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "g2g4",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "h5g6",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "h4g6",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "c8f5",
+                                    "children": [
+                                      {
+                                        "moveUci": "b1c3",
+                                        "children": [
+                                          {
+                                            "moveUci": "e7e6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": []
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "e7e6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "b8d7",
+                                            "children": [
+                                              {
+                                                "moveUci": "f1d3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d5c4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "d3c4",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "g8f6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "b7b5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "c4d3",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Nf6 lines",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "g8f6",
+                            "children": [
+                              {
+                                "moveUci": "c4d5",
+                                "children": [
+                                  {
+                                    "moveUci": "f6d5",
+                                    "children": [
+                                      {
+                                        "moveUci": "e2e4",
+                                        "children": [
+                                          {
+                                            "moveUci": "d5b6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "c8g4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1e2",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e7e6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "d5f6",
+                                            "children": [
+                                              {
+                                                "moveUci": "e4e5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f6d5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "c8f5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "d1b3",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "d5b6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "g1f3",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "b8c6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f1c4",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "d5b6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "c4b5",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "c8d7",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "g1e2",
+                                                                                "children": []
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "d8d5",
+                                    "children": [
+                                      {
+                                        "moveUci": "b1c3",
+                                        "children": [
+                                          {
+                                            "moveUci": "d5a5",
+                                            "children": [
+                                              {
+                                                "moveUci": "c1d2",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "a5b6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "g1f3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b6b2",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "a1b1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "b2a3",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "c3b5",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Nc6 lines",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "b8c6",
+                            "children": [
+                              {
+                                "moveUci": "b1c3",
+                                "children": [
+                                  {
+                                    "moveUci": "e7e5",
+                                    "children": [
+                                      {
+                                        "moveUci": "c4d5",
+                                        "children": [
+                                          {
+                                            "moveUci": "e5d4",
+                                            "children": [
+                                              {
+                                                "moveUci": "d5c6",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d4c3",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "c6b7",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "c8b7",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "b2c3",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "d5c4",
+                                    "children": [
+                                      {
+                                        "moveUci": "d4d5",
+                                        "children": [
+                                          {
+                                            "moveUci": "c6e5",
+                                            "children": [
+                                              {
+                                                "moveUci": "f2f4",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e5g6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "e2e4",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "e7e6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "d5c4",
+                                            "children": [
+                                              {
+                                                "moveUci": "e2e4",
+                                                "children": []
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "g8f6",
+                                            "children": [
+                                              {
+                                                "moveUci": "c1g5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f8e7",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "e2e3",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "e5 - countergambit",
+            "sideToTrain": "WHITE",
+            "startingFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "e7e5",
+                            "children": [
+                              {
+                                "moveUci": "d4e5",
+                                "children": [
+                                  {
+                                    "moveUci": "d5d4",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "b8c6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g2g3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "g8e7",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1g2",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "b8c6",
+                                    "children": [
+                                      {
+                                        "moveUci": "c4d5",
+                                        "children": [
+                                          {
+                                            "moveUci": "c6e5",
+                                            "children": [
+                                              {
+                                                "moveUci": "b1c3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "g8f6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "c1f4",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Austrian variation",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "c7c5",
+                            "children": [
+                              {
+                                "moveUci": "c4d5",
+                                "children": [
+                                  {
+                                    "moveUci": "d8d5",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "c5d4",
+                                            "children": [
+                                              {
+                                                "moveUci": "b1c3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d5a5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f3d4",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "g8f6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "c1d2",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "a5d8",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "d2g5",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Anti-Dutch",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "Mainline Dutch",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "f7f5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "g8f6",
+                            "children": [
+                              {
+                                "moveUci": "g1f3",
+                                "children": [
+                                  {
+                                    "moveUci": "e7e6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g2g3",
+                                        "children": [
+                                          {
+                                            "moveUci": "f8b4",
+                                            "children": [
+                                              {
+                                                "moveUci": "c1d2",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "b4d2",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "d1d2",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Sus responses to D4",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "Englund Gambit",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "e7e5",
+                    "children": [
+                      {
+                        "moveUci": "d4e5",
+                        "children": [
+                          {
+                            "moveUci": "b8c6",
+                            "children": [
+                              {
+                                "moveUci": "g1f3",
+                                "children": [
+                                  {
+                                    "moveUci": "d8e7",
+                                    "children": [
+                                      {
+                                        "moveUci": "c1f4",
+                                        "children": [
+                                          {
+                                            "moveUci": "e7b4",
+                                            "children": [
+                                              {
+                                                "moveUci": "f4d2",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "b4b2",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "c6b4",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f3d4",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "c7c5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "a1b1",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "b2a3",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "d4b5",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "a3a5",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "a2a3",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "b4a6",
+                                                                                            "children": []
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "moveUci": "f8b4",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "a1b1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "b2a3",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "c3d5",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "b4a5",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "b1b5",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "a5d2",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "d1d2",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "a8b8",
+                                                                                            "children": [
+                                                                                              {
+                                                                                                "moveUci": "d5c7",
+                                                                                                "children": []
+                                                                                              }
+                                                                                            ]
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          },
+                                                                          {
+                                                                            "moveUci": "b4d2",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "d1d2",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "a3a2",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "b1d1",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "e8d8",
+                                                                                            "children": [
+                                                                                              {
+                                                                                                "moveUci": "d2g5",
+                                                                                                "children": [
+                                                                                                  {
+                                                                                                    "moveUci": "g8e7",
+                                                                                                    "children": [
+                                                                                                      {
+                                                                                                        "moveUci": "e2e4",
+                                                                                                        "children": [
+                                                                                                          {
+                                                                                                            "moveUci": "h8e8",
+                                                                                                            "children": [
+                                                                                                              {
+                                                                                                                "moveUci": "f1e2",
+                                                                                                                "children": []
+                                                                                                              }
+                                                                                                            ]
+                                                                                                          }
+                                                                                                        ]
+                                                                                                      }
+                                                                                                    ]
+                                                                                                  }
+                                                                                                ]
+                                                                                              }
+                                                                                            ]
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "e6-c5",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "e7e6",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "c7c5",
+                            "children": [
+                              {
+                                "moveUci": "d4d5",
+                                "children": [
+                                  {
+                                    "moveUci": "e6d5",
+                                    "children": [
+                                      {
+                                        "moveUci": "c4d5",
+                                        "children": [
+                                          {
+                                            "moveUci": "g8f6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d7d6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "d7d6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "g8f6",
+                                            "children": [
+                                              {
+                                                "moveUci": "b1c3",
+                                                "children": []
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Indians",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "Main Nimzo-Indian",
+            "sideToTrain": "WHITE",
+            "startingFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "e7e6",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "g8f6",
+                            "children": [
+                              {
+                                "moveUci": "b1c3",
+                                "children": [
+                                  {
+                                    "moveUci": "f8b4",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "b7b6",
+                                            "children": [
+                                              {
+                                                "moveUci": "e2e3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "c8b7",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1d3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e8g8",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "f6e4",
+                                            "children": [
+                                              {
+                                                "moveUci": "d1c2",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f7f5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "e2e3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e8g8",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "f1d3",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Main Kings Indian",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "g8f6",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "g7g6",
+                            "children": [
+                              {
+                                "moveUci": "b1c3",
+                                "children": [
+                                  {
+                                    "moveUci": "f8g7",
+                                    "children": [
+                                      {
+                                        "moveUci": "e2e4",
+                                        "children": [
+                                          {
+                                            "moveUci": "d7d6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e8g8",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1e2",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e7e5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "e5d4",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "f3d4",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "b8c6",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "c1e3",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "c6d4",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "e3d4",
+                                                                                        "children": [
+                                                                                          {
+                                                                                            "moveUci": "f8e8",
+                                                                                            "children": [
+                                                                                              {
+                                                                                                "moveUci": "f2f3",
+                                                                                                "children": []
+                                                                                              }
+                                                                                            ]
+                                                                                          }
+                                                                                        ]
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "moveUci": "e8g8",
+                                            "children": [
+                                              {
+                                                "moveUci": "f1e2",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d7d6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "g1f3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e7e5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "b8a6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "a2a3",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "e5d4",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "f3d4",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "a6c5",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "f2f3",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Old Indian",
+            "sideToTrain": "WHITE",
+            "startingFen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "g8f6",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "d7d6",
+                            "children": [
+                              {
+                                "moveUci": "b1c3",
+                                "children": [
+                                  {
+                                    "moveUci": "e7e5",
+                                    "children": [
+                                      {
+                                        "moveUci": "d4e5",
+                                        "children": [
+                                          {
+                                            "moveUci": "d6e5",
+                                            "children": [
+                                              {
+                                                "moveUci": "d1d8",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e8d8",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "g1f3",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "b8c6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "c1g5",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "g7g6",
+                                    "children": [
+                                      {
+                                        "moveUci": "e2e4",
+                                        "children": [
+                                          {
+                                            "moveUci": "f8g7",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "e8g8",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "f1e2",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "e7e5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "e1g1",
+                                                                "children": []
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Benoni",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "Modern Benoni",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "g8f6",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "e7e6",
+                            "children": [
+                              {
+                                "moveUci": "b1c3",
+                                "children": [
+                                  {
+                                    "moveUci": "c7c5",
+                                    "children": [
+                                      {
+                                        "moveUci": "d4d5",
+                                        "children": [
+                                          {
+                                            "moveUci": "e6d5",
+                                            "children": [
+                                              {
+                                                "moveUci": "c4d5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d7d6",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "e2e4",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Immediate Benoni",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "c7c5",
+                    "children": [
+                      {
+                        "moveUci": "d4d5",
+                        "children": [
+                          {
+                            "moveUci": "d7d6",
+                            "children": [
+                              {
+                                "moveUci": "e2e4",
+                                "children": [
+                                  {
+                                    "moveUci": "e7e6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "e6d5",
+                                            "children": [
+                                              {
+                                                "moveUci": "e4d5",
+                                                "children": []
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "QG declined",
+        "sortOrder": 0,
+        "lines": [
+          {
+            "name": "Baltic defence",
+            "sideToTrain": "WHITE",
+            "startingFen": "startpos",
+            "moves": [
+              {
+                "moveUci": "d2d4",
+                "children": [
+                  {
+                    "moveUci": "d7d5",
+                    "children": [
+                      {
+                        "moveUci": "c2c4",
+                        "children": [
+                          {
+                            "moveUci": "c8f5",
+                            "children": [
+                              {
+                                "moveUci": "c4d5",
+                                "children": [
+                                  {
+                                    "moveUci": "f5b1",
+                                    "children": [
+                                      {
+                                        "moveUci": "a1b1",
+                                        "children": [
+                                          {
+                                            "moveUci": "d8d5",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "d5a2",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "c1d2",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "a2d5",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "b1c1",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "c7c6",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "e2e3",
+                                                                        "children": []
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

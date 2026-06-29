@@ -44,4 +44,5 @@
 .status-chip.review { background: var(--warning-soft); color: var(--warning); }
 .status-chip.stable,
 .status-chip.strong { background: var(--success-soft); color: var(--success); }
+.health-table tr.transfer-active td { background: var(--warning-soft); }
 .expanded-row td { background: rgba(255, 255, 255, 0.36); }
