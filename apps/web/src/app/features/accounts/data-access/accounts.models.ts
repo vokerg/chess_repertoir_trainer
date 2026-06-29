@@ -104,7 +104,7 @@ export interface AccountRatingStatsSpeedProjection {
 }
 
 export interface AccountRatingStatsProjection {
-  version: 2;
+  version: 3;
   ratingSource: 'gameRecordedRating';
   speeds: AccountRatingStatsSpeedProjection[];
 }
@@ -157,3 +157,5 @@ export interface AccountPerformanceStatsResponse {
   bestVictory: AccountPerformanceGameHighlight | null;
   mostEmbarrassingDefeat: AccountPerformanceGameHighlight | null;
 }
+
+export type DashboardPeriodKey = RatingRangeKey;

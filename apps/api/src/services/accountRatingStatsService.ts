@@ -1,8 +1,19 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../prisma';
 import { ExternalAccountService, ExternalProvider } from './externalAccountService';
+import {
+  AccountRatingHistoryData,
+  RatingSpeed,
+  buildAccountRatingHistoryData,
+} from './accountRatingHistoryService';
+import {
+  AccountPerformanceStatsData,
+  PerformanceGame,
+  buildAccountPerformanceStatsData,
+} from './accountPerformanceStatsService';
 
-export type RatingStatsSpeed = 'bullet' | 'blitz' | 'rapid';
+export type RatingStatsSpeed = RatingSpeed;
+export type DashboardPeriodKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
 
 export interface AccountRatingStatsPeak {
   rating: number;
@@ -32,9 +43,16 @@ export interface AccountRatingStatsSpeedProjection {
 }
 
 export interface AccountRatingStatsProjection {
-  version: 2;
+  version: 3;
   ratingSource: 'gameRecordedRating';
   speeds: AccountRatingStatsSpeedProjection[];
+}
+
+export interface AccountDashboardProjection {
+  version: 3;
+  ratingStats: AccountRatingStatsProjection;
+  ratingHistory: AccountRatingHistoryData;
+  performanceByPeriod: Record<DashboardPeriodKey, AccountPerformanceStatsData>;
 }
 
 export interface AccountRatingStatsResponse {
@@ -50,6 +68,7 @@ export interface AccountRatingStatsResponse {
 }
 
 const SPEEDS: readonly RatingStatsSpeed[] = ['bullet', 'blitz', 'rapid'];
+const PERIODS: readonly DashboardPeriodKey[] = ['1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'ALL'];
 
 const SPEED_LABELS: Record<RatingStatsSpeed, 'Bullet' | 'Blitz' | 'Rapid'> = {
   bullet: 'Bullet',
@@ -73,6 +92,9 @@ type ImportedRatingGame = {
   userColor: string | null;
   whiteRating: number | null;
   blackRating: number | null;
+  opponentUsername?: string | null;
+  resultForUser?: string | null;
+  providerUrl?: string | null;
 };
 
 function getUserRating(game: Pick<ImportedRatingGame, 'userColor' | 'whiteRating' | 'blackRating'>) {
@@ -101,7 +123,7 @@ function toPeak(game: { id: number; endedAt: Date }, rating: number): AccountRat
   };
 }
 
-function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; data: AccountRatingStatsProjection } {
+function buildRatingStatsProjection(games: ImportedRatingGame[]): { gamesCount: number; data: AccountRatingStatsProjection } {
   const bySpeed = new Map<
     RatingStatsSpeed,
     {
@@ -176,17 +198,103 @@ function buildProjection(games: ImportedRatingGame[]): { gamesCount: number; dat
   return {
     gamesCount: speeds.reduce((total, speed) => total + speed.gamesCount, 0),
     data: {
-      version: 2,
+      version: 3,
       ratingSource: 'gameRecordedRating',
       speeds,
     },
   };
 }
 
+function dateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addUtcMonths(date: Date, months: number): Date {
+  const next = startOfUtcDay(date);
+  next.setUTCMonth(next.getUTCMonth() + months);
+  return next;
+}
+
+function addUtcYears(date: Date, years: number): Date {
+  const next = startOfUtcDay(date);
+  next.setUTCFullYear(next.getUTCFullYear() + years);
+  return next;
+}
+
+function periodRange(period: DashboardPeriodKey, now: Date): { from?: string; to?: string } {
+  if (period === 'ALL') return {};
+
+  const to = startOfUtcDay(now);
+  const from =
+    period === '1M'
+      ? addUtcMonths(to, -1)
+      : period === '3M'
+        ? addUtcMonths(to, -3)
+        : period === '6M'
+          ? addUtcMonths(to, -6)
+          : period === 'YTD'
+            ? new Date(Date.UTC(to.getUTCFullYear(), 0, 1))
+            : period === '1Y'
+              ? addUtcYears(to, -1)
+              : period === '3Y'
+                ? addUtcYears(to, -3)
+                : addUtcYears(to, -5);
+
+  return {
+    from: dateOnly(from),
+    to: dateOnly(to),
+  };
+}
+
+function inPeriod(game: { endedAt: Date | null }, range: { from?: string; to?: string }) {
+  if (!game.endedAt) return false;
+  if (range.from && game.endedAt < new Date(range.from)) return false;
+  if (range.to && game.endedAt >= new Date(Date.parse(range.to) + 24 * 60 * 60 * 1000)) return false;
+  return true;
+}
+
+function buildDashboardProjection(games: ImportedRatingGame[], now = new Date()): { gamesCount: number; data: AccountDashboardProjection } {
+  const ratingStats = buildRatingStatsProjection(games);
+  const ratingHistory = buildAccountRatingHistoryData(games, SPEEDS);
+  const performanceByPeriod = Object.fromEntries(
+    PERIODS.map((period) => {
+      const range = periodRange(period, now);
+      const periodGames = games.filter((game) => inPeriod(game, range)) as PerformanceGame[];
+      return [
+        period,
+        buildAccountPerformanceStatsData(periodGames, {
+          ...range,
+          speeds: [...SPEEDS],
+        }),
+      ];
+    }),
+  ) as Record<DashboardPeriodKey, AccountPerformanceStatsData>;
+
+  return {
+    gamesCount: ratingStats.gamesCount,
+    data: {
+      version: 3,
+      ratingStats: ratingStats.data,
+      ratingHistory,
+      performanceByPeriod,
+    },
+  };
+}
+
+function getStoredProjection(data: Prisma.JsonValue): AccountDashboardProjection | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  return (data as { version?: unknown }).version === 3 ? (data as unknown as AccountDashboardProjection) : null;
+}
+
 function toResponse(
   account: AccountSummary,
   stats: { computedAt: Date; gamesCount: number; data: Prisma.JsonValue },
 ): AccountRatingStatsResponse {
+  const dashboard = getStoredProjection(stats.data);
   return {
     account: {
       id: account.id,
@@ -196,12 +304,8 @@ function toResponse(
     },
     computedAt: stats.computedAt.toISOString(),
     gamesCount: stats.gamesCount,
-    data: stats.data as unknown as AccountRatingStatsProjection,
+    data: dashboard ? dashboard.ratingStats : (stats.data as unknown as AccountRatingStatsProjection),
   };
-}
-
-function isCurrentProjection(data: Prisma.JsonValue): boolean {
-  return Boolean(data && typeof data === 'object' && !Array.isArray(data) && (data as { version?: unknown }).version === 2);
 }
 
 export const AccountRatingStatsService = {
@@ -224,11 +328,14 @@ export const AccountRatingStatsService = {
         userColor: true,
         whiteRating: true,
         blackRating: true,
+        opponentUsername: true,
+        resultForUser: true,
+        providerUrl: true,
       },
       orderBy: [{ endedAt: 'asc' }, { id: 'asc' }],
     });
 
-    const projection = buildProjection(games);
+    const projection = buildDashboardProjection(games);
     const computedAt = new Date();
     const stats = await prisma.accountRatingStats.upsert({
       where: { accountId },
@@ -256,7 +363,7 @@ export const AccountRatingStatsService = {
       where: { accountId },
     });
 
-    if (stats && isCurrentProjection(stats.data)) return toResponse(account, stats);
+    if (stats && getStoredProjection(stats.data)) return toResponse(account, stats);
 
     return AccountRatingStatsService.recomputeForAccount(userId, accountId);
   },

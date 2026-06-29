@@ -35,6 +35,8 @@ export interface AccountRatingHistoryResponse {
   } | null;
 }
 
+export type AccountRatingHistoryData = Omit<AccountRatingHistoryResponse, 'account'>;
+
 const SPEED_LABELS: Record<RatingSpeed, 'Bullet' | 'Blitz' | 'Rapid'> = {
   bullet: 'Bullet',
   blitz: 'Blitz',
@@ -42,6 +44,14 @@ const SPEED_LABELS: Record<RatingSpeed, 'Bullet' | 'Blitz' | 'Rapid'> = {
 };
 
 const SPEED_ORDER: readonly RatingSpeed[] = ['bullet', 'blitz', 'rapid'];
+
+export type RatingHistoryGame = {
+  endedAt: Date | null;
+  speedCategory: string | null;
+  userColor: string | null;
+  whiteRating: number | null;
+  blackRating: number | null;
+};
 
 interface RatingBucket {
   rating: number;
@@ -59,7 +69,7 @@ function utcDayKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildEndedAtRange(query: Pick<AccountRatingHistoryQuery, 'from' | 'to'>) {
+export function buildEndedAtRange(query: Pick<AccountRatingHistoryQuery, 'from' | 'to'>) {
   if (!query.from && !query.to) return undefined;
 
   return {
@@ -69,6 +79,83 @@ function buildEndedAtRange(query: Pick<AccountRatingHistoryQuery, 'from' | 'to'>
         ? { lt: new Date(Date.parse(query.to) + 24 * 60 * 60 * 1000) }
         : { lte: new Date(query.to) }
       : {}),
+  };
+}
+
+export function buildAccountRatingHistoryData(
+  games: RatingHistoryGame[],
+  speeds: readonly RatingSpeed[],
+): AccountRatingHistoryData {
+  const requestedSpeeds = new Set<RatingSpeed>(speeds);
+  const bucketsBySpeed = new Map<RatingSpeed, Map<string, RatingBucket>>();
+
+  for (const game of games) {
+    if (!game.endedAt) continue;
+    const speed = game.speedCategory?.toLowerCase();
+    if (speed !== 'bullet' && speed !== 'blitz' && speed !== 'rapid') continue;
+    if (!requestedSpeeds.has(speed)) continue;
+
+    const rating = getUserRating(game);
+    if (rating === null) continue;
+
+    const date = utcDayKey(game.endedAt);
+    const speedBuckets = bucketsBySpeed.get(speed) ?? new Map<string, RatingBucket>();
+    const bucket = speedBuckets.get(date);
+
+    if (!bucket) {
+      speedBuckets.set(date, { rating, gameCount: 1, ratingAt: game.endedAt });
+    } else {
+      bucket.gameCount += 1;
+      if (rating > bucket.rating || (rating === bucket.rating && game.endedAt > bucket.ratingAt)) {
+        bucket.rating = rating;
+        bucket.ratingAt = game.endedAt;
+      }
+    }
+
+    bucketsBySpeed.set(speed, speedBuckets);
+  }
+
+  const ratings: number[] = [];
+  const series = SPEED_ORDER.filter((speed) => requestedSpeeds.has(speed)).map((speed) => {
+    const buckets = bucketsBySpeed.get(speed) ?? new Map<string, RatingBucket>();
+    const points = Array.from(buckets.entries())
+      .sort(([leftDate], [rightDate]) => leftDate.localeCompare(rightDate))
+      .map(([date, bucket]) => {
+        ratings.push(bucket.rating);
+        return {
+          date,
+          rating: bucket.rating,
+          gameCount: bucket.gameCount,
+          ratingAt: bucket.ratingAt.toISOString(),
+        };
+      });
+
+    return {
+      key: speed,
+      label: SPEED_LABELS[speed],
+      points,
+    };
+  });
+
+  const yDomain =
+    ratings.length > 0
+      ? (() => {
+          const rawMin = Math.min(...ratings);
+          const rawMax = Math.max(...ratings);
+          const padding = Math.max(25, Math.round((rawMax - rawMin) * 0.08));
+          return {
+            min: Math.max(0, rawMin - padding),
+            max: rawMax + padding,
+          };
+        })()
+      : null;
+
+  return {
+    bucket: 'day',
+    aggregation: 'max',
+    ratingSource: 'gameRecordedRating',
+    series,
+    yDomain,
   };
 }
 
@@ -95,69 +182,7 @@ export const AccountRatingHistoryService = {
       orderBy: [{ endedAt: 'asc' }],
     });
 
-    const requestedSpeeds = new Set<RatingSpeed>(query.speeds);
-    const bucketsBySpeed = new Map<RatingSpeed, Map<string, RatingBucket>>();
-
-    for (const game of games) {
-      if (!game.endedAt) continue;
-      const speed = game.speedCategory?.toLowerCase();
-      if (speed !== 'bullet' && speed !== 'blitz' && speed !== 'rapid') continue;
-      if (!requestedSpeeds.has(speed)) continue;
-
-      const rating = getUserRating(game);
-      if (rating === null) continue;
-
-      const date = utcDayKey(game.endedAt);
-      const speedBuckets = bucketsBySpeed.get(speed) ?? new Map<string, RatingBucket>();
-      const bucket = speedBuckets.get(date);
-
-      if (!bucket) {
-        speedBuckets.set(date, { rating, gameCount: 1, ratingAt: game.endedAt });
-      } else {
-        bucket.gameCount += 1;
-        if (rating > bucket.rating || (rating === bucket.rating && game.endedAt > bucket.ratingAt)) {
-          bucket.rating = rating;
-          bucket.ratingAt = game.endedAt;
-        }
-      }
-
-      bucketsBySpeed.set(speed, speedBuckets);
-    }
-
-    const ratings: number[] = [];
-    const series = SPEED_ORDER.filter((speed) => requestedSpeeds.has(speed)).map((speed) => {
-      const buckets = bucketsBySpeed.get(speed) ?? new Map<string, RatingBucket>();
-      const points = Array.from(buckets.entries())
-        .sort(([leftDate], [rightDate]) => leftDate.localeCompare(rightDate))
-        .map(([date, bucket]) => {
-          ratings.push(bucket.rating);
-          return {
-            date,
-            rating: bucket.rating,
-            gameCount: bucket.gameCount,
-            ratingAt: bucket.ratingAt.toISOString(),
-          };
-        });
-
-      return {
-        key: speed,
-        label: SPEED_LABELS[speed],
-        points,
-      };
-    });
-
-    const yDomain =
-      ratings.length > 0
-        ? (() => {
-            const rawMin = Math.min(...ratings);
-            const rawMax = Math.max(...ratings);
-            const padding = Math.max(25, Math.round((rawMax - rawMin) * 0.08));
-            return {
-              min: Math.max(0, rawMin - padding),
-              max: rawMax + padding,
-            };
-          })()
-        : null;
+    const history = buildAccountRatingHistoryData(games, query.speeds);
 
     return {
       account: {
@@ -166,11 +191,7 @@ export const AccountRatingHistoryService = {
         username: account.username,
         displayName: account.displayName,
       },
-      bucket: 'day',
-      aggregation: 'max',
-      ratingSource: 'gameRecordedRating',
-      series,
-      yDomain,
+      ...history,
     };
   },
 };

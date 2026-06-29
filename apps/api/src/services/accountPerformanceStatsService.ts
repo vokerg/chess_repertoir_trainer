@@ -1,17 +1,17 @@
 import prisma from '../prisma';
 import { ExternalAccountService, ExternalProvider } from './externalAccountService';
-import { RatingStatsSpeed } from './accountRatingStatsService';
+import { RatingSpeed } from './accountRatingHistoryService';
 
 export interface AccountPerformanceStatsQuery {
   from?: string;
   to?: string;
-  speeds: RatingStatsSpeed[];
+  speeds: RatingSpeed[];
 }
 
 export interface AccountPerformanceGameHighlight {
   gameId: number;
   endedAt: string;
-  speed: RatingStatsSpeed;
+  speed: RatingSpeed;
   userRating: number | null;
   opponentRating: number | null;
   opponentUsername: string | null;
@@ -29,7 +29,7 @@ export interface AccountPerformanceStatsResponse {
     from?: string;
     to?: string;
   };
-  speeds: RatingStatsSpeed[];
+  speeds: RatingSpeed[];
   gamesCount: number;
   wdl: {
     wins: number;
@@ -45,7 +45,11 @@ export interface AccountPerformanceStatsResponse {
   mostEmbarrassingDefeat: AccountPerformanceGameHighlight | null;
 }
 
-type PerformanceGame = {
+export type AccountPerformanceStatsData = Omit<AccountPerformanceStatsResponse, 'account'> & {
+  scorePercent: number | null;
+};
+
+export type PerformanceGame = {
   id: number;
   endedAt: Date | null;
   speedCategory: string | null;
@@ -57,7 +61,7 @@ type PerformanceGame = {
   providerUrl: string | null;
 };
 
-function buildEndedAtRange(query: Pick<AccountPerformanceStatsQuery, 'from' | 'to'>) {
+export function buildPerformanceEndedAtRange(query: Pick<AccountPerformanceStatsQuery, 'from' | 'to'>) {
   return {
     not: null,
     ...(query.from ? { gte: new Date(query.from) } : {}),
@@ -95,7 +99,7 @@ function toHighlight(game: PerformanceGame): AccountPerformanceGameHighlight | n
   };
 }
 
-function isRatingSpeed(value: string | null): value is RatingStatsSpeed {
+function isRatingSpeed(value: string | null): value is RatingSpeed {
   return value === 'bullet' || value === 'blitz' || value === 'rapid';
 }
 
@@ -123,6 +127,57 @@ function worseDefeat(left: PerformanceGame, right: PerformanceGame | null) {
   return (left.endedAt?.getTime() ?? 0) > (right.endedAt?.getTime() ?? 0);
 }
 
+export function buildAccountPerformanceStatsData(
+  games: PerformanceGame[],
+  query: AccountPerformanceStatsQuery,
+): AccountPerformanceStatsData {
+  const wdl = { wins: 0, draws: 0, losses: 0 };
+  const opponentRatings = {
+    wins: [] as number[],
+    draws: [] as number[],
+    losses: [] as number[],
+  };
+  let bestVictory: PerformanceGame | null = null;
+  let mostEmbarrassingDefeat: PerformanceGame | null = null;
+
+  for (const game of games) {
+    const opponentRating = getOpponentRating(game);
+
+    if (game.resultForUser === 'WIN') {
+      wdl.wins += 1;
+      if (opponentRating !== null) opponentRatings.wins.push(opponentRating);
+      if (betterBestVictory(game, bestVictory)) bestVictory = game;
+    } else if (game.resultForUser === 'DRAW') {
+      wdl.draws += 1;
+      if (opponentRating !== null) opponentRatings.draws.push(opponentRating);
+    } else if (game.resultForUser === 'LOSS') {
+      wdl.losses += 1;
+      if (opponentRating !== null) opponentRatings.losses.push(opponentRating);
+      if (worseDefeat(game, mostEmbarrassingDefeat)) mostEmbarrassingDefeat = game;
+    }
+  }
+
+  const decidedGames = wdl.wins + wdl.draws + wdl.losses;
+
+  return {
+    range: {
+      from: query.from,
+      to: query.to,
+    },
+    speeds: query.speeds,
+    gamesCount: games.length,
+    wdl,
+    scorePercent: decidedGames > 0 ? Math.round(((wdl.wins + wdl.draws * 0.5) / decidedGames) * 100) : null,
+    averageOpponentRating: {
+      wins: average(opponentRatings.wins),
+      draws: average(opponentRatings.draws),
+      losses: average(opponentRatings.losses),
+    },
+    bestVictory: bestVictory ? toHighlight(bestVictory) : null,
+    mostEmbarrassingDefeat: mostEmbarrassingDefeat ? toHighlight(mostEmbarrassingDefeat) : null,
+  };
+}
+
 export const AccountPerformanceStatsService = {
   getForAccount: async (
     userId: number,
@@ -136,7 +191,7 @@ export const AccountPerformanceStatsService = {
       where: {
         userId,
         accountId,
-        endedAt: buildEndedAtRange(query),
+        endedAt: buildPerformanceEndedAtRange(query),
         speedCategory: { in: query.speeds },
         userColor: { in: ['WHITE', 'BLACK'] },
         resultForUser: { in: ['WIN', 'DRAW', 'LOSS'] },
@@ -155,31 +210,7 @@ export const AccountPerformanceStatsService = {
       orderBy: [{ endedAt: 'asc' }, { id: 'asc' }],
     });
 
-    const wdl = { wins: 0, draws: 0, losses: 0 };
-    const opponentRatings = {
-      wins: [] as number[],
-      draws: [] as number[],
-      losses: [] as number[],
-    };
-    let bestVictory: PerformanceGame | null = null;
-    let mostEmbarrassingDefeat: PerformanceGame | null = null;
-
-    for (const game of games) {
-      const opponentRating = getOpponentRating(game);
-
-      if (game.resultForUser === 'WIN') {
-        wdl.wins += 1;
-        if (opponentRating !== null) opponentRatings.wins.push(opponentRating);
-        if (betterBestVictory(game, bestVictory)) bestVictory = game;
-      } else if (game.resultForUser === 'DRAW') {
-        wdl.draws += 1;
-        if (opponentRating !== null) opponentRatings.draws.push(opponentRating);
-      } else if (game.resultForUser === 'LOSS') {
-        wdl.losses += 1;
-        if (opponentRating !== null) opponentRatings.losses.push(opponentRating);
-        if (worseDefeat(game, mostEmbarrassingDefeat)) mostEmbarrassingDefeat = game;
-      }
-    }
+    const { scorePercent: _scorePercent, ...performance } = buildAccountPerformanceStatsData(games, query);
 
     return {
       account: {
@@ -188,20 +219,7 @@ export const AccountPerformanceStatsService = {
         username: account.username,
         displayName: account.displayName,
       },
-      range: {
-        from: query.from,
-        to: query.to,
-      },
-      speeds: query.speeds,
-      gamesCount: games.length,
-      wdl,
-      averageOpponentRating: {
-        wins: average(opponentRatings.wins),
-        draws: average(opponentRatings.draws),
-        losses: average(opponentRatings.losses),
-      },
-      bestVictory: bestVictory ? toHighlight(bestVictory) : null,
-      mostEmbarrassingDefeat: mostEmbarrassingDefeat ? toHighlight(mostEmbarrassingDefeat) : null,
+      ...performance,
     };
   },
 };
