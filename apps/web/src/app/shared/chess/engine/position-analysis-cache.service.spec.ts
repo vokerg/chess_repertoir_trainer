@@ -3,6 +3,7 @@ import {
   DEFAULT_INTERACTIVE_MULTIPV,
   firstUciMove,
   PositionAnalysisCacheService,
+  RICH_INTERACTIVE_CACHE_MIN_DEPTH,
   RICH_INTERACTIVE_ANALYSIS_DEPTH,
 } from './position-analysis-cache.service';
 import { EngineAnalysis } from './stockfish-analysis.service';
@@ -76,7 +77,7 @@ describe('PositionAnalysisCacheService', () => {
     };
 
     expect((service as any).usablePosition(compactPosition, fen, 1, 12, 'best-eval')).toBe(compactPosition);
-    expect((service as any).usablePosition(compactPosition, fen, 1, RICH_INTERACTIVE_ANALYSIS_DEPTH, 'lines')).toBeNull();
+    expect((service as any).usablePosition(compactPosition, fen, 1, RICH_INTERACTIVE_CACHE_MIN_DEPTH, 'lines')).toBeNull();
   });
 
   it('does not let a compact pending save replace a rich pending save', () => {
@@ -121,7 +122,22 @@ describe('PositionAnalysisCacheService', () => {
     expect(result.lines[0].depth).toBe(RICH_INTERACTIVE_ANALYSIS_DEPTH);
   });
 
-  it('reuses cached rich lines that meet requested depth', async () => {
+  it('reuses cached rich lines at the interactive cache threshold', async () => {
+    const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
+    const cached = richPosition(fen, RICH_INTERACTIVE_CACHE_MIN_DEPTH);
+    api.get.and.returnValue(of({ positionAnalysis: cached }));
+
+    const result = await service.getOrAnalyzePosition(fen, {
+      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+      multipv: DEFAULT_INTERACTIVE_MULTIPV,
+    });
+
+    expect(stockfish.analyzeOnce).not.toHaveBeenCalled();
+    expect(api.post).not.toHaveBeenCalled();
+    expect(result).toBe(cached);
+  });
+
+  it('reuses cached rich lines at full interactive depth', async () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
     const cached = richPosition(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH);
     api.get.and.returnValue(of({ positionAnalysis: cached }));

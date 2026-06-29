@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   DEFAULT_INTERACTIVE_MULTIPV,
   PositionAnalysisCacheService,
+  RICH_INTERACTIVE_CACHE_MIN_DEPTH,
   RICH_INTERACTIVE_ANALYSIS_DEPTH,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
@@ -239,7 +240,7 @@ export class GameDetailStore implements OnDestroy {
       depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
       multipv: DEFAULT_INTERACTIVE_MULTIPV,
       seedPosition: this.positionAnalysis.seedForFen(fen, this.game()?.plies ?? [], {
-        requestedDepth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+        requestedDepth: RICH_INTERACTIVE_CACHE_MIN_DEPTH,
       }),
     });
   }

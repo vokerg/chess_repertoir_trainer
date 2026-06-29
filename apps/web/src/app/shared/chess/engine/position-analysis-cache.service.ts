@@ -6,6 +6,7 @@ import { EngineAnalysis, EngineLine, StockfishAnalysisService } from './stockfis
 
 export const COMPACT_GAME_ANALYSIS_DEPTH = 12;
 export const RICH_INTERACTIVE_ANALYSIS_DEPTH = 18;
+export const RICH_INTERACTIVE_CACHE_MIN_DEPTH = 17;
 export const DEFAULT_INTERACTIVE_MULTIPV = 3;
 export const COMPACT_GAME_MULTIPV = 1;
 
@@ -74,6 +75,12 @@ export function firstUciMove(value?: string | null): string | null {
   return token && UCI_MOVE_RE.test(token) ? token : null;
 }
 
+function defaultRequiredDepth(depth: number, cacheRequirement: PositionAnalysisCacheRequirement): number {
+  return cacheRequirement === 'lines' && depth >= RICH_INTERACTIVE_ANALYSIS_DEPTH
+    ? RICH_INTERACTIVE_CACHE_MIN_DEPTH
+    : depth;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PositionAnalysisCacheService implements OnDestroy {
   private static readonly bulkSaveChunkSize = 25;
@@ -114,11 +121,11 @@ export class PositionAnalysisCacheService implements OnDestroy {
 
   async getOrAnalyzePosition(fen: string, options: CachedPositionAnalysisOptions = {}): Promise<PositionAnalysisCache> {
     const depth = options.depth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
-    const requiredDepth = options.requiredDepth ?? depth;
     const multipv = options.multipv ?? DEFAULT_INTERACTIVE_MULTIPV;
     const persistMode = options.persistMode ?? 'await';
     const persistenceMode = options.persistenceMode ?? 'rich';
     const cacheRequirement = options.cacheRequirement ?? (persistenceMode === 'compact' ? 'best-eval' : 'lines');
+    const requiredDepth = options.requiredDepth ?? defaultRequiredDepth(depth, cacheRequirement);
     const seed = this.usablePosition(options.seedPosition, fen, multipv, requiredDepth, cacheRequirement);
     if (seed) {
       this.rememberPosition(fen, seed);
@@ -263,10 +270,10 @@ export class PositionAnalysisCacheService implements OnDestroy {
 
   private async analyzeForUi(fen: string, options: CachedPositionAnalysisOptions): Promise<void> {
     const depth = options.depth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
-    const requiredDepth = options.requiredDepth ?? depth;
     const multipv = options.multipv ?? DEFAULT_INTERACTIVE_MULTIPV;
     const persistenceMode = options.persistenceMode ?? 'rich';
     const cacheRequirement = options.cacheRequirement ?? (persistenceMode === 'compact' ? 'best-eval' : 'lines');
+    const requiredDepth = options.requiredDepth ?? defaultRequiredDepth(depth, cacheRequirement);
     const requestId = ++this.requestSeq;
 
     this.persistPendingAnalysis(this.stateSubject.value, true);
