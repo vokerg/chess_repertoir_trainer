@@ -21,10 +21,11 @@ export const bulkPositionAnalysisLookupSchema = z.object({
 
 export const storePositionAnalysisSchema = z.object({
   fen: z.string().min(1),
-  bestMoveUci: z.string().min(4).max(5).optional(),
-  bestScoreCpWhite: smallIntSchema.optional(),
-  bestMateWhite: smallIntSchema.optional(),
-  lines: z.array(engineLineSchema).max(3).optional(),
+  bestMoveUci: z.string().min(4).max(128).nullable().optional(),
+  bestScoreCpWhite: smallIntSchema.nullable().optional(),
+  bestMateWhite: smallIntSchema.nullable().optional(),
+  lines: z.array(engineLineSchema).max(3).nullable().optional(),
+  persistenceMode: z.enum(['compact', 'rich']).optional(),
 });
 
 export const bulkStorePositionAnalysisSchema = z.object({

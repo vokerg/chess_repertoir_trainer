@@ -22,7 +22,7 @@ Invalid or incomplete token configuration fails closed. No-auth mode logs a warn
 - `get_imported_game_analysis`
 - `get_opening_analysis`
 
-These tools query imported games, stored analysis, and opening data. They do not import games, synchronize external accounts, or implement Lichess/Chess.com authentication.
+These tools query imported games, stored analysis, and opening data. Compact `PositionAnalysis` rows expose `lines: []`; rich rows expose the stored lines as available. The tools do not import games, synchronize external accounts, or implement Lichess/Chess.com authentication.
 
 Write or heavy operations are deferred, including:
 

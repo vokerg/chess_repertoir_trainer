@@ -6,7 +6,14 @@ import {
   positionKeyForNormalizedFen,
   positionKeyHex,
 } from '../positions/position-key';
-import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredPositionAnalysis } from './analysis.types';
+import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
+import {
+  bestMateWhiteFrom,
+  bestMoveUciFrom,
+  bestScoreCpWhiteFrom,
+  firstUciMove,
+  normalizeStoredEngineLines,
+} from './position-analysis-normalization';
 
 const positionAnalysisInclude = {
   position: {
@@ -49,7 +56,7 @@ function compactPositionAnalysis(row: any, fromCache = true) {
     id: row.id,
     positionId: row.positionId,
     normalizedFen: row.position?.normalizedFen ?? '',
-    bestMoveUci: row.bestMoveUci ?? undefined,
+    bestMoveUci: firstUciMove(row.bestMoveUci) ?? undefined,
     bestScoreCpWhite: row.bestScoreCpWhite ?? undefined,
     bestMateWhite: row.bestMateWhite ?? undefined,
     lines: Array.isArray(row.lines) ? row.lines : [],
@@ -68,17 +75,77 @@ function dedupePlyAnalysisUpdates(updates: PlyAnalysisUpdate[]) {
 function normalizedPositionAnalysisInput(input: StorePositionAnalysisInput) {
   const normalizedFen = normalizeFenForPosition(input.fen);
   const positionKey = positionKeyForNormalizedFen(normalizedFen);
-  const lines = (input.lines ?? []).slice(0, 3);
+  const persistenceMode = input.persistenceMode ?? 'rich';
+  const normalizedLines = normalizeStoredEngineLines(input.lines);
+  const linesToPersist = persistenceMode === 'compact' ? null : normalizedLines;
 
   return {
     input,
     normalizedFen,
     positionKey,
-    bestMoveUci: input.bestMoveUci ?? lines[0]?.moveUci ?? lines[0]?.pvUci?.[0] ?? null,
-    bestScoreCpWhite: input.bestScoreCpWhite ?? lines[0]?.scoreCpWhite ?? null,
-    bestMateWhite: input.bestMateWhite ?? lines[0]?.mateWhite ?? null,
-    lines,
+    persistenceMode,
+    normalizedLines,
+    linesToPersist,
+    incomingDepth: normalizedLines[0]?.depth ?? null,
+    bestMoveUci: bestMoveUciFrom(input, normalizedLines),
+    bestScoreCpWhite: bestScoreCpWhiteFrom(input, normalizedLines),
+    bestMateWhite: bestMateWhiteFrom(input, normalizedLines),
   };
+}
+
+type NormalizedPositionAnalysisInput = Pick<
+  ReturnType<typeof normalizedPositionAnalysisInput>,
+  'bestMoveUci' | 'bestScoreCpWhite' | 'bestMateWhite' | 'linesToPersist' | 'persistenceMode' | 'incomingDepth'
+>;
+
+function persistedLines(lines: unknown): StoredEngineLine[] {
+  return Array.isArray(lines) ? normalizeStoredEngineLines(lines as StoredEngineLine[]) : [];
+}
+
+function bestLineDepth(lines: unknown): number | null {
+  const depth = persistedLines(lines)[0]?.depth;
+  return typeof depth === 'number' ? depth : null;
+}
+
+function hasPersistedLines(lines: unknown): boolean {
+  return persistedLines(lines).length > 0;
+}
+
+function isIncomingAtLeastAsDeep(incomingDepth: number | null, existingDepth: number | null): boolean {
+  return incomingDepth === null || existingDepth === null || incomingDepth >= existingDepth;
+}
+
+function scalarWriteData(input: NormalizedPositionAnalysisInput) {
+  return {
+    bestMoveUci: input.bestMoveUci,
+    bestScoreCpWhite: input.bestScoreCpWhite,
+    bestMateWhite: input.bestMateWhite,
+  };
+}
+
+function linesJsonInput(lines: StoredEngineLine[] | null): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  return lines && lines.length ? lines as unknown as Prisma.InputJsonValue : Prisma.DbNull;
+}
+
+function positionAnalysisWriteData(existing: { lines: Prisma.JsonValue | null }, input: NormalizedPositionAnalysisInput) {
+  const existingHasLines = hasPersistedLines(existing.lines);
+  const existingDepth = bestLineDepth(existing.lines);
+  const incomingHasLines = !!input.linesToPersist?.length;
+
+  if (input.persistenceMode === 'compact') {
+    return !existingHasLines || isIncomingAtLeastAsDeep(input.incomingDepth, existingDepth)
+      ? scalarWriteData(input)
+      : {};
+  }
+
+  if (incomingHasLines && (!existingHasLines || isIncomingAtLeastAsDeep(input.incomingDepth, existingDepth))) {
+    return {
+      ...scalarWriteData(input),
+      lines: linesJsonInput(input.linesToPersist),
+    };
+  }
+
+  return existingHasLines ? {} : scalarWriteData(input);
 }
 
 function dedupePositionAnalysisInputs(inputs: StorePositionAnalysisInput[]) {
@@ -182,28 +249,25 @@ export async function getPositionAnalysisByPositionId(positionId: number) {
 }
 
 export async function upsertPositionAnalysis(positionId: number, data: StorePositionAnalysisInput) {
-  const lines = (data.lines ?? []).slice(0, 3);
-  const bestMoveUci = data.bestMoveUci ?? lines[0]?.moveUci ?? lines[0]?.pvUci?.[0];
-  const bestScoreCpWhite = data.bestScoreCpWhite ?? lines[0]?.scoreCpWhite;
-  const bestMateWhite = data.bestMateWhite ?? lines[0]?.mateWhite;
+  const normalized = normalizedPositionAnalysisInput(data);
+  const existing = await prisma.positionAnalysis.findUnique({ where: { positionId } });
 
-  const row = await prisma.positionAnalysis.upsert({
-    where: { positionId },
-    create: {
-      positionId,
-      bestMoveUci,
-      bestScoreCpWhite,
-      bestMateWhite,
-      lines: lines as any,
-    },
-    update: {
-      bestMoveUci,
-      bestScoreCpWhite,
-      bestMateWhite,
-      lines: lines as any,
-    },
-    include: positionAnalysisInclude,
-  });
+  const row = existing
+    ? await prisma.positionAnalysis.update({
+      where: { positionId },
+      data: positionAnalysisWriteData(existing, normalized),
+      include: positionAnalysisInclude,
+    })
+    : await prisma.positionAnalysis.create({
+      data: {
+        positionId,
+        bestMoveUci: normalized.bestMoveUci,
+        bestScoreCpWhite: normalized.bestScoreCpWhite,
+        bestMateWhite: normalized.bestMateWhite,
+        lines: linesJsonInput(normalized.linesToPersist),
+      },
+      include: positionAnalysisInclude,
+    });
 
   return compactPositionAnalysis(row, false);
 }
@@ -250,32 +314,45 @@ export async function upsertPositionAnalysesBulk(inputs: StorePositionAnalysisIn
         bestMoveUci: item.bestMoveUci,
         bestScoreCpWhite: item.bestScoreCpWhite,
         bestMateWhite: item.bestMateWhite,
-        lines: item.lines,
+        linesToPersist: item.linesToPersist,
+        persistenceMode: item.persistenceMode,
+        incomingDepth: item.incomingDepth,
       };
     });
 
-    await tx.$executeRaw(Prisma.sql`
-      INSERT INTO "PositionAnalysis" (
-        "positionId",
-        "bestMoveUci",
-        "bestScoreCpWhite",
-        "bestMateWhite",
-        "lines"
-      )
-      VALUES ${Prisma.join(upsertRows.map((row) => Prisma.sql`(
-        ${row.positionId},
-        ${row.bestMoveUci},
-        ${row.bestScoreCpWhite},
-        ${row.bestMateWhite},
-        ${JSON.stringify(row.lines)}::jsonb
-      )`))}
-      ON CONFLICT ("positionId") DO UPDATE
-      SET
-        "bestMoveUci" = EXCLUDED."bestMoveUci",
-        "bestScoreCpWhite" = EXCLUDED."bestScoreCpWhite",
-        "bestMateWhite" = EXCLUDED."bestMateWhite",
-        "lines" = EXCLUDED."lines"
-    `);
+    const existingRows = await tx.positionAnalysis.findMany({
+      where: { positionId: { in: upsertRows.map((row) => row.positionId) } },
+    });
+    const existingByPositionId = new Map(existingRows.map((row) => [row.positionId, row]));
+
+    for (const row of upsertRows) {
+      const existing = existingByPositionId.get(row.positionId);
+      const input = {
+        bestMoveUci: row.bestMoveUci,
+        bestScoreCpWhite: row.bestScoreCpWhite,
+        bestMateWhite: row.bestMateWhite,
+        linesToPersist: row.linesToPersist,
+        persistenceMode: row.persistenceMode,
+        incomingDepth: row.incomingDepth,
+      };
+
+      if (existing) {
+        await tx.positionAnalysis.update({
+          where: { positionId: row.positionId },
+          data: positionAnalysisWriteData(existing, input),
+        });
+      } else {
+        await tx.positionAnalysis.create({
+          data: {
+            positionId: row.positionId,
+            bestMoveUci: row.bestMoveUci,
+            bestScoreCpWhite: row.bestScoreCpWhite,
+            bestMateWhite: row.bestMateWhite,
+            lines: linesJsonInput(row.linesToPersist),
+          },
+        });
+      }
+    }
 
     const rows = await tx.positionAnalysis.findMany({
       where: {

@@ -1,4 +1,5 @@
 import { moveClassificationLabel } from 'chess-domain';
+import { firstUciMove } from '../analysis/position-analysis-normalization';
 import {
   criticalMoveCount,
   deriveAnalysisStatus,
@@ -27,7 +28,7 @@ function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
     positionAnalysis: analysis
       ? {
         id: analysis.id,
-        bestMoveUci: analysis.bestMoveUci ?? null,
+        bestMoveUci: firstUciMove(analysis.bestMoveUci) ?? null,
         bestScoreCpWhite: analysis.bestScoreCpWhite ?? null,
         bestMateWhite: analysis.bestMateWhite ?? null,
         lines: Array.isArray(analysis.lines) ? analysis.lines : [],

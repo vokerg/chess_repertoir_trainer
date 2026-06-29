@@ -1,5 +1,6 @@
 import { MoveClassificationCode } from 'chess-domain';
 import type { StoredEngineLine } from './analysis.types';
+import { firstUciMove, lineMoveUci } from './position-analysis-normalization';
 
 export type AnalysisSide = 'WHITE' | 'BLACK';
 
@@ -89,7 +90,7 @@ function linesFor(analysis?: PositionAnalysisSummaryInput | null): StoredEngineL
 }
 
 function bestMoveFor(analysis?: PositionAnalysisSummaryInput | null): string | null {
-  return analysis?.bestMoveUci ?? linesFor(analysis)[0]?.moveUci ?? linesFor(analysis)[0]?.pvUci?.[0] ?? null;
+  return firstUciMove(analysis?.bestMoveUci) ?? lineMoveUci(linesFor(analysis)[0]) ?? null;
 }
 
 function bestEvalCpWhite(analysis?: PositionAnalysisSummaryInput | null): number | null {
@@ -100,7 +101,7 @@ function playedEvalFromMatchingLineCpWhite(
   analysis: PositionAnalysisSummaryInput | null | undefined,
   moveUci: string,
 ): number | null {
-  const line = linesFor(analysis).find((candidate) => (candidate.moveUci ?? candidate.pvUci?.[0]) === moveUci);
+  const line = linesFor(analysis).find((candidate) => lineMoveUci(candidate) === moveUci);
   return line ? effectiveScoreCpWhite(line.scoreCpWhite, line.mateWhite) : null;
 }
 

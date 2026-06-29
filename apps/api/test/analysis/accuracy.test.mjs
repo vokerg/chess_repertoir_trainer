@@ -151,6 +151,83 @@ const cases = [
       assert.ok(summary.white.accuracy < 90);
     },
   },
+  {
+    name: 'scores compact best-move rows without persisted lines',
+    run() {
+      const summary = buildGameAccuracySummary([
+        {
+          plyNumber: 1,
+          moveUci: 'e2e4',
+          scoreLossCp: 0,
+          classificationCode: MoveClassificationCode.Best,
+          positionAnalysis: {
+            bestMoveUci: 'e2e4',
+            bestScoreCpWhite: 35,
+            bestMateWhite: null,
+            lines: [],
+          },
+          resultingPositionAnalysis: null,
+        },
+      ], 'WHITE');
+
+      assert.equal(summary.white.accuracy, 100);
+      assert.equal(summary.white.averageCentipawnLoss, 0);
+      assert.equal(summary.white.moves, 1);
+    },
+  },
+  {
+    name: 'uses compact resulting-position eval when compact before-position move is not best',
+    run() {
+      const summary = buildGameAccuracySummary([
+        {
+          plyNumber: 1,
+          moveUci: 'e2e4',
+          scoreLossCp: 50,
+          classificationCode: MoveClassificationCode.Inaccuracy,
+          positionAnalysis: {
+            bestMoveUci: 'd2d4',
+            bestScoreCpWhite: 25,
+            bestMateWhite: null,
+            lines: [],
+          },
+          resultingPositionAnalysis: {
+            bestMoveUci: 'e7e5',
+            bestScoreCpWhite: -25,
+            bestMateWhite: null,
+            lines: [],
+          },
+        },
+      ], 'WHITE');
+
+      assert.equal(summary.white.moves, 1);
+      assert.equal(summary.white.averageCentipawnLoss, 50);
+      assert.ok(summary.white.accuracy > 75);
+      assert.ok(summary.white.accuracy < 90);
+    },
+  },
+  {
+    name: 'sanitizes polluted bestMoveUci before best-move comparison',
+    run() {
+      const summary = buildGameAccuracySummary([
+        {
+          plyNumber: 1,
+          moveUci: 'e2e4',
+          scoreLossCp: 0,
+          classificationCode: MoveClassificationCode.Best,
+          positionAnalysis: {
+            bestMoveUci: 'e2e4 e7e5 g1f3',
+            bestScoreCpWhite: 20,
+            bestMateWhite: null,
+            lines: [],
+          },
+          resultingPositionAnalysis: null,
+        },
+      ], 'WHITE');
+
+      assert.equal(summary.white.accuracy, 100);
+      assert.equal(summary.white.moves, 1);
+    },
+  },
 ];
 
 for (const testCase of cases) {

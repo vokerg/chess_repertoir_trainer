@@ -79,7 +79,7 @@ The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A u
 
 The Games explorer UI is available from the main `Games` navigation item and supports filtering by account, provider, result, colour, time-control class, rated/casual, opponent, opening, analysis status, accuracy range, and date range. Rows show provider, result, players, time control, opening, analysis accuracy, and actions such as Analyse, Force re-analysis, and provider-link navigation.
 
-Backend analysis stores the heavy reusable position result separately from per-game move analysis. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
+Backend analysis stores reusable position-level analysis separately from per-game move analysis. Imported-game analysis persists compact `PositionAnalysis` rows by default: `bestMoveUci`, `bestScoreCpWhite`, and `bestMateWhite`, with no persisted engine lines. Interactive/free analysis persists rich rows with PV/engine lines. Rich analysis may upgrade compact rows, while compact analysis must not erase existing rich lines. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
 
 `GET /api/opening-analysis` powers both the opening-analysis explorer and the line-editor games assistant, so position-based imported-game continuations use one backend aggregation path.
 
@@ -364,12 +364,12 @@ GET /api/imported-games/:gameId/analysis
 Behavior:
 
 - The analyze endpoint loads the imported game PGN, expands it into plies, analyzes each played move through the shared position-analysis service, and stores the result.
-- `PositionAnalysis` stores the heavy reusable Stockfish result for a concrete position, played move, depth, MultiPV, engine, and classification version.
+- `PositionAnalysis` stores reusable position-level analysis. Imported-game analysis writes compact rows with scalar best move/eval only; interactive/free analysis writes rich rows with up to three PV lines.
 - `GameAnalysisRun` stores the one-game run metadata and summary.
 - `GameMoveAnalysis` stores the game-specific move row and points to `PositionAnalysis`.
 - If `force` is false or omitted and a `RUNNING` or `COMPLETED` run already exists for the same imported game, depth, MultiPV, engine name, and engine version, the endpoint returns that run and does not re-analyze.
 - If `force` is true, the endpoint creates a new `GameAnalysisRun`; existing `PositionAnalysis` cache rows are still reused.
-- Analyze and read endpoints return compact game-analysis reports by default. Full engine lines remain stored in `PositionAnalysis` and should be exposed through a dedicated detail endpoint only when needed.
+- Analyze and read endpoints return compact game-analysis reports by default. Compact `PositionAnalysis` rows expose `lines: []` in API responses; rich rows retain PV lines for free/interactive analysis. Compact writes must not erase rich lines.
 - Cache hits do not update hit counters; reuse can be derived later from `GameMoveAnalysis.positionAnalysisId` references.
 
 Frontend contract for analysis status:

@@ -36,7 +36,7 @@ Several modules also still call services under `apps/api/src/services`. This is 
 
 The imported-games module has a feature-local query service that shares filtering and pagination semantics across backend consumers while keeping REST response mapping in `ImportedGamesService`.
 
-Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position engine results are stored in the analysis module's position-analysis cache with bulk writes, while per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
+Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position analysis is stored in the analysis module's position-analysis cache with compact or rich persistence: imported-game flows write scalar-only compact rows, while free/interactive analysis can write rich rows with PV lines. Per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
 
 MCP is a backend transport under `apps/api`; its read-only tools call feature/application services directly rather than calling REST endpoints.
 

@@ -2,7 +2,11 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
-import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import {
+  DEFAULT_INTERACTIVE_MULTIPV,
+  PositionAnalysisCacheService,
+  RICH_INTERACTIVE_ANALYSIS_DEPTH,
+} from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import { GamesApiService } from '../data-access/games-api.service';
@@ -232,9 +236,11 @@ export class GameDetailStore implements OnDestroy {
   rerunAnalysis(): void {
     const fen = this.currentFen();
     this.positionAnalysis.analyze(fen, {
-      depth: 12,
-      multipv: 3,
-      seedPosition: this.positionAnalysis.seedForFen(fen, this.game()?.plies ?? []),
+      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+      multipv: DEFAULT_INTERACTIVE_MULTIPV,
+      seedPosition: this.positionAnalysis.seedForFen(fen, this.game()?.plies ?? [], {
+        requestedDepth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+      }),
     });
   }
 

@@ -7,12 +7,15 @@ export interface StoredEngineLine {
   pvUci: string[];
 }
 
+export type PositionAnalysisPersistenceMode = 'compact' | 'rich';
+
 export interface StorePositionAnalysisInput {
   fen: string;
-  bestMoveUci?: string;
-  bestScoreCpWhite?: number;
-  bestMateWhite?: number;
-  lines?: StoredEngineLine[];
+  bestMoveUci?: string | null;
+  bestScoreCpWhite?: number | null;
+  bestMateWhite?: number | null;
+  lines?: StoredEngineLine[] | null;
+  persistenceMode?: PositionAnalysisPersistenceMode;
 }
 
 export interface StoredPositionAnalysis {

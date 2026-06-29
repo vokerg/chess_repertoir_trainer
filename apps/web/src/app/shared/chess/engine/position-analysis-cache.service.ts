@@ -4,6 +4,11 @@ import { BehaviorSubject, firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import { EngineAnalysis, EngineLine, StockfishAnalysisService } from './stockfish-analysis.service';
 
+export const COMPACT_GAME_ANALYSIS_DEPTH = 12;
+export const RICH_INTERACTIVE_ANALYSIS_DEPTH = 18;
+export const DEFAULT_INTERACTIVE_MULTIPV = 3;
+export const COMPACT_GAME_MULTIPV = 1;
+
 export interface PositionAnalysisLine {
   multipv?: number;
   depth?: number;
@@ -33,26 +38,40 @@ interface BulkPositionAnalysisResponse {
   positionAnalyses: PositionAnalysisCache[];
 }
 
+export type PositionAnalysisPersistenceMode = 'compact' | 'rich';
+export type PositionAnalysisCacheRequirement = 'best-eval' | 'lines';
+
 interface PositionAnalysisStoreRequest {
   fen: string;
   bestMoveUci?: string | null;
   bestScoreCpWhite?: number | null;
   bestMateWhite?: number | null;
   lines?: PositionAnalysisLine[];
+  persistenceMode?: PositionAnalysisPersistenceMode;
 }
 
 export interface CachedPositionAnalysisOptions {
   depth?: number;
+  requiredDepth?: number;
   multipv?: number;
   pvMoveLimit?: number;
   seedPosition?: PositionAnalysisCache | null;
   keepAlive?: boolean;
   persistMode?: 'await' | 'background';
+  persistenceMode?: PositionAnalysisPersistenceMode;
+  cacheRequirement?: PositionAnalysisCacheRequirement;
 }
 
 export interface PositionAnalysisSeedCandidate {
   normalizedFen?: string | null;
   positionAnalysis?: PositionAnalysisCache | null;
+}
+
+const UCI_MOVE_RE = /^[a-h][1-8][a-h][1-8][qrbn]?$/i;
+
+export function firstUciMove(value?: string | null): string | null {
+  const token = value?.trim().split(/\s+/)[0]?.toLowerCase();
+  return token && UCI_MOVE_RE.test(token) ? token : null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,8 +83,12 @@ export class PositionAnalysisCacheService implements OnDestroy {
   private readonly memoryCache = new Map<string, PositionAnalysisCache>();
   private readonly knownRemoteMisses = new Set<string>();
   private requestSeq = 0;
-  private pendingInteractiveSave: { fen: string; multipv: number } | null = null;
-  private readonly pendingBulkSaves = new Map<string, PositionAnalysisCache>();
+  private pendingInteractiveSave: {
+    fen: string;
+    multipv: number;
+    persistenceMode: PositionAnalysisPersistenceMode;
+  } | null = null;
+  private readonly pendingBulkSaves = new Map<string, { positionAnalysis: PositionAnalysisCache; persistenceMode: PositionAnalysisPersistenceMode }>();
   private inflightBulkSave: Promise<void> | null = null;
 
   readonly state$ = this.stateSubject.asObservable();
@@ -90,20 +113,23 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   async getOrAnalyzePosition(fen: string, options: CachedPositionAnalysisOptions = {}): Promise<PositionAnalysisCache> {
-    const depth = options.depth ?? 12;
-    const multipv = options.multipv ?? 3;
+    const depth = options.depth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
+    const requiredDepth = options.requiredDepth ?? depth;
+    const multipv = options.multipv ?? DEFAULT_INTERACTIVE_MULTIPV;
     const persistMode = options.persistMode ?? 'await';
-    const seed = this.usablePosition(options.seedPosition, fen, multipv);
+    const persistenceMode = options.persistenceMode ?? 'rich';
+    const cacheRequirement = options.cacheRequirement ?? (persistenceMode === 'compact' ? 'best-eval' : 'lines');
+    const seed = this.usablePosition(options.seedPosition, fen, multipv, requiredDepth, cacheRequirement);
     if (seed) {
       this.rememberPosition(fen, seed);
       return seed;
     }
 
-    const memoryCached = this.memoryPosition(fen, multipv);
+    const memoryCached = this.memoryPosition(fen, multipv, requiredDepth, cacheRequirement);
     if (memoryCached) return memoryCached;
 
     if (!this.isKnownRemoteMiss(fen)) {
-      const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv);
+      const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv, requiredDepth, cacheRequirement);
       if (cached) {
         this.rememberPosition(fen, cached);
         return cached;
@@ -116,10 +142,10 @@ export class PositionAnalysisCacheService implements OnDestroy {
       multipv,
       pvMoveLimit: options.pvMoveLimit,
       keepAlive: options.keepAlive,
-      seedBestMove: this.bestMoveFromPosition(this.usablePosition(fallbackSeed, fen)),
-      seedLines: this.toEngineLines(this.usablePosition(fallbackSeed, fen), fen),
+      seedBestMove: this.bestMoveFromPosition(this.usablePosition(fallbackSeed, fen, multipv, requiredDepth, cacheRequirement)),
+      seedLines: this.toEngineLines(this.usablePosition(fallbackSeed, fen, multipv, requiredDepth, 'lines'), fen),
     });
-    return this.storePositionAnalysis(fen, analysis, multipv, persistMode);
+    return this.storePositionAnalysis(fen, analysis, multipv, persistMode, persistenceMode);
   }
 
   async flushPendingPositionAnalysisSaves(): Promise<void> {
@@ -146,22 +172,36 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.stockfish.shutdownWorker();
   }
 
-  isUsablePosition(position?: PositionAnalysisCache | null): position is PositionAnalysisCache {
-    return !!this.usablePosition(position);
+  isUsablePosition(
+    position?: PositionAnalysisCache | null,
+    cacheRequirement: PositionAnalysisCacheRequirement = 'lines',
+    requestedDepth = RICH_INTERACTIVE_ANALYSIS_DEPTH,
+  ): position is PositionAnalysisCache {
+    return !!this.usablePosition(position, undefined, 1, requestedDepth, cacheRequirement);
   }
 
-  rememberSeedPositions(candidates: PositionAnalysisSeedCandidate[] = []): void {
+  rememberSeedPositions(
+    candidates: PositionAnalysisSeedCandidate[] = [],
+    cacheRequirement: PositionAnalysisCacheRequirement = 'lines',
+    requestedDepth = RICH_INTERACTIVE_ANALYSIS_DEPTH,
+  ): void {
     for (const candidate of candidates) {
-      if (!candidate.normalizedFen || !this.isUsablePosition(candidate.positionAnalysis)) continue;
+      if (!candidate.normalizedFen || !this.isUsablePosition(candidate.positionAnalysis, cacheRequirement, requestedDepth)) continue;
       this.memoryCache.set(candidate.normalizedFen, candidate.positionAnalysis);
       this.knownRemoteMisses.delete(candidate.normalizedFen);
     }
   }
 
-  async bulkLookupPositions(fens: string[], requestedMultipv = 1): Promise<void> {
+  async bulkLookupPositions(
+    fens: string[],
+    requestedMultipv = 1,
+    options: { cacheRequirement?: PositionAnalysisCacheRequirement; requestedDepth?: number } = {},
+  ): Promise<void> {
+    const cacheRequirement = options.cacheRequirement ?? 'lines';
+    const requestedDepth = options.requestedDepth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
     const requestedNormalizedFens = this.deduplicateNormalizedFens(fens);
     const fensToLookup = requestedNormalizedFens.filter((fen) =>
-      !this.memoryPosition(fen, requestedMultipv) && !this.knownRemoteMisses.has(fen)
+      !this.memoryPosition(fen, requestedMultipv, requestedDepth, cacheRequirement) && !this.knownRemoteMisses.has(fen)
     );
     if (!fensToLookup.length) return;
 
@@ -186,10 +226,16 @@ export class PositionAnalysisCacheService implements OnDestroy {
     }
   }
 
-  seedForFen(fen: string, candidates: PositionAnalysisSeedCandidate[] = []): PositionAnalysisCache | null {
+  seedForFen(
+    fen: string,
+    candidates: PositionAnalysisSeedCandidate[] = [],
+    options: { cacheRequirement?: PositionAnalysisCacheRequirement; requestedDepth?: number } = {},
+  ): PositionAnalysisCache | null {
     const normalizedFen = this.normalizeFenForPosition(fen);
+    const cacheRequirement = options.cacheRequirement ?? 'lines';
+    const requestedDepth = options.requestedDepth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
     return candidates.find((candidate) =>
-      candidate.normalizedFen === normalizedFen && this.isUsablePosition(candidate.positionAnalysis)
+      candidate.normalizedFen === normalizedFen && this.isUsablePosition(candidate.positionAnalysis, cacheRequirement, requestedDepth)
     )?.positionAnalysis ?? null;
   }
 
@@ -205,7 +251,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   bestMoveFromPosition(position?: PositionAnalysisCache | null): string | null {
-    return position?.bestMoveUci ?? position?.lines?.[0]?.moveUci ?? position?.lines?.[0]?.pvUci?.[0] ?? null;
+    return firstUciMove(position?.bestMoveUci) ?? firstUciMove(position?.lines?.[0]?.moveUci) ?? firstUciMove(position?.lines?.[0]?.pvUci?.[0]);
   }
 
   effectiveScoreCpWhite(scoreCpWhite?: number | null, mateWhite?: number | null): number | null {
@@ -216,8 +262,11 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   private async analyzeForUi(fen: string, options: CachedPositionAnalysisOptions): Promise<void> {
-    const depth = options.depth ?? 12;
-    const multipv = options.multipv ?? 3;
+    const depth = options.depth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
+    const requiredDepth = options.requiredDepth ?? depth;
+    const multipv = options.multipv ?? DEFAULT_INTERACTIVE_MULTIPV;
+    const persistenceMode = options.persistenceMode ?? 'rich';
+    const cacheRequirement = options.cacheRequirement ?? (persistenceMode === 'compact' ? 'best-eval' : 'lines');
     const requestId = ++this.requestSeq;
 
     this.persistPendingAnalysis(this.stateSubject.value, true);
@@ -225,20 +274,20 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.stockfish.stop();
     this.emit({ fen, running: false, ready: false, error: null, bestMove: null, lines: [] });
 
-    const seed = this.usablePosition(options.seedPosition, fen, multipv);
+    const seed = this.usablePosition(options.seedPosition, fen, multipv, requiredDepth, cacheRequirement);
     if (seed) {
       this.rememberPosition(fen, seed);
       this.emit(this.mapPositionAnalysis(seed, fen));
       return;
     }
 
-    const memoryCached = this.memoryPosition(fen, multipv);
+    const memoryCached = this.memoryPosition(fen, multipv, requiredDepth, cacheRequirement);
     if (memoryCached) {
       this.emit(this.mapPositionAnalysis(memoryCached, fen));
       return;
     }
 
-    const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv);
+    const cached = this.usablePosition(await this.lookupPosition(fen), fen, multipv, requiredDepth, cacheRequirement);
     if (requestId !== this.requestSeq) return;
     if (cached) {
       this.rememberPosition(fen, cached);
@@ -246,8 +295,8 @@ export class PositionAnalysisCacheService implements OnDestroy {
       return;
     }
 
-    this.pendingInteractiveSave = { fen, multipv };
-    const fallbackSeed = this.usablePosition(options.seedPosition, fen);
+    this.pendingInteractiveSave = { fen, multipv, persistenceMode };
+    const fallbackSeed = this.usablePosition(options.seedPosition, fen, multipv, requiredDepth, cacheRequirement);
     this.stockfish.analyze(fen, {
       depth,
       multipv,
@@ -272,16 +321,17 @@ export class PositionAnalysisCacheService implements OnDestroy {
     analysis: EngineAnalysis,
     multipv: number,
     persistMode: 'await' | 'background' = 'await',
+    persistenceMode: PositionAnalysisPersistenceMode = 'rich',
   ): Promise<PositionAnalysisCache> {
     const positionAnalysis = this.cacheFromAnalysis(fen, analysis, multipv);
     this.rememberPosition(fen, positionAnalysis);
 
     if (persistMode === 'background') {
-      this.enqueueBackgroundSave(fen, positionAnalysis);
+      this.enqueueBackgroundSave(fen, positionAnalysis, persistenceMode);
       return positionAnalysis;
     }
 
-    return this.persistPositionAnalysis(fen, positionAnalysis);
+    return this.persistPositionAnalysis(fen, positionAnalysis, persistenceMode);
   }
 
   private maybePersistInteractiveAnalysis(analysis: EngineAnalysis): void {
@@ -296,27 +346,41 @@ export class PositionAnalysisCacheService implements OnDestroy {
     if (!analysis.lines.length && !analysis.bestMove) return;
 
     this.pendingInteractiveSave = null;
-    this.storePositionAnalysis(pending.fen, analysis, pending.multipv).catch(() => {
+    this.storePositionAnalysis(pending.fen, analysis, pending.multipv, 'await', pending.persistenceMode).catch(() => {
       // The UI already has the engine result; cache persistence is best-effort.
     });
   }
 
-  private async persistPositionAnalysis(fen: string, positionAnalysis: PositionAnalysisCache): Promise<PositionAnalysisCache> {
+  private async persistPositionAnalysis(
+    fen: string,
+    positionAnalysis: PositionAnalysisCache,
+    persistenceMode: PositionAnalysisPersistenceMode,
+  ): Promise<PositionAnalysisCache> {
     const response = await firstValueFrom(this.api.post<PositionAnalysisResponse>(
       '/position-analysis/store',
-      this.toStoreRequest(fen, positionAnalysis),
+      this.toStoreRequest(fen, positionAnalysis, persistenceMode),
     ));
     if (!response.positionAnalysis) throw new Error('Position analysis was not stored.');
     this.rememberPosition(fen, response.positionAnalysis);
     return response.positionAnalysis;
   }
 
-  private enqueueBackgroundSave(fen: string, positionAnalysis: PositionAnalysisCache): void {
+  private enqueueBackgroundSave(
+    fen: string,
+    positionAnalysis: PositionAnalysisCache,
+    persistenceMode: PositionAnalysisPersistenceMode,
+  ): void {
     const normalizedFen = this.normalizeFenForPosition(fen);
+    const existing = this.pendingBulkSaves.get(normalizedFen);
+    if (existing?.persistenceMode === 'rich' && persistenceMode === 'compact') return;
+
     this.pendingBulkSaves.set(normalizedFen, {
-      ...positionAnalysis,
-      fen,
-      normalizedFen,
+      persistenceMode,
+      positionAnalysis: {
+        ...positionAnalysis,
+        fen,
+        normalizedFen,
+      },
     });
 
     if (this.pendingBulkSaves.size >= PositionAnalysisCacheService.bulkSaveChunkSize) {
@@ -339,7 +403,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
   private async flushOneBulkSaveChunk(): Promise<void> {
     const items = Array.from(this.pendingBulkSaves.entries())
       .slice(0, PositionAnalysisCacheService.bulkSaveChunkSize)
-      .map(([normalizedFen, positionAnalysis]) => ({ normalizedFen, positionAnalysis }));
+      .map(([normalizedFen, item]) => ({ normalizedFen, ...item }));
 
     if (!items.length) return;
 
@@ -348,7 +412,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
     }
 
     try {
-      const stored = await this.persistPositionAnalysesBulk(items.map((item) => item.positionAnalysis));
+      const stored = await this.persistPositionAnalysesBulk(items);
       for (const position of stored) {
         const fen = position.fen ?? position.normalizedFen;
         if (fen) this.rememberPosition(fen, position);
@@ -358,26 +422,45 @@ export class PositionAnalysisCacheService implements OnDestroy {
     }
   }
 
-  private async persistPositionAnalysesBulk(items: PositionAnalysisCache[]): Promise<PositionAnalysisCache[]> {
-    const positions = items.map((item) => this.toStoreRequest(item.fen ?? item.normalizedFen ?? '', item));
+  private async persistPositionAnalysesBulk(
+    items: Array<{ positionAnalysis: PositionAnalysisCache; persistenceMode: PositionAnalysisPersistenceMode }>,
+  ): Promise<PositionAnalysisCache[]> {
+    const positions = items.map((item) =>
+      this.toStoreRequest(
+        item.positionAnalysis.fen ?? item.positionAnalysis.normalizedFen ?? '',
+        item.positionAnalysis,
+        item.persistenceMode,
+      )
+    );
     const response = await firstValueFrom(this.api.post<BulkPositionAnalysisResponse>('/position-analysis/bulk-store', {
       positions,
     }));
     return response.positionAnalyses ?? [];
   }
 
-  private toStoreRequest(fen: string, positionAnalysis: PositionAnalysisCache): PositionAnalysisStoreRequest {
-    return {
+  private toStoreRequest(
+    fen: string,
+    positionAnalysis: PositionAnalysisCache,
+    persistenceMode: PositionAnalysisPersistenceMode,
+  ): PositionAnalysisStoreRequest {
+    const request: PositionAnalysisStoreRequest = {
       fen,
-      bestMoveUci: positionAnalysis.bestMoveUci,
+      bestMoveUci: this.bestMoveFromPosition(positionAnalysis),
       bestScoreCpWhite: positionAnalysis.bestScoreCpWhite,
       bestMateWhite: positionAnalysis.bestMateWhite,
-      lines: positionAnalysis.lines,
+      persistenceMode,
     };
+    if (persistenceMode === 'rich') request.lines = positionAnalysis.lines;
+    return request;
   }
 
-  private memoryPosition(fen: string, requestedMultipv = 1): PositionAnalysisCache | null {
-    return this.usablePosition(this.memoryCache.get(this.normalizeFenForPosition(fen)), fen, requestedMultipv);
+  private memoryPosition(
+    fen: string,
+    requestedMultipv = 1,
+    requestedDepth = RICH_INTERACTIVE_ANALYSIS_DEPTH,
+    cacheRequirement: PositionAnalysisCacheRequirement = 'lines',
+  ): PositionAnalysisCache | null {
+    return this.usablePosition(this.memoryCache.get(this.normalizeFenForPosition(fen)), fen, requestedMultipv, requestedDepth, cacheRequirement);
   }
 
   private rememberPosition(fen: string, position: PositionAnalysisCache): void {
@@ -400,18 +483,37 @@ export class PositionAnalysisCacheService implements OnDestroy {
     return Array.from(normalizedFens);
   }
 
-  private usablePosition(position?: PositionAnalysisCache | null, fen?: string, requestedMultipv = 1): PositionAnalysisCache | null {
+  private usablePosition(
+    position?: PositionAnalysisCache | null,
+    fen?: string,
+    requestedMultipv = 1,
+    requestedDepth = RICH_INTERACTIVE_ANALYSIS_DEPTH,
+    cacheRequirement: PositionAnalysisCacheRequirement = 'lines',
+  ): PositionAnalysisCache | null {
     if (!position) return null;
     if (fen && !this.positionMatchesFen(position, fen)) return null;
     const bestMove = this.bestMoveFromPosition(position);
+    if (cacheRequirement === 'best-eval') {
+      return bestMove && this.effectiveScoreCpWhite(position.bestScoreCpWhite, position.bestMateWhite) !== null ? position : null;
+    }
     if (!bestMove && !position.lines?.length) return null;
-    return this.hasRequestedLines(position, requestedMultipv, fen) ? position : null;
+    return this.hasRequestedLines(position, requestedMultipv, requestedDepth, fen) ? position : null;
   }
 
-  private hasRequestedLines(position: PositionAnalysisCache, requestedMultipv: number, fen?: string): boolean {
+  private hasRequestedLines(
+    position: PositionAnalysisCache,
+    requestedMultipv: number,
+    requestedDepth: number,
+    fen?: string,
+  ): boolean {
     const requiredLines = this.requiredLineCount(requestedMultipv, fen);
     const lines = Array.isArray(position.lines) ? position.lines : [];
-    return lines.filter((line) => line.moveUci || line.pvUci?.[0]).length >= requiredLines;
+    if (lines.length < requiredLines) return false;
+    return lines.slice(0, requiredLines).every((line) =>
+      (firstUciMove(line.moveUci) || firstUciMove(line.pvUci?.[0])) &&
+      typeof line.depth === 'number' &&
+      line.depth >= requestedDepth
+    );
   }
 
   private requiredLineCount(requestedMultipv: number, fen?: string): number {
@@ -436,7 +538,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
     return {
       fen,
       normalizedFen: this.normalizeFenForPosition(fen),
-      bestMoveUci: analysis.bestMove || analysis.lines[0]?.pv?.[0] || undefined,
+      bestMoveUci: firstUciMove(analysis.bestMove) ?? firstUciMove(analysis.lines[0]?.pv?.[0]) ?? undefined,
       bestScoreCpWhite: this.scoreFromSideToMoveToWhite(analysis.lines[0]?.scoreCp, fen),
       bestMateWhite: this.scoreFromSideToMoveToWhite(analysis.lines[0]?.mate, fen),
       lines: analysis.lines.slice(0, multipv).map((line) => this.toPositionAnalysisLine(line, fen)),
@@ -452,7 +554,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
         depth: line.depth ?? 0,
         scoreCp: this.scoreFromWhiteToSideToMove(line.scoreCpWhite ?? undefined, fen),
         mate: this.scoreFromWhiteToSideToMove(line.mateWhite ?? undefined, fen),
-        pv: line.pvUci ?? (line.moveUci ? [line.moveUci] : []),
+      pv: line.pvUci ?? (line.moveUci ? [line.moveUci] : []),
       }))
       .filter((line) => line.pv.length);
   }
@@ -461,10 +563,10 @@ export class PositionAnalysisCacheService implements OnDestroy {
     return {
       multipv: line.multipv,
       depth: line.depth,
-      moveUci: line.pv[0] || undefined,
+      moveUci: firstUciMove(line.pv[0]) ?? undefined,
       scoreCpWhite: this.scoreFromSideToMoveToWhite(line.scoreCp, fen),
       mateWhite: this.scoreFromSideToMoveToWhite(line.mate, fen),
-      pvUci: line.pv,
+      pvUci: line.pv.map((move) => firstUciMove(move)).filter((move): move is string => move !== null),
     };
   }
 

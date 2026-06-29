@@ -1,5 +1,6 @@
 import { moveClassificationLabel } from 'chess-domain';
 import type { StoredEngineLine } from './analysis.types';
+import { firstUciMove, lineMoveUci } from './position-analysis-normalization';
 import {
   createClientGameAnalysisRun,
   getImportedGameForAnalysis,
@@ -30,12 +31,12 @@ function linesFor(analysis: any): StoredEngineLine[] {
 }
 
 function bestMoveFor(analysis: any): string | null {
-  return analysis?.bestMoveUci ?? linesFor(analysis)[0]?.moveUci ?? linesFor(analysis)[0]?.pvUci?.[0] ?? null;
+  return firstUciMove(analysis?.bestMoveUci) ?? lineMoveUci(linesFor(analysis)[0]) ?? null;
 }
 
 function playedScoreCpWhite(ply: any, nextPly: any): number | null {
   const analysis = ply.position?.analysis;
-  const matchingLine = linesFor(analysis).find((line) => (line.moveUci ?? line.pvUci?.[0]) === ply.moveUci);
+  const matchingLine = linesFor(analysis).find((line) => lineMoveUci(line) === ply.moveUci);
   if (matchingLine) return effectiveScoreCpWhite(matchingLine.scoreCpWhite, matchingLine.mateWhite);
 
   if (bestMoveFor(analysis) === ply.moveUci) {
@@ -59,7 +60,7 @@ function compactMove(ply: any, nextPly: any) {
     classificationCode: ply.classificationCode ?? null,
     classification: moveClassificationLabel(ply.classificationCode),
     scoreLossCp: ply.scoreLossCp ?? null,
-    bestMoveUci: analysis?.bestMoveUci ?? null,
+    bestMoveUci: bestMoveFor(analysis),
     bestScoreCpWhite: analysis?.bestScoreCpWhite ?? null,
     playedScoreCpWhite: playedScoreCpWhite(ply, nextPly),
     bestMateWhite: analysis?.bestMateWhite ?? null,

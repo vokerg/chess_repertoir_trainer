@@ -294,11 +294,7 @@ export const OpeningAnalysisService = {
       .map((row) => toOpeningAnalysisGame(row, detailsForMove(row.moveUci).moveSan));
 
     const chess = new Chess(fen);
-    const positionAnalysis = await PositionAnalysisService.getStoredPositionSearch({
-      fen,
-      depth: 12,
-      multipv: 3,
-    });
+    const positionAnalysis = await PositionAnalysisService.getStoredPositionSearch({ fen });
 
     return {
       fen,

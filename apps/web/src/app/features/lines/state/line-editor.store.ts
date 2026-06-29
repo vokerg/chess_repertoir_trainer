@@ -2,7 +2,11 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
-import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import {
+  DEFAULT_INTERACTIVE_MULTIPV,
+  PositionAnalysisCacheService,
+  RICH_INTERACTIVE_ANALYSIS_DEPTH,
+} from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
@@ -284,7 +288,10 @@ export class LineEditorStore implements OnDestroy {
   rerunAnalysis(): void {
     const fen = this.currentFen();
     if (!fen) return;
-    this.positionAnalysis.analyze(fen, { depth: 12, multipv: 3 });
+    this.positionAnalysis.analyze(fen, {
+      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+      multipv: DEFAULT_INTERACTIVE_MULTIPV,
+    });
   }
 
   handleKeyboard(event: KeyboardEvent): void {

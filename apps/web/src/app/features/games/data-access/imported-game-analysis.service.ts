@@ -3,7 +3,12 @@ import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
 import { classifyPly } from 'chess-domain';
 import { ApiService } from '../../../core/api/api.service';
-import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import {
+  COMPACT_GAME_ANALYSIS_DEPTH,
+  COMPACT_GAME_MULTIPV,
+  firstUciMove,
+  PositionAnalysisCacheService,
+} from '../../../shared/chess/engine/position-analysis-cache.service';
 import { ImportedGameDetail, ImportedGamePly, PositionAnalysisCache, UserColor } from './games.models';
 
 interface AnalysisRunResponse {
@@ -48,7 +53,7 @@ export class ImportedGameAnalysisService {
     const plies = game.plies || [];
     if (!plies.length) throw new Error('This game has no indexed plies. Index plies before analysing.');
 
-    this.positionAnalysis.rememberSeedPositions(plies);
+    this.positionAnalysis.rememberSeedPositions(plies, 'best-eval', COMPACT_GAME_ANALYSIS_DEPTH);
 
     const totalPlies = plies.length;
     const alreadyAnalysedCount = force ? 0 : plies.filter(isPlyAnalysisComplete).length;
@@ -70,7 +75,10 @@ export class ImportedGameAnalysisService {
       }
 
       const worksetFens = this.buildAnalysisWorksetFens(pliesToAnalyze);
-      await this.positionAnalysis.bulkLookupPositions(worksetFens, 1);
+      await this.positionAnalysis.bulkLookupPositions(worksetFens, COMPACT_GAME_MULTIPV, {
+        cacheRequirement: 'best-eval',
+        requestedDepth: COMPACT_GAME_ANALYSIS_DEPTH,
+      });
 
       const updates: PlyAnalysisPatch[] = [];
 
@@ -139,7 +147,7 @@ export class ImportedGameAnalysisService {
     const side = sideToMove(beforeFen);
     const legalMoves = legalMoveCount(beforeFen);
     const position = await this.getGamePositionAnalysis(beforeFen, ply.positionAnalysis);
-    const bestMoveUci = position.bestMoveUci ?? position.lines[0]?.moveUci ?? position.lines[0]?.pvUci?.[0] ?? null;
+    const bestMoveUci = this.positionAnalysis.bestMoveFromPosition(position);
     const bestScoreCpWhite = this.positionAnalysis.effectiveScoreCpWhite(position.bestScoreCpWhite, position.bestMateWhite);
     const playedScoreCpWhite = await this.playedMoveScoreCpWhite(beforeFen, ply.moveUci, position, seedCandidates);
     const scoreLossCp = this.scoreLossCp(side, bestScoreCpWhite, playedScoreCpWhite);
@@ -159,12 +167,14 @@ export class ImportedGameAnalysisService {
 
   private async getGamePositionAnalysis(fen: string, seed?: PositionAnalysisCache | null): Promise<PositionAnalysisCache> {
     return this.positionAnalysis.getOrAnalyzePosition(fen, {
-      depth: 12,
-      multipv: 1,
+      depth: COMPACT_GAME_ANALYSIS_DEPTH,
+      multipv: COMPACT_GAME_MULTIPV,
       pvMoveLimit: 1,
       keepAlive: true,
       seedPosition: seed,
       persistMode: 'background',
+      persistenceMode: 'compact',
+      cacheRequirement: 'best-eval',
     });
   }
 
@@ -174,17 +184,20 @@ export class ImportedGameAnalysisService {
     position: PositionAnalysisCache,
     seedCandidates: ImportedGamePly[],
   ): Promise<number | null> {
-    const matchingLine = position.lines.find((line) => (line.moveUci ?? line.pvUci?.[0]) === moveUci);
+    const matchingLine = position.lines.find((line) => (firstUciMove(line.moveUci) ?? firstUciMove(line.pvUci?.[0])) === moveUci);
     if (matchingLine) return this.positionAnalysis.effectiveScoreCpWhite(matchingLine.scoreCpWhite, matchingLine.mateWhite);
 
-    const bestMoveUci = position.bestMoveUci ?? position.lines[0]?.moveUci ?? position.lines[0]?.pvUci?.[0] ?? null;
+    const bestMoveUci = this.positionAnalysis.bestMoveFromPosition(position);
     if (bestMoveUci === moveUci) {
       return this.positionAnalysis.effectiveScoreCpWhite(position.bestScoreCpWhite, position.bestMateWhite);
     }
 
     const afterFen = this.fenAfterMove(fen, moveUci);
     if (!afterFen) return null;
-    const afterSeed = this.positionAnalysis.seedForFen(afterFen, seedCandidates);
+    const afterSeed = this.positionAnalysis.seedForFen(afterFen, seedCandidates, {
+      cacheRequirement: 'best-eval',
+      requestedDepth: COMPACT_GAME_ANALYSIS_DEPTH,
+    });
     const afterPosition = await this.getGamePositionAnalysis(afterFen, afterSeed);
     return this.positionAnalysis.effectiveScoreCpWhite(afterPosition.bestScoreCpWhite, afterPosition.bestMateWhite);
   }

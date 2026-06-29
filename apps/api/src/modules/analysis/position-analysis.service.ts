@@ -23,7 +23,7 @@ export const PositionAnalysisService = {
     return getPositionAnalysesByFens(fens);
   },
 
-  getStoredPositionSearch: async (input: { fen: string; depth?: number; multipv?: number }): Promise<StoredPositionAnalysis | null> => {
+  getStoredPositionSearch: async (input: { fen: string }): Promise<StoredPositionAnalysis | null> => {
     normalizeFenForPosition(input.fen);
     return withRequestedFen(await getPositionAnalysisByFen(input.fen), input.fen);
   },

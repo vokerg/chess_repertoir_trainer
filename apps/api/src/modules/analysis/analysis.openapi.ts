@@ -47,7 +47,12 @@ export const analysisOpenApiSchemas = {
       bestMoveUci: { type: 'string', nullable: true },
       bestScoreCpWhite: { type: 'integer', nullable: true },
       bestMateWhite: { type: 'integer', nullable: true },
-      lines: { type: 'array', items: { $ref: '#/components/schemas/StoredEngineLine' }, maxItems: 3 },
+      lines: { type: 'array', nullable: true, items: { $ref: '#/components/schemas/StoredEngineLine' }, maxItems: 3 },
+      persistenceMode: {
+        type: 'string',
+        enum: ['compact', 'rich'],
+        description: 'compact stores scalar best move/eval only and persists database NULL for lines; rich stores scalar best move/eval and up to three engine lines.',
+      },
     },
     required: ['fen'],
   },
@@ -264,7 +269,7 @@ export const bulkPositionAnalysisLookupOpenApiOperation = {
 export const storePositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Store one client-computed position analysis',
-  description: 'Accepts completed engine lines computed on the client and stores them in the shared PositionAnalysis cache.',
+  description: 'Accepts client/local-engine analysis results and stores them in the shared PositionAnalysis cache. Imported-game analysis should send compact persistence; interactive/free analysis should send rich persistence.',
   requestBody: {
     required: true,
     content: {
@@ -289,7 +294,7 @@ export const storePositionAnalysisOpenApiOperation = {
 export const bulkStorePositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Store multiple client-computed position analyses',
-  description: 'Accepts completed engine lines computed by a client or local engine and upserts them into the shared PositionAnalysis cache in bulk.',
+  description: 'Accepts client/local-engine analysis results and upserts them into the shared PositionAnalysis cache in bulk. Imported-game analysis should send compact persistence; interactive/free analysis should send rich persistence.',
   requestBody: {
     required: true,
     content: {

@@ -1,4 +1,5 @@
 import { moveClassificationLabel } from 'chess-domain';
+import { firstUciMove } from '../analysis/position-analysis-normalization';
 import { GAME_TAG } from './game-tags';
 import {
   getGameTagDefinitions,
@@ -160,7 +161,7 @@ function buildAnalysedMoves(game: ImportedGameForTagging): AnalysedMoveRecord[] 
       isUserMove: isUserMove(game, ply),
       beforeScoreForUser: scoreFromAnalysisForUser(game, beforeAnalysis),
       afterScoreForUser: scoreFromAnalysisForUser(game, afterAnalysis),
-      beforeBestMoveUci: beforeAnalysis?.bestMoveUci ?? null,
+      beforeBestMoveUci: firstUciMove(beforeAnalysis?.bestMoveUci) ?? null,
       scoreLossCp: ply.scoreLossCp ?? null,
       classificationLabel: ply.classificationCode ? moveClassificationLabel(ply.classificationCode) : null,
     };

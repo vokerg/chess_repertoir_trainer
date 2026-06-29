@@ -16,6 +16,14 @@ import {
 import { getLocalBatchStockfishAnalysisConfig, isLocalBatchStockfishAnalysisEnabled } from './batch-analysis.config';
 import { LocalStockfishEngineService } from './local-stockfish-engine.service';
 import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
+import {
+  bestMateWhiteFrom,
+  bestMoveUciFrom,
+  bestScoreCpWhiteFrom,
+  firstUciMove,
+  lineMoveUci,
+  normalizeStoredEngineLines,
+} from './position-analysis-normalization';
 import { PositionAnalysisService } from './position-analysis.service';
 
 interface BatchQueueItem {
@@ -53,11 +61,11 @@ function effectiveScoreCpWhite(scoreCpWhite?: number | null, mateWhite?: number 
 }
 
 function lineMove(line: StoredEngineLine): string | null {
-  return line.moveUci ?? line.pvUci?.[0] ?? null;
+  return lineMoveUci(line);
 }
 
 function bestMoveFor(analysis: StoredPositionAnalysis): string | null {
-  return analysis.bestMoveUci ?? (analysis.lines[0] ? lineMove(analysis.lines[0]) : null);
+  return firstUciMove(analysis.bestMoveUci) ?? (analysis.lines[0] ? lineMove(analysis.lines[0]) : null);
 }
 
 function bestEvalCpWhite(analysis: StoredPositionAnalysis): number | null {
@@ -92,7 +100,7 @@ function compactPositionAnalysis(row: any): StoredPositionAnalysis | null {
     id: row.id,
     positionId: row.positionId,
     normalizedFen: row.position?.normalizedFen ?? '',
-    bestMoveUci: row.bestMoveUci ?? undefined,
+    bestMoveUci: firstUciMove(row.bestMoveUci) ?? undefined,
     bestScoreCpWhite: row.bestScoreCpWhite ?? undefined,
     bestMateWhite: row.bestMateWhite ?? undefined,
     lines: Array.isArray(row.lines) ? row.lines : [],
@@ -101,15 +109,15 @@ function compactPositionAnalysis(row: any): StoredPositionAnalysis | null {
 }
 
 function transientPositionAnalysis(input: StorePositionAnalysisInput): StoredPositionAnalysis {
-  const lines = (input.lines ?? []).slice(0, 3);
+  const lines = normalizeStoredEngineLines(input.lines);
   return {
     id: 0,
     positionId: 0,
     fen: input.fen,
     normalizedFen: normalizeFenForPosition(input.fen),
-    bestMoveUci: input.bestMoveUci ?? lines[0]?.moveUci ?? lines[0]?.pvUci?.[0],
-    bestScoreCpWhite: input.bestScoreCpWhite ?? lines[0]?.scoreCpWhite,
-    bestMateWhite: input.bestMateWhite ?? lines[0]?.mateWhite,
+    bestMoveUci: bestMoveUciFrom(input, lines) ?? undefined,
+    bestScoreCpWhite: bestScoreCpWhiteFrom(input, lines) ?? undefined,
+    bestMateWhite: bestMateWhiteFrom(input, lines) ?? undefined,
     lines,
     fromCache: false,
   };
@@ -179,7 +187,13 @@ class BatchAnalysisWriteBuffer {
   enqueuePosition(input: StorePositionAnalysisInput): StoredPositionAnalysis {
     const normalizedFen = normalizeFenForPosition(input.fen);
     const transient = transientPositionAnalysis(input);
-    this.pendingPositionInputs.set(normalizedFen, input);
+    this.pendingPositionInputs.set(normalizedFen, {
+      ...input,
+      bestMoveUci: transient.bestMoveUci ?? null,
+      bestScoreCpWhite: transient.bestScoreCpWhite ?? null,
+      bestMateWhite: transient.bestMateWhite ?? null,
+      persistenceMode: 'compact',
+    });
     this.transientPositionCache.set(normalizedFen, transient);
     return transient;
   }
@@ -220,7 +234,7 @@ async function getOrCreatePositionAnalysis(
   engineAvailability: EngineAvailability,
   buffer: BatchAnalysisWriteBuffer,
 ): Promise<StoredPositionAnalysis | null> {
-  const cached = await PositionAnalysisService.getStoredPositionSearch(fen ? { fen, depth: options.depth, multipv: options.multipv } : { fen });
+  const cached = await PositionAnalysisService.getStoredPositionSearch({ fen });
   if (cached) return cached;
   const transient = buffer.transientPosition(fen);
   if (transient) return transient;

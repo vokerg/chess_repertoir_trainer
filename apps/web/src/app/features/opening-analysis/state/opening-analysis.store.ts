@@ -13,7 +13,11 @@ import {
   PlayedMove,
   UserColor,
 } from '../../../shared/games/position-moves/position-game-moves.models';
-import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import {
+  DEFAULT_INTERACTIVE_MULTIPV,
+  PositionAnalysisCacheService,
+  RICH_INTERACTIVE_ANALYSIS_DEPTH,
+} from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
@@ -96,8 +100,8 @@ export class OpeningAnalysisStore implements OnDestroy {
       this.analysis.set(analysis);
       this.loading.set(false);
       this.positionAnalysis.analyze(this.currentFen(), {
-        depth: 12,
-        multipv: 3,
+        depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+        multipv: DEFAULT_INTERACTIVE_MULTIPV,
         seedPosition: analysis.positionAnalysis,
       });
     } catch (error) {
@@ -149,8 +153,8 @@ export class OpeningAnalysisStore implements OnDestroy {
 
   rerunAnalysis(): void {
     this.positionAnalysis.analyze(this.currentFen(), {
-      depth: 12,
-      multipv: 3,
+      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+      multipv: DEFAULT_INTERACTIVE_MULTIPV,
       seedPosition: this.analysis()?.positionAnalysis ?? null,
     });
   }
