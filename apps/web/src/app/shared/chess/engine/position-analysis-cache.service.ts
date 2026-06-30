@@ -90,9 +90,13 @@ export class PositionAnalysisCacheService implements OnDestroy {
   private readonly memoryCache = new Map<string, PositionAnalysisCache>();
   private readonly knownRemoteMisses = new Set<string>();
   private requestSeq = 0;
+  private inflightInteractiveSaveRequestId: number | null = null;
   private pendingInteractiveSave: {
+    requestId: number;
     fen: string;
     multipv: number;
+    requiredDepth: number;
+    cacheRequirement: PositionAnalysisCacheRequirement;
     persistenceMode: PositionAnalysisPersistenceMode;
   } | null = null;
   private readonly pendingBulkSaves = new Map<string, { positionAnalysis: PositionAnalysisCache; persistenceMode: PositionAnalysisPersistenceMode }>();
@@ -115,11 +119,44 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.shutdownWorker();
   }
 
-  analyze(fen: string, options: CachedPositionAnalysisOptions = {}): void {
+  analyzeInteractiveRichPosition(
+    fen: string,
+    options: { seedPosition?: PositionAnalysisCache | null } = {},
+  ): void {
+    this.analyze(fen, {
+      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+      requiredDepth: RICH_INTERACTIVE_CACHE_MIN_DEPTH,
+      multipv: DEFAULT_INTERACTIVE_MULTIPV,
+      seedPosition: options.seedPosition,
+      persistenceMode: 'rich',
+      cacheRequirement: 'lines',
+    });
+  }
+
+  getOrAnalyzeCompactGamePosition(
+    fen: string,
+    options: {
+      seedPosition?: PositionAnalysisCache | null;
+      keepAlive?: boolean;
+    } = {},
+  ): Promise<PositionAnalysisCache> {
+    return this.getOrAnalyzePosition(fen, {
+      depth: COMPACT_GAME_ANALYSIS_DEPTH,
+      multipv: COMPACT_GAME_MULTIPV,
+      pvMoveLimit: 1,
+      seedPosition: options.seedPosition,
+      keepAlive: options.keepAlive,
+      persistMode: 'background',
+      persistenceMode: 'compact',
+      cacheRequirement: 'best-eval',
+    });
+  }
+
+  private analyze(fen: string, options: CachedPositionAnalysisOptions = {}): void {
     void this.analyzeForUi(fen, options);
   }
 
-  async getOrAnalyzePosition(fen: string, options: CachedPositionAnalysisOptions = {}): Promise<PositionAnalysisCache> {
+  private async getOrAnalyzePosition(fen: string, options: CachedPositionAnalysisOptions = {}): Promise<PositionAnalysisCache> {
     const depth = options.depth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
     const multipv = options.multipv ?? DEFAULT_INTERACTIVE_MULTIPV;
     const persistMode = options.persistMode ?? 'await';
@@ -169,6 +206,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.persistPendingAnalysis(this.stateSubject.value, true);
     this.requestSeq += 1;
     this.pendingInteractiveSave = null;
+    this.inflightInteractiveSaveRequestId = null;
     this.stockfish.stop();
   }
 
@@ -176,6 +214,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
     this.persistPendingAnalysis(this.stateSubject.value, true);
     this.requestSeq += 1;
     this.pendingInteractiveSave = null;
+    this.inflightInteractiveSaveRequestId = null;
     this.stockfish.shutdownWorker();
   }
 
@@ -278,6 +317,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
 
     this.persistPendingAnalysis(this.stateSubject.value, true);
     this.pendingInteractiveSave = null;
+    this.inflightInteractiveSaveRequestId = null;
     this.stockfish.stop();
     this.emit({ fen, running: false, ready: false, error: null, bestMove: null, lines: [] });
 
@@ -302,7 +342,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
       return;
     }
 
-    this.pendingInteractiveSave = { fen, multipv, persistenceMode };
+    this.pendingInteractiveSave = { requestId, fen, multipv, requiredDepth, cacheRequirement, persistenceMode };
     const fallbackSeed = this.usablePosition(options.seedPosition, fen, multipv, requiredDepth, cacheRequirement);
     this.stockfish.analyze(fen, {
       depth,
@@ -349,13 +389,40 @@ export class PositionAnalysisCacheService implements OnDestroy {
     const pending = this.pendingInteractiveSave;
     if (!pending) return;
     if (analysis.fen !== pending.fen || analysis.error) return;
-    if (analysis.running && !allowRunning) return;
+    if (analysis.running && (!allowRunning || pending.persistenceMode === 'rich')) return;
     if (!analysis.lines.length && !analysis.bestMove) return;
+    if (this.inflightInteractiveSaveRequestId === pending.requestId) return;
 
-    this.pendingInteractiveSave = null;
-    this.storePositionAnalysis(pending.fen, analysis, pending.multipv, 'await', pending.persistenceMode).catch(() => {
-      // The UI already has the engine result; cache persistence is best-effort.
-    });
+    const candidate = this.cacheFromAnalysis(pending.fen, analysis, pending.multipv);
+    if (!this.usablePosition(
+      candidate,
+      pending.fen,
+      pending.multipv,
+      pending.requiredDepth,
+      pending.cacheRequirement,
+    )) {
+      return;
+    }
+
+    this.inflightInteractiveSaveRequestId = pending.requestId;
+    this.persistPositionAnalysis(pending.fen, candidate, pending.persistenceMode)
+      .then(() => {
+        if (this.pendingInteractiveSave?.requestId === pending.requestId) {
+          this.pendingInteractiveSave = null;
+        }
+      })
+      .catch((error) => {
+        console.warn('Interactive position-analysis save failed.', {
+          fen: pending.fen,
+          persistenceMode: pending.persistenceMode,
+          error,
+        });
+      })
+      .finally(() => {
+        if (this.inflightInteractiveSaveRequestId === pending.requestId) {
+          this.inflightInteractiveSaveRequestId = null;
+        }
+      });
   }
 
   private async persistPositionAnalysis(
@@ -516,10 +583,12 @@ export class PositionAnalysisCacheService implements OnDestroy {
     const requiredLines = this.requiredLineCount(requestedMultipv, fen);
     const lines = Array.isArray(position.lines) ? position.lines : [];
     if (lines.length < requiredLines) return false;
-    return lines.slice(0, requiredLines).every((line) =>
+    const requestedLines = lines.slice(0, requiredLines);
+    const bestLineDepth = requestedLines[0]?.depth;
+    if (typeof bestLineDepth !== 'number' || bestLineDepth < requestedDepth) return false;
+    return requestedLines.every((line) =>
       (firstUciMove(line.moveUci) || firstUciMove(line.pvUci?.[0])) &&
-      typeof line.depth === 'number' &&
-      line.depth >= requestedDepth
+      typeof line.depth === 'number'
     );
   }
 

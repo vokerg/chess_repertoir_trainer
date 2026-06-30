@@ -8,9 +8,7 @@ import { PositionGameMovesApiService } from '../../../shared/games/position-move
 import { buildOpeningAnalysisQuery } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
 import {
-  DEFAULT_INTERACTIVE_MULTIPV,
   PositionAnalysisCacheService,
-  RICH_INTERACTIVE_ANALYSIS_DEPTH,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
@@ -289,10 +287,7 @@ export class FreeAnalysisStore implements OnDestroy {
   }
 
   rerunAnalysis(): void {
-    this.positionAnalysis.analyze(this.currentFen(), {
-      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
-      multipv: DEFAULT_INTERACTIVE_MULTIPV,
-    });
+    this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen());
   }
 
   handleKeyboard(event: KeyboardEvent): void {

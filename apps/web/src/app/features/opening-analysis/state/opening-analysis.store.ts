@@ -14,9 +14,7 @@ import {
   UserColor,
 } from '../../../shared/games/position-moves/position-game-moves.models';
 import {
-  DEFAULT_INTERACTIVE_MULTIPV,
   PositionAnalysisCacheService,
-  RICH_INTERACTIVE_ANALYSIS_DEPTH,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 
@@ -99,9 +97,7 @@ export class OpeningAnalysisStore implements OnDestroy {
       if (requestId !== this.refreshRequestSeq) return;
       this.analysis.set(analysis);
       this.loading.set(false);
-      this.positionAnalysis.analyze(this.currentFen(), {
-        depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
-        multipv: DEFAULT_INTERACTIVE_MULTIPV,
+      this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen(), {
         seedPosition: analysis.positionAnalysis,
       });
     } catch (error) {
@@ -152,9 +148,7 @@ export class OpeningAnalysisStore implements OnDestroy {
   }
 
   rerunAnalysis(): void {
-    this.positionAnalysis.analyze(this.currentFen(), {
-      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
-      multipv: DEFAULT_INTERACTIVE_MULTIPV,
+    this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen(), {
       seedPosition: this.analysis()?.positionAnalysis ?? null,
     });
   }

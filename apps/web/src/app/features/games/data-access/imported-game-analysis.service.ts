@@ -166,15 +166,9 @@ export class ImportedGameAnalysisService {
   }
 
   private async getGamePositionAnalysis(fen: string, seed?: PositionAnalysisCache | null): Promise<PositionAnalysisCache> {
-    return this.positionAnalysis.getOrAnalyzePosition(fen, {
-      depth: COMPACT_GAME_ANALYSIS_DEPTH,
-      multipv: COMPACT_GAME_MULTIPV,
-      pvMoveLimit: 1,
-      keepAlive: true,
+    return this.positionAnalysis.getOrAnalyzeCompactGamePosition(fen, {
       seedPosition: seed,
-      persistMode: 'background',
-      persistenceMode: 'compact',
-      cacheRequirement: 'best-eval',
+      keepAlive: true,
     });
   }
 

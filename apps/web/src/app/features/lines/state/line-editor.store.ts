@@ -3,9 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import {
-  DEFAULT_INTERACTIVE_MULTIPV,
   PositionAnalysisCacheService,
-  RICH_INTERACTIVE_ANALYSIS_DEPTH,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { GameFilters } from '../../../shared/games/filters/game-filter.model';
@@ -288,10 +286,7 @@ export class LineEditorStore implements OnDestroy {
   rerunAnalysis(): void {
     const fen = this.currentFen();
     if (!fen) return;
-    this.positionAnalysis.analyze(fen, {
-      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
-      multipv: DEFAULT_INTERACTIVE_MULTIPV,
-    });
+    this.positionAnalysis.analyzeInteractiveRichPosition(fen);
   }
 
   handleKeyboard(event: KeyboardEvent): void {
