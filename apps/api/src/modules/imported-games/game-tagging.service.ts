@@ -22,7 +22,6 @@ const TAG_THRESHOLDS = {
   endgameThrowMinMove: 30,
   slightEdgeCp: 200,
   openingTroubleCp: 150,
-  worsePositionCp: 150,
   comebackWorseCp: 150,
   clearlyBetterCp: 300,
   winningCp: 700,
@@ -717,9 +716,19 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
   if (foundKnockout) addTag(tags, GAME_TAG.FOUND_KNOCKOUT);
   if (punishedOpponentBlunder) addTag(tags, GAME_TAG.PUNISHED_OPPONENT_BLUNDER);
 
-  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp && game.resultForUser !== 'WIN') {
-    addTag(tags, GAME_TAG.MISSED_WIN);
+  if ((minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.clearlyBetterCp) {
+    addTag(tags, GAME_TAG.WAS_MUCH_WORSE);
   }
+  if ((minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp) {
+    addTag(tags, GAME_TAG.WAS_LOST);
+  }
+  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp) {
+    addTag(tags, GAME_TAG.WAS_MUCH_BETTER);
+  }
+  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp) {
+    addTag(tags, GAME_TAG.WAS_WINNING);
+  }
+
   if (
     game.resultForUser === 'LOSS' &&
     records.some((record) =>
@@ -731,25 +740,6 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
     )
   ) {
     addTag(tags, GAME_TAG.MISSED_DRAW);
-  }
-  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp && game.resultForUser === 'LOSS') {
-    addTag(tags, GAME_TAG.LOST_WINNING_POSITION);
-  }
-  if ((minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp && game.resultForUser === 'WIN') {
-    addTag(tags, GAME_TAG.WON_LOST_POSITION);
-  }
-  if ((minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.winningCp && game.resultForUser === 'DRAW') {
-    addTag(tags, GAME_TAG.SAVED_LOST_POSITION);
-  }
-  if (
-    game.resultForUser === 'WIN' &&
-    (minScoreForUser ?? Number.POSITIVE_INFINITY) <= -TAG_THRESHOLDS.worsePositionCp &&
-    (maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp
-  ) {
-    addTag(tags, GAME_TAG.WON_FROM_WORSE_POSITION);
-  }
-  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.clearlyBetterCp && game.resultForUser === 'LOSS') {
-    addTag(tags, GAME_TAG.LOST_FROM_BETTER_POSITION);
   }
   if (
     game.resultForUser === 'LOSS' &&
@@ -822,9 +812,6 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
     noLaterLargeUserMistake(records, firstWinningIndex)
   ) {
     addTag(tags, GAME_TAG.CLEAN_CONVERSION);
-  }
-  if ((maxScoreForUser ?? Number.NEGATIVE_INFINITY) >= TAG_THRESHOLDS.winningCp && game.resultForUser !== 'WIN') {
-    addTag(tags, GAME_TAG.FAILED_CONVERSION);
   }
 
   const userLossRecords = records.filter((record) => record.isUserMove);

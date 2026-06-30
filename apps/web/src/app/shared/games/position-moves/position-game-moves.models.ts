@@ -11,6 +11,32 @@ export interface OpeningWdl {
   scorePct: number | null;
 }
 
+export interface OpeningPositionPerformanceTagStat {
+  code: number;
+  name: string;
+  games: number;
+  ratePct: number;
+  wdl: OpeningWdl;
+}
+
+export interface OpeningPositionPerformanceBucket {
+  key: string;
+  label: string;
+  games: number;
+  ratePct: number;
+  tags: OpeningPositionPerformanceTagStat[];
+}
+
+export interface OpeningPositionPerformance {
+  sample: {
+    games: number;
+    taggedGames: number;
+  };
+  wdl: OpeningWdl;
+  tags: OpeningPositionPerformanceTagStat[];
+  buckets: OpeningPositionPerformanceBucket[];
+}
+
 export interface OpeningNextMove {
   moveUci: string;
   moveSan?: string | null;
@@ -48,6 +74,7 @@ export interface OpeningAnalysisResponse {
   ratedOnly: boolean;
   occurrences: number;
   games: OpeningWdl;
+  performance: OpeningPositionPerformance;
   nextMoves: OpeningNextMove[];
   topGames: OpeningAnalysisGame[];
   positionAnalysis: PositionAnalysisCache | null;

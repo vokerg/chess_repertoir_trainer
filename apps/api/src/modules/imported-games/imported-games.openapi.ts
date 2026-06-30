@@ -182,6 +182,56 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['total', 'wins', 'draws', 'losses', 'scorePct'],
   },
+  GamePerformanceWdl: {
+    type: 'object',
+    properties: {
+      total: { type: 'integer' },
+      wins: { type: 'integer' },
+      draws: { type: 'integer' },
+      losses: { type: 'integer' },
+      scorePct: { type: 'number', nullable: true },
+    },
+    required: ['total', 'wins', 'draws', 'losses', 'scorePct'],
+  },
+  GamePerformanceTagStat: {
+    type: 'object',
+    properties: {
+      code: { type: 'integer' },
+      name: { type: 'string' },
+      games: { type: 'integer' },
+      ratePct: { type: 'number' },
+      wdl: { $ref: '#/components/schemas/GamePerformanceWdl' },
+    },
+    required: ['code', 'name', 'games', 'ratePct', 'wdl'],
+  },
+  GamePerformanceBucket: {
+    type: 'object',
+    properties: {
+      key: { type: 'string' },
+      label: { type: 'string' },
+      games: { type: 'integer' },
+      ratePct: { type: 'number' },
+      tags: { type: 'array', items: { $ref: '#/components/schemas/GamePerformanceTagStat' } },
+    },
+    required: ['key', 'label', 'games', 'ratePct', 'tags'],
+  },
+  GamePerformanceSummary: {
+    type: 'object',
+    properties: {
+      sample: {
+        type: 'object',
+        properties: {
+          games: { type: 'integer' },
+          taggedGames: { type: 'integer' },
+        },
+        required: ['games', 'taggedGames'],
+      },
+      wdl: { $ref: '#/components/schemas/GamePerformanceWdl' },
+      tags: { type: 'array', items: { $ref: '#/components/schemas/GamePerformanceTagStat' } },
+      buckets: { type: 'array', items: { $ref: '#/components/schemas/GamePerformanceBucket' } },
+    },
+    required: ['sample', 'wdl', 'tags', 'buckets'],
+  },
   OpeningAnalysisNextMove: {
     type: 'object',
     properties: {
@@ -234,12 +284,13 @@ export const importedGamesOpenApiSchemas = {
       ratedOnly: { type: 'boolean' },
       occurrences: { type: 'integer' },
       games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
+      performance: { $ref: '#/components/schemas/GamePerformanceSummary' },
       nextMoves: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisNextMove' } },
       topGames: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisGame' } },
       positionAnalysis: { anyOf: [{ $ref: '#/components/schemas/PositionAnalysis' }, { type: 'null' }] },
       appliedFilters: { type: 'object', additionalProperties: true },
     },
-    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
+    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'performance', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
   },
 };
 

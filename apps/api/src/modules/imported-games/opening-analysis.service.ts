@@ -2,6 +2,8 @@ import { Chess } from 'chess.js';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
 import { ImportedGameSearchQuery, OpeningAnalysisQuery } from './imported-games.schemas';
 import { findOpeningAnalysisRows, OpeningAnalysisPlyRow } from './opening-analysis.repository.prisma';
+import { summarizeGamePerformance } from './performance-insights.service';
+import { GamePerformanceSummary } from './performance-insights.types';
 
 export interface OpeningAnalysisWdl {
   total: number;
@@ -72,6 +74,21 @@ export interface OpeningPositionAnalysis {
   classification?: string;
   lines: unknown[];
   playedLine?: unknown;
+}
+
+export interface OpeningAnalysisResponse {
+  fen: string;
+  normalizedFen: string;
+  sideToMove: 'WHITE' | 'BLACK';
+  fullMoveNumber: number;
+  ratedOnly: boolean;
+  occurrences: number;
+  games: OpeningAnalysisWdl;
+  performance: GamePerformanceSummary;
+  nextMoves: OpeningAnalysisNextMove[];
+  topGames: OpeningAnalysisGame[];
+  positionAnalysis: unknown;
+  appliedFilters: ReturnType<typeof toAppliedFilters>;
 }
 
 function normalizeFenForExplorer(fen: string): string {
@@ -214,7 +231,7 @@ function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow, moveSan: string | nul
 }
 
 export const OpeningAnalysisService = {
-  getPosition: async (userId: number, query: OpeningAnalysisQuery) => {
+  getPosition: async (userId: number, query: OpeningAnalysisQuery): Promise<OpeningAnalysisResponse> => {
     const fen = boardFen(query.fen);
     const normalizedFen = normalizeFenForExplorer(fen);
     const effectiveQuery: OpeningAnalysisQuery = { ...query, rated: query.rated ?? true };
@@ -222,6 +239,7 @@ export const OpeningAnalysisService = {
 
     const positionGames = new Set<number>();
     const positionWdl = emptyWdl();
+    const positionPerformanceGames = new Map<number, { id: number; resultForUser: string | null; tagCodes: readonly number[] | null }>();
     const moveBuckets = new Map<
       string,
       {
@@ -250,6 +268,11 @@ export const OpeningAnalysisService = {
       if (!positionGames.has(row.importedGameId)) {
         positionGames.add(row.importedGameId);
         addResult(positionWdl, row.importedGame.resultForUser);
+        positionPerformanceGames.set(row.importedGameId, {
+          id: row.importedGameId,
+          resultForUser: row.importedGame.resultForUser,
+          tagCodes: row.importedGame.tagCodes,
+        });
       }
 
       const existing = moveBuckets.get(row.moveUci);
@@ -295,6 +318,7 @@ export const OpeningAnalysisService = {
 
     const chess = new Chess(fen);
     const positionAnalysis = await PositionAnalysisService.getStoredPositionSearch({ fen });
+    const performance = summarizeGamePerformance(Array.from(positionPerformanceGames.values()));
 
     return {
       fen,
@@ -304,6 +328,7 @@ export const OpeningAnalysisService = {
       ratedOnly: effectiveQuery.rated === true,
       occurrences: rows.length,
       games: positionWdl,
+      performance,
       nextMoves,
       topGames,
       positionAnalysis,

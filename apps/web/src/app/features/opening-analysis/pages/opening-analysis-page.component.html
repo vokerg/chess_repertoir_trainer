@@ -59,12 +59,17 @@
         [fen]="store.currentFen()"
         (moveSelected)="store.playBoardMove($event.moveUci)"
       />
+
+      <app-position-performance-panel
+        [performance]="store.analysis()?.performance ?? null"
+        [loading]="store.loading()"
+      />
+
     </div>
 
     <div class="opening-tree-panel">
       <app-position-game-moves-panel
         title="Next moves from your games"
-        subtitle="Each row is a move you actually played or faced from this exact normalized position."
         [analysis]="store.analysis()"
         [loading]="store.loading()"
         [error]="store.error()"

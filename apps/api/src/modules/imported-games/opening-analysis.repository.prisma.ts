@@ -30,6 +30,7 @@ const openingAnalysisGameSelect = {
   userColor: true,
   openingEco: true,
   openingName: true,
+  tagCodes: true,
   analysisRuns: {
     orderBy: { createdAt: 'desc' as const },
     take: 1,

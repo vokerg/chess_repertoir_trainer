@@ -76,6 +76,10 @@ export const GAME_TAG = {
   TIME_SCRAMBLE: 160,
   MUTUAL_TIME_SCRAMBLE: 161,
   PLAYED_TOO_FAST: 162,
+  WAS_MUCH_WORSE: 170,
+  WAS_LOST: 171,
+  WAS_MUCH_BETTER: 172,
+  WAS_WINNING: 173,
 } as const;
 
 export const GAME_TAG_DEFINITIONS = [
@@ -156,6 +160,10 @@ export const GAME_TAG_DEFINITIONS = [
   { code: GAME_TAG.TIME_SCRAMBLE, name: 'TIME_SCRAMBLE' },
   { code: GAME_TAG.MUTUAL_TIME_SCRAMBLE, name: 'MUTUAL_TIME_SCRAMBLE' },
   { code: GAME_TAG.PLAYED_TOO_FAST, name: 'PLAYED_TOO_FAST' },
+  { code: GAME_TAG.WAS_MUCH_WORSE, name: 'WAS_MUCH_WORSE' },
+  { code: GAME_TAG.WAS_LOST, name: 'WAS_LOST' },
+  { code: GAME_TAG.WAS_MUCH_BETTER, name: 'WAS_MUCH_BETTER' },
+  { code: GAME_TAG.WAS_WINNING, name: 'WAS_WINNING' },
 ] as const;
 
 export type GameTagDefinitionItem = (typeof GAME_TAG_DEFINITIONS)[number];

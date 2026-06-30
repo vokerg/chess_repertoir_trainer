@@ -7,6 +7,7 @@ import { StockfishPanelComponent } from '../../../shared/chess/engine/stockfish-
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
+import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
 import { scoreLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 
@@ -22,6 +23,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     BoardActionToolbarComponent,
     PageHeaderComponent,
     CopyableLineComponent,
+    PositionPerformancePanelComponent,
   ],
   providers: [OpeningAnalysisStore],
   templateUrl: './opening-analysis-page.component.html',

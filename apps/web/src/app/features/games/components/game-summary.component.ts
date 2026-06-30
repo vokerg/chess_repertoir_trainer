@@ -4,36 +4,9 @@ import { ImportedGameAnalysisProgress } from '../data-access/imported-game-analy
 import {
   ImportedGameAnalysisRun,
   ImportedGameDetail,
-  ImportedGameTag,
 } from '../data-access/games.models';
 import { accuracyLabel, colorLabel, playerLabel, resultLabel, timeControlLabel } from '../helpers/game-detail-labels';
-
-const POSITIVE_TAG_CODES = new Set<number>([
-  1,
-  3,
-  5,
-  103,
-  115,
-  118,
-  121,
-  133,
-  134,
-  129,
-]);
-
-const NEGATIVE_TAG_CODES = new Set<number>([
-  2,
-  4,
-  6,
-  102,
-  104,
-  105,
-  108,
-  113,
-  114,
-  119,
-  120,
-]);
+import { gameTagLabel, gameTagTone } from '../../../shared/games/game-tag-display';
 
 type SummaryFact = {
   label: string;
@@ -175,19 +148,8 @@ export class GameSummaryComponent {
     return userColor === 'BLACK' ? rows.reverse() : rows;
   });
 
-  protected tagTone(tag: ImportedGameTag): 'positive' | 'negative' | 'neutral' {
-    if (POSITIVE_TAG_CODES.has(tag.code)) return 'positive';
-    if (NEGATIVE_TAG_CODES.has(tag.code)) return 'negative';
-    return 'neutral';
-  }
-
-  protected tagLabel(tag: ImportedGameTag): string {
-    return tag.name
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
-  }
+  protected readonly tagTone = gameTagTone;
+  protected readonly tagLabel = gameTagLabel;
 
   private userAccuracyField(): 'whiteAccuracy' | 'blackAccuracy' {
     return this.game().userColor === 'BLACK' ? 'blackAccuracy' : 'whiteAccuracy';

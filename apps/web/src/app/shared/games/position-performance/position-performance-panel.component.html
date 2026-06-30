@@ -1,0 +1,90 @@
+<section class="workbench-panel position-performance-panel" aria-label="Performance in this position">
+  <div class="position-performance-header">
+    <div>
+      <h3 class="workbench-panel-title">{{ title() }}</h3>
+      <p class="workbench-panel-subtitle">{{ subtitle() }}</p>
+    </div>
+    @if (performance(); as currentPerformance) {
+      <div class="position-performance-score">
+        <span>{{ scoreLabel(currentPerformance.wdl) }}</span>
+        <small>Score</small>
+      </div>
+    }
+  </div>
+
+  @if (loading() && !performance()) {
+    <div class="position-performance-summary-grid" aria-hidden="true">
+      <div><span>&nbsp;</span><small>Games</small></div>
+      <div><span>&nbsp;</span><small>Tagged</small></div>
+      <div><span>&nbsp;</span><small>WDL</small></div>
+    </div>
+  } @else if (performance(); as currentPerformance) {
+    <div class="position-performance-summary-grid">
+      <div>
+        <span>{{ currentPerformance.sample.games }}</span>
+        <small>Games</small>
+      </div>
+      <div>
+        <span>{{ currentPerformance.sample.taggedGames }}</span>
+        <small>Tagged</small>
+      </div>
+      <div>
+        <span>{{ currentPerformance.wdl.wins }} {{ currentPerformance.wdl.draws }} {{ currentPerformance.wdl.losses }}</span>
+        <small>WDL</small>
+      </div>
+    </div>
+
+    @if (buckets().length) {
+      <div class="position-performance-buckets">
+        @for (bucket of buckets(); track bucket.key) {
+          <section class="position-performance-bucket">
+            <div class="position-performance-bucket-header">
+              <h4>{{ bucket.label }}</h4>
+              <small>{{ bucket.games }} games · {{ bucket.ratePct }}%</small>
+            </div>
+            <div class="position-performance-tag-list">
+              @for (tag of bucket.tags; track tag.code) {
+                <div class="position-performance-tag-row" [class.tag-positive]="tagTone(tag) === 'positive'" [class.tag-negative]="tagTone(tag) === 'negative'" [class.tag-neutral]="tagTone(tag) === 'neutral'">
+                  <strong>{{ tagLabel(tag) }}</strong>
+                  <span>{{ tag.games }} games</span>
+                  <span>{{ tag.ratePct }}%</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+        @if (unbucketedTags().length) {
+          <section class="position-performance-bucket">
+            <div class="position-performance-bucket-header">
+              <h4>Other signals</h4>
+              <small>{{ unbucketedTags().length }} shown</small>
+            </div>
+            <div class="position-performance-tag-list">
+              @for (tag of unbucketedTags(); track tag.code) {
+                <div class="position-performance-tag-row" [class.tag-positive]="tagTone(tag) === 'positive'" [class.tag-negative]="tagTone(tag) === 'negative'" [class.tag-neutral]="tagTone(tag) === 'neutral'">
+                  <strong>{{ tagLabel(tag) }}</strong>
+                  <span>{{ tag.games }} games</span>
+                  <span>{{ tag.ratePct }}%</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    } @else if (topTags().length) {
+      <div class="position-performance-tag-list">
+        @for (tag of topTags(); track tag.code) {
+          <div class="position-performance-tag-row" [class.tag-positive]="tagTone(tag) === 'positive'" [class.tag-negative]="tagTone(tag) === 'negative'" [class.tag-neutral]="tagTone(tag) === 'neutral'">
+            <strong>{{ tagLabel(tag) }}</strong>
+            <span>{{ tag.games }} games</span>
+            <span>{{ tag.ratePct }}%</span>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="status-note">No tags are available for this position sample yet.</p>
+    }
+  } @else {
+    <p class="status-note">No position performance loaded yet.</p>
+  }
+</section>

@@ -59,8 +59,8 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly turnOwnerLabel = computed(() => (this.userTurn() ? 'Your move' : 'Opponent move'));
   readonly perspectiveHelpText = computed(() =>
     this.filters().userColor === 'BLACK'
-      ? 'Black perspective: start with the opponent move, then inspect your replies from indexed games.'
-      : 'White perspective: play your opening moves from the start position and inspect your indexed continuations.',
+      ? 'Black perspective'
+      : 'White perspective',
   );
   readonly lineLabel = computed(() =>
     this.history().length ? this.history().map((move) => move.san || move.uci).join(' ') : 'Start position',
