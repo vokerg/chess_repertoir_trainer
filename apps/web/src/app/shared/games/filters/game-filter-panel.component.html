@@ -91,6 +91,24 @@
         <option value="FAILED">Failed</option>
       </select></label
     >
+    <div class="games-field tags-field">
+      <span>Tags</span>
+      <details class="tags-picker">
+        <summary>{{ tagSelectionLabel() }}</summary>
+        <div class="tags-options">
+          @for (tag of facets().tags || []; track tagCode(tag)) {
+            <label class="tag-option">
+              <input
+                type="checkbox"
+                [checked]="isTagSelected(tagCode(tag))"
+                (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
+              />
+              <span>{{ facetLabel(tag) }}</span>
+            </label>
+          }
+        </div>
+      </details>
+    </div>
     <label class="games-field"
       ><span>Time control</span
       ><input

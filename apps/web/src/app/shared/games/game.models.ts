@@ -23,4 +23,5 @@ export interface ImportedGameFacetsResponse {
   colors?: FacetValue[];
   openings?: FacetValue[];
   analysisStatuses?: FacetValue[];
+  tags?: FacetValue[];
 }

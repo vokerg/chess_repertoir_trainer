@@ -24,6 +24,9 @@ export class GamesExplorerStore {
   readonly bulkIndexing = signal(false);
   readonly bulkIndexCompleted = signal(0);
   readonly bulkIndexTotal = signal(0);
+  readonly bulkRefreshingTags = signal(false);
+  readonly bulkRefreshTagsCompleted = signal(0);
+  readonly bulkRefreshTagsTotal = signal(0);
   readonly batchAnalysisEnabled = signal(false);
   readonly batchAnalysisSubmitting = signal(false);
   readonly pageInfo = signal<ImportedGamePageInfo>({ nextCursor: null, hasMore: false });
@@ -60,6 +63,11 @@ export class GamesExplorerStore {
     return `${this.bulkIndexCompleted()}/${this.bulkIndexTotal()}`;
   });
 
+  readonly bulkRefreshTagsProgressLabel = computed(() => {
+    if (!this.bulkRefreshingTags()) return String(this.filteredGames().length);
+    return `${this.bulkRefreshTagsCompleted()}/${this.bulkRefreshTagsTotal()}`;
+  });
+
   readonly batchAnalysisProgressLabel = computed(() => {
     if (this.batchAnalysisSubmitting()) return 'Starting...';
     return String(this.filteredGames().length);
@@ -92,6 +100,7 @@ export class GamesExplorerStore {
 
   refresh(): void {
     this.resetBulkIndexState();
+    this.resetBulkRefreshTagsState();
     this.games.set([]);
     this.pageInfo.set({ nextCursor: null, hasMore: false });
     this.loadGames();
@@ -217,6 +226,42 @@ export class GamesExplorerStore {
     });
   }
 
+  async refreshTagsForVisibleGames(): Promise<void> {
+    const games = this.filteredGames();
+    if (!games.length || this.bulkRefreshingTags()) return;
+
+    this.error.set(null);
+    this.bulkRefreshingTags.set(true);
+    this.bulkRefreshTagsCompleted.set(0);
+    this.bulkRefreshTagsTotal.set(games.length);
+
+    const concurrency = 4;
+    let nextIndex = 0;
+    const failures: string[] = [];
+
+    const runWorker = async () => {
+      while (nextIndex < games.length) {
+        const game = games[nextIndex];
+        nextIndex += 1;
+        try {
+          const response = await firstValueFrom(this.api.refreshGameTags(game.id));
+          this.patchGameTags(response.importedGameId, response.tagCodes, response.tags);
+        } catch (err: unknown) {
+          failures.push(readApiError(err, `Could not refresh tags for game #${game.id}.`));
+        } finally {
+          this.bulkRefreshTagsCompleted.update((completed) => completed + 1);
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, games.length) }, () => runWorker()));
+
+    this.bulkRefreshingTags.set(false);
+    if (failures.length) {
+      this.error.set(failures[0]);
+    }
+  }
+
   private async runAnalysis(game: ImportedGameListItem, force = false): Promise<void> {
     this.analysingGameId.set(game.id);
     this.error.set(null);
@@ -306,10 +351,24 @@ export class GamesExplorerStore {
     }));
   }
 
+  private patchGameTags(gameId: number, tagCodes: number[], tags: ImportedGameListItem['tags']): void {
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      tagCodes,
+      tags,
+    }));
+  }
+
   private resetBulkIndexState(): void {
     this.bulkIndexing.set(false);
     this.bulkIndexCompleted.set(0);
     this.bulkIndexTotal.set(0);
+  }
+
+  private resetBulkRefreshTagsState(): void {
+    this.bulkRefreshingTags.set(false);
+    this.bulkRefreshTagsCompleted.set(0);
+    this.bulkRefreshTagsTotal.set(0);
   }
 
   private displayTimeControl(game: ImportedGameListItem): string {

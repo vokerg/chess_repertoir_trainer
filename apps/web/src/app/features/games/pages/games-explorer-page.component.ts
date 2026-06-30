@@ -18,7 +18,7 @@ export class GamesExplorerPageComponent implements OnInit {
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'loaded', label: 'Loaded', value: this.store.filteredGames().length },
     { id: 'analysed', label: 'Analysed', value: this.store.analysedCount() },
-    { id: 'ply-indexed', label: 'Ply indexed', value: this.store.plyIndexedCount() },
+    { id: 'ply-indexed', label: 'Indexed', value: this.store.plyIndexedCount() },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const actions: PageHeaderAction[] = [
@@ -37,6 +37,12 @@ export class GamesExplorerPageComponent implements OnInit {
         run: () => this.store.batchAnalyzeVisibleGames(),
       });
     }
+    actions.push({
+      id: 'tags',
+      label: `Refresh tags: ${this.store.bulkRefreshTagsProgressLabel()}`,
+      disabled: this.store.loading() || this.store.bulkRefreshingTags() || this.store.filteredGames().length === 0,
+      run: () => this.store.refreshTagsForVisibleGames(),
+    });
     return actions;
   });
 

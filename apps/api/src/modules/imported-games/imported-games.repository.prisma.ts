@@ -219,6 +219,7 @@ export function buildImportedGameWhere(userId: number, query: ImportedGameFilter
     speedCategory: inFilter(query.speedCategory),
     variant: inFilter(query.variant),
     openingEco: inFilter(query.openingEco),
+    tagCodes: query.tagCodes?.length ? { hasSome: query.tagCodes } : undefined,
     openingName: query.openingName ? { contains: query.openingName, mode: 'insensitive' } : undefined,
     opponentUsername: query.opponent ? { contains: query.opponent, mode: 'insensitive' } : undefined,
     AND: [

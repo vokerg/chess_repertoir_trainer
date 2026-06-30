@@ -45,6 +45,7 @@ export const importedGameSearchQuerySchema = z.object({
   maxOpponentRating: z.coerce.number().int().min(0).optional(),
   analysisStatus: csvArray(analysisStatusSchema),
   plyIndexStatus: csvArray(plyIndexStatusSchema),
+  tagCodes: intCsv,
   classification: csvArray(classificationSchema),
   minAccuracy: z.coerce.number().min(0).max(100).optional(),
   maxAccuracy: z.coerce.number().min(0).max(100).optional(),

@@ -11,7 +11,7 @@ describe('GamesExplorerStore', () => {
   let analysis: jasmine.SpyObj<ImportedGameAnalysisService>;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['indexPlies', 'searchGames']);
+    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['indexPlies', 'refreshGameTags', 'searchGames']);
     analysis = jasmine.createSpyObj<ImportedGameAnalysisService>('ImportedGameAnalysisService', ['analyzeGame']);
 
     TestBed.configureTestingModule({
@@ -71,6 +71,45 @@ describe('GamesExplorerStore', () => {
     expect(store.games()[0].analysis.status).toBe('COMPLETED');
     expect(store.games()[1]).toBe(untouched);
     expect(api.searchGames).not.toHaveBeenCalled();
+  });
+
+  it('refreshes tags for visible rows without reloading the list', async () => {
+    const untouchedPlyIndex = store.games()[1].plyIndex;
+    api.refreshGameTags.and.callFake((gameId: number) => of({
+      importedGameId: gameId,
+      tagCodes: [gameId],
+      tags: [{ code: gameId, name: `Tag ${gameId}` }],
+    }));
+
+    await store.refreshTagsForVisibleGames();
+
+    expect(store.games()[0].tagCodes).toEqual([1]);
+    expect(store.games()[0].tags).toEqual([{ code: 1, name: 'Tag 1' }]);
+    expect(store.games()[1].tagCodes).toEqual([2]);
+    expect(store.games()[1].tags).toEqual([{ code: 2, name: 'Tag 2' }]);
+    expect(store.games()[1].plyIndex).toBe(untouchedPlyIndex);
+    expect(store.bulkRefreshingTags()).toBeFalse();
+    expect(store.bulkRefreshTagsCompleted()).toBe(2);
+    expect(api.searchGames).not.toHaveBeenCalled();
+  });
+
+  it('keeps successful tag patches and records the first bulk refresh failure', async () => {
+    api.refreshGameTags.and.callFake((gameId: number) => {
+      if (gameId === 2) return throwError(() => new Error('Tag refresh failed'));
+      return of({
+        importedGameId: gameId,
+        tagCodes: [10],
+        tags: [{ code: 10, name: 'Needs review' }],
+      });
+    });
+
+    await store.refreshTagsForVisibleGames();
+
+    expect(store.games()[0].tagCodes).toEqual([10]);
+    expect(store.games()[1].tagCodes).toEqual([]);
+    expect(store.error()).toBe('Tag refresh failed');
+    expect(store.bulkRefreshingTags()).toBeFalse();
+    expect(store.bulkRefreshTagsCompleted()).toBe(2);
   });
 });
 

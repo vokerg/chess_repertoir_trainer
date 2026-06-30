@@ -35,11 +35,36 @@ export class GameFilterPanelComponent {
     this.filtersChange.emit(this.withLockedColor({ ...this.filters(), [key]: value }));
   }
 
+  protected selectedTagCodes(): number[] {
+    return this.filters().tagCodes;
+  }
+
+  protected tagSelectionLabel(): string {
+    const count = this.selectedTagCodes().length;
+    if (count === 0) return 'Any tags';
+    return count === 1 ? '1 selected' : `${count} selected`;
+  }
+
+  protected isTagSelected(code: number): boolean {
+    return this.selectedTagCodes().includes(code);
+  }
+
+  protected toggleTagCode(code: number, checked: boolean): void {
+    const selectedCodes = new Set(this.selectedTagCodes());
+    if (checked) selectedCodes.add(code);
+    else selectedCodes.delete(code);
+    this.setFilter('tagCodes', Array.from(selectedCodes).sort((left, right) => left - right));
+  }
+
   protected customSpeedFacets(): FacetValue[] {
     const builtIns = new Set(['bullet', 'blitz', 'rapid', 'classical']);
     return (this.facets().speeds || []).filter(
       (speed) => !builtIns.has(String(this.facetKey(speed)).toLowerCase()),
     );
+  }
+
+  protected tagCode(facet: FacetValue): number {
+    return Number(facet.value ?? facet.id ?? 0);
   }
 
   protected facetKey(facet: FacetValue): string {

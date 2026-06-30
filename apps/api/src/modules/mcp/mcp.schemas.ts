@@ -36,6 +36,7 @@ const importedGameFilterShape = {
   maxOpponentRating: z.number().int().min(0).optional(),
   analysisStatus: z.array(analysisStatusSchema).optional(),
   plyIndexStatus: z.array(plyIndexStatusSchema).optional(),
+  tagCodes: z.array(z.number().int().positive()).optional(),
   classification: z.array(classificationSchema).optional(),
   minAccuracy: z.number().min(0).max(100).optional(),
   maxAccuracy: z.number().min(0).max(100).optional(),

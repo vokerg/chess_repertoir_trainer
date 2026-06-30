@@ -182,7 +182,10 @@ export const ImportedGamesService = {
   refreshTags: async (userId: number, id: number) => GameTaggingService.refreshOne(userId, id),
 
   facets: async (userId: number) => {
-    const facets = await ImportedGameQueryService.getFacets(userId);
+    const [facets, definitionsResponse] = await Promise.all([
+      ImportedGameQueryService.getFacets(userId),
+      GameTaggingService.definitions(),
+    ]);
     return {
       accounts: facets.accounts.map((account) => ({
         id: account.id,
@@ -202,6 +205,10 @@ export const ImportedGamesService = {
         count: groupCount(opening, 'openingEco'),
       })),
       analysisStatuses: analysisStatusFacetRows(facets.totalGames, facets.analysisRunRows),
+      tags: definitionsResponse.items.map((tag) => ({
+        value: tag.code,
+        name: tag.name,
+      })),
     };
   },
 };
