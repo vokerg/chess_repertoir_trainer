@@ -27,6 +27,8 @@ const TAG_BUCKETS = [
     key: 'gameEnd',
     label: 'Game end',
     tags: [
+      GAME_TAG.WON_ON_TIME,
+      GAME_TAG.LOST_ON_TIME,
       GAME_TAG.WON_BY_RESIGNATION,
       GAME_TAG.LOST_BY_RESIGNATION,
       GAME_TAG.WON_BY_CHECKMATE,
@@ -97,8 +99,6 @@ const TAG_BUCKETS = [
     key: 'time',
     label: 'Time',
     tags: [
-      GAME_TAG.WON_ON_TIME,
-      GAME_TAG.LOST_ON_TIME,
       GAME_TAG.FLAGGED_IN_WINNING_POSITION,
       GAME_TAG.OPPONENT_FLAGGED_IN_WINNING_POSITION,
       GAME_TAG.OPPONENT_FLAGGED_IN_LOST_POSITION,

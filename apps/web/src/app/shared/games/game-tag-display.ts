@@ -88,7 +88,7 @@ export const GAME_TAG_BUCKETS: readonly GameTagBucketDefinition[] = [
   {
     key: 'gameEnd',
     label: 'Game end',
-    codes: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    codes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   },
   {
     key: 'conversion',
@@ -113,7 +113,7 @@ export const GAME_TAG_BUCKETS: readonly GameTagBucketDefinition[] = [
   {
     key: 'time',
     label: 'Time',
-    codes: [1, 2, 140, 141, 142, 160, 161, 162],
+    codes: [140, 141, 142, 160, 161, 162],
   },
   {
     key: 'quality',
