@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
-import { ImportedGameSearchQuery, OpeningAnalysisQuery } from './imported-games.schemas';
+import { OpeningAnalysisQuery } from './imported-games.schemas';
 import { findOpeningAnalysisRows, OpeningAnalysisPlyRow } from './opening-analysis.repository.prisma';
 import { summarizeGamePerformance } from './performance-insights.service';
 import { GamePerformanceSummary } from './performance-insights.types';
@@ -136,57 +136,6 @@ function addResult(wdl: OpeningAnalysisWdl, result: string | null) {
   wdl.scorePct = Math.round(((wdl.wins + wdl.draws * 0.5) / wdl.total) * 1000) / 10;
 }
 
-function latestRun(row: OpeningAnalysisPlyRow) {
-  return row.importedGame.analysisRuns[0] ?? null;
-}
-
-function deriveAnalysisStatus(row: OpeningAnalysisPlyRow) {
-  const run = latestRun(row);
-  if (!run) return 'NOT_ANALYZED';
-  if (run.status === 'RUNNING') return 'RUNNING';
-  if (run.status === 'COMPLETED') return 'COMPLETED';
-  return 'FAILED';
-}
-
-function userAccuracy(row: OpeningAnalysisPlyRow) {
-  const run = latestRun(row);
-  if (!run) return null;
-  if (row.importedGame.userColor === 'WHITE') return run.whiteAccuracy;
-  if (row.importedGame.userColor === 'BLACK') return run.blackAccuracy;
-  return null;
-}
-
-function classificationCount(summary: unknown, classification: string) {
-  if (!summary || typeof summary !== 'object') return 0;
-  const white = (summary as any).white;
-  const black = (summary as any).black;
-  const whiteCount = white && typeof white === 'object' && typeof white[classification] === 'number' ? white[classification] : 0;
-  const blackCount = black && typeof black === 'object' && typeof black[classification] === 'number' ? black[classification] : 0;
-  return whiteCount + blackCount;
-}
-
-function rowMatchesAnalysisFilters(row: OpeningAnalysisPlyRow, query: ImportedGameSearchQuery) {
-  if (query.analysisStatus?.length && !query.analysisStatus.includes(deriveAnalysisStatus(row) as any)) {
-    return false;
-  }
-
-  const accuracy = userAccuracy(row);
-  if (query.minAccuracy !== undefined && (accuracy === null || accuracy < query.minAccuracy)) {
-    return false;
-  }
-  if (query.maxAccuracy !== undefined && (accuracy === null || accuracy > query.maxAccuracy)) {
-    return false;
-  }
-
-  if (query.classification?.length) {
-    const run = latestRun(row);
-    if (!run) return false;
-    return query.classification.some((classification) => classificationCount(run.summary, classification) > 0);
-  }
-
-  return true;
-}
-
 function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
   return {
     ...query,
@@ -235,7 +184,7 @@ export const OpeningAnalysisService = {
     const fen = boardFen(query.fen);
     const normalizedFen = normalizeFenForExplorer(fen);
     const effectiveQuery: OpeningAnalysisQuery = { ...query, rated: query.rated ?? true };
-    const rows = (await findOpeningAnalysisRows(userId, effectiveQuery, normalizedFen)).filter((row) => rowMatchesAnalysisFilters(row, effectiveQuery));
+    const rows = await findOpeningAnalysisRows(userId, effectiveQuery, normalizedFen);
 
     const positionGames = new Set<number>();
     const positionWdl = emptyWdl();

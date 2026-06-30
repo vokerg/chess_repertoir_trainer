@@ -28,6 +28,5 @@ export class MonthlyGamesStore {
 
   setExcludeBullet(excludeBullet: boolean): void {
     this.excludeBullet.set(excludeBullet);
-    void this.load();
   }
 }

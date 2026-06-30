@@ -34,7 +34,7 @@ The API is only partly migrated to feature modules. These registered routes rema
 
 Several modules also still call services under `apps/api/src/services`. This is accepted legacy debt, not the preferred structure for new features. Do not invent `games` or `importers` modules in documentation until those boundaries exist in code.
 
-The imported-games module has a feature-local query service that shares filtering and pagination semantics across backend consumers while keeping REST response mapping in `ImportedGamesService`.
+The imported-games module has a feature-local query service that shares filtering and pagination semantics across backend consumers while keeping REST response mapping in `ImportedGamesService`. Imported-game filtering is SQL-side through the imported-games repository; latest analysis status and accuracy filters use materialized fields on `ImportedGame` that are synchronized from `GameAnalysisRun` writes.
 
 Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position analysis is stored in the analysis module's position-analysis cache with compact or rich persistence: imported-game flows write scalar-only compact rows, while free/interactive analysis can write rich rows with PV lines. Per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
 

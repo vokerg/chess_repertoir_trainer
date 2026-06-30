@@ -16,7 +16,6 @@ import {
   CourseReviewGroup,
   RepertoireColor,
 } from './repertoire-coverage.types';
-import { rowMatchesImportedGamePostFilters } from '../imported-games/imported-game-analysis.helpers';
 import {
   courseReviewGameFilters,
   CourseReviewQuery,
@@ -120,9 +119,7 @@ export const CourseReviewService = {
       filters: gameFilters,
       sideToTrain,
     });
-    const games = candidateGames
-      .filter((game) => rowMatchesImportedGamePostFilters(game, gameFilters))
-      .slice(input.offset, input.offset + input.limit);
+    const games = candidateGames.slice(input.offset, input.offset + input.limit);
     const plies = await getCourseReviewPlies(
       games.filter((game) => game.plyIndexedAt).map((game) => game.id),
     );

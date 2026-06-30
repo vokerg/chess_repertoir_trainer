@@ -12,6 +12,7 @@ export interface GameFilters {
   openingName: string;
   analysisStatus: '' | AnalysisStatus;
   plyIndexStatus: '' | PlyIndexStatus;
+  tagFilter: '' | 'NO_TAGS';
   tagCodes: number[];
   minAccuracy: string;
   maxAccuracy: string;
@@ -34,6 +35,7 @@ export function defaultGameFilters(): GameFilters {
     openingName: '',
     analysisStatus: '',
     plyIndexStatus: '',
+    tagFilter: '',
     tagCodes: [],
     minAccuracy: '',
     maxAccuracy: '',

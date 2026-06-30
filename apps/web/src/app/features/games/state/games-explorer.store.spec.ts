@@ -93,6 +93,35 @@ describe('GamesExplorerStore', () => {
     expect(api.searchGames).not.toHaveBeenCalled();
   });
 
+  it('skips bulk tag refresh for rows that already have at least three tags', async () => {
+    store.games.set([
+      game(1),
+      game(2, [
+        { code: 20, name: 'Tag 20' },
+        { code: 21, name: 'Tag 21' },
+        { code: 22, name: 'Tag 22' },
+      ]),
+    ]);
+    api.refreshGameTags.and.returnValue(of({
+      importedGameId: 1,
+      tagCodes: [10],
+      tags: [{ code: 10, name: 'Needs review' }],
+    }));
+
+    await store.refreshTagsForVisibleGames();
+
+    expect(api.refreshGameTags).toHaveBeenCalledOnceWith(1);
+    expect(store.games()[0].tagCodes).toEqual([10]);
+    expect(store.games()[1].tagCodes).toEqual([20, 21, 22]);
+    expect(store.games()[1].tags).toEqual([
+      { code: 20, name: 'Tag 20' },
+      { code: 21, name: 'Tag 21' },
+      { code: 22, name: 'Tag 22' },
+    ]);
+    expect(store.bulkRefreshTagsTotal()).toBe(2);
+    expect(store.bulkRefreshTagsCompleted()).toBe(2);
+  });
+
   it('keeps successful tag patches and records the first bulk refresh failure', async () => {
     api.refreshGameTags.and.callFake((gameId: number) => {
       if (gameId === 2) return throwError(() => new Error('Tag refresh failed'));
@@ -113,15 +142,15 @@ describe('GamesExplorerStore', () => {
   });
 });
 
-function game(id: number): ImportedGameListItem {
+function game(id: number, tags: ImportedGameListItem['tags'] = []): ImportedGameListItem {
   return {
     id,
     accountId: 10,
     provider: 'LICHESS',
     providerGameId: `game-${id}`,
     timeControl: {},
-    tagCodes: [],
-    tags: [],
+    tagCodes: tags.map((tag) => tag.code),
+    tags,
     plyIndex: { status: 'NOT_INDEXED', error: null },
     analysis: { status: 'NOT_ANALYZED' },
   };

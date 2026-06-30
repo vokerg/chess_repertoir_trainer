@@ -8,12 +8,16 @@ imported-games.routes.ts
     -> ImportedGamesService
       REST/browser DTO and facet response mapping
         -> ImportedGameQueryService
-          current-user setup, cursor pagination, post-filtering, detail/PGN/facet use cases
+          current-user setup, cursor pagination, detail/PGN/facet use cases
             -> imported-games.repository.prisma.ts
-              Prisma selects, filters, sorting, cursor predicates, and database calls
+              Prisma selects, SQL-side filters, sorting, cursor predicates, and database calls
 ```
 
-`imported-game-analysis.helpers.ts` contains pure row-derived analysis and ply-index status calculations plus imported-game post-filter matching. `ImportedGameQueryService` uses those helpers while returning repository rows and query criteria rather than browser response DTOs.
+`imported-games.repository.prisma.ts` owns imported-game selection semantics. Filters must be expressed in the Prisma/SQL predicate built by `buildImportedGameWhere`, including analysis status, accuracy, classification, ply-index status, and tag filters. Do not add Node-side post-filtering for search, summary, opening analysis, course review, lab reports, or MCP tools; it breaks pagination and forces the API to scan candidate pages that Postgres could reject directly.
+
+`ImportedGame` materializes the latest analysis-run fields used for filtering (`latestAnalysisStatus`, latest accuracy values, and latest run timestamps). Analysis write paths update those fields in the same transaction as `GameAnalysisRun` creation/completion/failure, and the migration backfills existing games from the newest run. Browser response mapping can still load the latest `analysisRuns` relation for detailed display fields such as summary and run id.
+
+`imported-game-analysis.helpers.ts` contains pure row-derived display helpers for analysis and ply-index status. It is not a filtering layer.
 
 ## Reuse rule
 

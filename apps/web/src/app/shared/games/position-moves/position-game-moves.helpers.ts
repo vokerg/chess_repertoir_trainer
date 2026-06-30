@@ -18,6 +18,7 @@ export function buildOpeningAnalysisQuery(fen: string, filters: GameFilters): st
   setParam(params, 'openingName', filters.openingName.trim());
   setParam(params, 'analysisStatus', filters.analysisStatus);
   setParam(params, 'plyIndexStatus', filters.plyIndexStatus);
+  setParam(params, 'tagFilter', filters.tagFilter);
   if (filters.tagCodes.length) params.set('tagCodes', filters.tagCodes.join(','));
   setParam(params, 'minAccuracy', filters.minAccuracy.trim());
   setParam(params, 'maxAccuracy', filters.maxAccuracy.trim());

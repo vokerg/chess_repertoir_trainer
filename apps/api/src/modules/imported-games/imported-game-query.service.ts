@@ -1,4 +1,3 @@
-import { rowMatchesImportedGamePostFilters } from './imported-game-analysis.helpers';
 import {
   findImportedGameById,
   findImportedGamesForSummary,
@@ -32,56 +31,18 @@ function decodeCursor(cursor?: string): ImportedGameCursor | null {
   }
 }
 
-function toCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>): ImportedGameCursor {
-  return {
-    endedAt: row.endedAt ? row.endedAt.toISOString() : null,
-    id: row.id,
-  };
-}
-
 async function searchRows(userId: number, query: ImportedGameSearchQuery) {
-  let cursor = decodeCursor(query.cursor);
-  const visibleRows: ImportedGameListRow[] = [];
-  let lastScannedRow: ImportedGameListRow | null = null;
-
-  for (let page = 0; page < 25; page += 1) {
-    const rows = await findImportedGames(userId, query, cursor);
-    const candidates = rows.slice(0, query.limit);
-    const batchHasMore = rows.length > query.limit;
-
-    for (let index = 0; index < candidates.length; index += 1) {
-      const row = candidates[index];
-      lastScannedRow = row;
-      if (!rowMatchesImportedGamePostFilters(row, query)) continue;
-
-      visibleRows.push(row);
-      if (visibleRows.length === query.limit) {
-        const hasMore = batchHasMore || index < candidates.length - 1;
-        return {
-          rows: visibleRows,
-          pageInfo: {
-            nextCursor: hasMore ? encodeCursor(row) : null,
-            hasMore,
-          },
-        };
-      }
-    }
-
-    if (!candidates.length || !batchHasMore) {
-      return {
-        rows: visibleRows,
-        pageInfo: { nextCursor: null, hasMore: false },
-      };
-    }
-
-    cursor = toCursor(candidates[candidates.length - 1]);
-  }
+  const cursor = decodeCursor(query.cursor);
+  const rows = await findImportedGames(userId, query, cursor);
+  const visibleRows = rows.slice(0, query.limit);
+  const hasMore = rows.length > query.limit;
+  const lastVisibleRow = visibleRows[visibleRows.length - 1] ?? null;
 
   return {
     rows: visibleRows,
     pageInfo: {
-      nextCursor: lastScannedRow ? encodeCursor(lastScannedRow) : null,
-      hasMore: lastScannedRow !== null,
+      nextCursor: hasMore && lastVisibleRow ? encodeCursor(lastVisibleRow) : null,
+      hasMore,
     },
   };
 }
@@ -185,7 +146,7 @@ export const ImportedGameQueryService = {
   summarize: async (userId: number, query: ImportedGameSummaryQuery) => {
     const rows = await findImportedGamesForSummary(userId, query);
     return {
-      summary: summarizeRows(rows.filter((row) => rowMatchesImportedGamePostFilters(row, query))),
+      summary: summarizeRows(rows),
       appliedCriteria: query,
     };
   },

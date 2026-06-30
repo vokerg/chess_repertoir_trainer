@@ -1,4 +1,3 @@
-import { rowMatchesImportedGamePostFilters } from '../../imported-games/imported-game-analysis.helpers';
 import {
   findImportedGamesForOpeningStruggles,
   OpeningStrugglesGameRow,
@@ -261,7 +260,7 @@ function sortItems(items: ReturnType<typeof toItem>[], query: OpeningStrugglesQu
 export async function getOpeningStruggles(userId: number, query: OpeningStrugglesQuery) {
   const filters = importedGameFilters(query);
   const candidateGames = await findImportedGamesForOpeningStruggles(userId, filters, query.maxPly);
-  const filteredGames = candidateGames.filter((game) => rowMatchesImportedGamePostFilters(game, filters));
+  const filteredGames = candidateGames;
   const indexedGames = filteredGames.filter((game) => game.plyIndexedAt !== null);
   const items = sortItems(flatten(buildTree(indexedGames, query), query), query).slice(0, query.limit);
 

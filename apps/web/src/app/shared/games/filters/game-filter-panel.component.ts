@@ -28,7 +28,6 @@ export class GameFilterPanelComponent {
   protected setFilter<K extends keyof GameFilters>(key: K, value: GameFilters[K]): void {
     if (key === 'userColor' && this.lockedUserColor()) return;
     this.filtersChange.emit(this.withLockedColor({ ...this.filters(), [key]: value }));
-    this.apply.emit();
   }
 
   protected setFilterValue<K extends keyof GameFilters>(key: K, value: string): void {
@@ -40,20 +39,37 @@ export class GameFilterPanelComponent {
   }
 
   protected tagSelectionLabel(): string {
+    if (this.filters().tagFilter === 'NO_TAGS') return 'No tags';
     const count = this.selectedTagCodes().length;
     if (count === 0) return 'Any tags';
     return count === 1 ? '1 selected' : `${count} selected`;
   }
 
+  protected noTagsSelected(): boolean {
+    return this.filters().tagFilter === 'NO_TAGS';
+  }
+
+  protected toggleNoTags(checked: boolean): void {
+    this.filtersChange.emit(this.withLockedColor({
+      ...this.filters(),
+      tagFilter: checked ? 'NO_TAGS' : '',
+      tagCodes: checked ? [] : this.filters().tagCodes,
+    }));
+  }
+
   protected isTagSelected(code: number): boolean {
-    return this.selectedTagCodes().includes(code);
+    return !this.noTagsSelected() && this.selectedTagCodes().includes(code);
   }
 
   protected toggleTagCode(code: number, checked: boolean): void {
     const selectedCodes = new Set(this.selectedTagCodes());
     if (checked) selectedCodes.add(code);
     else selectedCodes.delete(code);
-    this.setFilter('tagCodes', Array.from(selectedCodes).sort((left, right) => left - right));
+    this.filtersChange.emit(this.withLockedColor({
+      ...this.filters(),
+      tagFilter: '',
+      tagCodes: Array.from(selectedCodes).sort((left, right) => left - right),
+    }));
   }
 
   protected customSpeedFacets(): FacetValue[] {

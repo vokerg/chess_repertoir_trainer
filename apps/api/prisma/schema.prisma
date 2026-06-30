@@ -94,6 +94,12 @@ model ImportedGame {
   plyIndexedAt          DateTime?
   plyIndexError         String?
   tagCodes              Int[]              @default([])
+  latestAnalysisRunId   Int?
+  latestAnalysisStatus  String?
+  latestAnalysisCreatedAt DateTime?
+  latestAnalysisCompletedAt DateTime?
+  latestWhiteAccuracy   Float?
+  latestBlackAccuracy   Float?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   analysisRuns          GameAnalysisRun[]
@@ -102,6 +108,7 @@ model ImportedGame {
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
+  @@index([userId, latestAnalysisStatus, endedAt])
 }
 
 model GameTagDefinition {

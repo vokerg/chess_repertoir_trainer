@@ -12,6 +12,7 @@ export function appendGameFilterParams(params: URLSearchParams, filters: GameFil
   if (filters.openingName.trim()) params.set('openingName', filters.openingName.trim());
   if (filters.analysisStatus) params.set('analysisStatus', filters.analysisStatus);
   if (filters.plyIndexStatus) params.set('plyIndexStatus', filters.plyIndexStatus);
+  if (filters.tagFilter) params.set('tagFilter', filters.tagFilter);
   if (filters.tagCodes.length) params.set('tagCodes', filters.tagCodes.join(','));
   if (filters.minAccuracy.trim()) params.set('minAccuracy', filters.minAccuracy.trim());
   if (filters.maxAccuracy.trim()) params.set('maxAccuracy', filters.maxAccuracy.trim());

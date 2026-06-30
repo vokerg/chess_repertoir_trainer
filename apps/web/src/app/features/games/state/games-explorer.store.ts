@@ -244,6 +244,7 @@ export class GamesExplorerStore {
         const game = games[nextIndex];
         nextIndex += 1;
         try {
+          if (this.gameTagCount(game) >= 3) continue;
           const response = await firstValueFrom(this.api.refreshGameTags(game.id));
           this.patchGameTags(response.importedGameId, response.tagCodes, response.tags);
         } catch (err: unknown) {
@@ -357,6 +358,10 @@ export class GamesExplorerStore {
       tagCodes,
       tags,
     }));
+  }
+
+  private gameTagCount(game: ImportedGameListItem): number {
+    return game.tags?.length ?? game.tagCodes.length;
   }
 
   private resetBulkIndexState(): void {

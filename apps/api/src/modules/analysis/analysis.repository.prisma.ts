@@ -51,6 +51,35 @@ const compactGameAnalysisRunInclude = {
   },
 } as const;
 
+function latestAnalysisSnapshotData(run: {
+  id: number;
+  status: string;
+  createdAt: Date;
+  completedAt: Date | null;
+  whiteAccuracy: number | null;
+  blackAccuracy: number | null;
+}) {
+  return {
+    latestAnalysisRunId: run.id,
+    latestAnalysisStatus: run.status,
+    latestAnalysisCreatedAt: run.createdAt,
+    latestAnalysisCompletedAt: run.completedAt,
+    latestWhiteAccuracy: run.whiteAccuracy,
+    latestBlackAccuracy: run.blackAccuracy,
+  };
+}
+
+async function updateImportedGameLatestAnalysisSnapshot(
+  tx: Prisma.TransactionClient,
+  importedGameId: number,
+  run: Parameters<typeof latestAnalysisSnapshotData>[0],
+) {
+  await tx.importedGame.update({
+    where: { id: importedGameId },
+    data: latestAnalysisSnapshotData(run),
+  });
+}
+
 function compactPositionAnalysis(row: any, fromCache = true) {
   return {
     id: row.id,
@@ -395,23 +424,27 @@ export async function createClientGameAnalysisRun(data: {
   whiteMovesAnalyzed: number;
   blackMovesAnalyzed: number;
 }) {
-  return prisma.gameAnalysisRun.create({
-    data: {
-      importedGameId: data.importedGameId,
-      status: 'COMPLETED',
-      positionsTotal: data.positionsDone,
-      positionsDone: data.positionsDone,
-      summary: data.summary as any,
-      accuracyVersion: data.accuracyVersion,
-      whiteAccuracy: data.whiteAccuracy,
-      blackAccuracy: data.blackAccuracy,
-      whiteAverageCentipawnLoss: data.whiteAverageCentipawnLoss,
-      blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
-      whiteMovesAnalyzed: data.whiteMovesAnalyzed,
-      blackMovesAnalyzed: data.blackMovesAnalyzed,
-      completedAt: new Date(),
-    },
-    include: compactGameAnalysisRunInclude,
+  return prisma.$transaction(async (tx) => {
+    const run = await tx.gameAnalysisRun.create({
+      data: {
+        importedGameId: data.importedGameId,
+        status: 'COMPLETED',
+        positionsTotal: data.positionsDone,
+        positionsDone: data.positionsDone,
+        summary: data.summary as any,
+        accuracyVersion: data.accuracyVersion,
+        whiteAccuracy: data.whiteAccuracy,
+        blackAccuracy: data.blackAccuracy,
+        whiteAverageCentipawnLoss: data.whiteAverageCentipawnLoss,
+        blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
+        whiteMovesAnalyzed: data.whiteMovesAnalyzed,
+        blackMovesAnalyzed: data.blackMovesAnalyzed,
+        completedAt: new Date(),
+      },
+      include: compactGameAnalysisRunInclude,
+    });
+    await updateImportedGameLatestAnalysisSnapshot(tx, data.importedGameId, run);
+    return run;
   });
 }
 
@@ -420,14 +453,18 @@ export async function createRunningGameAnalysisRun(data: {
   positionsTotal: number;
   positionsDone?: number;
 }) {
-  return prisma.gameAnalysisRun.create({
-    data: {
-      importedGameId: data.importedGameId,
-      status: 'RUNNING',
-      positionsTotal: data.positionsTotal,
-      positionsDone: data.positionsDone ?? 0,
-    },
-    include: compactGameAnalysisRunInclude,
+  return prisma.$transaction(async (tx) => {
+    const run = await tx.gameAnalysisRun.create({
+      data: {
+        importedGameId: data.importedGameId,
+        status: 'RUNNING',
+        positionsTotal: data.positionsTotal,
+        positionsDone: data.positionsDone ?? 0,
+      },
+      include: compactGameAnalysisRunInclude,
+    });
+    await updateImportedGameLatestAnalysisSnapshot(tx, data.importedGameId, run);
+    return run;
   });
 }
 
@@ -462,36 +499,44 @@ export async function completeGameAnalysisRun(
     blackMovesAnalyzed: number;
   },
 ) {
-  return prisma.gameAnalysisRun.update({
-    where: { id: runId },
-    data: {
-      status: 'COMPLETED',
-      positionsTotal: data.positionsTotal,
-      positionsDone: data.positionsDone,
-      summary: data.summary as any,
-      accuracyVersion: data.accuracyVersion,
-      whiteAccuracy: data.whiteAccuracy,
-      blackAccuracy: data.blackAccuracy,
-      whiteAverageCentipawnLoss: data.whiteAverageCentipawnLoss,
-      blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
-      whiteMovesAnalyzed: data.whiteMovesAnalyzed,
-      blackMovesAnalyzed: data.blackMovesAnalyzed,
-      error: null,
-      completedAt: new Date(),
-    },
-    include: compactGameAnalysisRunInclude,
+  return prisma.$transaction(async (tx) => {
+    const run = await tx.gameAnalysisRun.update({
+      where: { id: runId },
+      data: {
+        status: 'COMPLETED',
+        positionsTotal: data.positionsTotal,
+        positionsDone: data.positionsDone,
+        summary: data.summary as any,
+        accuracyVersion: data.accuracyVersion,
+        whiteAccuracy: data.whiteAccuracy,
+        blackAccuracy: data.blackAccuracy,
+        whiteAverageCentipawnLoss: data.whiteAverageCentipawnLoss,
+        blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
+        whiteMovesAnalyzed: data.whiteMovesAnalyzed,
+        blackMovesAnalyzed: data.blackMovesAnalyzed,
+        error: null,
+        completedAt: new Date(),
+      },
+      include: compactGameAnalysisRunInclude,
+    });
+    await updateImportedGameLatestAnalysisSnapshot(tx, run.importedGameId, run);
+    return run;
   });
 }
 
 export async function failGameAnalysisRun(runId: number, error: string) {
-  return prisma.gameAnalysisRun.update({
-    where: { id: runId },
-    data: {
-      status: 'FAILED',
-      error,
-      completedAt: new Date(),
-    },
-    include: compactGameAnalysisRunInclude,
+  return prisma.$transaction(async (tx) => {
+    const run = await tx.gameAnalysisRun.update({
+      where: { id: runId },
+      data: {
+        status: 'FAILED',
+        error,
+        completedAt: new Date(),
+      },
+      include: compactGameAnalysisRunInclude,
+    });
+    await updateImportedGameLatestAnalysisSnapshot(tx, run.importedGameId, run);
+    return run;
   });
 }
 

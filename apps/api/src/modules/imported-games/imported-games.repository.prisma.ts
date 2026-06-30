@@ -207,6 +207,40 @@ function buildPlyIndexStatusWhere(statuses?: ImportedGameSearchQuery['plyIndexSt
   ];
 }
 
+function buildAnalysisStatusWhere(statuses?: ImportedGameFilterQuery['analysisStatus']): Prisma.ImportedGameWhereInput[] {
+  if (!statuses?.length) return [];
+
+  const concreteStatuses = statuses.filter((status) => status !== 'NOT_ANALYZED');
+  const statusWhere: Prisma.ImportedGameWhereInput[] = [];
+  if (concreteStatuses.length) {
+    statusWhere.push({ latestAnalysisStatus: { in: concreteStatuses } });
+  }
+  if (statuses.includes('NOT_ANALYZED')) {
+    statusWhere.push({ latestAnalysisStatus: null });
+  }
+
+  return statusWhere.length ? [{ OR: statusWhere }] : [];
+}
+
+function buildAccuracyWhere(query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput[] {
+  const range = ratingRange(query.minAccuracy, query.maxAccuracy);
+  if (!range) return [];
+
+  return [
+    {
+      OR: [
+        { userColor: 'WHITE', latestWhiteAccuracy: range },
+        { userColor: 'BLACK', latestBlackAccuracy: range },
+      ],
+    },
+  ];
+}
+
+function tagCodesFilter(query: ImportedGameFilterQuery): Prisma.IntNullableListFilter | undefined {
+  if (query.tagFilter === 'NO_TAGS') return { isEmpty: true };
+  return query.tagCodes?.length ? { hasSome: query.tagCodes } : undefined;
+}
+
 export function buildImportedGameWhere(userId: number, query: ImportedGameFilterQuery): Prisma.ImportedGameWhereInput {
   return {
     userId,
@@ -219,7 +253,7 @@ export function buildImportedGameWhere(userId: number, query: ImportedGameFilter
     speedCategory: inFilter(query.speedCategory),
     variant: inFilter(query.variant),
     openingEco: inFilter(query.openingEco),
-    tagCodes: query.tagCodes?.length ? { hasSome: query.tagCodes } : undefined,
+    tagCodes: tagCodesFilter(query),
     openingName: query.openingName ? { contains: query.openingName, mode: 'insensitive' } : undefined,
     opponentUsername: query.opponent ? { contains: query.opponent, mode: 'insensitive' } : undefined,
     AND: [
@@ -228,6 +262,8 @@ export function buildImportedGameWhere(userId: number, query: ImportedGameFilter
       ...buildTimeControlWhere(query),
       ...buildClassificationWhere(query.classification),
       ...buildPlyIndexStatusWhere(query.plyIndexStatus),
+      ...buildAnalysisStatusWhere(query.analysisStatus),
+      ...buildAccuracyWhere(query),
     ],
   };
 }

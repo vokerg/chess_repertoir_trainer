@@ -11,6 +11,8 @@ export function summaryGameFilters(filters: GameFilters): string {
   else if (filters.provider && filters.provider !== 'ALL') {
     parts.push(filters.provider === 'CHESS_COM' ? 'Chess.com' : 'Lichess');
   }
+  if (filters.tagFilter === 'NO_TAGS') parts.push('No tags');
+  else if (filters.tagCodes.length) parts.push(`${filters.tagCodes.length} tag${filters.tagCodes.length === 1 ? '' : 's'}`);
   if (filters.openingName) parts.push(filters.openingName);
   return parts.join(' - ');
 }

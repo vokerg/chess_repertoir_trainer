@@ -23,6 +23,7 @@ const resultForUserSchema = z.enum(['WIN', 'DRAW', 'LOSS']);
 const colorSchema = z.enum(['WHITE', 'BLACK']);
 const analysisStatusSchema = z.enum(['NOT_ANALYZED', 'RUNNING', 'COMPLETED', 'FAILED']);
 const plyIndexStatusSchema = z.enum(['NOT_INDEXED', 'INDEXED', 'FAILED']);
+const tagFilterSchema = z.enum(['NO_TAGS']);
 const classificationSchema = z.enum(['BEST', 'GOOD', 'INACCURACY', 'MISTAKE', 'BLUNDER', 'BOOK', 'MISS']);
 
 export const importedGameSearchQuerySchema = z.object({
@@ -45,6 +46,7 @@ export const importedGameSearchQuerySchema = z.object({
   maxOpponentRating: z.coerce.number().int().min(0).optional(),
   analysisStatus: csvArray(analysisStatusSchema),
   plyIndexStatus: csvArray(plyIndexStatusSchema),
+  tagFilter: tagFilterSchema.optional(),
   tagCodes: intCsv,
   classification: csvArray(classificationSchema),
   minAccuracy: z.coerce.number().min(0).max(100).optional(),

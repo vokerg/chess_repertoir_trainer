@@ -96,10 +96,19 @@
       <details class="tags-picker">
         <summary>{{ tagSelectionLabel() }}</summary>
         <div class="tags-options">
+          <label class="tag-option">
+            <input
+              type="checkbox"
+              [checked]="noTagsSelected()"
+              (change)="toggleNoTags($any($event.target).checked)"
+            />
+            <span>No tags</span>
+          </label>
           @for (tag of facets().tags || []; track tagCode(tag)) {
             <label class="tag-option">
               <input
                 type="checkbox"
+                [disabled]="noTagsSelected()"
                 [checked]="isTagSelected(tagCode(tag))"
                 (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
               />
@@ -114,7 +123,6 @@
       ><input
         [ngModel]="filters().timeControl"
         (ngModelChange)="setFilterValue('timeControl', $event)"
-        (keyup.enter)="apply.emit()"
         placeholder="e.g. 10+5"
     /></label>
     <label class="games-field"
@@ -122,7 +130,6 @@
       ><input
         [ngModel]="filters().opponent"
         (ngModelChange)="setFilterValue('opponent', $event)"
-        (keyup.enter)="apply.emit()"
         placeholder="Username"
     /></label>
     <label class="games-field"
@@ -130,7 +137,6 @@
       ><input
         [ngModel]="filters().openingName"
         (ngModelChange)="setFilterValue('openingName', $event)"
-        (keyup.enter)="apply.emit()"
         placeholder="Sicilian, London..."
     /></label>
     <label class="games-field compact"
@@ -138,7 +144,6 @@
       ><input
         [ngModel]="filters().minAccuracy"
         (ngModelChange)="setFilterValue('minAccuracy', $event)"
-        (keyup.enter)="apply.emit()"
         inputmode="decimal"
         placeholder="0"
     /></label>
@@ -147,7 +152,6 @@
       ><input
         [ngModel]="filters().maxAccuracy"
         (ngModelChange)="setFilterValue('maxAccuracy', $event)"
-        (keyup.enter)="apply.emit()"
         inputmode="decimal"
         placeholder="100"
     /></label>
@@ -156,7 +160,6 @@
       ><input
         [ngModel]="filters().minOpponentRating"
         (ngModelChange)="setFilterValue('minOpponentRating', $event)"
-        (keyup.enter)="apply.emit()"
         inputmode="numeric"
         placeholder="1200"
     /></label>
@@ -165,7 +168,6 @@
       ><input
         [ngModel]="filters().maxOpponentRating"
         (ngModelChange)="setFilterValue('maxOpponentRating', $event)"
-        (keyup.enter)="apply.emit()"
         inputmode="numeric"
         placeholder="2200"
     /></label>

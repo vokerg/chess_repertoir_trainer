@@ -2,9 +2,9 @@
 
 `GET /api/opening-analysis` returns a `performance` summary for the requested position. The summary is computed on the server from distinct imported games that reached the normalized FEN.
 
-The performance sample uses the same filtered ply rows as the position WDL and next-move aggregation. All current imported-game filters apply before aggregation, including rated state, speed category, user color, date range, opening ECO/name, analysis status, accuracy, classification, and `tagCodes`.
+The performance sample uses the same SQL-filtered ply rows as the position WDL and next-move aggregation. All current imported-game filters apply before aggregation, including rated state, speed category, user color, date range, opening ECO/name, analysis status, accuracy, classification, `tagCodes`, and `tagFilter`.
 
-If a `tagCodes` filter is active, the performance sample is already narrowed to games matching those tags. The summary then describes that narrowed sample.
+If a `tagCodes` or `tagFilter` filter is active, the performance sample is already narrowed to matching games. The summary then describes that narrowed sample.
 
 Aggregation rules:
 
