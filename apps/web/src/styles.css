@@ -137,7 +137,7 @@ textarea:focus {
 }
 
 .page-shell {
-  width: min(1320px, calc(100vw - 32px));
+  width: min(1600px, calc(100vw - 24px));
   margin: 0 auto;
 }
 

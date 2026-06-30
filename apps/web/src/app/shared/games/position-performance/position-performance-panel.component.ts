@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { gameTagLabel, gameTagTone } from '../game-tag-display';
+import { gameTagBucket, gameTagBucketLabel, gameTagBucketOrder, gameTagLabel, gameTagTone } from '../game-tag-display';
 import { scoreLabel } from '../position-moves/position-game-moves.helpers';
-import { OpeningPositionPerformance } from '../position-moves/position-game-moves.models';
+import { OpeningPositionPerformance, OpeningPositionPerformanceBucket } from '../position-moves/position-game-moves.models';
 
 @Component({
   selector: 'app-position-performance-panel',
@@ -19,12 +19,16 @@ export class PositionPerformancePanelComponent {
   protected readonly scoreLabel = scoreLabel;
   protected readonly tagLabel = gameTagLabel;
   protected readonly tagTone = gameTagTone;
+  protected readonly bucketLabel = gameTagBucketLabel;
   protected readonly topTags = computed(() => this.performance()?.tags.slice(0, 6) ?? []);
-  protected readonly buckets = computed(() => this.performance()?.buckets.filter((bucket) => bucket.tags.length > 0) ?? []);
+  protected readonly buckets = computed(() => this.performance()?.buckets.filter((bucket) => bucket.tags.length > 0).sort(compareBuckets) ?? []);
   protected readonly unbucketedTags = computed(() => {
     const performance = this.performance();
     if (!performance) return [];
-    const bucketedCodes = new Set(performance.buckets.flatMap((bucket) => bucket.tags.map((tag) => tag.code)));
-    return performance.tags.filter((tag) => !bucketedCodes.has(tag.code)).slice(0, 6);
+    return performance.tags.filter((tag) => !gameTagBucket(tag)).slice(0, 6);
   });
+}
+
+function compareBuckets(left: OpeningPositionPerformanceBucket, right: OpeningPositionPerformanceBucket): number {
+  return gameTagBucketOrder(left.key) - gameTagBucketOrder(right.key) || left.label.localeCompare(right.label);
 }

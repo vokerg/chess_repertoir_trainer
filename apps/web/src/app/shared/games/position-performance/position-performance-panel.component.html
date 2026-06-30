@@ -39,7 +39,7 @@
         @for (bucket of buckets(); track bucket.key) {
           <section class="position-performance-bucket">
             <div class="position-performance-bucket-header">
-              <h4>{{ bucket.label }}</h4>
+              <h4>{{ bucketLabel(bucket.key) }}</h4>
               <small>{{ bucket.games }} games · {{ bucket.ratePct }}%</small>
             </div>
             <div class="position-performance-tag-list">

@@ -1,4 +1,6 @@
 import { moveClassificationLabel } from 'chess-domain';
+import { Chess } from 'chess.js';
+import { PositionAnalysisService } from '../analysis/position-analysis.service';
 import { firstUciMove } from '../analysis/position-analysis-normalization';
 import { GAME_TAG } from './game-tags';
 import {
@@ -21,6 +23,8 @@ const TAG_THRESHOLDS = {
   endgameMinMove: 36,
   endgameThrowMinMove: 30,
   slightEdgeCp: 200,
+  openingAdvantageCp: 150,
+  openingDisasterCp: 300,
   openingTroubleCp: 150,
   comebackWorseCp: 150,
   clearlyBetterCp: 300,
@@ -42,6 +46,10 @@ const TAG_THRESHOLDS = {
 type Side = 'WHITE' | 'BLACK';
 type ResultForUser = string | null | undefined;
 type TagDefinition = Awaited<ReturnType<typeof getGameTagDefinitions>>[number];
+type TaggingPositionAnalysis = ImportedGameForTagging['plies'][number]['position']['analysis'];
+type ImportedGameWithFinalPosition = ImportedGameForTagging & {
+  finalPositionAnalysis?: TaggingPositionAnalysis | null;
+};
 
 interface AnalysedMoveRecord {
   ply: ImportedGameForTagging['plies'][number];
@@ -148,10 +156,12 @@ function scoreFromAnalysisForUser(
   return game.userColor === 'WHITE' ? analysis.bestScoreCpWhite : -analysis.bestScoreCpWhite;
 }
 
-function buildAnalysedMoves(game: ImportedGameForTagging): AnalysedMoveRecord[] {
+function buildAnalysedMoves(game: ImportedGameWithFinalPosition): AnalysedMoveRecord[] {
   return game.plies.map((ply, index) => {
     const beforeAnalysis = ply.position.analysis;
-    const afterAnalysis = game.plies[index + 1]?.position.analysis ?? null;
+    const afterAnalysis = game.plies[index + 1]?.position.analysis ?? (
+      index === game.plies.length - 1 ? game.finalPositionAnalysis : null
+    );
 
     return {
       ply,
@@ -165,6 +175,39 @@ function buildAnalysedMoves(game: ImportedGameForTagging): AnalysedMoveRecord[] 
       classificationLabel: ply.classificationCode ? moveClassificationLabel(ply.classificationCode) : null,
     };
   });
+}
+
+function finalFen(game: ImportedGameForTagging): string | null {
+  const finalPly = game.plies.at(-1);
+  if (!finalPly) return null;
+
+  try {
+    const chess = new Chess(finalPly.position.normalizedFen);
+    const move = chess.move({
+      from: finalPly.moveUci.slice(0, 2),
+      to: finalPly.moveUci.slice(2, 4),
+      promotion: finalPly.moveUci.slice(4, 5) || undefined,
+    });
+    return move ? chess.fen() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function withFinalPositionAnalysis(game: ImportedGameForTagging): Promise<ImportedGameWithFinalPosition> {
+  const fen = finalFen(game);
+  if (!fen) return game;
+  const analysis = await PositionAnalysisService.getStoredPositionSearch({ fen });
+  return {
+    ...game,
+    finalPositionAnalysis: analysis
+      ? {
+          bestMoveUci: analysis.bestMoveUci ?? null,
+          bestScoreCpWhite: analysis.bestScoreCpWhite ?? null,
+          bestMateWhite: analysis.bestMateWhite ?? null,
+        }
+      : null,
+  };
 }
 
 function scoreAtPly(game: ImportedGameForTagging, plyNumber: number) {
@@ -593,7 +636,7 @@ function addPhaseOriginTags(
   }
 }
 
-function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
+function addAnalysisTags(game: ImportedGameWithFinalPosition, tags: Set<number>) {
   const completedRun = latestCompletedRun(game);
   if (!completedRun) return;
 
@@ -622,14 +665,15 @@ function addAnalysisTags(game: ImportedGameForTagging, tags: Set<number>) {
 
   if (typeof openingScore === 'number') {
     if (
-      openingScore <= -TAG_THRESHOLDS.winningCp ||
-      (userEarlyBlunder && openingScore <= -TAG_THRESHOLDS.clearlyBetterCp)
+      openingScore <= -TAG_THRESHOLDS.openingDisasterCp
     ) {
       addTag(tags, GAME_TAG.OPENING_DISASTER);
     } else if (openingScore <= -TAG_THRESHOLDS.openingTroubleCp) {
       addTag(tags, GAME_TAG.OPENING_TROUBLE);
     } else if (openingScore >= TAG_THRESHOLDS.clearlyBetterCp) {
       addTag(tags, GAME_TAG.OPENING_SUCCESS);
+    } else if (openingScore >= TAG_THRESHOLDS.openingAdvantageCp) {
+      addTag(tags, GAME_TAG.OPENING_ADVANTAGE);
     }
   }
 
@@ -903,7 +947,7 @@ function resolveTags(tagCodes: number[], definitions: TagDefinition[]) {
     .filter((tag): tag is { code: number; name: string } => tag !== null);
 }
 
-function calculateTagCodes(game: ImportedGameForTagging) {
+function calculateTagCodes(game: ImportedGameWithFinalPosition) {
   const tags = new Set<number>();
   addTerminalTags(game, tags);
   addTimeControlTags(game, tags);
@@ -924,7 +968,7 @@ export const GameTaggingService = {
     ]);
     if (!game) throw new Error('Imported game not found');
 
-    const tagCodes = calculateTagCodes(game);
+    const tagCodes = calculateTagCodes(await withFinalPositionAnalysis(game));
     await updateImportedGameTagCodes(game.id, tagCodes);
 
     return {

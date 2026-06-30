@@ -42,6 +42,7 @@ const importedGameForTaggingSelect = {
       classificationCode: true,
       position: {
         select: {
+          normalizedFen: true,
           analysis: {
             select: {
               bestScoreCpWhite: true,

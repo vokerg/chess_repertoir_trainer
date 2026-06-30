@@ -80,6 +80,7 @@ export const GAME_TAG = {
   WAS_LOST: 171,
   WAS_MUCH_BETTER: 172,
   WAS_WINNING: 173,
+  OPENING_ADVANTAGE: 174,
 } as const;
 
 export const GAME_TAG_DEFINITIONS = [
@@ -164,6 +165,7 @@ export const GAME_TAG_DEFINITIONS = [
   { code: GAME_TAG.WAS_LOST, name: 'WAS_LOST' },
   { code: GAME_TAG.WAS_MUCH_BETTER, name: 'WAS_MUCH_BETTER' },
   { code: GAME_TAG.WAS_WINNING, name: 'WAS_WINNING' },
+  { code: GAME_TAG.OPENING_ADVANTAGE, name: 'OPENING_ADVANTAGE' },
 ] as const;
 
 export type GameTagDefinitionItem = (typeof GAME_TAG_DEFINITIONS)[number];

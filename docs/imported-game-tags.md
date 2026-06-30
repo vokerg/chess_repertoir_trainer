@@ -11,6 +11,7 @@ Imported game tags are lightweight integer codes stored on `ImportedGame.tagCode
 Examples:
 
 - `OPENING_SUCCESS` means the imported user came out of the opening clearly better.
+- `OPENING_ADVANTAGE` means the imported user came out of the opening somewhat better.
 - `OPENING_TROUBLE` means the imported user came out of the opening worse.
 - `OPPONENT_BLUNDERED` means the opponent made a mistake that improved the imported user's position.
 - `WAS_MUCH_BETTER` means the imported user was clearly better at some analysed point.
@@ -46,7 +47,7 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 - Negative `scoreForUser` means the position favors the opponent.
 - `ImportedGamePly` rows describe the position before the move on that ply.
 - The next ply's analysed position is used as the after-move position.
-- The final after-position can be unavailable, especially for the last move.
+- The final after-position is looked up from the shared position-analysis cache when available.
 - Mate scores are converted to large signed user-perspective values so decisive rules still work.
 
 ## Tag table
@@ -86,8 +87,8 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 | 84 | LONG_GRIND | Game lasted a long time by ply count. | Ply count. | Total plies are `>= 100`. |
 | 100 | LOW_RATED_OPPONENT_EARLY_LOST_POSITION | Against a low-rated opponent, the imported user was already lost after full move 5. | Ratings plus opening checkpoint eval. | Opponent is below `800` and user-perspective score at ply `11` is `<= -700`. |
 | 101 | LOW_RATED_OPPONENT_EARLY_WINNING_POSITION | Against a low-rated opponent, the imported user was already winning after full move 5. | Ratings plus opening checkpoint eval. | Opponent is below `800` and user-perspective score at ply `11` is `>= +700`. |
-| 102 | OPENING_DISASTER | Imported user came out of the opening lost or nearly lost. | User-perspective opening eval plus early-blunder override. | Opening outcome score is `<= -700`, or user made an actual early blunder and opening outcome score is still `<= -300`. |
-| 103 | OPENING_SUCCESS | Imported user came out of the opening clearly better. | User-perspective opening eval. | Opening outcome score is `>= +300`. Opponent early blunder can support the story, but the score threshold still has to be met. |
+| 102 | OPENING_DISASTER | Imported user came out of the opening clearly worse. | User-perspective opening eval. | Opening outcome score is `<= -300`. |
+| 103 | OPENING_SUCCESS | Imported user came out of the opening clearly better. | User-perspective opening eval. | Opening outcome score is `>= +300`. |
 | 104 | EARLY_BLUNDER | Imported user made an actual early blunder. | Early move classification and eval loss. | User move in moves `1-10` is `BLUNDER`, or loses `>= 500` cp by score loss or eval drop. |
 | 105 | ONE_MOVE_BLUNDER | Imported user made one move that changed the game story with a major collapse. | Move loss and eval swing. | User move falls from roughly equal to lost, from roughly equal to clearly worse with a big loss, or from not-clearly-lost with a `>= 500` cp swing against user. A blunder label alone is not enough. |
 | 106 | TACTICAL_BLUNDER | Reserved for future stricter tactical detection. | Disabled for now. | Definition exists, but service does not generate this tag in v1.1. |
@@ -110,7 +111,7 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 | 123 | LOW_ACCURACY_WIN | Imported user had low accuracy but still won. | Accuracy plus result. | User accuracy is `<= 60` and result is `WIN`. |
 | 124 | CHAOTIC_GAME | Game had multiple major eval swings. | Eval swings. | At least `3` major swings of `>= 500` cp. Critical-move count alone does not generate this tag. |
 | 125 | NO_CLEAR_REASON | Reserved and disabled. | Disabled for now. | Definition remains for compatibility, but service does not generate it. |
-| 126 | OPENING_TROUBLE | Imported user came out of the opening worse, but not lost. | User-perspective opening eval. | Opening outcome score is `<= -150` and `> -700`, unless stronger disaster rule applies. |
+| 126 | OPENING_TROUBLE | Imported user came out of the opening worse. | User-perspective opening eval. | Opening outcome score is `<= -150` and `> -300`, unless stronger disaster rule applies. |
 | 127 | WON_FROM_WORSE_POSITION | Historical outcome-coupled range tag retained for compatibility. | Disabled for now. | Definition exists, but service no longer generates this tag. |
 | 128 | LOST_FROM_BETTER_POSITION | Historical outcome-coupled range tag retained for compatibility. | Disabled for now. | Definition exists, but service no longer generates this tag. |
 | 129 | COMEBACK_WIN | Imported user was worse, later became clearly better, and won. | Ordered eval timeline plus result. | User first reaches `<= -150`, later reaches `>= +300`, and result is `WIN`. |
@@ -134,6 +135,7 @@ All non-terminal game-story tags must be interpreted from the imported user's pe
 | 171 | WAS_LOST | Imported user was lost at some analysed point. | Whole-game user-perspective eval range. | Minimum user-perspective score was `<= -700`. |
 | 172 | WAS_MUCH_BETTER | Imported user was clearly better at some analysed point. | Whole-game user-perspective eval range. | Maximum user-perspective score was `>= +300`. |
 | 173 | WAS_WINNING | Imported user was winning at some analysed point. | Whole-game user-perspective eval range. | Maximum user-perspective score was `>= +700`. |
+| 174 | OPENING_ADVANTAGE | Imported user came out of the opening somewhat better. | User-perspective opening eval. | Opening outcome score is `>= +150` and `< +300`, unless stronger success rule applies. |
 
 ## Thresholds
 
@@ -151,6 +153,8 @@ Current service thresholds:
 - Late endgame throw window starts: move `30`
 - Slight edge: `200` cp
 - Opening trouble: `150` cp
+- Opening advantage: `150` cp
+- Opening disaster: `300` cp
 - Comeback worse phase: `150` cp
 - Clearly better/worse: `300` cp
 - Winning/lost: `700` cp
@@ -169,15 +173,16 @@ Current service thresholds:
 
 ## Strict vs practical thresholds
 
-Some tags intentionally stay strict because their names imply a severe or near-winning concept:
+Some tags intentionally stay strict because their names imply a near-winning or decisive concept:
 
-- `OPENING_DISASTER`
 - `MISSED_KNOCKOUT`
 - `CLEAN_CONVERSION`
 
 Other tags are practical review stories. They use lighter thresholds so games with real, review-worthy swings are not hidden just because the position never reached `+700` or `+800`:
 
 - `OPENING_TROUBLE`
+- `OPENING_ADVANTAGE`
+- `OPENING_DISASTER`
 - `COMEBACK_WIN`
 - `OPPONENT_BLUNDERED`
 - `MIDGAME_TURNAROUND_TO_WIN`
@@ -193,14 +198,15 @@ Other tags are practical review stories. They use lighter thresholds so games wi
 1. Add or update the `GameTagDefinition` migration.
 2. Update `apps/api/src/modules/imported-games/game-tags.ts`.
 3. Update `apps/api/src/modules/imported-games/game-tagging.service.ts`.
-4. Update this document with explicit meaning and rule.
-5. Refresh tags for sample games and verify the resulting names.
-6. Do not add database fields for confidence, category, source, or evidence.
+4. Update performance buckets or frontend display tone if the tag should be grouped or colored.
+5. Update this document with explicit meaning and rule.
+6. Refresh tags for sample games and verify the resulting names.
+7. Do not add database fields for confidence, category, source, or evidence.
 
 ## Known limitations
 
 - Per-move clocks are not stored yet, so clock-pressure tags stay reserved.
-- Final after-move analysis can be missing, especially for the last move.
+- Final after-move analysis can still be missing if the final position is not present in the shared analysis cache.
 - Tactical tags are intentionally conservative; `TACTICAL_BLUNDER` is disabled for now.
 - Some tags can coexist because they describe different aspects of one game.
 - A newer failed analysis run does not erase stories from an older completed run, but latest-run state tags still report the newest attempt.
@@ -211,24 +217,25 @@ Other tags are practical review stories. They use lighter thresholds so games wi
 2. Lichess `outoftime` plus `LOSS` => `LOST_ON_TIME`.
 3. Chess.com status contains `won on time` plus `WIN` => `WON_ON_TIME`.
 4. Chess.com status contains `won on time` plus `LOSS` => `LOST_ON_TIME`.
-5. Short win gets `QUICK_WIN`, not `OPENING_SUCCESS`.
-6. Short loss gets `QUICK_LOSS`, not `OPENING_DISASTER`.
-7. A game only gets `OPENING_SUCCESS` if user-perspective opening outcome eval is `>= +300`.
-8. A game gets `OPENING_TROUBLE` if user-perspective opening outcome eval is `<= -150` and `> -700`.
-9. A game gets `OPENING_DISASTER` if user-perspective opening outcome eval is `<= -700`.
-10. `MISTAKE` in first 10 moves gives `EARLY_MISTAKE`, not `EARLY_BLUNDER`.
-11. `BLUNDER` or huge early score loss gives `EARLY_BLUNDER`.
-12. `TACTICAL_BLUNDER` is not generated.
-13. `NO_CLEAR_REASON` is not generated.
-14. Opponent move causing `>= 400` cp swing toward user gives `OPPONENT_BLUNDERED`.
-15. If opponent blunders and user's immediate reply preserves at least a clearly better advantage, add `PUNISHED_OPPONENT_BLUNDER`.
-16. If user's reply to a practical decisive opportunity is strong, add `FOUND_KNOCKOUT`.
-17. A lost game where the user was once `+750` gets `WAS_WINNING` and `WAS_MUCH_BETTER`.
-18. A won game where the user was once `-750` gets `WAS_LOST` and `WAS_MUCH_WORSE`.
-19. A draw where the user was `+350` but never `+700` gets `WAS_MUCH_BETTER` only.
-20. A win where the user was only `-180` does not get `WAS_MUCH_WORSE` or `WAS_LOST`.
-21. A chaotic game can have all four neutral position-state tags if eval crossed both `+700` and `-700`.
-22. The four neutral position-state tags are independent of `game.resultForUser`.
+5. Short win gets `QUICK_WIN`; opening-quality tags can still apply independently.
+6. Short loss gets `QUICK_LOSS`; opening-quality tags can still apply independently.
+7. A game gets `OPENING_SUCCESS` if user-perspective opening outcome eval is `>= +300`.
+8. A game gets `OPENING_ADVANTAGE` if user-perspective opening outcome eval is `>= +150` and `< +300`.
+9. A game gets `OPENING_TROUBLE` if user-perspective opening outcome eval is `<= -150` and `> -300`.
+10. A game gets `OPENING_DISASTER` if user-perspective opening outcome eval is `<= -300`.
+11. `MISTAKE` in first 10 moves gives `EARLY_MISTAKE`, not `EARLY_BLUNDER`.
+12. `BLUNDER` or huge early score loss gives `EARLY_BLUNDER`.
+13. `TACTICAL_BLUNDER` is not generated.
+14. `NO_CLEAR_REASON` is not generated.
+15. Opponent move causing `>= 400` cp swing toward user gives `OPPONENT_BLUNDERED`.
+16. If opponent blunders and user's immediate reply preserves at least a clearly better advantage, add `PUNISHED_OPPONENT_BLUNDER`.
+17. If user's reply to a practical decisive opportunity is strong, add `FOUND_KNOCKOUT`.
+18. A lost game where the user was once `+750` gets `WAS_WINNING` and `WAS_MUCH_BETTER`.
+19. A won game where the user was once `-750` gets `WAS_LOST` and `WAS_MUCH_WORSE`.
+20. A draw where the user was `+350` but never `+700` gets `WAS_MUCH_BETTER` only.
+21. A win where the user was only `-180` does not get `WAS_MUCH_WORSE` or `WAS_LOST`.
+22. A chaotic game can have all four neutral position-state tags if eval crossed both `+700` and `-700`.
+23. The four neutral position-state tags are independent of `game.resultForUser`.
 
 ## Specific sample acceptance
 
