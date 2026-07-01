@@ -79,22 +79,19 @@
         <option value="FAILED">Failed</option>
       </select></label
     >
-    <label class="games-field"
-      ><span>Indexed</span
-      ><select
-        [ngModel]="filters().plyIndexStatus"
-        (ngModelChange)="setFilter('plyIndexStatus', $event)"
-      >
-        <option value="">Any status</option>
-        <option value="NOT_INDEXED">Not indexed</option>
-        <option value="INDEXED">Indexed</option>
-        <option value="FAILED">Failed</option>
-      </select></label
-    >
-    <div class="games-field tags-field">
+    <div class="games-field tags-field" #tagsPicker>
       <span>Tags</span>
-      <details class="tags-picker">
-        <summary>{{ tagSelectionLabel() }}</summary>
+      <div class="tags-picker">
+        <button
+          type="button"
+          class="tags-picker-toggle"
+          aria-haspopup="true"
+          [attr.aria-expanded]="tagsOpen()"
+          (click)="toggleTagsPicker($event)"
+        >
+          {{ tagSelectionLabel() }}
+        </button>
+        @if (tagsOpen()) {
         <div class="tags-options">
           <label class="tag-option">
             <input
@@ -116,61 +113,9 @@
             </label>
           }
         </div>
-      </details>
+        }
+      </div>
     </div>
-    <label class="games-field"
-      ><span>Time control</span
-      ><input
-        [ngModel]="filters().timeControl"
-        (ngModelChange)="setFilterValue('timeControl', $event)"
-        placeholder="e.g. 10+5"
-    /></label>
-    <label class="games-field"
-      ><span>Opponent</span
-      ><input
-        [ngModel]="filters().opponent"
-        (ngModelChange)="setFilterValue('opponent', $event)"
-        placeholder="Username"
-    /></label>
-    <label class="games-field"
-      ><span>Opening</span
-      ><input
-        [ngModel]="filters().openingName"
-        (ngModelChange)="setFilterValue('openingName', $event)"
-        placeholder="Sicilian, London..."
-    /></label>
-    <label class="games-field compact"
-      ><span>Min accuracy</span
-      ><input
-        [ngModel]="filters().minAccuracy"
-        (ngModelChange)="setFilterValue('minAccuracy', $event)"
-        inputmode="decimal"
-        placeholder="0"
-    /></label>
-    <label class="games-field compact"
-      ><span>Max accuracy</span
-      ><input
-        [ngModel]="filters().maxAccuracy"
-        (ngModelChange)="setFilterValue('maxAccuracy', $event)"
-        inputmode="decimal"
-        placeholder="100"
-    /></label>
-    <label class="games-field compact"
-      ><span>Opp. rating &gt;</span
-      ><input
-        [ngModel]="filters().minOpponentRating"
-        (ngModelChange)="setFilterValue('minOpponentRating', $event)"
-        inputmode="numeric"
-        placeholder="1200"
-    /></label>
-    <label class="games-field compact"
-      ><span>Opp. rating &lt;</span
-      ><input
-        [ngModel]="filters().maxOpponentRating"
-        (ngModelChange)="setFilterValue('maxOpponentRating', $event)"
-        inputmode="numeric"
-        placeholder="2200"
-    /></label>
     <label class="games-field compact"
       ><span>From</span
       ><input type="date" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)"
@@ -180,6 +125,83 @@
       ><input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)"
     /></label>
   </div>
+  <button
+    type="button"
+    class="more-filters-toggle"
+    [attr.aria-expanded]="moreFiltersOpen()"
+    (click)="moreFiltersOpen.set(!moreFiltersOpen())"
+  >
+    More filters@if (advancedFilterCount() > 0) { ({{ advancedFilterCount() }} active) }
+  </button>
+  @if (moreFiltersOpen()) {
+    <div class="games-filter-grid advanced-filters">
+      <label class="games-field"
+        ><span>Indexed</span
+        ><select
+          [ngModel]="filters().plyIndexStatus"
+          (ngModelChange)="setFilter('plyIndexStatus', $event)"
+        >
+          <option value="">Any status</option>
+          <option value="NOT_INDEXED">Not indexed</option>
+          <option value="INDEXED">Indexed</option>
+          <option value="FAILED">Failed</option>
+        </select></label
+      >
+      <label class="games-field"
+        ><span>Time control</span
+        ><input
+          [ngModel]="filters().timeControl"
+          (ngModelChange)="setFilterValue('timeControl', $event)"
+          placeholder="e.g. 10+5"
+      /></label>
+      <label class="games-field"
+        ><span>Opponent</span
+        ><input
+          [ngModel]="filters().opponent"
+          (ngModelChange)="setFilterValue('opponent', $event)"
+          placeholder="Username"
+      /></label>
+      <label class="games-field"
+        ><span>Opening</span
+        ><input
+          [ngModel]="filters().openingName"
+          (ngModelChange)="setFilterValue('openingName', $event)"
+          placeholder="Sicilian, London..."
+      /></label>
+      <label class="games-field compact"
+        ><span>Min accuracy</span
+        ><input
+          [ngModel]="filters().minAccuracy"
+          (ngModelChange)="setFilterValue('minAccuracy', $event)"
+          inputmode="decimal"
+          placeholder="0"
+      /></label>
+      <label class="games-field compact"
+        ><span>Max accuracy</span
+        ><input
+          [ngModel]="filters().maxAccuracy"
+          (ngModelChange)="setFilterValue('maxAccuracy', $event)"
+          inputmode="decimal"
+          placeholder="100"
+      /></label>
+      <label class="games-field compact"
+        ><span>Opp. rating &gt;</span
+        ><input
+          [ngModel]="filters().minOpponentRating"
+          (ngModelChange)="setFilterValue('minOpponentRating', $event)"
+          inputmode="numeric"
+          placeholder="1200"
+      /></label>
+      <label class="games-field compact"
+        ><span>Opp. rating &lt;</span
+        ><input
+          [ngModel]="filters().maxOpponentRating"
+          (ngModelChange)="setFilterValue('maxOpponentRating', $event)"
+          inputmode="numeric"
+          placeholder="2200"
+      /></label>
+    </div>
+  }
   <div class="games-filter-actions">
     <button type="button" (click)="apply.emit()" [disabled]="loading()">
       {{ loading() ? 'Loading...' : 'Apply filters' }}</button

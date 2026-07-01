@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  computed,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   FacetValue,
@@ -17,6 +27,8 @@ import { GameFilters } from './game-filter.model';
   styleUrl: './game-filter-panel.component.css',
 })
 export class GameFilterPanelComponent {
+  @ViewChild('tagsPicker') private tagsPicker?: ElementRef<HTMLElement>;
+
   readonly filters = input.required<GameFilters>();
   readonly facets = input<ImportedGameFacetsResponse>({});
   readonly loading = input(false);
@@ -24,6 +36,43 @@ export class GameFilterPanelComponent {
   readonly filtersChange = output<GameFilters>();
   readonly apply = output<void>();
   readonly reset = output<void>();
+  readonly tagsOpen = signal(false);
+  readonly moreFiltersOpen = signal(false);
+  readonly advancedFilterCount = computed(() => {
+    const filters = this.filters();
+    return [
+      filters.plyIndexStatus,
+      filters.timeControl,
+      filters.opponent,
+      filters.openingName,
+      filters.minAccuracy,
+      filters.maxAccuracy,
+      filters.minOpponentRating,
+      filters.maxOpponentRating,
+    ].filter((value) => value.trim().length > 0).length;
+  });
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: MouseEvent): void {
+    const picker = this.tagsPicker?.nativeElement;
+    if (!picker || !this.tagsOpen()) return;
+    if (event.target instanceof Node && picker.contains(event.target)) return;
+    this.closeTagsPicker();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onDocumentEscape(): void {
+    this.closeTagsPicker();
+  }
+
+  protected toggleTagsPicker(event?: Event): void {
+    event?.preventDefault();
+    this.tagsOpen.update((open) => !open);
+  }
+
+  protected closeTagsPicker(): void {
+    this.tagsOpen.set(false);
+  }
 
   protected setFilter<K extends keyof GameFilters>(key: K, value: GameFilters[K]): void {
     if (key === 'userColor' && this.lockedUserColor()) return;

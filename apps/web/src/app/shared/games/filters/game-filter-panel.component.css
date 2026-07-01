@@ -3,12 +3,14 @@
 .games-field { display: grid; gap: 0.35rem; color: var(--muted-strong); font-weight: 800; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .games-field input, .games-field select { text-transform: none; letter-spacing: 0; font-weight: 600; }
 .tags-picker { position: relative; text-transform: none; letter-spacing: 0; font-weight: 600; }
-.tags-picker summary { display: flex; align-items: center; min-height: 2.35rem; padding: 0 0.75rem; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); cursor: pointer; list-style: none; }
-.tags-picker summary::-webkit-details-marker { display: none; }
-.tags-picker summary::after { content: 'v'; margin-left: auto; color: var(--muted); font-size: 0.75rem; }
-.tags-picker[open] summary::after { content: '^'; }
+.tags-picker-toggle { display: flex; align-items: center; width: 100%; min-height: 2.35rem; padding: 0 0.75rem; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); cursor: pointer; text-align: left; font-weight: 600; }
+.tags-picker-toggle::after { content: 'v'; margin-left: auto; color: var(--muted); font-size: 0.75rem; }
+.tags-picker-toggle[aria-expanded='true']::after { content: '^'; }
 .tags-options { position: absolute; z-index: 10; top: calc(100% + 0.25rem); left: 0; right: 0; display: grid; gap: 0.35rem; max-height: 16rem; overflow: auto; padding: 0.5rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); }
 .tag-option { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.45rem; padding: 0.2rem 0.15rem; color: var(--text); font-size: 0.82rem; font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; }
 .tag-option input { margin: 0; }
 .tag-option:has(input:disabled) { color: var(--muted); cursor: default; }
+.more-filters-toggle { justify-self: start; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 800; }
+.more-filters-toggle[aria-expanded='true'] { border-color: var(--accent); }
+.advanced-filters { padding-top: 0.2rem; }
 .games-filter-actions { display: flex; gap: 0.65rem; flex-wrap: wrap; }

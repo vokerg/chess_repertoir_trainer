@@ -22,6 +22,17 @@ export interface GameFilters {
   to: string;
 }
 
+export function formatLocalDateForInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function defaultGameFilterFromDate(now = new Date()): string {
+  return formatLocalDateForInput(new Date(now.getFullYear(), now.getMonth() - 3, 1));
+}
+
 export function defaultGameFilters(): GameFilters {
   return {
     accountId: '',
@@ -41,7 +52,7 @@ export function defaultGameFilters(): GameFilters {
     maxAccuracy: '',
     minOpponentRating: '',
     maxOpponentRating: '',
-    from: '',
+    from: defaultGameFilterFromDate(),
     to: '',
   };
 }
