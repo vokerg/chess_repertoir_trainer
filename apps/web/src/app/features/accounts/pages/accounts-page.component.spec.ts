@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { ExternalAccount } from '../data-access/accounts.models';
 import { AccountsStore } from '../state/accounts.store';
@@ -47,7 +48,10 @@ describe('AccountsPageComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [AccountsPageComponent],
-      providers: [{ provide: ConfirmDialogService, useValue: confirmDialog }],
+      providers: [
+        { provide: ConfirmDialogService, useValue: confirmDialog },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
+      ],
     })
       .overrideComponent(AccountsPageComponent, {
         set: {
