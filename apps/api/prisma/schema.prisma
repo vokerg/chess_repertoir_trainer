@@ -20,6 +20,7 @@ model AppUser {
   authSubject      String?
   email            String?
   externalAccounts ExternalAccount[]
+  lichessConnection LichessConnection?
   importedGames    ImportedGame[]
   importRuns       ImportRun[]
   courses          Course[]
@@ -46,12 +47,49 @@ model ExternalAccount {
   importedGames       ImportedGame[]
   importRuns          ImportRun[]
   ratingStats         AccountRatingStats?
+  lichessConnections  LichessConnection[]
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
   @@unique([userId, provider, username])
   @@index([userId])
   @@index([provider, username])
+}
+
+model LichessConnection {
+  id                    Int              @id @default(autoincrement())
+  userId                Int              @unique
+  user                  AppUser          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalAccountId     Int?
+  externalAccount       ExternalAccount? @relation(fields: [externalAccountId], references: [id], onDelete: SetNull)
+  lichessUserId         String
+  username              String
+  scopes                String[]
+  accessTokenCiphertext String
+  accessTokenIv         String
+  accessTokenAuthTag    String
+  expiresAt             DateTime?
+  connectedAt           DateTime         @default(now())
+  revokedAt             DateTime?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([lichessUserId])
+  @@index([username])
+}
+
+model OAuthLoginState {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  provider      String
+  state         String   @unique
+  codeVerifier  String
+  redirectAfter String?
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@index([userId, provider])
+  @@index([expiresAt])
 }
 
 model AccountRatingStats {

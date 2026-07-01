@@ -1,20 +1,25 @@
+import { DOCUMENT } from '@angular/common';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AccountsApiService } from '../data-access/accounts-api.service';
-import { AccountForm, ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
+import { AccountForm, ExternalAccount, ImportRunSummary, LichessConnectionStatus } from '../data-access/accounts.models';
 import { providerLabel } from '../helpers/account-labels';
 
 @Injectable()
 export class AccountsStore {
   private readonly api = inject(AccountsApiService);
+  private readonly document = inject(DOCUMENT);
 
   readonly accounts = signal<ExternalAccount[]>([]);
+  readonly lichessConnection = signal<LichessConnectionStatus | null>(null);
   readonly loading = signal(false);
+  readonly loadingLichessConnection = signal(false);
   readonly saving = signal(false);
   readonly syncingAllAccounts = signal(false);
   readonly syncingAccountId = signal<number | null>(null);
   readonly resettingCursorAccountId = signal<number | null>(null);
   readonly deletingAccountId = signal<number | null>(null);
+  readonly disconnectingLichess = signal(false);
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
   readonly syncResults = signal<Record<number, ImportRunSummary>>({});
@@ -74,6 +79,45 @@ export class AccountsStore {
     } finally {
       this.syncingAccountId.set(null);
     }
+  }
+
+  async loadLichessConnection(): Promise<void> {
+    this.loadingLichessConnection.set(true);
+    try {
+      this.lichessConnection.set(await firstValueFrom(this.api.getLichessConnection()));
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not load Lichess connection.'));
+    } finally {
+      this.loadingLichessConnection.set(false);
+    }
+  }
+
+  connectLichess(): void {
+    this.document.defaultView?.location.assign(this.api.getLichessConnectUrl());
+  }
+
+  async disconnectLichess(): Promise<void> {
+    this.disconnectingLichess.set(true);
+    this.clearMessages();
+    try {
+      await firstValueFrom(this.api.disconnectLichess());
+      await this.loadLichessConnection();
+      this.notice.set('Lichess disconnected.');
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not disconnect Lichess.'));
+    } finally {
+      this.disconnectingLichess.set(false);
+    }
+  }
+
+  showNotice(message: string): void {
+    this.error.set(null);
+    this.notice.set(message);
+  }
+
+  showError(message: string): void {
+    this.notice.set(null);
+    this.error.set(message);
   }
 
   async syncActiveAccounts(): Promise<void> {

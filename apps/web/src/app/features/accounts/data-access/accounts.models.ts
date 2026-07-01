@@ -30,6 +30,18 @@ export interface DeleteAccountResponse {
   account: ExternalAccount;
 }
 
+export interface LichessConnectionStatus {
+  connected: boolean;
+  account?: {
+    username: string;
+    lichessUserId: string;
+    externalAccountId?: number | null;
+    scopes: string[];
+    connectedAt: string;
+    expiresAt?: string | null;
+  };
+}
+
 export interface AccountForm {
   provider: AccountProvider;
   username: string;

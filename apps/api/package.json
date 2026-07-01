@@ -18,7 +18,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
-    "test": "npm run build && node test/accounts/account-performance-stats.test.mjs && node test/analysis/accuracy.test.mjs && node test/analysis/local-stockfish-engine.test.mjs && node test/analysis/position-analysis-bulk-store.test.mjs && node test/repertoire-coverage/repertoire-coverage.test.mjs && node test/analysis-reintegration/analysis-reintegration.test.mjs && node test/auth/external-user-resolution.test.mjs && node test/courses/course-ownership.test.mjs && node test/training/training-ownership.test.mjs && node test/mcp/mcp-transport.test.mjs"
+    "test": "npm run build && node test/accounts/account-performance-stats.test.mjs && node test/auth/oauth-token-crypto.test.mjs && node test/analysis/accuracy.test.mjs && node test/analysis/local-stockfish-engine.test.mjs && node test/analysis/position-analysis-bulk-store.test.mjs && node test/repertoire-coverage/repertoire-coverage.test.mjs && node test/analysis-reintegration/analysis-reintegration.test.mjs && node test/auth/external-user-resolution.test.mjs && node test/courses/course-ownership.test.mjs && node test/training/training-ownership.test.mjs && node test/mcp/mcp-transport.test.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
