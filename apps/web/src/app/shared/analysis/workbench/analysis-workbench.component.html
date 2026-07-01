@@ -12,7 +12,7 @@
           [fen]="currentFen()"
           [side]="side()"
           [lastMove]="lastMove()"
-          [arrows]="arrows()"
+          [arrows]="boardArrows()"
           [sound]="false"
           [positionVersion]="boardPositionVersion()"
           (move)="boardMove.emit($event)"
