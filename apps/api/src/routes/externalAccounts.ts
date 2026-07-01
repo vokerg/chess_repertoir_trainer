@@ -198,15 +198,18 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     }
 
     try {
+      let result;
       if (account.provider === 'LICHESS') {
-        return await LichessImportService.syncAccount(auth.userId, id);
-      }
-      if (account.provider === 'CHESS_COM') {
-        return await ChessComImportService.syncAccount(auth.userId, id);
+        result = await LichessImportService.syncAccount(auth.userId, id);
+      } else if (account.provider === 'CHESS_COM') {
+        result = await ChessComImportService.syncAccount(auth.userId, id);
+      } else {
+        reply.code(400);
+        return { message: `Unsupported provider: ${account.provider}` };
       }
 
-      reply.code(400);
-      return { message: `Unsupported provider: ${account.provider}` };
+      await AccountRatingStatsService.recomputeForAccount(auth.userId, id);
+      return result;
     } catch (err: any) {
       reply.code(400);
       return { error: err.message ?? String(err) };

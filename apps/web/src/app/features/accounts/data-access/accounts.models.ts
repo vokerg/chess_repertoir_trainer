@@ -154,6 +154,8 @@ export interface AccountPerformanceStatsResponse {
     draws: number | null;
     losses: number | null;
   };
+  bestVictories: AccountPerformanceGameHighlight[];
+  mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
   bestVictory: AccountPerformanceGameHighlight | null;
   mostEmbarrassingDefeat: AccountPerformanceGameHighlight | null;
 }

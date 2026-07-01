@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AccountPerformanceGameHighlight, AccountPerformanceStatsResponse } from '../data-access/accounts.models';
 
 @Component({
   selector: 'app-account-performance-stats',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './account-performance-stats.component.html',
   styleUrl: './account-performance-stats.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

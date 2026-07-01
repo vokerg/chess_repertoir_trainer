@@ -79,6 +79,43 @@
   font-weight: 800;
 }
 
+.highlight-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.highlight-list li {
+  min-width: 0;
+}
+
+.highlight-link {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.2rem 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.highlight-link:hover,
+.highlight-link:focus-visible {
+  color: var(--accent);
+}
+
+.highlight-link strong {
+  overflow-wrap: anywhere;
+}
+
+.highlight-empty {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .avg-list {
   display: grid;
   gap: 0.25rem;

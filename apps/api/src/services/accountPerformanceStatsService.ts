@@ -41,6 +41,8 @@ export interface AccountPerformanceStatsResponse {
     draws: number | null;
     losses: number | null;
   };
+  bestVictories: AccountPerformanceGameHighlight[];
+  mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
   bestVictory: AccountPerformanceGameHighlight | null;
   mostEmbarrassingDefeat: AccountPerformanceGameHighlight | null;
 }
@@ -60,6 +62,8 @@ export type PerformanceGame = {
   resultForUser: string | null;
   providerUrl: string | null;
 };
+
+const HIGHLIGHT_LIMIT = 5;
 
 export function buildPerformanceEndedAtRange(query: Pick<AccountPerformanceStatsQuery, 'from' | 'to'>) {
   return {
@@ -107,57 +111,78 @@ function average(values: number[]) {
   return values.length > 0 ? Math.round(values.reduce((total, value) => total + value, 0) / values.length) : null;
 }
 
-function betterBestVictory(left: PerformanceGame, right: PerformanceGame | null) {
-  if (!right) return true;
-  const leftOpponent = getOpponentRating(left);
-  const rightOpponent = getOpponentRating(right);
-  if (leftOpponent === null) return false;
-  if (rightOpponent === null) return true;
-  if (leftOpponent !== rightOpponent) return leftOpponent > rightOpponent;
-  return (left.endedAt?.getTime() ?? 0) > (right.endedAt?.getTime() ?? 0);
+function isScoredGame(game: PerformanceGame) {
+  return game.resultForUser === 'WIN' || game.resultForUser === 'DRAW' || game.resultForUser === 'LOSS';
 }
 
-function worseDefeat(left: PerformanceGame, right: PerformanceGame | null) {
-  if (!right) return true;
+function compareEndedAtDesc(left: PerformanceGame, right: PerformanceGame) {
+  const endedAtDelta = (right.endedAt?.getTime() ?? 0) - (left.endedAt?.getTime() ?? 0);
+  return endedAtDelta !== 0 ? endedAtDelta : right.id - left.id;
+}
+
+function compareBestVictories(left: PerformanceGame, right: PerformanceGame) {
   const leftOpponent = getOpponentRating(left);
   const rightOpponent = getOpponentRating(right);
-  if (leftOpponent === null) return false;
-  if (rightOpponent === null) return true;
-  if (leftOpponent !== rightOpponent) return leftOpponent < rightOpponent;
-  return (left.endedAt?.getTime() ?? 0) > (right.endedAt?.getTime() ?? 0);
+  if (leftOpponent === null && rightOpponent !== null) return 1;
+  if (leftOpponent !== null && rightOpponent === null) return -1;
+  if (leftOpponent !== null && rightOpponent !== null && leftOpponent !== rightOpponent) {
+    return rightOpponent - leftOpponent;
+  }
+  return compareEndedAtDesc(left, right);
+}
+
+function compareMostEmbarrassingDefeats(left: PerformanceGame, right: PerformanceGame) {
+  const leftOpponent = getOpponentRating(left);
+  const rightOpponent = getOpponentRating(right);
+  if (leftOpponent === null && rightOpponent !== null) return 1;
+  if (leftOpponent !== null && rightOpponent === null) return -1;
+  if (leftOpponent !== null && rightOpponent !== null && leftOpponent !== rightOpponent) {
+    return leftOpponent - rightOpponent;
+  }
+  return compareEndedAtDesc(left, right);
+}
+
+function toHighlights(games: PerformanceGame[]) {
+  return games
+    .map(toHighlight)
+    .filter((game): game is AccountPerformanceGameHighlight => game !== null)
+    .slice(0, HIGHLIGHT_LIMIT);
 }
 
 export function buildAccountPerformanceStatsData(
   games: PerformanceGame[],
   query: AccountPerformanceStatsQuery,
 ): AccountPerformanceStatsData {
+  const scoredGames = games.filter(isScoredGame);
   const wdl = { wins: 0, draws: 0, losses: 0 };
   const opponentRatings = {
     wins: [] as number[],
     draws: [] as number[],
     losses: [] as number[],
   };
-  let bestVictory: PerformanceGame | null = null;
-  let mostEmbarrassingDefeat: PerformanceGame | null = null;
+  const wins: PerformanceGame[] = [];
+  const losses: PerformanceGame[] = [];
 
-  for (const game of games) {
+  for (const game of scoredGames) {
     const opponentRating = getOpponentRating(game);
 
     if (game.resultForUser === 'WIN') {
       wdl.wins += 1;
       if (opponentRating !== null) opponentRatings.wins.push(opponentRating);
-      if (betterBestVictory(game, bestVictory)) bestVictory = game;
+      wins.push(game);
     } else if (game.resultForUser === 'DRAW') {
       wdl.draws += 1;
       if (opponentRating !== null) opponentRatings.draws.push(opponentRating);
     } else if (game.resultForUser === 'LOSS') {
       wdl.losses += 1;
       if (opponentRating !== null) opponentRatings.losses.push(opponentRating);
-      if (worseDefeat(game, mostEmbarrassingDefeat)) mostEmbarrassingDefeat = game;
+      losses.push(game);
     }
   }
 
   const decidedGames = wdl.wins + wdl.draws + wdl.losses;
+  const bestVictories = toHighlights([...wins].sort(compareBestVictories));
+  const mostEmbarrassingDefeats = toHighlights([...losses].sort(compareMostEmbarrassingDefeats));
 
   return {
     range: {
@@ -165,7 +190,7 @@ export function buildAccountPerformanceStatsData(
       to: query.to,
     },
     speeds: query.speeds,
-    gamesCount: games.length,
+    gamesCount: scoredGames.length,
     wdl,
     scorePercent: decidedGames > 0 ? Math.round(((wdl.wins + wdl.draws * 0.5) / decidedGames) * 100) : null,
     averageOpponentRating: {
@@ -173,8 +198,10 @@ export function buildAccountPerformanceStatsData(
       draws: average(opponentRatings.draws),
       losses: average(opponentRatings.losses),
     },
-    bestVictory: bestVictory ? toHighlight(bestVictory) : null,
-    mostEmbarrassingDefeat: mostEmbarrassingDefeat ? toHighlight(mostEmbarrassingDefeat) : null,
+    bestVictories,
+    mostEmbarrassingDefeats,
+    bestVictory: bestVictories[0] ?? null,
+    mostEmbarrassingDefeat: mostEmbarrassingDefeats[0] ?? null,
   };
 }
 

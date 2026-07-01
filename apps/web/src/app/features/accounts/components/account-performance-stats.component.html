@@ -34,18 +34,38 @@
       </section>
 
       <section class="performance-card">
-        <h3>Best victory</h3>
-        <strong>{{ highlightLabel(stats.bestVictory) }}</strong>
-        @if (stats.bestVictory; as game) {
-          <span>{{ game.speed }} · {{ formatDate(game.endedAt) }}</span>
+        <h3>Best victories</h3>
+        @if (stats.bestVictories.length > 0) {
+          <ol class="highlight-list">
+            @for (game of stats.bestVictories; track game.gameId) {
+              <li>
+                <a class="highlight-link" [routerLink]="['/games', game.gameId]">
+                  <strong>{{ highlightLabel(game) }}</strong>
+                  <span>{{ game.speed }} · {{ formatDate(game.endedAt) }}</span>
+                </a>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="highlight-empty">No victories in this range.</p>
         }
       </section>
 
       <section class="performance-card">
-        <h3>Most embarrassing defeat</h3>
-        <strong>{{ highlightLabel(stats.mostEmbarrassingDefeat) }}</strong>
-        @if (stats.mostEmbarrassingDefeat; as game) {
-          <span>{{ game.speed }} · {{ formatDate(game.endedAt) }}</span>
+        <h3>Most embarrassing defeats</h3>
+        @if (stats.mostEmbarrassingDefeats.length > 0) {
+          <ol class="highlight-list">
+            @for (game of stats.mostEmbarrassingDefeats; track game.gameId) {
+              <li>
+                <a class="highlight-link" [routerLink]="['/games', game.gameId]">
+                  <strong>{{ highlightLabel(game) }}</strong>
+                  <span>{{ game.speed }} · {{ formatDate(game.endedAt) }}</span>
+                </a>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="highlight-empty">No defeats in this range.</p>
         }
       </section>
     </div>

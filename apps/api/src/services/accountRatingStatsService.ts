@@ -49,7 +49,7 @@ export interface AccountRatingStatsProjection {
 }
 
 export interface AccountDashboardProjection {
-  version: 3;
+  version: 4;
   ratingStats: AccountRatingStatsProjection;
   ratingHistory: AccountRatingHistoryData;
   performanceByPeriod: Record<DashboardPeriodKey, AccountPerformanceStatsData>;
@@ -277,7 +277,7 @@ function buildDashboardProjection(games: ImportedRatingGame[], now = new Date())
   return {
     gamesCount: ratingStats.gamesCount,
     data: {
-      version: 3,
+      version: 4,
       ratingStats: ratingStats.data,
       ratingHistory,
       performanceByPeriod,
@@ -287,7 +287,7 @@ function buildDashboardProjection(games: ImportedRatingGame[], now = new Date())
 
 function getStoredProjection(data: Prisma.JsonValue): AccountDashboardProjection | null {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
-  return (data as { version?: unknown }).version === 3 ? (data as unknown as AccountDashboardProjection) : null;
+  return (data as { version?: unknown }).version === 4 ? (data as unknown as AccountDashboardProjection) : null;
 }
 
 function toResponse(
