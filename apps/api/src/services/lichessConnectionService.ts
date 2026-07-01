@@ -195,10 +195,14 @@ export const LichessConnectionService = {
 
     try {
       await revokeLichessToken(token);
-    } finally {
-      await prisma.lichessConnection.delete({ where: { id: connection.id } });
+    } catch {
+      // Local disconnect should still succeed when the upstream token is already
+      // invalid, Lichess is temporarily unavailable, or revoke fails for another
+      // non-sensitive reason. The app no longer has a usable local connection
+      // after the row is removed below.
     }
 
+    await prisma.lichessConnection.delete({ where: { id: connection.id } });
     return { disconnected: true };
   },
 };
