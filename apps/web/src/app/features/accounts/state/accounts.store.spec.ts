@@ -16,6 +16,9 @@ describe('AccountsStore', () => {
       'resetCursor',
       'setActive',
       'deleteAccount',
+      'getLichessConnection',
+      'startLichessConnection',
+      'disconnectLichess',
     ]);
 
     TestBed.configureTestingModule({
@@ -23,6 +26,32 @@ describe('AccountsStore', () => {
     });
 
     store = TestBed.inject(AccountsStore);
+  });
+
+  it('disconnects Lichess without changing tracked accounts', async () => {
+    const tracked = account(1, 'tracked', true);
+    store.accounts.set([tracked]);
+    store.lichessConnection.set({
+      connected: true,
+      account: {
+        username: 'tracked',
+        lichessUserId: 'lichess-id',
+        externalAccountId: tracked.id,
+        scopes: [],
+        connectedAt: '2026-07-01T10:00:00.000Z',
+        expiresAt: null,
+      },
+    });
+    api.disconnectLichess.and.returnValue(of({ disconnected: true }));
+    api.getLichessConnection.and.returnValue(of({ connected: false }));
+
+    await store.disconnectLichess();
+
+    expect(api.disconnectLichess).toHaveBeenCalledTimes(1);
+    expect(api.getLichessConnection).toHaveBeenCalledTimes(1);
+    expect(store.accounts()).toEqual([tracked]);
+    expect(store.lichessConnection()).toEqual({ connected: false });
+    expect(store.notice()).toBe('Lichess disconnected.');
   });
 
   it('syncs all active accounts and reloads the account list once', async () => {

@@ -9,6 +9,7 @@ import {
   DeleteAccountResponse,
   ExternalAccount,
   ImportRunSummary,
+  LichessConnectionStatus,
 } from './accounts.models';
 
 @Injectable()
@@ -75,5 +76,17 @@ export class AccountsApiService {
 
   deleteAccount(accountId: number): Observable<DeleteAccountResponse> {
     return this.api.delete<DeleteAccountResponse>(`/me/accounts/${accountId}`);
+  }
+
+  getLichessConnection(): Observable<LichessConnectionStatus> {
+    return this.api.get<LichessConnectionStatus>('/me/lichess-connection');
+  }
+
+  startLichessConnection(): Observable<{ url: string }> {
+    return this.api.post<{ url: string }>('/me/lichess-connection/start', {});
+  }
+
+  disconnectLichess(): Observable<{ disconnected: true }> {
+    return this.api.delete<{ disconnected: true }>('/me/lichess-connection');
   }
 }

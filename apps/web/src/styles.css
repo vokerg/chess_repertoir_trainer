@@ -77,7 +77,7 @@ textarea {
   font: inherit;
 }
 
-button {
+.app-shell button:not([class^="cl-"]):not([class*=" cl-"]) {
   border: 0;
   border-radius: 999px;
   padding: 0.8rem 1.15rem;
@@ -90,28 +90,28 @@ button {
   box-shadow: 0 10px 20px rgba(143, 79, 13, 0.22);
 }
 
-button:hover:not(:disabled) {
+.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-button:disabled {
+.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-button.secondary {
+.app-shell button.secondary:not([class^="cl-"]):not([class*=" cl-"]) {
   background: rgba(35, 27, 21, 0.08);
   color: var(--text);
   box-shadow: none;
 }
 
-button.danger {
+.app-shell button.danger:not([class^="cl-"]):not([class*=" cl-"]) {
   background: linear-gradient(135deg, #d05d44 0%, #9f2f2f 100%);
   box-shadow: 0 10px 20px rgba(159, 47, 47, 0.18);
 }
 
-button.danger-text {
+.app-shell button.danger-text:not([class^="cl-"]):not([class*=" cl-"]) {
   color: var(--danger);
 }
 
@@ -756,21 +756,4 @@ textarea:focus {
   .library-column:last-child {
     border-bottom: 0;
   }
-}
-
-@media (max-width: 640px) {
-  .page-shell {
-    width: min(100vw - 20px, 1180px);
-  }
-
-  .section-card,
-  .collection-card {
-    border-radius: 22px;
-  }
-
-  .page-header {
-    align-items: flex-start;
-    border-radius: 22px;
-  }
-
 }

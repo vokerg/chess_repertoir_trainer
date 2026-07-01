@@ -1,7 +1,7 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
@@ -23,6 +23,7 @@ import { AccountsStore } from '../state/accounts.store';
 export class AccountsPageComponent implements OnInit {
   protected readonly store = inject(AccountsStore);
   private readonly confirmDialog = inject(ConfirmDialogService);
+  private readonly route = inject(ActivatedRoute);
   protected readonly providerLabel = providerLabel;
   protected readonly providerClass = providerClass;
   protected readonly syncStatusLabel = syncStatusLabel;
@@ -47,6 +48,20 @@ export class AccountsPageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.store.loadAccounts();
+    void this.store.loadLichessConnection();
+    this.showLichessCallbackNotice();
+  }
+
+  protected async confirmDisconnectLichess(): Promise<void> {
+    const confirmed = await this.confirmDialog.confirm({
+      title: 'Disconnect Lichess?',
+      message: 'This revokes the OAuth connection. It will not delete tracked accounts or imported games.',
+      tone: 'warning',
+      confirmLabel: 'Disconnect',
+      cancelLabel: 'Cancel',
+    });
+
+    if (confirmed) void this.store.disconnectLichess();
   }
 
   protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
@@ -73,5 +88,16 @@ export class AccountsPageComponent implements OnInit {
     });
 
     if (confirmed) void this.store.deleteAccount(account);
+  }
+
+  private showLichessCallbackNotice(): void {
+    const status = this.route.snapshot.queryParamMap.get('lichessConnected');
+    if (status === '1') {
+      this.store.showNotice('Lichess connected.');
+    } else if (status === 'cancelled') {
+      this.store.showNotice('Lichess connection cancelled.');
+    } else if (status === 'error') {
+      this.store.showError('Could not connect Lichess.');
+    }
   }
 }
