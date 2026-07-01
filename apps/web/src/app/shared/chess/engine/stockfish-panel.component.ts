@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { PanelComponent } from '../../ui/panel/panel.component';
 import { type UiShellAction, type UiShellStat } from '../../ui/ui-shell.model';
+import { engineBestMoveForFen } from './engine-best-move.helper';
 import { EngineAnalysis, EngineLine } from './stockfish-analysis.service';
 
 @Component({
@@ -46,10 +47,7 @@ export class StockfishPanelComponent {
   }
 
   bestMoveLabel(): string | null {
-    if (!this.isCurrentFen()) return null;
-    const analysis = this.analysis();
-    const move = analysis.bestMove || analysis.lines[0]?.pv?.[0] || null;
-    return move && move !== '(none)' ? move : null;
+    return engineBestMoveForFen(this.analysis(), this.currentFen());
   }
 
   isCurrentFen(): boolean {
