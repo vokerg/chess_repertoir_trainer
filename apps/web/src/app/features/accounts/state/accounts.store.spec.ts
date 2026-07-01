@@ -17,8 +17,8 @@ describe('AccountsStore', () => {
       'setActive',
       'deleteAccount',
       'getLichessConnection',
+      'startLichessConnection',
       'disconnectLichess',
-      'getLichessConnectUrl',
     ]);
 
     TestBed.configureTestingModule({

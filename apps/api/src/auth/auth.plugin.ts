@@ -7,6 +7,7 @@ const PUBLIC_PATHS = new Set([
   '/health',
   '/api/board-image',
   '/api/board-image-url',
+  '/api/auth/lichess/callback',
   '/api/docs',
   '/api/docs/openapi.json',
   '/mcp',

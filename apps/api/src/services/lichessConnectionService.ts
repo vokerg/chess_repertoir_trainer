@@ -90,10 +90,7 @@ export const LichessConnectionService = {
     return `${oauthBaseUrl}?${params.toString()}`;
   },
 
-  async handleCallback(
-    userId: number,
-    query: { code?: string; state?: string; error?: string; error_description?: string },
-  ): Promise<void> {
+  async handleCallback(query: { code?: string; state?: string; error?: string; error_description?: string }): Promise<void> {
     await deleteExpiredStates();
 
     if (query.error === 'access_denied') {
@@ -107,10 +104,11 @@ export const LichessConnectionService = {
     }
 
     const loginState = await prisma.oAuthLoginState.findUnique({ where: { state: query.state } });
-    if (!loginState || loginState.userId !== userId || loginState.provider !== provider || loginState.expiresAt <= new Date()) {
+    if (!loginState || loginState.provider !== provider || loginState.expiresAt <= new Date()) {
       throw new LichessOAuthError('Invalid or expired Lichess OAuth state.');
     }
 
+    const userId = loginState.userId;
     const token = await exchangeCodeForToken(query.code, loginState.codeVerifier);
     const lichessAccount = await fetchLichessAccount(token.accessToken);
     const encrypted = encryptToken(token.accessToken);

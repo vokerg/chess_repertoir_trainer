@@ -92,8 +92,14 @@ export class AccountsStore {
     }
   }
 
-  connectLichess(): void {
-    this.document.defaultView?.location.assign(this.api.getLichessConnectUrl());
+  async connectLichess(): Promise<void> {
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.api.startLichessConnection());
+      this.document.defaultView?.location.assign(response.url);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not start Lichess connection.'));
+    }
   }
 
   async disconnectLichess(): Promise<void> {

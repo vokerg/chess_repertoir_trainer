@@ -1,6 +1,5 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { appConfig } from '../../../app-config';
 import { ApiService } from '../../../core/api/api.service';
 import {
   AccountPerformanceStatsResponse,
@@ -83,11 +82,11 @@ export class AccountsApiService {
     return this.api.get<LichessConnectionStatus>('/me/lichess-connection');
   }
 
-  disconnectLichess(): Observable<{ disconnected: true }> {
-    return this.api.delete<{ disconnected: true }>('/me/lichess-connection');
+  startLichessConnection(): Observable<{ url: string }> {
+    return this.api.post<{ url: string }>('/me/lichess-connection/start', {});
   }
 
-  getLichessConnectUrl(): string {
-    return `${appConfig.apiBaseUrl}/auth/lichess/start`;
+  disconnectLichess(): Observable<{ disconnected: true }> {
+    return this.api.delete<{ disconnected: true }>('/me/lichess-connection');
   }
 }

@@ -18,25 +18,22 @@ export default async function lichessAuthRoutes(app: FastifyInstance) {
     return LichessConnectionService.getStatusForUser(auth.userId);
   });
 
-  app.get('/api/auth/lichess/start', async (request, reply) => {
+  app.post('/api/me/lichess-connection/start', async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
 
     const url = await LichessConnectionService.createAuthorizationUrl(auth.userId);
-    return reply.redirect(url);
+    return { url };
   });
 
   app.get('/api/auth/lichess/callback', async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-
     const parsed = callbackQuerySchema.safeParse(request.query);
     if (!parsed.success) {
       return reply.code(400).send({ error: parsed.error.errors });
     }
 
     try {
-      await LichessConnectionService.handleCallback(auth.userId, parsed.data);
+      await LichessConnectionService.handleCallback(parsed.data);
       return reply.redirect(`${readWebAppUrl()}/accounts?lichessConnected=1`);
     } catch (error) {
       if (error instanceof LichessOAuthError) {
