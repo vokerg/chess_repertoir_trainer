@@ -3,6 +3,8 @@ import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
 const MONTH_OVERLAP_MS = 31 * 24 * 60 * 60 * 1000;
+const CHESS_COM_FETCH_RETRIES = 2;
+const CHESS_COM_RETRY_BASE_DELAY_MS = 500;
 const CHESS_COM_USER_AGENT = process.env['CHESS_COM_USER_AGENT'] || 'chess-repertoire-trainer/0.1 (+https://github.com/vokerg/chess_repertoir_trainer)';
 
 type ChessComArchivesResponse = {
@@ -48,6 +50,18 @@ type ArchiveMonth = {
   month: number;
 };
 
+class ChessComHttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly statusText: string,
+    readonly url: string,
+  ) {
+    super(`Chess.com returned ${status}${statusText ? ` ${statusText}` : ''} for ${url}`);
+  }
+}
+
+const RETRYABLE_CHESS_COM_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
 const DRAW_RESULTS = new Set([
   'agreed',
   'repetition',
@@ -56,6 +70,10 @@ const DRAW_RESULTS = new Set([
   '50move',
   'timevsinsufficient',
 ]);
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function normalizeChessComName(value?: string | null) {
   return value?.trim().toLowerCase() ?? null;
@@ -205,19 +223,52 @@ function normalizeGame(game: ChessComGame, account: { id: number; userId: number
   };
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      'User-Agent': CHESS_COM_USER_AGENT,
-    },
-  });
+function parseRetryAfterMs(value: string | null) {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
 
-  if (!response.ok) {
-    throw new Error(`Chess.com returned ${response.status} ${response.statusText}`);
+  const dateMs = Date.parse(value);
+  if (Number.isNaN(dateMs)) return null;
+  return Math.max(0, dateMs - Date.now());
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= CHESS_COM_FETCH_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': CHESS_COM_USER_AGENT,
+        },
+      });
+
+      if (response.ok) {
+        return response.json() as Promise<T>;
+      }
+
+      const error = new ChessComHttpError(response.status, response.statusText, url);
+      if (!RETRYABLE_CHESS_COM_STATUSES.has(response.status) || attempt === CHESS_COM_FETCH_RETRIES) {
+        throw error;
+      }
+
+      const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'));
+      await sleep(retryAfterMs ?? CHESS_COM_RETRY_BASE_DELAY_MS * 2 ** attempt);
+    } catch (err) {
+      lastError = err;
+      if (err instanceof ChessComHttpError && !RETRYABLE_CHESS_COM_STATUSES.has(err.status)) {
+        throw err;
+      }
+      if (attempt === CHESS_COM_FETCH_RETRIES) {
+        throw err;
+      }
+      await sleep(CHESS_COM_RETRY_BASE_DELAY_MS * 2 ** attempt);
+    }
   }
 
-  return response.json() as Promise<T>;
+  throw lastError ?? new Error(`Unable to fetch ${url}`);
 }
 
 function parseArchiveMonth(url: string): ArchiveMonth | null {
@@ -270,6 +321,8 @@ export const ChessComImportService = {
     let gamesImported = 0;
     let gamesSkipped = 0;
     let gamesFailed = 0;
+    let archivesFetched = 0;
+    let archivesSkipped = 0;
     let maxEndedAt = account.syncCursorTime ?? null;
 
     try {
@@ -280,7 +333,17 @@ export const ChessComImportService = {
         .filter((archive) => shouldFetchArchive(archive, syncSince));
 
       for (const archive of archives) {
-        const monthlyGames = await fetchJson<ChessComMonthlyGamesResponse>(archive.url);
+        let monthlyGames: ChessComMonthlyGamesResponse;
+        try {
+          monthlyGames = await fetchJson<ChessComMonthlyGamesResponse>(archive.url);
+        } catch (err) {
+          if (err instanceof ChessComHttpError && err.status === 404) {
+            archivesSkipped += 1;
+            continue;
+          }
+          throw err;
+        }
+        archivesFetched += 1;
 
         for (const game of monthlyGames.games ?? []) {
           gamesSeen += 1;
@@ -355,7 +418,8 @@ export const ChessComImportService = {
         gamesFailed,
         syncSince,
         syncUntil: maxEndedAt,
-        archivesFetched: archives.length,
+        archivesFetched,
+        archivesSkipped,
       };
     } catch (err: any) {
       await prisma.importRun.update({

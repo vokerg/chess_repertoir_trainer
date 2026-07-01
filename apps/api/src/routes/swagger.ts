@@ -199,6 +199,7 @@ const legacyOpenApiDocument = {
                       syncSince: '2026-04-25T05:00:00.000Z',
                       syncUntil: '2026-05-26T05:00:00.000Z',
                       archivesFetched: 2,
+                      archivesSkipped: 0,
                     },
                   },
                 },
@@ -388,7 +389,12 @@ const legacyOpenApiDocument = {
           archivesFetched: {
             type: 'integer',
             nullable: true,
-            description: 'Chess.com-only count of monthly archive endpoints fetched during this sync.',
+            description: 'Chess.com-only count of monthly archive endpoints successfully fetched during this sync.',
+          },
+          archivesSkipped: {
+            type: 'integer',
+            nullable: true,
+            description: 'Chess.com-only count of monthly archive endpoints skipped because Chess.com listed them but returned 404.',
           },
         },
         required: ['importRunId', 'status', 'gamesSeen', 'gamesImported', 'gamesUpdated', 'gamesFailed'],
