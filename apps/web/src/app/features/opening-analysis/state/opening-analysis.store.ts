@@ -16,6 +16,7 @@ import {
 import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
+import { engineBestMoveForFen } from '../../../shared/chess/engine/engine-best-move.helper';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
@@ -66,9 +67,8 @@ export class OpeningAnalysisStore implements OnDestroy {
     this.history().length ? this.history().map((move) => move.san || move.uci).join(' ') : 'Start position',
   );
   readonly analysisArrows = computed(() => {
-    const engine = this.engine();
-    const move = engine.fen === this.currentFen() ? engine.bestMove || engine.lines[0]?.pv?.[0] : null;
-    if (!move || move === '(none)') return [];
+    const move = engineBestMoveForFen(this.engine(), this.currentFen());
+    if (!move) return [];
     return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
   });
 
