@@ -27,6 +27,14 @@ export class AccountPerformanceStatsComponent {
     return Math.round(((stats.wdl.wins + stats.wdl.draws * 0.5) / total) * 100);
   }
 
+  protected formatScorePercent(value: number | null): string {
+    return value === null ? '—' : `${value}%`;
+  }
+
+  protected gamesLabel(count: number): string {
+    return count === 1 ? '1 game' : `${count} games`;
+  }
+
   protected formatDate(value: string): string {
     return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(
       new Date(value),

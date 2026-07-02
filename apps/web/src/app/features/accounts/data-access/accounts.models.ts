@@ -143,6 +143,15 @@ export interface AccountPerformanceGameHighlight {
   providerUrl: string | null;
 }
 
+export interface AccountPerformanceTimeControlWdl {
+  timeControl: string;
+  gamesCount: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  scorePercent: number | null;
+}
+
 export interface AccountPerformanceStatsResponse {
   account: {
     id: number;
@@ -166,6 +175,7 @@ export interface AccountPerformanceStatsResponse {
     draws: number | null;
     losses: number | null;
   };
+  timeControlWdl: AccountPerformanceTimeControlWdl[];
   bestVictories: AccountPerformanceGameHighlight[];
   mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
   bestVictory: AccountPerformanceGameHighlight | null;

@@ -95,6 +95,9 @@ type ImportedRatingGame = {
   opponentUsername?: string | null;
   resultForUser?: string | null;
   providerUrl?: string | null;
+  timeControlRaw: string | null;
+  timeControlInitial: number | null;
+  timeControlIncrement: number | null;
 };
 
 function getUserRating(game: Pick<ImportedRatingGame, 'userColor' | 'whiteRating' | 'blackRating'>) {
@@ -331,6 +334,9 @@ export const AccountRatingStatsService = {
         opponentUsername: true,
         resultForUser: true,
         providerUrl: true,
+        timeControlRaw: true,
+        timeControlInitial: true,
+        timeControlIncrement: true,
       },
       orderBy: [{ endedAt: 'asc' }, { id: 'asc' }],
     });
