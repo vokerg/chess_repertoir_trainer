@@ -203,7 +203,7 @@
     </div>
   }
   <div class="games-filter-actions">
-    <button type="button" (click)="apply.emit()" [disabled]="loading()">
+    <button type="button" class="primary" (click)="apply.emit()" [disabled]="loading()">
       {{ loading() ? 'Loading...' : 'Apply filters' }}</button
     ><button type="button" class="secondary" (click)="reset.emit()" [disabled]="loading()">
       Reset

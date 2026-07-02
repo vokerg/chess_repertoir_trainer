@@ -138,7 +138,7 @@
 
         <div class="launcher-train-actions" aria-label="Start selected training">
           @for (mode of trainingModes(); track mode.id) {
-            <button type="button" [class.secondary]="mode.id !== 'ALL'" [disabled]="mode.disabled" (click)="start(mode.id)">
+            <button type="button" [class.primary]="mode.id === 'ALL'" [class.secondary]="mode.id !== 'ALL'" [disabled]="mode.disabled" (click)="start(mode.id)">
               {{ mode.label }}
             </button>
           }

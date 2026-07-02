@@ -77,7 +77,7 @@ textarea {
   font: inherit;
 }
 
-.app-shell button:not([class^="cl-"]):not([class*=" cl-"]) {
+.app-shell button:where(.primary, .secondary, .danger, .danger-text) {
   border: 0;
   border-radius: 999px;
   padding: 0.8rem 1.15rem;
@@ -90,28 +90,28 @@ textarea {
   box-shadow: 0 10px 20px rgba(143, 79, 13, 0.22);
 }
 
-.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):hover:not(:disabled) {
+.app-shell button:where(.primary, .secondary, .danger, .danger-text):hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):disabled {
+.app-shell button:where(.primary, .secondary, .danger, .danger-text):disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-.app-shell button.secondary:not([class^="cl-"]):not([class*=" cl-"]) {
+.app-shell button:where(.secondary) {
   background: rgba(35, 27, 21, 0.08);
   color: var(--text);
   box-shadow: none;
 }
 
-.app-shell button.danger:not([class^="cl-"]):not([class*=" cl-"]) {
+.app-shell button:where(.danger) {
   background: linear-gradient(135deg, #d05d44 0%, #9f2f2f 100%);
   box-shadow: 0 10px 20px rgba(159, 47, 47, 0.18);
 }
 
-.app-shell button.danger-text:not([class^="cl-"]):not([class*=" cl-"]) {
+.app-shell button:where(.danger-text) {
   color: var(--danger);
 }
 

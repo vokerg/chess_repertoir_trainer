@@ -10,7 +10,7 @@
           @for (course of store.courses(); track course.id) {
             <article class="collection-card">
               <div class="course-card-header"><div><h4 class="collection-title">{{ course.name }}</h4><p class="collection-description">{{ course.description || 'A focused training space for a complete repertoire branch.' }}</p></div><span class="pill">Course #{{ course.id }}</span></div>
-              <div class="collection-actions"><a [routerLink]="['/courses', course.id]" class="button-link"><button type="button">Open course</button></a><button type="button" class="secondary" (click)="confirmDeleteCourse(course)" [disabled]="store.deletingId() === course.id">{{ store.deletingId() === course.id ? 'Deleting...' : 'Delete' }}</button></div>
+              <div class="collection-actions"><a [routerLink]="['/courses', course.id]" class="button-link"><button type="button" class="primary">Open course</button></a><button type="button" class="secondary" (click)="confirmDeleteCourse(course)" [disabled]="store.deletingId() === course.id">{{ store.deletingId() === course.id ? 'Deleting...' : 'Delete' }}</button></div>
             </article>
           }
         </div>
@@ -20,7 +20,7 @@
       <form (ngSubmit)="store.createCourse()" class="stack">
         <div class="stack field-stack"><label for="course-name" class="metric-label">Course name</label><input id="course-name" [ngModel]="store.newCourseName()" (ngModelChange)="store.newCourseName.set($event)" name="name" placeholder="Italian Game for White" required /></div>
         <div class="stack field-stack"><label for="course-description" class="metric-label">Description</label><textarea id="course-description" [ngModel]="store.newCourseDescription()" (ngModelChange)="store.newCourseDescription.set($event)" name="description" rows="4" placeholder="What this course is for, what structures it covers, and why it matters."></textarea></div>
-        <div class="collection-actions"><button type="submit" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Create course' }}</button></div>
+        <div class="collection-actions"><button type="submit" class="primary" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Create course' }}</button></div>
       </form>
     </app-panel>
   </div>

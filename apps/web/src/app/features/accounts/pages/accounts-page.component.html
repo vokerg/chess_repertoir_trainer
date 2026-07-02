@@ -36,7 +36,7 @@
       <div class="lichess-connection">
         <p class="accounts-muted">No Lichess account connected.</p>
         <div class="account-card-actions">
-          <button type="button" (click)="store.connectLichess()">Connect Lichess</button>
+          <button type="button" class="primary" (click)="store.connectLichess()">Connect Lichess</button>
         </div>
       </div>
     }
@@ -78,7 +78,7 @@
       </label>
 
       <div class="account-form-actions">
-        <button type="submit" [disabled]="store.saving() || !store.form().username.trim()">
+        <button type="submit" class="primary" [disabled]="store.saving() || !store.form().username.trim()">
           {{ store.saving() ? 'Adding...' : 'Add account' }}
         </button>
         <button type="button" class="secondary" (click)="store.resetForm()" [disabled]="store.saving()">Clear</button>
@@ -149,6 +149,7 @@
             <div class="account-card-actions">
               <button
                 type="button"
+                class="primary"
                 (click)="store.syncAccount(account)"
                 [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
               >

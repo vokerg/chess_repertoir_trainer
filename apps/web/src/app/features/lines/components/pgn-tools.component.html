@@ -33,7 +33,7 @@
     </select>
     <input [(ngModel)]="importStartingFen" placeholder="startpos" />
     <textarea [(ngModel)]="importPgnText" rows="8" placeholder="Paste PGN here" style="width:100%;font-family:monospace;"></textarea>
-    <button type="button" (click)="importPgn()" [disabled]="importing() || !chapterId() || !importName || !importPgnText">
+    <button type="button" class="primary" (click)="importPgn()" [disabled]="importing() || !chapterId() || !importName || !importPgnText">
       {{ importing() ? 'Importing...' : 'Import PGN' }}
     </button>
   </div>

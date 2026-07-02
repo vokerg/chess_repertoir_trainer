@@ -50,7 +50,7 @@
           [ngModel]="store.minCoveredPlies()"
           (ngModelChange)="store.setMinCoveredPlies($event)"
         />
-        <button type="button" (click)="store.loadReview()" [disabled]="!store.canReview()">
+        <button type="button" class="primary" (click)="store.loadReview()" [disabled]="!store.canReview()">
           {{ store.loading() ? 'Reviewing...' : 'Review' }}
         </button>
       </div>

@@ -39,7 +39,7 @@
           <td>{{ line.trainingStats.weakSublineCount }}</td>
           <td>
             <div class="primary-actions">
-              <button type="button" (click)="trainLine.emit(line)">Train</button>
+              <button type="button" class="primary" (click)="trainLine.emit(line)">Train</button>
               <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
             </div>
             <app-line-action-menu

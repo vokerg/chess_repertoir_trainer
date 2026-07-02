@@ -22,7 +22,7 @@
       </label>
 
       <div class="move-notes-actions">
-        <button type="button" (click)="submit()" [disabled]="saving">
+        <button type="button" class="primary" (click)="submit()" [disabled]="saving">
           {{ saving ? 'Saving...' : 'Save notes' }}
         </button>
         @if (saved) {

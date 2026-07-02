@@ -35,7 +35,7 @@
           }
         }
       }
-      <footer class="dialog-actions"><button type="button" class="secondary" (click)="store.close()">Cancel</button><button type="button" [disabled]="!store.canApply()" (click)="store.apply()">{{ store.applying() ? 'Applying...' : 'Apply merge' }}</button></footer>
+      <footer class="dialog-actions"><button type="button" class="secondary" (click)="store.close()">Cancel</button><button type="button" class="primary" [disabled]="!store.canApply()" (click)="store.apply()">{{ store.applying() ? 'Applying...' : 'Apply merge' }}</button></footer>
     </section>
   </div>
 }

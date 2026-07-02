@@ -13,14 +13,14 @@
 
         <div class="training-board-actions">
           @if (completed()) {
-            <button type="button" (click)="primaryAction.emit()">{{ primaryActionLabel() }}</button>
+            <button type="button" class="primary" (click)="primaryAction.emit()">{{ primaryActionLabel() }}</button>
             @if (secondaryActionLink(); as secondaryActionLink) {
               <a class="library-button-link secondary" [routerLink]="secondaryActionLink">
                 {{ secondaryActionLabel() }}
               </a>
             }
           } @else {
-            <button type="button" (click)="finish.emit()" [disabled]="completed()">
+            <button type="button" class="primary" (click)="finish.emit()" [disabled]="completed()">
               {{ finishButtonLabel() }}
             </button>
             <button type="button" class="secondary" (click)="toggleExpectedMove.emit()">

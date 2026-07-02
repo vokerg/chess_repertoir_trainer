@@ -14,7 +14,7 @@
             <label for="course-rename" class="metric-label">Course name</label>
             <input id="course-rename" [ngModel]="store.courseNameDraft()" (ngModelChange)="store.courseNameDraft.set($event)" name="courseRename" />
           </div>
-          <button type="button" (click)="store.saveCourseName()" [disabled]="store.savingCourseName()">{{ store.savingCourseName() ? 'Saving...' : 'Save' }}</button>
+          <button type="button" class="primary" (click)="store.saveCourseName()" [disabled]="store.savingCourseName()">{{ store.savingCourseName() ? 'Saving...' : 'Save' }}</button>
           <button type="button" class="secondary" (click)="store.cancelCourseEdit()" [disabled]="store.savingCourseName()">Cancel</button>
         </div>
       </section>
@@ -43,7 +43,7 @@
                           <label [for]="'chapter-rename-' + chapter.id" class="metric-label">Chapter name</label>
                           <input [id]="'chapter-rename-' + chapter.id" [ngModel]="store.chapterNameDraft()" (ngModelChange)="store.chapterNameDraft.set($event)" [name]="'chapterRename' + chapter.id" />
                         </div>
-                        <button type="button" (click)="store.saveChapterName(chapter)" [disabled]="store.savingChapterId() === chapter.id">{{ store.savingChapterId() === chapter.id ? 'Saving...' : 'Save' }}</button>
+                        <button type="button" class="primary" (click)="store.saveChapterName(chapter)" [disabled]="store.savingChapterId() === chapter.id">{{ store.savingChapterId() === chapter.id ? 'Saving...' : 'Save' }}</button>
                         <button type="button" class="secondary" (click)="store.cancelChapterEdit()" [disabled]="store.savingChapterId() === chapter.id">Cancel</button>
                       </div>
                     } @else {
@@ -54,7 +54,7 @@
                   <span class="pill">Order {{ chapter.sortOrder }}</span>
                 </div>
                 <div class="collection-actions">
-                  <a [routerLink]="['/chapters', chapter.id, 'lines']" class="button-link"><button type="button">Open lines</button></a>
+                  <a [routerLink]="['/chapters', chapter.id, 'lines']" class="button-link"><button type="button" class="primary">Open lines</button></a>
                   <a [routerLink]="['/chapters', chapter.id, 'marathon']" class="button-link"><button type="button" class="secondary">Train chapter</button></a>
                   <button type="button" class="secondary" (click)="store.startChapterEdit(chapter)" [disabled]="store.savingChapterId() === chapter.id">Rename</button>
                   <button type="button" class="secondary" (click)="confirmDeleteChapter(chapter)" [disabled]="store.deletingChapterId() === chapter.id">
@@ -82,7 +82,7 @@
             <label for="chapter-description" class="metric-label">Description</label>
             <textarea id="chapter-description" [ngModel]="store.newChapterDescription()" (ngModelChange)="store.newChapterDescription.set($event)" name="description" rows="4" placeholder="What this chapter covers and when it appears."></textarea>
           </div>
-          <div class="collection-actions"><button type="submit" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Add chapter' }}</button></div>
+          <div class="collection-actions"><button type="submit" class="primary" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Add chapter' }}</button></div>
         </form>
       </aside>
     </div>

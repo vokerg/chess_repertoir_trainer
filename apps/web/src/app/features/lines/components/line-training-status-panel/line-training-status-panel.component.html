@@ -6,7 +6,7 @@
     </div>
     <div class="status-panel-actions">
       <button type="button" class="secondary" (click)="trainWholeLine.emit()">Train line</button>
-      <button type="button" [disabled]="selectedHashes().length === 0" (click)="drillSelected.emit()">Drill selected</button>
+      <button type="button" class="primary" [disabled]="selectedHashes().length === 0" (click)="drillSelected.emit()">Drill selected</button>
       <a class="compact-action secondary" [routerLink]="['/lines', line().id, 'edit']">Edit tree</a>
     </div>
   </div>
