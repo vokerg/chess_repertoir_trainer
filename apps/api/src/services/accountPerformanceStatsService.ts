@@ -18,6 +18,15 @@ export interface AccountPerformanceGameHighlight {
   providerUrl: string | null;
 }
 
+export interface AccountPerformanceTimeControlWdl {
+  timeControl: string;
+  gamesCount: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  scorePercent: number | null;
+}
+
 export interface AccountPerformanceStatsResponse {
   account: {
     id: number;
@@ -41,6 +50,7 @@ export interface AccountPerformanceStatsResponse {
     draws: number | null;
     losses: number | null;
   };
+  timeControlWdl: AccountPerformanceTimeControlWdl[];
   bestVictories: AccountPerformanceGameHighlight[];
   mostEmbarrassingDefeats: AccountPerformanceGameHighlight[];
   bestVictory: AccountPerformanceGameHighlight | null;
@@ -61,9 +71,13 @@ export type PerformanceGame = {
   opponentUsername: string | null;
   resultForUser: string | null;
   providerUrl: string | null;
+  timeControlRaw: string | null;
+  timeControlInitial: number | null;
+  timeControlIncrement: number | null;
 };
 
 const HIGHLIGHT_LIMIT = 5;
+const TIME_CONTROL_WDL_LIMIT = 8;
 
 export function buildPerformanceEndedAtRange(query: Pick<AccountPerformanceStatsQuery, 'from' | 'to'>) {
   return {
@@ -111,6 +125,35 @@ function average(values: number[]) {
   return values.length > 0 ? Math.round(values.reduce((total, value) => total + value, 0) / values.length) : null;
 }
 
+function formatInitialMinutes(initialSeconds: number): string {
+  if (initialSeconds < 60) return `${initialSeconds}s`;
+  const minutes = initialSeconds / 60;
+  return Number.isInteger(minutes) ? String(minutes) : String(Number(minutes.toFixed(1)));
+}
+
+function formatStructuredTimeControl(initial: number | null, increment: number | null): string | null {
+  if (typeof initial !== 'number' || typeof increment !== 'number') return null;
+  return `${formatInitialMinutes(initial)}+${increment}`;
+}
+
+function normalizeRawTimeControl(raw: string | null): string | null {
+  const value = raw?.trim();
+  if (!value || value === '-' || value === '?') return null;
+
+  const match = value.match(/^(\d+(?:\.\d+)?)\s*\+\s*(\d+)$/);
+  if (!match) return value;
+
+  return `${Number(match[1])}+${Number(match[2])}`;
+}
+
+function normalizeTimeControl(game: PerformanceGame): string {
+  return (
+    formatStructuredTimeControl(game.timeControlInitial, game.timeControlIncrement) ??
+    normalizeRawTimeControl(game.timeControlRaw) ??
+    'Unknown'
+  );
+}
+
 function isScoredGame(game: PerformanceGame) {
   return game.resultForUser === 'WIN' || game.resultForUser === 'DRAW' || game.resultForUser === 'LOSS';
 }
@@ -149,6 +192,36 @@ function toHighlights(games: PerformanceGame[]) {
     .slice(0, HIGHLIGHT_LIMIT);
 }
 
+function buildTimeControlWdl(scoredGames: PerformanceGame[]): AccountPerformanceTimeControlWdl[] {
+  const buckets = new Map<string, { wins: number; draws: number; losses: number }>();
+
+  for (const game of scoredGames) {
+    const timeControl = normalizeTimeControl(game);
+    const bucket = buckets.get(timeControl) ?? { wins: 0, draws: 0, losses: 0 };
+
+    if (game.resultForUser === 'WIN') bucket.wins += 1;
+    if (game.resultForUser === 'DRAW') bucket.draws += 1;
+    if (game.resultForUser === 'LOSS') bucket.losses += 1;
+
+    buckets.set(timeControl, bucket);
+  }
+
+  return Array.from(buckets.entries())
+    .map(([timeControl, bucket]) => {
+      const gamesCount = bucket.wins + bucket.draws + bucket.losses;
+      return {
+        timeControl,
+        gamesCount,
+        wins: bucket.wins,
+        draws: bucket.draws,
+        losses: bucket.losses,
+        scorePercent: gamesCount > 0 ? Math.round(((bucket.wins + bucket.draws * 0.5) / gamesCount) * 100) : null,
+      };
+    })
+    .sort((left, right) => right.gamesCount - left.gamesCount || left.timeControl.localeCompare(right.timeControl))
+    .slice(0, TIME_CONTROL_WDL_LIMIT);
+}
+
 export function buildAccountPerformanceStatsData(
   games: PerformanceGame[],
   query: AccountPerformanceStatsQuery,
@@ -181,6 +254,7 @@ export function buildAccountPerformanceStatsData(
   }
 
   const decidedGames = wdl.wins + wdl.draws + wdl.losses;
+  const timeControlWdl = buildTimeControlWdl(scoredGames);
   const bestVictories = toHighlights([...wins].sort(compareBestVictories));
   const mostEmbarrassingDefeats = toHighlights([...losses].sort(compareMostEmbarrassingDefeats));
 
@@ -198,6 +272,7 @@ export function buildAccountPerformanceStatsData(
       draws: average(opponentRatings.draws),
       losses: average(opponentRatings.losses),
     },
+    timeControlWdl,
     bestVictories,
     mostEmbarrassingDefeats,
     bestVictory: bestVictories[0] ?? null,
@@ -233,6 +308,9 @@ export const AccountPerformanceStatsService = {
         opponentUsername: true,
         resultForUser: true,
         providerUrl: true,
+        timeControlRaw: true,
+        timeControlInitial: true,
+        timeControlIncrement: true,
       },
       orderBy: [{ endedAt: 'asc' }, { id: 'asc' }],
     });

@@ -31,6 +31,26 @@
             <dd>{{ stats.averageOpponentRating.losses ?? '—' }}</dd>
           </div>
         </dl>
+
+        <div class="time-control-breakdown">
+          <h4>By time control</h4>
+          @if (stats.timeControlWdl.length > 0) {
+            <ul class="time-control-list">
+              @for (bucket of stats.timeControlWdl; track bucket.timeControl) {
+                <li>
+                  <strong>{{ bucket.timeControl }}</strong>
+                  <span>
+                    {{ bucket.wins }} / {{ bucket.draws }} / {{ bucket.losses }} ·
+                    {{ formatScorePercent(bucket.scorePercent) }} ·
+                    {{ gamesLabel(bucket.gamesCount) }}
+                  </span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="time-control-empty">No time-control breakdown.</p>
+          }
+        </div>
       </section>
 
       <section class="performance-card">
