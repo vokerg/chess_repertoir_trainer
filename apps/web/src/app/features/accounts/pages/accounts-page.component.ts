@@ -64,6 +64,10 @@ export class AccountsPageComponent implements OnInit {
     if (confirmed) void this.store.disconnectLichess();
   }
 
+  protected hasChallengeWriteScope(account: { scopes: string[] }): boolean {
+    return account.scopes.includes('challenge:write');
+  }
+
   protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
     const confirmed = await this.confirmDialog.confirm({
       title: 'Reset import cursor?',

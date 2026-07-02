@@ -19,9 +19,16 @@
             @if (account.externalAccountId) {
               <div><span>Tracked account</span><strong>Also tracked on this page.</strong></div>
             }
+            <div>
+              <span>Challenge scope</span>
+              <strong>{{ hasChallengeWriteScope(account) ? 'Ready' : 'Missing' }}</strong>
+            </div>
           </div>
         </div>
         <div class="account-card-actions">
+          <button type="button" class="primary" (click)="store.connectLichess()">
+            Reconnect
+          </button>
           <button
             type="button"
             class="secondary"

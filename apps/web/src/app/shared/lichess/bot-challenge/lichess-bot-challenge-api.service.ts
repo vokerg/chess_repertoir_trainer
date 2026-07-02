@@ -2,11 +2,6 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 
-export interface FreeAnalysisImportedGame {
-  pgn?: string | null;
-  userColor?: 'WHITE' | 'BLACK' | null;
-}
-
 export interface LichessBotChallengeOption {
   username: string;
   label: string;
@@ -36,18 +31,14 @@ export interface LichessBotChallengeResponse {
 }
 
 @Injectable()
-export class FreeAnalysisApiService {
+export class LichessBotChallengeApiService {
   private readonly api = inject(ApiService);
 
-  getImportedGame(gameId: number): Observable<FreeAnalysisImportedGame> {
-    return this.api.get<FreeAnalysisImportedGame>(`/imported-games/${gameId}`);
-  }
-
-  getLichessBotChallengeOptions(): Observable<LichessBotChallengeOptionsResponse> {
+  getOptions(): Observable<LichessBotChallengeOptionsResponse> {
     return this.api.get<LichessBotChallengeOptionsResponse>('/me/lichess/bot-challenge-options');
   }
 
-  challengeLichessBot(body: LichessBotChallengeBody): Observable<LichessBotChallengeResponse> {
+  challengeBot(body: LichessBotChallengeBody): Observable<LichessBotChallengeResponse> {
     return this.api.post<LichessBotChallengeResponse>('/me/lichess/challenge-bot', body);
   }
 }

@@ -29,6 +29,10 @@ import {
   freeAnalysisRouteInputFromQuery,
   sameFreeAnalysisRouteInput,
 } from '../helpers/free-analysis-route-query.helpers';
+import { buildChallengeBotHeaderAction } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-action.helper';
+import { LichessBotChallengeApiService } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-api.service';
+import { LichessBotChallengeDialogComponent } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-dialog.component';
+import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge.store';
 
 @Component({
   selector: 'app-free-analysis-page',
@@ -38,6 +42,7 @@ import {
     PanelComponent,
     FreeAnalysisWorkbenchComponent,
     AnalysisReintegrationDialogComponent,
+    LichessBotChallengeDialogComponent,
     FreeAnalysisMyGamesPanelComponent,
   ],
   providers: [
@@ -45,6 +50,8 @@ import {
     FreeAnalysisApiService,
     AnalysisReintegrationStore,
     AnalysisReintegrationApiService,
+    LichessBotChallengeStore,
+    LichessBotChallengeApiService,
   ],
   templateUrl: './free-analysis-page.component.html',
   styleUrl: './free-analysis-page.component.css',
@@ -56,12 +63,17 @@ export class FreeAnalysisPageComponent implements OnInit {
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(FreeAnalysisStore);
   protected readonly reintegrationStore = inject(AnalysisReintegrationStore);
+  protected readonly challengeStore = inject(LichessBotChallengeStore);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'my-games',
       label: this.store.myGamesOpen() ? 'Hide my games' : 'My games',
       run: () => this.store.toggleMyGames(),
     },
+    buildChallengeBotHeaderAction({
+      disabled: !this.store.tree(),
+      run: () => this.challengeStore.openForFen(this.store.currentFen()),
+    }),
     {
       id: 'reintegrate',
       label: 'Reintegrate into course',

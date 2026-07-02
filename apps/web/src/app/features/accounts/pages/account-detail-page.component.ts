@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { AccountPerformanceStatsComponent } from '../components/account-performance-stats.component';
 import { AccountRatingStatsComponent } from '../components/account-rating-stats.component';
@@ -26,7 +26,6 @@ import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
   selector: 'app-account-detail-page',
   standalone: true,
   imports: [
-    RouterLink,
     PageHeaderComponent,
     PanelComponent,
     AccountRatingStatsComponent,
@@ -74,6 +73,13 @@ export class AccountDetailPageComponent implements OnInit {
     const account = this.account();
     return account ? `${providerLabel(account.provider)} @${account.username}` : 'Loading account details.';
   });
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+    {
+      id: 'back-to-accounts',
+      label: 'Back to accounts',
+      link: '/accounts',
+    },
+  ]);
 
   ngOnInit(): void {
     void this.loadAccounts();

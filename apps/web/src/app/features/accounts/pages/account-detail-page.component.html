@@ -1,25 +1,5 @@
 <section class="account-detail-page stack">
-  <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()" />
-
-  <div class="account-detail-toolbar">
-    <a class="back-link" routerLink="/accounts">Back to accounts</a>
-
-    <label class="account-switcher">
-      <span>Account</span>
-      <select
-        [value]="accountId() ?? ''"
-        (change)="onAccountSelectionChange($any($event.target).value)"
-        [disabled]="accountsLoading() || accounts().length === 0"
-      >
-        @if (accountsLoading()) {
-          <option value="">Loading accounts...</option>
-        }
-        @for (option of accounts(); track option.id) {
-          <option [value]="option.id">{{ accountOptionLabel(option) }}</option>
-        }
-      </select>
-    </label>
-  </div>
+  <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()" [actions]="headerActions()" />
 
   @if (accountsError()) {
     <p class="status-error">{{ accountsError() }}</p>
@@ -36,20 +16,38 @@
       }
 
       @if (account(); as account) {
-        <dl class="account-summary">
-          <div>
-            <dt>Provider</dt>
-            <dd>{{ account.provider === 'LICHESS' ? 'Lichess' : 'Chess.com' }}</dd>
-          </div>
-          <div>
-            <dt>Username</dt>
-            <dd>&#64;{{ account.username }}</dd>
-          </div>
-          <div>
-            <dt>Status</dt>
-            <dd>{{ account.isActive ? 'Active' : 'Inactive' }}</dd>
-          </div>
-        </dl>
+        <div class="account-overview-content">
+          <dl class="account-summary">
+            <div>
+              <dt>Provider</dt>
+              <dd>{{ account.provider === 'LICHESS' ? 'Lichess' : 'Chess.com' }}</dd>
+            </div>
+            <div>
+              <dt>Username</dt>
+              <dd>&#64;{{ account.username }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{{ account.isActive ? 'Active' : 'Inactive' }}</dd>
+            </div>
+          </dl>
+
+          <label class="account-switcher">
+            <span>Account</span>
+            <select
+              [value]="accountId() ?? ''"
+              (change)="onAccountSelectionChange($any($event.target).value)"
+              [disabled]="accountsLoading() || accounts().length === 0"
+            >
+              @if (accountsLoading()) {
+                <option value="">Loading accounts...</option>
+              }
+              @for (option of accounts(); track option.id) {
+                <option [value]="option.id">{{ accountOptionLabel(option) }}</option>
+              }
+            </select>
+          </label>
+        </div>
       }
     </app-panel>
 

@@ -89,13 +89,20 @@
         letter-spacing: -0.02em;
       }
       .account-title a {
-        color: inherit;
-        text-decoration: none;
+        color: var(--accent-strong);
+        text-decoration: underline;
+        text-underline-offset: 0.18em;
+        text-decoration-thickness: 0.08em;
+      }
+      .account-title a::after {
+        content: ' ->';
+        color: var(--accent);
+        font-size: 0.88em;
       }
       .account-title a:hover,
       .account-title a:focus-visible {
-        color: var(--accent-strong);
-        text-decoration: underline;
+        color: var(--accent);
+        text-decoration-thickness: 0.12em;
       }
       .account-username {
         margin-top: -0.55rem;

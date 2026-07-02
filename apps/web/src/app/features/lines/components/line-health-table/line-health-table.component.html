@@ -17,8 +17,14 @@
         <tr [class.transfer-active]="transferLineId() === line.id">
           <td><input type="checkbox" [checked]="isSelected(line.id)" (change)="toggleLineSelected.emit(line.id)" /></td>
           <td>
-            <button type="button" class="line-expand" (click)="toggleExpandedLine.emit(line.id)">
-              {{ expandedLineId() === line.id ? 'Hide' : 'Show' }}
+            <button
+              type="button"
+              class="line-expand"
+              [attr.aria-expanded]="expandedLineId() === line.id"
+              (click)="toggleExpandedLine.emit(line.id)"
+            >
+              <span>Sublines</span>
+              <span class="line-expand-caret" aria-hidden="true">v</span>
             </button>
             <strong>{{ line.name }}</strong>
             <span

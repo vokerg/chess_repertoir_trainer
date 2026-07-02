@@ -11,7 +11,10 @@ import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
-import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
+import {
+  FreeAnalysisApiService,
+  LichessBotChallengeOption,
+} from '../data-access/free-analysis-api.service';
 import {
   appendFreeAnalysisChild,
   buildFreeAnalysisGameTree,
@@ -54,6 +57,16 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly myGamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
   readonly myGamesLoading = signal(false);
   readonly myGamesError = signal<string | null>(null);
+  readonly botChallengeOpen = signal(false);
+  readonly botChallengeOptions = signal<readonly LichessBotChallengeOption[]>([]);
+  readonly botChallengeDefaultUsername = signal<string | null>(null);
+  readonly botChallengeUsername = signal('');
+  readonly botChallengeColor = signal<'white' | 'black' | 'random'>('white');
+  readonly botChallengeLimit = signal(300);
+  readonly botChallengeIncrement = signal(3);
+  readonly botChallengeOptionsLoading = signal(false);
+  readonly botChallengeSubmitting = signal(false);
+  readonly botChallengeError = signal<string | null>(null);
   readonly startingFen = signal(new Chess().fen());
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
     initialValue: EMPTY_ENGINE_ANALYSIS,
@@ -88,6 +101,9 @@ export class FreeAnalysisStore implements OnDestroy {
         this.selectedNodeId() !== 0 &&
         this.selectedNode()?.node.source === 'LOCAL',
     ),
+  );
+  readonly canChallengeBot = computed(() =>
+    Boolean(this.tree() && this.botChallengeUsername() && !this.botChallengeSubmitting()),
   );
   readonly deleteConfirmationText = computed(() => {
     const node = this.selectedNode();
@@ -290,6 +306,68 @@ export class FreeAnalysisStore implements OnDestroy {
     this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen());
   }
 
+  openBotChallengeDialog(): void {
+    if (!this.tree()) return;
+    this.botChallengeOpen.set(true);
+    this.botChallengeError.set(null);
+    void this.loadBotChallengeOptions();
+  }
+
+  closeBotChallengeDialog(): void {
+    if (this.botChallengeSubmitting()) return;
+    this.botChallengeOpen.set(false);
+  }
+
+  setBotChallengeUsername(username: string): void {
+    if (this.botChallengeOptions().some((bot) => bot.username === username)) {
+      this.botChallengeUsername.set(username);
+    }
+  }
+
+  setBotChallengeColor(color: string): void {
+    if (color === 'white' || color === 'black' || color === 'random') {
+      this.botChallengeColor.set(color);
+    }
+  }
+
+  setBotChallengeLimit(value: string | number): void {
+    const limit = Number(value);
+    if (Number.isFinite(limit)) this.botChallengeLimit.set(Math.max(1, Math.floor(limit)));
+  }
+
+  setBotChallengeIncrement(value: string | number): void {
+    const increment = Number(value);
+    if (Number.isFinite(increment)) this.botChallengeIncrement.set(Math.max(0, Math.floor(increment)));
+  }
+
+  async submitBotChallenge(): Promise<void> {
+    if (!this.tree() || !this.botChallengeUsername()) return;
+    this.botChallengeSubmitting.set(true);
+    this.botChallengeError.set(null);
+
+    try {
+      const result = await firstValueFrom(
+        this.api.challengeLichessBot({
+          username: this.botChallengeUsername(),
+          fen: this.currentFen(),
+          color: this.botChallengeColor(),
+          rated: false,
+          clock: {
+            limit: this.botChallengeLimit(),
+            increment: this.botChallengeIncrement(),
+          },
+        }),
+      );
+      if (!result.url) throw new Error('Lichess accepted the challenge but did not return a URL.');
+      window.open(result.url, '_blank', 'noopener');
+      this.botChallengeOpen.set(false);
+    } catch (error) {
+      this.botChallengeError.set(readError(error, 'Lichess rejected the challenge.'));
+    } finally {
+      this.botChallengeSubmitting.set(false);
+    }
+  }
+
   handleKeyboard(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();
@@ -330,6 +408,23 @@ export class FreeAnalysisStore implements OnDestroy {
       this.myGamesFacetsLoaded = true;
     } catch {
       this.myGamesFacets.set({});
+    }
+  }
+
+  private async loadBotChallengeOptions(): Promise<void> {
+    if (this.botChallengeOptions().length || this.botChallengeOptionsLoading()) return;
+    this.botChallengeOptionsLoading.set(true);
+    this.botChallengeError.set(null);
+
+    try {
+      const options = await firstValueFrom(this.api.getLichessBotChallengeOptions());
+      this.botChallengeOptions.set(options.bots);
+      this.botChallengeDefaultUsername.set(options.defaultUsername);
+      this.botChallengeUsername.set(options.defaultUsername || options.bots[0]?.username || '');
+    } catch (error) {
+      this.botChallengeError.set(readError(error, 'Could not load Lichess bot challenge options.'));
+    } finally {
+      this.botChallengeOptionsLoading.set(false);
     }
   }
 

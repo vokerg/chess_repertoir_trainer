@@ -124,15 +124,18 @@
       ><span>To</span
       ><input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)"
     /></label>
+    <div class="games-field more-filters-field">
+      <span>&nbsp;</span>
+      <button
+        type="button"
+        class="more-filters-toggle"
+        [attr.aria-expanded]="moreFiltersOpen()"
+        (click)="moreFiltersOpen.set(!moreFiltersOpen())"
+      >
+        More filters@if (advancedFilterCount() > 0) { ({{ advancedFilterCount() }} active) }
+      </button>
+    </div>
   </div>
-  <button
-    type="button"
-    class="more-filters-toggle"
-    [attr.aria-expanded]="moreFiltersOpen()"
-    (click)="moreFiltersOpen.set(!moreFiltersOpen())"
-  >
-    More filters@if (advancedFilterCount() > 0) { ({{ advancedFilterCount() }} active) }
-  </button>
   @if (moreFiltersOpen()) {
     <div class="games-filter-grid advanced-filters">
       <label class="games-field"

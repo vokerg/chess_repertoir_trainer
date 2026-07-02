@@ -1,5 +1,10 @@
 <section class="opening-page stack">
-  <app-page-header title="Opening analysis" subtitle="Explore positions from your indexed games." [stats]="headerStats()" />
+  <app-page-header
+    title="Opening analysis"
+    subtitle="Explore positions from your indexed games."
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
 
   <div class="opening-workbench">
     <div class="opening-board-column">
@@ -94,4 +99,5 @@
       </section>
     </div>
   </div>
+  <app-lichess-bot-challenge-dialog />
 </section>

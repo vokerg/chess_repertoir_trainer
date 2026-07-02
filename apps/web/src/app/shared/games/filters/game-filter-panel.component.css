@@ -11,11 +11,15 @@
 .tag-option { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.45rem; padding: 0.2rem 0.15rem; color: var(--text); font-size: 0.82rem; font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; }
 .tag-option input { margin: 0; }
 .tag-option:has(input:disabled) { color: var(--muted); cursor: default; }
+.more-filters-field {
+  align-self: end;
+}
 .more-filters-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   justify-self: start;
+  width: fit-content;
   min-height: 36px;
   border: 1px solid var(--border);
   border-radius: 999px;

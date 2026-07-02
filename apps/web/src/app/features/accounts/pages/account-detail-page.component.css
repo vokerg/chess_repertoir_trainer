@@ -2,29 +2,16 @@
   gap: 1rem;
 }
 
-.account-detail-toolbar {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
+.account-overview-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
   gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.back-link {
-  width: fit-content;
-  color: var(--accent-strong);
-  font-weight: 900;
-  text-decoration: none;
-}
-
-.back-link:hover {
-  text-decoration: underline;
+  align-items: start;
 }
 
 .account-switcher {
   display: grid;
   gap: 0.35rem;
-  min-width: min(100%, 280px);
   color: var(--muted-strong);
   font-size: 0.72rem;
   font-weight: 900;
@@ -88,14 +75,7 @@
 }
 
 @media (max-width: 640px) {
-  .account-detail-toolbar {
-    align-items: stretch;
-  }
-
-  .account-switcher {
-    width: 100%;
-  }
-
+  .account-overview-content,
   .account-summary {
     grid-template-columns: 1fr;
   }
