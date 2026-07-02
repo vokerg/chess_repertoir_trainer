@@ -77,6 +77,31 @@ textarea {
   font: inherit;
 }
 
+.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"])):not(.clerk-user-button *) {
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    filter 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"]):hover:not(:disabled)):not(.clerk-user-button *) {
+  filter: brightness(0.98);
+}
+
+.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible):not(.clerk-user-button *) {
+  outline: 3px solid rgba(183, 121, 39, 0.28);
+  outline-offset: 2px;
+}
+
+.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"]):disabled):not(.clerk-user-button *) {
+  cursor: not-allowed;
+}
+
 .app-shell button:where(.primary, .secondary, .danger, .danger-text) {
   border: 0;
   border-radius: 999px;
@@ -85,8 +110,6 @@ textarea {
   color: white;
   font-weight: 700;
   letter-spacing: 0.01em;
-  cursor: pointer;
-  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
   box-shadow: 0 10px 20px rgba(143, 79, 13, 0.22);
 }
 

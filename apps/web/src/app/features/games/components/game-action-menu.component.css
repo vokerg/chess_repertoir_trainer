@@ -16,6 +16,11 @@
   letter-spacing: 0.12em;
   padding: 0;
 }
+.games-action-menu-trigger:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
 .games-action-menu-trigger[aria-expanded='true'] {
   background: var(--accent-soft);
   color: var(--accent-strong);

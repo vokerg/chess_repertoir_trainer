@@ -68,6 +68,12 @@
   color: var(--muted-strong);
 }
 
+.launcher-tabs button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text);
+}
+
 .launcher-tabs button.active {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: white;
@@ -124,6 +130,8 @@
 
 .launcher-choice:hover {
   transform: none;
+  border-color: rgba(183, 121, 39, 0.28);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .launcher-choice.active {

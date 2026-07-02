@@ -37,6 +37,13 @@
   font-weight: 900;
 }
 
+.speed-button:hover:not(:disabled),
+.range-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text);
+}
+
 .speed-button-active,
 .range-button-active {
   border-color: var(--accent);
