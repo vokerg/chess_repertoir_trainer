@@ -37,6 +37,16 @@ export interface OpeningPositionPerformance {
   buckets: OpeningPositionPerformanceBucket[];
 }
 
+export interface OpeningBookMatch {
+  eco: string;
+  name: string;
+  pgn: string;
+  uci: string;
+  epd: string;
+  ply: number;
+  source: 'ECO' | 'FEN' | 'MOVES';
+}
+
 export interface OpeningNextMove {
   moveUci: string;
   moveSan?: string | null;
@@ -69,6 +79,7 @@ export interface OpeningAnalysisGame {
 export interface OpeningAnalysisResponse {
   fen: string;
   normalizedFen: string;
+  bookOpening: OpeningBookMatch | null;
   sideToMove: UserColor;
   fullMoveNumber: number;
   ratedOnly: boolean;

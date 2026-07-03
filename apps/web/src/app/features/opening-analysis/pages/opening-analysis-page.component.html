@@ -1,7 +1,7 @@
 <section class="opening-page stack">
   <app-page-header
     title="Opening analysis"
-    subtitle="Explore positions from your indexed games."
+    [subtitle]="pageSubtitle()"
     [stats]="headerStats()"
     [actions]="headerActions()"
   />

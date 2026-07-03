@@ -43,6 +43,11 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected readonly analysisQueryParams = computed(() => ({
     moves: this.store.history().map((move) => move.uci).join(','),
   }));
+  protected readonly pageSubtitle = computed(() => {
+    const opening = this.store.analysis()?.bookOpening;
+    if (!opening) return 'Explore positions from your indexed games.';
+    return opening.eco ? `${opening.eco} · ${opening.name}` : opening.name;
+  });
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'games', label: 'Games', value: this.store.wdl().total },
     { id: 'score', label: 'Score', value: this.scoreLabel(this.store.wdl()) },

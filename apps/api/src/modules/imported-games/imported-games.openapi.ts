@@ -232,6 +232,19 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['sample', 'wdl', 'tags', 'buckets'],
   },
+  OpeningBookMatch: {
+    type: 'object',
+    properties: {
+      eco: { type: 'string' },
+      name: { type: 'string' },
+      pgn: { type: 'string' },
+      uci: { type: 'string' },
+      epd: { type: 'string' },
+      ply: { type: 'integer' },
+      source: { type: 'string', enum: ['ECO', 'FEN', 'MOVES'] },
+    },
+    required: ['eco', 'name', 'pgn', 'uci', 'epd', 'ply', 'source'],
+  },
   OpeningAnalysisNextMove: {
     type: 'object',
     properties: {
@@ -279,6 +292,7 @@ export const importedGamesOpenApiSchemas = {
     properties: {
       fen: { type: 'string' },
       normalizedFen: { type: 'string' },
+      bookOpening: { anyOf: [{ $ref: '#/components/schemas/OpeningBookMatch' }, { type: 'null' }] },
       sideToMove: { type: 'string', enum: ['WHITE', 'BLACK'] },
       fullMoveNumber: { type: 'integer' },
       ratedOnly: { type: 'boolean' },
@@ -290,7 +304,7 @@ export const importedGamesOpenApiSchemas = {
       positionAnalysis: { anyOf: [{ $ref: '#/components/schemas/PositionAnalysis' }, { type: 'null' }] },
       appliedFilters: { type: 'object', additionalProperties: true },
     },
-    required: ['fen', 'normalizedFen', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'performance', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
+    required: ['fen', 'normalizedFen', 'bookOpening', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'performance', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
   },
 };
 
@@ -348,7 +362,7 @@ export const listImportedGamesOpenApiOperation = {
 export const getOpeningAnalysisOpenApiOperation = {
   tags: ['Imported games'],
   summary: 'Get personal opening analysis for one board position',
-  description: 'Aggregates indexed ply rows for rated imported games only. Reuses imported-game search filters, then returns WDL from the current user point of view and all next moves played from the requested position.',
+  description: 'Aggregates indexed ply rows for rated imported games only. Reuses imported-game search filters, then returns WDL from the current user point of view, all next moves played from the requested position, and an opening-book lookup for the current position when found.',
   parameters: [
     { name: 'fen', in: 'query', schema: { type: 'string', default: 'startpos' } },
     ...searchParameters,

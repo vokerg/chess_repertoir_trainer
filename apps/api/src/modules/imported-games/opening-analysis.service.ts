@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
+import { OpeningLookupService, OpeningMatch } from '../../services/opening-book/openingLookupService';
 import { OpeningAnalysisQuery } from './imported-games.schemas';
 import { findOpeningAnalysisRows, OpeningAnalysisPlyRow } from './opening-analysis.repository.prisma';
 import { summarizeGamePerformance } from './performance-insights.service';
@@ -79,6 +80,7 @@ export interface OpeningPositionAnalysis {
 export interface OpeningAnalysisResponse {
   fen: string;
   normalizedFen: string;
+  bookOpening: OpeningMatch | null;
   sideToMove: 'WHITE' | 'BLACK';
   fullMoveNumber: number;
   ratedOnly: boolean;
@@ -183,6 +185,7 @@ export const OpeningAnalysisService = {
   getPosition: async (userId: number, query: OpeningAnalysisQuery): Promise<OpeningAnalysisResponse> => {
     const fen = boardFen(query.fen);
     const normalizedFen = normalizeFenForExplorer(fen);
+    const bookOpening = OpeningLookupService.lookupByFen(normalizedFen);
     const effectiveQuery: OpeningAnalysisQuery = { ...query, rated: query.rated ?? true };
     const rows = await findOpeningAnalysisRows(userId, effectiveQuery, normalizedFen);
 
@@ -272,6 +275,7 @@ export const OpeningAnalysisService = {
     return {
       fen,
       normalizedFen,
+      bookOpening,
       sideToMove: chess.turn() === 'w' ? 'WHITE' : 'BLACK',
       fullMoveNumber: Number(fen.split(/\s+/)[5]) || 1,
       ratedOnly: effectiveQuery.rated === true,
