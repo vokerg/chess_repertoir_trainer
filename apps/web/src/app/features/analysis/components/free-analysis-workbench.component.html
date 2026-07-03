@@ -13,11 +13,6 @@
   boardTitle="Analysis board"
   boardHelp="Play legal moves to create local variations from this position."
   treeTitle="Move tree"
-  [treeHelp]="
-    loadedFromGame()
-      ? 'The imported game is the main line. New variations remain local to this analysis page.'
-      : 'FEN contains the current position, not its move history. New local variations appear below the loaded position.'
-  "
   [treeRootLabel]="loadedFromGame() ? 'Game start' : 'Loaded position'"
   dangerTitle="Danger zone"
   dangerHelp="Delete a selected local variation and every continuation below it. Imported game moves and the start position cannot be deleted."
