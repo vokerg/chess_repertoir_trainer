@@ -3,6 +3,14 @@ import { requireAuth } from '../../auth/request-auth';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
 import { getOpeningStruggles } from './opening-struggles/opening-struggles.service';
+import {
+  tacticalDetectionListSchema,
+  tacticalDetectionRunSchema,
+} from './tactical-detections/tactical-detection.schema';
+import {
+  getTacticalDetections,
+  runTacticalDetection,
+} from './tactical-detections/tactical-detection.service';
 import { trainingLogQuerySchema } from './training-log/training-log.schema';
 import { getTrainingLog } from './training-log/training-log.service';
 import { getTopOpponents } from './top-opponents/top-opponents.service';
@@ -52,5 +60,27 @@ export default async function labModule(app: FastifyInstance) {
       return { error: parsed.error.errors };
     }
     return getTrainingLog(auth.userId, parsed.data);
+  });
+
+  app.post('/api/lab/tactical-detections/run', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = tacticalDetectionRunSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+    return runTacticalDetection(auth.userId, parsed.data);
+  });
+
+  app.get('/api/lab/tactical-detections', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = tacticalDetectionListSchema.safeParse(request.query ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+    return getTacticalDetections(auth.userId, parsed.data);
   });
 }

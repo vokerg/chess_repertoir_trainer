@@ -23,6 +23,9 @@ model AppUser {
   lichessConnection LichessConnection?
   importedGames    ImportedGame[]
   importRuns       ImportRun[]
+  tacticalDetectionRuns           TacticalDetectionRun[]
+  tacticalDetections              TacticalDetection[]
+  tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
   courses          Course[]
   trainingSessions TrainingSession[]
   trainingSublineAttempts TrainingSublineAttempt[]
@@ -142,11 +145,73 @@ model ImportedGame {
   updatedAt             DateTime           @updatedAt
   analysisRuns          GameAnalysisRun[]
   plies                 ImportedGamePly[]
+  tacticalDetections              TacticalDetection[]
+  tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
 
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
   @@index([userId, latestAnalysisStatus, endedAt])
+}
+
+model TacticalDetectionRun {
+  id             Int                              @id @default(autoincrement())
+  userId         Int
+  user           AppUser                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  from           DateTime
+  to             DateTime
+  force          Boolean                          @default(false)
+  thresholds     Json
+  thresholdsHash String
+  gamesScanned   Int                              @default(0)
+  detectionsMade Int                              @default(0)
+  startedAt      DateTime                         @default(now())
+  completedAt    DateTime?
+  error          String?
+  detections     TacticalDetection[]
+  processedGames TacticalDetectionProcessedGame[]
+
+  @@index([userId, startedAt])
+  @@index([userId, thresholdsHash])
+}
+
+model TacticalDetection {
+  id                     Int                  @id @default(autoincrement())
+  runId                  Int
+  run                    TacticalDetectionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  userId                 Int
+  user                   AppUser              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  importedGameId         Int
+  importedGame           ImportedGame         @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  kind                   String
+  triggerPlyNumber       Int                  @db.SmallInt
+  userReplyPlyNumber     Int?                 @db.SmallInt
+  moveUci                String               @db.VarChar(5)
+  bestMoveUci            String?              @db.VarChar(5)
+  evalBeforeUserCp       Int?
+  evalAfterTriggerUserCp Int?
+  evalAfterReplyUserCp   Int?
+  swingCp                Int?
+  createdAt              DateTime             @default(now())
+
+  @@unique([userId, importedGameId, kind, triggerPlyNumber])
+  @@index([userId, kind, createdAt])
+  @@index([userId, importedGameId])
+}
+
+model TacticalDetectionProcessedGame {
+  userId         Int
+  user           AppUser              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  importedGameId Int
+  importedGame   ImportedGame         @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  thresholdsHash String
+  runId          Int
+  run            TacticalDetectionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  scannedAt      DateTime             @default(now())
+
+  @@id([userId, importedGameId, thresholdsHash])
+  @@index([userId, scannedAt])
+  @@index([runId])
 }
 
 model GameTagDefinition {

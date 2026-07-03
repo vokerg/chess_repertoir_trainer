@@ -19,6 +19,10 @@
         <span><strong>Opening struggles</strong><small>Loss rate and eval traps by line</small></span>
         <span class="pill">Table</span>
       </button>
+      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'tactical-detections'" (click)="selectExperiment('tactical-detections')">
+        <span><strong>Tactical detections</strong><small>Missed shots and my blunders from analysed games</small></span>
+        <span class="pill">Table</span>
+      </button>
       <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'training-log'" (click)="selectExperiment('training-log')">
         <span><strong>Training log</strong><small>Course/chapter/line sequence attempts</small></span>
         <span class="pill">Table</span>
@@ -30,6 +34,7 @@
     @case ('top-opponents') { <app-lab-top-opponents /> }
     @case ('monthly-games') { <app-lab-monthly-games /> }
     @case ('opening-struggles') { <app-lab-opening-struggles /> }
+    @case ('tactical-detections') { <app-lab-tactical-detections /> }
     @case ('training-log') { <app-lab-training-log /> }
     @default {
       <section class="section-card lab-panel">
