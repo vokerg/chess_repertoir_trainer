@@ -12,10 +12,15 @@ import { CopyableFenComponent } from '../../ui/copyable-fen/copyable-fen.compone
 export class BoardActionToolbarComponent {
   readonly canGoBackward = input(false);
   readonly canGoForward = input(false);
+  readonly canGoEnd = input<boolean | null>(null);
   readonly showStart = input(true);
   readonly showPrevious = input(true);
   readonly showNext = input(true);
   readonly showEnd = input(true);
+  readonly startLabel = input('Start');
+  readonly previousLabel = input('Previous');
+  readonly nextLabel = input('Next');
+  readonly endLabel = input('End');
   readonly keyboardHint = input<string | null>(null);
   readonly fen = input<string | null>(null);
 

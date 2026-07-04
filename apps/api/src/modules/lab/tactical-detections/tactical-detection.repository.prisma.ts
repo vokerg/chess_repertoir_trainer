@@ -107,14 +107,19 @@ export async function clearTacticalDetectionsForGames(
   db: Db,
   userId: number,
   gameIds: number[],
-  thresholdsHash: string,
+  scope: { thresholdsHash: string; detectionVersion: number },
 ) {
   if (!gameIds.length) return;
   await db.tacticalDetection.deleteMany({
-    where: { userId, importedGameId: { in: gameIds } },
+    where: {
+      userId,
+      importedGameId: { in: gameIds },
+      thresholdsHash: scope.thresholdsHash,
+      detectionVersion: scope.detectionVersion,
+    },
   });
   await db.tacticalDetectionProcessedGame.deleteMany({
-    where: { userId, importedGameId: { in: gameIds }, thresholdsHash },
+    where: { userId, importedGameId: { in: gameIds }, thresholdsHash: scope.thresholdsHash },
   });
 }
 
@@ -297,6 +302,7 @@ export async function insertTacticalDetections(
   runId: number,
   userId: number,
   candidates: TacticalDetectionCandidate[],
+  scope: { thresholdsHash: string; detectionVersion: number },
 ) {
   if (!candidates.length) return 0;
   const result = await db.tacticalDetection.createMany({
@@ -305,6 +311,8 @@ export async function insertTacticalDetections(
       userId,
       importedGameId: candidate.importedGameId,
       kind: candidate.kind,
+      thresholdsHash: scope.thresholdsHash,
+      detectionVersion: scope.detectionVersion,
       triggerPlyNumber: candidate.triggerPlyNumber,
       userReplyPlyNumber: candidate.userReplyPlyNumber,
       moveUci: candidate.moveUci,
@@ -345,12 +353,14 @@ export async function runTacticalDetectionTransaction<T>(callback: (db: Db) => P
 
 export async function listTacticalDetections(
   userId: number,
-  query: TacticalDetectionListQuery & { toExclusive?: Date },
+  query: TacticalDetectionListQuery & { toExclusive?: Date; thresholdsHash: string; detectionVersion: number },
 ): Promise<TacticalDetectionListItem[]> {
   const rows = await prisma.tacticalDetection.findMany({
     where: {
       userId,
       kind: query.kind,
+      thresholdsHash: query.thresholdsHash,
+      detectionVersion: query.detectionVersion,
       importedGame: {
         endedAt: {
           ...(query.from ? { gte: query.from } : {}),

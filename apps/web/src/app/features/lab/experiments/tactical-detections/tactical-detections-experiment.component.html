@@ -8,6 +8,9 @@
       <button type="button" class="compact-action" (click)="store.runDetection()" [disabled]="store.running() || store.loading()">
         {{ store.running() ? 'Running...' : 'Run detection' }}
       </button>
+      <a class="compact-action" [routerLink]="['/scenario-training/tactical-missed-shot']">
+        Train random missed shot
+      </a>
     </div>
   </div>
 
@@ -39,7 +42,7 @@
   @if (!store.loading() && store.items().length > 0) {
     <div class="table-wrap">
       <table class="lab-table">
-        <thead><tr><th>Kind</th><th>Game</th><th>Date</th><th>Move no.</th><th>Move</th><th>Best move</th><th>Swing</th><th>Eval</th></tr></thead>
+        <thead><tr><th>Kind</th><th>Game</th><th>Date</th><th>Move no.</th><th>Move</th><th>Best move</th><th>Swing</th><th>Eval</th><th>Action</th></tr></thead>
         <tbody>
           @for (item of store.items(); track item.id) {
             <tr>
@@ -51,6 +54,13 @@
               <td>{{ item.bestMoveUci ?? '-' }}</td>
               <td>{{ swingLabel(item.swingCp) }}</td>
               <td class="eval-cell">{{ evalLabel(item.evalBeforeUserCp) }} / {{ evalLabel(item.evalAfterTriggerUserCp) }} / {{ evalLabel(item.evalAfterReplyUserCp) }}</td>
+              <td>
+                @if (item.kind === 'MISSED_SHOT') {
+                  <a class="compact-action" [routerLink]="['/scenario-training/tactical-missed-shot']" [queryParams]="{ detectionId: item.id }">Train this</a>
+                } @else {
+                  <span>-</span>
+                }
+              </td>
             </tr>
           }
         </tbody>

@@ -12,6 +12,7 @@ import swaggerRoutes from './swagger';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
 import mcpModule from '../modules/mcp/mcp.routes';
 import boardImagesModule from '../modules/board-images/board-images.routes';
+import scenarioTrainingModule from '../modules/scenario-training/scenario-training.routes';
 
 export default function registerRoutes(app: FastifyInstance): void {
   app.register(coursesModule);
@@ -24,6 +25,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(repertoireCoverageModule);
   app.register(mcpModule);
   app.register(boardImagesModule);
+  app.register(scenarioTrainingModule);
   app.register(lichessAuthRoutes);
   app.register(externalAccountsRoutes);
   app.register(swaggerRoutes);
