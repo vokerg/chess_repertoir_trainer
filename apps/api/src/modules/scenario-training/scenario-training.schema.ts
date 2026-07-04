@@ -4,6 +4,7 @@ export const tacticalMissedShotStartSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   detectionId: z.coerce.number().int().positive().optional(),
+  excludeDetectionId: z.coerce.number().int().positive().optional(),
   random: z.boolean().optional(),
   excludePassedRecently: z.boolean().optional(),
 });

@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { MoveTreeComponent } from '../../analysis/move-tree/move-tree.component';
+import { AnalysisTree, AnalysisTreeNode } from '../../analysis/workbench/analysis-tree.models';
 import { BoardActionToolbarComponent } from '../../chess/board/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../chess/board/chessground-board.component';
 
-export type ScenarioBoardMode = 'context' | 'challenge' | 'result';
+export type ScenarioBoardMode = 'intro' | 'context' | 'challenge' | 'result';
 export type ScenarioBoardColor = 'WHITE' | 'BLACK';
 
 export interface ScenarioBoardContextPly {
@@ -15,23 +17,10 @@ export interface ScenarioBoardContextPly {
   isUserMove: boolean;
 }
 
-export interface ScenarioBoardGameHeader {
-  whiteUsername?: string | null;
-  blackUsername?: string | null;
-  userColor?: ScenarioBoardColor;
-  opponentUsername?: string | null;
-  resultForUser?: string | null;
-  gameResult?: string | null;
-  openingEco?: string | null;
-  openingName?: string | null;
-  endedAt?: string | null;
-  providerUrl?: string | null;
-}
-
 @Component({
   selector: 'app-scenario-board-shell',
   standalone: true,
-  imports: [BoardActionToolbarComponent, ChessgroundBoardComponent],
+  imports: [BoardActionToolbarComponent, ChessgroundBoardComponent, MoveTreeComponent],
   templateUrl: './scenario-board-shell.component.html',
   styleUrl: './scenario-board-shell.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,7 +35,6 @@ export class ScenarioBoardShellComponent {
   readonly challengePlyNumber = input.required<number>();
   readonly boardDisabled = input(false);
   readonly boardPositionVersion = input(0);
-  readonly gameHeader = input<ScenarioBoardGameHeader>({});
 
   readonly boardMove = output<string>();
   readonly goStart = output<void>();
@@ -54,23 +42,6 @@ export class ScenarioBoardShellComponent {
   readonly goNext = output<void>();
   readonly goChallenge = output<void>();
   readonly contextPlySelected = output<number>();
-
-  protected readonly modeLabel = computed(() => {
-    if (this.mode() === 'challenge') return 'Your move';
-    if (this.mode() === 'result') return 'Attempt result';
-    return 'Reviewing game context';
-  });
-
-  protected readonly openingLabel = computed(() => {
-    const header = this.gameHeader();
-    return [header.openingEco, header.openingName].filter(Boolean).join(' ') || null;
-  });
-
-  protected readonly dateLabel = computed(() => {
-    const endedAt = this.gameHeader().endedAt;
-    if (!endedAt) return null;
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(endedAt));
-  });
 
   protected readonly selectedContextIndex = computed(() => {
     const selected = this.selectedContextPly();
@@ -80,13 +51,47 @@ export class ScenarioBoardShellComponent {
 
   protected readonly canGoBackward = computed(() => this.mode() !== 'context' || this.selectedContextIndex() >= 0);
   protected readonly canGoForward = computed(() => {
-    if (this.mode() !== 'context') return true;
+    if (this.mode() !== 'context') return false;
     const index = this.selectedContextIndex();
     return index < this.contextPlies().length - 1;
   });
 
-  protected moveLabel(ply: ScenarioBoardContextPly): string {
-    const san = ply.moveSan || ply.moveUci;
-    return ply.plyNumber % 2 === 1 ? `${ply.moveNumber}. ${san}` : san;
+  protected readonly contextTree = computed<AnalysisTree>(() => {
+    const root: AnalysisTreeNode = {
+      node: {
+        id: 0,
+        moveSan: 'Start',
+        moveUci: null,
+        isUserMove: false,
+      },
+      children: [],
+    };
+    let parent = root;
+    const triggerPly = this.challengePlyNumber() - 1;
+    for (const ply of this.contextPlies()) {
+      const node: AnalysisTreeNode = {
+        node: {
+          id: ply.plyNumber,
+          moveSan: ply.moveSan,
+          moveUci: ply.moveUci,
+          isUserMove: ply.isUserMove,
+          moveNumber: ply.moveNumber,
+          side: ply.plyNumber % 2 === 1 ? 'WHITE' : 'BLACK',
+          classification: ply.plyNumber === triggerPly ? 'MISSED_OPPORTUNITY' : null,
+        },
+        children: [],
+      };
+      parent.children = [node];
+      parent = node;
+    }
+    return { root };
+  });
+
+  protected selectTreeNode(nodeId: number): void {
+    if (nodeId === 0) {
+      this.goStart.emit();
+      return;
+    }
+    this.contextPlySelected.emit(nodeId);
   }
 }

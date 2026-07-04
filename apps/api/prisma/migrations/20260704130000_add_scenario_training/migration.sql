@@ -35,6 +35,8 @@ CREATE TABLE "ScenarioTrainingSession" (
     "opponentUsername" TEXT,
     "whiteUsername" TEXT,
     "blackUsername" TEXT,
+    "whiteRating" INTEGER,
+    "blackRating" INTEGER,
     "resultForUser" TEXT,
     "gameResult" TEXT,
     "openingEco" TEXT,

@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
@@ -26,8 +26,10 @@ function applyUci(fen: string, moveUci: string): string {
   return chess.fen();
 }
 
+const INTRO_REPLAY_MS = 650;
+
 @Injectable()
-export class TacticalMissedShotTrainerStore {
+export class TacticalMissedShotTrainerStore implements OnDestroy {
   private readonly api = inject(ScenarioTrainingApiService);
   private readonly engine = inject(TrainerEngineService);
   private readonly router = inject(Router);
@@ -44,6 +46,7 @@ export class TacticalMissedShotTrainerStore {
   readonly boardPositionVersion = signal(0);
   readonly revealBestMove = signal(false);
   readonly revealOriginalReply = signal(false);
+  private introTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly attempts = computed(() => this.session()?.attempts ?? []);
   readonly latestAttempt = computed<ScenarioTrainingAttempt | null>(() => this.attempts().at(-1) ?? null);
@@ -51,6 +54,7 @@ export class TacticalMissedShotTrainerStore {
   readonly currentFen = computed(() => {
     const session = this.session();
     if (!session) return 'startpos';
+    if (this.mode() === 'intro') return session.previousFen ?? session.startFen;
     if (this.mode() === 'challenge') return session.startFen;
     if (this.mode() === 'result') return this.attemptedMoveFen() ?? this.latestAttempt()?.fenAfter ?? session.startFen;
     const selected = this.selectedContextPly();
@@ -60,6 +64,7 @@ export class TacticalMissedShotTrainerStore {
   readonly lastMove = computed(() => {
     const session = this.session();
     if (!session) return null;
+    if (this.mode() === 'intro') return null;
     if (this.mode() === 'result') return lastMoveFromUci(this.latestAttempt()?.playedMoveUci);
     if (this.mode() === 'challenge') return lastMoveFromUci(session.triggerMoveUci);
     const selected = this.selectedContextPly();
@@ -71,6 +76,10 @@ export class TacticalMissedShotTrainerStore {
     await this.start({});
   }
 
+  ngOnDestroy(): void {
+    this.clearIntroTimer();
+  }
+
   async startFromDetection(detectionId: number): Promise<void> {
     await this.start({ detectionId, random: false });
   }
@@ -79,7 +88,7 @@ export class TacticalMissedShotTrainerStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.setSession(await firstValueFrom(this.api.getSession(sessionId)));
+      this.setSession(await firstValueFrom(this.api.getSession(sessionId)), { animateIntro: true });
     } catch {
       this.error.set('Could not load scenario.');
     } finally {
@@ -88,6 +97,7 @@ export class TacticalMissedShotTrainerStore {
   }
 
   goStart(): void {
+    this.clearIntroTimer();
     this.mode.set('context');
     this.selectedContextPly.set(null);
     this.bumpBoardPosition();
@@ -95,6 +105,7 @@ export class TacticalMissedShotTrainerStore {
 
   goPrevious(): void {
     const plies = this.session()?.contextPlies ?? [];
+    this.clearIntroTimer();
     this.mode.set('context');
     const selected = this.selectedContextPly();
     if (selected === null) return;
@@ -105,34 +116,53 @@ export class TacticalMissedShotTrainerStore {
 
   goNext(): void {
     const plies = this.session()?.contextPlies ?? [];
+    this.clearIntroTimer();
+    if (this.mode() !== 'context') return;
     this.mode.set('context');
     const selected = this.selectedContextPly();
     if (selected === null) {
-      this.selectedContextPly.set(plies[0]?.plyNumber ?? null);
+      const firstPly = plies[0]?.plyNumber ?? null;
+      if (firstPly !== null && this.isChallengePly(firstPly)) {
+        this.enterChallenge();
+        return;
+      }
+      this.selectedContextPly.set(firstPly);
       this.bumpBoardPosition();
       return;
     }
     const index = plies.findIndex((ply) => ply.plyNumber === selected);
-    if (index >= 0 && index < plies.length - 1) this.selectedContextPly.set(plies[index + 1].plyNumber);
+    if (index >= 0 && index < plies.length - 2) {
+      this.selectedContextPly.set(plies[index + 1].plyNumber);
+    } else if (index >= 0) {
+      this.enterChallenge();
+      return;
+    }
     this.bumpBoardPosition();
   }
 
   goChallenge(): void {
-    this.mode.set('challenge');
-    this.selectedContextPly.set(this.session()?.challengePlyNumber ? this.session()!.challengePlyNumber - 1 : null);
-    this.attemptedMoveFen.set(null);
-    this.bumpBoardPosition();
+    this.clearIntroTimer();
+    this.enterChallenge();
   }
 
   selectContextPly(plyNumber: number): void {
+    this.clearIntroTimer();
+    if (this.isChallengePly(plyNumber)) {
+      this.enterChallenge();
+      return;
+    }
     this.mode.set('context');
     this.selectedContextPly.set(plyNumber);
     this.bumpBoardPosition();
   }
 
+  replayOpponentMove(): void {
+    this.startIntroReplay();
+  }
+
   async playBoardMove(moveUci: string): Promise<void> {
     const session = this.session();
-    if (!session || this.evaluating()) return;
+    if (!session || this.evaluating() || this.mode() !== 'challenge') return;
     this.evaluating.set(true);
     this.error.set(null);
     try {
@@ -171,7 +201,8 @@ export class TacticalMissedShotTrainerStore {
   }
 
   async nextScenario(): Promise<void> {
-    await this.startRandom();
+    const excludeDetectionId = this.session()?.sourceId;
+    await this.start(excludeDetectionId ? { excludeDetectionId } : {});
   }
 
   async complete(): Promise<void> {
@@ -214,7 +245,7 @@ export class TacticalMissedShotTrainerStore {
     command();
   }
 
-  private async start(request: { detectionId?: number; random?: boolean }): Promise<void> {
+  private async start(request: { detectionId?: number; excludeDetectionId?: number; random?: boolean }): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -223,7 +254,7 @@ export class TacticalMissedShotTrainerStore {
         random: request.random ?? true,
         excludePassedRecently: true,
       }));
-      this.setSession(session);
+      this.setSession(session, { animateIntro: true });
       await this.router.navigate(['/scenario-training/tactical-missed-shot', session.sessionId], { replaceUrl: true });
     } catch {
       this.error.set('Could not start a missed-shot scenario.');
@@ -232,7 +263,8 @@ export class TacticalMissedShotTrainerStore {
     }
   }
 
-  private setSession(session: ScenarioTrainingSession): void {
+  private setSession(session: ScenarioTrainingSession, options: { animateIntro?: boolean } = {}): void {
+    this.clearIntroTimer();
     this.session.set(session);
     this.mode.set(session.status === 'IN_PROGRESS' ? 'challenge' : 'result');
     this.selectedContextPly.set(session.challengePlyNumber - 1);
@@ -240,11 +272,45 @@ export class TacticalMissedShotTrainerStore {
     this.revealBestMove.set(false);
     this.revealOriginalReply.set(false);
     this.bumpBoardPosition();
+    if (options.animateIntro && session.status === 'IN_PROGRESS') {
+      this.startIntroReplay();
+    }
     void this.analyzeBaseline(session);
+  }
+
+  private startIntroReplay(): void {
+    const session = this.session();
+    if (!session || session.status !== 'IN_PROGRESS') return;
+    this.clearIntroTimer();
+    this.mode.set('intro');
+    this.selectedContextPly.set(null);
+    this.attemptedMoveFen.set(null);
+    this.bumpBoardPosition();
+    this.introTimer = setTimeout(() => {
+      this.introTimer = null;
+      this.enterChallenge();
+    }, INTRO_REPLAY_MS);
+  }
+
+  private enterChallenge(): void {
+    this.mode.set('challenge');
+    this.selectedContextPly.set(this.session()?.challengePlyNumber ? this.session()!.challengePlyNumber - 1 : null);
+    this.attemptedMoveFen.set(null);
+    this.bumpBoardPosition();
+  }
+
+  private isChallengePly(plyNumber: number): boolean {
+    return plyNumber === (this.session()?.challengePlyNumber ?? 0) - 1;
   }
 
   private bumpBoardPosition(): void {
     this.boardPositionVersion.update((version) => version + 1);
+  }
+
+  private clearIntroTimer(): void {
+    if (!this.introTimer) return;
+    clearTimeout(this.introTimer);
+    this.introTimer = null;
   }
 
   private async analyzeBaseline(session: ScenarioTrainingSession): Promise<TrainerEngineResult> {

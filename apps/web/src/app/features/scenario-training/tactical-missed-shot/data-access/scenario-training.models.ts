@@ -1,4 +1,4 @@
-export type ScenarioMode = 'context' | 'challenge' | 'result';
+export type ScenarioMode = 'intro' | 'context' | 'challenge' | 'result';
 export type ScenarioColor = 'WHITE' | 'BLACK';
 
 export interface ScenarioContextPly {
@@ -14,6 +14,8 @@ export interface ScenarioContextPly {
 export interface ScenarioGameHeader {
   whiteUsername?: string | null;
   blackUsername?: string | null;
+  whiteRating?: number | null;
+  blackRating?: number | null;
   userColor?: ScenarioColor;
   opponentUsername?: string | null;
   resultForUser?: string | null;
@@ -72,6 +74,7 @@ export interface StartScenarioRequest {
   from?: string;
   to?: string;
   detectionId?: number;
+  excludeDetectionId?: number;
   random?: boolean;
   excludePassedRecently?: boolean;
 }

@@ -29,41 +29,17 @@
     </section>
 
     <aside class="scenario-side-panel">
-      <header class="scenario-header">
-        <div>
-          <p class="scenario-kicker">{{ modeLabel() }}</p>
-          <h2>{{ gameHeader().whiteUsername || 'White' }} vs {{ gameHeader().blackUsername || 'Black' }}</h2>
-        </div>
-        <div class="scenario-meta-grid">
-          <span>User: {{ gameHeader().userColor === 'BLACK' ? 'Black' : 'White' }}</span>
-          <span>Opponent: {{ gameHeader().opponentUsername || '-' }}</span>
-          <span>Result: {{ gameHeader().resultForUser || gameHeader().gameResult || '-' }}</span>
-          <span>Date: {{ dateLabel() || '-' }}</span>
-          <span>Opening: {{ openingLabel() || '-' }}</span>
-          @if (gameHeader().providerUrl) {
-            <a [href]="gameHeader().providerUrl" target="_blank" rel="noopener noreferrer">Source</a>
-          }
-        </div>
-      </header>
+      <ng-content />
 
       <section class="move-list-panel">
         <h3>Game context</h3>
-        <div class="scenario-move-list">
-          @for (ply of contextPlies(); track ply.plyNumber) {
-            <button
-              type="button"
-              class="move-list-item"
-              [class.selected]="selectedContextPly() === ply.plyNumber"
-              [class.trigger]="ply.plyNumber === challengePlyNumber() - 1"
-              (click)="contextPlySelected.emit(ply.plyNumber)"
-            >
-              <span>{{ moveLabel(ply) }}</span>
-            </button>
-          }
-        </div>
+        <app-move-tree
+          [tree]="contextTree()"
+          [selectedNodeId]="selectedContextPly()"
+          rootLabel="Before"
+          (nodeSelected)="selectTreeNode($event)"
+        />
       </section>
-
-      <ng-content />
     </aside>
   </div>
 </section>

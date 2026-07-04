@@ -32,6 +32,8 @@ const detectionSelect = {
       userId: true,
       whiteUsername: true,
       blackUsername: true,
+      whiteRating: true,
+      blackRating: true,
       userColor: true,
       opponentUsername: true,
       resultForUser: true,
@@ -43,6 +45,16 @@ const detectionSelect = {
     },
   },
 } satisfies Prisma.TacticalDetectionSelect;
+
+const sessionInclude = {
+  attempts: { orderBy: { attemptNumber: 'asc' } },
+  importedGame: {
+    select: {
+      whiteRating: true,
+      blackRating: true,
+    },
+  },
+} satisfies Prisma.ScenarioTrainingSessionInclude;
 
 function dateRangeWhere(input: TacticalMissedShotStartInput): Prisma.ImportedGameWhereInput['endedAt'] {
   if (!input.from && !input.to) return undefined;
@@ -64,6 +76,7 @@ export async function findTacticalMissedShotDetection(
     thresholdsHash: scope.thresholdsHash,
     detectionVersion: scope.detectionVersion,
     ...(input.detectionId ? { id: input.detectionId } : {}),
+    ...(!input.detectionId && input.excludeDetectionId ? { id: { not: input.excludeDetectionId } } : {}),
     importedGame: {
       endedAt: dateRangeWhere(input),
     },
@@ -126,6 +139,8 @@ export async function createScenarioTrainingSession(input: {
   opponentUsername: string | null;
   whiteUsername: string | null;
   blackUsername: string | null;
+  whiteRating: number | null;
+  blackRating: number | null;
   resultForUser: string | null;
   gameResult: string | null;
   openingEco: string | null;
@@ -149,14 +164,14 @@ export async function createScenarioTrainingSession(input: {
       ...input,
       contextPlies: input.contextPlies as unknown as Prisma.InputJsonValue,
     },
-    include: { attempts: { orderBy: { attemptNumber: 'asc' } } },
+    include: sessionInclude,
   });
 }
 
 export async function findScenarioTrainingSession(userId: number, sessionId: number) {
   return prisma.scenarioTrainingSession.findFirst({
     where: { id: sessionId, userId },
-    include: { attempts: { orderBy: { attemptNumber: 'asc' } } },
+    include: sessionInclude,
   });
 }
 
@@ -197,6 +212,6 @@ export async function listScenarioTrainingHistory(userId: number) {
     where: { userId },
     orderBy: { startedAt: 'desc' },
     take: 100,
-    include: { attempts: { orderBy: { attemptNumber: 'asc' } } },
+    include: sessionInclude,
   });
 }

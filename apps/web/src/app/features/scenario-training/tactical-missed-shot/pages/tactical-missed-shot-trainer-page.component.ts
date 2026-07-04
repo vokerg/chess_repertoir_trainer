@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { PageHeaderAction, PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { ScenarioBoardShellComponent } from '../../../../shared/training/scenario-board-shell/scenario-board-shell.component';
 import { TrainerEngineService } from '../../shared/trainer-engine.service';
 import { ScenarioTrainingApiService } from '../data-access/scenario-training-api.service';
@@ -7,7 +8,7 @@ import { TacticalMissedShotTrainerStore } from '../state/tactical-missed-shot-tr
 
 @Component({
   standalone: true,
-  imports: [RouterLink, ScenarioBoardShellComponent],
+  imports: [PageHeaderComponent, ScenarioBoardShellComponent],
   providers: [ScenarioTrainingApiService, TrainerEngineService, TacticalMissedShotTrainerStore],
   templateUrl: './tactical-missed-shot-trainer-page.component.html',
   styleUrl: './tactical-missed-shot-trainer-page.component.css',
@@ -16,6 +17,14 @@ import { TacticalMissedShotTrainerStore } from '../state/tactical-missed-shot-tr
 export class TacticalMissedShotTrainerPageComponent implements OnInit {
   protected readonly store = inject(TacticalMissedShotTrainerStore);
   private readonly route = inject(ActivatedRoute);
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+    {
+      id: 'next-scenario',
+      label: 'Next scenario',
+      disabled: this.store.loading() || this.store.evaluating(),
+      run: () => this.store.nextScenario(),
+    },
+  ]);
 
   ngOnInit(): void {
     const sessionId = Number(this.route.snapshot.paramMap.get('sessionId'));
@@ -40,5 +49,32 @@ export class TacticalMissedShotTrainerPageComponent implements OnInit {
     if (value === null || value === undefined) return '-';
     const pawns = value / 100;
     return `${pawns > 0 ? '+' : ''}${pawns.toFixed(2)}`;
+  }
+
+  protected gameTitle(session: {
+    whiteUsername?: string | null;
+    blackUsername?: string | null;
+    whiteRating?: number | null;
+    blackRating?: number | null;
+  } | null): string {
+    if (!session) return 'Find a move that keeps the opportunity alive.';
+    return `${this.playerLabel(session.whiteUsername, session.whiteRating)} vs ${this.playerLabel(session.blackUsername, session.blackRating)}`;
+  }
+
+  protected gameMeta(session: { endedAt?: string | null; gameResult?: string | null }): string {
+    return [
+      session.gameResult,
+      session.endedAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(session.endedAt)) : null,
+    ].filter(Boolean).join(' · ');
+  }
+
+  protected pageSubtitle(): string {
+    const session = this.store.session();
+    if (!session) return 'Find a move that keeps the opportunity alive.';
+    return [this.gameTitle(session), this.gameMeta(session)].filter(Boolean).join(' · ');
+  }
+
+  private playerLabel(username: string | null | undefined, rating: number | null | undefined): string {
+    return `${username || 'Unknown'}${rating ? ` (${rating})` : ''}`;
   }
 }
