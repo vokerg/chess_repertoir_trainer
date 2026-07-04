@@ -1,16 +1,4 @@
-export interface TacticalDetectionThresholds extends Record<string, number> {
-  detectionVersion: number;
-  opponentGiftMinCp: number;
-  missedShotDropMinCp: number;
-  minShotEvalCp: number;
-  recoveryToleranceCp: number;
-  userBlunderDropMinCp: number;
-  mateAsCp: number;
-  defaultLimit: number;
-  maxLimit: number;
-}
-
-export const tacticalDetectionThresholds: TacticalDetectionThresholds = {
+export const tacticalDetectionThresholds = {
   detectionVersion: 2,
   opponentGiftMinCp: 150,
   missedShotDropMinCp: 120,
@@ -20,4 +8,6 @@ export const tacticalDetectionThresholds: TacticalDetectionThresholds = {
   mateAsCp: 1000,
   defaultLimit: 100,
   maxLimit: 500,
-};
+} as const;
+
+export type TacticalDetectionThresholds = typeof tacticalDetectionThresholds;
