@@ -72,8 +72,8 @@ function serializeSession(session: Awaited<ReturnType<typeof findScenarioTrainin
     importedGameId: session.importedGameId,
     whiteUsername: session.whiteUsername,
     blackUsername: session.blackUsername,
-    whiteRating: session.whiteRating ?? session.importedGame?.whiteRating ?? null,
-    blackRating: session.blackRating ?? session.importedGame?.blackRating ?? null,
+    whiteRating: session.importedGame?.whiteRating ?? null,
+    blackRating: session.importedGame?.blackRating ?? null,
     userColor: session.userColor,
     opponentUsername: session.opponentUsername,
     resultForUser: session.resultForUser,
@@ -143,10 +143,21 @@ async function buildContextPlies(userId: number, detection: TacticalMissedShotDe
 }
 
 export async function startTacticalMissedShotScenario(userId: number, input: TacticalMissedShotStartInput) {
-  const detection = await findTacticalMissedShotDetection(userId, input, {
+  const scope = {
     thresholdsHash: currentTacticalDetectionThresholdsHash(),
     detectionVersion: currentTacticalDetectionVersion(),
-  });
+  };
+  let detection = await findTacticalMissedShotDetection(userId, input, scope);
+  if (!detection && input.excludeDetectionId && !input.detectionId) {
+    detection = await findTacticalMissedShotDetection(userId, { ...input, excludeDetectionId: undefined }, scope);
+  }
+  if (!detection && input.excludePassedRecently) {
+    detection = await findTacticalMissedShotDetection(userId, {
+      ...input,
+      excludeDetectionId: undefined,
+      excludePassedRecently: false,
+    }, scope);
+  }
   if (!detection) throw new Error('Tactical missed-shot scenario not found');
   if (detection.importedGame.userColor !== 'WHITE' && detection.importedGame.userColor !== 'BLACK') {
     throw new Error('Imported game has no trainable user color');
@@ -164,8 +175,6 @@ export async function startTacticalMissedShotScenario(userId: number, input: Tac
     opponentUsername: detection.importedGame.opponentUsername,
     whiteUsername: detection.importedGame.whiteUsername,
     blackUsername: detection.importedGame.blackUsername,
-    whiteRating: detection.importedGame.whiteRating,
-    blackRating: detection.importedGame.blackRating,
     resultForUser: detection.importedGame.resultForUser,
     gameResult: detection.importedGame.result,
     openingEco: detection.importedGame.openingEco,

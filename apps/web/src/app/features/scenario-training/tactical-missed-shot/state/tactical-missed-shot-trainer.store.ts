@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Chess } from 'chess.js';
@@ -89,8 +90,8 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     this.error.set(null);
     try {
       this.setSession(await firstValueFrom(this.api.getSession(sessionId)), { animateIntro: true });
-    } catch {
-      this.error.set('Could not load scenario.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error, 'Could not load scenario.'));
     } finally {
       this.loading.set(false);
     }
@@ -186,8 +187,8 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
       this.session.set(result.session);
       this.mode.set('result');
       this.bumpBoardPosition();
-    } catch {
-      this.error.set('Could not evaluate or save that attempt.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error, 'Could not evaluate or save that attempt.'));
       this.mode.set('challenge');
     } finally {
       this.evaluating.set(false);
@@ -211,8 +212,8 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     this.completing.set(true);
     try {
       this.session.set(await firstValueFrom(this.api.complete(sessionId)));
-    } catch {
-      this.error.set('Could not finish this scenario.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error, 'Could not finish this scenario.'));
     } finally {
       this.completing.set(false);
     }
@@ -256,8 +257,8 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
       }));
       this.setSession(session, { animateIntro: true });
       await this.router.navigate(['/scenario-training/tactical-missed-shot', session.sessionId], { replaceUrl: true });
-    } catch {
-      this.error.set('Could not start a missed-shot scenario.');
+    } catch (error) {
+      this.error.set(this.errorMessage(error, 'Could not start a missed-shot scenario.'));
     } finally {
       this.loading.set(false);
     }
@@ -311,6 +312,14 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     if (!this.introTimer) return;
     clearTimeout(this.introTimer);
     this.introTimer = null;
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const detail = typeof error.error?.error === 'string' ? error.error.error : error.message;
+      return detail ? `${fallback} ${detail}` : fallback;
+    }
+    return fallback;
   }
 
   private async analyzeBaseline(session: ScenarioTrainingSession): Promise<TrainerEngineResult> {

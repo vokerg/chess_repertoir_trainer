@@ -332,8 +332,6 @@ model ScenarioTrainingSession {
 
   whiteUsername String?
   blackUsername String?
-  whiteRating Int?
-  blackRating Int?
   resultForUser String?
   gameResult String?
   openingEco String?

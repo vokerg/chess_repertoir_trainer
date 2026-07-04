@@ -139,8 +139,6 @@ export async function createScenarioTrainingSession(input: {
   opponentUsername: string | null;
   whiteUsername: string | null;
   blackUsername: string | null;
-  whiteRating: number | null;
-  blackRating: number | null;
   resultForUser: string | null;
   gameResult: string | null;
   openingEco: string | null;
