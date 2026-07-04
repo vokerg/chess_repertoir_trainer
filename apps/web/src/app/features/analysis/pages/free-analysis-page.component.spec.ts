@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
+import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge.store';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { AnalysisReintegrationStore } from '../state/analysis-reintegration.store';
 import { FreeAnalysisStore } from '../state/free-analysis.store';
@@ -10,6 +11,7 @@ describe('FreeAnalysisPageComponent', () => {
   let fixture: ComponentFixture<FreeAnalysisPageComponent>;
   let store: jasmine.SpyObj<FreeAnalysisStore>;
   let reintegrationStore: jasmine.SpyObj<AnalysisReintegrationStore>;
+  let challengeStore: jasmine.SpyObj<LichessBotChallengeStore>;
   let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
 
   beforeEach(async () => {
@@ -21,6 +23,7 @@ describe('FreeAnalysisPageComponent', () => {
       'toggleMyGames',
     ]);
     reintegrationStore = jasmine.createSpyObj<AnalysisReintegrationStore>('AnalysisReintegrationStore', ['openForTree']);
+    challengeStore = jasmine.createSpyObj<LichessBotChallengeStore>('LichessBotChallengeStore', ['openForFen']);
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
 
     await TestBed.configureTestingModule({
@@ -39,6 +42,7 @@ describe('FreeAnalysisPageComponent', () => {
           providers: [
             { provide: FreeAnalysisStore, useValue: store },
             { provide: AnalysisReintegrationStore, useValue: reintegrationStore },
+            { provide: LichessBotChallengeStore, useValue: challengeStore },
           ],
         },
       })
