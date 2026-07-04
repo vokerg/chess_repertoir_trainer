@@ -61,6 +61,10 @@ function whiteToUserCp(scoreCpWhite: number | null, userColor: string): number |
   return userColor === 'BLACK' ? -scoreCpWhite : scoreCpWhite;
 }
 
+function sameUciMove(a: string | null | undefined, b: string | null | undefined): boolean {
+  return Boolean(a && b && a.toLowerCase() === b.toLowerCase());
+}
+
 function serializeSession(session: Awaited<ReturnType<typeof findScenarioTrainingSession>>) {
   if (!session) return null;
   return {
@@ -225,9 +229,10 @@ export async function submitScenarioTrainingAttempt(
   const deltaCp = baselineUserEvalCp !== null && afterUserEvalCp !== null
     ? baselineUserEvalCp - afterUserEvalCp
     : null;
-  const passed = baselineUserEvalCp !== null && afterUserEvalCp !== null
+  const passedByEval = baselineUserEvalCp !== null && afterUserEvalCp !== null
     ? afterUserEvalCp >= baselineUserEvalCp - session.passToleranceCp
     : false;
+  const passed = sameUciMove(input.moveUci, session.referenceBestMoveUci) || passedByEval;
 
   await createScenarioTrainingAttempt({
     sessionId,

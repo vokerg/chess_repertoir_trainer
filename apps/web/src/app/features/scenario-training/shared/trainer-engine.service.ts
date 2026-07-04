@@ -16,12 +16,13 @@ export class TrainerEngineService {
   private readonly stockfish = inject(StockfishAnalysisService);
   private readonly depth = 8;
   private readonly multipv = 1;
+  private readonly pvMoveLimit = 10;
 
   async analyze(fen: string): Promise<TrainerEngineResult> {
     const analysis = await this.stockfish.analyzeOnce(fen, {
       depth: this.depth,
       multipv: this.multipv,
-      pvMoveLimit: 1,
+      pvMoveLimit: this.pvMoveLimit,
       timeoutMs: 6000,
       keepAlive: true,
     });

@@ -1,5 +1,5 @@
 export const tacticalDetectionThresholds = {
-  detectionVersion: 2,
+  detectionVersion: 3,
   opponentGiftMinCp: 150,
   missedShotDropMinCp: 120,
   minShotEvalCp: 100,

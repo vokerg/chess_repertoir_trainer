@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { AnalysisWorkbenchComponent } from '../../../../shared/analysis/workbench/analysis-workbench.component';
 import { PageHeaderAction, PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { ScenarioBoardShellComponent } from '../../../../shared/training/scenario-board-shell/scenario-board-shell.component';
 import { TrainerEngineService } from '../../shared/trainer-engine.service';
@@ -8,7 +9,7 @@ import { TacticalMissedShotTrainerStore } from '../state/tactical-missed-shot-tr
 
 @Component({
   standalone: true,
-  imports: [PageHeaderComponent, ScenarioBoardShellComponent],
+  imports: [AnalysisWorkbenchComponent, PageHeaderComponent, ScenarioBoardShellComponent],
   providers: [ScenarioTrainingApiService, TrainerEngineService, TacticalMissedShotTrainerStore],
   templateUrl: './tactical-missed-shot-trainer-page.component.html',
   styleUrl: './tactical-missed-shot-trainer-page.component.css',
@@ -69,6 +70,7 @@ export class TacticalMissedShotTrainerPageComponent implements OnInit {
   }
 
   protected pageSubtitle(): string {
+    if (this.store.loading()) return this.store.loadingMessage();
     const session = this.store.session();
     if (!session) return 'Find a move that keeps the opportunity alive.';
     return [this.gameTitle(session), this.gameMeta(session)].filter(Boolean).join(' · ');

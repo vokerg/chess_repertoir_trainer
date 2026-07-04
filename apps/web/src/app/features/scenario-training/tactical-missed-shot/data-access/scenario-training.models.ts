@@ -1,4 +1,4 @@
-export type ScenarioMode = 'intro' | 'context' | 'challenge' | 'result';
+export type ScenarioMode = 'intro' | 'context' | 'challenge' | 'result' | 'analysis';
 export type ScenarioColor = 'WHITE' | 'BLACK';
 
 export interface ScenarioContextPly {

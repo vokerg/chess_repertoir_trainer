@@ -164,17 +164,29 @@ export async function findTacticalDetectionCandidatesForGames(
             -COALESCE(before_analysis."bestScoreCpWhite", CASE WHEN before_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN before_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
         END AS "beforeUserEval",
         CASE
+          WHEN p."userColor" = 'WHITE' THEN before_analysis."bestMateWhite"
+          ELSE -before_analysis."bestMateWhite"
+        END AS "beforeUserMate",
+        CASE
           WHEN p."userColor" = 'WHITE' THEN
             COALESCE(after_trigger_analysis."bestScoreCpWhite", CASE WHEN after_trigger_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_trigger_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
           ELSE
             -COALESCE(after_trigger_analysis."bestScoreCpWhite", CASE WHEN after_trigger_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_trigger_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
         END AS "afterTriggerUserEval",
         CASE
+          WHEN p."userColor" = 'WHITE' THEN after_trigger_analysis."bestMateWhite"
+          ELSE -after_trigger_analysis."bestMateWhite"
+        END AS "afterTriggerUserMate",
+        CASE
           WHEN p."userColor" = 'WHITE' THEN
             COALESCE(after_reply_analysis."bestScoreCpWhite", CASE WHEN after_reply_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_reply_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
           ELSE
             -COALESCE(after_reply_analysis."bestScoreCpWhite", CASE WHEN after_reply_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_reply_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
         END AS "afterReplyUserEval",
+        CASE
+          WHEN p."userColor" = 'WHITE' THEN after_reply_analysis."bestMateWhite"
+          ELSE -after_reply_analysis."bestMateWhite"
+        END AS "afterReplyUserMate",
         before_analysis."bestMoveUci" AS "beforeBestMoveUci",
         after_trigger_analysis."bestMoveUci" AS "afterTriggerBestMoveUci"
       FROM ordered_plies p
@@ -206,6 +218,7 @@ export async function findTacticalDetectionCandidatesForGames(
         AND "afterTriggerUserEval" >= ${thresholds.minShotEvalCp}
         AND ("afterTriggerUserEval" - "afterReplyUserEval") >= ${thresholds.missedShotDropMinCp}
         AND "afterReplyUserEval" <= "beforeUserEval" + ${thresholds.recoveryToleranceCp}
+        AND ("afterReplyUserMate" IS NULL OR "afterReplyUserMate" <= 0)
     ),
     punished_opponent_blunders AS (
       SELECT
