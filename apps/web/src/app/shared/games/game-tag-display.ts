@@ -39,6 +39,7 @@ const POSITIVE_TAG_CODES = new Set<number>([
   131,
   133,
   134,
+  136,
   141,
   143,
   145,
@@ -60,7 +61,6 @@ const NEGATIVE_TAG_CODES = new Set<number>([
   106,
   107,
   108,
-  109,
   110,
   113,
   114,
@@ -71,6 +71,7 @@ const NEGATIVE_TAG_CODES = new Set<number>([
   126,
   128,
   135,
+  137,
   140,
   144,
   146,
@@ -98,12 +99,12 @@ export const GAME_TAG_BUCKETS: readonly GameTagBucketDefinition[] = [
   {
     key: 'tactics',
     label: 'Tactics',
-    codes: [135, 104, 105, 121, 134, 133, 107, 109],
+    codes: [135, 104, 137, 105, 121, 134, 133, 107],
   },
   {
     key: 'phase',
     label: 'Phase',
-    codes: [114, 115, 116, 117, 120, 145, 146],
+    codes: [114, 115, 116, 117, 120, 136, 145, 146],
   },
   {
     key: 'positionState',
