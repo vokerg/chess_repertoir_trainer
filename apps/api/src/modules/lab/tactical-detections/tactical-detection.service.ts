@@ -38,11 +38,15 @@ function normalizeRange(input: { from?: Date; to?: Date }) {
   };
 }
 
-function thresholdsHash() {
+export function currentTacticalDetectionThresholdsHash() {
   return createHash('sha256')
     .update(JSON.stringify(tacticalDetectionThresholds))
     .digest('hex')
     .slice(0, 24);
+}
+
+export function currentTacticalDetectionVersion() {
+  return tacticalDetectionThresholds.detectionVersion;
 }
 
 function errorMessage(error: unknown) {
@@ -52,7 +56,7 @@ function errorMessage(error: unknown) {
 export async function runTacticalDetection(userId: number, input: TacticalDetectionRunInput) {
   const range = normalizeRange(input);
   const force = input.force ?? false;
-  const hash = thresholdsHash();
+  const hash = currentTacticalDetectionThresholdsHash();
   const run = await createTacticalDetectionRun(userId, {
     from: range.from,
     to: range.to,
@@ -70,9 +74,15 @@ export async function runTacticalDetection(userId: number, input: TacticalDetect
     });
 
     const result = await runTacticalDetectionTransaction(async (db) => {
-      if (force) await clearTacticalDetectionsForGames(db, userId, gameIds, hash);
+      if (force) await clearTacticalDetectionsForGames(db, userId, gameIds, {
+        thresholdsHash: hash,
+        detectionVersion: currentTacticalDetectionVersion(),
+      });
       const candidates = await findTacticalDetectionCandidatesForGames(db, userId, gameIds, tacticalDetectionThresholds);
-      const detectionsInserted = await insertTacticalDetections(db, run.id, userId, candidates);
+      const detectionsInserted = await insertTacticalDetections(db, run.id, userId, candidates, {
+        thresholdsHash: hash,
+        detectionVersion: currentTacticalDetectionVersion(),
+      });
       const processedGames = await markTacticalDetectionProcessedGames(db, run.id, userId, gameIds, hash);
       return { candidates, detectionsInserted, processedGames };
     });
@@ -107,6 +117,8 @@ export async function getTacticalDetections(userId: number, query: TacticalDetec
     from: range.from,
     to: range.to,
     toExclusive: range.toExclusive,
+    thresholdsHash: currentTacticalDetectionThresholdsHash(),
+    detectionVersion: currentTacticalDetectionVersion(),
   });
   return {
     from: range.from,

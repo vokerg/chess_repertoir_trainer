@@ -70,6 +70,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   @Input() arrows: Array<{ from: string; to: string; brush?: string }> = [];
   @Input() showCoordinates = true;
   @Input() sound = true;
+  @Input() movable = true;
   @Input() positionVersion = 0;
   @Output() move = new EventEmitter<string>();
 
@@ -99,7 +100,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
       return;
     }
 
-    if (changes['lastMove'] || changes['showCoordinates'] || changes['arrows']) {
+    if (changes['lastMove'] || changes['showCoordinates'] || changes['arrows'] || changes['movable']) {
       this.ground.set(this.config());
     }
   }
@@ -136,15 +137,15 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
       },
       movable: {
         free: false,
-        color: this.pendingMove ? undefined : turnColor,
-        dests: this.pendingMove ? new Map<Key, Key[]>() : this.legalDests(),
+        color: this.pendingMove || !this.movable ? undefined : turnColor,
+        dests: this.pendingMove || !this.movable ? new Map<Key, Key[]>() : this.legalDests(),
         showDests: true,
         events: {
           after: (from: Key, to: Key) => this.handleMove(from, to),
         },
       },
       draggable: {
-        enabled: !this.pendingMove,
+        enabled: !this.pendingMove && this.movable,
         showGhost: true,
       },
       selectable: {
@@ -181,6 +182,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
 
   private handleMove(from: Key, to: Key) {
     if (this.pendingMove) return;
+    if (!this.movable) return;
 
     const legalMoves = this.game.moves({ verbose: true }) as VerboseMove[];
     const matching = legalMoves.find((m) => m.from === from && m.to === to);

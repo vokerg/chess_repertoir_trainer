@@ -7,7 +7,7 @@
       [disabled]="!canGoBackward()"
       title="Home"
     >
-      &#x23ee; Start
+      &#x23ee; {{ startLabel() }}
     </button>
   }
   @if (showPrevious()) {
@@ -18,7 +18,7 @@
       [disabled]="!canGoBackward()"
       title="Left arrow"
     >
-      &larr; Previous
+      &larr; {{ previousLabel() }}
     </button>
   }
   @if (showNext()) {
@@ -29,7 +29,7 @@
       [disabled]="!canGoForward()"
       title="Right arrow"
     >
-      Next &rarr;
+      {{ nextLabel() }} &rarr;
     </button>
   }
   @if (showEnd()) {
@@ -37,10 +37,10 @@
       type="button"
       class="compact-action secondary"
       (click)="goEnd.emit()"
-      [disabled]="!canGoForward()"
+      [disabled]="!(canGoEnd() ?? canGoForward())"
       title="End"
     >
-      End &#x23ed;
+      {{ endLabel() }} &#x23ed;
     </button>
   }
 

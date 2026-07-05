@@ -1,0 +1,158 @@
+<main class="scenario-page">
+  <app-page-header
+    title="Tactical missed shot"
+    [subtitle]="pageSubtitle()"
+    [subtitleLink]="store.session()?.providerUrl ?? null"
+    [actions]="headerActions()"
+  />
+
+  @if (store.error(); as error) {
+    <p class="scenario-error">{{ error }}</p>
+  }
+
+  @if (store.loading()) {
+    <section class="trainer-panel scenario-loading" aria-live="polite" aria-busy="true">
+      <div class="scenario-loading-spinner" aria-hidden="true"></div>
+      <div>
+        <h3>{{ store.loadingMessage() }}</h3>
+        <p>Preparing the board and game context.</p>
+      </div>
+    </section>
+  } @else if (store.session(); as session) {
+    @if (store.mode() === 'analysis') {
+      <app-analysis-workbench
+        [tree]="store.analysisTree()"
+        [selectedNodeId]="store.selectedAnalysisNodeId()"
+        [currentFen]="store.currentAnalysisFen()"
+        [side]="session.userColor || 'WHITE'"
+        [blackPerspective]="store.blackPerspective()"
+        [lastMove]="store.analysisLastMove()"
+        [boardPositionVersion]="store.analysisBoardPositionVersion()"
+        [analysis]="store.analysisEngineAnalysis()"
+        [savedScoreCpWhite]="null"
+        [canGoBackward]="store.analysisCanGoBackward()"
+        [canGoForward]="store.analysisCanGoForward()"
+        boardTitle="Solved line"
+        boardHelp="Analyse your passed move and try variations."
+        treeTitle="Analysis line"
+        treeHelp="Local analysis only. These moves are not submitted as attempts."
+        [showDangerZone]="false"
+        (boardMove)="store.playAnalysisBoardMove($event)"
+        (nodeSelected)="store.selectAnalysisNode($event)"
+        (goStart)="store.goAnalysisStart()"
+        (goPrevious)="store.goAnalysisPrevious()"
+        (goNext)="store.goAnalysisNext()"
+        (goEnd)="store.goAnalysisEnd()"
+        (analyze)="store.rerunPostPassAnalysis()"
+      >
+        @if (store.latestAttempt(); as attempt) {
+          <section analysisWorkbenchSideExtra class="trainer-panel solved-panel">
+            <h3>Passed</h3>
+            <dl class="attempt-stats">
+              <div><dt>Training move</dt><dd>{{ attempt.playedMoveSan || attempt.playedMoveUci }}</dd></div>
+              <div><dt>Game move</dt><dd>{{ session.originalUserMoveSan || session.originalUserMoveUci || '-' }}</dd></div>
+              <div><dt>Baseline</dt><dd>{{ evalLabel(attempt.baselineUserEvalCp) }}</dd></div>
+              <div><dt>After</dt><dd>{{ evalLabel(attempt.afterUserEvalCp) }}</dd></div>
+              <div><dt>Delta</dt><dd>{{ evalLabel(attempt.deltaCp) }}</dd></div>
+              <div><dt>Depth</dt><dd>{{ attempt.engineDepth }}</dd></div>
+            </dl>
+            <div class="result-actions">
+              <button type="button" class="primary" (click)="store.nextScenario()">Next scenario</button>
+              <button type="button" class="secondary" (click)="store.tryAgain()">Try again</button>
+            </div>
+          </section>
+        }
+      </app-analysis-workbench>
+    } @else {
+      <app-scenario-board-shell
+        [mode]="store.mode()"
+        [currentFen]="store.currentFen()"
+        [side]="session.userColor || 'WHITE'"
+        [lastMove]="store.lastMove()"
+        [contextPlies]="session.contextPlies"
+        [selectedContextPly]="store.selectedContextPly()"
+        [challengePlyNumber]="session.challengePlyNumber"
+        [boardDisabled]="store.boardDisabled()"
+        [boardPositionVersion]="store.boardPositionVersion()"
+        (boardMove)="store.playBoardMove($event)"
+        (goStart)="store.goStart()"
+        (goPrevious)="store.goPrevious()"
+        (goNext)="store.goNext()"
+        (goChallenge)="store.goChallenge()"
+        (contextPlySelected)="store.selectContextPly($event)"
+      >
+        <section class="trainer-panel">
+          @if (store.mode() === 'intro') {
+            <h3>Opponent move</h3>
+            <p>Replaying the move that created the opportunity.</p>
+          } @else if (store.mode() === 'challenge') {
+            <h3>Your move</h3>
+            <p>
+              @if (store.evaluating()) {
+                Evaluating with browser Stockfish...
+              } @else if (store.baselineAnalysis()) {
+                Baseline ready. Play any legal move from the challenge position.
+              } @else {
+                Preparing baseline analysis...
+              }
+            </p>
+            <div class="result-actions">
+              <button type="button" class="secondary" (click)="store.replayOpponentMove()" [disabled]="store.evaluating()">
+                Replay opponent move
+              </button>
+            </div>
+          } @else if (store.mode() === 'result') {
+            @if (store.latestAttempt(); as attempt) {
+              <h3>{{ attempt.passed ? 'Passed' : 'Try again' }}</h3>
+              <dl class="attempt-stats">
+                <div><dt>Played</dt><dd>{{ attempt.playedMoveSan || attempt.playedMoveUci }}</dd></div>
+                <div><dt>Baseline</dt><dd>{{ evalLabel(attempt.baselineUserEvalCp) }}</dd></div>
+                <div><dt>After</dt><dd>{{ evalLabel(attempt.afterUserEvalCp) }}</dd></div>
+                <div><dt>Delta</dt><dd>{{ evalLabel(attempt.deltaCp) }}</dd></div>
+                <div><dt>Depth</dt><dd>{{ attempt.engineDepth }}</dd></div>
+              </dl>
+              <div class="result-actions">
+                <button type="button" class="secondary" (click)="store.toggleBestMove()">
+                  {{ store.revealBestMove() ? 'Hide best move' : 'Reveal best move' }}
+                </button>
+                <button type="button" class="secondary" (click)="store.toggleOriginalReply()">
+                  {{ store.revealOriginalReply() ? 'Hide game reply' : 'Reveal game reply' }}
+                </button>
+              </div>
+              @if (store.revealBestMove()) {
+                <p class="reveal-line">Best move: <code>{{ session.referenceBestMoveUci || '-' }}</code></p>
+              }
+              @if (store.revealOriginalReply()) {
+                <p class="reveal-line">Original reply: <code>{{ session.originalUserMoveSan || session.originalUserMoveUci || '-' }}</code></p>
+              }
+              <div class="result-actions">
+                <button type="button" class="primary" (click)="store.tryAgain()">Try again</button>
+                <button type="button" class="secondary" (click)="store.nextScenario()">Next scenario</button>
+                <button type="button" class="secondary" (click)="store.complete()" [disabled]="store.completing()">Finish</button>
+              </div>
+            }
+          } @else {
+            <h3>Context</h3>
+            <p>Review the game up to the move that created the opportunity.</p>
+          }
+        </section>
+
+        @if (store.mode() === 'result' && session.attempts.length) {
+          <section class="trainer-panel">
+            <h3>Attempt history</h3>
+            <div class="attempt-list">
+              @for (attempt of session.attempts; track attempt.id) {
+                <article class="attempt-row">
+                  <strong>{{ attempt.attemptNumber }}. {{ attempt.playedMoveSan || attempt.playedMoveUci }}</strong>
+                  <span>{{ attempt.passed ? 'Passed' : 'Failed' }} · {{ evalLabel(attempt.afterUserEvalCp) }} · depth {{ attempt.engineDepth }}</span>
+                </article>
+              }
+            </div>
+          </section>
+        }
+      </app-scenario-board-shell>
+    }
+  } @else {
+    <div class="trainer-panel">Loading scenario...</div>
+  }
+</main>

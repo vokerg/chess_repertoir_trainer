@@ -107,14 +107,19 @@ export async function clearTacticalDetectionsForGames(
   db: Db,
   userId: number,
   gameIds: number[],
-  thresholdsHash: string,
+  scope: { thresholdsHash: string; detectionVersion: number },
 ) {
   if (!gameIds.length) return;
   await db.tacticalDetection.deleteMany({
-    where: { userId, importedGameId: { in: gameIds } },
+    where: {
+      userId,
+      importedGameId: { in: gameIds },
+      thresholdsHash: scope.thresholdsHash,
+      detectionVersion: scope.detectionVersion,
+    },
   });
   await db.tacticalDetectionProcessedGame.deleteMany({
-    where: { userId, importedGameId: { in: gameIds }, thresholdsHash },
+    where: { userId, importedGameId: { in: gameIds }, thresholdsHash: scope.thresholdsHash },
   });
 }
 
@@ -159,17 +164,29 @@ export async function findTacticalDetectionCandidatesForGames(
             -COALESCE(before_analysis."bestScoreCpWhite", CASE WHEN before_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN before_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
         END AS "beforeUserEval",
         CASE
+          WHEN p."userColor" = 'WHITE' THEN before_analysis."bestMateWhite"
+          ELSE -before_analysis."bestMateWhite"
+        END AS "beforeUserMate",
+        CASE
           WHEN p."userColor" = 'WHITE' THEN
             COALESCE(after_trigger_analysis."bestScoreCpWhite", CASE WHEN after_trigger_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_trigger_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
           ELSE
             -COALESCE(after_trigger_analysis."bestScoreCpWhite", CASE WHEN after_trigger_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_trigger_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
         END AS "afterTriggerUserEval",
         CASE
+          WHEN p."userColor" = 'WHITE' THEN after_trigger_analysis."bestMateWhite"
+          ELSE -after_trigger_analysis."bestMateWhite"
+        END AS "afterTriggerUserMate",
+        CASE
           WHEN p."userColor" = 'WHITE' THEN
             COALESCE(after_reply_analysis."bestScoreCpWhite", CASE WHEN after_reply_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_reply_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
           ELSE
             -COALESCE(after_reply_analysis."bestScoreCpWhite", CASE WHEN after_reply_analysis."bestMateWhite" >= 0 THEN ${thresholds.mateAsCp} WHEN after_reply_analysis."bestMateWhite" < 0 THEN -${thresholds.mateAsCp} END)
         END AS "afterReplyUserEval",
+        CASE
+          WHEN p."userColor" = 'WHITE' THEN after_reply_analysis."bestMateWhite"
+          ELSE -after_reply_analysis."bestMateWhite"
+        END AS "afterReplyUserMate",
         before_analysis."bestMoveUci" AS "beforeBestMoveUci",
         after_trigger_analysis."bestMoveUci" AS "afterTriggerBestMoveUci"
       FROM ordered_plies p
@@ -197,10 +214,23 @@ export async function findTacticalDetectionCandidatesForGames(
         AND "beforeUserEval" IS NOT NULL
         AND "afterTriggerUserEval" IS NOT NULL
         AND "afterReplyUserEval" IS NOT NULL
+        AND "afterTriggerBestMoveUci" IS NOT NULL
+        AND LOWER("nextMoveUci") <> LOWER("afterTriggerBestMoveUci")
+        AND NOT (
+          "beforeUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" >= ${thresholds.decisiveEvalCp}
+        )
+        AND NOT (
+          "beforeUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" <= -${thresholds.decisiveEvalCp}
+        )
         AND ("afterTriggerUserEval" - "beforeUserEval") >= ${thresholds.opponentGiftMinCp}
         AND "afterTriggerUserEval" >= ${thresholds.minShotEvalCp}
         AND ("afterTriggerUserEval" - "afterReplyUserEval") >= ${thresholds.missedShotDropMinCp}
         AND "afterReplyUserEval" <= "beforeUserEval" + ${thresholds.recoveryToleranceCp}
+        AND ("afterReplyUserMate" IS NULL OR "afterReplyUserMate" <= 0)
     ),
     punished_opponent_blunders AS (
       SELECT
@@ -222,6 +252,16 @@ export async function findTacticalDetectionCandidatesForGames(
         AND "beforeUserEval" IS NOT NULL
         AND "afterTriggerUserEval" IS NOT NULL
         AND "afterReplyUserEval" IS NOT NULL
+        AND NOT (
+          "beforeUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" >= ${thresholds.decisiveEvalCp}
+        )
+        AND NOT (
+          "beforeUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" <= -${thresholds.decisiveEvalCp}
+        )
         AND ("afterTriggerUserEval" - "beforeUserEval") >= ${thresholds.opponentGiftMinCp}
         AND "afterTriggerUserEval" >= ${thresholds.minShotEvalCp}
         AND "afterReplyUserEval" >= "afterTriggerUserEval" - ${thresholds.recoveryToleranceCp}
@@ -243,6 +283,14 @@ export async function findTacticalDetectionCandidatesForGames(
         CASE WHEN e."userColor" = 'WHITE' THEN e."plyNumber" % 2 = 1 ELSE e."plyNumber" % 2 = 0 END
         AND e."beforeUserEval" IS NOT NULL
         AND e."afterTriggerUserEval" IS NOT NULL
+        AND NOT (
+          e."beforeUserEval" >= ${thresholds.decisiveEvalCp}
+          AND e."afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
+        )
+        AND NOT (
+          e."beforeUserEval" <= -${thresholds.decisiveEvalCp}
+          AND e."afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
+        )
         AND (e."beforeUserEval" - e."afterTriggerUserEval") >= ${thresholds.userBlunderDropMinCp}
         AND NOT EXISTS (
           SELECT 1
@@ -297,6 +345,7 @@ export async function insertTacticalDetections(
   runId: number,
   userId: number,
   candidates: TacticalDetectionCandidate[],
+  scope: { thresholdsHash: string; detectionVersion: number },
 ) {
   if (!candidates.length) return 0;
   const result = await db.tacticalDetection.createMany({
@@ -305,6 +354,8 @@ export async function insertTacticalDetections(
       userId,
       importedGameId: candidate.importedGameId,
       kind: candidate.kind,
+      thresholdsHash: scope.thresholdsHash,
+      detectionVersion: scope.detectionVersion,
       triggerPlyNumber: candidate.triggerPlyNumber,
       userReplyPlyNumber: candidate.userReplyPlyNumber,
       moveUci: candidate.moveUci,
@@ -345,12 +396,14 @@ export async function runTacticalDetectionTransaction<T>(callback: (db: Db) => P
 
 export async function listTacticalDetections(
   userId: number,
-  query: TacticalDetectionListQuery & { toExclusive?: Date },
+  query: TacticalDetectionListQuery & { toExclusive?: Date; thresholdsHash: string; detectionVersion: number },
 ): Promise<TacticalDetectionListItem[]> {
   const rows = await prisma.tacticalDetection.findMany({
     where: {
       userId,
       kind: query.kind,
+      thresholdsHash: query.thresholdsHash,
+      detectionVersion: query.detectionVersion,
       importedGame: {
         endedAt: {
           ...(query.from ? { gte: query.from } : {}),

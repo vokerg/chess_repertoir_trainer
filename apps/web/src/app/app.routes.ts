@@ -77,6 +77,24 @@ export const routes: Routes = [
       import('./features/lab/pages/lab-page.component').then((m) => m.LabPageComponent),
   },
   {
+    path: 'scenario-training/tactical-missed-shot',
+    title: 'Tactical missed shot | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
+        (m) => m.TacticalMissedShotTrainerPageComponent,
+      ),
+  },
+  {
+    path: 'scenario-training/tactical-missed-shot/:sessionId',
+    title: 'Tactical missed shot | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
+        (m) => m.TacticalMissedShotTrainerPageComponent,
+      ),
+  },
+  {
     path: 'games/:gameId',
     title: 'Game review | Chess Repertoire Trainer',
     canActivate: [authGuard],

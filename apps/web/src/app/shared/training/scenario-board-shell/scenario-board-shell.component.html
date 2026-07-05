@@ -1,0 +1,45 @@
+<section class="scenario-shell">
+  <div class="scenario-layout">
+    <section class="scenario-board-area">
+      <div class="scenario-board-panel">
+        <app-chessground-board
+          [fen]="currentFen()"
+          [side]="side()"
+          size="var(--scenario-board-size, clamp(560px, min(78vh, 60vw), 820px))"
+          [lastMove]="lastMove()"
+          [movable]="!boardDisabled() && mode() === 'challenge'"
+          [positionVersion]="boardPositionVersion()"
+          (move)="boardMove.emit($event)"
+        />
+      </div>
+
+      <app-board-action-toolbar
+        [canGoBackward]="canGoBackward()"
+        [canGoForward]="canGoForward()"
+        [canGoEnd]="true"
+        [fen]="currentFen()"
+        startLabel="First"
+        endLabel="Challenge"
+        keyboardHint="Review with the toolbar, then return to the challenge position."
+        (goStart)="goStart.emit()"
+        (goPrevious)="goPrevious.emit()"
+        (goNext)="goNext.emit()"
+        (goEnd)="goChallenge.emit()"
+      />
+    </section>
+
+    <aside class="scenario-side-panel">
+      <ng-content />
+
+      <section class="move-list-panel">
+        <h3>Game context</h3>
+        <app-move-tree
+          [tree]="contextTree()"
+          [selectedNodeId]="selectedContextPly()"
+          rootLabel="Before"
+          (nodeSelected)="selectTreeNode($event)"
+        />
+      </section>
+    </aside>
+  </div>
+</section>

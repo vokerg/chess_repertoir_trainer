@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.scenario-shell {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.scenario-layout {
+  display: grid;
+  grid-template-columns: minmax(560px, max-content) minmax(320px, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.scenario-board-area {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.scenario-board-panel {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: clamp(0.7rem, 1.4vw, var(--space-3));
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.scenario-board-area app-board-action-toolbar {
+  padding: 0 var(--space-1);
+}
+
+.scenario-side-panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.move-list-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.move-list-panel {
+  padding: var(--space-3);
+}
+
+.move-list-panel h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+@media (max-width: 900px) {
+  .scenario-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-side-panel {
+    order: 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .scenario-board-panel {
+    --scenario-board-size: min(calc(100vw - 28px), 520px);
+    border-radius: var(--radius-lg);
+    padding: 0.45rem;
+  }
+
+  .move-list-panel {
+    border-radius: var(--radius-lg);
+  }
+}

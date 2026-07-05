@@ -222,10 +222,19 @@ textarea:focus {
 }
 
 .page-header-subtitle {
+  display: block;
   margin: 0.3rem 0 0;
   max-width: 64ch;
   color: var(--muted);
   line-height: 1.4;
+}
+
+.page-header-subtitle-link {
+  text-decoration: none;
+}
+
+.page-header-subtitle-link:hover {
+  text-decoration: underline;
 }
 
 .compact-action {

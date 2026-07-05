@@ -26,6 +26,7 @@ model AppUser {
   tacticalDetectionRuns           TacticalDetectionRun[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
+  scenarioTrainingSessions        ScenarioTrainingSession[]
   courses          Course[]
   trainingSessions TrainingSession[]
   trainingSublineAttempts TrainingSublineAttempt[]
@@ -147,6 +148,7 @@ model ImportedGame {
   plies                 ImportedGamePly[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
+  scenarioTrainingSessions        ScenarioTrainingSession[]
 
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
@@ -184,6 +186,8 @@ model TacticalDetection {
   importedGameId         Int
   importedGame           ImportedGame         @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
   kind                   String
+  thresholdsHash         String               @db.VarChar(64)
+  detectionVersion       Int                  @default(2)
   triggerPlyNumber       Int                  @db.SmallInt
   userReplyPlyNumber     Int?                 @db.SmallInt
   moveUci                String               @db.VarChar(5)
@@ -193,10 +197,12 @@ model TacticalDetection {
   evalAfterReplyUserCp   Int?
   swingCp                Int?
   createdAt              DateTime             @default(now())
+  scenarioTrainingSessions ScenarioTrainingSession[]
 
-  @@unique([userId, importedGameId, kind, triggerPlyNumber])
+  @@unique([userId, importedGameId, kind, triggerPlyNumber, thresholdsHash, detectionVersion], map: "TacticalDetection_scope_key")
   @@index([userId, kind, createdAt])
   @@index([userId, importedGameId])
+  @@index([userId, thresholdsHash, detectionVersion])
 }
 
 model TacticalDetectionProcessedGame {
@@ -303,6 +309,90 @@ model GameAnalysisRun {
 
   @@index([importedGameId, createdAt])
   @@index([status])
+}
+
+model ScenarioTrainingSession {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  scenarioType String
+  sourceType String
+  sourceId Int
+
+  tacticalDetectionId Int?
+  tacticalDetection TacticalDetection? @relation(fields: [tacticalDetectionId], references: [id], onDelete: SetNull)
+
+  importedGameId Int?
+  importedGame ImportedGame? @relation(fields: [importedGameId], references: [id], onDelete: SetNull)
+
+  userColor String
+  opponentUsername String?
+
+  whiteUsername String?
+  blackUsername String?
+  resultForUser String?
+  gameResult String?
+  openingEco String?
+  openingName String?
+  endedAt DateTime?
+  providerUrl String?
+
+  previousFen String?
+  startFen String
+  challengePlyNumber Int
+
+  triggerMoveUci String?
+  triggerMoveSan String?
+  originalUserMoveUci String?
+  originalUserMoveSan String?
+  referenceBestMoveUci String?
+
+  contextPlies Json
+
+  baselineUserEvalCp Int?
+  passToleranceCp Int @default(100)
+
+  status String @default("IN_PROGRESS")
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+
+  attempts ScenarioTrainingAttempt[]
+
+  @@index([userId, scenarioType, startedAt])
+  @@index([userId, sourceType, sourceId])
+  @@index([userId, tacticalDetectionId])
+}
+
+model ScenarioTrainingAttempt {
+  id Int @id @default(autoincrement())
+
+  sessionId Int
+  session ScenarioTrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  attemptNumber Int
+
+  fenBefore String
+  playedMoveUci String
+  playedMoveSan String?
+  fenAfter String
+
+  baselineUserEvalCp Int?
+  afterUserEvalCp Int?
+  deltaCp Int?
+
+  passed Boolean
+
+  engineSource String
+  engineName String?
+  engineDepth Int
+  engineMultipv Int @default(1)
+  rawEngineJson Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, attemptNumber])
 }
 
 model Course {
