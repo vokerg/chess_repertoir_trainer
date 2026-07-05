@@ -214,6 +214,18 @@ export async function findTacticalDetectionCandidatesForGames(
         AND "beforeUserEval" IS NOT NULL
         AND "afterTriggerUserEval" IS NOT NULL
         AND "afterReplyUserEval" IS NOT NULL
+        AND "afterTriggerBestMoveUci" IS NOT NULL
+        AND LOWER("nextMoveUci") <> LOWER("afterTriggerBestMoveUci")
+        AND NOT (
+          "beforeUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" >= ${thresholds.decisiveEvalCp}
+        )
+        AND NOT (
+          "beforeUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" <= -${thresholds.decisiveEvalCp}
+        )
         AND ("afterTriggerUserEval" - "beforeUserEval") >= ${thresholds.opponentGiftMinCp}
         AND "afterTriggerUserEval" >= ${thresholds.minShotEvalCp}
         AND ("afterTriggerUserEval" - "afterReplyUserEval") >= ${thresholds.missedShotDropMinCp}
@@ -240,6 +252,16 @@ export async function findTacticalDetectionCandidatesForGames(
         AND "beforeUserEval" IS NOT NULL
         AND "afterTriggerUserEval" IS NOT NULL
         AND "afterReplyUserEval" IS NOT NULL
+        AND NOT (
+          "beforeUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" >= ${thresholds.decisiveEvalCp}
+        )
+        AND NOT (
+          "beforeUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
+          AND "afterReplyUserEval" <= -${thresholds.decisiveEvalCp}
+        )
         AND ("afterTriggerUserEval" - "beforeUserEval") >= ${thresholds.opponentGiftMinCp}
         AND "afterTriggerUserEval" >= ${thresholds.minShotEvalCp}
         AND "afterReplyUserEval" >= "afterTriggerUserEval" - ${thresholds.recoveryToleranceCp}
@@ -261,6 +283,14 @@ export async function findTacticalDetectionCandidatesForGames(
         CASE WHEN e."userColor" = 'WHITE' THEN e."plyNumber" % 2 = 1 ELSE e."plyNumber" % 2 = 0 END
         AND e."beforeUserEval" IS NOT NULL
         AND e."afterTriggerUserEval" IS NOT NULL
+        AND NOT (
+          e."beforeUserEval" >= ${thresholds.decisiveEvalCp}
+          AND e."afterTriggerUserEval" >= ${thresholds.decisiveEvalCp}
+        )
+        AND NOT (
+          e."beforeUserEval" <= -${thresholds.decisiveEvalCp}
+          AND e."afterTriggerUserEval" <= -${thresholds.decisiveEvalCp}
+        )
         AND (e."beforeUserEval" - e."afterTriggerUserEval") >= ${thresholds.userBlunderDropMinCp}
         AND NOT EXISTS (
           SELECT 1
