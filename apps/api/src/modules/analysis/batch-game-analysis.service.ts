@@ -1,5 +1,17 @@
 import { Chess } from 'chess.js';
-import { classifyPly, moveClassificationLabel, normalizeFenForPosition } from 'chess-domain';
+import {
+  bestMateWhiteFrom,
+  bestMoveUciFrom,
+  bestScoreCpWhiteFrom,
+  classifyPly,
+  effectiveScoreCpWhite,
+  firstUciMove,
+  lineMoveUci,
+  moveClassificationLabel,
+  normalizeFenForPosition,
+  normalizeStoredEngineLines,
+  shapePositionAnalysisForStorage,
+} from 'chess-domain';
 import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { ImportedGamePlyIndexService } from '../imported-games/ply-index.service';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
@@ -14,17 +26,10 @@ import {
   updateImportedGamePlyAnalysis,
 } from './analysis.repository.prisma';
 import { getLocalBatchStockfishAnalysisConfig, isLocalBatchStockfishAnalysisEnabled } from './batch-analysis.config';
-import { LocalStockfishEngineService } from './local-stockfish-engine.service';
 import { PlyAnalysisUpdate, StorePositionAnalysisInput, StoredEngineLine, StoredPositionAnalysis } from './analysis.types';
-import {
-  bestMateWhiteFrom,
-  bestMoveUciFrom,
-  bestScoreCpWhiteFrom,
-  firstUciMove,
-  lineMoveUci,
-  normalizeStoredEngineLines,
-} from './position-analysis-normalization';
 import { PositionAnalysisService } from './position-analysis.service';
+import { createStockfishEngine } from './stockfish-engine.factory';
+import type { StockfishEngine } from './stockfish-engine';
 
 interface BatchQueueItem {
   userId: number;
@@ -52,12 +57,6 @@ function toEngineFen(fen: string): string {
 
 function sideToMove(fen: string): 'WHITE' | 'BLACK' {
   return fen.trim().split(/\s+/)[1] === 'b' ? 'BLACK' : 'WHITE';
-}
-
-function effectiveScoreCpWhite(scoreCpWhite?: number | null, mateWhite?: number | null): number | null {
-  if (typeof scoreCpWhite === 'number' && Number.isFinite(scoreCpWhite)) return scoreCpWhite;
-  if (typeof mateWhite !== 'number' || !Number.isFinite(mateWhite)) return null;
-  return mateWhite >= 0 ? 1000 : -1000;
 }
 
 function lineMove(line: StoredEngineLine): string | null {
@@ -187,13 +186,12 @@ class BatchAnalysisWriteBuffer {
   enqueuePosition(input: StorePositionAnalysisInput): StoredPositionAnalysis {
     const normalizedFen = normalizeFenForPosition(input.fen);
     const transient = transientPositionAnalysis(input);
-    this.pendingPositionInputs.set(normalizedFen, {
+    this.pendingPositionInputs.set(normalizedFen, shapePositionAnalysisForStorage({
       ...input,
       bestMoveUci: transient.bestMoveUci ?? null,
       bestScoreCpWhite: transient.bestScoreCpWhite ?? null,
       bestMateWhite: transient.bestMateWhite ?? null,
-      persistenceMode: 'compact',
-    });
+    }, 'compact'));
     this.transientPositionCache.set(normalizedFen, transient);
     return transient;
   }
@@ -228,7 +226,7 @@ class BatchAnalysisWriteBuffer {
 }
 
 async function getOrCreatePositionAnalysis(
-  engine: LocalStockfishEngineService,
+  engine: StockfishEngine,
   fen: string,
   options: { depth: number; multipv: number; continueWithoutEngine: boolean },
   engineAvailability: EngineAvailability,
@@ -252,7 +250,7 @@ async function getOrCreatePositionAnalysis(
 }
 
 async function analysePly(
-  engine: LocalStockfishEngineService,
+  engine: StockfishEngine,
   ply: any,
   options: { depth: number; multipv: number; continueWithoutEngine: boolean },
   engineAvailability: EngineAvailability,
@@ -327,7 +325,7 @@ async function completeRun(
 }
 
 async function analyseGame(
-  engine: LocalStockfishEngineService,
+  engine: StockfishEngine,
   userId: number,
   importedGameId: number,
   options: {
@@ -428,10 +426,7 @@ async function drainQueue() {
       const item = queue.shift();
       if (!item) continue;
       const config = getLocalBatchStockfishAnalysisConfig();
-      const engine = new LocalStockfishEngineService({
-        stockfishPath: config.stockfishPath,
-        timeoutMs: config.timeoutMs,
-      });
+      const engine = createStockfishEngine(config);
 
       try {
         for (const gameId of item.gameIds) {
@@ -447,7 +442,7 @@ async function drainQueue() {
           }
         }
       } catch (err) {
-        console.error('Could not start local Stockfish batch analysis', err);
+        console.error('Could not start Stockfish batch analysis', err);
       } finally {
         engine.dispose();
       }

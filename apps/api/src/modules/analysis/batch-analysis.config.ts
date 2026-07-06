@@ -10,6 +10,7 @@ function readBoolean(value: string | undefined): boolean {
 
 export interface LocalBatchStockfishAnalysisConfig {
   enabled: boolean;
+  engine: 'local' | 'wasm';
   stockfishPath: string;
   depth: number;
   multipv: number;
@@ -21,8 +22,10 @@ export function isLocalBatchStockfishAnalysisEnabled(): boolean {
 }
 
 export function getLocalBatchStockfishAnalysisConfig(): LocalBatchStockfishAnalysisConfig {
+  const engine = process.env['STOCKFISH_ENGINE'] === 'wasm' ? 'wasm' : 'local';
   return {
     enabled: isLocalBatchStockfishAnalysisEnabled(),
+    engine,
     stockfishPath: process.env['STOCKFISH_PATH'] || 'stockfish',
     depth: readPositiveInt(
       process.env['STOCKFISH_ANALYSIS_DEPTH'] || process.env['ANALYSIS_DEFAULT_DEPTH'],

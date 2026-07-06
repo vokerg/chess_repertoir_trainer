@@ -1,6 +1,6 @@
 # Position Analysis Cache
 
-Position analysis stores reusable engine results for a normalized chess position. It is shared by browser free analysis, browser imported-game analysis, and backend local Stockfish batch analysis.
+Position analysis stores reusable engine results for a normalized chess position. It is shared by browser free analysis, browser imported-game analysis, and backend Stockfish batch analysis.
 
 ## Stored Data
 
@@ -31,11 +31,11 @@ Per-game ply score loss and classification are stored separately with the existi
 
 ## Backend Batch Flow
 
-Backend local Stockfish batch analysis first checks the database cache through `PositionAnalysisService.getStoredPositionSearch`.
+Backend Stockfish batch analysis first checks the database cache through `PositionAnalysisService.getStoredPositionSearch`.
 
-If no stored row exists, it analyzes the position with local Stockfish and creates a transient in-memory analysis object. Classification can use transient full lines immediately; real database ids are not required for classification.
+If no stored row exists, it analyzes the position with the configured backend engine and creates a transient in-memory analysis object. `STOCKFISH_ENGINE=local` uses the executable from `STOCKFISH_PATH` and remains the default rollback path. `STOCKFISH_ENGINE=wasm` uses the API workspace's npm `stockfish` package in a worker thread, so batch analysis does not require a system Stockfish binary. Classification can use transient full lines immediately; real database ids are not required for classification.
 
-New position-analysis inputs are buffered per game and persisted in bulk chunks through `PositionAnalysisService.storePositionSearches`. Backend batch persists compact rows, so full local-engine PVs are not written to `PositionAnalysis.lines` for imported-game analysis.
+New position-analysis inputs are buffered per game and persisted in bulk chunks through `PositionAnalysisService.storePositionSearches`. Backend batch persists compact rows, so full engine PVs are not written to `PositionAnalysis.lines` for imported-game analysis. Compact batch persistence stores only `bestMoveUci`, `bestScoreCpWhite`, and `bestMateWhite`.
 
 Ply score loss and classification updates are buffered separately and flushed in chunks through `updateImportedGamePlyAnalysis`, which uses set-based SQL.
 
@@ -45,8 +45,8 @@ Before `completeRun`, pending position saves and pending ply updates are fully f
 
 - `GET /api/position-analysis`: returns one cached analysis row for a FEN, or null. It never runs an engine.
 - `POST /api/position-analysis/bulk-lookup`: returns stored rows for a set of FENs. Missing positions are omitted.
-- `POST /api/position-analysis/store`: stores one client/local-engine position analysis. Use `persistenceMode: "compact"` for imported-game analysis and `persistenceMode: "rich"` for free/interactive analysis.
-- `POST /api/position-analysis/bulk-store`: stores up to 500 client/local-engine position analyses and returns `{ positionAnalyses }`.
+- `POST /api/position-analysis/store`: stores one client/backend-engine position analysis. Use `persistenceMode: "compact"` for imported-game analysis and `persistenceMode: "rich"` for free/interactive analysis.
+- `POST /api/position-analysis/bulk-store`: stores up to 500 client/backend-engine position analyses and returns `{ positionAnalyses }`.
 
 ## Invariants
 

@@ -1,22 +1,10 @@
-export interface StoredEngineLine {
-  multipv?: number;
-  depth?: number;
-  moveUci?: string;
-  scoreCpWhite?: number;
-  mateWhite?: number;
-  pvUci: string[];
-}
+import type {
+  PositionAnalysisPersistenceMode,
+  StorePositionAnalysisInput,
+  StoredEngineLine,
+} from 'chess-domain';
 
-export type PositionAnalysisPersistenceMode = 'compact' | 'rich';
-
-export interface StorePositionAnalysisInput {
-  fen: string;
-  bestMoveUci?: string | null;
-  bestScoreCpWhite?: number | null;
-  bestMateWhite?: number | null;
-  lines?: StoredEngineLine[] | null;
-  persistenceMode?: PositionAnalysisPersistenceMode;
-}
+export type { PositionAnalysisPersistenceMode, StorePositionAnalysisInput, StoredEngineLine };
 
 export interface StoredPositionAnalysis {
   id: number;
