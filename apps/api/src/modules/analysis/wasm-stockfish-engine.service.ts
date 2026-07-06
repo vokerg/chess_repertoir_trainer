@@ -1,5 +1,6 @@
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { Worker } from 'node:worker_threads';
+import type { WorkerOptions } from 'node:worker_threads';
 import { parseUciInfoLine, stockfishActiveColorFromFen, storedEngineLineFromUciInfo } from 'chess-domain';
 import { StorePositionAnalysisInput, StoredEngineLine } from './analysis.types';
 import { EngineAnalyzeOptions, StockfishEngine } from './stockfish-engine';
@@ -43,7 +44,8 @@ export class WasmStockfishEngineService implements StockfishEngine {
   async init(): Promise<void> {
     if (this.worker) return;
 
-    const worker = new Worker(join(__dirname, 'wasm-stockfish-worker.js'));
+    const workerConfig = resolveWasmStockfishWorkerConfig();
+    const worker = new Worker(workerConfig.filename, { execArgv: workerConfig.execArgv });
     this.worker = worker;
     worker.on('message', (message: WorkerMessage) => this.handleWorkerMessage(message));
     worker.on('error', (err) => {
@@ -254,6 +256,19 @@ export class WasmStockfishEngineService implements StockfishEngine {
       this.activeAnalysis = null;
     }
   }
+}
+
+export interface WasmStockfishWorkerConfig {
+  filename: string;
+  execArgv: WorkerOptions['execArgv'];
+}
+
+export function resolveWasmStockfishWorkerConfig(moduleFilename = __filename, moduleDirname = __dirname): WasmStockfishWorkerConfig {
+  const isTypeScriptRuntime = extname(moduleFilename) === '.ts';
+  return {
+    filename: join(moduleDirname, isTypeScriptRuntime ? 'wasm-stockfish-worker.ts' : 'wasm-stockfish-worker.js'),
+    execArgv: isTypeScriptRuntime ? ['-r', 'ts-node/register/transpile-only'] : [],
+  };
 }
 
 function normalizeWorkerErrorMessage(message: string): string {

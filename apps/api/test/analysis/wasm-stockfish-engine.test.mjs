@@ -1,5 +1,22 @@
 import assert from 'node:assert/strict';
-import { WasmStockfishEngineService } from '../../dist/modules/analysis/wasm-stockfish-engine.service.js';
+import {
+  resolveWasmStockfishWorkerConfig,
+  WasmStockfishEngineService,
+} from '../../dist/modules/analysis/wasm-stockfish-engine.service.js';
+
+const compiledWorker = resolveWasmStockfishWorkerConfig(
+  '/repo/apps/api/dist/modules/analysis/wasm-stockfish-engine.service.js',
+  '/repo/apps/api/dist/modules/analysis',
+);
+assert.equal(compiledWorker.filename, '/repo/apps/api/dist/modules/analysis/wasm-stockfish-worker.js');
+assert.deepEqual(compiledWorker.execArgv, []);
+
+const devWorker = resolveWasmStockfishWorkerConfig(
+  '/repo/apps/api/src/modules/analysis/wasm-stockfish-engine.service.ts',
+  '/repo/apps/api/src/modules/analysis',
+);
+assert.equal(devWorker.filename, '/repo/apps/api/src/modules/analysis/wasm-stockfish-worker.ts');
+assert.deepEqual(devWorker.execArgv, ['-r', 'ts-node/register/transpile-only']);
 
 const engine = new WasmStockfishEngineService({
   timeoutMs: 30_000,
