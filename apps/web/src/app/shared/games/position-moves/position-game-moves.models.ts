@@ -1,4 +1,3 @@
-import type { PositionAnalysisCache } from '../../chess/engine/position-analysis-cache.service';
 import type { Provider, ResultForUser, UserColor } from '../game.models';
 
 export type { Provider, ResultForUser, UserColor } from '../game.models';
@@ -85,10 +84,21 @@ export interface OpeningAnalysisResponse {
   ratedOnly: boolean;
   occurrences: number;
   games: OpeningWdl;
-  performance: OpeningPositionPerformance;
   nextMoves: OpeningNextMove[];
+  appliedFilters: Record<string, unknown>;
+}
+
+export interface OpeningAnalysisPerformanceResponse {
+  fen: string;
+  normalizedFen: string;
+  performance: OpeningPositionPerformance;
+  appliedFilters: Record<string, unknown>;
+}
+
+export interface OpeningAnalysisTopGamesResponse {
+  fen: string;
+  normalizedFen: string;
   topGames: OpeningAnalysisGame[];
-  positionAnalysis: PositionAnalysisCache | null;
   appliedFilters: Record<string, unknown>;
 }
 

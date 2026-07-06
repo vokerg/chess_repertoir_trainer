@@ -83,6 +83,6 @@
   </div>
 
   @if (showTopGames()) {
-    <app-position-top-games [games]="analysis()?.topGames || []" [loading]="loading()" />
+    <app-position-top-games [games]="topGames()" [loading]="topGamesLoading()" />
   }
 </section>

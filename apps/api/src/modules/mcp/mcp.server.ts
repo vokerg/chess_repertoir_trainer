@@ -192,7 +192,7 @@ export function createChessMcpServer(logger: McpLogger, userId?: number) {
   }, async (input) => {
     if (!userId) return toMcpError('Application user authentication is required for imported-game tools.', 'UNAUTHORIZED');
     try {
-      const analysis = await OpeningAnalysisService.getPosition(userId, toOpeningAnalysisQuery(input));
+      const analysis = await OpeningAnalysisService.getPositionLegacy(userId, toOpeningAnalysisQuery(input));
       return structuredResult(
         `Loaded opening analysis for ${analysis.normalizedFen} from ${analysis.games.total} games.`,
         analysis,

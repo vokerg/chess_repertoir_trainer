@@ -472,6 +472,7 @@ model MoveNode {
   trainingAttempts TrainingAttemptMove[]
   plyNumber       Int
   fenBefore       String
+  fenBeforeNormalized String?  @db.VarChar(120)
   fenAfter        String
   moveUci         String
   moveSan         String
@@ -490,6 +491,7 @@ model MoveNode {
 
   @@index([lineId, parentId])
   @@index([lineId, parentId, moveUci])
+  @@index([fenBeforeNormalized])
 }
 
 model TrainingSession {

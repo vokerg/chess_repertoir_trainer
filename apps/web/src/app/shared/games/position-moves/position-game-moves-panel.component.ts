@@ -13,7 +13,7 @@ import { GameFilters } from '../filters/game-filter.model';
 import { summaryGameFilters } from '../filters/game-filter-summary';
 import { PositionTopGamesComponent } from './position-top-games.component';
 import { providerLabel, scoreLabel, wdlLabel } from './position-game-moves.helpers';
-import { OpeningAnalysisResponse, OpeningNextMove, OpeningWdl } from './position-game-moves.models';
+import { OpeningAnalysisGame, OpeningAnalysisResponse, OpeningNextMove, OpeningWdl } from './position-game-moves.models';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 
@@ -28,6 +28,8 @@ const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct
 export class PositionGameMovesPanelComponent implements OnInit {
   readonly analysis = input<OpeningAnalysisResponse | null>(null);
   readonly loading = input(false);
+  readonly topGames = input<OpeningAnalysisGame[]>([]);
+  readonly topGamesLoading = input(false);
   readonly error = input<string | null>(null);
   readonly filters = input.required<GameFilters>();
   readonly facets = input<ImportedGameFacetsResponse>({});

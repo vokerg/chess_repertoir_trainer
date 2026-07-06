@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../auth/request-auth';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import { ImportedGamesService } from './imported-games.service';
-import { importedGameSearchQuerySchema, openingAnalysisQuerySchema } from './imported-games.schemas';
+import { importedGameSearchQuerySchema, openingAnalysisQuerySchema, openingAnalysisTopGamesQuerySchema } from './imported-games.schemas';
 import { ImportedGamePlyIndexService } from './ply-index.service';
 import { OpeningAnalysisService } from './opening-analysis.service';
 import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis.config';
@@ -14,6 +14,8 @@ import {
   getImportedGamePgnOpenApiOperation,
   getImportedGameTagDefinitionsOpenApiOperation,
   getOpeningAnalysisOpenApiOperation,
+  getOpeningAnalysisPerformanceOpenApiOperation,
+  getOpeningAnalysisTopGamesOpenApiOperation,
   importedGamesOpenApiSchemas,
   indexImportedGamePlyOpenApiOperation,
   listImportedGamesOpenApiOperation,
@@ -69,7 +71,51 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
 
       try {
-        return await OpeningAnalysisService.getPosition(auth.userId, parsed.data);
+        return await OpeningAnalysisService.getPosition(auth.userId, parsed.data, request.log);
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'get',
+    url: '/api/opening-analysis/performance',
+    operation: getOpeningAnalysisPerformanceOpenApiOperation,
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const parsed = openingAnalysisQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        return await OpeningAnalysisService.getPerformance(auth.userId, parsed.data, request.log);
+      } catch (err: any) {
+        reply.code(400);
+        return { error: err?.message ?? String(err) };
+      }
+    },
+  });
+
+  registerOpenApiRoute(app, {
+    method: 'get',
+    url: '/api/opening-analysis/top-games',
+    operation: getOpeningAnalysisTopGamesOpenApiOperation,
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+      const parsed = openingAnalysisTopGamesQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        reply.code(400);
+        return { error: parsed.error.errors };
+      }
+
+      try {
+        return await OpeningAnalysisService.getTopGames(auth.userId, parsed.data, parsed.data.limit, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };

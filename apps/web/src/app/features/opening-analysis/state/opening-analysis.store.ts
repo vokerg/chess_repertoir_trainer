@@ -8,6 +8,8 @@ import { PositionGameMovesApiService } from '../../../shared/games/position-move
 import { buildOpeningAnalysisQuery, defaultOpeningFilters } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import {
   OpeningAnalysisResponse,
+  OpeningAnalysisGame,
+  OpeningPositionPerformance,
   OpeningNextMove,
   OpeningWdl,
   PlayedMove,
@@ -44,8 +46,14 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly facets = signal<ImportedGameFacetsResponse>({});
   readonly filters = signal<GameFilters>(defaultOpeningFilters());
   readonly analysis = signal<OpeningAnalysisResponse | null>(null);
+  readonly performance = signal<OpeningPositionPerformance | null>(null);
+  readonly topGames = signal<OpeningAnalysisGame[]>([]);
   readonly loading = signal(false);
+  readonly performanceLoading = signal(false);
+  readonly topGamesLoading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly performanceError = signal<string | null>(null);
+  readonly topGamesError = signal<string | null>(null);
   readonly boardPositionVersion = signal(0);
   readonly lastMove = signal<{ from: string; to: string } | null>(null);
   readonly history = signal<PlayedMove[]>([]);
@@ -74,6 +82,8 @@ export class OpeningAnalysisStore implements OnDestroy {
 
   private chess = new Chess();
   private refreshRequestSeq = 0;
+  private performanceRequestSeq = 0;
+  private topGamesRequestSeq = 0;
   private initialized = false;
 
   initialize(): void {
@@ -89,21 +99,57 @@ export class OpeningAnalysisStore implements OnDestroy {
 
   async refresh(): Promise<void> {
     const requestId = ++this.refreshRequestSeq;
+    const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
+    this.performance.set(null);
+    this.topGames.set([]);
+    void this.refreshPerformance(query);
+    void this.refreshTopGames(query);
     this.loading.set(true);
     this.error.set(null);
     try {
-      const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
       const analysis = await firstValueFrom(this.api.getAnalysis(query));
       if (requestId !== this.refreshRequestSeq) return;
       this.analysis.set(analysis);
       this.loading.set(false);
-      this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen(), {
-        seedPosition: analysis.positionAnalysis,
-      });
+      this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen());
     } catch (error) {
       if (requestId !== this.refreshRequestSeq) return;
       this.error.set(readError(error, 'Could not load opening analysis.'));
       this.loading.set(false);
+    }
+  }
+
+  private async refreshPerformance(query: string): Promise<void> {
+    const requestId = ++this.performanceRequestSeq;
+    this.performanceLoading.set(true);
+    this.performanceError.set(null);
+    try {
+      const response = await firstValueFrom(this.api.getPerformance(query));
+      if (requestId !== this.performanceRequestSeq) return;
+      this.performance.set(response.performance);
+    } catch (error) {
+      if (requestId !== this.performanceRequestSeq) return;
+      this.performance.set(null);
+      this.performanceError.set(readError(error, 'Could not load position performance.'));
+    } finally {
+      if (requestId === this.performanceRequestSeq) this.performanceLoading.set(false);
+    }
+  }
+
+  private async refreshTopGames(query: string): Promise<void> {
+    const requestId = ++this.topGamesRequestSeq;
+    this.topGamesLoading.set(true);
+    this.topGamesError.set(null);
+    try {
+      const response = await firstValueFrom(this.api.getTopGames(query));
+      if (requestId !== this.topGamesRequestSeq) return;
+      this.topGames.set(response.topGames);
+    } catch (error) {
+      if (requestId !== this.topGamesRequestSeq) return;
+      this.topGames.set([]);
+      this.topGamesError.set(readError(error, 'Could not load top games.'));
+    } finally {
+      if (requestId === this.topGamesRequestSeq) this.topGamesLoading.set(false);
     }
   }
 
@@ -148,9 +194,7 @@ export class OpeningAnalysisStore implements OnDestroy {
   }
 
   rerunAnalysis(): void {
-    this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen(), {
-      seedPosition: this.analysis()?.positionAnalysis ?? null,
-    });
+    this.positionAnalysis.analyzeInteractiveRichPosition(this.currentFen());
   }
 
   private async loadFacets(): Promise<void> {

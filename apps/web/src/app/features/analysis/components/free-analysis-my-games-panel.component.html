@@ -16,5 +16,5 @@
     <p class="status-error">{{ currentError }}</p>
   }
 
-  <app-position-top-games [games]="analysis()?.topGames || []" [loading]="loading()" />
+  <app-position-top-games [games]="topGames()" [loading]="loading()" />
 </app-panel>

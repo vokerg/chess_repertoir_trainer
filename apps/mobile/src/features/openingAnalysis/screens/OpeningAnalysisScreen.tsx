@@ -89,7 +89,7 @@ export function OpeningAnalysisScreen() {
       </Card>
       <Card style={styles.summary}>
         <Text style={styles.title}>Top games</Text>
-        {query.data?.topGames.map((game) => (
+        {query.data?.topGames?.map((game) => (
           <Link key={game.id} href={`/games/${game.id}`} asChild>
             <Button title={`${game.white?.username ?? 'White'} vs ${game.black?.username ?? 'Black'}`} variant="ghost" />
           </Link>

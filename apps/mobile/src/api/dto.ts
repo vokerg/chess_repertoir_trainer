@@ -246,7 +246,7 @@ export interface OpeningAnalysisResponseDto {
     occurrences: number;
     games: OpeningWdlDto;
   }>;
-  topGames: ImportedGameListItemDto[];
+  topGames?: ImportedGameListItemDto[];
   appliedFilters: Record<string, unknown>;
 }
 

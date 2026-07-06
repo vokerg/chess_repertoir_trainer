@@ -19,7 +19,7 @@ import {
   getCourseById,
   getLineById,
   getLineMoveNodes,
-  listCourseMoveNodeCandidatesForUser,
+  listCourseMoveNodesForNormalizedFen,
   getNodeById,
   listChapters,
   listCourses,
@@ -114,9 +114,8 @@ interface CoursePositionSuggestion {
 export const CoursePositionSuggestionService = {
   listForFen: async (userId: number, fen: string) => {
     const normalizedFen = normalizeFenForPosition(fen);
-    const candidates = await listCourseMoveNodeCandidatesForUser(userId);
+    const candidates = await listCourseMoveNodesForNormalizedFen(userId, normalizedFen);
     const suggestions: CoursePositionSuggestion[] = candidates
-      .filter((node) => normalizeFenForPosition(node.fenBefore) === normalizedFen)
       .map((node) => ({
         nodeId: node.id,
         fenBefore: node.fenBefore,

@@ -1,8 +1,8 @@
 # Opening Position Performance
 
-`GET /api/opening-analysis` returns a `performance` summary for the requested position. The summary is computed on the server from distinct imported games that reached the normalized FEN.
+`GET /api/opening-analysis/performance` returns a `performance` summary for the requested position. The summary is computed on the server from distinct imported games that reached the normalized FEN. The core `GET /api/opening-analysis` response intentionally does not include this summary.
 
-The performance sample uses the same SQL-filtered ply rows as the position WDL and next-move aggregation. All current imported-game filters apply before aggregation, including rated state, speed category, user color, date range, opening ECO/name, analysis status, accuracy, classification, `tagCodes`, and `tagFilter`.
+The performance sample uses the same imported-game filter semantics as the position WDL and next-move aggregation. Prisma narrows to distinct matching games before the TypeScript performance summarizer applies the API-owned tag bucket taxonomy. All current imported-game filters apply before aggregation, including rated state, speed category, user color, date range, opening ECO/name, analysis status, accuracy, classification, `tagCodes`, and `tagFilter`.
 
 If a `tagCodes` or `tagFilter` filter is active, the performance sample is already narrowed to matching games. The summary then describes that narrowed sample.
 

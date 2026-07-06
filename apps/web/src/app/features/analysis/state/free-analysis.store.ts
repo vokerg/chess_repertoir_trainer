@@ -6,7 +6,7 @@ import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
 import { buildOpeningAnalysisQuery } from '../../../shared/games/position-moves/position-game-moves.helpers';
-import { OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
+import { OpeningAnalysisGame, OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
 import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
@@ -55,6 +55,7 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly myGamesFilters = signal<GameFilters>(defaultGameFilters());
   readonly myGamesFacets = signal<ImportedGameFacetsResponse>({});
   readonly myGamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
+  readonly myGamesTopGames = signal<OpeningAnalysisGame[]>([]);
   readonly myGamesLoading = signal(false);
   readonly myGamesError = signal<string | null>(null);
   readonly botChallengeOpen = signal(false);
@@ -212,11 +213,16 @@ export class FreeAnalysisStore implements OnDestroy {
     this.myGamesError.set(null);
     try {
       const query = buildOpeningAnalysisQuery(this.currentFen(), this.myGamesFilters());
-      const analysis = await firstValueFrom(this.positionGamesApi.getAnalysis(query));
+      const [analysis, topGames] = await Promise.all([
+        firstValueFrom(this.positionGamesApi.getAnalysis(query)),
+        firstValueFrom(this.positionGamesApi.getTopGames(query)),
+      ]);
       if (requestVersion !== this.myGamesRequestVersion) return;
       this.myGamesAnalysis.set(analysis);
+      this.myGamesTopGames.set(topGames.topGames);
     } catch (error) {
       if (requestVersion !== this.myGamesRequestVersion) return;
+      this.myGamesTopGames.set([]);
       this.myGamesError.set(readError(error, 'Could not load games for this position.'));
     } finally {
       if (requestVersion === this.myGamesRequestVersion) this.myGamesLoading.set(false);
