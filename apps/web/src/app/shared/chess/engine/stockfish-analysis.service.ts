@@ -1,4 +1,5 @@
 import { Injectable, NgZone, OnDestroy } from '@angular/core';
+import { parseUciInfoLine } from 'chess-domain';
 import { BehaviorSubject } from 'rxjs';
 
 export interface EngineLine {
@@ -225,23 +226,16 @@ export class StockfishAnalysisService implements OnDestroy {
   }
 
   private parseInfo(message: string): EngineLine | null {
-    const tokens = message.split(/\s+/);
-    const depthIndex = tokens.indexOf('depth');
-    const pvIndex = tokens.indexOf('pv');
-    const scoreIndex = tokens.indexOf('score');
-    if (depthIndex < 0 || pvIndex < 0 || scoreIndex < 0) return null;
+    const parsed = parseUciInfoLine(message, { pvMoveLimit: this.currentRun?.pvMoveLimit });
+    if (!parsed) return null;
 
-    const multipvIndex = tokens.indexOf('multipv');
-    const multipv = multipvIndex >= 0 ? Number(tokens[multipvIndex + 1]) || 1 : 1;
-    const depth = Number(tokens[depthIndex + 1]) || 0;
-    const scoreKind = tokens[scoreIndex + 1];
-    const scoreValue = Number(tokens[scoreIndex + 2]);
-    const pv = tokens.slice(pvIndex + 1).filter(Boolean);
-    const limitedPv = this.currentRun?.pvMoveLimit ? pv.slice(0, this.currentRun.pvMoveLimit) : pv;
-
-    const line: EngineLine = { multipv, depth, pv: limitedPv };
-    if (scoreKind === 'cp') line.scoreCp = scoreValue;
-    if (scoreKind === 'mate') line.mate = scoreValue;
+    const line: EngineLine = {
+      multipv: parsed.multipv,
+      depth: parsed.depth ?? 0,
+      pv: parsed.pvUci,
+    };
+    if (parsed.scoreCp !== undefined) line.scoreCp = parsed.scoreCp;
+    if (parsed.mate !== undefined) line.mate = parsed.mate;
     return line;
   }
 

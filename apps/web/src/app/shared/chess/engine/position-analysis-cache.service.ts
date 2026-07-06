@@ -1,5 +1,12 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { Chess } from 'chess.js';
+import {
+  effectiveScoreCpWhite,
+  firstUciMove,
+  scoreFromSideToMoveToWhite,
+  scoreFromWhiteToSideToMove,
+  shapePositionAnalysisForStorage,
+} from 'chess-domain';
 import { BehaviorSubject, firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import { EngineAnalysis, EngineLine, StockfishAnalysisService } from './stockfish-analysis.service';
@@ -68,12 +75,7 @@ export interface PositionAnalysisSeedCandidate {
   positionAnalysis?: PositionAnalysisCache | null;
 }
 
-const UCI_MOVE_RE = /^[a-h][1-8][a-h][1-8][qrbn]?$/i;
-
-export function firstUciMove(value?: string | null): string | null {
-  const token = value?.trim().split(/\s+/)[0]?.toLowerCase();
-  return token && UCI_MOVE_RE.test(token) ? token : null;
-}
+export { firstUciMove } from 'chess-domain';
 
 function defaultRequiredDepth(depth: number, cacheRequirement: PositionAnalysisCacheRequirement): number {
   return cacheRequirement === 'lines' && depth >= RICH_INTERACTIVE_ANALYSIS_DEPTH
@@ -301,10 +303,7 @@ export class PositionAnalysisCacheService implements OnDestroy {
   }
 
   effectiveScoreCpWhite(scoreCpWhite?: number | null, mateWhite?: number | null): number | null {
-    if (typeof scoreCpWhite === 'number') return scoreCpWhite;
-    if (typeof mateWhite !== 'number') return null;
-    const sign = mateWhite >= 0 ? 1 : -1;
-    return sign * (30000 - Math.min(1000, Math.abs(mateWhite) * 100));
+    return effectiveScoreCpWhite(scoreCpWhite, mateWhite);
   }
 
   private async analyzeForUi(fen: string, options: CachedPositionAnalysisOptions): Promise<void> {
@@ -517,15 +516,25 @@ export class PositionAnalysisCacheService implements OnDestroy {
     positionAnalysis: PositionAnalysisCache,
     persistenceMode: PositionAnalysisPersistenceMode,
   ): PositionAnalysisStoreRequest {
-    const request: PositionAnalysisStoreRequest = {
+    const shaped = shapePositionAnalysisForStorage({
       fen,
       bestMoveUci: this.bestMoveFromPosition(positionAnalysis),
       bestScoreCpWhite: positionAnalysis.bestScoreCpWhite,
       bestMateWhite: positionAnalysis.bestMateWhite,
-      persistenceMode,
+      lines: positionAnalysis.lines.map((line) => ({
+        multipv: line.multipv,
+        depth: line.depth,
+        moveUci: firstUciMove(line.moveUci) ?? undefined,
+        scoreCpWhite: line.scoreCpWhite ?? undefined,
+        mateWhite: line.mateWhite ?? undefined,
+        pvUci: line.pvUci ?? [],
+      })),
+    }, persistenceMode);
+
+    return {
+      ...shaped,
+      lines: shaped.lines ?? undefined,
     };
-    if (persistenceMode === 'rich') request.lines = positionAnalysis.lines;
-    return request;
   }
 
   private memoryPosition(
@@ -615,8 +624,8 @@ export class PositionAnalysisCacheService implements OnDestroy {
       fen,
       normalizedFen: this.normalizeFenForPosition(fen),
       bestMoveUci: firstUciMove(analysis.bestMove) ?? firstUciMove(analysis.lines[0]?.pv?.[0]) ?? undefined,
-      bestScoreCpWhite: this.scoreFromSideToMoveToWhite(analysis.lines[0]?.scoreCp, fen),
-      bestMateWhite: this.scoreFromSideToMoveToWhite(analysis.lines[0]?.mate, fen),
+      bestScoreCpWhite: scoreFromSideToMoveToWhite(analysis.lines[0]?.scoreCp, fen),
+      bestMateWhite: scoreFromSideToMoveToWhite(analysis.lines[0]?.mate, fen),
       lines: analysis.lines.slice(0, multipv).map((line) => this.toPositionAnalysisLine(line, fen)),
       fromCache: false,
     };
@@ -628,9 +637,9 @@ export class PositionAnalysisCacheService implements OnDestroy {
       .map((line, index) => ({
         multipv: line.multipv ?? index + 1,
         depth: line.depth ?? 0,
-        scoreCp: this.scoreFromWhiteToSideToMove(line.scoreCpWhite ?? undefined, fen),
-        mate: this.scoreFromWhiteToSideToMove(line.mateWhite ?? undefined, fen),
-      pv: line.pvUci ?? (line.moveUci ? [line.moveUci] : []),
+        scoreCp: scoreFromWhiteToSideToMove(line.scoreCpWhite ?? undefined, fen),
+        mate: scoreFromWhiteToSideToMove(line.mateWhite ?? undefined, fen),
+        pv: line.pvUci ?? (line.moveUci ? [line.moveUci] : []),
       }))
       .filter((line) => line.pv.length);
   }
@@ -640,20 +649,10 @@ export class PositionAnalysisCacheService implements OnDestroy {
       multipv: line.multipv,
       depth: line.depth,
       moveUci: firstUciMove(line.pv[0]) ?? undefined,
-      scoreCpWhite: this.scoreFromSideToMoveToWhite(line.scoreCp, fen),
-      mateWhite: this.scoreFromSideToMoveToWhite(line.mate, fen),
+      scoreCpWhite: scoreFromSideToMoveToWhite(line.scoreCp, fen),
+      mateWhite: scoreFromSideToMoveToWhite(line.mate, fen),
       pvUci: line.pv.map((move) => firstUciMove(move)).filter((move): move is string => move !== null),
     };
-  }
-
-  private scoreFromWhiteToSideToMove(value: number | undefined, fen: string): number | undefined {
-    if (value === undefined) return undefined;
-    return fen.split(/\s+/)[1] === 'b' ? -value : value;
-  }
-
-  private scoreFromSideToMoveToWhite(value: number | undefined, fen: string): number | undefined {
-    if (value === undefined) return undefined;
-    return fen.split(/\s+/)[1] === 'b' ? -value : value;
   }
 
   private normalizeFenForPosition(fen: string): string {

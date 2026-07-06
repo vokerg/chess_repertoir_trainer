@@ -1,7 +1,5 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { delimiter, extname, isAbsolute, join } from 'node:path';
-import { createInterface, Interface } from 'node:readline';
+import { join } from 'node:path';
+import { Worker } from 'node:worker_threads';
 import { parseUciInfoLine, stockfishActiveColorFromFen, storedEngineLineFromUciInfo } from 'chess-domain';
 import { StorePositionAnalysisInput, StoredEngineLine } from './analysis.types';
 import { EngineAnalyzeOptions, StockfishEngine } from './stockfish-engine';
@@ -23,48 +21,47 @@ interface ActiveAnalysis {
   timer: NodeJS.Timeout;
 }
 
-export interface LocalStockfishEngineOptions {
-  stockfishPath: string;
+interface WasmStockfishEngineOptions {
   timeoutMs: number;
 }
 
-export class LocalStockfishEngineService implements StockfishEngine {
-  private process: ChildProcessWithoutNullStreams | null = null;
-  private stdout: Interface | null = null;
+type WorkerMessage =
+  | { type: 'ready' }
+  | { type: 'line'; line: string }
+  | { type: 'error'; error: string };
+
+export class WasmStockfishEngineService implements StockfishEngine {
+  private worker: Worker | null = null;
   private waiters: PendingLineWaiter[] = [];
   private activeAnalysis: ActiveAnalysis | null = null;
-  private stderrBuffer = '';
+  private startupWaiter: { resolve: () => void; reject: (err: Error) => void; timer: NodeJS.Timeout } | null = null;
 
-  constructor(private readonly options: LocalStockfishEngineOptions) {}
+  constructor(private readonly options: WasmStockfishEngineOptions) {}
 
   async init(): Promise<void> {
-    if (this.process) return;
+    if (this.worker) return;
 
-    const stockfishPath = resolveStockfishPath(this.options.stockfishPath);
-    const child = spawn(stockfishPath, [], {
-      stdio: 'pipe',
-      shell: process.platform === 'win32' && ['.bat', '.cmd'].includes(extname(stockfishPath).toLowerCase()),
-      windowsHide: true,
+    const worker = new Worker(join(__dirname, 'wasm-stockfish-worker.js'));
+    this.worker = worker;
+    worker.on('message', (message: WorkerMessage) => this.handleWorkerMessage(message));
+    worker.on('error', (err) => {
+      if (this.worker === worker) this.worker = null;
+      this.rejectStartup(err);
+      this.rejectAll(err);
     });
-    this.process = child;
-    this.stdout = createInterface({ input: child.stdout });
-    this.stdout.on('line', (line) => this.handleLine(line.trim()));
-    child.stderr.on('data', (chunk) => {
-      this.stderrBuffer += chunk.toString();
-    });
-    child.on('exit', (code, signal) => {
-      const reason = `Local Stockfish exited with code ${code ?? 'null'} and signal ${signal ?? 'null'}`;
-      if (this.process === child) this.process = null;
-      this.rejectAll(new Error(reason));
-    });
-    child.on('error', (err) => {
-      if (this.process === child) this.process = null;
+    worker.on('exit', (code) => {
+      const err = new Error(`WASM Stockfish worker exited with code ${code}`);
+      if (this.worker === worker) this.worker = null;
+      this.rejectStartup(err);
       this.rejectAll(err);
     });
 
     await new Promise<void>((resolve, reject) => {
-      child.once('spawn', resolve);
-      child.once('error', reject);
+      const timer = setTimeout(() => {
+        this.startupWaiter = null;
+        reject(new Error(`WASM Stockfish worker did not start within ${this.options.timeoutMs}ms`));
+      }, this.options.timeoutMs);
+      this.startupWaiter = { resolve, reject, timer };
     });
 
     this.send('uci');
@@ -78,7 +75,7 @@ export class LocalStockfishEngineService implements StockfishEngine {
   async analyzePosition(fen: string, options: EngineAnalyzeOptions): Promise<StorePositionAnalysisInput> {
     await this.init();
     if (this.activeAnalysis) {
-      throw new Error('Local Stockfish analysis is already running');
+      throw new Error('WASM Stockfish analysis is already running');
     }
 
     const activeColor = stockfishActiveColorFromFen(fen);
@@ -88,7 +85,7 @@ export class LocalStockfishEngineService implements StockfishEngine {
 
     return new Promise<StorePositionAnalysisInput>((resolve, reject) => {
       const timer = setTimeout(() => {
-        const err = new Error(`Local Stockfish analysis timed out after ${this.options.timeoutMs}ms`);
+        const err = new Error(`WASM Stockfish analysis timed out after ${this.options.timeoutMs}ms`);
         this.activeAnalysis = null;
         reject(err);
       }, this.options.timeoutMs);
@@ -109,13 +106,13 @@ export class LocalStockfishEngineService implements StockfishEngine {
   }
 
   dispose(): void {
-    const child = this.process;
-    this.process = null;
-    this.stdout?.close();
-    this.stdout = null;
-    this.rejectAll(new Error('Local Stockfish disposed'));
-    if (child && !child.killed) {
-      child.kill();
+    const worker = this.worker;
+    this.worker = null;
+    this.rejectStartup(new Error('WASM Stockfish disposed'));
+    this.rejectAll(new Error('WASM Stockfish disposed'));
+    if (worker) {
+      worker.postMessage({ type: 'command', command: 'quit' });
+      void worker.terminate();
     }
   }
 
@@ -128,7 +125,7 @@ export class LocalStockfishEngineService implements StockfishEngine {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.waiters = this.waiters.filter((waiter) => waiter.timer !== timer);
-        reject(new Error(`Timed out waiting for local Stockfish response${this.stderrBuffer ? `: ${this.stderrBuffer}` : ''}`));
+        reject(new Error('Timed out waiting for WASM Stockfish response'));
       }, this.options.timeoutMs);
 
       this.waiters.push({ test, resolve, reject, timer });
@@ -136,10 +133,30 @@ export class LocalStockfishEngineService implements StockfishEngine {
   }
 
   private send(command: string): void {
-    if (!this.process?.stdin.writable) {
-      throw new Error('Local Stockfish process is not running');
+    if (!this.worker) {
+      throw new Error('WASM Stockfish worker is not running');
     }
-    this.process.stdin.write(`${command}\n`);
+    this.worker.postMessage({ type: 'command', command });
+  }
+
+  private handleWorkerMessage(message: WorkerMessage): void {
+    if (message.type === 'ready') {
+      if (this.startupWaiter) {
+        clearTimeout(this.startupWaiter.timer);
+        this.startupWaiter.resolve();
+        this.startupWaiter = null;
+      }
+      return;
+    }
+
+    if (message.type === 'error') {
+      const err = new Error(message.error);
+      this.rejectStartup(err);
+      this.rejectAll(err);
+      return;
+    }
+
+    this.handleLine(message.line.trim());
   }
 
   private handleLine(line: string): void {
@@ -205,6 +222,13 @@ export class LocalStockfishEngineService implements StockfishEngine {
     });
   }
 
+  private rejectStartup(err: Error): void {
+    if (!this.startupWaiter) return;
+    clearTimeout(this.startupWaiter.timer);
+    this.startupWaiter.reject(err);
+    this.startupWaiter = null;
+  }
+
   private rejectAll(err: Error): void {
     for (const waiter of this.waiters) {
       clearTimeout(waiter.timer);
@@ -218,35 +242,6 @@ export class LocalStockfishEngineService implements StockfishEngine {
       this.activeAnalysis = null;
     }
   }
-}
-
-function resolveStockfishPath(stockfishPath: string): string {
-  if (process.platform !== 'win32') return stockfishPath;
-  if (isAbsolute(stockfishPath) || stockfishPath.includes('/') || stockfishPath.includes('\\')) {
-    if (existsSync(stockfishPath)) return stockfishPath;
-    throw missingExecutableError(stockfishPath);
-  }
-
-  const extensions = extname(stockfishPath)
-    ? ['']
-    : (process.env['PATHEXT'] || '.COM;.EXE;.BAT;.CMD').split(';');
-  for (const directory of (process.env['PATH'] || '').split(delimiter).filter(Boolean)) {
-    for (const extension of extensions) {
-      const candidate = join(directory, `${stockfishPath}${extension}`);
-      if (existsSync(candidate)) return candidate;
-    }
-  }
-
-  throw missingExecutableError(stockfishPath);
-}
-
-function missingExecutableError(stockfishPath: string): NodeJS.ErrnoException {
-  const error = new Error(`spawn ${stockfishPath} ENOENT`) as NodeJS.ErrnoException;
-  error.code = 'ENOENT';
-  error.errno = -4058;
-  error.syscall = `spawn ${stockfishPath}`;
-  error.path = stockfishPath;
-  return error;
 }
 
 function toEngineFen(fen: string): string {
