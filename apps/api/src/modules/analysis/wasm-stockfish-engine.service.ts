@@ -25,6 +25,8 @@ interface WasmStockfishEngineOptions {
   timeoutMs: number;
 }
 
+const MISSING_STOCKFISH_PACKAGE_ERROR = 'WASM Stockfish engine is not installed. Add stockfish to apps/api dependencies or use STOCKFISH_ENGINE=local.';
+
 type WorkerMessage =
   | { type: 'ready' }
   | { type: 'line'; line: string }
@@ -150,13 +152,23 @@ export class WasmStockfishEngineService implements StockfishEngine {
     }
 
     if (message.type === 'error') {
-      const err = new Error(message.error);
+      const err = new Error(normalizeWorkerErrorMessage(message.error));
+      this.stopWorker();
       this.rejectStartup(err);
       this.rejectAll(err);
       return;
     }
 
     this.handleLine(message.line.trim());
+  }
+
+  private stopWorker(): void {
+    const worker = this.worker;
+    this.worker = null;
+    if (worker) {
+      worker.removeAllListeners();
+      void worker.terminate();
+    }
   }
 
   private handleLine(line: string): void {
@@ -242,6 +254,12 @@ export class WasmStockfishEngineService implements StockfishEngine {
       this.activeAnalysis = null;
     }
   }
+}
+
+function normalizeWorkerErrorMessage(message: string): string {
+  return message.includes("Cannot find module 'stockfish'")
+    ? MISSING_STOCKFISH_PACKAGE_ERROR
+    : message;
 }
 
 function toEngineFen(fen: string): string {
