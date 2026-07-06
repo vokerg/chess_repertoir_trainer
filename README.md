@@ -131,7 +131,7 @@ Recommended versions:
 
 Angular 21 requires a modern Node/TypeScript toolchain, so Node 18 is not the target for this repo.
 
-Backend imported-game analysis also requires a server-side Stockfish executable. Locally, install Stockfish and set `STOCKFISH_PATH` if the executable is not available as `stockfish` on `PATH`.
+Backend imported-game analysis can use either a server-side Stockfish executable or the npm `stockfish` package. The executable engine remains the default rollback path; set `STOCKFISH_ENGINE=wasm` to use the npm engine in a worker thread without requiring a system Stockfish binary.
 
 ## Installation
 
@@ -176,18 +176,14 @@ Chess.com public API import requests should use a recognizable user agent with a
 Backend Stockfish analysis env knobs:
 
 ```text
+LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED=false
+STOCKFISH_ENGINE=local
 STOCKFISH_PATH=stockfish
-STOCKFISH_VERSION=stockfish-local
-ANALYSIS_DEFAULT_DEPTH=12
-ANALYSIS_MAX_DEPTH=16
-ANALYSIS_DEFAULT_MULTIPV=3
-ANALYSIS_MAX_MULTIPV=3
-ANALYSIS_TIMEOUT_MS=15000
-STOCKFISH_THREADS=1
-STOCKFISH_HASH_MB=64
+STOCKFISH_ANALYSIS_DEPTH=12
+STOCKFISH_ANALYSIS_TIMEOUT_MS=15000
 ```
 
-`STOCKFISH_VERSION` is optional but recommended for deployed environments because it is part of the position-analysis cache identity. Keep it stable until you intentionally want new engine results.
+`STOCKFISH_ENGINE=local` uses `STOCKFISH_PATH` and is the default. `STOCKFISH_ENGINE=wasm` uses the API workspace's npm `stockfish` dependency in a worker thread, so deployed APIs can run backend batch analysis without a system Stockfish binary. Existing fallback env vars `ANALYSIS_DEFAULT_DEPTH` and `ANALYSIS_TIMEOUT_MS` are still read when the newer Stockfish-specific depth/timeout vars are not set.
 
 Frontend build-time API configuration:
 
@@ -456,7 +452,7 @@ npm run prisma:studio
 - The API is designed for a Node host such as Render.
 - Configure the deployed API with `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGIN`, `CHESS_COM_USER_AGENT`, and Stockfish-related variables.
 - `CORS_ORIGIN` should include the deployed Vercel web origin.
-- Ensure Stockfish is available to the deployed API and that `STOCKFISH_PATH` points to it.
+- For backend batch analysis, either keep `STOCKFISH_ENGINE=local` and ensure `STOCKFISH_PATH` points to an executable, or set `STOCKFISH_ENGINE=wasm` to use the npm `stockfish` package in a worker thread. `local` remains the default rollback path.
 
 ## Current stabilization acceptance checklist
 

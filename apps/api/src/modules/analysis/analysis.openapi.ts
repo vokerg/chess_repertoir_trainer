@@ -269,7 +269,7 @@ export const bulkPositionAnalysisLookupOpenApiOperation = {
 export const storePositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Store one client-computed position analysis',
-  description: 'Accepts client/local-engine analysis results and stores them in the shared PositionAnalysis cache. Imported-game analysis should send compact persistence; interactive/free analysis should send rich persistence.',
+  description: 'Accepts client/backend-engine analysis results and stores them in the shared PositionAnalysis cache. Imported-game analysis should send compact persistence; interactive/free analysis should send rich persistence.',
   requestBody: {
     required: true,
     content: {
@@ -294,7 +294,7 @@ export const storePositionAnalysisOpenApiOperation = {
 export const bulkStorePositionAnalysisOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Store multiple client-computed position analyses',
-  description: 'Accepts client/local-engine analysis results and upserts them into the shared PositionAnalysis cache in bulk. Imported-game analysis should send compact persistence; interactive/free analysis should send rich persistence.',
+  description: 'Accepts client/backend-engine analysis results and upserts them into the shared PositionAnalysis cache in bulk. Imported-game analysis should send compact persistence; interactive/free analysis should send rich persistence.',
   requestBody: {
     required: true,
     content: {
