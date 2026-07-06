@@ -29,6 +29,10 @@ export class ScenarioTrainingApiService {
     return this.api.post<ScenarioTrainingSession>(`/scenario-training/${sessionId}/complete`, {});
   }
 
+  dislike(sessionId: number, reason?: string): Observable<{ disliked: true }> {
+    return this.api.post<{ disliked: true }>(`/scenario-training/${sessionId}/dislike`, { reason });
+  }
+
   history(): Observable<ScenarioTrainingHistoryResponse> {
     return this.api.get<ScenarioTrainingHistoryResponse>('/scenario-training/history');
   }

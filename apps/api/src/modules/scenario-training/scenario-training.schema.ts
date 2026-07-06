@@ -23,5 +23,10 @@ export const scenarioTrainingAttemptSchema = z.object({
   rawEngineJson: z.unknown().optional(),
 });
 
+export const scenarioTrainingDislikeSchema = z.object({
+  reason: z.string().max(200).optional(),
+});
+
 export type TacticalMissedShotStartInput = z.infer<typeof tacticalMissedShotStartSchema>;
 export type ScenarioTrainingAttemptInput = z.infer<typeof scenarioTrainingAttemptSchema>;
+export type ScenarioTrainingDislikeInput = z.infer<typeof scenarioTrainingDislikeSchema>;

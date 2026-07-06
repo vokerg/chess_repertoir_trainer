@@ -26,6 +26,7 @@ model AppUser {
   tacticalDetectionRuns           TacticalDetectionRun[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
+  tacticalDetectionFeedbacks      TacticalDetectionFeedback[]
   scenarioTrainingSessions        ScenarioTrainingSession[]
   courses          Course[]
   trainingSessions TrainingSession[]
@@ -148,6 +149,7 @@ model ImportedGame {
   plies                 ImportedGamePly[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
+  tacticalDetectionFeedbacks      TacticalDetectionFeedback[]
   scenarioTrainingSessions        ScenarioTrainingSession[]
 
   @@unique([accountId, providerGameId])
@@ -218,6 +220,28 @@ model TacticalDetectionProcessedGame {
   @@id([userId, importedGameId, thresholdsHash])
   @@index([userId, scannedAt])
   @@index([runId])
+}
+
+model TacticalDetectionFeedback {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  importedGameId Int
+  importedGame ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+
+  kind String
+  triggerPlyNumber Int @db.SmallInt
+  status String @default("DISLIKED")
+  reason String?
+  sourceSessionId Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, importedGameId, kind, triggerPlyNumber])
+  @@index([userId, status, updatedAt])
+  @@index([userId, importedGameId])
 }
 
 model GameTagDefinition {

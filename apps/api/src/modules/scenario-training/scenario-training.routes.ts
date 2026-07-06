@@ -2,12 +2,14 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../auth/request-auth';
 import {
   completeScenarioTraining,
+  dislikeScenarioTrainingSource,
   getScenarioTrainingHistory,
   getScenarioTrainingSession,
   startTacticalMissedShotScenario,
   submitScenarioTrainingAttempt,
 } from './scenario-training.service';
 import {
+  scenarioTrainingDislikeSchema,
   scenarioTrainingAttemptSchema,
   tacticalMissedShotStartSchema,
 } from './scenario-training.schema';
@@ -80,6 +82,22 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not complete scenario training' };
+    }
+  });
+
+  app.post('/api/scenario-training/:sessionId/dislike', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = scenarioTrainingDislikeSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+    try {
+      return await dislikeScenarioTrainingSource(auth.userId, sessionIdParam(request.params), parsed.data);
+    } catch (error) {
+      reply.code(statusFor(error));
+      return { error: error instanceof Error ? error.message : 'Could not dislike scenario source' };
     }
   });
 }

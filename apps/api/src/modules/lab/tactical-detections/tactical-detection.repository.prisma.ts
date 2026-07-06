@@ -29,6 +29,10 @@ export interface TacticalDetectionListItem extends TacticalDetectionCandidate {
   providerUrl: string | null;
 }
 
+function feedbackKey(input: { importedGameId: number; kind: string; triggerPlyNumber: number }): string {
+  return `${input.importedGameId}:${input.kind}:${input.triggerPlyNumber}`;
+}
+
 export async function createTacticalDetectionRun(
   userId: number,
   input: { from: Date; to: Date; force: boolean; thresholds: TacticalDetectionThresholds; thresholdsHash: string },
@@ -415,7 +419,7 @@ export async function listTacticalDetections(
       { importedGame: { endedAt: 'desc' } },
       { triggerPlyNumber: 'asc' },
     ],
-    take: query.limit,
+    take: query.limit * 5,
     select: {
       id: true,
       importedGameId: true,
@@ -441,8 +445,21 @@ export async function listTacticalDetections(
       },
     },
   });
+  const feedbackRows = await prisma.tacticalDetectionFeedback.findMany({
+    where: {
+      userId,
+      status: 'DISLIKED',
+      importedGameId: { in: [...new Set(rows.map((row) => row.importedGameId))] },
+    },
+    select: {
+      importedGameId: true,
+      kind: true,
+      triggerPlyNumber: true,
+    },
+  });
+  const dislikedKeys = new Set(feedbackRows.map(feedbackKey));
 
-  return rows.map((row) => ({
+  return rows.filter((row) => !dislikedKeys.has(feedbackKey(row))).slice(0, query.limit).map((row) => ({
     id: row.id,
     importedGameId: row.importedGameId,
     kind: row.kind as TacticalDetectionKind,

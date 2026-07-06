@@ -22,7 +22,7 @@ export class TacticalMissedShotTrainerPageComponent implements OnInit {
     {
       id: 'next-scenario',
       label: 'Next scenario',
-      disabled: this.store.loading() || this.store.evaluating(),
+      disabled: this.store.loading() || this.store.evaluating() || this.store.disliking(),
       run: () => this.store.nextScenario(),
     },
   ]);

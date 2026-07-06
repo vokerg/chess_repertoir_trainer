@@ -59,6 +59,14 @@
             <div class="result-actions">
               <button type="button" class="primary" (click)="store.nextScenario()">Next scenario</button>
               <button type="button" class="secondary" (click)="store.tryAgain()">Try again</button>
+              <button
+                type="button"
+                class="secondary danger-text"
+                (click)="store.dislikeCurrentShot()"
+                [disabled]="!store.canDislikeShot() || store.disliking() || store.evaluating() || store.loading()"
+              >
+                {{ store.disliking() ? 'Excluding...' : 'Exclude this shot' }}
+              </button>
             </div>
           </section>
         }
@@ -129,6 +137,14 @@
                 <button type="button" class="primary" (click)="store.tryAgain()">Try again</button>
                 <button type="button" class="secondary" (click)="store.nextScenario()">Next scenario</button>
                 <button type="button" class="secondary" (click)="store.complete()" [disabled]="store.completing()">Finish</button>
+                <button
+                  type="button"
+                  class="secondary danger-text"
+                  (click)="store.dislikeCurrentShot()"
+                  [disabled]="!store.canDislikeShot() || store.disliking() || store.evaluating() || store.loading()"
+                >
+                  {{ store.disliking() ? 'Excluding...' : 'Exclude this shot' }}
+                </button>
               </div>
             }
           } @else {

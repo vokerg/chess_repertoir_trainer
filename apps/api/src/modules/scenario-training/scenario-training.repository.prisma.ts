@@ -14,6 +14,13 @@ export interface ScenarioContextPly {
 
 export type TacticalMissedShotDetection = NonNullable<Awaited<ReturnType<typeof findTacticalMissedShotDetection>>>;
 
+type TacticalDetectionFeedbackKey = {
+  id: number;
+  importedGameId: number;
+  kind: string;
+  triggerPlyNumber: number;
+};
+
 const detectionSelect = {
   id: true,
   userId: true,
@@ -56,6 +63,11 @@ const sessionInclude = {
   },
 } satisfies Prisma.ScenarioTrainingSessionInclude;
 
+const dislikeSessionInclude = {
+  attempts: { orderBy: { attemptNumber: 'asc' } },
+  tacticalDetection: true,
+} satisfies Prisma.ScenarioTrainingSessionInclude;
+
 function dateRangeWhere(input: TacticalMissedShotStartInput): Prisma.ImportedGameWhereInput['endedAt'] {
   if (!input.from && !input.to) return undefined;
   const toExclusive = input.to ? new Date(input.to.getTime() + 24 * 60 * 60 * 1000) : undefined;
@@ -63,6 +75,32 @@ function dateRangeWhere(input: TacticalMissedShotStartInput): Prisma.ImportedGam
     ...(input.from ? { gte: input.from } : {}),
     ...(toExclusive ? { lt: toExclusive } : {}),
   };
+}
+
+function feedbackKey(input: { importedGameId: number; kind: string; triggerPlyNumber: number }): string {
+  return `${input.importedGameId}:${input.kind}:${input.triggerPlyNumber}`;
+}
+
+async function removeDislikedDetections(
+  userId: number,
+  detections: TacticalDetectionFeedbackKey[],
+): Promise<TacticalDetectionFeedbackKey[]> {
+  if (!detections.length) return detections;
+  const feedbackRows = await prisma.tacticalDetectionFeedback.findMany({
+    where: {
+      userId,
+      status: 'DISLIKED',
+      kind: 'MISSED_SHOT',
+      importedGameId: { in: [...new Set(detections.map((detection) => detection.importedGameId))] },
+    },
+    select: {
+      importedGameId: true,
+      kind: true,
+      triggerPlyNumber: true,
+    },
+  });
+  const dislikedKeys = new Set(feedbackRows.map(feedbackKey));
+  return detections.filter((detection) => !dislikedKeys.has(feedbackKey(detection)));
 }
 
 export async function findTacticalMissedShotDetection(
@@ -94,20 +132,23 @@ export async function findTacticalMissedShotDetection(
       : {}),
   };
 
-  if (input.detectionId || input.random === false) {
-    return prisma.tacticalDetection.findFirst({
-      where: baseWhere,
-      orderBy: [{ importedGame: { endedAt: 'desc' } }, { triggerPlyNumber: 'asc' }],
-      select: detectionSelect,
-    });
-  }
-
-  const count = await prisma.tacticalDetection.count({ where: baseWhere });
-  if (!count) return null;
-  return prisma.tacticalDetection.findFirst({
+  const candidates = await prisma.tacticalDetection.findMany({
     where: baseWhere,
-    skip: Math.floor(Math.random() * count),
     orderBy: [{ importedGame: { endedAt: 'desc' } }, { triggerPlyNumber: 'asc' }],
+    select: {
+      id: true,
+      importedGameId: true,
+      kind: true,
+      triggerPlyNumber: true,
+    },
+  });
+  const available = await removeDislikedDetections(userId, candidates);
+  if (!available.length) return null;
+  const selected = input.detectionId || input.random === false
+    ? available[0]
+    : available[Math.floor(Math.random() * available.length)];
+  return prisma.tacticalDetection.findUnique({
+    where: { id: selected.id },
     select: detectionSelect,
   });
 }
@@ -170,6 +211,45 @@ export async function findScenarioTrainingSession(userId: number, sessionId: num
   return prisma.scenarioTrainingSession.findFirst({
     where: { id: sessionId, userId },
     include: sessionInclude,
+  });
+}
+
+export async function findScenarioTrainingSessionForDislike(userId: number, sessionId: number) {
+  return prisma.scenarioTrainingSession.findFirst({
+    where: {
+      id: sessionId,
+      userId,
+      sourceType: 'TACTICAL_DETECTION',
+      scenarioType: 'MISSED_OPPORTUNITY',
+    },
+    include: dislikeSessionInclude,
+  });
+}
+
+export async function upsertTacticalDetectionFeedback(input: {
+  userId: number;
+  importedGameId: number;
+  kind: string;
+  triggerPlyNumber: number;
+  status: string;
+  reason: string | null;
+  sourceSessionId: number;
+}) {
+  return prisma.tacticalDetectionFeedback.upsert({
+    where: {
+      userId_importedGameId_kind_triggerPlyNumber: {
+        userId: input.userId,
+        importedGameId: input.importedGameId,
+        kind: input.kind,
+        triggerPlyNumber: input.triggerPlyNumber,
+      },
+    },
+    create: input,
+    update: {
+      status: input.status,
+      reason: input.reason,
+      sourceSessionId: input.sourceSessionId,
+    },
   });
 }
 

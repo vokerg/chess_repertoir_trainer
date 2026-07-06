@@ -3,17 +3,23 @@ import {
   currentTacticalDetectionThresholdsHash,
   currentTacticalDetectionVersion,
 } from '../lab/tactical-detections/tactical-detection.service';
-import { ScenarioTrainingAttemptInput, TacticalMissedShotStartInput } from './scenario-training.schema';
+import {
+  ScenarioTrainingAttemptInput,
+  ScenarioTrainingDislikeInput,
+  TacticalMissedShotStartInput,
+} from './scenario-training.schema';
 import {
   completeScenarioTrainingSession,
   createScenarioTrainingAttempt,
   createScenarioTrainingSession,
   findGamePliesThrough,
   findScenarioTrainingSession,
+  findScenarioTrainingSessionForDislike,
   findTacticalMissedShotDetection,
   listScenarioTrainingHistory,
   ScenarioContextPly,
   TacticalMissedShotDetection,
+  upsertTacticalDetectionFeedback,
 } from './scenario-training.repository.prisma';
 
 const MATE_AS_CP = 100_000;
@@ -265,6 +271,29 @@ export async function completeScenarioTraining(userId: number, sessionId: number
   const result = await completeScenarioTrainingSession(userId, sessionId);
   if (result.count === 0) throw new Error('Scenario training session not found');
   return serializeSession(await findScenarioTrainingSession(userId, sessionId));
+}
+
+export async function dislikeScenarioTrainingSource(
+  userId: number,
+  sessionId: number,
+  input: ScenarioTrainingDislikeInput,
+) {
+  const session = await findScenarioTrainingSessionForDislike(userId, sessionId);
+  if (!session) throw new Error('Scenario training session not found');
+  if (session.attempts.length === 0) throw new Error('Cannot dislike a scenario before making an attempt');
+  if (!session.importedGameId) throw new Error('Scenario training session has no source game');
+
+  await upsertTacticalDetectionFeedback({
+    userId,
+    importedGameId: session.importedGameId,
+    kind: 'MISSED_SHOT',
+    triggerPlyNumber: session.tacticalDetection?.triggerPlyNumber ?? session.challengePlyNumber - 1,
+    status: 'DISLIKED',
+    reason: input.reason ?? null,
+    sourceSessionId: session.id,
+  });
+
+  return { disliked: true };
 }
 
 export async function getScenarioTrainingHistory(userId: number) {

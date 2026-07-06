@@ -86,6 +86,7 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   readonly loading = signal(false);
   readonly evaluating = signal(false);
   readonly completing = signal(false);
+  readonly disliking = signal(false);
   readonly error = signal<string | null>(null);
   readonly baselineAnalysis = signal<TrainerEngineResult | null>(null);
   readonly attemptedMoveFen = signal<string | null>(null);
@@ -106,7 +107,8 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   readonly attempts = computed(() => this.session()?.attempts ?? []);
   readonly loadingMessage = computed(() => this.session() ? 'Loading next scenario...' : 'Loading scenario...');
   readonly latestAttempt = computed<ScenarioTrainingAttempt | null>(() => this.attempts().at(-1) ?? null);
-  readonly boardDisabled = computed(() => this.loading() || this.evaluating() || this.mode() !== 'challenge');
+  readonly canDislikeShot = computed(() => Boolean(this.session() && this.attempts().length > 0));
+  readonly boardDisabled = computed(() => this.loading() || this.evaluating() || this.disliking() || this.mode() !== 'challenge');
   readonly currentFen = computed(() => {
     const session = this.session();
     if (!session) return 'startpos';
@@ -298,6 +300,21 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
       this.error.set(this.errorMessage(error, 'Could not finish this scenario.'));
     } finally {
       this.completing.set(false);
+    }
+  }
+
+  async dislikeCurrentShot(): Promise<void> {
+    const session = this.session();
+    if (!session || !session.attempts.length || this.loading() || this.evaluating() || this.disliking()) return;
+    this.disliking.set(true);
+    this.error.set(null);
+    try {
+      await firstValueFrom(this.api.dislike(session.sessionId));
+      await this.nextScenario();
+    } catch (error) {
+      this.error.set(this.errorMessage(error, 'Could not exclude this shot.'));
+    } finally {
+      this.disliking.set(false);
     }
   }
 
