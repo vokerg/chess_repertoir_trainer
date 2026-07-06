@@ -2,7 +2,15 @@ import { Chess } from 'chess.js';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
 import { OpeningLookupService, OpeningMatch } from '../../services/opening-book/openingLookupService';
 import { OpeningAnalysisQuery } from './imported-games.schemas';
-import { findOpeningAnalysisRows, OpeningAnalysisPlyRow } from './opening-analysis.repository.prisma';
+import {
+  findOpeningCoreSummary,
+  findOpeningNextMoves,
+  findOpeningPerformanceGames,
+  findOpeningPositionByNormalizedFen,
+  findOpeningTopGames,
+  OpeningAnalysisGameRow,
+  OpeningTopGameRow,
+} from './opening-analysis.repository.prisma';
 import { summarizeGamePerformance } from './performance-insights.service';
 import { GamePerformanceSummary } from './performance-insights.types';
 
@@ -56,28 +64,7 @@ export interface OpeningAnalysisGame {
   nextMoveSan: string | null;
 }
 
-export interface OpeningPositionAnalysis {
-  id: number;
-  cacheKey: string;
-  fromCache: boolean;
-  fen: string;
-  normalizedFen: string;
-  playedMoveUci?: string;
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string;
-  classificationVersion: string;
-  bestMoveUci?: string;
-  bestScoreCpWhite?: number;
-  playedScoreCpWhite?: number;
-  scoreLossCp?: number;
-  classification?: string;
-  lines: unknown[];
-  playedLine?: unknown;
-}
-
-export interface OpeningAnalysisResponse {
+export interface OpeningAnalysisCoreResponse {
   fen: string;
   normalizedFen: string;
   bookOpening: OpeningMatch | null;
@@ -86,11 +73,55 @@ export interface OpeningAnalysisResponse {
   ratedOnly: boolean;
   occurrences: number;
   games: OpeningAnalysisWdl;
-  performance: GamePerformanceSummary;
   nextMoves: OpeningAnalysisNextMove[];
+  appliedFilters: ReturnType<typeof toAppliedFilters>;
+}
+
+export interface OpeningAnalysisPerformanceResponse {
+  fen: string;
+  normalizedFen: string;
+  performance: GamePerformanceSummary;
+  appliedFilters: ReturnType<typeof toAppliedFilters>;
+}
+
+export interface OpeningAnalysisTopGamesResponse {
+  fen: string;
+  normalizedFen: string;
+  topGames: OpeningAnalysisGame[];
+  appliedFilters: ReturnType<typeof toAppliedFilters>;
+}
+
+export interface OpeningAnalysisLegacyResponse extends OpeningAnalysisCoreResponse {
+  performance: GamePerformanceSummary;
   topGames: OpeningAnalysisGame[];
   positionAnalysis: unknown;
-  appliedFilters: ReturnType<typeof toAppliedFilters>;
+}
+
+interface TimingLogger {
+  debug: (obj: Record<string, unknown>, message: string) => void;
+}
+
+interface TimingProbe {
+  mark: (name: string) => void;
+  finish: (extra?: Record<string, unknown>) => void;
+}
+
+function timingProbe(logger: TimingLogger | undefined, flow: string, enabled = Boolean(logger)): TimingProbe {
+  const start = performance.now();
+  let previous = start;
+  const marks: Record<string, number> = {};
+  return {
+    mark(name: string) {
+      if (!enabled) return;
+      const now = performance.now();
+      marks[name] = Math.round((now - previous) * 10) / 10;
+      previous = now;
+    },
+    finish(extra: Record<string, unknown> = {}) {
+      if (!enabled || !logger) return;
+      logger.debug({ flow, totalMs: Math.round((performance.now() - start) * 10) / 10, marks, ...extra }, 'Opening analysis timing');
+    },
+  };
 }
 
 function normalizeFenForExplorer(fen: string): string {
@@ -128,13 +159,13 @@ function emptyWdl(): OpeningAnalysisWdl {
   return { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 }
 
-function addResult(wdl: OpeningAnalysisWdl, result: string | null) {
-  if (result === 'WIN') wdl.wins += 1;
-  else if (result === 'DRAW') wdl.draws += 1;
-  else if (result === 'LOSS') wdl.losses += 1;
+function addResult(wdl: OpeningAnalysisWdl, result: string | null, count = 1) {
+  if (result === 'WIN') wdl.wins += count;
+  else if (result === 'DRAW') wdl.draws += count;
+  else if (result === 'LOSS') wdl.losses += count;
   else return;
 
-  wdl.total += 1;
+  wdl.total += count;
   wdl.scorePct = Math.round(((wdl.wins + wdl.draws * 0.5) / wdl.total) * 1000) / 10;
 }
 
@@ -146,8 +177,39 @@ function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
   };
 }
 
-function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow, moveSan: string | null): OpeningAnalysisGame {
-  const game = row.importedGame;
+function effectiveQuery(query: OpeningAnalysisQuery): OpeningAnalysisQuery {
+  return { ...query, rated: query.rated ?? true };
+}
+
+async function resolvePosition(query: OpeningAnalysisQuery, logger?: TimingLogger) {
+  const timing = timingProbe(logger, 'opening-analysis.resolve-position');
+  const fen = boardFen(query.fen);
+  const normalizedFen = normalizeFenForExplorer(fen);
+  const bookOpening = OpeningLookupService.lookupByFen(normalizedFen);
+  timing.mark('fen_normalization_book_lookup');
+  const position = await findOpeningPositionByNormalizedFen(normalizedFen);
+  timing.mark('matching_position_lookup');
+  timing.finish({ hasPosition: Boolean(position) });
+  return { fen, normalizedFen, bookOpening, position };
+}
+
+function emptyCore(query: OpeningAnalysisQuery, fen: string, normalizedFen: string, bookOpening: OpeningMatch | null): OpeningAnalysisCoreResponse {
+  const chess = new Chess(fen);
+  return {
+    fen,
+    normalizedFen,
+    bookOpening,
+    sideToMove: chess.turn() === 'w' ? 'WHITE' : 'BLACK',
+    fullMoveNumber: Number(fen.split(/\s+/)[5]) || 1,
+    ratedOnly: query.rated === true,
+    occurrences: 0,
+    games: emptyWdl(),
+    nextMoves: [],
+    appliedFilters: toAppliedFilters(query, normalizedFen),
+  };
+}
+
+function toOpeningAnalysisGame(game: OpeningAnalysisGameRow, plyNumber: number, nextMoveUci: string, nextMoveSan: string | null): OpeningAnalysisGame {
   return {
     id: game.id,
     provider: game.provider,
@@ -174,118 +236,145 @@ function toOpeningAnalysisGame(row: OpeningAnalysisPlyRow, moveSan: string | nul
       eco: game.openingEco,
       name: game.openingName,
     },
-    plyNumber: row.plyNumber,
-    moveNumber: moveNumberFromPly(row.plyNumber),
-    nextMoveUci: row.moveUci,
-    nextMoveSan: moveSan,
+    plyNumber,
+    moveNumber: moveNumberFromPly(plyNumber),
+    nextMoveUci,
+    nextMoveSan,
   };
 }
 
+function toTopGame(fen: string, row: OpeningTopGameRow): OpeningAnalysisGame | null {
+  const ply = row.plies[0];
+  if (!ply) return null;
+  return toOpeningAnalysisGame(row, ply.plyNumber, ply.moveUci, playUci(fen, ply.moveUci).moveSan);
+}
+
+function responseSize(response: unknown): number | undefined {
+  try {
+    return Buffer.byteLength(JSON.stringify(response));
+  } catch {
+    return undefined;
+  }
+}
+
 export const OpeningAnalysisService = {
-  getPosition: async (userId: number, query: OpeningAnalysisQuery): Promise<OpeningAnalysisResponse> => {
-    const fen = boardFen(query.fen);
-    const normalizedFen = normalizeFenForExplorer(fen);
-    const bookOpening = OpeningLookupService.lookupByFen(normalizedFen);
-    const effectiveQuery: OpeningAnalysisQuery = { ...query, rated: query.rated ?? true };
-    const rows = await findOpeningAnalysisRows(userId, effectiveQuery, normalizedFen);
+  getPosition: async (userId: number, query: OpeningAnalysisQuery, logger?: TimingLogger): Promise<OpeningAnalysisCoreResponse> => {
+    const total = timingProbe(logger, 'opening-analysis.core.total');
+    const resolved = await resolvePosition(query, logger);
+    const currentQuery = effectiveQuery(query);
+    if (!resolved.position) {
+      const response = emptyCore(currentQuery, resolved.fen, resolved.normalizedFen, resolved.bookOpening);
+      total.finish({ responseBytes: responseSize(response) });
+      return response;
+    }
 
-    const positionGames = new Set<number>();
+    const [summary, moves] = await Promise.all([
+      findOpeningCoreSummary(userId, currentQuery, resolved.position.id),
+      findOpeningNextMoves(userId, currentQuery, resolved.position.id),
+    ]);
+    total.mark('core_summary_next_moves_queries');
+
     const positionWdl = emptyWdl();
-    const positionPerformanceGames = new Map<number, { id: number; resultForUser: string | null; tagCodes: readonly number[] | null }>();
-    const moveBuckets = new Map<
-      string,
-      {
-        moveUci: string;
-        moveSan: string | null;
-        fenAfter: string;
-        side: string;
-        moveNumber: number;
-        occurrences: number;
-        gameIds: Set<number>;
-        games: OpeningAnalysisWdl;
-      }
-    >();
-    const moveDetailsByUci = new Map<string, { fenAfter: string; moveSan: string | null }>();
+    for (const result of summary.gameResults) addResult(positionWdl, result.resultForUser, result._count._all);
 
-    function detailsForMove(moveUci: string) {
-      const existing = moveDetailsByUci.get(moveUci);
-      if (existing) return existing;
-
-      const details = playUci(fen, moveUci);
-      moveDetailsByUci.set(moveUci, details);
-      return details;
+    const occurrencesByMove = new Map<string, { occurrences: number; firstPlyNumber: number }>();
+    for (const row of moves.occurrences) {
+      const existing = occurrencesByMove.get(row.moveUci);
+      occurrencesByMove.set(row.moveUci, {
+        occurrences: (existing?.occurrences ?? 0) + row._count._all,
+        firstPlyNumber: Math.min(existing?.firstPlyNumber ?? row.plyNumber, row.plyNumber),
+      });
     }
 
-    for (const row of rows) {
-      if (!positionGames.has(row.importedGameId)) {
-        positionGames.add(row.importedGameId);
-        addResult(positionWdl, row.importedGame.resultForUser);
-        positionPerformanceGames.set(row.importedGameId, {
-          id: row.importedGameId,
-          resultForUser: row.importedGame.resultForUser,
-          tagCodes: row.importedGame.tagCodes,
-        });
-      }
-
-      const existing = moveBuckets.get(row.moveUci);
-      const moveDetails = detailsForMove(row.moveUci);
-      const bucket = existing ?? {
-        moveUci: row.moveUci,
-        moveSan: moveDetails.moveSan,
-        fenAfter: moveDetails.fenAfter,
-        side: sideToMove(fen),
-        moveNumber: moveNumberFromPly(row.plyNumber),
-        occurrences: 0,
-        gameIds: new Set<number>(),
-        games: emptyWdl(),
-      };
-
-      bucket.occurrences += 1;
-      if (!bucket.gameIds.has(row.importedGameId)) {
-        bucket.gameIds.add(row.importedGameId);
-        addResult(bucket.games, row.importedGame.resultForUser);
-      }
-      moveBuckets.set(row.moveUci, bucket);
+    const gamesByMove = new Map<string, OpeningAnalysisWdl>();
+    for (const row of moves.distinctGames) {
+      const wdl = gamesByMove.get(row.moveUci) ?? emptyWdl();
+      addResult(wdl, row.importedGame.resultForUser);
+      gamesByMove.set(row.moveUci, wdl);
     }
 
-    const nextMoves: OpeningAnalysisNextMove[] = Array.from(moveBuckets.values())
-      .map(({ gameIds: _gameIds, ...bucket }) => bucket)
+    const nextMoves = Array.from(occurrencesByMove.entries())
+      .map(([moveUci, count]) => {
+        const details = playUci(resolved.fen, moveUci);
+        return {
+          moveUci,
+          moveSan: details.moveSan,
+          fenAfter: details.fenAfter,
+          side: sideToMove(resolved.fen),
+          moveNumber: moveNumberFromPly(count.firstPlyNumber),
+          occurrences: count.occurrences,
+          games: gamesByMove.get(moveUci) ?? emptyWdl(),
+        };
+      })
       .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || (a.moveSan ?? '').localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));
 
-    const seenTopGameIds = new Set<number>();
-    const topGames = rows
-      .slice()
-      .sort((a, b) => {
-        const endedA = a.importedGame.endedAt?.getTime() ?? 0;
-        const endedB = b.importedGame.endedAt?.getTime() ?? 0;
-        return endedB - endedA || b.importedGameId - a.importedGameId || a.plyNumber - b.plyNumber;
-      })
-      .filter((row) => {
-        if (seenTopGameIds.has(row.importedGameId)) return false;
-        seenTopGameIds.add(row.importedGameId);
-        return true;
-      })
-      .slice(0, 10)
-      .map((row) => toOpeningAnalysisGame(row, detailsForMove(row.moveUci).moveSan));
-
-    const chess = new Chess(fen);
-    const positionAnalysis = await PositionAnalysisService.getStoredPositionSearch({ fen });
-    const performance = summarizeGamePerformance(Array.from(positionPerformanceGames.values()));
-
-    return {
-      fen,
-      normalizedFen,
-      bookOpening,
+    const chess = new Chess(resolved.fen);
+    const response: OpeningAnalysisCoreResponse = {
+      fen: resolved.fen,
+      normalizedFen: resolved.normalizedFen,
+      bookOpening: resolved.bookOpening,
       sideToMove: chess.turn() === 'w' ? 'WHITE' : 'BLACK',
-      fullMoveNumber: Number(fen.split(/\s+/)[5]) || 1,
-      ratedOnly: effectiveQuery.rated === true,
-      occurrences: rows.length,
+      fullMoveNumber: Number(resolved.fen.split(/\s+/)[5]) || 1,
+      ratedOnly: currentQuery.rated === true,
+      occurrences: summary.occurrences,
       games: positionWdl,
-      performance,
       nextMoves,
+      appliedFilters: toAppliedFilters(currentQuery, resolved.normalizedFen),
+    };
+    total.finish({ responseBytes: responseSize(response), nextMoveCount: nextMoves.length });
+    return response;
+  },
+
+  getPerformance: async (userId: number, query: OpeningAnalysisQuery, logger?: TimingLogger): Promise<OpeningAnalysisPerformanceResponse> => {
+    const total = timingProbe(logger, 'opening-analysis.performance.total');
+    const resolved = await resolvePosition(query, logger);
+    const currentQuery = effectiveQuery(query);
+    const rows = resolved.position
+      ? await findOpeningPerformanceGames(userId, currentQuery, resolved.position.id)
+      : [];
+    total.mark('performance_query');
+    const response = {
+      fen: resolved.fen,
+      normalizedFen: resolved.normalizedFen,
+      performance: summarizeGamePerformance(rows),
+      appliedFilters: toAppliedFilters(currentQuery, resolved.normalizedFen),
+    };
+    total.finish({ responseBytes: responseSize(response), sampleGames: rows.length });
+    return response;
+  },
+
+  getTopGames: async (userId: number, query: OpeningAnalysisQuery, limit: number, logger?: TimingLogger): Promise<OpeningAnalysisTopGamesResponse> => {
+    const total = timingProbe(logger, 'opening-analysis.top-games.total');
+    const resolved = await resolvePosition(query, logger);
+    const currentQuery = effectiveQuery(query);
+    const rows = resolved.position
+      ? await findOpeningTopGames(userId, currentQuery, resolved.position.id, limit)
+      : [];
+    total.mark('top_games_query');
+    const topGames = rows.map((row) => toTopGame(resolved.fen, row)).filter((game): game is OpeningAnalysisGame => Boolean(game));
+    const response = {
+      fen: resolved.fen,
+      normalizedFen: resolved.normalizedFen,
       topGames,
+      appliedFilters: toAppliedFilters(currentQuery, resolved.normalizedFen),
+    };
+    total.finish({ responseBytes: responseSize(response), topGameCount: topGames.length });
+    return response;
+  },
+
+  getPositionLegacy: async (userId: number, query: OpeningAnalysisQuery, logger?: TimingLogger): Promise<OpeningAnalysisLegacyResponse> => {
+    const currentQuery = effectiveQuery(query);
+    const core = await OpeningAnalysisService.getPosition(userId, query, logger);
+    const [performance, topGames, positionAnalysis] = await Promise.all([
+      OpeningAnalysisService.getPerformance(userId, currentQuery, logger),
+      OpeningAnalysisService.getTopGames(userId, currentQuery, 10, logger),
+      PositionAnalysisService.getStoredPositionSearch({ fen: core.fen }),
+    ]);
+    return {
+      ...core,
+      performance: performance.performance,
+      topGames: topGames.topGames,
       positionAnalysis,
-      appliedFilters: toAppliedFilters(effectiveQuery, normalizedFen),
     };
   },
 };

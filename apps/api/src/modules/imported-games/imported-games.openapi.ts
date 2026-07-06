@@ -298,13 +298,30 @@ export const importedGamesOpenApiSchemas = {
       ratedOnly: { type: 'boolean' },
       occurrences: { type: 'integer' },
       games: { $ref: '#/components/schemas/OpeningAnalysisWdl' },
-      performance: { $ref: '#/components/schemas/GamePerformanceSummary' },
       nextMoves: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisNextMove' } },
-      topGames: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisGame' } },
-      positionAnalysis: { anyOf: [{ $ref: '#/components/schemas/PositionAnalysis' }, { type: 'null' }] },
       appliedFilters: { type: 'object', additionalProperties: true },
     },
-    required: ['fen', 'normalizedFen', 'bookOpening', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'performance', 'nextMoves', 'topGames', 'positionAnalysis', 'appliedFilters'],
+    required: ['fen', 'normalizedFen', 'bookOpening', 'sideToMove', 'fullMoveNumber', 'ratedOnly', 'occurrences', 'games', 'nextMoves', 'appliedFilters'],
+  },
+  OpeningAnalysisPerformanceResponse: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      normalizedFen: { type: 'string' },
+      performance: { $ref: '#/components/schemas/GamePerformanceSummary' },
+      appliedFilters: { type: 'object', additionalProperties: true },
+    },
+    required: ['fen', 'normalizedFen', 'performance', 'appliedFilters'],
+  },
+  OpeningAnalysisTopGamesResponse: {
+    type: 'object',
+    properties: {
+      fen: { type: 'string' },
+      normalizedFen: { type: 'string' },
+      topGames: { type: 'array', items: { $ref: '#/components/schemas/OpeningAnalysisGame' } },
+      appliedFilters: { type: 'object', additionalProperties: true },
+    },
+    required: ['fen', 'normalizedFen', 'topGames', 'appliedFilters'],
   },
 };
 
@@ -361,14 +378,43 @@ export const listImportedGamesOpenApiOperation = {
 
 export const getOpeningAnalysisOpenApiOperation = {
   tags: ['Imported games'],
-  summary: 'Get personal opening analysis for one board position',
-  description: 'Aggregates indexed ply rows for rated imported games only. Reuses imported-game search filters, then returns WDL from the current user point of view, all next moves played from the requested position, and an opening-book lookup for the current position when found.',
+  summary: 'Get core opening analysis for one board position',
+  description: 'Fast first-render endpoint. Reuses imported-game search filters, then returns position WDL, next moves, and opening-book lookup. Performance, top games, and stored engine analysis are intentionally separate panel requests.',
   parameters: [
     { name: 'fen', in: 'query', schema: { type: 'string', default: 'startpos' } },
     ...searchParameters,
   ],
   responses: {
     '200': { description: 'Personal opening analysis for the position', content: { 'application/json': { schema: { $ref: '#/components/schemas/OpeningAnalysisResponse' } } } },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
+};
+
+export const getOpeningAnalysisPerformanceOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Get opening position performance summary',
+  description: 'Returns the server-owned performance tag and bucket summary for distinct imported games that reached the requested normalized position. Uses the same imported-game filters as the core opening-analysis endpoint.',
+  parameters: [
+    { name: 'fen', in: 'query', schema: { type: 'string', default: 'startpos' } },
+    ...searchParameters,
+  ],
+  responses: {
+    '200': { description: 'Performance summary for the position', content: { 'application/json': { schema: { $ref: '#/components/schemas/OpeningAnalysisPerformanceResponse' } } } },
+    '400': { $ref: '#/components/responses/BadRequest' },
+  },
+};
+
+export const getOpeningAnalysisTopGamesOpenApiOperation = {
+  tags: ['Imported games'],
+  summary: 'Get recent top games for one opening position',
+  description: 'Returns the most recent distinct games that reached the requested normalized position. Uses the same imported-game filters as the core opening-analysis endpoint and orders by endedAt DESC, id DESC.',
+  parameters: [
+    { name: 'fen', in: 'query', schema: { type: 'string', default: 'startpos' } },
+    ...searchParameters,
+    { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 50, default: 10 } },
+  ],
+  responses: {
+    '200': { description: 'Recent games for the position', content: { 'application/json': { schema: { $ref: '#/components/schemas/OpeningAnalysisTopGamesResponse' } } } },
     '400': { $ref: '#/components/responses/BadRequest' },
   },
 };

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
 
 export type DbClient = typeof prisma | Prisma.TransactionClient;
@@ -176,6 +177,7 @@ export async function copyLineToChapter(
             parentId,
             plyNumber: sourceNode.plyNumber,
             fenBefore: sourceNode.fenBefore,
+            fenBeforeNormalized: sourceNode.fenBeforeNormalized ?? normalizeFenForPosition(sourceNode.fenBefore),
             fenAfter: sourceNode.fenAfter,
             moveUci: sourceNode.moveUci,
             moveSan: sourceNode.moveSan,
@@ -216,38 +218,52 @@ export async function getLineMoveNodes(userId: number, lineId: number) {
   });
 }
 
-export async function listCourseMoveNodeCandidatesForUser(userId: number) {
-  return prisma.moveNode.findMany({
-    where: { line: { chapter: { course: { userId } } } },
+const coursePositionSuggestionSelect = {
+  id: true,
+  fenBefore: true,
+  fenAfter: true,
+  moveUci: true,
+  moveSan: true,
+  isUserMove: true,
+  isCorrectUserMove: true,
+  sortOrder: true,
+  line: {
     select: {
       id: true,
-      fenBefore: true,
-      fenAfter: true,
-      moveUci: true,
-      moveSan: true,
-      isUserMove: true,
-      isCorrectUserMove: true,
-      sortOrder: true,
-      line: {
+      name: true,
+      chapter: {
         select: {
           id: true,
           name: true,
-          chapter: {
+          sortOrder: true,
+          course: {
             select: {
               id: true,
               name: true,
-              sortOrder: true,
-              course: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
         },
       },
     },
+  },
+} as const;
+
+export type CoursePositionSuggestionRow = Prisma.MoveNodeGetPayload<{ select: typeof coursePositionSuggestionSelect }>;
+
+export async function listCourseMoveNodeCandidatesForUser(userId: number): Promise<CoursePositionSuggestionRow[]> {
+  return prisma.moveNode.findMany({
+    where: { line: { chapter: { course: { userId } } } },
+    select: coursePositionSuggestionSelect,
+  });
+}
+
+export async function listCourseMoveNodesForNormalizedFen(userId: number, normalizedFen: string): Promise<CoursePositionSuggestionRow[]> {
+  return prisma.moveNode.findMany({
+    where: {
+      fenBeforeNormalized: normalizedFen,
+      line: { chapter: { course: { userId } } },
+    },
+    select: coursePositionSuggestionSelect,
   });
 }
 
@@ -256,7 +272,12 @@ export async function getNodeById(userId: number, id: number, db: DbClient = pri
 }
 
 export async function createMoveNode(data: any, db: DbClient = prisma) {
-  return db.moveNode.create({ data });
+  return db.moveNode.create({
+    data: {
+      ...data,
+      fenBeforeNormalized: data.fenBeforeNormalized ?? normalizeFenForPosition(data.fenBefore),
+    },
+  });
 }
 
 export async function updateMoveNode(userId: number, id: number, data: any, db: DbClient = prisma) {

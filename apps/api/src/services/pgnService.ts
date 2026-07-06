@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../prisma';
 
 function colorToMove(chess: Chess): 'WHITE' | 'BLACK' {
@@ -92,6 +93,7 @@ async function createImportedMove(
       parentId,
       plyNumber,
       fenBefore,
+      fenBeforeNormalized: normalizeFenForPosition(fenBefore),
       fenAfter: chess.fen(),
       moveUci: moveToUci(move),
       moveSan: move.san,

@@ -66,8 +66,8 @@
       />
 
       <app-position-performance-panel
-        [performance]="store.analysis()?.performance ?? null"
-        [loading]="store.loading()"
+        [performance]="store.performance()"
+        [loading]="store.performanceLoading()"
       />
 
     </div>
@@ -78,6 +78,8 @@
         [analysis]="store.analysis()"
         [loading]="store.loading()"
         [error]="store.error()"
+        [topGames]="store.topGames()"
+        [topGamesLoading]="store.topGamesLoading()"
         [filters]="store.filters()"
         [facets]="store.facets()"
         [filtersCollapsedInitially]="false"

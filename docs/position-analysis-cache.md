@@ -25,7 +25,7 @@ Browser imported-game analysis first bulk-lookups known cached positions with `P
 
 Missing positions are analyzed with browser Stockfish. Results are placed into the in-memory cache immediately so classification can continue with full transient lines. Position-analysis saves are deferred and deduped by normalized FEN, then compact-persisted in chunks through `POST /api/position-analysis/bulk-store`.
 
-Browser free/opening/game-detail/line-editor interactive analysis uses rich persistence and a `lines` cache requirement. A compact row is not sufficient for interactive analysis that requested engine lines; the browser re-runs the engine and rich-saves the resulting lines. Rich cache reuse is depth-aware: the cache must have the required legal PV lines, and the best line must have depth 17 or deeper for the current depth-18 interactive setting.
+Browser free/opening/game-detail/line-editor interactive analysis uses rich persistence and a `lines` cache requirement. A compact row is not sufficient for interactive analysis that requested engine lines; the browser re-runs the engine and rich-saves the resulting lines. Rich cache reuse is depth-aware: the cache must have the required legal PV lines, and the best line must have depth 17 or deeper for the current depth-18 interactive setting. Opening analysis no longer embeds stored position analysis in its core response; the frontend cache service performs its normal `GET /api/position-analysis?fen=...` lookup when an interactive engine panel needs a seed.
 
 Per-game ply score loss and classification are stored separately with the existing batched `PATCH /api/imported-games/:gameId/plies/analysis` request. The game analysis run is created only after pending position-analysis saves have been flushed.
 

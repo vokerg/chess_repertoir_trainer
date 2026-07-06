@@ -18,6 +18,10 @@ const boolParam = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+const lastParam = (value: unknown) => Array.isArray(value) ? value.at(-1) : value;
+const searchLimitParam = z.preprocess(lastParam, z.coerce.number().int().min(1).max(200).default(50));
+const topGamesLimitParam = z.preprocess(lastParam, z.coerce.number().int().min(1).max(50).default(10));
+
 const providerSchema = z.enum(['LICHESS', 'CHESS_COM']);
 const resultForUserSchema = z.enum(['WIN', 'DRAW', 'LOSS']);
 const colorSchema = z.enum(['WHITE', 'BLACK']);
@@ -52,7 +56,7 @@ export const importedGameSearchQuerySchema = z.object({
   minAccuracy: z.coerce.number().min(0).max(100).optional(),
   maxAccuracy: z.coerce.number().min(0).max(100).optional(),
   sort: z.enum(['endedAtDesc', 'endedAtAsc']).default('endedAtDesc'),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: searchLimitParam,
   cursor: z.string().min(1).optional(),
 });
 
@@ -62,5 +66,10 @@ export const openingAnalysisQuerySchema = importedGameSearchQuerySchema.extend({
   fen: z.string().min(1).default('startpos'),
 });
 
+export const openingAnalysisTopGamesQuerySchema = openingAnalysisQuerySchema.extend({
+  limit: topGamesLimitParam,
+});
+
 export type ImportedGameSearchQuery = z.infer<typeof importedGameSearchQuerySchema>;
 export type OpeningAnalysisQuery = z.infer<typeof openingAnalysisQuerySchema>;
+export type OpeningAnalysisTopGamesQuery = z.infer<typeof openingAnalysisTopGamesQuerySchema>;

@@ -50,7 +50,8 @@ try {
     startingFen: 'startpos',
   });
   assert.ok(lineA);
-  await MoveNodeService.create(userA.id, lineA.id, { moveUci: 'e2e4' });
+  const nodeA = await MoveNodeService.create(userA.id, lineA.id, { moveUci: 'e2e4' });
+  assert.equal(nodeA.fenBeforeNormalized, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -');
 
   const secondCourseA = await CourseService.create(userA.id, { name: 'Another user A course' });
   const secondChapterA = await ChapterService.create(userA.id, secondCourseA.id, { name: 'Earlier chapter', sortOrder: 1 });
@@ -63,7 +64,13 @@ try {
   assert.ok(secondLineA);
   await MoveNodeService.create(userA.id, secondLineA.id, { moveUci: 'd2d4' });
 
-  const positionSuggestions = await CoursePositionSuggestionService.listForFen(userA.id, 'startpos');
+  const copiedLine = await LineService.copy(userA.id, lineA.id, secondChapterA.id, 'Alpha copy');
+  assert.ok(copiedLine);
+  const copiedNodes = await prisma.moveNode.findMany({ where: { lineId: copiedLine.id }, orderBy: { id: 'asc' } });
+  assert.equal(copiedNodes.length, 1);
+  assert.equal(copiedNodes[0].fenBeforeNormalized, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -');
+
+  const positionSuggestions = await CoursePositionSuggestionService.listForFen(userA.id, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 7 42');
   assert.equal(positionSuggestions.normalizedFen, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -');
   assert.deepEqual(
     positionSuggestions.suggestions.map((suggestion) => ({
@@ -72,10 +79,12 @@ try {
       moveUci: suggestion.moveUci,
     })),
     [
+      { courseName: 'Another user A course', lineName: 'Alpha copy', moveUci: 'e2e4' },
       { courseName: 'Another user A course', lineName: 'Beta line', moveUci: 'd2d4' },
       { courseName: 'User A course', lineName: 'Alpha line', moveUci: 'e2e4' },
     ],
   );
+  assert.equal(positionSuggestions.suggestions.some((suggestion) => suggestion.courseName === 'User B course'), false);
 
   assert.equal(await ChapterService.get(userA.id, chapterB.id), null);
   assert.equal(await ChapterService.list(userA.id, courseB.id), null);

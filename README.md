@@ -81,7 +81,7 @@ The Games explorer UI is available from the main `Games` navigation item and sup
 
 Backend analysis stores reusable position-level analysis separately from per-game move analysis. Imported-game analysis persists compact `PositionAnalysis` rows by default: `bestMoveUci`, `bestScoreCpWhite`, and `bestMateWhite`, with no persisted engine lines. Interactive/free analysis persists rich rows with PV/engine lines. Rich analysis may upgrade compact rows, while compact analysis must not erase existing rich lines. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
 
-`GET /api/opening-analysis` powers both the opening-analysis explorer and the line-editor games assistant, so position-based imported-game continuations use one backend aggregation path.
+`GET /api/opening-analysis` is the fast core opening-analysis endpoint used for first render: board metadata, position WDL, next moves, and applied filters. Secondary panels load independently through `GET /api/opening-analysis/performance`, `GET /api/opening-analysis/top-games`, `GET /api/position-analysis`, and `GET /api/courses/position-suggestions`, so expensive panel data does not block the next-move view. Line-editor and free-analysis game assistants reuse the same core/top-games APIs where needed.
 
 ### Free analysis
 
