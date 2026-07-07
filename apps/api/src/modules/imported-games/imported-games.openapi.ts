@@ -135,7 +135,7 @@ export const importedGamesOpenApiSchemas = {
       importedGameId: { type: 'integer' },
       steps: {
         type: 'array',
-        items: { type: 'string', enum: ['PLY_INDEX', 'ANALYSIS', 'TAGS'] },
+        items: { type: 'string', enum: ['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'] },
       },
     },
     required: ['accepted', 'importedGameId', 'steps'],
@@ -497,7 +497,7 @@ export const refreshImportedGameTagsOpenApiOperation = {
 export const createImportedGameFullRefreshRunOpenApiOperation = {
   tags: ['Imported games'],
   summary: 'Queue a full refresh for one imported game',
-  description: 'Force re-indexes plies, recalculates Stockfish analysis, and refreshes tags after analysis succeeds.',
+  description: 'Force re-indexes plies, assigns a missing opening, recalculates Stockfish analysis, and refreshes tags after analysis succeeds.',
   parameters: [importedGameIdParameter],
   responses: {
     '200': {

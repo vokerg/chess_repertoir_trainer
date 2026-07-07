@@ -13,6 +13,7 @@ import {
   shapePositionAnalysisForStorage,
 } from 'chess-domain';
 import { ImportedGamesService } from '../imported-games/imported-games.service';
+import { GameOpeningAssignmentService } from '../imported-games/game-opening-assignment.service';
 import { ImportedGamePlyIndexService } from '../imported-games/ply-index.service';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
 import {
@@ -344,6 +345,7 @@ async function analyseGame(
   if (indexResult.status === 'FAILED') {
     throw new Error(indexResult.error || 'Could not index game plies');
   }
+  await GameOpeningAssignmentService.assignMissingOpening(userId, importedGameId);
 
   const plies = await getImportedGamePliesForBatchAnalysis(userId, importedGameId);
   const alreadyDone = options.force ? 0 : plies.filter(isPlyAnalysed).length;

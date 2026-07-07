@@ -216,7 +216,7 @@ export default async function importedGamesModule(app: FastifyInstance) {
         return {
           accepted: true,
           importedGameId: gameId,
-          steps: ['PLY_INDEX', 'ANALYSIS', 'TAGS'],
+          steps: ['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'],
         };
       } catch (err: any) {
         reply.code(400);

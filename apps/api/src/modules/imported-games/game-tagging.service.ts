@@ -991,7 +991,7 @@ function resolveTags(tagCodes: number[], definitions: TagDefinition[]) {
     .filter((tag): tag is { code: number; name: string } => tag !== null);
 }
 
-export function calculateTagCodes(game: ImportedGameWithFinalPosition) {
+export function calculateAllTagCodes(game: ImportedGameWithFinalPosition) {
   const tags = new Set<number>();
   addTerminalTags(game, tags);
   addTimeControlTags(game, tags);
@@ -999,9 +999,11 @@ export function calculateTagCodes(game: ImportedGameWithFinalPosition) {
   addRatingTags(game, tags);
   addOpeningAndShapeTags(game, tags);
   addAnalysisTags(game, tags);
-  return Array.from(tags)
-    .filter(isDisplayedGameTag)
-    .sort((left, right) => left - right);
+  return Array.from(tags).sort((left, right) => left - right);
+}
+
+export function calculateTagCodes(game: ImportedGameWithFinalPosition) {
+  return calculateAllTagCodes(game).filter(isDisplayedGameTag);
 }
 
 export const GameTaggingService = {

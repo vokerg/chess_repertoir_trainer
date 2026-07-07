@@ -175,7 +175,7 @@ export interface ImportedGameTagsRefreshResponse {
 export interface ImportedGameFullRefreshAcceptedResponse {
   accepted: true;
   importedGameId: number;
-  steps: ['PLY_INDEX', 'ANALYSIS', 'TAGS'];
+  steps: ['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'];
 }
 
 export interface ImportedGameSearchResponse {
