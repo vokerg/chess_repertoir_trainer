@@ -78,6 +78,16 @@ The shared analysis workbench receives board, move-tree, engine, navigation, and
 
 Projected side content may compose the shared position-game-moves panel with feature-owned UI such as line notes. Shared and presentational components emit user intent only; persistence and async workflow remain owned by the feature store. Shared components must not import feature internals to reach feature state or commands.
 
+## Shared chess board
+
+`ChessgroundBoardComponent` owns legal move UI behavior, promotion selection, sounds, and board visuals for every board surface. Feature pages and stores should send positions into the board and receive UCI moves from it; they must not implement their own promotion picker or feature-specific promotion branching.
+
+Promotion moves are emitted as full UCI strings with the selected suffix, such as `e7e8q` or `e2e1n`. Features should handle those UCI moves exactly like any other board move.
+
+Board sounds are integral shared board behavior and are always on. Do not add per-page, per-mode, or feature-level sound flags; keep `ChessSoundService` as the only sound implementation.
+
+Board themes are hardcoded in `apps/web/src/app/shared/chess/board/chess-board-theme.ts`. To switch the application board theme, change `ACTIVE_CHESS_BOARD_THEME`; do not add per-page theming, runtime settings, local storage, API persistence, or user preferences for board themes.
+
 ## Dialogs and destructive confirmations
 
 Do not use `window.alert`, `window.confirm`, `window.prompt`, raw `alert`, raw `confirm`, or raw `prompt` in `apps/web`.
