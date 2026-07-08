@@ -17,7 +17,7 @@
   justify-content: center;
   min-height: 36px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.45rem 0.75rem;
   font-size: 0.84rem;
   font-weight: 800;
@@ -27,7 +27,7 @@
 
 .ui-shell-stat {
   gap: 0.4rem;
-  background: rgba(35, 27, 21, 0.045);
+  background: rgba(15, 23, 42, 0.045);
   color: var(--text);
 }
 
@@ -52,7 +52,7 @@
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: white;
   text-decoration: none;
-  box-shadow: 0 6px 14px rgba(143, 79, 13, 0.16);
+  box-shadow: 0 6px 14px rgba(143, 79, 13, 0.14);
 }
 
 .ui-shell-action.active {

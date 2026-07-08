@@ -34,6 +34,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'progress',
+    title: 'Progress | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/accounts/pages/progress-entry-page.component').then(
+        (m) => m.ProgressEntryPageComponent,
+      ),
+  },
+  {
     path: 'accounts',
     title: 'Accounts | Chess Repertoire Trainer',
     canActivate: [authGuard],
@@ -67,6 +76,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/opening-analysis/pages/opening-analysis-page.component').then(
         (m) => m.OpeningAnalysisPageComponent,
+      ),
+  },
+  {
+    path: 'opening-struggles',
+    title: 'Opening struggles | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/experiments/opening-struggles/opening-struggles-experiment.component').then(
+        (m) => m.OpeningStrugglesExperimentComponent,
       ),
   },
   {

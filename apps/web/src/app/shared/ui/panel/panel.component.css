@@ -7,10 +7,11 @@
   display: grid;
   gap: 1rem;
   border: 1px solid var(--border);
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   padding: 1.35rem;
-  background: var(--surface-strong);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
 }
 
 .app-panel-header {
@@ -48,6 +49,6 @@
 /* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .app-panel {
-    border-radius: 22px;
+    border-radius: var(--radius-md);
   }
 }

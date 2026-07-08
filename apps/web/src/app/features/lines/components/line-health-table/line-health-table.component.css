@@ -61,6 +61,7 @@
 }
 .primary-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.45rem; }
 .primary-actions button { padding: 0.55rem 0.75rem; font-size: 0.82rem; }
+.primary-actions .line-train-action { font-weight: 800; }
 .status-chip {
   margin-left: 0.45rem;
   border-radius: 999px;

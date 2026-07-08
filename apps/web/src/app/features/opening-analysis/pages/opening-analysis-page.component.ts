@@ -54,6 +54,11 @@ export class OpeningAnalysisPageComponent implements OnInit {
     { id: 'next-moves', label: 'Next moves', value: this.store.analysis()?.nextMoves?.length || 0 },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+    {
+      id: 'opening-struggles',
+      label: 'Opening struggles',
+      link: '/opening-struggles',
+    },
     buildChallengeBotHeaderAction({
       run: () => this.challengeStore.openForFen(this.store.currentFen()),
     }),

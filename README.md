@@ -36,6 +36,21 @@ Do not treat auth, mobile, cloud multi-user sync, account-wide analysis queues, 
 
 ## Product capabilities
 
+### Web navigation
+
+The Angular app is organized around first-class workflows rather than implementation buckets:
+
+- `Study` opens `/library` for repertoire planning, line selection, and repertoire training.
+- `Courses` opens `/courses` for course, chapter, and line collection management.
+- `Games` opens `/games` for imported game exploration and review.
+- `Openings` opens `/opening-analysis`, with `/opening-struggles` promoted as a related Openings report.
+- `Progress` opens `/progress`, which redirects to the active account dashboard when one exists and falls back to account setup otherwise.
+- `Missed shots` opens `/scenario-training/tactical-missed-shot` for tactical chances missed in analysed/imported games.
+- `Analysis` opens `/analysis` for the free analysis board.
+- `Lab` opens `/lab` for experimental and raw reports, including tactical detections.
+
+Navigation icons are local inline SVGs rendered with `currentColor`; the web app does not use an external icon library.
+
 ### Repertoire authoring and training
 
 The core data hierarchy is:
@@ -76,6 +91,8 @@ The line editor can also show filtered next moves from indexed imported games fo
 ### Imported games and analysis
 
 The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A user can add multiple accounts, sync finished games from either provider, browse imported games, open a game replay/detail page, and start backend Stockfish analysis for an imported game.
+
+The Progress workflow uses the existing account detail dashboard for rating stats, yearly highs, period performance, and rating history. Account management remains available at `/accounts` for import-source configuration and sync controls.
 
 The Games explorer UI is available from the main `Games` navigation item and supports filtering by account, provider, result, colour, time-control class, rated/casual, opponent, opening, analysis status, accuracy range, and date range. Rows show provider, result, players, time control, opening, analysis accuracy, and actions such as Analyse, Force re-analysis, and provider-link navigation.
 

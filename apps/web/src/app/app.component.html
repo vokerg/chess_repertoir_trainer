@@ -7,13 +7,18 @@
       <div class="app-header-actions">
         @if (auth.isSignedIn()) {
           <nav class="app-nav" aria-label="Main navigation">
-            <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill">Study</a>
-            <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill">Accounts</a>
-            <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill">Games</a>
-            <a routerLink="/opening-analysis" routerLinkActive="nav-pill-active" class="nav-pill">Opening analysis</a>
-            <a routerLink="/analysis" routerLinkActive="nav-pill-active" class="nav-pill">Analysis</a>
-            <a routerLink="/lab" routerLinkActive="nav-pill-active" class="nav-pill">Lab</a>
-            <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill">Courses</a>
+            @for (item of primaryNavItems; track item.id) {
+              <a
+                [routerLink]="item.link"
+                class="nav-pill"
+                [class.nav-pill-active]="isNavActive(item)"
+                [class.nav-pill-quiet]="item.quiet"
+                [attr.aria-current]="isNavActive(item) ? 'page' : null"
+              >
+                <app-nav-icon [name]="item.icon" />
+                <span>{{ item.label }}</span>
+              </a>
+            }
           </nav>
           <div class="auth-status">
             <span class="auth-name">{{ auth.displayName() }}</span>
@@ -23,8 +28,17 @@
           </div>
         } @else {
           <nav class="app-nav" aria-label="Authentication navigation">
-            <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill">Sign in</a>
-            <a routerLink="/signup" routerLinkActive="nav-pill-active" class="nav-pill">Sign up</a>
+            @for (item of authNavItems; track item.id) {
+              <a
+                [routerLink]="item.link"
+                class="nav-pill"
+                [class.nav-pill-active]="isNavActive(item)"
+                [attr.aria-current]="isNavActive(item) ? 'page' : null"
+              >
+                <app-nav-icon [name]="item.icon" />
+                <span>{{ item.label }}</span>
+              </a>
+            }
           </nav>
         }
       </div>
@@ -52,14 +66,41 @@
     ></button>
     <aside id="mobile-main-menu" class="mobile-menu-sheet" aria-label="Main navigation">
       @if (auth.isSignedIn()) {
-        <nav class="mobile-nav" aria-label="Main navigation">
-          <a routerLink="/library" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Study</a>
-          <a routerLink="/accounts" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Accounts</a>
-          <a routerLink="/games" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Games</a>
-          <a routerLink="/opening-analysis" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Opening analysis</a>
-          <a routerLink="/analysis" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Analysis</a>
-          <a routerLink="/lab" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Lab</a>
-          <a routerLink="/courses" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Courses</a>
+        <div class="mobile-menu-header">
+          <div>
+            <p class="mobile-menu-kicker">Navigation</p>
+            <h2 class="mobile-menu-title">Chess Repertoire Trainer</h2>
+          </div>
+          <button type="button" class="mobile-menu-close" aria-label="Close main menu" (click)="closeMobileMenu()">
+            <span></span>
+          </button>
+        </div>
+        <nav class="mobile-nav-groups" aria-label="Main navigation">
+          @for (group of mobileNavGroups; track group.title) {
+            <section class="mobile-nav-group">
+              <h3 class="mobile-nav-group-title">{{ group.title }}</h3>
+              <div class="mobile-nav">
+                @for (item of group.items; track item.id) {
+                  <a
+                    [routerLink]="item.link"
+                    class="mobile-nav-item"
+                    [class.mobile-nav-item-active]="isNavActive(item)"
+                    [class.mobile-nav-item-quiet]="item.quiet"
+                    [attr.aria-current]="isNavActive(item) ? 'page' : null"
+                    (click)="closeMobileMenu()"
+                  >
+                    <span class="mobile-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+                    <span class="mobile-nav-copy">
+                      <span class="mobile-nav-label">{{ item.label }}</span>
+                      @if (item.description) {
+                        <span class="mobile-nav-description">{{ item.description }}</span>
+                      }
+                    </span>
+                  </a>
+                }
+              </div>
+            </section>
+          }
         </nav>
         <div class="mobile-auth-status">
           <span class="auth-name">{{ auth.displayName() }}</span>
@@ -69,8 +110,20 @@
         </div>
       } @else {
         <nav class="mobile-nav" aria-label="Authentication navigation">
-          <a routerLink="/login" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Sign in</a>
-          <a routerLink="/signup" routerLinkActive="nav-pill-active" class="nav-pill" (click)="closeMobileMenu()">Sign up</a>
+          @for (item of authNavItems; track item.id) {
+            <a
+              [routerLink]="item.link"
+              class="mobile-nav-item"
+              [class.mobile-nav-item-active]="isNavActive(item)"
+              [attr.aria-current]="isNavActive(item) ? 'page' : null"
+              (click)="closeMobileMenu()"
+            >
+              <span class="mobile-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+              <span class="mobile-nav-copy">
+                <span class="mobile-nav-label">{{ item.label }}</span>
+              </span>
+            </a>
+          }
         </nav>
       }
     </aside>

@@ -36,7 +36,7 @@
           </p>
         </div>
         <div class="line-actions" (click)="$event.stopPropagation()">
-          <a class="compact-action" [routerLink]="['/lines', line.id, 'train']">Train</a>
+          <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'train']">Train</a>
           <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
         </div>
       </article>
