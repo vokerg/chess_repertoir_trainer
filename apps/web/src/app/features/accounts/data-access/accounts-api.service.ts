@@ -7,6 +7,7 @@ import {
   AccountRatingHistoryResponse,
   AccountRatingStatsResponse,
   DeleteAccountResponse,
+  DefaultProgressAccountResponse,
   ExternalAccount,
   ImportRunSummary,
   LichessConnectionStatus,
@@ -76,6 +77,10 @@ export class AccountsApiService {
 
   deleteAccount(accountId: number): Observable<DeleteAccountResponse> {
     return this.api.delete<DeleteAccountResponse>(`/me/accounts/${accountId}`);
+  }
+
+  setDefaultProgressAccount(accountId: number | null): Observable<DefaultProgressAccountResponse> {
+    return this.api.patch<DefaultProgressAccountResponse>('/me/default-progress-account', { accountId });
   }
 
   getLichessConnection(): Observable<LichessConnectionStatus> {

@@ -43,8 +43,22 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'accounts',
-    title: 'Accounts | Chess Repertoire Trainer',
+    path: 'progress/accounts/:accountId',
+    title: 'Account | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/accounts/pages/account-detail-page.component').then(
+        (m) => m.AccountDetailPageComponent,
+      ),
+  },
+  {
+    path: 'settings',
+    redirectTo: '/settings/accounts',
+    pathMatch: 'full',
+  },
+  {
+    path: 'settings/accounts',
+    title: 'Import accounts | Chess Repertoire Trainer',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/accounts/pages/accounts-page.component').then(
@@ -52,13 +66,31 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'accounts/:accountId',
-    title: 'Account | Chess Repertoire Trainer',
+    path: 'settings/lichess',
+    title: 'Lichess integration | Chess Repertoire Trainer',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/accounts/pages/account-detail-page.component').then(
-        (m) => m.AccountDetailPageComponent,
+      import('./features/accounts/pages/lichess-settings-page.component').then(
+        (m) => m.LichessSettingsPageComponent,
       ),
+  },
+  {
+    path: 'settings/appearance',
+    title: 'Appearance | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/settings/pages/appearance-settings-page.component').then(
+        (m) => m.AppearanceSettingsPageComponent,
+      ),
+  },
+  {
+    path: 'accounts',
+    redirectTo: '/settings/accounts',
+    pathMatch: 'full',
+  },
+  {
+    path: 'accounts/:accountId',
+    redirectTo: '/progress/accounts/:accountId',
   },
   {
     path: 'games',

@@ -19,6 +19,7 @@ export class AccountsStore {
   readonly syncingAccountId = signal<number | null>(null);
   readonly resettingCursorAccountId = signal<number | null>(null);
   readonly deletingAccountId = signal<number | null>(null);
+  readonly settingDefaultProgressAccountId = signal<number | null>(null);
   readonly disconnectingLichess = signal(false);
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
@@ -189,6 +190,25 @@ export class AccountsStore {
       this.notice.set(`${updated.username} is now ${updated.isActive ? 'active' : 'inactive'}.`);
     } catch (error) {
       this.error.set(readApiError(error, 'Could not update account.'));
+    }
+  }
+
+  async setDefaultProgressAccount(account: ExternalAccount): Promise<void> {
+    this.settingDefaultProgressAccountId.set(account.id);
+    this.clearMessages();
+    const nextAccountId = account.isDefaultProgressAccount ? null : account.id;
+    try {
+      const response = await firstValueFrom(this.api.setDefaultProgressAccount(nextAccountId));
+      this.accounts.set(response.accounts);
+      this.notice.set(
+        response.defaultProgressAccountId
+          ? `${accountSummary(account)} is now the default progress account.`
+          : 'Default progress account cleared.',
+      );
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not update default progress account.'));
+    } finally {
+      this.settingDefaultProgressAccountId.set(null);
     }
   }
 

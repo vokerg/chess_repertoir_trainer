@@ -1,53 +1,5 @@
 <section class="accounts-page stack">
-  <app-page-header title="Accounts" subtitle="Connect accounts and refresh imported games." [actions]="headerActions()" />
-
-  <app-panel
-    title="Connected Lichess account"
-    subtitle="Connect one Lichess account for OAuth-powered actions. This is separate from tracked accounts used for imports and stats."
-  >
-    @if (store.loadingLichessConnection()) {
-      <p class="status-note">Checking Lichess connection...</p>
-    } @else if (store.lichessConnection()?.connected && store.lichessConnection()?.account; as account) {
-      <div class="lichess-connection">
-        <div class="lichess-connection-main">
-          <p class="lichess-status">Connected as <strong>&#64;{{ account.username }}</strong></p>
-          <div class="account-meta-grid lichess-meta-grid">
-            <div><span>Connected</span><strong>{{ dateLabel(account.connectedAt) }}</strong></div>
-            @if (account.expiresAt) {
-              <div><span>Expires</span><strong>{{ dateLabel(account.expiresAt) }}</strong></div>
-            }
-            @if (account.externalAccountId) {
-              <div><span>Tracked account</span><strong>Also tracked on this page.</strong></div>
-            }
-            <div>
-              <span>Challenge scope</span>
-              <strong>{{ hasChallengeWriteScope(account) ? 'Ready' : 'Missing' }}</strong>
-            </div>
-          </div>
-        </div>
-        <div class="account-card-actions">
-          <button type="button" class="primary" (click)="store.connectLichess()">
-            Reconnect
-          </button>
-          <button
-            type="button"
-            class="secondary"
-            (click)="confirmDisconnectLichess()"
-            [disabled]="store.disconnectingLichess()"
-          >
-            {{ store.disconnectingLichess() ? 'Disconnecting...' : 'Disconnect' }}
-          </button>
-        </div>
-      </div>
-    } @else {
-      <div class="lichess-connection">
-        <p class="accounts-muted">No Lichess account connected.</p>
-        <div class="account-card-actions">
-          <button type="button" class="primary" (click)="store.connectLichess()">Connect Lichess</button>
-        </div>
-      </div>
-    }
-  </app-panel>
+  <app-page-header title="Import accounts" subtitle="Connect accounts and refresh imported games." [actions]="headerActions()" />
 
   <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account.">
     <form class="account-form" (ngSubmit)="store.createAccount()">
@@ -127,10 +79,13 @@
                 <span class="account-state-pill" [class.account-state-inactive]="!account.isActive">
                   {{ account.isActive ? 'Active' : 'Inactive' }}
                 </span>
+                @if (account.isDefaultProgressAccount) {
+                  <span class="account-default-pill">Default progress</span>
+                }
               </div>
 
               <h4 class="account-title">
-                <a [routerLink]="['/accounts', account.id]">{{ account.displayName || account.username }}</a>
+                <a [routerLink]="['/progress/accounts', account.id]">{{ account.displayName || account.username }}</a>
               </h4>
               <p class="accounts-muted account-username">&#64;{{ account.username }}</p>
 
@@ -154,6 +109,22 @@
             </div>
 
             <div class="account-card-actions">
+              <button
+                type="button"
+                class="secondary default-account-button"
+                [class.default-account-button-active]="account.isDefaultProgressAccount"
+                (click)="store.setDefaultProgressAccount(account)"
+                [disabled]="store.settingDefaultProgressAccountId() === account.id || store.deletingAccountId() === account.id"
+                [attr.aria-pressed]="account.isDefaultProgressAccount ? 'true' : 'false'"
+                [attr.aria-label]="account.isDefaultProgressAccount ? 'Clear default progress account' : 'Set as default progress account'"
+                title="Default progress account"
+              >
+                @if (account.isDefaultProgressAccount) {
+                  <span aria-hidden="true">&#9733;</span>
+                } @else {
+                  <span aria-hidden="true">&#9734;</span>
+                }
+              </button>
               <button
                 type="button"
                 class="primary"

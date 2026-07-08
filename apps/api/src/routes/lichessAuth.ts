@@ -80,10 +80,10 @@ export default async function lichessAuthRoutes(app: FastifyInstance) {
 
     try {
       await LichessConnectionService.handleCallback(parsed.data);
-      return reply.redirect(`${readWebAppUrl()}/accounts?lichessConnected=1`);
+      return reply.redirect(`${readWebAppUrl()}/settings/lichess?lichessConnected=1`);
     } catch (error) {
       if (error instanceof LichessOAuthError) {
-        return reply.redirect(`${readWebAppUrl()}/accounts?lichessConnected=${error.redirectStatus}`);
+        return reply.redirect(`${readWebAppUrl()}/settings/lichess?lichessConnected=${error.redirectStatus}`);
       }
 
       throw error;

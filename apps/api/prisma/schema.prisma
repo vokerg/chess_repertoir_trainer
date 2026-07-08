@@ -14,47 +14,50 @@ datasource db {
 }
 
 model AppUser {
-  id               Int               @id @default(autoincrement())
-  displayName      String?
-  authProvider     String?
-  authSubject      String?
-  email            String?
-  externalAccounts ExternalAccount[]
-  lichessConnection LichessConnection?
-  importedGames    ImportedGame[]
-  importRuns       ImportRun[]
+  id                              Int                              @id @default(autoincrement())
+  displayName                     String?
+  authProvider                    String?
+  authSubject                     String?
+  email                           String?
+  defaultProgressAccountId        Int?                             @unique
+  defaultProgressAccount          ExternalAccount?                 @relation("DefaultProgressAccount", fields: [defaultProgressAccountId], references: [id], onDelete: SetNull)
+  externalAccounts                ExternalAccount[]
+  lichessConnection               LichessConnection?
+  importedGames                   ImportedGame[]
+  importRuns                      ImportRun[]
   tacticalDetectionRuns           TacticalDetectionRun[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
   tacticalDetectionFeedbacks      TacticalDetectionFeedback[]
   scenarioTrainingSessions        ScenarioTrainingSession[]
-  courses          Course[]
-  trainingSessions TrainingSession[]
-  trainingSublineAttempts TrainingSublineAttempt[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  courses                         Course[]
+  trainingSessions                TrainingSession[]
+  trainingSublineAttempts         TrainingSublineAttempt[]
+  createdAt                       DateTime                         @default(now())
+  updatedAt                       DateTime                         @updatedAt
 
   @@unique([authProvider, authSubject])
 }
 
 model ExternalAccount {
-  id                  Int            @id @default(autoincrement())
-  userId              Int
-  user                AppUser        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider            String
-  username            String
-  displayName         String?
-  providerUserId      String?
-  isActive            Boolean        @default(true)
-  lastSyncAt          DateTime?
-  syncCursorTime      DateTime?
-  lastSyncRunId       Int?
-  importedGames       ImportedGame[]
-  importRuns          ImportRun[]
-  ratingStats         AccountRatingStats?
-  lichessConnections  LichessConnection[]
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  id                     Int                 @id @default(autoincrement())
+  userId                 Int
+  user                   AppUser             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider               String
+  username               String
+  displayName            String?
+  providerUserId         String?
+  isActive               Boolean             @default(true)
+  lastSyncAt             DateTime?
+  syncCursorTime         DateTime?
+  lastSyncRunId          Int?
+  importedGames          ImportedGame[]
+  importRuns             ImportRun[]
+  ratingStats            AccountRatingStats?
+  lichessConnections     LichessConnection[]
+  defaultProgressForUser AppUser?            @relation("DefaultProgressAccount")
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
   @@unique([userId, provider, username])
   @@index([userId])
@@ -106,47 +109,47 @@ model AccountRatingStats {
 }
 
 model ImportedGame {
-  id                    Int                @id @default(autoincrement())
-  userId                Int
-  user                  AppUser            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId             Int
-  account               ExternalAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  provider              String
-  providerGameId        String
-  providerUrl           String?
-  pgn                   String?
-  rated                 Boolean?
-  variant               String?
-  speedCategory         String?
-  timeControlRaw        String?
-  timeControlInitial    Int?
-  timeControlIncrement  Int?
-  startedAt             DateTime?
-  endedAt               DateTime?
-  whiteUsername         String?
-  blackUsername         String?
-  whiteRating           Int?
-  blackRating           Int?
-  userColor             String?
-  opponentUsername      String?
-  result                String?
-  resultForUser         String?
-  status                String?
-  openingName           String?
-  openingEco            String?
-  plyIndexedAt          DateTime?
-  plyIndexError         String?
-  tagCodes              Int[]              @default([])
-  latestAnalysisRunId   Int?
-  latestAnalysisStatus  String?
-  latestAnalysisCreatedAt DateTime?
-  latestAnalysisCompletedAt DateTime?
-  latestWhiteAccuracy   Float?
-  latestBlackAccuracy   Float?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  analysisRuns          GameAnalysisRun[]
-  plies                 ImportedGamePly[]
+  id                              Int                              @id @default(autoincrement())
+  userId                          Int
+  user                            AppUser                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId                       Int
+  account                         ExternalAccount                  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider                        String
+  providerGameId                  String
+  providerUrl                     String?
+  pgn                             String?
+  rated                           Boolean?
+  variant                         String?
+  speedCategory                   String?
+  timeControlRaw                  String?
+  timeControlInitial              Int?
+  timeControlIncrement            Int?
+  startedAt                       DateTime?
+  endedAt                         DateTime?
+  whiteUsername                   String?
+  blackUsername                   String?
+  whiteRating                     Int?
+  blackRating                     Int?
+  userColor                       String?
+  opponentUsername                String?
+  result                          String?
+  resultForUser                   String?
+  status                          String?
+  openingName                     String?
+  openingEco                      String?
+  plyIndexedAt                    DateTime?
+  plyIndexError                   String?
+  tagCodes                        Int[]                            @default([])
+  latestAnalysisRunId             Int?
+  latestAnalysisStatus            String?
+  latestAnalysisCreatedAt         DateTime?
+  latestAnalysisCompletedAt       DateTime?
+  latestWhiteAccuracy             Float?
+  latestBlackAccuracy             Float?
+  createdAt                       DateTime                         @default(now())
+  updatedAt                       DateTime                         @updatedAt
+  analysisRuns                    GameAnalysisRun[]
+  plies                           ImportedGamePly[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
   tacticalDetectionFeedbacks      TacticalDetectionFeedback[]
@@ -180,25 +183,25 @@ model TacticalDetectionRun {
 }
 
 model TacticalDetection {
-  id                     Int                  @id @default(autoincrement())
-  runId                  Int
-  run                    TacticalDetectionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  userId                 Int
-  user                   AppUser              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  importedGameId         Int
-  importedGame           ImportedGame         @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
-  kind                   String
-  thresholdsHash         String               @db.VarChar(64)
-  detectionVersion       Int                  @default(2)
-  triggerPlyNumber       Int                  @db.SmallInt
-  userReplyPlyNumber     Int?                 @db.SmallInt
-  moveUci                String               @db.VarChar(5)
-  bestMoveUci            String?              @db.VarChar(5)
-  evalBeforeUserCp       Int?
-  evalAfterTriggerUserCp Int?
-  evalAfterReplyUserCp   Int?
-  swingCp                Int?
-  createdAt              DateTime             @default(now())
+  id                       Int                       @id @default(autoincrement())
+  runId                    Int
+  run                      TacticalDetectionRun      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  userId                   Int
+  user                     AppUser                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  importedGameId           Int
+  importedGame             ImportedGame              @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  kind                     String
+  thresholdsHash           String                    @db.VarChar(64)
+  detectionVersion         Int                       @default(2)
+  triggerPlyNumber         Int                       @db.SmallInt
+  userReplyPlyNumber       Int?                      @db.SmallInt
+  moveUci                  String                    @db.VarChar(5)
+  bestMoveUci              String?                   @db.VarChar(5)
+  evalBeforeUserCp         Int?
+  evalAfterTriggerUserCp   Int?
+  evalAfterReplyUserCp     Int?
+  swingCp                  Int?
+  createdAt                DateTime                  @default(now())
   scenarioTrainingSessions ScenarioTrainingSession[]
 
   @@unique([userId, importedGameId, kind, triggerPlyNumber, thresholdsHash, detectionVersion], map: "TacticalDetection_scope_key")
@@ -226,18 +229,18 @@ model TacticalDetectionFeedback {
   id Int @id @default(autoincrement())
 
   userId Int
-  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   importedGameId Int
-  importedGame ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  importedGame   ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
 
-  kind String
-  triggerPlyNumber Int @db.SmallInt
-  status String @default("DISLIKED")
-  reason String?
-  sourceSessionId Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  kind             String
+  triggerPlyNumber Int      @db.SmallInt
+  status           String   @default("DISLIKED")
+  reason           String?
+  sourceSessionId  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([userId, importedGameId, kind, triggerPlyNumber])
   @@index([userId, status, updatedAt])
@@ -250,12 +253,12 @@ model GameTagDefinition {
 }
 
 model Position {
-  id            Int               @id @default(autoincrement())
-  positionKey   Bytes             @unique @db.ByteA
-  normalizedFen String            @db.VarChar(120)
+  id            Int    @id @default(autoincrement())
+  positionKey   Bytes  @unique @db.ByteA
+  normalizedFen String @db.VarChar(120)
 
-  plies         ImportedGamePly[]
-  analysis      PositionAnalysis?
+  plies    ImportedGamePly[]
+  analysis PositionAnalysis?
 
   @@map("ImportedGamePosition")
 }
@@ -264,11 +267,11 @@ model ImportedGamePly {
   importedGameId Int
   importedGame   ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
 
-  positionId     Int
-  position       Position     @relation(fields: [positionId], references: [id])
+  positionId Int
+  position   Position @relation(fields: [positionId], references: [id])
 
-  plyNumber      Int    @db.SmallInt
-  moveUci        String @db.VarChar(5)
+  plyNumber Int    @db.SmallInt
+  moveUci   String @db.VarChar(5)
 
   scoreLossCp        Int? @db.SmallInt
   classificationCode Int? @db.SmallInt
@@ -278,36 +281,36 @@ model ImportedGamePly {
 }
 
 model ImportRun {
-  id              Int              @id @default(autoincrement())
-  userId          Int
-  user            AppUser          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId       Int
-  account         ExternalAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  provider        String
-  status          String
-  syncSince       DateTime?
-  syncUntil       DateTime?
-  gamesSeen       Int              @default(0)
-  gamesImported   Int              @default(0)
-  gamesUpdated    Int              @default(0)
-  gamesSkipped    Int              @default(0)
-  gamesFailed     Int              @default(0)
-  error           String?
-  startedAt       DateTime         @default(now())
-  completedAt     DateTime?
+  id            Int             @id @default(autoincrement())
+  userId        Int
+  user          AppUser         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId     Int
+  account       ExternalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider      String
+  status        String
+  syncSince     DateTime?
+  syncUntil     DateTime?
+  gamesSeen     Int             @default(0)
+  gamesImported Int             @default(0)
+  gamesUpdated  Int             @default(0)
+  gamesSkipped  Int             @default(0)
+  gamesFailed   Int             @default(0)
+  error         String?
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
 
   @@index([accountId, startedAt])
   @@index([userId, startedAt])
 }
 
 model PositionAnalysis {
-  id               Int      @id @default(autoincrement())
-  positionId       Int      @unique
-  position         Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  positionId Int      @unique
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
 
-  bestMoveUci      String?  @db.VarChar(5)
-  bestScoreCpWhite Int?     @db.SmallInt
-  bestMateWhite    Int?     @db.SmallInt
+  bestMoveUci      String? @db.VarChar(5)
+  bestScoreCpWhite Int?    @db.SmallInt
+  bestMateWhite    Int?    @db.SmallInt
   lines            Json?
 }
 
@@ -339,47 +342,47 @@ model ScenarioTrainingSession {
   id Int @id @default(autoincrement())
 
   userId Int
-  user AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   scenarioType String
-  sourceType String
-  sourceId Int
+  sourceType   String
+  sourceId     Int
 
   tacticalDetectionId Int?
-  tacticalDetection TacticalDetection? @relation(fields: [tacticalDetectionId], references: [id], onDelete: SetNull)
+  tacticalDetection   TacticalDetection? @relation(fields: [tacticalDetectionId], references: [id], onDelete: SetNull)
 
   importedGameId Int?
-  importedGame ImportedGame? @relation(fields: [importedGameId], references: [id], onDelete: SetNull)
+  importedGame   ImportedGame? @relation(fields: [importedGameId], references: [id], onDelete: SetNull)
 
-  userColor String
+  userColor        String
   opponentUsername String?
 
   whiteUsername String?
   blackUsername String?
   resultForUser String?
-  gameResult String?
-  openingEco String?
-  openingName String?
-  endedAt DateTime?
-  providerUrl String?
+  gameResult    String?
+  openingEco    String?
+  openingName   String?
+  endedAt       DateTime?
+  providerUrl   String?
 
-  previousFen String?
-  startFen String
+  previousFen        String?
+  startFen           String
   challengePlyNumber Int
 
-  triggerMoveUci String?
-  triggerMoveSan String?
-  originalUserMoveUci String?
-  originalUserMoveSan String?
+  triggerMoveUci       String?
+  triggerMoveSan       String?
+  originalUserMoveUci  String?
+  originalUserMoveSan  String?
   referenceBestMoveUci String?
 
   contextPlies Json
 
   baselineUserEvalCp Int?
-  passToleranceCp Int @default(100)
+  passToleranceCp    Int  @default(100)
 
-  status String @default("IN_PROGRESS")
-  startedAt DateTime @default(now())
+  status      String    @default("IN_PROGRESS")
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
 
   attempts ScenarioTrainingAttempt[]
@@ -393,25 +396,25 @@ model ScenarioTrainingAttempt {
   id Int @id @default(autoincrement())
 
   sessionId Int
-  session ScenarioTrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   ScenarioTrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   attemptNumber Int
 
-  fenBefore String
+  fenBefore     String
   playedMoveUci String
   playedMoveSan String?
-  fenAfter String
+  fenAfter      String
 
   baselineUserEvalCp Int?
-  afterUserEvalCp Int?
-  deltaCp Int?
+  afterUserEvalCp    Int?
+  deltaCp            Int?
 
   passed Boolean
 
-  engineSource String
-  engineName String?
-  engineDepth Int
-  engineMultipv Int @default(1)
+  engineSource  String
+  engineName    String?
+  engineDepth   Int
+  engineMultipv Int     @default(1)
   rawEngineJson Json?
 
   createdAt DateTime @default(now())
@@ -445,49 +448,49 @@ model Chapter {
 }
 
 model Line {
-  id                  Int      @id @default(autoincrement())
-  chapterId           Int
-  chapter             Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  name                String
-  sideToTrain         String
-  startingFen         String
-  tags                String?
-  notes               String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  moves               MoveNode[]
-  sessions            TrainingSession[]
-  sublineAttempts     TrainingSublineAttempt[]
+  id              Int                      @id @default(autoincrement())
+  chapterId       Int
+  chapter         Chapter                  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  name            String
+  sideToTrain     String
+  startingFen     String
+  tags            String?
+  notes           String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  moves           MoveNode[]
+  sessions        TrainingSession[]
+  sublineAttempts TrainingSublineAttempt[]
 
   @@index([chapterId])
 }
 
 model MoveNode {
-  id              Int      @id @default(autoincrement())
-  lineId          Int
-  parentId        Int?
-  line            Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
-  parent          MoveNode?@relation("MoveNodeToMoveNode", fields: [parentId], references: [id], onDelete: Cascade)
-  children        MoveNode[] @relation("MoveNodeToMoveNode")
-  trainingAttempts TrainingAttemptMove[]
-  plyNumber       Int
-  fenBefore       String
-  fenBeforeNormalized String?  @db.VarChar(120)
-  fenAfter        String
-  moveUci         String
-  moveSan         String
-  moveNumber      Int
-  colorToMoveBefore String
-  side            String
-  isUserMove      Boolean
-  isCorrectUserMove Boolean
-  comment         String?
-  annotation      String?
-  branchLabel     String?
-  branchWeight    Float?
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  Int                   @id @default(autoincrement())
+  lineId              Int
+  parentId            Int?
+  line                Line                  @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  parent              MoveNode?             @relation("MoveNodeToMoveNode", fields: [parentId], references: [id], onDelete: Cascade)
+  children            MoveNode[]            @relation("MoveNodeToMoveNode")
+  trainingAttempts    TrainingAttemptMove[]
+  plyNumber           Int
+  fenBefore           String
+  fenBeforeNormalized String?               @db.VarChar(120)
+  fenAfter            String
+  moveUci             String
+  moveSan             String
+  moveNumber          Int
+  colorToMoveBefore   String
+  side                String
+  isUserMove          Boolean
+  isCorrectUserMove   Boolean
+  comment             String?
+  annotation          String?
+  branchLabel         String?
+  branchWeight        Float?
+  sortOrder           Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
   @@index([lineId, parentId])
   @@index([lineId, parentId, moveUci])
@@ -495,18 +498,18 @@ model MoveNode {
 }
 
 model TrainingSession {
-  id                 Int      @id @default(autoincrement())
+  id                 Int                     @id @default(autoincrement())
   userId             Int
-  user               AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   lineId             Int
-  line               Line     @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  line               Line                    @relation(fields: [lineId], references: [id], onDelete: Cascade)
   attempts           TrainingAttemptMove[]
-  startedAt          DateTime @default(now())
+  startedAt          DateTime                @default(now())
   completedAt        DateTime?
   result             String
-  mistakesCount      Int      @default(0)
-  totalExpectedMoves Int      @default(0)
-  correctMoves       Int      @default(0)
+  mistakesCount      Int                     @default(0)
+  totalExpectedMoves Int                     @default(0)
+  correctMoves       Int                     @default(0)
   accuracy           Float?
   sublineAttempt     TrainingSublineAttempt?
 
@@ -516,34 +519,34 @@ model TrainingSession {
 }
 
 model TrainingSublineAttempt {
-  id                 Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId             Int
-  user               AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  lineId             Int
-  line               Line      @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  lineId Int
+  line   Line @relation(fields: [lineId], references: [id], onDelete: Cascade)
 
-  trainingSessionId Int?      @unique
+  trainingSessionId Int?             @unique
   trainingSession   TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
 
-  sublineHash        String    @db.VarChar(64)
-  sublineKeyVersion  Int       @default(1)
+  sublineHash       String @db.VarChar(64)
+  sublineKeyVersion Int    @default(1)
 
-  movesJson          Json
-  moveText           String?
+  movesJson Json
+  moveText  String?
 
-  trainingMode       String
-  result             String
+  trainingMode String
+  result       String
 
   passed             Boolean?
-  mistakesCount      Int       @default(0)
-  totalExpectedMoves Int       @default(0)
-  correctMoves       Int       @default(0)
+  mistakesCount      Int      @default(0)
+  totalExpectedMoves Int      @default(0)
+  correctMoves       Int      @default(0)
   accuracy           Float?
 
-  startedAt          DateTime  @default(now())
-  completedAt        DateTime?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
 
   @@index([userId, lineId, startedAt])
   @@index([userId, sublineHash, startedAt])
@@ -552,14 +555,14 @@ model TrainingSublineAttempt {
 }
 
 model TrainingAttemptMove {
-  id             Int      @id @default(autoincrement())
-  sessionId      Int
-  session        TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  moveNodeId     Int?
-  moveNode       MoveNode? @relation(fields: [moveNodeId], references: [id], onDelete: Cascade)
-  fenBefore      String
+  id              Int             @id @default(autoincrement())
+  sessionId       Int
+  session         TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  moveNodeId      Int?
+  moveNode        MoveNode?       @relation(fields: [moveNodeId], references: [id], onDelete: Cascade)
+  fenBefore       String
   expectedMoveUci String?
-  playedMoveUci  String?
-  wasCorrect     Boolean
-  createdAt      DateTime @default(now())
+  playedMoveUci   String?
+  wasCorrect      Boolean
+  createdAt       DateTime        @default(now())
 }

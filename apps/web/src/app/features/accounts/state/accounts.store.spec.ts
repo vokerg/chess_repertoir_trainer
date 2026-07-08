@@ -16,6 +16,7 @@ describe('AccountsStore', () => {
       'resetCursor',
       'setActive',
       'deleteAccount',
+      'setDefaultProgressAccount',
       'getLichessConnection',
       'startLichessConnection',
       'disconnectLichess',
@@ -100,6 +101,22 @@ describe('AccountsStore', () => {
     expect(store.notice()).toBeNull();
     expect(store.syncingAllAccounts()).toBeFalse();
     expect(store.syncingAccountId()).toBeNull();
+  });
+
+  it('sets the default progress account from the API account list response', async () => {
+    const first = account(1, 'first', true);
+    const second = account(2, 'second', true);
+    const updatedAccounts = [{ ...first, isDefaultProgressAccount: true }, second];
+    store.accounts.set([first, second]);
+    api.setDefaultProgressAccount.and.returnValue(
+      of({ defaultProgressAccountId: first.id, account: updatedAccounts[0], accounts: updatedAccounts }),
+    );
+
+    await store.setDefaultProgressAccount(first);
+
+    expect(api.setDefaultProgressAccount).toHaveBeenCalledOnceWith(first.id);
+    expect(store.accounts()).toEqual(updatedAccounts);
+    expect(store.notice()).toBe('Lichess @first is now the default progress account.');
   });
 });
 

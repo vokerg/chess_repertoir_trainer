@@ -73,11 +73,19 @@ export class AccountDetailPageComponent implements OnInit {
     const account = this.account();
     return account ? `${providerLabel(account.provider)} @${account.username}` : 'Loading account details.';
   });
+  protected readonly accountOptions = computed(() =>
+    [...this.accounts()].sort(
+      (left, right) =>
+        Number(Boolean(right.isDefaultProgressAccount)) - Number(Boolean(left.isDefaultProgressAccount)) ||
+        providerLabel(left.provider).localeCompare(providerLabel(right.provider)) ||
+        left.username.localeCompare(right.username),
+    ),
+  );
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'back-to-accounts',
       label: 'Back to accounts',
-      link: '/accounts',
+      link: '/settings/accounts',
     },
   ]);
 
@@ -123,13 +131,14 @@ export class AccountDetailPageComponent implements OnInit {
   }
 
   protected accountOptionLabel(account: ExternalAccount): string {
-    return `${providerLabel(account.provider)} @${account.username}`;
+    const label = `${providerLabel(account.provider)} @${account.username}`;
+    return account.isDefaultProgressAccount ? `${label} (default)` : label;
   }
 
   protected onAccountSelectionChange(value: string): void {
     const id = Number(value);
     if (Number.isInteger(id) && id > 0 && id !== this.accountId()) {
-      void this.router.navigate(['/accounts', id]);
+      void this.router.navigate(['/progress/accounts', id]);
     }
   }
 

@@ -22,6 +22,10 @@ const updateAccountSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const defaultProgressAccountSchema = z.object({
+  accountId: z.number().int().positive().nullable(),
+});
+
 const listAccountGamesQuerySchema = importedGameSearchQuerySchema.omit({ accountIds: true }).extend({
   take: z.coerce.number().int().min(1).max(200).optional(),
 });
@@ -91,6 +95,24 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const account = await ExternalAccountService.createForUser(auth.userId, parsed.data);
     reply.code(201);
     return account;
+  });
+
+  app.patch('/api/me/default-progress-account', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = defaultProgressAccountSchema.safeParse(request.body);
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+
+    const result = await ExternalAccountService.setDefaultProgressAccount(auth.userId, parsed.data.accountId);
+    if (!result) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    return result;
   });
 
   app.get('/api/me/accounts/:id', async (request, reply) => {

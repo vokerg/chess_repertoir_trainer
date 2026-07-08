@@ -30,6 +30,10 @@
               <dt>Status</dt>
               <dd>{{ account.isActive ? 'Active' : 'Inactive' }}</dd>
             </div>
+            <div>
+              <dt>Progress</dt>
+              <dd>{{ account.isDefaultProgressAccount ? 'Default' : 'Available' }}</dd>
+            </div>
           </dl>
 
           <label class="account-switcher">
@@ -42,7 +46,7 @@
               @if (accountsLoading()) {
                 <option value="">Loading accounts...</option>
               }
-              @for (option of accounts(); track option.id) {
+              @for (option of accountOptions(); track option.id) {
                 <option [value]="option.id">{{ accountOptionLabel(option) }}</option>
               }
             </select>

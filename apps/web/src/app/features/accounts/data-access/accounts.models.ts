@@ -8,6 +8,7 @@ export interface ExternalAccount {
   isActive: boolean;
   lastSyncAt?: string | null;
   syncCursorTime?: string | null;
+  isDefaultProgressAccount?: boolean;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -28,6 +29,12 @@ export interface ImportRunSummary {
 export interface DeleteAccountResponse {
   deleted: true;
   account: ExternalAccount;
+}
+
+export interface DefaultProgressAccountResponse {
+  defaultProgressAccountId: number | null;
+  account?: ExternalAccount | null;
+  accounts: ExternalAccount[];
 }
 
 export interface LichessConnectionStatus {

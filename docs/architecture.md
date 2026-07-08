@@ -64,6 +64,12 @@ Frontend conventions and accepted debt are documented under `docs/frontend`.
 ## Frontend product ownership
 
 - `/library` is the Study planner. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`. Desktop keeps the right-side study planner basket; mobile keeps browsing visible and uses the Study Launcher for course, section, or single-line marathon launch.
+- App navigation lives in `apps/web/src/app/core/layout/main-navigation`. It owns the hierarchical desktop/mobile nav model described in [Frontend Navigation](frontend/navigation.md). Keep desktop and mobile navigation driven by the same route/group data.
+- Study is the primary entry point for repertoire study and tactical missed-shot training. The main menu nests Missed shots under Study rather than exposing it as a separate top-level item.
+- Openings groups Opening analysis (`/opening-analysis`) and Opening struggles (`/opening-struggles`). Opening struggles remains routed directly even though its implementation currently lives under the Lab experiment directory.
+- Tools groups Analysis (`/analysis`) and Lab (`/lab`). These routes are not Settings.
+- Settings groups import accounts (`/settings/accounts`), Lichess OAuth integration (`/settings/lichess`), and Appearance (`/settings/appearance`). Legacy `/accounts` URLs redirect into Settings or Progress routes.
+- Progress uses `/progress` as the entry point and `/progress/accounts/:accountId` for the account dashboard. The entry route opens the default progress account first, then an active account, then the first available account.
 - `/chapters/:chapterId/lines` is the line/subline training-health diagnosis page. It owns line selection, expandable per-line subline status, and selected-subline drill launch.
 - `/courses/:courseId` stays course/content oriented. Its available-sublines section is a structural repertoire dump, not a user-specific training-health dashboard.
 - `/library/marathon`, `/courses/:courseId/marathon`, and `/chapters/:chapterId/marathon` share the line marathon page. Query parameters can provide `lineIds`, `sublineHashes`, and `mode`; route params provide optional course/chapter scope.

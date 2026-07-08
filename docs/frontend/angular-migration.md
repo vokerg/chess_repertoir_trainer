@@ -6,7 +6,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 
 ## Completed
 
-- Application shell: external template/styles and OnPush.
+- Application shell: external template/styles, OnPush, and app-specific navigation extracted to `core/layout/main-navigation`.
 - Games explorer store: immutable row patching without row-action list reloads.
 - Game detail: feature-local route page, signal store, typed data access, pure tree helpers, presentational summary/workbench components, and built-in control flow.
 - Move tree: OnPush, signal inputs/outputs, built-in control flow, and stable tracking.

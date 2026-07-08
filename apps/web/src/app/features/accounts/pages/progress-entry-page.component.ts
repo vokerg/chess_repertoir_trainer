@@ -21,7 +21,7 @@ import { type ExternalAccount } from '../data-access/accounts.models';
           <p class="status-note">Loading connected accounts...</p>
         } @else if (error(); as error) {
           <p class="status-error">{{ error }}</p>
-          <a class="compact-action secondary" routerLink="/accounts">Manage accounts</a>
+          <a class="compact-action secondary" routerLink="/settings/accounts">Manage accounts</a>
         }
       </app-panel>
     </section>
@@ -47,9 +47,9 @@ export class ProgressEntryPageComponent implements OnInit {
       const accounts = await firstValueFrom(this.accountsApi.getAccounts());
       const account = this.progressAccount(accounts);
       if (account) {
-        await this.router.navigate(['/accounts', account.id], { replaceUrl: true });
+        await this.router.navigate(['/progress/accounts', account.id], { replaceUrl: true });
       } else {
-        await this.router.navigate(['/accounts'], { replaceUrl: true });
+        await this.router.navigate(['/settings/accounts'], { replaceUrl: true });
       }
     } catch (error) {
       this.error.set(this.errorMessage(error));
@@ -58,7 +58,7 @@ export class ProgressEntryPageComponent implements OnInit {
   }
 
   private progressAccount(accounts: readonly ExternalAccount[]): ExternalAccount | undefined {
-    return accounts.find((account) => account.isActive) ?? accounts[0];
+    return accounts.find((account) => account.isDefaultProgressAccount) ?? accounts.find((account) => account.isActive) ?? accounts[0];
   }
 
   private errorMessage(error: unknown): string {

@@ -75,26 +75,30 @@ export default fp(async function authPlugin(app) {
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
+    let payload: Record<string, unknown>;
     try {
-      const { payload } = await jwtVerify!(token, clerkJwks!, {
+      const verified = await jwtVerify!(token, clerkJwks!, {
         issuer: config.issuer,
         ...(config.audience ? { audience: config.audience } : {}),
       });
-      const authorizedParty = payload['azp'];
-      if (!payload.sub || typeof authorizedParty !== 'string' || !config.authorizedParties.includes(authorizedParty)) {
-        return reply.code(401).send({ message: 'Unauthorized' });
-      }
-
-      const resolved = await CurrentAppUserService.resolveExternalUser({
-        provider: 'clerk',
-        externalSubject: payload.sub,
-        email: readEmail(payload),
-        displayName: readDisplayName(payload),
-      });
-      request.auth = resolved.auth;
+      payload = verified.payload;
     } catch (error) {
       request.log.warn({ err: error }, 'Request authentication failed');
       return reply.code(401).send({ message: 'Unauthorized' });
     }
+
+    const authorizedParty = payload['azp'];
+    const subject = payload['sub'];
+    if (!subject || typeof subject !== 'string' || typeof authorizedParty !== 'string' || !config.authorizedParties.includes(authorizedParty)) {
+      return reply.code(401).send({ message: 'Unauthorized' });
+    }
+
+    const resolved = await CurrentAppUserService.resolveExternalUser({
+      provider: 'clerk',
+      externalSubject: subject,
+      email: readEmail(payload),
+      displayName: readDisplayName(payload),
+    });
+    request.auth = resolved.auth;
   });
 });
