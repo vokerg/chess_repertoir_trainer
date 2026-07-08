@@ -3,6 +3,7 @@ import {
   currentTacticalDetectionThresholdsHash,
   currentTacticalDetectionVersion,
 } from '../lab/tactical-detections/tactical-detection.service';
+import { evaluateScenarioAttempt } from './scenario-training-evaluation';
 import {
   ScenarioTrainingAttemptInput,
   ScenarioTrainingDislikeInput,
@@ -65,10 +66,6 @@ function scoreToCp(scoreCp: number | null | undefined, mate: number | null | und
 function whiteToUserCp(scoreCpWhite: number | null, userColor: string): number | null {
   if (scoreCpWhite === null) return null;
   return userColor === 'BLACK' ? -scoreCpWhite : scoreCpWhite;
-}
-
-function sameUciMove(a: string | null | undefined, b: string | null | undefined): boolean {
-  return Boolean(a && b && a.toLowerCase() === b.toLowerCase());
 }
 
 function serializeSession(session: Awaited<ReturnType<typeof findScenarioTrainingSession>>) {
@@ -231,14 +228,15 @@ export async function submitScenarioTrainingAttempt(
   const afterWhiteCp = scoreToCp(input.afterScoreCpWhite, input.afterMateWhite);
   const submittedBaselineUserCp = whiteToUserCp(baselineWhiteCp, session.userColor);
   const afterUserEvalCp = whiteToUserCp(afterWhiteCp, session.userColor);
-  const baselineUserEvalCp = submittedBaselineUserCp ?? session.baselineUserEvalCp;
-  const deltaCp = baselineUserEvalCp !== null && afterUserEvalCp !== null
-    ? baselineUserEvalCp - afterUserEvalCp
-    : null;
-  const passedByEval = baselineUserEvalCp !== null && afterUserEvalCp !== null
-    ? afterUserEvalCp >= baselineUserEvalCp - session.passToleranceCp
-    : false;
-  const passed = sameUciMove(input.moveUci, session.referenceBestMoveUci) || passedByEval;
+  const evaluation = evaluateScenarioAttempt({
+    moveUci: input.moveUci,
+    referenceBestMoveUci: session.referenceBestMoveUci,
+    originalUserMoveUci: session.originalUserMoveUci,
+    sessionBaselineUserEvalCp: session.baselineUserEvalCp,
+    submittedBaselineUserEvalCp: submittedBaselineUserCp,
+    afterUserEvalCp,
+    passToleranceCp: session.passToleranceCp,
+  });
 
   await createScenarioTrainingAttempt({
     sessionId,
@@ -247,10 +245,10 @@ export async function submitScenarioTrainingAttempt(
     playedMoveUci: input.moveUci,
     playedMoveSan: move.san,
     fenAfter: chess.fen(),
-    baselineUserEvalCp,
+    baselineUserEvalCp: evaluation.baselineUserEvalCp,
     afterUserEvalCp,
-    deltaCp,
-    passed,
+    deltaCp: evaluation.deltaCp,
+    passed: evaluation.passed,
     engineSource: input.engineSource,
     engineName: input.engineName ?? null,
     engineDepth: input.engineDepth,
@@ -259,10 +257,10 @@ export async function submitScenarioTrainingAttempt(
   });
 
   return {
-    passed,
-    baselineUserEvalCp,
+    passed: evaluation.passed,
+    baselineUserEvalCp: evaluation.baselineUserEvalCp,
     afterUserEvalCp,
-    deltaCp,
+    deltaCp: evaluation.deltaCp,
     session: serializeSession(await findScenarioTrainingSession(userId, sessionId))!,
   };
 }
