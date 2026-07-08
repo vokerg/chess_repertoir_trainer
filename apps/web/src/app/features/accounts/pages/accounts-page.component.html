@@ -104,6 +104,33 @@
                   @if (result.archivesFetched !== null && result.archivesFetched !== undefined) {
                     <span>Archives fetched: {{ result.archivesFetched }}.</span>
                   }
+                  @if (newImportedEligibleCount(result) > 0) {
+                    <div class="sync-workflow">
+                      <span>{{ newImportedEligibleCount(result) }} newly imported blitz/rapid games are ready for standard workflows.</span>
+                      <div class="sync-workflow-actions">
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="confirmIndexNewImportedGames(account, result)"
+                          [disabled]="newImportedUnindexedGameIds(account.id, result).length === 0 || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id"
+                        >
+                          @if (store.indexingWorkflowAccountId() === account.id) {
+                            Indexing {{ store.indexWorkflowCompleted() }}/{{ store.indexWorkflowTotal() }}
+                          } @else {
+                            Index new games
+                          }
+                        </button>
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="confirmAnalyseNewImportedGames(account, result)"
+                          [disabled]="newImportedIndexedGameIds(account.id, result).length === 0 || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id"
+                        >
+                          {{ store.analysingWorkflowAccountId() === account.id ? 'Submitting analysis...' : 'Analyse new indexed games' }}
+                        </button>
+                      </div>
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -132,6 +159,22 @@
                 [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
               >
                 {{ store.syncingAccountId() === account.id ? 'Syncing...' : 'Sync' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="confirmIndexEligibleAccountGames(account)"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+              >
+                {{ store.indexingWorkflowAccountId() === account.id ? 'Indexing...' : 'Index blitz/rapid games' }}
+              </button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="confirmAnalyseEligibleAccountGames(account)"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+              >
+                {{ store.analysingWorkflowAccountId() === account.id ? 'Submitting...' : 'Analyse indexed blitz/rapid games' }}
               </button>
               <button
                 type="button"

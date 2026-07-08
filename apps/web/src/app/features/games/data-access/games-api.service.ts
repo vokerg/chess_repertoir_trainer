@@ -10,7 +10,7 @@ import {
   ImportedGameDetail,
   ImportedGameFacetsResponse,
   ImportedGameFullRefreshAcceptedResponse,
-  ImportedGamePlyIndexResult,
+  ImportedGameIndexWorkflowResult,
   ImportedGameSearchResponse,
   ImportedGameTagsRefreshResponse,
 } from './games.models';
@@ -53,8 +53,12 @@ export class GamesApiService {
     return this.api.post<ImportedGameAnalysisSummary>(`/imported-games/${gameId}/analysis-runs`, force ? { force: true } : {});
   }
 
-  indexPlies(gameId: number, force = false): Observable<ImportedGamePlyIndexResult> {
-    return this.api.post<ImportedGamePlyIndexResult>(`/imported-games/${gameId}/ply-index`, force ? { force: true } : {});
+  runIndexWorkflow(gameId: number, force = false): Observable<ImportedGameIndexWorkflowResult> {
+    return this.api.post<ImportedGameIndexWorkflowResult>(`/imported-games/${gameId}/ply-index`, force ? { force: true } : {});
+  }
+
+  indexPlies(gameId: number, force = false): Observable<ImportedGameIndexWorkflowResult> {
+    return this.runIndexWorkflow(gameId, force);
   }
 
   refreshGameTags(gameId: number): Observable<ImportedGameTagsRefreshResponse> {

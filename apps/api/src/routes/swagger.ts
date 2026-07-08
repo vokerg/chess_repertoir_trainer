@@ -211,6 +211,26 @@ const legacyOpenApiDocument = {
         },
       },
     },
+    '/api/me/accounts/{id}/imported-game-workflow-candidates': {
+      get: {
+        tags: ['External accounts'],
+        summary: 'List standard imported-game workflow candidates for an account',
+        description:
+          'Returns blitz/rapid imported-game ids that can be offered for standard post-sync workflows. Bullet games are intentionally excluded.',
+        parameters: [{ $ref: '#/components/parameters/AccountId' }],
+        responses: {
+          '200': {
+            description: 'Workflow candidates',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ImportedGameWorkflowCandidates' },
+              },
+            },
+          },
+          '404': { $ref: '#/components/responses/NotFound' },
+        },
+      },
+    },
     '/api/me/accounts/{id}/reset-cursor': {
       post: {
         tags: ['External accounts'],
@@ -396,8 +416,40 @@ const legacyOpenApiDocument = {
             nullable: true,
             description: 'Chess.com-only count of monthly archive endpoints skipped because Chess.com listed them but returned 404.',
           },
+          importedGameIds: {
+            type: 'array',
+            items: { type: 'integer' },
+            description: 'ImportedGame ids created by this sync run.',
+          },
+          eligibleImportedGameIds: {
+            type: 'array',
+            items: { type: 'integer' },
+            description: 'Newly imported blitz/rapid game ids eligible for standard workflows.',
+          },
+          eligibleUnindexedGameIds: {
+            type: 'array',
+            items: { type: 'integer' },
+            description: 'Newly imported blitz/rapid game ids eligible for the standard indexing workflow.',
+          },
         },
         required: ['importRunId', 'status', 'gamesSeen', 'gamesImported', 'gamesUpdated', 'gamesFailed'],
+      },
+      ImportedGameWorkflowCandidates: {
+        type: 'object',
+        properties: {
+          accountId: { type: 'integer' },
+          eligibleImportedGameIds: { type: 'array', items: { type: 'integer' } },
+          eligibleUnindexedGameIds: { type: 'array', items: { type: 'integer' } },
+          eligibleIndexedGameIds: { type: 'array', items: { type: 'integer' } },
+          eligibleMissingOpeningGameIds: { type: 'array', items: { type: 'integer' } },
+        },
+        required: [
+          'accountId',
+          'eligibleImportedGameIds',
+          'eligibleUnindexedGameIds',
+          'eligibleIndexedGameIds',
+          'eligibleMissingOpeningGameIds',
+        ],
       },
       ErrorResponse: {
         type: 'object',

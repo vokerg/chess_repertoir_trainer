@@ -9,6 +9,9 @@ import {
   DeleteAccountResponse,
   DefaultProgressAccountResponse,
   ExternalAccount,
+  BatchAnalysisAcceptedResponse,
+  ImportedGameIndexWorkflowResult,
+  ImportedGameWorkflowCandidates,
   ImportRunSummary,
   LichessConnectionStatus,
 } from './accounts.models';
@@ -65,6 +68,18 @@ export class AccountsApiService {
 
   syncAccount(accountId: number): Observable<ImportRunSummary> {
     return this.api.post<ImportRunSummary>(`/me/accounts/${accountId}/sync`, {});
+  }
+
+  getWorkflowCandidates(accountId: number): Observable<ImportedGameWorkflowCandidates> {
+    return this.api.get<ImportedGameWorkflowCandidates>(`/me/accounts/${accountId}/imported-game-workflow-candidates`);
+  }
+
+  runIndexWorkflow(gameId: number): Observable<ImportedGameIndexWorkflowResult> {
+    return this.api.post<ImportedGameIndexWorkflowResult>(`/imported-games/${gameId}/ply-index`, {});
+  }
+
+  startBatchAnalysis(gameIds: number[]): Observable<BatchAnalysisAcceptedResponse> {
+    return this.api.post<BatchAnalysisAcceptedResponse>('/imported-games/batch-analysis-runs', { gameIds });
   }
 
   resetCursor(accountId: number): Observable<ExternalAccount> {

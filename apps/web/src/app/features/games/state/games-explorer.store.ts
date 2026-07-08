@@ -4,11 +4,13 @@ import { GamesApiService } from '../data-access/games-api.service';
 import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import {
   ImportedGameFacetsResponse,
+  ImportedGameIndexWorkflowResult,
   ImportedGameListItem,
   ImportedGamePageInfo,
   ImportedGamePlyIndexResult,
 } from '../data-access/games.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game-workflow-eligibility';
 
 @Injectable()
 export class GamesExplorerStore {
@@ -55,7 +57,9 @@ export class GamesExplorerStore {
   );
 
   readonly bulkIndexableGames = computed(() =>
-    this.filteredGames().filter((game) => game.plyIndex?.status !== 'INDEXED')
+    this.filteredGames().filter((game) =>
+      isStandardImportedGameSpeed(game.speedCategory) && game.plyIndex?.status !== 'INDEXED'
+    )
   );
 
   readonly bulkIndexProgressLabel = computed(() => {
@@ -154,12 +158,15 @@ export class GamesExplorerStore {
     const force = game.plyIndex?.status === 'FAILED';
     this.api.indexPlies(game.id, force).subscribe({
       next: (result) => {
-        if (result.status === 'FAILED') {
-          const message = result.error || 'Could not index game plies.';
+        if (!result.eligible) {
+          const message = 'Only blitz and rapid games are eligible for the standard indexing workflow.';
+          this.error.set(message);
+        } else if (result.plyIndex?.status === 'FAILED') {
+          const message = result.plyIndex.error || 'Could not index game plies.';
           this.markGamePlyIndexFailed(game.id, message);
           this.error.set(message);
         } else {
-          this.markGamePlyIndexed(game.id, result);
+          this.markGameIndexWorkflowCompleted(game.id, result);
         }
         this.indexingPlyGameId.set(null);
       },
@@ -209,7 +216,9 @@ export class GamesExplorerStore {
   }
 
   batchAnalyzeVisibleGames(): void {
-    const gameIds = this.filteredGames().map((game) => game.id);
+    const gameIds = this.filteredGames()
+      .filter((game) => isStandardImportedGameSpeed(game.speedCategory))
+      .map((game) => game.id);
     if (!gameIds.length || this.batchAnalysisSubmitting()) return;
 
     this.error.set(null);
@@ -270,6 +279,11 @@ export class GamesExplorerStore {
     try {
       await this.importedGameAnalysis.analyzeGame(game.id, force);
       this.markGameAnalysisCompleted(game.id);
+      try {
+        await this.reloadCurrentList();
+      } catch (reloadError) {
+        this.error.set(readApiError(reloadError, 'Analysis completed, but refreshed tags could not be loaded.'));
+      }
       this.analysingGameId.set(null);
     } catch (err) {
       const message = readApiError(err, 'Could not analyse game.');
@@ -284,13 +298,18 @@ export class GamesExplorerStore {
     this.markGamePlyIndexing(game.id);
     const force = game.plyIndex?.status === 'FAILED';
     try {
-      const result = await firstValueFrom(this.api.indexPlies(game.id, force));
-      if (result.status === 'FAILED') {
-        const message = result.error || 'Could not index game plies.';
+      const result = await firstValueFrom(this.api.runIndexWorkflow(game.id, force));
+      if (!result.eligible) {
+        const message = 'Only blitz and rapid games are eligible for the standard indexing workflow.';
         this.markGamePlyIndexFailed(game.id, message);
         throw new Error(message);
       }
-      this.markGamePlyIndexed(game.id, result);
+      if (result.plyIndex?.status === 'FAILED') {
+        const message = result.plyIndex.error || 'Could not index game plies.';
+        this.markGamePlyIndexFailed(game.id, message);
+        throw new Error(message);
+      }
+      this.markGameIndexWorkflowCompleted(game.id, result);
     } catch (error) {
       const message = readApiError(error, `Could not index game #${game.id}.`);
       this.markGamePlyIndexFailed(game.id, message);
@@ -352,12 +371,34 @@ export class GamesExplorerStore {
     }));
   }
 
+  private markGameIndexWorkflowCompleted(gameId: number, result: ImportedGameIndexWorkflowResult): void {
+    const plyIndex = result.plyIndex;
+    if (plyIndex) this.markGamePlyIndexed(gameId, plyIndex);
+    const openingAssignment = result.openingAssignment;
+    if (!openingAssignment || openingAssignment.status === 'FAILED') return;
+
+    this.patchGameById(gameId, (game) => ({
+      ...game,
+      opening: {
+        ...game.opening,
+        eco: openingAssignment.openingEco ?? game.opening?.eco ?? null,
+        name: openingAssignment.openingName ?? game.opening?.name ?? null,
+      },
+    }));
+  }
+
   private patchGameTags(gameId: number, tagCodes: number[], tags: ImportedGameListItem['tags']): void {
     this.patchGameById(gameId, (game) => ({
       ...game,
       tagCodes,
       tags,
     }));
+  }
+
+  private async reloadCurrentList(): Promise<void> {
+    const data = await firstValueFrom(this.api.searchGames(this.filters()));
+    this.games.set(data.items);
+    this.pageInfo.set(data.pageInfo);
   }
 
   private gameTagCount(game: ImportedGameListItem): number {

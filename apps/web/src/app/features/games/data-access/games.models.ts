@@ -51,6 +51,23 @@ export interface ImportedGamePlyIndexResult {
   error?: string;
 }
 
+export interface ImportedGameOpeningAssignmentResult {
+  importedGameId: number;
+  status: 'ASSIGNED' | 'SKIPPED' | 'FAILED';
+  openingEco?: string | null;
+  openingName?: string | null;
+  reason?: string | null;
+}
+
+export interface ImportedGameIndexWorkflowResult {
+  importedGameId: number;
+  eligible: boolean;
+  speedCategory?: string | null;
+  skippedReason?: 'UNSUPPORTED_SPEED_CATEGORY';
+  plyIndex?: ImportedGamePlyIndexResult;
+  openingAssignment?: ImportedGameOpeningAssignmentResult;
+}
+
 export interface BatchAnalysisConfig {
   enabled: boolean;
 }

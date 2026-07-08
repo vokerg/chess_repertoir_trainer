@@ -154,6 +154,16 @@
         background: var(--accent-soft);
         color: var(--text);
       }
+      .sync-workflow {
+        display: grid;
+        gap: 0.55rem;
+        margin-top: 0.4rem;
+      }
+      .sync-workflow-actions {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+      }
       .account-card-actions {
         align-content: flex-start;
         justify-content: flex-end;

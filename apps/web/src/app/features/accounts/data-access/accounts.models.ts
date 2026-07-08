@@ -24,11 +24,48 @@ export interface ImportRunSummary {
   syncSince?: string | null;
   syncUntil?: string | null;
   archivesFetched?: number | null;
+  importedGameIds?: number[];
+  eligibleImportedGameIds?: number[];
+  eligibleUnindexedGameIds?: number[];
 }
 
 export interface DeleteAccountResponse {
   deleted: true;
   account: ExternalAccount;
+}
+
+export interface ImportedGameWorkflowCandidates {
+  accountId: number;
+  eligibleImportedGameIds: number[];
+  eligibleUnindexedGameIds: number[];
+  eligibleIndexedGameIds: number[];
+  eligibleMissingOpeningGameIds: number[];
+}
+
+export interface ImportedGameIndexWorkflowResult {
+  importedGameId: number;
+  eligible: boolean;
+  speedCategory?: string | null;
+  skippedReason?: 'UNSUPPORTED_SPEED_CATEGORY';
+  plyIndex?: {
+    importedGameId: number;
+    status: 'INDEXED' | 'ALREADY_INDEXED' | 'FAILED';
+    pliesIndexed?: number | null;
+    plyIndexedAt?: string | null;
+    error?: string | null;
+  };
+  openingAssignment?: {
+    importedGameId: number;
+    status: 'ASSIGNED' | 'SKIPPED' | 'FAILED';
+    openingEco?: string | null;
+    openingName?: string | null;
+    reason?: string | null;
+  };
+}
+
+export interface BatchAnalysisAcceptedResponse {
+  accepted: boolean;
+  gameIds: number[];
 }
 
 export interface DefaultProgressAccountResponse {

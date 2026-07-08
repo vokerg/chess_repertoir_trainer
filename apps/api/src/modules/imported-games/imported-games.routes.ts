@@ -3,7 +3,7 @@ import { requireAuth } from '../../auth/request-auth';
 import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import { ImportedGamesService } from './imported-games.service';
 import { importedGameSearchQuerySchema, openingAnalysisQuerySchema, openingAnalysisTopGamesQuerySchema } from './imported-games.schemas';
-import { ImportedGamePlyIndexService } from './ply-index.service';
+import { ImportedGameIndexWorkflowService } from './imported-game-index-workflow.service';
 import { OpeningAnalysisService } from './opening-analysis.service';
 import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis.config';
 import { ImportedGameBatchAnalysisService } from '../analysis/batch-game-analysis.service';
@@ -212,7 +212,7 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
 
       try {
-        ImportedGameBatchAnalysisService.enqueueFullRefresh(auth.userId, gameId);
+        await ImportedGameBatchAnalysisService.enqueueFullRefresh(auth.userId, gameId);
         return {
           accepted: true,
           importedGameId: gameId,
@@ -261,9 +261,11 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
 
       try {
-        const result = await ImportedGamePlyIndexService.indexOne(auth.userId, gameId, { force: parseForce(request.body) });
-        if (result.status === 'INDEXED') reply.code(201);
-        if (result.status === 'FAILED') reply.code(400);
+        const result = await ImportedGameIndexWorkflowService.indexGame(auth.userId, gameId, {
+          force: parseForce(request.body),
+        });
+        if (result.plyIndex?.status === 'INDEXED') reply.code(201);
+        if (result.plyIndex?.status === 'FAILED') reply.code(400);
         return result;
       } catch (err: any) {
         const message = err?.message ?? String(err);

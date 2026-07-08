@@ -14,7 +14,9 @@ import {
 } from 'chess-domain';
 import { ImportedGamesService } from '../imported-games/imported-games.service';
 import { GameOpeningAssignmentService } from '../imported-games/game-opening-assignment.service';
+import { isStandardImportedGameSpeed } from '../imported-games/imported-game-workflow-eligibility';
 import { ImportedGamePlyIndexService } from '../imported-games/ply-index.service';
+import prisma from '../../prisma';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
 import {
   completeGameAnalysisRun,
@@ -338,6 +340,9 @@ async function analyseGame(
 ) {
   const game = await getImportedGameForAnalysis(userId, importedGameId);
   if (!game) throw new Error('Imported game not found');
+  if (!isStandardImportedGameSpeed(game.speedCategory)) {
+    return;
+  }
 
   const indexResult = await ImportedGamePlyIndexService.indexOne(userId, importedGameId, {
     force: options.force,
@@ -454,38 +459,62 @@ async function drainQueue() {
   }
 }
 
+async function eligibleStandardGameIds(userId: number, gameIds: number[]): Promise<number[]> {
+  const games = await prisma.importedGame.findMany({
+    where: {
+      userId,
+      id: { in: gameIds },
+    },
+    select: {
+      id: true,
+      speedCategory: true,
+    },
+  });
+  const requestedOrder = new Map(gameIds.map((id, index) => [id, index]));
+  return games
+    .filter((game) => isStandardImportedGameSpeed(game.speedCategory))
+    .sort((a, b) => (requestedOrder.get(a.id) ?? 0) - (requestedOrder.get(b.id) ?? 0))
+    .map((game) => game.id);
+}
+
 export const ImportedGameBatchAnalysisService = {
-  enqueue: (userId: number, gameIds: number[]) => {
+  enqueue: async (userId: number, gameIds: number[]) => {
     if (!isLocalBatchStockfishAnalysisEnabled()) {
       throw new Error('Local batch Stockfish analysis is disabled');
     }
 
     const uniqueGameIds = Array.from(new Set(gameIds)).filter((id) => Number.isInteger(id) && id > 0);
-    if (!uniqueGameIds.length) {
-      throw new Error('No imported games selected for batch analysis');
+    const eligibleGameIds = await eligibleStandardGameIds(userId, uniqueGameIds);
+    if (!eligibleGameIds.length) {
+      throw new Error('No eligible blitz or rapid imported games selected for batch analysis');
     }
 
     queue.push({
       userId,
-      gameIds: uniqueGameIds,
+      gameIds: eligibleGameIds,
       force: false,
-      refreshTagsAfterAnalysis: false,
+      refreshTagsAfterAnalysis: true,
     });
     void drainQueue().catch((err) => {
       console.error('Local Stockfish batch analysis queue failed', err);
     });
+    return eligibleGameIds;
   },
-  enqueueFullRefresh: (userId: number, gameId: number) => {
+  enqueueFullRefresh: async (userId: number, gameId: number) => {
     if (!isLocalBatchStockfishAnalysisEnabled()) {
       throw new Error('Local batch Stockfish analysis is disabled');
     }
     if (!Number.isInteger(gameId) || gameId <= 0) {
       throw new Error('Invalid imported game id');
     }
+    const eligibleGameIds = await eligibleStandardGameIds(userId, [gameId]);
+    if (!eligibleGameIds.length) {
+      throw new Error('No eligible blitz or rapid imported games selected for full refresh');
+    }
 
     queue.push({
       userId,
-      gameIds: [gameId],
+      gameIds: eligibleGameIds,
       force: true,
       refreshTagsAfterAnalysis: true,
     });

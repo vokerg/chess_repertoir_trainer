@@ -247,7 +247,6 @@ export class GameDetailStore implements OnDestroy {
     this.error.set(null);
     try {
       await this.importedGameAnalysis.analyzeGame(gameId, force);
-      await this.refreshTags();
       await this.loadGame();
     } catch (error) {
       this.error.set(readError(error, 'Could not analyse imported game.'));

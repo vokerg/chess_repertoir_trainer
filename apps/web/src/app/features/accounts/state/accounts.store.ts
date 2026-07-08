@@ -2,7 +2,13 @@ import { DOCUMENT } from '@angular/common';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AccountsApiService } from '../data-access/accounts-api.service';
-import { AccountForm, ExternalAccount, ImportRunSummary, LichessConnectionStatus } from '../data-access/accounts.models';
+import {
+  AccountForm,
+  ExternalAccount,
+  ImportedGameWorkflowCandidates,
+  ImportRunSummary,
+  LichessConnectionStatus,
+} from '../data-access/accounts.models';
 import { providerLabel } from '../helpers/account-labels';
 
 @Injectable()
@@ -24,6 +30,11 @@ export class AccountsStore {
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
   readonly syncResults = signal<Record<number, ImportRunSummary>>({});
+  readonly workflowCandidates = signal<Record<number, ImportedGameWorkflowCandidates>>({});
+  readonly indexingWorkflowAccountId = signal<number | null>(null);
+  readonly indexWorkflowCompleted = signal(0);
+  readonly indexWorkflowTotal = signal(0);
+  readonly analysingWorkflowAccountId = signal<number | null>(null);
   readonly form = signal<AccountForm>(defaultForm());
 
   async loadAccounts(): Promise<void> {
@@ -73,6 +84,7 @@ export class AccountsStore {
     try {
       const result = await firstValueFrom(this.api.syncAccount(account.id));
       this.syncResults.update((results) => ({ ...results, [account.id]: result }));
+      await this.loadWorkflowCandidates(account.id);
       this.notice.set(`${providerLabel(account.provider)} account ${account.username} synced.`);
       await this.loadAccounts();
     } catch (error) {
@@ -146,6 +158,7 @@ export class AccountsStore {
         try {
           const result = await firstValueFrom(this.api.syncAccount(account.id));
           this.syncResults.update((results) => ({ ...results, [account.id]: result }));
+          await this.loadWorkflowCandidates(account.id);
           syncedCount += 1;
         } catch (error) {
           failedAccounts.push(`${accountSummary(account)} (${readApiError(error, 'sync failed')})`);
@@ -223,6 +236,11 @@ export class AccountsStore {
         delete next[account.id];
         return next;
       });
+      this.workflowCandidates.update((candidates) => {
+        const next = { ...candidates };
+        delete next[account.id];
+        return next;
+      });
       this.notice.set(`${providerLabel(result.account.provider)} account ${result.account.username} was deleted with its imported data.`);
     } catch (error) {
       this.error.set(readApiError(error, `Could not delete ${account.username}.`));
@@ -235,6 +253,74 @@ export class AccountsStore {
     this.form.set(defaultForm());
   }
 
+  async refreshWorkflowCandidates(accountId: number): Promise<ImportedGameWorkflowCandidates> {
+    return this.loadWorkflowCandidates(accountId);
+  }
+
+  async indexEligibleAccountGames(account: ExternalAccount, gameIds?: readonly number[]): Promise<void> {
+    const candidates = gameIds ? null : await this.ensureWorkflowCandidates(account.id);
+    const selectedGameIds = Array.from(new Set(gameIds ?? candidates?.eligibleUnindexedGameIds ?? []));
+    if (!selectedGameIds.length || this.indexingWorkflowAccountId()) return;
+
+    await this.indexAccountGames(account, selectedGameIds);
+  }
+
+  async analyseEligibleAccountGames(account: ExternalAccount, gameIds?: readonly number[]): Promise<void> {
+    const candidates = gameIds ? null : await this.ensureWorkflowCandidates(account.id);
+    const selectedGameIds = Array.from(new Set(gameIds ?? candidates?.eligibleIndexedGameIds ?? []));
+    if (!selectedGameIds.length || this.analysingWorkflowAccountId()) return;
+
+    await this.analyseAccountGames(account, selectedGameIds);
+  }
+
+  private async indexAccountGames(account: ExternalAccount, gameIds: number[]): Promise<void> {
+    if (!gameIds.length || this.indexingWorkflowAccountId()) return;
+
+    this.clearMessages();
+    this.indexingWorkflowAccountId.set(account.id);
+    this.indexWorkflowCompleted.set(0);
+    this.indexWorkflowTotal.set(gameIds.length);
+    const failures: string[] = [];
+
+    try {
+      for (const gameId of gameIds) {
+        try {
+          const result = await firstValueFrom(this.api.runIndexWorkflow(gameId));
+          if (!result.eligible || result.plyIndex?.status === 'FAILED') {
+            failures.push(result.plyIndex?.error || `Could not index game #${gameId}.`);
+          }
+        } catch (error) {
+          failures.push(readApiError(error, `Could not index game #${gameId}.`));
+        } finally {
+          this.indexWorkflowCompleted.update((completed) => completed + 1);
+        }
+      }
+
+      await this.loadWorkflowCandidates(account.id);
+      if (failures.length) {
+        this.error.set(failures[0]);
+      } else {
+        this.notice.set(`Indexed ${gameIds.length} blitz/rapid ${gameIds.length === 1 ? 'game' : 'games'}.`);
+      }
+    } finally {
+      this.indexingWorkflowAccountId.set(null);
+    }
+  }
+
+  private async analyseAccountGames(account: ExternalAccount, gameIds: number[]): Promise<void> {
+    this.clearMessages();
+    this.analysingWorkflowAccountId.set(account.id);
+    try {
+      const result = await firstValueFrom(this.api.startBatchAnalysis(gameIds));
+      this.notice.set(`Submitted ${result.gameIds.length} indexed blitz/rapid ${result.gameIds.length === 1 ? 'game' : 'games'} for analysis.`);
+      await this.loadWorkflowCandidates(account.id);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Could not submit standard analysis workflow.'));
+    } finally {
+      this.analysingWorkflowAccountId.set(null);
+    }
+  }
+
   private patchAccount(updated: ExternalAccount): void {
     this.accounts.update((accounts) => accounts.map((account) => (account.id === updated.id ? updated : account)));
   }
@@ -242,6 +328,18 @@ export class AccountsStore {
   private clearMessages(): void {
     this.error.set(null);
     this.notice.set(null);
+  }
+
+  private async ensureWorkflowCandidates(accountId: number): Promise<ImportedGameWorkflowCandidates> {
+    const existing = this.workflowCandidates()[accountId];
+    if (existing) return existing;
+    return this.loadWorkflowCandidates(accountId);
+  }
+
+  private async loadWorkflowCandidates(accountId: number): Promise<ImportedGameWorkflowCandidates> {
+    const candidates = await firstValueFrom(this.api.getWorkflowCandidates(accountId));
+    this.workflowCandidates.update((items) => ({ ...items, [accountId]: candidates }));
+    return candidates;
   }
 }
 

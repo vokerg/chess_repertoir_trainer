@@ -13,6 +13,9 @@ describe('AccountsStore', () => {
       'getAccounts',
       'createAccount',
       'syncAccount',
+      'getWorkflowCandidates',
+      'runIndexWorkflow',
+      'startBatchAnalysis',
       'resetCursor',
       'setActive',
       'deleteAccount',
@@ -27,6 +30,13 @@ describe('AccountsStore', () => {
     });
 
     store = TestBed.inject(AccountsStore);
+    api.getWorkflowCandidates.and.callFake((accountId: number) => of({
+      accountId,
+      eligibleImportedGameIds: [],
+      eligibleUnindexedGameIds: [],
+      eligibleIndexedGameIds: [],
+      eligibleMissingOpeningGameIds: [],
+    }));
   });
 
   it('disconnects Lichess without changing tracked accounts', async () => {

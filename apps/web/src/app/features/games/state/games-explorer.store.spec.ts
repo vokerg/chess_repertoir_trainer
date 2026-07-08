@@ -11,7 +11,7 @@ describe('GamesExplorerStore', () => {
   let analysis: jasmine.SpyObj<ImportedGameAnalysisService>;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['indexPlies', 'refreshGameTags', 'searchGames']);
+    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['indexPlies', 'runIndexWorkflow', 'refreshGameTags', 'searchGames']);
     analysis = jasmine.createSpyObj<ImportedGameAnalysisService>('ImportedGameAnalysisService', ['analyzeGame']);
 
     TestBed.configureTestingModule({
@@ -29,8 +29,18 @@ describe('GamesExplorerStore', () => {
     const untouched = store.games()[1];
     api.indexPlies.and.returnValue(of({
       importedGameId: 1,
-      status: 'INDEXED',
-      plyIndexedAt: '2026-06-07T12:00:00.000Z',
+      eligible: true,
+      plyIndex: {
+        importedGameId: 1,
+        status: 'INDEXED',
+        plyIndexedAt: '2026-06-07T12:00:00.000Z',
+      },
+      openingAssignment: {
+        importedGameId: 1,
+        status: 'ASSIGNED',
+        openingEco: 'B20',
+        openingName: 'Sicilian Defense',
+      },
     }));
 
     store.indexPlies(store.games()[0]);
@@ -39,6 +49,10 @@ describe('GamesExplorerStore', () => {
       status: 'INDEXED',
       indexedAt: '2026-06-07T12:00:00.000Z',
       error: null,
+    }));
+    expect(store.games()[0].opening).toEqual(jasmine.objectContaining({
+      eco: 'B20',
+      name: 'Sicilian Defense',
     }));
     expect(store.games()[1]).toBe(untouched);
     expect(api.searchGames).not.toHaveBeenCalled();
@@ -60,17 +74,36 @@ describe('GamesExplorerStore', () => {
     expect(originalPlyIndex.status).toBe('NOT_INDEXED');
   });
 
-  it('marks analysis complete without clearing or reloading the list', async () => {
-    const untouched = store.games()[1];
+  it('only includes blitz and rapid games in bulk index candidates', () => {
+    store.games.set([
+      game(1, [], 'bullet'),
+      game(2, [], 'blitz'),
+      game(3, [], 'rapid'),
+      { ...game(4, [], 'rapid'), plyIndex: { status: 'INDEXED', error: null } },
+    ]);
+
+    expect(store.bulkIndexableGames().map((item) => item.id)).toEqual([2, 3]);
+  });
+
+  it('marks analysis complete and reloads the list so refreshed tags are visible', async () => {
     analysis.analyzeGame.and.resolveTo({});
+    api.searchGames.and.returnValue(of({
+      items: [
+        { ...game(1), analysis: { status: 'COMPLETED' }, tagCodes: [10], tags: [{ code: 10, name: 'Needs review' }] },
+        store.games()[1],
+      ],
+      pageInfo: { nextCursor: null, hasMore: false },
+      appliedFilters: {},
+    }));
 
     store.analyse(store.games()[0]);
+    await Promise.resolve();
     await Promise.resolve();
 
     expect(store.games().length).toBe(2);
     expect(store.games()[0].analysis.status).toBe('COMPLETED');
-    expect(store.games()[1]).toBe(untouched);
-    expect(api.searchGames).not.toHaveBeenCalled();
+    expect(store.games()[0].tagCodes).toEqual([10]);
+    expect(api.searchGames).toHaveBeenCalled();
   });
 
   it('refreshes tags for visible rows without reloading the list', async () => {
@@ -142,12 +175,17 @@ describe('GamesExplorerStore', () => {
   });
 });
 
-function game(id: number, tags: ImportedGameListItem['tags'] = []): ImportedGameListItem {
+function game(
+  id: number,
+  tags: ImportedGameListItem['tags'] = [],
+  speedCategory: string | null = 'rapid',
+): ImportedGameListItem {
   return {
     id,
     accountId: 10,
     provider: 'LICHESS',
     providerGameId: `game-${id}`,
+    speedCategory,
     timeControl: {},
     tagCodes: tags.map((tag) => tag.code),
     tags,

@@ -24,6 +24,7 @@ import {
 import { isLocalBatchStockfishAnalysisEnabled } from './batch-analysis.config';
 import { ImportedGameBatchAnalysisService } from './batch-game-analysis.service';
 import { GameAnalysisService } from './game-analysis.service';
+import { ImportedGameAnalysisWorkflowService } from './imported-game-analysis-workflow.service';
 import { PositionAnalysisService } from './position-analysis.service';
 import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
 
@@ -61,11 +62,11 @@ export default async function analysisModule(app: FastifyInstance) {
 
     const gameIds = Array.from(new Set(parsed.data.gameIds));
     try {
-      ImportedGameBatchAnalysisService.enqueue(auth.userId, gameIds);
+      const acceptedGameIds = await ImportedGameBatchAnalysisService.enqueue(auth.userId, gameIds);
       reply.code(200);
       return {
         accepted: true,
-        gameIds,
+        gameIds: acceptedGameIds,
       };
     } catch (err: any) {
       reply.code(400);
@@ -213,7 +214,11 @@ export default async function analysisModule(app: FastifyInstance) {
       }
 
       try {
-        const result = await GameAnalysisService.createClientAnalysisSummary(auth.userId, gameId, parsed.data);
+        const result = await ImportedGameAnalysisWorkflowService.recordClientAnalysisAndRefreshTags(
+          auth.userId,
+          gameId,
+          parsed.data,
+        );
         reply.code(201);
         return result;
       } catch (err: any) {

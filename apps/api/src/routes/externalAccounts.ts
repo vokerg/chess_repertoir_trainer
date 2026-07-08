@@ -9,6 +9,7 @@ import { AccountRatingStatsService } from '../services/accountRatingStatsService
 import { LichessImportService } from '../services/lichessImportService';
 import { ChessComImportService } from '../services/chessComImportService';
 import { ImportedGamesService } from '../modules/imported-games/imported-games.service';
+import { ImportedGameWorkflowCandidatesService } from '../modules/imported-games/imported-game-workflow-candidates.service';
 import { importedGameSearchQuerySchema } from '../modules/imported-games/imported-games.schemas';
 
 const createAccountSchema = z.object({
@@ -236,6 +237,19 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
       reply.code(400);
       return { error: err.message ?? String(err) };
     }
+  });
+
+  app.get('/api/me/accounts/:id/imported-game-workflow-candidates', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const id = Number((request.params as any).id);
+    const account = await ExternalAccountService.getForUser(auth.userId, id);
+    if (!account) {
+      reply.code(404);
+      return { message: 'External account not found' };
+    }
+
+    return ImportedGameWorkflowCandidatesService.forAccount(auth.userId, id);
   });
 
   app.post('/api/me/accounts/:id/reset-cursor', async (request, reply) => {

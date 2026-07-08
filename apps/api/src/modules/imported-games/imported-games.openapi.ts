@@ -171,6 +171,29 @@ export const importedGamesOpenApiSchemas = {
     },
     required: ['importedGameId', 'status'],
   },
+  ImportedGameOpeningAssignmentResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      status: { type: 'string', enum: ['ASSIGNED', 'SKIPPED', 'FAILED'] },
+      openingEco: { type: 'string', nullable: true },
+      openingName: { type: 'string', nullable: true },
+      reason: { type: 'string', nullable: true },
+    },
+    required: ['importedGameId', 'status'],
+  },
+  ImportedGameIndexWorkflowResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      eligible: { type: 'boolean' },
+      speedCategory: { type: 'string', nullable: true },
+      skippedReason: { type: 'string', enum: ['UNSUPPORTED_SPEED_CATEGORY'], nullable: true },
+      plyIndex: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' },
+      openingAssignment: { $ref: '#/components/schemas/ImportedGameOpeningAssignmentResponse' },
+    },
+    required: ['importedGameId', 'eligible', 'speedCategory'],
+  },
   OpeningAnalysisWdl: {
     type: 'object',
     properties: {
@@ -460,8 +483,8 @@ export const getImportedGameTagDefinitionsOpenApiOperation = {
 
 export const indexImportedGamePlyOpenApiOperation = {
   tags: ['Imported games'],
-  summary: 'Parse one imported game into ply rows',
-  description: 'Parses one imported game PGN into lightweight move-by-move rows. This does not run Stockfish and does not build an explorer tree.',
+  summary: 'Run standard indexing workflow for one imported game',
+  description: 'For blitz and rapid games, parses PGN into lightweight move-by-move rows and then assigns a missing opening from the opening book. The ply-index and opening-assignment results are returned separately. Provider opening data is preserved. Unsupported speed categories are skipped cleanly. This does not run Stockfish.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,
@@ -473,8 +496,8 @@ export const indexImportedGamePlyOpenApiOperation = {
     },
   },
   responses: {
-    '200': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
-    '201': { description: 'Ply indexing result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGamePlyIndexResponse' } } } },
+    '200': { description: 'Standard indexing workflow result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameIndexWorkflowResponse' } } } },
+    '201': { description: 'Standard indexing workflow result', content: { 'application/json': { schema: { $ref: '#/components/schemas/ImportedGameIndexWorkflowResponse' } } } },
     '400': { $ref: '#/components/responses/BadRequest' },
     '404': { $ref: '#/components/responses/NotFound' },
   },

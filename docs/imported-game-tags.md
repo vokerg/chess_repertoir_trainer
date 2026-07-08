@@ -31,6 +31,12 @@ Current storage is intentionally minimal:
 
 Tags are compact metadata, not a full explanation graph.
 
+## Standard workflow integration
+
+Tag derivation remains owned by `GameTaggingService`. Standard imported-game analysis does not merge tag logic into analysis calculation; it records analysis first, then refreshes tags as a separate workflow step.
+
+The standard analysis workflow currently applies to blitz and rapid imported games. Bullet games can still be imported and can still appear in account stats, but bullets are excluded from the new standard post-sync, bulk analysis, and backfill workflow scope.
+
 ## User-perspective rule
 
 All non-terminal game-story tags must be interpreted from the imported user's perspective.

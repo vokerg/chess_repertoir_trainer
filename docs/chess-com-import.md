@@ -7,7 +7,12 @@ The app supports importing finished public Chess.com games through the same exte
 1. Create an external account with provider `CHESS_COM` and the public Chess.com username.
 2. Call `POST /api/me/accounts/:id/sync`.
 3. Read imported games with `GET /api/me/accounts/:id/games`.
-4. Existing imported-game analysis endpoints can analyze Chess.com games as long as the imported row has PGN.
+4. Run the standard imported-game workflow for eligible blitz/rapid games:
+   - standard indexing parses ply rows and then assigns a missing opening from the opening book
+   - standard analysis records analysis and then refreshes imported-game tags
+5. Read analysed games and refreshed tags from the imported games endpoints.
+
+Sync only imports games. It does not index, assign openings, analyse, or refresh tags by itself.
 
 ## Implementation notes
 
@@ -42,6 +47,12 @@ Chess.com games are normalized into the existing `ImportedGame` shape:
 - `whiteRating` / `blackRating`: player ratings or PGN Elo headers
 - `userColor`, `opponentUsername`, `result`, and `resultForUser`: derived from player usernames and Chess.com result codes
 - `openingEco` / `openingName`: PGN headers when available
+
+Provider opening data is preserved. If Chess.com PGN headers include ECO/name data, the standard opening assignment step fills only missing fields and does not overwrite those provider values.
+
+## Standard workflow scope
+
+The standardized imported-game workflows currently apply to `blitz` and `rapid` games only. Bullet imports are still stored and remain available for account stats and rating views, but they are ignored by post-sync offers, bulk indexing, bulk analysis, and the temporary missing-opening backfill script.
 
 ## Environment
 

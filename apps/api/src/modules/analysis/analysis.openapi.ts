@@ -113,8 +113,28 @@ export const analysisOpenApiSchemas = {
     properties: {
       reusedExisting: { type: 'boolean' },
       run: { $ref: '#/components/schemas/CompactGameAnalysisRun' },
+      tags: { $ref: '#/components/schemas/ImportedGameAnalysisTagsRefreshResponse' },
     },
     required: ['reusedExisting', 'run'],
+  },
+  ImportedGameAnalysisTagsRefreshResponse: {
+    type: 'object',
+    properties: {
+      importedGameId: { type: 'integer' },
+      tagCodes: { type: 'array', items: { type: 'integer' } },
+      tags: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            code: { type: 'integer' },
+            name: { type: 'string' },
+          },
+          required: ['code', 'name'],
+        },
+      },
+    },
+    required: ['importedGameId', 'tagCodes', 'tags'],
   },
   ImportedGameAnalysisResponse: {
     type: 'object',
@@ -337,7 +357,7 @@ export const getImportedGameAnalysisOpenApiOperation = {
 export const createClientGameAnalysisRunOpenApiOperation = {
   tags: ['Analysis'],
   summary: 'Create a client-side imported-game analysis summary',
-  description: 'Records a summary/progress row after the browser has analyzed a game locally. This endpoint never runs an engine.',
+  description: 'Records a summary/progress row after the browser has analyzed a blitz or rapid game locally, then refreshes imported-game tags as a separate workflow step. This endpoint never runs an engine.',
   parameters: [importedGameIdParameter],
   requestBody: {
     required: false,

@@ -1,4 +1,5 @@
 import prisma from '../prisma';
+import { isStandardImportedGameSpeed } from '../modules/imported-games/imported-game-workflow-eligibility';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
@@ -323,6 +324,8 @@ export const ChessComImportService = {
     let gamesFailed = 0;
     let archivesFetched = 0;
     let archivesSkipped = 0;
+    const importedGameIds: number[] = [];
+    const eligibleImportedGameIds: number[] = [];
     let maxEndedAt = account.syncCursorTime ?? null;
 
     try {
@@ -367,7 +370,14 @@ export const ChessComImportService = {
             if (existing) {
               gamesSkipped += 1;
             } else {
-              await prisma.importedGame.create({ data });
+              const created = await prisma.importedGame.create({
+                data,
+                select: { id: true },
+              });
+              importedGameIds.push(created.id);
+              if (isStandardImportedGameSpeed(data.speedCategory)) {
+                eligibleImportedGameIds.push(created.id);
+              }
               gamesImported += 1;
             }
 
@@ -420,6 +430,9 @@ export const ChessComImportService = {
         syncUntil: maxEndedAt,
         archivesFetched,
         archivesSkipped,
+        importedGameIds,
+        eligibleImportedGameIds,
+        eligibleUnindexedGameIds: eligibleImportedGameIds,
       };
     } catch (err: any) {
       await prisma.importRun.update({

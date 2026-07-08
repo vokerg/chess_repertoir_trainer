@@ -1,4 +1,5 @@
 import prisma from '../prisma';
+import { isStandardImportedGameSpeed } from '../modules/imported-games/imported-game-workflow-eligibility';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const LICHESS_GAMES_URL = 'https://lichess.org/api/games/user';
@@ -221,6 +222,8 @@ export const LichessImportService = {
     let gamesImported = 0;
     let gamesSkipped = 0;
     let gamesFailed = 0;
+    const importedGameIds: number[] = [];
+    const eligibleImportedGameIds: number[] = [];
     let maxEndedAt = account.syncCursorTime ?? null;
 
     try {
@@ -258,7 +261,14 @@ export const LichessImportService = {
           if (existing) {
             gamesSkipped += 1;
           } else {
-            await prisma.importedGame.create({ data });
+            const created = await prisma.importedGame.create({
+              data,
+              select: { id: true },
+            });
+            importedGameIds.push(created.id);
+            if (isStandardImportedGameSpeed(data.speedCategory)) {
+              eligibleImportedGameIds.push(created.id);
+            }
             gamesImported += 1;
           }
 
@@ -309,6 +319,9 @@ export const LichessImportService = {
         gamesFailed,
         syncSince,
         syncUntil: maxEndedAt,
+        importedGameIds,
+        eligibleImportedGameIds,
+        eligibleUnindexedGameIds: eligibleImportedGameIds,
       };
     } catch (err: any) {
       await prisma.importRun.update({
