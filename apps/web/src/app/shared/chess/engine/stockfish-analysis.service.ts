@@ -1,6 +1,6 @@
 import { Injectable, NgZone, OnDestroy } from '@angular/core';
 import { parseUciInfoLine } from 'chess-domain';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 
 export interface EngineLine {
   multipv: number;
@@ -101,10 +101,20 @@ export class StockfishAnalysisService implements OnDestroy {
 
     return new Promise((resolve, reject) => {
       let settled = false;
+      let subscription: Subscription | null = null;
+      this.analyze(fen, {
+        depth,
+        multipv,
+        pvMoveLimit: options.pvMoveLimit,
+        seedBestMove: options.seedBestMove,
+        seedLines: options.seedLines,
+        keepAlive: options.keepAlive,
+      });
+
       const timer = setTimeout(() => {
         if (settled) return;
         settled = true;
-        subscription.unsubscribe();
+        subscription?.unsubscribe();
         this.stop();
         reject(new Error('Stockfish analysis timed out.'));
       }, timeoutMs);
@@ -113,11 +123,11 @@ export class StockfishAnalysisService implements OnDestroy {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
-        subscription.unsubscribe();
+        subscription?.unsubscribe();
         callback();
       };
 
-      const subscription = this.state$.subscribe((analysis) => {
+      subscription = this.state$.subscribe((analysis) => {
         if (analysis.fen !== fen) return;
         if (analysis.error) {
           finish(() => reject(new Error(analysis.error || 'Stockfish analysis failed.')));
@@ -127,15 +137,7 @@ export class StockfishAnalysisService implements OnDestroy {
           finish(() => resolve(analysis));
         }
       });
-
-      this.analyze(fen, {
-        depth,
-        multipv,
-        pvMoveLimit: options.pvMoveLimit,
-        seedBestMove: options.seedBestMove,
-        seedLines: options.seedLines,
-        keepAlive: options.keepAlive,
-      });
+      if (settled) subscription.unsubscribe();
     });
   }
 
