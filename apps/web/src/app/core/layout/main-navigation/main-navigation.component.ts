@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs';
@@ -41,7 +48,13 @@ export class MainNavigationComponent implements OnInit {
       label: 'Study',
       link: '/library',
       icon: 'study',
-      activePrefixes: ['/library', '/chapters', '/lines', '/scenario-training/tactical-missed-shot'],
+      activePrefixes: [
+        '/library',
+        '/chapters',
+        '/lines',
+        '/scenario-training/tactical-missed-shot',
+        '/scenario-training/tactical-blunder',
+      ],
       children: [
         {
           id: 'repertoire-library',
@@ -58,6 +71,14 @@ export class MainNavigationComponent implements OnInit {
           link: '/scenario-training/tactical-missed-shot',
           icon: 'target',
           activePrefixes: ['/scenario-training/tactical-missed-shot'],
+        },
+        {
+          id: 'blunder-trainer',
+          label: 'Avoid blunders',
+          description: 'Practice safer choices from mistakes in analysed games.',
+          link: '/scenario-training/tactical-blunder',
+          icon: 'target',
+          activePrefixes: ['/scenario-training/tactical-blunder'],
         },
       ],
     },

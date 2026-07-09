@@ -4,7 +4,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
-import { AnalysisTree, AnalysisTreeNodeData } from '../../../../shared/analysis/workbench/analysis-tree.models';
+import {
+  AnalysisTree,
+  AnalysisTreeNodeData,
+} from '../../../../shared/analysis/workbench/analysis-tree.models';
 import { PositionAnalysisCacheService } from '../../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../../shared/chess/engine/stockfish-analysis.service';
 import { TrainerEngineResult, TrainerEngineService } from '../../shared/trainer-engine.service';
@@ -15,6 +18,10 @@ import {
   ScenarioTrainingAttempt,
   ScenarioTrainingSession,
 } from '../data-access/scenario-training.models';
+import {
+  TacticalScenarioTrainerConfig,
+  tacticalScenarioTrainerConfig,
+} from '../helpers/tactical-scenario-trainer.config';
 
 function lastMoveFromUci(moveUci: string | null | undefined): { from: string; to: string } | null {
   if (!moveUci || moveUci.length < 4) return null;
@@ -74,12 +81,15 @@ const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
 const INTRO_REPLAY_MS = 650;
 
 @Injectable()
-export class TacticalMissedShotTrainerStore implements OnDestroy {
+export class TacticalScenarioTrainerStore implements OnDestroy {
   private readonly api = inject(ScenarioTrainingApiService);
   private readonly engine = inject(TrainerEngineService);
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
   private readonly router = inject(Router);
 
+  readonly config = signal<TacticalScenarioTrainerConfig>(
+    tacticalScenarioTrainerConfig('missed-shot'),
+  );
   readonly session = signal<ScenarioTrainingSession | null>(null);
   readonly mode = signal<ScenarioMode>('context');
   readonly selectedContextPly = signal<number | null>(null);
@@ -92,7 +102,7 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   readonly attemptedMoveFen = signal<string | null>(null);
   readonly boardPositionVersion = signal(0);
   readonly revealBestMove = signal(false);
-  readonly revealOriginalReply = signal(false);
+  readonly revealOriginalMove = signal(false);
   private readonly localAnalysisTree = signal<ScenarioAnalysisTree | null>(null);
   readonly analysisTree = computed<AnalysisTree | null>(() => this.localAnalysisTree());
   readonly selectedAnalysisNodeId = signal<number | null>(null);
@@ -105,10 +115,18 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   private introTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly attempts = computed(() => this.session()?.attempts ?? []);
-  readonly loadingMessage = computed(() => this.session() ? 'Loading next scenario...' : 'Loading scenario...');
-  readonly latestAttempt = computed<ScenarioTrainingAttempt | null>(() => this.attempts().at(-1) ?? null);
-  readonly canDislikeShot = computed(() => Boolean(this.session() && this.attempts().length > 0));
-  readonly boardDisabled = computed(() => this.loading() || this.evaluating() || this.disliking() || this.mode() !== 'challenge');
+  readonly loadingMessage = computed(() =>
+    this.session() ? this.config().loadingNextScenario : this.config().loadingScenario,
+  );
+  readonly latestAttempt = computed<ScenarioTrainingAttempt | null>(
+    () => this.attempts().at(-1) ?? null,
+  );
+  readonly canDislikeScenario = computed(() =>
+    Boolean(this.session() && this.attempts().length > 0),
+  );
+  readonly boardDisabled = computed(
+    () => this.loading() || this.evaluating() || this.disliking() || this.mode() !== 'challenge',
+  );
   readonly currentFen = computed(() => {
     const session = this.session();
     if (!session) return 'startpos';
@@ -118,14 +136,18 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
       return this.attemptedMoveFen() ?? this.latestAttempt()?.fenAfter ?? session.startFen;
     }
     const selected = this.selectedContextPly();
-    if (selected === null) return session.contextPlies[0]?.fenBefore ?? session.previousFen ?? session.startFen;
-    return session.contextPlies.find((ply) => ply.plyNumber === selected)?.fenAfter ?? session.startFen;
+    if (selected === null)
+      return session.contextPlies[0]?.fenBefore ?? session.previousFen ?? session.startFen;
+    return (
+      session.contextPlies.find((ply) => ply.plyNumber === selected)?.fenAfter ?? session.startFen
+    );
   });
   readonly lastMove = computed(() => {
     const session = this.session();
     if (!session) return null;
     if (this.mode() === 'intro') return null;
-    if (this.mode() === 'result' || this.mode() === 'analysis') return lastMoveFromUci(this.latestAttempt()?.playedMoveUci);
+    if (this.mode() === 'result' || this.mode() === 'analysis')
+      return lastMoveFromUci(this.latestAttempt()?.playedMoveUci);
     if (this.mode() === 'challenge') return lastMoveFromUci(session.triggerMoveUci);
     const selected = this.selectedContextPly();
     if (selected === null) return null;
@@ -134,16 +156,25 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   readonly selectedAnalysisNode = computed(() =>
     findAnalysisNode(this.selectedAnalysisNodeId(), this.localAnalysisTree()?.root),
   );
-  readonly currentAnalysisFen = computed(() =>
-    this.selectedAnalysisNode()?.node.fenAfter ?? this.session()?.startFen ?? new Chess().fen(),
+  readonly currentAnalysisFen = computed(
+    () =>
+      this.selectedAnalysisNode()?.node.fenAfter ?? this.session()?.startFen ?? new Chess().fen(),
   );
   readonly analysisLastMove = computed(() =>
     lastMoveFromUci(this.selectedAnalysisNode()?.node.moveUci),
   );
-  readonly analysisCanGoBackward = computed(() => this.selectedAnalysisNodeId() !== null && this.selectedAnalysisNodeId() !== 0);
-  readonly analysisCanGoForward = computed(() => Boolean(this.selectedAnalysisNode()?.children.length));
+  readonly analysisCanGoBackward = computed(
+    () => this.selectedAnalysisNodeId() !== null && this.selectedAnalysisNodeId() !== 0,
+  );
+  readonly analysisCanGoForward = computed(() =>
+    Boolean(this.selectedAnalysisNode()?.children.length),
+  );
   readonly analysisEngineAnalysis = computed(() => this.engineAnalysis());
   readonly blackPerspective = computed(() => this.session()?.userColor === 'BLACK');
+
+  configure(config: TacticalScenarioTrainerConfig): void {
+    this.config.set(config);
+  }
 
   async startRandom(): Promise<void> {
     await this.start({});
@@ -242,21 +273,23 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     try {
       const fenAfter = applyUci(session.startFen, moveUci);
       this.attemptedMoveFen.set(fenAfter);
-      const baseline = this.baselineAnalysis() ?? await this.analyzeBaseline(session);
+      const baseline = this.baselineAnalysis() ?? (await this.analyzeBaseline(session));
       const after = await this.engine.analyze(fenAfter);
-      const result = await firstValueFrom(this.api.submitAttempt(session.sessionId, {
-        moveUci,
-        fenAfter,
-        engineSource: 'CLIENT_STOCKFISH',
-        engineName: after.engineName,
-        engineDepth: after.depth,
-        engineMultipv: after.multipv,
-        baselineScoreCpWhite: baseline.scoreCpWhite,
-        baselineMateWhite: baseline.mateWhite,
-        afterScoreCpWhite: after.scoreCpWhite,
-        afterMateWhite: after.mateWhite,
-        rawEngineJson: { baseline: baseline.raw, after: after.raw },
-      }));
+      const result = await firstValueFrom(
+        this.api.submitAttempt(session.sessionId, {
+          moveUci,
+          fenAfter,
+          engineSource: 'CLIENT_STOCKFISH',
+          engineName: after.engineName,
+          engineDepth: after.depth,
+          engineMultipv: after.multipv,
+          baselineScoreCpWhite: baseline.scoreCpWhite,
+          baselineMateWhite: baseline.mateWhite,
+          afterScoreCpWhite: after.scoreCpWhite,
+          afterMateWhite: after.mateWhite,
+          rawEngineJson: { baseline: baseline.raw, after: after.raw },
+        }),
+      );
       this.session.set(result.session);
       const attempt = result.session.attempts.at(-1) ?? null;
       if (result.passed && attempt) {
@@ -279,7 +312,7 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   tryAgain(): void {
     this.clearAnalysisState();
     this.revealBestMove.set(false);
-    this.revealOriginalReply.set(false);
+    this.revealOriginalMove.set(false);
     this.goChallenge();
   }
 
@@ -303,16 +336,23 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     }
   }
 
-  async dislikeCurrentShot(): Promise<void> {
+  async dislikeCurrentScenario(): Promise<void> {
     const session = this.session();
-    if (!session || !session.attempts.length || this.loading() || this.evaluating() || this.disliking()) return;
+    if (
+      !session ||
+      !session.attempts.length ||
+      this.loading() ||
+      this.evaluating() ||
+      this.disliking()
+    )
+      return;
     this.disliking.set(true);
     this.error.set(null);
     try {
       await firstValueFrom(this.api.dislike(session.sessionId));
       await this.nextScenario();
     } catch (error) {
-      this.error.set(this.errorMessage(error, 'Could not exclude this shot.'));
+      this.error.set(this.errorMessage(error, this.config().excludeError));
     } finally {
       this.disliking.set(false);
     }
@@ -322,8 +362,8 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     this.revealBestMove.update((value) => !value);
   }
 
-  toggleOriginalReply(): void {
-    this.revealOriginalReply.update((value) => !value);
+  toggleOriginalMove(): void {
+    this.revealOriginalMove.update((value) => !value);
   }
 
   handleKeyboard(event: KeyboardEvent): void {
@@ -335,10 +375,10 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     }
 
     const commands: Record<string, () => void> = {
-      ArrowLeft: () => this.mode() === 'analysis' ? this.goAnalysisPrevious() : this.goPrevious(),
-      ArrowRight: () => this.mode() === 'analysis' ? this.goAnalysisNext() : this.goNext(),
-      Home: () => this.mode() === 'analysis' ? this.goAnalysisStart() : this.goStart(),
-      End: () => this.mode() === 'analysis' ? this.goAnalysisEnd() : this.goChallenge(),
+      ArrowLeft: () => (this.mode() === 'analysis' ? this.goAnalysisPrevious() : this.goPrevious()),
+      ArrowRight: () => (this.mode() === 'analysis' ? this.goAnalysisNext() : this.goNext()),
+      Home: () => (this.mode() === 'analysis' ? this.goAnalysisStart() : this.goStart()),
+      End: () => (this.mode() === 'analysis' ? this.goAnalysisEnd() : this.goChallenge()),
     };
     const command = commands[event.key];
     if (!command) return;
@@ -410,7 +450,10 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
 
   goAnalysisPrevious(): void {
     if (this.mode() !== 'analysis') return;
-    const parent = findAnalysisParent(this.selectedAnalysisNodeId(), this.localAnalysisTree()?.root);
+    const parent = findAnalysisParent(
+      this.selectedAnalysisNodeId(),
+      this.localAnalysisTree()?.root,
+    );
     if (parent) this.selectAnalysisNode(parent.node.id);
   }
 
@@ -432,26 +475,36 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     this.positionAnalysis.analyzeInteractiveRichPosition(this.currentAnalysisFen());
   }
 
-  private async start(request: { detectionId?: number; excludeDetectionId?: number; random?: boolean }): Promise<void> {
+  private async start(request: {
+    detectionId?: number;
+    excludeDetectionId?: number;
+    random?: boolean;
+  }): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
     this.error.set(null);
     try {
-      const session = await firstValueFrom(this.api.startTacticalMissedShot({
-        ...request,
-        random: request.random ?? true,
-        excludePassedRecently: true,
-      }));
+      const config = this.config();
+      const session = await firstValueFrom(
+        config.start(this.api, {
+          ...request,
+          random: request.random ?? true,
+          excludePassedRecently: true,
+        }),
+      );
       this.setSession(session, { animateIntro: true });
-      await this.router.navigate(['/scenario-training/tactical-missed-shot', session.sessionId], { replaceUrl: true });
+      await this.router.navigate([config.routeBase, session.sessionId], { replaceUrl: true });
     } catch (error) {
-      this.error.set(this.errorMessage(error, 'Could not start a missed-shot scenario.'));
+      this.error.set(this.errorMessage(error, this.config().startError));
     } finally {
       this.loading.set(false);
     }
   }
 
-  private setSession(session: ScenarioTrainingSession, options: { animateIntro?: boolean } = {}): void {
+  private setSession(
+    session: ScenarioTrainingSession,
+    options: { animateIntro?: boolean } = {},
+  ): void {
     this.clearIntroTimer();
     this.clearAnalysisState();
     this.session.set(session);
@@ -466,7 +519,7 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     this.selectedContextPly.set(session.challengePlyNumber - 1);
     this.attemptedMoveFen.set(latestAttempt?.fenAfter ?? null);
     this.revealBestMove.set(false);
-    this.revealOriginalReply.set(false);
+    this.revealOriginalMove.set(false);
     this.bumpBoardPosition();
     if (options.animateIntro && session.status === 'IN_PROGRESS' && !latestAttempt) {
       this.startIntroReplay();
@@ -491,7 +544,9 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   private enterChallenge(): void {
     this.clearAnalysisState();
     this.mode.set('challenge');
-    this.selectedContextPly.set(this.session()?.challengePlyNumber ? this.session()!.challengePlyNumber - 1 : null);
+    this.selectedContextPly.set(
+      this.session()?.challengePlyNumber ? this.session()!.challengePlyNumber - 1 : null,
+    );
     this.attemptedMoveFen.set(null);
     this.bumpBoardPosition();
   }
@@ -510,7 +565,10 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
     this.introTimer = null;
   }
 
-  private initializeAnalysisTree(session: ScenarioTrainingSession, attempt: ScenarioTrainingAttempt): void {
+  private initializeAnalysisTree(
+    session: ScenarioTrainingSession,
+    attempt: ScenarioTrainingAttempt,
+  ): void {
     this.clearAnalysisTimer();
     const tree = buildInitialAnalysisTree(session, attempt);
     this.localAnalysisTree.set({ root: tree.root });
@@ -564,7 +622,10 @@ export class TacticalMissedShotTrainerStore implements OnDestroy {
   }
 }
 
-function findAnalysisNode(id: number | null | undefined, node?: ScenarioAnalysisTreeNode | null): ScenarioAnalysisTreeNode | null {
+function findAnalysisNode(
+  id: number | null | undefined,
+  node?: ScenarioAnalysisTreeNode | null,
+): ScenarioAnalysisTreeNode | null {
   if (id === null || id === undefined || !node) return null;
   if (node.node.id === id) return node;
   for (const child of node.children) {
@@ -633,7 +694,9 @@ function buildInitialAnalysisTree(
   const passedNodeId = nextNodeId++;
   const continuation = buildAnalysisContinuation(attempt, session.userColor, nextNodeId);
   nextNodeId = continuation.nextNodeId;
-  challengeParent.children.push(trainingAttemptNode(session, attempt, passedNodeId, continuation.nodes));
+  challengeParent.children.push(
+    trainingAttemptNode(session, attempt, passedNodeId, continuation.nodes),
+  );
 
   const originalMove = originalGameMoveNode(session, nextNodeId);
   if (originalMove && originalMove.node.moveUci !== attempt.playedMoveUci) {
@@ -688,7 +751,10 @@ function trainingAttemptNode(
   };
 }
 
-function originalGameMoveNode(session: ScenarioTrainingSession, id: number): ScenarioAnalysisTreeNode | null {
+function originalGameMoveNode(
+  session: ScenarioTrainingSession,
+  id: number,
+): ScenarioAnalysisTreeNode | null {
   if (!session.originalUserMoveUci) return null;
   const chess = new Chess(session.startFen);
   const side = sideFromFen(chess.fen());
@@ -785,7 +851,11 @@ function firstEnginePv(analysis: StoredEngineAnalysisLike | null | undefined): s
 
 function engineLinePv(line: unknown): string[] {
   const candidate = line as StoredEngineLineLike | null;
-  const pv = Array.isArray(candidate?.pv) ? candidate.pv : Array.isArray(candidate?.pvUci) ? candidate.pvUci : [];
+  const pv = Array.isArray(candidate?.pv)
+    ? candidate.pv
+    : Array.isArray(candidate?.pvUci)
+      ? candidate.pvUci
+      : [];
   const moves = pv.filter((move): move is string => typeof move === 'string' && move.length >= 4);
   if (moves.length) return moves;
   return typeof candidate?.moveUci === 'string' ? [candidate.moveUci] : [];

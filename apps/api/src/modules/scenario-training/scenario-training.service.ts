@@ -7,7 +7,7 @@ import { evaluateScenarioAttempt } from './scenario-training-evaluation';
 import {
   ScenarioTrainingAttemptInput,
   ScenarioTrainingDislikeInput,
-  TacticalMissedShotStartInput,
+  TacticalScenarioStartInput,
 } from './scenario-training.schema';
 import {
   completeScenarioTrainingSession,
@@ -16,10 +16,12 @@ import {
   findGamePliesThrough,
   findScenarioTrainingSession,
   findScenarioTrainingSessionForDislike,
-  findTacticalMissedShotDetection,
+  findTacticalScenarioDetection,
   listScenarioTrainingHistory,
   ScenarioContextPly,
-  TacticalMissedShotDetection,
+  TacticalDetectionKind,
+  TacticalScenarioDetection,
+  TacticalScenarioType,
   upsertTacticalDetectionFeedback,
 } from './scenario-training.repository.prisma';
 
@@ -56,7 +58,10 @@ function applyMove(fen: string, moveUci: string) {
   return { san: move.san, fenAfter: chess.fen() };
 }
 
-function scoreToCp(scoreCp: number | null | undefined, mate: number | null | undefined): number | null {
+function scoreToCp(
+  scoreCp: number | null | undefined,
+  mate: number | null | undefined,
+): number | null {
   if (typeof scoreCp === 'number') return scoreCp;
   if (typeof mate !== 'number') return null;
   if (mate === 0) return 0;
@@ -110,18 +115,22 @@ function serializeSession(session: Awaited<ReturnType<typeof findScenarioTrainin
   };
 }
 
-async function buildContextPlies(userId: number, detection: TacticalMissedShotDetection) {
-  const rows = await findGamePliesThrough(userId, detection.importedGameId, detection.triggerPlyNumber);
+async function buildContextPlies(
+  userId: number,
+  detection: TacticalScenarioDetection,
+  throughPlyNumber: number,
+) {
+  const rows = await findGamePliesThrough(userId, detection.importedGameId, throughPlyNumber);
   const rowByPly = new Map(rows.map((row) => [row.plyNumber, row]));
   const context: ScenarioContextPly[] = [];
 
-  for (const row of rows.filter((ply) => ply.plyNumber <= detection.triggerPlyNumber)) {
+  for (const row of rows.filter((ply) => ply.plyNumber <= throughPlyNumber)) {
     const fenBefore = toFullFen(row.position.normalizedFen, row.plyNumber);
     const nextRow = rowByPly.get(row.plyNumber + 1);
     const applied = applyMove(fenBefore, row.moveUci);
     const fenAfter = nextRow
       ? toFullFen(nextRow.position.normalizedFen, row.plyNumber + 1)
-      : applied?.fenAfter ?? fenBefore;
+      : (applied?.fenAfter ?? fenBefore);
     context.push({
       plyNumber: row.plyNumber,
       moveNumber: moveNumber(row.plyNumber),
@@ -133,47 +142,93 @@ async function buildContextPlies(userId: number, detection: TacticalMissedShotDe
     });
   }
 
-  const triggerContext = context.at(-1);
-  if (!triggerContext) throw new Error('Scenario has no context plies');
-  const originalReply = detection.userReplyPlyNumber ? rowByPly.get(detection.userReplyPlyNumber) : null;
-  const originalReplyApplied = originalReply ? applyMove(triggerContext.fenAfter, originalReply.moveUci) : null;
-
-  return {
-    context,
-    previousFen: triggerContext.fenBefore,
-    startFen: triggerContext.fenAfter,
-    triggerMoveUci: triggerContext.moveUci,
-    triggerMoveSan: triggerContext.moveSan,
-    originalUserMoveUci: originalReply?.moveUci ?? null,
-    originalUserMoveSan: originalReplyApplied?.san ?? null,
-  };
+  return { context, rowByPly };
 }
 
-export async function startTacticalMissedShotScenario(userId: number, input: TacticalMissedShotStartInput) {
+interface TacticalScenarioDefinition {
+  scenarioType: TacticalScenarioType;
+  detectionKind: TacticalDetectionKind;
+  notFoundMessage: string;
+}
+
+const MISSED_SHOT_SCENARIO: TacticalScenarioDefinition = {
+  scenarioType: 'MISSED_OPPORTUNITY',
+  detectionKind: 'MISSED_SHOT',
+  notFoundMessage: 'Tactical missed-shot scenario not found',
+};
+
+const BLUNDER_SCENARIO: TacticalScenarioDefinition = {
+  scenarioType: 'BLUNDER_AVOIDANCE',
+  detectionKind: 'USER_BLUNDER',
+  notFoundMessage: 'Tactical blunder scenario not found',
+};
+
+async function startTacticalScenario(
+  userId: number,
+  input: TacticalScenarioStartInput,
+  definition: TacticalScenarioDefinition,
+) {
   const scope = {
     thresholdsHash: currentTacticalDetectionThresholdsHash(),
     detectionVersion: currentTacticalDetectionVersion(),
   };
-  let detection = await findTacticalMissedShotDetection(userId, input, scope);
+  const finderOptions = {
+    detectionKind: definition.detectionKind,
+    scenarioType: definition.scenarioType,
+  };
+  let detection = await findTacticalScenarioDetection(userId, input, scope, finderOptions);
   if (!detection && input.excludeDetectionId && !input.detectionId) {
-    detection = await findTacticalMissedShotDetection(userId, { ...input, excludeDetectionId: undefined }, scope);
+    detection = await findTacticalScenarioDetection(
+      userId,
+      { ...input, excludeDetectionId: undefined },
+      scope,
+      finderOptions,
+    );
   }
   if (!detection && input.excludePassedRecently) {
-    detection = await findTacticalMissedShotDetection(userId, {
-      ...input,
-      excludeDetectionId: undefined,
-      excludePassedRecently: false,
-    }, scope);
+    detection = await findTacticalScenarioDetection(
+      userId,
+      {
+        ...input,
+        excludeDetectionId: undefined,
+        excludePassedRecently: false,
+      },
+      scope,
+      finderOptions,
+    );
   }
-  if (!detection) throw new Error('Tactical missed-shot scenario not found');
-  if (detection.importedGame.userColor !== 'WHITE' && detection.importedGame.userColor !== 'BLACK') {
+  if (!detection) throw new Error(definition.notFoundMessage);
+  if (
+    detection.importedGame.userColor !== 'WHITE' &&
+    detection.importedGame.userColor !== 'BLACK'
+  ) {
     throw new Error('Imported game has no trainable user color');
   }
 
-  const context = await buildContextPlies(userId, detection);
+  const isBlunderAvoidance = definition.scenarioType === 'BLUNDER_AVOIDANCE';
+  const throughPlyNumber = isBlunderAvoidance
+    ? detection.triggerPlyNumber - 1
+    : detection.triggerPlyNumber;
+  const { context, rowByPly } = await buildContextPlies(userId, detection, throughPlyNumber);
+  const setupPly = context.at(-1);
+  const challengeRow = isBlunderAvoidance ? rowByPly.get(detection.triggerPlyNumber) : null;
+  const startFen = isBlunderAvoidance
+    ? challengeRow && toFullFen(challengeRow.position.normalizedFen, detection.triggerPlyNumber)
+    : setupPly?.fenAfter;
+  if (!startFen) throw new Error('Scenario has no challenge position');
+  const originalReply = detection.userReplyPlyNumber
+    ? rowByPly.get(detection.userReplyPlyNumber)
+    : null;
+  const originalUserMoveUci = isBlunderAvoidance
+    ? detection.moveUci
+    : (originalReply?.moveUci ?? null);
+  const originalUserMoveSan = originalUserMoveUci
+    ? (applyMove(startFen, originalUserMoveUci)?.san ?? null)
+    : null;
+
   const session = await createScenarioTrainingSession({
     userId,
-    scenarioType: 'MISSED_OPPORTUNITY',
+    scenarioType: definition.scenarioType,
     sourceType: 'TACTICAL_DETECTION',
     sourceId: detection.id,
     tacticalDetectionId: detection.id,
@@ -188,20 +243,38 @@ export async function startTacticalMissedShotScenario(userId: number, input: Tac
     openingName: detection.importedGame.openingName,
     endedAt: detection.importedGame.endedAt,
     providerUrl: detection.importedGame.providerUrl,
-    previousFen: context.previousFen,
-    startFen: context.startFen,
-    challengePlyNumber: detection.userReplyPlyNumber ?? detection.triggerPlyNumber + 1,
-    triggerMoveUci: context.triggerMoveUci,
-    triggerMoveSan: context.triggerMoveSan,
-    originalUserMoveUci: context.originalUserMoveUci,
-    originalUserMoveSan: context.originalUserMoveSan,
+    previousFen: setupPly?.fenBefore ?? startFen,
+    startFen,
+    challengePlyNumber: isBlunderAvoidance
+      ? detection.triggerPlyNumber
+      : (detection.userReplyPlyNumber ?? detection.triggerPlyNumber + 1),
+    triggerMoveUci: setupPly?.moveUci ?? null,
+    triggerMoveSan: setupPly?.moveSan ?? null,
+    originalUserMoveUci,
+    originalUserMoveSan,
     referenceBestMoveUci: detection.bestMoveUci,
-    contextPlies: context.context,
-    baselineUserEvalCp: detection.evalAfterTriggerUserCp,
+    contextPlies: context,
+    baselineUserEvalCp: isBlunderAvoidance
+      ? detection.evalBeforeUserCp
+      : detection.evalAfterTriggerUserCp,
     passToleranceCp: PASS_TOLERANCE_CP,
   });
 
   return serializeSession(session)!;
+}
+
+export async function startTacticalMissedShotScenario(
+  userId: number,
+  input: TacticalScenarioStartInput,
+) {
+  return startTacticalScenario(userId, input, MISSED_SHOT_SCENARIO);
+}
+
+export async function startTacticalBlunderScenario(
+  userId: number,
+  input: TacticalScenarioStartInput,
+) {
+  return startTacticalScenario(userId, input, BLUNDER_SCENARIO);
 }
 
 export async function getScenarioTrainingSession(userId: number, sessionId: number) {
@@ -278,14 +351,17 @@ export async function dislikeScenarioTrainingSource(
 ) {
   const session = await findScenarioTrainingSessionForDislike(userId, sessionId);
   if (!session) throw new Error('Scenario training session not found');
-  if (session.attempts.length === 0) throw new Error('Cannot dislike a scenario before making an attempt');
+  if (session.attempts.length === 0)
+    throw new Error('Cannot dislike a scenario before making an attempt');
   if (!session.importedGameId) throw new Error('Scenario training session has no source game');
+  if (!session.tacticalDetection)
+    throw new Error('Scenario training session has no tactical detection');
 
   await upsertTacticalDetectionFeedback({
     userId,
     importedGameId: session.importedGameId,
-    kind: 'MISSED_SHOT',
-    triggerPlyNumber: session.tacticalDetection?.triggerPlyNumber ?? session.challengePlyNumber - 1,
+    kind: session.tacticalDetection.kind,
+    triggerPlyNumber: session.tacticalDetection.triggerPlyNumber,
     status: 'DISLIKED',
     reason: input.reason ?? null,
     sourceSessionId: session.id,

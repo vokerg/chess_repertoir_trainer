@@ -130,18 +130,40 @@ export const routes: Routes = [
     path: 'scenario-training/tactical-missed-shot',
     title: 'Tactical missed shot | Chess Repertoire Trainer',
     canActivate: [authGuard],
+    data: { scenarioKind: 'missed-shot' },
     loadComponent: () =>
       import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
-        (m) => m.TacticalMissedShotTrainerPageComponent,
+        (m) => m.TacticalScenarioTrainerPageComponent,
       ),
   },
   {
     path: 'scenario-training/tactical-missed-shot/:sessionId',
     title: 'Tactical missed shot | Chess Repertoire Trainer',
     canActivate: [authGuard],
+    data: { scenarioKind: 'missed-shot' },
     loadComponent: () =>
       import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
-        (m) => m.TacticalMissedShotTrainerPageComponent,
+        (m) => m.TacticalScenarioTrainerPageComponent,
+      ),
+  },
+  {
+    path: 'scenario-training/tactical-blunder',
+    title: 'Blunder trainer | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    data: { scenarioKind: 'blunder' },
+    loadComponent: () =>
+      import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
+        (m) => m.TacticalScenarioTrainerPageComponent,
+      ),
+  },
+  {
+    path: 'scenario-training/tactical-blunder/:sessionId',
+    title: 'Blunder trainer | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    data: { scenarioKind: 'blunder' },
+    loadComponent: () =>
+      import('./features/scenario-training/tactical-missed-shot/pages/tactical-missed-shot-trainer-page.component').then(
+        (m) => m.TacticalScenarioTrainerPageComponent,
       ),
   },
   {

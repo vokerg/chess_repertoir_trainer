@@ -1,6 +1,6 @@
 <main class="scenario-page">
   <app-page-header
-    title="Tactical missed shot"
+    [title]="store.config().title"
     [subtitle]="pageSubtitle()"
     [subtitleLink]="store.session()?.providerUrl ?? null"
     [actions]="headerActions()"
@@ -49,23 +49,50 @@
           <section analysisWorkbenchSideExtra class="trainer-panel solved-panel">
             <h3>Passed</h3>
             <dl class="attempt-stats">
-              <div><dt>Training move</dt><dd>{{ attempt.playedMoveSan || attempt.playedMoveUci }}</dd></div>
-              <div><dt>Game move</dt><dd>{{ session.originalUserMoveSan || session.originalUserMoveUci || '-' }}</dd></div>
-              <div><dt>Baseline</dt><dd>{{ evalLabel(attempt.baselineUserEvalCp) }}</dd></div>
-              <div><dt>After</dt><dd>{{ evalLabel(attempt.afterUserEvalCp) }}</dd></div>
-              <div><dt>Delta</dt><dd>{{ evalLabel(attempt.deltaCp) }}</dd></div>
-              <div><dt>Depth</dt><dd>{{ attempt.engineDepth }}</dd></div>
+              <div>
+                <dt>Training move</dt>
+                <dd>{{ attempt.playedMoveSan || attempt.playedMoveUci }}</dd>
+              </div>
+              <div>
+                <dt>{{ store.config().originalMoveLabel }}</dt>
+                <dd>{{ session.originalUserMoveSan || session.originalUserMoveUci || '-' }}</dd>
+              </div>
+              <div>
+                <dt>Baseline</dt>
+                <dd>{{ evalLabel(attempt.baselineUserEvalCp) }}</dd>
+              </div>
+              <div>
+                <dt>After</dt>
+                <dd>{{ evalLabel(attempt.afterUserEvalCp) }}</dd>
+              </div>
+              <div>
+                <dt>Delta</dt>
+                <dd>{{ evalLabel(attempt.deltaCp) }}</dd>
+              </div>
+              <div>
+                <dt>Depth</dt>
+                <dd>{{ attempt.engineDepth }}</dd>
+              </div>
             </dl>
             <div class="result-actions">
-              <button type="button" class="primary" (click)="store.nextScenario()">Next scenario</button>
+              <button type="button" class="primary" (click)="store.nextScenario()">
+                Next scenario
+              </button>
               <button type="button" class="secondary" (click)="store.tryAgain()">Try again</button>
               <button
                 type="button"
                 class="secondary danger-text"
-                (click)="store.dislikeCurrentShot()"
-                [disabled]="!store.canDislikeShot() || store.disliking() || store.evaluating() || store.loading()"
+                (click)="store.dislikeCurrentScenario()"
+                [disabled]="
+                  !store.canDislikeScenario() ||
+                  store.disliking() ||
+                  store.evaluating() ||
+                  store.loading()
+                "
               >
-                {{ store.disliking() ? 'Excluding...' : 'Exclude this shot' }}
+                {{
+                  store.disliking() ? store.config().excludingLabel : store.config().excludeLabel
+                }}
               </button>
             </div>
           </section>
@@ -80,6 +107,7 @@
         [contextPlies]="session.contextPlies"
         [selectedContextPly]="store.selectedContextPly()"
         [challengePlyNumber]="session.challengePlyNumber"
+        [challengeClassification]="session.scenarioType"
         [boardDisabled]="store.boardDisabled()"
         [boardPositionVersion]="store.boardPositionVersion()"
         (boardMove)="store.playBoardMove($event)"
@@ -91,65 +119,112 @@
       >
         <section class="trainer-panel">
           @if (store.mode() === 'intro') {
-            <h3>Opponent move</h3>
-            <p>Replaying the move that created the opportunity.</p>
+            <h3>{{ store.config().introTitle }}</h3>
+            <p>{{ store.config().introHelpText }}</p>
           } @else if (store.mode() === 'challenge') {
             <h3>Your move</h3>
             <p>
               @if (store.evaluating()) {
                 Evaluating with browser Stockfish...
               } @else if (store.baselineAnalysis()) {
-                Baseline ready. Play any legal move from the challenge position.
+                Baseline ready. {{ store.config().challengeHelpText }}
               } @else {
                 Preparing baseline analysis...
               }
             </p>
             <div class="result-actions">
-              <button type="button" class="secondary" (click)="store.replayOpponentMove()" [disabled]="store.evaluating()">
-                Replay opponent move
+              <button
+                type="button"
+                class="secondary"
+                (click)="store.replayOpponentMove()"
+                [disabled]="store.evaluating()"
+              >
+                {{ store.config().replayLabel }}
               </button>
             </div>
           } @else if (store.mode() === 'result') {
             @if (store.latestAttempt(); as attempt) {
               <h3>{{ attempt.passed ? 'Passed' : 'Try again' }}</h3>
               <dl class="attempt-stats">
-                <div><dt>Played</dt><dd>{{ attempt.playedMoveSan || attempt.playedMoveUci }}</dd></div>
-                <div><dt>Baseline</dt><dd>{{ evalLabel(attempt.baselineUserEvalCp) }}</dd></div>
-                <div><dt>After</dt><dd>{{ evalLabel(attempt.afterUserEvalCp) }}</dd></div>
-                <div><dt>Delta</dt><dd>{{ evalLabel(attempt.deltaCp) }}</dd></div>
-                <div><dt>Depth</dt><dd>{{ attempt.engineDepth }}</dd></div>
+                <div>
+                  <dt>Played</dt>
+                  <dd>{{ attempt.playedMoveSan || attempt.playedMoveUci }}</dd>
+                </div>
+                <div>
+                  <dt>Baseline</dt>
+                  <dd>{{ evalLabel(attempt.baselineUserEvalCp) }}</dd>
+                </div>
+                <div>
+                  <dt>After</dt>
+                  <dd>{{ evalLabel(attempt.afterUserEvalCp) }}</dd>
+                </div>
+                <div>
+                  <dt>Delta</dt>
+                  <dd>{{ evalLabel(attempt.deltaCp) }}</dd>
+                </div>
+                <div>
+                  <dt>Depth</dt>
+                  <dd>{{ attempt.engineDepth }}</dd>
+                </div>
               </dl>
               <div class="result-actions">
                 <button type="button" class="secondary" (click)="store.toggleBestMove()">
                   {{ store.revealBestMove() ? 'Hide best move' : 'Reveal best move' }}
                 </button>
-                <button type="button" class="secondary" (click)="store.toggleOriginalReply()">
-                  {{ store.revealOriginalReply() ? 'Hide game reply' : 'Reveal game reply' }}
+                <button type="button" class="secondary" (click)="store.toggleOriginalMove()">
+                  {{
+                    store.revealOriginalMove()
+                      ? store.config().hideOriginalMoveLabel
+                      : store.config().revealOriginalMoveLabel
+                  }}
                 </button>
               </div>
               @if (store.revealBestMove()) {
-                <p class="reveal-line">Best move: <code>{{ session.referenceBestMoveUci || '-' }}</code></p>
+                <p class="reveal-line">
+                  Best move: <code>{{ session.referenceBestMoveUci || '-' }}</code>
+                </p>
               }
-              @if (store.revealOriginalReply()) {
-                <p class="reveal-line">Original reply: <code>{{ session.originalUserMoveSan || session.originalUserMoveUci || '-' }}</code></p>
+              @if (store.revealOriginalMove()) {
+                <p class="reveal-line">
+                  {{ store.config().originalMoveRevealPrefix }}:
+                  <code>{{
+                    session.originalUserMoveSan || session.originalUserMoveUci || '-'
+                  }}</code>
+                </p>
               }
               <div class="result-actions">
                 <button type="button" class="primary" (click)="store.tryAgain()">Try again</button>
-                <button type="button" class="secondary" (click)="store.nextScenario()">Next scenario</button>
-                <button type="button" class="secondary" (click)="store.complete()" [disabled]="store.completing()">Finish</button>
+                <button type="button" class="secondary" (click)="store.nextScenario()">
+                  Next scenario
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="store.complete()"
+                  [disabled]="store.completing()"
+                >
+                  Finish
+                </button>
                 <button
                   type="button"
                   class="secondary danger-text"
-                  (click)="store.dislikeCurrentShot()"
-                  [disabled]="!store.canDislikeShot() || store.disliking() || store.evaluating() || store.loading()"
+                  (click)="store.dislikeCurrentScenario()"
+                  [disabled]="
+                    !store.canDislikeScenario() ||
+                    store.disliking() ||
+                    store.evaluating() ||
+                    store.loading()
+                  "
                 >
-                  {{ store.disliking() ? 'Excluding...' : 'Exclude this shot' }}
+                  {{
+                    store.disliking() ? store.config().excludingLabel : store.config().excludeLabel
+                  }}
                 </button>
               </div>
             }
           } @else {
             <h3>Context</h3>
-            <p>Review the game up to the move that created the opportunity.</p>
+            <p>{{ store.config().contextHelpText }}</p>
           }
         </section>
 
@@ -159,8 +234,14 @@
             <div class="attempt-list">
               @for (attempt of session.attempts; track attempt.id) {
                 <article class="attempt-row">
-                  <strong>{{ attempt.attemptNumber }}. {{ attempt.playedMoveSan || attempt.playedMoveUci }}</strong>
-                  <span>{{ attempt.passed ? 'Passed' : 'Failed' }} · {{ evalLabel(attempt.afterUserEvalCp) }} · depth {{ attempt.engineDepth }}</span>
+                  <strong
+                    >{{ attempt.attemptNumber }}.
+                    {{ attempt.playedMoveSan || attempt.playedMoveUci }}</strong
+                  >
+                  <span
+                    >{{ attempt.passed ? 'Passed' : 'Failed' }} ·
+                    {{ evalLabel(attempt.afterUserEvalCp) }} · depth {{ attempt.engineDepth }}</span
+                  >
                 </article>
               }
             </div>

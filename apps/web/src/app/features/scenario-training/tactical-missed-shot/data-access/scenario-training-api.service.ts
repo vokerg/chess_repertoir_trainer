@@ -14,14 +14,27 @@ export class ScenarioTrainingApiService {
   private readonly api = inject(ApiService);
 
   startTacticalMissedShot(request: StartScenarioRequest): Observable<ScenarioTrainingSession> {
-    return this.api.post<ScenarioTrainingSession>('/scenario-training/tactical-missed-shot/start', request);
+    return this.api.post<ScenarioTrainingSession>(
+      '/scenario-training/tactical-missed-shot/start',
+      request,
+    );
+  }
+
+  startTacticalBlunder(request: StartScenarioRequest): Observable<ScenarioTrainingSession> {
+    return this.api.post<ScenarioTrainingSession>(
+      '/scenario-training/tactical-blunder/start',
+      request,
+    );
   }
 
   getSession(sessionId: number): Observable<ScenarioTrainingSession> {
     return this.api.get<ScenarioTrainingSession>(`/scenario-training/${sessionId}`);
   }
 
-  submitAttempt(sessionId: number, request: SubmitScenarioAttemptRequest): Observable<ScenarioAttemptResult> {
+  submitAttempt(
+    sessionId: number,
+    request: SubmitScenarioAttemptRequest,
+  ): Observable<ScenarioAttemptResult> {
     return this.api.post<ScenarioAttemptResult>(`/scenario-training/${sessionId}/attempt`, request);
   }
 

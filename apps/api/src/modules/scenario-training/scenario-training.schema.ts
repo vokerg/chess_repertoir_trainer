@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const tacticalMissedShotStartSchema = z.object({
+export const tacticalScenarioStartSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   detectionId: z.coerce.number().int().positive().optional(),
@@ -8,6 +8,8 @@ export const tacticalMissedShotStartSchema = z.object({
   random: z.boolean().optional(),
   excludePassedRecently: z.boolean().optional(),
 });
+
+export const tacticalMissedShotStartSchema = tacticalScenarioStartSchema;
 
 export const scenarioTrainingAttemptSchema = z.object({
   moveUci: z.string().regex(/^[a-h][1-8][a-h][1-8][qrbn]?$/),
@@ -27,6 +29,7 @@ export const scenarioTrainingDislikeSchema = z.object({
   reason: z.string().max(200).optional(),
 });
 
-export type TacticalMissedShotStartInput = z.infer<typeof tacticalMissedShotStartSchema>;
+export type TacticalScenarioStartInput = z.infer<typeof tacticalScenarioStartSchema>;
+export type TacticalMissedShotStartInput = TacticalScenarioStartInput;
 export type ScenarioTrainingAttemptInput = z.infer<typeof scenarioTrainingAttemptSchema>;
 export type ScenarioTrainingDislikeInput = z.infer<typeof scenarioTrainingDislikeSchema>;

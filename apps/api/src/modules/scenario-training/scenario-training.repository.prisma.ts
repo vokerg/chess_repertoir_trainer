@@ -1,6 +1,9 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
-import { TacticalMissedShotStartInput } from './scenario-training.schema';
+import { TacticalScenarioStartInput } from './scenario-training.schema';
+
+export type TacticalDetectionKind = 'MISSED_SHOT' | 'USER_BLUNDER';
+export type TacticalScenarioType = 'MISSED_OPPORTUNITY' | 'BLUNDER_AVOIDANCE';
 
 export interface ScenarioContextPly {
   plyNumber: number;
@@ -12,7 +15,9 @@ export interface ScenarioContextPly {
   isUserMove: boolean;
 }
 
-export type TacticalMissedShotDetection = NonNullable<Awaited<ReturnType<typeof findTacticalMissedShotDetection>>>;
+export type TacticalScenarioDetection = NonNullable<
+  Awaited<ReturnType<typeof findTacticalScenarioDetection>>
+>;
 
 type TacticalDetectionFeedbackKey = {
   id: number;
@@ -30,6 +35,7 @@ const detectionSelect = {
   userReplyPlyNumber: true,
   moveUci: true,
   bestMoveUci: true,
+  evalBeforeUserCp: true,
   evalAfterTriggerUserCp: true,
   thresholdsHash: true,
   detectionVersion: true,
@@ -68,7 +74,9 @@ const dislikeSessionInclude = {
   tacticalDetection: true,
 } satisfies Prisma.ScenarioTrainingSessionInclude;
 
-function dateRangeWhere(input: TacticalMissedShotStartInput): Prisma.ImportedGameWhereInput['endedAt'] {
+function dateRangeWhere(
+  input: TacticalScenarioStartInput,
+): Prisma.ImportedGameWhereInput['endedAt'] {
   if (!input.from && !input.to) return undefined;
   const toExclusive = input.to ? new Date(input.to.getTime() + 24 * 60 * 60 * 1000) : undefined;
   return {
@@ -77,12 +85,17 @@ function dateRangeWhere(input: TacticalMissedShotStartInput): Prisma.ImportedGam
   };
 }
 
-function feedbackKey(input: { importedGameId: number; kind: string; triggerPlyNumber: number }): string {
+function feedbackKey(input: {
+  importedGameId: number;
+  kind: string;
+  triggerPlyNumber: number;
+}): string {
   return `${input.importedGameId}:${input.kind}:${input.triggerPlyNumber}`;
 }
 
 async function removeDislikedDetections(
   userId: number,
+  detectionKind: TacticalDetectionKind,
   detections: TacticalDetectionFeedbackKey[],
 ): Promise<TacticalDetectionFeedbackKey[]> {
   if (!detections.length) return detections;
@@ -90,7 +103,7 @@ async function removeDislikedDetections(
     where: {
       userId,
       status: 'DISLIKED',
-      kind: 'MISSED_SHOT',
+      kind: detectionKind,
       importedGameId: { in: [...new Set(detections.map((detection) => detection.importedGameId))] },
     },
     select: {
@@ -103,18 +116,24 @@ async function removeDislikedDetections(
   return detections.filter((detection) => !dislikedKeys.has(feedbackKey(detection)));
 }
 
-export async function findTacticalMissedShotDetection(
+export async function findTacticalScenarioDetection(
   userId: number,
-  input: TacticalMissedShotStartInput,
+  input: TacticalScenarioStartInput,
   scope: { thresholdsHash: string; detectionVersion: number },
+  options: {
+    detectionKind: TacticalDetectionKind;
+    scenarioType: TacticalScenarioType;
+  },
 ) {
   const baseWhere: Prisma.TacticalDetectionWhereInput = {
     userId,
-    kind: 'MISSED_SHOT',
+    kind: options.detectionKind,
     thresholdsHash: scope.thresholdsHash,
     detectionVersion: scope.detectionVersion,
     ...(input.detectionId ? { id: input.detectionId } : {}),
-    ...(!input.detectionId && input.excludeDetectionId ? { id: { not: input.excludeDetectionId } } : {}),
+    ...(!input.detectionId && input.excludeDetectionId
+      ? { id: { not: input.excludeDetectionId } }
+      : {}),
     importedGame: {
       endedAt: dateRangeWhere(input),
     },
@@ -123,7 +142,7 @@ export async function findTacticalMissedShotDetection(
           scenarioTrainingSessions: {
             none: {
               userId,
-              scenarioType: 'MISSED_OPPORTUNITY',
+              scenarioType: options.scenarioType,
               startedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
               attempts: { some: { passed: true } },
             },
@@ -142,18 +161,23 @@ export async function findTacticalMissedShotDetection(
       triggerPlyNumber: true,
     },
   });
-  const available = await removeDislikedDetections(userId, candidates);
+  const available = await removeDislikedDetections(userId, options.detectionKind, candidates);
   if (!available.length) return null;
-  const selected = input.detectionId || input.random === false
-    ? available[0]
-    : available[Math.floor(Math.random() * available.length)];
+  const selected =
+    input.detectionId || input.random === false
+      ? available[0]
+      : available[Math.floor(Math.random() * available.length)];
   return prisma.tacticalDetection.findUnique({
     where: { id: selected.id },
     select: detectionSelect,
   });
 }
 
-export async function findGamePliesThrough(userId: number, importedGameId: number, throughPlyNumber: number) {
+export async function findGamePliesThrough(
+  userId: number,
+  importedGameId: number,
+  throughPlyNumber: number,
+) {
   return prisma.importedGamePly.findMany({
     where: {
       importedGameId,
@@ -220,7 +244,6 @@ export async function findScenarioTrainingSessionForDislike(userId: number, sess
       id: sessionId,
       userId,
       sourceType: 'TACTICAL_DETECTION',
-      scenarioType: 'MISSED_OPPORTUNITY',
     },
     include: dislikeSessionInclude,
   });
@@ -273,7 +296,10 @@ export async function createScenarioTrainingAttempt(input: {
   return prisma.scenarioTrainingAttempt.create({
     data: {
       ...input,
-      rawEngineJson: input.rawEngineJson === undefined ? Prisma.JsonNull : input.rawEngineJson as Prisma.InputJsonValue,
+      rawEngineJson:
+        input.rawEngineJson === undefined
+          ? Prisma.JsonNull
+          : (input.rawEngineJson as Prisma.InputJsonValue),
     },
   });
 }

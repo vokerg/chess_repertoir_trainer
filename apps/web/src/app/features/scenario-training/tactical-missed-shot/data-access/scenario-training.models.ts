@@ -49,7 +49,7 @@ export interface ScenarioTrainingAttempt {
 export interface ScenarioTrainingSession extends ScenarioGameHeader {
   id: number;
   sessionId: number;
-  scenarioType: 'MISSED_OPPORTUNITY';
+  scenarioType: 'MISSED_OPPORTUNITY' | 'BLUNDER_AVOIDANCE';
   sourceType: 'TACTICAL_DETECTION';
   sourceId: number;
   importedGameId: number;

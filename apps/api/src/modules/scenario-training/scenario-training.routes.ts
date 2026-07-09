@@ -5,13 +5,14 @@ import {
   dislikeScenarioTrainingSource,
   getScenarioTrainingHistory,
   getScenarioTrainingSession,
+  startTacticalBlunderScenario,
   startTacticalMissedShotScenario,
   submitScenarioTrainingAttempt,
 } from './scenario-training.service';
 import {
   scenarioTrainingDislikeSchema,
   scenarioTrainingAttemptSchema,
-  tacticalMissedShotStartSchema,
+  tacticalScenarioStartSchema,
 } from './scenario-training.schema';
 
 function sessionIdParam(params: unknown): number {
@@ -28,7 +29,7 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
   app.post('/api/scenario-training/tactical-missed-shot/start', async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = tacticalMissedShotStartSchema.safeParse(request.body ?? {});
+    const parsed = tacticalScenarioStartSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
       return { error: parsed.error.errors };
@@ -37,7 +38,9 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
       return await startTacticalMissedShotScenario(auth.userId, parsed.data);
     } catch (error) {
       reply.code(statusFor(error));
-      return { error: error instanceof Error ? error.message : 'Could not start scenario training' };
+      return {
+        error: error instanceof Error ? error.message : 'Could not start scenario training',
+      };
     }
   });
 
@@ -67,7 +70,11 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
       return { error: parsed.error.errors };
     }
     try {
-      return await submitScenarioTrainingAttempt(auth.userId, sessionIdParam(request.params), parsed.data);
+      return await submitScenarioTrainingAttempt(
+        auth.userId,
+        sessionIdParam(request.params),
+        parsed.data,
+      );
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not save scenario attempt' };
@@ -81,7 +88,27 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
       return await completeScenarioTraining(auth.userId, sessionIdParam(request.params));
     } catch (error) {
       reply.code(statusFor(error));
-      return { error: error instanceof Error ? error.message : 'Could not complete scenario training' };
+      return {
+        error: error instanceof Error ? error.message : 'Could not complete scenario training',
+      };
+    }
+  });
+
+  app.post('/api/scenario-training/tactical-blunder/start', async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const parsed = tacticalScenarioStartSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: parsed.error.errors };
+    }
+    try {
+      return await startTacticalBlunderScenario(auth.userId, parsed.data);
+    } catch (error) {
+      reply.code(statusFor(error));
+      return {
+        error: error instanceof Error ? error.message : 'Could not start scenario training',
+      };
     }
   });
 
@@ -94,10 +121,16 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
       return { error: parsed.error.errors };
     }
     try {
-      return await dislikeScenarioTrainingSource(auth.userId, sessionIdParam(request.params), parsed.data);
+      return await dislikeScenarioTrainingSource(
+        auth.userId,
+        sessionIdParam(request.params),
+        parsed.data,
+      );
     } catch (error) {
       reply.code(statusFor(error));
-      return { error: error instanceof Error ? error.message : 'Could not dislike scenario source' };
+      return {
+        error: error instanceof Error ? error.message : 'Could not dislike scenario source',
+      };
     }
   });
 }

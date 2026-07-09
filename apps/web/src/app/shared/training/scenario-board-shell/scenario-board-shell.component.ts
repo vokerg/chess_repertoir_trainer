@@ -33,6 +33,7 @@ export class ScenarioBoardShellComponent {
   readonly contextPlies = input<ScenarioBoardContextPly[]>([]);
   readonly selectedContextPly = input<number | null>(null);
   readonly challengePlyNumber = input.required<number>();
+  readonly challengeClassification = input<string>('MISSED_OPPORTUNITY');
   readonly boardDisabled = input(false);
   readonly boardPositionVersion = input(0);
 
@@ -49,7 +50,9 @@ export class ScenarioBoardShellComponent {
     return this.contextPlies().findIndex((ply) => ply.plyNumber === selected);
   });
 
-  protected readonly canGoBackward = computed(() => this.mode() !== 'context' || this.selectedContextIndex() >= 0);
+  protected readonly canGoBackward = computed(
+    () => this.mode() !== 'context' || this.selectedContextIndex() >= 0,
+  );
   protected readonly canGoForward = computed(() => {
     if (this.mode() !== 'context') return false;
     const index = this.selectedContextIndex();
@@ -77,7 +80,7 @@ export class ScenarioBoardShellComponent {
           isUserMove: ply.isUserMove,
           moveNumber: ply.moveNumber,
           side: ply.plyNumber % 2 === 1 ? 'WHITE' : 'BLACK',
-          classification: ply.plyNumber === triggerPly ? 'MISSED_OPPORTUNITY' : null,
+          classification: ply.plyNumber === triggerPly ? this.challengeClassification() : null,
         },
         children: [],
       };
