@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../../../prisma';
 import { TacticalDetectionKind, TacticalDetectionListQuery } from './tactical-detection.schema';
 import { TacticalDetectionThresholds } from './tactical-detection.constants';
+import { isTrainableUserBlunder } from './tactical-detection-policy';
 
 type Db = Prisma.TransactionClient;
 
@@ -135,7 +136,7 @@ export async function findTacticalDetectionCandidatesForGames(
 ): Promise<TacticalDetectionCandidate[]> {
   if (!gameIds.length) return [];
 
-  return db.$queryRaw<TacticalDetectionCandidate[]>`
+  const candidates = await db.$queryRaw<TacticalDetectionCandidate[]>`
     WITH candidate_games AS (
       SELECT id, "userColor"
       FROM "ImportedGame"
@@ -342,6 +343,11 @@ export async function findTacticalDetectionCandidatesForGames(
       "swingCp"::int AS "swingCp"
     FROM user_blunders
   `;
+
+  return candidates.filter(
+    (candidate) =>
+      candidate.kind !== 'USER_BLUNDER' || isTrainableUserBlunder(candidate, thresholds),
+  );
 }
 
 export async function insertTacticalDetections(

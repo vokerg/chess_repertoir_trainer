@@ -14,7 +14,7 @@ All eval math is user-centric:
 
 `PUNISHED_OPPONENT_BLUNDER` is also triggered by the opponent move. The opponent move must give the same minimum eval gift, and the user's immediate reply must preserve the gained advantage within `recoveryToleranceCp`. This bucket is the complement of missed shots: the opponent blundered and the user found a good enough reply.
 
-`USER_BLUNDER` is triggered by the user's own move. The user eval before the move must drop by at least `userBlunderDropMinCp`. User replies already represented as `MISSED_SHOT` are excluded so the same move does not appear in both lists.
+`USER_BLUNDER` is triggered by the user's own move. The user eval before the move must drop by at least `userBlunderDropMinCp`, and the resulting position must be no better than `userBlunderMaxAfterEvalCp`. This keeps the bucket focused on moves that materially change the practical position instead of moves where the user remains clearly better. User replies already represented as `MISSED_SHOT` are excluded so the same move does not appear in both lists.
 
 ## Persistence
 
