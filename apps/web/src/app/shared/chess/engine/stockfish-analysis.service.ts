@@ -160,18 +160,22 @@ export class StockfishAnalysisService implements OnDestroy {
       const workerUrl = `${assetBase}bin/stockfish-18-asm.js`;
 
       this.ready = false;
-      this.worker = new Worker(workerUrl);
-      this.worker.onmessage = (event) => this.zone.run(() => this.handleMessage(String(event.data ?? '')));
-      this.worker.onerror = (event) => this.zone.run(() => {
+      const worker = new Worker(workerUrl);
+      this.worker = worker;
+      worker.onmessage = (event) => this.zone.run(() => this.handleMessage(String(event.data ?? ''), worker));
+      worker.onerror = (event) => this.zone.run(() => {
+        if (this.worker !== worker || !this.currentRun) return;
         const state = this.stateSubject.value;
         const detail = event.message ? ` ${event.message}` : '';
         this.emit({ ...state, running: false, ready: false, error: `Stockfish failed to start.${detail}` });
       });
       this.startupTimer = setTimeout(() => {
         this.zone.run(() => {
-          if (!this.ready) {
+          if (this.worker === worker && !this.ready) {
             const state = this.stateSubject.value;
-            this.emit({ ...state, running: false, ready: false, error: 'Stockfish did not become ready in time.' });
+            if (this.currentRun) {
+              this.emit({ ...state, running: false, ready: false, error: 'Stockfish did not become ready in time.' });
+            }
             this.resetWorker();
           }
         });
@@ -189,8 +193,11 @@ export class StockfishAnalysisService implements OnDestroy {
     this.worker?.postMessage(command);
   }
 
-  private handleMessage(message: string) {
+  private handleMessage(message: string, worker: Worker) {
+    if (worker !== this.worker) return;
+
     if (message.startsWith('error ')) {
+      if (!this.currentRun) return;
       const state = this.stateSubject.value;
       this.emit({ ...state, running: false, ready: false, error: `Stockfish failed to start. ${message.slice(6)}` });
       this.resetWorker();
@@ -203,6 +210,7 @@ export class StockfishAnalysisService implements OnDestroy {
         this.startupTimer = null;
       }
       this.ready = true;
+      if (!this.currentRun) return;
       this.emit({ ...this.stateSubject.value, ready: true });
       this.startCurrentRun();
       return;
@@ -218,9 +226,10 @@ export class StockfishAnalysisService implements OnDestroy {
     }
 
     if (message.startsWith('bestmove ')) {
+      if (!this.currentRun) return;
       const bestMove = message.split(/\s+/)[1] || null;
       const state = this.stateSubject.value;
-      const keepAlive = this.currentRun?.keepAlive ?? false;
+      const keepAlive = this.currentRun.keepAlive;
       this.emit({ ...state, running: false, bestMove });
       this.currentRun = null;
       if (!keepAlive) this.resetWorker();
