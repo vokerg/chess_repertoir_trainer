@@ -108,9 +108,13 @@ function getUserColor(game: LichessGame, accountUsername: string): 'WHITE' | 'BL
   return null;
 }
 
-function getResultForUser(game: LichessGame, userColor: 'WHITE' | 'BLACK' | null) {
+export function getLichessResultForUser(
+  game: { status?: string; winner?: 'white' | 'black'; pgn?: string },
+  userColor: 'WHITE' | 'BLACK' | null,
+) {
   if (!userColor) return null;
   if (game.status === 'draw' || game.status === 'stalemate') return 'DRAW';
+  if (getPgnHeader(game.pgn, 'Result') === '1/2-1/2') return 'DRAW';
   if (!game.winner) return null;
   return game.winner.toUpperCase() === userColor ? 'WIN' : 'LOSS';
 }
@@ -161,7 +165,7 @@ function normalizeGame(game: LichessGame, account: { id: number; userId: number;
     userColor,
     opponentUsername,
     result: getResult(game),
-    resultForUser: getResultForUser(game, userColor),
+    resultForUser: getLichessResultForUser(game, userColor),
     status: game.status ?? getPgnHeader(game.pgn, 'Termination'),
     openingName: game.opening?.name ?? getPgnHeader(game.pgn, 'Opening'),
     openingEco: game.opening?.eco ?? getPgnHeader(game.pgn, 'ECO'),
