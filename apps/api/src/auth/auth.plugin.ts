@@ -14,7 +14,8 @@ const PUBLIC_PATHS = new Set([
 ]);
 
 function isPublicRequest(request: FastifyRequest) {
-  return request.method === 'OPTIONS' || PUBLIC_PATHS.has(request.url.split('?', 1)[0]);
+  const path = request.url.split('?', 1)[0];
+  return request.method === 'OPTIONS' || PUBLIC_PATHS.has(path) || path.startsWith('/api/docs/');
 }
 
 function readCookie(request: FastifyRequest, name: string) {

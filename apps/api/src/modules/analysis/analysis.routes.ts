@@ -1,18 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../auth/request-auth';
 import { z } from 'zod';
-import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
-import {
-  analysisOpenApiSchemas,
-  bulkPositionAnalysisLookupOpenApiOperation,
-  bulkStorePositionAnalysisOpenApiOperation,
-  clearPlyAnalysisOpenApiOperation,
-  createClientGameAnalysisRunOpenApiOperation,
-  getImportedGameAnalysisOpenApiOperation,
-  getPositionAnalysisOpenApiOperation,
-  storePositionAnalysisOpenApiOperation,
-  updatePlyAnalysisOpenApiOperation,
-} from './analysis.openapi';
 import {
   bulkPositionAnalysisLookupSchema,
   bulkStorePositionAnalysisSchema,
@@ -37,16 +25,25 @@ const batchAnalysisRequestSchema = z.object({
   gameIds: z.array(z.number().int().positive()).min(1).max(500),
 });
 
-export default async function analysisModule(app: FastifyInstance) {
-  registerOpenApiSchemas(analysisOpenApiSchemas);
+const importedGameParamsSchema = z.object({ gameId: z.coerce.number().int().positive() });
+const analysisRouteSchema = (operationId: string, extra: Record<string, unknown> = {}) => ({
+  operationId,
+  tags: ['Analysis'],
+  ...extra,
+});
 
-  app.get('/api/imported-games/batch-analysis/config', async (request, reply) => {
+export default async function analysisModule(app: FastifyInstance) {
+  app.get('/api/imported-games/batch-analysis/config', {
+    schema: analysisRouteSchema('getBatchAnalysisConfig'),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return { enabled: isLocalBatchStockfishAnalysisEnabled() };
   });
 
-  app.post('/api/imported-games/batch-analysis-runs', async (request, reply) => {
+  app.post('/api/imported-games/batch-analysis-runs', {
+    schema: analysisRouteSchema('createBatchAnalysisRun', { body: batchAnalysisRequestSchema }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     if (!isLocalBatchStockfishAnalysisEnabled()) {
@@ -57,7 +54,7 @@ export default async function analysisModule(app: FastifyInstance) {
     const parsed = batchAnalysisRequestSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     const gameIds = Array.from(new Set(parsed.data.gameIds));
@@ -74,17 +71,17 @@ export default async function analysisModule(app: FastifyInstance) {
     }
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/position-analysis',
-    operation: getPositionAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('getPositionAnalysis', { querystring: positionAnalysisLookupSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = positionAnalysisLookupSchema.safeParse(request.query ?? {});
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -97,17 +94,17 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/position-analysis/bulk-lookup',
-    operation: bulkPositionAnalysisLookupOpenApiOperation,
+    schema: analysisRouteSchema('bulkLookupPositionAnalysis', { body: bulkPositionAnalysisLookupSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = bulkPositionAnalysisLookupSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -120,17 +117,17 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/position-analysis/store',
-    operation: storePositionAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('storePositionAnalysis', { body: storePositionAnalysisSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = storePositionAnalysisSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -144,17 +141,17 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/position-analysis/bulk-store',
-    operation: bulkStorePositionAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('bulkStorePositionAnalysis', { body: bulkStorePositionAnalysisSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = bulkStorePositionAnalysisSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -167,10 +164,10 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/imported-games/:gameId/analysis',
-    operation: getImportedGameAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('getImportedGameAnalysis', { params: importedGameParamsSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
@@ -194,10 +191,13 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/analysis-runs',
-    operation: createClientGameAnalysisRunOpenApiOperation,
+    schema: analysisRouteSchema('createClientGameAnalysisRun', {
+      params: importedGameParamsSchema,
+      body: clientGameAnalysisRunSchema,
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
@@ -210,7 +210,7 @@ export default async function analysisModule(app: FastifyInstance) {
       const parsed = clientGameAnalysisRunSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -233,10 +233,13 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'patch',
+  app.route({
+    method: 'PATCH',
     url: '/api/imported-games/:gameId/plies/analysis',
-    operation: updatePlyAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('updateImportedGamePlyAnalysis', {
+      params: importedGameParamsSchema,
+      body: updatePlyAnalysisSchema,
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
@@ -249,7 +252,7 @@ export default async function analysisModule(app: FastifyInstance) {
       const parsed = updatePlyAnalysisSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -266,10 +269,10 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/plies/analysis/clear',
-    operation: clearPlyAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('clearImportedGamePlyAnalysis', { params: importedGameParamsSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;

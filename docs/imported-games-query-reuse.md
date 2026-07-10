@@ -44,7 +44,13 @@ MCP tool handler
     -> imported-games.repository.prisma.ts
 ```
 
-The query service currently exposes paged search rows, detail rows, PGN lookup, and raw facet results. Each consumer owns its own output mapping. New query operations should remain feature-local and should be added only when a concrete consumer needs them; this is not a global query framework.
+The query service exposes paged search rows, summary aggregates, detail rows, PGN lookup, and raw facet results. Each consumer owns its own output mapping. New query operations should remain feature-local and should be added only when a concrete consumer needs them; this is not a global query framework.
+
+## Summary aggregation
+
+`ImportedGameQueryService.summarize` reuses `buildImportedGameWhere` and delegates database aggregation to `summarizeImportedGames`. PostgreSQL computes the total, result/provider/speed/color/opening groups, and rating averages/counts. Node receives only bounded aggregate groups, then applies output sorting, score calculation, and weighted rating combination.
+
+Loading every matching imported-game row for a summary, facet, count, or average is forbidden. Bounded post-processing of distinct aggregate groups is allowed; an unbounded `findMany` plus Node reduction is a performance regression even when it preserves output values.
 
 MCP-specific input schemas and output mappers remain under `apps/api/src/modules/mcp`; imported-games query semantics remain owned by the imported-games module.
 

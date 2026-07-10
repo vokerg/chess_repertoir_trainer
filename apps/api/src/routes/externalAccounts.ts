@@ -90,7 +90,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const parsed = createAccountSchema.safeParse(request.body);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     const account = await ExternalAccountService.createForUser(auth.userId, parsed.data);
@@ -104,7 +104,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const parsed = defaultProgressAccountSchema.safeParse(request.body);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     const result = await ExternalAccountService.setDefaultProgressAccount(auth.userId, parsed.data.accountId);
@@ -141,7 +141,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const parsed = ratingHistoryQuerySchema.safeParse(request.query);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     return AccountRatingHistoryService.getForAccount(auth.userId, account, parsed.data);
@@ -173,7 +173,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const parsed = accountPerformanceStatsQuerySchema.safeParse(request.query);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     return AccountPerformanceStatsService.getForAccount(auth.userId, id, parsed.data);
@@ -186,7 +186,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const parsed = updateAccountSchema.safeParse(request.body);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     const account = await ExternalAccountService.updateForUser(auth.userId, id, parsed.data);
@@ -278,7 +278,7 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     const parsed = listAccountGamesQuerySchema.safeParse(request.query);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     const { take, ...query } = parsed.data;

@@ -21,21 +21,50 @@ describe('games table display helpers', () => {
 
   it('formats player names with optional ratings', () => {
     expect(playerLabel({ username: 'player', rating: 1800 })).toBe('player (1800)');
-    expect(playerLabel({ username: 'player' })).toBe('player');
+    expect(playerLabel({ username: 'player', rating: null })).toBe('player');
     expect(playerLabel(null)).toBe('Unknown');
   });
 });
 
-function game(timeControl: ImportedGameListItem['timeControl']): ImportedGameListItem {
+function game(timeControl: Partial<ImportedGameListItem['timeControl']>): ImportedGameListItem {
   return {
     id: 1,
     accountId: 10,
     provider: 'LICHESS',
     providerGameId: 'game-1',
-    timeControl,
+    providerUrl: null,
+    endedAt: null,
+    startedAt: null,
+    speedCategory: null,
+    rated: null,
+    variant: null,
+    timeControl: { raw: null, initial: null, increment: null, ...timeControl },
+    white: { username: null, rating: null },
+    black: { username: null, rating: null },
+    userColor: null,
+    opponentUsername: null,
+    result: null,
+    resultForUser: null,
+    status: null,
+    opening: { eco: null, name: null },
     tagCodes: [],
     tags: [],
-    plyIndex: { status: 'NOT_INDEXED' },
-    analysis: { status: 'NOT_ANALYZED' },
+    plyIndex: { status: 'NOT_INDEXED', indexedAt: null, error: null },
+    analysis: emptyAnalysis(),
+  };
+}
+
+function emptyAnalysis(): ImportedGameListItem['analysis'] {
+  return {
+    status: 'NOT_ANALYZED',
+    runId: null,
+    depth: null,
+    completedAt: null,
+    createdAt: null,
+    whiteAccuracy: null,
+    blackAccuracy: null,
+    userAccuracy: null,
+    summary: null,
+    criticalMoveCount: null,
   };
 }

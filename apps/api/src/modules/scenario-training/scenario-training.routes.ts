@@ -32,7 +32,7 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
     const parsed = tacticalScenarioStartSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     try {
       return await startTacticalMissedShotScenario(auth.userId, parsed.data);
@@ -67,7 +67,7 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
     const parsed = scenarioTrainingAttemptSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     try {
       return await submitScenarioTrainingAttempt(
@@ -100,7 +100,7 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
     const parsed = tacticalScenarioStartSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     try {
       return await startTacticalBlunderScenario(auth.userId, parsed.data);
@@ -118,7 +118,7 @@ export default async function scenarioTrainingModule(app: FastifyInstance) {
     const parsed = scenarioTrainingDislikeSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     try {
       return await dislikeScenarioTrainingSource(

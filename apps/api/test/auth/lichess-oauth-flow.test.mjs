@@ -100,7 +100,7 @@ try {
     url: `/api/auth/lichess/callback?code=test-code&state=${encodeURIComponent(state)}`,
   });
   assert.equal(callbackWithoutAuth.statusCode, 302);
-  assert.equal(callbackWithoutAuth.headers.location, 'http://localhost:4200/accounts?lichessConnected=1');
+  assert.equal(callbackWithoutAuth.headers.location, 'http://localhost:4200/settings/lichess?lichessConnected=1');
 
   const connection = await prisma.lichessConnection.findUnique({ where: { userId: user.id } });
   assert.equal(connection?.username.startsWith('lichessUser'), true);

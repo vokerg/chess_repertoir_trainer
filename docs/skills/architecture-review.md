@@ -1,6 +1,6 @@
-# Skill: Architecture review
+# Working guide: Architecture review
 
-Use this skill before merging any PR that changes source code, project structure, deployment configuration, or shared packages.
+Use this guide before merging any PR that changes source code, project structure, deployment configuration, or shared packages. Agent workflows live under `.github/skills`.
 
 Existing global API services and page-heavy Angular components are accepted debt. Review changes for unnecessary expansion of that debt; do not require unrelated migration work.
 

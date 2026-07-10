@@ -46,7 +46,7 @@ export default async function labModule(app: FastifyInstance) {
     const parsed = openingStrugglesQuerySchema.safeParse(request.query ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     return getOpeningStruggles(auth.userId, parsed.data);
   });
@@ -57,7 +57,7 @@ export default async function labModule(app: FastifyInstance) {
     const parsed = trainingLogQuerySchema.safeParse(request.query ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     return getTrainingLog(auth.userId, parsed.data);
   });
@@ -68,7 +68,7 @@ export default async function labModule(app: FastifyInstance) {
     const parsed = tacticalDetectionRunSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     return runTacticalDetection(auth.userId, parsed.data);
   });
@@ -79,7 +79,7 @@ export default async function labModule(app: FastifyInstance) {
     const parsed = tacticalDetectionListSchema.safeParse(request.query ?? {});
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
     return getTacticalDetections(auth.userId, parsed.data);
   });

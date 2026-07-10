@@ -2,13 +2,15 @@
 
 This monorepo contains the Fastify API, Angular web app, and shared chess-domain code.
 
+The responsive Angular application is the only supported client. The former Expo/React Native workspace has been removed; Git history is its archive.
+
 ```text
 apps/
   api/    Fastify + Prisma
   web/    Angular
 packages/
   chess-domain/  pure chess and training logic
-  contracts/     scaffolded API contracts; not wired into the workspace
+  contracts/     active package for verified HTTP wire schemas and DTO types
 ```
 
 ## Current API structure
@@ -27,12 +29,11 @@ apps/api/src/modules/
   training-marathons/    marathon next-item workflow and selected candidate resolution
 ```
 
-The API is only partly migrated to feature modules. These registered routes remain global:
+These registered routes remain global because they span provider/account integration rather than one product module:
 
 - `routes/externalAccounts.ts` owns current-user accounts and provider sync endpoints.
-- `routes/swagger.ts` serves API documentation.
 
-Several modules also still call services under `apps/api/src/services`. This is accepted legacy debt, not the preferred structure for new features. Do not invent `games` or `importers` modules in documentation until those boundaries exist in code.
+Several modules also call services under `apps/api/src/services`. This is accepted organizational debt, not the preferred structure for new features. Do not invent `games` or `importers` modules in documentation until those boundaries exist in code.
 
 The imported-games module has a feature-local query service that shares filtering and pagination semantics across backend consumers while keeping REST response mapping in `ImportedGamesService`. Imported-game filtering is SQL-side through the imported-games repository; latest analysis status and accuracy filters use materialized fields on `ImportedGame` that are synchronized from `GameAnalysisRun` writes.
 
@@ -41,6 +42,8 @@ Imported-game analysis keeps reusable engine output and per-game classification 
 Lab tactical detections are persisted reports over analysed imported games. They reuse cached position evals to identify missed shots, punished opponent blunders, and user blunders without running an engine. See [Tactical Detections](tactical-detections.md) for detection semantics, persistence, and Lab UI behavior.
 
 MCP is a backend transport under `apps/api`; its read-only tools call feature/application services directly rather than calling REST endpoints.
+
+`apps/api/src/app.ts` owns reusable Fastify construction, compiler/plugin registration, generated OpenAPI and official Swagger UI, auth/CORS, and route composition. `apps/api/src/main.ts` loads environment configuration, listens, and handles shutdown. Tests construct and close independent app instances through `buildApp`.
 
 For new backend work, extend the owning directory under `apps/api/src/modules` when one exists. Keep routes thin and place feature orchestration and Prisma access next to the owning module where practical. Make narrow changes to legacy global code when that is safer than an unrelated migration; do not copy the global layout into new features.
 
@@ -57,7 +60,7 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - Marathon candidate selection supports a course/chapter scope, selected line ids, selected active subline hashes, and recent subline hashes. Scope-only requests preserve whole-course/chapter marathon behavior. Selected lines are ownership checked and, when a scope is also provided, must belong to that scope. Selected subline hashes are filtered against active owned sublines, so inactive hashes remain historical and are not trained.
 - Marathon modes are `ALL`, `WEAK_SUBLINES`, `UNTRAINED_SUBLINES`, and `MIXED_WEAK_UNTRAINED`. Weak and untrained filtering uses the same active subline extraction and last-5 scored-attempt window as stats.
 - Persisted training stats live in `TrainingSublineAttempt`, keyed by user, line, and subline hash. Line, chapter, and course stats count only active hashes and the last 5 scored attempts per active subline; old hashes remain historical but inactive after move-tree edits.
-- `packages/contracts` is scaffolded future work and must not be treated as an active shared dependency.
+- `packages/contracts` is an active workspace. Endpoint schemas are added only after their actual API output and consumers have been verified.
 
 Frontend conventions and accepted debt are documented under `docs/frontend`.
 

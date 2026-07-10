@@ -32,7 +32,7 @@ export default async function trainingMarathonsModule(app: FastifyInstance) {
     if (!auth) return;
     const bodyResult = nextLineSchema.safeParse(request.body);
     if (!bodyResult.success) {
-      return reply.status(400).send({ error: bodyResult.error.errors });
+      return reply.status(400).send({ error: bodyResult.error.issues });
     }
 
     const requestBody = bodyResult.data;

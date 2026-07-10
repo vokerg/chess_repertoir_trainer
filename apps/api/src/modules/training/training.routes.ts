@@ -45,7 +45,7 @@ export default async function trainingModule(app: FastifyInstance) {
     const { sessionId } = request.params as { sessionId: string };
     const bodyResult = playMoveSchema.safeParse(request.body);
     if (!bodyResult.success) {
-      return reply.status(400).send({ error: bodyResult.error.errors });
+      return reply.status(400).send({ error: bodyResult.error.issues });
     }
     try {
       const result = await TrainingService.playMove(auth.userId, parseInt(sessionId, 10), bodyResult.data.moveUci);

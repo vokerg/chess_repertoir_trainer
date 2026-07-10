@@ -6,7 +6,7 @@ import {
   openingAnalysisQuerySchema,
   OpeningAnalysisQuery,
 } from '../imported-games/imported-games.schemas';
-import { boardImagePovSchema, boardImageTurnSchema } from '../board-images/board-images.schemas';
+import { boardImagePovSchema, boardImageTurnSchema } from '@chess-trainer/contracts/board-images';
 
 const providerSchema = z.enum(['LICHESS', 'CHESS_COM']);
 const resultSchema = z.enum(['WIN', 'DRAW', 'LOSS']);

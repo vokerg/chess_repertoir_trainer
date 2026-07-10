@@ -1,26 +1,27 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import {
+  importedGameDetailResponseSchema,
+  importedGameFacetsResponseSchema,
+  importedGameIdParamsSchema,
+  importedGamePgnResponseSchema,
+  importedGameSearchQuerySchema,
+  importedGameSearchResponseSchema,
+  importedGameTagDefinitionsResponseSchema,
+  legacyApiErrorResponseSchema,
+  legacyMessageResponseSchema,
+} from '@chess-trainer/contracts/imported-games';
 import { requireAuth } from '../../auth/request-auth';
-import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
 import { ImportedGamesService } from './imported-games.service';
-import { importedGameSearchQuerySchema, openingAnalysisQuerySchema, openingAnalysisTopGamesQuerySchema } from './imported-games.schemas';
+import {
+  normalizeImportedGameSearchQuery,
+  openingAnalysisQuerySchema,
+  openingAnalysisTopGamesQuerySchema,
+} from './imported-games.schemas';
 import { ImportedGameIndexWorkflowService } from './imported-game-index-workflow.service';
 import { OpeningAnalysisService } from './opening-analysis.service';
 import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis.config';
 import { ImportedGameBatchAnalysisService } from '../analysis/batch-game-analysis.service';
-import {
-  createImportedGameFullRefreshRunOpenApiOperation,
-  getImportedGameFacetsOpenApiOperation,
-  getImportedGameOpenApiOperation,
-  getImportedGamePgnOpenApiOperation,
-  getImportedGameTagDefinitionsOpenApiOperation,
-  getOpeningAnalysisOpenApiOperation,
-  getOpeningAnalysisPerformanceOpenApiOperation,
-  getOpeningAnalysisTopGamesOpenApiOperation,
-  importedGamesOpenApiSchemas,
-  indexImportedGamePlyOpenApiOperation,
-  listImportedGamesOpenApiOperation,
-  refreshImportedGameTagsOpenApiOperation,
-} from './imported-games.openapi';
+import { z } from 'zod';
 
 function parseGameId(params: unknown): number | null {
   const gameId = Number((params as any).gameId);
@@ -32,42 +33,49 @@ function parseForce(body: unknown): boolean {
   return (body as any).force === true;
 }
 
-export default async function importedGamesModule(app: FastifyInstance) {
-  registerOpenApiSchemas(importedGamesOpenApiSchemas);
+const forceSchema = z.object({ force: z.boolean().optional() });
+const importedGamesRouteSchema = (operationId: string, extra: Record<string, unknown> = {}) => ({
+  operationId,
+  tags: ['Imported games'],
+  ...extra,
+});
 
-  registerOpenApiRoute(app, {
-    method: 'get',
-    url: '/api/imported-games',
-    operation: listImportedGamesOpenApiOperation,
-    handler: async (request, reply) => {
+const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/imported-games', {
+    schema: {
+      operationId: 'listImportedGames',
+      tags: ['Imported games'],
+      summary: 'Search imported games for the current user',
+      description: 'Returns compact imported-game list rows. PGN and full engine lines are excluded.',
+      querystring: importedGameSearchQuerySchema,
+      response: {
+        200: importedGameSearchResponseSchema,
+        400: legacyApiErrorResponseSchema,
+        401: legacyMessageResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = importedGameSearchQuerySchema.safeParse(request.query);
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
 
       try {
-        return await ImportedGamesService.search(auth.userId, parsed.data);
+        return await ImportedGamesService.search(auth.userId, normalizeImportedGameSearchQuery(request.query));
       } catch (err: any) {
-        reply.code(400);
-        return { error: err?.message ?? String(err) };
+        return reply.code(400).send({ error: err?.message ?? String(err) });
       }
-    },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/opening-analysis',
-    operation: getOpeningAnalysisOpenApiOperation,
+    schema: importedGamesRouteSchema('getOpeningAnalysis', { querystring: openingAnalysisQuerySchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = openingAnalysisQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -79,17 +87,17 @@ export default async function importedGamesModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/opening-analysis/performance',
-    operation: getOpeningAnalysisPerformanceOpenApiOperation,
+    schema: importedGamesRouteSchema('getOpeningAnalysisPerformance', { querystring: openingAnalysisQuerySchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = openingAnalysisQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -101,17 +109,17 @@ export default async function importedGamesModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/opening-analysis/top-games',
-    operation: getOpeningAnalysisTopGamesOpenApiOperation,
+    schema: importedGamesRouteSchema('getOpeningAnalysisTopGames', { querystring: openingAnalysisTopGamesQuerySchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       const parsed = openingAnalysisTopGamesQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         reply.code(400);
-        return { error: parsed.error.errors };
+        return { error: parsed.error.issues };
       }
 
       try {
@@ -123,54 +131,66 @@ export default async function importedGamesModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
-    url: '/api/imported-games/facets',
-    operation: getImportedGameFacetsOpenApiOperation,
-    handler: async (request, reply) => {
+  app.get('/api/imported-games/facets', {
+    schema: {
+      operationId: 'getImportedGameFacets',
+      tags: ['Imported games'],
+      summary: 'Get imported-game filter facets',
+      response: {
+        200: importedGameFacetsResponseSchema,
+        401: legacyMessageResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       return ImportedGamesService.facets(auth.userId);
-    },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
-    url: '/api/imported-games/tag-definitions',
-    operation: getImportedGameTagDefinitionsOpenApiOperation,
-    handler: async (request, reply) => {
+  app.get('/api/imported-games/tag-definitions', {
+    schema: {
+      operationId: 'getImportedGameTagDefinitions',
+      tags: ['Imported games'],
+      summary: 'Get imported-game tag definitions',
+      response: {
+        200: importedGameTagDefinitionsResponseSchema,
+        401: legacyMessageResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
       return ImportedGamesService.tagDefinitions();
-    },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
-    url: '/api/imported-games/:gameId',
-    operation: getImportedGameOpenApiOperation,
-    handler: async (request, reply) => {
+  app.get('/api/imported-games/:gameId', {
+    schema: {
+      operationId: 'getImportedGame',
+      tags: ['Imported games'],
+      summary: 'Get one imported game',
+      params: importedGameIdParamsSchema,
+      response: {
+        200: importedGameDetailResponseSchema,
+        400: legacyApiErrorResponseSchema,
+        401: legacyMessageResponseSchema,
+        404: legacyMessageResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
 
-      const game = await ImportedGamesService.get(auth.userId, gameId);
+      const game = await ImportedGamesService.get(auth.userId, request.params.gameId);
       if (!game) {
-        reply.code(404);
-        return { message: 'Imported game not found' };
+        return reply.code(404).send({ message: 'Imported game not found' });
       }
       return game;
-    },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/tags/refresh',
-    operation: refreshImportedGameTagsOpenApiOperation,
+    schema: importedGamesRouteSchema('refreshImportedGameTags', { params: importedGameIdParamsSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
@@ -194,10 +214,10 @@ export default async function importedGamesModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/full-refresh-runs',
-    operation: createImportedGameFullRefreshRunOpenApiOperation,
+    schema: importedGamesRouteSchema('createImportedGameFullRefreshRun', { params: importedGameIdParamsSchema }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
@@ -225,32 +245,37 @@ export default async function importedGamesModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
-    url: '/api/imported-games/:gameId/pgn',
-    operation: getImportedGamePgnOpenApiOperation,
-    handler: async (request, reply) => {
+  app.get('/api/imported-games/:gameId/pgn', {
+    schema: {
+      operationId: 'getImportedGamePgn',
+      tags: ['Imported games'],
+      summary: 'Get PGN for one imported game',
+      params: importedGameIdParamsSchema,
+      response: {
+        200: importedGamePgnResponseSchema,
+        400: legacyApiErrorResponseSchema,
+        401: legacyMessageResponseSchema,
+        404: legacyMessageResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
 
-      const game = await ImportedGamesService.getPgn(auth.userId, gameId);
+      const game = await ImportedGamesService.getPgn(auth.userId, request.params.gameId);
       if (!game) {
-        reply.code(404);
-        return { message: 'Imported game not found' };
+        return reply.code(404).send({ message: 'Imported game not found' });
       }
       return game;
-    },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/ply-index',
-    operation: indexImportedGamePlyOpenApiOperation,
+    schema: importedGamesRouteSchema('indexImportedGamePly', {
+      params: importedGameIdParamsSchema,
+      body: forceSchema,
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
@@ -278,4 +303,6 @@ export default async function importedGamesModule(app: FastifyInstance) {
       }
     },
   });
-}
+};
+
+export default importedGamesModule;

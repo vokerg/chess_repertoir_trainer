@@ -1,6 +1,6 @@
-# Skill: Contracts
+# Working guide: Contracts
 
-Use this skill when defining or changing request/response shapes shared between API and web.
+Use this guide when defining or changing request/response shapes shared between API and web. The procedural agent workflow is `.github/skills/api-contract-change/SKILL.md`.
 
 ## Goal
 
@@ -8,7 +8,7 @@ Keep API boundary shapes explicit and shared without confusing them with domain 
 
 ## Current status
 
-`packages/contracts` is scaffolded but not wired into root workspaces yet. Do not rely on it in build-critical API or web code until `package-lock.json` is regenerated and the root workspace is updated.
+`packages/contracts` is an active root workspace, but schemas are exported only after verification against the real route, mapper, Angular consumer, and tests. Do not revive the deleted provisional exports.
 
 ## What belongs in contracts
 
@@ -67,13 +67,13 @@ Do not expose a Prisma model by default just because it exists. Decide what the 
 2. Define the request schema if the endpoint accepts a body.
 3. Define the response schema if the response is consumed by web.
 4. Export inferred TypeScript types.
-5. Update API validation to use the schema once contracts are wired.
-6. Update frontend API calls to use the inferred types once contracts are wired.
+5. Update API route validation/serialization to use the schema.
+6. Update frontend API calls to use the inferred types.
 7. Avoid adding behavior to the contract file.
 
-## Wiring contracts into the repo
+## Workspace status
 
-This is future integration work, not current architecture. When it is explicitly requested, add the package to the root workspace and regenerate the lockfile in the same change. Do not partially adopt contract imports before that work is complete.
+The package is wired into root, API, web, CI, and deployment build order. Product exports still move only as complete endpoint slices; workspace activation alone does not make an unverified shape authoritative.
 
 Run the narrowest relevant validation when practical and report what was and was not run.
 

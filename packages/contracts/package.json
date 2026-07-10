@@ -4,12 +4,29 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./imported-games": {
+      "types": "./dist/imported-games/index.d.ts",
+      "default": "./dist/imported-games/index.js"
+    },
+    "./board-images": {
+      "types": "./dist/board-images/index.d.ts",
+      "default": "./dist/board-images/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node -e \"console.log('No contracts tests yet')\""
+    "test": "npm run build && node -e \"require('./dist/index.js')\""
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0"

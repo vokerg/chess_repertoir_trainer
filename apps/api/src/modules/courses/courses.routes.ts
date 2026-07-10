@@ -24,13 +24,31 @@ import { PgnService } from '../../services/pgnService';
 import { applyAnalysisReintegrationSchema, previewAnalysisReintegrationSchema } from './analysis-reintegration.schemas';
 import { AnalysisReintegrationError, AnalysisReintegrationService } from './analysis-reintegration.service';
 import { getAvailableSublineRows } from './sublines.service';
-import { registerOpenApiRoute } from '../../openapi/route-registry';
 
 const importPgnSchema = z.object({
   name: z.string().min(1),
   sideToTrain: z.enum(['WHITE', 'BLACK']),
   startingFen: z.string().optional(),
   pgn: z.string().min(1),
+});
+
+const courseIdParamsSchema = z.object({ courseId: z.coerce.number().int().positive() });
+const sublineSchema = z.object({
+  hash: z.string(),
+  canonicalKeyVersion: z.number().int(),
+  lineId: z.number().int(),
+  lineName: z.string(),
+  chapterId: z.number().int(),
+  chapterName: z.string(),
+  leafNodeId: z.number().int(),
+  moveText: z.string(),
+  moves: z.array(z.object({
+    nodeId: z.number().int(),
+    moveUci: z.string(),
+    moveSan: z.string(),
+    plyNumber: z.number().int(),
+    sortOrder: z.number().int(),
+  })),
 });
 
 export default async function coursesModule(app: FastifyInstance) {
@@ -53,7 +71,7 @@ export default async function coursesModule(app: FastifyInstance) {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     const parsed = positionSuggestionsQuerySchema.safeParse(request.query ?? {});
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
     try {
       return await CoursePositionSuggestionService.listForFen(auth.userId, parsed.data.fen);
     } catch (err: any) {
@@ -174,35 +192,18 @@ export default async function coursesModule(app: FastifyInstance) {
     return lines;
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/courses/:courseId/sublines',
-    operation: {
+    schema: {
+      operationId: 'listCourseSublines',
       tags: ['Courses'],
       summary: 'List all terminal move-tree variations in a course',
-      parameters: [{ name: 'courseId', in: 'path', required: true,
-        schema: { type: 'integer', minimum: 1 } }],
-      responses: {
-        '200': {
-          description: 'One row per available terminal variation',
-          content: { 'application/json': { schema: { type: 'array', items: {
-            type: 'object',
-            required: ['hash', 'canonicalKeyVersion', 'lineId', 'lineName', 'chapterId', 'chapterName', 'leafNodeId', 'moves', 'moveText'],
-            properties: {
-              hash: { type: 'string' }, canonicalKeyVersion: { type: 'integer' },
-              lineId: { type: 'integer' }, lineName: { type: 'string' },
-              chapterId: { type: 'integer' }, chapterName: { type: 'string' },
-              leafNodeId: { type: 'integer' }, moveText: { type: 'string' },
-              moves: { type: 'array', items: { type: 'object',
-                required: ['nodeId', 'moveUci', 'moveSan', 'plyNumber', 'sortOrder'],
-                properties: { nodeId: { type: 'integer' }, moveUci: { type: 'string' },
-                  moveSan: { type: 'string' }, plyNumber: { type: 'integer' },
-                  sortOrder: { type: 'integer' } } } },
-            },
-          } } } },
-        },
-        '400': { description: 'Invalid course id' },
-        '404': { description: 'Course not found' },
+      params: courseIdParamsSchema,
+      response: {
+        200: z.array(sublineSchema),
+        400: z.object({ error: z.string() }),
+        404: z.object({ error: z.string() }),
       },
     },
     handler: async (request, reply) => {
@@ -224,7 +225,7 @@ export default async function coursesModule(app: FastifyInstance) {
     const chapterId = Number((request.params as any).chapterId);
     if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
     const parsed = previewAnalysisReintegrationSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
     try {
       return await AnalysisReintegrationService.previewChapter(auth.userId, chapterId, parsed.data);
     } catch (error) {
@@ -239,7 +240,7 @@ export default async function coursesModule(app: FastifyInstance) {
     const chapterId = Number((request.params as any).chapterId);
     if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
     const parsed = applyAnalysisReintegrationSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
     try {
       return await AnalysisReintegrationService.applyToChapter(auth.userId, chapterId, parsed.data);
     } catch (error) {
@@ -269,7 +270,7 @@ export default async function coursesModule(app: FastifyInstance) {
     if (!auth) return;
     const chapterId = Number((request.params as any).chapterId);
     const parsed = importPgnSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
     try {
       const line = await PgnService.importLine(auth.userId, chapterId, parsed.data);
       return reply.status(201).send(line);
@@ -364,7 +365,7 @@ export default async function coursesModule(app: FastifyInstance) {
     if (!auth) return;
     const lineId = Number((request.params as any).lineId);
     const bodyResult = createNodeSchema.safeParse(request.body);
-    if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.errors });
+    if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.issues });
     try {
       const node = await MoveNodeService.create(auth.userId, lineId, bodyResult.data);
       return reply.status(201).send(node);
@@ -381,7 +382,7 @@ export default async function coursesModule(app: FastifyInstance) {
     if (!auth) return;
     const id = Number((request.params as any).id);
     const bodyResult = updateNodeSchema.safeParse(request.body);
-    if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.errors });
+    if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.issues });
     try {
       const node = await MoveNodeService.update(auth.userId, id, bodyResult.data);
       if (!node) return reply.status(404).send({ message: 'Node not found' });

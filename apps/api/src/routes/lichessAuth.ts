@@ -49,7 +49,7 @@ export default async function lichessAuthRoutes(app: FastifyInstance) {
     const parsed = challengeBotSchema.safeParse(request.body);
     if (!parsed.success) {
       reply.code(400);
-      return { error: parsed.error.errors };
+      return { error: parsed.error.issues };
     }
 
     try {
@@ -75,7 +75,7 @@ export default async function lichessAuthRoutes(app: FastifyInstance) {
   app.get('/api/auth/lichess/callback', async (request, reply) => {
     const parsed = callbackQuerySchema.safeParse(request.query);
     if (!parsed.success) {
-      return reply.code(400).send({ error: parsed.error.errors });
+      return reply.code(400).send({ error: parsed.error.issues });
     }
 
     try {
