@@ -21,6 +21,9 @@
     [tree]="tree()"
     [selectedNodeId]="selectedNodeId()"
     [rootLabel]="rootLabel()"
+    [deletionEnabled]="deletionEnabled()"
+    [deletionDisabled]="deletionDisabled()"
     (nodeSelected)="nodeSelected.emit($event)"
+    (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
   />
 </section>
