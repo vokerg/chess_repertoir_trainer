@@ -174,7 +174,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       params: importedGameParamsSchema,
       response: {
         200: legacyOpaqueResponseSchema,
-        400: validationErrorResponseSchema,
+        400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
       },
@@ -207,7 +207,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       body: clientGameAnalysisRunSchema,
       response: {
         201: legacyOpaqueResponseSchema,
-        400: validationErrorResponseSchema,
+        400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
       },
@@ -246,7 +246,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       body: updatePlyAnalysisSchema,
       response: {
         200: legacyOpaqueResponseSchema,
-        400: validationErrorResponseSchema,
+        400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
       },
@@ -279,7 +279,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       params: importedGameParamsSchema,
       response: {
         200: legacyOpaqueResponseSchema,
-        400: validationErrorResponseSchema,
+        400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,
       },
