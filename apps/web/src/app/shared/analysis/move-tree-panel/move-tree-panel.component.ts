@@ -18,8 +18,11 @@ export class MoveTreePanelComponent {
   readonly help = input<string>();
   readonly rootLabel = input('Start');
   readonly copyLabel = input('Copy line');
+  readonly deletionEnabled = input(false);
+  readonly deletionDisabled = input(false);
 
   readonly nodeSelected = output<number>();
+  readonly deleteSelectedSubtree = output<void>();
 
   protected readonly copyLine = computed(() => {
     const tree = this.tree();
@@ -47,7 +50,6 @@ export class MoveTreePanelComponent {
       const childPath = this.findPath(child, selectedNodeId);
       if (childPath) return [node, ...childPath];
     }
-
     return null;
   }
 

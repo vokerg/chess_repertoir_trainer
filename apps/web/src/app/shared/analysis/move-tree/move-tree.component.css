@@ -39,6 +39,14 @@
   font-weight: 700;
 }
 
+.move-tree-node-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  min-width: 0;
+  justify-self: start;
+}
+
 .move-tree-node-button {
   display: inline-flex;
   align-items: center;
@@ -74,6 +82,61 @@
 
 .move-tree-node-opponent {
   box-shadow: none;
+}
+
+.move-tree-delete-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-0.12rem);
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease,
+    transform 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.move-tree-delete-action svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.move-tree-step-row:hover .move-tree-delete-action,
+.move-tree-step-row:focus-within .move-tree-delete-action {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.move-tree-delete-action:hover:not(:disabled),
+.move-tree-delete-action:focus-visible:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger, #c43d3d) 34%, transparent);
+  background: color-mix(in srgb, var(--danger, #c43d3d) 9%, transparent);
+  color: var(--danger, #a72d2d);
+}
+
+.move-tree-delete-action:disabled {
+  cursor: wait;
+  opacity: 0.38;
 }
 
 .move-tree-meta {
@@ -137,6 +200,15 @@
   padding-left: 0.5rem;
   border-left: 1px solid color-mix(in srgb, var(--border-subtle, rgba(255, 255, 255, 0.12)) 70%, transparent);
   margin-left: 0.9rem;
+}
+
+@media (hover: none) {
+  .move-tree-step-row-selected .move-tree-delete-action {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
 }
 
 @media (max-width: 640px) {

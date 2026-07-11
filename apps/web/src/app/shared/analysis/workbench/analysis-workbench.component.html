@@ -38,7 +38,10 @@
       [title]="treeTitle()"
       [help]="treeHelp()"
       [rootLabel]="treeRootLabel()"
+      [deletionEnabled]="showDangerZone()"
+      [deletionDisabled]="deleting()"
       (nodeSelected)="nodeSelected.emit($event)"
+      (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
     />
 
     <app-stockfish-panel
@@ -49,22 +52,5 @@
     />
 
     <ng-content select="[analysisWorkbenchSideExtra]"></ng-content>
-
-    @if (showDangerZone()) {
-      <section class="danger-zone">
-        <h3 class="workbench-panel-title">{{ dangerTitle() }}</h3>
-        <p class="workbench-panel-subtitle">{{ dangerHelp() }}</p>
-        <div class="board-action-row">
-          <button
-            type="button"
-            class="danger"
-            [disabled]="deleteDisabled() || deleting()"
-            (click)="deleteSelectedSubtree.emit()"
-          >
-            {{ deleteButtonLabel() }}
-          </button>
-        </div>
-      </section>
-    }
   </div>
 </div>
