@@ -1,5 +1,15 @@
 import { Injectable, inject } from '@angular/core';
-import { EngineAnalysis, StockfishAnalysisService } from '../../../shared/chess/engine/stockfish-analysis.service';
+import { Chess } from 'chess.js';
+import {
+  EngineAnalysis,
+  StockfishAnalysisService,
+} from '../../../shared/chess/engine/stockfish-analysis.service';
+
+const ENGINE_NAME = 'Stockfish 18 (browser)';
+
+function isUciMove(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(value);
+}
 
 export interface TrainerEngineResult {
   engineName: string;
@@ -19,6 +29,9 @@ export class TrainerEngineService {
   private readonly pvMoveLimit = 10;
 
   async analyze(fen: string): Promise<TrainerEngineResult> {
+    const terminalResult = this.terminalResult(fen);
+    if (terminalResult) return terminalResult;
+
     const analysis = await this.stockfish.analyzeOnce(fen, {
       depth: this.depth,
       multipv: this.multipv,
@@ -27,14 +40,40 @@ export class TrainerEngineService {
       keepAlive: true,
     });
     const bestLine = analysis.lines[0];
+    const bestMove = [analysis.bestMove, bestLine?.pv?.[0]].find(isUciMove) ?? null;
+    const raw = analysis.bestMove === bestMove ? analysis : { ...analysis, bestMove };
     return {
-      engineName: 'Stockfish 18 (browser)',
+      engineName: ENGINE_NAME,
       depth: bestLine?.depth || this.depth,
       multipv: this.multipv,
-      bestMove: analysis.bestMove ?? bestLine?.pv?.[0] ?? null,
+      bestMove,
       scoreCpWhite: this.fromSideToMove(bestLine?.scoreCp, fen),
       mateWhite: this.fromSideToMove(bestLine?.mate, fen),
-      raw: analysis,
+      raw,
+    };
+  }
+
+  private terminalResult(fen: string): TrainerEngineResult | null {
+    const chess = new Chess(fen);
+    if (!chess.isGameOver()) return null;
+
+    const mateWhite = chess.isCheckmate() ? (chess.turn() === 'b' ? 1 : -1) : null;
+    const raw: EngineAnalysis = {
+      fen,
+      running: false,
+      ready: true,
+      error: null,
+      bestMove: null,
+      lines: [],
+    };
+    return {
+      engineName: ENGINE_NAME,
+      depth: this.depth,
+      multipv: this.multipv,
+      bestMove: null,
+      scoreCpWhite: mateWhite === null ? 0 : null,
+      mateWhite,
+      raw,
     };
   }
 
