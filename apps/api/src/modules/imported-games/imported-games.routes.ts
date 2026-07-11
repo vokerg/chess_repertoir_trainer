@@ -23,11 +23,10 @@ import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis
 import { ImportedGameBatchAnalysisService } from '../analysis/batch-game-analysis.service';
 import { z } from 'zod';
 import {
-  apiErrorResponseSchema,
   legacyOpaqueResponseSchema,
   unauthorizedResponseSchema,
 } from '../../routes/legacy-route.schemas';
-import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
+import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const forceSchema = z.object({ force: z.boolean().optional() });
 const importedGamesRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
@@ -68,7 +67,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Get core opening analysis for one board position',
       description: 'Returns position WDL, next moves, and opening-book lookup for the current user filters.',
       querystring: openingAnalysisQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -89,7 +88,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Get opening-position performance',
       description: 'Returns bounded database-backed performance buckets for games reaching the position.',
       querystring: openingAnalysisQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -109,7 +108,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
     schema: importedGamesRouteSchema('getOpeningAnalysisTopGames', {
       summary: 'Get recent games reaching an opening position',
       querystring: openingAnalysisTopGamesQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);

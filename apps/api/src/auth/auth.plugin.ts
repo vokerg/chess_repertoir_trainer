@@ -66,7 +66,7 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
 
   app.decorateRequest('auth', null);
 
-  app.addHook('preHandler', async (request, reply) => {
+  app.addHook('onRequest', async (request, reply) => {
     if (isPublicRequest(request)) return;
 
     if (config.mode === 'dev-single-user') {

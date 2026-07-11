@@ -16,12 +16,11 @@ import { ImportedGameAnalysisWorkflowService } from './imported-game-analysis-wo
 import { PositionAnalysisService } from './position-analysis.service';
 import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
 import {
-  apiErrorResponseSchema,
   legacyOpaqueResponseSchema,
   messageResponseSchema,
   unauthorizedResponseSchema,
 } from '../../routes/legacy-route.schemas';
-import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
+import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const batchAnalysisRequestSchema = z.object({
   gameIds: z.array(z.number().int().positive()).min(1).max(500),
@@ -55,7 +54,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       body: batchAnalysisRequestSchema,
       response: {
         200: z.object({ accepted: z.literal(true), gameIds: z.array(z.number().int().positive()) }),
-        400: validationErrorResponseSchema,
+        400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         403: apiErrorResponseSchema,
       },
@@ -88,7 +87,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('getPositionAnalysis', {
       summary: 'Look up cached analysis for one position',
       querystring: positionAnalysisLookupSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -109,7 +108,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('bulkLookupPositionAnalysis', {
       summary: 'Look up cached analysis for multiple positions',
       body: bulkPositionAnalysisLookupSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -130,7 +129,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('storePositionAnalysis', {
       summary: 'Store analysis for one position',
       body: storePositionAnalysisSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -152,7 +151,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
     schema: analysisRouteSchema('bulkStorePositionAnalysis', {
       summary: 'Store analysis for multiple positions',
       body: bulkStorePositionAnalysisSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
