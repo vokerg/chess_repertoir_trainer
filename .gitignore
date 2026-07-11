@@ -42,7 +42,7 @@ apps/api/prisma/*.d.ts
 apps/api/prisma/generated/
 
 # Generated course exports are personal backup data.
-backups/courses/
+#backups/courses/
 
 # Keep data folder, but do not commit local DB files
 data/*.db
