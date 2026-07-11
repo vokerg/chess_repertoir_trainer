@@ -72,7 +72,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       const acceptedGameIds = await ImportedGameBatchAnalysisService.enqueue(auth.userId, gameIds);
       reply.code(200);
       return {
-        accepted: true,
+        accepted: true as const,
         gameIds: acceptedGameIds,
       };
     } catch (err: any) {
