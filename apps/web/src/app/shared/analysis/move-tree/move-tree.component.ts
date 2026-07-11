@@ -17,7 +17,10 @@ export class MoveTreeComponent {
   readonly tree = input<AnalysisTree | null>(null);
   readonly selectedNodeId = input<number | null>(null);
   readonly rootLabel = input('Start');
+  readonly deletionEnabled = input(false);
+  readonly deletionDisabled = input(false);
   readonly nodeSelected = output<number>();
+  readonly deleteSelectedSubtree = output<void>();
 
   protected mainlineNodes(start: AnalysisTreeNode | null | undefined): AnalysisTreeNode[] {
     const nodes: AnalysisTreeNode[] = [];
@@ -87,6 +90,24 @@ export class MoveTreeComponent {
     if (typeof node.node.evalCpWhite !== 'number') return null;
     const pawns = node.node.evalCpWhite / 100;
     return pawns > 0 ? `+${pawns.toFixed(1)}` : pawns.toFixed(1);
+  }
+
+  protected canDeleteNode(node: AnalysisTreeNode): boolean {
+    if (!this.deletionEnabled() || node.node.id === 0) return false;
+
+    const source = (
+      node.node as AnalysisTreeNode['node'] & { source?: 'GAME' | 'LOCAL' }
+    ).source;
+    return source === undefined || source === 'LOCAL';
+  }
+
+  protected requestDelete(node: AnalysisTreeNode, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.canDeleteNode(node) || this.deletionDisabled()) return;
+
+    this.nodeSelected.emit(node.node.id);
+    this.deleteSelectedSubtree.emit();
   }
 
   private normalizedClassification(node: AnalysisTreeNode): string | null {
