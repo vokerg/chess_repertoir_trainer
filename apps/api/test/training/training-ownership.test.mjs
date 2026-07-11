@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import Fastify from 'fastify';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import prismaModule from '../../dist/prisma.js';
 import {
   ChapterService,
@@ -48,6 +49,8 @@ try {
   );
 
   app = Fastify();
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
   app.decorateRequest('auth', null);
   app.addHook('onRequest', async (request) => {
     request.auth = {

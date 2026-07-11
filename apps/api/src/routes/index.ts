@@ -8,7 +8,6 @@ import importedGamesModule from '../modules/imported-games/imported-games.routes
 import labModule from '../modules/lab/lab.routes';
 import externalAccountsRoutes from './externalAccounts';
 import lichessAuthRoutes from './lichessAuth';
-import swaggerRoutes from './swagger';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
 import mcpModule from '../modules/mcp/mcp.routes';
 import boardImagesModule from '../modules/board-images/board-images.routes';
@@ -28,5 +27,4 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(scenarioTrainingModule);
   app.register(lichessAuthRoutes);
   app.register(externalAccountsRoutes);
-  app.register(swaggerRoutes);
 }

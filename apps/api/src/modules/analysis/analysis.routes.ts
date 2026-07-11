@@ -1,18 +1,6 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { requireAuth } from '../../auth/request-auth';
 import { z } from 'zod';
-import { registerOpenApiRoute, registerOpenApiSchemas } from '../../openapi/route-registry';
-import {
-  analysisOpenApiSchemas,
-  bulkPositionAnalysisLookupOpenApiOperation,
-  bulkStorePositionAnalysisOpenApiOperation,
-  clearPlyAnalysisOpenApiOperation,
-  createClientGameAnalysisRunOpenApiOperation,
-  getImportedGameAnalysisOpenApiOperation,
-  getPositionAnalysisOpenApiOperation,
-  storePositionAnalysisOpenApiOperation,
-  updatePlyAnalysisOpenApiOperation,
-} from './analysis.openapi';
 import {
   bulkPositionAnalysisLookupSchema,
   bulkStorePositionAnalysisSchema,
@@ -27,26 +15,51 @@ import { GameAnalysisService } from './game-analysis.service';
 import { ImportedGameAnalysisWorkflowService } from './imported-game-analysis-workflow.service';
 import { PositionAnalysisService } from './position-analysis.service';
 import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
-
-function parseGameId(params: unknown): number | null {
-  const gameId = Number((params as any).gameId);
-  return Number.isInteger(gameId) && gameId > 0 ? gameId : null;
-}
+import {
+  legacyOpaqueResponseSchema,
+  messageResponseSchema,
+  unauthorizedResponseSchema,
+} from '../../routes/legacy-route.schemas';
+import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const batchAnalysisRequestSchema = z.object({
   gameIds: z.array(z.number().int().positive()).min(1).max(500),
 });
 
-export default async function analysisModule(app: FastifyInstance) {
-  registerOpenApiSchemas(analysisOpenApiSchemas);
+const importedGameParamsSchema = z.object({ gameId: z.coerce.number().int().positive() });
+const analysisRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
+  operationId,
+  tags: ['Analysis'],
+  ...extra,
+});
 
-  app.get('/api/imported-games/batch-analysis/config', async (request, reply) => {
+const analysisModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/imported-games/batch-analysis/config', {
+    schema: analysisRouteSchema('getBatchAnalysisConfig', {
+      summary: 'Get local batch-analysis availability',
+      response: {
+        200: z.object({ enabled: z.boolean() }),
+        401: unauthorizedResponseSchema,
+      },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return { enabled: isLocalBatchStockfishAnalysisEnabled() };
   });
 
-  app.post('/api/imported-games/batch-analysis-runs', async (request, reply) => {
+  app.post('/api/imported-games/batch-analysis-runs', {
+    schema: analysisRouteSchema('createBatchAnalysisRun', {
+      summary: 'Queue analysis for imported games',
+      body: batchAnalysisRequestSchema,
+      response: {
+        200: z.object({ accepted: z.literal(true), gameIds: z.array(z.number().int().positive()) }),
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        403: apiErrorResponseSchema,
+      },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     if (!isLocalBatchStockfishAnalysisEnabled()) {
@@ -54,18 +67,12 @@ export default async function analysisModule(app: FastifyInstance) {
       return { error: 'Local batch Stockfish analysis is disabled' };
     }
 
-    const parsed = batchAnalysisRequestSchema.safeParse(request.body ?? {});
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    const gameIds = Array.from(new Set(parsed.data.gameIds));
+    const gameIds = Array.from(new Set(request.body.gameIds));
     try {
       const acceptedGameIds = await ImportedGameBatchAnalysisService.enqueue(auth.userId, gameIds);
       reply.code(200);
       return {
-        accepted: true,
+        accepted: true as const,
         gameIds: acceptedGameIds,
       };
     } catch (err: any) {
@@ -74,21 +81,19 @@ export default async function analysisModule(app: FastifyInstance) {
     }
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/position-analysis',
-    operation: getPositionAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('getPositionAnalysis', {
+      summary: 'Look up cached analysis for one position',
+      querystring: positionAnalysisLookupSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = positionAnalysisLookupSchema.safeParse(request.query ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
-
       try {
-        const positionAnalysis = await PositionAnalysisService.getPositionAnalysis(parsed.data.fen);
+        const positionAnalysis = await PositionAnalysisService.getPositionAnalysis(request.query.fen);
         return { positionAnalysis };
       } catch (err: any) {
         reply.code(400);
@@ -97,21 +102,19 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/position-analysis/bulk-lookup',
-    operation: bulkPositionAnalysisLookupOpenApiOperation,
+    schema: analysisRouteSchema('bulkLookupPositionAnalysis', {
+      summary: 'Look up cached analysis for multiple positions',
+      body: bulkPositionAnalysisLookupSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = bulkPositionAnalysisLookupSchema.safeParse(request.body ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
-
       try {
-        const positionAnalyses = await PositionAnalysisService.getPositionAnalyses(parsed.data.fens);
+        const positionAnalyses = await PositionAnalysisService.getPositionAnalyses(request.body.fens);
         return { positionAnalyses };
       } catch (err: any) {
         reply.code(400);
@@ -120,21 +123,19 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/position-analysis/store',
-    operation: storePositionAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('storePositionAnalysis', {
+      summary: 'Store analysis for one position',
+      body: storePositionAnalysisSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = storePositionAnalysisSchema.safeParse(request.body ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
-
       try {
-        const positionAnalysis = await PositionAnalysisService.storePositionSearch(parsed.data);
+        const positionAnalysis = await PositionAnalysisService.storePositionSearch(request.body);
         // Legacy compatibility for older clients. Bulk-store intentionally returns only positionAnalyses.
         return { positionAnalysis, position: positionAnalysis };
       } catch (err: any) {
@@ -144,21 +145,19 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/position-analysis/bulk-store',
-    operation: bulkStorePositionAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('bulkStorePositionAnalysis', {
+      summary: 'Store analysis for multiple positions',
+      body: bulkStorePositionAnalysisSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = bulkStorePositionAnalysisSchema.safeParse(request.body ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
-
       try {
-        const positionAnalyses = await PositionAnalysisService.storePositionSearches(parsed.data.positions);
+        const positionAnalyses = await PositionAnalysisService.storePositionSearches(request.body.positions);
         return { positionAnalyses };
       } catch (err: any) {
         reply.code(400);
@@ -167,18 +166,23 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/imported-games/:gameId/analysis',
-    operation: getImportedGameAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('getImportedGameAnalysis', {
+      summary: 'Get the latest analysis run for an imported game',
+      params: importedGameParamsSchema,
+      response: {
+        200: legacyOpaqueResponseSchema,
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: apiErrorResponseSchema,
+      },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
+      const gameId = request.params.gameId;
 
       try {
         return await GameAnalysisService.getImportedGameAnalysis(auth.userId, gameId);
@@ -194,30 +198,30 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/analysis-runs',
-    operation: createClientGameAnalysisRunOpenApiOperation,
+    schema: analysisRouteSchema('createClientGameAnalysisRun', {
+      summary: 'Record a client-computed imported-game analysis run',
+      params: importedGameParamsSchema,
+      body: clientGameAnalysisRunSchema,
+      response: {
+        201: legacyOpaqueResponseSchema,
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: apiErrorResponseSchema,
+      },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
-
-      const parsed = clientGameAnalysisRunSchema.safeParse(request.body ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
+      const gameId = request.params.gameId;
 
       try {
         const result = await ImportedGameAnalysisWorkflowService.recordClientAnalysisAndRefreshTags(
           auth.userId,
           gameId,
-          parsed.data,
+          request.body,
         );
         reply.code(201);
         return result;
@@ -233,27 +237,27 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'patch',
+  app.route({
+    method: 'PATCH',
     url: '/api/imported-games/:gameId/plies/analysis',
-    operation: updatePlyAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('updateImportedGamePlyAnalysis', {
+      summary: 'Update analysis classifications for imported-game plies',
+      params: importedGameParamsSchema,
+      body: updatePlyAnalysisSchema,
+      response: {
+        200: legacyOpaqueResponseSchema,
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: apiErrorResponseSchema,
+      },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
-
-      const parsed = updatePlyAnalysisSchema.safeParse(request.body ?? {});
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.errors };
-      }
+      const gameId = request.params.gameId;
 
       try {
-        return await updateImportedGamePlyAnalysis(auth.userId, gameId, parsed.data.plies);
+        return await updateImportedGamePlyAnalysis(auth.userId, gameId, request.body.plies);
       } catch (err: any) {
         const message = err?.message ?? String(err);
         if (message === 'Imported game not found') {
@@ -266,18 +270,24 @@ export default async function analysisModule(app: FastifyInstance) {
     },
   });
 
-  registerOpenApiRoute(app, {
-    method: 'post',
+  app.route({
+    method: 'POST',
     url: '/api/imported-games/:gameId/plies/analysis/clear',
-    operation: clearPlyAnalysisOpenApiOperation,
+    schema: analysisRouteSchema('clearImportedGamePlyAnalysis', {
+      summary: 'Clear persisted analysis from imported-game plies',
+      description: 'Bodyless action: the imported game id fully identifies the analysis rows to clear.',
+      params: importedGameParamsSchema,
+      response: {
+        200: legacyOpaqueResponseSchema,
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: apiErrorResponseSchema,
+      },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
+      const gameId = request.params.gameId;
 
       try {
         return await clearImportedGamePlyAnalysis(auth.userId, gameId);
@@ -292,4 +302,6 @@ export default async function analysisModule(app: FastifyInstance) {
       }
     },
   });
-}
+};
+
+export default analysisModule;

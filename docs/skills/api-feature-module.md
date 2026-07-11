@@ -18,7 +18,7 @@ modules/
   training-marathons/    marathon workflow
 ```
 
-`apps/api/src/routes/index.ts` is the source of truth. It also registers global `externalAccounts` and Swagger routes. Global services and repositories remain in use, including provider import services and some training, stats, PGN, and current-user logic.
+`apps/api/src/routes/index.ts` is the route composition source of truth. It also registers global external-account and authentication routes. Global services and repositories remain in use, including provider import services and some training, stats, PGN, and current-user logic.
 
 These global files are accepted legacy debt. They describe the current implementation, not the preferred shape for new work. In particular, there are no current `games` or `importers` modules.
 
@@ -27,7 +27,8 @@ These global files are accepted legacy debt. They describe the current implement
 - Extend the owning module under `apps/api/src/modules` when one exists.
 - Keep route handlers focused on HTTP parsing, validation, service calls, and expected error mapping.
 - Put feature workflow and Prisma access in feature-local services/repositories where practical.
-- Keep route-local schemas and OpenAPI metadata with modules that already use that pattern.
+- Make narrow changes without spreading old organizational patterns. Do not add `*.openapi.ts`, an OpenAPI registry, or a merge layer.
+- Change endpoints vertically with shared contracts where appropriate and Fastify route schemas as described in `docs/api-conventions.md` and `.github/skills/openapi-route-migration/SKILL.md`.
 - Register module routes only in `apps/api/src/routes/index.ts`.
 - Avoid deep imports into another module's internals.
 - Reuse chess logic from `packages/chess-domain` instead of duplicating it.

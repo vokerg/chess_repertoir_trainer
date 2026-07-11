@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
@@ -51,7 +51,7 @@ export class LineEditorStore implements OnDestroy {
   readonly notesSaving = signal(false);
   readonly notesSaved = signal(false);
   readonly notesError = signal<string | null>(null);
-  readonly gamesFacets = signal<ImportedGameFacetsResponse>({});
+  readonly gamesFacets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly gamesFilters = signal<GameFilters>(defaultOpeningFilters());
   readonly gamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
   readonly gamesLoading = signal(false);
@@ -343,7 +343,7 @@ export class LineEditorStore implements OnDestroy {
     try {
       this.gamesFacets.set((await firstValueFrom(this.positionGameMovesApi.getFacets())) || {});
     } catch {
-      this.gamesFacets.set({});
+      this.gamesFacets.set(emptyImportedGameFacets());
     }
   }
 }

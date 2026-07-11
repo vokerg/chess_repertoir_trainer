@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyRequest } from 'fastify';
-import { loadAuthConfig } from './auth.config';
+import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
 
 const PUBLIC_PATHS = new Set([
@@ -14,7 +14,8 @@ const PUBLIC_PATHS = new Set([
 ]);
 
 function isPublicRequest(request: FastifyRequest) {
-  return request.method === 'OPTIONS' || PUBLIC_PATHS.has(request.url.split('?', 1)[0]);
+  const path = request.url.split('?', 1)[0];
+  return request.method === 'OPTIONS' || PUBLIC_PATHS.has(path) || path.startsWith('/api/docs/');
 }
 
 function readCookie(request: FastifyRequest, name: string) {
@@ -52,8 +53,12 @@ function readDisplayName(payload: Record<string, unknown>) {
   return typeof name === 'string' && name.length > 0 ? name : undefined;
 }
 
-export default fp(async function authPlugin(app) {
-  const config = loadAuthConfig();
+export interface AuthPluginOptions {
+  authConfig?: AuthConfig;
+}
+
+export default fp(async function authPlugin(app, options: AuthPluginOptions) {
+  const config = options.authConfig ?? loadAuthConfig();
   const { createRemoteJWKSet, jwtVerify } = config.mode === 'clerk'
     ? await import('jose')
     : { createRemoteJWKSet: null, jwtVerify: null };

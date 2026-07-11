@@ -1,4 +1,5 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { requireAuth } from '../../auth/request-auth';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
@@ -14,73 +15,81 @@ import {
 import { trainingLogQuerySchema } from './training-log/training-log.schema';
 import { getTrainingLog } from './training-log/training-log.service';
 import { getTopOpponents } from './top-opponents/top-opponents.service';
+import { legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
-function parseLimit(value: unknown) {
-  const limit = Number(value ?? 50);
-  if (!Number.isInteger(limit)) return 50;
-  return Math.min(Math.max(limit, 1), 200);
-}
+const limitQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) });
+const monthlyGamesQuerySchema = z.object({
+  excludeBullet: z.preprocess((value) => value === 'true' ? true : value === 'false' ? false : value, z.boolean().default(false)),
+});
+const labSchema = <T extends Record<string, unknown>>(operationId: string, summary: string, extra: T) => ({ operationId, tags: ['Lab'], summary, ...extra });
 
-function parseBoolean(value: unknown) {
-  return value === true || value === 'true';
-}
-
-export default async function labModule(app: FastifyInstance) {
-  app.get('/api/lab/top-opponents', async (request, reply) => {
+const labModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/lab/top-opponents', {
+    schema: labSchema('getTopOpponents', 'Get the most frequently faced opponents', {
+      querystring: limitQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const query = request.query as { limit?: string };
-    return getTopOpponents(auth.userId, parseLimit(query.limit));
+    return getTopOpponents(auth.userId, request.query.limit);
   });
 
-  app.get('/api/lab/monthly-games', async (request, reply) => {
+  app.get('/api/lab/monthly-games', {
+    schema: labSchema('getMonthlyGames', 'Get imported-game counts by month', {
+      querystring: monthlyGamesQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const query = request.query as { excludeBullet?: string };
-    return getMonthlyGames(auth.userId, { excludeBullet: parseBoolean(query.excludeBullet) });
+    return getMonthlyGames(auth.userId, { excludeBullet: request.query.excludeBullet });
   });
 
-  app.get('/api/lab/opening-struggles', async (request, reply) => {
+  app.get('/api/lab/opening-struggles', {
+    schema: labSchema('getOpeningStruggles', 'Find openings with the weakest results', {
+      querystring: openingStrugglesQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = openingStrugglesQuerySchema.safeParse(request.query ?? {});
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-    return getOpeningStruggles(auth.userId, parsed.data);
+    return getOpeningStruggles(auth.userId, request.query);
   });
 
-  app.get('/api/lab/training-log', async (request, reply) => {
+  app.get('/api/lab/training-log', {
+    schema: labSchema('getTrainingLog', 'Get the training activity log', {
+      querystring: trainingLogQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = trainingLogQuerySchema.safeParse(request.query ?? {});
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-    return getTrainingLog(auth.userId, parsed.data);
+    return getTrainingLog(auth.userId, request.query);
   });
 
-  app.post('/api/lab/tactical-detections/run', async (request, reply) => {
+  app.post('/api/lab/tactical-detections/run', {
+    schema: labSchema('runTacticalDetection', 'Run tactical detection over imported games', {
+      body: tacticalDetectionRunSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = tacticalDetectionRunSchema.safeParse(request.body ?? {});
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-    return runTacticalDetection(auth.userId, parsed.data);
+    return runTacticalDetection(auth.userId, request.body);
   });
 
-  app.get('/api/lab/tactical-detections', async (request, reply) => {
+  app.get('/api/lab/tactical-detections', {
+    schema: labSchema('listTacticalDetections', 'List detected tactical opportunities', {
+      querystring: tacticalDetectionListSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = tacticalDetectionListSchema.safeParse(request.query ?? {});
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-    return getTacticalDetections(auth.userId, parsed.data);
+    return getTacticalDetections(auth.userId, request.query);
   });
-}
+};
+
+export default labModule;

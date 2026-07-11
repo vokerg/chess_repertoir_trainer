@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import Fastify from 'fastify';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import prismaModule from '../../dist/prisma.js';
 import authPlugin from '../../dist/auth/auth.plugin.js';
 import lichessAuthRoutes from '../../dist/routes/lichessAuth.js';
@@ -86,6 +87,8 @@ try {
   const state = await createState(user.id);
 
   app = Fastify({ logger: false });
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
   await app.register(authPlugin);
   await app.register(lichessAuthRoutes);
 
@@ -100,7 +103,7 @@ try {
     url: `/api/auth/lichess/callback?code=test-code&state=${encodeURIComponent(state)}`,
   });
   assert.equal(callbackWithoutAuth.statusCode, 302);
-  assert.equal(callbackWithoutAuth.headers.location, 'http://localhost:4200/accounts?lichessConnected=1');
+  assert.equal(callbackWithoutAuth.headers.location, 'http://localhost:4200/settings/lichess?lichessConnected=1');
 
   const connection = await prisma.lichessConnection.findUnique({ where: { userId: user.id } });
   assert.equal(connection?.username.startsWith('lichessUser'), true);

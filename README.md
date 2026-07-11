@@ -4,6 +4,8 @@ A local-first web app for authoring and training personal chess opening repertoi
 
 Repository spelling note: this GitHub repo is named `chess_repertoir_trainer`.
 
+Architecture and operational documentation is indexed in [`docs/README.md`](docs/README.md). Repository instructions for coding agents live in [`AGENTS.md`](AGENTS.md).
+
 ## Live app
 
 - Web: https://chess-repertoir-trainer-web.vercel.app/
@@ -32,7 +34,7 @@ Current priorities:
 - A filterable imported-games explorer.
 - One-game-at-a-time backend Stockfish analysis for imported games.
 
-Do not treat auth, mobile, cloud multi-user sync, account-wide analysis queues, full PGN import, or advanced spaced repetition as current v1 features.
+Do not treat cloud multi-user sync, account-wide analysis queues, full PGN import, or advanced spaced repetition as current v1 features. The supported client is the responsive Angular web app; there is no native mobile client.
 
 ## Product capabilities
 
@@ -120,7 +122,8 @@ chess-repertoire-trainer/
 │   ├── api/            # Fastify/Prisma backend
 │   └── web/            # Angular frontend
 ├── packages/
-│   └── chess-domain/   # Pure TypeScript chess/training logic
+│   ├── chess-domain/   # Pure TypeScript chess/training logic
+│   └── contracts/      # Verified HTTP wire schemas and DTO types
 ├── apps/api/prisma/
 │   ├── migrations/     # Active PostgreSQL migrations
 │   └── legacy-sqlite-migrations/
@@ -156,7 +159,7 @@ Backend imported-game analysis can use either a server-side Stockfish executable
 npm install
 ```
 
-The root workspace scripts build `packages/chess-domain` before API/web builds so workspace imports resolve from `dist/`.
+The root workspace scripts build `packages/chess-domain` and `packages/contracts` before API/web builds so workspace imports resolve from `dist/`.
 
 ## Environment configuration
 
@@ -415,7 +418,7 @@ GET /api/docs
 GET /api/docs/openapi.json
 ```
 
-Swagger UI is served by the API itself. The generated OpenAPI document combines legacy route metadata with module-level generated schemas and paths.
+The official Swagger UI and OpenAPI JSON are served by the API. The document is generated solely from explicit Fastify route schemas and is isolated to each `buildApp()` instance; incomplete product routes fail registration. See [`docs/openapi.md`](docs/openapi.md).
 
 ## Running locally
 
@@ -437,6 +440,8 @@ npm run dev:api
 npm run dev:web
 ```
 
+Focused API commands prepare compiled `chess-domain` and `contracts` dependencies automatically. Focused web commands prepare compiled `contracts`, so these commands do not require a prior root build after `npm ci`.
+
 ## Build and test
 
 ```bash
@@ -444,18 +449,16 @@ npm run build
 npm run test
 ```
 
-Current testing status:
-
-- `packages/chess-domain` contains Vitest test files.
-- `apps/api` and `apps/web` currently use placeholder test scripts.
-- Treat `npm test` as a lightweight repo check, not full behavioral coverage.
+`npm test` runs domain, contract, API, and Angular web checks. API integration tests require the configured PostgreSQL database.
 
 Useful scoped commands:
 
 ```bash
 npm run build:domain
+npm run build:contracts
 npm run build:api
 npm run build:web
+npm run test:contracts
 npm run test --workspace=packages/chess-domain
 npm run lint
 npm run format

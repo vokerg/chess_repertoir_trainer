@@ -5,8 +5,8 @@
   "workspaces": [
     "apps/web",
     "apps/api",
-    "apps/mobile",
-    "packages/chess-domain"
+    "packages/chess-domain",
+    "packages/contracts"
   ],
   "engines": {
     "node": ">=22.12.0",
@@ -14,20 +14,18 @@
   },
   "scripts": {
     "backup:courses": "ts-node --project scripts/tsconfig.json scripts/course-backup/backup-courses.ts",
-    "dev": "npm run build:domain && concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
+    "dev": "npm run build:domain && npm run build:contracts && concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
-    "dev:mobile": "npm run start --workspace=apps/mobile --",
-    "ios:mobile": "npm run ios --workspace=apps/mobile",
-    "build": "npm run build:domain && npm run build:api && npm run build:web",
+    "build": "npm run build:domain && npm run build:contracts && npm run build:api && npm run build:web",
     "build:domain": "npm run build --workspace=packages/chess-domain",
+    "build:contracts": "npm run build --workspace=packages/contracts",
     "build:api": "npm run build --workspace=apps/api",
     "build:web": "npm run build --workspace=apps/web",
-    "build:mobile": "npm run build --workspace=apps/mobile",
-    "test": "npm run test --workspace=packages/chess-domain && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
-    "test:mobile": "npm run test --workspace=apps/mobile",
-    "lint": "npm run lint --workspaces",
-    "lint:mobile": "npm run lint --workspace=apps/mobile",
+    "test": "npm run test --workspace=packages/chess-domain && npm run test:contracts && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
+    "test:contracts": "npm run test --workspace=packages/contracts",
+    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
+    "check:architecture": "node scripts/check-architecture-guardrails.mjs",
     "format": "npm run format --workspaces",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
@@ -60,18 +58,7 @@
   },
   "overrides": {
     "@babel/core": "7.29.7",
-    "@expo/plist": {
-      ".": "0.7.0",
-      "@xmldom/xmldom": "0.8.13"
-    },
-    "@expo/cli": "56.1.16",
-    "@expo/config": "56.0.9",
-    "@expo/config-plugins": "56.0.9",
     "esbuild": "0.28.1",
-    "expo": "56.0.12",
-    "expo-constants": "56.0.18",
-    "expo-linking": "56.0.14",
-    "expo-router": "56.2.11",
     "hono": "4.12.26",
     "jayson": {
       "uuid": "11.1.1",
@@ -79,9 +66,6 @@
     },
     "js-yaml": "4.2.0",
     "piscina": "5.2.0",
-    "plist": {
-      "@xmldom/xmldom": "0.9.10"
-    },
     "sockjs": {
       "uuid": "11.1.1"
     },

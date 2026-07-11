@@ -1,82 +1,57 @@
 # Repository instructions
 
-This is a chess repertoire trainer with an Angular frontend, Fastify/Prisma backend, and shared chess/domain packages.
+Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web client, a Fastify/Prisma API, and shared packages.
 
-## How to work in this repo
+## Workspaces
 
-Before changing code:
+- `apps/web`: Angular UI, feature state, and typed data access.
+- `apps/api`: Fastify routes, application services, provider integration, and Prisma repositories.
+- `packages/chess-domain`: pure chess and training behavior.
+- `packages/contracts`: active package for verified HTTP wire schemas and inferred DTO types.
 
-* Inspect the relevant feature/module first.
-* Understand existing naming, data flow, state management, and tests before editing.
-* Prefer small, feature-local changes over new global abstractions.
-* Do not introduce cross-feature deep imports.
-* Do not move logic into shared/global code unless it is genuinely reused by multiple features.
-* Keep changes focused on the requested problem.
+## Before changing code
 
-## Project skills
+- Inspect the owning route/module, its data flow, and relevant tests first.
+- Read the closest `.github/instructions/*.instructions.md` and `.github/skills/*/SKILL.md`.
+- Prefer small feature-local changes. Do not create cross-feature deep imports or new global abstractions.
+- Preserve URLs, JSON fields, nullability, status codes, filtering, sorting, and ownership behavior unless a change is explicit.
+- Do not work directly on `main`.
 
-Use project skills when relevant:
+## Sources of truth
 
-* Use `$angular-frontend` for Angular/frontend work under `apps/web`.
-* Use `$api-feature` for backend/API work under `apps/api`.
-* Use `$architecture-review` before larger refactors, feature reviews, duplicated-code analysis, or unclear architectural changes.
+- Runtime behavior: code and tests.
+- Shared HTTP wire shapes: Zod schemas in `packages/contracts`.
+- OpenAPI operations: Fastify route schemas.
+- Imported-game filters: repository predicates, especially `buildImportedGameWhere`.
+- Architecture: `docs/architecture.md` and topic documents indexed by `docs/README.md`.
+- Agent workflows: `.github/skills/*/SKILL.md`.
 
-If a task touches multiple areas, inspect all involved boundaries before editing.
+Do not add `*.openapi.ts`, a separate OpenAPI registry, or hand-maintained path objects. Product endpoints use Fastify route schemas; shared request and response DTOs belong in `packages/contracts` when consumed across workspace boundaries.
 
-## Architecture boundaries
+## Boundaries
 
-* `apps/web` owns Angular UI, frontend state, pages, components, and frontend data-access services.
-* `apps/api` owns Fastify routes, API orchestration, Prisma access, import jobs, and backend services.
-* `packages/chess-domain` must remain pure TypeScript domain logic. It must not depend on Angular, Fastify, Prisma, browser APIs, or Node-only infrastructure unless explicitly intended.
-* Shared packages should contain stable domain/application logic, not one-off feature implementation details.
-
-## Angular frontend rules
-
-For frontend changes:
-
-* Use standalone Angular components.
-* Use `ChangeDetectionStrategy.OnPush`.
-* Prefer signals/computed for component state.
-* Keep route/page components as composition and orchestration shells.
-* Put page workflows and mutable page state in feature-local stores/facades.
-* Put HTTP calls in typed data-access services.
-* Keep presentational components free of HTTP and backend knowledge.
-* Use built-in template control flow: `@if`, `@for`, `@switch`.
-* Track lists by stable domain ids where possible.
-* Preserve filters, pagination, selected rows, loaded rows, and user context during row-level commands.
-
-Project Angular docs are authoritative:
-
-* `docs/frontend/angular-architecture.md`
-* `docs/frontend/angular-patterns.md`
-* `docs/frontend/angular-migration.md`
-* `docs/skills/frontend-feature-module.md`
-
-Do not rely on generic/downloaded Angular reference docs as project rules.
-
-## Backend/API rules
-
-For backend changes:
-
-* Keep route handlers thin.
-* Put orchestration into feature/application services where practical.
-* Keep Prisma access explicit and easy to trace.
-* Validate inputs at the API boundary.
-* Keep domain decisions out of infrastructure-heavy code where possible.
-* Avoid duplicating chess logic already available in shared/domain packages.
+- Keep route handlers thin; authentication and transport decisions belong at the route boundary.
+- Keep Fastify types out of application services and Prisma out of route handlers.
+- Keep `packages/contracts` limited to HTTP wire schemas and inferred types. Dates are ISO strings on the wire; optional and nullable are distinct.
+- Keep `packages/chess-domain` independent of Angular, Fastify, Prisma, browser APIs, and Node infrastructure.
+- Use database `count`, `aggregate`, or `groupBy` for summaries and facets. Never load an unbounded matching row set for Node-side reduction.
+- The only supported client is responsive Angular web. There is no native mobile workspace; do not confuse responsive-web “mobile” behavior with a native client.
+- Update canonical docs in the same change as architecture behavior.
+- Schema-backed handlers consume Fastify-validated `params`, `query`, and `body` values directly. Malformed requests use the centralized `{ "error": "Validation failed" }` response.
+- Tests that construct the full API inject a deterministic `authConfig`; production startup omits it and loads auth from the environment.
 
 ## Validation
 
-Run the most relevant validation before finishing.
+From the repository root:
 
-Common commands:
+- `npm run build`
+- `npm test`
+- `npm run lint`
+- API: `npm run build:api` and `npm run test --workspace=apps/api`
+- Web: `npm run build:web` and `npm run test --workspace=apps/web`
+- Domain: `npm run build:domain` and `npm run test --workspace=packages/chess-domain`
+- Contracts: `npm run build:contracts` and `npm run test:contracts`
 
-* Frontend changes: `npm run build:web`
-* Backend/API changes: inspect `package.json` and run the relevant build/test command.
-* Shared/domain changes: run affected package tests/builds where available.
+Focused API build/dev/lint commands build `chess-domain` and `contracts` first; focused web build/dev/test/lint commands build `contracts` first. Do not remove those workspace pre-scripts or assume a root build already ran.
 
-When reporting completion:
-
-* Say what changed.
-* Say what validation was run.
-* Mention any warnings, skipped tests, uncertainty, or follow-up risks.
+Report exactly what ran, what was skipped, and any warnings or residual risk.

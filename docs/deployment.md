@@ -43,7 +43,7 @@ Settings:
 - Build command:
 
 ```bash
-npm ci && npm run build:domain && npm run build:api && npm run db:migrate
+npm ci && npm run build:domain && npm run build:contracts && npm run build:api && npm run db:migrate
 ```
 
 - Start command:
@@ -87,7 +87,7 @@ Settings:
 - Build command:
 
 ```bash
-npm ci && npm run build:domain && npm run build:web
+npm ci && npm run build:domain && npm run build:contracts && npm run build:web
 ```
 
 - Output directory:
@@ -155,7 +155,7 @@ npm run db:reset --workspace=apps/api
 API build:
 
 ```bash
-npm run build:domain && npm run build:api
+npm run build:domain && npm run build:contracts && npm run build:api
 ```
 
 API start:
@@ -167,5 +167,5 @@ npm run start --workspace=apps/api
 Vercel-equivalent web build:
 
 ```bash
-npm ci && npm run build:domain && npm run build:web
+npm ci && npm run build:domain && npm run build:contracts && npm run build:web
 ```

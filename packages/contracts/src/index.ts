@@ -1,2 +1,2 @@
-export * from './repertoire-contracts';
-export * from './training-contracts';
+export * from './board-images';
+export * from './imported-games';

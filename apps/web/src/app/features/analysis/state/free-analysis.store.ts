@@ -2,7 +2,7 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
 import { buildOpeningAnalysisQuery } from '../../../shared/games/position-moves/position-game-moves.helpers';
@@ -53,7 +53,7 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly boardSide = signal<'WHITE' | 'BLACK'>('WHITE');
   readonly myGamesOpen = signal(false);
   readonly myGamesFilters = signal<GameFilters>(defaultGameFilters());
-  readonly myGamesFacets = signal<ImportedGameFacetsResponse>({});
+  readonly myGamesFacets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly myGamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
   readonly myGamesTopGames = signal<OpeningAnalysisGame[]>([]);
   readonly myGamesLoading = signal(false);
@@ -413,7 +413,7 @@ export class FreeAnalysisStore implements OnDestroy {
       this.myGamesFacets.set((await firstValueFrom(this.positionGamesApi.getFacets())) || {});
       this.myGamesFacetsLoaded = true;
     } catch {
-      this.myGamesFacets.set({});
+      this.myGamesFacets.set(emptyImportedGameFacets());
     }
   }
 

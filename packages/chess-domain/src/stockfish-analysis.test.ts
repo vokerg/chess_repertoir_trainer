@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   firstUciMove,
+  normalizeStoredEngineLines,
   parseUciInfoLine,
   scoreFromSideToMoveToWhite,
   shapePositionAnalysisForStorage,
@@ -52,5 +53,17 @@ describe('stockfish analysis helpers', () => {
       persistenceMode: 'rich',
       lines: [{ multipv: 1, depth: 12, moveUci: 'e2e3', scoreCpWhite: 25, pvUci: ['e2e3'] }],
     });
+  });
+
+  it('normalizes historical and malformed persisted engine lines', () => {
+    expect(normalizeStoredEngineLines([
+      { multipv: 1, depth: 18, moveUci: 'e2e4', scoreCpWhite: 32 },
+      { multipv: 99, depth: -4, moveUci: 'd2d4', mateWhite: 'invalid', pvUci: ['bad', 'd2d4'] },
+      null,
+      { pvUci: ['not-a-move'] },
+    ])).toEqual([
+      { multipv: 1, depth: 18, moveUci: 'e2e4', scoreCpWhite: 32, pvUci: ['e2e4'] },
+      { multipv: 3, depth: 0, moveUci: 'd2d4', pvUci: ['d2d4'] },
+    ]);
   });
 });

@@ -91,6 +91,24 @@ export const importedGameDetailSelect = {
 export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameListSelect }>;
 export type ImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;
 
+export interface ImportedGameSummaryAggregateRows {
+  total: number;
+  results: Array<{ resultForUser: string | null; _count: { _all: number } }>;
+  providers: Array<{ provider: string; _count: { _all: number } }>;
+  speedCategories: Array<{ speedCategory: string | null; _count: { _all: number } }>;
+  userColors: Array<{ userColor: string | null; _count: { _all: number } }>;
+  openings: Array<{
+    openingEco: string | null;
+    openingName: string | null;
+    _count: { _all: number };
+  }>;
+  ratings: Array<{
+    userColor: string | null;
+    _avg: { whiteRating: number | null; blackRating: number | null };
+    _count: { whiteRating: number; blackRating: number };
+  }>;
+}
+
 const openingStrugglesPlySelect = {
   importedGameId: true,
   plyNumber: true,
@@ -309,11 +327,47 @@ export async function findImportedGames(userId: number, query: ImportedGameSearc
   });
 }
 
-export async function findImportedGamesForSummary(userId: number, query: ImportedGameSummaryQuery) {
-  return prisma.importedGame.findMany({
-    where: buildImportedGameWhere(userId, query),
-    select: importedGameListSelect,
-  });
+export async function summarizeImportedGames(
+  userId: number,
+  query: ImportedGameSummaryQuery,
+): Promise<ImportedGameSummaryAggregateRows> {
+  const where = buildImportedGameWhere(userId, query);
+  const [total, results, providers, speedCategories, userColors, openings, ratings] = await Promise.all([
+    prisma.importedGame.count({ where }),
+    prisma.importedGame.groupBy({
+      by: ['resultForUser'],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.importedGame.groupBy({
+      by: ['provider'],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.importedGame.groupBy({
+      by: ['speedCategory'],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.importedGame.groupBy({
+      by: ['userColor'],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.importedGame.groupBy({
+      by: ['openingEco', 'openingName'],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.importedGame.groupBy({
+      by: ['userColor'],
+      where,
+      _avg: { whiteRating: true, blackRating: true },
+      _count: { whiteRating: true, blackRating: true },
+    }),
+  ]);
+
+  return { total, results, providers, speedCategories, userColors, openings, ratings };
 }
 
 export async function findImportedGamesForOpeningStruggles(

@@ -1,10 +1,16 @@
 import { z } from 'zod';
 
-export const analysisMergeMoveSchema: z.ZodType<
-  { moveUci: string; children: any[] },
-  z.ZodTypeDef,
-  { moveUci: string; children?: any[] }
-> = z.lazy(() =>
+interface AnalysisMergeMoveInput {
+  moveUci: string;
+  children?: AnalysisMergeMoveInput[];
+}
+
+interface AnalysisMergeMoveOutput {
+  moveUci: string;
+  children: AnalysisMergeMoveOutput[];
+}
+
+export const analysisMergeMoveSchema: z.ZodType<AnalysisMergeMoveOutput, AnalysisMergeMoveInput> = z.lazy(() =>
   z.object({ moveUci: z.string().min(4).max(5), children: z.array(analysisMergeMoveSchema).default([]) }),
 );
 

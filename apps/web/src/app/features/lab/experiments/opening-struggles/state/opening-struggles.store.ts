@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
 import { defaultGameFilters, GameFilters } from '../../../../../shared/games/filters/game-filter.model';
 import { OpeningStrugglesApiService } from '../data-access/opening-struggles-api.service';
 import {
@@ -28,7 +28,7 @@ function defaultOpeningStrugglesGameFilters(): GameFilters {
 export class OpeningStrugglesStore {
   private readonly api = inject(OpeningStrugglesApiService);
   readonly gameFilters = signal<GameFilters>(defaultOpeningStrugglesGameFilters());
-  readonly facets = signal<ImportedGameFacetsResponse>({});
+  readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly criteria = signal<OpeningStrugglesCriteria>(defaultCriteria);
   readonly items = signal<readonly OpeningStruggleItem[]>([]);
   readonly totalFilteredGames = signal(0);
@@ -76,9 +76,9 @@ export class OpeningStrugglesStore {
 
   private async loadFacets(): Promise<void> {
     try {
-      this.facets.set((await firstValueFrom(this.api.getFacets())) || {});
+      this.facets.set(await firstValueFrom(this.api.getFacets()));
     } catch {
-      this.facets.set({});
+      this.facets.set(emptyImportedGameFacets());
     }
   }
 }

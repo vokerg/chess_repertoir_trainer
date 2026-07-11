@@ -1,6 +1,6 @@
 {
   "installCommand": "npm ci",
-  "buildCommand": "npm run build:domain && npm run build:web",
+  "buildCommand": "npm run build:domain && npm run build:contracts && npm run build:web",
   "outputDirectory": "dist/apps/web",
   "rewrites": [
     {

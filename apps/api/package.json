@@ -4,10 +4,12 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "predev": "prisma generate --schema prisma/schema.prisma",
-    "dev": "npm --prefix ../.. run build --workspace=chess-domain && ts-node-dev --respawn --transpile-only src/main.ts",
-    "prebuild": "prisma generate --schema prisma/schema.prisma",
+    "predev": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts && prisma generate --schema prisma/schema.prisma",
+    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "prebuild": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts && prisma generate --schema prisma/schema.prisma",
     "build": "tsc -p tsconfig.json",
+    "prelint": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts && prisma generate --schema prisma/schema.prisma",
+    "lint": "tsc -p tsconfig.json --noEmit",
     "prestart": "prisma generate --schema prisma/schema.prisma",
     "start": "node dist/main.js",
     "db:migrate": "prisma migrate deploy --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma",
@@ -25,17 +27,21 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.5",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@prisma/client": "^6.19.3",
+    "@chess-trainer/contracts": "file:../../packages/contracts",
     "chess-domain": "file:../../packages/chess-domain",
     "chess.js": "^1.0.0",
     "dotenv": "^16.3.1",
     "fastify": "^5.8.5",
     "fastify-plugin": "^5.1.0",
+    "fastify-type-provider-zod": "^7.0.0",
     "jose": "^6.2.3",
     "prisma": "^6.19.3",
     "stockfish": "^18.0.7",
-    "zod": "^3.25.76"
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

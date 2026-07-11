@@ -1,23 +1,10 @@
 import { Chess } from 'chess.js';
-
-export interface BoardImageInput {
-  fen: string;
-  pov?: 'white' | 'black';
-  turn?: 'none' | 'auto' | 'white' | 'black';
-}
+import type { BoardImageQuery, BoardImageUrlResponse } from '@chess-trainer/contracts/board-images';
 
 export class BoardImageValidationError extends Error {}
 
-export interface BoardImageResult {
-  url: string;
-  fen: string;
-  normalizedFen: string;
-  pov: 'white' | 'black';
-  turn: 'none' | 'white' | 'black';
-}
-
 export class BoardImagesService {
-  static buildBoardImageUrl(input: BoardImageInput): BoardImageResult {
+  static buildBoardImageUrl(input: BoardImageQuery): BoardImageUrlResponse {
     let chess: Chess;
     try {
       chess = input.fen === 'startpos' ? new Chess() : new Chess(input.fen);

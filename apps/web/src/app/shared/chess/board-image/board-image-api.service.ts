@@ -1,16 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
+import type { BoardImagePov, BoardImageTurn, BoardImageUrlResponse } from '@chess-trainer/contracts/board-images';
 
-export type BoardImagePov = 'white' | 'black';
-export type BoardImageTurn = 'none' | 'auto' | 'white' | 'black';
-export interface BoardImageUrlResponse {
-  url: string;
-  fen: string;
-  normalizedFen: string;
-  pov: BoardImagePov;
-  turn: Exclude<BoardImageTurn, 'auto'>;
-}
+export type { BoardImagePov, BoardImageTurn, BoardImageUrlResponse } from '@chess-trainer/contracts/board-images';
 
 @Injectable({ providedIn: 'root' })
 export class BoardImageApiService {

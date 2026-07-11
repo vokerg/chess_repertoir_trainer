@@ -79,7 +79,7 @@ describe('GamesExplorerStore', () => {
       game(1, [], 'bullet'),
       game(2, [], 'blitz'),
       game(3, [], 'rapid'),
-      { ...game(4, [], 'rapid'), plyIndex: { status: 'INDEXED', error: null } },
+      { ...game(4, [], 'rapid'), plyIndex: { status: 'INDEXED', indexedAt: '2026-06-07T12:00:00.000Z', error: null } },
     ]);
 
     expect(store.bulkIndexableGames().map((item) => item.id)).toEqual([2, 3]);
@@ -89,11 +89,11 @@ describe('GamesExplorerStore', () => {
     analysis.analyzeGame.and.resolveTo({});
     api.searchGames.and.returnValue(of({
       items: [
-        { ...game(1), analysis: { status: 'COMPLETED' }, tagCodes: [10], tags: [{ code: 10, name: 'Needs review' }] },
+        { ...game(1), analysis: { ...game(1).analysis, status: 'COMPLETED' }, tagCodes: [10], tags: [{ code: 10, name: 'Needs review' }] },
         store.games()[1],
       ],
       pageInfo: { nextCursor: null, hasMore: false },
-      appliedFilters: {},
+      appliedFilters: { sort: 'endedAtDesc', limit: 50 },
     }));
 
     store.analyse(store.games()[0]);
@@ -185,11 +185,35 @@ function game(
     accountId: 10,
     provider: 'LICHESS',
     providerGameId: `game-${id}`,
+    providerUrl: null,
+    endedAt: null,
+    startedAt: null,
     speedCategory,
-    timeControl: {},
+    rated: null,
+    variant: null,
+    timeControl: { raw: null, initial: null, increment: null },
+    white: { username: null, rating: null },
+    black: { username: null, rating: null },
+    userColor: null,
+    opponentUsername: null,
+    result: null,
+    resultForUser: null,
+    status: null,
+    opening: { eco: null, name: null },
     tagCodes: tags.map((tag) => tag.code),
     tags,
-    plyIndex: { status: 'NOT_INDEXED', error: null },
-    analysis: { status: 'NOT_ANALYZED' },
+    plyIndex: { status: 'NOT_INDEXED', indexedAt: null, error: null },
+    analysis: {
+      status: 'NOT_ANALYZED',
+      runId: null,
+      depth: null,
+      completedAt: null,
+      createdAt: null,
+      whiteAccuracy: null,
+      blackAccuracy: null,
+      userAccuracy: null,
+      summary: null,
+      criticalMoveCount: null,
+    },
   };
 }

@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CourseReviewApiService } from '../data-access/course-review-api.service';
 import { CourseReviewResponse } from '../data-access/course-review.models';
-import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { summaryGameFilters } from '../../../shared/games/filters/game-filter-summary';
 
@@ -24,7 +24,7 @@ export class CourseReviewStore {
   private requestVersion = 0;
 
   readonly gameFilters = signal(defaultCourseReviewGameFilters());
-  readonly facets = signal<ImportedGameFacetsResponse>({});
+  readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly filtersCollapsed = signal(true);
   readonly minCoveredPlies = signal(2);
   readonly review = signal<CourseReviewResponse | null>(null);
@@ -77,7 +77,7 @@ export class CourseReviewStore {
 
   loadFacets(): void {
     this.api.getFacets().subscribe({
-      next: (facets) => this.facets.set(facets || {}),
+      next: (facets) => this.facets.set(facets),
     });
   }
 

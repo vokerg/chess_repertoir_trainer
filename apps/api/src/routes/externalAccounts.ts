@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { CurrentAppUserService } from '../auth/current-app-user.service';
 import { requireAuth } from '../auth/request-auth';
@@ -11,6 +11,13 @@ import { ChessComImportService } from '../services/chessComImportService';
 import { ImportedGamesService } from '../modules/imported-games/imported-games.service';
 import { ImportedGameWorkflowCandidatesService } from '../modules/imported-games/imported-game-workflow-candidates.service';
 import { importedGameSearchQuerySchema } from '../modules/imported-games/imported-games.schemas';
+import {
+  apiErrorResponseSchema,
+  legacyOpaqueResponseSchema,
+  messageResponseSchema,
+  unauthorizedResponseSchema,
+} from './legacy-route.schemas';
+import { validationErrorResponseSchema } from './api-error.schemas';
 
 const createAccountSchema = z.object({
   provider: z.enum(['LICHESS', 'CHESS_COM']),
@@ -68,9 +75,20 @@ const ratingHistoryQuerySchema = z.object({
 });
 
 const accountPerformanceStatsQuerySchema = ratingHistoryQuerySchema;
+const accountIdParamsSchema = z.object({ id: z.coerce.number().int().positive() });
+const accountSchema = <T extends Record<string, unknown>>(operationId: string, summary: string, extra: T) => ({
+  operationId,
+  tags: ['External accounts'],
+  summary,
+  ...extra,
+});
 
-export default async function externalAccountsRoutes(app: FastifyInstance) {
-  app.get('/api/me', async (request, reply) => {
+const externalAccountsRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/me', {
+    schema: accountSchema('getCurrentUser', 'Get the authenticated application user', {
+      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
 
@@ -78,36 +96,38 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return { user, auth };
   });
 
-  app.get('/api/me/accounts', async (request, reply) => {
+  app.get('/api/me/accounts', {
+    schema: accountSchema('listExternalAccounts', 'List external chess accounts', {
+      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return ExternalAccountService.listForUser(auth.userId);
   });
 
-  app.post('/api/me/accounts', async (request, reply) => {
+  app.post('/api/me/accounts', {
+    schema: accountSchema('createExternalAccount', 'Add or reactivate an external chess account', {
+      body: createAccountSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = createAccountSchema.safeParse(request.body);
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    const account = await ExternalAccountService.createForUser(auth.userId, parsed.data);
+    const account = await ExternalAccountService.createForUser(auth.userId, request.body);
     reply.code(201);
     return account;
   });
 
-  app.patch('/api/me/default-progress-account', async (request, reply) => {
+  app.patch('/api/me/default-progress-account', {
+    schema: accountSchema('setDefaultProgressAccount', 'Set the default account for progress views', {
+      body: defaultProgressAccountSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = defaultProgressAccountSchema.safeParse(request.body);
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    const result = await ExternalAccountService.setDefaultProgressAccount(auth.userId, parsed.data.accountId);
+    const result = await ExternalAccountService.setDefaultProgressAccount(auth.userId, request.body.accountId);
     if (!result) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -116,10 +136,15 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return result;
   });
 
-  app.get('/api/me/accounts/:id', async (request, reply) => {
+  app.get('/api/me/accounts/:id', {
+    schema: accountSchema('getExternalAccount', 'Get one external chess account', {
+      params: accountIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
@@ -128,29 +153,34 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return account;
   });
 
-  app.get('/api/me/accounts/:id/rating-history', async (request, reply) => {
+  app.get('/api/me/accounts/:id/rating-history', {
+    schema: accountSchema('getExternalAccountRatingHistory', 'Get rating history for an external account', {
+      params: accountIdParamsSchema,
+      querystring: ratingHistoryQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
     }
 
-    const parsed = ratingHistoryQuerySchema.safeParse(request.query);
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    return AccountRatingHistoryService.getForAccount(auth.userId, account, parsed.data);
+    return AccountRatingHistoryService.getForAccount(auth.userId, account, request.query);
   });
 
-  app.get('/api/me/accounts/:id/rating-stats', async (request, reply) => {
+  app.get('/api/me/accounts/:id/rating-stats', {
+    schema: accountSchema('getExternalAccountRatingStats', 'Get rating statistics for an external account', {
+      params: accountIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
@@ -160,36 +190,36 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return AccountRatingStatsService.getForAccount(auth.userId, id);
   });
 
-  app.get('/api/me/accounts/:id/performance-stats', async (request, reply) => {
+  app.get('/api/me/accounts/:id/performance-stats', {
+    schema: accountSchema('getExternalAccountPerformanceStats', 'Get performance statistics for an external account', {
+      params: accountIdParamsSchema,
+      querystring: accountPerformanceStatsQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
     }
 
-    const parsed = accountPerformanceStatsQuerySchema.safeParse(request.query);
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    return AccountPerformanceStatsService.getForAccount(auth.userId, id, parsed.data);
+    return AccountPerformanceStatsService.getForAccount(auth.userId, id, request.query);
   });
 
-  app.patch('/api/me/accounts/:id', async (request, reply) => {
+  app.patch('/api/me/accounts/:id', {
+    schema: accountSchema('updateExternalAccount', 'Update external account metadata', {
+      params: accountIdParamsSchema,
+      body: updateAccountSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
-    const parsed = updateAccountSchema.safeParse(request.body);
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    const account = await ExternalAccountService.updateForUser(auth.userId, id, parsed.data);
+    const id = request.params.id;
+    const account = await ExternalAccountService.updateForUser(auth.userId, id, request.body);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
@@ -197,10 +227,15 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return account;
   });
 
-  app.delete('/api/me/accounts/:id', async (request, reply) => {
+  app.delete('/api/me/accounts/:id', {
+    schema: accountSchema('deleteExternalAccount', 'Delete one external account', {
+      params: accountIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.deleteForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
@@ -210,10 +245,16 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return { deleted: true, account };
   });
 
-  app.post('/api/me/accounts/:id/sync', async (request, reply) => {
+  app.post('/api/me/accounts/:id/sync', {
+    schema: accountSchema('syncExternalAccount', 'Synchronize games for an external account', {
+      description: 'Bodyless action: provider and cursor state come from the selected account.',
+      params: accountIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: z.union([apiErrorResponseSchema, messageResponseSchema, validationErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
@@ -239,10 +280,15 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/api/me/accounts/:id/imported-game-workflow-candidates', async (request, reply) => {
+  app.get('/api/me/accounts/:id/imported-game-workflow-candidates', {
+    schema: accountSchema('getImportedGameWorkflowCandidates', 'List standard workflow candidates for an external account', {
+      params: accountIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
@@ -252,10 +298,16 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return ImportedGameWorkflowCandidatesService.forAccount(auth.userId, id);
   });
 
-  app.post('/api/me/accounts/:id/reset-cursor', async (request, reply) => {
+  app.post('/api/me/accounts/:id/reset-cursor', {
+    schema: accountSchema('resetExternalAccountSyncCursor', 'Reset the sync cursor for an external account', {
+      description: 'Bodyless action: resets the persisted cursor for the selected account.',
+      params: accountIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.resetSyncCursorForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
@@ -265,27 +317,29 @@ export default async function externalAccountsRoutes(app: FastifyInstance) {
     return account;
   });
 
-  app.get('/api/me/accounts/:id/games', async (request, reply) => {
+  app.get('/api/me/accounts/:id/games', {
+    schema: accountSchema('listExternalAccountGames', 'Search imported games for one external account', {
+      params: accountIdParamsSchema,
+      querystring: listAccountGamesQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const account = await ExternalAccountService.getForUser(auth.userId, id);
     if (!account) {
       reply.code(404);
       return { message: 'External account not found' };
     }
 
-    const parsed = listAccountGamesQuerySchema.safeParse(request.query);
-    if (!parsed.success) {
-      reply.code(400);
-      return { error: parsed.error.errors };
-    }
-
-    const { take, ...query } = parsed.data;
+    const { take, ...query } = request.query;
     return ImportedGamesService.search(auth.userId, {
       ...query,
       accountIds: [id],
       limit: take ?? query.limit,
     });
   });
-}
+};
+
+export default externalAccountsRoutes;

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
-import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { OpeningAnalysisResponse } from '../../../shared/games/position-moves/position-game-moves.models';
@@ -45,7 +45,7 @@ export class LineEditorWorkbenchComponent {
   readonly gamesLoading = input(false);
   readonly gamesError = input<string | null>(null);
   readonly gamesFilters = input.required<GameFilters>();
-  readonly gamesFacets = input<ImportedGameFacetsResponse>({});
+  readonly gamesFacets = input<ImportedGameFacetsResponse>(emptyImportedGameFacets());
 
   readonly boardMove = output<string>();
   readonly nodeSelected = output<number>();

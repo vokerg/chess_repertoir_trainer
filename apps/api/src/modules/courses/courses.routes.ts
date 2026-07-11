@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { requireAuth } from '../../auth/request-auth';
 import {
   ChapterService,
@@ -24,7 +24,14 @@ import { PgnService } from '../../services/pgnService';
 import { applyAnalysisReintegrationSchema, previewAnalysisReintegrationSchema } from './analysis-reintegration.schemas';
 import { AnalysisReintegrationError, AnalysisReintegrationService } from './analysis-reintegration.service';
 import { getAvailableSublineRows } from './sublines.service';
-import { registerOpenApiRoute } from '../../openapi/route-registry';
+import {
+  apiErrorResponseSchema,
+  legacyOpaqueResponseSchema,
+  messageResponseSchema,
+  noContentResponseSchema,
+  unauthorizedResponseSchema,
+} from '../../routes/legacy-route.schemas';
+import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const importPgnSchema = z.object({
   name: z.string().min(1),
@@ -33,38 +40,83 @@ const importPgnSchema = z.object({
   pgn: z.string().min(1),
 });
 
-export default async function coursesModule(app: FastifyInstance) {
-  app.get('/api/courses', async (request, reply) => {
+const courseIdParamsSchema = z.object({ courseId: z.coerce.number().int().positive() });
+const chapterIdParamsSchema = z.object({ chapterId: z.coerce.number().int().positive() });
+const lineIdParamsSchema = z.object({ lineId: z.coerce.number().int().positive() });
+const idParamsSchema = z.object({ id: z.coerce.number().int().positive() });
+const sublineSchema = z.object({
+  hash: z.string(),
+  canonicalKeyVersion: z.number().int(),
+  lineId: z.number().int(),
+  lineName: z.string(),
+  chapterId: z.number().int(),
+  chapterName: z.string(),
+  leafNodeId: z.number().int(),
+  moveText: z.string(),
+  moves: z.array(z.object({
+    nodeId: z.number().int(),
+    moveUci: z.string(),
+    moveSan: z.string(),
+    plyNumber: z.number().int(),
+    sortOrder: z.number().int(),
+  })),
+});
+
+const courseRouteSchema = <T extends Record<string, unknown>>(
+  operationId: string,
+  tags: string[],
+  summary: string,
+  extra: T,
+) => ({ operationId, tags, summary, ...extra });
+
+const coursesModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/courses', {
+    schema: courseRouteSchema('listCourses', ['Courses'], 'List courses for the current user', {
+      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return CourseService.list(auth.userId);
   });
 
-  app.post('/api/courses', async (request, reply) => {
+  app.post('/api/courses', {
+    schema: courseRouteSchema('createCourse', ['Courses'], 'Create a course', {
+      body: createCourseSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const data = createCourseSchema.parse(request.body);
-    const course = await CourseService.create(auth.userId, data);
+    const course = await CourseService.create(auth.userId, request.body);
     reply.code(201);
     return course;
   });
 
-  app.get('/api/courses/position-suggestions', async (request, reply) => {
+  app.get('/api/courses/position-suggestions', {
+    schema: courseRouteSchema('listCoursePositionSuggestions', ['Courses'], 'List repertoire suggestions for a position', {
+      querystring: positionSuggestionsQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const parsed = positionSuggestionsQuerySchema.safeParse(request.query ?? {});
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
     try {
-      return await CoursePositionSuggestionService.listForFen(auth.userId, parsed.data.fen);
+      return await CoursePositionSuggestionService.listForFen(auth.userId, request.query.fen);
     } catch (err: any) {
       return reply.status(400).send({ error: err?.message ?? String(err) });
     }
   });
 
-  app.get('/api/courses/:id', async (request, reply) => {
+  app.get('/api/courses/:id', {
+    schema: courseRouteSchema('getCourse', ['Courses'], 'Get one course', {
+      params: idParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const course = await CourseService.get(auth.userId, id);
     if (!course) {
       reply.code(404);
@@ -73,13 +125,18 @@ export default async function coursesModule(app: FastifyInstance) {
     return course;
   });
 
-  app.patch('/api/courses/:id', async (request, reply) => {
+  app.patch('/api/courses/:id', {
+    schema: courseRouteSchema('updateCourse', ['Courses'], 'Update one course', {
+      params: idParamsSchema,
+      body: updateCourseSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
-    const data = updateCourseSchema.parse(request.body);
+    const id = request.params.id;
     try {
-      const course = await CourseService.update(auth.userId, id, data);
+      const course = await CourseService.update(auth.userId, id, request.body);
       if (!course) return reply.status(404).send({ message: 'Course not found' });
       return course;
     } catch {
@@ -88,10 +145,15 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.delete('/api/courses/:id', async (request, reply) => {
+  app.delete('/api/courses/:id', {
+    schema: courseRouteSchema('deleteCourse', ['Courses'], 'Delete one course', {
+      params: idParamsSchema,
+      response: { 204: noContentResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     try {
       const course = await CourseService.delete(auth.userId, id);
       if (!course) return reply.status(404).send({ message: 'Course not found' });
@@ -103,30 +165,45 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.get('/api/courses/:courseId/chapters', async (request, reply) => {
+  app.get('/api/courses/:courseId/chapters', {
+    schema: courseRouteSchema('listCourseChapters', ['Chapters'], 'List chapters in a course', {
+      params: courseIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const courseId = Number((request.params as any).courseId);
+    const courseId = request.params.courseId;
     const chapters = await ChapterService.list(auth.userId, courseId);
     if (!chapters) return reply.status(404).send({ message: 'Course not found' });
     return chapters;
   });
 
-  app.post('/api/courses/:courseId/chapters', async (request, reply) => {
+  app.post('/api/courses/:courseId/chapters', {
+    schema: courseRouteSchema('createCourseChapter', ['Chapters'], 'Create a chapter in a course', {
+      params: courseIdParamsSchema,
+      body: createChapterSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const courseId = Number((request.params as any).courseId);
-    const data = createChapterSchema.parse(request.body);
-    const chapter = await ChapterService.create(auth.userId, courseId, data);
+    const courseId = request.params.courseId;
+    const chapter = await ChapterService.create(auth.userId, courseId, request.body);
     if (!chapter) return reply.status(404).send({ message: 'Course not found' });
     reply.code(201);
     return chapter;
   });
 
-  app.get('/api/chapters/:id', async (request, reply) => {
+  app.get('/api/chapters/:id', {
+    schema: courseRouteSchema('getChapter', ['Chapters'], 'Get one chapter', {
+      params: idParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const chapter = await ChapterService.get(auth.userId, id);
     if (!chapter) {
       reply.code(404);
@@ -135,13 +212,18 @@ export default async function coursesModule(app: FastifyInstance) {
     return chapter;
   });
 
-  app.patch('/api/chapters/:id', async (request, reply) => {
+  app.patch('/api/chapters/:id', {
+    schema: courseRouteSchema('updateChapter', ['Chapters'], 'Update one chapter', {
+      params: idParamsSchema,
+      body: updateChapterSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
-    const data = updateChapterSchema.parse(request.body);
+    const id = request.params.id;
     try {
-      const chapter = await ChapterService.update(auth.userId, id, data);
+      const chapter = await ChapterService.update(auth.userId, id, request.body);
       if (!chapter) return reply.status(404).send({ message: 'Chapter not found' });
       return chapter;
     } catch {
@@ -150,10 +232,15 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.delete('/api/chapters/:id', async (request, reply) => {
+  app.delete('/api/chapters/:id', {
+    schema: courseRouteSchema('deleteChapter', ['Chapters'], 'Delete one chapter', {
+      params: idParamsSchema,
+      response: { 204: noContentResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     try {
       const chapter = await ChapterService.delete(auth.userId, id);
       if (!chapter) return reply.status(404).send({ message: 'Chapter not found' });
@@ -165,96 +252,93 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.get('/api/chapters/:chapterId/lines', async (request, reply) => {
+  app.get('/api/chapters/:chapterId/lines', {
+    schema: courseRouteSchema('listChapterLines', ['Lines'], 'List lines in a chapter', {
+      params: chapterIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const chapterId = Number((request.params as any).chapterId);
+    const chapterId = request.params.chapterId;
     const lines = await LineService.list(auth.userId, chapterId);
     if (!lines) return reply.status(404).send({ message: 'Chapter not found' });
     return lines;
   });
 
-  registerOpenApiRoute(app, {
-    method: 'get',
+  app.route({
+    method: 'GET',
     url: '/api/courses/:courseId/sublines',
-    operation: {
+    schema: {
+      operationId: 'listCourseSublines',
       tags: ['Courses'],
       summary: 'List all terminal move-tree variations in a course',
-      parameters: [{ name: 'courseId', in: 'path', required: true,
-        schema: { type: 'integer', minimum: 1 } }],
-      responses: {
-        '200': {
-          description: 'One row per available terminal variation',
-          content: { 'application/json': { schema: { type: 'array', items: {
-            type: 'object',
-            required: ['hash', 'canonicalKeyVersion', 'lineId', 'lineName', 'chapterId', 'chapterName', 'leafNodeId', 'moves', 'moveText'],
-            properties: {
-              hash: { type: 'string' }, canonicalKeyVersion: { type: 'integer' },
-              lineId: { type: 'integer' }, lineName: { type: 'string' },
-              chapterId: { type: 'integer' }, chapterName: { type: 'string' },
-              leafNodeId: { type: 'integer' }, moveText: { type: 'string' },
-              moves: { type: 'array', items: { type: 'object',
-                required: ['nodeId', 'moveUci', 'moveSan', 'plyNumber', 'sortOrder'],
-                properties: { nodeId: { type: 'integer' }, moveUci: { type: 'string' },
-                  moveSan: { type: 'string' }, plyNumber: { type: 'integer' },
-                  sortOrder: { type: 'integer' } } } },
-            },
-          } } } },
-        },
-        '400': { description: 'Invalid course id' },
-        '404': { description: 'Course not found' },
+      params: courseIdParamsSchema,
+      response: {
+        200: z.array(sublineSchema),
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: z.object({ error: z.string() }),
       },
     },
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const courseId = Number((request.params as any).courseId);
-      if (!Number.isInteger(courseId) || courseId <= 0) {
-        return reply.status(400).send({ error: 'Invalid course id' });
-      }
+      const courseId = request.params.courseId;
       const sublines = await getAvailableSublineRows(auth.userId, { type: 'COURSE', id: courseId });
       if (sublines === null) return reply.status(404).send({ error: 'Course not found' });
       return reply.send(sublines);
     },
   });
 
-  app.post('/api/chapters/:chapterId/analysis-reintegration/preview', async (request, reply) => {
+  app.post('/api/chapters/:chapterId/analysis-reintegration/preview', {
+    schema: courseRouteSchema('previewChapterAnalysisReintegration', ['Chapters'], 'Preview analysis moves that can be added to a chapter', {
+      params: chapterIdParamsSchema,
+      body: previewAnalysisReintegrationSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const chapterId = Number((request.params as any).chapterId);
-    if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
-    const parsed = previewAnalysisReintegrationSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    const chapterId = request.params.chapterId;
     try {
-      return await AnalysisReintegrationService.previewChapter(auth.userId, chapterId, parsed.data);
+      return await AnalysisReintegrationService.previewChapter(auth.userId, chapterId, request.body);
     } catch (error) {
       const status = error instanceof AnalysisReintegrationError ? error.status : 400;
-      return reply.status(status).send({ error: error instanceof Error ? error.message : 'Could not preview analysis reintegration.' });
+      return reply.status(status as 400 | 404).send({ error: error instanceof Error ? error.message : 'Could not preview analysis reintegration.' });
     }
   });
 
-  app.post('/api/chapters/:chapterId/analysis-reintegration/apply', async (request, reply) => {
+  app.post('/api/chapters/:chapterId/analysis-reintegration/apply', {
+    schema: courseRouteSchema('applyChapterAnalysisReintegration', ['Chapters'], 'Apply selected analysis moves to a chapter', {
+      params: chapterIdParamsSchema,
+      body: applyAnalysisReintegrationSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema, 409: legacyOpaqueResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const chapterId = Number((request.params as any).chapterId);
-    if (!Number.isInteger(chapterId) || chapterId <= 0) return reply.status(400).send({ error: 'Invalid chapter id' });
-    const parsed = applyAnalysisReintegrationSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    const chapterId = request.params.chapterId;
     try {
-      return await AnalysisReintegrationService.applyToChapter(auth.userId, chapterId, parsed.data);
+      return await AnalysisReintegrationService.applyToChapter(auth.userId, chapterId, request.body);
     } catch (error) {
       const status = error instanceof AnalysisReintegrationError ? error.status : 400;
-      return reply.status(status).send({ error: error instanceof Error ? error.message : 'Could not apply analysis reintegration.',
+      return reply.status(status as 400 | 404 | 409).send({ error: error instanceof Error ? error.message : 'Could not apply analysis reintegration.',
         conflicts: error instanceof AnalysisReintegrationError ? error.conflicts : undefined });
     }
   });
 
-  app.post('/api/chapters/:chapterId/lines', async (request, reply) => {
+  app.post('/api/chapters/:chapterId/lines', {
+    schema: courseRouteSchema('createChapterLine', ['Lines'], 'Create a repertoire line in a chapter', {
+      params: chapterIdParamsSchema,
+      body: createLineSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const chapterId = Number((request.params as any).chapterId);
-    const data = createLineSchema.parse(request.body);
-    const { tags, ...rest } = data;
+    const chapterId = request.params.chapterId;
+    const { tags, ...rest } = request.body;
     const line = await LineService.create(auth.userId, chapterId, {
       ...rest,
       tags: tags ? JSON.stringify(tags) : undefined,
@@ -264,24 +348,33 @@ export default async function coursesModule(app: FastifyInstance) {
     return line;
   });
 
-  app.post('/api/chapters/:chapterId/lines/import-pgn', async (request, reply) => {
+  app.post('/api/chapters/:chapterId/lines/import-pgn', {
+    schema: courseRouteSchema('importChapterLinePgn', ['Lines'], 'Import a PGN as a repertoire line', {
+      params: chapterIdParamsSchema,
+      body: importPgnSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const chapterId = Number((request.params as any).chapterId);
-    const parsed = importPgnSchema.safeParse(request.body);
-    if (!parsed.success) return reply.status(400).send({ error: parsed.error.errors });
+    const chapterId = request.params.chapterId;
     try {
-      const line = await PgnService.importLine(auth.userId, chapterId, parsed.data);
+      const line = await PgnService.importLine(auth.userId, chapterId, request.body);
       return reply.status(201).send(line);
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });
     }
   });
 
-  app.get('/api/lines/:id', async (request, reply) => {
+  app.get('/api/lines/:id', {
+    schema: courseRouteSchema('getLine', ['Lines'], 'Get one repertoire line', {
+      params: idParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const line = await LineService.get(auth.userId, id);
     if (!line) {
       reply.code(404);
@@ -290,10 +383,15 @@ export default async function coursesModule(app: FastifyInstance) {
     return line;
   });
 
-  app.get('/api/lines/:id/tree', async (request, reply) => {
+  app.get('/api/lines/:id/tree', {
+    schema: courseRouteSchema('getLineTree', ['Lines'], 'Get the move tree for a repertoire line', {
+      params: idParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     const tree = await LineService.getMoveTree(auth.userId, id);
     if (!tree) {
       reply.code(404);
@@ -302,10 +400,15 @@ export default async function coursesModule(app: FastifyInstance) {
     return tree;
   });
 
-  app.get('/api/lines/:id/export-pgn', async (request, reply) => {
+  app.get('/api/lines/:id/export-pgn', {
+    schema: courseRouteSchema('exportLinePgn', ['Lines'], 'Export a repertoire line as PGN', {
+      params: idParamsSchema,
+      response: { 200: z.object({ pgn: z.string() }), 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     try {
       return { pgn: await PgnService.exportLine(auth.userId, id) };
     } catch (err: any) {
@@ -313,12 +416,17 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.patch('/api/lines/:id', async (request, reply) => {
+  app.patch('/api/lines/:id', {
+    schema: courseRouteSchema('updateLine', ['Lines'], 'Update one repertoire line', {
+      params: idParamsSchema,
+      body: updateLineSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
-    const data = updateLineSchema.parse(request.body);
-    const { tags, ...rest } = data;
+    const id = request.params.id;
+    const { tags, ...rest } = request.body;
     try {
       const line = await LineService.update(auth.userId, id, {
         ...rest,
@@ -332,22 +440,32 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.post('/api/lines/:id/copy', async (request, reply) => {
+  app.post('/api/lines/:id/copy', {
+    schema: courseRouteSchema('copyLine', ['Lines'], 'Copy a repertoire line to a chapter', {
+      params: idParamsSchema,
+      body: copyLineSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
-    const data = copyLineSchema.parse(request.body);
-    const copied = await LineService.copy(auth.userId, id, data.targetChapterId, data.name);
+    const id = request.params.id;
+    const copied = await LineService.copy(auth.userId, id, request.body.targetChapterId, request.body.name);
     if (!copied) {
       return reply.status(404).send({ message: 'Source line or target chapter not found' });
     }
     return reply.status(201).send(copied);
   });
 
-  app.delete('/api/lines/:id', async (request, reply) => {
+  app.delete('/api/lines/:id', {
+    schema: courseRouteSchema('deleteLine', ['Lines'], 'Delete one repertoire line', {
+      params: idParamsSchema,
+      response: { 204: noContentResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     try {
       const line = await LineService.delete(auth.userId, id);
       if (!line) return reply.status(404).send({ message: 'Line not found' });
@@ -359,14 +477,18 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.post('/api/lines/:lineId/nodes', async (request, reply) => {
+  app.post('/api/lines/:lineId/nodes', {
+    schema: courseRouteSchema('createLineNode', ['Lines'], 'Add a move node to a repertoire line', {
+      params: lineIdParamsSchema,
+      body: createNodeSchema,
+      response: { 201: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const lineId = Number((request.params as any).lineId);
-    const bodyResult = createNodeSchema.safeParse(request.body);
-    if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.errors });
+    const lineId = request.params.lineId;
     try {
-      const node = await MoveNodeService.create(auth.userId, lineId, bodyResult.data);
+      const node = await MoveNodeService.create(auth.userId, lineId, request.body);
       return reply.status(201).send(node);
     } catch (err: any) {
       if (err.message === 'Line not found' || err.message === 'Parent node not found') {
@@ -376,14 +498,18 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.patch('/api/nodes/:id', async (request, reply) => {
+  app.patch('/api/nodes/:id', {
+    schema: courseRouteSchema('updateMoveNode', ['Lines'], 'Update one move node', {
+      params: idParamsSchema,
+      body: updateNodeSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
-    const bodyResult = updateNodeSchema.safeParse(request.body);
-    if (!bodyResult.success) return reply.status(400).send({ error: bodyResult.error.errors });
+    const id = request.params.id;
     try {
-      const node = await MoveNodeService.update(auth.userId, id, bodyResult.data);
+      const node = await MoveNodeService.update(auth.userId, id, request.body);
       if (!node) return reply.status(404).send({ message: 'Node not found' });
       return node;
     } catch (err: any) {
@@ -391,10 +517,15 @@ export default async function coursesModule(app: FastifyInstance) {
     }
   });
 
-  app.delete('/api/nodes/:id/subtree', async (request, reply) => {
+  app.delete('/api/nodes/:id/subtree', {
+    schema: courseRouteSchema('deleteMoveNodeSubtree', ['Lines'], 'Delete a move-node subtree', {
+      params: idParamsSchema,
+      response: { 204: noContentResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const id = Number((request.params as any).id);
+    const id = request.params.id;
     try {
       const node = await MoveNodeService.deleteSubtree(auth.userId, id);
       if (!node) return reply.status(404).send({ message: 'Node not found' });
@@ -403,4 +534,6 @@ export default async function coursesModule(app: FastifyInstance) {
       return reply.status(400).send({ error: err.message });
     }
   });
-}
+};
+
+export default coursesModule;

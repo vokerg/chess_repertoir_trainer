@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import Fastify from 'fastify';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import coursesModule from '../../dist/modules/courses/courses.routes.js';
 import { AnalysisReintegrationError, AnalysisReintegrationService } from '../../dist/modules/courses/analysis-reintegration.service.js';
 
 const app = Fastify();
+app.setValidatorCompiler(validatorCompiler);
+app.setSerializerCompiler(serializerCompiler);
 app.decorateRequest('auth', null);
 app.addHook('onRequest', async (request) => {
   request.auth = { userId: 42, provider: 'dev', externalSubject: 'test-user' };

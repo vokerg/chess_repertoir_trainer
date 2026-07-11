@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ImportedGameSearchQuery as ImportedGameSearchWireQuery } from '@chess-trainer/contracts/imported-games';
 
 function csvArray<T extends z.ZodTypeAny>(itemSchema: T) {
   return z.preprocess((value) => {
@@ -73,3 +74,11 @@ export const openingAnalysisTopGamesQuerySchema = openingAnalysisQuerySchema.ext
 export type ImportedGameSearchQuery = z.infer<typeof importedGameSearchQuerySchema>;
 export type OpeningAnalysisQuery = z.infer<typeof openingAnalysisQuerySchema>;
 export type OpeningAnalysisTopGamesQuery = z.infer<typeof openingAnalysisTopGamesQuerySchema>;
+
+export function normalizeImportedGameSearchQuery(query: ImportedGameSearchWireQuery): ImportedGameSearchQuery {
+  return {
+    ...query,
+    from: query.from ? new Date(query.from) : undefined,
+    to: query.to ? new Date(query.to) : undefined,
+  };
+}

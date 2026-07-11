@@ -1,35 +1,39 @@
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
 import dotenv from 'dotenv';
-import registerRoutes from './routes';
-import authPlugin from './auth/auth.plugin';
+import { buildApp } from './app';
 
 dotenv.config();
 
-const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3000;
-const ORIGIN = process.env['CORS_ORIGIN'] || 'http://localhost:4200';
+const port = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3000;
 
 async function bootstrap() {
-  const app = Fastify({ logger: true });
+  const app = await buildApp({ logger: true });
+  let shuttingDown = false;
 
-  await app.register(cors, {
-    origin: ORIGIN,
-    credentials: true,
-    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  });
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    app.log.info({ signal }, 'Shutting down API server');
+    try {
+      await app.close();
+    } catch (error) {
+      app.log.error({ err: error, signal }, 'API shutdown failed');
+      process.exitCode = 1;
+    }
+  };
 
-  app.get('/health', async () => ({ ok: true }));
-
-  await app.register(authPlugin);
-  registerRoutes(app);
+  process.once('SIGINT', () => void shutdown('SIGINT'));
+  process.once('SIGTERM', () => void shutdown('SIGTERM'));
 
   try {
-    await app.listen({ port: PORT, host: '0.0.0.0' });
-    app.log.info(`API server listening on port ${PORT}`);
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
+    await app.listen({ port, host: '0.0.0.0' });
+    app.log.info(`API server listening on port ${port}`);
+  } catch (error) {
+    app.log.error(error);
+    process.exitCode = 1;
+    await app.close().catch((closeError) => {
+      app.log.error({ err: closeError }, 'API cleanup after startup failure failed');
+    });
   }
 }
 
-bootstrap();
+void bootstrap();

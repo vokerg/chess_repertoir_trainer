@@ -1,8 +1,17 @@
-export type Provider = 'LICHESS' | 'CHESS_COM';
-export type UserColor = 'WHITE' | 'BLACK';
-export type ResultForUser = 'WIN' | 'DRAW' | 'LOSS';
-export type AnalysisStatus = 'NOT_ANALYZED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-export type PlyIndexStatus = 'NOT_INDEXED' | 'INDEXED' | 'FAILED';
+import type {
+  ImportedGameAnalysisStatus,
+  ImportedGameFacetsResponse as ImportedGameFacetsDto,
+  ImportedGamePlyIndexStatus,
+  ImportedGameProvider,
+  ImportedGameResultForUser,
+  ImportedGameUserColor,
+} from '@chess-trainer/contracts/imported-games';
+
+export type Provider = ImportedGameProvider;
+export type UserColor = ImportedGameUserColor;
+export type ResultForUser = ImportedGameResultForUser;
+export type AnalysisStatus = ImportedGameAnalysisStatus;
+export type PlyIndexStatus = ImportedGamePlyIndexStatus;
 
 export interface FacetValue {
   value?: string | number | boolean | null;
@@ -14,14 +23,18 @@ export interface FacetValue {
   username?: string | null;
 }
 
-export interface ImportedGameFacetsResponse {
-  accounts?: FacetValue[];
-  providers?: FacetValue[];
-  speeds?: FacetValue[];
-  variants?: FacetValue[];
-  results?: FacetValue[];
-  colors?: FacetValue[];
-  openings?: FacetValue[];
-  analysisStatuses?: FacetValue[];
-  tags?: FacetValue[];
+export type ImportedGameFacetsResponse = ImportedGameFacetsDto;
+
+export function emptyImportedGameFacets(): ImportedGameFacetsResponse {
+  return {
+    accounts: [],
+    providers: [],
+    speeds: [],
+    variants: [],
+    results: [],
+    colors: [],
+    openings: [],
+    analysisStatuses: [],
+    tags: [],
+  };
 }

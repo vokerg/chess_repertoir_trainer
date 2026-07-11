@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { requireAuth } from '../../auth/request-auth';
 import {
@@ -8,6 +8,8 @@ import {
   pickMarathonSubline,
   resolveMarathonCandidates,
 } from './training-marathon-candidates.service';
+import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const marathonScopeSchema = z.object({
   type: z.enum(['CHAPTER', 'COURSE']),
@@ -26,16 +28,24 @@ const nextLineSchema = z.object({
   recentLineIds: z.array(z.coerce.number().int().positive()).optional().default([]),
 });
 
-export default async function trainingMarathonsModule(app: FastifyInstance) {
-  app.post('/api/training-marathons/next', async (request: FastifyRequest, reply: FastifyReply) => {
+const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
+  app.post('/api/training-marathons/next', {
+    schema: {
+      operationId: 'getNextTrainingMarathonLine',
+      tags: ['Training'],
+      summary: 'Select the next line for a training marathon',
+      body: nextLineSchema,
+      response: {
+        200: legacyOpaqueResponseSchema,
+        400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]),
+        401: unauthorizedResponseSchema,
+        404: apiErrorResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    const bodyResult = nextLineSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      return reply.status(400).send({ error: bodyResult.error.errors });
-    }
-
-    const requestBody = bodyResult.data;
+    const requestBody = request.body;
 
     try {
       const { scope, scopeLabel, sublines } = await resolveMarathonCandidates(auth.userId, requestBody);
@@ -52,9 +62,11 @@ export default async function trainingMarathonsModule(app: FastifyInstance) {
       return reply.send(await buildMarathonNextResponse(auth.userId, scope, requestBody.mode, subline));
     } catch (err: any) {
       if (err instanceof MarathonCandidateError) {
-        return reply.status(err.statusCode).send({ error: err.message });
+        return reply.status(err.statusCode as 400 | 404).send({ error: err.message });
       }
       return reply.status(400).send({ error: err.message });
     }
   });
-}
+};
+
+export default trainingMarathonsModule;
