@@ -8,41 +8,64 @@
   <section class="move-tree-line" [class.move-tree-line-branch]="branch">
     @for (current of nodes; track current.node.id) {
       <div class="move-tree-step">
-        <div class="move-tree-step-row">
+        <div
+          class="move-tree-step-row"
+          [class.move-tree-step-row-selected]="current.node.id === selectedNodeId()"
+        >
           <span class="move-tree-move-number" aria-hidden="true">{{ moveNumberLabel(current) }}</span>
 
-          <button
-            type="button"
-            class="move-tree-node-button"
-            [class.move-tree-node-pilled]="current.node.id !== 0 && current.node.isUserMove"
-            [class.move-tree-node-selected]="current.node.id === selectedNodeId()"
-            [class.move-tree-node-trained]="current.node.id !== 0 && current.node.isUserMove"
-            [class.move-tree-node-opponent]="current.node.id !== 0 && !current.node.isUserMove"
-            [title]="nodeTitle(current)"
-            (click)="nodeSelected.emit(current.node.id)"
-          >
-            <span>{{ nodeLabel(current) }}</span>
-            @if (evalLabel(current); as label) {
-              <span class="move-tree-eval" [attr.aria-label]="'Evaluation ' + label">
-                {{ label }}
-              </span>
-            }
-            @if (current.node.id !== 0) {
-              <span class="move-tree-meta">{{ nodeMeta(current) }}</span>
-            }
-            @if (classificationLabel(current); as label) {
-              <span
-                class="move-tree-classification"
-                [class.move-tree-classification-good]="classificationTone(current) === 'good'"
-                [class.move-tree-classification-warning]="classificationTone(current) === 'warning'"
-                [class.move-tree-classification-bad]="classificationTone(current) === 'bad'"
-                [attr.title]="classificationTitle(current)"
-                [attr.aria-label]="classificationTitle(current)"
+          <div class="move-tree-node-controls">
+            <button
+              type="button"
+              class="move-tree-node-button"
+              [class.move-tree-node-pilled]="current.node.id !== 0 && current.node.isUserMove"
+              [class.move-tree-node-selected]="current.node.id === selectedNodeId()"
+              [class.move-tree-node-trained]="current.node.id !== 0 && current.node.isUserMove"
+              [class.move-tree-node-opponent]="current.node.id !== 0 && !current.node.isUserMove"
+              [title]="nodeTitle(current)"
+              (click)="nodeSelected.emit(current.node.id)"
+            >
+              <span>{{ nodeLabel(current) }}</span>
+              @if (evalLabel(current); as label) {
+                <span class="move-tree-eval" [attr.aria-label]="'Evaluation ' + label">
+                  {{ label }}
+                </span>
+              }
+              @if (current.node.id !== 0) {
+                <span class="move-tree-meta">{{ nodeMeta(current) }}</span>
+              }
+              @if (classificationLabel(current); as label) {
+                <span
+                  class="move-tree-classification"
+                  [class.move-tree-classification-good]="classificationTone(current) === 'good'"
+                  [class.move-tree-classification-warning]="classificationTone(current) === 'warning'"
+                  [class.move-tree-classification-bad]="classificationTone(current) === 'bad'"
+                  [attr.title]="classificationTitle(current)"
+                  [attr.aria-label]="classificationTitle(current)"
+                >
+                  {{ label }}
+                </span>
+              }
+            </button>
+
+            @if (canDeleteNode(current)) {
+              <button
+                type="button"
+                class="move-tree-delete-action"
+                [disabled]="deletionDisabled()"
+                [attr.aria-label]="'Delete ' + nodeLabel(current) + ' and its continuations'"
+                [title]="'Delete ' + nodeLabel(current) + ' and its continuations'"
+                (click)="requestDelete(current, $event)"
               >
-                {{ label }}
-              </span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16" />
+                  <path d="M9 7V4h6v3" />
+                  <path d="M6.5 7l1 13h9l1-13" />
+                  <path d="M10 11v5M14 11v5" />
+                </svg>
+              </button>
             }
-          </button>
+          </div>
         </div>
 
         @if (sidelines(current).length) {
