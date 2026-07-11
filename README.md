@@ -418,7 +418,7 @@ GET /api/docs
 GET /api/docs/openapi.json
 ```
 
-The official Swagger UI and OpenAPI JSON are served by the API. The document is generated solely from Fastify route schemas and is isolated to each `buildApp()` instance. See [`docs/openapi.md`](docs/openapi.md).
+The official Swagger UI and OpenAPI JSON are served by the API. The document is generated solely from explicit Fastify route schemas and is isolated to each `buildApp()` instance; incomplete product routes fail registration. See [`docs/openapi.md`](docs/openapi.md).
 
 ## Running locally
 
@@ -439,6 +439,8 @@ Individual services:
 npm run dev:api
 npm run dev:web
 ```
+
+Focused API commands prepare compiled `chess-domain` and `contracts` dependencies automatically. Focused web commands prepare compiled `contracts`, so these commands do not require a prior root build after `npm ci`.
 
 ## Build and test
 

@@ -11,7 +11,7 @@ import {
   legacyMessageResponseSchema,
 } from '@chess-trainer/contracts/imported-games';
 import { requireAuth } from '../../auth/request-auth';
-import { ImportedGamesService } from './imported-games.service';
+import { ImportedGamesService, PersistedImportedGameAnalysisError } from './imported-games.service';
 import {
   normalizeImportedGameSearchQuery,
   openingAnalysisQuerySchema,
@@ -22,19 +22,15 @@ import { OpeningAnalysisService } from './opening-analysis.service';
 import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis.config';
 import { ImportedGameBatchAnalysisService } from '../analysis/batch-game-analysis.service';
 import { z } from 'zod';
-
-function parseGameId(params: unknown): number | null {
-  const gameId = Number((params as any).gameId);
-  return Number.isInteger(gameId) && gameId > 0 ? gameId : null;
-}
-
-function parseForce(body: unknown): boolean {
-  if (!body || typeof body !== 'object') return false;
-  return (body as any).force === true;
-}
+import {
+  apiErrorResponseSchema,
+  legacyOpaqueResponseSchema,
+  unauthorizedResponseSchema,
+} from '../../routes/legacy-route.schemas';
+import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const forceSchema = z.object({ force: z.boolean().optional() });
-const importedGamesRouteSchema = (operationId: string, extra: Record<string, unknown> = {}) => ({
+const importedGamesRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
   operationId,
   tags: ['Imported games'],
   ...extra,
@@ -68,18 +64,17 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
     method: 'GET',
     url: '/api/opening-analysis',
-    schema: importedGamesRouteSchema('getOpeningAnalysis', { querystring: openingAnalysisQuerySchema }),
+    schema: importedGamesRouteSchema('getOpeningAnalysis', {
+      summary: 'Get core opening analysis for one board position',
+      description: 'Returns position WDL, next moves, and opening-book lookup for the current user filters.',
+      querystring: openingAnalysisQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = openingAnalysisQuerySchema.safeParse(request.query);
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.issues };
-      }
-
       try {
-        return await OpeningAnalysisService.getPosition(auth.userId, parsed.data, request.log);
+        return await OpeningAnalysisService.getPosition(auth.userId, request.query, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -90,18 +85,17 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
     method: 'GET',
     url: '/api/opening-analysis/performance',
-    schema: importedGamesRouteSchema('getOpeningAnalysisPerformance', { querystring: openingAnalysisQuerySchema }),
+    schema: importedGamesRouteSchema('getOpeningAnalysisPerformance', {
+      summary: 'Get opening-position performance',
+      description: 'Returns bounded database-backed performance buckets for games reaching the position.',
+      querystring: openingAnalysisQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = openingAnalysisQuerySchema.safeParse(request.query);
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.issues };
-      }
-
       try {
-        return await OpeningAnalysisService.getPerformance(auth.userId, parsed.data, request.log);
+        return await OpeningAnalysisService.getPerformance(auth.userId, request.query, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -112,18 +106,16 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
     method: 'GET',
     url: '/api/opening-analysis/top-games',
-    schema: importedGamesRouteSchema('getOpeningAnalysisTopGames', { querystring: openingAnalysisTopGamesQuerySchema }),
+    schema: importedGamesRouteSchema('getOpeningAnalysisTopGames', {
+      summary: 'Get recent games reaching an opening position',
+      querystring: openingAnalysisTopGamesQuerySchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const parsed = openingAnalysisTopGamesQuerySchema.safeParse(request.query);
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.issues };
-      }
-
       try {
-        return await OpeningAnalysisService.getTopGames(auth.userId, parsed.data, parsed.data.limit, request.log);
+        return await OpeningAnalysisService.getTopGames(auth.userId, request.query, request.query.limit, request.log);
       } catch (err: any) {
         reply.code(400);
         return { error: err?.message ?? String(err) };
@@ -174,13 +166,23 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
         400: legacyApiErrorResponseSchema,
         401: legacyMessageResponseSchema,
         404: legacyMessageResponseSchema,
+        500: legacyApiErrorResponseSchema,
       },
     },
   }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
 
-      const game = await ImportedGamesService.get(auth.userId, request.params.gameId);
+      let game;
+      try {
+        game = await ImportedGamesService.get(auth.userId, request.params.gameId);
+      } catch (error) {
+        if (error instanceof PersistedImportedGameAnalysisError) {
+          request.log.error({ err: error, gameId: request.params.gameId }, 'Stored imported-game analysis could not be normalized');
+          return reply.code(500).send({ error: 'Stored analysis data is invalid' });
+        }
+        throw error;
+      }
       if (!game) {
         return reply.code(404).send({ message: 'Imported game not found' });
       }
@@ -190,15 +192,16 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
     method: 'POST',
     url: '/api/imported-games/:gameId/tags/refresh',
-    schema: importedGamesRouteSchema('refreshImportedGameTags', { params: importedGameIdParamsSchema }),
+    schema: importedGamesRouteSchema('refreshImportedGameTags', {
+      summary: 'Refresh derived tags for one imported game',
+      description: 'Bodyless action: tags are recalculated from the persisted game and analysis.',
+      params: importedGameIdParamsSchema,
+      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
+      const gameId = request.params.gameId;
 
       try {
         return await ImportedGamesService.refreshTags(auth.userId, gameId);
@@ -217,15 +220,25 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
     method: 'POST',
     url: '/api/imported-games/:gameId/full-refresh-runs',
-    schema: importedGamesRouteSchema('createImportedGameFullRefreshRun', { params: importedGameIdParamsSchema }),
+    schema: importedGamesRouteSchema('createImportedGameFullRefreshRun', {
+      summary: 'Queue a full imported-game refresh',
+      description: 'Bodyless action: force re-indexes, assigns an opening, recalculates analysis, and refreshes tags.',
+      params: importedGameIdParamsSchema,
+      response: {
+        200: z.object({
+          accepted: z.literal(true),
+          importedGameId: z.number().int().positive(),
+          steps: z.array(z.enum(['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'])).length(4),
+        }),
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        403: apiErrorResponseSchema,
+      },
+    }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
+      const gameId = request.params.gameId;
       if (!isLocalBatchStockfishAnalysisEnabled()) {
         reply.code(403);
         return { error: 'Local batch Stockfish analysis is disabled' };
@@ -234,9 +247,9 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
       try {
         await ImportedGameBatchAnalysisService.enqueueFullRefresh(auth.userId, gameId);
         return {
-          accepted: true,
+          accepted: true as const,
           importedGameId: gameId,
-          steps: ['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'],
+          steps: ['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'] as Array<'PLY_INDEX' | 'OPENING_ASSIGNMENT' | 'ANALYSIS' | 'TAGS'>,
         };
       } catch (err: any) {
         reply.code(400);
@@ -273,21 +286,26 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
     method: 'POST',
     url: '/api/imported-games/:gameId/ply-index',
     schema: importedGamesRouteSchema('indexImportedGamePly', {
+      summary: 'Run the standard indexing workflow for one imported game',
+      description: 'Indexes plies and assigns missing opening metadata without running Stockfish.',
       params: importedGameIdParamsSchema,
       body: forceSchema,
+      response: {
+        200: legacyOpaqueResponseSchema,
+        201: legacyOpaqueResponseSchema,
+        400: apiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: apiErrorResponseSchema,
+      },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
-      const gameId = parseGameId(request.params);
-      if (!gameId) {
-        reply.code(400);
-        return { error: 'Invalid imported game id' };
-      }
+      const gameId = request.params.gameId;
 
       try {
         const result = await ImportedGameIndexWorkflowService.indexGame(auth.userId, gameId, {
-          force: parseForce(request.body),
+          force: request.body.force === true,
         });
         if (result.plyIndex?.status === 'INDEXED') reply.code(201);
         if (result.plyIndex?.status === 'FAILED') reply.code(400);

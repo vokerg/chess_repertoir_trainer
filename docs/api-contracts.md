@@ -16,5 +16,8 @@ Contracts may contain HTTP params/query/body/response schemas, stable wire liter
 - Distinguish wire input from normalized internal output when transforms are used.
 - Test the schema against actual mapper/service output and representative invalid values.
 - Delete handwritten duplicates only after API and web compile against the shared contract.
+- Public position-analysis lines require `pvUci`. Historical persisted JSON is normalized at the API mapping boundary so legacy rows cannot weaken the wire contract.
+
+The package exports compiled `dist` files. Focused API scripts prepare both `chess-domain` and `contracts`; focused web scripts prepare `contracts`. This keeps focused commands valid after `npm ci` without importing unpublished package source.
 
 See [OpenAPI](openapi.md) for route documentation conventions.

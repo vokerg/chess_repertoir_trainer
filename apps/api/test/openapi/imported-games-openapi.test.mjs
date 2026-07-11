@@ -10,7 +10,11 @@ const expectedOperations = new Map([
 ]);
 
 async function generatedDocument() {
-  const app = await buildApp({ logger: false });
+  const app = await buildApp({
+    logger: false,
+    authConfig: { mode: 'dev-single-user', userId: 1 },
+    prisma: { $disconnect: async () => {} },
+  });
   try {
     await app.ready();
     const document = app.swagger();

@@ -30,8 +30,6 @@ Thumbs.db
 apps/web/.angular/
 apps/web/node_modules/
 apps/api/node_modules/
-apps/mobile/node_modules/
-apps/mobile/.expo/
 apps/web/.agents/
 apps/web/skills-lock.json
 
@@ -42,6 +40,9 @@ apps/api/prisma/*.d.ts
 
 # Compiled Prisma client
 apps/api/prisma/generated/
+
+# Generated course exports are personal backup data.
+backups/courses/
 
 # Keep data folder, but do not commit local DB files
 data/*.db

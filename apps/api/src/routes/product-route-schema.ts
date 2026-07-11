@@ -1,42 +1,20 @@
 import type { RouteOptions } from 'fastify';
 
-const METHOD_PREFIX: Record<string, string> = {
-  DELETE: 'delete',
-  GET: 'get',
-  PATCH: 'update',
-  POST: 'create',
-  PUT: 'replace',
-};
-
 export function ensureProductRouteSchema(route: RouteOptions): void {
   if (!route.url.startsWith('/api/') || route.url.startsWith('/api/docs')) return;
 
-  route.schema ??= {};
-  if (route.schema.hide || route.schema.operationId) return;
+  const schema = route.schema;
+  if (schema?.hide) return;
 
-  const method = Array.isArray(route.method) ? route.method[0] : route.method;
-  const normalizedMethod = String(method).toUpperCase();
-  const segments = route.url
-    .replace(/^\/api\//, '')
-    .split('/')
-    .filter(Boolean);
-  const resource = segments[0] ?? 'api';
+  const missing = [
+    !schema?.operationId && 'operationId',
+    (!schema?.tags || schema.tags.length === 0) && 'tags',
+    !schema?.summary && 'summary',
+    (!schema?.response || !Object.keys(schema.response).some((status) => /^[23]\d\d$/.test(status))) && 'successful response',
+  ].filter(Boolean);
 
-  route.schema.operationId = [
-    METHOD_PREFIX[normalizedMethod] ?? normalizedMethod.toLowerCase(),
-    ...segments.map((segment) => segment.startsWith(':')
-      ? `by-${segment.slice(1)}`
-      : segment),
-  ].map((segment, index) => index === 0
-    ? segment
-    : segment.replace(/(^|-)([a-z0-9])/g, (_, _separator, character: string) => character.toUpperCase()))
-    .join('');
-  route.schema.tags ??= [toTag(resource)];
-}
-
-function toTag(value: string): string {
-  return value
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+  if (missing.length > 0) {
+    const method = Array.isArray(route.method) ? route.method.join(',') : route.method;
+    throw new Error(`Product route ${String(method)} ${route.url} is missing explicit schema metadata: ${missing.join(', ')}`);
+  }
 }

@@ -107,7 +107,7 @@ export const positionAnalysisLineSchema = z.object({
   moveUci: z.string().nullable().optional(),
   scoreCpWhite: z.number().nullable().optional(),
   mateWhite: z.number().nullable().optional(),
-  pvUci: z.array(z.string()).optional(),
+  pvUci: z.array(z.string()),
 });
 
 export const importedGamePositionAnalysisSchema = z.object({

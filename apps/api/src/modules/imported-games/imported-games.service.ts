@@ -1,4 +1,4 @@
-import { moveClassificationLabel } from 'chess-domain';
+import { moveClassificationLabel, normalizeStoredEngineLines } from 'chess-domain';
 import type {
   ImportedGameDetail,
   ImportedGameFacetsResponse,
@@ -7,7 +7,6 @@ import type {
   ImportedGameSearchResponse,
   ImportedGameTagDefinitionsResponse,
 } from '@chess-trainer/contracts/imported-games';
-import { positionAnalysisLineSchema } from '@chess-trainer/contracts/imported-games';
 import { firstUciMove } from '../analysis/position-analysis-normalization';
 import {
   criticalMoveCount,
@@ -29,8 +28,18 @@ function toIso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
+export class PersistedImportedGameAnalysisError extends Error {
+  constructor() {
+    super('Stored imported-game analysis lines are not an array');
+    this.name = 'PersistedImportedGameAnalysisError';
+  }
+}
+
 function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
   const analysis = ply.position.analysis;
+  if (analysis?.lines !== null && analysis?.lines !== undefined && !Array.isArray(analysis.lines)) {
+    throw new PersistedImportedGameAnalysisError();
+  }
   return {
     plyNumber: ply.plyNumber,
     moveUci: ply.moveUci,
@@ -44,7 +53,7 @@ function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
         bestMoveUci: firstUciMove(analysis.bestMoveUci) ?? null,
         bestScoreCpWhite: analysis.bestScoreCpWhite ?? null,
         bestMateWhite: analysis.bestMateWhite ?? null,
-        lines: positionAnalysisLineSchema.array().parse(Array.isArray(analysis.lines) ? analysis.lines : []),
+        lines: normalizeStoredEngineLines(Array.isArray(analysis.lines) ? analysis.lines : []),
       }
       : null,
   };

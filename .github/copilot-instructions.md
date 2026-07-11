@@ -8,6 +8,8 @@ Use existing feature boundaries. Keep Fastify routes thin, application services 
 
 For shared endpoint DTOs, `packages/contracts` owns the Zod wire schema and inferred type; Fastify route schemas generate OpenAPI. Do not add `*.openapi.ts`, an OpenAPI registry or merge layer, duplicate shared DTOs in Angular, expose Prisma models as contracts, or parse an already schema-validated request again.
 
+Every `/api/**` product operation declares explicit OpenAPI metadata and intentional responses; the route-registration guard does not fill gaps. Full-app tests inject `authConfig` rather than modifying global auth environment state. Focused API/web scripts prepare their compiled workspace dependencies.
+
 Use database aggregation for counts, summaries, facets, and averages. Apply the existing repository `where` predicate before grouping and only post-process bounded aggregate rows in Node.
 
 The native Expo client has been removed. Do not recreate native-client code or remove responsive Angular behavior merely because it uses the word “mobile.”

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
+import { emptyImportedGameFacets } from '../../../shared/games/game.models';
 import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
 import {
   OpeningAnalysisPerformanceResponse,
@@ -37,7 +38,7 @@ describe('OpeningAnalysisStore', () => {
       { state$: new BehaviorSubject<EngineAnalysis>(EMPTY_ENGINE).asObservable() },
     );
 
-    api.getFacets.and.returnValue(of({}));
+    api.getFacets.and.returnValue(of(emptyImportedGameFacets()));
     api.getAnalysis.and.returnValue(of(coreResponse('startpos', 1)));
     api.getPerformance.and.returnValue(of(performanceResponse('startpos', 1)));
     api.getTopGames.and.returnValue(of(topGamesResponse('startpos', 1)));

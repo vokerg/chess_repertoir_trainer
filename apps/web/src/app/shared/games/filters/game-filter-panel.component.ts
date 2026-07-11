@@ -12,6 +12,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import {
   FacetValue,
+  emptyImportedGameFacets,
   ImportedGameFacetsResponse,
   Provider,
   UserColor,
@@ -30,7 +31,7 @@ export class GameFilterPanelComponent {
   @ViewChild('tagsPicker') private tagsPicker?: ElementRef<HTMLElement>;
 
   readonly filters = input.required<GameFilters>();
-  readonly facets = input<ImportedGameFacetsResponse>({});
+  readonly facets = input<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly loading = input(false);
   readonly lockedUserColor = input<UserColor | null>(null);
   readonly filtersChange = output<GameFilters>();

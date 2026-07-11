@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import { ImportedGameQueryService } from '../../dist/modules/imported-games/imported-game-query.service.js';
+import { createChessMcpServer } from '../../dist/modules/mcp/mcp.server.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
@@ -116,6 +119,22 @@ try {
   assert.equal((await summarize({ analysisStatus: ['NOT_ANALYZED'] })).total, 2);
   assert.equal((await summarize({ minAccuracy: 80 })).total, 2);
   assert.equal((await summarize({ classification: ['BLUNDER'] })).total, 1);
+
+  const server = createChessMcpServer({ error: () => {} }, userId);
+  const client = new Client({ name: 'summary-aggregation-regression', version: '1.0.0' });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  const mcpSummary = await client.callTool({
+    name: 'summarize_imported_games',
+    arguments: { providers: ['LICHESS'] },
+  });
+  assert.equal(mcpSummary.isError, undefined);
+  assert.deepEqual(mcpSummary.content, []);
+  assert.equal(mcpSummary.structuredContent.summary.total, 3);
+  assert.deepEqual(mcpSummary.structuredContent.appliedCriteria.providers, ['LICHESS']);
+  await client.close();
+  await server.close();
 
   console.log('Imported game summary aggregation tests passed.');
 } finally {

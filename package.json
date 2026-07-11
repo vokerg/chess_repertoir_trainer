@@ -24,7 +24,7 @@
     "build:web": "npm run build --workspace=apps/web",
     "test": "npm run test --workspace=packages/chess-domain && npm run test:contracts && npm run test --workspace=apps/api && npm run test --workspace=apps/web",
     "test:contracts": "npm run test --workspace=packages/contracts",
-    "lint": "npm run lint --workspaces --if-present",
+    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
     "check:architecture": "node scripts/check-architecture-guardrails.mjs",
     "format": "npm run format --workspaces",
     "db:migrate": "npm run db:migrate --workspace=apps/api",

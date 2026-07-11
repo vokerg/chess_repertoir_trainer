@@ -7,7 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { ImportedGameFacetsResponse } from '../game.models';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../game.models';
 import { GameFilterPanelComponent } from '../filters/game-filter-panel.component';
 import { GameFilters } from '../filters/game-filter.model';
 import { summaryGameFilters } from '../filters/game-filter-summary';
@@ -32,7 +32,7 @@ export class PositionGameMovesPanelComponent implements OnInit {
   readonly topGamesLoading = input(false);
   readonly error = input<string | null>(null);
   readonly filters = input.required<GameFilters>();
-  readonly facets = input<ImportedGameFacetsResponse>({});
+  readonly facets = input<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly filtersCollapsedInitially = input(false);
   readonly compact = input(false);
   readonly showTopGames = input(false);

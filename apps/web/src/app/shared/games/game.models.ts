@@ -23,4 +23,18 @@ export interface FacetValue {
   username?: string | null;
 }
 
-export type ImportedGameFacetsResponse = Partial<ImportedGameFacetsDto>;
+export type ImportedGameFacetsResponse = ImportedGameFacetsDto;
+
+export function emptyImportedGameFacets(): ImportedGameFacetsResponse {
+  return {
+    accounts: [],
+    providers: [],
+    speeds: [],
+    variants: [],
+    results: [],
+    colors: [],
+    openings: [],
+    analysisStatuses: [],
+    tags: [],
+  };
+}

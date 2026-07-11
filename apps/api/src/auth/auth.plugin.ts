@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyRequest } from 'fastify';
-import { loadAuthConfig } from './auth.config';
+import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
 
 const PUBLIC_PATHS = new Set([
@@ -53,8 +53,12 @@ function readDisplayName(payload: Record<string, unknown>) {
   return typeof name === 'string' && name.length > 0 ? name : undefined;
 }
 
-export default fp(async function authPlugin(app) {
-  const config = loadAuthConfig();
+export interface AuthPluginOptions {
+  authConfig?: AuthConfig;
+}
+
+export default fp(async function authPlugin(app, options: AuthPluginOptions) {
+  const config = options.authConfig ?? loadAuthConfig();
   const { createRemoteJWKSet, jwtVerify } = config.mode === 'clerk'
     ? await import('jose')
     : { createRemoteJWKSet: null, jwtVerify: null };
@@ -62,7 +66,7 @@ export default fp(async function authPlugin(app) {
 
   app.decorateRequest('auth', null);
 
-  app.addHook('onRequest', async (request, reply) => {
+  app.addHook('preHandler', async (request, reply) => {
     if (isPublicRequest(request)) return;
 
     if (config.mode === 'dev-single-user') {

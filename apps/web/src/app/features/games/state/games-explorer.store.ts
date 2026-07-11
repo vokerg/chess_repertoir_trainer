@@ -11,6 +11,7 @@ import {
 } from '../data-access/games.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game-workflow-eligibility';
+import { emptyImportedGameFacets } from '../../../shared/games/game.models';
 
 @Injectable()
 export class GamesExplorerStore {
@@ -18,7 +19,7 @@ export class GamesExplorerStore {
   readonly importedGameAnalysis = inject(ImportedGameAnalysisService);
 
   readonly games = signal<ImportedGameListItem[]>([]);
-  readonly facets = signal<ImportedGameFacetsResponse>({});
+  readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly analysingGameId = signal<number | null>(null);
@@ -89,7 +90,7 @@ export class GamesExplorerStore {
 
   loadFacets(): void {
     this.api.getFacets().subscribe({
-      next: (data) => this.facets.set(data || {}),
+      next: (data) => this.facets.set(data),
     });
   }
 

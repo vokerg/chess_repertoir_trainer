@@ -119,21 +119,23 @@ export function storedEngineLineFromUciInfo(
   };
 }
 
-export function normalizeStoredEngineLines(lines?: StoredEngineLine[] | null): StoredEngineLine[] {
+export function normalizeStoredEngineLines(lines?: readonly unknown[] | null): StoredEngineLine[] {
   if (!Array.isArray(lines)) return [];
 
   return lines.slice(0, 3).flatMap((line, index) => {
-    const pvUci = (Array.isArray(line?.pvUci) ? line.pvUci : [])
+    if (!line || typeof line !== 'object') return [];
+    const persisted = line as Record<string, unknown>;
+    const pvUci = (Array.isArray(persisted['pvUci']) ? persisted['pvUci'] : [])
       .map((move) => firstUciMove(move))
       .filter((move): move is string => move !== null);
-    const moveUci = firstUciMove(line?.moveUci) ?? pvUci[0] ?? null;
+    const moveUci = firstUciMove(typeof persisted['moveUci'] === 'string' ? persisted['moveUci'] : null) ?? pvUci[0] ?? null;
     if (!moveUci) return [];
 
-    const scoreCpWhite = boundedInt(line.scoreCpWhite, -32768, 32767);
-    const mateWhite = boundedInt(line.mateWhite, -32768, 32767);
+    const scoreCpWhite = boundedInt(persisted['scoreCpWhite'], -32768, 32767);
+    const mateWhite = boundedInt(persisted['mateWhite'], -32768, 32767);
     return [{
-      multipv: boundedInt(line.multipv, 1, 3) ?? index + 1,
-      depth: boundedInt(line.depth, 0, 255),
+      multipv: boundedInt(persisted['multipv'], 1, 3) ?? index + 1,
+      depth: boundedInt(persisted['depth'], 0, 255),
       moveUci,
       ...(scoreCpWhite === undefined ? {} : { scoreCpWhite }),
       ...(mateWhite === undefined ? {} : { mateWhite }),

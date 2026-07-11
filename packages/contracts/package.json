@@ -23,7 +23,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node -e \"require('./dist/index.js')\""
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node test/contracts.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"

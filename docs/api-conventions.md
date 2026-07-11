@@ -2,9 +2,11 @@
 
 ## Route convention
 
-Migrated feature routes use one Fastify route schema containing `operationId`, tags, summary, params/query/body schemas, and response schemas. Zod wire schemas come from `packages/contracts`; generated OpenAPI is an output of these route schemas.
+Every product route uses one Fastify route schema containing an explicit `operationId`, tags, summary, params/query/body schemas where applicable, and intentional response schemas. Zod wire schemas come from `packages/contracts`; generated OpenAPI is an output of these route schemas. Registration fails when required product-route metadata is missing.
 
 Route handlers authenticate, read validated input, call an application service, and select documented HTTP responses. Services do not accept Fastify objects. Prisma stays in feature repositories. `routes/index.ts` remains composition-only.
+
+Fastify request-validation failures are centralized in `buildApp()` and return status `400` with exactly `{ "error": "Validation failed" }`. The handler is not entered for malformed schema-backed input. Expected service and domain failures keep their route-specific status and response semantics.
 
 ## Rules
 
@@ -30,3 +32,5 @@ apps/api/src/modules/<feature>/
 ```
 
 Validate API changes with `npm run build:api` and the focused API test or `npm run test --workspace=apps/api`.
+
+`buildApp({ authConfig })` accepts deterministic test auth without mutating process-global environment state. When `authConfig` is omitted, the auth plugin calls `loadAuthConfig()` exactly as production startup requires.

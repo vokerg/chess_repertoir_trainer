@@ -4,7 +4,30 @@ import {
   boardImageUrlResponseSchema,
 } from '@chess-trainer/contracts/board-images';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { BoardImagesService } from './board-images.service';
+import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
+
+const boardImageBadRequestSchema = z.union([
+  validationErrorResponseSchema,
+  boardImageErrorResponseSchema,
+]);
+
+const boardImageRedirectResponseSchema = z.never().meta({
+  description: 'Redirect with no response body.',
+  headers: {
+    Location: {
+      description: 'Absolute Chessvision board-image URL.',
+      type: 'string',
+      format: 'uri',
+    },
+    'Cache-Control': {
+      description: 'Public one-day cache policy.',
+      type: 'string',
+      example: 'public, max-age=86400',
+    },
+  },
+});
 
 const boardImagesModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/board-image-url', {
@@ -15,7 +38,7 @@ const boardImagesModule: FastifyPluginAsyncZod = async (app) => {
       querystring: boardImageQuerySchema,
       response: {
         200: boardImageUrlResponseSchema,
-        400: boardImageErrorResponseSchema,
+        400: boardImageBadRequestSchema,
       },
     },
   }, async (request, reply) => {
@@ -33,8 +56,8 @@ const boardImagesModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Redirect to a Chessvision board image',
       querystring: boardImageQuerySchema,
       response: {
-        302: boardImageUrlResponseSchema.optional(),
-        400: boardImageErrorResponseSchema,
+        302: boardImageRedirectResponseSchema,
+        400: boardImageBadRequestSchema,
       },
     },
   }, async (request, reply) => {

@@ -37,6 +37,8 @@ Do not add `*.openapi.ts`, a separate OpenAPI registry, or hand-maintained path 
 - Use database `count`, `aggregate`, or `groupBy` for summaries and facets. Never load an unbounded matching row set for Node-side reduction.
 - The only supported client is responsive Angular web. There is no native mobile workspace; do not confuse responsive-web “mobile” behavior with a native client.
 - Update canonical docs in the same change as architecture behavior.
+- Schema-backed handlers consume Fastify-validated `params`, `query`, and `body` values directly. Malformed requests use the centralized `{ "error": "Validation failed" }` response.
+- Tests that construct the full API inject a deterministic `authConfig`; production startup omits it and loads auth from the environment.
 
 ## Validation
 
@@ -48,6 +50,8 @@ From the repository root:
 - API: `npm run build:api` and `npm run test --workspace=apps/api`
 - Web: `npm run build:web` and `npm run test --workspace=apps/web`
 - Domain: `npm run build:domain` and `npm run test --workspace=packages/chess-domain`
-- Contracts, once active: `npm run build:contracts` and `npm run test:contracts`
+- Contracts: `npm run build:contracts` and `npm run test:contracts`
+
+Focused API build/dev/lint commands build `chess-domain` and `contracts` first; focused web build/dev/test/lint commands build `contracts` first. Do not remove those workspace pre-scripts or assume a root build already ran.
 
 Report exactly what ran, what was skipped, and any warnings or residual risk.

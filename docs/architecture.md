@@ -43,7 +43,7 @@ Lab tactical detections are persisted reports over analysed imported games. They
 
 MCP is a backend transport under `apps/api`; its read-only tools call feature/application services directly rather than calling REST endpoints.
 
-`apps/api/src/app.ts` owns reusable Fastify construction, compiler/plugin registration, generated OpenAPI and official Swagger UI, auth/CORS, and route composition. `apps/api/src/main.ts` loads environment configuration, listens, and handles shutdown. Tests construct and close independent app instances through `buildApp`.
+`apps/api/src/app.ts` owns reusable Fastify construction, compiler/plugin registration, centralized request-validation errors, generated OpenAPI and official Swagger UI, auth/CORS, route composition, and Prisma disconnection through Fastify `onClose`. Tests construct independent app instances through `buildApp`, inject deterministic auth and lifecycle collaborators, and close each instance. Production omits injected auth so `loadAuthConfig()` still reads the environment. `apps/api/src/main.ts` loads environment configuration, listens, guards duplicate shutdown signals, closes Fastify, and uses `process.exitCode` instead of forcing an immediate successful exit.
 
 For new backend work, extend the owning directory under `apps/api/src/modules` when one exists. Keep routes thin and place feature orchestration and Prisma access next to the owning module where practical. Make narrow changes to legacy global code when that is safer than an unrelated migration; do not copy the global layout into new features.
 

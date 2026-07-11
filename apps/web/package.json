@@ -4,9 +4,14 @@
   "private": true,
   "scripts": {
     "config": "node -e \"const fs=require('fs'); const env='../api/.env'; if (fs.existsSync(env)) process.loadEnvFile(env); require('fs').writeFileSync('src/app/app-config.ts', 'export const appConfig = {\\n  apiBaseUrl: ' + JSON.stringify(process.env.WEB_API_BASE_URL || '/api') + ',\\n  clerkPublishableKey: ' + JSON.stringify(process.env.WEB_CLERK_PUBLISHABLE_KEY || '') + ',\\n};\\n')\"",
+    "predev": "npm --prefix ../.. run build:contracts",
     "dev": "npm run config && ng serve",
+    "prebuild": "npm --prefix ../.. run build:contracts",
     "build": "npm run config && ng build",
+    "pretest": "npm --prefix ../.. run build:contracts",
     "test": "ng test --watch=false",
+    "prelint": "npm --prefix ../.. run build:contracts",
+    "lint": "ngc -p tsconfig.app.json --noEmit",
     "format": "prettier --write ."
   },
   "dependencies": {
