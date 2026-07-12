@@ -197,6 +197,7 @@ export interface MarathonNextRequest {
   sublineHashes?: string[];
   recentSublineHashes?: string[];
 }
+export interface MarathonRunResponse { runId: string }
 
 export interface SublineTrainingStatus {
   hash: string;

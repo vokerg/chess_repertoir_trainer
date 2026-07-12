@@ -9,6 +9,7 @@ export class TrainingMarathonStore {
   private readonly api = inject(LinesApiService);
   private readonly recentSublineHashes = signal<string[]>([]);
   private readonly countedCompletedSessionIds = new Set<number>();
+  private readonly runId = signal<string | null>(null);
   private requestVersion = 0;
 
   readonly scopeType = signal<MarathonScopeType>('CHAPTER');
@@ -73,6 +74,7 @@ export class TrainingMarathonStore {
     this.selectedLineIds.set(options.lineIds ?? []);
     this.selectedSublineHashes.set(options.sublineHashes ?? []);
     this.recentSublineHashes.set([]);
+    this.runId.set(null);
     this.completedThisRun.set(0);
     this.countedCompletedSessionIds.clear();
     void this.startNextLine();
@@ -83,15 +85,18 @@ export class TrainingMarathonStore {
     this.loaded.set(false);
     this.error.set(null);
     try {
-      const response = await firstValueFrom(
-        this.api.startNextMarathonLine({
+      let runId = this.runId();
+      if (!runId) {
+        const run = await firstValueFrom(this.api.createMarathonRun({
           scope: this.scopeId() ? { type: this.scopeType(), id: this.scopeId()! } : undefined,
           mode: this.mode(),
           lineIds: this.selectedLineIds(),
           sublineHashes: this.selectedSublineHashes(),
-          recentSublineHashes: this.recentSublineHashes(),
-        }),
-      );
+        }));
+        runId = run.runId;
+        this.runId.set(runId);
+      }
+      const response = await firstValueFrom(this.api.startNextMarathonRunLine(runId));
       if (requestVersion !== this.requestVersion) return;
       this.lineId.set(response.line.id);
       this.lineName.set(response.line.name);
@@ -150,6 +155,7 @@ export class TrainingMarathonStore {
   setMode(mode: MarathonMode): void {
     if (this.mode() === mode) return;
     this.mode.set(mode);
+    this.runId.set(null);
     this.recentSublineHashes.set([]);
     this.completedThisRun.set(0);
     this.countedCompletedSessionIds.clear();

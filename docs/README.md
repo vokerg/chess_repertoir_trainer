@@ -6,6 +6,7 @@
 - [Frontend architecture](frontend/angular-architecture.md): Angular ownership and composition.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
+- [Course and training performance](performance/course-training-optimisation.md): phase measurements and structural regression constraints.
 
 ## Operational guides
 
