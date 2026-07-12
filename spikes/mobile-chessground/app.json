@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Chessground Phase 0",
+    "slug": "chessground-phase-0",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.chessrepertoiretrainer.chessgroundphase0"
+    },
+    "android": {
+      "package": "com.chessrepertoiretrainer.chessgroundphase0",
+      "edgeToEdgeEnabled": true
+    }
+  }
+}
