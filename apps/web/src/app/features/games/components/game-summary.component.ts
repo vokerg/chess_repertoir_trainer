@@ -103,8 +103,8 @@ export class GameSummaryComponent {
     if (!run) return [];
     return [
       { label: 'Moves', value: String(run.moves.length) },
-      { label: 'Critical', value: String(run.criticalMoves.length) },
-      { label: 'Depth', value: this.numericStat(run.depth) },
+      { label: 'Critical', value: String(run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length) },
+      { label: 'Positions', value: `${run.positionsDone ?? 0}/${run.positionsTotal ?? 0}` },
     ];
   });
   protected readonly analysisMessage = computed(() => {
@@ -132,7 +132,7 @@ export class GameSummaryComponent {
         label: userColor === 'WHITE' ? 'White (you)' : 'White',
         accuracy: this.whiteAccuracy(),
         acpl: this.numericStat(run.whiteAverageCentipawnLoss),
-        critical: run.criticalMoves.filter((move) => move.side === 'WHITE').length,
+        critical: run.moves.filter((move) => move.side === 'WHITE' && (move.classificationCode === 5 || move.classificationCode === 6)).length,
         issues: this.issueSummary('WHITE'),
       },
       {
@@ -140,7 +140,7 @@ export class GameSummaryComponent {
         label: userColor === 'BLACK' ? 'Black (you)' : 'Black',
         accuracy: this.blackAccuracy(),
         acpl: this.numericStat(run.blackAverageCentipawnLoss),
-        critical: run.criticalMoves.filter((move) => move.side === 'BLACK').length,
+        critical: run.moves.filter((move) => move.side === 'BLACK' && (move.classificationCode === 5 || move.classificationCode === 6)).length,
         issues: this.issueSummary('BLACK'),
       },
     ];

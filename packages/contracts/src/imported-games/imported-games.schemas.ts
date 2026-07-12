@@ -115,7 +115,6 @@ export const importedGamePositionAnalysisSchema = z.object({
   bestMoveUci: z.string().nullable(),
   bestScoreCpWhite: z.number().nullable(),
   bestMateWhite: z.number().nullable(),
-  lines: z.array(positionAnalysisLineSchema),
 });
 
 export const importedGamePlySchema = z.object({
@@ -173,7 +172,31 @@ export const importedGameListItemSchema = z.object({
   }),
 });
 
-export const importedGameDetailResponseSchema = importedGameListItemSchema.extend({
+export const importedGameSearchItemSchema = z.object({
+  id: z.number().int().positive(),
+  provider: importedGameProviderSchema,
+  providerUrl: z.string().nullable(),
+  endedAt: nullableDateTimeSchema,
+  speedCategory: z.string().nullable(),
+  rated: z.boolean().nullable(),
+  timeControl: z.object({ raw: z.string().nullable(), initial: z.number().int().nullable(), increment: z.number().int().nullable() }),
+  white: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
+  black: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
+  userColor: importedGameUserColorSchema.nullable(),
+  resultForUser: importedGameResultForUserSchema.nullable(),
+  opening: z.object({ eco: z.string().nullable(), name: z.string().nullable() }),
+  tagCount: z.number().int().nonnegative(),
+  plyIndex: z.object({ status: importedGamePlyIndexStatusSchema }),
+  analysis: z.object({
+    status: importedGameAnalysisStatusSchema,
+    whiteAccuracy: z.number().nullable(),
+    blackAccuracy: z.number().nullable(),
+    userAccuracy: z.number().nullable(),
+  }),
+});
+
+export const importedGameDetailResponseSchema = z.object({
+  ...importedGameListItemSchema.shape,
   pgn: z.string().nullable(),
   plies: z.array(importedGamePlySchema),
   createdAt: z.iso.datetime({ offset: true }),
@@ -181,7 +204,7 @@ export const importedGameDetailResponseSchema = importedGameListItemSchema.exten
 });
 
 export const importedGameSearchResponseSchema = z.object({
-  items: z.array(importedGameListItemSchema),
+  items: z.array(importedGameSearchItemSchema),
   pageInfo: z.object({
     nextCursor: z.string().nullable(),
     hasMore: z.boolean(),
@@ -226,6 +249,7 @@ export type ImportedGamePlyIndexStatus = z.output<typeof importedGamePlyIndexSta
 export type ImportedGameSearchQuery = z.output<typeof importedGameSearchQuerySchema>;
 export type ImportedGameAppliedFilters = z.output<typeof importedGameAppliedFiltersSchema>;
 export type ImportedGameListItem = z.output<typeof importedGameListItemSchema>;
+export type ImportedGameSearchItem = z.output<typeof importedGameSearchItemSchema>;
 export type ImportedGamePlayer = ImportedGameListItem['white'];
 export type ImportedGameTimeControl = ImportedGameListItem['timeControl'];
 export type ImportedGameOpening = ImportedGameListItem['opening'];

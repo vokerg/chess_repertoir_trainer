@@ -146,7 +146,7 @@ export class ImportedGameAnalysisService {
     const beforeFen = ply.normalizedFen;
     const side = sideToMove(beforeFen);
     const legalMoves = legalMoveCount(beforeFen);
-    const position = await this.getGamePositionAnalysis(beforeFen, ply.positionAnalysis);
+    const position = await this.getGamePositionAnalysis(beforeFen, ply.positionAnalysis ? { ...ply.positionAnalysis, lines: [] } : null);
     const bestMoveUci = this.positionAnalysis.bestMoveFromPosition(position);
     const bestScoreCpWhite = this.positionAnalysis.effectiveScoreCpWhite(position.bestScoreCpWhite, position.bestMateWhite);
     const playedScoreCpWhite = await this.playedMoveScoreCpWhite(beforeFen, ply.moveUci, position, seedCandidates);

@@ -1,4 +1,4 @@
-import { ImportedGameListItem } from '../data-access/games.models';
+import { ImportedGameSearchItem } from '../data-access/games.models';
 import { displayTimeControl, gameDateLabel, playerLabel, profileUrl } from './games-table-display';
 
 describe('games table display helpers', () => {
@@ -26,45 +26,31 @@ describe('games table display helpers', () => {
   });
 });
 
-function game(timeControl: Partial<ImportedGameListItem['timeControl']>): ImportedGameListItem {
+function game(timeControl: Partial<ImportedGameSearchItem['timeControl']>): ImportedGameSearchItem {
   return {
     id: 1,
-    accountId: 10,
     provider: 'LICHESS',
-    providerGameId: 'game-1',
     providerUrl: null,
     endedAt: null,
-    startedAt: null,
     speedCategory: null,
     rated: null,
-    variant: null,
     timeControl: { raw: null, initial: null, increment: null, ...timeControl },
     white: { username: null, rating: null },
     black: { username: null, rating: null },
     userColor: null,
-    opponentUsername: null,
-    result: null,
     resultForUser: null,
-    status: null,
     opening: { eco: null, name: null },
-    tagCodes: [],
-    tags: [],
-    plyIndex: { status: 'NOT_INDEXED', indexedAt: null, error: null },
+    tagCount: 0,
+    plyIndex: { status: 'NOT_INDEXED' },
     analysis: emptyAnalysis(),
   };
 }
 
-function emptyAnalysis(): ImportedGameListItem['analysis'] {
+function emptyAnalysis(): ImportedGameSearchItem['analysis'] {
   return {
     status: 'NOT_ANALYZED',
-    runId: null,
-    depth: null,
-    completedAt: null,
-    createdAt: null,
     whiteAccuracy: null,
     blackAccuracy: null,
     userAccuracy: null,
-    summary: null,
-    criticalMoveCount: null,
   };
 }

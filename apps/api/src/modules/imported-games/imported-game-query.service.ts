@@ -4,13 +4,13 @@ import {
   getImportedGameFacets,
   getImportedGamePgn,
   ImportedGameCursor,
-  ImportedGameListRow,
+  ImportedGameSearchRow,
   ImportedGameSummaryAggregateRows,
   summarizeImportedGames,
 } from './imported-games.repository.prisma';
 import { ImportedGameSearchQuery, ImportedGameSummaryQuery } from './imported-games.schemas';
 
-function encodeCursor(row: Pick<ImportedGameListRow, 'endedAt' | 'id'>) {
+function encodeCursor(row: Pick<ImportedGameSearchRow, 'endedAt' | 'id'>) {
   const payload: ImportedGameCursor = {
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
     id: row.id,

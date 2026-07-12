@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../prisma';
 import { ExternalAccountService, ExternalProvider } from './externalAccountService';
 import { RatingSpeed } from './accountRatingHistoryService';
@@ -146,7 +147,7 @@ function normalizeRawTimeControl(raw: string | null): string | null {
   return `${Number(match[1])}+${Number(match[2])}`;
 }
 
-function normalizeTimeControl(game: PerformanceGame): string {
+function normalizeTimeControl(game: Pick<PerformanceGame, 'timeControlRaw' | 'timeControlInitial' | 'timeControlIncrement'>): string {
   return (
     formatStructuredTimeControl(game.timeControlInitial, game.timeControlIncrement) ??
     normalizeRawTimeControl(game.timeControlRaw) ??
@@ -222,6 +223,22 @@ function buildTimeControlWdl(scoredGames: PerformanceGame[]): AccountPerformance
     .slice(0, TIME_CONTROL_WDL_LIMIT);
 }
 
+function buildTimeControlWdlFromGroups(groups: Array<{ timeControlRaw: string | null; timeControlInitial: number | null; timeControlIncrement: number | null; resultForUser: string | null; _count: { _all: number } }>) {
+  const buckets = new Map<string, { wins: number; draws: number; losses: number }>();
+  for (const group of groups) {
+    const timeControl = normalizeTimeControl(group);
+    const bucket = buckets.get(timeControl) ?? { wins: 0, draws: 0, losses: 0 };
+    if (group.resultForUser === 'WIN') bucket.wins += group._count._all;
+    if (group.resultForUser === 'DRAW') bucket.draws += group._count._all;
+    if (group.resultForUser === 'LOSS') bucket.losses += group._count._all;
+    buckets.set(timeControl, bucket);
+  }
+  return [...buckets.entries()].map(([timeControl, bucket]) => {
+    const gamesCount = bucket.wins + bucket.draws + bucket.losses;
+    return { timeControl, gamesCount, ...bucket, scorePercent: gamesCount ? Math.round(((bucket.wins + bucket.draws * .5) / gamesCount) * 100) : null };
+  }).sort((a, b) => b.gamesCount - a.gamesCount || a.timeControl.localeCompare(b.timeControl)).slice(0, TIME_CONTROL_WDL_LIMIT);
+}
+
 export function buildAccountPerformanceStatsData(
   games: PerformanceGame[],
   query: AccountPerformanceStatsQuery,
@@ -289,33 +306,50 @@ export const AccountPerformanceStatsService = {
     const account = await ExternalAccountService.getForUser(userId, accountId);
     if (!account) return null;
 
-    const games = await prisma.importedGame.findMany({
-      where: {
-        userId,
-        accountId,
-        endedAt: buildPerformanceEndedAtRange(query),
-        speedCategory: { in: query.speeds },
-        userColor: { in: ['WHITE', 'BLACK'] },
-        resultForUser: { in: ['WIN', 'DRAW', 'LOSS'] },
-      },
-      select: {
-        id: true,
-        endedAt: true,
-        speedCategory: true,
-        userColor: true,
-        whiteRating: true,
-        blackRating: true,
-        opponentUsername: true,
-        resultForUser: true,
-        providerUrl: true,
-        timeControlRaw: true,
-        timeControlInitial: true,
-        timeControlIncrement: true,
-      },
-      orderBy: [{ endedAt: 'asc' }, { id: 'asc' }],
-    });
-
-    const { scorePercent: _scorePercent, ...performance } = buildAccountPerformanceStatsData(games, query);
+    const endedAt = buildPerformanceEndedAtRange(query);
+    const where = { userId, accountId, endedAt, speedCategory: { in: query.speeds }, userColor: { in: ['WHITE', 'BLACK'] }, resultForUser: { in: ['WIN', 'DRAW', 'LOSS'] } };
+    const [results, timeGroups, highlights] = await Promise.all([
+      prisma.$queryRaw<Array<{ result: string; games: bigint; averageOpponent: number | null }>>(Prisma.sql`
+        SELECT "resultForUser" AS result, COUNT(*) AS games,
+          AVG(CASE WHEN "userColor" = 'WHITE' THEN "blackRating" ELSE "whiteRating" END) AS "averageOpponent"
+        FROM "ImportedGame"
+        WHERE "userId" = ${userId} AND "accountId" = ${accountId}
+          AND "endedAt" IS NOT NULL
+          ${query.from ? Prisma.sql`AND "endedAt" >= ${new Date(query.from)}` : Prisma.empty}
+          ${query.to ? Prisma.sql`AND "endedAt" ${/^\d{4}-\d{2}-\d{2}$/.test(query.to) ? Prisma.sql`< ${new Date(Date.parse(query.to) + 86400000)}` : Prisma.sql`<= ${new Date(query.to)}`}` : Prisma.empty}
+          AND "speedCategory" IN (${Prisma.join(query.speeds)})
+          AND "userColor" IN ('WHITE','BLACK') AND "resultForUser" IN ('WIN','DRAW','LOSS')
+        GROUP BY "resultForUser"
+      `),
+      prisma.importedGame.groupBy({ by: ['timeControlRaw', 'timeControlInitial', 'timeControlIncrement', 'resultForUser'], where, _count: { _all: true } }),
+      prisma.$queryRaw<PerformanceGame[]>(Prisma.sql`
+        (SELECT id, "endedAt", "speedCategory", "userColor", "whiteRating", "blackRating", "opponentUsername", "resultForUser", "providerUrl", "timeControlRaw", "timeControlInitial", "timeControlIncrement"
+         FROM "ImportedGame" WHERE "userId"=${userId} AND "accountId"=${accountId} AND "resultForUser"='WIN'
+           AND "endedAt" IS NOT NULL ${query.from ? Prisma.sql`AND "endedAt" >= ${new Date(query.from)}` : Prisma.empty}
+           ${query.to ? Prisma.sql`AND "endedAt" ${/^\d{4}-\d{2}-\d{2}$/.test(query.to) ? Prisma.sql`< ${new Date(Date.parse(query.to) + 86400000)}` : Prisma.sql`<= ${new Date(query.to)}`}` : Prisma.empty}
+           AND "speedCategory" IN (${Prisma.join(query.speeds)}) AND "userColor" IN ('WHITE','BLACK')
+         ORDER BY CASE WHEN "userColor"='WHITE' THEN "blackRating" ELSE "whiteRating" END DESC NULLS LAST, "endedAt" DESC, id DESC LIMIT 5)
+        UNION ALL
+        (SELECT id, "endedAt", "speedCategory", "userColor", "whiteRating", "blackRating", "opponentUsername", "resultForUser", "providerUrl", "timeControlRaw", "timeControlInitial", "timeControlIncrement"
+         FROM "ImportedGame" WHERE "userId"=${userId} AND "accountId"=${accountId} AND "resultForUser"='LOSS'
+           AND "endedAt" IS NOT NULL ${query.from ? Prisma.sql`AND "endedAt" >= ${new Date(query.from)}` : Prisma.empty}
+           ${query.to ? Prisma.sql`AND "endedAt" ${/^\d{4}-\d{2}-\d{2}$/.test(query.to) ? Prisma.sql`< ${new Date(Date.parse(query.to) + 86400000)}` : Prisma.sql`<= ${new Date(query.to)}`}` : Prisma.empty}
+           AND "speedCategory" IN (${Prisma.join(query.speeds)}) AND "userColor" IN ('WHITE','BLACK')
+         ORDER BY CASE WHEN "userColor"='WHITE' THEN "blackRating" ELSE "whiteRating" END ASC NULLS LAST, "endedAt" DESC, id DESC LIMIT 5)
+      `),
+    ]);
+    const counts = new Map(results.map((row) => [row.result, Number(row.games)]));
+    const averageByResult = new Map(results.map((row) => [row.result, row.averageOpponent === null ? null : Math.round(Number(row.averageOpponent))]));
+    const bestVictories = toHighlights(highlights.filter((game) => game.resultForUser === 'WIN'));
+    const mostEmbarrassingDefeats = toHighlights(highlights.filter((game) => game.resultForUser === 'LOSS'));
+    const performance = {
+      range: { from: query.from, to: query.to }, speeds: query.speeds,
+      gamesCount: [...counts.values()].reduce((sum, count) => sum + count, 0),
+      wdl: { wins: counts.get('WIN') ?? 0, draws: counts.get('DRAW') ?? 0, losses: counts.get('LOSS') ?? 0 },
+      averageOpponentRating: { wins: averageByResult.get('WIN') ?? null, draws: averageByResult.get('DRAW') ?? null, losses: averageByResult.get('LOSS') ?? null },
+      timeControlWdl: buildTimeControlWdlFromGroups(timeGroups), bestVictories, mostEmbarrassingDefeats,
+      bestVictory: bestVictories[0] ?? null, mostEmbarrassingDefeat: mostEmbarrassingDefeats[0] ?? null,
+    };
 
     return {
       account: {

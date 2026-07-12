@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import { ImportedGameQueryService } from '../../dist/modules/imported-games/imported-game-query.service.js';
+import { ImportedGamesService } from '../../dist/modules/imported-games/imported-games.service.js';
 import { createChessMcpServer } from '../../dist/modules/mcp/mcp.server.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -120,6 +121,14 @@ try {
   assert.equal((await summarize({ minAccuracy: 80 })).total, 2);
   assert.equal((await summarize({ classification: ['BLUNDER'] })).total, 1);
 
+  const facets = await ImportedGamesService.facets(userId);
+  assert.deepEqual(Object.fromEntries(facets.analysisStatuses.map((item) => [item.value, item.count])), {
+    NOT_ANALYZED: 2,
+    RUNNING: 0,
+    COMPLETED: 3,
+    FAILED: 1,
+  });
+
   const server = createChessMcpServer({ error: () => {} }, userId);
   const client = new Client({ name: 'summary-aggregation-regression', version: '1.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -133,6 +142,17 @@ try {
   assert.deepEqual(mcpSummary.content, []);
   assert.equal(mcpSummary.structuredContent.summary.total, 3);
   assert.deepEqual(mcpSummary.structuredContent.appliedCriteria.providers, ['LICHESS']);
+  const mcpSearch = await client.callTool({
+    name: 'search_imported_games',
+    arguments: { providers: ['LICHESS'], limit: 1 },
+  });
+  assert.equal(mcpSearch.isError, undefined);
+  const mcpGame = mcpSearch.structuredContent.items[0];
+  assert.equal(mcpGame.provider, 'LICHESS');
+  assert.equal(mcpGame.analysis.status, 'NOT_ANALYZED');
+  assert.equal('providerGameId' in mcpGame, false);
+  assert.equal('analysisRuns' in mcpGame, false);
+  assert.equal('tags' in mcpGame, false);
   await client.close();
   await server.close();
 

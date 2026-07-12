@@ -7,22 +7,15 @@ import { buildImportedGameWhere } from './imported-games.repository.prisma';
 const openingAnalysisGameSelect = {
   id: true,
   provider: true,
-  providerGameId: true,
-  providerUrl: true,
   endedAt: true,
   speedCategory: true,
-  timeControlRaw: true,
-  timeControlInitial: true,
-  timeControlIncrement: true,
   whiteUsername: true,
   whiteRating: true,
   blackUsername: true,
   blackRating: true,
   resultForUser: true,
-  userColor: true,
   openingEco: true,
   openingName: true,
-  tagCodes: true,
 } as const;
 
 const openingTopGameSelect = {
