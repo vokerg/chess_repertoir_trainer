@@ -10,7 +10,7 @@ const derivedCourseSelect = {
   chapters: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], select: {
     id: true, courseId: true, name: true, description: true, sortOrder: true,
     lines: { orderBy: { id: 'asc' }, select: {
-      id: true, chapterId: true, name: true, sideToTrain: true, startingFen: true,
+      id: true, chapterId: true, name: true, sideToTrain: true, startingFen: true, updatedAt: true,
       moves: { select: { id: true, lineId: true, parentId: true, plyNumber: true, moveUci: true, moveSan: true, sortOrder: true } },
     } },
   } },

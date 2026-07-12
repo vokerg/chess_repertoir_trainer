@@ -80,6 +80,18 @@ try {
     mode: 'ALL', lineIds: lines.map((line) => line.id), sublineHashes: [], recentSublineHashes: [], recentLineIds: [],
   });
   assert.equal(resolved.preparedLines.size, 2);
+  const originalLineFindMany = prisma.line.findMany.bind(prisma.line);
+  let scopedLineReads = 0;
+  prisma.line.findMany = (...args) => { scopedLineReads += 1; return originalLineFindMany(...args); };
+  try {
+    const scopedSelected = await resolveMarathonCandidates(userId, {
+      scope: { type: 'CHAPTER', id: chapter.id }, mode: 'ALL', lineIds: [lines[0].id], sublineHashes: [], recentSublineHashes: [], recentLineIds: [],
+    });
+    assert.equal(scopedLineReads, 1);
+    assert.equal(scopedSelected.preparedLines.size, 1);
+  } finally {
+    prisma.line.findMany = originalLineFindMany;
+  }
   await assert.rejects(
     resolveMarathonCandidates(userId + 1, {
       mode: 'ALL', lineIds: [lines[0].id], sublineHashes: [], recentSublineHashes: [], recentLineIds: [],

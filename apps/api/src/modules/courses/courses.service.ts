@@ -78,10 +78,12 @@ export async function createMoveNodeInTransaction(
   }
   const move = chess.move(parseUci(moveUci));
   if (!move) throw new Error('Illegal move');
-  return createMoveNode({ lineId, parentId, plyNumber, fenBefore, fenAfter: chess.fen(), moveUci,
+  const created = await createMoveNode({ lineId, parentId, plyNumber, fenBefore, fenAfter: chess.fen(), moveUci,
     moveSan: move.san, moveNumber: Math.ceil(plyNumber / 2), colorToMoveBefore,
     side: colorToMoveBefore, isUserMove, isCorrectUserMove: isUserMove, comment, annotation,
     branchLabel, branchWeight, sortOrder }, tx);
+  await tx.line.update({ where: { id: lineId }, data: { updatedAt: new Date() } });
+  return created;
 }
 
 export const CourseService = {
@@ -288,9 +290,19 @@ export const MoveNodeService = {
         }
       }
       if (Object.keys(data).length === 0) return node;
-      return updateMoveNode(userId, id, data, tx);
+      const updated = await updateMoveNode(userId, id, data, tx);
+      if (body.sortOrder !== undefined || body.isCorrectUserMove !== undefined) {
+        await tx.line.update({ where: { id: node.lineId }, data: { updatedAt: new Date() } });
+      }
+      return updated;
     });
   },
 
-  deleteSubtree: async (userId: number, id: number) => deleteNodeAndSubtree(userId, id),
+  deleteSubtree: async (userId: number, id: number) => prisma.$transaction(async (tx) => {
+    const node = await getNodeById(userId, id, tx);
+    if (!node) return null;
+    const deleted = await deleteNodeAndSubtree(userId, id, tx);
+    await tx.line.update({ where: { id: node.lineId }, data: { updatedAt: new Date() } });
+    return deleted;
+  }),
 };

@@ -50,6 +50,7 @@ export interface DerivedLineData {
     chapterId: number;
     chapterName: string;
     courseId: number;
+    updatedAt: Date;
   };
   tree: ReturnType<typeof buildMoveTreeFromNodes>;
   sublines: HashedAvailableSublineDto[];
@@ -140,6 +141,7 @@ export function deriveLineData(line: any): DerivedLineData {
       chapterId: line.chapter.id,
       chapterName: line.chapter.name,
       courseId: line.chapter.courseId,
+      updatedAt: line.updatedAt,
     },
     tree,
     sublines,

@@ -22,6 +22,8 @@ import prisma from '../prisma';
  */
 const activeSessions: Map<number, { state: TrainingState; subline: HashedAvailableSublineDto }> = new Map();
 
+export class PreparedLineStaleError extends Error {}
+
 async function getOwnedSession(userId: number, sessionId: number) {
   return prisma.trainingSession.findFirst({
     where: {
@@ -164,9 +166,12 @@ async function startForPreparedSubline(
 ) {
   const owned = await prisma.line.findFirst({
     where: { id: preparedLine.line.id, chapter: { course: { userId } } },
-    select: { id: true },
+    select: { id: true, updatedAt: true },
   });
   if (!owned || subline.lineId !== preparedLine.line.id) throw new Error('Line not found');
+  if (owned.updatedAt.getTime() !== preparedLine.line.updatedAt.getTime()) {
+    throw new PreparedLineStaleError('Prepared line changed.');
+  }
 
   const trainingState = startSublineTraining(preparedLine.tree, { leafNodeId: subline.leafNodeId, moves: subline.moves });
   return createTrainingSession(userId, subline, trainingMode, trainingState);

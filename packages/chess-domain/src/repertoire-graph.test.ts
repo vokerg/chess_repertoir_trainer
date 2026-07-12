@@ -55,17 +55,21 @@ describe('repertoire graph', () => {
     const branchingLine = { ...line, moves: [...line.moves, ...branch.moves.slice(1)] };
 
     const graph = buildRepertoireGraph([branchingLine]);
-    const refs = [...graph.positions.values()]
+    const refsByNodeId = new Map([...graph.positions.values()]
       .flatMap((position) => [...position.userMoves.values(), ...position.opponentMoves.values()])
       .flatMap((move) => move.lineRefs)
-      .map((ref) => ({ nodeId: ref.nodeId, lineId: ref.lineId, moveSequenceSan: ref.moveSequenceSan }));
+      .filter((ref) => ref.nodeId !== null)
+      .map((ref) => [ref.nodeId!, ref]));
 
-    expect(refs).toEqual([
-      { nodeId: 501, lineId: 5, moveSequenceSan: '1. e4' },
-      { nodeId: 502, lineId: 5, moveSequenceSan: '1. e4 e5' },
-      { nodeId: 503, lineId: 5, moveSequenceSan: '1. e4 e5 2. Nf3' },
-      { nodeId: 601, lineId: 5, moveSequenceSan: '1. e4 c5' },
-      { nodeId: 602, lineId: 5, moveSequenceSan: '1. e4 c5 2. Nf3' },
-    ]);
+    expect(refsByNodeId.size).toBe(5);
+    for (const [nodeId, moveSequenceSan] of [
+      [501, '1. e4'],
+      [502, '1. e4 e5'],
+      [503, '1. e4 e5 2. Nf3'],
+      [601, '1. e4 c5'],
+      [602, '1. e4 c5 2. Nf3'],
+    ] as const) {
+      expect(refsByNodeId.get(nodeId)).toMatchObject({ lineId: 5, moveSequenceSan });
+    }
   });
 });

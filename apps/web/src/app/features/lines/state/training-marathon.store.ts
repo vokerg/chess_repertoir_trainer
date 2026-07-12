@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LinesApiService, readLinesError } from '../data-access/lines-api.service';
-import { MarathonMode, MarathonScopeType, RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
+import { MarathonMode, MarathonNextResponse, MarathonScopeType, RepertoireColor, TrainingReviewItem } from '../data-access/lines.models';
 import { MarathonInitializeOptions } from '../helpers/marathon-query.helpers';
 
 @Injectable()
@@ -85,18 +85,8 @@ export class TrainingMarathonStore {
     this.loaded.set(false);
     this.error.set(null);
     try {
-      let runId = this.runId();
-      if (!runId) {
-        const run = await firstValueFrom(this.api.createMarathonRun({
-          scope: this.scopeId() ? { type: this.scopeType(), id: this.scopeId()! } : undefined,
-          mode: this.mode(),
-          lineIds: this.selectedLineIds(),
-          sublineHashes: this.selectedSublineHashes(),
-        }));
-        runId = run.runId;
-        this.runId.set(runId);
-      }
-      const response = await firstValueFrom(this.api.startNextMarathonRunLine(runId));
+      const response = await this.loadNextRunLine(requestVersion, true);
+      if (!response) return;
       if (requestVersion !== this.requestVersion) return;
       this.lineId.set(response.line.id);
       this.lineName.set(response.line.name);
@@ -115,6 +105,32 @@ export class TrainingMarathonStore {
     } catch (error) {
       if (requestVersion !== this.requestVersion) return;
       this.error.set(readLinesError(error, 'Could not start marathon training.'));
+    }
+  }
+
+  private async loadNextRunLine(
+    requestVersion: number,
+    allowRunRecovery: boolean,
+  ): Promise<MarathonNextResponse | null> {
+    let runId = this.runId();
+    if (!runId) {
+      const run = await firstValueFrom(this.api.createMarathonRun({
+        scope: this.scopeId() ? { type: this.scopeType(), id: this.scopeId()! } : undefined,
+        mode: this.mode(), lineIds: this.selectedLineIds(), sublineHashes: this.selectedSublineHashes(),
+      }));
+      if (requestVersion !== this.requestVersion) return null;
+      runId = run.runId;
+      this.runId.set(runId);
+    }
+    try {
+      const response = await firstValueFrom(this.api.startNextMarathonRunLine(runId));
+      return requestVersion === this.requestVersion ? response : null;
+    } catch (error) {
+      if (allowRunRecovery && isNotFound(error) && requestVersion === this.requestVersion) {
+        this.runId.set(null);
+        return this.loadNextRunLine(requestVersion, false);
+      }
+      throw error;
     }
   }
 
@@ -221,4 +237,8 @@ export class TrainingMarathonStore {
     this.mistakes.set([]);
     this.lastMove.set(null);
   }
+}
+
+function isNotFound(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'status' in error && error.status === 404;
 }

@@ -11,7 +11,7 @@ import {
 import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { performanceDebug } from '../../utils/performance-debug';
-import { TrainingMarathonRunService } from './training-marathon-runs.service';
+import { MarathonRunStaleError, TrainingMarathonRunService } from './training-marathon-runs.service';
 
 const marathonScopeSchema = z.object({
   type: z.enum(['CHAPTER', 'COURSE']),
@@ -51,9 +51,14 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
       params: z.object({ runId: z.string().uuid() }), response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
   }, async (request, reply) => {
     const auth = requireAuth(request, reply); if (!auth) return;
-    const response = await TrainingMarathonRunService.next(auth.userId, request.params.runId);
-    if (!response) return reply.status(404).send({ error: 'Training marathon run not found or expired.' });
-    return response;
+    try {
+      const response = await TrainingMarathonRunService.next(auth.userId, request.params.runId);
+      if (!response) return reply.status(404).send({ error: 'Training marathon run not found or expired.' });
+      return response;
+    } catch (error) {
+      if (error instanceof MarathonRunStaleError) return reply.status(404).send({ error: error.message });
+      throw error;
+    }
   });
 
   app.post('/api/training-marathons/next', {

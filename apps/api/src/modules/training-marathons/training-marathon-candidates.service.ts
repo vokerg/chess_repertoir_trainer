@@ -87,20 +87,26 @@ export async function resolveMarathonCandidates(
   }
 
   if (selectedLineIds.length > 0) {
-    const selectedLines = await getDerivedSelectedLines(userId, selectedLineIds);
-    ensureAllSelectedLinesResolved(selectedLineIds, new Set(selectedLines.map((line) => line.line.id)));
+    let selectedLines: DerivedLineData[];
     if (request.scope) {
-      const rows = selectedLines.map((line) => ({ id: line.line.id, chapterId: line.line.chapterId, chapter: { courseId: line.line.courseId } }));
-      ensureLinesInsideScope(request.scope, rows);
+      const scopedIds = new Set(derivedLines.map((line) => line.line.id));
+      const unresolvedIds = selectedLineIds.filter((id) => !scopedIds.has(id));
+      if (unresolvedIds.length > 0) {
+        const ownedRows = await loadOwnedSelectedLineRows(userId, unresolvedIds);
+        ensureAllSelectedLinesResolved(unresolvedIds, new Set(ownedRows.map((line) => line.id)));
+        ensureLinesInsideScope(request.scope, ownedRows);
+      }
+      selectedLines = derivedLines.filter((line) => selectedLineIds.includes(line.line.id));
+    } else {
+      selectedLines = await getDerivedSelectedLines(userId, selectedLineIds);
+      ensureAllSelectedLinesResolved(selectedLineIds, new Set(selectedLines.map((line) => line.line.id)));
     }
 
     const selectedLineSet = new Set(selectedLineIds);
     sublines = sublines
       ? sublines.filter((subline) => selectedLineSet.has(subline.lineId))
       : selectedLines.flatMap((line) => line.sublines);
-    derivedLines = derivedLines.length > 0
-      ? derivedLines.filter((line) => selectedLineSet.has(line.line.id))
-      : selectedLines;
+    derivedLines = selectedLines;
 
     if (sublines.length === 0) {
       throw new MarathonCandidateError(404, 'No trainable sublines found for the selected lines.');
