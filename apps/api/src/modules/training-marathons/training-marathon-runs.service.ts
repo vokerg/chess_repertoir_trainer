@@ -40,8 +40,11 @@ async function refreshStatusCandidates(run: MarathonRun): Promise<HashedAvailabl
   const untrained = run.preparedSublines.filter((subline) =>
     !attempts.has(key(subline)) && !run.servedUntrainedKeys.has(key(subline)),
   );
+  const eligibleWeak = weak.filter((subline) =>
+    attempts.has(key(subline)) || !run.servedUntrainedKeys.has(key(subline)),
+  );
   const combined = new Map<string, HashedAvailableSublineDto>();
-  for (const subline of [...weak, ...untrained]) combined.set(key(subline), subline);
+  for (const subline of [...eligibleWeak, ...untrained]) combined.set(key(subline), subline);
   return [...combined.values()];
 }
 
