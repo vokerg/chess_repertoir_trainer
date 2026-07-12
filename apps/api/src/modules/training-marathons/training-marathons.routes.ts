@@ -48,6 +48,7 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
 
   app.post('/api/training-marathons/:runId/next', {
     schema: { operationId: 'getNextTrainingMarathonRunLine', tags: ['Training'], summary: 'Start the next prepared candidate in a marathon run',
+      description: 'The run id selects the prepared marathon state.',
       params: z.object({ runId: z.string().uuid() }), response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema } },
   }, async (request, reply) => {
     const auth = requireAuth(request, reply); if (!auth) return;
