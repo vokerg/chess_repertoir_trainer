@@ -63,9 +63,13 @@ try {
   assert.equal(parsedSearch.items.length, 1);
   assert.equal(encodedSearch.appliedFilters.sort, 'endedAtDesc');
   assert.equal(parsedSearch.items[0].endedAt, '2026-03-04T05:06:07.000Z');
-  assert.equal(parsedSearch.items[0].startedAt, null);
   assert.equal(parsedSearch.items[0].white.username, null);
   assert.equal(parsedSearch.items[0].analysis.status, 'NOT_ANALYZED');
+  assert.equal(parsedSearch.items[0].tagCount, 0);
+  assert.equal('startedAt' in parsedSearch.items[0], false);
+  assert.equal('tags' in parsedSearch.items[0], false);
+  assert.equal('tagCodes' in parsedSearch.items[0], false);
+  assert.equal('summary' in parsedSearch.items[0].analysis, false);
 
   const detail = await ImportedGamesService.get(userId, game.id);
   assert.ok(detail);

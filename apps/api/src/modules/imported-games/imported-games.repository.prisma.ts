@@ -35,7 +35,6 @@ const importedGamePlySelect = {
           bestMoveUci: true,
           bestScoreCpWhite: true,
           bestMateWhite: true,
-          lines: true,
         },
       },
     },
@@ -77,6 +76,15 @@ export const importedGameListSelect = {
   },
 } as const;
 
+export const importedGameSearchSelect = {
+  id: true, provider: true, providerUrl: true, endedAt: true, speedCategory: true, rated: true,
+  timeControlRaw: true, timeControlInitial: true, timeControlIncrement: true,
+  whiteUsername: true, whiteRating: true, blackUsername: true, blackRating: true,
+  userColor: true, resultForUser: true, openingEco: true, openingName: true,
+  tagCodes: true, plyIndexedAt: true, plyIndexError: true,
+  latestAnalysisStatus: true, latestWhiteAccuracy: true, latestBlackAccuracy: true,
+} as const;
+
 export const importedGameDetailSelect = {
   ...importedGameListSelect,
   pgn: true,
@@ -89,6 +97,7 @@ export const importedGameDetailSelect = {
 } as const;
 
 export type ImportedGameListRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameListSelect }>;
+export type ImportedGameSearchRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameSearchSelect }>;
 export type ImportedGameDetailRow = Prisma.ImportedGameGetPayload<{ select: typeof importedGameDetailSelect }>;
 
 export interface ImportedGameSummaryAggregateRows {
@@ -110,17 +119,14 @@ export interface ImportedGameSummaryAggregateRows {
 }
 
 const openingStrugglesPlySelect = {
-  importedGameId: true,
   plyNumber: true,
   moveUci: true,
-  positionId: true,
   position: {
     select: {
       normalizedFen: true,
       analysis: {
         select: {
           id: true,
-          bestMoveUci: true,
           bestScoreCpWhite: true,
           bestMateWhite: true,
         },
@@ -130,7 +136,10 @@ const openingStrugglesPlySelect = {
 } as const;
 
 const openingStrugglesGameSelect = {
-  ...importedGameListSelect,
+  id: true,
+  userColor: true,
+  resultForUser: true,
+  plyIndexedAt: true,
   plies: {
     orderBy: { plyNumber: 'asc' as const },
     select: openingStrugglesPlySelect,
@@ -323,7 +332,7 @@ export async function findImportedGames(userId: number, query: ImportedGameSearc
     where: cursorWhere ? { AND: [where, cursorWhere] } : where,
     orderBy: buildOrderBy(query.sort),
     take: query.limit + 1,
-    select: importedGameListSelect,
+    select: importedGameSearchSelect,
   });
 }
 
@@ -379,7 +388,7 @@ export async function findImportedGamesForOpeningStruggles(
     where: buildImportedGameWhere(userId, query),
     orderBy: { id: 'asc' },
     select: {
-      ...importedGameListSelect,
+      ...openingStrugglesGameSelect,
       plies: {
         where: { plyNumber: { lte: maxPly + 1 } },
         orderBy: { plyNumber: 'asc' },
@@ -404,7 +413,7 @@ export async function getImportedGamePgn(userId: number, id: number) {
 }
 
 export async function getImportedGameFacets(userId: number) {
-  const [accounts, speeds, variants, results, colors, providers, openings, totalGames, analysisRunRows] = await Promise.all([
+  const [accounts, speeds, variants, results, colors, providers, openings, totalGames, analysisStatusRows] = await Promise.all([
     prisma.externalAccount.findMany({
       where: { userId },
       select: {
@@ -423,19 +432,8 @@ export async function getImportedGameFacets(userId: number) {
     prisma.importedGame.groupBy({ by: ['provider'], where: { userId }, _count: true }),
     prisma.importedGame.groupBy({ by: ['openingEco', 'openingName'], where: { userId, openingEco: { not: null } }, _count: true, orderBy: { _count: { openingEco: 'desc' } }, take: 50 }),
     prisma.importedGame.count({ where: { userId } }),
-    prisma.gameAnalysisRun.findMany({
-      where: { importedGame: { userId } },
-      orderBy: [
-        { importedGameId: 'asc' },
-        { createdAt: 'desc' },
-        { id: 'desc' },
-      ],
-      select: {
-        importedGameId: true,
-        status: true,
-      },
-    }),
+    prisma.importedGame.groupBy({ by: ['latestAnalysisStatus'], where: { userId }, _count: { _all: true } }),
   ]);
 
-  return { accounts, speeds, variants, results, colors, providers, openings, totalGames, analysisRunRows };
+  return { accounts, speeds, variants, results, colors, providers, openings, totalGames, analysisStatusRows };
 }

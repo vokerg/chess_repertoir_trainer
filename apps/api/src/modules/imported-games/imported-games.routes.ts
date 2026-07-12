@@ -11,7 +11,7 @@ import {
   legacyMessageResponseSchema,
 } from '@chess-trainer/contracts/imported-games';
 import { requireAuth } from '../../auth/request-auth';
-import { ImportedGamesService, PersistedImportedGameAnalysisError } from './imported-games.service';
+import { ImportedGamesService } from './imported-games.service';
 import {
   normalizeImportedGameSearchQuery,
   openingAnalysisQuerySchema,
@@ -29,6 +29,17 @@ import {
 import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const forceSchema = z.object({ force: z.boolean().optional() });
+const openingTopGamesResponseSchema = z.object({
+  fen: z.string(), normalizedFen: z.string(),
+  topGames: z.array(z.object({
+    id: z.number().int(), provider: z.string(), endedAt: z.iso.datetime({ offset: true }).nullable(), speedCategory: z.string().nullable(),
+    white: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
+    black: z.object({ username: z.string().nullable(), rating: z.number().int().nullable() }),
+    resultForUser: z.string().nullable(), opening: z.object({ eco: z.string().nullable(), name: z.string().nullable() }),
+    moveNumber: z.number().int(), nextMoveUci: z.string(), nextMoveSan: z.string().nullable(),
+  })),
+  appliedFilters: z.record(z.string(), z.unknown()),
+});
 const importedGamesRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
   operationId,
   tags: ['Imported games'],
@@ -108,7 +119,7 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
     schema: importedGamesRouteSchema('getOpeningAnalysisTopGames', {
       summary: 'Get recent games reaching an opening position',
       querystring: openingAnalysisTopGamesQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: openingTopGamesResponseSchema, 400: apiErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
     handler: async (request, reply) => {
       const auth = requireAuth(request, reply);
@@ -165,23 +176,13 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
         400: legacyApiErrorResponseSchema,
         401: legacyMessageResponseSchema,
         404: legacyMessageResponseSchema,
-        500: legacyApiErrorResponseSchema,
       },
     },
   }, async (request, reply) => {
       const auth = requireAuth(request, reply);
       if (!auth) return;
 
-      let game;
-      try {
-        game = await ImportedGamesService.get(auth.userId, request.params.gameId);
-      } catch (error) {
-        if (error instanceof PersistedImportedGameAnalysisError) {
-          request.log.error({ err: error, gameId: request.params.gameId }, 'Stored imported-game analysis could not be normalized');
-          return reply.code(500).send({ error: 'Stored analysis data is invalid' });
-        }
-        throw error;
-      }
+      const game = await ImportedGamesService.get(auth.userId, request.params.gameId);
       if (!game) {
         return reply.code(404).send({ message: 'Imported game not found' });
       }

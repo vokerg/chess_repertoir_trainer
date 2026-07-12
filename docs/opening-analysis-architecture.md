@@ -6,7 +6,7 @@ Opening analysis is panel-shaped. The opening explorer needs next moves quickly,
 
 - `GET /api/opening-analysis`: core endpoint for first render. Query params are `fen` plus the imported-game filters from the games explorer. Response includes `fen`, `normalizedFen`, `bookOpening`, `sideToMove`, `fullMoveNumber`, `ratedOnly`, `occurrences`, position `games` WDL, `nextMoves`, and `appliedFilters`.
 - `GET /api/opening-analysis/performance`: performance panel endpoint. Query params are `fen` plus the same imported-game filters. Response includes `fen`, `normalizedFen`, `performance`, and `appliedFilters`.
-- `GET /api/opening-analysis/top-games`: recent games panel endpoint. Query params are `fen`, the same imported-game filters, and `limit` from 1 to 50. Response includes `fen`, `normalizedFen`, `topGames`, and `appliedFilters`.
+- `GET /api/opening-analysis/top-games`: recent games panel endpoint. Query params are `fen`, the same imported-game filters, and `limit` from 1 to 50. Each top game contains only `id`, `provider`, `endedAt`, `speedCategory`, white/black player summaries, `resultForUser`, opening, `moveNumber`, `nextMoveUci`, and `nextMoveSan`; it does not load tags or full game detail.
 - `GET /api/position-analysis`: stored engine-analysis lookup. Query params include `fen`. Response is `{ positionAnalysis }`; it never starts an engine.
 - `GET /api/courses/position-suggestions`: course suggestion lookup. Query params include `fen`. Response is `{ normalizedFen, suggestions }`.
 
@@ -28,7 +28,7 @@ TypeScript still handles DTO shaping, SAN and `fenAfter` formatting, final next-
 
 ## Frontend Loading
 
-The opening explorer starts the core request first and uses it to render board context, WDL, and next moves. Performance and top games load through separate store commands with separate loading/error state and request sequence guards. Stale responses from older positions are ignored.
+The opening explorer starts the core request first and uses it to render board context, WDL, and next moves. Core, performance, and top games remain separate requests because they serve independent panels and query shapes. Performance and top games load through separate store commands with separate loading/error state and request sequence guards. Stale responses from older positions are ignored.
 
 The engine panel is not seeded from `/api/opening-analysis`; `PositionAnalysisCacheService` performs the stored lookup through `/api/position-analysis` and then starts live local analysis when needed. This avoids duplicate stored-analysis fetches in the opening flow.
 

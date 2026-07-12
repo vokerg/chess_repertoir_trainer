@@ -1,34 +1,23 @@
 import { moveClassificationLabel } from 'chess-domain';
 import { firstUciMove } from '../analysis/position-analysis-normalization';
-import {
-  criticalMoveCount,
-  deriveAnalysisStatus,
-  derivePlyIndexStatus,
-  ImportedGameAnalysisStatus,
-  latestRun,
-  userAccuracy,
-} from '../imported-games/imported-game-analysis.helpers';
+import { ImportedGameAnalysisStatus } from '../imported-games/imported-game-analysis.helpers';
 import {
   getImportedGameFacets,
   ImportedGameDetailRow,
-  ImportedGameListRow,
+  ImportedGameSearchRow,
 } from '../imported-games/imported-games.repository.prisma';
 
 function isoDate(value: Date | null | undefined) {
   return value?.toISOString() ?? null;
 }
 
-export function toMcpGameSummary(row: ImportedGameListRow | ImportedGameDetailRow) {
-  const run = latestRun(row);
+export function toMcpGameSummary(row: ImportedGameSearchRow) {
   return {
     id: row.id,
     provider: row.provider,
-    providerGameId: row.providerGameId,
     providerUrl: row.providerUrl,
     endedAt: isoDate(row.endedAt),
-    startedAt: isoDate(row.startedAt),
     rated: row.rated,
-    variant: row.variant,
     speedCategory: row.speedCategory,
     timeControl: {
       raw: row.timeControlRaw,
@@ -38,25 +27,18 @@ export function toMcpGameSummary(row: ImportedGameListRow | ImportedGameDetailRo
     white: { username: row.whiteUsername, rating: row.whiteRating },
     black: { username: row.blackUsername, rating: row.blackRating },
     userColor: row.userColor,
-    opponentUsername: row.opponentUsername,
-    result: row.result,
     resultForUser: row.resultForUser,
-    status: row.status,
     opening: { eco: row.openingEco, name: row.openingName },
     plyIndex: {
-      status: derivePlyIndexStatus(row),
-      indexedAt: isoDate(row.plyIndexedAt),
-      error: row.plyIndexError,
+      status: row.plyIndexedAt ? 'INDEXED' : row.plyIndexError ? 'FAILED' : 'NOT_INDEXED',
     },
     analysis: {
-      status: deriveAnalysisStatus(row),
-      runId: run?.id ?? null,
-      completedAt: isoDate(run?.completedAt),
-      createdAt: isoDate(run?.createdAt),
-      whiteAccuracy: run?.whiteAccuracy ?? null,
-      blackAccuracy: run?.blackAccuracy ?? null,
-      userAccuracy: userAccuracy(row),
-      criticalMoveCount: criticalMoveCount(run?.summary),
+      status: row.latestAnalysisStatus === 'RUNNING' || row.latestAnalysisStatus === 'COMPLETED'
+        ? row.latestAnalysisStatus
+        : row.latestAnalysisStatus ? 'FAILED' : 'NOT_ANALYZED',
+      whiteAccuracy: row.latestWhiteAccuracy,
+      blackAccuracy: row.latestBlackAccuracy,
+      userAccuracy: row.userColor === 'WHITE' ? row.latestWhiteAccuracy : row.userColor === 'BLACK' ? row.latestBlackAccuracy : null,
     },
   };
 }
@@ -76,7 +58,6 @@ export function toMcpPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
         bestMoveUci: firstUciMove(analysis.bestMoveUci) ?? null,
         bestScoreCpWhite: analysis.bestScoreCpWhite ?? null,
         bestMateWhite: analysis.bestMateWhite ?? null,
-        lines: Array.isArray(analysis.lines) ? analysis.lines : [],
       }
       : null,
   };
@@ -84,7 +65,18 @@ export function toMcpPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
 
 export function toMcpGameDetail(row: ImportedGameDetailRow, options: { includePlies?: boolean } = {}) {
   return {
-    ...toMcpGameSummary(row),
+    id: row.id,
+    provider: row.provider,
+    providerGameId: row.providerGameId,
+    providerUrl: row.providerUrl,
+    endedAt: isoDate(row.endedAt),
+    speedCategory: row.speedCategory,
+    timeControl: { raw: row.timeControlRaw, initial: row.timeControlInitial, increment: row.timeControlIncrement },
+    white: { username: row.whiteUsername, rating: row.whiteRating },
+    black: { username: row.blackUsername, rating: row.blackRating },
+    userColor: row.userColor,
+    resultForUser: row.resultForUser,
+    opening: { eco: row.openingEco, name: row.openingName },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     pgnAvailable: Boolean(row.pgn),
@@ -114,16 +106,12 @@ export function toMcpFacets(facets: Awaited<ReturnType<typeof getImportedGameFac
     COMPLETED: 0,
     FAILED: 0,
   };
-  const seenGameIds = new Set<number>();
-
-  for (const row of facets.analysisRunRows) {
-    if (seenGameIds.has(row.importedGameId)) continue;
-    seenGameIds.add(row.importedGameId);
-    analysisCounts.NOT_ANALYZED -= 1;
-
-    if (row.status === 'RUNNING') analysisCounts.RUNNING += 1;
-    else if (row.status === 'COMPLETED') analysisCounts.COMPLETED += 1;
-    else if (row.status) analysisCounts.FAILED += 1;
+  for (const row of facets.analysisStatusRows) {
+    if (!row.latestAnalysisStatus) continue;
+    analysisCounts.NOT_ANALYZED -= row._count._all;
+    if (row.latestAnalysisStatus === 'RUNNING') analysisCounts.RUNNING += row._count._all;
+    else if (row.latestAnalysisStatus === 'COMPLETED') analysisCounts.COMPLETED += row._count._all;
+    else analysisCounts.FAILED += row._count._all;
   }
 
   return {

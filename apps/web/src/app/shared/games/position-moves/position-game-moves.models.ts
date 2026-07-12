@@ -59,20 +59,15 @@ export interface OpeningNextMove {
 export interface OpeningAnalysisGame {
   id: number;
   provider: Provider;
-  providerGameId: string;
-  providerUrl?: string | null;
-  endedAt?: string | null;
-  speedCategory?: string | null;
-  timeControl: { raw?: string | null; initial?: number | null; increment?: number | null };
-  white?: { username?: string | null; rating?: number | null } | null;
-  black?: { username?: string | null; rating?: number | null } | null;
-  userColor?: UserColor | null;
-  resultForUser?: ResultForUser | null;
-  opening?: { eco?: string | null; name?: string | null } | null;
-  plyNumber: number;
+  endedAt: string | null;
+  speedCategory: string | null;
+  white: { username: string | null; rating: number | null };
+  black: { username: string | null; rating: number | null };
+  resultForUser: ResultForUser | null;
+  opening: { eco: string | null; name: string | null };
   moveNumber: number;
   nextMoveUci: string;
-  nextMoveSan?: string | null;
+  nextMoveSan: string | null;
 }
 
 export interface OpeningAnalysisResponse {

@@ -35,15 +35,8 @@ export interface OpeningAnalysisNextMove {
 export interface OpeningAnalysisGame {
   id: number;
   provider: string;
-  providerGameId: string;
-  providerUrl: string | null;
-  endedAt: Date | null;
+  endedAt: string | null;
   speedCategory: string | null;
-  timeControl: {
-    raw: string | null;
-    initial: number | null;
-    increment: number | null;
-  };
   white: {
     username: string | null;
     rating: number | null;
@@ -52,13 +45,11 @@ export interface OpeningAnalysisGame {
     username: string | null;
     rating: number | null;
   };
-  userColor: string | null;
   resultForUser: string | null;
   opening: {
     eco: string | null;
     name: string | null;
   };
-  plyNumber: number;
   moveNumber: number;
   nextMoveUci: string;
   nextMoveSan: string | null;
@@ -213,15 +204,8 @@ function toOpeningAnalysisGame(game: OpeningAnalysisGameRow, plyNumber: number, 
   return {
     id: game.id,
     provider: game.provider,
-    providerGameId: game.providerGameId,
-    providerUrl: game.providerUrl,
-    endedAt: game.endedAt,
+    endedAt: game.endedAt?.toISOString() ?? null,
     speedCategory: game.speedCategory,
-    timeControl: {
-      raw: game.timeControlRaw,
-      initial: game.timeControlInitial,
-      increment: game.timeControlIncrement,
-    },
     white: {
       username: game.whiteUsername,
       rating: game.whiteRating,
@@ -230,13 +214,11 @@ function toOpeningAnalysisGame(game: OpeningAnalysisGameRow, plyNumber: number, 
       username: game.blackUsername,
       rating: game.blackRating,
     },
-    userColor: game.userColor,
     resultForUser: game.resultForUser,
     opening: {
       eco: game.openingEco,
       name: game.openingName,
     },
-    plyNumber,
     moveNumber: moveNumberFromPly(plyNumber),
     nextMoveUci,
     nextMoveSan,

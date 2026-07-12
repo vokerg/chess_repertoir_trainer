@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { ImportedGameListItem } from '../data-access/games.models';
+import { ImportedGameSearchItem } from '../data-access/games.models';
 
 @Component({
   selector: 'app-game-action-menu',
@@ -9,7 +9,7 @@ import { ImportedGameListItem } from '../data-access/games.models';
   styleUrl: './game-action-menu.component.css',
 })
 export class GameActionMenuComponent {
-  readonly game = input.required<ImportedGameListItem>();
+  readonly game = input.required<ImportedGameSearchItem>();
   readonly open = input(false);
   readonly analysing = input(false);
   readonly indexing = input(false);

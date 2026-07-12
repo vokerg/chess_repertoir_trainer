@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { buildAccountPerformanceStatsData } from '../../dist/services/accountPerformanceStatsService.js';
+import { randomUUID } from 'node:crypto';
+import prismaModule from '../../dist/prisma.js';
+import {
+  AccountPerformanceStatsService,
+  buildAccountPerformanceStatsData,
+} from '../../dist/services/accountPerformanceStatsService.js';
+
+const prisma = prismaModule.default;
 
 function game(options) {
   return {
@@ -250,4 +257,69 @@ function build(games) {
   assert.equal(stats.mostEmbarrassingDefeat, null);
 }
 
+{
+  const suffix = randomUUID();
+  const user = await prisma.appUser.create({
+    data: { displayName: 'Performance query test', authProvider: 'test', authSubject: `performance-${suffix}` },
+  });
+  try {
+    const account = await prisma.externalAccount.create({
+      data: { userId: user.id, provider: 'LICHESS', username: `performance-${suffix}` },
+    });
+    const createGame = (providerGameId, resultForUser, opponentRating, endedAt, opponentUsername) => prisma.importedGame.create({
+      data: {
+        userId: user.id,
+        accountId: account.id,
+        provider: 'LICHESS',
+        providerGameId,
+        endedAt: new Date(endedAt),
+        speedCategory: 'blitz',
+        userColor: 'WHITE',
+        whiteRating: 1500,
+        blackRating: opponentRating,
+        opponentUsername,
+        resultForUser,
+        timeControlRaw: '300+0',
+        timeControlInitial: 300,
+        timeControlIncrement: 0,
+      },
+    });
+
+    const rows = [
+      ['w1', 'WIN', 1800, '2026-01-01T12:00:00Z'],
+      ['w2', 'WIN', 1700, '2026-01-02T12:00:00Z'],
+      ['w3', 'WIN', 1700, '2026-01-02T12:00:00Z'],
+      ['w4', 'WIN', 1600, '2026-01-03T12:00:00Z'],
+      ['w5', 'WIN', 1500, '2026-01-04T12:00:00Z'],
+      ['w6', 'WIN', 1400, '2026-01-05T12:00:00Z'],
+      ['d1', 'DRAW', 1300, '2026-01-06T12:00:00Z'],
+      ['l1', 'LOSS', 800, '2026-01-07T12:00:00Z'],
+      ['l2', 'LOSS', 900, '2026-01-08T12:00:00Z'],
+      ['l3', 'LOSS', 900, '2026-01-09T12:00:00Z'],
+      ['l4', 'LOSS', 1000, '2026-01-10T12:00:00Z'],
+      ['l5', 'LOSS', 1100, '2026-01-11T12:00:00Z'],
+      ['l6', 'LOSS', 1200, '2026-01-12T12:00:00Z'],
+    ];
+    for (const [name, result, rating, endedAt] of rows) {
+      await createGame(`${name}-${suffix}`, result, rating, endedAt, name);
+    }
+
+    const stats = await AccountPerformanceStatsService.getForAccount(user.id, account.id, {
+      speeds: ['bullet', 'blitz', 'rapid'],
+    });
+    assert.ok(stats);
+    assert.equal(stats.gamesCount, 13);
+    assert.deepEqual(stats.wdl, { wins: 6, draws: 1, losses: 6 });
+    assert.deepEqual(stats.averageOpponentRating, { wins: 1617, draws: 1300, losses: 983 });
+    assert.deepEqual(stats.bestVictories.map((item) => item.opponentUsername), ['w1', 'w3', 'w2', 'w4', 'w5']);
+    assert.deepEqual(stats.mostEmbarrassingDefeats.map((item) => item.opponentUsername), ['l1', 'l3', 'l2', 'l4', 'l5']);
+    assert.deepEqual(stats.timeControlWdl, [{
+      timeControl: '5+0', gamesCount: 13, wins: 6, draws: 1, losses: 6, scorePercent: 50,
+    }]);
+  } finally {
+    await prisma.appUser.delete({ where: { id: user.id } });
+  }
+}
+
 console.log('Account performance stats tests passed.');
+await prisma.$disconnect();

@@ -72,7 +72,7 @@ export interface CachedPositionAnalysisOptions {
 
 export interface PositionAnalysisSeedCandidate {
   normalizedFen?: string | null;
-  positionAnalysis?: PositionAnalysisCache | null;
+  positionAnalysis?: (Omit<PositionAnalysisCache, 'lines'> & { lines?: PositionAnalysisLine[] }) | null;
 }
 
 export { firstUciMove } from 'chess-domain';
@@ -234,8 +234,9 @@ export class PositionAnalysisCacheService implements OnDestroy {
     requestedDepth = RICH_INTERACTIVE_ANALYSIS_DEPTH,
   ): void {
     for (const candidate of candidates) {
-      if (!candidate.normalizedFen || !this.isUsablePosition(candidate.positionAnalysis, cacheRequirement, requestedDepth)) continue;
-      this.memoryCache.set(candidate.normalizedFen, candidate.positionAnalysis);
+      const position = this.normalizeSeed(candidate.positionAnalysis);
+      if (!candidate.normalizedFen || !this.isUsablePosition(position, cacheRequirement, requestedDepth)) continue;
+      this.memoryCache.set(candidate.normalizedFen, position);
       this.knownRemoteMisses.delete(candidate.normalizedFen);
     }
   }
@@ -282,9 +283,11 @@ export class PositionAnalysisCacheService implements OnDestroy {
     const normalizedFen = this.normalizeFenForPosition(fen);
     const cacheRequirement = options.cacheRequirement ?? 'lines';
     const requestedDepth = options.requestedDepth ?? RICH_INTERACTIVE_ANALYSIS_DEPTH;
-    return candidates.find((candidate) =>
-      candidate.normalizedFen === normalizedFen && this.isUsablePosition(candidate.positionAnalysis, cacheRequirement, requestedDepth)
-    )?.positionAnalysis ?? null;
+    for (const candidate of candidates) {
+      const position = this.normalizeSeed(candidate.positionAnalysis);
+      if (candidate.normalizedFen === normalizedFen && this.isUsablePosition(position, cacheRequirement, requestedDepth)) return position;
+    }
+    return null;
   }
 
   mapPositionAnalysis(position: PositionAnalysisCache, requestedFen: string): EngineAnalysis {
@@ -581,6 +584,10 @@ export class PositionAnalysisCacheService implements OnDestroy {
     }
     if (!bestMove && !position.lines?.length) return null;
     return this.hasRequestedLines(position, requestedMultipv, requestedDepth, fen) ? position : null;
+  }
+
+  private normalizeSeed(position?: PositionAnalysisSeedCandidate['positionAnalysis']): PositionAnalysisCache | null {
+    return position ? { ...position, lines: position.lines ?? [] } : null;
   }
 
   private hasRequestedLines(

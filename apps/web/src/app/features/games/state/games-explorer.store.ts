@@ -5,7 +5,7 @@ import { ImportedGameAnalysisService } from '../data-access/imported-game-analys
 import {
   ImportedGameFacetsResponse,
   ImportedGameIndexWorkflowResult,
-  ImportedGameListItem,
+  ImportedGameSearchItem,
   ImportedGamePageInfo,
   ImportedGamePlyIndexResult,
 } from '../data-access/games.models';
@@ -18,7 +18,7 @@ export class GamesExplorerStore {
   private readonly api = inject(GamesApiService);
   readonly importedGameAnalysis = inject(ImportedGameAnalysisService);
 
-  readonly games = signal<ImportedGameListItem[]>([]);
+  readonly games = signal<ImportedGameSearchItem[]>([]);
   readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -35,19 +35,7 @@ export class GamesExplorerStore {
   readonly pageInfo = signal<ImportedGamePageInfo>({ nextCursor: null, hasMore: false });
   readonly filters = signal<GameFilters>(defaultGameFilters());
 
-  readonly filteredGames = computed(() => {
-    const timeControl = this.normalizedTimeControlSearch(this.filters().timeControl);
-    const games = this.games();
-    if (!timeControl) return games;
-    return games.filter((game) => {
-      const labels = [
-        this.displayTimeControl(game),
-        game.timeControl?.raw || '',
-        this.timeControlFromRaw(game.timeControl?.raw),
-      ];
-      return labels.some((label) => this.normalizedTimeControlSearch(label).includes(timeControl));
-    });
-  });
+  readonly filteredGames = computed(() => this.games());
 
   readonly analysedCount = computed(
     () => this.filteredGames().filter((game) => game.analysis?.status === 'COMPLETED').length
@@ -142,15 +130,15 @@ export class GamesExplorerStore {
     this.refresh();
   }
 
-  analyse(game: ImportedGameListItem): void {
+  analyse(game: ImportedGameSearchItem): void {
     this.runAnalysis(game);
   }
 
-  forceReanalyse(game: ImportedGameListItem): void {
+  forceReanalyse(game: ImportedGameSearchItem): void {
     this.runAnalysis(game, true);
   }
 
-  indexPlies(game: ImportedGameListItem): void {
+  indexPlies(game: ImportedGameSearchItem): void {
     if (game.plyIndex?.status === 'INDEXED') return;
 
     this.indexingPlyGameId.set(game.id);
@@ -256,7 +244,7 @@ export class GamesExplorerStore {
         try {
           if (this.gameTagCount(game) >= 3) continue;
           const response = await firstValueFrom(this.api.refreshGameTags(game.id));
-          this.patchGameTags(response.importedGameId, response.tagCodes, response.tags);
+          this.patchGameTagCount(response.importedGameId, response.tagCodes.length);
         } catch (err: unknown) {
           failures.push(readApiError(err, `Could not refresh tags for game #${game.id}.`));
         } finally {
@@ -273,7 +261,7 @@ export class GamesExplorerStore {
     }
   }
 
-  private async runAnalysis(game: ImportedGameListItem, force = false): Promise<void> {
+  private async runAnalysis(game: ImportedGameSearchItem, force = false): Promise<void> {
     this.analysingGameId.set(game.id);
     this.error.set(null);
     this.markGameAnalysisRunning(game.id);
@@ -294,7 +282,7 @@ export class GamesExplorerStore {
     }
   }
 
-  private async indexSingleGame(game: ImportedGameListItem): Promise<void> {
+  private async indexSingleGame(game: ImportedGameSearchItem): Promise<void> {
     this.indexingPlyGameId.set(game.id);
     this.markGamePlyIndexing(game.id);
     const force = game.plyIndex?.status === 'FAILED';
@@ -320,7 +308,7 @@ export class GamesExplorerStore {
 
   private patchGameById(
     gameId: number,
-    updater: (game: ImportedGameListItem) => ImportedGameListItem,
+    updater: (game: ImportedGameSearchItem) => ImportedGameSearchItem,
   ): void {
     this.games.update((games) => games.map((game) => (game.id === gameId ? updater(game) : game)));
   }
@@ -349,26 +337,21 @@ export class GamesExplorerStore {
   private markGamePlyIndexing(gameId: number): void {
     this.patchGameById(gameId, (game) => ({
       ...game,
-      plyIndex: { ...game.plyIndex, status: 'NOT_INDEXED', error: null },
+      plyIndex: { status: 'NOT_INDEXED' },
     }));
   }
 
   private markGamePlyIndexed(gameId: number, result: ImportedGamePlyIndexResult): void {
     this.patchGameById(gameId, (game) => ({
       ...game,
-      plyIndex: {
-        ...game.plyIndex,
-        status: 'INDEXED',
-        indexedAt: result.plyIndexedAt ?? game.plyIndex?.indexedAt ?? null,
-        error: null,
-      },
+      plyIndex: { status: 'INDEXED' },
     }));
   }
 
   private markGamePlyIndexFailed(gameId: number, error: string): void {
     this.patchGameById(gameId, (game) => ({
       ...game,
-      plyIndex: { ...game.plyIndex, status: 'FAILED', error },
+      plyIndex: { status: 'FAILED' },
     }));
   }
 
@@ -388,11 +371,10 @@ export class GamesExplorerStore {
     }));
   }
 
-  private patchGameTags(gameId: number, tagCodes: number[], tags: ImportedGameListItem['tags']): void {
+  private patchGameTagCount(gameId: number, tagCount: number): void {
     this.patchGameById(gameId, (game) => ({
       ...game,
-      tagCodes,
-      tags,
+      tagCount,
     }));
   }
 
@@ -402,8 +384,8 @@ export class GamesExplorerStore {
     this.pageInfo.set(data.pageInfo);
   }
 
-  private gameTagCount(game: ImportedGameListItem): number {
-    return game.tags?.length ?? game.tagCodes.length;
+  private gameTagCount(game: ImportedGameSearchItem): number {
+    return game.tagCount;
   }
 
   private resetBulkIndexState(): void {
@@ -418,33 +400,6 @@ export class GamesExplorerStore {
     this.bulkRefreshTagsTotal.set(0);
   }
 
-  private displayTimeControl(game: ImportedGameListItem): string {
-    const fromParts = this.formatTimeControl(game.timeControl?.initial, game.timeControl?.increment);
-    if (fromParts) return fromParts;
-    return this.timeControlFromRaw(game.timeControl?.raw) || '—';
-  }
-
-  private timeControlFromRaw(raw?: string | null): string {
-    if (!raw) return '';
-    const match = raw.match(/^(\d+)\s*\+\s*(\d+)$/);
-    if (!match) return raw;
-    return this.formatTimeControl(Number(match[1]), Number(match[2])) || raw;
-  }
-
-  private formatTimeControl(initial?: number | null, increment?: number | null): string | null {
-    if (typeof initial !== 'number' || typeof increment !== 'number') return null;
-    return `${this.formatInitialMinutes(initial)}+${increment}`;
-  }
-
-  private formatInitialMinutes(initialSeconds: number): string {
-    if (initialSeconds < 60) return `${initialSeconds}s`;
-    const minutes = initialSeconds / 60;
-    return Number.isInteger(minutes) ? String(minutes) : String(Number(minutes.toFixed(1)));
-  }
-
-  private normalizedTimeControlSearch(value?: string | null): string {
-    return (value || '').toLowerCase().replace(/\s+/g, '').replace(/\+0$/, '+0');
-  }
 }
 
 function readApiError(err: unknown, fallback: string): string {

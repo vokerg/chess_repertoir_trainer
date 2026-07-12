@@ -27,6 +27,21 @@ const batchAnalysisRequestSchema = z.object({
 });
 
 const importedGameParamsSchema = z.object({ gameId: z.coerce.number().int().positive() });
+const importedGameAnalysisMoveResponseSchema = z.object({
+  plyNumber: z.number().int(), moveNumber: z.number().int(), side: z.enum(['WHITE', 'BLACK']),
+  playedMoveUci: z.string(), playedMoveSan: z.string().nullable(), classificationCode: z.number().int().nullable(),
+  classification: z.string(), scoreLossCp: z.number().nullable(), bestMoveUci: z.string().nullable(),
+  bestScoreCpWhite: z.number().nullable(), playedScoreCpWhite: z.number().nullable(), bestMateWhite: z.number().nullable(),
+  positionAnalysisId: z.number().int().nullable(),
+});
+const importedGameAnalysisResponseSchema = z.object({ run: z.object({
+  id: z.number().int(), importedGameId: z.number().int(), status: z.string(), positionsTotal: z.number().int().nullable(),
+  positionsDone: z.number().int().nullable(), accuracyVersion: z.string().nullable(), whiteAccuracy: z.number().nullable(),
+  blackAccuracy: z.number().nullable(), whiteAverageCentipawnLoss: z.number().nullable(), blackAverageCentipawnLoss: z.number().nullable(),
+  whiteMovesAnalyzed: z.number().int().nullable(), blackMovesAnalyzed: z.number().int().nullable(), summary: z.unknown().nullable(),
+  error: z.string().nullable(), startedAt: z.iso.datetime({ offset: true }).nullable(), completedAt: z.iso.datetime({ offset: true }).nullable(),
+  createdAt: z.iso.datetime({ offset: true }).nullable(), moves: z.array(importedGameAnalysisMoveResponseSchema),
+}) });
 const analysisRouteSchema = <T extends Record<string, unknown>>(operationId: string, extra: T) => ({
   operationId,
   tags: ['Analysis'],
@@ -173,7 +188,7 @@ const analysisModule: FastifyPluginAsyncZod = async (app) => {
       summary: 'Get the latest analysis run for an imported game',
       params: importedGameParamsSchema,
       response: {
-        200: legacyOpaqueResponseSchema,
+        200: importedGameAnalysisResponseSchema,
         400: apiErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: apiErrorResponseSchema,

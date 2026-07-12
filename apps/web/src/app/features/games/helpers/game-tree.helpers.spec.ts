@@ -52,17 +52,18 @@ describe('game tree helpers', () => {
     const tree = buildGameTree(parseGamePgn('1. e4 e5'), 'WHITE', {});
     const updated = attachGameTreeAnalysis(tree.root, {
       1: {
-        id: 11,
         plyNumber: 1,
         moveNumber: 1,
         side: 'WHITE',
         playedMoveUci: 'e2e4',
         playedMoveSan: 'e4',
         classification: 'BEST',
+        classificationCode: 1,
         scoreLossCp: 0,
         bestMoveUci: 'e2e4',
         bestScoreCpWhite: 20,
         playedScoreCpWhite: 20,
+        bestMateWhite: null,
         positionAnalysisId: 5,
       },
     });

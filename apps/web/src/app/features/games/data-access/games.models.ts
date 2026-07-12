@@ -1,7 +1,7 @@
 import type {
   ImportedGameAnalysisSummary,
   ImportedGameDetail,
-  ImportedGameListItem,
+  ImportedGameSearchItem,
   ImportedGamePageInfo,
   ImportedGamePly,
   ImportedGamePlyIndexSummary,
@@ -22,7 +22,7 @@ export type {
   ImportedGameAnalysisSummary,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
-  ImportedGameListItem,
+  ImportedGameSearchItem,
   ImportedGamePageInfo,
   ImportedGamePly,
   ImportedGamePlyIndexSummary,
@@ -78,40 +78,40 @@ export interface BatchAnalysisAcceptedResponse {
 export type GameMoveClassification = 'BEST' | 'GOOD' | 'INACCURACY' | 'MISTAKE' | 'BLUNDER' | 'BOOK' | 'MISS';
 
 export interface ImportedGameAnalysisMove {
-  id: number;
   plyNumber: number;
   moveNumber: number;
   side: UserColor;
   playedMoveUci: string;
   playedMoveSan: string | null;
   classification: GameMoveClassification | string | null;
+  classificationCode: number | null;
   scoreLossCp: number | null;
   bestMoveUci: string | null;
   bestScoreCpWhite: number | null;
   playedScoreCpWhite: number | null;
-  positionAnalysisId: number;
+  bestMateWhite: number | null;
+  positionAnalysisId: number | null;
 }
 
 export interface ImportedGameAnalysisRun {
   id: number;
   importedGameId: number;
   status: AnalysisStatus;
-  depth: number;
-  multipv: number;
-  engineName: string;
-  engineVersion?: string | null;
-  whiteAccuracy?: number | null;
-  blackAccuracy?: number | null;
-  whiteAverageCentipawnLoss?: number | null;
-  blackAverageCentipawnLoss?: number | null;
-  whiteMovesAnalyzed?: number | null;
-  blackMovesAnalyzed?: number | null;
-  summary?: Record<string, unknown> | null;
-  error?: string | null;
-  startedAt?: string | null;
-  completedAt?: string | null;
+  positionsTotal: number | null;
+  positionsDone: number | null;
+  accuracyVersion: string | null;
+  whiteAccuracy: number | null;
+  blackAccuracy: number | null;
+  whiteAverageCentipawnLoss: number | null;
+  blackAverageCentipawnLoss: number | null;
+  whiteMovesAnalyzed: number | null;
+  blackMovesAnalyzed: number | null;
+  summary: Record<string, unknown> | null;
+  error: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string | null;
   moves: ImportedGameAnalysisMove[];
-  criticalMoves: ImportedGameAnalysisMove[];
 }
 
 export interface ImportedGameAnalysisResponse {

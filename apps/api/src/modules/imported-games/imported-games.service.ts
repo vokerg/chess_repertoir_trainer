@@ -1,8 +1,9 @@
-import { moveClassificationLabel, normalizeStoredEngineLines } from 'chess-domain';
+import { moveClassificationLabel } from 'chess-domain';
 import type {
   ImportedGameDetail,
   ImportedGameFacetsResponse,
   ImportedGameListItem,
+  ImportedGameSearchItem,
   ImportedGameProvider,
   ImportedGameSearchResponse,
   ImportedGameTagDefinitionsResponse,
@@ -21,6 +22,7 @@ import { ImportedGameQueryService } from './imported-game-query.service';
 import {
   ImportedGameDetailRow,
   ImportedGameListRow,
+  ImportedGameSearchRow,
 } from './imported-games.repository.prisma';
 import { ImportedGameSearchQuery } from './imported-games.schemas';
 
@@ -28,18 +30,8 @@ function toIso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
-export class PersistedImportedGameAnalysisError extends Error {
-  constructor() {
-    super('Stored imported-game analysis lines are not an array');
-    this.name = 'PersistedImportedGameAnalysisError';
-  }
-}
-
 function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
   const analysis = ply.position.analysis;
-  if (analysis?.lines !== null && analysis?.lines !== undefined && !Array.isArray(analysis.lines)) {
-    throw new PersistedImportedGameAnalysisError();
-  }
   return {
     plyNumber: ply.plyNumber,
     moveUci: ply.moveUci,
@@ -53,7 +45,6 @@ function toPlyItem(ply: ImportedGameDetailRow['plies'][number]) {
         bestMoveUci: firstUciMove(analysis.bestMoveUci) ?? null,
         bestScoreCpWhite: analysis.bestScoreCpWhite ?? null,
         bestMateWhite: analysis.bestMateWhite ?? null,
-        lines: normalizeStoredEngineLines(Array.isArray(analysis.lines) ? analysis.lines : []),
       }
       : null,
   };
@@ -128,6 +119,29 @@ function toListItem(
   };
 }
 
+function toSearchItem(row: ImportedGameSearchRow): ImportedGameSearchItem {
+  const whiteAccuracy = row.latestWhiteAccuracy ?? null;
+  const blackAccuracy = row.latestBlackAccuracy ?? null;
+  return {
+    id: row.id, provider: row.provider as ImportedGameSearchItem['provider'], providerUrl: row.providerUrl,
+    endedAt: toIso(row.endedAt), speedCategory: row.speedCategory, rated: row.rated,
+    timeControl: { raw: row.timeControlRaw, initial: row.timeControlInitial, increment: row.timeControlIncrement },
+    white: { username: row.whiteUsername, rating: row.whiteRating },
+    black: { username: row.blackUsername, rating: row.blackRating },
+    userColor: row.userColor as ImportedGameSearchItem['userColor'],
+    resultForUser: row.resultForUser as ImportedGameSearchItem['resultForUser'],
+    opening: { eco: row.openingEco, name: row.openingName },
+    tagCount: row.tagCodes?.length ?? 0,
+    plyIndex: { status: row.plyIndexedAt ? 'INDEXED' : row.plyIndexError ? 'FAILED' : 'NOT_INDEXED' },
+    analysis: {
+      status: row.latestAnalysisStatus === 'RUNNING' || row.latestAnalysisStatus === 'COMPLETED'
+        ? row.latestAnalysisStatus : row.latestAnalysisStatus ? 'FAILED' : 'NOT_ANALYZED',
+      whiteAccuracy, blackAccuracy,
+      userAccuracy: row.userColor === 'WHITE' ? whiteAccuracy : row.userColor === 'BLACK' ? blackAccuracy : null,
+    },
+  };
+}
+
 function toDetail(row: ImportedGameDetailRow, tagNamesByCode: Map<number, string>): ImportedGameDetail {
   return {
     ...toListItem(row, tagNamesByCode),
@@ -153,23 +167,19 @@ function countFacetRows<T extends Record<string, any>>(rows: T[], valueKey: keyo
     .map((row) => ({ value: row[valueKey], count: groupCount(row, valueKey) }));
 }
 
-function analysisStatusFacetRows(totalGames: number, rows: Array<{ importedGameId: number; status: string }>) {
+function analysisStatusFacetRows(totalGames: number, rows: Array<{ latestAnalysisStatus: string | null; _count: { _all: number } }>) {
   const counts: Record<ImportedGameAnalysisStatus, number> = {
     NOT_ANALYZED: totalGames,
     RUNNING: 0,
     COMPLETED: 0,
     FAILED: 0,
   };
-  const seenGameIds = new Set<number>();
-
   for (const row of rows) {
-    if (seenGameIds.has(row.importedGameId)) continue;
-    seenGameIds.add(row.importedGameId);
-    counts.NOT_ANALYZED -= 1;
-
-    if (row.status === 'RUNNING') counts.RUNNING += 1;
-    else if (row.status === 'COMPLETED') counts.COMPLETED += 1;
-    else if (row.status) counts.FAILED += 1;
+    if (!row.latestAnalysisStatus) continue;
+    counts.NOT_ANALYZED -= row._count._all;
+    if (row.latestAnalysisStatus === 'RUNNING') counts.RUNNING += row._count._all;
+    else if (row.latestAnalysisStatus === 'COMPLETED') counts.COMPLETED += row._count._all;
+    else counts.FAILED += row._count._all;
   }
 
   return Object.entries(counts).map(([value, count]) => ({ value, count }));
@@ -177,14 +187,10 @@ function analysisStatusFacetRows(totalGames: number, rows: Array<{ importedGameI
 
 export const ImportedGamesService = {
   search: async (userId: number, query: ImportedGameSearchQuery): Promise<ImportedGameSearchResponse> => {
-    const [page, definitionsResponse] = await Promise.all([
-      ImportedGameQueryService.searchPage(userId, query),
-      GameTaggingService.definitions(),
-    ]);
-    const tagNamesByCode = new Map(definitionsResponse.items.map((item) => [item.code, item.name]));
+    const page = await ImportedGameQueryService.searchPage(userId, query);
 
     return {
-      items: page.rows.map((row) => toListItem(row, tagNamesByCode)),
+      items: page.rows.map(toSearchItem),
       pageInfo: page.pageInfo,
       appliedFilters: {
         ...page.appliedCriteria,
@@ -235,7 +241,7 @@ export const ImportedGamesService = {
       }] : []),
       analysisStatuses: analysisStatusFacetRows(
         facets.totalGames,
-        facets.analysisRunRows,
+        facets.analysisStatusRows,
       ) as ImportedGameFacetsResponse['analysisStatuses'],
       tags: definitionsResponse.items.map((tag) => ({
         value: tag.code,

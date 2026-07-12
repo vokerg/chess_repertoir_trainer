@@ -1,5 +1,5 @@
 import {
-  ImportedGameListItem,
+  ImportedGameSearchItem,
   ImportedGamePlayer,
   Provider,
   ResultForUser,
@@ -52,7 +52,7 @@ export function timeClassLabel(speed?: string | null): string {
   return speed ? speed.charAt(0).toUpperCase() + speed.slice(1) : 'Unknown';
 }
 
-export function gameDateLabel(game: ImportedGameListItem): string {
+export function gameDateLabel(game: ImportedGameSearchItem): string {
   if (!game.endedAt) return `#${game.id}`;
   const date = new Date(game.endedAt);
   if (Number.isNaN(date.getTime())) return '—';
@@ -62,7 +62,7 @@ export function gameDateLabel(game: ImportedGameListItem): string {
   return `${day}.${month}.${year}`;
 }
 
-export function displayTimeControl(game: ImportedGameListItem): string {
+export function displayTimeControl(game: ImportedGameSearchItem): string {
   const fromParts = formatTimeControl(game.timeControl?.initial, game.timeControl?.increment);
   if (fromParts) return fromParts;
   return timeControlFromRaw(game.timeControl?.raw) || '—';

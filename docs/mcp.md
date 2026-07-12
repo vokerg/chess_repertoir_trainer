@@ -21,8 +21,10 @@ Invalid or incomplete token configuration fails closed. No-auth mode logs a warn
 - `get_imported_game_facets`
 - `get_imported_game_analysis`
 - `get_opening_analysis`
+- `summarize_imported_games`
+- `get_board_image_url`
 
-These tools query imported games, stored analysis, and opening data. Compact `PositionAnalysis` rows expose `lines: []`; rich rows expose the stored lines as available. The tools do not import games, synchronize external accounts, or implement Lichess/Chess.com authentication.
+These tools query imported games, stored analysis, and opening data. `search_imported_games` returns a compact MCP-owned projection with identity, provider/date, players, result, speed/time control, opening, index/analysis status, and useful accuracy values. It does not reuse the browser DTO or return tag arrays and analysis-run metadata. `get_imported_game` preserves `includePlies`; included plies contain compact position-analysis scalars without stored multipv lines. Game-analysis responses expose one `moves` collection; critical moves are identified by classification instead of being duplicated in a second collection. Rich position-analysis lines remain available through the dedicated position-analysis flow rather than being repeated in game detail. The tools do not import games, synchronize external accounts, or implement Lichess/Chess.com authentication.
 
 Write or heavy operations are deferred, including:
 

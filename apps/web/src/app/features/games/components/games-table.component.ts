@@ -10,7 +10,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
-import { ImportedGameListItem, ImportedGamePageInfo } from '../data-access/games.models';
+import { ImportedGameSearchItem, ImportedGamePageInfo } from '../data-access/games.models';
 import {
   accuracyLabel,
   colorLabel,
@@ -35,7 +35,7 @@ import { GameActionMenuComponent } from './game-action-menu.component';
   styleUrl: './games-table.component.css',
 })
 export class GamesTableComponent {
-  readonly games = input.required<ImportedGameListItem[]>();
+  readonly games = input.required<ImportedGameSearchItem[]>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly tableSubtitle = input('No games loaded');
@@ -44,9 +44,9 @@ export class GamesTableComponent {
   readonly indexingPlyGameId = input<number | null>(null);
   readonly refresh = output<void>();
   readonly loadMore = output<void>();
-  readonly analyse = output<ImportedGameListItem>();
-  readonly forceReanalyse = output<ImportedGameListItem>();
-  readonly indexPlies = output<ImportedGameListItem>();
+  readonly analyse = output<ImportedGameSearchItem>();
+  readonly forceReanalyse = output<ImportedGameSearchItem>();
+  readonly indexPlies = output<ImportedGameSearchItem>();
 
   protected readonly activeActionMenuGameId = signal<number | null>(null);
   protected readonly accuracyLabel = accuracyLabel;
@@ -90,35 +90,35 @@ export class GamesTableComponent {
     this.activeActionMenuGameId.set(null);
   }
 
-  protected analyseGame(game: ImportedGameListItem): void {
+  protected analyseGame(game: ImportedGameSearchItem): void {
     this.closeActionMenu();
     this.analyse.emit(game);
   }
 
-  protected forceReanalyseGame(game: ImportedGameListItem): void {
+  protected forceReanalyseGame(game: ImportedGameSearchItem): void {
     this.closeActionMenu();
     this.forceReanalyse.emit(game);
   }
 
-  protected indexGamePlies(game: ImportedGameListItem): void {
+  protected indexGamePlies(game: ImportedGameSearchItem): void {
     this.closeActionMenu();
     this.indexPlies.emit(game);
   }
 
-  protected analysisStatusLabel(game: ImportedGameListItem): string {
+  protected analysisStatusLabel(game: ImportedGameSearchItem): string {
     if (this.analysingGameId() === game.id || game.analysis?.status === 'RUNNING')
       return 'Analysing...';
     if (game.analysis?.status === 'COMPLETED') return 'Analysed';
     return 'Not analysed';
   }
 
-  protected plyIndexStatusLabel(game: ImportedGameListItem): string {
+  protected plyIndexStatusLabel(game: ImportedGameSearchItem): string {
     if (this.indexingPlyGameId() === game.id) return 'Indexing...';
     if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
     return 'Not indexed';
   }
 
-  protected ratedLabel(game: ImportedGameListItem): string {
+  protected ratedLabel(game: ImportedGameSearchItem): string {
     if (game.rated === true) return 'Rated';
     if (game.rated === false) return 'Casual';
     return 'Rating unknown';

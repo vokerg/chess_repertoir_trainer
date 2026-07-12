@@ -120,7 +120,6 @@ function buildAccuracySummary(plies: any[], userColor?: string | null) {
 function compactRun(run: any) {
   const plies = run.importedGame?.plies ?? [];
   const moves = plies.map((ply: any, index: number) => compactMove(ply, plies[index + 1] ?? null));
-  const criticalMoves = moves.filter((move: any) => move.classificationCode === 5 || move.classificationCode === 6);
 
   return {
     id: run.id,
@@ -137,11 +136,10 @@ function compactRun(run: any) {
     blackMovesAnalyzed: run.blackMovesAnalyzed,
     summary: run.summary,
     error: run.error,
-    startedAt: run.startedAt,
-    completedAt: run.completedAt,
-    createdAt: run.createdAt,
+    startedAt: run.startedAt?.toISOString?.() ?? null,
+    completedAt: run.completedAt?.toISOString?.() ?? null,
+    createdAt: run.createdAt?.toISOString?.() ?? null,
     moves,
-    criticalMoves,
   };
 }
 

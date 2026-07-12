@@ -114,7 +114,7 @@ export class GameDetailStore implements OnDestroy {
   readonly analysisSummaryLabel = computed(() => {
     const run = this.analysisRun();
     return run
-      ? `${run.moves.length} analysed moves · ${run.criticalMoves.length} critical`
+      ? `${run.moves.length} analysed moves · ${run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length} critical`
       : 'No saved analysis loaded';
   });
 
