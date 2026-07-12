@@ -39,4 +39,33 @@ describe('repertoire graph', () => {
       makeLine(3, 'BLACK', ['e2e4']), makeLine(4, 'BLACK', ['d2d4']),
     ]))).toHaveLength(0);
   });
+
+  it('preserves line references and SAN paths for a branching line', () => {
+    const line = makeLine(5, 'WHITE', ['e2e4', 'e7e5', 'g1f3']);
+    const branch = makeLine(6, 'WHITE', ['e2e4', 'c7c5', 'g1f3']);
+    branch.id = line.id;
+    branch.name = line.name;
+    branch.moves.forEach((move, index) => {
+      move.lineId = line.id;
+      move.id = 600 + index;
+      move.parentId = index === 0 ? null : branch.moves[index - 1].id;
+    });
+    branch.moves[0] = line.moves[0];
+    branch.moves[1].parentId = line.moves[0].id;
+    const branchingLine = { ...line, moves: [...line.moves, ...branch.moves.slice(1)] };
+
+    const graph = buildRepertoireGraph([branchingLine]);
+    const refs = [...graph.positions.values()]
+      .flatMap((position) => [...position.userMoves.values(), ...position.opponentMoves.values()])
+      .flatMap((move) => move.lineRefs)
+      .map((ref) => ({ nodeId: ref.nodeId, lineId: ref.lineId, moveSequenceSan: ref.moveSequenceSan }));
+
+    expect(refs).toEqual([
+      { nodeId: 501, lineId: 5, moveSequenceSan: '1. e4' },
+      { nodeId: 502, lineId: 5, moveSequenceSan: '1. e4 e5' },
+      { nodeId: 503, lineId: 5, moveSequenceSan: '1. e4 e5 2. Nf3' },
+      { nodeId: 601, lineId: 5, moveSequenceSan: '1. e4 c5' },
+      { nodeId: 602, lineId: 5, moveSequenceSan: '1. e4 c5 2. Nf3' },
+    ]);
+  });
 });

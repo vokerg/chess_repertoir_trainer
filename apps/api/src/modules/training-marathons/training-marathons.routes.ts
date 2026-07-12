@@ -10,6 +10,7 @@ import {
 } from './training-marathon-candidates.service';
 import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
+import { performanceDebug } from '../../utils/performance-debug';
 
 const marathonScopeSchema = z.object({
   type: z.enum(['CHAPTER', 'COURSE']),
@@ -43,12 +44,13 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
       },
     },
   }, async (request, reply) => {
+    const endpointStartedAt = performance.now();
     const auth = requireAuth(request, reply);
     if (!auth) return;
     const requestBody = request.body;
 
     try {
-      const { scope, scopeLabel, sublines } = await resolveMarathonCandidates(auth.userId, requestBody);
+      const { scope, scopeLabel, sublines, preparedLines } = await resolveMarathonCandidates(auth.userId, requestBody);
       const pool = await filterCandidatesByMode(auth.userId, sublines, requestBody.mode);
       if (pool.length === 0) {
         return reply.status(404).send({ error: `No weak or untrained candidates found for ${scopeLabel}.` });
@@ -59,7 +61,11 @@ const trainingMarathonsModule: FastifyPluginAsyncZod = async (app) => {
         return reply.status(404).send({ error: `No trainable sublines found for ${scopeLabel}.` });
       }
 
-      return reply.send(await buildMarathonNextResponse(auth.userId, scope, requestBody.mode, subline));
+      const preparedLine = preparedLines.get(subline.lineId);
+      if (!preparedLine) throw new MarathonCandidateError(404, 'Line not found.');
+      const response = await buildMarathonNextResponse(auth.userId, scope, requestBody.mode, subline, preparedLine);
+      performanceDebug('training-marathon-next-endpoint', endpointStartedAt, { candidates: sublines.length, filteredCandidates: pool.length });
+      return reply.send(response);
     } catch (err: any) {
       if (err instanceof MarathonCandidateError) {
         return reply.status(err.statusCode as 400 | 404).send({ error: err.message });

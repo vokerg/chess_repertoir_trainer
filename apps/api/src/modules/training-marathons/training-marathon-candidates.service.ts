@@ -1,20 +1,22 @@
 import prisma from '../../prisma';
 import { TrainingService } from '../../services/trainingService';
 import {
-  SCORED_TRAINING_RESULTS,
   TRAINING_MODE_MARATHON,
   TRAINING_MODE_MIXED_WEAK_UNTRAINED,
   TRAINING_MODE_UNTRAINED_SUBLINES,
   TRAINING_MODE_WEAK_SUBLINES,
-  TRAINING_STATS_RECENT_ATTEMPTS,
 } from '../training/training.constants';
 import {
   getAvailableSublineRows,
-  getWeakSublinePool,
+  getDerivedLineData,
+  getDerivedSelectedLines,
+  getWeakSublinePoolFromAttempts,
+  DerivedLineData,
   HashedAvailableSublineDto,
   pickRandomSubline,
   SublineScope,
 } from '../courses/sublines.service';
+import { groupRecentAttempts, loadRecentScoredAttempts, sublineIdentityKey } from '../training/recent-scored-attempts';
 
 export type MarathonScope = { type: 'CHAPTER' | 'COURSE'; id: number };
 export type MarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';
@@ -62,39 +64,43 @@ function ensureLinesInsideScope(scope: MarathonScope, rows: Awaited<ReturnType<t
   }
 }
 
-async function loadSelectedLineSublines(userId: number, lineIds: number[]): Promise<HashedAvailableSublineDto[]> {
-  const rows = await Promise.all(lineIds.map((lineId) => getAvailableSublineRows(userId, { type: 'LINE', id: lineId })));
-  return rows.flatMap((lineRows) => lineRows ?? []);
-}
-
 export async function resolveMarathonCandidates(
   userId: number,
   request: MarathonNextRequest,
-): Promise<{ scopeLabel: string; scope: MarathonScope | null; sublines: HashedAvailableSublineDto[] }> {
+): Promise<{ scopeLabel: string; scope: MarathonScope | null; sublines: HashedAvailableSublineDto[]; preparedLines: Map<number, DerivedLineData> }> {
   if (!request.scope && request.lineIds.length === 0 && request.sublineHashes.length === 0) {
     throw new MarathonCandidateError(400, 'Provide a marathon scope, selected line ids, or selected subline hashes.');
   }
 
   let sublines: HashedAvailableSublineDto[] | null = null;
+  let derivedLines: DerivedLineData[] = [];
   const selectedLineIds = [...new Set(request.lineIds)];
   const selectedHashes = new Set(request.sublineHashes);
 
   if (request.scope) {
-    sublines = await getAvailableSublineRows(userId, request.scope as SublineScope);
-    if (sublines === null) {
+    const scopedLines = await getDerivedLineData(userId, request.scope as SublineScope);
+    if (scopedLines === null) {
       throw new MarathonCandidateError(404, `${request.scope.type === 'COURSE' ? 'Course' : 'Chapter'} not found.`);
     }
+    derivedLines = scopedLines;
+    sublines = derivedLines.flatMap((line) => line.sublines);
   }
 
   if (selectedLineIds.length > 0) {
-    const rows = await loadOwnedSelectedLineRows(userId, selectedLineIds);
-    ensureAllSelectedLinesResolved(selectedLineIds, new Set(rows.map((line) => line.id)));
-    if (request.scope) ensureLinesInsideScope(request.scope, rows);
+    const selectedLines = await getDerivedSelectedLines(userId, selectedLineIds);
+    ensureAllSelectedLinesResolved(selectedLineIds, new Set(selectedLines.map((line) => line.line.id)));
+    if (request.scope) {
+      const rows = selectedLines.map((line) => ({ id: line.line.id, chapterId: line.line.chapterId, chapter: { courseId: line.line.courseId } }));
+      ensureLinesInsideScope(request.scope, rows);
+    }
 
     const selectedLineSet = new Set(selectedLineIds);
     sublines = sublines
       ? sublines.filter((subline) => selectedLineSet.has(subline.lineId))
-      : await loadSelectedLineSublines(userId, selectedLineIds);
+      : selectedLines.flatMap((line) => line.sublines);
+    derivedLines = derivedLines.length > 0
+      ? derivedLines.filter((line) => selectedLineSet.has(line.line.id))
+      : selectedLines;
 
     if (sublines.length === 0) {
       throw new MarathonCandidateError(404, 'No trainable sublines found for the selected lines.');
@@ -103,11 +109,9 @@ export async function resolveMarathonCandidates(
 
   if (selectedHashes.size > 0) {
     if (!sublines) {
-      const ownedLineIds = await prisma.line.findMany({
-        where: { chapter: { course: { userId } } },
-        select: { id: true },
-      });
-      sublines = await loadSelectedLineSublines(userId, ownedLineIds.map((line) => line.id));
+      const ownedLineIds = await prisma.line.findMany({ where: { chapter: { course: { userId } } }, select: { id: true } });
+      derivedLines = await getDerivedSelectedLines(userId, ownedLineIds.map((line) => line.id));
+      sublines = derivedLines.flatMap((line) => line.sublines);
     }
     sublines = sublines.filter((subline) => selectedHashes.has(subline.hash));
     if (sublines.length === 0) {
@@ -125,7 +129,7 @@ export async function resolveMarathonCandidates(
       ? 'selected sublines'
       : 'selected lines';
 
-  return { scopeLabel, scope: request.scope ?? null, sublines };
+  return { scopeLabel, scope: request.scope ?? null, sublines, preparedLines: new Map(derivedLines.map((line) => [line.line.id, line])) };
 }
 
 export async function filterCandidatesByMode(
@@ -134,12 +138,15 @@ export async function filterCandidatesByMode(
   mode: MarathonMode,
 ): Promise<HashedAvailableSublineDto[]> {
   if (mode === 'ALL') return sublines;
-  if (mode === 'WEAK_SUBLINES') return getWeakSublinePool(userId, sublines);
+  const attempts = groupRecentAttempts(await loadRecentScoredAttempts(
+    userId,
+    sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash })),
+  ));
+  const weak = getWeakSublinePoolFromAttempts(sublines, attempts);
+  if (mode === 'WEAK_SUBLINES') return weak;
 
-  const untrained = await getUntrainedSublinePool(userId, sublines);
+  const untrained = sublines.filter((subline) => !attempts.has(sublineIdentityKey({ lineId: subline.lineId, sublineHash: subline.hash })));
   if (mode === 'UNTRAINED_SUBLINES') return untrained;
-
-  const weak = await getWeakSublinePool(userId, sublines);
   const byKey = new Map<string, HashedAvailableSublineDto>();
   for (const subline of [...weak, ...untrained]) byKey.set(sublineKey(subline), subline);
   return [...byKey.values()];
@@ -159,9 +166,11 @@ export async function buildMarathonNextResponse(
   scope: MarathonScope | null,
   mode: MarathonMode,
   subline: HashedAvailableSublineDto,
+  preparedLine: DerivedLineData,
 ) {
-  const session = await TrainingService.startForSubline(
+  const session = await TrainingService.startForPreparedSubline(
     userId,
+    preparedLine,
     subline,
     trainingModeForMarathonMode(mode),
   );
@@ -193,33 +202,6 @@ export function pickMarathonSubline(
   recentSublineHashes: string[],
 ): HashedAvailableSublineDto | null {
   return pickRandomSubline(filterOutRecentSublines(sublines, recentSublineHashes), []);
-}
-
-async function getUntrainedSublinePool(
-  userId: number,
-  sublines: HashedAvailableSublineDto[],
-): Promise<HashedAvailableSublineDto[]> {
-  if (sublines.length === 0) return [];
-  const lineIds = [...new Set(sublines.map((subline) => subline.lineId))];
-  const hashes = [...new Set(sublines.map((subline) => subline.hash))];
-  const attempts = await prisma.trainingSublineAttempt.findMany({
-    where: {
-      userId,
-      lineId: { in: lineIds },
-      sublineHash: { in: hashes },
-      result: { in: [...SCORED_TRAINING_RESULTS] },
-    },
-    orderBy: [{ completedAt: 'desc' }, { startedAt: 'desc' }],
-  });
-
-  const recentCounts = new Map<string, number>();
-  for (const attempt of attempts) {
-    const key = `${attempt.lineId}:${attempt.sublineHash}`;
-    const count = recentCounts.get(key) ?? 0;
-    if (count < TRAINING_STATS_RECENT_ATTEMPTS) recentCounts.set(key, count + 1);
-  }
-
-  return sublines.filter((subline) => !recentCounts.has(sublineKey(subline)));
 }
 
 function trainingModeForMarathonMode(mode: MarathonMode): string {
