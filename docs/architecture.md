@@ -60,13 +60,14 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - Marathon candidate selection supports a course/chapter scope, selected line ids, selected active subline hashes, and recent subline hashes. Scope-only requests preserve whole-course/chapter marathon behavior. Selected lines are ownership checked and, when a scope is also provided, must belong to that scope. Selected subline hashes are filtered against active owned sublines, so inactive hashes remain historical and are not trained.
 - Marathon modes are `ALL`, `WEAK_SUBLINES`, `UNTRAINED_SUBLINES`, and `MIXED_WEAK_UNTRAINED`. Weak and untrained filtering uses the same active subline extraction and last-5 scored-attempt window as stats.
 - Persisted training stats live in `TrainingSublineAttempt`, keyed by user, line, and subline hash. Line, chapter, and course stats count only active hashes and the last 5 scored attempts per active subline; old hashes remain historical but inactive after move-tree edits.
+- Course read models are assembled by `course-derived-data.service.ts` from lean hierarchy/move selections. `/api/library/catalog` derives all owned lines once and uses one bounded attempt read for course and line summaries; `/api/courses/:courseId/overview` serves course metadata, chapters, statistics, and active sublines from one course derivation.
 - `packages/contracts` is an active workspace. Endpoint schemas are added only after their actual API output and consumers have been verified.
 
 Frontend conventions and accepted debt are documented under `docs/frontend`.
 
 ## Frontend product ownership
 
-- `/library` is the Study planner. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`. Desktop keeps the right-side study planner basket; mobile keeps browsing visible and uses the Study Launcher for course, section, or single-line marathon launch.
+- `/library` is the Study planner. Its primary hierarchy and summaries come from one `/api/library/catalog` request. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`.
 - App navigation lives in `apps/web/src/app/core/layout/main-navigation`. It owns the hierarchical desktop/mobile nav model described in [Frontend Navigation](frontend/navigation.md). Keep desktop and mobile navigation driven by the same route/group data.
 - Study is the primary entry point for repertoire study and tactical missed-shot training. The main menu nests Missed shots under Study rather than exposing it as a separate top-level item.
 - Openings groups Opening analysis (`/opening-analysis`) and Opening struggles (`/opening-struggles`). Opening struggles remains routed directly even though its implementation currently lives under the Lab experiment directory.

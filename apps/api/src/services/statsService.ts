@@ -84,7 +84,7 @@ async function statsFromSublines(
   return statsFromLoadedAttempts(scopeType, scopeId, sublines, attemptsBySubline);
 }
 
-function statsFromLoadedAttempts(
+export function statsFromLoadedAttempts(
   scopeType: 'LINE' | 'CHAPTER' | 'COURSE',
   scopeId: number,
   sublines: HashedAvailableSublineDto[],

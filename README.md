@@ -268,6 +268,15 @@ The seed stores real move nodes only; it does not create a fake blank root node.
 
 ## Main API surfaces
 
+### Course read models
+
+```http
+GET /api/library/catalog
+GET /api/courses/:courseId/overview
+```
+
+The library catalog returns the complete owned course/chapter/line hierarchy with course and line training summaries from one recent-attempt read. Course overview returns metadata, chapters, aggregate statistics, weakest summaries, and active sublines derived once for the initial course-detail load. Neither response includes move-node payloads or attempt history.
+
 ### Course sublines API
 
 ```http
