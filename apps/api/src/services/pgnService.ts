@@ -198,6 +198,8 @@ export const PgnService = {
       };
     }
 
+    await prisma.line.update({ where: { id: line.id }, data: { updatedAt: new Date() } });
+
     return prisma.line.findUniqueOrThrow({ where: { id: line.id } });
   },
 };

@@ -1,11 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
-import { LibraryChapter, LibraryCourse, LibraryCourseStats, LibraryLine } from './library.models';
+import { LibraryCatalogResponse, LibraryChapter, LibraryCourse, LibraryCourseStats, LibraryLine } from './library.models';
 
 @Injectable()
 export class LibraryApiService {
   private readonly api = inject(ApiService);
+
+  getCatalog(): Observable<LibraryCatalogResponse> {
+    return this.api.get<LibraryCatalogResponse>('/library/catalog');
+  }
 
   getCourses(): Observable<LibraryCourse[]> {
     return this.api.get<LibraryCourse[]>('/courses');

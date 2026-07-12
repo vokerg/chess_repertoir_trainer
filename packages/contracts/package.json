@@ -19,6 +19,10 @@
     "./board-images": {
       "types": "./dist/board-images/index.d.ts",
       "default": "./dist/board-images/index.js"
+    },
+    "./courses": {
+      "types": "./dist/courses/index.d.ts",
+      "default": "./dist/courses/index.js"
     }
   },
   "scripts": {

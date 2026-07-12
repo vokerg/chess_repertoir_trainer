@@ -25,3 +25,5 @@ export interface CourseChapter {
   description?: string | null;
   sortOrder: number;
 }
+export type CourseOverview = CourseOverviewContract;
+import type { CourseOverview as CourseOverviewContract } from '@chess-trainer/contracts/courses';

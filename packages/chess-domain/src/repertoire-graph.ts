@@ -75,6 +75,24 @@ export function buildRepertoireGraph(lines: RepertoireLineInput[]): RepertoireGr
   const graph: RepertoireGraph = { startPositions: new Set(), positions: new Map() };
 
   for (const line of lines) {
+    const nodesById = new Map(line.moves.map((node) => [node.id, node]));
+    const pathsByNodeId = new Map<number, string | null>();
+    const pathForNode = (nodeId: number): string | null => {
+      if (pathsByNodeId.has(nodeId)) return pathsByNodeId.get(nodeId) ?? null;
+      const path: RepertoireMoveInput[] = [];
+      const visited = new Set<number>();
+      let current = nodesById.get(nodeId);
+      while (current && !visited.has(current.id)) {
+        visited.add(current.id);
+        path.push(current);
+        current = current.parentId === null ? undefined : nodesById.get(current.parentId);
+      }
+      const formatted = path.length === 0 || current
+        ? null
+        : formatMoveSequence(path.reverse().map((node) => ({ san: node.moveSan, plyNumber: node.plyNumber })));
+      pathsByNodeId.set(nodeId, formatted);
+      return formatted;
+    };
     const startKey = normalizeFenForPosition(line.startingFen || 'startpos');
     graph.startPositions.add(startKey);
     const startPosition = getOrCreatePosition(graph, startKey, line.startingFen);
@@ -106,7 +124,7 @@ export function buildRepertoireGraph(lines: RepertoireLineInput[]): RepertoireGr
         lineId: line.id,
         lineName: line.name,
         nodeId: node.id,
-        moveSequenceSan: formatPathToNode(line.moves, node.id),
+        moveSequenceSan: pathForNode(node.id),
       });
     }
   }

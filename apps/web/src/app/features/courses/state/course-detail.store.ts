@@ -3,14 +3,12 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseChapter, CourseDetail, CourseStats } from '../data-access/course-detail.models';
-import { SublinesApiService } from '../data-access/sublines/sublines-api.service';
 import { AvailableSubline } from '../data-access/sublines/sublines.models';
 
 @Injectable()
 export class CourseDetailStore {
   private readonly api = inject(CourseDetailApiService);
   private readonly router = inject(Router);
-  private readonly sublinesApi = inject(SublinesApiService);
   private requestVersion = 0;
 
   readonly courseId = signal<number | null>(null);
@@ -51,30 +49,21 @@ export class CourseDetailStore {
     this.sublinesLoading.set(true);
     this.error.set(null);
     this.sublinesError.set(null);
-    const [courseResult, statsResult, chaptersResult, sublinesResult] = await Promise.allSettled([
-      firstValueFrom(this.api.getCourse(courseId)),
-      firstValueFrom(this.api.getStats(courseId)),
-      firstValueFrom(this.api.getChapters(courseId)),
-      firstValueFrom(this.sublinesApi.getCourseSublines(courseId)),
-    ]);
+    const overviewResult = await Promise.allSettled([firstValueFrom(this.api.getOverview(courseId))]);
     if (version !== this.requestVersion) return;
-    if (courseResult.status === 'fulfilled') {
-      this.course.set(courseResult.value);
-      if (!this.editingCourseName()) this.courseNameDraft.set(courseResult.value.name);
+    const result = overviewResult[0];
+    if (result.status === 'fulfilled') {
+      this.course.set(result.value.course);
+      this.stats.set(result.value.stats);
+      this.chapters.set(result.value.chapters);
+      this.sublines.set(result.value.sublines);
+      if (!this.editingCourseName()) this.courseNameDraft.set(result.value.course.name);
     } else {
-      this.error.set('Could not load course.');
-    }
-    this.stats.set(statsResult.status === 'fulfilled' ? statsResult.value : null);
-    if (chaptersResult.status === 'fulfilled') {
-      this.chapters.set(chaptersResult.value);
-    } else {
-      this.error.set(readError(chaptersResult.reason, 'Could not load chapters.'));
-    }
-    if (sublinesResult.status === 'fulfilled') {
-      this.sublines.set(sublinesResult.value);
-    } else {
+      this.course.set(null);
+      this.stats.set(null);
+      this.chapters.set([]);
       this.sublines.set([]);
-      this.sublinesError.set(readError(sublinesResult.reason, 'Could not load available sublines.'));
+      this.error.set(readError(result.reason, 'Could not load course.'));
     }
     this.loading.set(false);
     this.sublinesLoading.set(false);

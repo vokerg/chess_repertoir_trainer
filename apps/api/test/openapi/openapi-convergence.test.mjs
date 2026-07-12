@@ -52,6 +52,7 @@ for (const { method, path, operation } of operations) {
 
 const bodylessActions = new Map([
   ['POST /api/lines/{lineId}/training/start', 'the line id selects the repertoire material'],
+  ['POST /api/training-marathons/{runId}/next', 'The run id selects the prepared marathon state'],
   ['POST /api/training/{sessionId}/complete', 'completion uses the persisted session state'],
   ['POST /api/training/{sessionId}/abandon', 'abandonment uses the persisted session state'],
   ['POST /api/imported-games/{gameId}/plies/analysis/clear', 'the imported game id fully identifies the analysis rows to clear'],

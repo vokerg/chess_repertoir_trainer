@@ -32,6 +32,8 @@ import {
   unauthorizedResponseSchema,
 } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
+import { courseOverviewSchema, libraryCatalogSchema } from '@chess-trainer/contracts/courses';
+import { CourseDerivedDataService } from './course-derived-data.service';
 
 const importPgnSchema = z.object({
   name: z.string().min(1),
@@ -70,6 +72,29 @@ const courseRouteSchema = <T extends Record<string, unknown>>(
 ) => ({ operationId, tags, summary, ...extra });
 
 const coursesModule: FastifyPluginAsyncZod = async (app) => {
+  app.get('/api/library/catalog', {
+    schema: courseRouteSchema('getLibraryCatalog', ['Courses'], 'Get the complete library catalog with training summaries', {
+      response: { 200: libraryCatalogSchema, 401: unauthorizedResponseSchema },
+    }),
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return CourseDerivedDataService.catalog(auth.userId);
+  });
+
+  app.get('/api/courses/:courseId/overview', {
+    schema: courseRouteSchema('getCourseOverview', ['Courses'], 'Get course metadata, summaries, and available sublines', {
+      params: courseIdParamsSchema,
+      response: { 200: courseOverviewSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: messageResponseSchema },
+    }),
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const overview = await CourseDerivedDataService.overview(auth.userId, request.params.courseId);
+    if (!overview) return reply.status(404).send({ message: 'Course not found' });
+    return overview;
+  });
+
   app.get('/api/courses', {
     schema: courseRouteSchema('listCourses', ['Courses'], 'List courses for the current user', {
       response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },

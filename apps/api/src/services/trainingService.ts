@@ -7,6 +7,8 @@ import {
 import { LineService } from '../modules/courses/courses.service';
 import {
   HashedAvailableSublineDto,
+  DerivedLineData,
+  getDerivedLineData,
   getAvailableSublineRows,
   pickRandomSubline,
 } from '../modules/courses/sublines.service';
@@ -19,6 +21,8 @@ import prisma from '../prisma';
  * which is acceptable for v1 as sessions are short-lived.
  */
 const activeSessions: Map<number, { state: TrainingState; subline: HashedAvailableSublineDto }> = new Map();
+
+export class PreparedLineStaleError extends Error {}
 
 async function getOwnedSession(userId: number, sessionId: number) {
   return prisma.trainingSession.findFirst({
@@ -154,6 +158,33 @@ async function startForSubline(
   };
 }
 
+async function startForPreparedSubline(
+  userId: number,
+  preparedLine: DerivedLineData,
+  subline: HashedAvailableSublineDto,
+  trainingMode: string,
+) {
+  const owned = await prisma.line.findFirst({
+    where: { id: preparedLine.line.id, chapter: { course: { userId } } },
+    select: { id: true, updatedAt: true },
+  });
+  if (!owned || subline.lineId !== preparedLine.line.id) throw new Error('Line not found');
+  if (owned.updatedAt.getTime() !== preparedLine.line.updatedAt.getTime()) {
+    throw new PreparedLineStaleError('Prepared line changed.');
+  }
+
+  const trainingState = startSublineTraining(preparedLine.tree, { leafNodeId: subline.leafNodeId, moves: subline.moves });
+  return createTrainingSession(userId, subline, trainingMode, trainingState);
+}
+
+async function createTrainingSession(userId: number, subline: HashedAvailableSublineDto, trainingMode: string, trainingState: TrainingState) {
+  const session = await prisma.trainingSession.create({ data: { userId, lineId: subline.lineId, result: 'IN_PROGRESS', mistakesCount: 0, totalExpectedMoves: 0, correctMoves: 0 } });
+  await prisma.trainingSublineAttempt.create({ data: { userId, lineId: subline.lineId, trainingSessionId: session.id, sublineHash: subline.hash, sublineKeyVersion: subline.canonicalKeyVersion, movesJson: subline.moves, moveText: subline.moveText, trainingMode, result: 'IN_PROGRESS', mistakesCount: 0, totalExpectedMoves: 0, correctMoves: 0 } });
+  activeSessions.set(session.id, { state: trainingState, subline });
+  if (trainingState.completed) await finalizeSession(userId, session.id);
+  return { sessionId: session.id, fen: trainingState.current.node.fenAfter, expectedMove: getExpectedUserMoveUci(trainingState), completed: trainingState.completed, sublineHash: subline.hash, sublineMoveText: subline.moveText };
+}
+
 export const TrainingService = {
   /**
    * Start a new training session on the given line. This builds the move tree, creates a session row
@@ -171,6 +202,7 @@ export const TrainingService = {
   },
 
   startForSubline,
+  startForPreparedSubline,
 
   /**
    * Play a user move in an active session. Each attempt is counted exactly once

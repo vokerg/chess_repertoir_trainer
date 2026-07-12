@@ -268,6 +268,15 @@ The seed stores real move nodes only; it does not create a fake blank root node.
 
 ## Main API surfaces
 
+### Course read models
+
+```http
+GET /api/library/catalog
+GET /api/courses/:courseId/overview
+```
+
+The library catalog returns the complete owned course/chapter/line hierarchy with course and line training summaries from one recent-attempt read. Course overview returns metadata, chapters, aggregate statistics, weakest summaries, and active sublines derived once for the initial course-detail load. Neither response includes move-node payloads or attempt history.
+
 ### Course sublines API
 
 ```http
@@ -282,10 +291,14 @@ The hash is derived from a canonical key containing version, line id, starting F
 
 ```http
 POST /api/training-marathons/next
+POST /api/training-marathons
+POST /api/training-marathons/:runId/next
 GET /api/lines/:lineId/sublines/status
 ```
 
 `POST /api/training-marathons/next` accepts an optional course/chapter `scope`, selected `lineIds`, selected `sublineHashes`, a `mode`, and `recentSublineHashes`. At least one of `scope`, `lineIds`, or `sublineHashes` is required. When both scope and selected lines are provided, the selected lines must belong to that scope. The frontend sends subline recency by hash rather than by line id.
+
+The web client uses `POST /api/training-marathons` to prepare one short-lived owned run and `POST /api/training-marathons/:runId/next` for continuation. Runs retain prepared candidates in memory, expire after 30 minutes of inactivity, are bounded to 1,000 active runs, and do not survive API restarts.
 
 ### Current user and external accounts
 

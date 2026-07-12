@@ -120,6 +120,17 @@ export class LinesApiService {
     return this.api.get<SublineTrainingStatus[]>(`/lines/${lineId}/sublines/status`);
   }
 
+  createMarathonRun(request: MarathonNextRequest): Observable<{ runId: string }> {
+    return this.api.post<{ runId: string }>('/training-marathons', {
+      scope: request.scope, mode: request.mode, lineIds: request.lineIds ?? [], sublineHashes: request.sublineHashes ?? [],
+      recentSublineHashes: [], recentLineIds: [],
+    });
+  }
+
+  startNextMarathonRunLine(runId: string): Observable<MarathonNextResponse> {
+    return this.api.post<MarathonNextResponse>(`/training-marathons/${runId}/next`, {});
+  }
+
   startNextMarathonLine(request: MarathonNextRequest): Observable<MarathonNextResponse> {
     return this.api.post<MarathonNextResponse>('/training-marathons/next', {
       scope: request.scope,

@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { LibraryApiService } from '../data-access/library-api.service';
 import {
   LibraryChapter,
+  LibraryCatalogResponse,
   LibraryCourse,
   LibraryCourseStats,
   LibraryLine,
@@ -18,6 +19,7 @@ export class LibraryBrowserStore {
   private readonly router = inject(Router);
 
   readonly courses = signal<LibraryCourse[]>([]);
+  private readonly catalog = signal<LibraryCatalogResponse>({ courses: [] });
   readonly chapters = signal<LibraryChapter[]>([]);
   readonly lines = signal<LibraryLine[]>([]);
   readonly selectedCourseId = signal<number | null>(null);
@@ -132,9 +134,11 @@ export class LibraryBrowserStore {
     this.courseLoading.set(true);
     this.courseError.set(null);
     try {
-      const courses = await firstValueFrom(this.api.getCourses());
+      const catalog = await firstValueFrom(this.api.getCatalog());
+      this.catalog.set(catalog);
+      const courses = catalog.courses.map(({ id, name, description }) => ({ id, name, description }));
       this.courses.set(courses);
-      void Promise.all(courses.map((course) => this.loadCourseStats(course.id)));
+      this.courseStatsById.set(Object.fromEntries(catalog.courses.map((course) => [course.id, course.stats])));
       if (!courses.length) {
         this.clearCourseSelection();
         return;
@@ -273,7 +277,8 @@ export class LibraryBrowserStore {
     this.chapterLoading.set(true);
     this.chapterError.set(null);
     try {
-      const chapters = await firstValueFrom(this.api.getChapters(courseId));
+      const chapters = (this.catalog().courses.find((course) => course.id === courseId)?.chapters ?? [])
+        .map(({ id, name, description, sortOrder }) => ({ id, name, description, sortOrder }));
       if (this.selectedCourseId() !== courseId) return;
       this.chapters.set(chapters);
       if (!chapters.length) {
@@ -297,7 +302,8 @@ export class LibraryBrowserStore {
     this.lineLoading.set(true);
     this.lineError.set(null);
     try {
-      const lines = await firstValueFrom(this.api.getLines(chapterId));
+      const lines = this.catalog().courses.flatMap((course) => course.chapters)
+        .find((chapter) => chapter.id === chapterId)?.lines ?? [];
       if (this.selectedChapterId() !== chapterId) return;
       this.lines.set(lines);
       this.selectedLineIds.update((ids) => ids.filter((id) => lines.some((line) => line.id === id)));
@@ -311,15 +317,6 @@ export class LibraryBrowserStore {
       if (this.selectedChapterId() === chapterId) this.lineError.set(readError(error, 'Could not load lines.'));
     } finally {
       if (this.selectedChapterId() === chapterId) this.lineLoading.set(false);
-    }
-  }
-
-  private async loadCourseStats(courseId: number): Promise<void> {
-    try {
-      const stats = await firstValueFrom(this.api.getCourseStats(courseId));
-      this.courseStatsById.update((allStats) => ({ ...allStats, [courseId]: stats }));
-    } catch {
-      // Statistics are supplementary; the library remains usable without them.
     }
   }
 

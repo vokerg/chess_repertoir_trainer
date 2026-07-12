@@ -1,6 +1,8 @@
 import prisma from '../prisma';
 import { getAvailableSublineRows, HashedAvailableSublineDto, SublineScope } from '../modules/courses/sublines.service';
-import { SCORED_TRAINING_RESULTS, TRAINING_STATS_RECENT_ATTEMPTS } from '../modules/training/training.constants';
+import { TRAINING_STATS_RECENT_ATTEMPTS } from '../modules/training/training.constants';
+import { groupRecentAttempts, loadRecentScoredAttempts, sublineIdentityKey, summarizeRecentAttempts } from '../modules/training/recent-scored-attempts';
+import { performanceDebug } from '../utils/performance-debug';
 
 export interface ActiveSublineStats {
   scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
@@ -63,14 +65,6 @@ export interface SublineTrainingStatus {
   status: SublineTrainingStatusValue;
 }
 
-function sublineKey(lineId: number, hash: string): string {
-  return `${lineId}:${hash}`;
-}
-
-function sortAttemptDate(attempt: { completedAt: Date | null; startedAt: Date }): number {
-  return (attempt.completedAt ?? attempt.startedAt).getTime();
-}
-
 async function computeStats(userId: number, scope: SublineScope): Promise<ActiveSublineStats | null> {
   const sublines = await getAvailableSublineRows(userId, scope);
   if (sublines === null) return null;
@@ -83,7 +77,20 @@ async function statsFromSublines(
   scopeId: number,
   sublines: HashedAvailableSublineDto[],
 ): Promise<ActiveSublineStats> {
-  const attemptsBySubline = await loadRecentScoredAttemptsBySubline(userId, sublines);
+  const attemptsBySubline = groupRecentAttempts(await loadRecentScoredAttempts(
+    userId,
+    sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash })),
+  ));
+  return statsFromLoadedAttempts(scopeType, scopeId, sublines, attemptsBySubline);
+}
+
+export function statsFromLoadedAttempts(
+  scopeType: 'LINE' | 'CHAPTER' | 'COURSE',
+  scopeId: number,
+  sublines: HashedAvailableSublineDto[],
+  attemptsBySubline: ReturnType<typeof groupRecentAttempts>,
+): ActiveSublineStats {
+  const aggregateStartedAt = performance.now();
 
   let passedCount = 0;
   let failedCount = 0;
@@ -92,10 +99,8 @@ async function statsFromSublines(
   let weakSublineCount = 0;
 
   const weakestSublines: WeakSublineStats[] = sublines.map((subline) => {
-    const recent = attemptsBySubline.get(sublineKey(subline.lineId, subline.hash)) ?? [];
-    const passed = recent.filter((attempt) => attempt.result === 'PASSED' || attempt.passed === true).length;
-    const failed = recent.filter((attempt) => attempt.result === 'FAILED' || attempt.passed === false).length;
-    const passRate = recent.length > 0 ? passed / recent.length : 0;
+    const recent = attemptsBySubline.get(sublineIdentityKey({ lineId: subline.lineId, sublineHash: subline.hash })) ?? [];
+    const { passedCount: passed, failedCount: failed, passRate } = summarizeRecentAttempts(recent);
     const status = statusForSubline(recent.length, passRate);
 
     passedCount += passed;
@@ -123,7 +128,7 @@ async function statsFromSublines(
   const passRate = activeSublineCount > 0 ? passRateSum / activeSublineCount : 0;
   const aggregateStatus = statusForSubline(totalAttempts, passRate);
 
-  return {
+  const result = {
     scopeType,
     scopeId,
     activeSublineCount,
@@ -140,33 +145,8 @@ async function statsFromSublines(
     status: aggregateStatus,
     weakestSublines: weakestSublines.slice(0, 5),
   };
-}
-
-async function loadRecentScoredAttemptsBySubline(userId: number, sublines: HashedAvailableSublineDto[]) {
-  const lineIds = [...new Set(sublines.map((subline) => subline.lineId))];
-  const hashes = [...new Set(sublines.map((subline) => subline.hash))];
-  const attempts = lineIds.length === 0 || hashes.length === 0
-    ? []
-    : await prisma.trainingSublineAttempt.findMany({
-      where: {
-        userId,
-        lineId: { in: lineIds },
-        sublineHash: { in: hashes },
-        result: { in: [...SCORED_TRAINING_RESULTS] },
-      },
-      orderBy: [{ completedAt: 'desc' }, { startedAt: 'desc' }],
-    });
-
-  const attemptsBySubline = new Map<string, typeof attempts>();
-  for (const attempt of attempts.sort((a, b) => sortAttemptDate(b) - sortAttemptDate(a))) {
-    const key = sublineKey(attempt.lineId, attempt.sublineHash);
-    const current = attemptsBySubline.get(key) ?? [];
-    if (current.length < TRAINING_STATS_RECENT_ATTEMPTS) {
-      current.push(attempt);
-      attemptsBySubline.set(key, current);
-    }
-  }
-  return attemptsBySubline;
+  performanceDebug('training-stats-aggregate', aggregateStartedAt, { sublines: sublines.length, attemptRows: totalAttempts });
+  return result;
 }
 
 function statusForSubline(recentAttempts: number, passRate: number): SublineTrainingStatusValue {
@@ -217,9 +197,9 @@ export const StatsService = {
   lineSublineStatus: async (userId: number, lineId: number): Promise<SublineTrainingStatus[] | null> => {
     const sublines = await getAvailableSublineRows(userId, { type: 'LINE', id: lineId });
     if (sublines === null) return null;
-    const attemptsBySubline = await loadRecentScoredAttemptsBySubline(userId, sublines);
+    const attemptsBySubline = groupRecentAttempts(await loadRecentScoredAttempts(userId, sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash }))));
     return sublines.map((subline) => {
-      const recent = attemptsBySubline.get(sublineKey(subline.lineId, subline.hash)) ?? [];
+      const recent = attemptsBySubline.get(sublineIdentityKey({ lineId: subline.lineId, sublineHash: subline.hash })) ?? [];
       const passedCount = recent.filter((attempt) => attempt.result === 'PASSED' || attempt.passed === true).length;
       const failedCount = recent.filter((attempt) => attempt.result === 'FAILED' || attempt.passed === false).length;
       const passRate = recent.length > 0 ? passedCount / recent.length : null;
@@ -254,9 +234,10 @@ export const StatsService = {
       grouped.set(subline.lineId, [...(grouped.get(subline.lineId) ?? []), subline]);
     }
 
+    const attemptsBySubline = groupRecentAttempts(await loadRecentScoredAttempts(userId, sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash }))));
     const statsByLine = new Map<number, LineTrainingStats>();
-    await Promise.all([...grouped.entries()].map(async ([lineId, lineSublines]) => {
-      const stats = await statsFromSublines(userId, 'LINE', lineId, lineSublines);
+    for (const [lineId, lineSublines] of grouped.entries()) {
+      const stats = statsFromLoadedAttempts('LINE', lineId, lineSublines, attemptsBySubline);
       statsByLine.set(lineId, {
         totalAttempts: stats.totalAttempts,
         passedCount: stats.passedCount,
@@ -268,7 +249,7 @@ export const StatsService = {
         weakSublineCount: stats.weakSublineCount,
         status: stats.status,
       });
-    }));
+    }
     return statsByLine;
   },
 };

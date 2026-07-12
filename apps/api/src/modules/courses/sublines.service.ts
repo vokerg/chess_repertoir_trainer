@@ -1,14 +1,16 @@
 import { createHash } from 'crypto';
 import { buildSublineCanonicalKey, extractAvailableSublines, SUBLINE_KEY_VERSION } from 'chess-domain';
-import prisma from '../../prisma';
 import { TRAINING_STATS_RECENT_ATTEMPTS, WEAK_SUBLINE_PERCENTAGE } from '../training/training.constants';
+import { groupRecentAttempts, loadRecentScoredAttempts, sublineIdentityKey, summarizeRecentAttempts } from '../training/recent-scored-attempts';
 import { buildMoveTreeFromNodes } from '../../utils/move-tree-builder';
+import { performanceDebug } from '../../utils/performance-debug';
 import {
   getChapterById,
   getChapterLinesWithMoves,
   getCourseById,
   getCourseLinesWithMoves,
   getLineWithMoves,
+  getLinesWithMoves,
 } from './courses.repository.prisma';
 
 export type SublineScope =
@@ -39,6 +41,21 @@ export interface AvailableSublineDto {
 
 export type HashedAvailableSublineDto = AvailableSublineDto;
 
+export interface DerivedLineData {
+  line: {
+    id: number;
+    name: string;
+    sideToTrain: 'WHITE' | 'BLACK';
+    startingFen: string;
+    chapterId: number;
+    chapterName: string;
+    courseId: number;
+    updatedAt: Date;
+  };
+  tree: ReturnType<typeof buildMoveTreeFromNodes>;
+  sublines: HashedAvailableSublineDto[];
+}
+
 export function hashSublineCanonicalKey(canonicalKey: string): string {
   return createHash('sha256').update(canonicalKey, 'utf8').digest('hex');
 }
@@ -56,10 +73,39 @@ async function loadLines(userId: number, scope: SublineScope) {
   return getCourseLinesWithMoves(userId, scope.id);
 }
 
+export async function getDerivedLineData(
+  userId: number,
+  scope: SublineScope,
+): Promise<DerivedLineData[] | null> {
+  const queryStartedAt = performance.now();
+  const lines = await loadLines(userId, scope);
+  performanceDebug('line-database-query', queryStartedAt, { scope: scope.type, lines: lines?.length ?? 0, moveNodes: lines?.reduce((sum, line) => sum + line.moves.length, 0) ?? 0 });
+  if (!lines) return null;
+  const derivationStartedAt = performance.now();
+  const derived = lines.map(deriveLineData);
+  performanceDebug('move-tree-and-subline-derivation', derivationStartedAt, { lines: derived.length, sublines: derived.reduce((sum, line) => sum + line.sublines.length, 0) });
+  return derived;
+}
+
+export async function getDerivedSelectedLines(userId: number, lineIds: number[]): Promise<DerivedLineData[]> {
+  const queryStartedAt = performance.now();
+  const lines = await getLinesWithMoves(userId, lineIds);
+  performanceDebug('selected-line-database-query', queryStartedAt, { requestedLines: lineIds.length, lines: lines.length, moveNodes: lines.reduce((sum, line) => sum + line.moves.length, 0) });
+  const derivationStartedAt = performance.now();
+  const derived = lines.map(deriveLineData);
+  performanceDebug('selected-move-tree-and-subline-derivation', derivationStartedAt, { lines: derived.length, sublines: derived.reduce((sum, line) => sum + line.sublines.length, 0) });
+  return derived;
+}
+
 export function getAvailableSublineRowsForLines(lines: any[]): HashedAvailableSublineDto[] {
   return lines.flatMap((line) => {
     const tree = buildMoveTreeFromNodes(line.moves, line);
-    return extractAvailableSublines(tree).map((subline) => {
+    return sublinesForTree(line, tree);
+  });
+}
+
+function sublinesForTree(line: any, tree: ReturnType<typeof buildMoveTreeFromNodes>): HashedAvailableSublineDto[] {
+  return extractAvailableSublines(tree).map((subline) => {
       const canonicalKey = buildSublineCanonicalKey({
         lineId: line.id,
         startingFen: line.startingFen,
@@ -81,16 +127,33 @@ export function getAvailableSublineRowsForLines(lines: any[]): HashedAvailableSu
         moveText: subline.moves.map((move) => move.moveSan || move.moveUci).join(' '),
       };
     });
-  });
+}
+
+export function deriveLineData(line: any): DerivedLineData {
+  const tree = buildMoveTreeFromNodes(line.moves, line);
+  const sublines = sublinesForTree(line, tree);
+  return {
+    line: {
+      id: line.id,
+      name: line.name,
+      sideToTrain: line.sideToTrain,
+      startingFen: line.startingFen,
+      chapterId: line.chapter.id,
+      chapterName: line.chapter.name,
+      courseId: line.chapter.courseId,
+      updatedAt: line.updatedAt,
+    },
+    tree,
+    sublines,
+  };
 }
 
 export async function getAvailableSublineRows(
   userId: number,
   scope: SublineScope,
 ): Promise<HashedAvailableSublineDto[] | null> {
-  const lines = await loadLines(userId, scope);
-  if (!lines) return null;
-  return getAvailableSublineRowsForLines(lines);
+  const lines = await getDerivedLineData(userId, scope);
+  return lines ? lines.flatMap((line) => line.sublines) : null;
 }
 
 export function pickRandomSubline<T extends { hash: string }>(sublines: T[], recentHashes: string[] = []): T | null {
@@ -116,34 +179,20 @@ export async function getWeakSublinePool(
 ): Promise<HashedAvailableSublineDto[]> {
   if (sublines.length === 0) return [];
 
-  const lineIds = [...new Set(sublines.map((subline) => subline.lineId))];
-  const hashes = [...new Set(sublines.map((subline) => subline.hash))];
-  const attempts = await prisma.trainingSublineAttempt.findMany({
-    where: {
-      userId,
-      lineId: { in: lineIds },
-      sublineHash: { in: hashes },
-      result: { in: ['PASSED', 'FAILED'] },
-    },
-    orderBy: [{ completedAt: 'desc' }, { startedAt: 'desc' }],
-  });
+  const bySubline = groupRecentAttempts(await loadRecentScoredAttempts(userId, sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash }))));
+  return getWeakSublinePoolFromAttempts(sublines, bySubline);
+}
 
-  const bySubline = new Map<string, typeof attempts>();
-  for (const attempt of attempts) {
-    const key = `${attempt.lineId}:${attempt.sublineHash}`;
-    const list = bySubline.get(key) ?? [];
-    if (list.length < TRAINING_STATS_RECENT_ATTEMPTS) {
-      list.push(attempt);
-      bySubline.set(key, list);
-    }
-  }
-
+export function getWeakSublinePoolFromAttempts(
+  sublines: HashedAvailableSublineDto[],
+  bySubline: ReturnType<typeof groupRecentAttempts>,
+): HashedAvailableSublineDto[] {
   const ranked = sublines.map((subline) => {
-    const recent = bySubline.get(`${subline.lineId}:${subline.hash}`) ?? [];
-    const passed = recent.filter((attempt) => attempt.result === 'PASSED' || attempt.passed === true).length;
+    const recent = bySubline.get(sublineIdentityKey({ lineId: subline.lineId, sublineHash: subline.hash })) ?? [];
+    const { passRate } = summarizeRecentAttempts(recent);
     return {
       subline,
-      passRate: recent.length > 0 ? passed / recent.length : 0,
+      passRate,
       recentAttempts: recent.length,
     };
   }).sort((a, b) => a.passRate - b.passRate || a.recentAttempts - b.recentAttempts);

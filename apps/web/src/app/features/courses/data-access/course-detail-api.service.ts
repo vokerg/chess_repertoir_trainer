@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
-import { CourseChapter, CourseDetail, CourseStats } from './course-detail.models';
+import { CourseChapter, CourseDetail, CourseOverview, CourseStats } from './course-detail.models';
 
 @Injectable()
 export class CourseDetailApiService {
@@ -17,6 +17,10 @@ export class CourseDetailApiService {
 
   getCourse(courseId: number): Observable<CourseDetail> {
     return this.api.get<CourseDetail>(`/courses/${courseId}`);
+  }
+
+  getOverview(courseId: number): Observable<CourseOverview> {
+    return this.api.get<CourseOverview>(`/courses/${courseId}/overview`);
   }
 
   getStats(courseId: number): Observable<CourseStats> {

@@ -104,6 +104,14 @@ export async function getLineWithMoves(userId: number, lineId: number, db: DbCli
   return db.line.findFirst({ where: { id: lineId, chapter: { course: { userId } } }, include: { chapter: true, moves: true } });
 }
 
+export async function getLinesWithMoves(userId: number, lineIds: number[], db: DbClient = prisma) {
+  return db.line.findMany({
+    where: { id: { in: lineIds }, chapter: { course: { userId } } },
+    include: { chapter: true, moves: true },
+    orderBy: { id: 'asc' },
+  });
+}
+
 export async function getLineById(userId: number, id: number, db: DbClient = prisma) {
   return db.line.findFirst({ where: { id, chapter: { course: { userId } } } });
 }

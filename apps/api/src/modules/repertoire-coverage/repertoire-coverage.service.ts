@@ -118,8 +118,10 @@ export const CourseReviewService = {
       userId,
       filters: gameFilters,
       sideToTrain,
+      offset: input.offset,
+      limit: input.limit,
     });
-    const games = candidateGames.slice(input.offset, input.offset + input.limit);
+    const games = candidateGames;
     const plies = await getCourseReviewPlies(
       games.filter((game) => game.plyIndexedAt).map((game) => game.id),
     );

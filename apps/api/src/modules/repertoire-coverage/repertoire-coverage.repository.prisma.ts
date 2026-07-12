@@ -48,6 +48,8 @@ export async function getCourseReviewCandidateGames(input: {
   userId: number;
   sideToTrain: RepertoireColor | null;
   filters: ImportedGameSummaryQuery;
+  offset: number;
+  limit: number;
 }) {
   const baseWhere = buildImportedGameWhere(input.userId, input.filters);
   const sideWhere: Prisma.ImportedGameWhereInput | null = input.sideToTrain
@@ -57,6 +59,8 @@ export async function getCourseReviewCandidateGames(input: {
   return prisma.importedGame.findMany({
     where: sideWhere ? { AND: [baseWhere, sideWhere] } : baseWhere,
     orderBy: [{ endedAt: 'desc' }, { id: 'desc' }],
+    skip: input.offset,
+    take: input.limit,
     select: importedGameListSelect,
   });
 }
