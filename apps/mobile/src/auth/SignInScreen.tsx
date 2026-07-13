@@ -15,14 +15,15 @@ import {
 
 export function SignInScreen() {
   const router = useRouter();
-  const { isLoaded, signIn, setActive } = useSignIn();
+  const { signIn, fetchStatus } = useSignIn();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const clerkBusy = fetchStatus === 'fetching';
 
   const submit = async () => {
-    if (!isLoaded || !signIn || !setActive || submitting) return;
+    if (clerkBusy || submitting) return;
     if (!identifier.trim() || !password) {
       setError('Enter your email or username and password.');
       return;
@@ -30,12 +31,23 @@ export function SignInScreen() {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await signIn.create({ identifier: identifier.trim(), password });
-      if (result.status !== 'complete' || !result.createdSessionId) {
+      const passwordResult = await signIn.password({
+        identifier: identifier.trim(),
+        password,
+      });
+      if (passwordResult.error) {
+        setError(readClerkError(passwordResult.error));
+        return;
+      }
+      if (signIn.status !== 'complete') {
         setError('This account requires an additional sign-in factor that is not supported by this first mobile screen yet.');
         return;
       }
-      await setActive({ session: result.createdSessionId });
+      const finalizeResult = await signIn.finalize();
+      if (finalizeResult.error) {
+        setError(readClerkError(finalizeResult.error));
+        return;
+      }
       router.replace('/');
     } catch (caught) {
       setError(readClerkError(caught));
@@ -75,7 +87,7 @@ export function SignInScreen() {
             onChangeText={setPassword}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={styles.button} onPress={() => void submit()} disabled={!isLoaded || submitting}>
+          <Pressable style={styles.button} onPress={() => void submit()} disabled={clerkBusy || submitting}>
             {submitting ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Sign in</Text>}
           </Pressable>
         </View>
@@ -85,6 +97,10 @@ export function SignInScreen() {
 }
 
 function readClerkError(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'longMessage' in error) {
+    const longMessage = (error as { longMessage?: unknown }).longMessage;
+    if (typeof longMessage === 'string' && longMessage) return longMessage;
+  }
   if (typeof error === 'object' && error !== null && 'errors' in error) {
     const errors = (error as { errors?: Array<{ longMessage?: string; message?: string }> }).errors;
     const message = errors?.[0]?.longMessage ?? errors?.[0]?.message;
