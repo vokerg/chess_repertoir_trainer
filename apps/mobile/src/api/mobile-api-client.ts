@@ -11,6 +11,7 @@ export class MobileApiError extends Error {
     message: string,
     readonly status: number | null,
     readonly responseBody: unknown = null,
+    readonly requestUrl: string | null = null,
   ) {
     super(message);
     this.name = 'MobileApiError';
@@ -35,9 +36,10 @@ async function requestJson(path: string, token: string): Promise<unknown> {
     throw new MobileApiError('EXPO_PUBLIC_API_BASE_URL is not configured.', null);
   }
 
+  const requestUrl = resolveApiUrl(path);
   let response: Response;
   try {
-    response = await fetch(resolveApiUrl(path), {
+    response = await fetch(requestUrl, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -46,16 +48,23 @@ async function requestJson(path: string, token: string): Promise<unknown> {
     });
   } catch (error) {
     throw new MobileApiError(
-      error instanceof Error ? error.message : 'The API could not be reached.',
+      `Could not reach ${requestUrl}: ${error instanceof Error ? error.message : 'network request failed'}`,
       null,
+      null,
+      requestUrl,
     );
   }
 
   const text = await response.text();
   const body = parseResponseBody(text);
   if (!response.ok) {
-    const message = readErrorMessage(body) ?? `API request failed with status ${response.status}.`;
-    throw new MobileApiError(message, response.status, body);
+    const responseMessage = readErrorMessage(body) ?? 'API request failed';
+    throw new MobileApiError(
+      `${responseMessage} (HTTP ${response.status}).`,
+      response.status,
+      body,
+      requestUrl,
+    );
   }
   return body;
 }

@@ -6,11 +6,11 @@ import {
   AppState,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useMobileSession } from '../../auth/MobileSessionProvider';
 import {
