@@ -99,12 +99,14 @@ export interface PersistMobileAttemptInput {
   trainingMode: string;
   session: SerializableTrainingSession;
   subline: SerializableTrainingSubline;
+  linkedMoveNodeIds: number[];
   receivedAt: Date;
 }
 
 export async function persistMobileAttempt(input: PersistMobileAttemptInput) {
   return prisma.$transaction(async (tx) => {
     const counters = input.session.counters;
+    const linkedMoveNodeIds = new Set(input.linkedMoveNodeIds);
     const session = await tx.trainingSession.create({
       data: {
         userId: input.userId,
@@ -149,7 +151,7 @@ export async function persistMobileAttempt(input: PersistMobileAttemptInput) {
       await tx.trainingAttemptMove.createMany({
         data: input.session.events.map((event) => ({
           sessionId: session.id,
-          moveNodeId: event.expectedNodeId,
+          moveNodeId: linkedMoveNodeIds.has(event.expectedNodeId) ? event.expectedNodeId : null,
           fenBefore: event.fenBefore,
           expectedMoveUci: event.expectedMoveUci,
           playedMoveUci: event.kind === 'MISSED_ON_EARLY_FINISH' ? null : event.playedMoveUci,

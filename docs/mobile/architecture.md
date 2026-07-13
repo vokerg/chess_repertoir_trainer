@@ -1,97 +1,76 @@
 # Native mobile architecture
 
-`apps/mobile` is the supported React Native / Expo client. Its first production scope remains deliberately narrow: the real Lichess Chessground experience and framework-neutral local training foundations, without prematurely restoring the former broad mobile product.
+`apps/mobile` is the supported React Native / Expo client. Its first product scope is a narrow offline-first repertoire trainer using the real Lichess Chessground board.
 
-## Phase 1 status
+## Current status
 
-Phase 1 is complete in code. The repository now provides:
+Phase 1 established the supported Expo workspace, the Chessground DOM adapter, and the versioned serializable training reducer.
 
-- Expo SDK 54 and Expo Router;
-- the actual `@lichess-org/chessground` package inside an Expo DOM component;
-- local Chessground and Cburnett assets;
-- drag, tap, orientation, promotion, legal destinations, highlights, arrows, and authoritative snapback;
-- a fixture-driven board diagnostics route;
-- bounded native-side board-event deduplication;
-- a pure, versioned, JSON-serializable training reducer under `chess-domain/training`;
-- immutable move-attempt and early-finish events with deterministic replay validation;
-- counters and local review derived from those events;
-- explicit mobile-safe `chess-domain` subpath exports;
-- versioned training and mobile-sync schemas under `@chess-trainer/contracts/training` and `@chess-trainer/contracts/mobile-sync`;
-- authenticated API support for owned-course manifests, complete versioned bundles, and idempotent replay-validated attempt ingestion;
-- a real local training route that connects Chessground to the shared reducer with no API request;
-- a bounded diagnostics logger and application error boundary;
-- architecture checks that prevent cross-client imports, root-domain imports from mobile, AsyncStorage course/session storage, and retired handmade-board patterns.
+Phase 2 adds the authenticated downloadable-content boundary:
 
-The `/training-lab` route is a proof of the complete Phase 1 boundary. A legal board move is emitted once, evaluated by the shared reducer, recorded as an immutable event, followed by fixed-path opponent auto-play, and returned to Chessground as an authoritative FEN. Wrong moves keep the same reducer position and increment `positionVersion` so the DOM board snaps back. The route also performs a JSON serialize/parse/replay check to demonstrate restart-safe state semantics before durable storage is introduced.
+- Clerk Expo authentication with secure token caching;
+- a small bearer-token API client consuming `@chess-trainer/contracts/mobile-sync`;
+- an explicit versioned SQLite migration;
+- user-scoped manifest, course-revision, chapter, line, move-node, and subline tables;
+- atomic `STAGING` → `ACTIVE` course activation;
+- retention of the previous active revision when an update fails;
+- foreground and reconnect manifest refresh;
+- download/update status and local course/chapter/line browsing;
+- offline cold-start access for the last authenticated, unlocked local user.
 
-## Serializable training boundary
-
-The reducer owns training authority and has no React Native, Angular, Fastify, Prisma, browser, or storage dependency.
+The API transport is:
 
 ```text
-SerializableTrainingSubline
-        ↓
-createSerializableTrainingSession
-        ↓
-applySerializableTrainingMove / finishSerializableTrainingEarly
-        ↓
-SerializableTrainingSession + immutable events
-        ↓
-restoreSerializableTrainingSession / deriveSerializableTrainingReview
+GET  /api/mobile-sync/manifest
+GET  /api/mobile-sync/courses/:courseId
+POST /api/mobile-sync/training-attempts
 ```
 
-Current parity with server training semantics:
+Only the first two endpoints are consumed during Phase 2. Attempt persistence and outbox upload remain Phase 3/4 work.
 
-- a wrong move does not advance the position;
-- every wrong retry counts as a separate expected-move attempt;
-- a later correct retry is recorded separately;
-- fixed-path opponent moves auto-play after a correct trained-side move;
-- completion passes only when no mistake was recorded;
-- early finish records the currently expected move as missed;
-- review retains FEN, expected move, played move, annotation, comment, and branch label when supplied by the subline snapshot.
+## Storage boundary
 
-The stored counters are validated against deterministic event replay rather than treated as the only source of truth.
+SQLite is the source of truth for downloaded mobile content. Every durable row is scoped by the Clerk subject stored as `app_user_id`.
 
-## Boundaries
+Course updates never replace active content in place:
 
-- `apps/mobile` owns React Native routes, native lifecycle, board hosting, future SQLite repositories, and future synchronization orchestration.
-- `apps/web` remains an independent Angular client. Neither client imports from the other.
-- `packages/chess-domain` owns framework-neutral chess and training behavior. Mobile imports explicit subpaths such as `chess-domain/training` rather than the broad root export.
-- `packages/contracts` owns versioned wire schemas. Mobile UI does not duplicate synchronization DTOs.
-- Browser-only Chessground imports stay in mobile `.dom.tsx` files.
-- The DOM board emits semantic completed-move events only. Pointer and drag traffic never crosses the native boundary.
-- The board owns legal interaction and promotion UI; the reducer owns repertoire correctness, progression, attempts, and completion.
+```text
+validate bundle references
+        ↓
+insert complete STAGING revision in one exclusive transaction
+        ↓
+retire previous ACTIVE revision
+        ↓
+activate new revision and update downloaded_course pointer
+        ↓
+commit
+```
 
-## Board state boundary
+A failed transaction leaves the previous active revision browseable. Explicit sign-out locks the local user row without deleting downloaded content.
 
-Chessground owns visual interaction and board-legal movement. Native application state remains authoritative for acceptance or rejection. After emitting one immutable move event, the board locks until native state supplies an authoritative FEN and increments `positionVersion`.
+Bearer tokens are requested from Clerk when an API call starts. Tokens are never stored in SQLite or diagnostics.
 
-## Server synchronization boundary
+## Shared boundaries
 
-The API now provides the native synchronization transport without coupling it to Expo:
+- `apps/mobile` owns Expo routes, native lifecycle, authentication orchestration, SQLite repositories, and download orchestration.
+- `apps/web` remains an independent Angular client.
+- `packages/chess-domain` owns framework-neutral chess and training behavior.
+- `packages/contracts` owns versioned wire schemas.
+- Browser-only Chessground imports remain in `.dom.tsx` files.
 
-- `GET /api/mobile-sync/manifest` lists current revisions for owned courses;
-- `GET /api/mobile-sync/courses/:courseId` returns ordered course content, move nodes, and active serializable sublines;
-- `POST /api/mobile-sync/training-attempts` independently replays and persists each completed attempt into the existing progress model, with idempotency by user and client attempt id.
+## Deferred work
 
-The server derives result and counters from immutable events, rejects tampered or obsolete snapshots with stable codes, and preserves client chronology separately from server receipt time. Native SQLite, outbox, and synchronization orchestration remain client-side rollout work.
+Phase 2 does not yet persist active training sessions or completed attempts. The following remain later phases:
 
-## Deferred to later rollout phases
+- durable local training-session transitions and resume;
+- immutable attempt/event tables and outbox creation;
+- attempt upload, retry, duplicate, and rejection handling;
+- background synchronization;
+- broader training selection modes.
 
-Phase 1 intentionally does not provide:
+## Release gates
 
-- Clerk authentication;
-- SQLite initialization or migrations;
-- durable session persistence;
-- attempt outbox persistence or upload;
-- foreground, reconnect, or background synchronization.
-
-Those belong to Phases 2–4. The shared reducer and contract subpaths are the foundations they consume; they are not placeholders for a generic synchronization framework.
-
-## Remaining Phase 0/release gates
-
-The Phase 0 spike remains under `spikes/mobile-chessground` as the feasibility and licensing record until the supported adapter completes:
-
-- standalone iOS release-build cold-offline validation;
+- configure a native Clerk authorized party accepted by the API's existing `azp` validation;
+- standalone iOS cold-offline validation;
 - physical Android validation;
 - final GPL/licensing acceptance for production distribution.
