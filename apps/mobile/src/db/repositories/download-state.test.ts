@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveDownloadState } from './course-content.repository';
+import { deriveDownloadState } from './course-content.types';
 
 describe('deriveDownloadState', () => {
   it('marks newer server content as an update', () => {
