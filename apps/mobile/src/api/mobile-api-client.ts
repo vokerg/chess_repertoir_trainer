@@ -5,7 +5,6 @@ import {
   type MobileSyncManifestDto,
 } from '@chess-trainer/contracts/mobile-sync';
 import { mobileConfig } from '../config/mobile-config';
-import { mobileLogger } from '../diagnostics/mobile-logger';
 
 export class MobileApiError extends Error {
   constructor(
@@ -59,12 +58,6 @@ async function requestJson(path: string, token: string): Promise<unknown> {
   const text = await response.text();
   const body = parseResponseBody(text);
   if (!response.ok) {
-    const authDiagnostics = response.headers.get('x-clerk-auth-diagnostics');
-    if (response.status === 401 && authDiagnostics) {
-      mobileLogger.warn('mobile-api', 'API authentication rejected request', {
-        diagnostics: parseResponseBody(authDiagnostics),
-      });
-    }
     const responseMessage = readErrorMessage(body) ?? 'API request failed';
     throw new MobileApiError(
       `${responseMessage} (HTTP ${response.status}).`,

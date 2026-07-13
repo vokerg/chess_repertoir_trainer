@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { FastifyReply, FastifyRequest } from 'fastify';
+import { FastifyRequest } from 'fastify';
 import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
 
@@ -69,12 +69,6 @@ function readAudience(payload: Record<string, unknown>) {
   return undefined;
 }
 
-function addDevelopmentAuthDiagnostics(reply: FastifyReply, diagnostics: Record<string, unknown>) {
-  if (process.env['NODE_ENV'] !== 'production') {
-    reply.header('x-clerk-auth-diagnostics', JSON.stringify(diagnostics));
-  }
-}
-
 export interface AuthPluginOptions {
   authConfig?: AuthConfig;
 }
@@ -125,7 +119,6 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
         authorizedParties: config.authorizedParties,
       };
       request.log.warn(diagnostics, 'Request authentication failed during JWT verification');
-      addDevelopmentAuthDiagnostics(reply, diagnostics);
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
@@ -145,7 +138,6 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
         authorizedParties: config.authorizedParties,
       };
       request.log.warn(diagnostics, 'Request authentication failed after JWT verification');
-      addDevelopmentAuthDiagnostics(reply, diagnostics);
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
