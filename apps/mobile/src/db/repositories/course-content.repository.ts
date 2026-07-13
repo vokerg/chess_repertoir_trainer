@@ -7,6 +7,17 @@ export {
 } from './course-manifest.repository';
 export { buildMobileTrainingAttempt } from './offline-training-attempt';
 export {
+  advanceOfflineMarathon,
+  openOfflineMarathon,
+  restartOfflineMarathonCurrent,
+  startNewOfflineMarathon,
+  type OfflineMarathonContext,
+  type OfflineMarathonOptions,
+  type OfflineMarathonRunStatus,
+  type OfflineMarathonScopeType,
+} from './offline-marathon.repository';
+export type { OfflineMarathonMode, OfflineTrainingMode } from './offline-marathon-policy';
+export {
   countPendingAttemptsForLine,
   openLineTraining,
   persistOfflineTrainingTransition,
