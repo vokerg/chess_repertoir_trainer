@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import { FastifyRequest } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
 
@@ -53,6 +53,28 @@ function readDisplayName(payload: Record<string, unknown>) {
   return typeof name === 'string' && name.length > 0 ? name : undefined;
 }
 
+function jwtRejectionReason(error: unknown) {
+  if (typeof error === 'object' && error !== null) {
+    const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+    const name = 'name' in error && typeof error.name === 'string' ? error.name : undefined;
+    return code ?? name ?? 'UnknownJwtVerificationError';
+  }
+  return 'UnknownJwtVerificationError';
+}
+
+function readAudience(payload: Record<string, unknown>) {
+  const audience = payload['aud'];
+  if (typeof audience === 'string') return audience;
+  if (Array.isArray(audience) && audience.every((value) => typeof value === 'string')) return audience;
+  return undefined;
+}
+
+function addDevelopmentAuthDiagnostics(reply: FastifyReply, diagnostics: Record<string, unknown>) {
+  if (process.env['NODE_ENV'] !== 'production') {
+    reply.header('x-clerk-auth-diagnostics', JSON.stringify(diagnostics));
+  }
+}
+
 export interface AuthPluginOptions {
   authConfig?: AuthConfig;
 }
@@ -87,14 +109,43 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
         ...(config.audience ? { audience: config.audience } : {}),
       });
       payload = verified.payload;
+      if (process.env['NODE_ENV'] !== 'production') {
+        request.log.info({
+          issuer: payload['iss'] ?? null,
+          audience: readAudience(payload) ?? null,
+          authorizedParty: payload['azp'] ?? null,
+          hasSubject: typeof payload['sub'] === 'string' && payload['sub'].length > 0,
+        }, 'Verified Clerk JWT claims');
+      }
     } catch (error) {
-      request.log.warn({ err: error }, 'Request authentication failed');
+      const diagnostics = {
+        reason: jwtRejectionReason(error),
+        expectedIssuer: config.issuer,
+        expectedAudience: config.audience,
+        authorizedParties: config.authorizedParties,
+      };
+      request.log.warn(diagnostics, 'Request authentication failed during JWT verification');
+      addDevelopmentAuthDiagnostics(reply, diagnostics);
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
     const authorizedParty = payload['azp'];
     const subject = payload['sub'];
-    if (!subject || typeof subject !== 'string' || typeof authorizedParty !== 'string' || !config.authorizedParties.includes(authorizedParty)) {
+    const invalidAuthorizedParty = authorizedParty !== undefined
+      && (typeof authorizedParty !== 'string' || !config.authorizedParties.includes(authorizedParty));
+    if (!subject || typeof subject !== 'string' || invalidAuthorizedParty) {
+      const diagnostics = {
+        reason: !subject || typeof subject !== 'string' ? 'MissingOrInvalidSubject' : 'UnauthorizedAuthorizedParty',
+        issuer: payload['iss'] ?? null,
+        audience: readAudience(payload) ?? null,
+        authorizedParty: authorizedParty ?? null,
+        hasSubject: typeof subject === 'string' && subject.length > 0,
+        expectedIssuer: config.issuer,
+        expectedAudience: config.audience,
+        authorizedParties: config.authorizedParties,
+      };
+      request.log.warn(diagnostics, 'Request authentication failed after JWT verification');
+      addDevelopmentAuthDiagnostics(reply, diagnostics);
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
