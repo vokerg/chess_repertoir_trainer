@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "prebuild": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts",
-    "build": "expo export --platform web --output-dir dist",
+    "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
     "pretest": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts",
     "test": "vitest run",
     "prelint": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts",
