@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { MobileErrorBoundary } from '../src/app/MobileErrorBoundary';
+import { MobileErrorBoundary } from '../src/shell/MobileErrorBoundary';
 
 export default function RootLayout() {
   return (

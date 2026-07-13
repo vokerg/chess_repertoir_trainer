@@ -29,6 +29,7 @@ import {
   updateLine,
   updateMoveNode,
 } from './courses.repository.prisma';
+import { incrementCourseContentRevision } from './course-content-revision.repository.prisma';
 
 function parseUci(moveUci: string): { from: string; to: string; promotion?: string } {
   return {
@@ -36,6 +37,11 @@ function parseUci(moveUci: string): { from: string; to: string; promotion?: stri
     to: moveUci.slice(2, 4),
     promotion: moveUci.length === 5 ? moveUci[4] : undefined,
   };
+}
+
+function hasDataChanges(current: object, data: object): boolean {
+  const row = current as Record<string, unknown>;
+  return Object.entries(data).some(([key, value]) => value !== undefined && row[key] !== value);
 }
 
 export async function createMoveNodeInTransaction(
@@ -91,7 +97,15 @@ export const CourseService = {
   create: async (userId: number, data: { name: string; description?: string | null }) => createCourse(userId, data),
   get: async (userId: number, id: number) => getCourseById(userId, id),
   update: async (userId: number, id: number, data: { name?: string; description?: string | null }) =>
-    updateCourse(userId, id, data),
+    prisma.$transaction(async (tx) => {
+      const current = await getCourseById(userId, id, tx);
+      if (!current) return null;
+      if (!hasDataChanges(current, data)) return current;
+      const updated = await updateCourse(userId, id, data, tx);
+      if (!updated) return null;
+      const revision = await incrementCourseContentRevision(id, tx);
+      return { ...updated, ...revision };
+    }),
   delete: async (userId: number, id: number) => deleteCourse(userId, id),
 };
 
@@ -161,13 +175,35 @@ export const ChapterService = {
     userId: number,
     courseId: number,
     data: { name: string; description?: string | null; sortOrder?: number },
-  ) => createChapter(userId, courseId, data),
+  ) => prisma.$transaction(async (tx) => {
+    const created = await createChapter(userId, courseId, data, tx);
+    if (!created) return null;
+    await incrementCourseContentRevision(courseId, tx);
+    return created;
+  }),
   update: async (
     userId: number,
     id: number,
     data: { name?: string; description?: string | null; sortOrder?: number },
-  ) => updateChapter(userId, id, data),
-  delete: async (userId: number, id: number) => deleteChapter(userId, id),
+  ) => prisma.$transaction(async (tx) => {
+    const chapter = await getChapterById(userId, id, tx);
+    if (!chapter) return null;
+    if (!hasDataChanges(chapter, data)) {
+      return tx.chapter.findUniqueOrThrow({ where: { id } });
+    }
+    const updated = await updateChapter(userId, id, data, tx);
+    if (!updated) return null;
+    await incrementCourseContentRevision(chapter.courseId, tx);
+    return updated;
+  }),
+  delete: async (userId: number, id: number) => prisma.$transaction(async (tx) => {
+    const chapter = await getChapterById(userId, id, tx);
+    if (!chapter) return null;
+    const deleted = await deleteChapter(userId, id, tx);
+    if (!deleted) return null;
+    await incrementCourseContentRevision(chapter.courseId, tx);
+    return deleted;
+  }),
 };
 
 export const LineService = {
@@ -202,7 +238,14 @@ export const LineService = {
       tags?: string | null;
       notes?: string | null;
     },
-  ) => createLine(userId, chapterId, data),
+  ) => prisma.$transaction(async (tx) => {
+    const chapter = await getChapterById(userId, chapterId, tx);
+    if (!chapter) return null;
+    const created = await createLine(userId, chapterId, data, tx);
+    if (!created) return null;
+    await incrementCourseContentRevision(chapter.courseId, tx);
+    return created;
+  }),
   get: async (userId: number, id: number) => getLineById(userId, id),
   update: async (
     userId: number,
@@ -215,10 +258,45 @@ export const LineService = {
       tags: string | null;
       notes: string | null;
     }>,
-  ) => updateLine(userId, id, data),
+  ) => prisma.$transaction(async (tx) => {
+    const current = await tx.line.findFirst({
+      where: { id, chapter: { course: { userId } } },
+      include: { chapter: { select: { courseId: true } } },
+    });
+    if (!current) return null;
+    const destination = data.chapterId === undefined
+      ? null
+      : await tx.chapter.findFirst({
+          where: { id: data.chapterId, course: { userId } },
+          select: { courseId: true },
+        });
+    if (data.chapterId !== undefined && !destination) return null;
+    if (!hasDataChanges(current, data)) {
+      const { chapter: _chapter, ...unchanged } = current;
+      return unchanged;
+    }
+    const updated = await updateLine(userId, id, data, tx);
+    if (!updated) return null;
+    const affectedCourseIds = new Set([
+      current.chapter.courseId,
+      destination?.courseId ?? current.chapter.courseId,
+    ]);
+    for (const courseId of affectedCourseIds) await incrementCourseContentRevision(courseId, tx);
+    return updated;
+  }),
   copy: async (userId: number, sourceLineId: number, targetChapterId: number, name?: string) =>
     copyLineToChapter(userId, sourceLineId, targetChapterId, name),
-  delete: async (userId: number, id: number) => deleteLine(userId, id),
+  delete: async (userId: number, id: number) => prisma.$transaction(async (tx) => {
+    const line = await tx.line.findFirst({
+      where: { id, chapter: { course: { userId } } },
+      select: { chapter: { select: { courseId: true } } },
+    });
+    if (!line) return null;
+    const deleted = await deleteLine(userId, id, tx);
+    if (!deleted) return null;
+    await incrementCourseContentRevision(line.chapter.courseId, tx);
+    return deleted;
+  }),
   getMoveTree: async (userId: number, lineId: number) => {
     const line = await getLineById(userId, lineId);
     if (!line) return null;
@@ -241,7 +319,15 @@ export const MoveNodeService = {
       sortOrder?: number;
     },
   ) => {
-    return prisma.$transaction((tx) => createMoveNodeInTransaction(tx, userId, lineId, body));
+    return prisma.$transaction(async (tx) => {
+      const created = await createMoveNodeInTransaction(tx, userId, lineId, body);
+      const line = await tx.line.findUniqueOrThrow({
+        where: { id: lineId },
+        select: { chapter: { select: { courseId: true } } },
+      });
+      await incrementCourseContentRevision(line.chapter.courseId, tx);
+      return created;
+    });
   },
 
   update: async (
@@ -291,9 +377,12 @@ export const MoveNodeService = {
       }
       if (Object.keys(data).length === 0) return node;
       const updated = await updateMoveNode(userId, id, data, tx);
-      if (body.sortOrder !== undefined || body.isCorrectUserMove !== undefined) {
-        await tx.line.update({ where: { id: node.lineId }, data: { updatedAt: new Date() } });
-      }
+      await tx.line.update({ where: { id: node.lineId }, data: { updatedAt: new Date() } });
+      const line = await tx.line.findUniqueOrThrow({
+        where: { id: node.lineId },
+        select: { chapter: { select: { courseId: true } } },
+      });
+      await incrementCourseContentRevision(line.chapter.courseId, tx);
       return updated;
     });
   },
@@ -303,6 +392,11 @@ export const MoveNodeService = {
     if (!node) return null;
     const deleted = await deleteNodeAndSubtree(userId, id, tx);
     await tx.line.update({ where: { id: node.lineId }, data: { updatedAt: new Date() } });
+    const line = await tx.line.findUniqueOrThrow({
+      where: { id: node.lineId },
+      select: { chapter: { select: { courseId: true } } },
+    });
+    await incrementCourseContentRevision(line.chapter.courseId, tx);
     return deleted;
   }),
 };
