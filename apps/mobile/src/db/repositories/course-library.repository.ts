@@ -23,6 +23,10 @@ type LineRow = {
   starting_fen: string;
   notes: string | null;
   tags_json: string;
+  attempt_count: number;
+  pending_attempt_count: number;
+  has_in_progress_session: number;
+  latest_result: 'PASSED' | 'FAILED' | null;
 };
 
 export async function loadLocalCourseHierarchy(
@@ -53,10 +57,35 @@ export async function loadLocalCourseHierarchy(
     revision.content_revision,
   );
   const lines = await db.getAllAsync<LineRow>(
-    `SELECT line_id, chapter_id, name, side_to_train, starting_fen, notes, tags_json
-     FROM course_line
-     WHERE app_user_id = ? AND course_id = ? AND content_revision = ?
-     ORDER BY chapter_id, line_id`,
+    `SELECT l.line_id, l.chapter_id, l.name, l.side_to_train, l.starting_fen,
+            l.notes, l.tags_json,
+            (
+              SELECT COUNT(*) FROM local_training_attempt a
+              WHERE a.app_user_id = l.app_user_id AND a.line_id = l.line_id
+            ) AS attempt_count,
+            (
+              SELECT COUNT(*)
+              FROM training_attempt_outbox o
+              JOIN local_training_attempt a
+                ON a.app_user_id = o.app_user_id
+                AND a.client_attempt_id = o.client_attempt_id
+              WHERE o.app_user_id = l.app_user_id AND a.line_id = l.line_id
+                AND o.state IN ('PENDING', 'SENDING')
+            ) AS pending_attempt_count,
+            EXISTS (
+              SELECT 1 FROM local_training_session s
+              WHERE s.app_user_id = l.app_user_id AND s.line_id = l.line_id
+                AND s.local_status = 'IN_PROGRESS'
+            ) AS has_in_progress_session,
+            (
+              SELECT a.result FROM local_training_attempt a
+              WHERE a.app_user_id = l.app_user_id AND a.line_id = l.line_id
+              ORDER BY a.completed_at DESC
+              LIMIT 1
+            ) AS latest_result
+     FROM course_line l
+     WHERE l.app_user_id = ? AND l.course_id = ? AND l.content_revision = ?
+     ORDER BY l.chapter_id, l.line_id`,
     appUserId,
     courseId,
     revision.content_revision,
@@ -71,6 +100,10 @@ export async function loadLocalCourseHierarchy(
       startingFen: line.starting_fen,
       notes: line.notes,
       tags: parseTags(line.tags_json),
+      attemptCount: line.attempt_count,
+      pendingAttemptCount: line.pending_attempt_count,
+      hasInProgressSession: line.has_in_progress_session === 1,
+      latestResult: line.latest_result,
     });
     linesByChapter.set(line.chapter_id, list);
   }

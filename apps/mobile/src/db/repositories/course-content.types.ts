@@ -35,6 +35,10 @@ export type LocalCourseHierarchy = {
       startingFen: string;
       notes: string | null;
       tags: string[];
+      attemptCount: number;
+      pendingAttemptCount: number;
+      hasInProgressSession: boolean;
+      latestResult: 'PASSED' | 'FAILED' | null;
     }>;
   }>;
 };

@@ -10,7 +10,8 @@ applyTo: "apps/mobile/**/*"
 - Browser-only Chessground imports belong in `.dom.tsx` files. Native wrappers exchange small serializable semantic events with the DOM component.
 - Keep promotion, drag interaction, legal destinations, and transient pending-board state inside the DOM component; the shared serializable reducer owns repertoire correctness, attempts, progression, completion, and review.
 - Preserve immutable event IDs and native-side deduplication. After every accepted or rejected semantic move, supply the authoritative FEN and increment `positionVersion` so the board unlocks or snaps back.
-- SQLite owns downloaded content and future durable sessions/attempts. Keep every query scoped by the active Clerk user and never use AsyncStorage for course content, sessions, or attempts.
+- SQLite owns downloaded content, durable sessions, local events, completed attempts, and the synchronization outbox. Keep every query scoped by the active Clerk user and never use AsyncStorage for these records.
+- Persist each reducer transition before advancing or unlocking the board. Completion must create the local attempt and outbox row in the same SQLite transaction.
 - Activate course downloads through a staging revision and one exclusive transaction. A failed update must leave the previous active revision usable.
 - Bearer tokens come from Clerk at request time and remain in secure Clerk/Expo storage; never persist them in SQLite or diagnostics.
 - Keep synchronization orchestration feature-local until multiple independent workflows justify a shared abstraction.
