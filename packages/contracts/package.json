@@ -23,6 +23,14 @@
     "./courses": {
       "types": "./dist/courses/index.d.ts",
       "default": "./dist/courses/index.js"
+    },
+    "./training": {
+      "types": "./dist/training/index.d.ts",
+      "default": "./dist/training/index.js"
+    },
+    "./mobile-sync": {
+      "types": "./dist/mobile-sync/index.d.ts",
+      "default": "./dist/mobile-sync/index.js"
     }
   },
   "scripts": {

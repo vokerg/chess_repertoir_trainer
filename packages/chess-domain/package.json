@@ -4,6 +4,24 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./training": {
+      "types": "./dist/training/index.d.ts",
+      "default": "./dist/training/index.js"
+    },
+    "./sublines": {
+      "types": "./dist/sublines.d.ts",
+      "default": "./dist/sublines.js"
+    },
+    "./position": {
+      "types": "./dist/position.d.ts",
+      "default": "./dist/position.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"

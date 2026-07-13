@@ -4,6 +4,7 @@
 
 - [Architecture](architecture.md): workspace and runtime boundaries.
 - [Frontend architecture](frontend/angular-architecture.md): Angular ownership and composition.
+- [Native mobile architecture](mobile/architecture.md): Expo workspace, Chessground DOM boundary, and current rollout scope.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Course and training performance](performance/course-training-optimisation.md): phase measurements and structural regression constraints.

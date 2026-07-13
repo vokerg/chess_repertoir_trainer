@@ -1,10 +1,11 @@
 # Repository instructions
 
-Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web client, a Fastify/Prisma API, and shared packages.
+Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web client, a React Native / Expo mobile client, a Fastify/Prisma API, and shared packages.
 
 ## Workspaces
 
 - `apps/web`: Angular UI, feature state, and typed data access.
+- `apps/mobile`: Expo routes, native lifecycle, Chessground DOM hosting, and future offline workflows.
 - `apps/api`: Fastify routes, application services, provider integration, and Prisma repositories.
 - `packages/chess-domain`: pure chess and training behavior.
 - `packages/contracts`: active package for verified HTTP wire schemas and inferred DTO types.
@@ -33,9 +34,10 @@ Do not add `*.openapi.ts`, a separate OpenAPI registry, or hand-maintained path 
 - Keep route handlers thin; authentication and transport decisions belong at the route boundary.
 - Keep Fastify types out of application services and Prisma out of route handlers.
 - Keep `packages/contracts` limited to HTTP wire schemas and inferred types. Dates are ISO strings on the wire; optional and nullable are distinct.
-- Keep `packages/chess-domain` independent of Angular, Fastify, Prisma, browser APIs, and Node infrastructure.
+- Keep `packages/chess-domain` independent of Angular, React Native, Fastify, Prisma, browser APIs, and Node infrastructure.
 - Use database `count`, `aggregate`, or `groupBy` for summaries and facets. Never load an unbounded matching row set for Node-side reduction.
-- The only supported client is responsive Angular web. There is no native mobile workspace; do not confuse responsive-web “mobile” behavior with a native client.
+- Keep `apps/web` and `apps/mobile` independent. Share behavior and verified wire contracts through packages, never through cross-app imports.
+- Browser-only Chessground imports in mobile belong in `.dom.tsx` files.
 - Update canonical docs in the same change as architecture behavior.
 - Schema-backed handlers consume Fastify-validated `params`, `query`, and `body` values directly. Malformed requests use the centralized `{ "error": "Validation failed" }` response.
 - Tests that construct the full API inject a deterministic `authConfig`; production startup omits it and loads auth from the environment.
@@ -47,11 +49,13 @@ From the repository root:
 - `npm run build`
 - `npm test`
 - `npm run lint`
+- `npm run check:architecture`
 - API: `npm run build:api` and `npm run test --workspace=apps/api`
 - Web: `npm run build:web` and `npm run test --workspace=apps/web`
+- Mobile: `npm run build:mobile`, `npm run test:mobile`, `npm run lint:mobile`, and `npm run expo:check`
 - Domain: `npm run build:domain` and `npm run test --workspace=packages/chess-domain`
 - Contracts: `npm run build:contracts` and `npm run test:contracts`
 
-Focused API build/dev/lint commands build `chess-domain` and `contracts` first; focused web build/dev/test/lint commands build `contracts` first. Do not remove those workspace pre-scripts or assume a root build already ran.
+Focused API build/dev/lint commands build `chess-domain` and `contracts` first; focused web build/dev/test/lint commands build `contracts` first; focused mobile commands build `chess-domain` first. Do not remove those workspace pre-scripts or assume a root build already ran.
 
 Report exactly what ran, what was skipped, and any warnings or residual risk.
