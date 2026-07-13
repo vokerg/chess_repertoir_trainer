@@ -8,6 +8,8 @@ import {
   type MobileTrainingAttemptBatchResponseDto,
   type MobileTrainingAttemptDto,
 } from '@chess-trainer/contracts/mobile-sync';
+import { Chess } from 'chess.js';
+import { buildSublineCanonicalKey, SUBLINE_KEY_VERSION } from 'chess-domain/sublines';
 import {
   deriveSerializableTrainingCounters,
   restoreSerializableTrainingSession,
@@ -16,7 +18,7 @@ import {
   type SerializableTrainingSession,
   type SerializableTrainingSubline,
 } from 'chess-domain/training';
-import { deriveLineData } from '../courses/sublines.service';
+import { deriveLineData, hashSublineCanonicalKey } from '../courses/sublines.service';
 import {
   findMobileAttemptByClientId,
   getAttemptLine,
@@ -47,6 +49,11 @@ class MobileAttemptRejection extends Error {
   constructor(readonly code: MobileAttemptRejectionCode, message: string) {
     super(message);
   }
+}
+
+interface ValidatedMobileAttempt {
+  session: SerializableTrainingSession;
+  linkedMoveNodeIds: number[];
 }
 
 export const MobileSyncService = {
@@ -88,15 +95,16 @@ export const MobileSyncService = {
           continue;
         }
 
-        const replayed = await validateAndReplayAttempt(userId, attempt, receivedAt);
+        const validated = await validateAndReplayAttempt(userId, attempt, receivedAt);
         const persisted = await persistMobileAttempt({
           userId,
           deviceId: batch.deviceId,
           clientAttemptId: attempt.clientAttemptId,
           courseContentRevision: attempt.courseContentRevision,
           trainingMode: attempt.trainingMode,
-          session: replayed,
+          session: validated.session,
           subline: attempt.subline,
+          linkedMoveNodeIds: validated.linkedMoveNodeIds,
           receivedAt,
         });
         results.push({
@@ -237,7 +245,7 @@ async function validateAndReplayAttempt(
   userId: number,
   attempt: MobileTrainingAttemptDto,
   receivedAt: Date,
-): Promise<SerializableTrainingSession> {
+): Promise<ValidatedMobileAttempt> {
   validateVersions(attempt);
   validateAttemptShape(attempt);
   validateTimestamps(attempt, receivedAt);
@@ -266,10 +274,15 @@ async function validateAndReplayAttempt(
     throw new MobileAttemptRejection('INVALID_SNAPSHOT', 'Line does not belong to the submitted course.');
   }
 
-  validateSublineAgainstCurrentLine(attempt.subline, line);
+  const linkedMoveNodeIds = attempt.courseContentRevision === course.contentRevision
+    ? validateSublineAgainstCurrentLine(attempt.subline, line)
+    : validateHistoricalSublineSnapshot(attempt.subline, line);
 
   try {
-    return restoreSerializableTrainingSession(attempt.session, attempt.subline);
+    return {
+      session: restoreSerializableTrainingSession(attempt.session, attempt.subline),
+      linkedMoveNodeIds,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Training replay failed.';
     if (/version/i.test(message)) {
@@ -339,7 +352,10 @@ function validateTimestamps(attempt: MobileTrainingAttemptDto, receivedAt: Date)
   }
 }
 
-function validateSublineAgainstCurrentLine(subline: SerializableTrainingSubline, line: Awaited<ReturnType<typeof getAttemptLine>>): void {
+function validateSublineAgainstCurrentLine(
+  subline: SerializableTrainingSubline,
+  line: Awaited<ReturnType<typeof getAttemptLine>>,
+): number[] {
   if (!line) throw new MobileAttemptRejection('CONTENT_GONE', 'Line no longer exists.');
   const derived = deriveLineData(line);
   const active = derived.sublines.find((candidate) =>
@@ -371,6 +387,72 @@ function validateSublineAgainstCurrentLine(subline: SerializableTrainingSubline,
       throw new MobileAttemptRejection('INVALID_SNAPSHOT', `Move node ${snapshot.nodeId} does not match server content.`);
     }
   }
+  return subline.moves.map((move) => move.nodeId);
+}
+
+function validateHistoricalSublineSnapshot(
+  subline: SerializableTrainingSubline,
+  line: NonNullable<Awaited<ReturnType<typeof getAttemptLine>>>,
+): number[] {
+  if (subline.sublineKeyVersion !== SUBLINE_KEY_VERSION) {
+    throw new MobileAttemptRejection(
+      'UNSUPPORTED_SCHEMA_VERSION',
+      `Unsupported subline key version ${subline.sublineKeyVersion}.`,
+    );
+  }
+
+  const canonicalKey = buildSublineCanonicalKey({
+    lineId: subline.lineId,
+    startingFen: subline.startingFen,
+    sideToTrain: subline.sideToTrain,
+    moves: subline.moves,
+  });
+  if (hashSublineCanonicalKey(canonicalKey) !== subline.sublineHash) {
+    throw new MobileAttemptRejection('INVALID_SNAPSHOT', 'Historical subline identity does not match its move path.');
+  }
+
+  let expectedFenBefore = subline.startingFen;
+  for (const snapshot of subline.moves) {
+    if (snapshot.fenBefore !== expectedFenBefore) {
+      throw new MobileAttemptRejection('INVALID_SNAPSHOT', `Move node ${snapshot.nodeId} has a broken FEN chain.`);
+    }
+
+    const chess = expectedFenBefore === 'startpos' ? new Chess() : new Chess(expectedFenBefore);
+    const sideToMove = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
+    if (snapshot.isUserMove !== (sideToMove === subline.sideToTrain)) {
+      throw new MobileAttemptRejection('INVALID_SNAPSHOT', `Move node ${snapshot.nodeId} has an invalid trained-side flag.`);
+    }
+
+    let played;
+    try {
+      played = chess.move(parseUci(snapshot.moveUci));
+    } catch {
+      played = null;
+    }
+    if (!played || played.san !== snapshot.moveSan || chess.fen() !== snapshot.fenAfter) {
+      throw new MobileAttemptRejection('INVALID_SNAPSHOT', `Move node ${snapshot.nodeId} is not a valid historical move snapshot.`);
+    }
+    expectedFenBefore = snapshot.fenAfter;
+  }
+
+  const currentNodes = new Map(line.moves.map((node) => [node.id, node]));
+  return subline.moves
+    .filter((snapshot) => {
+      const current = currentNodes.get(snapshot.nodeId);
+      return current ? sameMoveSnapshot(toTrainingMoveSnapshot(current), snapshot) : false;
+    })
+    .map((snapshot) => snapshot.nodeId);
+}
+
+function parseUci(moveUci: string): { from: string; to: string; promotion?: string } {
+  if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(moveUci)) {
+    throw new MobileAttemptRejection('INVALID_SNAPSHOT', `Invalid UCI move ${moveUci}.`);
+  }
+  return {
+    from: moveUci.slice(0, 2),
+    to: moveUci.slice(2, 4),
+    promotion: moveUci.length === 5 ? moveUci[4] : undefined,
+  };
 }
 
 function sameMoveSnapshot(left: SerializableTrainingMoveSnapshot, right: SerializableTrainingMoveSnapshot): boolean {

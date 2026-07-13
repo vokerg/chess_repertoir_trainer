@@ -188,6 +188,26 @@ try {
   const futureRevisionResult = await MobileSyncService.ingestTrainingAttempts(userA.id, { deviceId: 'device-a', attempts: [futureRevisionAttempt] });
   assert.equal(futureRevisionResult.results[0].rejectionCode, 'INVALID_SNAPSHOT');
 
+  const revisioned = await createTrainableCourse(userA.id, 'Revisioned');
+  const revisionedBundle = mobileCourseBundleSchema.parse(await MobileSyncService.courseBundle(userA.id, revisioned.course.id));
+  const historicalAttempt = earlyFinishAttempt(
+    revisionedBundle.courseId,
+    revisionedBundle.contentRevision,
+    revisionedBundle.sublines[0],
+  );
+  await MoveNodeService.update(userA.id, revisioned.node.id, { comment: 'Changed after download' });
+  const currentRevision = await prisma.course.findUniqueOrThrow({ where: { id: revisioned.course.id } });
+  assert.ok(currentRevision.contentRevision > revisionedBundle.contentRevision);
+  const historicalResult = await MobileSyncService.ingestTrainingAttempts(userA.id, {
+    deviceId: 'device-a', attempts: [historicalAttempt],
+  });
+  assert.equal(historicalResult.results[0].status, 'ACCEPTED');
+  const historicalMoves = await prisma.trainingAttemptMove.findMany({
+    where: { sessionId: historicalResult.results[0].trainingSessionId },
+  });
+  assert.equal(historicalMoves.length, 1);
+  assert.equal(historicalMoves[0].moveNodeId, null);
+
   const history = await TrainingService.listHistory(userA.id);
   assert.ok(history.some((session) => session.id === acceptedSessionId));
   assert.ok(history.some((session) => session.id === partial.results[0].trainingSessionId));
