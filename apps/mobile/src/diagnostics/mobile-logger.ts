@@ -50,17 +50,30 @@ function write(
   if (entries.length > MAX_ENTRIES) entries.splice(0, entries.length - MAX_ENTRIES);
 
   const output = `[${scope}] ${message}`;
-  if (level === 'error') console.error(output, details ?? '');
-  else if (level === 'warn') console.warn(output, details ?? '');
-  else console.info(output, details ?? '');
+  if (level === 'error') {
+    const printableDetails = details ? { ...details, stack: undefined } : null;
+    console.error(output, printableDetails ? JSON.stringify(printableDetails) : '');
+  } else if (level === 'warn') {
+    console.warn(output, details ?? '');
+  } else {
+    console.info(output, details ?? '');
+  }
 }
 
 function serializeError(error: unknown): Record<string, unknown> | undefined {
   if (error === undefined) return undefined;
   if (error instanceof Error) {
+    const extended = error as Error & {
+      status?: unknown;
+      requestUrl?: unknown;
+      responseBody?: unknown;
+    };
     return {
       name: error.name,
       message: error.message,
+      status: extended.status ?? null,
+      requestUrl: extended.requestUrl ?? null,
+      responseBody: extended.responseBody ?? null,
       stack: error.stack ?? null,
     };
   }
