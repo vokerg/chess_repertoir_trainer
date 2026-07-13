@@ -52,6 +52,19 @@ export function CourseDetailScreen() {
     };
   }, [courseId, db, session.activeUser]));
 
+  function openMarathon(scopeType: 'COURSE' | 'CHAPTER', scopeId: number): void {
+    if (!course) return;
+    router.push({
+      pathname: '/training/marathon',
+      params: {
+        courseId: String(course.courseId),
+        scopeType,
+        scopeId: String(scopeId),
+        mode: 'ALL',
+      },
+    });
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.centered}>
@@ -76,12 +89,34 @@ export function CourseDetailScreen() {
         <Text style={styles.eyebrow}>DOWNLOADED REVISION {course.contentRevision}</Text>
         <Text style={styles.title}>{course.name}</Text>
         {course.description ? <Text style={styles.description}>{course.description}</Text> : null}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => openMarathon('COURSE', course.courseId)}
+          style={({ pressed }) => [styles.marathonButton, pressed ? styles.lineRowPressed : null]}
+        >
+          <View style={styles.lineText}>
+            <Text style={styles.marathonTitle}>Start or resume course marathon</Text>
+            <Text style={styles.marathonMeta}>All, weak, untrained, and mixed modes work from downloaded content.</Text>
+          </View>
+          <Text style={styles.marathonAction}>Open</Text>
+        </Pressable>
         {course.chapters.length === 0 ? (
           <Text style={styles.meta}>This course has no chapters.</Text>
         ) : course.chapters.map((chapter) => (
           <View key={chapter.id} style={styles.chapterCard}>
-            <Text style={styles.chapterName}>{chapter.name}</Text>
-            {chapter.description ? <Text style={styles.description}>{chapter.description}</Text> : null}
+            <View style={styles.chapterHeader}>
+              <View style={styles.lineText}>
+                <Text style={styles.chapterName}>{chapter.name}</Text>
+                {chapter.description ? <Text style={styles.description}>{chapter.description}</Text> : null}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => openMarathon('CHAPTER', chapter.id)}
+                style={({ pressed }) => [styles.chapterMarathonButton, pressed ? styles.lineRowPressed : null]}
+              >
+                <Text style={styles.chapterMarathonText}>Marathon</Text>
+              </Pressable>
+            </View>
             {chapter.lines.length === 0 ? (
               <Text style={styles.meta}>No lines</Text>
             ) : chapter.lines.map((line) => (
@@ -118,7 +153,7 @@ export function CourseDetailScreen() {
           </View>
         ))}
         <Text style={styles.footer}>
-          Training runs from SQLite and Chessground. Every semantic transition is saved before the board continues.
+          Training and marathons run from SQLite and Chessground. Every semantic transition is saved before the board continues.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -132,8 +167,15 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 1.3, color: '#6f513b' },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '800', color: '#2e241d' },
   description: { fontSize: 15, lineHeight: 22, color: '#5a4a3f' },
+  marathonButton: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 17, borderRadius: 14, backgroundColor: '#6b452d' },
+  marathonTitle: { fontSize: 17, fontWeight: '800', color: '#ffffff' },
+  marathonMeta: { fontSize: 13, lineHeight: 18, color: '#f0ded0' },
+  marathonAction: { color: '#ffffff', fontSize: 14, fontWeight: '800' },
   chapterCard: { gap: 10, padding: 17, borderRadius: 14, backgroundColor: '#fffaf4' },
+  chapterHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   chapterName: { fontSize: 20, fontWeight: '800', color: '#2e241d' },
+  chapterMarathonButton: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9, backgroundColor: '#e9ddcf' },
+  chapterMarathonText: { color: '#5d402e', fontSize: 12, fontWeight: '800' },
   lineRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12, paddingBottom: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#d7c6b6' },
   lineRowPressed: { opacity: 0.65 },
   lineText: { flex: 1, gap: 3 },

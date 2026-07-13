@@ -14,13 +14,15 @@ import type {
   OfflineTrainingContext,
 } from './offline-training.types';
 
-type SessionRow = {
+export type StoredTrainingSessionRow = {
   session_id: string;
   course_id: number;
   content_revision: number;
   line_id: number;
   subline_hash: string;
   subline_key_version: number;
+  training_mode: OfflineTrainingContext['trainingMode'];
+  marathon_run_id: string | null;
   local_status: LocalTrainingStatus;
   session_json: string;
 };
@@ -71,11 +73,12 @@ export async function openLineTraining(
   courseId: number,
   lineId: number,
 ): Promise<OfflineTrainingContext> {
-  const latest = await db.getFirstAsync<SessionRow>(
+  const latest = await db.getFirstAsync<StoredTrainingSessionRow>(
     `SELECT session_id, course_id, content_revision, line_id, subline_hash,
-            subline_key_version, local_status, session_json
+            subline_key_version, training_mode, marathon_run_id, local_status, session_json
      FROM local_training_session
      WHERE app_user_id = ? AND course_id = ? AND line_id = ?
+       AND training_mode = 'LINE' AND marathon_run_id IS NULL
        AND local_status IN ('IN_PROGRESS', 'COMPLETED')
      ORDER BY updated_at DESC, rowid DESC
      LIMIT 1`,
@@ -113,9 +116,9 @@ export async function startNewLineTraining(
     await tx.runAsync(
       `INSERT INTO local_training_session (
         app_user_id, session_id, course_id, content_revision, line_id,
-        subline_hash, subline_key_version, local_status, session_json,
-        started_at, completed_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        subline_hash, subline_key_version, training_mode, marathon_run_id,
+        local_status, session_json, started_at, completed_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'LINE', NULL, ?, ?, ?, ?, ?)`,
       appUserId,
       session.sessionId,
       line.course_id,
@@ -130,7 +133,7 @@ export async function startNewLineTraining(
       now,
     );
     if (session.completed) {
-      await writeCompletedAttempt(tx, appUserId, line.course_id, subline, session, now);
+      await writeCompletedAttempt(tx, appUserId, line.course_id, subline, session, 'LINE', now);
     }
   });
 
@@ -140,6 +143,8 @@ export async function startNewLineTraining(
     contentRevision: line.content_revision,
     lineId: line.line_id,
     lineName: line.line_name,
+    trainingMode: 'LINE',
+    marathonRunId: null,
     localStatus,
     resumed: false,
     pendingAttemptCount: await countPendingAttemptsForLine(db, appUserId, lineId),
@@ -218,8 +223,24 @@ export async function persistOfflineTrainingTransition(
         context.courseId,
         context.subline,
         nextSession,
+        context.trainingMode,
         now,
       );
+      if (context.marathonRunId) {
+        const runUpdated = await tx.runAsync(
+          `UPDATE local_training_marathon_run
+           SET completed_count = completed_count + 1, updated_at = ?
+           WHERE app_user_id = ? AND run_id = ? AND status = 'IN_PROGRESS'
+             AND current_session_id = ?`,
+          now,
+          appUserId,
+          context.marathonRunId,
+          nextSession.sessionId,
+        );
+        if (runUpdated.changes !== 1) {
+          throw new Error('The offline marathon run no longer owns this training session.');
+        }
+      }
     }
   });
 
@@ -243,10 +264,18 @@ export async function countPendingAttemptsForLine(
   return row?.count ?? 0;
 }
 
+export async function restoreStoredTrainingContext(
+  db: SQLiteDatabase,
+  appUserId: string,
+  row: StoredTrainingSessionRow,
+): Promise<OfflineTrainingContext> {
+  return restoreTrainingContext(db, appUserId, row);
+}
+
 async function restoreTrainingContext(
   db: SQLiteDatabase,
   appUserId: string,
-  row: SessionRow,
+  row: StoredTrainingSessionRow,
 ): Promise<OfflineTrainingContext> {
   const line = await loadStoredLine(db, appUserId, row);
   if (!line) throw new Error('The downloaded content for this session is unavailable.');
@@ -276,6 +305,8 @@ async function restoreTrainingContext(
     contentRevision: line.content_revision,
     lineId: line.line_id,
     lineName: line.line_name,
+    trainingMode: row.training_mode,
+    marathonRunId: row.marathon_run_id,
     localStatus: row.local_status,
     resumed: row.local_status === 'IN_PROGRESS',
     pendingAttemptCount: await countPendingAttemptsForLine(db, appUserId, row.line_id),
@@ -312,7 +343,7 @@ async function loadActiveLine(
 async function loadStoredLine(
   db: SQLiteDatabase,
   appUserId: string,
-  session: Pick<SessionRow, 'course_id' | 'content_revision' | 'line_id'>,
+  session: Pick<StoredTrainingSessionRow, 'course_id' | 'content_revision' | 'line_id'>,
 ): Promise<LineRow | null> {
   return db.getFirstAsync<LineRow>(
     `SELECT l.course_id, r.course_name, l.content_revision,
@@ -470,9 +501,10 @@ async function writeCompletedAttempt(
   courseId: number,
   subline: SerializableTrainingSubline,
   session: SerializableTrainingSession,
+  trainingMode: OfflineTrainingContext['trainingMode'],
   createdAt: string,
 ): Promise<void> {
-  const attempt = buildMobileTrainingAttempt(courseId, subline, session);
+  const attempt = buildMobileTrainingAttempt(courseId, subline, session, trainingMode);
   const attemptJson = JSON.stringify(attempt);
   await db.runAsync(
     `INSERT OR IGNORE INTO local_training_attempt (
