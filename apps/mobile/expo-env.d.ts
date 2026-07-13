@@ -1,3 +1,3 @@
 /// <reference types="expo/types" />
 
-// This file is generated-compatible and keeps Expo globals available to TypeScript.
+// NOTE: This file should not be edited and should be in your git ignore

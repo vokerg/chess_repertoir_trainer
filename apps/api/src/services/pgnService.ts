@@ -1,6 +1,8 @@
 import { Chess } from 'chess.js';
+import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../prisma';
+import { incrementCourseContentRevision } from '../modules/courses/course-content-revision.repository.prisma';
 
 function colorToMove(chess: Chess): 'WHITE' | 'BLACK' {
   return chess.turn() === 'w' ? 'WHITE' : 'BLACK';
@@ -68,6 +70,7 @@ function exportNode(node: any, childrenByParent: Map<number | null, any[]>): str
 }
 
 async function createImportedMove(
+  tx: Prisma.TransactionClient,
   line: any,
   parentId: number | null,
   fenBefore: string,
@@ -82,12 +85,12 @@ async function createImportedMove(
 
   const isUserMove = colorBefore === line.sideToTrain;
   const existingCorrectUserMove = isUserMove
-    ? await prisma.moveNode.findFirst({
+    ? await tx.moveNode.findFirst({
         where: { lineId: line.id, parentId, isUserMove: true, isCorrectUserMove: true },
       })
     : null;
 
-  return prisma.moveNode.create({
+  return tx.moveNode.create({
     data: {
       lineId: line.id,
       parentId,
@@ -137,69 +140,73 @@ export const PgnService = {
     chapterId: number,
     data: { name: string; sideToTrain: string; startingFen?: string; pgn: string },
   ) => {
-    const chapter = await prisma.chapter.findFirst({
-      where: { id: chapterId, course: { userId } },
-      select: { id: true },
-    });
-    if (!chapter) throw new Error('Chapter not found');
     const tokens = tokenizePgn(data.pgn);
     if (!tokens.length) throw new Error('No PGN moves found');
 
-    const line = await prisma.line.create({
-      data: {
-        chapterId,
-        name: data.name,
-        sideToTrain: data.sideToTrain,
-        startingFen: data.startingFen || 'startpos',
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const chapter = await tx.chapter.findFirst({
+        where: { id: chapterId, course: { userId } },
+        select: { id: true, courseId: true },
+      });
+      if (!chapter) throw new Error('Chapter not found');
 
-    type Frame = {
-      parentId: number | null;
-      fen: string;
-      ply: number;
-      sortOrder: number;
-      returnTo?: Frame;
-    };
-    let frame: Frame = { parentId: null, fen: line.startingFen, ply: 1, sortOrder: 0 };
-    let lastMoveStart: Frame | null = null;
-    const stack: Frame[] = [];
+      const line = await tx.line.create({
+        data: {
+          chapterId,
+          name: data.name,
+          sideToTrain: data.sideToTrain,
+          startingFen: data.startingFen || 'startpos',
+        },
+      });
 
-    for (const token of tokens) {
-      if (token === '(') {
-        if (lastMoveStart) {
-          stack.push(frame);
-          frame = { ...lastMoveStart, sortOrder: (lastMoveStart.sortOrder ?? 0) + 1 };
-        }
-        continue;
-      }
-      if (token === ')') {
-        const restored = stack.pop();
-        if (restored) frame = restored;
-        continue;
-      }
-      if (/^\d+\.+$/.test(token)) continue;
-
-      const before: Frame = { ...frame };
-      const created = await createImportedMove(
-        line,
-        frame.parentId,
-        frame.fen,
-        token,
-        frame.ply,
-        frame.sortOrder,
-      );
-      lastMoveStart = before;
-      frame = {
-        parentId: created.id,
-        fen: created.fenAfter,
-        ply: frame.ply + 1,
-        sortOrder: 0,
+      type Frame = {
+        parentId: number | null;
+        fen: string;
+        ply: number;
+        sortOrder: number;
+        returnTo?: Frame;
       };
-    }
+      let frame: Frame = { parentId: null, fen: line.startingFen, ply: 1, sortOrder: 0 };
+      let lastMoveStart: Frame | null = null;
+      const stack: Frame[] = [];
 
-    await prisma.line.update({ where: { id: line.id }, data: { updatedAt: new Date() } });
+      for (const token of tokens) {
+        if (token === '(') {
+          if (lastMoveStart) {
+            stack.push(frame);
+            frame = { ...lastMoveStart, sortOrder: (lastMoveStart.sortOrder ?? 0) + 1 };
+          }
+          continue;
+        }
+        if (token === ')') {
+          const restored = stack.pop();
+          if (restored) frame = restored;
+          continue;
+        }
+        if (/^\d+\.+$/.test(token)) continue;
 
-    return prisma.line.findUniqueOrThrow({ where: { id: line.id } });
+        const before: Frame = { ...frame };
+        const created = await createImportedMove(
+          tx,
+          line,
+          frame.parentId,
+          frame.fen,
+          token,
+          frame.ply,
+          frame.sortOrder,
+        );
+        lastMoveStart = before;
+        frame = {
+          parentId: created.id,
+          fen: created.fenAfter,
+          ply: frame.ply + 1,
+          sortOrder: 0,
+        };
+      }
+
+      await tx.line.update({ where: { id: line.id }, data: { updatedAt: new Date() } });
+      await incrementCourseContentRevision(chapter.courseId, tx);
+      return tx.line.findUniqueOrThrow({ where: { id: line.id } });
+    });
   },
 };

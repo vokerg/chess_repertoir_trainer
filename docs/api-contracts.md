@@ -2,7 +2,7 @@
 
 ## Ownership
 
-`packages/contracts` is an active root workspace consumed by API and web build graphs. Its verified public exports currently cover imported-game browsing and board-image endpoints. Add schemas only after checking the real service output and consumers; unverified provisional exports are not acceptable.
+`packages/contracts` is an active root workspace consumed by API and client build graphs. Its verified public exports include imported-game browsing, board-image endpoints, course read models, serializable training, and mobile synchronization. Add schemas only after checking the real service output and consumers; unverified provisional exports are not acceptable.
 
 For each cross-workspace endpoint DTO, `packages/contracts` owns the Zod request/response wire schema and inferred TypeScript types. The API imports schemas at runtime for validation/serialization and Angular normally imports DTO types only. Feature-local input schemas may stay with the API when no other workspace consumes them.
 

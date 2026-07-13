@@ -26,6 +26,7 @@ apps/api/src/modules/
   courses/               courses, chapters, lines, and move nodes
   imported-games/        game browsing, facets, PGN, and opening data
   lab/                   exploratory game reports
+  mobile-sync/           offline course bundles and mobile attempt ingestion
   repertoire-coverage/   course review against imported games
   stats/                 summary, line, and course statistics
   training/              line training sessions
@@ -61,7 +62,9 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - `packages/chess-domain` stays framework- and infrastructure-free.
 - Mobile-safe domain imports use explicit subpaths such as `chess-domain/training`, `chess-domain/sublines`, and `chess-domain/position`.
 - The versioned serializable training reducer lives under `packages/chess-domain/src/training`. It records immutable attempt events, auto-plays fixed-path opponent moves, supports deterministic JSON replay, derives counters/review, and preserves existing server move-attempt and early-finish semantics.
-- `@chess-trainer/contracts/training` and `@chess-trainer/contracts/mobile-sync` own the versioned wire schemas for future downloaded content and attempt synchronization. No API endpoint is implied merely by the existence of these schemas.
+- `@chess-trainer/contracts/training` and `@chess-trainer/contracts/mobile-sync` own the versioned wire schemas for downloaded content and attempt synchronization. The API exposes an owned-course manifest, complete course bundles, and idempotent offline-attempt batch ingestion under `/api/mobile-sync`.
+- Course content carries a monotonic revision and content-change timestamp. Each logical bundle mutation increments the affected course once; moving content between courses increments both. Training and statistics writes do not change content revisions.
+- Offline attempts are replayed with the serializable training domain, validated against their submitted immutable subline snapshot, and persisted into the existing training session, subline-attempt, and move-attempt models. Client start/completion timestamps remain the training chronology; `receivedAt` records deterministic server receipt time.
 - Reusable repertoire graph, normalized-FEN matching, conflict detection, and reintegration planning live in `packages/chess-domain`; API modules own persistence and transactions.
 - Available subline extraction lives in `packages/chess-domain/src/sublines.ts`. It is the source for the course sublines widget, line-training candidate selection, marathon candidate selection, weak-subline candidate selection, and active line/chapter/course stats scopes.
 - `packages/chess-domain` owns extraction and canonical subline key generation. The canonical key is semantic and includes version, line id, starting FEN, side to train, and ordered UCI moves; it does not depend on node ids or SAN.

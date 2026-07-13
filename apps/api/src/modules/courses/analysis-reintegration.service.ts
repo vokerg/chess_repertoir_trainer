@@ -17,6 +17,7 @@ import {
   getLineWithMoves,
 } from './courses.repository.prisma';
 import { createMoveNodeInTransaction } from './courses.service';
+import { incrementCourseContentRevision } from './course-content-revision.repository.prisma';
 import {
   ApplyAnalysisReintegrationInput,
   PreviewAnalysisReintegrationInput,
@@ -56,6 +57,7 @@ export const AnalysisReintegrationService = {
           sideToTrain: input.target.sideToTrain, startingFen: input.analysisTree.rootFen }, tx);
         if (!line) throw new AnalysisReintegrationError('Chapter not found', 404);
         const counts = await applyChildren(tx, userId, line.id, null, input.analysisTree.children, []);
+        await incrementCourseContentRevision(chapter.courseId, tx);
         return { targetKind: 'NEW_LINE' as const, lineId: line.id, lineName: line.name,
           createdMoves: counts.created, reusedMoves: counts.reused };
       }
@@ -71,6 +73,7 @@ export const AnalysisReintegrationService = {
       rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
       const counts = await applyChildren(tx, userId, line.id, anchor.nodeId, input.analysisTree.children,
         selected.moves.map((node) => ({ id: node.id, parentId: node.parentId, moveUci: node.moveUci })));
+      if (counts.created > 0) await incrementCourseContentRevision(chapter.courseId, tx);
       return { targetKind: 'EXISTING_LINE' as const, lineId: line.id, lineName: line.name,
         createdMoves: counts.created, reusedMoves: counts.reused };
     }),

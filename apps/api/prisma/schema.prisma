@@ -423,14 +423,16 @@ model ScenarioTrainingAttempt {
 }
 
 model Course {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  user        AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  chapters    Chapter[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  user             AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  contentRevision  Int       @default(1)
+  contentChangedAt DateTime  @default(now())
+  chapters         Chapter[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([userId])
 }
@@ -500,21 +502,27 @@ model MoveNode {
 }
 
 model TrainingSession {
-  id                 Int                     @id @default(autoincrement())
-  userId             Int
-  user               AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lineId             Int
-  line               Line                    @relation(fields: [lineId], references: [id], onDelete: Cascade)
-  attempts           TrainingAttemptMove[]
-  startedAt          DateTime                @default(now())
-  completedAt        DateTime?
-  result             String
-  mistakesCount      Int                     @default(0)
-  totalExpectedMoves Int                     @default(0)
-  correctMoves       Int                     @default(0)
-  accuracy           Float?
-  sublineAttempt     TrainingSublineAttempt?
+  id                    Int                     @id @default(autoincrement())
+  userId                Int
+  user                  AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineId                Int
+  line                  Line                    @relation(fields: [lineId], references: [id], onDelete: Cascade)
+  clientAttemptId       String?
+  source                String                  @default("WEB_ONLINE")
+  sourceDeviceId        String?
+  courseContentRevision Int?
+  receivedAt            DateTime                @default(now())
+  attempts              TrainingAttemptMove[]
+  startedAt             DateTime                @default(now())
+  completedAt           DateTime?
+  result                String
+  mistakesCount         Int                     @default(0)
+  totalExpectedMoves    Int                     @default(0)
+  correctMoves          Int                     @default(0)
+  accuracy              Float?
+  sublineAttempt        TrainingSublineAttempt?
 
+  @@unique([userId, clientAttemptId])
   @@index([userId, startedAt])
   @@index([userId, result])
   @@index([userId, lineId])

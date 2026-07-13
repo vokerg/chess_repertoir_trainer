@@ -17,6 +17,7 @@ Phase 1 is complete in code. The repository now provides:
 - counters and local review derived from those events;
 - explicit mobile-safe `chess-domain` subpath exports;
 - versioned training and mobile-sync schemas under `@chess-trainer/contracts/training` and `@chess-trainer/contracts/mobile-sync`;
+- authenticated API support for owned-course manifests, complete versioned bundles, and idempotent replay-validated attempt ingestion;
 - a real local training route that connects Chessground to the shared reducer with no API request;
 - a bounded diagnostics logger and application error boundary;
 - architecture checks that prevent cross-client imports, root-domain imports from mobile, AsyncStorage course/session storage, and retired handmade-board patterns.
@@ -65,14 +66,22 @@ The stored counters are validated against deterministic event replay rather than
 
 Chessground owns visual interaction and board-legal movement. Native application state remains authoritative for acceptance or rejection. After emitting one immutable move event, the board locks until native state supplies an authoritative FEN and increments `positionVersion`.
 
+## Server synchronization boundary
+
+The API now provides the native synchronization transport without coupling it to Expo:
+
+- `GET /api/mobile-sync/manifest` lists current revisions for owned courses;
+- `GET /api/mobile-sync/courses/:courseId` returns ordered course content, move nodes, and active serializable sublines;
+- `POST /api/mobile-sync/training-attempts` independently replays and persists each completed attempt into the existing progress model, with idempotency by user and client attempt id.
+
+The server derives result and counters from immutable events, rejects tampered or obsolete snapshots with stable codes, and preserves client chronology separately from server receipt time. Native SQLite, outbox, and synchronization orchestration remain client-side rollout work.
+
 ## Deferred to later rollout phases
 
 Phase 1 intentionally does not provide:
 
 - Clerk authentication;
-- API integration;
 - SQLite initialization or migrations;
-- downloadable course bundles;
 - durable session persistence;
 - attempt outbox persistence or upload;
 - foreground, reconnect, or background synchronization.

@@ -76,7 +76,7 @@ for (const requiredFile of [
   '../packages/chess-domain/src/training/serializable-training.ts',
   '../apps/mobile/app/training-lab.tsx',
   '../apps/mobile/src/features/training/TrainingLabScreen.tsx',
-  '../apps/mobile/src/app/MobileErrorBoundary.tsx',
+  '../apps/mobile/src/shell/MobileErrorBoundary.tsx',
   '../apps/mobile/src/diagnostics/mobile-logger.ts',
 ]) {
   assert.equal(existsSync(new URL(requiredFile, import.meta.url)), true, `${requiredFile} must exist`);

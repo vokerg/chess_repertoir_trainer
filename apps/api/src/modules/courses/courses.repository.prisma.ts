@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
+import { incrementCourseContentRevision } from './course-content-revision.repository.prisma';
 
 export type DbClient = typeof prisma | Prisma.TransactionClient;
 
@@ -20,14 +21,15 @@ export async function updateCourse(
   userId: number,
   id: number,
   data: { name?: string; description?: string | null },
+  db: DbClient = prisma,
 ) {
-  if (!await getCourseById(userId, id)) return null;
-  return prisma.course.update({ where: { id }, data });
+  if (!await getCourseById(userId, id, db)) return null;
+  return db.course.update({ where: { id }, data });
 }
 
-export async function deleteCourse(userId: number, id: number) {
-  if (!await getCourseById(userId, id)) return null;
-  return prisma.course.delete({ where: { id } });
+export async function deleteCourse(userId: number, id: number, db: DbClient = prisma) {
+  if (!await getCourseById(userId, id, db)) return null;
+  return db.course.delete({ where: { id } });
 }
 
 export async function listChapters(userId: number, courseId: number) {
@@ -42,23 +44,25 @@ export async function createChapter(
   userId: number,
   courseId: number,
   data: { name: string; description?: string | null; sortOrder?: number },
+  db: DbClient = prisma,
 ) {
-  if (!await getCourseById(userId, courseId)) return null;
-  return prisma.chapter.create({ data: { courseId, ...data } });
+  if (!await getCourseById(userId, courseId, db)) return null;
+  return db.chapter.create({ data: { courseId, ...data } });
 }
 
 export async function updateChapter(
   userId: number,
   id: number,
   data: { name?: string; description?: string | null; sortOrder?: number },
+  db: DbClient = prisma,
 ) {
-  if (!await getChapterById(userId, id)) return null;
-  return prisma.chapter.update({ where: { id }, data });
+  if (!await getChapterById(userId, id, db)) return null;
+  return db.chapter.update({ where: { id }, data });
 }
 
-export async function deleteChapter(userId: number, id: number) {
-  if (!await getChapterById(userId, id)) return null;
-  return prisma.chapter.delete({ where: { id } });
+export async function deleteChapter(userId: number, id: number, db: DbClient = prisma) {
+  if (!await getChapterById(userId, id, db)) return null;
+  return db.chapter.delete({ where: { id } });
 }
 
 export async function listLines(userId: number, chapterId: number) {
@@ -150,7 +154,7 @@ export async function copyLineToChapter(
           },
         },
       }),
-      tx.chapter.findFirst({ where: { id: targetChapterId, course: { userId } }, select: { id: true } }),
+      tx.chapter.findFirst({ where: { id: targetChapterId, course: { userId } }, select: { id: true, courseId: true } }),
     ]);
     if (!source || !targetChapter) return null;
 
@@ -210,13 +214,14 @@ export async function copyLineToChapter(
       }
     }
 
+    await incrementCourseContentRevision(targetChapter.courseId, tx);
     return copiedLine;
   });
 }
 
-export async function deleteLine(userId: number, id: number) {
-  if (!await getLineById(userId, id)) return null;
-  return prisma.line.delete({ where: { id } });
+export async function deleteLine(userId: number, id: number, db: DbClient = prisma) {
+  if (!await getLineById(userId, id, db)) return null;
+  return db.line.delete({ where: { id } });
 }
 
 export async function getLineMoveNodes(userId: number, lineId: number) {
