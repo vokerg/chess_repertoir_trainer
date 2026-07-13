@@ -11,6 +11,7 @@ import { missingMobileConfiguration, mobileConfig } from '../src/config/mobile-c
 import { migrateMobileDatabase, MOBILE_DATABASE_NAME } from '../src/db/database';
 import { ConfigurationScreen } from '../src/shell/ConfigurationScreen';
 import { MobileErrorBoundary } from '../src/shell/MobileErrorBoundary';
+import { AttemptSyncProvider } from '../src/sync/AttemptSyncProvider';
 
 export default function RootLayout() {
   const missingConfiguration = missingMobileConfiguration();
@@ -33,15 +34,17 @@ export default function RootLayout() {
               useSuspense
             >
               <MobileSessionProvider>
-                <StatusBar style="auto" />
-                <Stack>
-                  <Stack.Screen name="index" options={{ title: 'Offline courses' }} />
-                  <Stack.Screen name="courses/[courseId]" options={{ title: 'Downloaded course' }} />
-                  <Stack.Screen name="training/[lineId]" options={{ title: 'Offline training' }} />
-                  <Stack.Screen name="(auth)/sign-in" options={{ title: 'Sign in', presentation: 'modal' }} />
-                  <Stack.Screen name="training-lab" options={{ title: 'Local training lab' }} />
-                  <Stack.Screen name="board-lab" options={{ title: 'Chessground board lab' }} />
-                </Stack>
+                <AttemptSyncProvider>
+                  <StatusBar style="auto" />
+                  <Stack>
+                    <Stack.Screen name="index" options={{ title: 'Offline courses' }} />
+                    <Stack.Screen name="courses/[courseId]" options={{ title: 'Downloaded course' }} />
+                    <Stack.Screen name="training/[lineId]" options={{ title: 'Offline training' }} />
+                    <Stack.Screen name="(auth)/sign-in" options={{ title: 'Sign in', presentation: 'modal' }} />
+                    <Stack.Screen name="training-lab" options={{ title: 'Local training lab' }} />
+                    <Stack.Screen name="board-lab" options={{ title: 'Chessground board lab' }} />
+                  </Stack>
+                </AttemptSyncProvider>
               </MobileSessionProvider>
             </SQLiteProvider>
           </Suspense>

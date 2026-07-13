@@ -3,13 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import {
   applySerializableTrainingMove,
@@ -19,12 +19,14 @@ import {
 } from 'chess-domain/training';
 import { useMobileSession } from '../../auth/MobileSessionProvider';
 import {
+  countPendingAttemptsForLine,
   openLineTraining,
   persistOfflineTrainingTransition,
   restartLineTraining,
   type OfflineTrainingContext,
 } from '../../db/repositories/course-content.repository';
 import { mobileLogger } from '../../diagnostics/mobile-logger';
+import { useAttemptSync } from '../../sync/AttemptSyncProvider';
 import { ChessgroundBoard } from '../board/ChessgroundBoard';
 import { createBoardEventDeduplicator } from '../board/board-event-deduplicator';
 import type { BoardMoveEvent } from '../board/board.types';
@@ -35,6 +37,7 @@ export function OfflineTrainingScreen() {
   const lineId = Number(params.lineId);
   const db = useSQLiteContext();
   const mobileSession = useMobileSession();
+  const attemptSync = useAttemptSync();
   const { width } = useWindowDimensions();
   const boardSize = Math.min(480, Math.max(240, width - 32));
   const [training, setTraining] = useState<OfflineTrainingContext | null>(null);
@@ -78,6 +81,29 @@ export function OfflineTrainingScreen() {
     };
   }, [courseId, db, lineId, mobileSession.activeUser]);
 
+  useEffect(() => {
+    const appUserId = mobileSession.activeUser?.appUserId;
+    const activeLineId = training?.lineId;
+    if (!appUserId || !activeLineId) return;
+    let cancelled = false;
+    void countPendingAttemptsForLine(db, appUserId, activeLineId)
+      .then((pendingAttemptCount) => {
+        if (cancelled) return;
+        setTraining((current) => current && current.lineId === activeLineId
+          && current.pendingAttemptCount !== pendingAttemptCount
+          ? { ...current, pendingAttemptCount }
+          : current);
+      })
+      .catch((caught: unknown) => {
+        mobileLogger.warn('offline-training', 'Could not refresh pending attempt count', {
+          message: caught instanceof Error ? caught.message : String(caught),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attemptSync.revision, db, mobileSession.activeUser?.appUserId, training?.lineId]);
+
   const expectedMove = training
     ? getSerializableExpectedMove(training.session, training.subline)
     : null;
@@ -120,7 +146,7 @@ export function OfflineTrainingScreen() {
       setFeedback(
         transition.correct
           ? transition.session.completed
-            ? `Line completed: ${transition.session.status.toLowerCase()}. Saved locally.`
+            ? `Line completed: ${transition.session.status.toLowerCase()}. Saved locally and queued for sync.`
             : `Correct. ${transition.appliedMoves.map((move) => move.moveSan).join(' ')}`
           : 'Incorrect. The position was restored; try again.',
       );
@@ -130,6 +156,9 @@ export function OfflineTrainingScreen() {
         correct: transition.correct,
         completed: transition.session.completed,
       });
+      if (transition.session.completed) {
+        void attemptSync.syncNow({ silent: true });
+      }
     } catch (caught) {
       setPositionVersion((version) => version + 1);
       setFeedback('The move was not saved. The board was restored.');
@@ -164,7 +193,8 @@ export function OfflineTrainingScreen() {
         session: transition.session,
       });
       setPositionVersion((version) => version + 1);
-      setFeedback(`Finished early. Missed ${transition.expectedMoveUci}. Saved locally.`);
+      setFeedback(`Finished early. Missed ${transition.expectedMoveUci}. Saved locally and queued for sync.`);
+      void attemptSync.syncNow({ silent: true });
     } catch (caught) {
       setFeedback('The early finish could not be saved.');
       mobileLogger.error('offline-training', 'Could not finish local training', caught);
@@ -249,7 +279,7 @@ export function OfflineTrainingScreen() {
               : `Expected: ${expectedMove?.moveSan ?? '—'} (${expectedMove?.moveUci ?? '—'})`}
           </Text>
           <Text style={styles.pending}>
-            Pending synchronization: {training.pendingAttemptCount}
+            Pending synchronization: {training.pendingAttemptCount}{attemptSync.syncing ? ' · syncing…' : ''}
           </Text>
         </View>
 
