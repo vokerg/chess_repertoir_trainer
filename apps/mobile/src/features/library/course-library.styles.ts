@@ -11,6 +11,7 @@ export const styles = StyleSheet.create({
   statusCard: { gap: 6, padding: 16, borderRadius: 14, backgroundColor: '#fffaf4' },
   statusTitle: { fontSize: 17, fontWeight: '800', color: '#2e241d' },
   statusText: { fontSize: 14, lineHeight: 20, color: '#6a594d' },
+  warningText: { fontSize: 13, lineHeight: 18, color: '#8a5a20', fontWeight: '700' },
   actionsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 8 },
   primaryButton: { paddingHorizontal: 15, paddingVertical: 10, borderRadius: 9, backgroundColor: '#6b452d' },
   primaryButtonText: { color: '#ffffff', fontWeight: '700' },

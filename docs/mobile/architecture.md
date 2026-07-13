@@ -1,6 +1,6 @@
 # Native mobile architecture
 
-`apps/mobile` is the supported React Native / Expo client. Its first product scope is a narrow offline-first repertoire trainer using the real Lichess Chessground board.
+`apps/mobile` is the supported React Native / Expo client. Its first product scope is an offline-first repertoire trainer using the real Lichess Chessground board.
 
 ## Current status
 
@@ -18,9 +18,9 @@ Phase 2 added the authenticated downloadable-content boundary:
 - download/update status and local course/chapter/line browsing;
 - offline cold-start access for the last authenticated, unlocked local user.
 
-Phase 3 adds the offline single-line training MVP:
+Phase 3 added offline single-line training:
 
-- local subline selection from the active downloaded revision;
+- local least-trained subline selection from the active downloaded revision;
 - durable serializable reducer snapshots;
 - one immutable SQLite event row per semantic transition;
 - persistence before Chessground is unlocked or advanced;
@@ -28,10 +28,22 @@ Phase 3 adds the offline single-line training MVP:
 - local natural and early completion;
 - durable local review data;
 - completed attempt rows matching the shared mobile-sync contract;
-- a durable `PENDING` attempt outbox without upload processing;
+- a durable `PENDING` attempt outbox;
 - per-line local attempt, resume, and pending-sync indicators.
 
-No board move calls the API.
+Phase 4 processes the durable attempt outbox:
+
+- one persistent installation/device id per SQLite database;
+- batches of at most 100 attempts sent to `POST /api/mobile-sync/training-attempts`;
+- `PENDING` → `SENDING` claims inside an exclusive SQLite transaction;
+- crash recovery by returning interrupted `SENDING` rows to `PENDING`;
+- `ACCEPTED` and `DUPLICATE` responses converged to local `ACCEPTED` state;
+- stable server rejections converged to local `REJECTED` state with diagnostics;
+- transient failures returned to `PENDING` with bounded exponential retry timing;
+- automatic synchronization on authentication, reconnect, foreground, and attempt completion;
+- manual forced retry plus visible queued, accepted, rejected, and last-successful-sync status.
+
+No board move calls the API. Completed attempts are uploaded only after their local transaction has committed.
 
 ## API transport
 
@@ -41,11 +53,11 @@ GET  /api/mobile-sync/courses/:courseId
 POST /api/mobile-sync/training-attempts
 ```
 
-Phase 2 consumes the first two endpoints. Phase 3 creates payloads for the third endpoint but deliberately does not upload them. Upload processing belongs to Phase 4.
+The first two endpoints distribute course content. The third endpoint receives replayable, idempotent completed attempts in batches.
 
 ## Storage boundary
 
-SQLite is the source of truth for downloaded mobile content, active local sessions, completed local attempts, and pending outbox payloads. Every durable row is scoped by the Clerk subject stored as `app_user_id`.
+SQLite is the source of truth for downloaded mobile content, active local sessions, completed local attempts, and synchronization state. Every user-owned durable row is scoped by the Clerk subject stored as `app_user_id`.
 
 Course updates never replace active content in place:
 
@@ -79,6 +91,20 @@ commit
 unlock or advance Chessground with authoritative FEN
 ```
 
+Attempt synchronization is independently retryable:
+
+```text
+claim eligible PENDING rows as SENDING
+        ↓
+POST one batch with persistent deviceId
+        ↓
+ACCEPTED / DUPLICATE → ACCEPTED
+REJECTED             → REJECTED + diagnostic
+transport failure    → PENDING + nextAttemptAt
+```
+
+A lost response is safe: retrying the same `clientAttemptId` produces a server `DUPLICATE` result and the local row converges to `ACCEPTED`.
+
 Explicit sign-out locks the local user row without deleting downloaded content or pending attempts. Bearer tokens are requested from Clerk when an API call starts and are never stored in SQLite or diagnostics.
 
 ## Shared boundaries
@@ -89,21 +115,19 @@ Explicit sign-out locks the local user row without deleting downloaded content o
 - `packages/contracts` owns versioned wire schemas.
 - Browser-only Chessground imports remain in `.dom.tsx` files.
 
-## Deferred work
+## Next phase
 
-Phase 4 still needs:
+Phase 5 is offline marathon and web training parity:
 
-- outbox upload processing;
-- retry, duplicate, accepted, and rejected state handling;
-- reconnect and foreground upload triggers;
-- manual retry and synchronization diagnostics;
-- server-progress convergence in the mobile UI.
-
-Broader course/chapter selection modes and product polish remain later phases.
+- course and chapter marathons;
+- selected-line and selected-subline marathons;
+- all, weak, untrained, and mixed weak/untrained modes;
+- durable marathon resume and continuous next-line flow;
+- all completed sessions synchronized through the Phase 4 outbox.
 
 ## Release gates
 
-- configure a native Clerk authorized party accepted by the API's existing `azp` validation;
+- complete the Phase 3/4 manual matrix including offline completion followed by reconnect upload;
 - standalone iOS cold-offline validation;
 - physical Android validation;
 - final GPL/licensing acceptance for production distribution.

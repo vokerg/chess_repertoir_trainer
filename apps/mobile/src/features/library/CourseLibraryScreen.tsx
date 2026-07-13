@@ -1,4 +1,3 @@
-import { useNetworkState } from 'expo-network';
 import { Link, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -20,13 +19,14 @@ import {
 } from '../../db/repositories/course-content.repository';
 import { mobileLogger } from '../../diagnostics/mobile-logger';
 import { downloadMobileCourse, refreshMobileManifest } from '../../sync/course-sync';
+import { useAttemptSync } from '../../sync/AttemptSyncProvider';
 import { styles } from './course-library.styles';
 
 export function CourseLibraryScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
-  const network = useNetworkState();
   const session = useMobileSession();
+  const attemptSync = useAttemptSync();
   const [courses, setCourses] = useState<LocalCourseSummary[]>([]);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,7 +75,7 @@ export function CourseLibraryScreen() {
     }
   }, [db, loadLocalState, session]);
 
-  const online = network.isInternetReachable !== false && network.isConnected !== false;
+  const online = attemptSync.online;
   useEffect(() => {
     if (!session.canSync || !session.activeUser || !online) return;
     const key = session.activeUser.appUserId;
@@ -116,6 +116,9 @@ export function CourseLibraryScreen() {
     return <CenteredStatus text="Opening offline library…" />;
   }
 
+  const attemptStatus = attemptSync.status;
+  const queuedAttempts = attemptStatus.pendingCount + attemptStatus.sendingCount;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -141,15 +144,38 @@ export function CourseLibraryScreen() {
           ) : null}
           <Text style={styles.statusText}>Network: {online ? 'available' : 'offline'}</Text>
           <Text style={styles.statusText}>Last manifest sync: {formatDate(lastSyncAt)}</Text>
+          <Text style={styles.statusText}>
+            Attempt sync: {attemptSync.syncing ? 'syncing…' : `${queuedAttempts} queued · ${attemptStatus.acceptedCount} accepted`}
+          </Text>
+          <Text style={styles.statusText}>
+            Last accepted attempt: {formatDate(attemptStatus.lastSuccessfulSyncAt)}
+          </Text>
+          {attemptStatus.rejectedCount > 0 ? (
+            <Text style={styles.warningText}>{attemptStatus.rejectedCount} attempt(s) rejected by the server.</Text>
+          ) : null}
+          {attemptSync.error ?? attemptStatus.lastError ? (
+            <Text style={styles.errorText}>{attemptSync.error ?? attemptStatus.lastError}</Text>
+          ) : null}
           <View style={styles.actionsRow}>
             {!session.isAuthenticated ? (
               <Pressable style={styles.primaryButton} onPress={() => router.push('/(auth)/sign-in')}>
                 <Text style={styles.primaryButtonText}>Sign in</Text>
               </Pressable>
             ) : (
-              <Pressable style={styles.secondaryButton} onPress={() => void refreshManifest()} disabled={refreshing}>
-                <Text style={styles.secondaryButtonText}>Refresh</Text>
-              </Pressable>
+              <>
+                <Pressable style={styles.secondaryButton} onPress={() => void refreshManifest()} disabled={refreshing}>
+                  <Text style={styles.secondaryButtonText}>Refresh courses</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={() => void attemptSync.syncNow({ force: true })}
+                  disabled={attemptSync.syncing || !online}
+                >
+                  <Text style={styles.secondaryButtonText}>
+                    {attemptSync.syncing ? 'Syncing attempts…' : 'Sync attempts'}
+                  </Text>
+                </Pressable>
+              </>
             )}
             {session.activeUser ? (
               <Pressable style={styles.linkButton} onPress={() => void session.signOutAndLock()}>
@@ -251,4 +277,3 @@ function formatDate(value: string | null): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
-

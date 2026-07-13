@@ -1,8 +1,12 @@
 import {
   mobileCourseBundleSchema,
   mobileSyncManifestSchema,
+  mobileTrainingAttemptBatchRequestSchema,
+  mobileTrainingAttemptBatchResponseSchema,
   type MobileCourseBundleDto,
   type MobileSyncManifestDto,
+  type MobileTrainingAttemptBatchRequestDto,
+  type MobileTrainingAttemptBatchResponseDto,
 } from '@chess-trainer/contracts/mobile-sync';
 import { mobileConfig } from '../config/mobile-config';
 
@@ -31,20 +35,44 @@ export async function getMobileCourseBundle(
   return mobileCourseBundleSchema.parse(payload);
 }
 
-async function requestJson(path: string, token: string): Promise<unknown> {
+export async function postMobileTrainingAttempts(
+  request: MobileTrainingAttemptBatchRequestDto,
+  token: string,
+): Promise<MobileTrainingAttemptBatchResponseDto> {
+  const body = mobileTrainingAttemptBatchRequestSchema.parse(request);
+  const payload = await requestJson('/api/mobile-sync/training-attempts', token, {
+    method: 'POST',
+    body,
+  });
+  return mobileTrainingAttemptBatchResponseSchema.parse(payload);
+}
+
+type RequestOptions = {
+  method?: 'GET' | 'POST';
+  body?: unknown;
+};
+
+async function requestJson(
+  path: string,
+  token: string,
+  options: RequestOptions = {},
+): Promise<unknown> {
   if (!mobileConfig.apiBaseUrl) {
     throw new MobileApiError('EXPO_PUBLIC_API_BASE_URL is not configured.', null);
   }
 
   const requestUrl = resolveApiUrl(path);
+  const method = options.method ?? 'GET';
   let response: Response;
   try {
     response = await fetch(requestUrl, {
-      method: 'GET',
+      method,
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
+        ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
       },
+      ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
     });
   } catch (error) {
     throw new MobileApiError(
