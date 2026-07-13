@@ -1,17 +1,20 @@
 # Architecture
 
-This monorepo contains the Fastify API, Angular web app, and shared chess-domain code.
+This monorepo contains the Fastify API, Angular web app, React Native / Expo mobile app, and shared packages.
 
-The responsive Angular application is the only supported client. The former Expo/React Native workspace has been removed; Git history is its archive.
+The Angular web application remains the broad product client. `apps/mobile` is a supported but deliberately narrow native client. Phase 1 now includes the application shell, production Chessground adapter, serializable local training reducer, versioned mobile contracts, diagnostics, and a complete local training proof. Authentication, SQLite, downloadable content, durable persistence, and synchronization are later rollout phases.
 
 ```text
 apps/
-  api/    Fastify + Prisma
-  web/    Angular
+  api/     Fastify + Prisma
+  web/     Angular
+  mobile/  React Native + Expo
 packages/
   chess-domain/  pure chess and training logic
   contracts/     active package for verified HTTP wire schemas and DTO types
 ```
+
+See [Native mobile architecture](mobile/architecture.md) for the mobile boundary and rollout status.
 
 ## Current API structure
 
@@ -52,8 +55,13 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 ## Boundaries
 
 - `apps/web` owns Angular UI, feature state, and frontend data access.
+- `apps/mobile` owns Expo routes, native lifecycle, Chessground DOM hosting, local training orchestration, and future offline repositories/workflows.
+- `apps/web` and `apps/mobile` never import from one another.
 - `apps/api` owns HTTP routes, application workflows, provider integration, and Prisma access.
 - `packages/chess-domain` stays framework- and infrastructure-free.
+- Mobile-safe domain imports use explicit subpaths such as `chess-domain/training`, `chess-domain/sublines`, and `chess-domain/position`.
+- The versioned serializable training reducer lives under `packages/chess-domain/src/training`. It records immutable attempt events, auto-plays fixed-path opponent moves, supports deterministic JSON replay, derives counters/review, and preserves existing server move-attempt and early-finish semantics.
+- `@chess-trainer/contracts/training` and `@chess-trainer/contracts/mobile-sync` own the versioned wire schemas for future downloaded content and attempt synchronization. No API endpoint is implied merely by the existence of these schemas.
 - Reusable repertoire graph, normalized-FEN matching, conflict detection, and reintegration planning live in `packages/chess-domain`; API modules own persistence and transactions.
 - Available subline extraction lives in `packages/chess-domain/src/sublines.ts`. It is the source for the course sublines widget, line-training candidate selection, marathon candidate selection, weak-subline candidate selection, and active line/chapter/course stats scopes.
 - `packages/chess-domain` owns extraction and canonical subline key generation. The canonical key is semantic and includes version, line id, starting FEN, side to train, and ordered UCI moves; it does not depend on node ids or SAN.
@@ -71,7 +79,7 @@ Frontend conventions and accepted debt are documented under `docs/frontend`.
 ## Frontend product ownership
 
 - `/library` is the Study planner. Its primary hierarchy and summaries come from one `/api/library/catalog` request. It owns repertoire/section browsing, line checkbox selection, marathon mode selection, and selected-line basket navigation to `/library/marathon`.
-- App navigation lives in `apps/web/src/app/core/layout/main-navigation`. It owns the hierarchical desktop/mobile nav model described in [Frontend Navigation](frontend/navigation.md). Keep desktop and mobile navigation driven by the same route/group data.
+- App navigation lives in `apps/web/src/app/core/layout/main-navigation`. It owns the hierarchical desktop/mobile nav model described in [Frontend Navigation](frontend/navigation.md). Keep desktop and responsive-mobile navigation driven by the same route/group data.
 - Study is the primary entry point for repertoire study and tactical missed-shot training. The main menu nests Missed shots under Study rather than exposing it as a separate top-level item.
 - Openings groups Opening analysis (`/opening-analysis`) and Opening struggles (`/opening-struggles`). Opening struggles remains routed directly even though its implementation currently lives under the Lab experiment directory.
 - Tools groups Analysis (`/analysis`) and Lab (`/lab`). These routes are not Settings.

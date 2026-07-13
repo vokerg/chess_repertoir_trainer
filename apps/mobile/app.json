@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Chess Repertoire Trainer",
+    "slug": "chess-repertoire-trainer",
+    "version": "0.1.0",
+    "scheme": "chessrepertoiretrainer",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "plugins": ["expo-router"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.chessrepertoiretrainer.mobile"
+    },
+    "android": {
+      "package": "com.chessrepertoiretrainer.mobile",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "autolinkingModuleResolution": true
+    }
+  }
+}

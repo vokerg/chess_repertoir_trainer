@@ -6,6 +6,7 @@ coverage/
 tmp/
 .angular/
 .cache/
+.expo/
 
 # Environment files
 .env
@@ -32,6 +33,12 @@ apps/web/node_modules/
 apps/api/node_modules/
 apps/web/.agents/
 apps/web/skills-lock.json
+
+# Mobile generated native projects and caches
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/web-build/
 
 # TypeScript build artifacts produced beside Prisma scripts
 apps/api/prisma/*.js
