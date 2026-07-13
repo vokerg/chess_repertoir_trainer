@@ -6,11 +6,11 @@
 
 Phase 1 established the supported Expo workspace, the Chessground DOM adapter, and the versioned serializable training reducer.
 
-Phase 2 adds the authenticated downloadable-content boundary:
+Phase 2 added the authenticated downloadable-content boundary:
 
 - Clerk Expo authentication with secure token caching;
 - a small bearer-token API client consuming `@chess-trainer/contracts/mobile-sync`;
-- an explicit versioned SQLite migration;
+- explicit versioned SQLite migrations;
 - user-scoped manifest, course-revision, chapter, line, move-node, and subline tables;
 - atomic `STAGING` → `ACTIVE` course activation;
 - retention of the previous active revision when an update fails;
@@ -18,7 +18,22 @@ Phase 2 adds the authenticated downloadable-content boundary:
 - download/update status and local course/chapter/line browsing;
 - offline cold-start access for the last authenticated, unlocked local user.
 
-The API transport is:
+Phase 3 adds the offline single-line training MVP:
+
+- local subline selection from the active downloaded revision;
+- durable serializable reducer snapshots;
+- one immutable SQLite event row per semantic transition;
+- persistence before Chessground is unlocked or advanced;
+- restart/resume for in-progress sessions;
+- local natural and early completion;
+- durable local review data;
+- completed attempt rows matching the shared mobile-sync contract;
+- a durable `PENDING` attempt outbox without upload processing;
+- per-line local attempt, resume, and pending-sync indicators.
+
+No board move calls the API.
+
+## API transport
 
 ```text
 GET  /api/mobile-sync/manifest
@@ -26,11 +41,11 @@ GET  /api/mobile-sync/courses/:courseId
 POST /api/mobile-sync/training-attempts
 ```
 
-Only the first two endpoints are consumed during Phase 2. Attempt persistence and outbox upload remain Phase 3/4 work.
+Phase 2 consumes the first two endpoints. Phase 3 creates payloads for the third endpoint but deliberately does not upload them. Upload processing belongs to Phase 4.
 
 ## Storage boundary
 
-SQLite is the source of truth for downloaded mobile content. Every durable row is scoped by the Clerk subject stored as `app_user_id`.
+SQLite is the source of truth for downloaded mobile content, active local sessions, completed local attempts, and pending outbox payloads. Every durable row is scoped by the Clerk subject stored as `app_user_id`.
 
 Course updates never replace active content in place:
 
@@ -46,13 +61,29 @@ activate new revision and update downloaded_course pointer
 commit
 ```
 
-A failed transaction leaves the previous active revision browseable. Explicit sign-out locks the local user row without deleting downloaded content.
+A failed transaction leaves the previous active revision browseable. Retired revisions remain available to resume sessions that started before a content update.
 
-Bearer tokens are requested from Clerk when an API call starts. Tokens are never stored in SQLite or diagnostics.
+Training transitions use the same durability rule:
+
+```text
+Chessground emits one semantic move
+        ↓
+shared reducer returns the next serializable session
+        ↓
+SQLite transaction updates session + appends immutable event
+        ↓
+if complete, create local attempt + PENDING outbox row
+        ↓
+commit
+        ↓
+unlock or advance Chessground with authoritative FEN
+```
+
+Explicit sign-out locks the local user row without deleting downloaded content or pending attempts. Bearer tokens are requested from Clerk when an API call starts and are never stored in SQLite or diagnostics.
 
 ## Shared boundaries
 
-- `apps/mobile` owns Expo routes, native lifecycle, authentication orchestration, SQLite repositories, and download orchestration.
+- `apps/mobile` owns Expo routes, native lifecycle, authentication orchestration, SQLite repositories, local training persistence, and synchronization orchestration.
 - `apps/web` remains an independent Angular client.
 - `packages/chess-domain` owns framework-neutral chess and training behavior.
 - `packages/contracts` owns versioned wire schemas.
@@ -60,13 +91,15 @@ Bearer tokens are requested from Clerk when an API call starts. Tokens are never
 
 ## Deferred work
 
-Phase 2 does not yet persist active training sessions or completed attempts. The following remain later phases:
+Phase 4 still needs:
 
-- durable local training-session transitions and resume;
-- immutable attempt/event tables and outbox creation;
-- attempt upload, retry, duplicate, and rejection handling;
-- background synchronization;
-- broader training selection modes.
+- outbox upload processing;
+- retry, duplicate, accepted, and rejected state handling;
+- reconnect and foreground upload triggers;
+- manual retry and synchronization diagnostics;
+- server-progress convergence in the mobile UI.
+
+Broader course/chapter selection modes and product polish remain later phases.
 
 ## Release gates
 

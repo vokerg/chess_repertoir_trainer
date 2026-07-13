@@ -35,8 +35,9 @@ export default function RootLayout() {
               <Stack>
                 <Stack.Screen name="index" options={{ title: 'Offline courses' }} />
                 <Stack.Screen name="courses/[courseId]" options={{ title: 'Downloaded course' }} />
+                <Stack.Screen name="training/[lineId]" options={{ title: 'Offline training' }} />
                 <Stack.Screen name="(auth)/sign-in" options={{ title: 'Sign in', presentation: 'modal' }} />
-                <Stack.Screen name="training-lab" options={{ title: 'Local training' }} />
+                <Stack.Screen name="training-lab" options={{ title: 'Local training lab' }} />
                 <Stack.Screen name="board-lab" options={{ title: 'Chessground board lab' }} />
               </Stack>
             </MobileSessionProvider>

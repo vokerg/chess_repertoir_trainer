@@ -3,12 +3,17 @@ import {
   OFFLINE_CONTENT_SCHEMA_VERSION,
   offlineContentMigrationSql,
 } from './0001-offline-content';
+import {
+  OFFLINE_TRAINING_SCHEMA_VERSION,
+  offlineTrainingMigrationSql,
+} from './0002-offline-training';
 
 const migrations = [
   { version: OFFLINE_CONTENT_SCHEMA_VERSION, sql: offlineContentMigrationSql },
+  { version: OFFLINE_TRAINING_SCHEMA_VERSION, sql: offlineTrainingMigrationSql },
 ] as const;
 
-export const MOBILE_DATABASE_VERSION = OFFLINE_CONTENT_SCHEMA_VERSION;
+export const MOBILE_DATABASE_VERSION = OFFLINE_TRAINING_SCHEMA_VERSION;
 
 export async function migrateMobileDatabase(db: SQLiteDatabase): Promise<void> {
   await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');

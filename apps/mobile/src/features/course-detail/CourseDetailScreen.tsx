@@ -1,6 +1,14 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useMobileSession } from '../../auth/MobileSessionProvider';
 import {
@@ -12,20 +20,22 @@ import { mobileLogger } from '../../diagnostics/mobile-logger';
 export function CourseDetailScreen() {
   const { courseId: rawCourseId } = useLocalSearchParams<{ courseId?: string }>();
   const courseId = Number(rawCourseId);
+  const router = useRouter();
   const db = useSQLiteContext();
   const session = useMobileSession();
   const [course, setCourse] = useState<LocalCourseHierarchy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!session.activeUser || !Number.isSafeInteger(courseId) || courseId < 1) {
       setLoading(false);
       setCourse(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);
+    setError(null);
     void loadLocalCourseHierarchy(db, session.activeUser.appUserId, courseId)
       .then((value) => {
         if (!cancelled) setCourse(value);
@@ -40,7 +50,7 @@ export function CourseDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [courseId, db, session.activeUser]);
+  }, [courseId, db, session.activeUser]));
 
   if (loading) {
     return (
@@ -75,18 +85,40 @@ export function CourseDetailScreen() {
             {chapter.lines.length === 0 ? (
               <Text style={styles.meta}>No lines</Text>
             ) : chapter.lines.map((line) => (
-              <View key={line.id} style={styles.lineRow}>
+              <Pressable
+                accessibilityRole="button"
+                key={line.id}
+                onPress={() => router.push({
+                  pathname: '/training/[lineId]',
+                  params: { lineId: String(line.id), courseId: String(course.courseId) },
+                })}
+                style={({ pressed }) => [styles.lineRow, pressed ? styles.lineRowPressed : null]}
+              >
                 <View style={styles.lineText}>
                   <Text style={styles.lineName}>{line.name}</Text>
-                  <Text style={styles.meta}>{line.sideToTrain === 'WHITE' ? 'Train as White' : 'Train as Black'}</Text>
+                  <Text style={styles.meta}>
+                    {line.sideToTrain === 'WHITE' ? 'Train as White' : 'Train as Black'}
+                  </Text>
                   {line.tags.length > 0 ? <Text style={styles.tags}>{line.tags.join(' · ')}</Text> : null}
+                  <Text style={styles.progress}>
+                    {line.hasInProgressSession
+                      ? 'Resume saved attempt'
+                      : line.latestResult
+                        ? `Last result: ${line.latestResult.toLowerCase()}`
+                        : 'Not trained locally'}
+                    {' · '}{line.attemptCount} completed
+                    {line.pendingAttemptCount > 0 ? ` · ${line.pendingAttemptCount} pending sync` : ''}
+                  </Text>
                 </View>
-              </View>
+                <Text style={styles.lineAction}>
+                  {line.hasInProgressSession ? 'Resume' : line.latestResult ? 'Review' : 'Train'}
+                </Text>
+              </Pressable>
             ))}
           </View>
         ))}
         <Text style={styles.footer}>
-          Phase 2 provides offline browsing. Starting durable offline training is enabled in Phase 3.
+          Training runs from SQLite and Chessground. Every semantic transition is saved before the board continues.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -102,10 +134,13 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, lineHeight: 22, color: '#5a4a3f' },
   chapterCard: { gap: 10, padding: 17, borderRadius: 14, backgroundColor: '#fffaf4' },
   chapterName: { fontSize: 20, fontWeight: '800', color: '#2e241d' },
-  lineRow: { paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#d7c6b6' },
-  lineText: { gap: 3 },
+  lineRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12, paddingBottom: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#d7c6b6' },
+  lineRowPressed: { opacity: 0.65 },
+  lineText: { flex: 1, gap: 3 },
   lineName: { fontSize: 16, fontWeight: '700', color: '#3c2f27' },
+  lineAction: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9, overflow: 'hidden', backgroundColor: '#6b452d', color: '#ffffff', fontSize: 13, fontWeight: '800' },
   meta: { fontSize: 14, lineHeight: 20, color: '#76675c' },
   tags: { fontSize: 12, lineHeight: 18, color: '#8a6249' },
+  progress: { fontSize: 12, lineHeight: 18, color: '#6f513b' },
   footer: { marginTop: 4, fontSize: 13, lineHeight: 19, color: '#76675c' },
 });
