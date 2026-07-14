@@ -82,8 +82,8 @@
       <table class="performance-table">
         <thead>
           <tr class="group-row">
-            <th rowspan="2">Type</th>
-            <th rowspan="2">Opponent rating</th>
+            <th class="type-column" rowspan="2">Type</th>
+            <th class="rating-column" rowspan="2">Opponent rating</th>
             @for (group of columnGroups; track group.id) {
               @if (visibleCount(group) > 0) {
                 <th [attr.colspan]="visibleCount(group)">{{ group.label }}</th>
