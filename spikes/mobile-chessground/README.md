@@ -1,12 +1,14 @@
 # Chessground mobile Phase 0 spike
 
-This is an isolated Expo feasibility harness for the native-mobile rollout. It proves or disproves the highest-risk requirement: running the actual `@lichess-org/chessground` package with acceptable physical-device interaction and fully local assets.
+> Historical status: this feasibility harness led to the supported `apps/mobile` workspace. Current mobile setup, persistence, synchronization, and training behavior are documented in [`../../docs/mobile/architecture.md`](../../docs/mobile/architecture.md) and [`../../docs/mobile/development.md`](../../docs/mobile/development.md).
 
-It is intentionally **not** an npm workspace and must not be installed from the repository root. The production mobile workspace, authentication, SQLite, synchronization, and offline training reducer belong to later phases.
+This is an isolated Expo feasibility harness for the native-mobile rollout. It proved the highest-risk requirement: running the actual `@lichess-org/chessground` package with acceptable physical-device interaction and fully local assets.
+
+It is intentionally **not** an npm workspace and must not be installed from the repository root. The supported product client now lives in `apps/mobile`; this directory remains a historical board-integration and manual-test reference.
 
 ## What is included
 
-- Expo SDK 54 baseline, selected so the current App Store Expo Go build can run the physical-iPhone smoke test.
+- Expo SDK 54 baseline, selected so the App Store Expo Go build used during the spike could run the physical-iPhone smoke test.
 - Actual `@lichess-org/chessground@10.1.0`.
 - Official Chessground base CSS and Cburnett piece CSS.
 - Walnut theme values copied into neutral DOM CSS.
@@ -53,7 +55,7 @@ Start Metro with a clean cache:
 npx expo start -c
 ```
 
-Then scan the QR code with the current App Store Expo Go app on iPhone, or open it from Expo Go on Android.
+Then scan the QR code with the compatible Expo client used for the spike, or open it from the Android Expo client.
 
 The phone and development machine must be able to reach each other over the local network. Use Expo tunnel mode when LAN discovery is blocked:
 
@@ -73,7 +75,7 @@ npm run web
 
 ## Release/offline validation
 
-Expo Go is only the first interaction smoke test. The Phase 0 offline gate still requires a standalone release build:
+Expo Go was only the first interaction smoke test. The Phase 0 offline gate used standalone release builds:
 
 ```bash
 npx expo run:android --variant release
@@ -81,6 +83,8 @@ npx expo run:ios --configuration Release
 ```
 
 After installation, terminate the app, enable airplane mode, and launch it again. The board, pieces, scenarios, promotion picker, and diagnostics must work without Metro or network access.
+
+For current product release gates, use [`../../docs/mobile/development.md`](../../docs/mobile/development.md), not this historical checklist alone.
 
 ## Test artifacts
 
@@ -92,11 +96,11 @@ After installation, terminate the app, enable airplane mode, and launch it again
 
 ## Isolation rules
 
-Do not add this directory to the repository root workspaces during Phase 0. Do not change the root lockfile, architecture guardrails, API, contracts, domain package, or existing web app for this spike.
+Do not add this directory to the repository root workspaces. Do not use it as the source of current mobile product behavior. Changes to the supported client belong under `apps/mobile` and the shared packages/API it consumes.
 
 ## Known Phase 0 limitations
 
-- This is a feasibility harness, not a supported product client.
-- Expo SDK 54 is used specifically to unblock testing with the App Store Expo Go build; production mobile baseline selection remains a separate Phase 1 decision.
-- No authentication, API integration, persistence, synchronization, or offline training reducer is included.
-- GPL compatibility must be accepted before reusing the approach in production.
+- This is a feasibility harness, not the supported product client.
+- Its Expo baseline and install notes describe the spike environment, not the current workspace contract.
+- It does not include authentication, API integration, persistence, synchronization, or the offline training reducer.
+- GPL compatibility and production distribution acceptance remain tracked as release gates for the supported client.
