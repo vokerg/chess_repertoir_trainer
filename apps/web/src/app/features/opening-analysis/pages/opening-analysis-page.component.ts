@@ -65,6 +65,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
       key: opening.name,
       label: opening.name,
       games: opening.games,
+      wdl: opening.wdl,
     })),
   );
   protected readonly selectedOpeningKeys = computed<readonly string[]>(() => {
