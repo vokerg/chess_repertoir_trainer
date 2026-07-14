@@ -5,7 +5,7 @@ Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web cl
 ## Workspaces
 
 - `apps/web`: Angular UI, feature state, and typed data access.
-- `apps/mobile`: Expo routes, native lifecycle, Chessground DOM hosting, and future offline workflows.
+- `apps/mobile`: Expo routes, native lifecycle, Chessground DOM hosting, Clerk authentication, user-scoped SQLite content/training persistence, offline marathons, and attempt synchronization.
 - `apps/api`: Fastify routes, application services, provider integration, and Prisma repositories.
 - `packages/chess-domain`: pure chess and training behavior.
 - `packages/contracts`: active package for verified HTTP wire schemas and inferred DTO types.
@@ -56,6 +56,6 @@ From the repository root:
 - Domain: `npm run build:domain` and `npm run test --workspace=packages/chess-domain`
 - Contracts: `npm run build:contracts` and `npm run test:contracts`
 
-Focused API build/dev/lint commands build `chess-domain` and `contracts` first; focused web build/dev/test/lint commands build `contracts` first; focused mobile commands build `chess-domain` first. Do not remove those workspace pre-scripts or assume a root build already ran.
+Focused API build/dev/lint commands build `chess-domain` and `contracts` first; focused web build/dev/test/lint commands build `contracts` first; focused mobile commands build `chess-domain` and `contracts` first. Do not remove those workspace pre-scripts or assume a root build already ran.
 
 Report exactly what ran, what was skipped, and any warnings or residual risk.
