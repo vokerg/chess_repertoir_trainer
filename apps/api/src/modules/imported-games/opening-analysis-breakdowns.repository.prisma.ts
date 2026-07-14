@@ -36,7 +36,7 @@ export async function findOpeningAnalysisOpeningBreakdown(
   query: OpeningAnalysisQuery,
   positionId: number,
 ): Promise<OpeningAnalysisOpeningBreakdownRow[]> {
-  return prisma.importedGame.groupBy({
+  const rows = await prisma.importedGame.groupBy({
     by: ['openingEco', 'openingName'],
     where: matchingGameWhere(userId, query, positionId),
     _count: { _all: true },
@@ -47,4 +47,6 @@ export async function findOpeningAnalysisOpeningBreakdown(
     ],
     take: OPENING_BREAKDOWN_LIMIT,
   });
+
+  return rows;
 }
