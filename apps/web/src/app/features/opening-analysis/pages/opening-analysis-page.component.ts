@@ -73,7 +73,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected readonly selectedOpeningKeys = computed<readonly string[]>(() => {
     const filters = this.store.filters();
     if (!filters.openingEco) return [];
-    return [openingKey({ eco: filters.openingEco, name: filters.openingName || null, games: 0 })];
+    return [openingKey({ eco: filters.openingEco, name: filters.openingName || null })];
   });
   protected readonly tagBreakdownItems = computed<readonly GameFilterBreakdownItem[]>(() =>
     (this.store.performance()?.tags ?? []).map((tag) => ({
