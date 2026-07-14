@@ -12,10 +12,16 @@ import { GameFilterPanelComponent } from '../filters/game-filter-panel.component
 import { GameFilters } from '../filters/game-filter.model';
 import { summaryGameFilters } from '../filters/game-filter-summary';
 import { PositionTopGamesComponent } from './position-top-games.component';
+import { uciMoveToSan } from '../../chess/notation/uci-to-san.helper';
 import { providerLabel, scoreLabel, wdlLabel } from './position-game-moves.helpers';
 import { OpeningAnalysisGame, OpeningAnalysisResponse, OpeningNextMove, OpeningWdl } from './position-game-moves.models';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
+
+interface PositionMoveViewModel {
+  move: OpeningNextMove;
+  san: string;
+}
 
 @Component({
   selector: 'app-position-game-moves-panel',
@@ -50,6 +56,14 @@ export class PositionGameMovesPanelComponent implements OnInit {
   protected readonly filtersCollapsed = signal(false);
   protected readonly loadingMoveRows = [0, 1, 2];
   protected readonly positionWdl = computed(() => this.analysis()?.games ?? EMPTY_WDL);
+  protected readonly moveViewModels = computed<readonly PositionMoveViewModel[]>(() => {
+    const analysis = this.analysis();
+    if (!analysis) return [];
+    return analysis.nextMoves.map((move) => ({
+      move,
+      san: move.moveSan || this.sanLabel(analysis.fen, move.moveUci),
+    }));
+  });
   protected readonly filterSummary = computed(() => summaryGameFilters(this.filters()));
   protected readonly providerLabel = providerLabel;
   protected readonly wdlLabel = wdlLabel;
@@ -57,5 +71,13 @@ export class PositionGameMovesPanelComponent implements OnInit {
 
   ngOnInit(): void {
     this.filtersCollapsed.set(this.filtersCollapsedInitially());
+  }
+
+  private sanLabel(fen: string, uci: string): string {
+    try {
+      return uciMoveToSan(fen, uci);
+    } catch {
+      return 'Move unavailable';
+    }
   }
 }

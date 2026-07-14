@@ -1,0 +1,19 @@
+.initial-position-input {
+  display: grid;
+  gap: 0.75rem;
+}
+
+label {
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+
+button {
+  justify-self: start;
+}

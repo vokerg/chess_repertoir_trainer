@@ -8,11 +8,22 @@ interface UiShellActionBase {
   id: string;
   label: string;
   disabled?: boolean;
-  active?: boolean;
 }
 
-export type UiShellAction = UiShellActionBase &
-  (
-    | { link: string | Array<string | number>; run?: never }
-    | { link?: never; run: () => void }
-  );
+export type UiShellAction =
+  | (UiShellActionBase & {
+      kind?: 'command';
+      link: string | Array<string | number>;
+      run?: never;
+    })
+  | (UiShellActionBase & {
+      kind?: 'command';
+      link?: never;
+      run: () => void;
+    })
+  | (UiShellActionBase & {
+      kind: 'toggle';
+      pressed: boolean;
+      link?: never;
+      run: () => void;
+    });

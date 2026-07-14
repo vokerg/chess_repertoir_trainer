@@ -44,6 +44,16 @@
     </button>
   }
 
+  @if (showFlip()) {
+    <button
+      type="button"
+      class="compact-action secondary"
+      (click)="flip.emit()"
+    >
+      Flip board
+    </button>
+  }
+
   @if (fen(); as currentFen) {
     <app-copyable-fen
       class="fen-copy-group"

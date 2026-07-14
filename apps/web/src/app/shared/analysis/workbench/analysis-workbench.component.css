@@ -21,6 +21,10 @@
   justify-self: center;
 }
 
+.board-stage-engine-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .workbench-side-stack {
   display: grid;
   gap: var(--space-3);

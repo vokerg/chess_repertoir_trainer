@@ -67,8 +67,17 @@ export class FreeAnalysisPageComponent implements OnInit {
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'my-games',
-      label: this.store.myGamesOpen() ? 'Hide my games' : 'My games',
+      kind: 'toggle',
+      label: 'My games',
+      pressed: this.store.myGamesOpen(),
       run: () => this.store.toggleMyGames(),
+    },
+    {
+      id: 'engine',
+      kind: 'toggle',
+      label: 'Engine',
+      pressed: this.store.engineVisible(),
+      run: () => this.store.toggleEngine(),
     },
     buildChallengeBotHeaderAction({
       disabled: !this.store.tree(),

@@ -55,7 +55,13 @@
   box-shadow: 0 6px 14px rgba(143, 79, 13, 0.14);
 }
 
-.ui-shell-action.active {
+.ui-shell-toggle {
+  background: rgba(15, 23, 42, 0.045);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.ui-shell-toggle.active {
   border-color: rgba(183, 121, 39, 0.35);
   background: var(--accent-soft);
   color: var(--accent-strong);

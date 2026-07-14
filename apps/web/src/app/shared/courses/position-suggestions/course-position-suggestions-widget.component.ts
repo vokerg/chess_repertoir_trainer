@@ -70,7 +70,6 @@ export class CoursePositionSuggestionsWidgetComponent {
 interface CoursePositionSuggestionGroup {
   id: string;
   moveLabel: string;
-  moveUci: string;
   contextLabel: string;
   suggestion: CoursePositionSuggestion;
 }
@@ -97,8 +96,7 @@ function groupSuggestions(
 
     return {
       id,
-      moveLabel: suggestion.moveSan || suggestion.moveUci,
-      moveUci: suggestion.moveUci,
+      moveLabel: suggestion.moveSan,
       contextLabel: contextParts.join(', '),
       suggestion,
     };

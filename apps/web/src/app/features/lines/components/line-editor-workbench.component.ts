@@ -53,7 +53,6 @@ export class LineEditorWorkbenchComponent {
   readonly goPrevious = output<void>();
   readonly goNext = output<void>();
   readonly goEnd = output<void>();
-  readonly analyze = output<void>();
   readonly deleteSelectedSubtree = output<void>();
   readonly saveNotes = output<UpdateLineNodePayload>();
   readonly gamesFiltersChange = output<GameFilters>();

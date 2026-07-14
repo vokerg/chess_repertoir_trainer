@@ -1,0 +1,21 @@
+<section class="workbench-panel initial-position-input">
+  <h3 class="workbench-panel-title">Set up the analysis</h3>
+  <p class="workbench-panel-subtitle">
+    Paste FEN, PGN, SAN moves, or UCI moves. The format is detected automatically.
+  </p>
+
+  <label for="initial-position-value">Position or moves</label>
+  <textarea
+    id="initial-position-value"
+    rows="5"
+    [value]="value()"
+    (input)="value.set($any($event.target).value)"
+    placeholder="e4 e5 Nf3 or e2e4, e7e5, g1f3"
+  ></textarea>
+
+  @if (error(); as message) {
+    <p class="status-error">{{ message }}</p>
+  }
+
+  <button type="button" class="compact-action" (click)="submit()">Load</button>
+</section>

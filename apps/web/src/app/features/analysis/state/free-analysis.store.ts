@@ -23,7 +23,9 @@ import {
   findFreeAnalysisNode,
   findFreeAnalysisParent,
   removeFreeAnalysisSubtree,
+  countFreeAnalysisDescendants,
 } from '../helpers/free-analysis-tree.helpers';
+import { parseInitialPositionInput } from '../helpers/initial-position-input.helper';
 import {
   FreeAnalysisTree,
   FreeAnalysisTreeNode,
@@ -51,6 +53,8 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly loading = signal(false);
   readonly loadedFromGame = signal(false);
   readonly boardSide = signal<'WHITE' | 'BLACK'>('WHITE');
+  readonly engineVisible = signal(true);
+  readonly initialPositionError = signal<string | null>(null);
   readonly myGamesOpen = signal(false);
   readonly myGamesFilters = signal<GameFilters>(defaultGameFilters());
   readonly myGamesFacets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
@@ -91,11 +95,15 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly canGoBackward = computed(() => this.selectedNodeId() !== 0);
   readonly canGoForward = computed(() => Boolean(this.selectedNode()?.children.length));
   readonly analysisArrows = computed<Array<{ from: string; to: string; brush?: string }>>(() => {
+    if (!this.engineVisible()) return [];
     const analysis = this.engineAnalysis();
     const move = analysis.bestMove;
     if (!move || analysis.fen !== this.currentFen() || move === '(none)') return [];
     return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
   });
+  readonly showInitialPositionInput = computed(
+    () => countFreeAnalysisDescendants(this.tree()?.root) === 0,
+  );
   readonly canDeleteSelectedSubtree = computed(() =>
     Boolean(
       this.selectedNode() &&
@@ -136,6 +144,7 @@ export class FreeAnalysisStore implements OnDestroy {
   initializeFromMoves(moves: readonly string[]): void {
     this.requestVersion += 1;
     this.error.set(null);
+    this.initialPositionError.set(null);
     this.loading.set(false);
     this.loadedFromGame.set(false);
     this.boardSide.set('WHITE');
@@ -160,6 +169,7 @@ export class FreeAnalysisStore implements OnDestroy {
     const normalStart = new Chess().fen();
     let fen = normalStart;
     this.error.set(null);
+    this.initialPositionError.set(null);
     this.loading.set(false);
     this.loadedFromGame.set(false);
     this.boardSide.set('WHITE');
@@ -195,6 +205,38 @@ export class FreeAnalysisStore implements OnDestroy {
     if (!open) return;
     void this.loadMyGamesFacets();
     void this.refreshMyGames();
+  }
+
+  toggleEngine(): void {
+    this.engineVisible.update((visible) => !visible);
+  }
+
+  flipBoard(): void {
+    this.boardSide.update((side) => (side === 'WHITE' ? 'BLACK' : 'WHITE'));
+  }
+
+  loadInitialPosition(value: string): void {
+    this.initialPositionError.set(null);
+    try {
+      const parsed = parseInitialPositionInput(value);
+      const root = parsed.moves.length
+        ? buildFreeAnalysisLineTree(parsed.moves, parsed.startingFen)
+        : buildFreeAnalysisRoot(parsed.startingFen);
+      this.requestVersion += 1;
+      this.error.set(null);
+      this.loadedFromGame.set(false);
+      this.startingFen.set(parsed.startingFen);
+      this.tree.set({ root });
+      this.selectedNodeId.set(parsed.moves.length);
+      this.nextLocalNodeId = 1_000_000;
+      this.boardPositionVersion.update((version) => version + 1);
+      this.scheduleAnalysis();
+      this.refreshMyGamesIfOpen();
+    } catch (error) {
+      this.initialPositionError.set(
+        error instanceof Error ? error.message : 'Could not load this position.',
+      );
+    }
   }
 
   setMyGamesFilters(filters: GameFilters): void {
@@ -442,6 +484,7 @@ export class FreeAnalysisStore implements OnDestroy {
     const requestVersion = ++this.requestVersion;
     this.loading.set(true);
     this.error.set(null);
+    this.initialPositionError.set(null);
 
     try {
       const game = await firstValueFrom(this.api.getImportedGame(gameId));

@@ -1,12 +1,14 @@
 <div class="analysis-workbench">
   <app-panel class="board-panel" [title]="boardTitle()" [subtitle]="boardHelp()">
-    <div class="board-stage">
-      <app-engine-eval-bar
-        [analysis]="analysis()"
-        [currentFen]="currentFen()"
-        [flipped]="blackPerspective()"
-        [savedScoreCpWhite]="savedScoreCpWhite()"
-      />
+    <div class="board-stage" [class.board-stage-engine-hidden]="!engineVisible()">
+      @if (engineVisible()) {
+        <app-engine-eval-bar
+          [analysis]="analysis()"
+          [currentFen]="currentFen()"
+          [flipped]="blackPerspective()"
+          [savedScoreCpWhite]="savedScoreCpWhite()"
+        />
+      }
       <div class="board-shell">
         <app-chessground-board
           [fen]="currentFen()"
@@ -24,14 +26,18 @@
       [canGoForward]="canGoForward()"
       [fen]="currentFen()"
       [keyboardHint]="keyboardHint()"
+      [showFlip]="showFlipBoard()"
       (goStart)="goStart.emit()"
       (goPrevious)="goPrevious.emit()"
       (goNext)="goNext.emit()"
       (goEnd)="goEnd.emit()"
+      (flip)="flipBoard.emit()"
     />
   </app-panel>
 
   <div class="workbench-side-stack">
+    <ng-content select="[analysisWorkbenchSideBeforeTree]"></ng-content>
+
     <app-move-tree-panel
       [tree]="tree()"
       [selectedNodeId]="selectedNodeId()"
@@ -44,12 +50,13 @@
       (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
     />
 
-    <app-stockfish-panel
-      [analysis]="analysis()"
-      [currentFen]="currentFen()"
-      [warning]="engineWarning()"
-      (analyze)="analyze.emit()"
-    />
+    @if (engineVisible()) {
+      <app-stockfish-panel
+        [analysis]="analysis()"
+        [currentFen]="currentFen()"
+        [warning]="engineWarning()"
+      />
+    }
 
     <ng-content select="[analysisWorkbenchSideExtra]"></ng-content>
   </div>

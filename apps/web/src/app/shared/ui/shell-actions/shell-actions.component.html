@@ -11,7 +11,6 @@
       @if (action.link) {
         <a
           class="ui-shell-action"
-          [class.active]="action.active"
           [class.disabled]="action.disabled"
           [attr.aria-disabled]="action.disabled || null"
           [routerLink]="action.disabled ? null : action.link"
@@ -22,7 +21,10 @@
         <button
           type="button"
           class="ui-shell-action"
-          [class.active]="action.active"
+          [class.ui-shell-toggle]="action.kind === 'toggle'"
+          [class.active]="action.kind === 'toggle' && action.pressed"
+          [class.disabled]="action.disabled"
+          [attr.aria-pressed]="action.kind === 'toggle' ? action.pressed : null"
           [disabled]="action.disabled"
           (click)="run(action)"
         >

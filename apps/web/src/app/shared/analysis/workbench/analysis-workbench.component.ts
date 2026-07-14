@@ -41,6 +41,8 @@ export class AnalysisWorkbenchComponent {
   readonly canGoBackward = input(false);
   readonly canGoForward = input(false);
   readonly keyboardHint = input<string | null>('Keyboard: ←/→, Home/End');
+  readonly showFlipBoard = input(false);
+  readonly engineVisible = input(true);
 
   readonly boardTitle = input.required<string>();
   readonly boardHelp = input<string>();
@@ -58,6 +60,7 @@ export class AnalysisWorkbenchComponent {
   readonly deleteDisabled = input(false);
 
   readonly boardArrows = computed<BoardArrow[]>(() => {
+    if (!this.engineVisible()) return this.arrows();
     const move = engineBestMoveForFen(this.analysis(), this.currentFen());
     if (!move) return this.arrows();
 
@@ -74,6 +77,6 @@ export class AnalysisWorkbenchComponent {
   readonly goPrevious = output<void>();
   readonly goNext = output<void>();
   readonly goEnd = output<void>();
-  readonly analyze = output<void>();
+  readonly flipBoard = output<void>();
   readonly deleteSelectedSubtree = output<void>();
 }

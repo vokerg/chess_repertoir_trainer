@@ -21,8 +21,11 @@ export function buildFreeAnalysisRoot(fen: string): FreeAnalysisTreeNode {
   };
 }
 
-export function buildFreeAnalysisLineTree(moves: readonly string[]): FreeAnalysisTreeNode {
-  const chess = new Chess();
+export function buildFreeAnalysisLineTree(
+  moves: readonly string[],
+  startingFen = new Chess().fen(),
+): FreeAnalysisTreeNode {
+  const chess = new Chess(startingFen);
   const root = buildFreeAnalysisRoot(chess.fen());
   let parent = root;
 

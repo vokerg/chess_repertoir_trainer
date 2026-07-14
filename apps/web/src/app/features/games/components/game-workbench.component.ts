@@ -43,6 +43,5 @@ export class GameWorkbenchComponent {
   readonly goPrevious = output<void>();
   readonly goNext = output<void>();
   readonly goEnd = output<void>();
-  readonly analyze = output<void>();
   readonly deleteSelectedSubtree = output<void>();
 }

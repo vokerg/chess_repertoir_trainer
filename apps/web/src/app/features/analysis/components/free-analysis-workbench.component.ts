@@ -3,11 +3,16 @@ import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/a
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { FreeAnalysisTree } from '../helpers/free-analysis-tree.models';
+import { InitialPositionInputComponent } from './initial-position-input.component';
 
 @Component({
   selector: 'app-free-analysis-workbench',
   standalone: true,
-  imports: [AnalysisWorkbenchComponent, CoursePositionSuggestionsWidgetComponent],
+  imports: [
+    AnalysisWorkbenchComponent,
+    CoursePositionSuggestionsWidgetComponent,
+    InitialPositionInputComponent,
+  ],
   templateUrl: './free-analysis-workbench.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -25,6 +30,9 @@ export class FreeAnalysisWorkbenchComponent {
   readonly canGoBackward = input(false);
   readonly canGoForward = input(false);
   readonly deleteDisabled = input(true);
+  readonly engineVisible = input(true);
+  readonly showInitialPositionInput = input(false);
+  readonly initialPositionError = input<string | null>(null);
 
   readonly boardMove = output<string>();
   readonly nodeSelected = output<number>();
@@ -32,6 +40,7 @@ export class FreeAnalysisWorkbenchComponent {
   readonly goPrevious = output<void>();
   readonly goNext = output<void>();
   readonly goEnd = output<void>();
-  readonly analyze = output<void>();
+  readonly flipBoard = output<void>();
+  readonly loadInitialPosition = output<string>();
   readonly deleteSelectedSubtree = output<void>();
 }

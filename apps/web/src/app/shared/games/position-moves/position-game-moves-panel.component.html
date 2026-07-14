@@ -54,16 +54,15 @@
         </div>
       } @else {
         <div class="position-games-move-list">
-          @for (move of currentAnalysis.nextMoves; track move.moveUci) {
-            <button type="button" class="position-games-move-row" (click)="moveSelected.emit(move)" [disabled]="loading()">
+          @for (row of moveViewModels(); track row.move.moveUci) {
+            <button type="button" class="position-games-move-row" (click)="moveSelected.emit(row.move)" [disabled]="loading()">
               <span class="move-node-dot"></span>
               <span class="move-main">
-                <strong>{{ move.moveSan || move.moveUci }}</strong>
-                <small>{{ move.moveUci }}</small>
+                <strong>{{ row.san }}</strong>
               </span>
               <span class="move-wdl">
-                <span>{{ wdlLabel(move.games) }}</span>
-                <small>{{ scoreLabel(move.games) }}</small>
+                <span>{{ wdlLabel(row.move.games) }}</span>
+                <small>{{ scoreLabel(row.move.games) }}</small>
               </span>
             </button>
           }
