@@ -15,6 +15,7 @@ export function buildOpeningAnalysisQuery(fen: string, filters: GameFilters): st
   setParam(params, 'rated', filters.rated);
   setParam(params, 'timeControl', filters.timeControl.trim());
   setParam(params, 'opponent', filters.opponent.trim());
+  setParam(params, 'openingEco', filters.openingEco.trim());
   setParam(params, 'openingName', filters.openingName.trim());
   setParam(params, 'analysisStatus', filters.analysisStatus);
   setParam(params, 'plyIndexStatus', filters.plyIndexStatus);
