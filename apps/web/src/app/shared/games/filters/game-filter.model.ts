@@ -9,7 +9,7 @@ export interface GameFilters {
   rated: '' | 'true' | 'false';
   timeControl: string;
   opponent: string;
-  openingEco: string;
+  openingNameExact: string;
   openingName: string;
   analysisStatus: '' | AnalysisStatus;
   plyIndexStatus: '' | PlyIndexStatus;
@@ -44,7 +44,7 @@ export function defaultGameFilters(): GameFilters {
     rated: '',
     timeControl: '',
     opponent: '',
-    openingEco: '',
+    openingNameExact: '',
     openingName: '',
     analysisStatus: '',
     plyIndexStatus: '',
