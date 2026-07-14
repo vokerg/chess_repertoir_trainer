@@ -2,7 +2,7 @@
 
 ## Ownership
 
-`packages/contracts` is an active root workspace consumed by API and client build graphs. Its verified public exports include imported-game browsing, board-image endpoints, course read models, serializable training, and mobile synchronization. Add schemas only after checking the real service output and consumers; unverified provisional exports are not acceptable.
+`packages/contracts` is an active root workspace consumed by API and client build graphs. Its verified public exports include imported-game browsing, board-image endpoints, course read models, serializable training, mobile synchronization, and the Lab performance-by-rating report. Add schemas only after checking the real service output and consumers; unverified provisional exports are not acceptable.
 
 For each cross-workspace endpoint DTO, `packages/contracts` owns the Zod request/response wire schema and inferred TypeScript types. The API imports schemas at runtime for validation/serialization. Angular normally imports DTO types only, while mobile imports the runtime schemas needed to validate downloaded bundles and attempt-sync responses. Feature-local input schemas may stay with the API when no other workspace consumes them.
 
@@ -17,6 +17,7 @@ Contracts may contain HTTP params/query/body/response schemas, stable wire liter
 - Test the schema against actual mapper/service output and representative invalid values.
 - Delete handwritten duplicates only after every consuming workspace compiles against the shared contract.
 - Public position-analysis lines require `pvUci`. Historical persisted JSON is normalized at the API mapping boundary so legacy rows cannot weaken the wire contract.
+- Lab performance-by-rating requests and responses are exported from `@chess-trainer/contracts/lab`; the API owns aggregation and Angular owns only report presentation state.
 
 The package exports compiled `dist` files. Focused API and mobile scripts prepare both `chess-domain` and `contracts`; focused web scripts prepare `contracts`. This keeps focused commands valid after `npm ci` without importing unpublished package source.
 
