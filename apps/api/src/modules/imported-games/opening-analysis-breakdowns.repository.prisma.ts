@@ -5,10 +5,9 @@ import { buildImportedGameWhere } from './imported-games.repository.prisma';
 
 export interface OpeningAnalysisOpeningBreakdownRow {
   openingName: string | null;
+  resultForUser: string | null;
   _count: { _all: number };
 }
-
-const OPENING_BREAKDOWN_LIMIT = 50;
 
 function withoutOpeningFilter(query: OpeningAnalysisQuery): OpeningAnalysisQuery {
   return {
@@ -37,14 +36,9 @@ export async function findOpeningAnalysisOpeningBreakdown(
   positionId: number,
 ): Promise<OpeningAnalysisOpeningBreakdownRow[]> {
   const rows = await prisma.importedGame.groupBy({
-    by: ['openingName'],
+    by: ['openingName', 'resultForUser'],
     where: matchingGameWhere(userId, query, positionId),
     _count: { _all: true },
-    orderBy: [
-      { _count: { openingName: 'desc' } },
-      { openingName: 'asc' },
-    ],
-    take: OPENING_BREAKDOWN_LIMIT,
   });
 
   return rows;
