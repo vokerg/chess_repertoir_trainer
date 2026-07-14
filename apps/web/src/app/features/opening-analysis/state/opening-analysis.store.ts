@@ -9,6 +9,7 @@ import { buildOpeningAnalysisQuery, defaultOpeningFilters } from '../../../share
 import {
   OpeningAnalysisResponse,
   OpeningAnalysisGame,
+  OpeningAnalysisOpeningBreakdown,
   OpeningPositionPerformance,
   OpeningNextMove,
   OpeningWdl,
@@ -48,12 +49,15 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly analysis = signal<OpeningAnalysisResponse | null>(null);
   readonly performance = signal<OpeningPositionPerformance | null>(null);
   readonly topGames = signal<OpeningAnalysisGame[]>([]);
+  readonly openingBreakdowns = signal<OpeningAnalysisOpeningBreakdown[]>([]);
   readonly loading = signal(false);
   readonly performanceLoading = signal(false);
   readonly topGamesLoading = signal(false);
+  readonly breakdownsLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly performanceError = signal<string | null>(null);
   readonly topGamesError = signal<string | null>(null);
+  readonly breakdownsError = signal<string | null>(null);
   readonly boardPositionVersion = signal(0);
   readonly lastMove = signal<{ from: string; to: string } | null>(null);
   readonly history = signal<PlayedMove[]>([]);
@@ -84,6 +88,7 @@ export class OpeningAnalysisStore implements OnDestroy {
   private refreshRequestSeq = 0;
   private performanceRequestSeq = 0;
   private topGamesRequestSeq = 0;
+  private breakdownsRequestSeq = 0;
   private initialized = false;
 
   initialize(): void {
@@ -102,8 +107,10 @@ export class OpeningAnalysisStore implements OnDestroy {
     const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
     this.performance.set(null);
     this.topGames.set([]);
+    this.openingBreakdowns.set([]);
     void this.refreshPerformance(query);
     void this.refreshTopGames(query);
+    void this.refreshBreakdowns(query);
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -153,6 +160,23 @@ export class OpeningAnalysisStore implements OnDestroy {
     }
   }
 
+  private async refreshBreakdowns(query: string): Promise<void> {
+    const requestId = ++this.breakdownsRequestSeq;
+    this.breakdownsLoading.set(true);
+    this.breakdownsError.set(null);
+    try {
+      const response = await firstValueFrom(this.api.getBreakdowns(query));
+      if (requestId !== this.breakdownsRequestSeq) return;
+      this.openingBreakdowns.set(response.openings);
+    } catch (error) {
+      if (requestId !== this.breakdownsRequestSeq) return;
+      this.openingBreakdowns.set([]);
+      this.breakdownsError.set(readError(error, 'Could not load opening breakdown.'));
+    } finally {
+      if (requestId === this.breakdownsRequestSeq) this.breakdownsLoading.set(false);
+    }
+  }
+
   setFilters(filters: GameFilters): void {
     const perspectiveChanged = this.filters().userColor !== filters.userColor;
     this.filters.set(filters);
@@ -162,6 +186,30 @@ export class OpeningAnalysisStore implements OnDestroy {
   resetFilters(): void {
     this.filters.set(defaultOpeningFilters());
     this.resetBoard();
+  }
+
+  selectOpeningFilter(opening: OpeningAnalysisOpeningBreakdown): void {
+    const current = this.filters();
+    const selected = current.openingEco === opening.eco && current.openingName === (opening.name ?? '');
+    this.filters.set({
+      ...current,
+      openingEco: selected ? '' : opening.eco,
+      openingName: selected ? '' : (opening.name ?? ''),
+    });
+    void this.refresh();
+  }
+
+  toggleTagFilter(code: number): void {
+    const current = this.filters();
+    const selected = new Set(current.tagCodes);
+    if (selected.has(code)) selected.delete(code);
+    else selected.add(code);
+    this.filters.set({
+      ...current,
+      tagFilter: '',
+      tagCodes: Array.from(selected).sort((left, right) => left - right),
+    });
+    void this.refresh();
   }
 
   playBoardMove(uci: string): void {
