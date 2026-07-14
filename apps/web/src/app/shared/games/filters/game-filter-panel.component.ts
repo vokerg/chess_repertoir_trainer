@@ -45,7 +45,7 @@ export class GameFilterPanelComponent {
       filters.plyIndexStatus,
       filters.timeControl,
       filters.opponent,
-      filters.openingName,
+      filters.openingEco || filters.openingName,
       filters.minAccuracy,
       filters.maxAccuracy,
       filters.minOpponentRating,
@@ -81,7 +81,9 @@ export class GameFilterPanelComponent {
   }
 
   protected setFilterValue<K extends keyof GameFilters>(key: K, value: string): void {
-    this.filtersChange.emit(this.withLockedColor({ ...this.filters(), [key]: value }));
+    const next = { ...this.filters(), [key]: value } as GameFilters;
+    if (key === 'openingName') next.openingEco = '';
+    this.filtersChange.emit(this.withLockedColor(next));
   }
 
   protected selectedTagCodes(): number[] {
