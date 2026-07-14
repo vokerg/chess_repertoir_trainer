@@ -4,7 +4,6 @@ import { OpeningAnalysisQuery } from './imported-games.schemas';
 import { buildImportedGameWhere } from './imported-games.repository.prisma';
 
 export interface OpeningAnalysisOpeningBreakdownRow {
-  openingEco: string | null;
   openingName: string | null;
   _count: { _all: number };
 }
@@ -16,6 +15,7 @@ function withoutOpeningFilter(query: OpeningAnalysisQuery): OpeningAnalysisQuery
     ...query,
     openingEco: undefined,
     openingName: undefined,
+    openingNameExact: undefined,
   };
 }
 
@@ -26,7 +26,7 @@ function matchingGameWhere(
 ): Prisma.ImportedGameWhereInput {
   return {
     ...buildImportedGameWhere(userId, withoutOpeningFilter(query)),
-    openingEco: { not: null },
+    openingName: { not: null },
     plies: { some: { positionId } },
   };
 }
@@ -37,12 +37,11 @@ export async function findOpeningAnalysisOpeningBreakdown(
   positionId: number,
 ): Promise<OpeningAnalysisOpeningBreakdownRow[]> {
   const rows = await prisma.importedGame.groupBy({
-    by: ['openingEco', 'openingName'],
+    by: ['openingName'],
     where: matchingGameWhere(userId, query, positionId),
     _count: { _all: true },
     orderBy: [
-      { _count: { openingEco: 'desc' } },
-      { openingEco: 'asc' },
+      { _count: { openingName: 'desc' } },
       { openingName: 'asc' },
     ],
     take: OPENING_BREAKDOWN_LIMIT,
