@@ -44,11 +44,21 @@
             </div>
             <div class="position-performance-tag-list">
               @for (tag of bucket.tags; track tag.code) {
-                <div class="position-performance-tag-row" [class.tag-positive]="tagTone(tag) === 'positive'" [class.tag-negative]="tagTone(tag) === 'negative'" [class.tag-neutral]="tagTone(tag) === 'neutral'">
+                <button
+                  type="button"
+                  class="position-performance-tag-row"
+                  [class.tag-positive]="tagTone(tag) === 'positive'"
+                  [class.tag-negative]="tagTone(tag) === 'negative'"
+                  [class.tag-neutral]="tagTone(tag) === 'neutral'"
+                  [class.tag-selected]="isTagSelected(tag.code)"
+                  [disabled]="!selectableTags()"
+                  [attr.aria-pressed]="selectableTags() ? isTagSelected(tag.code) : null"
+                  (click)="tagSelected.emit(tag.code)"
+                >
                   <strong>{{ tagLabel(tag) }}</strong>
                   <span>{{ tag.games }} games</span>
                   <span>{{ tag.ratePct }}%</span>
-                </div>
+                </button>
               }
             </div>
           </section>
@@ -61,11 +71,21 @@
             </div>
             <div class="position-performance-tag-list">
               @for (tag of unbucketedTags(); track tag.code) {
-                <div class="position-performance-tag-row" [class.tag-positive]="tagTone(tag) === 'positive'" [class.tag-negative]="tagTone(tag) === 'negative'" [class.tag-neutral]="tagTone(tag) === 'neutral'">
+                <button
+                  type="button"
+                  class="position-performance-tag-row"
+                  [class.tag-positive]="tagTone(tag) === 'positive'"
+                  [class.tag-negative]="tagTone(tag) === 'negative'"
+                  [class.tag-neutral]="tagTone(tag) === 'neutral'"
+                  [class.tag-selected]="isTagSelected(tag.code)"
+                  [disabled]="!selectableTags()"
+                  [attr.aria-pressed]="selectableTags() ? isTagSelected(tag.code) : null"
+                  (click)="tagSelected.emit(tag.code)"
+                >
                   <strong>{{ tagLabel(tag) }}</strong>
                   <span>{{ tag.games }} games</span>
                   <span>{{ tag.ratePct }}%</span>
-                </div>
+                </button>
               }
             </div>
           </section>
@@ -74,11 +94,21 @@
     } @else if (topTags().length) {
       <div class="position-performance-tag-list">
         @for (tag of topTags(); track tag.code) {
-          <div class="position-performance-tag-row" [class.tag-positive]="tagTone(tag) === 'positive'" [class.tag-negative]="tagTone(tag) === 'negative'" [class.tag-neutral]="tagTone(tag) === 'neutral'">
+          <button
+            type="button"
+            class="position-performance-tag-row"
+            [class.tag-positive]="tagTone(tag) === 'positive'"
+            [class.tag-negative]="tagTone(tag) === 'negative'"
+            [class.tag-neutral]="tagTone(tag) === 'neutral'"
+            [class.tag-selected]="isTagSelected(tag.code)"
+            [disabled]="!selectableTags()"
+            [attr.aria-pressed]="selectableTags() ? isTagSelected(tag.code) : null"
+            (click)="tagSelected.emit(tag.code)"
+          >
             <strong>{{ tagLabel(tag) }}</strong>
             <span>{{ tag.games }} games</span>
             <span>{{ tag.ratePct }}%</span>
-          </div>
+          </button>
         }
       </div>
     } @else {
