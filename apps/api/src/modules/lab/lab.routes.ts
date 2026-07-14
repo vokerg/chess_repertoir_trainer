@@ -1,13 +1,13 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import {
+  performanceByRatingQuerySchema,
+  performanceByRatingResponseSchema,
+} from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
 import { getOpeningStruggles } from './opening-struggles/opening-struggles.service';
-import {
-  performanceByRatingQuerySchema,
-  performanceByRatingResponseSchema,
-} from './performance-by-rating/performance-by-rating.schema';
 import { getPerformanceByRating } from './performance-by-rating/performance-by-rating.service';
 import {
   tacticalDetectionListSchema,
