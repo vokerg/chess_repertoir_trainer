@@ -4,6 +4,8 @@ import {
   importedGameFacetsResponseSchema,
   importedGameSearchQuerySchema,
   mobileSyncManifestSchema,
+  performanceByRatingQuerySchema,
+  performanceByRatingResponseSchema,
   positionAnalysisLineSchema,
   serializableTrainingSessionSchema,
 } from '../dist/index.js';
@@ -75,5 +77,41 @@ assert.equal(
   mobileSyncManifestSchema.safeParse({ ...manifest, generatedAt: 'not-a-date' }).success,
   false,
 );
+
+assert.deepEqual(performanceByRatingQuerySchema.parse({ from: '2026-04-14', to: '2026-07-14' }), {
+  from: '2026-04-14',
+  to: '2026-07-14',
+});
+assert.equal(
+  performanceByRatingQuerySchema.safeParse({ from: '2026-07-15', to: '2026-07-14' }).success,
+  false,
+);
+const performanceReport = {
+  range: { from: '2026-04-14', to: '2026-07-14' },
+  items: [{
+    provider: 'LICHESS',
+    speed: 'blitz',
+    type: 'LICHESS_BLITZ',
+    ratingFrom: 1200,
+    ratingTo: 1299,
+    games: 10,
+    analysedGames: 8,
+    accuracyGames: 7,
+    wdl: { wins: 5, draws: 2, losses: 3 },
+    whiteWdl: { wins: 3, draws: 1, losses: 1 },
+    blackWdl: { wins: 2, draws: 1, losses: 2 },
+    scorePercent: 60,
+    openingSuccess: 3,
+    openingTrouble: 2,
+    wasWinningAndLost: 1,
+    wasLosingAndWon: 1,
+    flaggedInWinningPosition: 0,
+    opponentFlaggedInWinningPosition: 1,
+    slowBleedLosses: 1,
+    slowBleedWins: 2,
+    averageAccuracy: 78.4,
+  }],
+};
+assert.deepEqual(performanceByRatingResponseSchema.parse(performanceReport), performanceReport);
 
 console.log('Shared contract tests passed.');
