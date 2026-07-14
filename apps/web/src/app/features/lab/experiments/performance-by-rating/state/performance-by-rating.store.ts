@@ -1,10 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import type { PerformanceByRatingRow, PerformanceReportType } from '@chess-trainer/contracts/lab';
 import { PerformanceByRatingApiService } from '../data-access/performance-by-rating-api.service';
-import {
-  PerformanceByRatingRow,
-  PerformanceReportType,
-} from '../data-access/performance-by-rating.models';
 
 export type PerformanceColumnId =
   | 'games'
