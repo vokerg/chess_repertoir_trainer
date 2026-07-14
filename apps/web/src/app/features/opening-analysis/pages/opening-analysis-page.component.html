@@ -64,11 +64,34 @@
         (moveSelected)="store.playBoardMove($event.moveUci)"
       />
 
+      <div class="opening-filter-breakdown-grid">
+        <app-game-filter-breakdown-panel
+          title="Openings in this position"
+          subtitle="Distinct filtered games grouped by their assigned opening. Click to replace the opening filter."
+          [items]="openingBreakdownItems()"
+          [selectedKeys]="selectedOpeningKeys()"
+          [loading]="store.breakdownsLoading()"
+          [error]="store.breakdownsError()"
+          emptyText="No assigned openings found for this position."
+          (itemSelected)="selectOpening($event)"
+        />
+
+        <app-game-filter-breakdown-panel
+          title="Tags in this position"
+          subtitle="Tag counts from the current position sample. Click to add or remove a tag filter."
+          [items]="tagBreakdownItems()"
+          [selectedKeys]="selectedTagKeys()"
+          [loading]="store.performanceLoading()"
+          [error]="store.performanceError()"
+          emptyText="No tags found for this position."
+          (itemSelected)="selectTag($event)"
+        />
+      </div>
+
       <app-position-performance-panel
         [performance]="store.performance()"
         [loading]="store.performanceLoading()"
       />
-
     </div>
 
     <div class="opening-tree-panel">
