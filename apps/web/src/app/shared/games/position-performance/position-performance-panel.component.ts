@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { gameTagBucket, gameTagBucketLabel, gameTagBucketOrder, gameTagLabel, gameTagTone } from '../game-tag-display';
 import { scoreLabel } from '../position-moves/position-game-moves.helpers';
 import { OpeningPositionPerformance, OpeningPositionPerformanceBucket } from '../position-moves/position-game-moves.models';
@@ -15,6 +15,9 @@ export class PositionPerformancePanelComponent {
   readonly loading = input(false);
   readonly title = input('Performance in this position');
   readonly subtitle = input('Distinct imported games that reached this normalized position.');
+  readonly selectableTags = input(false);
+  readonly selectedTagCodes = input<readonly number[]>([]);
+  readonly tagSelected = output<number>();
 
   protected readonly scoreLabel = scoreLabel;
   protected readonly tagLabel = gameTagLabel;
@@ -27,6 +30,10 @@ export class PositionPerformancePanelComponent {
     if (!performance) return [];
     return performance.tags.filter((tag) => !gameTagBucket(tag)).slice(0, 6);
   });
+
+  protected isTagSelected(code: number): boolean {
+    return this.selectedTagCodes().includes(code);
+  }
 }
 
 function compareBuckets(left: OpeningPositionPerformanceBucket, right: OpeningPositionPerformanceBucket): number {
