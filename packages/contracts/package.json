@@ -31,6 +31,10 @@
     "./mobile-sync": {
       "types": "./dist/mobile-sync/index.d.ts",
       "default": "./dist/mobile-sync/index.js"
+    },
+    "./lab": {
+      "types": "./dist/lab/index.d.ts",
+      "default": "./dist/lab/index.js"
     }
   },
   "scripts": {
