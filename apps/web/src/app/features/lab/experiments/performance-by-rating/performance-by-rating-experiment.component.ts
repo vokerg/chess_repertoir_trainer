@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import {
+import type {
   PerformanceByRatingRow,
   PerformanceReportType,
   PerformanceWdl,
-} from './data-access/performance-by-rating.models';
+} from '@chess-trainer/contracts/lab';
 import { PerformanceByRatingApiService } from './data-access/performance-by-rating-api.service';
 import {
   PerformanceByRatingStore,
