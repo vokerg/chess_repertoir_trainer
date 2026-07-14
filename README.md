@@ -1,6 +1,8 @@
 # Chess Repertoire Trainer
 
-A local-first chess repertoire platform for authoring, training, and reviewing personal opening repertoires. The repository contains a broad Angular web client, a supported React Native / Expo mobile client focused on offline training, a Fastify API, and shared chess/domain contracts.
+A personal chess improvement platform for building opening repertoires, training them, connecting real games, analysing recurring problems, and turning those findings into focused practice.
+
+The repository contains a broad Angular web application, a Fastify API backed by PostgreSQL, shared chess and HTTP-contract packages, and a supported React Native / Expo companion client for offline repertoire training.
 
 Repository spelling note: this GitHub repo is named `chess_repertoir_trainer`.
 
@@ -14,34 +16,94 @@ Architecture and operational documentation is indexed in [`docs/README.md`](docs
 
 The deployed web app expects `WEB_API_BASE_URL` at build time. The native client is currently a repository-supported Expo application rather than an app-store release.
 
-## Supported clients
+## What the platform does
 
-### Angular web
+The main product loop is:
 
-The Angular client is the broad product surface. It supports:
+1. **Build a repertoire** as courses, chapters, lines, and branching move trees.
+2. **Train active variations** as individual lines or larger marathon scopes.
+3. **Connect real games** from Lichess and Chess.com accounts.
+4. **Review and analyse** games, openings, tactical moments, and repertoire coverage.
+5. **Use the findings** to improve the repertoire and choose focused training.
 
-- course, chapter, line, and branching move-tree authoring;
-- single-line and marathon repertoire training;
-- Lichess and Chess.com account import;
-- imported-game browsing, filtering, replay, and Stockfish analysis;
-- opening analysis, course coverage review, progress dashboards, and tactical missed-shot training;
-- Clerk-backed authentication and settings workflows.
+The API and shared packages support both clients without coupling their UI implementations. PostgreSQL remains the server source of truth; the mobile client additionally keeps downloaded training data and pending attempts in device-local SQLite.
 
-### Native mobile
+## Web application
 
-`apps/mobile` is a supported Expo client with a deliberately narrower offline-first scope. The current implementation includes:
+The responsive Angular client is the primary and broadest product surface.
 
-- Clerk sign-in with secure token caching;
-- authenticated course manifests and downloadable course bundles;
-- user-scoped, versioned SQLite storage with atomic course revision activation;
-- offline cold-start access to previously downloaded content for the last unlocked user;
-- durable single-line training, restart/resume, local review, and early finish;
-- a durable attempt outbox with idempotent synchronization to the API;
-- course and chapter marathons in All, Weak, Untrained, and Mixed modes;
-- durable marathon resume and continuous next-line flow;
-- the real `@lichess-org/chessground` board hosted behind an Expo DOM boundary.
+### Repertoire authoring
 
-Selected-line and selected-subline mobile marathons are not implemented yet. See [Native mobile architecture](docs/mobile/architecture.md) and [Mobile development](docs/mobile/development.md).
+- Create and manage courses, chapters, and lines.
+- Build branching move trees from the standard position or a custom starting FEN.
+- Choose whether a line is trained as White or Black.
+- Edit and delete local move-tree subtrees while preserving the synthetic in-memory root model.
+- Inspect the active root-to-leaf sublines derived from each move tree.
+- Use next-move evidence from matching imported games while editing a repertoire position.
+- Review how imported games overlap with a course and identify trained-side deviations or missing opponent replies.
+
+The main authoring routes are `/courses`, `/courses/:courseId`, `/chapters/:chapterId/lines`, and `/lines/:lineId/edit`.
+
+### Repertoire study and training
+
+- Use `/library` as the Study planner for browsing the repertoire hierarchy and current training summaries.
+- Select individual lines into a training basket before starting a focused marathon.
+- Train a single line, a whole course, a whole chapter, selected lines, or selected active sublines.
+- Choose **All**, **Weak**, **Untrained**, or **Mixed weak/untrained** marathon modes.
+- Resume active line sessions, review completed attempts, and finish a line early when needed.
+- Inspect line and subline health, coverage, mastery, weak counts, and recent results.
+- Keep historical attempts while calculating current statistics only from active subline hashes and the latest five scored attempts per subline.
+
+Web line sessions and prepared marathon runs are intentionally short-lived API state. The shared chess domain owns deterministic move validation, fixed-path opponent auto-play, attempt events, completion, and review semantics.
+
+### Imported games and accounts
+
+- Track multiple Lichess and Chess.com accounts.
+- Synchronize finished games from either provider.
+- Browse imported games through `/games` with SQL-backed filtering and cursor pagination.
+- Filter by account, provider, date, result, user colour, speed, rated/casual status, opponent, opening, rating ranges, analysis status, classification, and accuracy.
+- Open a game detail page with replay data, PGN, indexed plies, and analysis context.
+- Configure import accounts separately from progress dashboards.
+- Connect or disconnect the dedicated Lichess OAuth integration from Settings.
+
+The list API uses compact browser-specific projections; detail, opening reports, course review, Lab reports, and MCP tools reuse the same backend selection semantics without sharing one oversized DTO.
+
+### Analysis and opening review
+
+- Start server-side Stockfish analysis for an imported game and reuse cached position analysis where possible.
+- Use `/analysis` as a free analysis board with FEN loading, local variations, move-tree navigation, and interactive Stockfish analysis.
+- Explore a position through `/opening-analysis`, including position results, next moves, performance, and representative games under the selected filters.
+- Review opening problem areas through `/opening-struggles`.
+- Compare imported games with a course through the course review workflow.
+- Reuse imported-game move evidence in both opening analysis and the line editor.
+
+Imported-game analysis stores compact reusable position results by default, while interactive analysis can retain richer principal-variation lines.
+
+### Tactical improvement and Lab reports
+
+- Scan analysed games for missed tactical opportunities, punished opponent blunders, and user blunders without rerunning the engine.
+- Filter persisted tactical detections by date and kind in the Lab.
+- Open the source game and inspect the played move, engine best move, evaluation swing, and surrounding position.
+- Turn missed-shot detections into scenario-training sessions that restore the challenge position and evaluate the attempted continuation.
+- Use the broader `/lab` area for experimental and lower-level reports that have not yet become first-class product workflows.
+
+### Progress and navigation
+
+- Use `/progress` to open the preferred account dashboard.
+- Review rating history, yearly highs, period performance, result summaries, and bounded best-victory and defeat lists.
+- Navigate through the product groups **Study**, **Courses**, **Games**, **Openings**, **Progress**, **Tools**, and **Settings**.
+- Use the same hierarchical navigation model on desktop and responsive mobile web layouts.
+- Authenticate through Clerk-backed sign-up and sign-in routes.
+
+See [Angular architecture](docs/frontend/angular-architecture.md) and [Frontend navigation](docs/frontend/navigation.md) for implementation ownership and route conventions.
+
+## Native mobile companion
+
+`apps/mobile` is a supported Expo client with a narrower offline-first training scope. It can authenticate with Clerk, download owned course revisions, browse them from user-scoped SQLite, run durable single-line and course/chapter marathon training offline, resume after restart, and synchronize completed attempts through an idempotent outbox when connectivity returns.
+
+It uses the real `@lichess-org/chessground` board behind an Expo DOM boundary. Mobile does not currently replace web authoring, imported-game exploration, opening analysis, progress dashboards, or Stockfish workflows. Selected-line and selected-subline mobile marathons are also not implemented yet.
+
+See [Native mobile architecture](docs/mobile/architecture.md) and [Mobile development](docs/mobile/development.md).
 
 ## Core model
 
@@ -208,6 +270,7 @@ API integration tests require the configured PostgreSQL database. Board interact
 - [Documentation index](docs/README.md)
 - [Architecture](docs/architecture.md)
 - [Angular architecture](docs/frontend/angular-architecture.md)
+- [Frontend navigation](docs/frontend/navigation.md)
 - [Native mobile architecture](docs/mobile/architecture.md)
 - [Mobile development](docs/mobile/development.md)
 - [API conventions](docs/api-conventions.md)
