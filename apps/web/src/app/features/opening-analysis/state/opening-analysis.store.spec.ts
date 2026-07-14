@@ -66,7 +66,8 @@ describe('OpeningAnalysisStore', () => {
     expect(store.analysis()?.nextMoves[0].moveUci).toBe('e2e4');
     expect(store.performance()?.sample.games).toBe(1);
     expect(store.topGames()[0].id).toBe(1);
-    expect(store.openingBreakdowns()[0].eco).toBe('C20');
+    expect(store.openingBreakdowns()[0].name).toBe("King's Pawn Game");
+    expect(store.openingBreakdowns()[0].wdl).toEqual({ wins: 1, draws: 0, losses: 0 });
     expect(positionAnalysis.analyzeInteractiveRichPosition).toHaveBeenCalledWith(store.currentFen());
   });
 
@@ -106,18 +107,23 @@ describe('OpeningAnalysisStore', () => {
     expect(store.openingBreakdowns()[0].games).toBe(2);
   });
 
-  it('applies exact opening filters and toggles tag filters', () => {
-    store.selectOpeningFilter({ eco: 'B20', name: 'Sicilian Defense', games: 5 });
-    expect(store.filters().openingEco).toBe('B20');
+  it('applies exact opening-name filters and toggles tag filters', () => {
+    const opening = {
+      name: 'Sicilian Defense',
+      games: 5,
+      wdl: { wins: 3, draws: 1, losses: 1 },
+    };
+    store.selectOpeningFilter(opening);
+    expect(store.filters().openingNameExact).toBe('Sicilian Defense');
     expect(store.filters().openingName).toBe('Sicilian Defense');
 
     store.toggleTagFilter(104);
     store.toggleTagFilter(137);
     expect(store.filters().tagCodes).toEqual([104, 137]);
 
-    store.selectOpeningFilter({ eco: 'B20', name: 'Sicilian Defense', games: 5 });
+    store.selectOpeningFilter(opening);
     store.toggleTagFilter(104);
-    expect(store.filters().openingEco).toBe('');
+    expect(store.filters().openingNameExact).toBe('');
     expect(store.filters().openingName).toBe('');
     expect(store.filters().tagCodes).toEqual([137]);
   });
@@ -185,7 +191,11 @@ function breakdownsResponse(fen: string, games: number): OpeningAnalysisBreakdow
   return {
     fen,
     normalizedFen: fen,
-    openings: [{ eco: 'C20', name: "King's Pawn Game", games }],
+    openings: [{
+      name: "King's Pawn Game",
+      games,
+      wdl: { wins: games, draws: 0, losses: 0 },
+    }],
     appliedFilters: {},
   };
 }

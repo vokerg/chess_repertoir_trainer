@@ -98,9 +98,13 @@ export interface OpeningAnalysisTopGamesResponse {
 }
 
 export interface OpeningAnalysisOpeningBreakdown {
-  eco: string;
-  name: string | null;
+  name: string;
   games: number;
+  wdl: {
+    wins: number;
+    draws: number;
+    losses: number;
+  };
 }
 
 export interface OpeningAnalysisBreakdownsResponse {

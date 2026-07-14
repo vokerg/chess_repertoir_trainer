@@ -190,11 +190,11 @@ export class OpeningAnalysisStore implements OnDestroy {
 
   selectOpeningFilter(opening: OpeningAnalysisOpeningBreakdown): void {
     const current = this.filters();
-    const selected = current.openingEco === opening.eco && current.openingName === (opening.name ?? '');
+    const selected = current.openingNameExact === opening.name;
     this.filters.set({
       ...current,
-      openingEco: selected ? '' : opening.eco,
-      openingName: selected ? '' : (opening.name ?? ''),
+      openingNameExact: selected ? '' : opening.name,
+      openingName: selected ? '' : opening.name,
     });
     void this.refresh();
   }

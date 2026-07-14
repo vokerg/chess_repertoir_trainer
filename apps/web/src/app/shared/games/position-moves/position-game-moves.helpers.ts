@@ -15,7 +15,7 @@ export function buildOpeningAnalysisQuery(fen: string, filters: GameFilters): st
   setParam(params, 'rated', filters.rated);
   setParam(params, 'timeControl', filters.timeControl.trim());
   setParam(params, 'opponent', filters.opponent.trim());
-  setParam(params, 'openingEco', filters.openingEco.trim());
+  setParam(params, 'openingNameExact', filters.openingNameExact.trim());
   setParam(params, 'openingName', filters.openingName.trim());
   setParam(params, 'analysisStatus', filters.analysisStatus);
   setParam(params, 'plyIndexStatus', filters.plyIndexStatus);
@@ -68,7 +68,7 @@ export function gameMetaLabel(game: OpeningAnalysisGame): string {
   const control = game.speedCategory
     ? game.speedCategory.charAt(0).toUpperCase() + game.speedCategory.slice(1)
     : 'Unknown control';
-  const opening = game.opening?.eco || game.opening?.name || 'Opening unavailable';
+  const opening = game.opening?.name || game.opening?.eco || 'Opening unavailable';
   return `${control} - move ${game.moveNumber}: ${game.nextMoveSan || game.nextMoveUci} - ${opening}`;
 }
 

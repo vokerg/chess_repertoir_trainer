@@ -31,7 +31,12 @@
             <strong>{{ item.label }}</strong>
             @if (item.detail) { <small>{{ item.detail }}</small> }
           </span>
-          <span class="game-filter-breakdown-count">{{ item.games }} games</span>
+          <span class="game-filter-breakdown-stats">
+            <strong>{{ item.games }} games</strong>
+            @if (item.wdl; as wdl) {
+              <small>{{ wdl.wins }} {{ wdl.draws }} {{ wdl.losses }} WDL</small>
+            }
+          </span>
         </button>
       }
     </div>

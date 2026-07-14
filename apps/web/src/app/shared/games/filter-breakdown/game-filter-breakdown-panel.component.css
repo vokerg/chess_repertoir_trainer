@@ -8,7 +8,9 @@
 .game-filter-breakdown-label { display: grid; gap: 0.15rem; min-width: 0; }
 .game-filter-breakdown-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .game-filter-breakdown-label small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.game-filter-breakdown-count { flex: 0 0 auto; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; }
+.game-filter-breakdown-stats { flex: 0 0 auto; display: grid; justify-items: end; gap: 0.15rem; color: var(--muted-strong); font-size: 0.82rem; }
+.game-filter-breakdown-stats strong { font-weight: 800; }
+.game-filter-breakdown-stats small { color: var(--muted); font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
 .loading-row { cursor: default; opacity: 0.55; }
 .loading-row:hover { border-color: var(--border); background: rgba(255,255,255,0.62); transform: none; }
 @media (max-width: 560px) { .game-filter-breakdown-header { display: grid; } .game-filter-breakdown-row { align-items: flex-start; } }

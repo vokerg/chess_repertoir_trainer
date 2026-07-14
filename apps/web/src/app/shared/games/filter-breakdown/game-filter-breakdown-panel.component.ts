@@ -5,6 +5,11 @@ export interface GameFilterBreakdownItem {
   label: string;
   detail?: string | null;
   games: number;
+  wdl?: {
+    wins: number;
+    draws: number;
+    losses: number;
+  };
 }
 
 @Component({

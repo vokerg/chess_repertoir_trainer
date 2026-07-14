@@ -11,12 +11,16 @@
 .position-performance-bucket-header { display: flex; gap: 0.75rem; align-items: baseline; justify-content: space-between; }
 .position-performance-bucket-header h4 { margin: 0; color: var(--text); font-size: 0.95rem; }
 .position-performance-tag-list { display: grid; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; }
-.position-performance-tag-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 0.75rem; align-items: center; padding: 0.65rem 0.75rem; background: rgba(255,255,255,0.44); color: var(--muted-strong); font-size: 0.85rem; }
+.position-performance-tag-row { display: grid; width: 100%; grid-template-columns: minmax(0,1fr) auto auto; gap: 0.75rem; align-items: center; border: 0; padding: 0.65rem 0.75rem; background: rgba(255,255,255,0.44); color: var(--muted-strong); font: inherit; font-size: 0.85rem; text-align: left; }
+.position-performance-tag-row:not(:disabled) { cursor: pointer; }
+.position-performance-tag-row:not(:disabled):hover { background: color-mix(in srgb, var(--accent-soft) 45%, rgba(255,255,255,0.44)); }
+.position-performance-tag-row:disabled { cursor: default; opacity: 1; }
 .position-performance-tag-row + .position-performance-tag-row { border-top: 1px solid var(--border); }
 .position-performance-tag-row strong { min-width: 0; overflow-wrap: anywhere; color: var(--text); font-size: 0.82rem; }
 .position-performance-tag-row.tag-positive { border-left: 3px solid color-mix(in srgb, #57c785 70%, transparent); background: color-mix(in srgb, #57c785 10%, rgba(255,255,255,0.44)); }
 .position-performance-tag-row.tag-negative { border-left: 3px solid color-mix(in srgb, #ff7d7d 70%, transparent); background: color-mix(in srgb, #ff7d7d 10%, rgba(255,255,255,0.44)); }
 .position-performance-tag-row.tag-neutral { border-left: 3px solid color-mix(in srgb, #69a7ff 45%, transparent); }
+.position-performance-tag-row.tag-selected { box-shadow: inset 0 0 0 2px var(--accent-strong); }
 @media (max-width: 680px) {
   .position-performance-header { display: grid; }
   .position-performance-score { justify-items: start; }
