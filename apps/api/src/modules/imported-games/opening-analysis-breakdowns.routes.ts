@@ -12,6 +12,11 @@ const openingAnalysisBreakdownsResponseSchema = z.object({
   openings: z.array(z.object({
     name: z.string(),
     games: z.number().int().nonnegative(),
+    wdl: z.object({
+      wins: z.number().int().nonnegative(),
+      draws: z.number().int().nonnegative(),
+      losses: z.number().int().nonnegative(),
+    }),
   })),
   appliedFilters: z.record(z.string(), z.unknown()),
 });
@@ -24,7 +29,7 @@ const openingAnalysisBreakdownsModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'getOpeningAnalysisBreakdowns',
       tags: ['Imported games'],
       summary: 'Get filter breakdowns for an opening position',
-      description: 'Returns SQL-grouped opening-name counts for distinct filtered games reaching the position. The breakdown ignores the active opening filter so another opening can be selected.',
+      description: 'Returns SQL-grouped opening-name counts and WDL for distinct filtered games reaching the position. The breakdown ignores the active opening filter so another opening can be selected.',
       querystring: openingAnalysisQuerySchema,
       response: {
         200: openingAnalysisBreakdownsResponseSchema,
