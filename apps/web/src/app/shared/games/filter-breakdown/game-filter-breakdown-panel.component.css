@@ -1,0 +1,14 @@
+.game-filter-breakdown-panel { display: grid; gap: 0.8rem; }
+.game-filter-breakdown-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.game-filter-breakdown-total { flex: 0 0 auto; border-radius: 999px; padding: 0.35rem 0.6rem; background: rgba(35,27,21,0.07); color: var(--muted-strong); font-size: 0.76rem; font-weight: 800; }
+.game-filter-breakdown-list { display: grid; gap: 0.45rem; }
+.game-filter-breakdown-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,0.62); padding: 0.7rem 0.8rem; color: inherit; text-align: left; cursor: pointer; transition: border-color 120ms ease, background 120ms ease, transform 120ms ease; }
+.game-filter-breakdown-row:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
+.game-filter-breakdown-row.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.game-filter-breakdown-label { display: grid; gap: 0.15rem; min-width: 0; }
+.game-filter-breakdown-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-filter-breakdown-label small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-filter-breakdown-count { flex: 0 0 auto; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; }
+.loading-row { cursor: default; opacity: 0.55; }
+.loading-row:hover { border-color: var(--border); background: rgba(255,255,255,0.62); transform: none; }
+@media (max-width: 560px) { .game-filter-breakdown-header { display: grid; } .game-filter-breakdown-row { align-items: flex-start; } }

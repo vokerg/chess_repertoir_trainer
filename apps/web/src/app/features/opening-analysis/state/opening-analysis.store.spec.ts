@@ -5,6 +5,7 @@ import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.
 import { emptyImportedGameFacets } from '../../../shared/games/game.models';
 import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
 import {
+  OpeningAnalysisBreakdownsResponse,
   OpeningAnalysisPerformanceResponse,
   OpeningAnalysisResponse,
   OpeningAnalysisTopGamesResponse,
@@ -31,6 +32,7 @@ describe('OpeningAnalysisStore', () => {
       'getAnalysis',
       'getPerformance',
       'getTopGames',
+      'getBreakdowns',
     ]);
     positionAnalysis = jasmine.createSpyObj<PositionAnalysisCacheService>(
       'PositionAnalysisCacheService',
@@ -42,6 +44,7 @@ describe('OpeningAnalysisStore', () => {
     api.getAnalysis.and.returnValue(of(coreResponse('startpos', 1)));
     api.getPerformance.and.returnValue(of(performanceResponse('startpos', 1)));
     api.getTopGames.and.returnValue(of(topGamesResponse('startpos', 1)));
+    api.getBreakdowns.and.returnValue(of(breakdownsResponse('startpos', 1)));
 
     TestBed.configureTestingModule({
       providers: [
@@ -59,9 +62,11 @@ describe('OpeningAnalysisStore', () => {
     expect(api.getAnalysis).toHaveBeenCalledTimes(1);
     expect(api.getPerformance).toHaveBeenCalledTimes(1);
     expect(api.getTopGames).toHaveBeenCalledTimes(1);
+    expect(api.getBreakdowns).toHaveBeenCalledTimes(1);
     expect(store.analysis()?.nextMoves[0].moveUci).toBe('e2e4');
     expect(store.performance()?.sample.games).toBe(1);
     expect(store.topGames()[0].id).toBe(1);
+    expect(store.openingBreakdowns()[0].eco).toBe('C20');
     expect(positionAnalysis.analyzeInteractiveRichPosition).toHaveBeenCalledWith(store.currentFen());
   });
 
@@ -69,13 +74,16 @@ describe('OpeningAnalysisStore', () => {
     const firstCore = deferred<OpeningAnalysisResponse>();
     const firstPerformance = deferred<OpeningAnalysisPerformanceResponse>();
     const firstTopGames = deferred<OpeningAnalysisTopGamesResponse>();
+    const firstBreakdowns = deferred<OpeningAnalysisBreakdownsResponse>();
     const secondCore = deferred<OpeningAnalysisResponse>();
     const secondPerformance = deferred<OpeningAnalysisPerformanceResponse>();
     const secondTopGames = deferred<OpeningAnalysisTopGamesResponse>();
+    const secondBreakdowns = deferred<OpeningAnalysisBreakdownsResponse>();
 
     api.getAnalysis.and.returnValues(firstCore.observable, secondCore.observable);
     api.getPerformance.and.returnValues(firstPerformance.observable, secondPerformance.observable);
     api.getTopGames.and.returnValues(firstTopGames.observable, secondTopGames.observable);
+    api.getBreakdowns.and.returnValues(firstBreakdowns.observable, secondBreakdowns.observable);
 
     const firstRefresh = store.refresh();
     const secondRefresh = store.refresh();
@@ -83,16 +91,35 @@ describe('OpeningAnalysisStore', () => {
     firstCore.next(coreResponse('stale', 1));
     firstPerformance.next(performanceResponse('stale', 1));
     firstTopGames.next(topGamesResponse('stale', 1));
+    firstBreakdowns.next(breakdownsResponse('stale', 1));
     await Promise.resolve();
 
     secondCore.next(coreResponse('fresh', 2));
     secondPerformance.next(performanceResponse('fresh', 2));
     secondTopGames.next(topGamesResponse('fresh', 2));
+    secondBreakdowns.next(breakdownsResponse('fresh', 2));
     await Promise.all([firstRefresh, secondRefresh]);
 
     expect(store.analysis()?.fen).toBe('fresh');
     expect(store.performance()?.sample.games).toBe(2);
     expect(store.topGames()[0].id).toBe(2);
+    expect(store.openingBreakdowns()[0].games).toBe(2);
+  });
+
+  it('applies exact opening filters and toggles tag filters', () => {
+    store.selectOpeningFilter({ eco: 'B20', name: 'Sicilian Defense', games: 5 });
+    expect(store.filters().openingEco).toBe('B20');
+    expect(store.filters().openingName).toBe('Sicilian Defense');
+
+    store.toggleTagFilter(104);
+    store.toggleTagFilter(137);
+    expect(store.filters().tagCodes).toEqual([104, 137]);
+
+    store.selectOpeningFilter({ eco: 'B20', name: 'Sicilian Defense', games: 5 });
+    store.toggleTagFilter(104);
+    expect(store.filters().openingEco).toBe('');
+    expect(store.filters().openingName).toBe('');
+    expect(store.filters().tagCodes).toEqual([137]);
   });
 });
 
@@ -150,6 +177,15 @@ function topGamesResponse(fen: string, id: number): OpeningAnalysisTopGamesRespo
       nextMoveUci: 'e2e4',
       nextMoveSan: 'e4',
     }],
+    appliedFilters: {},
+  };
+}
+
+function breakdownsResponse(fen: string, games: number): OpeningAnalysisBreakdownsResponse {
+  return {
+    fen,
+    normalizedFen: fen,
+    openings: [{ eco: 'C20', name: "King's Pawn Game", games }],
     appliedFilters: {},
   };
 }

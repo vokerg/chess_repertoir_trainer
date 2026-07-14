@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject } from '@angular/core';
 import { BoardActionToolbarComponent } from '../../../shared/chess/board/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../shared/chess/engine/engine-eval-bar.component';
@@ -6,7 +6,10 @@ import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../
 import { StockfishPanelComponent } from '../../../shared/chess/engine/stockfish-panel.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
+import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
+import { gameTagLabel } from '../../../shared/games/game-tag-display';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
+import { OpeningAnalysisOpeningBreakdown } from '../../../shared/games/position-moves/position-game-moves.models';
 import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
 import { scoreLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { buildChallengeBotHeaderAction } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-action.helper';
@@ -20,6 +23,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   standalone: true,
   imports: [
     CoursePositionSuggestionsWidgetComponent,
+    GameFilterBreakdownPanelComponent,
     PositionGameMovesPanelComponent,
     ChessgroundBoardComponent,
     EngineEvalBarComponent,
@@ -58,9 +62,43 @@ export class OpeningAnalysisPageComponent implements OnInit {
       run: () => this.challengeStore.openForFen(this.store.currentFen()),
     }),
   ]);
+  protected readonly openingBreakdownItems = computed<readonly GameFilterBreakdownItem[]>(() =>
+    this.store.openingBreakdowns().map((opening) => ({
+      key: openingKey(opening),
+      label: opening.eco,
+      detail: opening.name,
+      games: opening.games,
+    })),
+  );
+  protected readonly selectedOpeningKeys = computed<readonly string[]>(() => {
+    const filters = this.store.filters();
+    if (!filters.openingEco) return [];
+    return [openingKey({ eco: filters.openingEco, name: filters.openingName || null })];
+  });
+  protected readonly tagBreakdownItems = computed<readonly GameFilterBreakdownItem[]>(() =>
+    (this.store.performance()?.tags ?? []).map((tag) => ({
+      key: String(tag.code),
+      label: gameTagLabel(tag),
+      detail: `${tag.ratePct}% of matching games`,
+      games: tag.games,
+    })),
+  );
+  protected readonly selectedTagKeys = computed<readonly string[]>(() =>
+    this.store.filters().tagCodes.map(String),
+  );
 
   ngOnInit(): void {
     this.store.initialize();
+  }
+
+  protected selectOpening(key: string): void {
+    const opening = this.store.openingBreakdowns().find((item) => openingKey(item) === key);
+    if (opening) this.store.selectOpeningFilter(opening);
+  }
+
+  protected selectTag(key: string): void {
+    const code = Number(key);
+    if (Number.isInteger(code)) this.store.toggleTagFilter(code);
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -77,4 +115,8 @@ export class OpeningAnalysisPageComponent implements OnInit {
       this.store.resetBoard();
     }
   }
+}
+
+function openingKey(opening: Pick<OpeningAnalysisOpeningBreakdown, 'eco' | 'name'>): string {
+  return `${opening.eco}\u001f${opening.name ?? ''}`;
 }

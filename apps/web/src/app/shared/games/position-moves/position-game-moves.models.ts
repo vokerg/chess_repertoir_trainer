@@ -97,6 +97,19 @@ export interface OpeningAnalysisTopGamesResponse {
   appliedFilters: Record<string, unknown>;
 }
 
+export interface OpeningAnalysisOpeningBreakdown {
+  eco: string;
+  name: string | null;
+  games: number;
+}
+
+export interface OpeningAnalysisBreakdownsResponse {
+  fen: string;
+  normalizedFen: string;
+  openings: OpeningAnalysisOpeningBreakdown[];
+  appliedFilters: Record<string, unknown>;
+}
+
 export interface PlayedMove {
   san: string;
   uci: string;

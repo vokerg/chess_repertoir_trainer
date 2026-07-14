@@ -9,6 +9,7 @@ export function appendGameFilterParams(params: URLSearchParams, filters: GameFil
   if (filters.rated) params.set('rated', filters.rated);
   if (filters.timeControl.trim()) params.set('timeControl', filters.timeControl.trim());
   if (filters.opponent.trim()) params.set('opponent', filters.opponent.trim());
+  if (filters.openingEco.trim()) params.set('openingEco', filters.openingEco.trim());
   if (filters.openingName.trim()) params.set('openingName', filters.openingName.trim());
   if (filters.analysisStatus) params.set('analysisStatus', filters.analysisStatus);
   if (filters.plyIndexStatus) params.set('plyIndexStatus', filters.plyIndexStatus);
