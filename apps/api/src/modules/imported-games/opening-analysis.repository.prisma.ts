@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 import { positionKeyForNormalizedFen } from '../positions/position-key';
-import { ImportedGameSearchQuery } from './imported-games.schemas';
+import { OpeningAnalysisQuery } from './imported-games.schemas';
 import { buildImportedGameWhere } from './imported-games.repository.prisma';
 
 const openingAnalysisGameSelect = {
@@ -61,17 +61,26 @@ export interface OpeningPerformanceGameRow {
   tagCodes: number[] | null;
 }
 
-function matchingGameWhere(userId: number, query: ImportedGameSearchQuery, positionId: number): Prisma.ImportedGameWhereInput {
+function filteredGameWhere(userId: number, query: OpeningAnalysisQuery): Prisma.ImportedGameWhereInput {
+  const where = buildImportedGameWhere(userId, query);
+  if (!query.openingNameExact) return where;
   return {
-    ...buildImportedGameWhere(userId, query),
+    ...where,
+    openingName: { equals: query.openingNameExact, mode: 'insensitive' },
+  };
+}
+
+function matchingGameWhere(userId: number, query: OpeningAnalysisQuery, positionId: number): Prisma.ImportedGameWhereInput {
+  return {
+    ...filteredGameWhere(userId, query),
     plies: { some: { positionId } },
   };
 }
 
-function matchingPlyWhere(userId: number, query: ImportedGameSearchQuery, positionId: number): Prisma.ImportedGamePlyWhereInput {
+function matchingPlyWhere(userId: number, query: OpeningAnalysisQuery, positionId: number): Prisma.ImportedGamePlyWhereInput {
   return {
     positionId,
-    importedGame: buildImportedGameWhere(userId, query),
+    importedGame: filteredGameWhere(userId, query),
   };
 }
 
@@ -82,7 +91,7 @@ export async function findOpeningPositionByNormalizedFen(normalizedFen: string):
   });
 }
 
-export async function findOpeningCoreSummary(userId: number, query: ImportedGameSearchQuery, positionId: number): Promise<OpeningCoreSummaryRow> {
+export async function findOpeningCoreSummary(userId: number, query: OpeningAnalysisQuery, positionId: number): Promise<OpeningCoreSummaryRow> {
   const [occurrences, gameResults] = await Promise.all([
     prisma.importedGamePly.count({
       where: matchingPlyWhere(userId, query, positionId),
@@ -99,7 +108,7 @@ export async function findOpeningCoreSummary(userId: number, query: ImportedGame
 
 export async function findOpeningNextMoves(
   userId: number,
-  query: ImportedGameSearchQuery,
+  query: OpeningAnalysisQuery,
   positionId: number,
 ): Promise<{ occurrences: OpeningNextMoveOccurrenceRow[]; distinctGames: OpeningNextMoveGameRow[] }> {
   const where = matchingPlyWhere(userId, query, positionId);
@@ -131,7 +140,7 @@ export async function findOpeningNextMoves(
 
 export async function findOpeningTopGames(
   userId: number,
-  query: ImportedGameSearchQuery,
+  query: OpeningAnalysisQuery,
   positionId: number,
   limit: number,
 ): Promise<OpeningTopGameRow[]> {
@@ -156,7 +165,7 @@ export async function findOpeningTopGames(
 
 export async function findOpeningPerformanceGames(
   userId: number,
-  query: ImportedGameSearchQuery,
+  query: OpeningAnalysisQuery,
   positionId: number,
 ): Promise<OpeningPerformanceGameRow[]> {
   return prisma.importedGame.findMany({
