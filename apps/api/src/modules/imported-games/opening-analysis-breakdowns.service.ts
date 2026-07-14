@@ -32,9 +32,8 @@ export const OpeningAnalysisBreakdownsService = {
       : [];
 
     const openings = rows
-      .filter((row): row is typeof row & { openingEco: string } => Boolean(row.openingEco))
+      .filter((row): row is typeof row & { openingName: string } => Boolean(row.openingName))
       .map((row) => ({
-        eco: row.openingEco,
         name: row.openingName,
         games: row._count._all,
       }));
@@ -53,7 +52,7 @@ export const OpeningAnalysisBreakdownsService = {
         ...currentQuery,
         fen: query.fen,
         normalizedFen,
-        openingBreakdownExcludes: ['openingEco', 'openingName'],
+        openingBreakdownExcludes: ['openingEco', 'openingName', 'openingNameExact'],
       },
     };
   },
