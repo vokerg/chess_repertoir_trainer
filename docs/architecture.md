@@ -2,7 +2,7 @@
 
 This monorepo contains the Fastify API, Angular web app, React Native / Expo mobile app, and shared packages.
 
-The Angular web application remains the broad product client. `apps/mobile` is a supported but deliberately narrow native client. Phase 1 now includes the application shell, production Chessground adapter, serializable local training reducer, versioned mobile contracts, diagnostics, and a complete local training proof. Authentication, SQLite, downloadable content, durable persistence, and synchronization are later rollout phases.
+The Angular web application remains the broad product client. `apps/mobile` is a supported but deliberately narrow offline-training client. The implemented mobile rollout currently covers the production Chessground adapter, Clerk authentication, versioned SQLite course downloads, durable single-line training, idempotent attempt synchronization, and durable course/chapter marathons. Selected-line and selected-subline marathons remain follow-up work.
 
 ```text
 apps/
@@ -56,7 +56,7 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 ## Boundaries
 
 - `apps/web` owns Angular UI, feature state, and frontend data access.
-- `apps/mobile` owns Expo routes, native lifecycle, Chessground DOM hosting, local training orchestration, and future offline repositories/workflows.
+- `apps/mobile` owns Expo routes, native lifecycle, Chessground DOM hosting, authentication orchestration, user-scoped SQLite content/training repositories, offline marathon runs, and attempt synchronization.
 - `apps/web` and `apps/mobile` never import from one another.
 - `apps/api` owns HTTP routes, application workflows, provider integration, and Prisma access.
 - `packages/chess-domain` stays framework- and infrastructure-free.
@@ -73,6 +73,7 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - Marathon candidate selection supports a course/chapter scope, selected line ids, selected active subline hashes, and recent subline hashes. Scope-only requests preserve whole-course/chapter marathon behavior. Selected lines are ownership checked and, when a scope is also provided, must belong to that scope. Selected subline hashes are filtered against active owned sublines, so inactive hashes remain historical and are not trained.
 - Marathon modes are `ALL`, `WEAK_SUBLINES`, `UNTRAINED_SUBLINES`, and `MIXED_WEAK_UNTRAINED`. Weak and untrained filtering uses the same active subline extraction and last-5 scored-attempt window as stats.
 - The web marathon flow creates a bounded, short-lived in-memory run and requests subsequent candidates by run id. Prepared candidate trees and recent hashes live for 30 minutes of inactivity, are ownership checked, and do not survive API restarts, matching active training-session lifetime. The legacy stateless `/api/training-marathons/next` route remains compatible.
+- The mobile course/chapter marathon flow persists its run, current session, recent candidates, served-untrained identities, and completion count in SQLite. It survives app restarts and selects the next candidate without an API request.
 - Persisted training stats live in `TrainingSublineAttempt`, keyed by user, line, and subline hash. Line, chapter, and course stats count only active hashes and the last 5 scored attempts per active subline; old hashes remain historical but inactive after move-tree edits.
 - Course read models are assembled by `course-derived-data.service.ts` from lean hierarchy/move selections. `/api/library/catalog` derives all owned lines once and uses one bounded attempt read for course and line summaries; `/api/courses/:courseId/overview` serves course metadata, chapters, statistics, and active sublines from one course derivation.
 - `packages/contracts` is an active workspace. Endpoint schemas are added only after their actual API output and consumers have been verified.

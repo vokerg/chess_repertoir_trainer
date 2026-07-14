@@ -8,5 +8,5 @@ applyTo: "docs/**/*.md,README.md,AGENTS.md,.github/**/*.md"
 - Update code and its canonical topic document together.
 - Keep relative links valid and update `docs/README.md` when adding canonical documents.
 - Keep OpenAPI documentation aligned with the single Fastify route-schema source.
-- Do not retain references to the retired native Expo client. Responsive Angular “mobile” behavior remains valid.
+- Distinguish responsive Angular mobile layouts from the supported native Expo client; do not describe either one as retired or future-only without checking current code.
 - Keep `docs/skills` as human-readable working guides. Actual agent skills live in `.github/skills`.

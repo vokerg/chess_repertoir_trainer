@@ -1,6 +1,6 @@
 # Chess Repertoire Trainer
 
-A local-first web app for authoring and training personal chess opening repertoires. The app is inspired by Chessable, but the focus is your own course/chapter/line hierarchy, a branching move tree, imported-game review, and backend Stockfish analysis rather than a flat PGN list.
+A local-first chess repertoire platform for authoring, training, and reviewing personal opening repertoires. The repository contains a broad Angular web client, a supported React Native / Expo mobile client focused on offline training, a Fastify API, and shared chess/domain contracts.
 
 Repository spelling note: this GitHub repo is named `chess_repertoir_trainer`.
 
@@ -12,50 +12,38 @@ Architecture and operational documentation is indexed in [`docs/README.md`](docs
 - API docs, when the API is running: `/api/docs`
 - OpenAPI JSON, when the API is running: `/api/docs/openapi.json`
 
-The deployed web app expects a configured backend API through `WEB_API_BASE_URL` at build time. Locally, the Angular app defaults to `/api`.
+The deployed web app expects `WEB_API_BASE_URL` at build time. The native client is currently a repository-supported Expo application rather than an app-store release.
 
-## Current scope
+## Supported clients
 
-This project is in stabilization/prototype stage. The intended v1 stack is:
+### Angular web
 
-- Frontend: Angular
-- Backend: TypeScript + Fastify
-- Database: PostgreSQL on Neon
-- ORM: Prisma
-- Chess rules: chess.js
-- Validation: Zod
-- Tests: Vitest
-- Package manager: npm workspaces
+The Angular client is the broad product surface. It supports:
 
-Current priorities:
+- course, chapter, line, and branching move-tree authoring;
+- single-line and marathon repertoire training;
+- Lichess and Chess.com account import;
+- imported-game browsing, filtering, replay, and Stockfish analysis;
+- opening analysis, course coverage review, progress dashboards, and tactical missed-shot training;
+- Clerk-backed authentication and settings workflows.
 
-- Reliable repertoire authoring and training.
-- Imported game sync from Lichess and Chess.com accounts.
-- A filterable imported-games explorer.
-- One-game-at-a-time backend Stockfish analysis for imported games.
+### Native mobile
 
-Do not treat cloud multi-user sync, account-wide analysis queues, full PGN import, or advanced spaced repetition as current v1 features. The supported client is the responsive Angular web app; there is no native mobile client.
+`apps/mobile` is a supported Expo client with a deliberately narrower offline-first scope. The current implementation includes:
 
-## Product capabilities
+- Clerk sign-in with secure token caching;
+- authenticated course manifests and downloadable course bundles;
+- user-scoped, versioned SQLite storage with atomic course revision activation;
+- offline cold-start access to previously downloaded content for the last unlocked user;
+- durable single-line training, restart/resume, local review, and early finish;
+- a durable attempt outbox with idempotent synchronization to the API;
+- course and chapter marathons in All, Weak, Untrained, and Mixed modes;
+- durable marathon resume and continuous next-line flow;
+- the real `@lichess-org/chessground` board hosted behind an Expo DOM boundary.
 
-### Web navigation
+Selected-line and selected-subline mobile marathons are not implemented yet. See [Native mobile architecture](docs/mobile/architecture.md) and [Mobile development](docs/mobile/development.md).
 
-The Angular app is organized around first-class workflows rather than implementation buckets:
-
-- `Study` opens `/library` for repertoire planning, line selection, and repertoire training.
-- `Courses` opens `/courses` for course, chapter, and line collection management.
-- `Games` opens `/games` for imported game exploration and review.
-- `Openings` opens `/opening-analysis`, with `/opening-struggles` promoted as a related Openings report.
-- `Progress` opens `/progress`, which redirects to the active account dashboard when one exists and falls back to account setup otherwise.
-- `Missed shots` opens `/scenario-training/tactical-missed-shot` for tactical chances missed in analysed/imported games.
-- `Analysis` opens `/analysis` for the free analysis board.
-- `Lab` opens `/lab` for experimental and raw reports, including tactical detections.
-
-Navigation icons are local inline SVGs rendered with `currentColor`; the web app does not use an external icon library.
-
-### Repertoire authoring and training
-
-The core data hierarchy is:
+## Core model
 
 ```text
 Course
@@ -64,376 +52,74 @@ Course
       Move tree
 ```
 
-The move tree is the core model:
-
-- The database stores only real moves.
-- Each line has a `startingFen`.
-- The in-memory move tree always has a synthetic root at the line starting position.
-- First real moves are stored with `parentId: null` and are children of the synthetic root.
-- At trained-side positions, exactly one correct move should exist.
-- At opponent positions, multiple branches may exist.
-
-Available sublines are the current complete root-to-leaf variations in a line move tree. They are derived from the move tree rather than persisted, and one branching line can therefore expose multiple active sublines. The course sublines view is structural/content oriented: it shows repertoire variations, not user-specific training health.
-
-During training, the backend first selects one active terminal subline, identifies it with a deterministic SHA-256 hash of a semantic canonical key, and then follows that exact path. Opponent moves are auto-played only from the selected subline. Training stats are persisted in `TrainingSublineAttempt` per user, line, and subline hash. If a move-tree edit changes or removes a subline, the old hash remains historical but no longer counts in current line, chapter, or course stats.
-
-The Study page at `/library` is the training planner. It keeps the repertoire/section/line columns, adds line checkboxes, and uses a right-side training basket on desktop to show exactly what will be trained. On mobile, selecting a course opens the Study Launcher for course, section, or single-line marathon training with the same All, Weak, and Untrained filters.
-
-Marathon training can be started for a whole course, a whole chapter, selected line ids, or selected active subline hashes. Modes are:
-
-- All: train all active candidate sublines.
-- Weak: train the weakest active sublines by recent pass rate.
-- Untrained: train active sublines with no scored attempts in the recent stats window.
-- Mixed: train the union of weak and untrained active sublines.
-
-The chapter lines page is the line/subline diagnosis surface. It shows a compact health table with coverage, mastery, weak counts, expandable per-subline status, and selected-subline drill actions.
-
-The line editor can also show filtered next moves from indexed imported games for the selected repertoire position. Selecting a suggested move adds it through the normal line-editor move persistence flow.
-
-### Imported games and analysis
-
-The app supports external chess accounts for both `LICHESS` and `CHESS_COM`. A user can add multiple accounts, sync finished games from either provider, browse imported games, open a game replay/detail page, and start backend Stockfish analysis for an imported game.
-
-The Progress workflow uses the existing account detail dashboard for rating stats, yearly highs, period performance, and rating history. Account management remains available at `/accounts` for import-source configuration and sync controls.
-
-The Games explorer UI is available from the main `Games` navigation item and supports filtering by account, provider, result, colour, time-control class, rated/casual, opponent, opening, analysis status, accuracy range, and date range. Rows show provider, result, players, time control, opening, analysis accuracy, and actions such as Analyse, Force re-analysis, and provider-link navigation.
-
-Backend analysis stores reusable position-level analysis separately from per-game move analysis. Imported-game analysis persists compact `PositionAnalysis` rows by default: `bestMoveUci`, `bestScoreCpWhite`, and `bestMateWhite`, with no persisted engine lines. Interactive/free analysis persists rich rows with PV/engine lines. Rich analysis may upgrade compact rows, while compact analysis must not erase existing rich lines. Latest game-analysis summaries expose status and accuracy signals to the imported-games list/detail DTOs.
-
-`GET /api/opening-analysis` is the fast core opening-analysis endpoint used for first render: board metadata, position WDL, next moves, and applied filters. Secondary panels load independently through `GET /api/opening-analysis/performance`, `GET /api/opening-analysis/top-games`, `GET /api/position-analysis`, and `GET /api/courses/position-suggestions`, so expensive panel data does not block the next-move view. Line-editor and free-analysis game assistants reuse the same core/top-games APIs where needed.
-
-### Free analysis
-
-The frontend provides a free analysis board at `/analysis`. A position can be opened directly with `/analysis?fen=...`. The page supports local variations, move-tree navigation, Stockfish analysis, and local subtree deletion. It does not persist repertoire lines or modify imported games.
-
-### Course review / repertoire coverage
-
-Course review compares imported games with a course repertoire graph. It reports trained-side deviations and opponent moves that are not represented by the course.
-
-Each review issue card can open the resulting position after the played move in free analysis.
-
-To keep unrelated openings out of review results, `minCoveredPlies` sets the minimum number of actual played half-moves that must match the course before a game is considered in scope. The default is `2`.
+The database stores real move nodes only. Each line has a `startingFen`; the application derives a synthetic root in memory. Active sublines are current root-to-leaf variations derived from the move tree and identified by a semantic canonical key. Web and mobile training both use the shared serializable training domain for deterministic move validation, opponent auto-play, attempts, completion, and review.
 
 ## Project structure
 
 ```text
 chess-repertoire-trainer/
 ├── apps/
-│   ├── api/            # Fastify/Prisma backend
-│   └── web/            # Angular frontend
+│   ├── api/             # Fastify API and Prisma/PostgreSQL persistence
+│   ├── web/             # Angular product client
+│   └── mobile/          # React Native / Expo offline-training client
 ├── packages/
-│   ├── chess-domain/   # Pure TypeScript chess/training logic
-│   └── contracts/      # Verified HTTP wire schemas and DTO types
-├── apps/api/prisma/
-│   ├── migrations/     # Active PostgreSQL migrations
-│   └── legacy-sqlite-migrations/
-│                      # Archived SQLite migration history kept for reference
+│   ├── chess-domain/    # Framework-neutral chess and training behavior
+│   └── contracts/       # Verified cross-workspace HTTP schemas and DTOs
+├── docs/                # Canonical architecture and operational guides
+├── spikes/              # Isolated historical/feasibility work
 ├── .env.example
-├── .gitignore
-├── .nvmrc
 ├── package.json
-├── tsconfig.base.json
 └── README.md
 ```
 
 ## Prerequisites
 
-Use Node 22. The repo includes `.nvmrc`:
+Use Node 22.13 or newer for the complete workspace, including Expo. The repo includes `.nvmrc`:
 
 ```bash
 nvm use
-```
-
-Recommended versions:
-
-- Node.js >= 22.12
-- npm >= 10
-
-Angular 21 requires a modern Node/TypeScript toolchain, so Node 18 is not the target for this repo.
-
-Backend imported-game analysis can use either a server-side Stockfish executable or the npm `stockfish` package. The executable engine remains the default rollback path; set `STOCKFISH_ENGINE=wasm` to use the npm engine in a worker thread without requiring a system Stockfish binary.
-
-## Installation
-
-```bash
 npm install
 ```
 
-The root workspace scripts build `packages/chess-domain` and `packages/contracts` before API/web builds so workspace imports resolve from `dist/`.
+The root is an npm workspace. Focused API, web, and mobile scripts prepare the shared packages they consume.
 
-## Environment configuration
+## API and web configuration
 
-Copy the example environment file into the API workspace:
+Copy the root example into the API workspace:
 
 ```bash
 cp .env.example apps/api/.env
 ```
 
-The API workspace is the source of truth for local database configuration. Prisma CLI commands such as `migrate`, `seed`, and `studio` run from `apps/api`, and the Fastify API also loads its environment from that workspace.
-
-For Neon, configure both connection URLs:
+At minimum, configure PostgreSQL:
 
 ```text
-DATABASE_URL="postgresql://USER:PASSWORD@YOUR-POOLED-HOST/neondb?sslmode=require&channel_binding=require"
-DIRECT_URL="postgresql://USER:PASSWORD@YOUR-DIRECT-HOST/neondb?sslmode=require&channel_binding=require"
+DATABASE_URL="postgresql://USER:PASSWORD@YOUR-POOLED-HOST/neondb?sslmode=require"
+DIRECT_URL="postgresql://USER:PASSWORD@YOUR-DIRECT-HOST/neondb?sslmode=require"
 ```
 
-- `DATABASE_URL` is the pooled runtime connection used by the app.
-- `DIRECT_URL` is the direct connection used by Prisma CLI commands such as `migrate` and `seed`.
-
-If you change database credentials or switch environments, restart the API dev server so it reloads the updated env file.
-
-Additional backend env knobs:
+For Clerk-backed web and mobile authentication, configure the API and web build with the same Clerk application:
 
 ```text
-PORT=3000
-CORS_ORIGIN=http://localhost:4200
-CHESS_COM_USER_AGENT="chess-repertoire-trainer/0.1 (+https://github.com/vokerg/chess_repertoir_trainer)"
-```
-
-Chess.com public API import requests should use a recognizable user agent with a project URL or contact email when deployed.
-
-Backend Stockfish analysis env knobs:
-
-```text
-LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED=false
-STOCKFISH_ENGINE=local
-STOCKFISH_PATH=stockfish
-STOCKFISH_ANALYSIS_DEPTH=12
-STOCKFISH_ANALYSIS_TIMEOUT_MS=15000
-```
-
-`STOCKFISH_ENGINE=local` uses `STOCKFISH_PATH` and is the default. `STOCKFISH_ENGINE=wasm` uses the API workspace's npm `stockfish` dependency in a worker thread, so deployed APIs can run backend batch analysis without a system Stockfish binary. Existing fallback env vars `ANALYSIS_DEFAULT_DEPTH` and `ANALYSIS_TIMEOUT_MS` are still read when the newer Stockfish-specific depth/timeout vars are not set.
-
-Frontend build-time API configuration:
-
-```text
-WEB_API_BASE_URL=/api
-```
-
-`apps/web` writes this into `src/app/app-config.ts` during `npm run dev` and `npm run build`.
-
-### Clerk authentication
-
-This repo already contains a manual Clerk integration for the Angular frontend and Fastify API. The Clerk CLI currently cannot scaffold this workspace automatically: on June 26, 2026, `clerk init --app app_3Ff6uJYPdSH1n8IYkWVN2ceB47z` returned `Could not detect a framework`, so use the existing repo wiring instead of waiting for generated files.
-
-For local Clerk-backed auth:
-
-```text
-WEB_CLERK_PUBLISHABLE_KEY=pk_test_...
 AUTH_MODE=clerk
 CLERK_JWT_ISSUER=https://<your-clerk-domain>
 CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json
 CLERK_AUTHORIZED_PARTIES=http://localhost:4200
+WEB_CLERK_PUBLISHABLE_KEY=pk_test_...
 ```
 
-- `WEB_CLERK_PUBLISHABLE_KEY` is consumed by the Angular build and must be present in the web build environment.
-- `AUTH_MODE=clerk` switches the API from the local single-user fallback to Clerk JWT verification.
-- `CLERK_AUTHORIZED_PARTIES` should include the web app origin that is allowed to mint session tokens for this API.
-- This repo does not expose `CLERK_SECRET_KEY` to the client. The backend validates Clerk session JWTs with the configured issuer and JWKS URL.
+The API validates bearer tokens; neither web nor mobile requires a Clerk secret key in client code.
 
-Helpful CLI checks:
-
-```bash
-clerk auth login
-clerk doctor
-```
-
-Once the app is running, use the `Sign up` link in the nav to create the first user. A Clerk profile button should appear in the header after sign-up/sign-in succeeds.
-
-## Database setup
+Apply and optionally seed the database:
 
 ```bash
 npm run db:migrate
 npm run db:seed
 ```
 
-Reset the target database:
+`db:reset` is destructive and resets the configured PostgreSQL database.
 
-```bash
-npm run db:reset
-```
-
-`db:reset` is destructive. On Neon it resets the configured remote database, not a local SQLite file.
-
-The seed creates:
-
-- Course: `My White Repertoire`
-- Chapter: `1.e4`
-- Line: `Italian Game sample`
-- Main line: `1. e4 e5 2. Nf3 Nc6 3. Bc4`
-- Branches after `1. e4`: `1...c5 2.Nf3` and `1...e6 2.d4`
-
-The seed stores real move nodes only; it does not create a fake blank root node.
-
-## Main API surfaces
-
-### Course read models
-
-```http
-GET /api/library/catalog
-GET /api/courses/:courseId/overview
-```
-
-The library catalog returns the complete owned course/chapter/line hierarchy with course and line training summaries from one recent-attempt read. Course overview returns metadata, chapters, aggregate statistics, weakest summaries, and active sublines derived once for the initial course-detail load. Neither response includes move-node payloads or attempt history.
-
-### Course sublines API
-
-```http
-GET /api/courses/:courseId/sublines
-```
-
-This returns one row per active terminal variation in course chapter and line order. Each row includes `hash` and `canonicalKeyVersion` plus line/chapter metadata, leaf node id, ordered moves, and display move text. The same line may appear multiple times with different move text when its move tree branches.
-
-The hash is derived from a canonical key containing version, line id, starting FEN, side to train, and ordered UCI moves. It intentionally ignores node ids, SAN, timestamps, and sort order.
-
-### Marathon training API
-
-```http
-POST /api/training-marathons/next
-POST /api/training-marathons
-POST /api/training-marathons/:runId/next
-GET /api/lines/:lineId/sublines/status
-```
-
-`POST /api/training-marathons/next` accepts an optional course/chapter `scope`, selected `lineIds`, selected `sublineHashes`, a `mode`, and `recentSublineHashes`. At least one of `scope`, `lineIds`, or `sublineHashes` is required. When both scope and selected lines are provided, the selected lines must belong to that scope. The frontend sends subline recency by hash rather than by line id.
-
-The web client uses `POST /api/training-marathons` to prepare one short-lived owned run and `POST /api/training-marathons/:runId/next` for continuation. Runs retain prepared candidates in memory, expire after 30 minutes of inactivity, are bounded to 1,000 active runs, and do not survive API restarts.
-
-### Current user and external accounts
-
-```http
-GET /api/me
-GET /api/me/accounts
-POST /api/me/accounts
-GET /api/me/accounts/:id
-PATCH /api/me/accounts/:id
-POST /api/me/accounts/:id/sync
-GET /api/me/accounts/:id/games
-```
-
-Accounts support `provider: "LICHESS"` and `provider: "CHESS_COM"`. Sync is currently synchronous. Lichess uses the public user games stream; Chess.com uses public monthly archives.
-
-### Imported games browser API
-
-The imported-games browser should use the dedicated search API rather than the account-scoped legacy list:
-
-```http
-GET /api/imported-games
-GET /api/imported-games/:gameId
-GET /api/imported-games/:gameId/pgn
-GET /api/imported-games/facets
-```
-
-`GET /api/imported-games` returns compact list DTOs for the games browser. PGN, raw provider JSON, and full engine lines are intentionally excluded from list rows.
-
-Supported query parameters include:
-
-- `accountIds`, `providers`, `speedCategory`, `variant`, `openingEco` as comma-separated lists.
-- `from` and `to` for `endedAt` date filtering.
-- `resultForUser`, `userColor`, `rated`, `openingName`, `opponent`.
-- rating ranges: `minUserRating`, `maxUserRating`, `minOpponentRating`, `maxOpponentRating`.
-- latest-analysis filters: `analysisStatus`, `classification`, `minAccuracy`, `maxAccuracy`.
-- cursor pagination: `limit`, `cursor`, and `sort=endedAtDesc|endedAtAsc`.
-
-List and detail DTOs expose an `analysis` summary derived from the latest `GameAnalysisRun` with status values `NOT_ANALYZED`, `RUNNING`, `COMPLETED`, and `FAILED`.
-
-`GET /api/me/accounts/:id/games` remains available as an account-scoped compatibility route, but it is backed by the same imported-games search service.
-
-### Course review API
-
-```http
-GET /api/courses/:courseId/review
-```
-
-Supported query parameters are `from`, `to`, `limit`, `offset`, and `minCoveredPlies`. The overlap filter defaults to `2` and accepts values from `0` through `20`.
-
-## Imported game ply indexing
-
-The API can parse one imported game PGN into lightweight move-by-move ply rows:
-
-```http
-POST /api/imported-games/:gameId/ply-index
-```
-
-Optional body:
-
-```json
-{
-  "force": false
-}
-```
-
-This stores move facts only. It does not run Stockfish and does not build an explorer tree yet.
-
-### Backend imported-game analysis
-
-The API can analyze one imported game at a time with server-side Stockfish:
-
-```http
-POST /api/imported-games/:gameId/analysis-runs
-```
-
-Optional body:
-
-```json
-{
-  "depth": 12,
-  "multipv": 3,
-  "force": false
-}
-```
-
-Saved analysis can be read with:
-
-```http
-GET /api/imported-games/:gameId/analysis
-```
-
-Behavior:
-
-- The analyze endpoint loads the imported game PGN, expands it into plies, analyzes each played move through the shared position-analysis service, and stores the result.
-- `PositionAnalysis` stores reusable position-level analysis. Imported-game analysis writes compact rows with scalar best move/eval only; interactive/free analysis writes rich rows with up to three PV lines.
-- `GameAnalysisRun` stores the one-game run metadata and summary.
-- `GameMoveAnalysis` stores the game-specific move row and points to `PositionAnalysis`.
-- If `force` is false or omitted and a `RUNNING` or `COMPLETED` run already exists for the same imported game, depth, MultiPV, engine name, and engine version, the endpoint returns that run and does not re-analyze.
-- If `force` is true, the endpoint creates a new `GameAnalysisRun`; existing `PositionAnalysis` cache rows are still reused.
-- Analyze and read endpoints return compact game-analysis reports by default. Compact `PositionAnalysis` rows expose `lines: []` in API responses; rich rows retain PV lines for free/interactive analysis. Compact writes must not erase rich lines.
-- Cache hits do not update hit counters; reuse can be derived later from `GameMoveAnalysis.positionAnalysisId` references.
-
-Frontend contract for analysis status:
-
-- The source of truth is `GameAnalysisRun`, not a boolean column on `ImportedGame`.
-- A game with no analysis runs is `NOT_ANALYZED`.
-- A game with a latest `RUNNING` run is `RUNNING`.
-- A game with a latest `COMPLETED` run is `COMPLETED`.
-- A game with only failed runs is `FAILED`.
-- If performance later requires denormalized analysis fields on `ImportedGame`, treat them as a read-model/cache optimization, not the source of truth.
-
-Future opening-book and classification support:
-
-- Stockfish-only classification can mislabel playable theory as an inaccuracy, especially in the opening. For example, a known theoretical move can lose a small number of centipawns at shallow depth but still be a normal book move.
-- Future analysis should add `BOOK` to the classification vocabulary before `BEST`, `GOOD`, `INACCURACY`, `MISTAKE`, and `BLUNDER`.
-- Opening-book detection should happen before score-loss classification: if `fenBefore + playedMoveUci` is found in the book, classify the move as `BOOK` while still storing engine eval, score loss, and best move.
-- Preferred source is a local opening-book table generated from public Lichess game data, not live API calls during game analysis.
-- A future minimal table could store `normalizedFen`, `moveUci`, `moveSan`, `source`, `games`, and optional popularity/win-rate fields.
-- The book lookup should live behind an `OpeningBookService` or analysis-owned repository boundary so the source can change later without touching game-analysis orchestration.
-- Future analysis should consider a `MISS` classification for missed tactical or winning opportunities. A miss is different from a blunder: the player may not make an immediately terrible move, but fails to play a clearly strong best move.
-- `MISS` should not be implemented as just another raw centipawn-loss threshold. It should be a special classification based on the relationship between the best move score, played move score, side to move, and whether the best move represented a major opportunity.
-- Adding `BOOK`, `MISS`, or other human-facing classification changes should bump `classificationVersion` so old cached `PositionAnalysis` rows do not silently change meaning.
-
-This is a synchronous MVP endpoint. It is intended for one-game analysis and not yet for account-wide or queued batch analysis.
-
-### API documentation
-
-```http
-GET /api/docs
-GET /api/docs/openapi.json
-```
-
-The official Swagger UI and OpenAPI JSON are served by the API. The document is generated solely from explicit Fastify route schemas and is isolated to each `buildApp()` instance; incomplete product routes fail registration. See [`docs/openapi.md`](docs/openapi.md).
-
-## Running locally
+## Run API and web
 
 ```bash
 npm run dev
@@ -441,101 +127,99 @@ npm run dev
 
 This starts:
 
-- API on port `3000`
-- Angular dev server on port `4200`
+- API on `http://localhost:3000`;
+- Angular on `http://localhost:4200`.
 
-Visit `http://localhost:4200`.
-
-Individual services:
+Focused commands:
 
 ```bash
 npm run dev:api
 npm run dev:web
 ```
 
-Focused API commands prepare compiled `chess-domain` and `contracts` dependencies automatically. Focused web commands prepare compiled `contracts`, so these commands do not require a prior root build after `npm ci`.
+## Run mobile
 
-## Build and test
+Create the mobile environment file:
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env
+```
+
+Configure:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=http://<development-machine-LAN-IP>:3000
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+```
+
+A physical device cannot use the development machine's `localhost`; the API URL must be reachable from the device. Start the API and Metro separately:
+
+```bash
+npm run dev:api
+npm run dev:mobile
+```
+
+Additional Expo targets:
+
+```bash
+npm run ios --workspace=apps/mobile
+npm run android --workspace=apps/mobile
+npm run web --workspace=apps/mobile
+```
+
+The mobile client needs an online Clerk session to download or update courses. Downloaded content, in-progress sessions, completed attempts, marathon runs, and the synchronization outbox are stored in user-scoped SQLite for offline use.
+
+## Mobile synchronization API
+
+```http
+GET  /api/mobile-sync/manifest
+GET  /api/mobile-sync/courses/:courseId
+POST /api/mobile-sync/training-attempts
+```
+
+Course content uses monotonic revisions. Completed attempts are uploaded in idempotent batches after the local transaction commits; retries with the same `clientAttemptId` converge safely.
+
+## Build, test, and validation
 
 ```bash
 npm run build
-npm run test
+npm test
+npm run lint
+npm run check:architecture
 ```
 
-`npm test` runs domain, contract, API, and Angular web checks. API integration tests require the configured PostgreSQL database.
-
-Useful scoped commands:
+The root build includes API, Angular, shared packages, and Expo exports for iOS and Android. Useful focused checks:
 
 ```bash
-npm run build:domain
-npm run build:contracts
 npm run build:api
 npm run build:web
+npm run build:mobile
+npm run test:mobile
+npm run lint:mobile
+npm run expo:check
 npm run test:contracts
 npm run test --workspace=packages/chess-domain
-npm run lint
-npm run format
-npm run prisma:studio
 ```
 
-## Deployment notes
+API integration tests require the configured PostgreSQL database. Board interaction, cold-offline behavior, reconnect synchronization, and standalone native behavior still require manual device validation.
 
-- The web app is deployed at https://chess-repertoir-trainer-web.vercel.app/.
-- The web build writes `WEB_API_BASE_URL` into the Angular app config. Set it to the deployed API base URL for production.
-- The API is designed for a Node host such as Render.
-- Configure the deployed API with `DATABASE_URL`, `DIRECT_URL`, `CORS_ORIGIN`, `CHESS_COM_USER_AGENT`, and Stockfish-related variables.
-- `CORS_ORIGIN` should include the deployed Vercel web origin.
-- For backend batch analysis, either keep `STOCKFISH_ENGINE=local` and ensure `STOCKFISH_PATH` points to an executable, or set `STOCKFISH_ENGINE=wasm` to use the npm `stockfish` package in a worker thread. `local` remains the default rollback path.
+## Documentation
 
-## Current stabilization acceptance checklist
+- [Documentation index](docs/README.md)
+- [Architecture](docs/architecture.md)
+- [Angular architecture](docs/frontend/angular-architecture.md)
+- [Native mobile architecture](docs/mobile/architecture.md)
+- [Mobile development](docs/mobile/development.md)
+- [API conventions](docs/api-conventions.md)
+- [API contracts](docs/api-contracts.md)
+- [OpenAPI](docs/openapi.md)
+- [Deployment](docs/deployment.md)
 
-From a clean clone, the target is:
+## Current limitations
 
-1. `npm install` succeeds.
-2. `npm run db:migrate` succeeds.
-3. `npm run db:seed` succeeds.
-4. `npm run build` succeeds.
-5. `npm run test` succeeds.
-6. `npm run dev` starts API and web.
-7. Opening the web app shows the seeded course.
-8. The seeded line editor shows a synthetic start/root and real moves below it.
-9. Creating a new line and adding `e2e4` stores `e2e4` as a real first move with `parentId: null`.
-10. Training a new White line from the initial position asks for `e4` first.
-11. Adding multiple Black replies after `e4` is allowed.
-12. Adding two different White moves from the same White-to-move position is rejected.
-13. Completing a line creates and finalizes a `TrainingSublineAttempt`.
-14. Wrong moves do not advance the line.
-15. Correct moves advance the line.
-16. Opponent moves are auto-played deterministically from the selected active subline.
-17. Data persists in PostgreSQL after restart.
-18. Adding a Lichess or Chess.com account and syncing it imports finished games.
-19. The Games explorer loads imported games and filters them through `/api/imported-games`.
-20. Starting analysis from a game row creates or reuses a `GameAnalysisRun` and exposes latest accuracy in the list.
-21. A course review issue card's `Analyze position` link opens `/analysis?fen=...` at the resulting position.
-22. Free analysis loads a provided valid FEN and falls back visibly for an invalid FEN.
-23. Playing moves in free analysis creates local variations and Danger zone deletes local subtrees.
-24. Line editor move creation and subtree deletion still persist through the existing line APIs.
-25. The line editor shows the imported-games filter collapsed by default.
-26. Changing the selected repertoire node refreshes next moves for that node's FEN.
-27. Selecting a suggested imported-game move persists through the existing line APIs.
-28. Marathon training samples active sublines equally, not lines equally.
-29. Editing a subline changes its hash and excludes old-hash attempts from current line/chapter/course stats.
-30. Course stats are based on active sublines and the last 5 scored attempts per subline.
-31. Weak mode drills the weakest 30% of active sublines by recent pass rate.
-
-## Migration history
-
-- `apps/api/prisma/migrations/` contains the active PostgreSQL migration history used for Neon and other Postgres environments.
-- `apps/api/prisma/legacy-sqlite-migrations/` contains the archived SQLite-era migration that should not be applied to Postgres databases.
-
-## Known limitations
-
-- Active training session state is kept in API memory. Restarting the API loses active sessions.
-- Imported-game sync and analysis are synchronous MVP workflows, not queued background jobs.
-- Imported-game analysis is CPU-bound and limited to one game per request.
-- Imported-game search analysis filters are derived from latest run summaries at request time. If this becomes slow with large libraries, move those fields into a denormalized read model.
-- The UI is improving but still needs a dedicated authoring UX pass after stabilization.
-- JSON import/export exists but needs versioning and merge/deduplication before it should be trusted as a robust backup system.
-- Stats are based on active subline hashes and the last 5 scored attempts per active subline. Historical attempts for hashes that disappeared after move-tree edits remain in the database but are excluded from current line, chapter, and course stats.
-- The stats model is not yet a spaced repetition scheduler.
-- Mobile, auth, cloud multi-user sync, account-wide analysis queues, and full PGN import are future work, not current scope.
+- Mobile is an offline repertoire-training client, not a mobile replacement for web authoring, imported games, opening analysis, or Stockfish workflows.
+- Selected-line and selected-subline marathons remain a mobile follow-up after the current course/chapter marathon slice.
+- Native store distribution, standalone cold-offline validation, physical Android validation, reconnect/lost-response testing, and final Chessground licensing acceptance remain release gates.
+- Active web training sessions and prepared web marathon runs are API-memory state and do not survive API restarts.
+- Imported-game sync and one-game Stockfish analysis are synchronous MVP workflows rather than queued background jobs.
+- Training statistics use active subline hashes and the latest five scored attempts per active subline; this is not yet a spaced-repetition scheduler.
