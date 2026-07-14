@@ -1,17 +1,19 @@
 # Hobby deployment guide
 
-This repo is prepared for a split hobby deployment:
+The hosted web/API stack is prepared for a split hobby deployment:
 
-- Neon Postgres for the database
-- Render Web Service for the Fastify API
-- Vercel for the Angular web app
-- GitHub Actions for CI only
+- Neon Postgres for the API database;
+- Render Web Service for the Fastify API;
+- Vercel for the Angular web app;
+- GitHub Actions for CI only.
+
+The native Expo client is built from `apps/mobile` and connects to the same deployed API, but app-store distribution is not automated by the current repository.
 
 No Docker, Kubernetes, Helm, Terraform, or deployment-from-CI is required.
 
 ## Prerequisites
 
-Use Node 22 and npm 10+ locally and in hosted build environments.
+Use Node 22.13 and npm 10+ locally and in build environments that compile the complete workspace.
 
 ```bash
 npm ci
@@ -19,19 +21,24 @@ npm run build
 npm test
 ```
 
+Hosted API and web builds should use the focused commands documented below so they do not perform unnecessary native exports.
+
 ## Neon Postgres
 
 1. Create a new Neon project.
 2. Create or use the default database.
-3. Copy the pooled connection string.
-4. Use it as `DATABASE_URL` in Render.
-5. For local development, set `DATABASE_URL` to any local Postgres database URL, for example:
+3. Copy the pooled and direct connection strings.
+4. Use the pooled URL as `DATABASE_URL` at API runtime.
+5. Use the direct URL as `DIRECT_URL` for Prisma migrations.
+
+For local API development, either URL may point to local PostgreSQL, for example:
 
 ```bash
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chess_trainer_dev"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/chess_trainer_dev"
 ```
 
-The Prisma datasource is Postgres-only. Local SQLite is no longer supported after this deployment prep.
+The Prisma/API datasource is Postgres-only. The native client separately uses device-local SQLite for downloaded content, offline training, marathon runs, and its synchronization outbox.
 
 ## Render API setup
 
@@ -52,30 +59,28 @@ npm ci && npm run build:domain && npm run build:contracts && npm run build:api &
 npm run start --workspace=apps/api
 ```
 
-Environment variables:
+Core environment variables:
 
-```bash
-DATABASE_URL=<your Neon pooled Postgres URL>
+```text
+DATABASE_URL=<Neon pooled Postgres URL>
+DIRECT_URL=<Neon direct Postgres URL>
 PORT=3000
-CORS_ORIGIN=<your Vercel web URL>
+CORS_ORIGIN=<Vercel web origin>
 NODE_ENV=production
+AUTH_MODE=clerk
+CLERK_JWT_ISSUER=https://<your-clerk-domain>
+CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json
+CLERK_AUTHORIZED_PARTIES=<Vercel web origin>
 ```
+
+Add the provider, OAuth, and Stockfish variables used by the enabled product features; `.env.example` is the source list.
 
 Notes:
 
-- Render injects its own port at runtime; keeping `PORT=3000` documented is fine, but Render may override it.
-- `CORS_ORIGIN` must match the Vercel frontend origin, such as `https://your-app.vercel.app`.
-- The API exposes a simple health check at:
-
-```text
-/health
-```
-
-Expected response:
-
-```json
-{ "ok": true }
-```
+- Render injects its own port at runtime; it may override the documented value.
+- `CORS_ORIGIN` must match the deployed Angular origin. Native requests are not browser CORS requests.
+- Mobile and web must use the same Clerk application that the API issuer/JWKS values validate.
+- The API exposes a health check at `/health` with `{ "ok": true }`.
 
 ## Vercel web setup
 
@@ -98,28 +103,43 @@ dist/apps/web
 
 Environment variables:
 
-```bash
-WEB_API_BASE_URL=<your Render API URL>/api
+```text
+WEB_API_BASE_URL=https://<your-api-host>/api
+WEB_CLERK_PUBLISHABLE_KEY=pk_...
 ```
 
-Example:
+The web build generates `apps/web/src/app/app-config.ts`. In local development the API base defaults to `/api`, which works with the Angular proxy; production must use the deployed API URL.
+
+## Native mobile configuration and distribution
+
+Create the Expo environment from the workspace example:
 
 ```bash
-WEB_API_BASE_URL=https://your-api.onrender.com/api
+cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-The web app generates `apps/web/src/app/app-config.ts` before build. In local development it defaults to `/api`, which works with the Angular proxy. In production, set `WEB_API_BASE_URL` to the Render API URL plus `/api`.
+For a deployed API:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=https://<your-api-host>
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+```
+
+The API base may include `/api`; the client normalizes both forms. The Clerk publishable key must belong to the same application configured on the API.
+
+Repository compile/export gate:
+
+```bash
+npm run build:mobile
+```
+
+This runs Expo exports for iOS and Android into `apps/mobile/dist`. It does not configure signing, EAS, store metadata, review submission, or release promotion. Treat store distribution as incomplete until the manual gates in [Mobile development](mobile/development.md) are completed.
 
 ## GitHub Actions CI
 
-The CI workflow lives at `.github/workflows/ci.yml`.
+The CI workflow lives at `.github/workflows/ci.yml` and runs on pull requests and pushes to `main`.
 
-It runs on:
-
-- pull requests
-- pushes to `main`
-
-It uses Node 22 and runs:
+The root checks include the native workspace:
 
 ```bash
 npm ci
@@ -127,45 +147,47 @@ npm run build
 npm test
 ```
 
-CI does not deploy. Render and Vercel deployments should be configured directly in those platforms.
+CI does not deploy. Render and Vercel deployments should be configured directly in those platforms, and native distribution remains a separate manual release workflow.
 
 ## Local development with Postgres
 
-1. Start a local Postgres database.
-2. Export `DATABASE_URL`.
+1. Start a local PostgreSQL database.
+2. Configure `apps/api/.env`.
 3. Install dependencies.
 4. Apply migrations.
-5. Start dev servers.
+5. Start API/web and, when needed, Expo.
 
 ```bash
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chess_trainer_dev"
 npm ci
 npm run db:migrate
 npm run dev
 ```
 
-To reset local data:
+Mobile runs separately:
+
+```bash
+npm run dev:mobile
+```
+
+For a physical device, `EXPO_PUBLIC_API_BASE_URL` must use a URL reachable from that device rather than the development machine's `localhost`.
+
+To reset API data:
 
 ```bash
 npm run db:reset --workspace=apps/api
 ```
 
-## Useful build checks
+This does not clear device-local mobile SQLite. Clearing or reinstalling the native app is a separate destructive local-data action.
 
-API build:
-
-```bash
-npm run build:domain && npm run build:contracts && npm run build:api
-```
-
-API start:
+## Useful focused checks
 
 ```bash
-npm run start --workspace=apps/api
-```
-
-Vercel-equivalent web build:
-
-```bash
-npm ci && npm run build:domain && npm run build:contracts && npm run build:web
+npm run build:domain
+npm run build:contracts
+npm run build:api
+npm run build:web
+npm run build:mobile
+npm run test:mobile
+npm run lint:mobile
+npm run expo:check
 ```
