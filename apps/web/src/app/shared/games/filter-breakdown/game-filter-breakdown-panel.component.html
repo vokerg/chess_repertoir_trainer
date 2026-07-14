@@ -1,0 +1,41 @@
+<section class="workbench-panel game-filter-breakdown-panel">
+  <div class="game-filter-breakdown-header">
+    <div>
+      <h3 class="workbench-panel-title">{{ title() }}</h3>
+      <p class="workbench-panel-subtitle">{{ subtitle() }}</p>
+    </div>
+    @if (items().length) {
+      <span class="game-filter-breakdown-total">{{ items().length }} groups</span>
+    }
+  </div>
+
+  @if (loading() && !items().length) {
+    <div class="game-filter-breakdown-list" aria-hidden="true">
+      @for (row of [0, 1, 2, 3]; track row) {
+        <div class="game-filter-breakdown-row loading-row"><span>&nbsp;</span><strong>&nbsp;</strong></div>
+      }
+    </div>
+  } @else if (error()) {
+    <p class="status-note">{{ error() }}</p>
+  } @else if (visibleItems().length) {
+    <div class="game-filter-breakdown-list">
+      @for (item of visibleItems(); track item.key) {
+        <button
+          type="button"
+          class="game-filter-breakdown-row"
+          [class.selected]="selected().has(item.key)"
+          [attr.aria-pressed]="selected().has(item.key)"
+          (click)="itemSelected.emit(item.key)"
+        >
+          <span class="game-filter-breakdown-label">
+            <strong>{{ item.label }}</strong>
+            @if (item.detail) { <small>{{ item.detail }}</small> }
+          </span>
+          <span class="game-filter-breakdown-count">{{ item.games }} games</span>
+        </button>
+      }
+    </div>
+  } @else {
+    <p class="status-note">{{ emptyText() }}</p>
+  }
+</section>
