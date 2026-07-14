@@ -43,6 +43,8 @@ export const OpeningAnalysisBreakdownsService = {
       ? await findOpeningAnalysisOpeningBreakdown(userId, currentQuery, position.id)
       : [];
 
+    // The database already reduced matching games to one row per opening name/result.
+    // This pass only folds those bounded aggregate rows into the response shape.
     const openingsByName = new Map<string, OpeningBreakdownAccumulator>();
     for (const row of rows) {
       if (!row.openingName) continue;
