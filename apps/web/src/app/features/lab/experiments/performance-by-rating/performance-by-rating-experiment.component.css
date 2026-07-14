@@ -29,14 +29,14 @@
 .performance-table thead th { position: sticky; z-index: 4; color: var(--muted); background: #f7ecd9; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
 .performance-table .group-row th { top: 0; height: 2.1rem; text-align: center; }
 .performance-table .metric-row th { top: 2.1rem; }
-.performance-table th:first-child,
-.performance-table td:first-child { position: sticky; left: 0; width: 164px; min-width: 164px; max-width: 164px; text-align: left; }
-.performance-table th:nth-child(2),
-.performance-table td:nth-child(2) { position: sticky; left: 164px; width: 154px; min-width: 154px; max-width: 154px; text-align: left; }
-.performance-table thead th:first-child,
-.performance-table thead th:nth-child(2) { z-index: 7; background: #f7ecd9; }
-.performance-table tbody td:first-child,
-.performance-table tbody td:nth-child(2) { z-index: 2; background: #fffaf2; }
+.performance-table .type-column,
+.performance-table .type-cell { position: sticky; left: 0; width: 164px; min-width: 164px; max-width: 164px; text-align: left; }
+.performance-table .rating-column,
+.performance-table .rating-cell { position: sticky; left: 164px; width: 154px; min-width: 154px; max-width: 154px; text-align: left; }
+.performance-table .type-column,
+.performance-table .rating-column { z-index: 7; background: #f7ecd9; }
+.performance-table .type-cell,
+.performance-table .rating-cell { z-index: 2; background: #fffaf2; }
 .performance-table tbody tr:last-child td { border-bottom: 0; }
 .performance-table tbody tr.type-start td { border-top: 3px solid color-mix(in srgb, var(--accent) 55%, var(--border)); }
 .performance-table tbody tr.small-sample td:not(:first-child):not(:nth-child(2)) { color: var(--muted); }
@@ -53,8 +53,8 @@
   .column-picker summary { width: 100%; justify-content: center; }
   .column-picker-panel { position: static; width: 100%; margin-top: 0.6rem; box-shadow: none; }
   .column-picker fieldset { grid-template-columns: 1fr; }
-  .performance-table th:first-child,
-  .performance-table td:first-child { width: 142px; min-width: 142px; max-width: 142px; }
-  .performance-table th:nth-child(2),
-  .performance-table td:nth-child(2) { left: 142px; width: 138px; min-width: 138px; max-width: 138px; }
+  .performance-table .type-column,
+  .performance-table .type-cell { width: 142px; min-width: 142px; max-width: 142px; }
+  .performance-table .rating-column,
+  .performance-table .rating-cell { left: 142px; width: 138px; min-width: 138px; max-width: 138px; }
 }
