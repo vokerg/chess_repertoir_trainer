@@ -15,6 +15,10 @@
         <span><strong>Monthly games</strong><small>Year/month WDL and rating snapshots</small></span>
         <span class="pill">Table</span>
       </button>
+      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'performance-by-rating'" (click)="selectExperiment('performance-by-rating')">
+        <span><strong>Performance by rating</strong><small>Provider and speed results by opponent strength</small></span>
+        <span class="pill">Report</span>
+      </button>
       <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'tactical-detections'" (click)="selectExperiment('tactical-detections')">
         <span><strong>Tactical detections</strong><small>Missed shots and my blunders from analysed games</small></span>
         <span class="pill">Table</span>
@@ -29,6 +33,7 @@
   @switch (selected()) {
     @case ('top-opponents') { <app-lab-top-opponents /> }
     @case ('monthly-games') { <app-lab-monthly-games /> }
+    @case ('performance-by-rating') { <app-lab-performance-by-rating /> }
     @case ('tactical-detections') { <app-lab-tactical-detections /> }
     @case ('training-log') { <app-lab-training-log /> }
     @default {
