@@ -33,10 +33,10 @@ try {
   });
 
   const openings = [
-    { eco: 'C20', name: "King's Pawn Game" },
-    { eco: 'C21', name: "King's Pawn Game" },
-    { eco: 'C20', name: "King's Pawn Game: Leonardis Variation" },
-    { eco: 'B01', name: 'Scandinavian Defense' },
+    { eco: 'C20', name: "King's Pawn Game", result: 'WIN' },
+    { eco: 'C21', name: "King's Pawn Game", result: 'DRAW' },
+    { eco: 'C20', name: "King's Pawn Game: Leonardis Variation", result: 'WIN' },
+    { eco: 'B01', name: 'Scandinavian Defense', result: 'LOSS' },
   ];
 
   for (const [index, opening] of openings.entries()) {
@@ -50,7 +50,7 @@ try {
         variant: 'standard',
         speedCategory: 'blitz',
         userColor: 'WHITE',
-        resultForUser: index === 3 ? 'LOSS' : 'WIN',
+        resultForUser: opening.result,
         openingEco: opening.eco,
         openingName: opening.name,
         endedAt: new Date(`2026-06-0${index + 1}T12:00:00.000Z`),
@@ -79,9 +79,9 @@ try {
     const breakdown = breakdownResponse.json();
     assert.equal(breakdown.normalizedFen, normalizedFen);
     assert.deepEqual(breakdown.openings, [
-      { name: "King's Pawn Game", games: 2 },
-      { name: "King's Pawn Game: Leonardis Variation", games: 1 },
-      { name: 'Scandinavian Defense', games: 1 },
+      { name: "King's Pawn Game", games: 2, wdl: { wins: 1, draws: 1, losses: 0 } },
+      { name: "King's Pawn Game: Leonardis Variation", games: 1, wdl: { wins: 1, draws: 0, losses: 0 } },
+      { name: 'Scandinavian Defense', games: 1, wdl: { wins: 0, draws: 0, losses: 1 } },
     ]);
     assert.deepEqual(breakdown.appliedFilters.openingBreakdownExcludes, [
       'openingEco',
