@@ -65,6 +65,7 @@ export type ImportedGameSummaryQuery = Omit<z.infer<typeof importedGameSearchQue
 
 export const openingAnalysisQuerySchema = importedGameSearchQuerySchema.extend({
   fen: z.string().min(1).default('startpos'),
+  openingNameExact: z.string().min(1).optional(),
 });
 
 export const openingAnalysisTopGamesQuerySchema = openingAnalysisQuerySchema.extend({
