@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import { ImportedGameFacetsResponse } from '../game.models';
 import {
+  OpeningAnalysisBreakdownsResponse,
   OpeningAnalysisPerformanceResponse,
   OpeningAnalysisResponse,
   OpeningAnalysisTopGamesResponse,
@@ -28,5 +29,9 @@ export class PositionGameMovesApiService {
     const params = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query);
     params.set('limit', String(limit));
     return this.api.get<OpeningAnalysisTopGamesResponse>(`/opening-analysis/top-games?${params.toString()}`);
+  }
+
+  getBreakdowns(query: string): Observable<OpeningAnalysisBreakdownsResponse> {
+    return this.api.get<OpeningAnalysisBreakdownsResponse>(`/opening-analysis/breakdowns${query}`);
   }
 }
