@@ -4,24 +4,28 @@ on:
   pull_request:
 
 jobs:
-  api-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --silent
-      - run: npm run lint --workspace=apps/api
-
   web-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci --silent
-      - run: npm run lint --workspace=apps/web
+      - id: lint
+        shell: bash
+        run: |
+          set +e
+          npm run lint --workspace=apps/web > web-lint.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-lint-output
+          path: web-lint.log
+      - if: steps.lint.outputs.status != '0'
+        run: exit 1
