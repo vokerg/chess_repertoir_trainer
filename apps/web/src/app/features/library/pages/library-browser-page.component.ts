@@ -51,8 +51,9 @@ export class LibraryBrowserPageComponent implements OnInit {
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'filters',
-      label: this.store.reviewOnly() ? 'Review filter on' : 'Filters',
-      active: this.store.reviewOnly(),
+      kind: 'toggle',
+      label: 'Review filter',
+      pressed: this.store.reviewOnly(),
       run: () => this.store.toggleReviewOnly(),
     },
     {

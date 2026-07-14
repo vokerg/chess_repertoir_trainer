@@ -6,6 +6,7 @@ import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
+import { uciMoveToSan } from '../../../shared/chess/notation/uci-to-san.helper';
 import { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { PositionGameMovesApiService } from '../../../shared/games/position-moves/position-game-moves-api.service';
 import { buildOpeningAnalysisQuery, defaultOpeningFilters } from '../../../shared/games/position-moves/position-game-moves.helpers';
@@ -101,7 +102,7 @@ export class LineEditorStore implements OnDestroy {
       return null;
     }
     if (!planned || planned === analysis.bestMove) return null;
-    return `Engine warning: your planned move is ${planned}, but Stockfish currently prefers ${analysis.bestMove}.`;
+    return `Engine warning: your planned move is ${this.moveSanLabel(planned)}, but Stockfish currently prefers ${this.moveSanLabel(analysis.bestMove)}.`;
   });
   readonly breadcrumbLink = computed<readonly (string | number)[]>(() =>
     this.line()?.chapterId ? ['/chapters', this.line()!.chapterId, 'lines'] : ['/courses'],
@@ -335,6 +336,14 @@ export class LineEditorStore implements OnDestroy {
   private scheduleAnalysis(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.analysisTimer = setTimeout(() => this.rerunAnalysis(), 250);
+  }
+
+  private moveSanLabel(uci: string): string {
+    try {
+      return uciMoveToSan(this.currentFen(), uci);
+    } catch {
+      return 'an unavailable move';
+    }
   }
 
   private async loadGamesFacets(): Promise<void> {

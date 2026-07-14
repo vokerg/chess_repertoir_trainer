@@ -8,6 +8,8 @@
   [arrows]="arrows()"
   [boardPositionVersion]="boardPositionVersion()"
   [analysis]="analysis()"
+  [engineVisible]="engineVisible()"
+  [showFlipBoard]="true"
   [canGoBackward]="canGoBackward()"
   [canGoForward]="canGoForward()"
   boardTitle="Analysis board"
@@ -25,9 +27,17 @@
   (goPrevious)="goPrevious.emit()"
   (goNext)="goNext.emit()"
   (goEnd)="goEnd.emit()"
-  (analyze)="analyze.emit()"
+  (flipBoard)="flipBoard.emit()"
   (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
 >
+  @if (showInitialPositionInput()) {
+    <app-initial-position-input
+      analysisWorkbenchSideBeforeTree
+      [error]="initialPositionError()"
+      (load)="loadInitialPosition.emit($event)"
+    />
+  }
+
   <app-course-position-suggestions-widget
     analysisWorkbenchSideExtra
     [fen]="currentFen()"

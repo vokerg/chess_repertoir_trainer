@@ -24,6 +24,9 @@
       [arrows]="store.analysisArrows()"
       [boardPositionVersion]="store.boardPositionVersion()"
       [analysis]="store.engineAnalysis()"
+      [engineVisible]="store.engineVisible()"
+      [showInitialPositionInput]="store.showInitialPositionInput()"
+      [initialPositionError]="store.initialPositionError()"
       [loadedFromGame]="store.loadedFromGame()"
       [canGoBackward]="store.canGoBackward()"
       [canGoForward]="store.canGoForward()"
@@ -34,7 +37,8 @@
       (goPrevious)="store.goToPrevious()"
       (goNext)="store.goToNext()"
       (goEnd)="store.goToEnd()"
-      (analyze)="store.rerunAnalysis()"
+      (flipBoard)="store.flipBoard()"
+      (loadInitialPosition)="store.loadInitialPosition($event)"
       (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
     />
   }

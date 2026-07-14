@@ -1,25 +1,18 @@
-<app-panel title="Stockfish" [stats]="stockfishStats()" [actions]="stockfishActions()">
-  @if (isCurrentFen() && analysis().error) {
-    <p class="status-error">{{ analysis().error }}</p>
-  }
+<app-panel title="Engine lines">
   @if (warning()) {
     <div class="engine-warning-modern">{{ warning() }}</div>
   }
 
   <div class="stockfish-lines">
-    @for (slot of lineSlots; track slot) {
-      <div
-        class="engine-line-modern stockfish-line-slot"
-        [class.stockfish-line-empty]="!visibleLines()[slot]"
-      >
-        @if (visibleLines()[slot]; as engineLine) {
-          <span class="engine-score-modern">{{ lineScoreLabel(engineLine) }}</span>
-          <code>{{ engineLine.pv.slice(0, 8).join(' ') }}</code>
-        } @else {
-          <span class="engine-score-modern stockfish-placeholder-score">{{ placeholderScoreLabel(slot) }}</span>
-          <span class="stockfish-placeholder-text">{{ placeholderLineLabel(slot) }}</span>
-        }
+    @for (line of lineViewModels(); track line.id) {
+      <div class="engine-line-modern stockfish-line-slot">
+        <span class="engine-score-modern">{{ line.score }}</span>
+        <code>{{ line.moves }}</code>
       </div>
+    }
+
+    @if (statusText(); as status) {
+      <p class="stockfish-status" [class.status-error]="analysis().error">{{ status }}</p>
     }
   </div>
 </app-panel>

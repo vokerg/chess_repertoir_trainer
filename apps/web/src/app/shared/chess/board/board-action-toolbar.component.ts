@@ -23,9 +23,11 @@ export class BoardActionToolbarComponent {
   readonly endLabel = input('End');
   readonly keyboardHint = input<string | null>(null);
   readonly fen = input<string | null>(null);
+  readonly showFlip = input(false);
 
   readonly goStart = output<void>();
   readonly goPrevious = output<void>();
   readonly goNext = output<void>();
   readonly goEnd = output<void>();
+  readonly flip = output<void>();
 }
