@@ -7,6 +7,18 @@ interface TimingLogger {
   debug: (obj: Record<string, unknown>, message: string) => void;
 }
 
+interface OpeningBreakdownAccumulator {
+  name: string;
+  games: number;
+  wdl: {
+    wins: number;
+    draws: number;
+    losses: number;
+  };
+}
+
+const OPENING_BREAKDOWN_LIMIT = 50;
+
 function normalizeFenForExplorer(fen: string): string {
   const chess = fen === 'startpos' ? new Chess() : new Chess(fen);
   return chess.fen().split(/\s+/).slice(0, 4).join(' ');
@@ -31,12 +43,25 @@ export const OpeningAnalysisBreakdownsService = {
       ? await findOpeningAnalysisOpeningBreakdown(userId, currentQuery, position.id)
       : [];
 
-    const openings = rows
-      .filter((row): row is typeof row & { openingName: string } => Boolean(row.openingName))
-      .map((row) => ({
+    const openingsByName = new Map<string, OpeningBreakdownAccumulator>();
+    for (const row of rows) {
+      if (!row.openingName) continue;
+      const current = openingsByName.get(row.openingName) ?? {
         name: row.openingName,
-        games: row._count._all,
-      }));
+        games: 0,
+        wdl: { wins: 0, draws: 0, losses: 0 },
+      };
+      const count = row._count._all;
+      current.games += count;
+      if (row.resultForUser === 'WIN') current.wdl.wins += count;
+      else if (row.resultForUser === 'DRAW') current.wdl.draws += count;
+      else if (row.resultForUser === 'LOSS') current.wdl.losses += count;
+      openingsByName.set(row.openingName, current);
+    }
+
+    const openings = Array.from(openingsByName.values())
+      .sort((left, right) => right.games - left.games || left.name.localeCompare(right.name))
+      .slice(0, OPENING_BREAKDOWN_LIMIT);
 
     logger?.debug({
       flow: 'opening-analysis.breakdowns.total',
