@@ -98,8 +98,7 @@ export interface OpeningAnalysisTopGamesResponse {
 }
 
 export interface OpeningAnalysisOpeningBreakdown {
-  eco: string;
-  name: string | null;
+  name: string;
   games: number;
 }
 
