@@ -100,6 +100,11 @@ export interface OpeningAnalysisTopGamesResponse {
 export interface OpeningAnalysisOpeningBreakdown {
   name: string;
   games: number;
+  wdl: {
+    wins: number;
+    draws: number;
+    losses: number;
+  };
 }
 
 export interface OpeningAnalysisBreakdownsResponse {
