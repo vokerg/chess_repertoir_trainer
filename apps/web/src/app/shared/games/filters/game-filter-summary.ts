@@ -13,6 +13,8 @@ export function summaryGameFilters(filters: GameFilters): string {
   }
   if (filters.tagFilter === 'NO_TAGS') parts.push('No tags');
   else if (filters.tagCodes.length) parts.push(`${filters.tagCodes.length} tag${filters.tagCodes.length === 1 ? '' : 's'}`);
-  if (filters.openingName) parts.push(filters.openingName);
+  if (filters.openingEco && filters.openingName) parts.push(`${filters.openingEco} · ${filters.openingName}`);
+  else if (filters.openingEco) parts.push(filters.openingEco);
+  else if (filters.openingName) parts.push(filters.openingName);
   return parts.join(' - ');
 }
