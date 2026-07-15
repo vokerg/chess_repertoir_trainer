@@ -39,5 +39,11 @@ jobs:
         run: cd apps/api && node test/run-range.mjs imported-games/ masters-explorer/
       - name: API tests M-O
         run: cd apps/api && node test/run-range.mjs masters-explorer/ openapi/
-      - name: API tests P-Z
-        run: cd apps/api && node test/run-range.mjs openapi/ zzzz
+      - name: API tests OpenAPI
+        run: cd apps/api && node test/run-range.mjs openapi/ repertoire-coverage/
+      - name: API tests Repertoire
+        run: cd apps/api && node test/run-range.mjs repertoire-coverage/ scenario-training/
+      - name: API tests Scenario
+        run: cd apps/api && node test/run-range.mjs scenario-training/ training/
+      - name: API tests Training-Z
+        run: cd apps/api && node test/run-range.mjs training/ zzzz
