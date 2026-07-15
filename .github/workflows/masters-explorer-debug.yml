@@ -1,0 +1,46 @@
+name: Masters Explorer Debug
+
+on:
+  pull_request:
+
+jobs:
+  root-test-sequence:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chess_trainer_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d chess_trainer_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      WEB_API_BASE_URL: /api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run db:migrate --workspace=apps/api
+      - name: Domain tests
+        run: npm run test --workspace=packages/chess-domain
+      - name: Contracts tests
+        run: npm run test:contracts
+      - name: API tests
+        run: npm run test --workspace=apps/api
+      - name: Web tests
+        run: npm run test --workspace=apps/web
+      - name: Mobile tests
+        run: npm run test:mobile
