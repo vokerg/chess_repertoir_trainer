@@ -1,5 +1,9 @@
 import { Chess } from 'chess.js';
 import { buildRepertoireGraph, normalizeFenForPosition, RepertoireLineInput } from 'chess-domain';
+import type {
+  OpeningStruggleCourseCoverage,
+  OpeningStruggleCoverageStatus,
+} from '@chess-trainer/contracts/opening-struggles';
 import {
   findImportedGamesForOpeningStruggles,
   OpeningStrugglesGameRow,
@@ -7,21 +11,27 @@ import {
 import { ImportedGameSummaryQuery } from '../imported-games/imported-games.schemas';
 import { classifyRepertoireSequence } from '../repertoire-coverage/course-review.matcher';
 import { getOpeningStruggleCourseLines } from '../repertoire-coverage/repertoire-coverage.repository.prisma';
+import { countOpeningStruggleCandidateGames } from './opening-struggles.repository.prisma';
 import { OpeningStrugglesQuery } from './opening-struggles.schema';
 
-export type OpeningStruggleCoverageStatus =
-  | 'COVERED'
-  | 'MY_DEVIATION'
-  | 'OPPONENT_UNCOVERED'
-  | 'REPERTOIRE_ENDED'
-  | 'NOT_COVERED';
+export const OPENING_STRUGGLES_MAX_CANDIDATE_GAMES = 5000;
 
-export interface OpeningStruggleCourseCoverage {
-  status: OpeningStruggleCoverageStatus;
-  coveredPlies: number;
-  deviationPly: number | null;
-  courses: Array<{ id: number; name: string }>;
-  expectedMoveSans: string[];
+export class OpeningStrugglesScopeTooLargeError extends Error {
+  readonly code = 'OPENING_STRUGGLES_SCOPE_TOO_LARGE' as const;
+
+  constructor(
+    readonly candidateGames: number,
+    readonly maxCandidateGames = OPENING_STRUGGLES_MAX_CANDIDATE_GAMES,
+  ) {
+    super(`Opening struggles can analyse at most ${maxCandidateGames} games at once. Narrow the filters and try again.`);
+    this.name = 'OpeningStrugglesScopeTooLargeError';
+  }
+}
+
+export function assertOpeningStrugglesScope(candidateGames: number): void {
+  if (candidateGames > OPENING_STRUGGLES_MAX_CANDIDATE_GAMES) {
+    throw new OpeningStrugglesScopeTooLargeError(candidateGames);
+  }
 }
 
 export interface OpeningStruggleCoverageLine extends RepertoireLineInput {
@@ -255,9 +265,7 @@ function flatten(roots: Map<string, OpeningStruggleNode>, query: OpeningStruggle
           && item.averageCentipawnLoss !== null
           && item.averageCentipawnLoss >= query.minAverageCentipawnLoss
         : badPositionMatch && !parentMatchesBadPosition;
-    if (matches) {
-      items.push(item);
-    }
+    if (matches) items.push(item);
     for (const child of node.children.values()) visit(child, badPositionMatch);
   }
 
@@ -313,6 +321,15 @@ function notCovered(): OpeningStruggleCourseCoverage {
   };
 }
 
+function reachedPly(
+  match: ReturnType<typeof classifyRepertoireSequence>,
+  terminalPly: number,
+): number {
+  if (match.status === 'COVERED') return terminalPly;
+  if (match.deviationPly === null) return match.coveredPlies;
+  return Math.max(0, match.deviationPly - 1);
+}
+
 export function annotateOpeningStruggleCourseCoverage<T extends ReturnType<typeof toItem>>(
   items: T[],
   courseLines: OpeningStruggleCoverageLine[],
@@ -337,39 +354,32 @@ export function annotateOpeningStruggleCourseCoverage<T extends ReturnType<typeo
     } catch {
       return { ...item, courseCoverage: notCovered() };
     }
+
     const matches = graphs
       .filter((entry) => entry.sideToTrain === item.userColor)
-      .map((entry) => {
-        const startsAtPrefixRoot = Boolean(
-          plies[0] && entry.graph.startPositions.has(plies[0].normalizedFenBefore),
-        );
-        return {
-          course: entry.course,
-          ...(startsAtPrefixRoot ? classifyRepertoireSequence({
-            plies,
-            graph: entry.graph,
-            sideToTrain: item.userColor,
-            minCoveredPlies: 1,
-          }) : {
-            status: 'NOT_COVERED' as const,
-            coveredPlies: 0,
-            deviationPly: null,
-            expectedMoveUcis: [],
-            expectedMoveSans: [],
-          }),
-        };
-      })
-      .filter((match) => match.status !== 'COURSE_CONFLICT');
-    const covered = matches.filter((match) =>
-      match.status === 'COVERED' && match.coveredPlies === item.movesUci.length,
-    );
-    const candidates = covered.length
-      ? covered
-      : matches.filter((match) => match.status !== 'NOT_COVERED');
-    if (!candidates.length) return { ...item, courseCoverage: notCovered() };
+      .map((entry) => ({
+        course: entry.course,
+        ...classifyRepertoireSequence({
+          plies,
+          graph: entry.graph,
+          sideToTrain: item.userColor,
+          minCoveredPlies: 1,
+        }),
+      }))
+      .filter((match) => match.status !== 'COURSE_CONFLICT' && match.status !== 'NOT_COVERED')
+      .map((match) => ({ ...match, reachedPly: reachedPly(match, item.ply) }));
 
-    const bestCoveredPlies = Math.max(...candidates.map((match) => match.coveredPlies));
-    const bestAtDepth = candidates.filter((match) => match.coveredPlies === bestCoveredPlies);
+    if (!matches.length) return { ...item, courseCoverage: notCovered() };
+
+    const fullyCovered = matches.filter((match) => match.status === 'COVERED');
+    let candidates = fullyCovered;
+    if (!candidates.length) {
+      const furthestPly = Math.max(...matches.map((match) => match.reachedPly));
+      candidates = matches.filter((match) => match.reachedPly === furthestPly);
+      const longestOverlap = Math.max(...candidates.map((match) => match.coveredPlies));
+      candidates = candidates.filter((match) => match.coveredPlies === longestOverlap);
+    }
+
     const statusOrder: OpeningStruggleCoverageStatus[] = [
       'COVERED',
       'MY_DEVIATION',
@@ -378,14 +388,15 @@ export function annotateOpeningStruggleCourseCoverage<T extends ReturnType<typeo
       'NOT_COVERED',
     ];
     const status = statusOrder.find((candidateStatus) =>
-      bestAtDepth.some((match) => match.status === candidateStatus),
+      candidates.some((match) => match.status === candidateStatus),
     ) ?? 'NOT_COVERED';
-    const tied = bestAtDepth.filter((match) => match.status === status);
+    const tied = candidates.filter((match) => match.status === status);
+
     return {
       ...item,
       courseCoverage: {
         status,
-        coveredPlies: bestCoveredPlies,
+        coveredPlies: Math.max(...tied.map((match) => match.coveredPlies)),
         deviationPly: tied[0]?.deviationPly ?? null,
         courses: [...new Map(tied.map((match) => [match.course.id, match.course])).values()]
           .sort((left, right) => left.name.localeCompare(right.name) || left.id - right.id),
@@ -397,12 +408,14 @@ export function annotateOpeningStruggleCourseCoverage<T extends ReturnType<typeo
 
 export async function getOpeningStruggles(userId: number, query: OpeningStrugglesQuery) {
   const filters = importedGameFilters(query);
+  const candidateGameCount = await countOpeningStruggleCandidateGames(userId, filters);
+  assertOpeningStrugglesScope(candidateGameCount);
+
   const [candidateGames, courseLineRows] = await Promise.all([
     findImportedGamesForOpeningStruggles(userId, filters, query.maxPly),
     getOpeningStruggleCourseLines(userId),
   ]);
-  const filteredGames = candidateGames;
-  const indexedGames = filteredGames.filter((game) => game.plyIndexedAt !== null);
+  const indexedGames = candidateGames.filter((game) => game.plyIndexedAt !== null);
   const courseLines: OpeningStruggleCoverageLine[] = courseLineRows
     .filter((line) => line.sideToTrain === 'WHITE' || line.sideToTrain === 'BLACK')
     .map((line) => ({
@@ -413,7 +426,7 @@ export async function getOpeningStruggles(userId: number, query: OpeningStruggle
   const items = buildOpeningStruggleItems(indexedGames, query, courseLines);
 
   return {
-    totalFilteredGames: filteredGames.length,
+    totalFilteredGames: candidateGames.length,
     indexedFilteredGames: indexedGames.length,
     maxPly: query.maxPly,
     limit: query.limit,
