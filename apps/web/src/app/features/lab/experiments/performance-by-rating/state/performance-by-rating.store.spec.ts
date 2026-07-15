@@ -35,11 +35,14 @@ describe('PerformanceByRatingStore', () => {
     }));
   });
 
-  it('updates the minimum rating as a non-negative integer', () => {
+  it('clamps the minimum rating to the contract range as an integer', () => {
     store.setMinRating('850.9');
     expect(store.minRating()).toBe(850);
 
     store.setMinRating('-20');
     expect(store.minRating()).toBe(0);
+
+    store.setMinRating('5001');
+    expect(store.minRating()).toBe(5000);
   });
 });
