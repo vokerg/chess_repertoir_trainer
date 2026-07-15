@@ -53,7 +53,7 @@ Imported games do not have one universal response model. Each use case has a DTO
 - Browser search returns compact explorer fields, `tagCount`, scalar ply-index status, and snapshot-based analysis status/accuracy. It omits PGN, plies, tag arrays, raw provider fields, analysis-run metadata, summaries, and timestamps that the table does not render.
 - Detail returns replay metadata, PGN, indexed plies, and compact per-ply position-analysis scalars. Stored multipv lines are not embedded; interactive rich lines are fetched through the position-analysis APIs.
 - Opening top games return only identity, provider/date, players, result/opening, and the move needed for display and navigation.
-- Opening struggles select only early plies and the compact evaluation scalars used by the report.
+- Opening struggles selects only early plies, per-move score loss, and the compact position-evaluation scalars used for analysis links and existing response context.
 - MCP search and detail use MCP-owned mappers. They share repository query semantics, not browser DTOs.
 
 List response DTOs must match the consumer rather than contain detail-only fields. Prisma selects must in turn match those DTOs: avoid loading relations solely to derive values already represented by snapshot columns, and never add a generic `fields` or `include` transport parameter.

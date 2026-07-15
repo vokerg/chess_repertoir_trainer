@@ -6,6 +6,7 @@ import statsModule from '../modules/stats/stats.routes';
 import analysisModule from '../modules/analysis/analysis.routes';
 import importedGamesModule from '../modules/imported-games/imported-games.routes';
 import openingAnalysisBreakdownsModule from '../modules/imported-games/opening-analysis-breakdowns.routes';
+import openingStrugglesModule from '../modules/opening-struggles/opening-struggles.routes';
 import labModule from '../modules/lab/lab.routes';
 import externalAccountsRoutes from './externalAccounts';
 import lichessAuthRoutes from './lichessAuth';
@@ -23,6 +24,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(analysisModule);
   app.register(importedGamesModule);
   app.register(openingAnalysisBreakdownsModule);
+  app.register(openingStrugglesModule);
   app.register(labModule);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);

@@ -1,0 +1,88 @@
+<section class="opening-struggles-page stack">
+  <app-page-header
+    title="Opening struggles"
+    subtitle="Find recurring opening lines with poor results or costly moves."
+  />
+
+  <app-game-filter-panel
+    [filters]="store.gameFilters()"
+    [facets]="store.facets()"
+    [loading]="store.loading()"
+    applyLabel="Find struggles"
+    (filtersChange)="store.setGameFilters($event)"
+    (apply)="store.load()"
+    (reset)="store.resetGameFilters()"
+  />
+
+  <section class="criteria-panel stack" aria-label="Opening struggle criteria">
+    <div><span class="eyebrow">Struggle criteria</span><h4 class="criteria-title">Line thresholds</h4></div>
+
+    <fieldset class="mode-selector">
+      <legend>Analysis mode</legend>
+      <label [class.selected]="store.criteria().mode === 'results'">
+        <input type="radio" name="opening-struggles-mode" value="results" [checked]="store.criteria().mode === 'results'" (change)="store.updateCriteria('mode', modeValue($event))" />
+        <span>Poor results</span>
+      </label>
+      <label [class.selected]="store.criteria().mode === 'moveQuality'">
+        <input type="radio" name="opening-struggles-mode" value="moveQuality" [checked]="store.criteria().mode === 'moveQuality'" (change)="store.updateCriteria('mode', modeValue($event))" />
+        <span>Poor move quality</span>
+      </label>
+    </fieldset>
+
+    <div class="criteria-controls mode-criteria">
+      @if (store.isResultsMode()) {
+        <label><span>Minimum games</span><input type="number" min="1" [value]="store.criteria().minGames" (input)="store.updateCriteria('minGames', numberValue($event))" /></label>
+        <label><span>Minimum loss rate (%)</span><input type="number" min="0" max="100" [value]="store.criteria().minLossRate" (input)="store.updateCriteria('minLossRate', numberValue($event))" /></label>
+      } @else {
+        <label><span>Minimum analysed games</span><input type="number" min="1" [value]="store.criteria().minAnalysedGames" (input)="store.updateCriteria('minAnalysedGames', numberValue($event))" /></label>
+        <label><span>Minimum average centipawn loss</span><input type="number" min="0" [value]="store.criteria().minAverageCentipawnLoss" (input)="store.updateCriteria('minAverageCentipawnLoss', numberValue($event))" /></label>
+      }
+    </div>
+
+    <details class="advanced-settings">
+      <summary>Advanced settings</summary>
+      <div class="criteria-controls advanced-controls">
+        <label><span>Result limit</span><input type="number" min="1" max="500" [value]="store.criteria().limit" (input)="store.updateCriteria('limit', numberValue($event))" /></label>
+        <label><span>Opening depth (full moves)</span><input type="number" min="1" max="30" [value]="store.criteria().openingDepth" (input)="store.updateCriteria('openingDepth', numberValue($event))" /></label>
+      </div>
+    </details>
+  </section>
+
+  <p class="status-note">Only games with indexed plies are included. Move quality uses analysed moves played by you.</p>
+  @if (store.loading()) { <p class="status-note">Building opening line report...</p> }
+  @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
+  @if (store.loaded() && !store.loading() && !store.error()) { <p class="status-note">{{ store.indexedFilteredGames() }} indexed games from {{ store.totalFilteredGames() }} filtered games.</p> }
+
+  @if (!store.loading() && store.items().length > 0) {
+    <div class="table-wrap"><table class="results-table"><thead><tr><th>Line</th><th>Played as</th>
+      @if (store.isResultsMode()) {
+        <th>Games/W-D-L</th><th>Loss %</th>
+      } @else {
+        <th>Analysed moves</th><th>Avg CPL</th>
+      }
+    </tr></thead><tbody>
+      @for (item of store.items(); track item.key) {
+        <tr>
+          <td class="primary-cell line-cell">
+            <app-copyable-line
+              [line]="lineLabel(item)"
+              [link]="['/analysis']"
+              [queryParams]="analysisQueryParams(item)"
+              [ariaLabel]="'Copy line ' + lineLabel(item)"
+            />
+          </td>
+          <td>{{ userColorLabel(item) }}</td>
+          @if (store.isResultsMode()) {
+            <td>{{ item.totalReachGames }} / {{ wdlLabel(item) }}</td><td>{{ percentLabel(item.lossRate) }}</td>
+          } @else {
+            <td>{{ item.analysedMoveCount }}</td><td>{{ item.averageCentipawnLoss === null ? '-' : item.averageCentipawnLoss }}</td>
+          }
+        </tr>
+      }
+    </tbody></table></div>
+  } @else if (store.loaded() && !store.loading() && !store.error()) {
+    <div class="empty-state">No opening lines matched the selected thresholds.</div>
+  } @else if (!store.loaded() && !store.loading()) {
+    <div class="empty-state">Choose criteria and find opening struggles.</div>
+  }
+</section>

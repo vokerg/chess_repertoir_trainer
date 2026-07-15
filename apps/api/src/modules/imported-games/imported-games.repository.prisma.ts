@@ -121,6 +121,7 @@ export interface ImportedGameSummaryAggregateRows {
 const openingStrugglesPlySelect = {
   plyNumber: true,
   moveUci: true,
+  scoreLossCp: true,
   position: {
     select: {
       normalizedFen: true,

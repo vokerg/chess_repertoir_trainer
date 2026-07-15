@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
-import { defaultGameFilters, GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { OpeningStrugglesApiService } from '../data-access/opening-struggles-api.service';
 import {
   OpeningStruggleItem,
@@ -9,15 +9,13 @@ import {
 } from '../data-access/opening-struggles.models';
 
 const defaultCriteria: OpeningStrugglesCriteria = {
+  mode: 'results',
   minGames: 5,
-  maxPly: 20,
-  limit: 100,
-  resultMetric: 'lossRate',
   minLossRate: 60,
-  maxWinRate: 40,
-  maxScorePct: 40,
-  evalMetric: 'none',
-  maxUserEvalCp: -100,
+  minAnalysedGames: 5,
+  minAverageCentipawnLoss: 100,
+  openingDepth: 10,
+  limit: 100,
 };
 
 function defaultOpeningStrugglesGameFilters(): GameFilters {
@@ -36,10 +34,7 @@ export class OpeningStrugglesStore {
   readonly loading = signal(false);
   readonly loaded = signal(false);
   readonly error = signal<string | null>(null);
-  readonly metricsDisabled = computed(() => {
-    const criteria = this.criteria();
-    return criteria.resultMetric === 'none' && criteria.evalMetric === 'none';
-  });
+  readonly isResultsMode = computed(() => this.criteria().mode === 'results');
 
   setGameFilters(filters: GameFilters): void {
     this.gameFilters.set(filters);

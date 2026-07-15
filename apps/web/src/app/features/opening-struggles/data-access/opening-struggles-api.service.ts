@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
-import { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
-import { ApiService } from '../../../../../core/api/api.service';
+import { ApiService } from '../../../core/api/api.service';
+import { ImportedGameFacetsResponse } from '../../../shared/games/game.models';
+import { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { buildOpeningStrugglesQuery } from '../helpers/opening-struggles-query';
 import { OpeningStrugglesCriteria, OpeningStrugglesResponse } from './opening-struggles.models';
 
@@ -15,6 +15,6 @@ export class OpeningStrugglesApiService {
   }
 
   getOpeningStruggles(gameFilters: GameFilters, criteria: OpeningStrugglesCriteria): Observable<OpeningStrugglesResponse> {
-    return this.api.get<OpeningStrugglesResponse>(`/lab/opening-struggles?${buildOpeningStrugglesQuery(gameFilters, criteria)}`);
+    return this.api.get<OpeningStrugglesResponse>(`/opening-struggles?${buildOpeningStrugglesQuery(gameFilters, criteria)}`);
   }
 }
