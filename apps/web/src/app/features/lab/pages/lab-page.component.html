@@ -1,45 +1,32 @@
 <section class="lab-page stack">
-  <app-page-header title="Lab" subtitle="Run focused reports from imported games." [actions]="headerActions()" />
+  <app-page-header title="Lab" subtitle="Run focused reports from imported games." />
 
   <section class="section-card lab-menu" aria-label="Lab experiments">
     <div class="lab-menu-copy">
       <h3 class="collection-title">Experiments</h3>
-      <p class="status-note">Pick a focused report, then use the full panel below to inspect the results.</p>
+      <p class="status-note">Choose a focused report to open it on its own page.</p>
     </div>
     <div class="lab-menu-grid">
-      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'top-opponents'" (click)="selectExperiment('top-opponents')">
+      <a class="lab-menu-item" [routerLink]="['/lab/top-opponents']">
         <span><strong>Top opponents</strong><small>Grouped by opponent name</small></span>
         <span class="pill">List</span>
-      </button>
-      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'monthly-games'" (click)="selectExperiment('monthly-games')">
+      </a>
+      <a class="lab-menu-item" [routerLink]="['/lab/monthly-games']">
         <span><strong>Monthly games</strong><small>Year/month WDL and rating snapshots</small></span>
         <span class="pill">Table</span>
-      </button>
-      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'performance-by-rating'" (click)="selectExperiment('performance-by-rating')">
+      </a>
+      <a class="lab-menu-item" [routerLink]="['/lab/performance-by-rating']">
         <span><strong>Performance by rating</strong><small>Provider and speed results by opponent strength</small></span>
         <span class="pill">Report</span>
-      </button>
-      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'tactical-detections'" (click)="selectExperiment('tactical-detections')">
+      </a>
+      <a class="lab-menu-item" [routerLink]="['/lab/tactical-detections']">
         <span><strong>Tactical detections</strong><small>Missed shots and my blunders from analysed games</small></span>
         <span class="pill">Table</span>
-      </button>
-      <button type="button" class="lab-menu-item" [class.lab-menu-item-active]="selected() === 'training-log'" (click)="selectExperiment('training-log')">
+      </a>
+      <a class="lab-menu-item" [routerLink]="['/lab/training-log']">
         <span><strong>Training log</strong><small>Course/chapter/line sequence attempts</small></span>
         <span class="pill">Table</span>
-      </button>
+      </a>
     </div>
   </section>
-
-  @switch (selected()) {
-    @case ('top-opponents') { <app-lab-top-opponents /> }
-    @case ('monthly-games') { <app-lab-monthly-games /> }
-    @case ('performance-by-rating') { <app-lab-performance-by-rating /> }
-    @case ('tactical-detections') { <app-lab-tactical-detections /> }
-    @case ('training-log') { <app-lab-training-log /> }
-    @default {
-      <section class="section-card lab-panel">
-        <div class="empty-state lab-empty">Choose an experiment above to open it full width.</div>
-      </section>
-    }
-  }
 </section>
