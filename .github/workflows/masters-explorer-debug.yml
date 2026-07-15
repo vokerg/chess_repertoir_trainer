@@ -19,4 +19,13 @@ jobs:
       - run: npm ci --silent
       - run: npm run build:api --silent
       - name: Masters Explorer OpenAPI test
-        run: node apps/api/test/openapi/masters-explorer-openapi.test.mjs
+        id: masters_openapi
+        continue-on-error: true
+        run: node apps/api/test/openapi/masters-explorer-openapi.test.mjs > masters-openapi.log 2>&1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: masters-openapi-log
+          path: masters-openapi.log
+      - name: Preserve test result
+        if: steps.masters_openapi.outcome == 'failure'
+        run: exit 1
