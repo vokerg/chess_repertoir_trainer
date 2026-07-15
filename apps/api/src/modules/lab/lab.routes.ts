@@ -6,8 +6,6 @@ import {
 } from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
-import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
-import { getOpeningStruggles } from './opening-struggles/opening-struggles.service';
 import { getPerformanceByRating } from './performance-by-rating/performance-by-rating.service';
 import {
   tacticalDetectionListSchema,
@@ -66,17 +64,6 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return getPerformanceByRating(auth.userId, request.query);
-  });
-
-  app.get('/api/lab/opening-struggles', {
-    schema: labSchema('getOpeningStruggles', 'Find openings with the weakest results', {
-      querystring: openingStrugglesQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
-    }),
-  }, async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-    return getOpeningStruggles(auth.userId, request.query);
   });
 
   app.get('/api/lab/training-log', {

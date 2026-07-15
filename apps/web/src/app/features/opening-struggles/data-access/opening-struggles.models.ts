@@ -1,15 +1,13 @@
-export type OpeningStrugglesResultMetric = 'none' | 'lossRate' | 'winRate' | 'scorePct';
-export type OpeningStrugglesEvalMetric = 'none' | 'userEvalCp';
+export type OpeningStrugglesMode = 'results' | 'moveQuality';
+
 export interface OpeningStrugglesCriteria {
+  mode: OpeningStrugglesMode;
   minGames: number;
-  maxPly: number;
-  limit: number;
-  resultMetric: OpeningStrugglesResultMetric;
   minLossRate: number;
-  maxWinRate: number;
-  maxScorePct: number;
-  evalMetric: OpeningStrugglesEvalMetric;
-  maxUserEvalCp: number;
+  minAnalysedGames: number;
+  minAverageCentipawnLoss: number;
+  openingDepth: number;
+  limit: number;
 }
 
 export interface OpeningStruggleItem {
@@ -28,8 +26,9 @@ export interface OpeningStruggleItem {
   winRate: number | null;
   lossRate: number | null;
   scorePct: number | null;
+  analysedMoveCount: number;
+  averageCentipawnLoss: number | null;
   evalGames: number;
-  evalBadGames: number;
   avgUserEvalCp: number | null;
   bestUserEvalCp: number | null;
   worstUserEvalCp: number | null;
@@ -42,10 +41,8 @@ export interface OpeningStruggleItem {
 export interface OpeningStrugglesResponse {
   totalFilteredGames: number;
   indexedFilteredGames: number;
-  minGames: number;
   maxPly: number;
   limit: number;
-  resultMetric: OpeningStrugglesResultMetric;
-  evalMetric: OpeningStrugglesEvalMetric;
+  mode: OpeningStrugglesMode;
   items: OpeningStruggleItem[];
 }

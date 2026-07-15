@@ -18,6 +18,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Courses: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
 - Games table presentation: external templates/styles, built-in control flow with stable row tracking, signal-based action-menu state, and tested feature-local display helpers.
 - Lab: composition-only shell with isolated experiment components, page-scoped signal stores, typed experiment data access, external templates/styles, and built-in control flow.
+- Opening struggles: standalone Openings page with feature-local state, data access, query helpers, responsive criteria UI, and no Lab dependency.
 - Study planner refactor: `/library` now uses feature-local presentational components for scope columns, line selection, and the training basket, with selected-line marathon navigation owned by the store.
 - Chapter line health table: chapter lines now use feature-local table/status/action components, store-owned expanded row state, selected line ids, selected subline hashes, and typed subline status data access.
 - Free analysis: `/analysis` now uses a composition-focused route page, feature-local workbench and my-games panel components, signal store workflow state, typed route-query helpers, and built-in control flow.

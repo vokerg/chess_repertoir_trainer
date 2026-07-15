@@ -33,6 +33,7 @@ export class GameFilterPanelComponent {
   readonly filters = input.required<GameFilters>();
   readonly facets = input<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly loading = input(false);
+  readonly applyLabel = input('Apply filters');
   readonly lockedUserColor = input<UserColor | null>(null);
   readonly filtersChange = output<GameFilters>();
   readonly apply = output<void>();

@@ -115,8 +115,8 @@ export const routes: Routes = [
     title: 'Opening struggles | Chess Repertoire Trainer',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/lab/experiments/opening-struggles/opening-struggles-experiment.component').then(
-        (m) => m.OpeningStrugglesExperimentComponent,
+      import('./features/opening-struggles/pages/opening-struggles-page.component').then(
+        (m) => m.OpeningStrugglesPageComponent,
       ),
   },
   {

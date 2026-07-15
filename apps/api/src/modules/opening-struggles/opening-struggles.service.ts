@@ -1,8 +1,8 @@
 import {
   findImportedGamesForOpeningStruggles,
   OpeningStrugglesGameRow,
-} from '../../imported-games/imported-games.repository.prisma';
-import { ImportedGameSummaryQuery } from '../../imported-games/imported-games.schemas';
+} from '../imported-games/imported-games.repository.prisma';
+import { ImportedGameSummaryQuery } from '../imported-games/imported-games.schemas';
 import { OpeningStrugglesQuery } from './opening-struggles.schema';
 
 interface OpeningStruggleNode {
@@ -18,10 +18,11 @@ interface OpeningStruggleNode {
   draws: number;
   losses: number;
   evalGames: number;
-  evalBadGames: number;
   evalSumUserCp: number;
   bestUserEvalCp: number | null;
   worstUserEvalCp: number | null;
+  analysedMoveCount: number;
+  centipawnLossSum: number;
   afterPositionAnalysisId: number | null;
   afterPositionNormalizedFen: string | null;
   afterPositionBestScoreCpWhite: number | null;
@@ -54,14 +55,12 @@ function userEvalCpFromWhiteEval(
 function importedGameFilters(query: OpeningStrugglesQuery): ImportedGameSummaryQuery {
   const {
     minGames: _minGames,
+    mode: _mode,
+    minAnalysedGames: _minAnalysedGames,
+    minAverageCentipawnLoss: _minAverageCentipawnLoss,
     maxPly: _maxPly,
     limit: _limit,
-    resultMetric: _resultMetric,
     minLossRate: _minLossRate,
-    maxWinRate: _maxWinRate,
-    maxScorePct: _maxScorePct,
-    evalMetric: _evalMetric,
-    maxUserEvalCp: _maxUserEvalCp,
     ...filters
   } = query;
   return filters;
@@ -86,10 +85,11 @@ function createNode(
     draws: 0,
     losses: 0,
     evalGames: 0,
-    evalBadGames: 0,
     evalSumUserCp: 0,
     bestUserEvalCp: null,
     worstUserEvalCp: null,
+    analysedMoveCount: 0,
+    centipawnLossSum: 0,
     afterPositionAnalysisId: null,
     afterPositionNormalizedFen: null,
     afterPositionBestScoreCpWhite: null,
@@ -104,12 +104,15 @@ function addResult(node: OpeningStruggleNode, resultForUser: string | null) {
   else if (resultForUser === 'LOSS') node.losses += 1;
 }
 
-function updateEval(node: OpeningStruggleNode, userEvalCp: number, maxUserEvalCp: number) {
+function updateEval(node: OpeningStruggleNode, userEvalCp: number) {
   node.evalGames += 1;
   node.evalSumUserCp += userEvalCp;
-  if (userEvalCp <= maxUserEvalCp) node.evalBadGames += 1;
   node.bestUserEvalCp = node.bestUserEvalCp === null ? userEvalCp : Math.max(node.bestUserEvalCp, userEvalCp);
   node.worstUserEvalCp = node.worstUserEvalCp === null ? userEvalCp : Math.min(node.worstUserEvalCp, userEvalCp);
+}
+
+function isOwnerMove(plyNumber: number, userColor: 'WHITE' | 'BLACK'): boolean {
+  return userColor === 'WHITE' ? plyNumber % 2 === 1 : plyNumber % 2 === 0;
 }
 
 function buildTree(games: OpeningStrugglesGameRow[], query: OpeningStrugglesQuery) {
@@ -155,13 +158,14 @@ function buildTree(games: OpeningStrugglesGameRow[], query: OpeningStrugglesQuer
           analysis?.bestMateWhite,
           game.userColor,
         );
-        if (userEvalCp !== null) updateEval(node, userEvalCp, query.maxUserEvalCp);
+        if (userEvalCp !== null) updateEval(node, userEvalCp);
 
-        const metricEligible = query.evalMetric === 'none'
-          || (userEvalCp !== null && userEvalCp <= query.maxUserEvalCp);
-        if (metricEligible) {
-          node.metricGameIds.add(game.id);
-          addResult(node, game.resultForUser);
+        node.metricGameIds.add(game.id);
+        addResult(node, game.resultForUser);
+
+        if (isOwnerMove(ply.plyNumber, game.userColor) && ply.scoreLossCp !== null) {
+          node.analysedMoveCount += 1;
+          node.centipawnLossSum += ply.scoreLossCp;
         }
       }
 
@@ -173,22 +177,8 @@ function buildTree(games: OpeningStrugglesGameRow[], query: OpeningStrugglesQuer
   return roots;
 }
 
-function resultMetricPasses(
-  query: OpeningStrugglesQuery,
-  lossRate: number | null,
-  winRate: number | null,
-  resultScorePct: number | null,
-) {
-  if (query.resultMetric === 'none') return true;
-  if (query.resultMetric === 'lossRate') return lossRate !== null && lossRate >= query.minLossRate;
-  if (query.resultMetric === 'winRate') {
-    return query.maxWinRate !== undefined && winRate !== null && winRate <= query.maxWinRate;
-  }
-  return query.maxScorePct !== undefined && resultScorePct !== null && resultScorePct <= query.maxScorePct;
-}
-
 function toItem(node: OpeningStruggleNode) {
-  const games = node.metricGameIds.size;
+  const games = node.totalReachGameIds.size;
   return {
     key: node.key,
     parentKey: node.parentKey,
@@ -204,8 +194,11 @@ function toItem(node: OpeningStruggleNode) {
     winRate: roundPercent(games > 0 ? (node.wins / games) * 100 : null),
     lossRate: roundPercent(games > 0 ? (node.losses / games) * 100 : null),
     scorePct: roundPercent(games > 0 ? ((node.wins + node.draws * 0.5) / games) * 100 : null),
+    analysedMoveCount: node.analysedMoveCount,
+    averageCentipawnLoss: node.analysedMoveCount > 0
+      ? Math.round((node.centipawnLossSum / node.analysedMoveCount) * 10) / 10
+      : null,
     evalGames: node.evalGames,
-    evalBadGames: node.evalBadGames,
     avgUserEvalCp: node.evalGames > 0 ? Math.round(node.evalSumUserCp / node.evalGames) : null,
     bestUserEvalCp: node.bestUserEvalCp,
     worstUserEvalCp: node.worstUserEvalCp,
@@ -221,10 +214,14 @@ function flatten(roots: Map<string, OpeningStruggleNode>, query: OpeningStruggle
 
   function visit(node: OpeningStruggleNode) {
     const item = toItem(node);
-    if (
-      item.metricGames >= query.minGames
-      && resultMetricPasses(query, item.lossRate, item.winRate, item.scorePct)
-    ) {
+    const matches = query.mode === 'results'
+      ? item.totalReachGames >= query.minGames
+        && item.lossRate !== null
+        && item.lossRate >= query.minLossRate
+      : item.analysedMoveCount >= query.minAnalysedGames
+        && item.averageCentipawnLoss !== null
+        && item.averageCentipawnLoss >= query.minAverageCentipawnLoss;
+    if (matches) {
       items.push(item);
     }
     for (const child of node.children.values()) visit(child);
@@ -240,20 +237,15 @@ function sortItems(items: ReturnType<typeof toItem>[], query: OpeningStrugglesQu
   return items.sort((left, right) => {
     const colorOrder = (left.userColor === 'WHITE' ? 0 : 1) - (right.userColor === 'WHITE' ? 0 : 1);
     if (colorOrder !== 0) return colorOrder;
-    if (query.resultMetric === 'lossRate' && left.lossRate !== right.lossRate) {
+    if (query.mode === 'results' && left.lossRate !== right.lossRate) {
       return (right.lossRate ?? -1) - (left.lossRate ?? -1);
     }
-    if (query.resultMetric === 'scorePct' && left.scorePct !== right.scorePct) {
-      return (left.scorePct ?? 101) - (right.scorePct ?? 101);
+    if (query.mode === 'moveQuality' && left.averageCentipawnLoss !== right.averageCentipawnLoss) {
+      return (right.averageCentipawnLoss ?? -1) - (left.averageCentipawnLoss ?? -1);
     }
-    if (query.resultMetric === 'winRate' && left.winRate !== right.winRate) {
-      return (left.winRate ?? 101) - (right.winRate ?? 101);
-    }
-    if (query.evalMetric === 'userEvalCp' && left.avgUserEvalCp !== right.avgUserEvalCp) {
-      return (left.avgUserEvalCp ?? Number.POSITIVE_INFINITY)
-        - (right.avgUserEvalCp ?? Number.POSITIVE_INFINITY);
-    }
-    return right.metricGames - left.metricGames || right.ply - left.ply || left.key.localeCompare(right.key);
+    const leftCount = query.mode === 'results' ? left.totalReachGames : left.analysedMoveCount;
+    const rightCount = query.mode === 'results' ? right.totalReachGames : right.analysedMoveCount;
+    return rightCount - leftCount || right.ply - left.ply || left.key.localeCompare(right.key);
   });
 }
 
@@ -262,20 +254,27 @@ export async function getOpeningStruggles(userId: number, query: OpeningStruggle
   const candidateGames = await findImportedGamesForOpeningStruggles(userId, filters, query.maxPly);
   const filteredGames = candidateGames;
   const indexedGames = filteredGames.filter((game) => game.plyIndexedAt !== null);
-  const items = sortItems(flatten(buildTree(indexedGames, query), query), query).slice(0, query.limit);
+  const items = buildOpeningStruggleItems(indexedGames, query);
 
   return {
     totalFilteredGames: filteredGames.length,
     indexedFilteredGames: indexedGames.length,
-    minGames: query.minGames,
     maxPly: query.maxPly,
     limit: query.limit,
-    resultMetric: query.resultMetric,
-    evalMetric: query.evalMetric,
-    ...(query.resultMetric === 'lossRate' ? { minLossRate: query.minLossRate } : {}),
-    ...(query.resultMetric === 'winRate' ? { maxWinRate: query.maxWinRate } : {}),
-    ...(query.resultMetric === 'scorePct' ? { maxScorePct: query.maxScorePct } : {}),
-    ...(query.evalMetric === 'userEvalCp' ? { maxUserEvalCp: query.maxUserEvalCp } : {}),
+    mode: query.mode,
+    ...(query.mode === 'results'
+      ? { minGames: query.minGames, minLossRate: query.minLossRate }
+      : {
+          minAnalysedGames: query.minAnalysedGames,
+          minAverageCentipawnLoss: query.minAverageCentipawnLoss,
+        }),
     items,
   };
+}
+
+export function buildOpeningStruggleItems(
+  games: OpeningStrugglesGameRow[],
+  query: OpeningStrugglesQuery,
+) {
+  return sortItems(flatten(buildTree(games, query), query), query).slice(0, query.limit);
 }

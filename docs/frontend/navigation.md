@@ -44,7 +44,7 @@ Parent group links should navigate to the first/default child.
 - `/accounts/:accountId` temporarily redirects to `/progress/accounts/:accountId`.
 - `/progress` chooses the default progress account first, then an active account, then the first account.
 - `/progress/accounts/:accountId` owns the account progress dashboard.
-- `/opening-struggles` remains directly routable from the Openings menu even though the component still lives under the Lab experiment directory for now.
+- `/opening-struggles` is owned by the standalone `features/opening-struggles` feature and is backed by `/api/opening-struggles`.
 
 ## Active-State Rules
 
