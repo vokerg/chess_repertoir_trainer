@@ -44,6 +44,45 @@ export async function getCourseReviewLines(userId: number, courseId: number) {
   });
 }
 
+export async function getOpeningStruggleCourseLines(userId: number) {
+  return prisma.line.findMany({
+    where: { chapter: { course: { userId } } },
+    orderBy: [
+      { chapter: { course: { name: 'asc' } } },
+      { chapter: { sortOrder: 'asc' } },
+      { id: 'asc' },
+    ],
+    select: {
+      id: true,
+      chapterId: true,
+      name: true,
+      sideToTrain: true,
+      startingFen: true,
+      chapter: {
+        select: {
+          course: { select: { id: true, name: true } },
+        },
+      },
+      moves: {
+        orderBy: [{ plyNumber: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          lineId: true,
+          parentId: true,
+          plyNumber: true,
+          fenBefore: true,
+          fenAfter: true,
+          moveUci: true,
+          moveSan: true,
+          colorToMoveBefore: true,
+          isUserMove: true,
+          isCorrectUserMove: true,
+        },
+      },
+    },
+  });
+}
+
 export async function getCourseReviewCandidateGames(input: {
   userId: number;
   sideToTrain: RepertoireColor | null;

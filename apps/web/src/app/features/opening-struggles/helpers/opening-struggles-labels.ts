@@ -88,6 +88,50 @@ function terminalFen(item: OpeningStruggleItem): string {
   return fenAfterMoves(item.movesUci);
 }
 
+export function courseCoverageLabel(item: OpeningStruggleItem): string {
+  const coverage = item.courseCoverage;
+  const courses = coverage.courses.map((course) => course.name).join(', ');
+  const courseSuffix = courses ? ` Course${coverage.courses.length === 1 ? '' : 's'}: ${courses}.` : '';
+  const deviationMove = coverage.deviationPly === null
+    ? null
+    : moveLabelAtPly(item, coverage.deviationPly);
+  const expected = coverage.expectedMoveSans.length
+    ? ` Expected: ${coverage.expectedMoveSans.join(' or ')}.`
+    : '';
+  if (coverage.status === 'COVERED') {
+    return `Covered by courses through the full line.${courseSuffix}`;
+  }
+  if (coverage.status === 'MY_DEVIATION') {
+    return `Your move${deviationMove ? ` ${deviationMove}` : ''} leaves the course.${expected}${courseSuffix}`;
+  }
+  if (coverage.status === 'OPPONENT_UNCOVERED') {
+    return `The opponent move${deviationMove ? ` ${deviationMove}` : ''} is not covered.${expected}${courseSuffix}`;
+  }
+  if (coverage.status === 'REPERTOIRE_ENDED') {
+    return `The stored repertoire ends before${deviationMove ? ` ${deviationMove}` : ' this line ends'}.${courseSuffix}`;
+  }
+  return 'Not covered by courses.';
+}
+
+export function courseCoverageStatusLabel(item: OpeningStruggleItem): string {
+  const labels = {
+    COVERED: 'Covered',
+    MY_DEVIATION: 'Your deviation',
+    OPPONENT_UNCOVERED: 'Opponent move uncovered',
+    REPERTOIRE_ENDED: 'Repertoire ended',
+    NOT_COVERED: 'Not covered',
+  } as const;
+  return labels[item.courseCoverage.status];
+}
+
+function moveLabelAtPly(item: OpeningStruggleItem, ply: number): string | null {
+  const moves = item.movesSan?.length ? item.movesSan : movesSan(item.movesUci);
+  const move = moves[ply - 1];
+  if (!move) return null;
+  const moveNumber = Math.ceil(ply / 2);
+  return ply % 2 === 1 ? `${moveNumber}. ${move}` : `${moveNumber}... ${move}`;
+}
+
 function fenAfterMoves(movesUci: readonly string[]): string {
   const chess = new Chess();
   for (const uci of movesUci) {

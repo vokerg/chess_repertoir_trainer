@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import { OpeningStruggleCoverageComponent } from '../components/opening-struggle-coverage.component';
 import { OpeningStrugglesApiService } from '../data-access/opening-struggles-api.service';
 import { OpeningStrugglesMode } from '../data-access/opening-struggles.models';
 import {
@@ -19,7 +20,12 @@ import { OpeningStrugglesStore } from '../state/opening-struggles.store';
 @Component({
   selector: 'app-opening-struggles-page',
   standalone: true,
-  imports: [PageHeaderComponent, GameFilterPanelComponent, CopyableLineComponent],
+  imports: [
+    PageHeaderComponent,
+    GameFilterPanelComponent,
+    CopyableLineComponent,
+    OpeningStruggleCoverageComponent,
+  ],
   providers: [OpeningStrugglesApiService, OpeningStrugglesStore],
   templateUrl: './opening-struggles-page.component.html',
   styleUrl: './opening-struggles-page.component.css',

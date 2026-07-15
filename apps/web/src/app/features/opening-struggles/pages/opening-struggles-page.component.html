@@ -73,12 +73,17 @@
       @for (item of store.items(); track item.key) {
         <tr>
           <td class="primary-cell line-cell">
-            <app-copyable-line
-              [line]="store.isRepeatedMistakesMode() ? positionBeforeMoveLabel(item) : lineLabel(item)"
-              [link]="['/analysis']"
-              [queryParams]="analysisQueryParams(item, store.criteria().mode)"
-              [ariaLabel]="'Copy line ' + (store.isRepeatedMistakesMode() ? positionBeforeMoveLabel(item) : lineLabel(item))"
-            />
+            <div class="line-with-coverage">
+              <app-copyable-line
+                [line]="store.isRepeatedMistakesMode() ? positionBeforeMoveLabel(item) : lineLabel(item)"
+                [link]="['/analysis']"
+                [queryParams]="analysisQueryParams(item, store.criteria().mode)"
+                [ariaLabel]="'Copy line ' + (store.isRepeatedMistakesMode() ? positionBeforeMoveLabel(item) : lineLabel(item))"
+              />
+              @if (item.courseCoverage.status !== 'NOT_COVERED') {
+                <app-opening-struggle-coverage [item]="item" />
+              }
+            </div>
           </td>
           @if (store.isResultsMode()) {
             <td>{{ userColorLabel(item) }}</td><td>{{ item.totalReachGames }} / {{ wdlLabel(item) }}</td><td>{{ percentLabel(item.lossRate) }}</td>

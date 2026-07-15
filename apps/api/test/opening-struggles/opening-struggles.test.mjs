@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Chess } from 'chess.js';
 import { buildApp } from '../../dist/app.js';
 import { openingStrugglesQuerySchema } from '../../dist/modules/opening-struggles/opening-struggles.schema.js';
 import { buildOpeningStruggleItems } from '../../dist/modules/opening-struggles/opening-struggles.service.js';
@@ -41,9 +42,126 @@ function game(id, userColor, {
   };
 }
 
+function courseLine(courseId, courseName, sideToTrain, movesUci, lineId = courseId * 10) {
+  const chess = new Chess();
+  const moves = movesUci.map((moveUci, index) => {
+    const fenBefore = chess.fen();
+    const colorToMoveBefore = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
+    const move = chess.move({
+      from: moveUci.slice(0, 2),
+      to: moveUci.slice(2, 4),
+      promotion: moveUci[4],
+    });
+    return {
+      id: lineId * 100 + index + 1,
+      lineId,
+      parentId: index ? lineId * 100 + index : null,
+      plyNumber: index + 1,
+      fenBefore,
+      fenAfter: chess.fen(),
+      moveUci,
+      moveSan: move.san,
+      colorToMoveBefore,
+      isUserMove: colorToMoveBefore === sideToTrain,
+      isCorrectUserMove: colorToMoveBefore === sideToTrain,
+    };
+  });
+  return {
+    id: lineId,
+    name: `${courseName} line`,
+    sideToTrain,
+    startingFen: 'startpos',
+    moves,
+    course: { id: courseId, name: courseName },
+  };
+}
+
+function coverageFor(moves, userColor, courseLines) {
+  const query = openingStrugglesQuerySchema.parse({
+    mode: 'results', minGames: 1, minLossRate: 0, maxPly: moves.length,
+  });
+  const items = buildOpeningStruggleItems([
+    game(900 + moves.length, userColor, { resultForUser: 'LOSS', moves }),
+  ], query, courseLines);
+  return items.find((item) => item.movesUci.length === moves.length)?.courseCoverage;
+}
+
 const defaultQuery = openingStrugglesQuerySchema.parse({});
 assert.equal(defaultQuery.minAverageCentipawnLoss, 60);
 assert.equal(defaultQuery.maxAverageUserEvalCp, -80);
+
+const whiteOpenGame = courseLine(1, 'White Openings', 'WHITE', ['e2e4', 'e7e5', 'g1f3']);
+assert.equal(coverageFor(['d2d4'], 'WHITE', [whiteOpenGame]).status, 'NOT_COVERED');
+assert.equal(
+  coverageFor(['e2e4', 'e7e5'], 'WHITE', [whiteOpenGame]).status,
+  'COVERED',
+);
+const myDeviationCoverage = coverageFor(
+  ['e2e4', 'e7e5', 'd2d3'],
+  'WHITE',
+  [whiteOpenGame],
+);
+assert.equal(myDeviationCoverage.status, 'MY_DEVIATION');
+assert.equal(myDeviationCoverage.coveredPlies, 2);
+assert.equal(myDeviationCoverage.deviationPly, 3);
+assert.deepEqual(myDeviationCoverage.expectedMoveSans, ['Nf3']);
+
+const opponentDeviationCoverage = coverageFor(
+  ['e2e4', 'c7c5'],
+  'WHITE',
+  [whiteOpenGame],
+);
+assert.equal(opponentDeviationCoverage.status, 'OPPONENT_UNCOVERED');
+assert.equal(opponentDeviationCoverage.coveredPlies, 1);
+assert.equal(opponentDeviationCoverage.deviationPly, 2);
+
+const shortCourse = courseLine(2, 'Short Course', 'WHITE', ['e2e4']);
+assert.equal(
+  coverageFor(['e2e4', 'e7e5'], 'WHITE', [shortCourse]).status,
+  'REPERTOIRE_ENDED',
+);
+
+const alternativeCourse = courseLine(3, 'Alternative', 'WHITE', ['e2e4', 'c7c5']);
+const fullCoverageWins = coverageFor(
+  ['e2e4', 'e7e5'],
+  'WHITE',
+  [alternativeCourse, whiteOpenGame],
+);
+assert.equal(fullCoverageWins.status, 'COVERED');
+assert.deepEqual(fullCoverageWins.courses, [{ id: 1, name: 'White Openings' }]);
+
+const secondCoveredCourse = courseLine(4, 'Also Open', 'WHITE', ['e2e4', 'e7e5']);
+assert.deepEqual(
+  coverageFor(['e2e4', 'e7e5'], 'WHITE', [whiteOpenGame, secondCoveredCourse]).courses,
+  [{ id: 4, name: 'Also Open' }, { id: 1, name: 'White Openings' }],
+  'tied full-coverage courses are retained',
+);
+
+const blackQueensGambit = courseLine(5, 'Black QG', 'BLACK', ['d2d4', 'd7d5']);
+assert.equal(
+  coverageFor(['d2d4', 'd7d5'], 'WHITE', [blackQueensGambit]).status,
+  'NOT_COVERED',
+  'White struggles ignore Black-training courses',
+);
+assert.equal(
+  coverageFor(['d2d4', 'd7d5'], 'BLACK', [blackQueensGambit]).status,
+  'COVERED',
+  'Black struggles use Black-training courses',
+);
+
+const transpositionCourseLines = [
+  courseLine(6, 'Nimzo', 'WHITE', ['d2d4', 'e7e6', 'c2c4', 'g8f6', 'b1c3'], 61),
+  courseLine(6, 'Nimzo', 'WHITE', ['d2d4', 'g8f6', 'c2c4', 'g7g6'], 62),
+];
+assert.equal(
+  coverageFor(
+    ['d2d4', 'g8f6', 'c2c4', 'e7e6', 'b1c3'],
+    'WHITE',
+    transpositionCourseLines,
+  ).status,
+  'COVERED',
+  'opening-prefix coverage retains course-review opponent transpositions',
+);
 
 const whiteGames = [
   game(1, 'WHITE', { resultForUser: 'LOSS', scoreLosses: [120, 900], afterEvals: [-100, -200] }),

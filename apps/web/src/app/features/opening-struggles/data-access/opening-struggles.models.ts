@@ -38,6 +38,22 @@ export interface OpeningStruggleItem {
   afterPositionNormalizedFen: string | null;
   afterPositionBestScoreCpWhite: number | null;
   afterPositionBestMateWhite: number | null;
+  courseCoverage: OpeningStruggleCourseCoverage;
+}
+
+export type OpeningStruggleCoverageStatus =
+  | 'COVERED'
+  | 'MY_DEVIATION'
+  | 'OPPONENT_UNCOVERED'
+  | 'REPERTOIRE_ENDED'
+  | 'NOT_COVERED';
+
+export interface OpeningStruggleCourseCoverage {
+  status: OpeningStruggleCoverageStatus;
+  coveredPlies: number;
+  deviationPly: number | null;
+  courses: Array<{ id: number; name: string }>;
+  expectedMoveSans: string[];
 }
 
 export interface OpeningStrugglesResponse {
