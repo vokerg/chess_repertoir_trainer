@@ -104,6 +104,8 @@ export class OpeningAnalysisStore implements OnDestroy {
   async refresh(): Promise<void> {
     const requestId = ++this.refreshRequestSeq;
     const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
+    this.performanceRequestSeq += 1;
+    this.performanceLoading.set(false);
     this.performance.set(null);
     this.topGames.set([]);
     this.openingBreakdowns.set([]);
