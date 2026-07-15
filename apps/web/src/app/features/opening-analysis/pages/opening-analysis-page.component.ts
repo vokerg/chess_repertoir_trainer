@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
@@ -32,7 +32,6 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OpeningAnalysisPageComponent implements OnInit {
-  private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(OpeningAnalysisStore);
   protected readonly challengeStore = inject(LichessBotChallengeStore);
   protected readonly scoreLabel = scoreLabel;
