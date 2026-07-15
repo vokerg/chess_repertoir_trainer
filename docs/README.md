@@ -6,6 +6,7 @@
 - [Frontend architecture](frontend/angular-architecture.md): Angular ownership and composition.
 - [Native mobile architecture](mobile/architecture.md): Expo workspace, Chessground DOM boundary, offline persistence, synchronization, and current rollout scope.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
+- [Masters Explorer](masters-explorer.md): system-wide Lichess Masters position statistics and persistent cache behavior.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Opening struggles](opening-struggles.md): report modes, course coverage semantics, and performance boundary.
 - [Course and training performance](performance/course-training-optimisation.md): phase measurements and structural regression constraints.
