@@ -1,9 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject } from '@angular/core';
-import { BoardActionToolbarComponent } from '../../../shared/chess/board/board-action-toolbar.component';
-import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
-import { EngineEvalBarComponent } from '../../../shared/chess/engine/engine-eval-bar.component';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
-import { StockfishPanelComponent } from '../../../shared/chess/engine/stockfish-panel.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
@@ -20,13 +17,10 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   selector: 'app-opening-analysis-page',
   standalone: true,
   imports: [
+    AnalysisWorkbenchComponent,
     CoursePositionSuggestionsWidgetComponent,
     GameFilterBreakdownPanelComponent,
     PositionGameMovesPanelComponent,
-    ChessgroundBoardComponent,
-    EngineEvalBarComponent,
-    StockfishPanelComponent,
-    BoardActionToolbarComponent,
     PageHeaderComponent,
     CopyableLineComponent,
     PositionPerformancePanelComponent,
@@ -57,6 +51,20 @@ export class OpeningAnalysisPageComponent implements OnInit {
     { id: 'next-moves', label: 'Next moves', value: this.store.analysis()?.nextMoves?.length || 0 },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+    {
+      id: 'tags',
+      kind: 'toggle',
+      label: 'Tags',
+      pressed: this.store.tagsOpen(),
+      run: () => this.store.toggleTags(),
+    },
+    {
+      id: 'engine',
+      kind: 'toggle',
+      label: 'Engine',
+      pressed: this.store.engineVisible(),
+      run: () => this.store.toggleEngine(),
+    },
     buildChallengeBotHeaderAction({
       run: () => this.challengeStore.openForFen(this.store.currentFen()),
     }),
