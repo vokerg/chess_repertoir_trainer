@@ -1,11 +1,13 @@
-export type OpeningStrugglesMode = 'results' | 'moveQuality';
+export type OpeningStrugglesMode = 'results' | 'repeatedMistakes' | 'badPositions';
 
 export interface OpeningStrugglesCriteria {
   mode: OpeningStrugglesMode;
   minGames: number;
   minLossRate: number;
-  minAnalysedGames: number;
+  minOccurrences: number;
   minAverageCentipawnLoss: number;
+  minEvaluatedGames: number;
+  maxAverageUserEvalCp: number;
   openingDepth: number;
   limit: number;
 }

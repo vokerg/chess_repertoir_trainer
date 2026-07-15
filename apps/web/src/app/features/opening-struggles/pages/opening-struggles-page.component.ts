@@ -4,7 +4,16 @@ import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { OpeningStrugglesApiService } from '../data-access/opening-struggles-api.service';
 import { OpeningStrugglesMode } from '../data-access/opening-struggles.models';
-import { analysisQueryParams, lineLabel, percentLabel, userColorLabel, wdlLabel } from '../helpers/opening-struggles-labels';
+import {
+  analysisQueryParams,
+  evalLabel,
+  lineLabel,
+  percentLabel,
+  positionBeforeMoveLabel,
+  repeatedMoveLabel,
+  userColorLabel,
+  wdlLabel,
+} from '../helpers/opening-struggles-labels';
 import { OpeningStrugglesStore } from '../state/opening-struggles.store';
 
 @Component({
@@ -22,6 +31,9 @@ export class OpeningStrugglesPageComponent implements OnInit {
   protected readonly wdlLabel = wdlLabel;
   protected readonly userColorLabel = userColorLabel;
   protected readonly percentLabel = percentLabel;
+  protected readonly evalLabel = evalLabel;
+  protected readonly positionBeforeMoveLabel = positionBeforeMoveLabel;
+  protected readonly repeatedMoveLabel = repeatedMoveLabel;
   protected readonly analysisQueryParams = analysisQueryParams;
 
   ngOnInit(): void { void this.store.initialize(); }

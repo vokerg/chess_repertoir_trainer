@@ -16,9 +16,12 @@ export function buildOpeningStrugglesQuery(
   if (criteria.mode === 'results') {
     params.set('minGames', String(criteria.minGames));
     params.set('minLossRate', String(criteria.minLossRate));
-  } else {
-    params.set('minAnalysedGames', String(criteria.minAnalysedGames));
+  } else if (criteria.mode === 'repeatedMistakes') {
+    params.set('minOccurrences', String(criteria.minOccurrences));
     params.set('minAverageCentipawnLoss', String(criteria.minAverageCentipawnLoss));
+  } else {
+    params.set('minEvaluatedGames', String(criteria.minEvaluatedGames));
+    params.set('maxAverageUserEvalCp', String(criteria.maxAverageUserEvalCp));
   }
   return params.toString();
 }

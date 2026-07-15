@@ -56,8 +56,10 @@ function importedGameFilters(query: OpeningStrugglesQuery): ImportedGameSummaryQ
   const {
     minGames: _minGames,
     mode: _mode,
-    minAnalysedGames: _minAnalysedGames,
+    minOccurrences: _minOccurrences,
     minAverageCentipawnLoss: _minAverageCentipawnLoss,
+    minEvaluatedGames: _minEvaluatedGames,
+    maxAverageUserEvalCp: _maxAverageUserEvalCp,
     maxPly: _maxPly,
     limit: _limit,
     minLossRate: _minLossRate,
@@ -212,35 +214,50 @@ function toItem(node: OpeningStruggleNode) {
 function flatten(roots: Map<string, OpeningStruggleNode>, query: OpeningStrugglesQuery) {
   const items: Array<ReturnType<typeof toItem>> = [];
 
-  function visit(node: OpeningStruggleNode) {
+  function matchesBadPosition(item: ReturnType<typeof toItem>): boolean {
+    return item.evalGames >= query.minEvaluatedGames
+      && item.avgUserEvalCp !== null
+      && item.avgUserEvalCp <= query.maxAverageUserEvalCp;
+  }
+
+  function visit(node: OpeningStruggleNode, parentMatchesBadPosition: boolean) {
     const item = toItem(node);
+    const badPositionMatch = matchesBadPosition(item);
     const matches = query.mode === 'results'
       ? item.totalReachGames >= query.minGames
         && item.lossRate !== null
         && item.lossRate >= query.minLossRate
-      : item.analysedMoveCount >= query.minAnalysedGames
-        && item.averageCentipawnLoss !== null
-        && item.averageCentipawnLoss >= query.minAverageCentipawnLoss;
+      : query.mode === 'repeatedMistakes'
+        ? item.analysedMoveCount >= query.minOccurrences
+          && item.averageCentipawnLoss !== null
+          && item.averageCentipawnLoss >= query.minAverageCentipawnLoss
+        : badPositionMatch && !parentMatchesBadPosition;
     if (matches) {
       items.push(item);
     }
-    for (const child of node.children.values()) visit(child);
+    for (const child of node.children.values()) visit(child, badPositionMatch);
   }
 
   for (const root of roots.values()) {
-    for (const child of root.children.values()) visit(child);
+    for (const child of root.children.values()) visit(child, false);
   }
   return items;
 }
 
 function sortItems(items: ReturnType<typeof toItem>[], query: OpeningStrugglesQuery) {
   return items.sort((left, right) => {
+    if (query.mode === 'badPositions') {
+      return (left.avgUserEvalCp ?? Number.POSITIVE_INFINITY)
+          - (right.avgUserEvalCp ?? Number.POSITIVE_INFINITY)
+        || right.evalGames - left.evalGames
+        || left.key.localeCompare(right.key);
+    }
     const colorOrder = (left.userColor === 'WHITE' ? 0 : 1) - (right.userColor === 'WHITE' ? 0 : 1);
     if (colorOrder !== 0) return colorOrder;
     if (query.mode === 'results' && left.lossRate !== right.lossRate) {
       return (right.lossRate ?? -1) - (left.lossRate ?? -1);
     }
-    if (query.mode === 'moveQuality' && left.averageCentipawnLoss !== right.averageCentipawnLoss) {
+    if (query.mode === 'repeatedMistakes' && left.averageCentipawnLoss !== right.averageCentipawnLoss) {
       return (right.averageCentipawnLoss ?? -1) - (left.averageCentipawnLoss ?? -1);
     }
     const leftCount = query.mode === 'results' ? left.totalReachGames : left.analysedMoveCount;
@@ -264,10 +281,15 @@ export async function getOpeningStruggles(userId: number, query: OpeningStruggle
     mode: query.mode,
     ...(query.mode === 'results'
       ? { minGames: query.minGames, minLossRate: query.minLossRate }
-      : {
-          minAnalysedGames: query.minAnalysedGames,
-          minAverageCentipawnLoss: query.minAverageCentipawnLoss,
-        }),
+      : query.mode === 'repeatedMistakes'
+        ? {
+            minOccurrences: query.minOccurrences,
+            minAverageCentipawnLoss: query.minAverageCentipawnLoss,
+          }
+        : {
+            minEvaluatedGames: query.minEvaluatedGames,
+            maxAverageUserEvalCp: query.maxAverageUserEvalCp,
+          }),
     items,
   };
 }
