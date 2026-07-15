@@ -106,6 +106,28 @@ describe('OpeningAnalysisStore', () => {
     expect(store.performance()?.sample.games).toBe(1);
   });
 
+  it('invalidates an old tag-performance request when the position refreshes while tags are closed', async () => {
+    const stalePerformance = deferred<OpeningAnalysisPerformanceResponse>();
+    api.getPerformance.and.returnValues(
+      stalePerformance.observable,
+      of(performanceResponse('fresh', 2)),
+    );
+
+    store.toggleTags();
+    store.toggleTags();
+    await store.refresh();
+
+    stalePerformance.next(performanceResponse('stale', 1));
+    await flushPromises();
+    expect(store.performance()).toBeNull();
+
+    store.toggleTags();
+    await flushPromises();
+
+    expect(api.getPerformance).toHaveBeenCalledTimes(2);
+    expect(store.performance()?.sample.games).toBe(2);
+  });
+
   it('does not let stale core or panel responses overwrite newer state', async () => {
     const firstCore = deferred<OpeningAnalysisResponse>();
     const firstPerformance = deferred<OpeningAnalysisPerformanceResponse>();
