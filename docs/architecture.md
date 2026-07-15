@@ -18,7 +18,7 @@ See [Native mobile architecture](mobile/architecture.md) for the mobile boundary
 
 ## Current API structure
 
-`apps/api/src/routes/index.ts` is the route composition source of truth. It currently registers these feature modules:
+`apps/api/src/routes/index.ts` is the route composition source of truth. Notable registered feature modules include:
 
 ```text
 apps/api/src/modules/
@@ -27,11 +27,14 @@ apps/api/src/modules/
   imported-games/        game browsing, facets, PGN, and opening data
   lab/                   exploratory game reports
   mobile-sync/           offline course bundles and mobile attempt ingestion
+  opening-struggles/     recurring opening problems and course coverage
   repertoire-coverage/   course review against imported games
   stats/                 summary, line, and course statistics
   training/              line training sessions
   training-marathons/    marathon next-item workflow and selected candidate resolution
 ```
+
+The complete registered set remains defined by `apps/api/src/routes/index.ts`; this documentation list is intentionally descriptive rather than exhaustive.
 
 These registered routes remain global because they span provider/account integration rather than one product module:
 
@@ -44,6 +47,8 @@ The imported-games module has a feature-local query service that shares filterin
 Imported-game reads use consumer-specific projections. List endpoints do not return detail-only fields, response DTOs describe the fields their consumer needs, and Prisma selects mirror those DTOs. Snapshot columns replace relation reads when they already contain the list value. Counts, facets, averages, and rankings use database aggregation or explicitly bounded queries rather than unbounded row loading followed by Node reduction. Browser, detail, opening-analysis, workflow, and MCP models remain separate even when they reuse `buildImportedGameWhere`.
 
 Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position analysis is stored in the analysis module's position-analysis cache with compact or rich persistence: imported-game flows write scalar-only compact rows, while free/interactive analysis can write rich rows with PV lines. Per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
+
+Opening struggles is a standalone Openings feature. It counts candidate games before loading early plies, rejects scopes above its documented safety limit, builds prefix aggregates in memory, and annotates returned prefixes with side-specific course coverage. It reuses the repertoire sequence matcher shared with course review and exposes a verified contract from `packages/contracts`. See [Opening struggles](opening-struggles.md).
 
 Lab tactical detections are persisted reports over analysed imported games. They reuse cached position evals to identify missed shots, punished opponent blunders, and user blunders without running an engine. See [Tactical Detections](tactical-detections.md) for detection semantics, persistence, and Lab UI behavior.
 
