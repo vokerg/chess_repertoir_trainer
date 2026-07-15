@@ -110,7 +110,7 @@ export function courseCoverageLabel(item: OpeningStruggleItem): string {
   if (coverage.status === 'REPERTOIRE_ENDED') {
     return `The stored repertoire ends before${deviationMove ? ` ${deviationMove}` : ' this line ends'}.${courseSuffix}`;
   }
-  return 'Not covered by courses.';
+  return 'Not covered by your courses.';
 }
 
 export function courseCoverageStatusLabel(item: OpeningStruggleItem): string {

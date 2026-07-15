@@ -4,6 +4,8 @@ import {
   importedGameFacetsResponseSchema,
   importedGameSearchQuerySchema,
   mobileSyncManifestSchema,
+  openingStrugglesQuerySchema,
+  openingStrugglesResponseSchema,
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
   positionAnalysisLineSchema,
@@ -120,5 +122,74 @@ const performanceReport = {
   }],
 };
 assert.deepEqual(performanceByRatingResponseSchema.parse(performanceReport), performanceReport);
+
+assert.deepEqual(openingStrugglesQuerySchema.parse({
+  mode: 'repeatedMistakes',
+  from: '2026-01-01',
+  minOccurrences: '7',
+}), {
+  mode: 'repeatedMistakes',
+  from: '2026-01-01',
+  minGames: 5,
+  minLossRate: 60,
+  minOccurrences: 7,
+  minAverageCentipawnLoss: 60,
+  minEvaluatedGames: 5,
+  maxAverageUserEvalCp: -80,
+  maxPly: 20,
+  limit: 100,
+});
+assert.equal(openingStrugglesQuerySchema.safeParse({ mode: 'unknown' }).success, false);
+
+const openingStrugglesReport = {
+  totalFilteredGames: 6,
+  indexedFilteredGames: 6,
+  maxPly: 20,
+  limit: 100,
+  mode: 'badPositions',
+  minEvaluatedGames: 5,
+  maxAverageUserEvalCp: -80,
+  items: [{
+    key: 'WHITE:d2d4 e7e5 c2c4',
+    parentKey: 'WHITE:d2d4 e7e5',
+    userColor: 'WHITE',
+    movesUci: ['d2d4', 'e7e5', 'c2c4'],
+    ply: 3,
+    analysisGameId: 42,
+    totalReachGames: 6,
+    metricGames: 6,
+    wins: 1,
+    draws: 1,
+    losses: 4,
+    winRate: 16.7,
+    lossRate: 66.7,
+    scorePct: 25,
+    analysedMoveCount: 6,
+    averageCentipawnLoss: 154,
+    evalGames: 6,
+    avgUserEvalCp: -108,
+    bestUserEvalCp: -40,
+    worstUserEvalCp: -180,
+    afterPositionAnalysisId: 7,
+    afterPositionNormalizedFen: 'fen',
+    afterPositionBestScoreCpWhite: -108,
+    afterPositionBestMateWhite: null,
+    courseCoverage: {
+      status: 'MY_DEVIATION',
+      coveredPlies: 2,
+      deviationPly: 3,
+      courses: [{ id: 3, name: 'White repertoire' }],
+      expectedMoveSans: ['dxe5'],
+    },
+  }],
+};
+assert.deepEqual(openingStrugglesResponseSchema.parse(openingStrugglesReport), openingStrugglesReport);
+assert.equal(
+  openingStrugglesResponseSchema.safeParse({
+    ...openingStrugglesReport,
+    items: [{ ...openingStrugglesReport.items[0], courseCoverage: { ...openingStrugglesReport.items[0].courseCoverage, status: 'UNKNOWN' } }],
+  }).success,
+  false,
+);
 
 console.log('Shared contract tests passed.');

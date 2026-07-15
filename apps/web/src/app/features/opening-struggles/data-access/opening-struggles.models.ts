@@ -1,4 +1,16 @@
-export type OpeningStrugglesMode = 'results' | 'repeatedMistakes' | 'badPositions';
+import type {
+  OpeningStruggleCourseCoverage as ContractOpeningStruggleCourseCoverage,
+  OpeningStruggleCoverageStatus as ContractOpeningStruggleCoverageStatus,
+  OpeningStruggleItem as ContractOpeningStruggleItem,
+  OpeningStrugglesMode as ContractOpeningStrugglesMode,
+  OpeningStrugglesResponse as ContractOpeningStrugglesResponse,
+} from '@chess-trainer/contracts/opening-struggles';
+
+export type OpeningStrugglesMode = ContractOpeningStrugglesMode;
+export type OpeningStruggleCoverageStatus = ContractOpeningStruggleCoverageStatus;
+export type OpeningStruggleCourseCoverage = ContractOpeningStruggleCourseCoverage;
+export type OpeningStruggleItem = ContractOpeningStruggleItem;
+export type OpeningStrugglesResponse = ContractOpeningStrugglesResponse;
 
 export interface OpeningStrugglesCriteria {
   mode: OpeningStrugglesMode;
@@ -10,57 +22,4 @@ export interface OpeningStrugglesCriteria {
   maxAverageUserEvalCp: number;
   openingDepth: number;
   limit: number;
-}
-
-export interface OpeningStruggleItem {
-  key: string;
-  parentKey: string | null;
-  userColor: 'WHITE' | 'BLACK';
-  movesUci: string[];
-  movesSan?: string[];
-  ply: number;
-  analysisGameId: number | null;
-  totalReachGames: number;
-  metricGames: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  winRate: number | null;
-  lossRate: number | null;
-  scorePct: number | null;
-  analysedMoveCount: number;
-  averageCentipawnLoss: number | null;
-  evalGames: number;
-  avgUserEvalCp: number | null;
-  bestUserEvalCp: number | null;
-  worstUserEvalCp: number | null;
-  afterPositionAnalysisId: number | null;
-  afterPositionNormalizedFen: string | null;
-  afterPositionBestScoreCpWhite: number | null;
-  afterPositionBestMateWhite: number | null;
-  courseCoverage: OpeningStruggleCourseCoverage;
-}
-
-export type OpeningStruggleCoverageStatus =
-  | 'COVERED'
-  | 'MY_DEVIATION'
-  | 'OPPONENT_UNCOVERED'
-  | 'REPERTOIRE_ENDED'
-  | 'NOT_COVERED';
-
-export interface OpeningStruggleCourseCoverage {
-  status: OpeningStruggleCoverageStatus;
-  coveredPlies: number;
-  deviationPly: number | null;
-  courses: Array<{ id: number; name: string }>;
-  expectedMoveSans: string[];
-}
-
-export interface OpeningStrugglesResponse {
-  totalFilteredGames: number;
-  indexedFilteredGames: number;
-  maxPly: number;
-  limit: number;
-  mode: OpeningStrugglesMode;
-  items: OpeningStruggleItem[];
 }

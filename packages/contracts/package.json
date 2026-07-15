@@ -35,6 +35,10 @@
     "./lab": {
       "types": "./dist/lab/index.d.ts",
       "default": "./dist/lab/index.js"
+    },
+    "./opening-struggles": {
+      "types": "./dist/opening-struggles/index.d.ts",
+      "default": "./dist/opening-struggles/index.js"
     }
   },
   "scripts": {
