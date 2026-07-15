@@ -6,7 +6,7 @@ import { buildOpeningStruggleItems } from '../../dist/modules/opening-struggles/
 function position(id, bestScoreCpWhite) {
   return {
     normalizedFen: `position-${id}`,
-    analysis: {
+    analysis: bestScoreCpWhite === null ? null : {
       id,
       bestScoreCpWhite,
       bestMateWhite: null,
@@ -14,23 +14,41 @@ function position(id, bestScoreCpWhite) {
   };
 }
 
-function game(id, userColor, resultForUser, firstMoveLoss, secondMoveLoss) {
+function game(id, userColor, {
+  resultForUser = null,
+  moves = ['e2e4', 'e7e5'],
+  scoreLosses = [],
+  afterEvals = [],
+} = {}) {
+  const plies = moves.map((moveUci, index) => ({
+    plyNumber: index + 1,
+    moveUci,
+    scoreLossCp: scoreLosses[index] ?? null,
+    position: position(id * 100 + index, index === 0 ? 0 : (afterEvals[index - 1] ?? null)),
+  }));
+  plies.push({
+    plyNumber: moves.length + 1,
+    moveUci: 'a2a3',
+    scoreLossCp: null,
+    position: position(id * 100 + moves.length, afterEvals[moves.length - 1] ?? null),
+  });
   return {
     id,
     userColor,
     resultForUser,
     plyIndexedAt: new Date('2026-07-15T00:00:00.000Z'),
-    plies: [
-      { plyNumber: 1, moveUci: 'e2e4', scoreLossCp: firstMoveLoss, position: position(id * 10 + 1, -900) },
-      { plyNumber: 2, moveUci: 'e7e5', scoreLossCp: secondMoveLoss, position: position(id * 10 + 2, -800) },
-    ],
+    plies,
   };
 }
 
+const defaultQuery = openingStrugglesQuerySchema.parse({});
+assert.equal(defaultQuery.minAverageCentipawnLoss, 60);
+assert.equal(defaultQuery.maxAverageUserEvalCp, -80);
+
 const whiteGames = [
-  game(1, 'WHITE', 'LOSS', 120, 900),
-  game(2, 'WHITE', 'WIN', 80, 800),
-  game(3, 'WHITE', null, null, 700),
+  game(1, 'WHITE', { resultForUser: 'LOSS', scoreLosses: [120, 900], afterEvals: [-100, -200] }),
+  game(2, 'WHITE', { resultForUser: 'WIN', scoreLosses: [80, 800], afterEvals: [-100, -200] }),
+  game(3, 'WHITE', { scoreLosses: [null, 700], afterEvals: [-100, -200] }),
 ];
 
 const strictResults = openingStrugglesQuerySchema.parse({
@@ -56,33 +74,134 @@ assert.equal(resultItems.length, 2);
 assert.equal(resultItems[0].totalReachGames, 3);
 assert.equal(resultItems[0].lossRate, 33.3);
 
-const moveQuality = openingStrugglesQuerySchema.parse({
-  mode: 'moveQuality',
-  minAnalysedGames: 2,
+const repeatedMistakes = openingStrugglesQuerySchema.parse({
+  mode: 'repeatedMistakes',
+  minOccurrences: 2,
   minAverageCentipawnLoss: 90,
   minLossRate: 100,
   maxPly: 2,
 });
-const qualityItems = buildOpeningStruggleItems(whiteGames, moveQuality);
-assert.equal(qualityItems.length, 1, 'move quality does not apply the result threshold');
-assert.equal(qualityItems[0].movesUci.join(' '), 'e2e4');
-assert.equal(qualityItems[0].analysedMoveCount, 2, 'null score losses are ignored');
-assert.equal(qualityItems[0].averageCentipawnLoss, 100);
+const repeatedItems = buildOpeningStruggleItems(whiteGames, repeatedMistakes);
+assert.equal(repeatedItems.length, 1, 'repeated mistakes do not apply the result threshold');
+assert.equal(repeatedItems[0].movesUci.join(' '), 'e2e4');
+assert.equal(repeatedItems[0].analysedMoveCount, 2, 'null score losses are ignored');
+assert.equal(repeatedItems[0].averageCentipawnLoss, 100);
 
 const blackGames = [
-  game(4, 'BLACK', 'LOSS', 1000, 200),
-  game(5, 'BLACK', 'WIN', 900, 100),
+  game(4, 'BLACK', { resultForUser: 'LOSS', scoreLosses: [1000, 200], afterEvals: [0, -150] }),
+  game(5, 'BLACK', { resultForUser: 'WIN', scoreLosses: [900, 100], afterEvals: [0, -150] }),
 ];
-const blackQuality = openingStrugglesQuerySchema.parse({
-  mode: 'moveQuality',
-  minAnalysedGames: 2,
+const blackRepeatedMistakes = openingStrugglesQuerySchema.parse({
+  mode: 'repeatedMistakes',
+  minOccurrences: 2,
   minAverageCentipawnLoss: 140,
   maxPly: 2,
 });
-const blackItems = buildOpeningStruggleItems(blackGames, blackQuality);
-assert.equal(blackItems.length, 1, 'only the Black owner move is eligible for Black games');
-assert.equal(blackItems[0].movesUci.join(' '), 'e2e4 e7e5');
-assert.equal(blackItems[0].averageCentipawnLoss, 150);
+const blackRepeatedItems = buildOpeningStruggleItems(blackGames, blackRepeatedMistakes);
+assert.equal(blackRepeatedItems.length, 1, 'only the Black owner move is eligible for Black games');
+assert.equal(blackRepeatedItems[0].movesUci.join(' '), 'e2e4 e7e5');
+assert.equal(blackRepeatedItems[0].averageCentipawnLoss, 150);
+
+const perspectiveGames = [
+  game(10, 'WHITE', { moves: ['e2e4'], scoreLosses: [0], afterEvals: [-150] }),
+  game(11, 'BLACK', { moves: ['e2e4'], scoreLosses: [0], afterEvals: [200] }),
+];
+const perspectiveQuery = openingStrugglesQuerySchema.parse({
+  mode: 'badPositions',
+  minEvaluatedGames: 1,
+  maxAverageUserEvalCp: -100,
+  maxPly: 1,
+});
+const perspectiveItems = buildOpeningStruggleItems(perspectiveGames, perspectiveQuery);
+assert.deepEqual(
+  perspectiveItems.map((item) => [item.userColor, item.avgUserEvalCp]),
+  [['BLACK', -200], ['WHITE', -150]],
+  'White evaluations are preserved and Black evaluations are negated into the user perspective',
+);
+
+const sortedBadPositions = buildOpeningStruggleItems([
+  ...Array.from({ length: 5 }, (_, index) => game(60 + index, 'WHITE', {
+    moves: ['e2e4'], afterEvals: [-150],
+  })),
+  ...Array.from({ length: 6 }, (_, index) => game(70 + index, 'WHITE', {
+    moves: ['d2d4'], afterEvals: [-150],
+  })),
+  game(80, 'WHITE', { moves: ['c2c4'], afterEvals: [-200] }),
+], perspectiveQuery);
+assert.deepEqual(
+  sortedBadPositions.map((item) => [item.movesUci[0], item.avgUserEvalCp, item.evalGames]),
+  [['c2c4', -200, 1], ['d2d4', -150, 6], ['e2e4', -150, 5]],
+  'bad positions sort by average user evaluation ascending, then evaluated games descending',
+);
+
+const accumulatedGames = Array.from({ length: 5 }, (_, index) => game(20 + index, 'WHITE', {
+  moves: ['e2e4', 'e7e5', 'g1f3'],
+  scoreLosses: [20, 0, 20],
+  afterEvals: [-20, -80, -160],
+}));
+const badPositions = openingStrugglesQuerySchema.parse({
+  mode: 'badPositions',
+  minEvaluatedGames: 5,
+  maxAverageUserEvalCp: -100,
+  maxPly: 3,
+});
+const accumulatedBadItems = buildOpeningStruggleItems(accumulatedGames, badPositions);
+assert.deepEqual(
+  accumulatedBadItems.map((item) => item.movesUci.join(' ')),
+  ['e2e4 e7e5 g1f3'],
+  'a bad position can be reached through accumulated disadvantage without one high-CPL move',
+);
+assert.equal(
+  buildOpeningStruggleItems(accumulatedGames, openingStrugglesQuerySchema.parse({
+    mode: 'repeatedMistakes', minOccurrences: 5, minAverageCentipawnLoss: 100, maxPly: 3,
+  })).length,
+  0,
+  'the low-CPL sequence is not a repeated mistake',
+);
+
+const equalAfterMistakeGames = Array.from({ length: 5 }, (_, index) => game(30 + index, 'WHITE', {
+  moves: ['e2e4'],
+  scoreLosses: [200],
+  afterEvals: [0],
+}));
+assert.equal(
+  buildOpeningStruggleItems(equalAfterMistakeGames, openingStrugglesQuerySchema.parse({
+    mode: 'repeatedMistakes', minOccurrences: 5, minAverageCentipawnLoss: 100, maxPly: 1,
+  })).length,
+  1,
+  'a high-CPL owner move ending in equality is a repeated mistake',
+);
+assert.equal(
+  buildOpeningStruggleItems(equalAfterMistakeGames, badPositions).length,
+  0,
+  'a high-CPL owner move ending in equality is not a bad position',
+);
+
+const lowCplBadGames = Array.from({ length: 5 }, (_, index) => game(40 + index, 'WHITE', {
+  moves: ['e2e4'],
+  scoreLosses: [20],
+  afterEvals: [-150],
+}));
+assert.equal(buildOpeningStruggleItems(lowCplBadGames, badPositions).length, 1);
+assert.equal(
+  buildOpeningStruggleItems(lowCplBadGames, openingStrugglesQuerySchema.parse({
+    mode: 'repeatedMistakes', minOccurrences: 5, minAverageCentipawnLoss: 100, maxPly: 1,
+  })).length,
+  0,
+  'a low-CPL move ending badly can be a bad position without being a repeated mistake',
+);
+
+const redundantDescendantGames = Array.from({ length: 5 }, (_, index) => game(50 + index, 'WHITE', {
+  moves: ['e2e4', 'e7e5', 'g1f3'],
+  scoreLosses: [20, 0, 20],
+  afterEvals: [-120, -160, -200],
+}));
+const thresholdEntryItems = buildOpeningStruggleItems(redundantDescendantGames, badPositions);
+assert.deepEqual(
+  thresholdEntryItems.map((item) => item.movesUci.join(' ')),
+  ['e2e4'],
+  'threshold-entry filtering suppresses descendants whose parent already meets the bad-position threshold',
+);
 
 const app = await buildApp({
   logger: false,

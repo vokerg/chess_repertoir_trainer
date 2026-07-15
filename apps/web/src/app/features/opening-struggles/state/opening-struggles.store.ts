@@ -12,8 +12,10 @@ const defaultCriteria: OpeningStrugglesCriteria = {
   mode: 'results',
   minGames: 5,
   minLossRate: 60,
-  minAnalysedGames: 5,
-  minAverageCentipawnLoss: 100,
+  minOccurrences: 5,
+  minAverageCentipawnLoss: 60,
+  minEvaluatedGames: 5,
+  maxAverageUserEvalCp: -80,
   openingDepth: 10,
   limit: 100,
 };
@@ -35,6 +37,7 @@ export class OpeningStrugglesStore {
   readonly loaded = signal(false);
   readonly error = signal<string | null>(null);
   readonly isResultsMode = computed(() => this.criteria().mode === 'results');
+  readonly isRepeatedMistakesMode = computed(() => this.criteria().mode === 'repeatedMistakes');
 
   setGameFilters(filters: GameFilters): void {
     this.gameFilters.set(filters);
