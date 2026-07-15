@@ -39,8 +39,16 @@ jobs:
         run: cd apps/api && node test/run-range.mjs imported-games/ masters-explorer/
       - name: API tests M-O
         run: cd apps/api && node test/run-range.mjs masters-explorer/ openapi/
-      - name: API tests OpenAPI
-        run: cd apps/api && node test/run-range.mjs openapi/ repertoire-coverage/
+      - name: OpenAPI board images
+        run: node apps/api/test/openapi/board-images-openapi.test.mjs
+      - name: OpenAPI imported games
+        run: node apps/api/test/openapi/imported-games-openapi.test.mjs
+      - name: OpenAPI masters explorer
+        run: node apps/api/test/openapi/masters-explorer-openapi.test.mjs
+      - name: OpenAPI mobile sync
+        run: node apps/api/test/openapi/mobile-sync-openapi.test.mjs
+      - name: OpenAPI convergence
+        run: node apps/api/test/openapi/openapi-convergence.test.mjs
       - name: API tests Repertoire
         run: cd apps/api && node test/run-range.mjs repertoire-coverage/ scenario-training/
       - name: API tests Scenario
