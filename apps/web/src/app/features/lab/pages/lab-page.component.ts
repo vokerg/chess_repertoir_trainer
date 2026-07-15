@@ -1,11 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { MonthlyGamesExperimentComponent } from '../experiments/monthly-games/monthly-games-experiment.component';
+import { PerformanceByRatingExperimentComponent } from '../experiments/performance-by-rating/performance-by-rating-experiment.component';
 import { TacticalDetectionsExperimentComponent } from '../experiments/tactical-detections/tactical-detections-experiment.component';
 import { TrainingLogExperimentComponent } from '../experiments/training-log/training-log-experiment.component';
 import { TopOpponentsExperimentComponent } from '../experiments/top-opponents/top-opponents-experiment.component';
 
-type LabExperiment = 'top-opponents' | 'monthly-games' | 'tactical-detections' | 'training-log';
+type LabExperiment =
+  | 'top-opponents'
+  | 'monthly-games'
+  | 'performance-by-rating'
+  | 'tactical-detections'
+  | 'training-log';
 
 @Component({
   selector: 'app-lab-page',
@@ -14,6 +20,7 @@ type LabExperiment = 'top-opponents' | 'monthly-games' | 'tactical-detections' |
     PageHeaderComponent,
     TopOpponentsExperimentComponent,
     MonthlyGamesExperimentComponent,
+    PerformanceByRatingExperimentComponent,
     TacticalDetectionsExperimentComponent,
     TrainingLogExperimentComponent,
   ],

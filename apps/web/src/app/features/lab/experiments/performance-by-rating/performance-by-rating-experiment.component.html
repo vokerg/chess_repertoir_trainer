@@ -1,0 +1,145 @@
+<section class="section-card lab-panel performance-report stack">
+  <div class="lab-panel-header">
+    <div>
+      <span class="eyebrow">Opponent strength</span>
+      <h3 class="collection-title">Performance by opponent rating</h3>
+    </div>
+    <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading()">
+      {{ store.loading() ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+
+  <section class="criteria-panel stack" aria-label="Performance report filters">
+    <div class="report-filter-row">
+      <div class="lab-controls date-controls">
+        <label>
+          <span>From</span>
+          <input type="date" [value]="store.from()" (input)="store.setFrom(textValue($event))" />
+        </label>
+        <label>
+          <span>To</span>
+          <input type="date" [value]="store.to()" (input)="store.setTo(textValue($event))" />
+        </label>
+        <label>
+          <span>Minimum opponent rating</span>
+          <input
+            type="number"
+            min="0"
+            max="5000"
+            step="100"
+            [value]="store.minRating()"
+            (input)="store.setMinRating(textValue($event))"
+          />
+        </label>
+        <button type="button" class="compact-action" (click)="store.load()" [disabled]="store.loading()">Apply filters</button>
+      </div>
+
+      <details class="column-picker">
+        <summary class="compact-action secondary">Columns · {{ store.visibleColumnCount() }}</summary>
+        <div class="column-picker-panel" role="group" aria-label="Visible report columns">
+          <div class="column-presets" aria-label="Column presets">
+            <button type="button" [class.active]="store.selectedPreset() === 'core'" (click)="store.setPreset('core')">Core</button>
+            <button type="button" [class.active]="store.selectedPreset() === 'stories'" (click)="store.setPreset('stories')">Stories</button>
+            <button type="button" [class.active]="store.selectedPreset() === 'all'" (click)="store.setPreset('all')">All</button>
+          </div>
+          @for (group of columnGroups; track group.id) {
+            <fieldset>
+              <legend>{{ group.label }}</legend>
+              @for (column of group.columns; track column.id) {
+                <label [attr.title]="column.description">
+                  <input
+                    type="checkbox"
+                    [checked]="store.isColumnVisible(column.id)"
+                    (change)="store.toggleColumn(column.id)"
+                  />
+                  <span>{{ column.label }}</span>
+                </label>
+              }
+            </fieldset>
+          }
+        </div>
+      </details>
+    </div>
+
+    <div class="type-filters" aria-label="Report types">
+      @for (type of reportTypes; track type) {
+        <button
+          type="button"
+          class="type-toggle"
+          [class.active]="store.isTypeEnabled(type)"
+          [attr.aria-pressed]="store.isTypeEnabled(type)"
+          (click)="store.toggleType(type)"
+        >
+          {{ typeLabel(type) }}
+        </button>
+      }
+    </div>
+  </section>
+
+  @if (store.loading()) {
+    <p class="status-note">Aggregating imported games...</p>
+  }
+  @if (store.error(); as error) {
+    <p class="status-note danger-copy">{{ error }}</p>
+  }
+  @if (store.loaded() && !store.loading() && !store.error()) {
+    <p class="status-note">
+      {{ store.filteredItems().length }} rating bands shown. Story percentages use analysed games as their denominator.
+    </p>
+  }
+
+  @if (!store.loading() && store.filteredItems().length > 0) {
+    <div class="performance-table-wrap">
+      <table class="performance-table">
+        <thead>
+          <tr class="group-row">
+            <th class="type-column" rowspan="2">Type</th>
+            <th class="rating-column" rowspan="2">Opponent rating</th>
+            @for (group of columnGroups; track group.id) {
+              @if (visibleCount(group) > 0) {
+                <th [attr.colspan]="visibleCount(group)">{{ group.label }}</th>
+              }
+            }
+          </tr>
+          <tr class="metric-row">
+            @for (group of columnGroups; track group.id) {
+              @for (column of group.columns; track column.id) {
+                @if (store.isColumnVisible(column.id)) {
+                  <th [attr.title]="column.description">{{ column.shortLabel }}</th>
+                }
+              }
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of store.filteredItems(); track row.type + ':' + row.ratingFrom) {
+            <tr [class.small-sample]="row.games < 5">
+              <td class="type-cell">{{ typeLabel(row.type) }}</td>
+              <td class="rating-cell">
+                {{ ratingLabel(row) }}
+                @if (row.games < 5) { <span class="sample-warning" title="Fewer than five games">low n</span> }
+              </td>
+              @if (store.isColumnVisible('games')) { <td>{{ row.games }}</td> }
+              @if (store.isColumnVisible('wdl')) { <td>{{ wdlLabel(row.wdl) }}</td> }
+              @if (store.isColumnVisible('score')) { <td>{{ percentLabel(row.scorePercent) }}</td> }
+              @if (store.isColumnVisible('whiteWdl')) { <td>{{ wdlLabel(row.whiteWdl) }}</td> }
+              @if (store.isColumnVisible('blackWdl')) { <td>{{ wdlLabel(row.blackWdl) }}</td> }
+              @if (store.isColumnVisible('openingSuccess')) { <td>{{ storyMetricLabel(row.openingSuccess, row) }}</td> }
+              @if (store.isColumnVisible('openingTrouble')) { <td>{{ storyMetricLabel(row.openingTrouble, row) }}</td> }
+              @if (store.isColumnVisible('wasWinningAndLost')) { <td>{{ storyMetricLabel(row.wasWinningAndLost, row) }}</td> }
+              @if (store.isColumnVisible('wasLosingAndWon')) { <td>{{ storyMetricLabel(row.wasLosingAndWon, row) }}</td> }
+              @if (store.isColumnVisible('flaggedInWinningPosition')) { <td>{{ storyMetricLabel(row.flaggedInWinningPosition, row) }}</td> }
+              @if (store.isColumnVisible('opponentFlaggedInWinningPosition')) { <td>{{ storyMetricLabel(row.opponentFlaggedInWinningPosition, row) }}</td> }
+              @if (store.isColumnVisible('slowBleedLosses')) { <td>{{ storyMetricLabel(row.slowBleedLosses, row) }}</td> }
+              @if (store.isColumnVisible('slowBleedWins')) { <td>{{ storyMetricLabel(row.slowBleedWins, row) }}</td> }
+              @if (store.isColumnVisible('averageAccuracy')) { <td>{{ accuracyLabel(row) }}</td> }
+              @if (store.isColumnVisible('analysisCoverage')) { <td>{{ coverageLabel(row) }}</td> }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (store.loaded() && !store.loading() && !store.error()) {
+    <div class="empty-state">No scored games with opponent ratings match the selected dates and report types.</div>
+  }
+</section>

@@ -1,9 +1,14 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import {
+  performanceByRatingQuerySchema,
+  performanceByRatingResponseSchema,
+} from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { openingStrugglesQuerySchema } from './opening-struggles/opening-struggles.schema';
 import { getOpeningStruggles } from './opening-struggles/opening-struggles.service';
+import { getPerformanceByRating } from './performance-by-rating/performance-by-rating.service';
 import {
   tacticalDetectionListSchema,
   tacticalDetectionRunSchema,
@@ -45,6 +50,22 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return getMonthlyGames(auth.userId, { excludeBullet: request.query.excludeBullet });
+  });
+
+  app.get('/api/lab/performance-by-rating', {
+    schema: labSchema('getPerformanceByRating', 'Compare results across opponent rating bands', {
+      description: 'Groups scored Lichess and Chess.com blitz/rapid games by 100-point opponent rating bands, optionally filtered by minimum opponent rating.',
+      querystring: performanceByRatingQuerySchema,
+      response: {
+        200: performanceByRatingResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+      },
+    }),
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    return getPerformanceByRating(auth.userId, request.query);
   });
 
   app.get('/api/lab/opening-struggles', {

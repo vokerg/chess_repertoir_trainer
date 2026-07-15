@@ -1,0 +1,60 @@
+:host { display: block; min-width: 0; }
+.performance-report { min-width: 0; }
+.lab-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.criteria-panel { padding: 1rem; border: 1px solid var(--border); border-radius: 18px; background: rgba(255, 255, 255, 0.42); }
+.report-filter-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.lab-controls { display: flex; align-items: flex-end; gap: 0.8rem; flex-wrap: wrap; }
+.lab-controls label { display: grid; gap: 0.35rem; color: var(--muted-strong); font-size: 0.82rem; font-weight: 800; }
+.lab-controls input { min-width: 150px; }
+.type-filters { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+.type-toggle { padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 999px; background: rgba(255, 255, 255, 0.5); color: var(--muted-strong); font-weight: 800; cursor: pointer; }
+.type-toggle.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text); }
+.column-picker { position: relative; }
+.column-picker summary { list-style: none; cursor: pointer; }
+.column-picker summary::-webkit-details-marker { display: none; }
+.column-picker-panel { position: absolute; z-index: 20; top: calc(100% + 0.5rem); right: 0; width: min(560px, calc(100vw - 3rem)); max-height: min(640px, 72vh); overflow: auto; padding: 1rem; border: 1px solid var(--border); border-radius: 18px; background: var(--surface, #fffaf2); box-shadow: 0 18px 50px rgba(35, 25, 12, 0.2); }
+.column-presets { display: flex; gap: 0.45rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--border); }
+.column-presets button { padding: 0.45rem 0.7rem; border: 1px solid var(--border); border-radius: 999px; background: transparent; font-weight: 800; cursor: pointer; }
+.column-presets button.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.column-picker fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 1rem; margin: 0.9rem 0 0; padding: 0.85rem 0 0; border: 0; border-top: 1px solid var(--border); }
+.column-picker legend { padding: 0 0.4rem 0 0; color: var(--muted); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.column-picker label { display: flex; align-items: center; gap: 0.5rem; color: var(--muted-strong); font-size: 0.86rem; font-weight: 750; }
+.column-picker input { width: auto; accent-color: var(--accent); }
+.performance-table-wrap { max-height: 72vh; overflow: auto; border: 1px solid var(--border); border-radius: 18px; background: rgba(255, 255, 255, 0.58); }
+.performance-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+.performance-table th,
+.performance-table td { padding: 0.72rem 0.8rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+.performance-table th:last-child,
+.performance-table td:last-child { border-right: 0; }
+.performance-table thead th { position: sticky; z-index: 4; color: var(--muted); background: #f7ecd9; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+.performance-table .group-row th { top: 0; height: 2.1rem; text-align: center; }
+.performance-table .metric-row th { top: 2.1rem; }
+.performance-table .type-column,
+.performance-table .type-cell { position: sticky; left: 0; width: 164px; min-width: 164px; max-width: 164px; text-align: left; }
+.performance-table .rating-column,
+.performance-table .rating-cell { position: sticky; left: 164px; width: 154px; min-width: 154px; max-width: 154px; text-align: left; }
+.performance-table .type-column,
+.performance-table .rating-column { z-index: 7; background: #f7ecd9; }
+.performance-table .type-cell,
+.performance-table .rating-cell { z-index: 2; background: #fffaf2; }
+.performance-table tbody tr:last-child td { border-bottom: 0; }
+.performance-table tbody tr.small-sample td:not(:first-child):not(:nth-child(2)) { color: var(--muted); }
+.type-cell { font-weight: 900; color: var(--text); }
+.rating-cell { font-weight: 850; color: var(--text); }
+.sample-warning { display: inline-flex; margin-left: 0.35rem; padding: 0.1rem 0.35rem; border-radius: 999px; background: rgba(180, 112, 30, 0.12); color: var(--muted); font-size: 0.65rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+.danger-copy { color: var(--danger); }
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
+@media (max-width: 760px) {
+  .report-filter-row { align-items: stretch; }
+  .date-controls { align-items: stretch; }
+  .date-controls label,
+  .date-controls input { width: 100%; }
+  .column-picker { width: 100%; }
+  .column-picker summary { width: 100%; justify-content: center; }
+  .column-picker-panel { position: static; width: 100%; margin-top: 0.6rem; box-shadow: none; }
+  .column-picker fieldset { grid-template-columns: 1fr; }
+  .performance-table .type-column,
+  .performance-table .type-cell { width: 142px; min-width: 142px; max-width: 142px; }
+  .performance-table .rating-column,
+  .performance-table .rating-cell { left: 142px; width: 138px; min-width: 138px; max-width: 138px; }
+}
