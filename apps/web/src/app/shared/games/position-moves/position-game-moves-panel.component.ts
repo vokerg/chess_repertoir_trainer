@@ -42,6 +42,9 @@ export class PositionGameMovesPanelComponent implements OnInit {
   readonly filtersCollapsedInitially = input(false);
   readonly compact = input(false);
   readonly showTopGames = input(false);
+  readonly showPositionWdl = input(true);
+  readonly topGamesTitle = input('Top games in this position');
+  readonly topGamesSubtitle = input('Most recent games that reached this exact normalized position.');
   readonly title = input('Moves from your games');
   readonly subtitle = input(
     'Each row is a move you actually played or faced from this exact normalized position.',

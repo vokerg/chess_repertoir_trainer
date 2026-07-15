@@ -7,12 +7,14 @@
     <button type="button" class="compact-action secondary" (click)="refresh.emit()" [disabled]="loading()">Refresh</button>
   </div>
 
-  <div class="position-games-summary">
-    <div>
-      <p class="metric-label">Position WDL</p>
-      <p class="position-games-wdl">{{ wdlLabel(positionWdl()) }}</p>
+  @if (showPositionWdl()) {
+    <div class="position-games-summary">
+      <div>
+        <p class="metric-label">Position WDL</p>
+        <p class="position-games-wdl">{{ wdlLabel(positionWdl()) }}</p>
+      </div>
     </div>
-  </div>
+  }
 
   <section class="position-games-filters" aria-label="Game filters">
     <button
@@ -82,6 +84,11 @@
   </div>
 
   @if (showTopGames()) {
-    <app-position-top-games [games]="topGames()" [loading]="topGamesLoading()" />
+    <app-position-top-games
+      [games]="topGames()"
+      [loading]="topGamesLoading()"
+      [title]="topGamesTitle()"
+      [subtitle]="topGamesSubtitle()"
+    />
   }
 </section>

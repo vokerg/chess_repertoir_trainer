@@ -9,17 +9,6 @@
   <div class="opening-workbench">
     <div class="opening-board-column">
       <section class="workbench-panel opening-board-panel">
-        <div class="opening-panel-header">
-          <div>
-            <h3 class="workbench-panel-title">Board probe</h3>
-            <p class="workbench-panel-subtitle">{{ store.perspectiveHelpText() }}</p>
-          </div>
-          <div class="side-stack">
-            <span class="side-pill">{{ store.analysis()?.sideToMove || store.sideToMove() }} to move</span>
-            <span class="turn-pill" [class.turn-pill-user]="store.userTurn()">{{ store.turnOwnerLabel() }}</span>
-          </div>
-        </div>
-
         <div class="board-stage opening-board-stage">
           <app-engine-eval-bar
             [analysis]="store.engine()"
@@ -66,7 +55,7 @@
 
       <app-game-filter-breakdown-panel
         title="Openings in this position"
-        subtitle="Distinct filtered games grouped by assigned opening name. Click to replace the opening filter."
+        subtitle="Grouped by assigned opening. Click to filter."
         [items]="openingBreakdownItems()"
         [selectedKeys]="selectedOpeningKeys()"
         [loading]="store.breakdownsLoading()"
@@ -94,9 +83,12 @@
         [topGamesLoading]="store.topGamesLoading()"
         [filters]="store.filters()"
         [facets]="store.facets()"
-        [filtersCollapsedInitially]="false"
+        [filtersCollapsedInitially]="true"
         [compact]="false"
         [showTopGames]="true"
+        [showPositionWdl]="false"
+        topGamesTitle="Last games in this position"
+        topGamesSubtitle=""
         (filtersChange)="store.setFilters($event)"
         (applyFilters)="store.refresh()"
         (resetFilters)="store.resetFilters()"

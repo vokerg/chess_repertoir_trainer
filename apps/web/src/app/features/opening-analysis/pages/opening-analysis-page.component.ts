@@ -9,7 +9,7 @@ import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/course
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
-import { scoreLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
+import { scoreLabel, wdlLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { buildChallengeBotHeaderAction } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-action.helper';
 import { LichessBotChallengeApiService } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-api.service';
 import { LichessBotChallengeDialogComponent } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-dialog.component';
@@ -53,6 +53,7 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'games', label: 'Games', value: this.store.wdl().total },
     { id: 'score', label: 'Score', value: this.scoreLabel(this.store.wdl()) },
+    { id: 'wdl', label: 'WDL', value: wdlLabel(this.store.wdl()) },
     { id: 'next-moves', label: 'Next moves', value: this.store.analysis()?.nextMoves?.length || 0 },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [

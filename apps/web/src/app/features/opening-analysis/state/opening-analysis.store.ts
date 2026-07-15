@@ -67,14 +67,6 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly wdl = computed(() => this.analysis()?.games ?? EMPTY_WDL);
   readonly boardSide = computed<UserColor>(() => (this.filters().userColor === 'BLACK' ? 'BLACK' : 'WHITE'));
   readonly blackPerspective = computed(() => this.boardSide() === 'BLACK');
-  readonly sideToMove = computed<UserColor>(() => (this.chess.turn() === 'w' ? 'WHITE' : 'BLACK'));
-  readonly userTurn = computed(() => this.sideToMove() === this.filters().userColor);
-  readonly turnOwnerLabel = computed(() => (this.userTurn() ? 'Your move' : 'Opponent move'));
-  readonly perspectiveHelpText = computed(() =>
-    this.filters().userColor === 'BLACK'
-      ? 'Black perspective'
-      : 'White perspective',
-  );
   readonly lineLabel = computed(() =>
     this.history().length ? this.history().map((move) => move.san || move.uci).join(' ') : 'Start position',
   );

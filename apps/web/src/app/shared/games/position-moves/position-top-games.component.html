@@ -1,7 +1,9 @@
-<section class="position-games-top" aria-label="Top games in this position">
+<section class="position-games-top" [attr.aria-label]="title()">
   <div>
     <h3 class="workbench-panel-title">{{ title() }}</h3>
-    <p class="workbench-panel-subtitle">{{ subtitle() }}</p>
+    @if (subtitle(); as subtitle) {
+      <p class="workbench-panel-subtitle">{{ subtitle }}</p>
+    }
   </div>
 
   @if (games().length) {
