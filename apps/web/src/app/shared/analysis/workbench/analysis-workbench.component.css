@@ -1,4 +1,5 @@
 .analysis-workbench,
+.workbench-main-stack,
 .board-panel,
 .workbench-side-stack {
   min-width: 0;
@@ -12,6 +13,12 @@
   align-items: start;
 }
 
+.workbench-main-stack,
+.workbench-side-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .board-panel {
   display: grid;
   gap: 1rem;
@@ -23,11 +30,6 @@
 
 .board-stage-engine-hidden {
   grid-template-columns: minmax(0, 1fr);
-}
-
-.workbench-side-stack {
-  display: grid;
-  gap: var(--space-3);
 }
 
 .danger-zone {
