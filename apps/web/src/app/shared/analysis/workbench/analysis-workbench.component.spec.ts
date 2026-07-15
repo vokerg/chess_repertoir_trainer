@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Chess } from 'chess.js';
+import { BoardActionToolbarComponent } from '../../chess/board/board-action-toolbar.component';
 import { AnalysisWorkbenchComponent } from './analysis-workbench.component';
 
 describe('AnalysisWorkbenchComponent', () => {
@@ -36,5 +38,23 @@ describe('AnalysisWorkbenchComponent', () => {
     expect(fixture.nativeElement.querySelector('.board-stage').classList).toContain(
       'board-stage-engine-hidden',
     );
+  });
+
+  it('can hide the move tree for workbench consumers with their own side widgets', () => {
+    fixture.componentRef.setInput('showTreePanel', false);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-move-tree-panel')).toBeNull();
+  });
+
+  it('forwards optional navigation visibility to the board toolbar', () => {
+    fixture.componentRef.setInput('showNextNavigation', false);
+    fixture.componentRef.setInput('showEndNavigation', false);
+    fixture.detectChanges();
+
+    const toolbar = fixture.debugElement.query(By.directive(BoardActionToolbarComponent))
+      .componentInstance as BoardActionToolbarComponent;
+    expect(toolbar.showNext()).toBeFalse();
+    expect(toolbar.showEnd()).toBeFalse();
   });
 });
