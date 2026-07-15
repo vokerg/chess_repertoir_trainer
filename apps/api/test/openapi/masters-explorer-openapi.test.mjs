@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
 import { buildApp } from '../../dist/app.js';
+import prismaModule from '../../dist/prisma.js';
+
+const prisma = prismaModule.default;
+const existingDevUser = await prisma.appUser.findUnique({
+  where: { authProvider_authSubject: { authProvider: 'dev', authSubject: 'dev-single-user' } },
+});
+const devUser = existingDevUser ?? await prisma.appUser.create({
+  data: { displayName: 'Local user', authProvider: 'dev', authSubject: 'dev-single-user' },
+});
 
 const app = await buildApp({
   logger: false,
-  authConfig: { mode: 'dev-single-user', userId: 1 },
-  prisma: { $disconnect: async () => {} },
+  authConfig: { mode: 'dev-single-user', userId: devUser.id },
 });
 
 try {
@@ -22,7 +30,6 @@ try {
     method: 'GET',
     url: '/api/masters-explorer?fen=not-a-fen',
   });
-  console.error('invalid-fen-response', invalid.statusCode, invalid.body);
   assert.equal(invalid.statusCode, 400);
   assert.deepEqual(invalid.json(), {
     error: 'The supplied FEN is invalid.',
