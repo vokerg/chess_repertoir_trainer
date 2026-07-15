@@ -45,6 +45,8 @@ Parent group links should navigate to the first/default child.
 - `/progress` chooses the default progress account first, then an active account, then the first account.
 - `/progress/accounts/:accountId` owns the account progress dashboard.
 - `/opening-struggles` is owned by the standalone `features/opening-struggles` feature and is backed by `/api/opening-struggles`.
+- `/lab` owns the Lab experiment catalog and does not mount an active experiment.
+- `/lab/top-opponents`, `/lab/monthly-games`, `/lab/performance-by-rating`, `/lab/tactical-detections`, and `/lab/training-log` each own one independently routable experiment page.
 
 ## Active-State Rules
 

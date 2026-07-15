@@ -120,6 +120,51 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'lab/top-opponents',
+    title: 'Top opponents | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/pages/top-opponents-page.component').then(
+        (m) => m.TopOpponentsPageComponent,
+      ),
+  },
+  {
+    path: 'lab/monthly-games',
+    title: 'Monthly games | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/pages/monthly-games-page.component').then(
+        (m) => m.MonthlyGamesPageComponent,
+      ),
+  },
+  {
+    path: 'lab/performance-by-rating',
+    title: 'Performance by rating | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/pages/performance-by-rating-page.component').then(
+        (m) => m.PerformanceByRatingPageComponent,
+      ),
+  },
+  {
+    path: 'lab/tactical-detections',
+    title: 'Tactical detections | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/pages/tactical-detections-page.component').then(
+        (m) => m.TacticalDetectionsPageComponent,
+      ),
+  },
+  {
+    path: 'lab/training-log',
+    title: 'Training log | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lab/pages/training-log-page.component').then(
+        (m) => m.TrainingLogPageComponent,
+      ),
+  },
+  {
     path: 'lab',
     title: 'Lab | Chess Repertoire Trainer',
     canActivate: [authGuard],
