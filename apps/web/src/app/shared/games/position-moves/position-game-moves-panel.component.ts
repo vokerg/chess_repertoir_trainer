@@ -11,10 +11,11 @@ import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../game.mod
 import { GameFilterPanelComponent } from '../filters/game-filter-panel.component';
 import { GameFilters } from '../filters/game-filter.model';
 import { summaryGameFilters } from '../filters/game-filter-summary';
-import { PositionTopGamesComponent } from './position-top-games.component';
 import { uciMoveToSan } from '../../chess/notation/uci-to-san.helper';
+import { ProgressiveListComponent } from '../../ui/progressive-list/progressive-list.component';
 import { providerLabel, scoreLabel, wdlLabel } from './position-game-moves.helpers';
 import { OpeningAnalysisGame, OpeningAnalysisResponse, OpeningNextMove, OpeningWdl } from './position-game-moves.models';
+import { PositionTopGamesComponent } from './position-top-games.component';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 
@@ -26,7 +27,7 @@ interface PositionMoveViewModel {
 @Component({
   selector: 'app-position-game-moves-panel',
   standalone: true,
-  imports: [GameFilterPanelComponent, PositionTopGamesComponent],
+  imports: [GameFilterPanelComponent, PositionTopGamesComponent, ProgressiveListComponent],
   templateUrl: './position-game-moves-panel.component.html',
   styleUrl: './position-game-moves-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +44,8 @@ export class PositionGameMovesPanelComponent implements OnInit {
   readonly compact = input(false);
   readonly showTopGames = input(false);
   readonly showPositionWdl = input(true);
+  readonly initialVisibleMoveCount = input(4);
+  readonly initialVisibleGameCount = input(4);
   readonly topGamesTitle = input('Top games in this position');
   readonly topGamesSubtitle = input('Most recent games that reached this exact normalized position.');
   readonly title = input('Moves from your games');
@@ -68,6 +71,7 @@ export class PositionGameMovesPanelComponent implements OnInit {
     }));
   });
   protected readonly filterSummary = computed(() => summaryGameFilters(this.filters()));
+  protected readonly listResetKey = computed(() => `${this.analysis()?.normalizedFen ?? ''}:${this.filterSummary()}`);
   protected readonly providerLabel = providerLabel;
   protected readonly wdlLabel = wdlLabel;
   protected readonly scoreLabel = scoreLabel;

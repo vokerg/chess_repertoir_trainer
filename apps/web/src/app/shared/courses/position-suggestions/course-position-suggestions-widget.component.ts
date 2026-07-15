@@ -10,12 +10,14 @@ import {
   untracked,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ProgressiveListComponent } from '../../ui/progressive-list/progressive-list.component';
 import { CoursePositionSuggestionsApiService } from './course-position-suggestions-api.service';
 import { CoursePositionSuggestion } from './course-position-suggestions.models';
 
 @Component({
   selector: 'app-course-position-suggestions-widget',
   standalone: true,
+  imports: [ProgressiveListComponent],
   templateUrl: './course-position-suggestions-widget.component.html',
   styleUrl: './course-position-suggestions-widget.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,6 +27,7 @@ export class CoursePositionSuggestionsWidgetComponent {
 
   readonly fen = input.required<string>();
   readonly title = input('Moves from your courses');
+  readonly initialVisibleCount = input(4);
   readonly moveSelected = output<CoursePositionSuggestion>();
 
   protected readonly suggestions = signal<CoursePositionSuggestion[]>([]);

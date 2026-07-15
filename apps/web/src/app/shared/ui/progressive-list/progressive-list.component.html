@@ -1,0 +1,23 @@
+<div class="progressive-list">
+  <div class="progressive-list-items">
+    @for (item of visibleItems(); track item) {
+      <div class="progressive-list-item">
+        <ng-container
+          [ngTemplateOutlet]="itemTemplate()"
+          [ngTemplateOutletContext]="{ $implicit: item }"
+        />
+      </div>
+    }
+  </div>
+
+  @if (canExpand()) {
+    <button
+      type="button"
+      class="progressive-list-toggle"
+      [attr.aria-expanded]="expanded()"
+      (click)="toggleExpanded()"
+    >
+      {{ expanded() ? 'Show less' : 'Show ' + remainingCount() + ' more' }}
+    </button>
+  }
+</div>

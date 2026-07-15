@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.progressive-list,
+.progressive-list-items {
+  display: grid;
+}
+
+.progressive-list {
+  gap: 0.4rem;
+}
+
+.progressive-list-items {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.progressive-list-item {
+  min-width: 0;
+  transition: background 120ms ease;
+}
+
+.progressive-list-item + .progressive-list-item {
+  border-top: 1px solid var(--border);
+}
+
+.progressive-list-item:has(button:hover),
+.progressive-list-item:has(a:hover) {
+  background: var(--accent-soft);
+}
+
+.progressive-list-toggle {
+  justify-self: start;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.32rem 0.55rem;
+  color: var(--accent-strong);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.progressive-list-toggle:hover {
+  background: var(--accent-soft);
+}

@@ -17,29 +17,34 @@
     </div>
   } @else if (error()) {
     <p class="status-note">{{ error() }}</p>
-  } @else if (visibleItems().length) {
-    <div class="game-filter-breakdown-list">
-      @for (item of visibleItems(); track item.key) {
-        <button
-          type="button"
-          class="game-filter-breakdown-row"
-          [class.selected]="selected().has(item.key)"
-          [attr.aria-pressed]="selected().has(item.key)"
-          (click)="itemSelected.emit(item.key)"
-        >
-          <span class="game-filter-breakdown-label">
-            <strong>{{ item.label }}</strong>
-            @if (item.detail) { <small>{{ item.detail }}</small> }
-          </span>
-          <span class="game-filter-breakdown-stats">
-            <strong>{{ item.games }} games</strong>
-            @if (item.wdl; as wdl) {
-              <small>{{ wdl.wins }} {{ wdl.draws }} {{ wdl.losses }} WDL</small>
-            }
-          </span>
-        </button>
-      }
-    </div>
+  } @else if (items().length) {
+    <app-progressive-list
+      [items]="items()"
+      [itemTemplate]="breakdownRow"
+      [initialCount]="limit()"
+      [resetKey]="items()"
+    />
+
+    <ng-template #breakdownRow let-item>
+      <button
+        type="button"
+        class="game-filter-breakdown-row"
+        [class.selected]="selected().has(item.key)"
+        [attr.aria-pressed]="selected().has(item.key)"
+        (click)="itemSelected.emit(item.key)"
+      >
+        <span class="game-filter-breakdown-label">
+          <strong>{{ item.label }}</strong>
+          @if (item.detail) { <small>{{ item.detail }}</small> }
+        </span>
+        <span class="game-filter-breakdown-stats">
+          <strong>{{ item.games }} games</strong>
+          @if (item.wdl; as wdl) {
+            <small>{{ wdl.wins }} {{ wdl.draws }} {{ wdl.losses }} WDL</small>
+          }
+        </span>
+      </button>
+    </ng-template>
   } @else {
     <p class="status-note">{{ emptyText() }}</p>
   }
