@@ -91,4 +91,8 @@ describe('opening struggle labels', () => {
       },
     }))).toBe('Your move 2. Nf3 leaves the course. Expected: Bb5. Course: Open Games.');
   });
+
+  it('describes uncovered lines as a neutral course annotation', () => {
+    expect(courseCoverageLabel(item())).toBe('Not covered by your courses.');
+  });
 });

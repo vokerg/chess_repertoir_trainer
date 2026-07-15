@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
@@ -22,6 +23,15 @@ const defaultCriteria: OpeningStrugglesCriteria = {
 
 function defaultOpeningStrugglesGameFilters(): GameFilters {
   return { ...defaultGameFilters(), rated: 'true' };
+}
+
+function loadErrorMessage(error: unknown): string {
+  if (error instanceof HttpErrorResponse && error.status === 422) {
+    const message = error.error?.error?.message;
+    if (typeof message === 'string' && message.trim()) return message;
+    return 'The selected game scope is too large. Narrow the date, account, or game filters.';
+  }
+  return 'Could not load opening struggles.';
 }
 
 @Injectable()
@@ -49,7 +59,9 @@ export class OpeningStrugglesStore {
   }
 
   updateCriteria<K extends keyof OpeningStrugglesCriteria>(key: K, value: OpeningStrugglesCriteria[K]): void {
+    const modeChanged = key === 'mode' && value !== this.criteria().mode;
     this.criteria.update((criteria) => ({ ...criteria, [key]: value }));
+    if (modeChanged) this.clearResults();
   }
 
   async initialize(): Promise<void> {
@@ -59,17 +71,26 @@ export class OpeningStrugglesStore {
   async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
+    this.clearResults();
     try {
       const response = await firstValueFrom(this.api.getOpeningStruggles(this.gameFilters(), this.criteria()));
       this.items.set(response.items);
       this.totalFilteredGames.set(response.totalFilteredGames);
       this.indexedFilteredGames.set(response.indexedFilteredGames);
       this.loaded.set(true);
-    } catch {
-      this.error.set('Could not load opening struggles.');
+    } catch (error) {
+      this.error.set(loadErrorMessage(error));
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private clearResults(): void {
+    this.items.set([]);
+    this.totalFilteredGames.set(0);
+    this.indexedFilteredGames.set(0);
+    this.loaded.set(false);
+    this.error.set(null);
   }
 
   private async loadFacets(): Promise<void> {

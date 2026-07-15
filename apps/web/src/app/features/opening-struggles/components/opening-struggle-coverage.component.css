@@ -18,15 +18,15 @@
 .coverage-icon.my_deviation { border-color: rgba(181, 91, 55, 0.38); color: var(--danger); background: rgba(249, 224, 213, 0.82); }
 .coverage-icon.opponent_uncovered { border-color: rgba(190, 126, 59, 0.42); color: var(--accent-strong); background: var(--accent-soft); }
 .coverage-icon.repertoire_ended { border-color: var(--border-strong); color: var(--muted-strong); }
+.coverage-icon.not_covered { border-style: dashed; color: var(--muted); background: rgba(255, 255, 255, 0.65); }
 .coverage-icon:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
 .coverage-popover {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 0.4rem);
-  z-index: 5;
-  display: none;
+  position: fixed;
+  inset: auto;
+  z-index: 1000;
+  margin: 0;
   gap: 0.35rem;
-  width: min(19rem, 75vw);
+  max-width: calc(100vw - 1.5rem);
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -36,7 +36,7 @@
   white-space: normal;
   font-weight: 600;
 }
-.coverage-tooltip:hover .coverage-popover,
-.coverage-tooltip:focus-within .coverage-popover { display: grid; }
+.coverage-popover:popover-open { display: grid; }
+.coverage-popover::backdrop { background: transparent; }
 .coverage-popover p { margin: 0; line-height: 1.4; }
 .coverage-popover small { color: var(--muted); }
