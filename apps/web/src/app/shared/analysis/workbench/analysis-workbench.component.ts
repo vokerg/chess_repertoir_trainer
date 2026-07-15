@@ -42,11 +42,15 @@ export class AnalysisWorkbenchComponent {
   readonly canGoForward = input(false);
   readonly keyboardHint = input<string | null>('Keyboard: ←/→, Home/End');
   readonly showFlipBoard = input(false);
+  readonly showNextNavigation = input(true);
+  readonly showEndNavigation = input(true);
   readonly engineVisible = input(true);
+  readonly evalBarFitHeight = input(false);
+  readonly showTreePanel = input(true);
 
   readonly boardTitle = input.required<string>();
   readonly boardHelp = input<string>();
-  readonly treeTitle = input.required<string>();
+  readonly treeTitle = input('Move tree');
   readonly treeHelp = input<string>();
   readonly treeRootLabel = input('Start');
 
