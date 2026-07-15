@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { Chess } from 'chess.js';
 import { buildApp } from '../../dist/app.js';
 import { openingStrugglesQuerySchema } from '../../dist/modules/opening-struggles/opening-struggles.schema.js';
-import { buildOpeningStruggleItems } from '../../dist/modules/opening-struggles/opening-struggles.service.js';
+import {
+  assertOpeningStrugglesScope,
+  buildOpeningStruggleItems,
+  OPENING_STRUGGLES_MAX_CANDIDATE_GAMES,
+} from '../../dist/modules/opening-struggles/opening-struggles.service.js';
 
 function position(id, bestScoreCpWhite) {
   return {
@@ -42,8 +46,23 @@ function game(id, userColor, {
   };
 }
 
-function courseLine(courseId, courseName, sideToTrain, movesUci, lineId = courseId * 10) {
+function courseLine(
+  courseId,
+  courseName,
+  sideToTrain,
+  movesUci,
+  lineId = courseId * 10,
+  prefixMoves = [],
+) {
   const chess = new Chess();
+  for (const moveUci of prefixMoves) {
+    chess.move({
+      from: moveUci.slice(0, 2),
+      to: moveUci.slice(2, 4),
+      promotion: moveUci[4],
+    });
+  }
+  const startingFen = prefixMoves.length ? chess.fen() : 'startpos';
   const moves = movesUci.map((moveUci, index) => {
     const fenBefore = chess.fen();
     const colorToMoveBefore = chess.turn() === 'w' ? 'WHITE' : 'BLACK';
@@ -56,7 +75,7 @@ function courseLine(courseId, courseName, sideToTrain, movesUci, lineId = course
       id: lineId * 100 + index + 1,
       lineId,
       parentId: index ? lineId * 100 + index : null,
-      plyNumber: index + 1,
+      plyNumber: prefixMoves.length + index + 1,
       fenBefore,
       fenAfter: chess.fen(),
       moveUci,
@@ -70,7 +89,7 @@ function courseLine(courseId, courseName, sideToTrain, movesUci, lineId = course
     id: lineId,
     name: `${courseName} line`,
     sideToTrain,
-    startingFen: 'startpos',
+    startingFen,
     moves,
     course: { id: courseId, name: courseName },
   };
@@ -89,6 +108,14 @@ function coverageFor(moves, userColor, courseLines) {
 const defaultQuery = openingStrugglesQuerySchema.parse({});
 assert.equal(defaultQuery.minAverageCentipawnLoss, 60);
 assert.equal(defaultQuery.maxAverageUserEvalCp, -80);
+assert.ok(defaultQuery.from === undefined || defaultQuery.from instanceof Date);
+
+assert.doesNotThrow(() => assertOpeningStrugglesScope(OPENING_STRUGGLES_MAX_CANDIDATE_GAMES));
+assert.throws(
+  () => assertOpeningStrugglesScope(OPENING_STRUGGLES_MAX_CANDIDATE_GAMES + 1),
+  (error) => error.code === 'OPENING_STRUGGLES_SCOPE_TOO_LARGE'
+    && error.candidateGames === OPENING_STRUGGLES_MAX_CANDIDATE_GAMES + 1,
+);
 
 const whiteOpenGame = courseLine(1, 'White Openings', 'WHITE', ['e2e4', 'e7e5', 'g1f3']);
 assert.equal(coverageFor(['d2d4'], 'WHITE', [whiteOpenGame]).status, 'NOT_COVERED');
@@ -136,6 +163,48 @@ assert.deepEqual(
   [{ id: 4, name: 'Also Open' }, { id: 1, name: 'White Openings' }],
   'tied full-coverage courses are retained',
 );
+
+const laterStartCourse = courseLine(
+  7,
+  'Open Game Position',
+  'WHITE',
+  ['e7e5', 'g1f3', 'b8c6'],
+  70,
+  ['e2e4'],
+);
+const laterStartCovered = coverageFor(
+  ['e2e4', 'e7e5', 'g1f3'],
+  'WHITE',
+  [laterStartCourse],
+);
+assert.equal(laterStartCovered.status, 'COVERED', 'courses may start later in the displayed prefix');
+assert.equal(laterStartCovered.coveredPlies, 2);
+
+const laterStartMyDeviation = coverageFor(
+  ['e2e4', 'e7e5', 'd2d3'],
+  'WHITE',
+  [laterStartCourse],
+);
+assert.equal(laterStartMyDeviation.status, 'MY_DEVIATION');
+assert.equal(laterStartMyDeviation.deviationPly, 3);
+assert.deepEqual(laterStartMyDeviation.expectedMoveSans, ['Nf3']);
+
+const laterStartOpponentDeviation = coverageFor(
+  ['e2e4', 'e7e5', 'g1f3', 'd7d6'],
+  'WHITE',
+  [laterStartCourse],
+);
+assert.equal(laterStartOpponentDeviation.status, 'OPPONENT_UNCOVERED');
+assert.equal(laterStartOpponentDeviation.deviationPly, 4);
+
+const earlyPartialCourse = courseLine(8, 'Early Partial', 'WHITE', ['e2e4', 'c7c5']);
+const laterFullWins = coverageFor(
+  ['e2e4', 'e7e5', 'g1f3'],
+  'WHITE',
+  [earlyPartialCourse, laterStartCourse],
+);
+assert.equal(laterFullWins.status, 'COVERED');
+assert.deepEqual(laterFullWins.courses, [{ id: 7, name: 'Open Game Position' }]);
 
 const blackQueensGambit = courseLine(5, 'Black QG', 'BLACK', ['d2d4', 'd7d5']);
 assert.equal(
@@ -329,8 +398,18 @@ const app = await buildApp({
 try {
   await app.ready();
   const paths = app.swagger().paths;
-  assert.ok(paths?.['/api/opening-struggles'], 'the standalone API route is registered');
+  const operation = paths?.['/api/opening-struggles']?.get;
+  assert.ok(operation, 'the standalone API route is registered');
   assert.equal(paths?.['/api/lab/opening-struggles'], undefined, 'the former Lab API route is removed');
+  assert.ok(operation.responses?.['200'], 'the successful response is documented');
+  assert.ok(operation.responses?.['422'], 'the bounded-scope response is documented');
+  const operationJson = JSON.stringify(operation);
+  assert.match(operationJson, /courseCoverage/);
+  assert.match(operationJson, /repeatedMistakes/);
+  assert.match(operationJson, /badPositions/);
+  for (const status of ['COVERED', 'MY_DEVIATION', 'OPPONENT_UNCOVERED', 'REPERTOIRE_ENDED', 'NOT_COVERED']) {
+    assert.match(operationJson, new RegExp(status));
+  }
 } finally {
   await app.close();
 }
