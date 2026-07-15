@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { PanelComponent } from '../../ui/panel/panel.component';
 import { uciMovesToSan } from '../notation/uci-to-san.helper';
 import { EngineAnalysis, EngineLine } from './stockfish-analysis.service';
 
@@ -12,7 +11,6 @@ interface EngineLineViewModel {
 @Component({
   selector: 'app-stockfish-panel',
   standalone: true,
-  imports: [PanelComponent],
   templateUrl: './stockfish-panel.component.html',
   styleUrl: './stockfish-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

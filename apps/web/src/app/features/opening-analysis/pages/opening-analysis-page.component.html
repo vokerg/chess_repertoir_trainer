@@ -39,6 +39,12 @@
           (goPrevious)="store.goBack()"
         />
 
+        <app-stockfish-panel
+          class="opening-stockfish"
+          [analysis]="store.engine()"
+          [currentFen]="store.currentFen()"
+        />
+
         <app-copyable-line
           class="opening-line-card"
           name="Current line"
@@ -96,12 +102,6 @@
         (moveSelected)="store.playNextMove($event)"
       />
 
-      <section class="engine-summary-card" aria-label="Stockfish opening evaluation">
-        <app-stockfish-panel
-          [analysis]="store.engine()"
-          [currentFen]="store.currentFen()"
-        />
-      </section>
     </div>
   </div>
   <app-lichess-bot-challenge-dialog />

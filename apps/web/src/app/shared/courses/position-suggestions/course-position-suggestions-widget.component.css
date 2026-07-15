@@ -3,11 +3,9 @@
 .course-suggestions-header { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
 .course-suggestions-header .workbench-panel-subtitle { max-width: 52rem; overflow-wrap: anywhere; }
 .course-suggestions-loading { border: 1px solid var(--border); border-radius: 999px; background: rgba(255,255,255,0.72); padding: 0.35rem 0.65rem; color: var(--muted-strong); font-size: 0.78rem; font-weight: 900; white-space: nowrap; }
-.course-suggestions-list { display: grid; gap: 0.5rem; }
 .course-suggestions-list-loading { opacity: 0.56; }
-.course-suggestion-row { width: 100%; border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,0.72); padding: 0.75rem 0.85rem; color: var(--text); text-align: left; cursor: pointer; }
+.course-suggestion-row { width: 100%; border: 0; background: transparent; padding: 0.7rem 0.8rem; color: var(--text); text-align: left; cursor: pointer; }
 .course-suggestion-row { display: grid; grid-template-columns: minmax(72px,auto) minmax(0,1fr); gap: 0.75rem; align-items: center; }
-.course-suggestion-row:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(35,27,21,0.1); }
 .course-suggestion-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suggestion-move { display: grid; gap: 0.12rem; }
 .suggestion-move small { color: var(--muted); font-weight: 800; }

@@ -1,4 +1,4 @@
-<app-panel title="Engine lines">
+<section class="stockfish-widget" aria-label="Engine lines">
   @if (warning()) {
     <div class="engine-warning-modern">{{ warning() }}</div>
   }
@@ -15,4 +15,4 @@
       <p class="stockfish-status" [class.status-error]="analysis().error">{{ status }}</p>
     }
   </div>
-</app-panel>
+</section>

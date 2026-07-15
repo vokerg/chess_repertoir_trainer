@@ -7,7 +7,7 @@
 .opening-board-stage .board-shell { width: 100%; min-width: 0; }
 .opening-board-stage app-chessground-board { display: block; width: 100%; min-width: 0; }
 .opening-board-stage app-chessground-board ::ng-deep .board-shell { width: 100%; }
+.opening-stockfish { display: block; }
 .opening-line-card { display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.6); padding: 0.35rem; }
-.engine-summary-card { display: grid; gap: 0.65rem; border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,0.58); padding: 1rem; }
 @media (max-width: 1050px) { .opening-workbench { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .opening-board-stage { grid-template-columns: minmax(0,min(100%,520px)); gap: 0; } }

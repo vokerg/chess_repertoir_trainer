@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ProgressiveListComponent } from '../../ui/progressive-list/progressive-list.component';
 
 export interface GameFilterBreakdownItem {
   key: string;
@@ -15,6 +16,7 @@ export interface GameFilterBreakdownItem {
 @Component({
   selector: 'app-game-filter-breakdown-panel',
   standalone: true,
+  imports: [ProgressiveListComponent],
   templateUrl: './game-filter-breakdown-panel.component.html',
   styleUrl: './game-filter-breakdown-panel.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,9 +29,8 @@ export class GameFilterBreakdownPanelComponent {
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly emptyText = input('No matching groups.');
-  readonly limit = input(12);
+  readonly limit = input(4);
   readonly itemSelected = output<string>();
 
-  protected readonly visibleItems = computed(() => this.items().slice(0, this.limit()));
   protected readonly selected = computed(() => new Set(this.selectedKeys()));
 }

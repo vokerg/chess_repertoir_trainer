@@ -55,20 +55,25 @@
           No indexed games reached this position with the current filters. Index more games or widen the filters.
         </div>
       } @else {
-        <div class="position-games-move-list">
-          @for (row of moveViewModels(); track row.move.moveUci) {
-            <button type="button" class="position-games-move-row" (click)="moveSelected.emit(row.move)" [disabled]="loading()">
-              <span class="move-node-dot"></span>
-              <span class="move-main">
-                <strong>{{ row.san }}</strong>
-              </span>
-              <span class="move-wdl">
-                <span>{{ wdlLabel(row.move.games) }}</span>
-                <small>{{ scoreLabel(row.move.games) }}</small>
-              </span>
-            </button>
-          }
-        </div>
+        <app-progressive-list
+          [items]="moveViewModels()"
+          [itemTemplate]="moveRow"
+          [initialCount]="initialVisibleMoveCount()"
+          [resetKey]="listResetKey()"
+        />
+
+        <ng-template #moveRow let-row>
+          <button type="button" class="position-games-move-row" (click)="moveSelected.emit(row.move)" [disabled]="loading()">
+            <span class="move-node-dot"></span>
+            <span class="move-main">
+              <strong>{{ row.san }}</strong>
+            </span>
+            <span class="move-wdl">
+              <span>{{ wdlLabel(row.move.games) }}</span>
+              <small>{{ scoreLabel(row.move.games) }}</small>
+            </span>
+          </button>
+        </ng-template>
       }
     } @else if (loading()) {
       <div class="position-games-move-list position-games-placeholder" aria-hidden="true">
@@ -89,6 +94,8 @@
       [loading]="topGamesLoading()"
       [title]="topGamesTitle()"
       [subtitle]="topGamesSubtitle()"
+      [initialVisibleCount]="initialVisibleGameCount()"
+      [resetKey]="listResetKey()"
     />
   }
 </section>

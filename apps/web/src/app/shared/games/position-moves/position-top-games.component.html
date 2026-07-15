@@ -7,18 +7,23 @@
   </div>
 
   @if (games().length) {
-    <div class="position-games-game-list">
-      @for (game of games(); track game.id) {
-        <a class="position-games-game-row" [routerLink]="['/games', game.id]" [class.position-games-game-row-loading]="loading()">
-          <span class="provider-pill" [class]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
-          <span class="position-games-game-main">
-            <strong>{{ gameDateLabel(game) }} - {{ playerPairLabel(game) }}</strong>
-            <small>{{ gameMetaLabel(game) }}</small>
-          </span>
-          <span class="position-games-result" [class]="resultClass(game.resultForUser)">{{ resultLabel(game.resultForUser) }}</span>
-        </a>
-      }
-    </div>
+    <app-progressive-list
+      [items]="games()"
+      [itemTemplate]="gameRow"
+      [initialCount]="initialVisibleCount()"
+      [resetKey]="resetKey()"
+    />
+
+    <ng-template #gameRow let-game>
+      <a class="position-games-game-row" [routerLink]="['/games', game.id]" [class.position-games-game-row-loading]="loading()">
+        <span class="provider-pill" [class]="providerClass(game.provider)">{{ providerLabel(game.provider) }}</span>
+        <span class="position-games-game-main">
+          <strong>{{ gameDateLabel(game) }} - {{ playerPairLabel(game) }}</strong>
+          <small>{{ gameMetaLabel(game) }}</small>
+        </span>
+        <span class="position-games-result" [class]="resultClass(game.resultForUser)">{{ resultLabel(game.resultForUser) }}</span>
+      </a>
+    </ng-template>
   } @else if (!loading()) {
     <div class="empty-state compact-empty">No matching games reached this position with the current filters.</div>
   }
