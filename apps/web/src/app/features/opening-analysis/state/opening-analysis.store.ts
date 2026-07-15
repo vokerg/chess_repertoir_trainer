@@ -19,7 +19,6 @@ import {
 import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
-import { engineBestMoveForFen } from '../../../shared/chess/engine/engine-best-move.helper';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
@@ -62,6 +61,8 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly lastMove = signal<{ from: string; to: string } | null>(null);
   readonly history = signal<PlayedMove[]>([]);
   readonly currentFen = signal(new Chess().fen());
+  readonly tagsOpen = signal(false);
+  readonly engineVisible = signal(true);
   readonly engine = toSignal(this.positionAnalysis.state$, { initialValue: EMPTY_ENGINE });
 
   readonly wdl = computed(() => this.analysis()?.games ?? EMPTY_WDL);
@@ -70,11 +71,6 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly lineLabel = computed(() =>
     this.history().length ? this.history().map((move) => move.san || move.uci).join(' ') : 'Start position',
   );
-  readonly analysisArrows = computed(() => {
-    const move = engineBestMoveForFen(this.engine(), this.currentFen());
-    if (!move) return [];
-    return [{ from: move.substring(0, 2), to: move.substring(2, 4), brush: 'green' }];
-  });
 
   private chess = new Chess();
   private refreshRequestSeq = 0;
@@ -94,13 +90,24 @@ export class OpeningAnalysisStore implements OnDestroy {
     this.positionAnalysis.stop();
   }
 
+  toggleTags(): void {
+    const open = !this.tagsOpen();
+    this.tagsOpen.set(open);
+    if (!open || this.performance() || this.performanceLoading()) return;
+    void this.refreshPerformance(buildOpeningAnalysisQuery(this.currentFen(), this.filters()));
+  }
+
+  toggleEngine(): void {
+    this.engineVisible.update((visible) => !visible);
+  }
+
   async refresh(): Promise<void> {
     const requestId = ++this.refreshRequestSeq;
     const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
     this.performance.set(null);
     this.topGames.set([]);
     this.openingBreakdowns.set([]);
-    void this.refreshPerformance(query);
+    if (this.tagsOpen()) void this.refreshPerformance(query);
     void this.refreshTopGames(query);
     void this.refreshBreakdowns(query);
     this.loading.set(true);
