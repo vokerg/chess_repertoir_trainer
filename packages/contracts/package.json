@@ -39,6 +39,10 @@
     "./opening-struggles": {
       "types": "./dist/opening-struggles/index.d.ts",
       "default": "./dist/opening-struggles/index.js"
+    },
+    "./masters-explorer": {
+      "types": "./dist/masters-explorer/index.d.ts",
+      "default": "./dist/masters-explorer/index.js"
     }
   },
   "scripts": {

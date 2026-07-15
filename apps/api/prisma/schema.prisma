@@ -257,10 +257,31 @@ model Position {
   positionKey   Bytes  @unique @db.ByteA
   normalizedFen String @db.VarChar(120)
 
-  plies    ImportedGamePly[]
-  analysis PositionAnalysis?
+  plies                 ImportedGamePly[]
+  analysis              PositionAnalysis?
+  mastersExplorerCaches MastersExplorerCache[]
 
   @@map("ImportedGamePosition")
+}
+
+model MastersExplorerCache {
+  id             Int      @id @default(autoincrement())
+  positionId     Int
+  position       Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  source         String   @db.VarChar(40)
+  profileVersion Int
+  sinceYear      Int      @db.SmallInt
+  untilYear      Int      @db.SmallInt
+  movesLimit     Int      @db.SmallInt
+  topGamesLimit  Int      @db.SmallInt
+  payload        Json
+  fetchedAt      DateTime
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([positionId, source, profileVersion])
+  @@index([expiresAt])
 }
 
 model ImportedGamePly {
