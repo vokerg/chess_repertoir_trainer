@@ -1,11 +1,16 @@
 import { z } from 'zod';
 
+function todayUtcDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export const performanceByRatingQuerySchema = z.object({
   from: z.iso.date().optional(),
   to: z.iso.date().optional(),
   minRating: z.coerce.number().int().min(0).max(5000).optional(),
 }).superRefine((value, context) => {
-  if (value.from && value.to && value.from > value.to) {
+  const effectiveTo = value.to ?? todayUtcDate();
+  if (value.from && value.from > effectiveTo) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['from'],
