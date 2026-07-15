@@ -3,6 +3,8 @@ import {
   boardImageQuerySchema,
   importedGameFacetsResponseSchema,
   importedGameSearchQuerySchema,
+  mastersExplorerQuerySchema,
+  mastersExplorerResponseSchema,
   mobileSyncManifestSchema,
   openingStrugglesQuerySchema,
   openingStrugglesResponseSchema,
@@ -122,6 +124,49 @@ const performanceReport = {
   }],
 };
 assert.deepEqual(performanceByRatingResponseSchema.parse(performanceReport), performanceReport);
+
+assert.deepEqual(mastersExplorerQuerySchema.parse({}), { fen: 'startpos' });
+const mastersExplorerResponse = {
+  fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
+  dataset: {
+    source: 'LICHESS_MASTERS',
+    profileVersion: 1,
+    sinceYear: 2000,
+    untilYear: 2026,
+    movesLimit: 12,
+    topGamesLimit: 15,
+  },
+  cache: {
+    status: 'REFRESHED',
+    fetchedAt: '2026-07-15T12:00:00.000Z',
+    expiresAt: '2026-08-14T12:00:00.000Z',
+  },
+  opening: null,
+  games: { total: 12, whiteWins: 5, draws: 4, blackWins: 3 },
+  moves: [{
+    uci: 'e2e4',
+    san: 'e4',
+    averageRating: 2510,
+    games: { total: 8, whiteWins: 4, draws: 3, blackWins: 1 },
+    opening: { eco: 'B00', name: "King's Pawn Game" },
+    representativeGame: null,
+  }],
+  topGames: [{
+    id: 'game-id',
+    moveUci: 'e2e4',
+    winner: 'WHITE',
+    white: { name: 'White Player', rating: 2700 },
+    black: { name: 'Black Player', rating: null },
+    year: 2025,
+    month: '2025-05',
+  }],
+};
+assert.deepEqual(mastersExplorerResponseSchema.parse(mastersExplorerResponse), mastersExplorerResponse);
+assert.equal(
+  mastersExplorerResponseSchema.safeParse({ ...mastersExplorerResponse, cache: { status: 'MISS' } }).success,
+  false,
+);
 
 assert.deepEqual(openingStrugglesQuerySchema.parse({
   mode: 'repeatedMistakes',
