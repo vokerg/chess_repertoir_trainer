@@ -4,7 +4,7 @@ on:
   pull_request:
 
 jobs:
-  root-test-sequence:
+  api-test-ranges:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -24,7 +24,6 @@ jobs:
       CI: true
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
-      WEB_API_BASE_URL: /api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,15 +31,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - run: npm run build:api
       - run: npm run db:migrate --workspace=apps/api
-      - name: Domain tests
-        run: npm run test --workspace=packages/chess-domain
-      - name: Contracts tests
-        run: npm run test:contracts
-      - name: API tests
-        run: npm run test --workspace=apps/api
-      - name: Web tests
-        run: npm run test --workspace=apps/web
-      - name: Mobile tests
-        run: npm run test:mobile
+      - name: API tests A-H
+        run: cd apps/api && node test/run-range.mjs '' imported-games/
+      - name: API tests I-L
+        run: cd apps/api && node test/run-range.mjs imported-games/ masters-explorer/
+      - name: API tests M-O
+        run: cd apps/api && node test/run-range.mjs masters-explorer/ openapi/
+      - name: API tests P-Z
+        run: cd apps/api && node test/run-range.mjs openapi/ zzzz
