@@ -87,6 +87,11 @@ assert.equal(
   performanceByRatingQuerySchema.safeParse({ from: '2026-07-15', to: '2026-07-14' }).success,
   false,
 );
+assert.equal(
+  performanceByRatingQuerySchema.safeParse({ from: '2999-01-01' }).success,
+  false,
+  'from-only queries validate against the effective default to date',
+);
 assert.equal(performanceByRatingQuerySchema.safeParse({ minRating: '-1' }).success, false);
 const performanceReport = {
   range: { from: '2026-04-14', to: '2026-07-14' },
