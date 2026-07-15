@@ -141,7 +141,7 @@ export class PerformanceByRatingStore {
 
   setMinRating(value: string): void {
     const rating = Number(value);
-    if (Number.isFinite(rating)) this.minRating.set(Math.max(0, Math.floor(rating)));
+    if (Number.isFinite(rating)) this.minRating.set(Math.min(5000, Math.max(0, Math.floor(rating))));
   }
 
   isTypeEnabled(type: PerformanceReportType): boolean {
