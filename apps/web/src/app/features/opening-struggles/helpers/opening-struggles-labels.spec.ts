@@ -1,6 +1,7 @@
 import type { OpeningStruggleItem } from '../data-access/opening-struggles.models';
 import {
   analysisQueryParams,
+  courseCoverageLabel,
   evalLabel,
   positionBeforeMoveLabel,
   repeatedMoveLabel,
@@ -32,6 +33,13 @@ function item(overrides: Partial<OpeningStruggleItem> = {}): OpeningStruggleItem
     afterPositionNormalizedFen: 'after-position',
     afterPositionBestScoreCpWhite: -154,
     afterPositionBestMateWhite: null,
+    courseCoverage: {
+      status: 'NOT_COVERED',
+      coveredPlies: 0,
+      deviationPly: null,
+      courses: [],
+      expectedMoveSans: [],
+    },
     ...overrides,
   };
 }
@@ -70,5 +78,17 @@ describe('opening struggle labels', () => {
     expect(evalLabel(-154)).toBe('-1.54');
     expect(evalLabel(125)).toBe('+1.25');
     expect(evalLabel(0)).toBe('0.00');
+  });
+
+  it('describes deviations with the move, expected reply, and course name', () => {
+    expect(courseCoverageLabel(item({
+      courseCoverage: {
+        status: 'MY_DEVIATION',
+        coveredPlies: 2,
+        deviationPly: 3,
+        courses: [{ id: 1, name: 'Open Games' }],
+        expectedMoveSans: ['Bb5'],
+      },
+    }))).toBe('Your move 2. Nf3 leaves the course. Expected: Bb5. Course: Open Games.');
   });
 });

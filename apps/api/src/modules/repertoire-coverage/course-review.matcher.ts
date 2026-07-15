@@ -86,6 +86,100 @@ function opponentMoveTransposesToKnownPosition(
   }
 }
 
+export type RepertoireSequenceStatus =
+  | 'COVERED'
+  | 'MY_DEVIATION'
+  | 'OPPONENT_UNCOVERED'
+  | 'REPERTOIRE_ENDED'
+  | 'NOT_COVERED'
+  | 'COURSE_CONFLICT';
+
+export interface RepertoireSequenceMatch {
+  status: RepertoireSequenceStatus;
+  coveredPlies: number;
+  deviationPly: number | null;
+  expectedMoveUcis: string[];
+  expectedMoveSans: string[];
+}
+
+export function classifyRepertoireSequence(input: {
+  plies: CourseReviewPly[];
+  graph: RepertoireGraph;
+  sideToTrain: RepertoireColor;
+  minCoveredPlies?: number;
+  reportUserMoveConflicts?: boolean;
+}): RepertoireSequenceMatch {
+  const plies = [...input.plies].sort((a, b) => a.plyNumber - b.plyNumber);
+  const startIndex = plies.findIndex((ply) => input.graph.startPositions.has(ply.normalizedFenBefore));
+  if (startIndex < 0) return sequenceResult('NOT_COVERED', 0);
+
+  const minCoveredPlies = input.minCoveredPlies ?? 1;
+  let coveredPlies = 0;
+  for (let index = startIndex; index < plies.length; index += 1) {
+    const ply = plies[index];
+    const position = input.graph.positions.get(ply.normalizedFenBefore);
+    if (!position) {
+      return belowMinimumOverlap(coveredPlies, minCoveredPlies)
+        ? sequenceResult('NOT_COVERED', coveredPlies)
+        : sequenceResult('REPERTOIRE_ENDED', coveredPlies, ply.plyNumber);
+    }
+
+    if (position.sideToMove === input.sideToTrain) {
+      const correctMoves = [...position.userMoves.values()];
+      if (input.reportUserMoveConflicts && correctMoves.length > 1) {
+        return sequenceResult('COURSE_CONFLICT', coveredPlies, ply.plyNumber, correctMoves);
+      }
+      if (correctMoves.length === 0) {
+        return belowMinimumOverlap(coveredPlies, minCoveredPlies)
+          ? sequenceResult('NOT_COVERED', coveredPlies)
+          : sequenceResult('REPERTOIRE_ENDED', coveredPlies, ply.plyNumber);
+      }
+      if (!correctMoves.some((move) => move.moveUci === ply.moveUci)) {
+        return belowMinimumOverlap(coveredPlies, minCoveredPlies)
+          ? sequenceResult('NOT_COVERED', coveredPlies)
+          : sequenceResult('MY_DEVIATION', coveredPlies, ply.plyNumber, correctMoves);
+      }
+      coveredPlies += 1;
+      continue;
+    }
+
+    if (
+      position.opponentMoves.has(ply.moveUci)
+      || opponentMoveTransposesToKnownPosition(input.graph, ply.normalizedFenBefore, ply.moveUci)
+    ) {
+      coveredPlies += 1;
+      continue;
+    }
+    return belowMinimumOverlap(coveredPlies, minCoveredPlies)
+      ? sequenceResult('NOT_COVERED', coveredPlies)
+      : sequenceResult(
+          'OPPONENT_UNCOVERED',
+          coveredPlies,
+          ply.plyNumber,
+          [...position.opponentMoves.values()],
+        );
+  }
+
+  return belowMinimumOverlap(coveredPlies, minCoveredPlies)
+    ? sequenceResult('NOT_COVERED', coveredPlies)
+    : sequenceResult('COVERED', coveredPlies);
+}
+
+function sequenceResult(
+  status: RepertoireSequenceStatus,
+  coveredPlies: number,
+  deviationPly: number | null = null,
+  expectedMoves: Array<{ moveUci: string; moveSan: string }> = [],
+): RepertoireSequenceMatch {
+  return {
+    status,
+    coveredPlies,
+    deviationPly,
+    expectedMoveUcis: expectedMoves.map((move) => move.moveUci),
+    expectedMoveSans: expectedMoves.map((move) => move.moveSan),
+  };
+}
+
 export function classifyCourseReviewGame(input: {
   game: CourseReviewGameMetadata;
   indexed: boolean;
@@ -99,81 +193,33 @@ export function classifyCourseReviewGame(input: {
   }
 
   const plies = [...input.plies].sort((a, b) => a.plyNumber - b.plyNumber);
-  const startIndex = plies.findIndex((ply) =>
-    input.graph.startPositions.has(ply.normalizedFenBefore),
-  );
-  if (startIndex < 0) return baseResult(input.game, 'OUT_OF_SCOPE');
-
   const trainedSide = input.sideToTrain ?? input.game.userColor;
-  let coveredPlies = 0;
-  for (let index = startIndex; index < plies.length; index++) {
-    const ply = plies[index];
-    const position = input.graph.positions.get(ply.normalizedFenBefore);
-    let side: RepertoireColor;
-    try {
-      side = position?.sideToMove ?? sideToMove(ply.normalizedFenBefore);
-    } catch {
-      return baseResult(input.game, 'UNINDEXED_GAME');
-    }
+  if (!trainedSide) return baseResult(input.game, 'OUT_OF_SCOPE');
+  const match = classifyRepertoireSequence({
+    plies,
+    graph: input.graph,
+    sideToTrain: trainedSide,
+    minCoveredPlies: input.minCoveredPlies,
+    reportUserMoveConflicts: true,
+  });
+  if (match.status === 'NOT_COVERED') return baseResult(input.game, 'OUT_OF_SCOPE');
+  if (match.status === 'COVERED') return baseResult(input.game, 'GAME_ENDED_INSIDE_REPERTOIRE');
 
-    if (!position) {
-      if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
-        return baseResult(input.game, 'OUT_OF_SCOPE');
-      }
-      return atPly(input.game, 'REPERTOIRE_ENDED', ply, side, plies, index);
-    }
-
-    if (trainedSide !== null && side === trainedSide) {
-      const correctMoves = [...position.userMoves.values()];
-      if (correctMoves.length > 1) {
-        const result = atPly(input.game, 'COURSE_CONFLICT', ply, side, plies, index);
-        result.expectedMoveUcis = correctMoves.map((move) => move.moveUci);
-        result.expectedMoveSans = correctMoves.map((move) => move.moveSan);
-        return result;
-      }
-      if (correctMoves.length === 0) {
-        if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
-          return baseResult(input.game, 'OUT_OF_SCOPE');
-        }
-        return atPly(input.game, 'REPERTOIRE_ENDED', ply, side, plies, index);
-      }
-
-      const expected = correctMoves[0];
-      if (ply.moveUci !== expected.moveUci) {
-        if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
-          return baseResult(input.game, 'OUT_OF_SCOPE');
-        }
-        const result = atPly(input.game, 'MY_DEVIATION', ply, side, plies, index);
-        result.expectedMoveUci = expected.moveUci;
-        result.expectedMoveUcis = [expected.moveUci];
-        result.expectedMoveSans = [expected.moveSan];
-        return result;
-      }
-      coveredPlies += 1;
-      continue;
-    }
-
-    if (!position.opponentMoves.has(ply.moveUci)) {
-      if (
-        opponentMoveTransposesToKnownPosition(
-          input.graph,
-          ply.normalizedFenBefore,
-          ply.moveUci,
-        )
-      ) {
-        coveredPlies += 1;
-        continue;
-      }
-      if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
-        return baseResult(input.game, 'OUT_OF_SCOPE');
-      }
-      return atPly(input.game, 'OPPONENT_UNCOVERED', ply, side, plies, index);
-    }
-    coveredPlies += 1;
+  const plyIndex = plies.findIndex((ply) => ply.plyNumber === match.deviationPly);
+  if (plyIndex < 0) return baseResult(input.game, 'UNINDEXED_GAME');
+  const ply = plies[plyIndex];
+  let side: RepertoireColor;
+  try {
+    side = input.graph.positions.get(ply.normalizedFenBefore)?.sideToMove
+      ?? sideToMove(ply.normalizedFenBefore);
+  } catch {
+    return baseResult(input.game, 'UNINDEXED_GAME');
   }
-
-  if (belowMinimumOverlap(coveredPlies, input.minCoveredPlies)) {
-    return baseResult(input.game, 'OUT_OF_SCOPE');
+  const result = atPly(input.game, match.status, ply, side, plies, plyIndex);
+  if (match.status !== 'OPPONENT_UNCOVERED') {
+    result.expectedMoveUci = match.expectedMoveUcis[0] ?? null;
+    result.expectedMoveUcis = match.expectedMoveUcis;
+    result.expectedMoveSans = match.expectedMoveSans;
   }
-  return baseResult(input.game, 'GAME_ENDED_INSIDE_REPERTOIRE');
+  return result;
 }

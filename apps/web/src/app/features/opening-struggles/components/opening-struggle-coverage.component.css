@@ -1,0 +1,42 @@
+:host { display: inline-flex; position: relative; flex: 0 0 auto; }
+.coverage-tooltip { position: relative; display: inline-flex; }
+.coverage-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 252, 247, 0.92);
+  color: var(--muted-strong);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0;
+}
+.coverage-icon.covered { border-color: rgba(54, 130, 83, 0.38); color: #2f7650; background: rgba(219, 241, 225, 0.82); }
+.coverage-icon.my_deviation { border-color: rgba(181, 91, 55, 0.38); color: var(--danger); background: rgba(249, 224, 213, 0.82); }
+.coverage-icon.opponent_uncovered { border-color: rgba(190, 126, 59, 0.42); color: var(--accent-strong); background: var(--accent-soft); }
+.coverage-icon.repertoire_ended { border-color: var(--border-strong); color: var(--muted-strong); }
+.coverage-icon:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
+.coverage-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 5;
+  display: none;
+  gap: 0.35rem;
+  width: min(19rem, 75vw);
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 252, 247, 0.99);
+  box-shadow: 0 16px 32px rgba(35, 27, 21, 0.14);
+  color: var(--text);
+  white-space: normal;
+  font-weight: 600;
+}
+.coverage-tooltip:hover .coverage-popover,
+.coverage-tooltip:focus-within .coverage-popover { display: grid; }
+.coverage-popover p { margin: 0; line-height: 1.4; }
+.coverage-popover small { color: var(--muted); }

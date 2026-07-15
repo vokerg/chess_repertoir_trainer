@@ -1,9 +1,32 @@
+import { Chess } from 'chess.js';
+import { buildRepertoireGraph, normalizeFenForPosition, RepertoireLineInput } from 'chess-domain';
 import {
   findImportedGamesForOpeningStruggles,
   OpeningStrugglesGameRow,
 } from '../imported-games/imported-games.repository.prisma';
 import { ImportedGameSummaryQuery } from '../imported-games/imported-games.schemas';
+import { classifyRepertoireSequence } from '../repertoire-coverage/course-review.matcher';
+import { getOpeningStruggleCourseLines } from '../repertoire-coverage/repertoire-coverage.repository.prisma';
 import { OpeningStrugglesQuery } from './opening-struggles.schema';
+
+export type OpeningStruggleCoverageStatus =
+  | 'COVERED'
+  | 'MY_DEVIATION'
+  | 'OPPONENT_UNCOVERED'
+  | 'REPERTOIRE_ENDED'
+  | 'NOT_COVERED';
+
+export interface OpeningStruggleCourseCoverage {
+  status: OpeningStruggleCoverageStatus;
+  coveredPlies: number;
+  deviationPly: number | null;
+  courses: Array<{ id: number; name: string }>;
+  expectedMoveSans: string[];
+}
+
+export interface OpeningStruggleCoverageLine extends RepertoireLineInput {
+  course: { id: number; name: string };
+}
 
 interface OpeningStruggleNode {
   key: string;
@@ -266,12 +289,128 @@ function sortItems(items: ReturnType<typeof toItem>[], query: OpeningStrugglesQu
   });
 }
 
+function sequencePlies(movesUci: readonly string[]) {
+  const chess = new Chess();
+  return movesUci.map((moveUci, index) => {
+    const normalizedFenBefore = normalizeFenForPosition(chess.fen());
+    const move = chess.move({
+      from: moveUci.slice(0, 2),
+      to: moveUci.slice(2, 4),
+      promotion: moveUci[4],
+    });
+    if (!move) throw new Error(`Invalid UCI move at ply ${index + 1}`);
+    return { plyNumber: index + 1, moveUci, normalizedFenBefore };
+  });
+}
+
+function notCovered(): OpeningStruggleCourseCoverage {
+  return {
+    status: 'NOT_COVERED',
+    coveredPlies: 0,
+    deviationPly: null,
+    courses: [],
+    expectedMoveSans: [],
+  };
+}
+
+export function annotateOpeningStruggleCourseCoverage<T extends ReturnType<typeof toItem>>(
+  items: T[],
+  courseLines: OpeningStruggleCoverageLine[],
+): Array<T & { courseCoverage: OpeningStruggleCourseCoverage }> {
+  const groupedLines = new Map<string, OpeningStruggleCoverageLine[]>();
+  for (const line of courseLines) {
+    const key = `${line.course.id}:${line.sideToTrain}`;
+    const group = groupedLines.get(key) ?? [];
+    group.push(line);
+    groupedLines.set(key, group);
+  }
+  const graphs = [...groupedLines.values()].map((lines) => ({
+    course: lines[0].course,
+    sideToTrain: lines[0].sideToTrain,
+    graph: buildRepertoireGraph(lines),
+  }));
+
+  return items.map((item) => {
+    let plies: ReturnType<typeof sequencePlies>;
+    try {
+      plies = sequencePlies(item.movesUci);
+    } catch {
+      return { ...item, courseCoverage: notCovered() };
+    }
+    const matches = graphs
+      .filter((entry) => entry.sideToTrain === item.userColor)
+      .map((entry) => {
+        const startsAtPrefixRoot = Boolean(
+          plies[0] && entry.graph.startPositions.has(plies[0].normalizedFenBefore),
+        );
+        return {
+          course: entry.course,
+          ...(startsAtPrefixRoot ? classifyRepertoireSequence({
+            plies,
+            graph: entry.graph,
+            sideToTrain: item.userColor,
+            minCoveredPlies: 1,
+          }) : {
+            status: 'NOT_COVERED' as const,
+            coveredPlies: 0,
+            deviationPly: null,
+            expectedMoveUcis: [],
+            expectedMoveSans: [],
+          }),
+        };
+      })
+      .filter((match) => match.status !== 'COURSE_CONFLICT');
+    const covered = matches.filter((match) =>
+      match.status === 'COVERED' && match.coveredPlies === item.movesUci.length,
+    );
+    const candidates = covered.length
+      ? covered
+      : matches.filter((match) => match.status !== 'NOT_COVERED');
+    if (!candidates.length) return { ...item, courseCoverage: notCovered() };
+
+    const bestCoveredPlies = Math.max(...candidates.map((match) => match.coveredPlies));
+    const bestAtDepth = candidates.filter((match) => match.coveredPlies === bestCoveredPlies);
+    const statusOrder: OpeningStruggleCoverageStatus[] = [
+      'COVERED',
+      'MY_DEVIATION',
+      'OPPONENT_UNCOVERED',
+      'REPERTOIRE_ENDED',
+      'NOT_COVERED',
+    ];
+    const status = statusOrder.find((candidateStatus) =>
+      bestAtDepth.some((match) => match.status === candidateStatus),
+    ) ?? 'NOT_COVERED';
+    const tied = bestAtDepth.filter((match) => match.status === status);
+    return {
+      ...item,
+      courseCoverage: {
+        status,
+        coveredPlies: bestCoveredPlies,
+        deviationPly: tied[0]?.deviationPly ?? null,
+        courses: [...new Map(tied.map((match) => [match.course.id, match.course])).values()]
+          .sort((left, right) => left.name.localeCompare(right.name) || left.id - right.id),
+        expectedMoveSans: [...new Set(tied.flatMap((match) => match.expectedMoveSans))],
+      },
+    };
+  });
+}
+
 export async function getOpeningStruggles(userId: number, query: OpeningStrugglesQuery) {
   const filters = importedGameFilters(query);
-  const candidateGames = await findImportedGamesForOpeningStruggles(userId, filters, query.maxPly);
+  const [candidateGames, courseLineRows] = await Promise.all([
+    findImportedGamesForOpeningStruggles(userId, filters, query.maxPly),
+    getOpeningStruggleCourseLines(userId),
+  ]);
   const filteredGames = candidateGames;
   const indexedGames = filteredGames.filter((game) => game.plyIndexedAt !== null);
-  const items = buildOpeningStruggleItems(indexedGames, query);
+  const courseLines: OpeningStruggleCoverageLine[] = courseLineRows
+    .filter((line) => line.sideToTrain === 'WHITE' || line.sideToTrain === 'BLACK')
+    .map((line) => ({
+      ...line,
+      sideToTrain: line.sideToTrain as 'WHITE' | 'BLACK',
+      course: line.chapter.course,
+    }));
+  const items = buildOpeningStruggleItems(indexedGames, query, courseLines);
 
   return {
     totalFilteredGames: filteredGames.length,
@@ -297,6 +436,8 @@ export async function getOpeningStruggles(userId: number, query: OpeningStruggle
 export function buildOpeningStruggleItems(
   games: OpeningStrugglesGameRow[],
   query: OpeningStrugglesQuery,
+  courseLines: OpeningStruggleCoverageLine[] = [],
 ) {
-  return sortItems(flatten(buildTree(games, query), query), query).slice(0, query.limit);
+  const items = sortItems(flatten(buildTree(games, query), query), query).slice(0, query.limit);
+  return annotateOpeningStruggleCourseCoverage(items, courseLines);
 }
