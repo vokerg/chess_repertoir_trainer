@@ -115,6 +115,16 @@ try {
       tagCodes: [],
       endedAt: '2026-07-05T12:00:00.000Z',
     },
+    {
+      accountId: lichessAccount.id,
+      provider: 'LICHESS',
+      speedCategory: 'rapid',
+      userColor: 'WHITE',
+      resultForUser: 'WIN',
+      opponentRating: 599,
+      tagCodes: [],
+      endedAt: '2026-07-06T12:00:00.000Z',
+    },
   ];
 
   for (const [index, game] of games.entries()) {
@@ -148,15 +158,21 @@ try {
     await app.ready();
     const response = await app.inject({
       method: 'GET',
-      url: '/api/lab/performance-by-rating?from=2026-07-01&to=2026-07-14',
+      url: '/api/lab/performance-by-rating?from=2026-07-01&to=2026-07-14&minRating=600',
     });
 
     assert.equal(response.statusCode, 200);
     const body = response.json();
     assert.deepEqual(body.range, { from: '2026-07-01', to: '2026-07-14' });
     assert.equal(body.items.length, 5);
+    assert.deepEqual(
+      body.items.map((item) => item.ratingFrom),
+      [1500, 1300, 1200, 1200, 1100],
+      'rating bands are ordered descending before report type',
+    );
 
     const byKey = new Map(body.items.map((item) => [`${item.type}:${item.ratingFrom}`, item]));
+    assert.equal(byKey.has('LICHESS_RAPID:500'), false, 'minimum rating is applied before aggregation');
     const lichessBlitz1200 = byKey.get('LICHESS_BLITZ:1200');
     assert.deepEqual(lichessBlitz1200.wdl, { wins: 1, draws: 0, losses: 0 });
     assert.deepEqual(lichessBlitz1200.whiteWdl, { wins: 1, draws: 0, losses: 0 });

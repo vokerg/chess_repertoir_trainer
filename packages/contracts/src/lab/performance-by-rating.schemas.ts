@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const performanceByRatingQuerySchema = z.object({
   from: z.iso.date().optional(),
   to: z.iso.date().optional(),
+  minRating: z.coerce.number().int().min(0).max(5000).optional(),
 }).superRefine((value, context) => {
   if (value.from && value.to && value.from > value.to) {
     context.addIssue({

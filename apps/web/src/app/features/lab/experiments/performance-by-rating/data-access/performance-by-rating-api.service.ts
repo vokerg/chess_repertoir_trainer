@@ -14,6 +14,7 @@ export class PerformanceByRatingApiService {
     const params = new URLSearchParams();
     if (query.from) params.set('from', query.from);
     if (query.to) params.set('to', query.to);
+    if (query.minRating !== undefined) params.set('minRating', String(query.minRating));
     return this.api.get<PerformanceByRatingResponse>(`/lab/performance-by-rating?${params.toString()}`);
   }
 }

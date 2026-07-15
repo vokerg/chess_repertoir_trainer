@@ -78,14 +78,16 @@ assert.equal(
   false,
 );
 
-assert.deepEqual(performanceByRatingQuerySchema.parse({ from: '2026-04-14', to: '2026-07-14' }), {
+assert.deepEqual(performanceByRatingQuerySchema.parse({ from: '2026-04-14', to: '2026-07-14', minRating: '600' }), {
   from: '2026-04-14',
   to: '2026-07-14',
+  minRating: 600,
 });
 assert.equal(
   performanceByRatingQuerySchema.safeParse({ from: '2026-07-15', to: '2026-07-14' }).success,
   false,
 );
+assert.equal(performanceByRatingQuerySchema.safeParse({ minRating: '-1' }).success, false);
 const performanceReport = {
   range: { from: '2026-04-14', to: '2026-07-14' },
   items: [{

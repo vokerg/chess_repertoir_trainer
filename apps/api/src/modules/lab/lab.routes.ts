@@ -54,7 +54,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/api/lab/performance-by-rating', {
     schema: labSchema('getPerformanceByRating', 'Compare results across opponent rating bands', {
-      description: 'Groups scored Lichess and Chess.com blitz/rapid games by 100-point opponent rating bands.',
+      description: 'Groups scored Lichess and Chess.com blitz/rapid games by 100-point opponent rating bands, optionally filtered by minimum opponent rating.',
       querystring: performanceByRatingQuerySchema,
       response: {
         200: performanceByRatingResponseSchema,

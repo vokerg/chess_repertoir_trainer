@@ -108,6 +108,7 @@ export class PerformanceByRatingStore {
 
   readonly from = signal(this.defaults.from);
   readonly to = signal(this.defaults.to);
+  readonly minRating = signal(600);
   readonly items = signal<readonly PerformanceByRatingRow[]>([]);
   readonly enabledTypes = signal<readonly PerformanceReportType[]>(PERFORMANCE_REPORT_TYPES);
   readonly visibleColumns = signal<readonly PerformanceColumnId[]>(CORE_COLUMNS);
@@ -136,6 +137,11 @@ export class PerformanceByRatingStore {
 
   setTo(value: string): void {
     this.to.set(value);
+  }
+
+  setMinRating(value: string): void {
+    const rating = Number(value);
+    if (Number.isFinite(rating)) this.minRating.set(Math.max(0, Math.floor(rating)));
   }
 
   isTypeEnabled(type: PerformanceReportType): boolean {
@@ -188,6 +194,7 @@ export class PerformanceByRatingStore {
       const response = await firstValueFrom(this.api.getPerformanceByRating({
         from: this.from(),
         to: this.to(),
+        minRating: this.minRating(),
       }));
       this.items.set(response.items);
       this.from.set(response.range.from);

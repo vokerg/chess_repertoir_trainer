@@ -135,8 +135,4 @@ export class PerformanceByRatingExperimentComponent implements OnInit {
     return group.columns.filter((column) => this.store.isColumnVisible(column.id)).length;
   }
 
-  protected isTypeStart(index: number): boolean {
-    const items = this.store.filteredItems();
-    return index > 0 && items[index - 1]?.type !== items[index]?.type;
-  }
 }

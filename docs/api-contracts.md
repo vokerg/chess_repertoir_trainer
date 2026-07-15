@@ -17,7 +17,7 @@ Contracts may contain HTTP params/query/body/response schemas, stable wire liter
 - Test the schema against actual mapper/service output and representative invalid values.
 - Delete handwritten duplicates only after every consuming workspace compiles against the shared contract.
 - Public position-analysis lines require `pvUci`. Historical persisted JSON is normalized at the API mapping boundary so legacy rows cannot weaken the wire contract.
-- Lab performance-by-rating requests and responses are exported from `@chess-trainer/contracts/lab`; the API owns aggregation and Angular owns only report presentation state.
+- Lab performance-by-rating requests and responses are exported from `@chess-trainer/contracts/lab`; requests may filter by minimum opponent rating, the API owns filtering/descending rating-band aggregation order, and Angular owns only report presentation state.
 
 The package exports compiled `dist` files. Focused API and mobile scripts prepare both `chess-domain` and `contracts`; focused web scripts prepare `contracts`. This keeps focused commands valid after `npm ci` without importing unpublished package source.
 

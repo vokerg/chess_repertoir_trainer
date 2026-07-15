@@ -69,7 +69,12 @@ export async function getPerformanceByRating(
   query: PerformanceByRatingQuery,
 ): Promise<PerformanceByRatingResponse> {
   const range = resolvePerformanceByRatingRange(query);
-  const rows = await findPerformanceByRatingRows(userId, range.fromDate, range.toExclusive);
+  const rows = await findPerformanceByRatingRows(
+    userId,
+    range.fromDate,
+    range.toExclusive,
+    query.minRating ?? 0,
+  );
 
   return {
     range: { from: range.from, to: range.to },

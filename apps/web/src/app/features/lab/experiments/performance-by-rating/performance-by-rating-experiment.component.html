@@ -20,7 +20,18 @@
           <span>To</span>
           <input type="date" [value]="store.to()" (input)="store.setTo(textValue($event))" />
         </label>
-        <button type="button" class="compact-action" (click)="store.load()" [disabled]="store.loading()">Apply dates</button>
+        <label>
+          <span>Minimum opponent rating</span>
+          <input
+            type="number"
+            min="0"
+            max="5000"
+            step="100"
+            [value]="store.minRating()"
+            (input)="store.setMinRating(textValue($event))"
+          />
+        </label>
+        <button type="button" class="compact-action" (click)="store.load()" [disabled]="store.loading()">Apply filters</button>
       </div>
 
       <details class="column-picker">
@@ -101,8 +112,8 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of store.filteredItems(); track row.type + ':' + row.ratingFrom; let index = $index) {
-            <tr [class.type-start]="isTypeStart(index)" [class.small-sample]="row.games < 5">
+          @for (row of store.filteredItems(); track row.type + ':' + row.ratingFrom) {
+            <tr [class.small-sample]="row.games < 5">
               <td class="type-cell">{{ typeLabel(row.type) }}</td>
               <td class="rating-cell">
                 {{ ratingLabel(row) }}

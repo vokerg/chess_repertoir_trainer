@@ -36,6 +36,7 @@ export async function findPerformanceByRatingRows(
   userId: number,
   fromDate: Date,
   toExclusive: Date,
+  minRating: number,
 ): Promise<PerformanceByRatingAggregateRow[]> {
   return prisma.$queryRaw<PerformanceByRatingAggregateRow[]>(Prisma.sql`
     WITH eligible_games AS (
@@ -70,6 +71,7 @@ export async function findPerformanceByRatingRows(
         (floor("opponentRating"::numeric / 100) * 100)::int AS "ratingFrom"
       FROM eligible_games
       WHERE "opponentRating" IS NOT NULL
+        AND "opponentRating" >= ${minRating}
     )
     SELECT
       "provider",
@@ -99,8 +101,8 @@ export async function findPerformanceByRatingRows(
     FROM rated_games
     GROUP BY "provider", "speed", "ratingFrom"
     ORDER BY
+      "ratingFrom" DESC,
       CASE "provider" WHEN 'LICHESS' THEN 0 ELSE 1 END,
-      CASE "speed" WHEN 'blitz' THEN 0 ELSE 1 END,
-      "ratingFrom"
+      CASE "speed" WHEN 'blitz' THEN 0 ELSE 1 END
   `);
 }
