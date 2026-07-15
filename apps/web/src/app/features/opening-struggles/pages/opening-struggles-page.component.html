@@ -80,9 +80,7 @@
                 [queryParams]="analysisQueryParams(item, store.criteria().mode)"
                 [ariaLabel]="'Copy line ' + (store.isRepeatedMistakesMode() ? positionBeforeMoveLabel(item) : lineLabel(item))"
               />
-              @if (item.courseCoverage.status !== 'NOT_COVERED') {
-                <app-opening-struggle-coverage [item]="item" />
-              }
+              <app-opening-struggle-coverage [item]="item" />
             </div>
           </td>
           @if (store.isResultsMode()) {
@@ -98,7 +96,7 @@
     </tbody></table></div>
   } @else if (store.loaded() && !store.loading() && !store.error()) {
     <div class="empty-state">No opening lines matched the selected thresholds.</div>
-  } @else if (!store.loaded() && !store.loading()) {
+  } @else if (!store.loaded() && !store.loading() && !store.error()) {
     <div class="empty-state">Choose criteria and find opening struggles.</div>
   }
 </section>
