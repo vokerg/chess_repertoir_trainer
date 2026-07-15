@@ -22,6 +22,7 @@ try {
     method: 'GET',
     url: '/api/masters-explorer?fen=not-a-fen',
   });
+  console.error('invalid-fen-response', invalid.statusCode, invalid.body);
   assert.equal(invalid.statusCode, 400);
   assert.deepEqual(invalid.json(), {
     error: 'The supplied FEN is invalid.',
