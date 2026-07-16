@@ -53,6 +53,7 @@ export interface LichessMastersPositionRequest {
   untilYear: number;
   movesLimit: number;
   topGamesLimit: number;
+  accessToken: string;
 }
 
 export interface LichessMastersClient {
@@ -92,6 +93,12 @@ export function createLichessMastersClient(
   return {
     fetchPosition(input) {
       return runSerialized(async () => {
+        if (!input.accessToken.trim()) {
+          throw new LichessMastersUpstreamError(
+            'A Lichess access token is required for Lichess Masters requests.',
+          );
+        }
+
         if (nowMs() < blockedUntilMs) {
           throw new LichessMastersUpstreamError('Lichess Masters is temporarily rate limited.', 429);
         }
@@ -108,7 +115,10 @@ export function createLichessMastersClient(
 
         try {
           const response = await fetchImpl(url, {
-            headers: { Accept: 'application/json' },
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${input.accessToken}`,
+            },
             signal: controller.signal,
           });
 

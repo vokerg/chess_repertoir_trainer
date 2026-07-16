@@ -6,6 +6,14 @@ import {
 } from '../../dist/modules/masters-explorer/masters-explorer.service.js';
 
 const now = new Date('2026-07-15T12:00:00.000Z');
+const userId = 42;
+const accessToken = 'requesting-user-access-token';
+const testAccessTokenProvider = {
+  async getForUser(requestingUserId) {
+    assert.equal(requestingUserId, userId);
+    return accessToken;
+  },
+};
 const canonicalStartFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const normalizedStartFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 const emptySnapshot = {
@@ -91,23 +99,49 @@ function memoryRepository(initial = null) {
           untilYear: 2026,
           movesLimit: 12,
           topGamesLimit: 15,
+          accessToken,
         });
         return emptySnapshot;
       },
     },
+    accessTokenProvider: testAccessTokenProvider,
     clock: () => new Date(now),
   });
 
-  const first = await service.getPosition('startpos');
+  const first = await service.getPosition('startpos', userId);
   assert.equal(first.cache.status, 'REFRESHED');
   assert.equal(first.normalizedFen, normalizedStartFen);
   assert.deepEqual(first.games, emptySnapshot.games);
   assert.equal(upstreamCalls, 1);
   assert.equal(memory.calls.upsert, 1);
 
-  const second = await service.getPosition('startpos');
+  const second = await service.getPosition('startpos', userId);
   assert.equal(second.cache.status, 'HIT');
   assert.equal(upstreamCalls, 1, 'fresh system cache avoids another Lichess request');
+}
+
+{
+  const memory = memoryRepository(storedCache());
+  let accessTokenCalls = 0;
+  const service = createMastersExplorerService({
+    repository: memory.repository,
+    client: {
+      async fetchPosition() {
+        throw new Error('a fresh cache must not call Lichess');
+      },
+    },
+    accessTokenProvider: {
+      async getForUser() {
+        accessTokenCalls += 1;
+        throw new Error('a fresh cache must not load user credentials');
+      },
+    },
+    clock: () => new Date(now),
+  });
+
+  const response = await service.getPosition('startpos', userId);
+  assert.equal(response.cache.status, 'HIT');
+  assert.equal(accessTokenCalls, 0, 'shared cache hits do not require a Lichess connection');
 }
 
 {
@@ -123,10 +157,11 @@ function memoryRepository(initial = null) {
         return emptySnapshot;
       },
     },
+    accessTokenProvider: testAccessTokenProvider,
     clock: () => new Date(now),
   });
 
-  const response = await service.getPosition('startpos');
+  const response = await service.getPosition('startpos', userId);
   assert.equal(response.cache.status, 'REFRESHED');
   assert.equal(upstreamCalls, 1);
   assert.equal(memory.calls.upsert, 1);
@@ -143,10 +178,11 @@ function memoryRepository(initial = null) {
         return populatedSnapshot;
       },
     },
+    accessTokenProvider: testAccessTokenProvider,
     clock: () => new Date(now),
   });
 
-  const response = await service.getPosition('startpos');
+  const response = await service.getPosition('startpos', userId);
   assert.equal(response.cache.status, 'REFRESHED');
   assert.equal(response.dataset.untilYear, 2026);
   assert.equal(upstreamCalls, 1);
@@ -159,13 +195,18 @@ function memoryRepository(initial = null) {
     repository: memory.repository,
     client: {
       async fetchPosition() {
-        throw new Error('upstream unavailable');
+        throw new Error('missing credentials must fail before calling Lichess');
+      },
+    },
+    accessTokenProvider: {
+      async getForUser() {
+        throw new Error('requesting user has no active Lichess connection');
       },
     },
     clock: () => new Date(now),
   });
 
-  const response = await service.getPosition('startpos');
+  const response = await service.getPosition('startpos', userId);
   assert.equal(response.cache.status, 'STALE');
   assert.equal(response.cache.fetchedAt, stale.fetchedAt.toISOString());
   assert.deepEqual(response.games, populatedSnapshot.games);
@@ -180,11 +221,12 @@ function memoryRepository(initial = null) {
         throw new Error('upstream unavailable');
       },
     },
+    accessTokenProvider: testAccessTokenProvider,
     clock: () => new Date(now),
   });
 
   await assert.rejects(
-    service.getPosition('startpos'),
+    service.getPosition('startpos', userId),
     (error) => error instanceof MastersExplorerUnavailableError,
   );
 }
@@ -194,11 +236,12 @@ function memoryRepository(initial = null) {
   const service = createMastersExplorerService({
     repository: memory.repository,
     client: { async fetchPosition() { return populatedSnapshot; } },
+    accessTokenProvider: testAccessTokenProvider,
     clock: () => new Date(now),
   });
 
   await assert.rejects(
-    service.getPosition('not-a-fen'),
+    service.getPosition('not-a-fen', userId),
     (error) => error instanceof InvalidMastersExplorerFenError,
   );
   assert.equal(memory.calls.find, 0, 'invalid FEN fails before cache access');
@@ -217,11 +260,12 @@ function memoryRepository(initial = null) {
         return pendingFetch;
       },
     },
+    accessTokenProvider: testAccessTokenProvider,
     clock: () => new Date(now),
   });
 
-  const first = service.getPosition('startpos');
-  const second = service.getPosition('startpos');
+  const first = service.getPosition('startpos', userId);
+  const second = service.getPosition('startpos', userId);
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(upstreamCalls, 1, 'concurrent misses share one upstream request');
   resolveFetch(populatedSnapshot);

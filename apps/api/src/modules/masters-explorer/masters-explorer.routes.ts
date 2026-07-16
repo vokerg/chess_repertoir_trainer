@@ -36,7 +36,7 @@ const mastersExplorerModule: FastifyPluginAsyncZod = async (app) => {
       if (!auth) return;
 
       try {
-        return await MastersExplorerService.getPosition(request.query.fen);
+        return await MastersExplorerService.getPosition(request.query.fen, auth.userId);
       } catch (error) {
         if (error instanceof InvalidMastersExplorerFenError) {
           reply.code(400);

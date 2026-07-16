@@ -57,16 +57,11 @@
         [analysis]="store.analysis()"
         [loading]="store.loading()"
         [error]="store.error()"
-        [topGames]="store.topGames()"
-        [topGamesLoading]="store.topGamesLoading()"
         [filters]="store.filters()"
         [facets]="store.facets()"
         [filtersCollapsedInitially]="true"
         [compact]="false"
-        [showTopGames]="true"
         [showPositionWdl]="false"
-        topGamesTitle="Last games in this position"
-        topGamesSubtitle=""
         (filtersChange)="store.setFilters($event)"
         (applyFilters)="store.refresh()"
         (resetFilters)="store.resetFilters()"
@@ -74,8 +69,15 @@
         (moveSelected)="store.playNextMove($event)"
       />
 
+      @if (store.mastersOpen()) {
+        <app-masters-explorer-widget
+          [fen]="store.currentFen()"
+          (moveSelected)="store.playBoardMove($event)"
+        />
+      }
+
       <app-game-filter-breakdown-panel
-        title="Openings in this position"
+        title="My openings in this position"
         subtitle="Grouped by assigned opening. Click to filter."
         [items]="openingBreakdownItems()"
         [selectedKeys]="selectedOpeningKeys()"
@@ -84,6 +86,18 @@
         emptyText="No assigned openings found for this position."
         (itemSelected)="selectOpening($event)"
       />
+
+      @if (store.lastGamesOpen()) {
+        <section class="workbench-panel">
+          <app-position-top-games
+            [games]="store.topGames()"
+            [loading]="store.topGamesLoading()"
+            title="Last games in this position"
+            subtitle=""
+            [resetKey]="store.currentFen()"
+          />
+        </section>
+      }
     </div>
   </div>
 
