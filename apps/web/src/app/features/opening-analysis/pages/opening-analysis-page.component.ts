@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
-import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
+import { AnalysisBoardComponent } from '../../../shared/analysis/board/analysis-board.component';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
@@ -17,7 +17,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   selector: 'app-opening-analysis-page',
   standalone: true,
   imports: [
-    AnalysisWorkbenchComponent,
+    AnalysisBoardComponent,
     CoursePositionSuggestionsWidgetComponent,
     GameFilterBreakdownPanelComponent,
     PositionGameMovesPanelComponent,

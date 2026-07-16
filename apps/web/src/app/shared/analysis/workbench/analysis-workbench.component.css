@@ -1,15 +1,13 @@
 .analysis-workbench,
 .workbench-main-stack,
-.board-panel,
 .workbench-side-stack {
   min-width: 0;
 }
 
 .analysis-workbench {
-  --chess-board-size: min(520px, max(300px, calc(100dvh - 410px)));
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  grid-template-columns: minmax(0, 660px) minmax(300px, 1fr);
   align-items: start;
 }
 
@@ -19,38 +17,8 @@
   gap: var(--space-3);
 }
 
-.board-panel {
-  display: grid;
-  gap: 1rem;
-}
-
-.board-stage app-chessground-board {
-  justify-self: center;
-}
-
-.board-stage-engine-hidden {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.danger-zone {
-  border: 1px solid rgba(179, 58, 43, 0.22);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background: var(--danger-soft);
-}
-
-.board-action-row {
-  margin-top: var(--space-3);
-}
-
 @media (max-width: 980px) {
   .analysis-workbench {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .analysis-workbench {
-    --chess-board-size: min(100%, 520px);
   }
 }

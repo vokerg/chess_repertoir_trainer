@@ -1,43 +1,29 @@
 <div class="analysis-workbench">
   <div class="workbench-main-stack">
-    <app-panel class="board-panel" [title]="boardTitle()" [subtitle]="boardHelp()">
-      <div class="board-stage" [class.board-stage-engine-hidden]="!engineVisible()">
-        @if (engineVisible()) {
-          <app-engine-eval-bar
-            [analysis]="analysis()"
-            [currentFen]="currentFen()"
-            [flipped]="blackPerspective()"
-            [fitHeight]="evalBarFitHeight()"
-            [savedScoreCpWhite]="savedScoreCpWhite()"
-          />
-        }
-        <div class="board-shell">
-          <app-chessground-board
-            [fen]="currentFen()"
-            [side]="side()"
-            [lastMove]="lastMove()"
-            [arrows]="boardArrows()"
-            [positionVersion]="boardPositionVersion()"
-            (move)="boardMove.emit($event)"
-          />
-        </div>
-      </div>
-
-      <app-board-action-toolbar
-        [canGoBackward]="canGoBackward()"
-        [canGoForward]="canGoForward()"
-        [fen]="currentFen()"
-        [keyboardHint]="keyboardHint()"
-        [showFlip]="showFlipBoard()"
-        [showNext]="showNextNavigation()"
-        [showEnd]="showEndNavigation()"
-        (goStart)="goStart.emit()"
-        (goPrevious)="goPrevious.emit()"
-        (goNext)="goNext.emit()"
-        (goEnd)="goEnd.emit()"
-        (flip)="flipBoard.emit()"
-      />
-    </app-panel>
+    <app-analysis-board
+      [currentFen]="currentFen()"
+      [side]="side()"
+      [blackPerspective]="blackPerspective()"
+      [lastMove]="lastMove()"
+      [arrows]="arrows()"
+      [boardPositionVersion]="boardPositionVersion()"
+      [analysis]="analysis()"
+      [savedScoreCpWhite]="savedScoreCpWhite()"
+      [engineWarning]="engineWarning()"
+      [canGoBackward]="canGoBackward()"
+      [canGoForward]="canGoForward()"
+      [keyboardHint]="keyboardHint()"
+      [showFlipBoard]="showFlipBoard()"
+      [showNextNavigation]="showNextNavigation()"
+      [showEndNavigation]="showEndNavigation()"
+      [engineVisible]="engineVisible()"
+      (boardMove)="boardMove.emit($event)"
+      (goStart)="goStart.emit()"
+      (goPrevious)="goPrevious.emit()"
+      (goNext)="goNext.emit()"
+      (goEnd)="goEnd.emit()"
+      (flipBoard)="flipBoard.emit()"
+    />
 
     <ng-content select="[analysisWorkbenchLeftExtra]"></ng-content>
   </div>
@@ -53,17 +39,9 @@
         [help]="treeHelp()"
         [rootLabel]="treeRootLabel()"
         [deletionEnabled]="showDangerZone()"
-        [deletionDisabled]="deleting()"
+        [deletionDisabled]="deleteDisabled() || deleting()"
         (nodeSelected)="nodeSelected.emit($event)"
         (deleteSelectedSubtree)="deleteSelectedSubtree.emit()"
-      />
-    }
-
-    @if (engineVisible()) {
-      <app-stockfish-panel
-        [analysis]="analysis()"
-        [currentFen]="currentFen()"
-        [warning]="engineWarning()"
       />
     }
 

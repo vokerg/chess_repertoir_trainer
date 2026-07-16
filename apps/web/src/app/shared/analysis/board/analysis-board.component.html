@@ -1,0 +1,47 @@
+<section class="analysis-board">
+  <div class="analysis-board-stage" [class.engine-hidden]="!engineVisible()">
+    @if (engineVisible()) {
+      <app-engine-eval-bar
+        [analysis]="analysis()"
+        [currentFen]="currentFen()"
+        [flipped]="blackPerspective()"
+        [fitHeight]="true"
+        [savedScoreCpWhite]="savedScoreCpWhite()"
+      />
+    }
+
+    <div class="analysis-board-shell">
+      <app-chessground-board
+        [fen]="currentFen()"
+        [side]="side()"
+        [lastMove]="lastMove()"
+        [arrows]="boardArrows()"
+        [positionVersion]="boardPositionVersion()"
+        (move)="boardMove.emit($event)"
+      />
+    </div>
+  </div>
+
+  <app-board-action-toolbar
+    [canGoBackward]="canGoBackward()"
+    [canGoForward]="canGoForward()"
+    [fen]="currentFen()"
+    [keyboardHint]="keyboardHint()"
+    [showFlip]="showFlipBoard()"
+    [showNext]="showNextNavigation()"
+    [showEnd]="showEndNavigation()"
+    (goStart)="goStart.emit()"
+    (goPrevious)="goPrevious.emit()"
+    (goNext)="goNext.emit()"
+    (goEnd)="goEnd.emit()"
+    (flip)="flipBoard.emit()"
+  />
+
+  @if (engineVisible()) {
+    <app-stockfish-panel
+      [analysis]="analysis()"
+      [currentFen]="currentFen()"
+      [warning]="engineWarning()"
+    />
+  }
+</section>

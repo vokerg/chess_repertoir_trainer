@@ -1,0 +1,66 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.analysis-board {
+  --chess-board-size: 600px;
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.analysis-board-stage {
+  --analysis-eval-width: 34px;
+  --analysis-board-gap: 0.65rem;
+  display: grid;
+  grid-template-columns:
+    var(--analysis-eval-width)
+    minmax(
+      0,
+      min(600px, calc(100% - var(--analysis-eval-width) - var(--analysis-board-gap)))
+    );
+  gap: var(--analysis-board-gap);
+  justify-content: center;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.analysis-board-stage.engine-hidden {
+  grid-template-columns: minmax(0, min(600px, 100%));
+}
+
+.analysis-board-stage app-engine-eval-bar {
+  height: 100%;
+  min-width: 0;
+}
+
+.analysis-board-shell {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.analysis-board-shell app-chessground-board {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .analysis-board {
+    --chess-board-size: 100%;
+  }
+
+  .analysis-board-stage,
+  .analysis-board-stage.engine-hidden {
+    grid-template-columns: minmax(0, min(100%, 600px));
+    gap: 0;
+  }
+
+  .analysis-board-stage app-engine-eval-bar {
+    display: none;
+  }
+}

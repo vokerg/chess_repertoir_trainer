@@ -6,87 +6,86 @@
     [actions]="headerActions()"
   />
 
-  <app-analysis-workbench
-    [currentFen]="store.currentFen()"
-    [side]="store.boardSide()"
-    [blackPerspective]="store.blackPerspective()"
-    [lastMove]="store.lastMove()"
-    [boardPositionVersion]="store.boardPositionVersion()"
-    [analysis]="store.engine()"
-    [engineVisible]="store.engineVisible()"
-    [showTreePanel]="false"
-    [showNextNavigation]="false"
-    [showEndNavigation]="false"
-    [evalBarFitHeight]="true"
-    [canGoBackward]="store.history().length > 0"
-    boardTitle="Opening board"
-    boardHelp="Play legal moves to explore positions from your indexed games."
-    keyboardHint="Keyboard: Left arrow to go back, Home for start"
-    (boardMove)="store.playBoardMove($event)"
-    (goStart)="store.resetBoard()"
-    (goPrevious)="store.goBack()"
-  >
-    <app-copyable-line
-      analysisWorkbenchLeftExtra
-      class="opening-line-card"
-      name="Current line"
-      [line]="store.lineLabel()"
-      [link]="['/analysis']"
-      [queryParams]="analysisQueryParams()"
-    />
+  <div class="opening-workbench">
+    <div class="opening-board-column">
+      <section class="workbench-panel opening-board-panel">
+        <app-analysis-board
+          [currentFen]="store.currentFen()"
+          [side]="store.boardSide()"
+          [blackPerspective]="store.blackPerspective()"
+          [lastMove]="store.lastMove()"
+          [boardPositionVersion]="store.boardPositionVersion()"
+          [analysis]="store.engine()"
+          [engineVisible]="store.engineVisible()"
+          [showNextNavigation]="false"
+          [showEndNavigation]="false"
+          [canGoBackward]="store.history().length > 0"
+          keyboardHint="Keyboard: Left arrow to go back, Home for start"
+          (boardMove)="store.playBoardMove($event)"
+          (goStart)="store.resetBoard()"
+          (goPrevious)="store.goBack()"
+        />
 
-    <app-course-position-suggestions-widget
-      analysisWorkbenchLeftExtra
-      [fen]="store.currentFen()"
-      (moveSelected)="store.playBoardMove($event.moveUci)"
-    />
+        <app-copyable-line
+          class="opening-line-card"
+          name="Current line"
+          [line]="store.lineLabel()"
+          [link]="['/analysis']"
+          [queryParams]="analysisQueryParams()"
+        />
+      </section>
 
-    @if (store.tagsOpen()) {
-      <app-position-performance-panel
-        analysisWorkbenchLeftExtra
-        [performance]="store.performance()"
-        [loading]="store.performanceLoading()"
-        [selectableTags]="true"
-        [selectedTagCodes]="store.filters().tagCodes"
-        (tagSelected)="store.toggleTagFilter($event)"
+      <app-course-position-suggestions-widget
+        [fen]="store.currentFen()"
+        (moveSelected)="store.playBoardMove($event.moveUci)"
       />
-    }
 
-    <app-position-game-moves-panel
-      analysisWorkbenchSideBeforeTree
-      title="Next moves from your games"
-      [analysis]="store.analysis()"
-      [loading]="store.loading()"
-      [error]="store.error()"
-      [topGames]="store.topGames()"
-      [topGamesLoading]="store.topGamesLoading()"
-      [filters]="store.filters()"
-      [facets]="store.facets()"
-      [filtersCollapsedInitially]="true"
-      [compact]="false"
-      [showTopGames]="true"
-      [showPositionWdl]="false"
-      topGamesTitle="Last games in this position"
-      topGamesSubtitle=""
-      (filtersChange)="store.setFilters($event)"
-      (applyFilters)="store.refresh()"
-      (resetFilters)="store.resetFilters()"
-      (refresh)="store.refresh()"
-      (moveSelected)="store.playNextMove($event)"
-    />
+      @if (store.tagsOpen()) {
+        <app-position-performance-panel
+          [performance]="store.performance()"
+          [loading]="store.performanceLoading()"
+          [selectableTags]="true"
+          [selectedTagCodes]="store.filters().tagCodes"
+          (tagSelected)="store.toggleTagFilter($event)"
+        />
+      }
+    </div>
 
-    <app-game-filter-breakdown-panel
-      analysisWorkbenchSideBeforeTree
-      title="Openings in this position"
-      subtitle="Grouped by assigned opening. Click to filter."
-      [items]="openingBreakdownItems()"
-      [selectedKeys]="selectedOpeningKeys()"
-      [loading]="store.breakdownsLoading()"
-      [error]="store.breakdownsError()"
-      emptyText="No assigned openings found for this position."
-      (itemSelected)="selectOpening($event)"
-    />
-  </app-analysis-workbench>
+    <div class="opening-side-column">
+      <app-position-game-moves-panel
+        title="Next moves from your games"
+        [analysis]="store.analysis()"
+        [loading]="store.loading()"
+        [error]="store.error()"
+        [topGames]="store.topGames()"
+        [topGamesLoading]="store.topGamesLoading()"
+        [filters]="store.filters()"
+        [facets]="store.facets()"
+        [filtersCollapsedInitially]="true"
+        [compact]="false"
+        [showTopGames]="true"
+        [showPositionWdl]="false"
+        topGamesTitle="Last games in this position"
+        topGamesSubtitle=""
+        (filtersChange)="store.setFilters($event)"
+        (applyFilters)="store.refresh()"
+        (resetFilters)="store.resetFilters()"
+        (refresh)="store.refresh()"
+        (moveSelected)="store.playNextMove($event)"
+      />
+
+      <app-game-filter-breakdown-panel
+        title="Openings in this position"
+        subtitle="Grouped by assigned opening. Click to filter."
+        [items]="openingBreakdownItems()"
+        [selectedKeys]="selectedOpeningKeys()"
+        [loading]="store.breakdownsLoading()"
+        [error]="store.breakdownsError()"
+        emptyText="No assigned openings found for this position."
+        (itemSelected)="selectOpening($event)"
+      />
+    </div>
+  </div>
 
   <app-lichess-bot-challenge-dialog />
 </section>
