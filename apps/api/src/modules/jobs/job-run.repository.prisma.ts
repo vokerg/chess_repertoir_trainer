@@ -83,7 +83,7 @@ export const JobRunRepository = {
         },
         select: { id: true },
         orderBy: [
-          { endedAt: 'desc' },
+          { endedAt: { sort: 'desc', nulls: 'last' } },
           { id: 'desc' },
         ],
       });
