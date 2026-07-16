@@ -3,6 +3,7 @@ import type { JobWorkerRepository } from './job-worker.repository.prisma';
 import {
   JobTaskExecutorRegistry,
   type ClaimedJobTask,
+  type JobTaskExecutionStatus,
 } from './job-task-executor';
 
 export interface JobWorkerLogger {
@@ -29,6 +30,10 @@ interface SchedulingSlice {
   priority: number;
   processed: number;
 }
+
+type ExecutionOutcome =
+  | { ok: true; status: JobTaskExecutionStatus }
+  | { ok: false; error: unknown };
 
 const consoleLogger: JobWorkerLogger = {
   info(context, message) {
@@ -72,6 +77,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
         while (!stopRequested) {
           if (now() >= nextMaintenanceAt) {
             await runMaintenance(input.repository, input.config, logger, now);
+            if (stopRequested) break;
             nextMaintenanceAt = now() + input.config.staleRecoveryIntervalMs;
           }
 
@@ -92,21 +98,32 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
               slice.priority,
               supportedKinds,
             );
+            if (stopRequested) break;
+
             if (!shouldPreempt) {
               claimedTask = await input.repository.claimNextTask({
                 supportedKinds,
                 jobRunId: slice.jobRunId,
               });
+              if (stopRequested) {
+                if (claimedTask) await releaseClaimDuringShutdown(claimedTask);
+                break;
+              }
             }
           }
 
           if (!claimedTask && slice) {
             await input.repository.touchJobRun(slice.jobRunId);
             slice = null;
+            if (stopRequested) break;
           }
 
           if (!claimedTask) {
             claimedTask = await input.repository.claimNextTask({ supportedKinds });
+            if (stopRequested) {
+              if (claimedTask) await releaseClaimDuringShutdown(claimedTask);
+              break;
+            }
             if (!claimedTask) {
               await waitForPoll(input.config.pollIntervalMs);
               continue;
@@ -116,6 +133,11 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
               priority: claimedTask.priority,
               processed: 0,
             };
+          }
+
+          if (stopRequested) {
+            await releaseClaimDuringShutdown(claimedTask);
+            break;
           }
 
           await executeClaimedTask(
@@ -147,6 +169,21 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
       }
     },
   };
+
+  async function releaseClaimDuringShutdown(task: ClaimedJobTask): Promise<void> {
+    try {
+      const released = await input.repository.releaseTask(task);
+      logger.info(
+        { taskId: task.id, jobRunId: task.jobRunId, released },
+        'Persistent job task released before execution during worker shutdown',
+      );
+    } catch (error) {
+      logger.error(
+        { err: error, taskId: task.id, jobRunId: task.jobRunId },
+        'Could not release persistent job task during worker shutdown; stale recovery will retry it',
+      );
+    }
+  }
 
   async function executeClaimedTask(
     task: ClaimedJobTask,
@@ -184,39 +221,86 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
     }, config.heartbeatIntervalMs);
     heartbeat.unref();
 
+    let outcome: ExecutionOutcome;
     try {
-      const result = await executor.execute(task, { signal: controller.signal });
-      await heartbeatChain;
-      const settled = await repository.finishTask(task, result);
-      if (!settled) {
-        taskLogger.warn(
-          { taskId: task.id, jobRunId: task.jobRunId },
-          'Persistent job task completed after its claim was lost',
-        );
-      }
+      const status = await executor.execute(task, { signal: controller.signal });
+      outcome = { ok: true, status };
     } catch (error) {
-      await heartbeatChain;
-      if (claimLost) {
-        taskLogger.warn(
-          { err: error, taskId: task.id, jobRunId: task.jobRunId },
-          'Persistent job task stopped because its claim was lost',
-        );
-      } else if (stopRequested || controller.signal.aborted) {
-        const released = await repository.releaseTask(task);
-        taskLogger.info(
-          { taskId: task.id, jobRunId: task.jobRunId, released },
-          'Persistent job task released during worker shutdown',
-        );
-      } else {
-        const failed = await repository.failTask(task, errorMessage(error));
-        taskLogger.error(
-          { err: error, taskId: task.id, jobRunId: task.jobRunId, failed },
-          'Persistent job task failed',
-        );
-      }
+      outcome = { ok: false, error };
     } finally {
       clearInterval(heartbeat);
       await heartbeatChain;
+    }
+
+    try {
+      if (outcome.ok) {
+        if (claimLost) {
+          taskLogger.warn(
+            { taskId: task.id, jobRunId: task.jobRunId },
+            'Persistent job task completed after its claim was lost',
+          );
+          return;
+        }
+
+        try {
+          const settled = await repository.finishTask(task, outcome.status);
+          if (!settled) {
+            taskLogger.warn(
+              { taskId: task.id, jobRunId: task.jobRunId },
+              'Persistent job task completed after its claim was lost',
+            );
+          }
+        } catch (error) {
+          taskLogger.error(
+            { err: error, taskId: task.id, jobRunId: task.jobRunId, status: outcome.status },
+            'Could not persist successful task completion; claim remains running for stale recovery',
+          );
+        }
+        return;
+      }
+
+      if (claimLost) {
+        taskLogger.warn(
+          { err: outcome.error, taskId: task.id, jobRunId: task.jobRunId },
+          'Persistent job task stopped because its claim was lost',
+        );
+        return;
+      }
+
+      if (stopRequested || controller.signal.aborted) {
+        try {
+          const released = await repository.releaseTask(task);
+          taskLogger.info(
+            { taskId: task.id, jobRunId: task.jobRunId, released },
+            'Persistent job task released during worker shutdown',
+          );
+        } catch (error) {
+          taskLogger.error(
+            { err: error, taskId: task.id, jobRunId: task.jobRunId },
+            'Could not release persistent job task during worker shutdown; stale recovery will retry it',
+          );
+        }
+        return;
+      }
+
+      try {
+        const failed = await repository.failTask(task, errorMessage(outcome.error));
+        taskLogger.error(
+          { err: outcome.error, taskId: task.id, jobRunId: task.jobRunId, failed },
+          'Persistent job task failed',
+        );
+      } catch (error) {
+        taskLogger.error(
+          {
+            err: error,
+            executionError: outcome.error,
+            taskId: task.id,
+            jobRunId: task.jobRunId,
+          },
+          'Could not persist task failure; claim remains running for stale recovery',
+        );
+      }
+    } finally {
       if (activeController === controller) activeController = null;
     }
   }
