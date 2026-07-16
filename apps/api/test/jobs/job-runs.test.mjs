@@ -5,10 +5,11 @@ import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
-let userId;
 let otherUserId;
 let accountId;
 let otherAccountId;
+let createdJobRunId;
+let foreignJobRunId;
 
 try {
   const existingDevUser = await prisma.appUser.findUnique({
@@ -17,7 +18,7 @@ try {
   const devUser = existingDevUser ?? await prisma.appUser.create({
     data: { displayName: 'Local user', authProvider: 'dev', authSubject: 'dev-single-user' },
   });
-  userId = devUser.id;
+  const userId = devUser.id;
 
   const otherUser = await prisma.appUser.create({
     data: {
@@ -91,6 +92,7 @@ try {
       },
     },
   });
+  foreignJobRunId = foreignJob.id;
 
   const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId } });
   try {
@@ -106,6 +108,7 @@ try {
     });
     assert.equal(createResponse.statusCode, 202);
     const created = createResponse.json();
+    createdJobRunId = created.jobRun.id;
     assert.equal(created.jobRun.kind, 'PROCESS_GAMES');
     assert.equal(created.jobRun.source, 'USER_ACTION');
     assert.equal(created.jobRun.priority, 350);
@@ -197,10 +200,9 @@ try {
 
   console.log('Persistent job run tests passed.');
 } finally {
-  if (userId || otherUserId) {
-    await prisma.jobRun.deleteMany({
-      where: { userId: { in: [userId, otherUserId].filter(Boolean) } },
-    });
+  const jobRunIds = [createdJobRunId, foreignJobRunId].filter(Boolean);
+  if (jobRunIds.length > 0) {
+    await prisma.jobRun.deleteMany({ where: { id: { in: jobRunIds } } });
   }
   if (accountId) await prisma.externalAccount.delete({ where: { id: accountId } });
   if (otherAccountId) await prisma.externalAccount.delete({ where: { id: otherAccountId } });
