@@ -110,6 +110,126 @@ const logger = {
   assert.equal(releaseCount, 1, 'the active claim is returned to the queue during shutdown');
 }
 
+{
+  let maintenanceStartedResolve;
+  const maintenanceStarted = new Promise((resolve) => {
+    maintenanceStartedResolve = resolve;
+  });
+  let continueMaintenanceResolve;
+  const continueMaintenance = new Promise((resolve) => {
+    continueMaintenanceResolve = resolve;
+  });
+  let claimCount = 0;
+  let executionCount = 0;
+
+  const repository = fakeRepository({
+    recoverStaleTasks: async () => {
+      maintenanceStartedResolve();
+      await continueMaintenance;
+      return 0;
+    },
+    claimNextTask: async () => {
+      claimCount += 1;
+      return task(20, 20, 200);
+    },
+  });
+  const executors = new JobTaskExecutorRegistry([{
+    kind: 'INDEX_GAMES',
+    async execute() {
+      executionCount += 1;
+      return 'COMPLETED';
+    },
+  }]);
+  const worker = createJobWorker({ repository, executors, config, logger });
+  const runPromise = worker.run();
+  await maintenanceStarted;
+  worker.requestStop('Shutdown during maintenance.');
+  continueMaintenanceResolve();
+  await runPromise;
+
+  assert.equal(claimCount, 0, 'shutdown after maintenance prevents another claim');
+  assert.equal(executionCount, 0, 'shutdown after maintenance prevents execution');
+}
+
+{
+  let claimStartedResolve;
+  const claimStarted = new Promise((resolve) => {
+    claimStartedResolve = resolve;
+  });
+  let continueClaimResolve;
+  const continueClaim = new Promise((resolve) => {
+    continueClaimResolve = resolve;
+  });
+  let releaseCount = 0;
+  let executionCount = 0;
+
+  const repository = fakeRepository({
+    claimNextTask: async () => {
+      claimStartedResolve();
+      await continueClaim;
+      return task(30, 30, 200);
+    },
+    releaseTask: async () => {
+      releaseCount += 1;
+      return true;
+    },
+  });
+  const executors = new JobTaskExecutorRegistry([{
+    kind: 'INDEX_GAMES',
+    async execute() {
+      executionCount += 1;
+      return 'COMPLETED';
+    },
+  }]);
+  const worker = createJobWorker({ repository, executors, config, logger });
+  const runPromise = worker.run();
+  await claimStarted;
+  worker.requestStop('Shutdown during claim.');
+  continueClaimResolve();
+  await runPromise;
+
+  assert.equal(releaseCount, 1, 'a claim acquired during shutdown is released');
+  assert.equal(executionCount, 0, 'a claim acquired during shutdown is never executed');
+}
+
+{
+  let failCount = 0;
+  let releaseCount = 0;
+  let worker;
+  let claimed = false;
+
+  const repository = fakeRepository({
+    claimNextTask: async () => {
+      if (claimed) return null;
+      claimed = true;
+      return task(40, 40, 200);
+    },
+    finishTask: async () => {
+      throw new Error('Transient settlement failure');
+    },
+    failTask: async () => {
+      failCount += 1;
+      return true;
+    },
+    releaseTask: async () => {
+      releaseCount += 1;
+      return true;
+    },
+  });
+  const executors = new JobTaskExecutorRegistry([{
+    kind: 'INDEX_GAMES',
+    async execute() {
+      worker.requestStop('Settlement test complete.');
+      return 'COMPLETED';
+    },
+  }]);
+  worker = createJobWorker({ repository, executors, config, logger });
+  await worker.run();
+
+  assert.equal(failCount, 0, 'a successful executor is not marked failed when completion settlement throws');
+  assert.equal(releaseCount, 0, 'a successful executor is not requeued when completion settlement throws');
+}
+
 console.log('Persistent job worker scheduling tests passed.');
 
 function task(id, jobRunId, priority) {
