@@ -45,10 +45,7 @@ async function bootstrap() {
   } finally {
     process.removeListener('SIGINT', onSigint);
     process.removeListener('SIGTERM', onSigterm);
-    await prisma.$disconnect().catch((error) => {
-      console.error('Persistent job worker Prisma shutdown failed', error);
-      process.exitCode = 1;
-    });
+    await disconnectPrisma();
   }
 }
 
@@ -67,4 +64,15 @@ async function settlesWithin(promise: Promise<void>, timeoutMs: number): Promise
   return settled;
 }
 
-void bootstrap();
+async function disconnectPrisma(): Promise<void> {
+  await prisma.$disconnect().catch((error) => {
+    console.error('Persistent job worker Prisma shutdown failed', error);
+    process.exitCode = 1;
+  });
+}
+
+void bootstrap().catch(async (error) => {
+  console.error('Persistent job worker bootstrap failed', error);
+  process.exitCode = 1;
+  await disconnectPrisma();
+});
