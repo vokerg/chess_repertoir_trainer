@@ -132,9 +132,15 @@ function toJobRunSummary(
 
   for (const group of allCounts) {
     if (group.jobRunId !== run.id) continue;
-    const parsedStatus = jobTaskStatusSchema.safeParse(group.status);
-    if (!parsedStatus.success) continue;
-    taskCounts[taskCountKey(parsedStatus.data)] = group.count;
+    const status = jobTaskStatusSchema.parse(group.status);
+    taskCounts[taskCountKey(status)] = group.count;
+  }
+
+  const countedTasks = Object.values(taskCounts).reduce((sum, count) => sum + count, 0);
+  if (countedTasks !== run.totalTasks) {
+    throw new Error(
+      `Job run ${run.id} task-count mismatch: expected ${run.totalTasks}, counted ${countedTasks}.`,
+    );
   }
 
   return {
