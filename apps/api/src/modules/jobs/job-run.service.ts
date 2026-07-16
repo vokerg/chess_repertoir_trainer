@@ -1,13 +1,17 @@
-import type {
-  CreateImportedGameJobRunResponse,
-  JobRunKind,
-  JobRunListResponse,
-  JobRunStatus,
-  JobRunSummary,
-  JobTask,
-  JobTaskCounts,
-  JobTaskListResponse,
-  JobTaskStatus,
+import {
+  jobRunKindSchema,
+  jobRunSourceSchema,
+  jobRunStatusSchema,
+  jobTaskStatusSchema,
+  type CreateImportedGameJobRunResponse,
+  type JobRunKind,
+  type JobRunListResponse,
+  type JobRunStatus,
+  type JobRunSummary,
+  type JobTask,
+  type JobTaskCounts,
+  type JobTaskListResponse,
+  type JobTaskStatus,
 } from '@chess-trainer/contracts/jobs';
 import {
   JobRunRepository,
@@ -128,16 +132,17 @@ function toJobRunSummary(
 
   for (const group of allCounts) {
     if (group.jobRunId !== run.id) continue;
-    const key = taskCountKey(group.status as JobTaskStatus);
-    taskCounts[key] = group.count;
+    const parsedStatus = jobTaskStatusSchema.safeParse(group.status);
+    if (!parsedStatus.success) continue;
+    taskCounts[taskCountKey(parsedStatus.data)] = group.count;
   }
 
   return {
     id: run.id,
-    kind: run.kind as JobRunKind,
-    source: run.source as JobRunSummary['source'],
+    kind: jobRunKindSchema.parse(run.kind),
+    source: jobRunSourceSchema.parse(run.source),
     priority: run.priority,
-    status: run.status as JobRunStatus,
+    status: jobRunStatusSchema.parse(run.status),
     totalTasks: run.totalTasks,
     force: run.force,
     taskCounts,
@@ -153,7 +158,7 @@ function toJobTask(task: StoredJobTask): JobTask {
     id: task.id,
     importedGameId: task.importedGameId,
     ordinal: task.ordinal,
-    status: task.status as JobTaskStatus,
+    status: jobTaskStatusSchema.parse(task.status),
     error: task.error,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
