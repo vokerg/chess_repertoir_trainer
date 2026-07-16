@@ -25,6 +25,7 @@ apps/api/src/modules/
   analysis/              engine and imported-game analysis
   courses/               courses, chapters, lines, and move nodes
   imported-games/        game browsing, facets, PGN, and opening data
+  jobs/                  persistent imported-game job requests and read models
   lab/                   exploratory game reports
   mobile-sync/           offline course bundles and mobile attempt ingestion
   opening-struggles/     recurring opening problems and course coverage
@@ -47,6 +48,8 @@ The imported-games module has a feature-local query service that shares filterin
 Imported-game reads use consumer-specific projections. List endpoints do not return detail-only fields, response DTOs describe the fields their consumer needs, and Prisma selects mirror those DTOs. Snapshot columns replace relation reads when they already contain the list value. Counts, facets, averages, and rankings use database aggregation or explicitly bounded queries rather than unbounded row loading followed by Node reduction. Browser, detail, opening-analysis, workflow, and MCP models remain separate even when they reuse `buildImportedGameWhere`.
 
 Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position analysis is stored in the analysis module's position-analysis cache with compact or rich persistence: imported-game flows write scalar-only compact rows, while free/interactive analysis can write rich rows with PV lines. Per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
+
+The jobs module owns the persisted `JobRun`/`JobTask` master-detail foundation, current-user job creation, newest-first task ordering, task-status aggregation, ownership checks, and shared route contracts. The current foundation does not execute tasks yet; browser orchestration and the analysis module's in-memory queue remain active until the later worker and executor migration slices. See [Persistent imported-game job processing](imported-game-job-processing.md).
 
 Opening struggles is a standalone Openings feature. It counts candidate games before loading early plies, rejects scopes above its documented safety limit, builds prefix aggregates in memory, and annotates returned prefixes with side-specific course coverage. It reuses the repertoire sequence matcher shared with course review and exposes a verified contract from `packages/contracts`. See [Opening struggles](opening-struggles.md).
 
