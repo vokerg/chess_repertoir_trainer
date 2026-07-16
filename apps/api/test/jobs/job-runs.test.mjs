@@ -55,6 +55,15 @@ try {
       endedAt: new Date('2026-07-15T12:00:00.000Z'),
     },
   });
+  const undatedGame = await prisma.importedGame.create({
+    data: {
+      userId,
+      accountId,
+      provider: 'LICHESS',
+      providerGameId: `undated-${suffix}`,
+      endedAt: null,
+    },
+  });
   const foreignGame = await prisma.importedGame.create({
     data: {
       userId: otherUserId,
@@ -92,7 +101,7 @@ try {
       url: '/api/imported-games/job-runs',
       payload: {
         kind: 'PROCESS_GAMES',
-        gameIds: [olderGame.id, foreignGame.id, newerGame.id, olderGame.id],
+        gameIds: [undatedGame.id, olderGame.id, foreignGame.id, newerGame.id, olderGame.id],
       },
     });
     assert.equal(createResponse.statusCode, 202);
@@ -101,10 +110,10 @@ try {
     assert.equal(created.jobRun.source, 'USER_ACTION');
     assert.equal(created.jobRun.priority, 350);
     assert.equal(created.jobRun.status, 'QUEUED');
-    assert.equal(created.jobRun.totalTasks, 2);
+    assert.equal(created.jobRun.totalTasks, 3);
     assert.equal(created.jobRun.force, false);
     assert.deepEqual(created.jobRun.taskCounts, {
-      queued: 2,
+      queued: 3,
       running: 0,
       completed: 0,
       skipped: 0,
@@ -118,12 +127,13 @@ try {
       url: `/api/job-runs/${created.jobRun.id}/tasks`,
     });
     assert.equal(taskResponse.statusCode, 200);
-    assert.equal(taskResponse.json().total, 2);
+    assert.equal(taskResponse.json().total, 3);
     assert.deepEqual(
       taskResponse.json().items.map((task) => [task.importedGameId, task.ordinal, task.status]),
       [
         [newerGame.id, 0, 'QUEUED'],
         [olderGame.id, 1, 'QUEUED'],
+        [undatedGame.id, 2, 'QUEUED'],
       ],
     );
 
