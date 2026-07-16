@@ -4,6 +4,7 @@ The hosted web/API stack is prepared for a split hobby deployment:
 
 - Neon Postgres for the API database;
 - Render Web Service for the Fastify API;
+- Render Background Worker for persistent imported-game jobs;
 - Vercel for the Angular web app;
 - GitHub Actions for CI only.
 
@@ -21,14 +22,14 @@ npm run build
 npm test
 ```
 
-Hosted API and web builds should use the focused commands documented below so they do not perform unnecessary native exports.
+Hosted API, worker, and web builds should use the focused commands documented below so they do not perform unnecessary native exports.
 
 ## Neon Postgres
 
 1. Create a new Neon project.
 2. Create or use the default database.
 3. Copy the pooled and direct connection strings.
-4. Use the pooled URL as `DATABASE_URL` at API runtime.
+4. Use the pooled URL as `DATABASE_URL` at API and worker runtime.
 5. Use the direct URL as `DIRECT_URL` for Prisma migrations.
 
 For local API development, either URL may point to local PostgreSQL, for example:
@@ -81,6 +82,45 @@ Notes:
 - `CORS_ORIGIN` must match the deployed Angular origin. Native requests are not browser CORS requests.
 - Mobile and web must use the same Clerk application that the API issuer/JWKS values validate.
 - The API exposes a health check at `/health` with `{ "ok": true }`.
+- The API process does not start the persistent-job worker loop.
+
+## Render persistent-job worker setup
+
+Create a separate Render **Background Worker** from the same repository and commit as the API service.
+
+Settings:
+
+- Root directory: `.`
+- Build command:
+
+```bash
+npm ci && npm run build:domain && npm run build:contracts && npm run build:api
+```
+
+- Start command:
+
+```bash
+npm run start:worker --workspace=apps/api
+```
+
+The worker needs the same `DATABASE_URL`, `DIRECT_URL`, `NODE_ENV`, provider, and Stockfish settings as the API features it executes. It does not need `PORT`, CORS, Clerk JWT verification, or browser-origin settings because it does not serve HTTP traffic.
+
+Worker timing defaults are listed in `.env.example`:
+
+```text
+JOB_WORKER_POLL_INTERVAL_MS=1000
+JOB_WORKER_HEARTBEAT_INTERVAL_MS=30000
+JOB_WORKER_STALE_AFTER_MS=900000
+JOB_WORKER_STALE_RECOVERY_INTERVAL_MS=60000
+JOB_WORKER_SLICE_SIZE=25
+JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
+```
+
+Keep the worker as one process initially. PostgreSQL locking supports multiple worker processes, but Stockfish CPU/memory sizing and executor concurrency must be validated before scaling horizontally.
+
+During PR2 the production executor registry is intentionally empty, so the process performs stale/orphan maintenance but leaves domain jobs queued. PR3 registers the imported-game executors. This temporary state exists only on the long-lived feature branch and is not intended as the final production rollout.
+
+Run Prisma migrations once per deployment release, normally in the API build command or a dedicated release command. Do not run migrations independently from every worker replica.
 
 ## Vercel web setup
 
@@ -155,7 +195,7 @@ CI does not deploy. Render and Vercel deployments should be configured directly 
 2. Configure `apps/api/.env`.
 3. Install dependencies.
 4. Apply migrations.
-5. Start API/web and, when needed, Expo.
+5. Start API/web and, when needed, the worker and Expo.
 
 ```bash
 npm ci
@@ -163,7 +203,13 @@ npm run db:migrate
 npm run dev
 ```
 
-Mobile runs separately:
+Run the worker in another terminal:
+
+```bash
+npm run dev:worker
+```
+
+Mobile also runs separately:
 
 ```bash
 npm run dev:mobile
