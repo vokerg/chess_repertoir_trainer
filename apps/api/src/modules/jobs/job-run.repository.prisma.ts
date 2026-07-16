@@ -2,7 +2,6 @@ import type {
   JobRunKind,
   JobRunSource,
   JobRunStatus,
-  JobTaskStatus,
 } from '@chess-trainer/contracts/jobs';
 import prisma from '../../prisma';
 
@@ -189,12 +188,3 @@ export const JobRunRepository = {
     return { total, items };
   },
 };
-
-export const persistedJobTaskStatuses: JobTaskStatus[] = [
-  'QUEUED',
-  'RUNNING',
-  'COMPLETED',
-  'SKIPPED',
-  'FAILED',
-  'CANCELLED',
-];
