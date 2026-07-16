@@ -12,6 +12,10 @@ import {
   type LichessMastersClient,
 } from './lichess-masters.client';
 import {
+  defaultMastersExplorerAccessTokenProvider,
+  type MastersExplorerAccessTokenProvider,
+} from './masters-explorer-access-token.provider';
+import {
   findMastersExplorerCache,
   upsertMastersExplorerCache,
   type StoredMastersExplorerCache,
@@ -45,11 +49,12 @@ interface MastersExplorerRepository {
 interface MastersExplorerServiceDependencies {
   repository?: MastersExplorerRepository;
   client?: LichessMastersClient;
+  accessTokenProvider?: MastersExplorerAccessTokenProvider;
   clock?: () => Date;
 }
 
 export interface MastersExplorerService {
-  getPosition(fen: string): Promise<MastersExplorerResponse>;
+  getPosition(fen: string, userId: number): Promise<MastersExplorerResponse>;
 }
 
 const defaultRepository: MastersExplorerRepository = {
@@ -62,11 +67,13 @@ export function createMastersExplorerService(
 ): MastersExplorerService {
   const repository = dependencies.repository ?? defaultRepository;
   const client = dependencies.client ?? defaultLichessMastersClient;
+  const accessTokenProvider = dependencies.accessTokenProvider
+    ?? defaultMastersExplorerAccessTokenProvider;
   const clock = dependencies.clock ?? (() => new Date());
   const inFlightByPosition = new Map<string, Promise<MastersExplorerResponse>>();
 
   return {
-    async getPosition(inputFen: string): Promise<MastersExplorerResponse> {
+    async getPosition(inputFen: string, userId: number): Promise<MastersExplorerResponse> {
       const fen = canonicalFen(inputFen);
       const normalizedFen = normalizeFenForPosition(fen);
       const requestTime = clock();
@@ -90,6 +97,8 @@ export function createMastersExplorerService(
         cachedSnapshot,
         repository,
         client,
+        accessTokenProvider,
+        userId,
         clock,
       });
 
@@ -113,17 +122,21 @@ interface RefreshPositionInput {
   cachedSnapshot: MastersExplorerSnapshot | null;
   repository: MastersExplorerRepository;
   client: LichessMastersClient;
+  accessTokenProvider: MastersExplorerAccessTokenProvider;
+  userId: number;
   clock: () => Date;
 }
 
 async function refreshPosition(input: RefreshPositionInput): Promise<MastersExplorerResponse> {
   try {
+    const accessToken = await input.accessTokenProvider.getForUser(input.userId);
     const snapshot = await input.client.fetchPosition({
       fen: input.fen,
       sinceYear,
       untilYear: input.untilYear,
       movesLimit,
       topGamesLimit,
+      accessToken,
     });
     const validatedSnapshot = mastersExplorerSnapshotSchema.parse(snapshot);
     const fetchedAt = input.clock();

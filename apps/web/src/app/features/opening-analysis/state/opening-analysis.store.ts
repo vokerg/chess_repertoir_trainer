@@ -61,7 +61,9 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly lastMove = signal<{ from: string; to: string } | null>(null);
   readonly history = signal<PlayedMove[]>([]);
   readonly currentFen = signal(new Chess().fen());
-  readonly tagsOpen = signal(false);
+  readonly tagsOpen = signal(true);
+  readonly mastersOpen = signal(false);
+  readonly lastGamesOpen = signal(false);
   readonly engineVisible = signal(true);
   readonly engine = toSignal(this.positionAnalysis.state$, { initialValue: EMPTY_ENGINE });
 
@@ -101,16 +103,34 @@ export class OpeningAnalysisStore implements OnDestroy {
     this.engineVisible.update((visible) => !visible);
   }
 
+  toggleMasters(): void {
+    this.mastersOpen.update((open) => !open);
+  }
+
+  toggleLastGames(): void {
+    const open = !this.lastGamesOpen();
+    this.lastGamesOpen.set(open);
+    if (!open) {
+      this.topGamesRequestSeq += 1;
+      this.topGamesLoading.set(false);
+      return;
+    }
+    if (this.topGames().length || this.topGamesLoading()) return;
+    void this.refreshTopGames(buildOpeningAnalysisQuery(this.currentFen(), this.filters()));
+  }
+
   async refresh(): Promise<void> {
     const requestId = ++this.refreshRequestSeq;
     const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
     this.performanceRequestSeq += 1;
+    this.topGamesRequestSeq += 1;
     this.performanceLoading.set(false);
+    this.topGamesLoading.set(false);
     this.performance.set(null);
     this.topGames.set([]);
     this.openingBreakdowns.set([]);
     if (this.tagsOpen()) void this.refreshPerformance(query);
-    void this.refreshTopGames(query);
+    if (this.lastGamesOpen()) void this.refreshTopGames(query);
     void this.refreshBreakdowns(query);
     this.loading.set(true);
     this.error.set(null);

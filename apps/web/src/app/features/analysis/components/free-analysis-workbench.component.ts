@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
+import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
 import { FreeAnalysisTree } from '../helpers/free-analysis-tree.models';
 import { InitialPositionInputComponent } from './initial-position-input.component';
 
@@ -11,6 +12,7 @@ import { InitialPositionInputComponent } from './initial-position-input.componen
   imports: [
     AnalysisWorkbenchComponent,
     CoursePositionSuggestionsWidgetComponent,
+    MastersExplorerWidgetComponent,
     InitialPositionInputComponent,
   ],
   templateUrl: './free-analysis-workbench.component.html',
@@ -31,6 +33,7 @@ export class FreeAnalysisWorkbenchComponent {
   readonly canGoForward = input(false);
   readonly deleteDisabled = input(true);
   readonly engineVisible = input(true);
+  readonly mastersVisible = input(false);
   readonly showInitialPositionInput = input(false);
   readonly initialPositionError = input<string | null>(null);
 

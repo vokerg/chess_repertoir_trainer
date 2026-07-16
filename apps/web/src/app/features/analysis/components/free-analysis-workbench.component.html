@@ -38,4 +38,12 @@
     [fen]="currentFen()"
     (moveSelected)="boardMove.emit($event.moveUci)"
   />
+
+  @if (mastersVisible()) {
+    <app-masters-explorer-widget
+      analysisWorkbenchSideExtra
+      [fen]="currentFen()"
+      (moveSelected)="boardMove.emit($event)"
+    />
+  }
 </app-analysis-workbench>

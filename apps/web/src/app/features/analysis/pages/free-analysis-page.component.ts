@@ -73,6 +73,13 @@ export class FreeAnalysisPageComponent implements OnInit {
       run: () => this.store.toggleMyGames(),
     },
     {
+      id: 'masters',
+      kind: 'toggle',
+      label: 'Masters',
+      pressed: this.store.mastersOpen(),
+      run: () => this.store.toggleMasters(),
+    },
+    {
       id: 'engine',
       kind: 'toggle',
       label: 'Engine',

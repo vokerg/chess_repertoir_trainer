@@ -56,6 +56,7 @@ export class FreeAnalysisStore implements OnDestroy {
   readonly engineVisible = signal(true);
   readonly initialPositionError = signal<string | null>(null);
   readonly myGamesOpen = signal(false);
+  readonly mastersOpen = signal(false);
   readonly myGamesFilters = signal<GameFilters>(defaultGameFilters());
   readonly myGamesFacets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly myGamesAnalysis = signal<OpeningAnalysisResponse | null>(null);
@@ -205,6 +206,10 @@ export class FreeAnalysisStore implements OnDestroy {
     if (!open) return;
     void this.loadMyGamesFacets();
     void this.refreshMyGames();
+  }
+
+  toggleMasters(): void {
+    this.mastersOpen.update((open) => !open);
   }
 
   toggleEngine(): void {

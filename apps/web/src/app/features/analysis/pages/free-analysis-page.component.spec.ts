@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
@@ -21,7 +22,15 @@ describe('FreeAnalysisPageComponent', () => {
       'handleKeyboard',
       'initialize',
       'toggleMyGames',
+      'toggleMasters',
     ]);
+    Object.assign(store, {
+      myGamesOpen: signal(false),
+      mastersOpen: signal(false),
+      engineVisible: signal(true),
+      tree: signal(null),
+      currentFen: signal('startpos'),
+    });
     reintegrationStore = jasmine.createSpyObj<AnalysisReintegrationStore>('AnalysisReintegrationStore', ['openForTree']);
     challengeStore = jasmine.createSpyObj<LichessBotChallengeStore>('LichessBotChallengeStore', ['openForFen']);
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
@@ -70,7 +79,30 @@ describe('FreeAnalysisPageComponent', () => {
     expect(store.deleteSelectedSubtree).toHaveBeenCalled();
   });
 
-  function page(): { confirmDeleteSelectedSubtree(): Promise<void> } {
-    return fixture.componentInstance as unknown as { confirmDeleteSelectedSubtree(): Promise<void> };
+  it('orders the header actions with Masters between My games and Engine', () => {
+    const actions = page().headerActions();
+
+    expect(actions.map((action) => action.id)).toEqual([
+      'my-games',
+      'masters',
+      'engine',
+      'challenge-lichess-bot',
+      'reintegrate',
+    ]);
+    expect(actions[1].pressed).toBeFalse();
+
+    actions[1].run();
+
+    expect(store.toggleMasters).toHaveBeenCalled();
+  });
+
+  function page(): {
+    confirmDeleteSelectedSubtree(): Promise<void>;
+    headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
+  } {
+    return fixture.componentInstance as unknown as {
+      confirmDeleteSelectedSubtree(): Promise<void>;
+      headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
+    };
   }
 });

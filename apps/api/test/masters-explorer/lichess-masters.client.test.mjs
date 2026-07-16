@@ -10,6 +10,7 @@ const request = {
   untilYear: 2026,
   movesLimit: 12,
   topGamesLimit: 15,
+  accessToken: 'test-masters-access-token',
 };
 
 const upstreamPayload = {
@@ -50,6 +51,7 @@ const upstreamPayload = {
     fetchImpl: async (input, init) => {
       requestedUrl = new URL(input);
       assert.equal(init.headers.Accept, 'application/json');
+      assert.equal(init.headers.Authorization, `Bearer ${request.accessToken}`);
       assert.ok(init.signal);
       return new Response(JSON.stringify(upstreamPayload), {
         status: 200,
@@ -128,6 +130,23 @@ const upstreamPayload = {
   releaseFirst();
   await Promise.all([first, second]);
   assert.equal(maxActive, 1, 'outbound Lichess requests are serialized');
+}
+
+{
+  let fetchCalls = 0;
+  const client = createLichessMastersClient({
+    fetchImpl: async () => {
+      fetchCalls += 1;
+      return new Response(JSON.stringify(upstreamPayload), { status: 200 });
+    },
+  });
+
+  await assert.rejects(
+    client.fetchPosition({ ...request, accessToken: '' }),
+    (error) => error instanceof LichessMastersUpstreamError
+      && error.message.includes('access token'),
+  );
+  assert.equal(fetchCalls, 0, 'missing user credentials fail before an upstream request');
 }
 
 console.log('Lichess Masters client tests passed.');
