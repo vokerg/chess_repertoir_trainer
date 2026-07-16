@@ -8,6 +8,7 @@ import importedGamesModule from '../modules/imported-games/imported-games.routes
 import openingAnalysisBreakdownsModule from '../modules/imported-games/opening-analysis-breakdowns.routes';
 import openingStrugglesModule from '../modules/opening-struggles/opening-struggles.routes';
 import labModule from '../modules/lab/lab.routes';
+import jobsModule from '../modules/jobs/job-run.routes';
 import externalAccountsRoutes from './externalAccounts';
 import lichessAuthRoutes from './lichessAuth';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
@@ -27,6 +28,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(openingAnalysisBreakdownsModule);
   app.register(openingStrugglesModule);
   app.register(labModule);
+  app.register(jobsModule);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);
   app.register(boardImagesModule);
