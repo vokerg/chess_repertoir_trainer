@@ -191,9 +191,6 @@ async function claimNextTaskOnce(
   const jobFilter = input.jobRunId === undefined
     ? Prisma.sql``
     : Prisma.sql`AND job."id" = ${input.jobRunId}`;
-  const schedulerLease = input.jobRunId === undefined
-    ? Prisma.sql`, "updatedAt" = NOW()`
-    : Prisma.sql``;
 
   return database.$transaction(async (transaction) => {
     const rows = await transaction.$queryRaw<ClaimedRow[]>(Prisma.sql`
@@ -252,15 +249,26 @@ async function claimNextTaskOnce(
     const row = rows[0];
     if (!row) return null;
 
-    await transaction.$executeRaw(Prisma.sql`
-      UPDATE "JobRun"
-      SET "status" = 'RUNNING',
-          "startedAt" = COALESCE("startedAt", NOW()),
-          "completedAt" = NULL
-          ${schedulerLease}
-      WHERE "id" = ${row.jobRunId}
-        AND "status" IN ('QUEUED', 'RUNNING')
-    `);
+    if (input.jobRunId === undefined) {
+      await transaction.$executeRaw`
+        UPDATE "JobRun"
+        SET "status" = 'RUNNING',
+            "startedAt" = COALESCE("startedAt", NOW()),
+            "completedAt" = NULL,
+            "updatedAt" = NOW()
+        WHERE "id" = ${row.jobRunId}
+          AND "status" IN ('QUEUED', 'RUNNING')
+      `;
+    } else {
+      await transaction.$executeRaw`
+        UPDATE "JobRun"
+        SET "status" = 'RUNNING',
+            "startedAt" = COALESCE("startedAt", NOW()),
+            "completedAt" = NULL
+        WHERE "id" = ${row.jobRunId}
+          AND "status" IN ('QUEUED', 'RUNNING')
+      `;
+    }
 
     return {
       ...row,
