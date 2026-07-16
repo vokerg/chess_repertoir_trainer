@@ -9,40 +9,21 @@
   <div class="opening-workbench">
     <div class="opening-board-column">
       <section class="workbench-panel opening-board-panel">
-        <div class="board-stage opening-board-stage">
-          <app-engine-eval-bar
-            [analysis]="store.engine()"
-            [currentFen]="store.currentFen()"
-            [flipped]="store.blackPerspective()"
-            [fitHeight]="true"
-          />
-
-          <div class="board-shell">
-            <app-chessground-board
-              [fen]="store.currentFen()"
-              [side]="store.boardSide()"
-              [lastMove]="store.lastMove()"
-              [arrows]="store.analysisArrows()"
-              [positionVersion]="store.boardPositionVersion()"
-              (move)="store.playBoardMove($event)"
-            />
-          </div>
-        </div>
-
-        <app-board-action-toolbar
+        <app-analysis-board
+          [currentFen]="store.currentFen()"
+          [side]="store.boardSide()"
+          [blackPerspective]="store.blackPerspective()"
+          [lastMove]="store.lastMove()"
+          [boardPositionVersion]="store.boardPositionVersion()"
+          [analysis]="store.engine()"
+          [engineVisible]="store.engineVisible()"
+          [showNextNavigation]="false"
+          [showEndNavigation]="false"
           [canGoBackward]="store.history().length > 0"
-          [showNext]="false"
-          [showEnd]="false"
-          [fen]="store.currentFen()"
           keyboardHint="Keyboard: Left arrow to go back, Home for start"
+          (boardMove)="store.playBoardMove($event)"
           (goStart)="store.resetBoard()"
           (goPrevious)="store.goBack()"
-        />
-
-        <app-stockfish-panel
-          class="opening-stockfish"
-          [analysis]="store.engine()"
-          [currentFen]="store.currentFen()"
         />
 
         <app-copyable-line
@@ -59,27 +40,18 @@
         (moveSelected)="store.playBoardMove($event.moveUci)"
       />
 
-      <app-game-filter-breakdown-panel
-        title="Openings in this position"
-        subtitle="Grouped by assigned opening. Click to filter."
-        [items]="openingBreakdownItems()"
-        [selectedKeys]="selectedOpeningKeys()"
-        [loading]="store.breakdownsLoading()"
-        [error]="store.breakdownsError()"
-        emptyText="No assigned openings found for this position."
-        (itemSelected)="selectOpening($event)"
-      />
-
-      <app-position-performance-panel
-        [performance]="store.performance()"
-        [loading]="store.performanceLoading()"
-        [selectableTags]="true"
-        [selectedTagCodes]="store.filters().tagCodes"
-        (tagSelected)="store.toggleTagFilter($event)"
-      />
+      @if (store.tagsOpen()) {
+        <app-position-performance-panel
+          [performance]="store.performance()"
+          [loading]="store.performanceLoading()"
+          [selectableTags]="true"
+          [selectedTagCodes]="store.filters().tagCodes"
+          (tagSelected)="store.toggleTagFilter($event)"
+        />
+      }
     </div>
 
-    <div class="opening-tree-panel">
+    <div class="opening-side-column">
       <app-position-game-moves-panel
         title="Next moves from your games"
         [analysis]="store.analysis()"
@@ -102,7 +74,18 @@
         (moveSelected)="store.playNextMove($event)"
       />
 
+      <app-game-filter-breakdown-panel
+        title="Openings in this position"
+        subtitle="Grouped by assigned opening. Click to filter."
+        [items]="openingBreakdownItems()"
+        [selectedKeys]="selectedOpeningKeys()"
+        [loading]="store.breakdownsLoading()"
+        [error]="store.breakdownsError()"
+        emptyText="No assigned openings found for this position."
+        (itemSelected)="selectOpening($event)"
+      />
     </div>
   </div>
+
   <app-lichess-bot-challenge-dialog />
 </section>

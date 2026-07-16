@@ -1,13 +1,36 @@
-.opening-page { gap: 1rem; }
-.opening-workbench { display: grid; grid-template-columns: minmax(560px,0.85fr) minmax(720px,1.15fr); gap: 1rem; align-items: start; }
-.opening-board-column { display: grid; gap: 1rem; }
-.opening-board-panel, .opening-tree-panel { display: grid; gap: 1rem; }
-.opening-board-stage { --opening-eval-width: 34px; --opening-board-gap: 0.65rem; grid-template-columns: var(--opening-eval-width) minmax(0,min(600px,calc(100% - var(--opening-eval-width) - var(--opening-board-gap)))); gap: var(--opening-board-gap); justify-content: center; margin-top: 0; min-width: 0; }
-.opening-board-stage app-engine-eval-bar { height: 100%; min-width: 0; }
-.opening-board-stage .board-shell { width: 100%; min-width: 0; }
-.opening-board-stage app-chessground-board { display: block; width: 100%; min-width: 0; }
-.opening-board-stage app-chessground-board ::ng-deep .board-shell { width: 100%; }
-.opening-stockfish { display: block; }
-.opening-line-card { display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.6); padding: 0.35rem; }
-@media (max-width: 1050px) { .opening-workbench { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .opening-board-stage { grid-template-columns: minmax(0,min(100%,520px)); gap: 0; } }
+.opening-page {
+  gap: 1rem;
+}
+
+.opening-workbench {
+  display: grid;
+  grid-template-columns: minmax(560px, 0.85fr) minmax(720px, 1.15fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.opening-board-column,
+.opening-side-column {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.opening-board-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.opening-line-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+  padding: var(--space-2);
+}
+
+@media (max-width: 1050px) {
+  .opening-workbench {
+    grid-template-columns: 1fr;
+  }
+}

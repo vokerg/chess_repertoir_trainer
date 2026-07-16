@@ -56,19 +56,76 @@ describe('OpeningAnalysisStore', () => {
     store = TestBed.inject(OpeningAnalysisStore);
   });
 
-  it('loads core first and secondary panels independently', async () => {
+  it('defaults tags to closed and engine to visible without coupling visibility to engine execution', () => {
+    expect(store.tagsOpen()).toBeFalse();
+    expect(store.engineVisible()).toBeTrue();
+
+    store.toggleEngine();
+
+    expect(store.engineVisible()).toBeFalse();
+    expect(positionAnalysis.stop).not.toHaveBeenCalled();
+    expect(positionAnalysis.analyzeInteractiveRichPosition).not.toHaveBeenCalled();
+  });
+
+  it('loads core panels first and requests performance only while tags are open', async () => {
     await store.refresh();
 
     expect(api.getAnalysis).toHaveBeenCalledTimes(1);
-    expect(api.getPerformance).toHaveBeenCalledTimes(1);
+    expect(api.getPerformance).not.toHaveBeenCalled();
     expect(api.getTopGames).toHaveBeenCalledTimes(1);
     expect(api.getBreakdowns).toHaveBeenCalledTimes(1);
     expect(store.analysis()?.nextMoves[0].moveUci).toBe('e2e4');
-    expect(store.performance()?.sample.games).toBe(1);
     expect(store.topGames()[0].id).toBe(1);
     expect(store.openingBreakdowns()[0].name).toBe("King's Pawn Game");
-    expect(store.openingBreakdowns()[0].wdl).toEqual({ wins: 1, draws: 0, losses: 0 });
     expect(positionAnalysis.analyzeInteractiveRichPosition).toHaveBeenCalledWith(store.currentFen());
+
+    store.toggleTags();
+    await flushPromises();
+
+    expect(api.getPerformance).toHaveBeenCalledTimes(1);
+    expect(store.performance()?.sample.games).toBe(1);
+
+    store.toggleTagFilter(104);
+    await flushPromises();
+
+    expect(api.getPerformance).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not start a duplicate performance request while one is already running', async () => {
+    const pendingPerformance = deferred<OpeningAnalysisPerformanceResponse>();
+    api.getPerformance.and.returnValue(pendingPerformance.observable);
+
+    store.toggleTags();
+    store.toggleTags();
+    store.toggleTags();
+
+    expect(api.getPerformance).toHaveBeenCalledTimes(1);
+
+    pendingPerformance.next(performanceResponse('startpos', 1));
+    await flushPromises();
+    expect(store.performance()?.sample.games).toBe(1);
+  });
+
+  it('invalidates an old tag-performance request when the position refreshes while tags are closed', async () => {
+    const stalePerformance = deferred<OpeningAnalysisPerformanceResponse>();
+    api.getPerformance.and.returnValues(
+      stalePerformance.observable,
+      of(performanceResponse('fresh', 2)),
+    );
+
+    store.toggleTags();
+    store.toggleTags();
+    await store.refresh();
+
+    stalePerformance.next(performanceResponse('stale', 1));
+    await flushPromises();
+    expect(store.performance()).toBeNull();
+
+    store.toggleTags();
+    await flushPromises();
+
+    expect(api.getPerformance).toHaveBeenCalledTimes(2);
+    expect(store.performance()?.sample.games).toBe(2);
   });
 
   it('does not let stale core or panel responses overwrite newer state', async () => {
@@ -81,6 +138,7 @@ describe('OpeningAnalysisStore', () => {
     const secondTopGames = deferred<OpeningAnalysisTopGamesResponse>();
     const secondBreakdowns = deferred<OpeningAnalysisBreakdownsResponse>();
 
+    store.tagsOpen.set(true);
     api.getAnalysis.and.returnValues(firstCore.observable, secondCore.observable);
     api.getPerformance.and.returnValues(firstPerformance.observable, secondPerformance.observable);
     api.getTopGames.and.returnValues(firstTopGames.observable, secondTopGames.observable);
@@ -218,4 +276,9 @@ function deferred<T>() {
       observer?.complete();
     },
   };
+}
+
+async function flushPromises(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
 }
