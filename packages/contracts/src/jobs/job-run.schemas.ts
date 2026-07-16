@@ -73,7 +73,7 @@ export type JobRunSummary = z.infer<typeof jobRunSummarySchema>;
 
 export const jobTaskSchema = z.object({
   id: z.number().int().positive(),
-  importedGameId: z.number().int().positive(),
+  importedGameId: z.number().int().positive().nullable(),
   ordinal: z.number().int().nonnegative(),
   status: jobTaskStatusSchema,
   error: z.string().nullable(),
