@@ -6,10 +6,8 @@ import prismaModule from '../../dist/prisma.js';
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 let otherUserId;
-let accountId;
-let otherAccountId;
-let createdJobRunId;
-let foreignJobRunId;
+const accountIds = [];
+const jobRunIds = [];
 
 try {
   const existingDevUser = await prisma.appUser.findUnique({
@@ -32,16 +30,20 @@ try {
   const account = await prisma.externalAccount.create({
     data: { userId, provider: 'LICHESS', username: `jobs-${suffix}` },
   });
-  accountId = account.id;
+  accountIds.push(account.id);
+  const retentionAccount = await prisma.externalAccount.create({
+    data: { userId, provider: 'LICHESS', username: `jobs-retention-${suffix}` },
+  });
+  accountIds.push(retentionAccount.id);
   const otherAccount = await prisma.externalAccount.create({
     data: { userId: otherUserId, provider: 'LICHESS', username: `jobs-other-${suffix}` },
   });
-  otherAccountId = otherAccount.id;
+  accountIds.push(otherAccount.id);
 
   const olderGame = await prisma.importedGame.create({
     data: {
       userId,
-      accountId,
+      accountId: account.id,
       provider: 'LICHESS',
       providerGameId: `older-${suffix}`,
       endedAt: new Date('2026-07-14T12:00:00.000Z'),
@@ -50,7 +52,7 @@ try {
   const newerGame = await prisma.importedGame.create({
     data: {
       userId,
-      accountId,
+      accountId: account.id,
       provider: 'LICHESS',
       providerGameId: `newer-${suffix}`,
       endedAt: new Date('2026-07-15T12:00:00.000Z'),
@@ -59,16 +61,25 @@ try {
   const undatedGame = await prisma.importedGame.create({
     data: {
       userId,
-      accountId,
+      accountId: account.id,
       provider: 'LICHESS',
       providerGameId: `undated-${suffix}`,
       endedAt: null,
     },
   });
+  const retentionGame = await prisma.importedGame.create({
+    data: {
+      userId,
+      accountId: retentionAccount.id,
+      provider: 'LICHESS',
+      providerGameId: `retention-${suffix}`,
+      endedAt: new Date('2026-07-13T12:00:00.000Z'),
+    },
+  });
   const foreignGame = await prisma.importedGame.create({
     data: {
       userId: otherUserId,
-      accountId: otherAccountId,
+      accountId: otherAccount.id,
       provider: 'LICHESS',
       providerGameId: `foreign-${suffix}`,
       endedAt: new Date('2026-07-16T12:00:00.000Z'),
@@ -92,7 +103,7 @@ try {
       },
     },
   });
-  foreignJobRunId = foreignJob.id;
+  jobRunIds.push(foreignJob.id);
 
   const app = await buildApp({ logger: false, authConfig: { mode: 'dev-single-user', userId } });
   try {
@@ -108,7 +119,7 @@ try {
     });
     assert.equal(createResponse.statusCode, 202);
     const created = createResponse.json();
-    createdJobRunId = created.jobRun.id;
+    jobRunIds.push(created.jobRun.id);
     assert.equal(created.jobRun.kind, 'PROCESS_GAMES');
     assert.equal(created.jobRun.source, 'USER_ACTION');
     assert.equal(created.jobRun.priority, 350);
@@ -130,14 +141,28 @@ try {
       url: `/api/job-runs/${created.jobRun.id}/tasks`,
     });
     assert.equal(taskResponse.statusCode, 200);
-    assert.equal(taskResponse.json().total, 3);
+    const taskPayload = taskResponse.json();
+    assert.equal(taskPayload.total, 3);
     assert.deepEqual(
-      taskResponse.json().items.map((task) => [task.importedGameId, task.ordinal, task.status]),
+      taskPayload.items.map((task) => [task.importedGameId, task.ordinal, task.status]),
       [
         [newerGame.id, 0, 'QUEUED'],
         [olderGame.id, 1, 'QUEUED'],
         [undatedGame.id, 2, 'QUEUED'],
       ],
+    );
+
+    await assert.rejects(
+      prisma.$executeRaw`UPDATE "JobRun" SET "kind" = ${'UNKNOWN'} WHERE "id" = ${created.jobRun.id}`,
+    );
+    await assert.rejects(
+      prisma.$executeRaw`UPDATE "JobRun" SET "source" = ${'UNKNOWN'} WHERE "id" = ${created.jobRun.id}`,
+    );
+    await assert.rejects(
+      prisma.$executeRaw`UPDATE "JobRun" SET "status" = ${'UNKNOWN'} WHERE "id" = ${created.jobRun.id}`,
+    );
+    await assert.rejects(
+      prisma.$executeRaw`UPDATE "JobTask" SET "status" = ${'UNKNOWN'} WHERE "id" = ${taskPayload.items[0].id}`,
     );
 
     const listResponse = await app.inject({ method: 'GET', url: '/api/job-runs?active=true' });
@@ -187,6 +212,49 @@ try {
     assert.equal(invalidResponse.statusCode, 400);
     assert.deepEqual(invalidResponse.json(), { error: 'Validation failed' });
 
+    const retentionCreateResponse = await app.inject({
+      method: 'POST',
+      url: '/api/imported-games/job-runs',
+      payload: { kind: 'INDEX_GAMES', gameIds: [retentionGame.id] },
+    });
+    assert.equal(retentionCreateResponse.statusCode, 202);
+    const retentionJob = retentionCreateResponse.json().jobRun;
+    jobRunIds.push(retentionJob.id);
+
+    const deleteAccountResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/me/accounts/${retentionAccount.id}`,
+    });
+    assert.equal(deleteAccountResponse.statusCode, 200);
+    assert.equal(
+      await prisma.importedGame.findUnique({ where: { id: retentionGame.id } }),
+      null,
+    );
+
+    const retainedTasksResponse = await app.inject({
+      method: 'GET',
+      url: `/api/job-runs/${retentionJob.id}/tasks`,
+    });
+    assert.equal(retainedTasksResponse.statusCode, 200);
+    assert.equal(retainedTasksResponse.json().total, 1);
+    assert.equal(retainedTasksResponse.json().items[0].importedGameId, null);
+    assert.equal(retainedTasksResponse.json().items[0].status, 'QUEUED');
+
+    const retainedDetailResponse = await app.inject({
+      method: 'GET',
+      url: `/api/job-runs/${retentionJob.id}`,
+    });
+    assert.equal(retainedDetailResponse.statusCode, 200);
+    assert.equal(retainedDetailResponse.json().jobRun.totalTasks, 1);
+    assert.deepEqual(retainedDetailResponse.json().jobRun.taskCounts, {
+      queued: 1,
+      running: 0,
+      completed: 0,
+      skipped: 0,
+      failed: 0,
+      cancelled: 0,
+    });
+
     const openApiResponse = await app.inject({ method: 'GET', url: '/api/docs/openapi.json' });
     assert.equal(openApiResponse.statusCode, 200);
     const paths = openApiResponse.json().paths;
@@ -200,12 +268,12 @@ try {
 
   console.log('Persistent job run tests passed.');
 } finally {
-  const jobRunIds = [createdJobRunId, foreignJobRunId].filter(Boolean);
   if (jobRunIds.length > 0) {
     await prisma.jobRun.deleteMany({ where: { id: { in: jobRunIds } } });
   }
-  if (accountId) await prisma.externalAccount.delete({ where: { id: accountId } });
-  if (otherAccountId) await prisma.externalAccount.delete({ where: { id: otherAccountId } });
+  if (accountIds.length > 0) {
+    await prisma.externalAccount.deleteMany({ where: { id: { in: accountIds } } });
+  }
   if (otherUserId) await prisma.appUser.delete({ where: { id: otherUserId } });
   await prisma.$disconnect();
 }
