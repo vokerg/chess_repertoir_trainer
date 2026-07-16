@@ -33,7 +33,11 @@ GET  /api/job-runs/:jobRunId/tasks
 
 All routes use shared schemas from `@chess-trainer/contracts/jobs`, Fastify route-schema validation, generated OpenAPI, and current-user ownership checks.
 
-The persisted task counts are aggregated for reads rather than duplicated as counters on each task. The creation response can return its known all-queued count without another aggregate query.
+The persisted task counts are aggregated for reads rather than duplicated as counters on each task. The creation response can return its known all-queued count without another aggregate query. Reads fail loudly when persisted task rows do not account for the job's `totalTasks`.
+
+PostgreSQL check constraints guard every persisted job kind, source, run status, and task status. These constraints also apply to the raw claiming SQL introduced by the worker slice, so invalid lifecycle literals cannot be persisted outside Prisma.
+
+If an imported game is deleted, including through external-account deletion, its task rows are retained and `importedGameId` becomes `null`. This preserves job history and keeps aggregate task counts consistent. The later worker treats a queued task without a source game as non-runnable and terminalizes it explicitly.
 
 **Not yet implemented:** no worker claims or executes these tasks in this foundation slice. Existing browser orchestration and the API-process in-memory analysis queue remain active until later migration slices replace them. Creating a persisted job on this branch therefore records work but does not execute it yet.
 
@@ -65,7 +69,7 @@ Priority belongs only to the job. Tasks inherit effective priority through their
 A task is one imported game inside one job. It owns:
 
 - parent job;
-- imported game;
+- nullable imported-game reference, retained as `null` after source-game deletion;
 - newest-first ordinal;
 - lifecycle status;
 - optional active execution key;
@@ -146,6 +150,8 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Add shared job contracts.
 - Add authenticated creation and read services/routes with ownership checks.
 - Preserve newest-first task order and job-level priority constants.
+- Preserve task history after imported-game/account deletion.
+- Enforce lifecycle literals at the PostgreSQL boundary and fail loudly on count corruption.
 - Add focused API/contract tests and document the foundation.
 - Do not execute tasks or remove the old queue yet.
 
@@ -154,6 +160,7 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Add the separate worker entry point.
 - Claim tasks with short PostgreSQL transactions and `FOR UPDATE SKIP LOCKED`.
 - Add scheduling slices, active execution exclusion, stale-running recovery, and graceful shutdown.
+- Terminalize retained tasks whose imported game has been deleted.
 - Document local and hosted worker operation.
 
 ### PR3 — job executors
