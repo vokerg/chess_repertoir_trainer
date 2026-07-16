@@ -16,7 +16,32 @@ The complete feature accumulates on `feature/persistent-game-jobs`, with a draft
 
 Each implementation slice is developed on a child branch and reviewed through a smaller pull request targeting the feature branch. The feature pull request remains draft until execution, frontend integration, deployment support, tests, cleanup, and documentation are complete.
 
-## Target data model
+## Current foundation
+
+**Current:** `JobRun` and `JobTask` are persisted as a master-detail model. The API can create user-action jobs for owned imported games and read current-user job summaries and ordered tasks.
+
+Creation validates ownership, removes duplicate requested ids, selects owned games in newest-first order, and records stable task ordinals. Non-owned or missing ids are returned together as rejected ids without exposing which case applied.
+
+Current routes are:
+
+```http
+POST /api/imported-games/job-runs
+GET  /api/job-runs
+GET  /api/job-runs/:jobRunId
+GET  /api/job-runs/:jobRunId/tasks
+```
+
+All routes use shared schemas from `@chess-trainer/contracts/jobs`, Fastify route-schema validation, generated OpenAPI, and current-user ownership checks.
+
+The persisted task counts are aggregated for reads rather than duplicated as counters on each task. The creation response can return its known all-queued count without another aggregate query. Reads fail loudly when persisted task rows do not account for the job's `totalTasks`.
+
+PostgreSQL check constraints guard every persisted job kind, source, run status, and task status. These constraints also apply to the raw claiming SQL introduced by the worker slice, so invalid lifecycle literals cannot be persisted outside Prisma.
+
+If an imported game is deleted, including through external-account deletion, its task rows are retained and `importedGameId` becomes `null`. This preserves job history and keeps aggregate task counts consistent. The later worker treats a queued task without a source game as non-runnable and terminalizes it explicitly.
+
+**Not yet implemented:** no worker claims or executes these tasks in this foundation slice. Existing browser orchestration and the API-process in-memory analysis queue remain active until later migration slices replace them. Creating a persisted job on this branch therefore records work but does not execute it yet.
+
+## Data model
 
 The operational model is deliberately small and master-detail:
 
@@ -44,7 +69,7 @@ Priority belongs only to the job. Tasks inherit effective priority through their
 A task is one imported game inside one job. It owns:
 
 - parent job;
-- imported game;
+- nullable imported-game reference, retained as `null` after source-game deletion;
 - newest-first ordinal;
 - lifecycle status;
 - optional active execution key;
@@ -53,7 +78,7 @@ A task is one imported game inside one job. It owns:
 
 Tasks do not duplicate move-level analysis progress, configurable retry counters, dependency graphs, or per-task priorities. Existing `GameAnalysisRun.positionsDone` and `positionsTotal` remain the source for live Stockfish progress.
 
-## Target job kinds
+## Job kinds
 
 - `INDEX_GAMES`: index plies and assign a missing opening.
 - `ANALYSE_GAMES`: analyse an indexed game and refresh analysis-derived tags after success.
@@ -61,6 +86,17 @@ Tasks do not duplicate move-level analysis progress, configurable retry counters
 - `REFRESH_TAGS`: explicitly recalculate tags without rerunning analysis.
 
 Opening assignment is part of indexing. Tag refresh is part of successful analysis. They are not normally separate persisted tasks.
+
+The current user-action priorities are intentionally defined on job runs only:
+
+```text
+INDEX_GAMES   400
+PROCESS_GAMES 350
+ANALYSE_GAMES 300
+REFRESH_TAGS  250
+```
+
+Later system-created jobs use the same job-level priority boundary rather than adding task priority.
 
 ## Ordering and scheduling
 
@@ -73,7 +109,7 @@ id DESC
 
 The stable ordinal records that order inside a job.
 
-The target worker selects runnable work through the parent job:
+**Target:** the worker selects runnable work through the parent job:
 
 ```text
 JobRun.priority DESC
@@ -87,7 +123,7 @@ Execution groups of 25 are derived from ordered tasks and are not persisted as a
 
 Different jobs may contain tasks for the same game so that each job retains understandable progress and terminal results.
 
-An active execution key prevents two workers from simultaneously performing the same work class for one game. A later duplicate task performs an idempotency check and may finish as `SKIPPED` when the requested result is already current.
+**Target:** an active execution key prevents two workers from simultaneously performing the same work class for one game. A later duplicate task performs an idempotency check and may finish as `SKIPPED` when the requested result is already current.
 
 ## Worker boundary
 
@@ -100,11 +136,9 @@ apps/api/src/worker.ts  background worker process
 
 Keeping both entry points in the API workspace allows the worker to reuse existing application services and Prisma repositories without prematurely extracting another package. Deployment runs the API and worker as separate process types.
 
-## API and frontend direction
+## Frontend direction
 
-**Target:** domain-specific submission endpoints create jobs; authenticated job endpoints expose summaries and task details.
-
-The Angular application owns a root-scoped job store and a bottom job panel that survives route navigation. It polls only while active work exists and uses `GameAnalysisRun` for move-level analysis progress.
+**Target:** the Angular application owns a root-scoped job store and a bottom job panel that survives route navigation. It polls only while active work exists and uses `GameAnalysisRun` for move-level analysis progress.
 
 Browser code will no longer control indexing concurrency or mark every accepted game as already running.
 
@@ -116,6 +150,8 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Add shared job contracts.
 - Add authenticated creation and read services/routes with ownership checks.
 - Preserve newest-first task order and job-level priority constants.
+- Preserve task history after imported-game/account deletion.
+- Enforce lifecycle literals at the PostgreSQL boundary and fail loudly on count corruption.
 - Add focused API/contract tests and document the foundation.
 - Do not execute tasks or remove the old queue yet.
 
@@ -124,6 +160,7 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Add the separate worker entry point.
 - Claim tasks with short PostgreSQL transactions and `FOR UPDATE SKIP LOCKED`.
 - Add scheduling slices, active execution exclusion, stale-running recovery, and graceful shutdown.
+- Terminalize retained tasks whose imported game has been deleted.
 - Document local and hosted worker operation.
 
 ### PR3 — job executors

@@ -43,12 +43,16 @@
     "./masters-explorer": {
       "types": "./dist/masters-explorer/index.d.ts",
       "default": "./dist/masters-explorer/index.js"
+    },
+    "./jobs": {
+      "types": "./dist/jobs/index.d.ts",
+      "default": "./dist/jobs/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node test/contracts.test.mjs"
+    "test": "npm run build && node test/contracts.test.mjs && node test/jobs-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"
