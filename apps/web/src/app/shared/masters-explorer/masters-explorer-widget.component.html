@@ -1,0 +1,145 @@
+<section class="workbench-panel masters-explorer-panel">
+  <header class="masters-explorer-header">
+    <div>
+      <h3 class="workbench-panel-title">Masters explorer</h3>
+      @if (response(); as data) {
+        @if (data.opening; as opening) {
+          <p class="masters-opening">{{ opening.eco }} · {{ opening.name }}</p>
+        }
+        <p class="workbench-panel-subtitle">
+          Lichess Masters · {{ data.dataset.sinceYear }}–{{ data.dataset.untilYear }}
+        </p>
+      }
+    </div>
+    @if (loading()) {
+      <span class="masters-loading-label">Loading</span>
+    }
+  </header>
+
+  @if (loading()) {
+    <p class="status-note">Loading master games for this position...</p>
+  }
+
+  @if (error(); as message) {
+    <div class="masters-error">
+      <p class="status-error">{{ message }}</p>
+      <button type="button" class="compact-action secondary" (click)="retry()">Retry</button>
+    </div>
+  }
+
+  @if (response(); as data) {
+    @if (data.cache.status === 'STALE') {
+      <p class="masters-stale-warning">
+        Showing cached Masters data because Lichess is temporarily unavailable.
+      </p>
+    }
+
+    @if (!hasGames()) {
+      <div class="empty-state">No master games found for this position.</div>
+    } @else {
+      <section class="masters-summary" aria-label="Master game results">
+        <div class="masters-summary-heading">
+          <h4>Position results</h4>
+          <strong>{{ data.games.total }} master games</strong>
+        </div>
+        <div class="masters-result-bar" aria-hidden="true">
+          <span
+            class="masters-result-white"
+            [style.width.%]="percentage(data.games.whiteWins, data.games.total)"
+          ></span>
+          <span
+            class="masters-result-draw"
+            [style.width.%]="percentage(data.games.draws, data.games.total)"
+          ></span>
+          <span
+            class="masters-result-black"
+            [style.width.%]="percentage(data.games.blackWins, data.games.total)"
+          ></span>
+        </div>
+        <div class="masters-result-labels">
+          <span>
+            <strong>White {{ percentage(data.games.whiteWins, data.games.total) }}%</strong>
+            <small>{{ data.games.whiteWins }} games</small>
+          </span>
+          <span>
+            <strong>Draw {{ percentage(data.games.draws, data.games.total) }}%</strong>
+            <small>{{ data.games.draws }} games</small>
+          </span>
+          <span>
+            <strong>Black {{ percentage(data.games.blackWins, data.games.total) }}%</strong>
+            <small>{{ data.games.blackWins }} games</small>
+          </span>
+        </div>
+      </section>
+
+      <section class="masters-section">
+        <h4>Next moves</h4>
+        <app-progressive-list
+          [items]="data.moves"
+          [itemTemplate]="moveRow"
+          [initialCount]="6"
+          [resetKey]="fen()"
+        />
+
+        <ng-template #moveRow let-move>
+          <button
+            type="button"
+            class="masters-move-row"
+            [attr.aria-label]="'Play ' + move.san"
+            (click)="moveSelected.emit(move.uci)"
+          >
+            <span class="masters-move-primary">
+              <strong>{{ move.san }}</strong>
+              @if (!sameOpening(move.opening, data.opening) && move.opening; as opening) {
+                <small>{{ opening.eco }} · {{ opening.name }}</small>
+              }
+            </span>
+            <span class="masters-move-games">
+              <strong>{{ move.games.total }}</strong>
+              <small>{{ percentage(move.games.total, data.games.total) }}% of games</small>
+            </span>
+            <span class="masters-move-results">
+              <strong>
+                W {{ percentage(move.games.whiteWins, move.games.total) }}% ·
+                D {{ percentage(move.games.draws, move.games.total) }}% ·
+                B {{ percentage(move.games.blackWins, move.games.total) }}%
+              </strong>
+              <small>Average rating {{ move.averageRating }}</small>
+            </span>
+          </button>
+        </ng-template>
+      </section>
+
+      @if (data.topGames.length > 0) {
+        <section class="masters-section masters-top-games">
+          <h4>Top master games</h4>
+          <app-progressive-list
+            [items]="data.topGames"
+            [itemTemplate]="gameRow"
+            [initialCount]="3"
+            [resetKey]="fen()"
+          />
+
+          <ng-template #gameRow let-game>
+            <a
+              class="masters-game-row"
+              [href]="'https://lichess.org/' + game.id"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="masters-game-players">
+                <strong>{{ playerLabel(game.white) }}</strong>
+                <span>vs</span>
+                <strong>{{ playerLabel(game.black) }}</strong>
+              </span>
+              <span class="masters-game-meta">
+                <strong>{{ gameResultLabel(game.winner) }}</strong>
+                <small>{{ gameDateLabel(game.year, game.month) }}</small>
+              </span>
+            </a>
+          </ng-template>
+        </section>
+      }
+    }
+  }
+</section>

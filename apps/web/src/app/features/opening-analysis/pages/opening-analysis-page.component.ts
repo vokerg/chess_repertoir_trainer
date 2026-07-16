@@ -3,8 +3,10 @@ import { AnalysisBoardComponent } from '../../../shared/analysis/board/analysis-
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
+import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
+import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
 import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
 import { scoreLabel, wdlLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { buildChallengeBotHeaderAction } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-action.helper';
@@ -19,8 +21,10 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   imports: [
     AnalysisBoardComponent,
     CoursePositionSuggestionsWidgetComponent,
+    MastersExplorerWidgetComponent,
     GameFilterBreakdownPanelComponent,
     PositionGameMovesPanelComponent,
+    PositionTopGamesComponent,
     PageHeaderComponent,
     CopyableLineComponent,
     PositionPerformancePanelComponent,
@@ -56,6 +60,20 @@ export class OpeningAnalysisPageComponent implements OnInit {
       label: 'Tags',
       pressed: this.store.tagsOpen(),
       run: () => this.store.toggleTags(),
+    },
+    {
+      id: 'masters',
+      kind: 'toggle',
+      label: 'Masters',
+      pressed: this.store.mastersOpen(),
+      run: () => this.store.toggleMasters(),
+    },
+    {
+      id: 'last-games',
+      kind: 'toggle',
+      label: 'Last games',
+      pressed: this.store.lastGamesOpen(),
+      run: () => this.store.toggleLastGames(),
     },
     {
       id: 'engine',
