@@ -1,0 +1,160 @@
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import prismaModule from '../../dist/prisma.js';
+import {
+  createJobWorkerRepository,
+} from '../../dist/modules/jobs/job-worker.repository.prisma.js';
+
+const prisma = prismaModule.default;
+const repository = createJobWorkerRepository(prisma);
+const suffix = randomUUID();
+let userId;
+
+try {
+  const user = await prisma.appUser.create({
+    data: {
+      displayName: 'Job worker repository test',
+      authProvider: 'test',
+      authSubject: `job-worker-${suffix}`,
+    },
+  });
+  userId = user.id;
+
+  const account = await prisma.externalAccount.create({
+    data: { userId, provider: 'LICHESS', username: `job-worker-${suffix}` },
+  });
+
+  const games = await Promise.all(['a', 'b', 'c', 'orphan'].map((name) => (
+    prisma.importedGame.create({
+      data: {
+        userId,
+        accountId: account.id,
+        provider: 'LICHESS',
+        providerGameId: `${name}-${suffix}`,
+        endedAt: new Date(`2026-07-${10 + name.length}T12:00:00.000Z`),
+      },
+    })
+  )));
+  const [gameA, gameB, gameC, orphanGame] = games;
+
+  const lowJob = await createJob({
+    userId,
+    priority: 100,
+    gameIds: [gameA.id],
+  });
+  const highJob = await createJob({
+    userId,
+    priority: 200,
+    gameIds: [gameB.id, gameC.id],
+  });
+
+  assert.equal(
+    await repository.hasHigherPriorityRunnableWork(100, ['INDEX_GAMES']),
+    true,
+  );
+
+  const first = await repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] });
+  assert.ok(first);
+  assert.equal(first.jobRunId, highJob.id);
+  assert.equal(first.importedGameId, gameB.id);
+  assert.equal(first.ordinal, 0);
+  assert.match(first.workKey, /^GAME_WORK:/);
+  assert.equal(await repository.finishTask(first, 'COMPLETED'), true);
+
+  const second = await repository.claimNextTask({
+    supportedKinds: ['INDEX_GAMES'],
+    jobRunId: highJob.id,
+  });
+  assert.ok(second);
+  assert.equal(second.importedGameId, gameC.id);
+  assert.equal(await repository.finishTask(second, 'SKIPPED'), true);
+
+  const completedHighJob = await prisma.jobRun.findUniqueOrThrow({ where: { id: highJob.id } });
+  assert.equal(completedHighJob.status, 'COMPLETED');
+  assert.ok(completedHighJob.completedAt);
+
+  const duplicateJob = await createJob({
+    userId,
+    priority: 300,
+    gameIds: [gameA.id],
+  });
+
+  const concurrentClaims = await Promise.all([
+    repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] }),
+    repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] }),
+  ]);
+  const retainedClaims = concurrentClaims.filter(Boolean);
+  assert.equal(retainedClaims.length, 1, 'only one running task is allowed per imported game');
+  const originalClaim = retainedClaims[0];
+  assert.equal(originalClaim.jobRunId, duplicateJob.id);
+  assert.equal(originalClaim.importedGameId, gameA.id);
+
+  await prisma.jobTask.update({
+    where: { id: originalClaim.id },
+    data: { updatedAt: new Date('2026-07-01T00:00:00.000Z') },
+  });
+  assert.equal(
+    await repository.recoverStaleTasks(new Date('2026-07-02T00:00:00.000Z')),
+    1,
+  );
+
+  const replacementClaim = await repository.claimNextTask({
+    supportedKinds: ['INDEX_GAMES'],
+    jobRunId: duplicateJob.id,
+  });
+  assert.ok(replacementClaim);
+  assert.notEqual(replacementClaim.workKey, originalClaim.workKey);
+  assert.equal(
+    await repository.finishTask(originalClaim, 'COMPLETED'),
+    false,
+    'a stale worker cannot settle a replacement claim',
+  );
+  assert.equal(await repository.finishTask(replacementClaim, 'COMPLETED'), true);
+
+  const lowClaim = await repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] });
+  assert.ok(lowClaim);
+  assert.equal(lowClaim.jobRunId, lowJob.id);
+  assert.equal(await repository.releaseTask(lowClaim), true);
+  const released = await prisma.jobTask.findUniqueOrThrow({ where: { id: lowClaim.id } });
+  assert.equal(released.status, 'QUEUED');
+  assert.equal(released.workKey, null);
+
+  const orphanJob = await createJob({
+    userId,
+    priority: 50,
+    gameIds: [orphanGame.id],
+  });
+  await prisma.importedGame.delete({ where: { id: orphanGame.id } });
+  assert.equal(await repository.skipOrphanedTasks(), 1);
+
+  const orphanTask = await prisma.jobTask.findFirstOrThrow({ where: { jobRunId: orphanJob.id } });
+  assert.equal(orphanTask.status, 'SKIPPED');
+  assert.equal(orphanTask.importedGameId, null);
+  const completedOrphanJob = await prisma.jobRun.findUniqueOrThrow({ where: { id: orphanJob.id } });
+  assert.equal(completedOrphanJob.status, 'COMPLETED');
+
+  console.log('Persistent job worker repository tests passed.');
+} finally {
+  if (userId) await prisma.appUser.delete({ where: { id: userId } });
+  await prisma.$disconnect();
+}
+
+async function createJob({ userId, priority, gameIds }) {
+  return prisma.jobRun.create({
+    data: {
+      userId,
+      kind: 'INDEX_GAMES',
+      source: 'MAINTENANCE',
+      priority,
+      status: 'QUEUED',
+      totalTasks: gameIds.length,
+      tasks: {
+        create: gameIds.map((importedGameId, ordinal) => ({
+          importedGameId,
+          ordinal,
+          status: 'QUEUED',
+        })),
+      },
+    },
+  });
+}
