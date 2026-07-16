@@ -1,4 +1,3 @@
-import type { JobRunKind } from '@chess-trainer/contracts/jobs';
 import type { JobWorkerConfig } from './job-worker.config';
 import type { JobWorkerRepository } from './job-worker.repository.prisma';
 import {
@@ -121,7 +120,6 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
 
           await executeClaimedTask(
             claimedTask,
-            supportedKinds,
             input.repository,
             input.executors,
             input.config,
@@ -138,8 +136,9 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
         }
       } finally {
         if (slice) {
-          await input.repository.touchJobRun(slice.jobRunId).catch((error) => {
-            logger.error({ err: error, jobRunId: slice?.jobRunId }, 'Could not close worker scheduling slice');
+          const jobRunId = slice.jobRunId;
+          await input.repository.touchJobRun(jobRunId).catch((error) => {
+            logger.error({ err: error, jobRunId }, 'Could not close worker scheduling slice');
           });
         }
         activeController = null;
@@ -151,14 +150,13 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
 
   async function executeClaimedTask(
     task: ClaimedJobTask,
-    supportedKinds: JobRunKind[],
     repository: JobWorkerRepository,
     executors: JobTaskExecutorRegistry,
     config: JobWorkerConfig,
     taskLogger: JobWorkerLogger,
   ): Promise<void> {
     const executor = executors.get(task.kind);
-    if (!executor || !supportedKinds.includes(task.kind)) {
+    if (!executor) {
       await repository.releaseTask(task);
       throw new Error(`No executor registered for claimed job kind ${task.kind}.`);
     }
@@ -227,17 +225,13 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
     if (stopRequested) return Promise.resolve();
 
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        if (wakePoll === wake) wakePoll = null;
-        resolve();
-      }, delayMs);
-      timer.unref();
-
+      let timer: NodeJS.Timeout;
       const wake = () => {
         clearTimeout(timer);
         if (wakePoll === wake) wakePoll = null;
         resolve();
       };
+      timer = setTimeout(wake, delayMs);
       wakePoll = wake;
     });
   }
