@@ -4,6 +4,7 @@ import {
   jobRunListQuerySchema,
   jobRunSummarySchema,
   jobTaskListQuerySchema,
+  jobTaskSchema,
 } from '../dist/jobs/index.js';
 
 assert.deepEqual(createImportedGameJobRunBodySchema.parse({
@@ -55,5 +56,16 @@ assert.equal(
   jobRunSummarySchema.safeParse({ ...summary, taskCounts: { queued: 2 } }).success,
   false,
 );
+
+const retainedTask = {
+  id: 12,
+  importedGameId: null,
+  ordinal: 0,
+  status: 'QUEUED',
+  error: null,
+  createdAt: '2026-07-16T08:00:00.000Z',
+  updatedAt: '2026-07-16T08:00:00.000Z',
+};
+assert.deepEqual(jobTaskSchema.parse(retainedTask), retainedTask);
 
 console.log('Persistent job contract tests passed.');
