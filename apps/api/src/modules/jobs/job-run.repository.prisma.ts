@@ -21,7 +21,7 @@ export interface StoredJobRun {
 
 export interface StoredJobTask {
   id: number;
-  importedGameId: number;
+  importedGameId: number | null;
   ordinal: number;
   status: string;
   error: string | null;
