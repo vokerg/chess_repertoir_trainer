@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import {
   jobRunKindSchema,
+  jobTaskStatusSchema,
   type JobRunKind,
   type JobRunStatus,
-  type JobTaskStatus,
 } from '@chess-trainer/contracts/jobs';
 import prisma from '../../prisma';
 import type { ClaimedJobTask, JobTaskExecutionStatus } from './job-task-executor';
@@ -61,13 +61,6 @@ type JobRunIdRow = {
   jobRunId: number;
 };
 
-const activeRunStatuses: JobRunStatus[] = ['QUEUED', 'RUNNING'];
-const terminalTaskStatuses: JobTaskStatus[] = [
-  'COMPLETED',
-  'SKIPPED',
-  'FAILED',
-  'CANCELLED',
-];
 const CLAIM_RETRY_LIMIT = 8;
 
 export function createJobWorkerRepository(
@@ -210,6 +203,12 @@ async function claimNextTaskOnce(
           AND job."status" IN ('QUEUED', 'RUNNING')
           AND job."kind" IN (${kinds})
           ${jobFilter}
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "JobTask" AS active_task
+            WHERE active_task."status" = 'RUNNING'
+              AND active_task."importedGameId" = task."importedGameId"
+          )
         ORDER BY
           job."priority" DESC,
           job."updatedAt" ASC,
@@ -337,8 +336,12 @@ async function reconcileJobRun(
     WHERE "jobRunId" = ${jobRunId}
     GROUP BY "status"
   `;
-  const byStatus = new Map(counts.map((row) => [row.status, row.count]));
-  const countedTasks = counts.reduce((sum, row) => sum + row.count, 0);
+  const parsedCounts = counts.map((row) => ({
+    status: jobTaskStatusSchema.parse(row.status),
+    count: row.count,
+  }));
+  const byStatus = new Map(parsedCounts.map((row) => [row.status, row.count]));
+  const countedTasks = parsedCounts.reduce((sum, row) => sum + row.count, 0);
   if (countedTasks !== job.totalTasks) {
     throw new Error(
       `Job run ${jobRunId} task-count mismatch: expected ${job.totalTasks}, counted ${countedTasks}.`,
@@ -408,6 +411,3 @@ function isUniqueConstraintViolation(error: unknown): boolean {
 }
 
 export const JobWorkerRepository = createJobWorkerRepository();
-
-export const JOB_WORKER_ACTIVE_RUN_STATUSES = activeRunStatuses;
-export const JOB_WORKER_TERMINAL_TASK_STATUSES = terminalTaskStatuses;
