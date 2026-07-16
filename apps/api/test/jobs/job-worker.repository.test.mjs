@@ -24,7 +24,16 @@ try {
     data: { userId, provider: 'LICHESS', username: `job-worker-${suffix}` },
   });
 
-  const games = await Promise.all(['a', 'b', 'c', 'orphan'].map((name) => (
+  const games = await Promise.all([
+    'a',
+    'b',
+    'c',
+    'orphan',
+    'fair-a1',
+    'fair-a2',
+    'fair-b1',
+    'fair-b2',
+  ].map((name) => (
     prisma.importedGame.create({
       data: {
         userId,
@@ -35,7 +44,16 @@ try {
       },
     })
   )));
-  const [gameA, gameB, gameC, orphanGame] = games;
+  const [
+    gameA,
+    gameB,
+    gameC,
+    orphanGame,
+    fairGameA1,
+    fairGameA2,
+    fairGameB1,
+    fairGameB2,
+  ] = games;
 
   const lowJob = await createJob({
     userId,
@@ -132,6 +150,53 @@ try {
   assert.equal(orphanTask.importedGameId, null);
   const completedOrphanJob = await prisma.jobRun.findUniqueOrThrow({ where: { id: orphanJob.id } });
   assert.equal(completedOrphanJob.status, 'COMPLETED');
+
+  const fairJobA = await createJob({
+    userId,
+    priority: 400,
+    gameIds: [fairGameA1.id, fairGameA2.id],
+  });
+  const fairJobB = await createJob({
+    userId,
+    priority: 400,
+    gameIds: [fairGameB1.id, fairGameB2.id],
+  });
+  await prisma.jobRun.update({
+    where: { id: fairJobA.id },
+    data: { updatedAt: new Date('2026-01-01T00:00:00.000Z') },
+  });
+  await prisma.jobRun.update({
+    where: { id: fairJobB.id },
+    data: { updatedAt: new Date('2026-01-02T00:00:00.000Z') },
+  });
+
+  const fairFirstClaim = await repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] });
+  assert.ok(fairFirstClaim);
+  assert.equal(fairFirstClaim.jobRunId, fairJobA.id);
+
+  const fairSecondClaim = await repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] });
+  assert.ok(fairSecondClaim);
+  assert.equal(
+    fairSecondClaim.jobRunId,
+    fairJobB.id,
+    'a global claim leases the selected job so another worker selects the next equally prioritized job',
+  );
+
+  assert.equal(await repository.finishTask(fairFirstClaim, 'COMPLETED'), true);
+  assert.equal(await repository.finishTask(fairSecondClaim, 'COMPLETED'), true);
+
+  const fairASecondClaim = await repository.claimNextTask({
+    supportedKinds: ['INDEX_GAMES'],
+    jobRunId: fairJobA.id,
+  });
+  const fairBSecondClaim = await repository.claimNextTask({
+    supportedKinds: ['INDEX_GAMES'],
+    jobRunId: fairJobB.id,
+  });
+  assert.ok(fairASecondClaim);
+  assert.ok(fairBSecondClaim);
+  assert.equal(await repository.finishTask(fairASecondClaim, 'COMPLETED'), true);
+  assert.equal(await repository.finishTask(fairBSecondClaim, 'COMPLETED'), true);
 
   console.log('Persistent job worker repository tests passed.');
 } finally {
