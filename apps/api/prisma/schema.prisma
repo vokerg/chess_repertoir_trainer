@@ -347,17 +347,17 @@ model JobRun {
 }
 
 model JobTask {
-  id             Int          @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   jobRunId       Int
-  jobRun         JobRun       @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
-  importedGameId Int
-  importedGame   ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  jobRun         JobRun        @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
+  importedGameId Int?
+  importedGame   ImportedGame? @relation(fields: [importedGameId], references: [id], onDelete: SetNull)
   ordinal        Int
   status         String
-  workKey        String?      @unique
+  workKey        String?       @unique
   error          String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@unique([jobRunId, importedGameId])
   @@index([jobRunId, status, ordinal])
