@@ -25,6 +25,7 @@ model AppUser {
   lichessConnection               LichessConnection?
   importedGames                   ImportedGame[]
   importRuns                      ImportRun[]
+  jobRuns                         JobRun[]
   tacticalDetectionRuns           TacticalDetectionRun[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
@@ -150,6 +151,7 @@ model ImportedGame {
   updatedAt                       DateTime                         @updatedAt
   analysisRuns                    GameAnalysisRun[]
   plies                           ImportedGamePly[]
+  jobTasks                        JobTask[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
   tacticalDetectionFeedbacks      TacticalDetectionFeedback[]
@@ -322,6 +324,44 @@ model ImportRun {
 
   @@index([accountId, startedAt])
   @@index([userId, startedAt])
+}
+
+model JobRun {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        String
+  source      String
+  priority    Int
+  status      String
+  totalTasks  Int
+  force       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+  tasks       JobTask[]
+
+  @@index([status, priority, updatedAt])
+  @@index([userId, createdAt])
+}
+
+model JobTask {
+  id             Int          @id @default(autoincrement())
+  jobRunId       Int
+  jobRun         JobRun       @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
+  importedGameId Int
+  importedGame   ImportedGame @relation(fields: [importedGameId], references: [id], onDelete: Cascade)
+  ordinal        Int
+  status         String
+  workKey        String?      @unique
+  error          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([jobRunId, importedGameId])
+  @@index([jobRunId, status, ordinal])
+  @@index([status, updatedAt])
 }
 
 model PositionAnalysis {
