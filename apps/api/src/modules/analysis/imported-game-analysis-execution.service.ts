@@ -22,6 +22,12 @@ interface ImportedGameAnalysisExecutionDependencies {
   abandonRun: typeof abandonGameAnalysisRun;
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new Error('Imported-game analysis execution was aborted.');
+}
+
 function isCurrent(
   state: ImportedGameAnalysisExecutionState,
 ): boolean {
@@ -44,12 +50,15 @@ export function createImportedGameAnalysisExecutionService(
       importedGameId: number,
       options: ImportedGameAnalysisOptions,
     ): Promise<ImportedGameAnalysisExecutionStatus> {
+      throwIfAborted(options.signal);
       const state = await dependencies.getExecutionState(userId, importedGameId);
       if (!state) throw new Error('Imported game not found');
+      throwIfAborted(options.signal);
 
       if (!options.force && isCurrent(state)) {
         if (options.refreshTagsAfterAnalysis) {
           await dependencies.refreshTags(userId, importedGameId);
+          throwIfAborted(options.signal);
         }
         return 'SKIPPED';
       }
