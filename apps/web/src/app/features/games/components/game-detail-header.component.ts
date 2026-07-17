@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { ImportedGameAnalysisProgress } from '../data-access/imported-game-analysis.service';
 import { RouterLink } from '@angular/router';
 import { ImportedGameDetail } from '../data-access/games.models';
 import {
@@ -21,7 +20,7 @@ export class GameDetailHeaderComponent {
   readonly game = input<ImportedGameDetail | null>(null);
   readonly title = input.required<string>();
   readonly selectedLabel = input.required<string>();
-  readonly analysisProgress = input.required<ImportedGameAnalysisProgress>();
+  readonly analysisRunning = input(false);
   readonly refreshingTags = input(false);
   readonly fullRefreshing = input(false);
   readonly analyze = output<boolean>();
@@ -30,39 +29,35 @@ export class GameDetailHeaderComponent {
 
   protected readonly analysisAction = computed(() => {
     const game = this.game();
-    const progress = this.analysisProgress();
     const force = canForceReanalyse(game);
-
     return {
       force,
-      disabled: progress.running || game?.analysis.status === 'RUNNING',
-      label:
-        progress.running || game?.analysis.status === 'RUNNING'
-          ? 'Analysing...'
-          : force
-            ? 'Force re-analysis'
-            : 'Analyse',
+      disabled: !game || this.analysisRunning() || this.fullRefreshing(),
+      label: this.analysisRunning()
+        ? 'Analysis in background...'
+        : force
+          ? 'Force re-analysis'
+          : 'Analyse',
     };
   });
 
-  protected readonly refreshTagsAction = computed(() => {
-    const game = this.game();
-    return {
-      disabled: !game || this.refreshingTags(),
-      label: this.refreshingTags() ? 'Refreshing tags...' : 'Refresh tags',
-    };
-  });
+  protected readonly refreshTagsAction = computed(() => ({
+    disabled:
+      !this.game()
+      || this.refreshingTags()
+      || this.fullRefreshing()
+      || this.analysisRunning(),
+    label: this.refreshingTags() ? 'Refreshing tags...' : 'Refresh tags',
+  }));
 
-  protected readonly fullRefreshAction = computed(() => {
-    const game = this.game();
-    const analysisRunning =
-      this.analysisProgress().running || game?.analysis.status === 'RUNNING';
-    return {
-      disabled:
-        !game || analysisRunning || this.refreshingTags() || this.fullRefreshing(),
-      label: this.fullRefreshing() ? 'Submitting...' : 'Full refresh',
-    };
-  });
+  protected readonly fullRefreshAction = computed(() => ({
+    disabled:
+      !this.game()
+      || this.fullRefreshing()
+      || this.refreshingTags()
+      || this.analysisRunning(),
+    label: this.fullRefreshing() ? 'Full refresh in background...' : 'Full refresh',
+  }));
 
   protected readonly providerLabel = providerLabel;
   protected readonly playerLabel = playerLabel;
