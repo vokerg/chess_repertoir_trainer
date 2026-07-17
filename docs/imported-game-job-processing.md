@@ -35,11 +35,34 @@ All routes use shared schemas from `@chess-trainer/contracts/jobs`, Fastify rout
 
 The persisted task counts are aggregated for reads rather than duplicated as counters on each task. The creation response can return its known all-queued count without another aggregate query. Reads fail loudly when persisted task rows do not account for the job's `totalTasks`.
 
-PostgreSQL check constraints guard every persisted job kind, source, run status, and task status. These constraints also apply to the raw claiming SQL introduced by the worker slice, so invalid lifecycle literals cannot be persisted outside Prisma.
+PostgreSQL check constraints guard every persisted job kind, source, run status, and task status. These constraints also apply to raw worker SQL, so invalid lifecycle literals cannot be persisted outside Prisma.
 
-If an imported game is deleted, including through external-account deletion, its task rows are retained and `importedGameId` becomes `null`. This preserves job history and keeps aggregate task counts consistent. The later worker treats a queued task without a source game as non-runnable and terminalizes it explicitly.
+If an imported game is deleted, including through external-account deletion, its task rows are retained and `importedGameId` becomes `null`. This preserves job history and keeps aggregate task counts consistent. Worker maintenance marks queued orphaned tasks as `SKIPPED` with an explanatory error.
 
-**Not yet implemented:** no worker claims or executes these tasks in this foundation slice. Existing browser orchestration and the API-process in-memory analysis queue remain active until later migration slices replace them. Creating a persisted job on this branch therefore records work but does not execute it yet.
+## Current worker infrastructure
+
+**Current:** the worker is a separate runtime entry point inside `apps/api`:
+
+```text
+apps/api/src/main.ts    HTTP API process
+apps/api/src/worker.ts  persistent-job worker process
+```
+
+The processes share Prisma repositories and application code but have independent startup, shutdown, and database connections. Local commands are:
+
+```bash
+npm run dev:api
+npm run dev:worker
+```
+
+Production commands are:
+
+```bash
+npm run start --workspace=apps/api
+npm run start:worker --workspace=apps/api
+```
+
+The worker currently owns infrastructure only. Its production executor registry is intentionally empty until PR3, so it performs stale/orphan maintenance but does not claim the queued indexing, analysis, processing, or tag-refresh tasks yet. Existing browser orchestration and the API-process in-memory analysis queue remain active during this migration stage.
 
 ## Data model
 
@@ -72,7 +95,7 @@ A task is one imported game inside one job. It owns:
 - nullable imported-game reference, retained as `null` after source-game deletion;
 - newest-first ordinal;
 - lifecycle status;
-- optional active execution key;
+- optional opaque active-claim key;
 - terminal error;
 - timestamps.
 
@@ -109,32 +132,35 @@ id DESC
 
 The stable ordinal records that order inside a job.
 
-**Target:** the worker selects runnable work through the parent job:
+**Current:** the worker claims runnable work through the parent job using short PostgreSQL transactions and this order:
 
 ```text
 JobRun.priority DESC
 JobRun.updatedAt ASC
+JobRun.id ASC
 JobTask.ordinal ASC
+JobTask.id ASC
 ```
 
-Execution groups of 25 are derived from ordered tasks and are not persisted as another model or column. The worker re-evaluates higher-priority work between games and reselects jobs after a scheduling slice.
+Candidate rows are locked with `FOR UPDATE ... SKIP LOCKED`; expensive executor work always happens after the claim transaction commits. A worker continues the selected job for at most 25 tasks, checks for higher-priority runnable work between games, then touches `JobRun.updatedAt` and reselects. The slice size is derived behavior, not another persisted model or column.
 
-## Duplicate work
+A job moves to `RUNNING` on its first claim. Task completion reconciles the parent from persisted task states. All-success or success-plus-skipped jobs become `COMPLETED`; all-failed jobs become `FAILED`; all-cancelled jobs become `CANCELLED`; mixed failed/cancelled terminal outcomes become `PARTIALLY_FAILED`.
+
+## Claim safety and duplicate work
 
 Different jobs may contain tasks for the same game so that each job retains understandable progress and terminal results.
 
-**Target:** an active execution key prevents two workers from simultaneously performing the same work class for one game. A later duplicate task performs an idempotency check and may finish as `SKIPPED` when the requested result is already current.
+**Current:** PostgreSQL has a partial unique index allowing only one `RUNNING` task for an imported game across every job kind. Each successful claim also receives a new opaque `workKey`. Heartbeat, completion, failure, and release writes require the exact task id, job id, `RUNNING` state, and work key. After stale recovery clears the key, an old worker can no longer settle a replacement claim.
 
-## Worker boundary
+Workers heartbeat active tasks. Maintenance returns stale `RUNNING` tasks to `QUEUED`, clears their claim key, and updates the parent scheduler timestamp. This is infrastructure recovery after a lost process, not configurable business retry machinery. PR3 executors must still be idempotent because a crashed process may have performed part of its external work before the stale claim is recovered.
 
-**Target:** the worker is a separate runtime process with an independent entry point and lifecycle, initially inside `apps/api`:
+**Target:** after PR3 adds domain executors, a later duplicate task performs an idempotency check and may finish as `SKIPPED` when the requested result is already current.
 
-```text
-apps/api/src/main.ts    HTTP API process
-apps/api/src/worker.ts  background worker process
-```
+## Graceful shutdown
 
-Keeping both entry points in the API workspace allows the worker to reuse existing application services and Prisma repositories without prematurely extracting another package. Deployment runs the API and worker as separate process types.
+**Current:** `SIGINT` and `SIGTERM` stop new claims and abort the active executor through an `AbortSignal`. An executor that observes the signal returns its claim to `QUEUED`; the process waits up to `JOB_WORKER_SHUTDOWN_TIMEOUT_MS` before reporting an unsuccessful shutdown. A process that dies without releasing its claim is handled by heartbeat expiry and stale recovery.
+
+Worker timing settings are documented in `.env.example`. `JOB_WORKER_STALE_AFTER_MS` must be greater than twice `JOB_WORKER_HEARTBEAT_INTERVAL_MS`.
 
 ## Frontend direction
 
@@ -157,11 +183,13 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 
 ### PR2 — worker runtime and safe claiming
 
-- Add the separate worker entry point.
+- Add the separate worker entry point and executor registry boundary.
 - Claim tasks with short PostgreSQL transactions and `FOR UPDATE SKIP LOCKED`.
-- Add scheduling slices, active execution exclusion, stale-running recovery, and graceful shutdown.
-- Terminalize retained tasks whose imported game has been deleted.
+- Add active-game exclusion, per-claim fencing, heartbeat, and stale recovery.
+- Add 25-task scheduling slices and higher-priority preemption between games.
+- Add graceful shutdown and explicit orphan-task reconciliation.
 - Document local and hosted worker operation.
+- Keep production domain executors empty until PR3.
 
 ### PR3 — job executors
 

@@ -6,7 +6,7 @@ The Angular web application remains the broad product client. `apps/mobile` is a
 
 ```text
 apps/
-  api/     Fastify + Prisma
+  api/     Fastify + Prisma API and persistent-job worker runtimes
   web/     Angular
   mobile/  React Native + Expo
 packages/
@@ -25,7 +25,7 @@ apps/api/src/modules/
   analysis/              engine and imported-game analysis
   courses/               courses, chapters, lines, and move nodes
   imported-games/        game browsing, facets, PGN, and opening data
-  jobs/                  persistent imported-game job requests and read models
+  jobs/                  persistent imported-game jobs and worker infrastructure
   lab/                   exploratory game reports
   mobile-sync/           offline course bundles and mobile attempt ingestion
   opening-struggles/     recurring opening problems and course coverage
@@ -49,7 +49,7 @@ Imported-game reads use consumer-specific projections. List endpoints do not ret
 
 Imported-game analysis keeps reusable engine output and per-game classification separate. Reusable position analysis is stored in the analysis module's position-analysis cache with compact or rich persistence: imported-game flows write scalar-only compact rows, while free/interactive analysis can write rich rows with PV lines. Per-game ply score loss and classification fields are stored on `ImportedGamePly` in batches. See [Position Analysis Cache](position-analysis-cache.md) for the browser and backend analysis flows.
 
-The jobs module owns the persisted `JobRun`/`JobTask` master-detail foundation, current-user job creation, newest-first task ordering, task-status aggregation, ownership checks, and shared route contracts. The current foundation does not execute tasks yet; browser orchestration and the analysis module's in-memory queue remain active until the later worker and executor migration slices. See [Persistent imported-game job processing](imported-game-job-processing.md).
+The jobs module owns `JobRun`/`JobTask` persistence, current-user job creation/read models, lifecycle integrity, and the separate persistent-job worker runtime. Worker claims use short PostgreSQL transactions with `FOR UPDATE SKIP LOCKED`, job-level priority, stable task ordinals, 25-task fairness slices, one active task per imported game, opaque claim fencing, heartbeat, stale recovery, orphan reconciliation, and graceful shutdown. The production executor registry is intentionally empty until the next migration slice; browser orchestration and the analysis module's in-memory queue remain active until domain executors and compatibility routing are complete. See [Persistent imported-game job processing](imported-game-job-processing.md).
 
 Opening struggles is a standalone Openings feature. It counts candidate games before loading early plies, rejects scopes above its documented safety limit, builds prefix aggregates in memory, and annotates returned prefixes with side-specific course coverage. It reuses the repertoire sequence matcher shared with course review and exposes a verified contract from `packages/contracts`. See [Opening struggles](opening-struggles.md).
 
@@ -59,6 +59,8 @@ MCP is a backend transport under `apps/api`; its read-only tools call feature/ap
 
 `apps/api/src/app.ts` owns reusable Fastify construction, compiler/plugin registration, centralized request-validation errors, generated OpenAPI and official Swagger UI, auth/CORS, route composition, and Prisma disconnection through Fastify `onClose`. Tests construct independent app instances through `buildApp`, inject deterministic auth and lifecycle collaborators, and close each instance. Production omits injected auth so `loadAuthConfig()` still reads the environment. `apps/api/src/main.ts` loads environment configuration, listens, guards duplicate shutdown signals, closes Fastify, and uses `process.exitCode` instead of forcing an immediate successful exit.
 
+`apps/api/src/worker.ts` is a separate process entry point. It loads worker timing configuration, starts the jobs-module scheduling loop, handles `SIGINT`/`SIGTERM`, aborts the active executor through an `AbortSignal`, waits for bounded graceful shutdown, and disconnects its own Prisma client. The API process does not start or own this loop.
+
 For new backend work, extend the owning directory under `apps/api/src/modules` when one exists. Keep routes thin and place feature orchestration and Prisma access next to the owning module where practical. Make narrow changes to legacy global code when that is safer than an unrelated migration; do not copy the global layout into new features.
 
 ## Boundaries
@@ -66,7 +68,7 @@ For new backend work, extend the owning directory under `apps/api/src/modules` w
 - `apps/web` owns Angular UI, feature state, and frontend data access.
 - `apps/mobile` owns Expo routes, native lifecycle, Chessground DOM hosting, authentication orchestration, user-scoped SQLite content/training repositories, offline marathon runs, and attempt synchronization.
 - `apps/web` and `apps/mobile` never import from one another.
-- `apps/api` owns HTTP routes, application workflows, provider integration, and Prisma access.
+- `apps/api` owns HTTP routes, application workflows, provider integration, persistent-job scheduling/execution infrastructure, and Prisma access.
 - `packages/chess-domain` stays framework- and infrastructure-free.
 - Mobile-safe domain imports use explicit subpaths such as `chess-domain/training`, `chess-domain/sublines`, and `chess-domain/position`.
 - The versioned serializable training reducer lives under `packages/chess-domain/src/training`. It records immutable attempt events, auto-plays fixed-path opponent moves, supports deterministic JSON replay, derives counters/review, and preserves existing server move-attempt and early-finish semantics.
