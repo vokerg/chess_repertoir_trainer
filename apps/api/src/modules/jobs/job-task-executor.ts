@@ -46,7 +46,3 @@ export class JobTaskExecutorRegistry {
     return this.byKind.get(kind) ?? null;
   }
 }
-
-// PR2 establishes the worker boundary only. PR3 registers the imported-game
-// indexing, analysis, processing, and tag-refresh executors here.
-export const defaultJobTaskExecutorRegistry = new JobTaskExecutorRegistry([]);
