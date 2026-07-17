@@ -74,7 +74,7 @@ CLERK_JWKS_URL=https://<your-clerk-domain>/.well-known/jwks.json
 CLERK_AUTHORIZED_PARTIES=<Vercel web origin>
 ```
 
-Add the provider, OAuth, and Stockfish variables used by the enabled product features; `.env.example` is the source list.
+Add the provider and OAuth variables used by the enabled product features; `.env.example` is the source list. Stockfish and persistent-worker tuning belong on the worker service rather than the API service.
 
 Notes:
 
@@ -82,11 +82,11 @@ Notes:
 - `CORS_ORIGIN` must match the deployed Angular origin. Native requests are not browser CORS requests.
 - Mobile and web must use the same Clerk application that the API issuer/JWKS values validate.
 - The API exposes a health check at `/health` with `{ "ok": true }`.
-- The API process does not start the persistent-job worker loop.
+- The API process does not start the persistent-job worker loop or execute imported-game jobs.
 
 ## Render persistent-job worker setup
 
-Create a separate Render **Background Worker** from the same repository and commit as the API service.
+Create a separate Render **Background Worker** from the same repository and commit as the API service. This process is required when the application accepts imported-game indexing, analysis, processing, or tag-refresh jobs.
 
 Settings:
 
@@ -105,7 +105,7 @@ npm run start:worker --workspace=apps/api
 
 The worker needs the same `DATABASE_URL`, `DIRECT_URL`, and `NODE_ENV` values as the API. It does not need `PORT`, CORS, Clerk JWT verification, or browser-origin settings because it does not serve HTTP traffic.
 
-The worker now executes all four imported-game job kinds. Analysis and complete-processing jobs require Stockfish configuration in the worker environment:
+The worker executes all four imported-game job kinds. Analysis and complete-processing jobs require Stockfish configuration in the worker environment:
 
 ```text
 LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED=true
@@ -119,22 +119,23 @@ STOCKFISH_ANALYSIS_TIMEOUT_MS=15000
 
 Each claimed analysis or processing task creates and disposes one engine instance. Keep the worker as one process initially so analysis remains single-task per process. PostgreSQL locking supports multiple worker processes, but Stockfish CPU/memory sizing must be validated before horizontal scaling.
 
-Worker timing defaults are listed in `.env.example`:
+Worker timing and retention defaults are listed in `.env.example`:
 
 ```text
 JOB_WORKER_POLL_INTERVAL_MS=1000
 JOB_WORKER_HEARTBEAT_INTERVAL_MS=30000
 JOB_WORKER_STALE_AFTER_MS=900000
 JOB_WORKER_STALE_RECOVERY_INTERVAL_MS=60000
+JOB_WORKER_TERMINAL_RETENTION_DAYS=30
 JOB_WORKER_SLICE_SIZE=25
 JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 ```
 
 The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; shutdown aborts the active executor, disposes its engine, and releases the fenced task claim when possible.
 
-Run Prisma migrations once per deployment release, normally in the API build command or a dedicated release command. Do not run migrations independently from every worker replica.
+Terminal job retention runs at worker startup and hourly. It removes only terminal jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs are never removed by retention.
 
-The API-process batch-analysis queue remains temporarily for compatibility, but it delegates to the same processing and analysis services as the persistent worker. It is removed only after the remaining API/frontend flows submit persisted jobs.
+Run Prisma migrations once per deployment release, normally in the API build command or a dedicated release command. Do not run migrations independently from every worker replica.
 
 ## Vercel web setup
 
@@ -209,7 +210,8 @@ CI does not deploy. Render and Vercel deployments should be configured directly 
 2. Configure `apps/api/.env`.
 3. Install dependencies.
 4. Apply migrations.
-5. Start API/web and, when needed, the worker and Expo.
+5. Start the API and web app.
+6. Start the worker in a separate terminal before submitting imported-game jobs.
 
 ```bash
 npm ci
@@ -217,7 +219,7 @@ npm run db:migrate
 npm run dev
 ```
 
-Run the worker in another terminal:
+Worker terminal:
 
 ```bash
 npm run dev:worker
