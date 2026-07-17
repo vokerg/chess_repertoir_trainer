@@ -21,7 +21,7 @@ import {
   NoImportedGamesFoundError,
 } from './job-run.service';
 
-const emptyJobRunActionBodySchema = z.object({});
+const emptyJobRunActionBodySchema = z.object({}).default({});
 
 const jobRunModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
