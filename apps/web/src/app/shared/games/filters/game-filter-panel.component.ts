@@ -17,7 +17,13 @@ import {
   Provider,
   UserColor,
 } from '../game.models';
+import { gameTagLabel } from '../game-tag-display';
 import { GameFilters } from './game-filter.model';
+import {
+  detectGameFilterPeriod,
+  gameFilterPeriodRange,
+} from './game-filter-period';
+import type { GameFilterPeriod } from './game-filter-period';
 
 @Component({
   selector: 'app-game-filter-panel',
@@ -40,6 +46,12 @@ export class GameFilterPanelComponent {
   readonly reset = output<void>();
   readonly tagsOpen = signal(false);
   readonly moreFiltersOpen = signal(false);
+  readonly selectedPeriod = computed(() =>
+    detectGameFilterPeriod({
+      from: this.filters().from,
+      to: this.filters().to,
+    }),
+  );
   readonly advancedFilterCount = computed(() => {
     const filters = this.filters();
     return [
@@ -87,6 +99,20 @@ export class GameFilterPanelComponent {
     this.filtersChange.emit(this.withLockedColor(next));
   }
 
+  protected setPeriod(period: GameFilterPeriod): void {
+    if (period === 'CUSTOM') {
+      this.moreFiltersOpen.set(true);
+      return;
+    }
+
+    this.filtersChange.emit(
+      this.withLockedColor({
+        ...this.filters(),
+        ...gameFilterPeriodRange(period),
+      }),
+    );
+  }
+
   protected selectedTagCodes(): number[] {
     return this.filters().tagCodes;
   }
@@ -95,7 +121,13 @@ export class GameFilterPanelComponent {
     if (this.filters().tagFilter === 'NO_TAGS') return 'No tags';
     const count = this.selectedTagCodes().length;
     if (count === 0) return 'Any tags';
-    return count === 1 ? '1 selected' : `${count} selected`;
+    if (count === 1) {
+      const selectedTag = (this.facets().tags || []).find(
+        (tag) => this.tagCode(tag) === this.selectedTagCodes()[0],
+      );
+      if (selectedTag) return this.tagLabel(selectedTag);
+    }
+    return `${count} selected`;
   }
 
   protected noTagsSelected(): boolean {
@@ -134,6 +166,13 @@ export class GameFilterPanelComponent {
 
   protected tagCode(facet: FacetValue): number {
     return Number(facet.value ?? facet.id ?? 0);
+  }
+
+  protected tagLabel(facet: FacetValue): string {
+    return gameTagLabel({
+      code: this.tagCode(facet),
+      name: String(facet.name ?? facet.label ?? facet.value ?? ''),
+    });
   }
 
   protected facetKey(facet: FacetValue): string {

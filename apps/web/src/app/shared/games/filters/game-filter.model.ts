@@ -1,4 +1,7 @@
 import { AnalysisStatus, PlyIndexStatus, Provider, ResultForUser, UserColor } from '../game.models';
+import { gameFilterPeriodRange } from './game-filter-period';
+
+export { formatLocalDateForInput } from './game-filter-period';
 
 export interface GameFilters {
   accountId: string;
@@ -23,18 +26,12 @@ export interface GameFilters {
   to: string;
 }
 
-export function formatLocalDateForInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 export function defaultGameFilterFromDate(now = new Date()): string {
-  return formatLocalDateForInput(new Date(now.getFullYear(), now.getMonth() - 3, 1));
+  return gameFilterPeriodRange('3M', now).from;
 }
 
-export function defaultGameFilters(): GameFilters {
+export function defaultGameFilters(now = new Date()): GameFilters {
+  const defaultPeriod = gameFilterPeriodRange('3M', now);
   return {
     accountId: '',
     provider: 'ALL',
@@ -54,7 +51,7 @@ export function defaultGameFilters(): GameFilters {
     maxAccuracy: '',
     minOpponentRating: '',
     maxOpponentRating: '',
-    from: defaultGameFilterFromDate(),
-    to: '',
+    from: defaultPeriod.from,
+    to: defaultPeriod.to,
   };
 }
