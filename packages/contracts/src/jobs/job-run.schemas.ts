@@ -131,6 +131,7 @@ export type JobTaskListResponse = z.infer<typeof jobTaskListResponseSchema>;
 export const jobRunErrorCodeSchema = z.enum([
   'NO_IMPORTED_GAMES_FOUND',
   'JOB_RUN_NOT_FOUND',
+  'JOB_RUN_NOT_RETRYABLE',
 ]);
 export type JobRunErrorCode = z.infer<typeof jobRunErrorCodeSchema>;
 
