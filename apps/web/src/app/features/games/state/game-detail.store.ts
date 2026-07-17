@@ -99,15 +99,21 @@ export class GameDetailStore implements OnDestroy {
     const game = this.game();
     return game ? `${playerLabel(game.white)} vs ${playerLabel(game.black)}` : 'Imported game';
   });
-  readonly processJob = computed(() => {
+  readonly activeJob = computed(() => {
     const gameId = this.gameId();
-    return gameId ? this.jobs.activeRunForGame(gameId, ['PROCESS_GAMES']) : null;
+    return gameId ? this.jobs.activeRunForGame(gameId) : null;
+  });
+  readonly analysisJob = computed(() => {
+    const gameId = this.gameId();
+    return gameId
+      ? this.jobs.activeRunForGame(gameId, ['ANALYSE_GAMES', 'PROCESS_GAMES'])
+      : null;
   });
   readonly fullRefreshing = computed(() =>
-    this.submittingFullRefresh() || this.processJob() !== null,
+    this.submittingFullRefresh() || this.activeJob() !== null,
   );
   readonly analysisStatusLabel = computed(() => {
-    const job = this.processJob();
+    const job = this.analysisJob();
     if (job?.status === 'QUEUED') return 'Queued';
     if (job?.status === 'RUNNING') return 'Running';
     if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED') {
@@ -123,7 +129,7 @@ export class GameDetailStore implements OnDestroy {
   });
   readonly analysisSummaryLabel = computed(() => {
     const run = this.analysisRun();
-    if (!run) return this.processJob() ? 'Waiting for analysis progress...' : 'No saved analysis loaded';
+    if (!run) return this.analysisJob() ? 'Waiting for analysis progress...' : 'No saved analysis loaded';
     if (run.status === 'RUNNING') {
       return `${run.positionsDone ?? 0}/${run.positionsTotal ?? 0} positions analysed`;
     }
@@ -143,7 +149,7 @@ export class GameDetailStore implements OnDestroy {
       const pollVersion = this.jobs.pollVersion();
       if (pollVersion === this.lastPollVersion) return;
       this.lastPollVersion = pollVersion;
-      if (this.processJob()) void this.loadSavedAnalysis(false);
+      if (this.analysisJob()) void this.loadSavedAnalysis(false);
     });
   }
 
@@ -272,7 +278,7 @@ export class GameDetailStore implements OnDestroy {
 
   async fullRefreshGame(): Promise<void> {
     const gameId = this.gameId();
-    if (!gameId || this.fullRefreshing() || this.jobs.isGameActive(gameId)) return;
+    if (!gameId || this.fullRefreshing()) return;
 
     this.error.set(null);
     this.submittingFullRefresh.set(true);
