@@ -37,7 +37,14 @@ export class GamesExplorerStore {
     this.filteredGames().filter((game) =>
       isStandardImportedGameSpeed(game.speedCategory)
       && game.plyIndex?.status !== 'INDEXED'
-      && !this.jobs.isGameActive(game.id, ['INDEX_GAMES', 'PROCESS_GAMES']),
+      && !this.jobs.isGameActive(game.id),
+    ),
+  );
+  readonly bulkAnalyzableGames = computed(() =>
+    this.filteredGames().filter((game) =>
+      isStandardImportedGameSpeed(game.speedCategory)
+      && game.plyIndex?.status === 'INDEXED'
+      && !this.jobs.isGameActive(game.id),
     ),
   );
   readonly bulkIndexProgressLabel = computed(() =>
@@ -48,12 +55,12 @@ export class GamesExplorerStore {
   readonly bulkRefreshTagsProgressLabel = computed(() =>
     this.submittingKind() === 'REFRESH_TAGS'
       ? 'Starting...'
-      : String(this.filteredGames().length),
+      : String(this.filteredGames().filter((game) => !this.jobs.isGameActive(game.id)).length),
   );
   readonly batchAnalysisProgressLabel = computed(() =>
     this.submittingKind() === 'ANALYSE_GAMES'
       ? 'Starting...'
-      : String(this.filteredGames().length),
+      : String(this.bulkAnalyzableGames().length),
   );
   readonly tableSubtitle = computed(() => {
     const filteredGames = this.filteredGames();
@@ -121,15 +128,17 @@ export class GamesExplorerStore {
   }
 
   analyse(game: ImportedGameSearchItem): void {
+    if (!this.canAnalyse(game)) return;
     void this.submitJob('ANALYSE_GAMES', [game.id]);
   }
 
   forceReanalyse(game: ImportedGameSearchItem): void {
+    if (!this.canAnalyse(game)) return;
     void this.submitJob('ANALYSE_GAMES', [game.id], true);
   }
 
   indexPlies(game: ImportedGameSearchItem): void {
-    if (game.plyIndex?.status === 'INDEXED') return;
+    if (game.plyIndex?.status === 'INDEXED' || this.jobs.isGameActive(game.id)) return;
     void this.submitJob('INDEX_GAMES', [game.id], game.plyIndex?.status === 'FAILED');
   }
 
@@ -141,24 +150,34 @@ export class GamesExplorerStore {
   }
 
   batchAnalyzeVisibleGames(): void {
-    const gameIds = this.filteredGames()
-      .filter((game) =>
-        isStandardImportedGameSpeed(game.speedCategory)
-        && !this.jobs.isGameActive(game.id, ['ANALYSE_GAMES', 'PROCESS_GAMES']),
-      )
-      .map((game) => game.id);
-    void this.submitJob('ANALYSE_GAMES', gameIds);
+    void this.submitJob(
+      'ANALYSE_GAMES',
+      this.bulkAnalyzableGames().map((game) => game.id),
+    );
   }
 
   refreshTagsForVisibleGames(): void {
     const gameIds = this.filteredGames()
-      .filter((game) => !this.jobs.isGameActive(game.id, ['REFRESH_TAGS', 'PROCESS_GAMES']))
+      .filter((game) => !this.jobs.isGameActive(game.id))
       .map((game) => game.id);
     void this.submitJob('REFRESH_TAGS', gameIds);
   }
 
   isSubmitting(kind: JobRunKind): boolean {
     return this.submittingKind() === kind;
+  }
+
+  private canAnalyse(game: ImportedGameSearchItem): boolean {
+    if (this.jobs.isGameActive(game.id)) return false;
+    if (!isStandardImportedGameSpeed(game.speedCategory)) {
+      this.error.set('Only blitz and rapid games are eligible for saved analysis.');
+      return false;
+    }
+    if (game.plyIndex?.status !== 'INDEXED') {
+      this.error.set('Index game plies before starting analysis.');
+      return false;
+    }
+    return true;
   }
 
   private async submitJob(
@@ -185,10 +204,21 @@ export class GamesExplorerStore {
   }
 
   private async reloadCurrentList(): Promise<void> {
+    const targetCount = Math.max(1, this.games().length);
+    const items: ImportedGameSearchItem[] = [];
+    let cursor: string | null = null;
+    let pageInfo: ImportedGamePageInfo = { nextCursor: null, hasMore: false };
+
     try {
-      const data = await firstValueFrom(this.api.searchGames(this.filters()));
-      this.games.set(data.items);
-      this.pageInfo.set(data.pageInfo);
+      do {
+        const data = await firstValueFrom(this.api.searchGames(this.filters(), cursor));
+        items.push(...data.items);
+        pageInfo = data.pageInfo;
+        cursor = data.pageInfo.nextCursor;
+      } while (pageInfo.hasMore && cursor && items.length < targetCount);
+
+      this.games.set(items);
+      this.pageInfo.set(pageInfo);
     } catch (error) {
       this.error.set(readApiError(error, 'Job finished, but the game list could not be refreshed.'));
     }
