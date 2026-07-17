@@ -37,6 +37,8 @@ export class ImportedGameJobStore {
   readonly expanded = signal(true);
   readonly pollVersion = signal(0);
   readonly terminalBatch = signal<ImportedGameJobTerminalBatch | null>(null);
+  readonly cancellingRunId = signal<number | null>(null);
+  readonly retryingRunId = signal<number | null>(null);
 
   readonly activeRuns = computed(() =>
     this.runsState().filter((run) => isActiveStatus(run.status)),
@@ -78,6 +80,8 @@ export class ImportedGameJobStore {
     this.error.set(null);
     this.terminalBatch.set(null);
     this.pollVersion.set(0);
+    this.cancellingRunId.set(null);
+    this.retryingRunId.set(null);
   }
 
   async submit(
@@ -110,6 +114,67 @@ export class ImportedGameJobStore {
         this.error.set(message);
       }
       throw error;
+    }
+  }
+
+  async cancel(jobRunId: number): Promise<void> {
+    if (this.cancellingRunId() !== null) return;
+
+    const generation = this.sessionGeneration;
+    const previous = this.runsState().find((run) => run.id === jobRunId) ?? null;
+    this.cancellingRunId.set(jobRunId);
+    this.error.set(null);
+    try {
+      const response = await firstValueFrom(this.api.cancelJob(jobRunId));
+      if (!this.isCurrentGeneration(generation)) return;
+
+      this.mergeRuns([response.jobRun]);
+      if (previous && isActiveStatus(previous.status) && !isActiveStatus(response.jobRun.status)) {
+        this.publishTerminalBatch([response.jobRun]);
+      }
+      this.pollVersion.update((version) => version + 1);
+      if (this.activeRuns().length) this.schedulePoll(350, generation);
+      else this.stopPolling();
+    } catch (error) {
+      if (this.isCurrentGeneration(generation)) {
+        this.error.set(readError(error, 'Could not cancel imported-game job.'));
+      }
+    } finally {
+      if (this.isCurrentGeneration(generation) && this.cancellingRunId() === jobRunId) {
+        this.cancellingRunId.set(null);
+      }
+    }
+  }
+
+  async retry(jobRunId: number): Promise<void> {
+    if (this.retryingRunId() !== null) return;
+
+    const generation = this.sessionGeneration;
+    this.retryingRunId.set(jobRunId);
+    this.error.set(null);
+    try {
+      const response = await firstValueFrom(this.api.retryJob(jobRunId));
+      if (!this.isCurrentGeneration(generation)) return;
+
+      this.mergeRuns([response.jobRun]);
+      this.expanded.set(true);
+      this.pollVersion.update((version) => version + 1);
+      this.schedulePoll(350, generation);
+      try {
+        await this.ensureRunGameIds(response.jobRun.id, generation);
+      } catch (error) {
+        if (this.isCurrentGeneration(generation)) {
+          this.error.set(readError(error, 'Retry started, but its game list could not be loaded.'));
+        }
+      }
+    } catch (error) {
+      if (this.isCurrentGeneration(generation)) {
+        this.error.set(readError(error, 'Could not retry imported-game job.'));
+      }
+    } finally {
+      if (this.isCurrentGeneration(generation) && this.retryingRunId() === jobRunId) {
+        this.retryingRunId.set(null);
+      }
     }
   }
 
