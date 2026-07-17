@@ -26,9 +26,6 @@ export class GamesExplorerPageComponent implements OnInit {
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const submitting = this.store.submittingKind() !== null;
-    const availableTagGames = this.store.filteredGames().filter(
-      (game) => !this.store['jobs'].isGameActive(game.id),
-    ).length;
     return [
       {
         id: 'index-all',
@@ -51,7 +48,7 @@ export class GamesExplorerPageComponent implements OnInit {
       {
         id: 'tags',
         label: `Refresh tags: ${this.store.bulkRefreshTagsProgressLabel()}`,
-        disabled: this.store.loading() || submitting || availableTagGames === 0,
+        disabled: this.store.loading() || submitting || this.store.filteredGames().length === 0,
         run: () => this.store.refreshTagsForVisibleGames(),
       },
     ];
