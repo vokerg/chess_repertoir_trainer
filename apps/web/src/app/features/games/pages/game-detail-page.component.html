@@ -3,7 +3,7 @@
     [game]="store.game()"
     [title]="store.gameTitle()"
     [selectedLabel]="store.selectedLabel()"
-    [analysisProgress]="store.importedGameAnalysis.progress()"
+    [analysisRunning]="store.analysisRunning()"
     [refreshingTags]="store.refreshingTags()"
     [fullRefreshing]="store.fullRefreshing()"
     (analyze)="store.analyzeImportedGame($event)"
@@ -23,9 +23,10 @@
     <app-game-summary
       [game]="game"
       [analysisRun]="store.analysisRun()"
-      [analysisProgress]="store.importedGameAnalysis.progress()"
       [analysisStatus]="store.analysisStatusLabel()"
       [analysisSummary]="store.analysisSummaryLabel()"
+      [analysisMessage]="store.analysisMessage()"
+      [analysisMessageIsError]="store.analysisMessageIsError()"
     />
 
     @if (store.tree(); as tree) {
