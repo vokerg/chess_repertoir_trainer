@@ -103,7 +103,21 @@ npm ci && npm run build:domain && npm run build:contracts && npm run build:api
 npm run start:worker --workspace=apps/api
 ```
 
-The worker needs the same `DATABASE_URL`, `DIRECT_URL`, `NODE_ENV`, provider, and Stockfish settings as the API features it executes. It does not need `PORT`, CORS, Clerk JWT verification, or browser-origin settings because it does not serve HTTP traffic.
+The worker needs the same `DATABASE_URL`, `DIRECT_URL`, and `NODE_ENV` values as the API. It does not need `PORT`, CORS, Clerk JWT verification, or browser-origin settings because it does not serve HTTP traffic.
+
+The worker now executes all four imported-game job kinds. Analysis and complete-processing jobs require Stockfish configuration in the worker environment:
+
+```text
+LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED=true
+STOCKFISH_ENGINE=local
+STOCKFISH_PATH=<path to worker Stockfish binary>
+STOCKFISH_ANALYSIS_DEPTH=12
+STOCKFISH_ANALYSIS_TIMEOUT_MS=15000
+```
+
+`STOCKFISH_ENGINE=wasm` can be used instead when that runtime is preferred. A local-engine deployment must install or otherwise provide the configured Stockfish binary inside the worker environment. `INDEX_GAMES` and `REFRESH_TAGS` themselves are engine-free, but the worker uses one shared executor registry, so disabling local batch analysis causes `ANALYSE_GAMES` and `PROCESS_GAMES` tasks to fail clearly rather than remain silently queued.
+
+Each claimed analysis or processing task creates and disposes one engine instance. Keep the worker as one process initially so analysis remains single-task per process. PostgreSQL locking supports multiple worker processes, but Stockfish CPU/memory sizing must be validated before horizontal scaling.
 
 Worker timing defaults are listed in `.env.example`:
 
@@ -116,11 +130,11 @@ JOB_WORKER_SLICE_SIZE=25
 JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 ```
 
-Keep the worker as one process initially. PostgreSQL locking supports multiple worker processes, but Stockfish CPU/memory sizing and executor concurrency must be validated before scaling horizontally.
-
-During PR2 the production executor registry is intentionally empty, so the process performs stale/orphan maintenance but leaves domain jobs queued. PR3 registers the imported-game executors. This temporary state exists only on the long-lived feature branch and is not intended as the final production rollout.
+The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; shutdown aborts the active executor, disposes its engine, and releases the fenced task claim when possible.
 
 Run Prisma migrations once per deployment release, normally in the API build command or a dedicated release command. Do not run migrations independently from every worker replica.
+
+The API-process batch-analysis queue remains temporarily for compatibility, but it delegates to the same processing and analysis services as the persistent worker. It is removed only after the remaining API/frontend flows submit persisted jobs.
 
 ## Vercel web setup
 
@@ -208,6 +222,8 @@ Run the worker in another terminal:
 ```bash
 npm run dev:worker
 ```
+
+To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment.
 
 Mobile also runs separately:
 

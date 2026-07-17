@@ -5,8 +5,8 @@ import {
   createClientGameAnalysisRun,
   getImportedGameForAnalysis,
   getImportedGamePliesForAnalysisSummary,
-  getLatestGameAnalysisForImportedGame,
 } from './analysis.repository.prisma';
+import { getLatestGameAnalysisRunDeterministic } from './analysis-run-lifecycle.repository.prisma';
 import { buildGameAccuracySummary, sideForPly } from './accuracy';
 
 function moveNumberFromPly(plyNumber: number): number {
@@ -148,7 +148,7 @@ export const GameAnalysisService = {
     const game = await getImportedGameForAnalysis(userId, importedGameId);
     if (!game) throw new Error('Imported game not found');
 
-    const run = await getLatestGameAnalysisForImportedGame(userId, importedGameId);
+    const run = await getLatestGameAnalysisRunDeterministic(userId, importedGameId);
     if (!run) throw new Error('Imported game analysis not found');
 
     return { run: compactRun(run) };
