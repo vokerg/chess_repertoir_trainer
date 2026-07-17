@@ -30,62 +30,62 @@ function throwIfAborted(signal?: AbortSignal): void {
 export function createImportedGameProcessingService(
   dependencies: ImportedGameProcessingDependencies,
 ) {
-  return {
-    async indexOne(
-      userId: number,
-      importedGameId: number,
-      options: ImportedGameIndexExecutionOptions,
-    ): Promise<ImportedGameProcessingExecutionStatus> {
-      throwIfAborted(options.signal);
-      const indexResult = await dependencies.indexOne(userId, importedGameId, {
-        force: options.force,
-      });
-      if (indexResult.status === 'FAILED') {
-        throw new Error(indexResult.error || 'Could not index game plies');
-      }
+  const indexOne = async (
+    userId: number,
+    importedGameId: number,
+    options: ImportedGameIndexExecutionOptions,
+  ): Promise<ImportedGameProcessingExecutionStatus> => {
+    throwIfAborted(options.signal);
+    const indexResult = await dependencies.indexOne(userId, importedGameId, {
+      force: options.force,
+    });
+    if (indexResult.status === 'FAILED') {
+      throw new Error(indexResult.error || 'Could not index game plies');
+    }
 
-      throwIfAborted(options.signal);
-      const openingResult = await dependencies.assignMissingOpening(userId, importedGameId);
-      if (openingResult.status === 'FAILED') {
-        throw new Error(openingResult.reason || 'Could not assign game opening');
-      }
+    throwIfAborted(options.signal);
+    const openingResult = await dependencies.assignMissingOpening(userId, importedGameId);
+    if (openingResult.status === 'FAILED') {
+      throw new Error(openingResult.reason || 'Could not assign game opening');
+    }
 
-      return indexResult.status === 'INDEXED' || openingResult.status === 'ASSIGNED'
-        ? 'COMPLETED'
-        : 'SKIPPED';
-    },
-
-    analyseOne(
-      engine: StockfishEngine,
-      userId: number,
-      importedGameId: number,
-      options: ImportedGameAnalysisOptions,
-    ): Promise<ImportedGameProcessingExecutionStatus> {
-      return dependencies.analyseOne(engine, userId, importedGameId, options);
-    },
-
-    async processOne(
-      engine: StockfishEngine,
-      userId: number,
-      importedGameId: number,
-      options: ImportedGameProcessExecutionOptions,
-    ): Promise<ImportedGameProcessingExecutionStatus> {
-      const indexStatus = await this.indexOne(userId, importedGameId, {
-        force: options.force,
-        signal: options.signal,
-      });
-      throwIfAborted(options.signal);
-      const analysisStatus = await this.analyseOne(
-        engine,
-        userId,
-        importedGameId,
-        options,
-      );
-      return indexStatus === 'COMPLETED' || analysisStatus === 'COMPLETED'
-        ? 'COMPLETED'
-        : 'SKIPPED';
-    },
+    return indexResult.status === 'INDEXED' || openingResult.status === 'ASSIGNED'
+      ? 'COMPLETED'
+      : 'SKIPPED';
   };
+
+  const analyseOne = (
+    engine: StockfishEngine,
+    userId: number,
+    importedGameId: number,
+    options: ImportedGameAnalysisOptions,
+  ): Promise<ImportedGameProcessingExecutionStatus> => (
+    dependencies.analyseOne(engine, userId, importedGameId, options)
+  );
+
+  const processOne = async (
+    engine: StockfishEngine,
+    userId: number,
+    importedGameId: number,
+    options: ImportedGameProcessExecutionOptions,
+  ): Promise<ImportedGameProcessingExecutionStatus> => {
+    const indexStatus = await indexOne(userId, importedGameId, {
+      force: options.force,
+      signal: options.signal,
+    });
+    throwIfAborted(options.signal);
+    const analysisStatus = await analyseOne(
+      engine,
+      userId,
+      importedGameId,
+      options,
+    );
+    return indexStatus === 'COMPLETED' || analysisStatus === 'COMPLETED'
+      ? 'COMPLETED'
+      : 'SKIPPED';
+  };
+
+  return { indexOne, analyseOne, processOne };
 }
 
 export const ImportedGameProcessingService = createImportedGameProcessingService({
