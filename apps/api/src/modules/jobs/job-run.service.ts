@@ -45,6 +45,14 @@ export class JobRunNotFoundError extends Error {
   }
 }
 
+export class JobRunNotRetryableError extends Error {
+  readonly code = 'JOB_RUN_NOT_RETRYABLE' as const;
+
+  constructor() {
+    super('This job has no failed or cancelled games available to retry.');
+  }
+}
+
 export const JobRunService = {
   async createUserAction(input: {
     userId: number;
@@ -64,15 +72,7 @@ export const JobRunService = {
 
     if (!created) throw new NoImportedGamesFoundError();
 
-    const accepted = new Set(created.acceptedImportedGameIds);
-    return {
-      jobRun: toJobRunSummary(created.jobRun, [{
-        jobRunId: created.jobRun.id,
-        status: 'QUEUED',
-        count: created.acceptedImportedGameIds.length,
-      }]),
-      rejectedGameIds: importedGameIds.filter((gameId) => !accepted.has(gameId)),
-    };
+    return createdResponse(created.jobRun, created.acceptedImportedGameIds, importedGameIds);
   },
 
   async listForUser(userId: number, active: boolean, limit: number): Promise<JobRunListResponse> {
@@ -96,6 +96,41 @@ export const JobRunService = {
     return toJobRunSummary(run, counts);
   },
 
+  async cancelForUser(userId: number, jobRunId: number): Promise<JobRunSummary> {
+    const run = await JobRunRepository.cancelForUser(userId, jobRunId);
+    if (!run) throw new JobRunNotFoundError();
+
+    const counts = await JobRunRepository.countTaskStatuses([jobRunId]);
+    return toJobRunSummary(run, counts);
+  },
+
+  async retryForUser(
+    userId: number,
+    jobRunId: number,
+  ): Promise<CreateImportedGameJobRunResponse> {
+    const retryable = await JobRunRepository.findRetryableForUser(userId, jobRunId);
+    if (!retryable) throw new JobRunNotFoundError();
+
+    const status = jobRunStatusSchema.parse(retryable.jobRun.status);
+    if (activeJobRunStatuses.includes(status) || retryable.importedGameIds.length === 0) {
+      throw new JobRunNotRetryableError();
+    }
+
+    const kind = jobRunKindSchema.parse(retryable.jobRun.kind);
+    const requestedGameIds = Array.from(new Set(retryable.importedGameIds));
+    const created = await JobRunRepository.createQueued({
+      userId,
+      kind,
+      source: 'USER_ACTION',
+      priority: USER_ACTION_JOB_PRIORITIES[kind],
+      force: retryable.jobRun.force,
+      importedGameIds: requestedGameIds,
+    });
+    if (!created) throw new JobRunNotRetryableError();
+
+    return createdResponse(created.jobRun, created.acceptedImportedGameIds, requestedGameIds);
+  },
+
   async listTasksForUser(
     userId: number,
     jobRunId: number,
@@ -116,6 +151,22 @@ export const JobRunService = {
     };
   },
 };
+
+function createdResponse(
+  jobRun: StoredJobRun,
+  acceptedImportedGameIds: number[],
+  requestedImportedGameIds: number[],
+): CreateImportedGameJobRunResponse {
+  const accepted = new Set(acceptedImportedGameIds);
+  return {
+    jobRun: toJobRunSummary(jobRun, [{
+      jobRunId: jobRun.id,
+      status: 'QUEUED',
+      count: acceptedImportedGameIds.length,
+    }]),
+    rejectedGameIds: requestedImportedGameIds.filter((gameId) => !accepted.has(gameId)),
+  };
+}
 
 function toJobRunSummary(
   run: StoredJobRun,
