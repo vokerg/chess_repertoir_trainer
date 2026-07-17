@@ -1,0 +1,140 @@
+:host {
+  position: fixed;
+  right: 18px;
+  bottom: 16px;
+  z-index: 80;
+  width: min(520px, calc(100vw - 28px));
+}
+
+.job-panel {
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-lifted);
+  backdrop-filter: blur(18px);
+}
+
+.job-panel-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  padding: 0.85rem 1rem;
+  background: var(--surface-strong);
+  color: var(--text);
+  text-align: left;
+}
+
+.job-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 750;
+}
+
+.job-panel-active-count,
+.job-status {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.job-panel-active-count,
+.job-status-active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.job-status-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.job-status-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.job-status-muted {
+  background: var(--surface-muted);
+  color: var(--muted-strong);
+}
+
+.job-panel-toggle,
+.job-row-meta,
+.job-progress-label,
+.job-panel-note {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.job-panel-body {
+  display: grid;
+  max-height: min(52vh, 420px);
+  gap: 0.65rem;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding: 0.75rem;
+}
+
+.job-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  background: var(--surface-muted);
+}
+
+.job-row-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.job-row-heading > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.job-progress-track {
+  height: 8px;
+  overflow: hidden;
+  margin-top: 0.65rem;
+  border-radius: 999px;
+  background: var(--bg-strong);
+}
+
+.job-progress-value {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  transition: width 180ms ease;
+}
+
+.job-progress-label,
+.job-panel-note,
+.job-panel-error {
+  margin: 0.4rem 0 0;
+}
+
+.job-panel-error {
+  color: var(--danger);
+  font-size: 0.86rem;
+}
+
+@media (max-width: 760px) {
+  :host {
+    right: 10px;
+    bottom: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .job-panel-body {
+    max-height: 45vh;
+  }
+}
