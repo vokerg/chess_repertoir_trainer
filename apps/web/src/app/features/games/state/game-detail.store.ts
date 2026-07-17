@@ -1,13 +1,5 @@
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  OnDestroy,
-  signal,
-} from '@angular/core';
+import { computed, effect, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import type { JobRunKind } from '@chess-trainer/contracts/jobs';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
 import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
@@ -23,8 +15,8 @@ import {
   ImportedGameDetail,
   UserColor,
 } from '../data-access/games.models';
-import { playerLabel } from '../helpers/game-detail-labels';
 import { BoardArrow, BoardLastMove, GameTree, GameTreeNode } from '../helpers/game-detail.models';
+import { playerLabel } from '../helpers/game-detail-labels';
 import {
   appendGameTreeChild,
   attachGameTreeAnalysis,
@@ -50,7 +42,7 @@ export class GameDetailStore implements OnDestroy {
   private readonly jobs = inject(ImportedGameJobStore);
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
   private readonly gameId = signal<number | null>(null);
-  private readonly submittingKind = signal<JobRunKind | null>(null);
+  private readonly submittingFullRefresh = signal(false);
   private nextLocalNodeId = 1_000_000;
   private analysisTimer?: ReturnType<typeof setTimeout>;
   private lastTerminalSequence = 0;
@@ -107,37 +99,15 @@ export class GameDetailStore implements OnDestroy {
     const game = this.game();
     return game ? `${playerLabel(game.white)} vs ${playerLabel(game.black)}` : 'Imported game';
   });
-  readonly selectedLabel = computed(() => {
-    const selected = this.selectedNode();
-    if (!selected || selected.node.id === 0) return 'start';
-    const side = selected.node.side === 'BLACK' ? '...' : '.';
-    return `${selected.node.moveNumber}${side} ${selected.node.moveSan || selected.node.moveUci}`;
-  });
-  readonly analysisJob = computed(() => {
-    const gameId = this.gameId();
-    return gameId
-      ? this.jobs.activeRunForGame(gameId, ['ANALYSE_GAMES', 'PROCESS_GAMES'])
-      : null;
-  });
-  readonly tagJob = computed(() => {
-    const gameId = this.gameId();
-    return gameId ? this.jobs.activeRunForGame(gameId, ['REFRESH_TAGS']) : null;
-  });
   readonly processJob = computed(() => {
     const gameId = this.gameId();
     return gameId ? this.jobs.activeRunForGame(gameId, ['PROCESS_GAMES']) : null;
   });
-  readonly analysisRunning = computed(() =>
-    this.submittingKind() === 'ANALYSE_GAMES' || this.analysisJob() !== null,
-  );
-  readonly refreshingTags = computed(() =>
-    this.submittingKind() === 'REFRESH_TAGS' || this.tagJob() !== null,
-  );
   readonly fullRefreshing = computed(() =>
-    this.submittingKind() === 'PROCESS_GAMES' || this.processJob() !== null,
+    this.submittingFullRefresh() || this.processJob() !== null,
   );
   readonly analysisStatusLabel = computed(() => {
-    const job = this.analysisJob();
+    const job = this.processJob();
     if (job?.status === 'QUEUED') return 'Queued';
     if (job?.status === 'RUNNING') return 'Running';
     if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED') {
@@ -153,26 +123,12 @@ export class GameDetailStore implements OnDestroy {
   });
   readonly analysisSummaryLabel = computed(() => {
     const run = this.analysisRun();
-    if (!run) return this.analysisJob() ? 'Waiting for analysis progress...' : 'No saved analysis loaded';
+    if (!run) return this.processJob() ? 'Waiting for analysis progress...' : 'No saved analysis loaded';
     if (run.status === 'RUNNING') {
       return `${run.positionsDone ?? 0}/${run.positionsTotal ?? 0} positions analysed`;
     }
     return `${run.moves.length} analysed moves · ${run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length} critical`;
   });
-  readonly analysisMessage = computed(() => {
-    const job = this.analysisJob();
-    const run = this.analysisRun();
-    if (job?.status === 'QUEUED') return 'Analysis is queued in the background worker.';
-    if (job?.status === 'RUNNING') {
-      const positions = run?.positionsTotal
-        ? ` (${run.positionsDone ?? 0}/${run.positionsTotal})`
-        : '';
-      return `Analysis is running in the background${positions}.`;
-    }
-    if (this.analysisStatusLabel() === 'Failed') return run?.error || 'Analysis failed.';
-    return null;
-  });
-  readonly analysisMessageIsError = computed(() => this.analysisStatusLabel() === 'Failed');
 
   constructor() {
     effect(() => {
@@ -187,7 +143,7 @@ export class GameDetailStore implements OnDestroy {
       const pollVersion = this.jobs.pollVersion();
       if (pollVersion === this.lastPollVersion) return;
       this.lastPollVersion = pollVersion;
-      if (this.analysisRunning()) void this.loadSavedAnalysis(false);
+      if (this.processJob()) void this.loadSavedAnalysis(false);
     });
   }
 
@@ -314,16 +270,19 @@ export class GameDetailStore implements OnDestroy {
     });
   }
 
-  async analyzeImportedGame(force: boolean): Promise<void> {
-    await this.submitJob('ANALYSE_GAMES', force);
-  }
-
-  async refreshTags(): Promise<void> {
-    await this.submitJob('REFRESH_TAGS');
-  }
-
   async fullRefreshGame(): Promise<void> {
-    await this.submitJob('PROCESS_GAMES');
+    const gameId = this.gameId();
+    if (!gameId || this.fullRefreshing() || this.jobs.isGameActive(gameId)) return;
+
+    this.error.set(null);
+    this.submittingFullRefresh.set(true);
+    try {
+      await this.jobs.submit('PROCESS_GAMES', [gameId]);
+    } catch (error) {
+      this.error.set(readError(error, 'Could not submit full refresh.'));
+    } finally {
+      this.submittingFullRefresh.set(false);
+    }
   }
 
   handleKeyboard(event: KeyboardEvent): void {
@@ -347,21 +306,6 @@ export class GameDetailStore implements OnDestroy {
   ngOnDestroy(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.positionAnalysis.stop();
-  }
-
-  private async submitJob(kind: JobRunKind, force = false): Promise<void> {
-    const gameId = this.gameId();
-    if (!gameId || this.submittingKind() !== null || this.jobs.isGameActive(gameId)) return;
-
-    this.error.set(null);
-    this.submittingKind.set(kind);
-    try {
-      await this.jobs.submit(kind, [gameId], force);
-    } catch (error) {
-      this.error.set(readError(error, 'Could not submit imported-game job.'));
-    } finally {
-      this.submittingKind.set(null);
-    }
   }
 
   private async loadSavedAnalysis(resetOnMissing = true): Promise<void> {
@@ -408,9 +352,6 @@ export class GameDetailStore implements OnDestroy {
 
 function readError(error: unknown, fallback: string): string {
   if (typeof error !== 'object' || error === null) return fallback;
-  const candidate = error as {
-    error?: { message?: string; error?: string };
-    message?: string;
-  };
+  const candidate = error as { error?: { message?: string; error?: string }; message?: string };
   return candidate.error?.message || candidate.error?.error || candidate.message || fallback;
 }
