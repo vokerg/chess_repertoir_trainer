@@ -10,7 +10,6 @@ import {
   jobTaskListQuerySchema,
   jobTaskListResponseSchema,
 } from '@chess-trainer/contracts/jobs';
-import { z } from 'zod';
 import { requireAuth } from '../../auth/request-auth';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
@@ -20,8 +19,6 @@ import {
   JobRunService,
   NoImportedGamesFoundError,
 } from './job-run.service';
-
-const emptyJobRunActionBodySchema = z.object({}).default({});
 
 const jobRunModule: FastifyPluginAsyncZod = async (app) => {
   app.route({
@@ -129,9 +126,8 @@ const jobRunModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'cancelJobRun',
       tags: ['Jobs'],
       summary: 'Cancel one current-user job run',
-      description: 'Cancels every queued or running task. Running workers lose their fenced claim and abort cooperatively on the next heartbeat.',
+      description: 'Bodyless action: cancels every queued or running task. Running workers lose their fenced claim and abort cooperatively on the next heartbeat.',
       params: jobRunParamsSchema,
-      body: emptyJobRunActionBodySchema,
       response: {
         200: jobRunDetailResponseSchema,
         400: validationErrorResponseSchema,
@@ -164,9 +160,8 @@ const jobRunModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'retryJobRun',
       tags: ['Jobs'],
       summary: 'Retry failed or cancelled tasks as a new job',
-      description: 'Creates a new user-action job containing only the owned games from failed or cancelled tasks in the terminal source job.',
+      description: 'Bodyless action: creates a new user-action job containing only the owned games from failed or cancelled tasks in the terminal source job.',
       params: jobRunParamsSchema,
-      body: emptyJobRunActionBodySchema,
       response: {
         202: createImportedGameJobRunResponseSchema,
         400: validationErrorResponseSchema,
