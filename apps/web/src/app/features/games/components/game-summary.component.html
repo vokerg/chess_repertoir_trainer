@@ -1,50 +1,34 @@
-<app-panel title="Game stats">
+<app-panel>
   <section class="game-stats-grid">
     <div class="stats-column">
-      <div class="stats-section">
-        <p class="metric-label">Outcome</p>
+      <div class="stats-section outcome-section">
         <div class="outcome-block">
-          <p class="result-value" [class.result-win]="resultTone() === 'win'" [class.result-loss]="resultTone() === 'loss'" [class.result-draw]="resultTone() === 'draw'">
-            {{ result() }}
-          </p>
+          <div class="outcome-heading">
+            <span class="metric-label">Outcome</span>
+            <p class="result-value" [class.result-win]="resultTone() === 'win'" [class.result-loss]="resultTone() === 'loss'" [class.result-draw]="resultTone() === 'draw'">{{ result() }}</p>
+          </div>
           <div class="stats-facts">
-            <div class="stats-fact">
-              <span class="stats-fact-label">Opponent</span>
-              @if (opponentUrl(); as url) {
-                <a class="stats-link" [href]="url" target="_blank" rel="noopener noreferrer">{{ opponentLabel() }}</a>
-              } @else {
-                <span class="stats-fact-value">{{ opponentLabel() }}</span>
-              }
-            </div>
-            <div class="stats-fact">
-              <span class="stats-fact-label">You</span>
-              <span class="stats-fact-value">{{ color() }}</span>
-            </div>
-            <div class="stats-fact">
-              <span class="stats-fact-label">Game</span>
-              <span class="stats-fact-value">{{ ratedLabel() }} · {{ speedLabel() }} · {{ timeControl() }}</span>
-            </div>
+            @for (player of players(); track player.label) {
+              <div class="stats-fact">
+                <span class="stats-fact-label">{{ player.label }}</span>
+                @if (player.url; as url) {
+                  <a class="stats-link" [href]="url" target="_blank" rel="noopener noreferrer">{{ player.username }}</a>
+                } @else {
+                  <span class="stats-fact-value">{{ player.username }}</span>
+                }
+              </div>
+            }
           </div>
         </div>
       </div>
 
       <div class="stats-section">
         <p class="metric-label">Opening</p>
-        <div class="stats-facts">
-          <div class="stats-fact">
-            <span class="stats-fact-label">ECO</span>
-            <span class="stats-fact-value">{{ game().opening?.eco || '—' }}</span>
-          </div>
-          <div class="stats-fact">
-            <span class="stats-fact-label">Name</span>
-            <span class="stats-fact-value">{{ game().opening?.name || 'Opening unavailable' }}</span>
-          </div>
-        </div>
+        <p class="opening-value">{{ game().opening?.name || game().opening?.eco || 'Opening unavailable' }}</p>
       </div>
 
-      <div class="stats-section">
-        <p class="metric-label">Signals</p>
-        @if (game().tags?.length) {
+      @if (game().tags?.length) {
+        <div class="tag-section">
           <div class="tag-chip-list">
             @for (tag of game().tags ?? []; track tag.code) {
               <span class="tag-chip" [class.tag-chip-positive]="tagTone(tag) === 'positive'" [class.tag-chip-negative]="tagTone(tag) === 'negative'" [class.tag-chip-neutral]="tagTone(tag) === 'neutral'">
@@ -52,10 +36,8 @@
               </span>
             }
           </div>
-        } @else {
-          <p class="game-muted">No tags yet</p>
-        }
-      </div>
+        </div>
+      }
     </div>
 
     <div class="stats-column">
@@ -80,14 +62,6 @@
         @if (analysisMessage(); as message) {
           <p class="analysis-message" [class.analysis-message-error]="analysisMessageIsError()">{{ message }}</p>
         }
-        <div class="stats-facts stats-facts-compact">
-          @for (fact of analysisFacts(); track fact.label) {
-            <div class="stats-fact">
-              <span class="stats-fact-label">{{ fact.label }}</span>
-              <span class="stats-fact-value">{{ fact.value }}</span>
-            </div>
-          }
-        </div>
         @if (sideAnalysisRows().length) {
           <div class="side-analysis-list">
             @for (row of sideAnalysisRows(); track row.side) {
@@ -97,9 +71,7 @@
                   <p class="game-muted">{{ row.issues }}</p>
                 </div>
                 <div class="side-analysis-metrics">
-                  <span>{{ row.accuracy }} acc</span>
                   <span>{{ row.acpl }} ACPL</span>
-                  <span>{{ row.critical }} critical</span>
                 </div>
               </div>
             }

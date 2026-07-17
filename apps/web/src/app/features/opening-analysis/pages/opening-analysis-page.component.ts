@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inj
 import { AnalysisBoardComponent } from '../../../shared/analysis/board/analysis-board.component';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
@@ -27,6 +28,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     PositionTopGamesComponent,
     PageHeaderComponent,
     CopyableLineComponent,
+    PanelComponent,
     PositionPerformancePanelComponent,
     LichessBotChallengeDialogComponent,
   ],

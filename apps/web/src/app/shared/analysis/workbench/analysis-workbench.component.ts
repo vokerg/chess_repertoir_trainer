@@ -2,12 +2,13 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { EngineAnalysis } from '../../chess/engine/stockfish-analysis.service';
 import { AnalysisBoardComponent, AnalysisBoardArrow } from '../board/analysis-board.component';
 import { MoveTreePanelComponent } from '../move-tree-panel/move-tree-panel.component';
+import { PanelComponent } from '../../ui/panel/panel.component';
 import { AnalysisTree } from './analysis-tree.models';
 
 @Component({
   selector: 'app-analysis-workbench',
   standalone: true,
-  imports: [AnalysisBoardComponent, MoveTreePanelComponent],
+  imports: [AnalysisBoardComponent, MoveTreePanelComponent, PanelComponent],
   templateUrl: './analysis-workbench.component.html',
   styleUrl: './analysis-workbench.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

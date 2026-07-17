@@ -5,6 +5,7 @@ import {
   ResultForUser,
   UserColor,
 } from '../data-access/games.models';
+import { formatTimeControl } from './game-detail-labels';
 
 export function providerLabel(provider?: Provider | null): string {
   if (provider === 'CHESS_COM') return 'Chess.com';
@@ -63,29 +64,9 @@ export function gameDateLabel(game: ImportedGameSearchItem): string {
 }
 
 export function displayTimeControl(game: ImportedGameSearchItem): string {
-  const fromParts = formatTimeControl(game.timeControl?.initial, game.timeControl?.increment);
-  if (fromParts) return fromParts;
-  return timeControlFromRaw(game.timeControl?.raw) || '—';
+  return formatTimeControl(game.timeControl?.initial, game.timeControl?.increment, game.timeControl?.raw);
 }
 
 export function accuracyLabel(value?: number | null): string {
   return typeof value === 'number' ? `${Math.round(value)}%` : '—';
-}
-
-function timeControlFromRaw(raw?: string | null): string {
-  if (!raw) return '';
-  const match = raw.match(/^(\d+)\s*\+\s*(\d+)$/);
-  if (!match) return raw;
-  return formatTimeControl(Number(match[1]), Number(match[2])) || raw;
-}
-
-function formatTimeControl(initial?: number | null, increment?: number | null): string | null {
-  if (typeof initial !== 'number' || typeof increment !== 'number') return null;
-  return `${formatInitialMinutes(initial)}+${increment}`;
-}
-
-function formatInitialMinutes(initialSeconds: number): string {
-  if (initialSeconds < 60) return `${initialSeconds}s`;
-  const minutes = initialSeconds / 60;
-  return Number.isInteger(minutes) ? String(minutes) : String(Number(minutes.toFixed(1)));
 }

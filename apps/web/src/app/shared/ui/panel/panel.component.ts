@@ -11,7 +11,7 @@ import { type UiShellAction, type UiShellStat } from '../ui-shell.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PanelComponent {
-  readonly title = input.required<string>();
+  readonly title = input<string>();
   readonly subtitle = input<string>();
   readonly stats = input<readonly UiShellStat[]>([]);
   readonly actions = input<readonly UiShellAction[]>([]);

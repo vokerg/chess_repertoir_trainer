@@ -5,7 +5,6 @@ import {
   BatchAnalysisAcceptedResponse,
   BatchAnalysisConfig,
   GameTagDefinitionsResponse,
-  ImportedGameAnalysisSummary,
   ImportedGameAnalysisResponse,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
@@ -47,10 +46,6 @@ export class GamesApiService {
 
   startBatchAnalysis(gameIds: number[]): Observable<BatchAnalysisAcceptedResponse> {
     return this.api.post<BatchAnalysisAcceptedResponse>('/imported-games/batch-analysis-runs', { gameIds });
-  }
-
-  startAnalysis(gameId: number, force = false): Observable<ImportedGameAnalysisSummary> {
-    return this.api.post<ImportedGameAnalysisSummary>(`/imported-games/${gameId}/analysis-runs`, force ? { force: true } : {});
   }
 
   runIndexWorkflow(gameId: number, force = false): Observable<ImportedGameIndexWorkflowResult> {

@@ -5,10 +5,10 @@
 
 .app-panel {
   display: grid;
-  gap: 1rem;
+  gap: var(--panel-gap, 1rem);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.35rem;
+  padding: var(--panel-padding, 1.35rem);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(14px);

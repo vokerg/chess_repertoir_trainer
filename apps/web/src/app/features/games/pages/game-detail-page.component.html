@@ -2,12 +2,7 @@
   <app-game-detail-header
     [game]="store.game()"
     [title]="store.gameTitle()"
-    [selectedLabel]="store.selectedLabel()"
-    [analysisProgress]="store.importedGameAnalysis.progress()"
-    [refreshingTags]="store.refreshingTags()"
     [fullRefreshing]="store.fullRefreshing()"
-    (analyze)="store.analyzeImportedGame($event)"
-    (refreshTags)="store.refreshTags()"
     (fullRefresh)="store.fullRefreshGame()"
   />
 
@@ -23,7 +18,6 @@
     <app-game-summary
       [game]="game"
       [analysisRun]="store.analysisRun()"
-      [analysisProgress]="store.importedGameAnalysis.progress()"
       [analysisStatus]="store.analysisStatusLabel()"
       [analysisSummary]="store.analysisSummaryLabel()"
     />

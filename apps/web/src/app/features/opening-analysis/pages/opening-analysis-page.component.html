@@ -8,7 +8,7 @@
 
   <div class="opening-workbench">
     <div class="opening-board-column">
-      <section class="workbench-panel opening-board-panel">
+      <app-panel class="opening-board-panel">
         <app-analysis-board
           [currentFen]="store.currentFen()"
           [side]="store.boardSide()"
@@ -33,7 +33,7 @@
           [link]="['/analysis']"
           [queryParams]="analysisQueryParams()"
         />
-      </section>
+      </app-panel>
 
       <app-course-position-suggestions-widget
         [fen]="store.currentFen()"

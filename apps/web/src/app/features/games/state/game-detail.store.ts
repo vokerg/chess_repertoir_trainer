@@ -7,7 +7,6 @@ import {
   RICH_INTERACTIVE_CACHE_MIN_DEPTH,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
-import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import { GamesApiService } from '../data-access/games-api.service';
 import {
   ImportedGameAnalysisMove,
@@ -40,7 +39,6 @@ const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
 export class GameDetailStore implements OnDestroy {
   private readonly api = inject(GamesApiService);
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
-  readonly importedGameAnalysis = inject(ImportedGameAnalysisService);
 
   private readonly gameId = signal<number | null>(null);
   readonly game = signal<ImportedGameDetail | null>(null);
@@ -49,7 +47,6 @@ export class GameDetailStore implements OnDestroy {
   readonly selectedNodeId = signal(0);
   readonly boardPositionVersion = signal(0);
   readonly loading = signal(true);
-  readonly refreshingTags = signal(false);
   readonly fullRefreshing = signal(false);
   readonly error = signal<string | null>(null);
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
@@ -97,12 +94,6 @@ export class GameDetailStore implements OnDestroy {
   readonly gameTitle = computed(() => {
     const game = this.game();
     return game ? `${playerLabel(game.white)} vs ${playerLabel(game.black)}` : 'Imported game';
-  });
-  readonly selectedLabel = computed(() => {
-    const selected = this.selectedNode();
-    if (!selected || selected.node.id === 0) return 'start';
-    const side = selected.node.side === 'BLACK' ? '...' : '.';
-    return `${selected.node.moveNumber}${side} ${selected.node.moveSan || selected.node.moveUci}`;
   });
   readonly analysisStatusLabel = computed(() => {
     if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED')
@@ -241,45 +232,11 @@ export class GameDetailStore implements OnDestroy {
     });
   }
 
-  async analyzeImportedGame(force: boolean): Promise<void> {
-    const gameId = this.gameId();
-    if (!gameId || this.importedGameAnalysis.progress().running) return;
-    this.error.set(null);
-    try {
-      await this.importedGameAnalysis.analyzeGame(gameId, force);
-      await this.loadGame();
-    } catch (error) {
-      this.error.set(readError(error, 'Could not analyse imported game.'));
-    }
-  }
-
-  async refreshTags(): Promise<void> {
-    const gameId = this.gameId();
-    if (!gameId || this.refreshingTags()) return;
-    this.error.set(null);
-    this.refreshingTags.set(true);
-    try {
-      const response = await firstValueFrom(this.api.refreshGameTags(gameId));
-      this.game.update((game) =>
-        game
-          ? { ...game, tagCodes: response.tagCodes, tags: response.tags }
-          : game,
-      );
-    } catch (error) {
-      this.error.set(readError(error, 'Could not refresh tags.'));
-      throw error;
-    } finally {
-      this.refreshingTags.set(false);
-    }
-  }
-
   async fullRefreshGame(): Promise<void> {
     const gameId = this.gameId();
     if (
       !gameId ||
       this.fullRefreshing() ||
-      this.refreshingTags() ||
-      this.importedGameAnalysis.progress().running ||
       this.game()?.analysis.status === 'RUNNING'
     ) {
       return;
@@ -344,7 +301,6 @@ export class GameDetailStore implements OnDestroy {
   private resetViewState(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.loading.set(true);
-    this.refreshingTags.set(false);
     this.fullRefreshing.set(false);
     this.error.set(null);
     this.game.set(null);
