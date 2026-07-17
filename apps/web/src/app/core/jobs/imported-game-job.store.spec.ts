@@ -16,6 +16,8 @@ describe('ImportedGameJobStore', () => {
       'createJob',
       'listJobs',
       'getJob',
+      'cancelJob',
+      'retryJob',
       'listTasks',
     ]);
     TestBed.configureTestingModule({
@@ -157,6 +159,45 @@ describe('ImportedGameJobStore', () => {
     expect(store.gameIdsByRun()).toEqual({});
     expect(store.error()).toBeNull();
   });
+
+  it('cancels an active job and publishes its affected games', async () => {
+    const active = jobRun(60, 'PROCESS_GAMES', 'RUNNING', 1);
+    const cancelled = jobRun(60, 'PROCESS_GAMES', 'CANCELLED', 1);
+    api.listJobs.and.returnValue(of({ items: [active] }));
+    api.listTasks.and.returnValue(of({
+      total: 1,
+      items: [task(1, 601, 'RUNNING')],
+    }));
+    api.cancelJob.and.returnValue(of({ jobRun: cancelled }));
+
+    await store.initialize();
+    await store.cancel(active.id);
+
+    expect(api.cancelJob).toHaveBeenCalledOnceWith(active.id);
+    expect(store.activeRuns()).toEqual([]);
+    expect(store.runs()).toContain(cancelled);
+    expect(store.terminalBatch()?.runs).toEqual([cancelled]);
+    expect(store.terminalBatch()?.gameIds).toEqual([601]);
+  });
+
+  it('tracks a retry as a new active job and hydrates its games', async () => {
+    const retriedRun = jobRun(71, 'ANALYSE_GAMES', 'QUEUED', 1);
+    api.retryJob.and.returnValue(of({
+      jobRun: retriedRun,
+      rejectedGameIds: [],
+    }));
+    api.listTasks.and.returnValue(of({
+      total: 1,
+      items: [task(71, 701, 'QUEUED')],
+    }));
+
+    await store.retry(70);
+
+    expect(api.retryJob).toHaveBeenCalledOnceWith(70);
+    expect(store.activeRuns()).toEqual([retriedRun]);
+    expect(store.gameIdsForRun(retriedRun.id)).toEqual([701]);
+    expect(store.isGameActive(701, ['ANALYSE_GAMES'])).toBeTrue();
+  });
 });
 
 function jobRun(
@@ -165,6 +206,26 @@ function jobRun(
   status: JobRunSummary['status'],
   totalTasks: number,
 ): JobRunSummary {
+  const taskCounts = {
+    queued: 0,
+    running: 0,
+    completed: 0,
+    skipped: 0,
+    failed: 0,
+    cancelled: 0,
+  };
+  if (status === 'QUEUED') taskCounts.queued = totalTasks;
+  else if (status === 'RUNNING') {
+    taskCounts.running = Math.min(1, totalTasks);
+    taskCounts.queued = Math.max(0, totalTasks - taskCounts.running);
+  } else if (status === 'COMPLETED') taskCounts.completed = totalTasks;
+  else if (status === 'FAILED') taskCounts.failed = totalTasks;
+  else if (status === 'CANCELLED') taskCounts.cancelled = totalTasks;
+  else {
+    taskCounts.failed = Math.min(1, totalTasks);
+    taskCounts.completed = Math.max(0, totalTasks - taskCounts.failed);
+  }
+
   return {
     id,
     kind,
@@ -173,18 +234,13 @@ function jobRun(
     status,
     totalTasks,
     force: false,
-    taskCounts: {
-      queued: status === 'QUEUED' ? totalTasks : 1,
-      running: status === 'RUNNING' ? 1 : 0,
-      completed: 0,
-      skipped: 0,
-      failed: 0,
-      cancelled: 0,
-    },
+    taskCounts,
     createdAt: '2026-07-17T10:00:00.000Z',
     updatedAt: '2026-07-17T10:00:00.000Z',
-    startedAt: status === 'RUNNING' ? '2026-07-17T10:00:01.000Z' : null,
-    completedAt: null,
+    startedAt: status === 'QUEUED' ? null : '2026-07-17T10:00:01.000Z',
+    completedAt: status === 'QUEUED' || status === 'RUNNING'
+      ? null
+      : '2026-07-17T10:00:02.000Z',
   };
 }
 
