@@ -16,7 +16,7 @@ SET
 FROM "GameAnalysisRun" AS run
 WHERE game."latestAnalysisRunId" = run."id"
   AND run."status" = 'FAILED'
-  AND run."error" = 'Analysis run completed with incomplete progress.';
+  AND run."positionsDone" < run."positionsTotal";
 
 ALTER TABLE "GameAnalysisRun"
 ADD CONSTRAINT "GameAnalysisRun_completed_progress_check"
