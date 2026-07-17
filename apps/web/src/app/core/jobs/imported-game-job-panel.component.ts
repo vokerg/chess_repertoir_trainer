@@ -33,17 +33,21 @@ export class ImportedGameJobPanelComponent {
   }
 
   protected statusClass(status: JobRunStatus): string {
-    if (status === 'COMPLETED') return 'job-status-success';
-    if (status === 'FAILED' || status === 'PARTIALLY_FAILED') return 'job-status-error';
-    if (status === 'CANCELLED') return 'job-status-muted';
-    return 'job-status-active';
+    if (status === 'COMPLETED') return 'job-status job-status-success';
+    if (status === 'FAILED' || status === 'PARTIALLY_FAILED') {
+      return 'job-status job-status-error';
+    }
+    if (status === 'CANCELLED') return 'job-status job-status-muted';
+    return 'job-status job-status-active';
   }
 
   protected progressLabel(run: JobRunSummary): string {
     const counts = run.taskCounts;
     const settled = counts.completed + counts.skipped + counts.failed + counts.cancelled;
     if (run.status === 'QUEUED') return `${counts.queued} queued`;
-    if (run.status === 'RUNNING') return `${settled}/${run.totalTasks} settled · ${counts.running} running`;
+    if (run.status === 'RUNNING') {
+      return `${settled}/${run.totalTasks} settled · ${counts.running} running`;
+    }
     if (counts.failed) return `${settled}/${run.totalTasks} settled · ${counts.failed} failed`;
     return `${settled}/${run.totalTasks} settled`;
   }
