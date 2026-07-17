@@ -8,6 +8,7 @@ assert.deepEqual(loadJobWorkerConfig({}), {
   heartbeatIntervalMs: 30_000,
   staleAfterMs: 900_000,
   staleRecoveryIntervalMs: 60_000,
+  terminalRetentionDays: 30,
   sliceSize: 25,
   shutdownTimeoutMs: 30_000,
 });
@@ -17,6 +18,7 @@ assert.deepEqual(loadJobWorkerConfig({
   JOB_WORKER_HEARTBEAT_INTERVAL_MS: '1000',
   JOB_WORKER_STALE_AFTER_MS: '3000',
   JOB_WORKER_STALE_RECOVERY_INTERVAL_MS: '500',
+  JOB_WORKER_TERMINAL_RETENTION_DAYS: '7',
   JOB_WORKER_SLICE_SIZE: '10',
   JOB_WORKER_SHUTDOWN_TIMEOUT_MS: '2000',
 }), {
@@ -24,12 +26,17 @@ assert.deepEqual(loadJobWorkerConfig({
   heartbeatIntervalMs: 1_000,
   staleAfterMs: 3_000,
   staleRecoveryIntervalMs: 500,
+  terminalRetentionDays: 7,
   sliceSize: 10,
   shutdownTimeoutMs: 2_000,
 });
 
 assert.throws(
   () => loadJobWorkerConfig({ JOB_WORKER_SLICE_SIZE: '0' }),
+  /positive integer/,
+);
+assert.throws(
+  () => loadJobWorkerConfig({ JOB_WORKER_TERMINAL_RETENTION_DAYS: '0' }),
   /positive integer/,
 );
 assert.throws(
