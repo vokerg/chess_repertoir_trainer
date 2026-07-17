@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { gameTagLabel, gameTagTone } from '../../../shared/games/game-tag-display';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import {
   ImportedGameAnalysisRun,
@@ -7,6 +6,7 @@ import {
   ImportedGamePlayer,
 } from '../data-access/games.models';
 import { accuracyLabel, resultLabel } from '../helpers/game-detail-labels';
+import { gameTagLabel, gameTagTone } from '../../../shared/games/game-tag-display';
 
 type AccuracyRow = {
   label: string;
@@ -48,15 +48,9 @@ export class GameSummaryComponent {
       this.playerRow('Black', game.black, game.userColor === 'BLACK'),
     ];
   });
-  protected readonly userAccuracyValue = computed(() =>
-    this.analysisRun()?.[this.userAccuracyField()] ?? this.game().analysis.userAccuracy ?? null,
-  );
-  protected readonly whiteAccuracyValue = computed(() =>
-    this.analysisRun()?.whiteAccuracy ?? this.game().analysis.whiteAccuracy ?? null,
-  );
-  protected readonly blackAccuracyValue = computed(() =>
-    this.analysisRun()?.blackAccuracy ?? this.game().analysis.blackAccuracy ?? null,
-  );
+  protected readonly userAccuracyValue = computed(() => this.analysisRun()?.[this.userAccuracyField()] ?? this.game().analysis.userAccuracy ?? null);
+  protected readonly whiteAccuracyValue = computed(() => this.analysisRun()?.whiteAccuracy ?? this.game().analysis.whiteAccuracy ?? null);
+  protected readonly blackAccuracyValue = computed(() => this.analysisRun()?.blackAccuracy ?? this.game().analysis.blackAccuracy ?? null);
   protected readonly userAccuracy = computed(() => accuracyLabel(this.userAccuracyValue()));
   protected readonly whiteAccuracy = computed(() => accuracyLabel(this.whiteAccuracyValue()));
   protected readonly blackAccuracy = computed(() => accuracyLabel(this.blackAccuracyValue()));
@@ -113,11 +107,7 @@ export class GameSummaryComponent {
   protected readonly tagTone = gameTagTone;
   protected readonly tagLabel = gameTagLabel;
 
-  private playerRow(
-    label: string,
-    player: ImportedGamePlayer | null,
-    isUser: boolean,
-  ): PlayerRow {
+  private playerRow(label: string, player: ImportedGamePlayer | null, isUser: boolean): PlayerRow {
     const username = player?.username?.trim() || 'Unknown';
     return {
       label: `${label}${isUser ? ' (you)' : ''}`,
@@ -129,12 +119,8 @@ export class GameSummaryComponent {
   private playerUrl(username?: string | null): string | null {
     const normalizedUsername = username?.trim();
     if (!normalizedUsername) return null;
-    if (this.game().provider === 'LICHESS') {
-      return `https://lichess.org/@/${encodeURIComponent(normalizedUsername)}`;
-    }
-    if (this.game().provider === 'CHESS_COM') {
-      return `https://www.chess.com/member/${encodeURIComponent(normalizedUsername)}`;
-    }
+    if (this.game().provider === 'LICHESS') return `https://lichess.org/@/${encodeURIComponent(normalizedUsername)}`;
+    if (this.game().provider === 'CHESS_COM') return `https://www.chess.com/member/${encodeURIComponent(normalizedUsername)}`;
     return null;
   }
 
