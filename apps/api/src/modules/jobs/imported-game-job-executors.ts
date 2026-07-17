@@ -51,14 +51,19 @@ async function withAnalysisEngine(
   }
 
   const engine = dependencies.createEngine(config);
-  const abortEngine = () => engine.dispose();
-  context.signal.addEventListener('abort', abortEngine, { once: true });
+  let disposed = false;
+  const disposeEngine = () => {
+    if (disposed) return;
+    disposed = true;
+    engine.dispose();
+  };
+  context.signal.addEventListener('abort', disposeEngine, { once: true });
 
   try {
     return await execute(engine, config);
   } finally {
-    context.signal.removeEventListener('abort', abortEngine);
-    engine.dispose();
+    context.signal.removeEventListener('abort', disposeEngine);
+    disposeEngine();
   }
 }
 
