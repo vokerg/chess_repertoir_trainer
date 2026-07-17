@@ -1,9 +1,13 @@
-<div class="page-shell app-shell">
+<div
+  class="page-shell app-shell"
+  [class.app-shell-with-job-panel]="jobStore.visibleRuns().length > 0"
+>
   <app-main-navigation />
 
   <main class="app-main">
     <router-outlet />
   </main>
 
+  <app-imported-game-job-panel />
   <app-confirm-dialog />
 </div>
