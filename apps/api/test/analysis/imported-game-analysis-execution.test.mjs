@@ -73,11 +73,11 @@ const baseOptions = {
 
 {
   const controller = new AbortController();
-  controller.abort(new Error('Worker received SIGTERM.'));
   let cleanupInput;
   let abandonedRunId = null;
   const service = createImportedGameAnalysisExecutionService({
     analyseOne: async () => {
+      controller.abort(new Error('Worker received SIGTERM.'));
       throw new Error('Local Stockfish disposed');
     },
     refreshTags: async () => {},
@@ -104,6 +104,30 @@ const baseOptions = {
   assert.equal(cleanupInput.afterRunId, 10);
   assert.equal(cleanupInput.error, 'Local Stockfish disposed');
   assert.equal(abandonedRunId, 11, 'controlled abort attempts are abandoned before the task is requeued');
+}
+
+{
+  let analyseCalls = 0;
+  const controller = new AbortController();
+  controller.abort(new Error('Worker received SIGTERM.'));
+  const service = createImportedGameAnalysisExecutionService({
+    analyseOne: async () => {
+      analyseCalls += 1;
+      return 'COMPLETED';
+    },
+    refreshTags: async () => {},
+    getExecutionState: async () => {
+      throw new Error('state lookup should not run');
+    },
+    findAbortCleanupCandidate: async () => null,
+    abandonRun: async () => true,
+  });
+
+  await assert.rejects(
+    service.analyseOne(engine, 1, 2, { ...baseOptions, signal: controller.signal }),
+    /Worker received SIGTERM/,
+  );
+  assert.equal(analyseCalls, 0, 'pre-aborted work does not perform reads or analysis');
 }
 
 {
