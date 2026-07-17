@@ -6,7 +6,7 @@ The feature is under active migration. Sections labeled **Current** describe beh
 
 ## Why this exists
 
-Imported-game indexing and analysis currently mix browser-side orchestration with an API-process in-memory analysis queue. That makes accepted work difficult to observe, dependent on the browser or API process lifetime, and unsuitable for fair prioritisation across users and workflows.
+Imported-game indexing and analysis currently mix browser-side orchestration with an API-process compatibility queue. Accepted work is therefore difficult to observe and parts of the old flow still depend on the browser or API process lifetime.
 
 The migration replaces that orchestration with PostgreSQL-backed jobs that remain visible across navigation, browser restarts, and API restarts.
 
@@ -33,11 +33,11 @@ GET  /api/job-runs/:jobRunId/tasks
 
 All routes use shared schemas from `@chess-trainer/contracts/jobs`, Fastify route-schema validation, generated OpenAPI, and current-user ownership checks.
 
-The persisted task counts are aggregated for reads rather than duplicated as counters on each task. The creation response can return its known all-queued count without another aggregate query. Reads fail loudly when persisted task rows do not account for the job's `totalTasks`.
+Persisted task counts are aggregated for reads rather than duplicated as counters on each task. Reads fail loudly when persisted task rows do not account for the job's `totalTasks`.
 
-PostgreSQL check constraints guard every persisted job kind, source, run status, and task status. These constraints also apply to raw worker SQL, so invalid lifecycle literals cannot be persisted outside Prisma.
+PostgreSQL check constraints guard every persisted job kind, source, run status, and task status. These constraints also apply to raw worker SQL.
 
-If an imported game is deleted, including through external-account deletion, its task rows are retained and `importedGameId` becomes `null`. This preserves job history and keeps aggregate task counts consistent. Worker maintenance marks queued orphaned tasks as `SKIPPED` with an explanatory error.
+If an imported game is deleted, including through external-account deletion, its task rows are retained and `importedGameId` becomes `null`. Worker maintenance marks queued orphaned tasks as `SKIPPED` with an explanatory error.
 
 ## Current worker infrastructure
 
@@ -62,7 +62,24 @@ npm run start --workspace=apps/api
 npm run start:worker --workspace=apps/api
 ```
 
-The worker currently owns infrastructure only. Its production executor registry is intentionally empty until PR3, so it performs stale/orphan maintenance but does not claim the queued indexing, analysis, processing, or tag-refresh tasks yet. Existing browser orchestration and the API-process in-memory analysis queue remain active during this migration stage.
+The worker registers all four imported-game domain executors. The existing API-process in-memory queue remains temporarily for compatibility, but it delegates to the same imported-game processing and analysis services as the persistent worker rather than owning a second analysis implementation.
+
+Analysis-backed jobs use the existing batch Stockfish configuration. `LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED` must be enabled in the worker environment, and the selected local or WASM engine configuration must be usable there.
+
+## Current domain execution
+
+The worker executor registry maps persisted job kinds to the existing imported-game services:
+
+- `INDEX_GAMES`: index plies and assign a missing opening;
+- `ANALYSE_GAMES`: analyse an already-indexed standard-speed game and refresh analysis-derived tags after success;
+- `PROCESS_GAMES`: run indexing/opening followed by analysis/tag refresh;
+- `REFRESH_TAGS`: explicitly recalculate tags without running Stockfish.
+
+Opening assignment remains part of indexing. Tag refresh remains part of successful analysis. They are not normally separate persisted tasks; `REFRESH_TAGS` exists for an explicit recalculation request.
+
+Each analysis or processing task owns one Stockfish engine instance. The executor disposes it on completion, failure, or abort. Indexing and tag-only tasks do not create an engine.
+
+The old batch queue now calls the same `ImportedGameProcessingService`, so migration compatibility does not duplicate the analysis algorithm.
 
 ## Data model
 
@@ -74,7 +91,7 @@ JobRun 1 ──── * JobTask
 
 ### JobRun
 
-A job is the user-visible or system-visible request. It owns:
+A job owns:
 
 - user ownership;
 - job kind;
@@ -101,16 +118,9 @@ A task is one imported game inside one job. It owns:
 
 Tasks do not duplicate move-level analysis progress, configurable retry counters, dependency graphs, or per-task priorities. Existing `GameAnalysisRun.positionsDone` and `positionsTotal` remain the source for live Stockfish progress.
 
-## Job kinds
+## Job priorities
 
-- `INDEX_GAMES`: index plies and assign a missing opening.
-- `ANALYSE_GAMES`: analyse an indexed game and refresh analysis-derived tags after success.
-- `PROCESS_GAMES`: run indexing/opening followed by analysis/tag refresh for each game.
-- `REFRESH_TAGS`: explicitly recalculate tags without rerunning analysis.
-
-Opening assignment is part of indexing. Tag refresh is part of successful analysis. They are not normally separate persisted tasks.
-
-The current user-action priorities are intentionally defined on job runs only:
+Current user-action priorities are defined on job runs only:
 
 ```text
 INDEX_GAMES   400
@@ -142,23 +152,30 @@ JobTask.ordinal ASC
 JobTask.id ASC
 ```
 
-Candidate rows are locked with `FOR UPDATE ... SKIP LOCKED`; expensive executor work always happens after the claim transaction commits. A worker continues the selected job for at most 25 tasks, checks for higher-priority runnable work between games, then touches `JobRun.updatedAt` and reselects. The slice size is derived behavior, not another persisted model or column.
+Candidate rows are locked with `FOR UPDATE ... SKIP LOCKED`; expensive executor work always happens after the claim transaction commits. A worker continues the selected job for at most 25 tasks, checks for higher-priority runnable work between games, then touches `JobRun.updatedAt` and reselects. A global claim advances the selected job's scheduler timestamp so another worker can select the next equal-priority job instead of opening another slice on the same job.
 
 A job moves to `RUNNING` on its first claim. Task completion reconciles the parent from persisted task states. All-success or success-plus-skipped jobs become `COMPLETED`; all-failed jobs become `FAILED`; all-cancelled jobs become `CANCELLED`; mixed failed/cancelled terminal outcomes become `PARTIALLY_FAILED`.
 
-## Claim safety and duplicate work
+## Idempotency, freshness, and duplicate work
 
 Different jobs may contain tasks for the same game so that each job retains understandable progress and terminal results.
 
-**Current:** PostgreSQL has a partial unique index allowing only one `RUNNING` task for an imported game across every job kind. Each successful claim also receives a new opaque `workKey`. Heartbeat, completion, failure, and release writes require the exact task id, job id, `RUNNING` state, and work key. After stale recovery clears the key, an old worker can no longer settle a replacement claim.
+**Current:** PostgreSQL has a partial unique index allowing only one `RUNNING` task for an imported game across every job kind. Each successful claim receives a new opaque `workKey`. Heartbeat, completion, failure, and release writes require the exact task id, job id, `RUNNING` state, and work key. After stale recovery clears the key, an old worker can no longer settle a replacement claim.
 
-Workers heartbeat active tasks. Maintenance returns stale `RUNNING` tasks to `QUEUED`, clears their claim key, and updates the parent scheduler timestamp. This is infrastructure recovery after a lost process, not configurable business retry machinery. PR3 executors must still be idempotent because a crashed process may have performed part of its external work before the stale claim is recovered.
+Workers heartbeat active tasks. Maintenance returns stale `RUNNING` tasks to `QUEUED`, clears their claim key, and updates the parent scheduler timestamp. This is infrastructure recovery after a lost process, not configurable business retry machinery.
 
-**Target:** after PR3 adds domain executors, a later duplicate task performs an idempotency check and may finish as `SKIPPED` when the requested result is already current.
+Domain execution is idempotent at the existing service boundaries:
+
+- indexing returns `SKIPPED` when plies are already indexed and the opening is already present or cannot be matched;
+- non-forced analysis returns `SKIPPED` when all plies and the latest completed run are already current, while still refreshing tags so tag logic changes can be repaired;
+- processing composes those checks;
+- forced work reruns the requested indexing and analysis behavior.
+
+During migration, analysis can still arrive from both the legacy client workflow and the persistent worker. A PostgreSQL guard prevents an older `GameAnalysisRun` from overwriting the denormalized latest-analysis snapshot of a newer run on `ImportedGame`.
 
 ## Graceful shutdown
 
-**Current:** `SIGINT` and `SIGTERM` stop new claims and abort the active executor through an `AbortSignal`. An executor that observes the signal returns its claim to `QUEUED`; the process waits up to `JOB_WORKER_SHUTDOWN_TIMEOUT_MS` before reporting an unsuccessful shutdown. A process that dies without releasing its claim is handled by heartbeat expiry and stale recovery.
+**Current:** `SIGINT` and `SIGTERM` stop new claims and abort the active executor through an `AbortSignal`. Executors check the signal between domain steps and analysis chunks. Engine-backed executors dispose Stockfish on abort. The worker releases an aborted claim back to `QUEUED` and waits up to `JOB_WORKER_SHUTDOWN_TIMEOUT_MS` before reporting an unsuccessful shutdown. A process that dies without releasing its claim is handled by heartbeat expiry and stale recovery.
 
 Worker timing settings are documented in `.env.example`. `JOB_WORKER_STALE_AFTER_MS` must be greater than twice `JOB_WORKER_HEARTBEAT_INTERVAL_MS`.
 
@@ -178,7 +195,6 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Preserve newest-first task order and job-level priority constants.
 - Preserve task history after imported-game/account deletion.
 - Enforce lifecycle literals at the PostgreSQL boundary and fail loudly on count corruption.
-- Add focused API/contract tests and document the foundation.
 - Do not execute tasks or remove the old queue yet.
 
 ### PR2 — worker runtime and safe claiming
@@ -189,14 +205,13 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Add 25-task scheduling slices and higher-priority preemption between games.
 - Add graceful shutdown and explicit orphan-task reconciliation.
 - Document local and hosted worker operation.
-- Keep production domain executors empty until PR3.
 
 ### PR3 — job executors
 
 - Implement indexing, analysis, complete processing, and explicit tag-refresh executors.
-- Reuse existing imported-game services.
-- Add idempotency, force behavior, duplicate exclusion, and stale-analysis snapshot protection.
-- Retire the in-memory analysis queue after compatibility routing exists.
+- Reuse one shared imported-game processing and analysis path from both worker and compatibility queue.
+- Add idempotency, force behavior, abort propagation, isolated engine lifecycle, and stale-analysis snapshot protection.
+- Keep the in-memory queue only as a compatibility wrapper until later API/frontend routing removes it.
 
 ### PR4 — global frontend progress
 
@@ -223,10 +238,10 @@ Every incremental pull request updates the canonical documentation for behavior 
 
 - `docs/README.md` indexes this canonical topic.
 - `docs/architecture.md` changes only when module/runtime boundaries are implemented.
-- `docs/deployment.md` changes when the worker process exists.
+- `docs/deployment.md` changes when worker runtime requirements change.
 - `README.md` stops describing imported-game analysis as synchronous only after the old implementation is retired.
 - OpenAPI remains generated from Fastify route schemas.
-- The final cleanup searches README, `docs/`, package scripts, environment examples, tests, and code comments for obsolete or contradictory queue descriptions.
+- Final cleanup searches README, `docs/`, package scripts, environment examples, tests, and code comments for obsolete or contradictory queue descriptions.
 
 ## Non-goals
 
