@@ -1,12 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { gameTagLabel, gameTagTone } from '../../../shared/games/game-tag-display';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
-import { ImportedGameAnalysisProgress } from '../data-access/imported-game-analysis.service';
 import {
   ImportedGameAnalysisRun,
   ImportedGameDetail,
 } from '../data-access/games.models';
-import { accuracyLabel, colorLabel, playerLabel, resultLabel, timeControlLabel } from '../helpers/game-detail-labels';
-import { gameTagLabel, gameTagTone } from '../../../shared/games/game-tag-display';
+import {
+  accuracyLabel,
+  colorLabel,
+  playerLabel,
+  resultLabel,
+  timeControlLabel,
+} from '../helpers/game-detail-labels';
 
 type SummaryFact = {
   label: string;
@@ -38,9 +43,10 @@ type SideAnalysisRow = {
 export class GameSummaryComponent {
   readonly game = input.required<ImportedGameDetail>();
   readonly analysisRun = input<ImportedGameAnalysisRun | null>(null);
-  readonly analysisProgress = input.required<ImportedGameAnalysisProgress>();
   readonly analysisStatus = input.required<string>();
   readonly analysisSummary = input.required<string>();
+  readonly analysisMessage = input<string | null>(null);
+  readonly analysisMessageIsError = input(false);
 
   protected readonly result = computed(() => resultLabel(this.game().resultForUser));
   protected readonly color = computed(() => colorLabel(this.game().userColor));
@@ -52,30 +58,41 @@ export class GameSummaryComponent {
   });
   protected readonly opponentLabel = computed(() => {
     const opponent = this.opponent();
-    if (!opponent) return 'Opponent unavailable';
-    return playerLabel(opponent);
+    return opponent ? playerLabel(opponent) : 'Opponent unavailable';
   });
   protected readonly opponentUrl = computed(() => {
     const username = this.opponent()?.username?.trim();
     if (!username) return null;
-    if (this.game().provider === 'LICHESS') return `https://lichess.org/@/${encodeURIComponent(username)}`;
-    if (this.game().provider === 'CHESS_COM') return `https://www.chess.com/member/${encodeURIComponent(username)}`;
+    if (this.game().provider === 'LICHESS') {
+      return `https://lichess.org/@/${encodeURIComponent(username)}`;
+    }
+    if (this.game().provider === 'CHESS_COM') {
+      return `https://www.chess.com/member/${encodeURIComponent(username)}`;
+    }
     return null;
   });
   protected readonly speedLabel = computed(() => {
     const speed = this.game().speedCategory;
     return speed ? speed.charAt(0).toUpperCase() + speed.slice(1) : 'Unknown speed';
   });
-  protected readonly timeControl = computed(() => this.game().timeControl.raw || timeControlLabel(this.game()));
+  protected readonly timeControl = computed(() =>
+    this.game().timeControl.raw || timeControlLabel(this.game()),
+  );
   protected readonly ratedLabel = computed(() => {
     const rated = this.game().rated;
     if (rated === true) return 'Rated';
     if (rated === false) return 'Unrated';
     return 'Rated unknown';
   });
-  protected readonly userAccuracyValue = computed(() => this.analysisRun()?.[this.userAccuracyField()] ?? this.game().analysis.userAccuracy ?? null);
-  protected readonly whiteAccuracyValue = computed(() => this.analysisRun()?.whiteAccuracy ?? this.game().analysis.whiteAccuracy ?? null);
-  protected readonly blackAccuracyValue = computed(() => this.analysisRun()?.blackAccuracy ?? this.game().analysis.blackAccuracy ?? null);
+  protected readonly userAccuracyValue = computed(() =>
+    this.analysisRun()?.[this.userAccuracyField()] ?? this.game().analysis.userAccuracy ?? null,
+  );
+  protected readonly whiteAccuracyValue = computed(() =>
+    this.analysisRun()?.whiteAccuracy ?? this.game().analysis.whiteAccuracy ?? null,
+  );
+  protected readonly blackAccuracyValue = computed(() =>
+    this.analysisRun()?.blackAccuracy ?? this.game().analysis.blackAccuracy ?? null,
+  );
   protected readonly userAccuracy = computed(() => accuracyLabel(this.userAccuracyValue()));
   protected readonly whiteAccuracy = computed(() => accuracyLabel(this.whiteAccuracyValue()));
   protected readonly blackAccuracy = computed(() => accuracyLabel(this.blackAccuracyValue()));
@@ -103,24 +120,15 @@ export class GameSummaryComponent {
     if (!run) return [];
     return [
       { label: 'Moves', value: String(run.moves.length) },
-      { label: 'Critical', value: String(run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length) },
+      {
+        label: 'Critical',
+        value: String(
+          run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length,
+        ),
+      },
       { label: 'Positions', value: `${run.positionsDone ?? 0}/${run.positionsTotal ?? 0}` },
     ];
   });
-  protected readonly analysisMessage = computed(() => {
-    const progress = this.analysisProgress();
-    const run = this.analysisRun();
-    if (progress.error) return progress.error;
-    if (progress.running) {
-      const counts = progress.totalPlies ? ` (${progress.currentPly}/${progress.totalPlies})` : '';
-      return `${progress.message || 'Analysis running'}${counts}`;
-    }
-    if (this.analysisStatus() === 'Failed') return run?.error || progress.message || 'Analysis failed';
-    return null;
-  });
-  protected readonly analysisMessageIsError = computed(() =>
-    Boolean(this.analysisProgress().error || this.analysisStatus() === 'Failed'),
-  );
   protected readonly sideAnalysisRows = computed<SideAnalysisRow[]>(() => {
     const run = this.analysisRun();
     const userColor = this.game().userColor;
@@ -132,7 +140,10 @@ export class GameSummaryComponent {
         label: userColor === 'WHITE' ? 'White (you)' : 'White',
         accuracy: this.whiteAccuracy(),
         acpl: this.numericStat(run.whiteAverageCentipawnLoss),
-        critical: run.moves.filter((move) => move.side === 'WHITE' && (move.classificationCode === 5 || move.classificationCode === 6)).length,
+        critical: run.moves.filter(
+          (move) => move.side === 'WHITE'
+            && (move.classificationCode === 5 || move.classificationCode === 6),
+        ).length,
         issues: this.issueSummary('WHITE'),
       },
       {
@@ -140,7 +151,10 @@ export class GameSummaryComponent {
         label: userColor === 'BLACK' ? 'Black (you)' : 'Black',
         accuracy: this.blackAccuracy(),
         acpl: this.numericStat(run.blackAverageCentipawnLoss),
-        critical: run.moves.filter((move) => move.side === 'BLACK' && (move.classificationCode === 5 || move.classificationCode === 6)).length,
+        critical: run.moves.filter(
+          (move) => move.side === 'BLACK'
+            && (move.classificationCode === 5 || move.classificationCode === 6),
+        ).length,
         issues: this.issueSummary('BLACK'),
       },
     ];
