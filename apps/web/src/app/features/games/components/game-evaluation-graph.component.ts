@@ -18,113 +18,8 @@ const MAX_SCORE_CP = 800;
 @Component({
   selector: 'app-game-evaluation-graph',
   standalone: true,
-  template: `
-    @if (points().length > 0) {
-      <svg
-        class="evaluation-graph"
-        viewBox="0 0 600 180"
-        role="img"
-        aria-label="Imported game evaluation by move"
-      >
-        <line
-          class="zero-line"
-          [attr.x1]="horizontalPadding"
-          [attr.x2]="viewboxWidth - horizontalPadding"
-          [attr.y1]="zeroY"
-          [attr.y2]="zeroY"
-        />
-
-        @if (path(); as graphPath) {
-          <path class="evaluation-line" [attr.d]="graphPath" />
-        }
-
-        @for (point of points(); track point.nodeId) {
-          <circle
-            class="point-hit-target"
-            [attr.cx]="point.x"
-            [attr.cy]="point.y"
-            r="13"
-            tabindex="0"
-            role="button"
-            [attr.aria-label]="'Select move ' + point.plyNumber"
-            (click)="nodeSelected.emit(point.nodeId)"
-            (keydown.enter)="nodeSelected.emit(point.nodeId)"
-            (keydown.space)="selectFromKeyboard($event, point.nodeId)"
-          >
-            <title>Move {{ point.plyNumber }}: {{ evaluationLabel(point.scoreCp) }}</title>
-          </circle>
-        }
-
-        @if (selectedPoint(); as point) {
-          <circle class="selected-point-halo" [attr.cx]="point.x" [attr.cy]="point.y" r="7" />
-          <circle class="selected-point" [attr.cx]="point.x" [attr.cy]="point.y" r="3.5" />
-        }
-      </svg>
-    } @else {
-      <p class="empty-note">Run game analysis to see the evaluation graph.</p>
-    }
-  `,
-  styles: `
-    :host {
-      display: block;
-      min-width: 0;
-    }
-
-    .evaluation-graph {
-      display: block;
-      width: 100%;
-      height: auto;
-      overflow: visible;
-    }
-
-    .zero-line {
-      stroke: var(--border-strong);
-      stroke-width: 1;
-      stroke-dasharray: 5 5;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .evaluation-line {
-      fill: none;
-      stroke: var(--accent-strong);
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .point-hit-target {
-      fill: transparent;
-      stroke: none;
-      cursor: pointer;
-      pointer-events: all;
-    }
-
-    .point-hit-target:focus-visible {
-      fill: var(--accent-soft);
-      outline: none;
-    }
-
-    .selected-point-halo {
-      fill: var(--surface-strong);
-      stroke: var(--accent-strong);
-      stroke-width: 2;
-      pointer-events: none;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .selected-point {
-      fill: var(--accent-strong);
-      pointer-events: none;
-    }
-
-    .empty-note {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.45;
-    }
-  `,
+  templateUrl: './game-evaluation-graph.component.html',
+  styleUrl: './game-evaluation-graph.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GameEvaluationGraphComponent {
@@ -193,6 +88,13 @@ export class GameEvaluationGraphComponent {
       .join(' ');
   });
 
+  protected readonly areaPath = computed(() => {
+    const points = this.points();
+    const graphPath = this.path();
+    if (points.length === 0 || !graphPath) return null;
+    return `${graphPath} L ${points[points.length - 1].x} ${this.zeroY} L ${points[0].x} ${this.zeroY} Z`;
+  });
+
   protected readonly selectedPoint = computed(
     () => this.points().find((point) => point.nodeId === this.selectedNodeId()) ?? null,
   );
@@ -200,6 +102,11 @@ export class GameEvaluationGraphComponent {
   protected evaluationLabel(scoreCp: number): string {
     const pawns = scoreCp / 100;
     return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
+  }
+
+  protected moveLabel(plyNumber: number): string {
+    const moveNumber = Math.ceil(plyNumber / 2);
+    return `${moveNumber}${plyNumber % 2 === 0 ? '…' : '.'}`;
   }
 
   protected selectFromKeyboard(event: Event, nodeId: number): void {

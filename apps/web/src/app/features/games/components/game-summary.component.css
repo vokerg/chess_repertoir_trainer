@@ -1,29 +1,32 @@
+:host {
+  display: block;
+  min-width: 0;
+  --panel-gap: 0.65rem;
+  --panel-padding: 0.9rem 1rem;
+}
+
 .game-stats-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .stats-column {
   display: grid;
-  gap: 1rem;
+  gap: 0.65rem;
   min-width: 0;
 }
 
 .stats-section {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.25rem;
   min-width: 0;
 }
 
 .stats-facts {
   display: grid;
-  gap: 0.35rem 1rem;
+  gap: 0.25rem 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.stats-facts-compact {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .stats-fact {
@@ -46,12 +49,18 @@
 
 .outcome-block {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.35rem;
+}
+
+.outcome-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
 }
 
 .result-value {
   margin: 0;
-  font-size: 1.55rem;
+  font-size: 1.3rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -75,9 +84,12 @@
   text-underline-offset: 0.18em;
 }
 
-.compact-result {
-  font-size: 1.45rem;
-  line-height: 1.1;
+.opening-value {
+  margin: 0;
+  line-height: 1.3;
+}
+
+.tag-section {
   margin: 0;
 }
 
@@ -129,8 +141,7 @@
 
 .side-analysis-list {
   display: grid;
-  gap: 0.45rem;
-  margin-top: 0.15rem;
+  gap: 0.25rem;
 }
 
 .side-analysis-row {
@@ -138,7 +149,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding-block: 0.35rem;
+  padding-block: 0.2rem;
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
 }
 
@@ -160,15 +171,15 @@
 .tag-chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .tag-chip {
-  padding: 0.28rem 0.58rem;
+  padding: 0.16rem 0.42rem;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-size: 0.78rem;
-  line-height: 1.2;
+  font-size: 0.72rem;
+  line-height: 1.15;
 }
 
 .tag-chip-positive {
@@ -200,7 +211,4 @@
     grid-template-columns: 1fr;
   }
 
-  .stats-facts-compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }

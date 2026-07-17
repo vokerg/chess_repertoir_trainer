@@ -1,0 +1,107 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.graph-frame {
+  overflow: hidden;
+}
+
+.evaluation-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.advantage-band {
+  pointer-events: none;
+}
+
+.advantage-band-positive {
+  fill: color-mix(in srgb, var(--success) 7%, transparent);
+}
+
+.advantage-band-negative {
+  fill: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
+.zero-line {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.scale-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.scale-label-positive {
+  fill: var(--success);
+}
+
+.scale-label-negative {
+  fill: var(--danger);
+}
+
+.evaluation-area {
+  fill: url(#evaluation-area);
+  pointer-events: none;
+}
+
+.evaluation-line-shadow {
+  fill: none;
+  stroke: var(--surface-strong);
+  stroke-width: 5.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.evaluation-line {
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.point-hit-target {
+  fill: transparent;
+  stroke: none;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.point-hit-target:focus,
+.point-hit-target:focus-visible {
+  fill: transparent;
+  stroke: none;
+  outline: none;
+}
+
+.selected-point-halo {
+  fill: var(--surface-strong);
+  stroke: var(--accent-strong);
+  stroke-width: 2;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.selected-point {
+  fill: var(--accent-strong);
+  pointer-events: none;
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}

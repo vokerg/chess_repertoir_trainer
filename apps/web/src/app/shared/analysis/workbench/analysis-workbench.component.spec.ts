@@ -75,9 +75,10 @@ describe('AnalysisWorkbenchComponent', () => {
     ) as HTMLElement[];
 
     expect(mainChildren.map((element) => element.tagName)).toEqual([
-      'APP-ANALYSIS-BOARD',
+      'APP-PANEL',
       'DIV',
     ]);
+    expect(mainChildren[0].querySelector('app-analysis-board')).not.toBeNull();
     expect(mainChildren[1].dataset['testid']).toBe('left-extra');
     expect(sideChildren.map((element) => element.dataset['testid'] || element.tagName)).toEqual([
       'side-before',

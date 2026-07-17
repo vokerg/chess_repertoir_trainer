@@ -4,34 +4,16 @@
     <h2 class="workbench-title">{{ title() }}</h2>
     @if (game(); as currentGame) {
       <div class="workbench-meta">
-        <span>White: {{ playerLabel(currentGame.white) }}</span>
-        <span>Black: {{ playerLabel(currentGame.black) }}</span>
         <span>{{ providerLabel(currentGame.provider) }}</span>
         <span>{{ gameDateLabel(currentGame.endedAt) }}</span>
+        <span>{{ currentGame.rated === true ? 'Rated' : currentGame.rated === false ? 'Unrated' : 'Rating unknown' }}</span>
         <span>{{ currentGame.speedCategory || 'unknown speed' }}</span>
-        <span>{{ currentGame.timeControl.raw || timeControlLabel(currentGame) }}</span>
-        <span>Selected: {{ selectedLabel() }}</span>
+        <span>{{ timeControlLabel(currentGame) }}</span>
       </div>
     }
   </div>
   <nav class="workbench-mode-switch" aria-label="Game actions">
     @if (game()) {
-      <button
-        type="button"
-        class="mode-pill game-header-action"
-        [disabled]="analysisAction().disabled"
-        (click)="analyze.emit(analysisAction().force)"
-      >
-        {{ analysisAction().label }}
-      </button>
-      <button
-        type="button"
-        class="mode-pill game-header-action"
-        [disabled]="refreshTagsAction().disabled"
-        (click)="refreshTags.emit()"
-      >
-        {{ refreshTagsAction().label }}
-      </button>
       <button
         type="button"
         class="mode-pill game-header-action"

@@ -43,8 +43,25 @@ export function gameDateLabel(value?: string | null): string {
 }
 
 export function timeControlLabel(game: ImportedGameDetail): string {
-  const { initial, increment } = game.timeControl;
-  return typeof initial === 'number' && typeof increment === 'number'
-    ? `${initial}+${increment}`
-    : 'Time control unknown';
+  return formatTimeControl(game.timeControl.initial, game.timeControl.increment, game.timeControl.raw);
+}
+
+export function formatTimeControl(
+  initial?: number | null,
+  increment?: number | null,
+  raw?: string | null,
+): string {
+  if (typeof initial === 'number' && typeof increment === 'number') {
+    return `${formatInitialMinutes(initial)}+${increment}`;
+  }
+
+  const rawMatch = raw?.match(/^(\d+)\s*\+\s*(\d+)$/);
+  if (rawMatch) return `${formatInitialMinutes(Number(rawMatch[1]))}+${rawMatch[2]}`;
+  return raw || 'Time control unknown';
+}
+
+function formatInitialMinutes(initialSeconds: number): string {
+  if (initialSeconds < 60) return `${initialSeconds}s`;
+  const minutes = initialSeconds / 60;
+  return Number.isInteger(minutes) ? String(minutes) : String(Number(minutes.toFixed(1)));
 }
