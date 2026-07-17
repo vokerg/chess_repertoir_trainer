@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   createImportedGameJobRunBodySchema,
+  jobRunErrorCodeSchema,
   jobRunListQuerySchema,
   jobRunSummarySchema,
   jobTaskListQuerySchema,
@@ -29,6 +30,7 @@ assert.deepEqual(jobRunListQuerySchema.parse({ active: 'true', limit: '25' }), {
   limit: 25,
 });
 assert.deepEqual(jobTaskListQuerySchema.parse({}), { offset: 0, limit: 100 });
+assert.equal(jobRunErrorCodeSchema.parse('JOB_RUN_NOT_RETRYABLE'), 'JOB_RUN_NOT_RETRYABLE');
 
 const summary = {
   id: 9,
