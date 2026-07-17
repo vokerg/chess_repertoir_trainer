@@ -49,6 +49,9 @@ export class ImportedGameJobPanelComponent {
       return `${settled}/${run.totalTasks} settled · ${counts.running} running`;
     }
     if (counts.failed) return `${settled}/${run.totalTasks} settled · ${counts.failed} failed`;
+    if (counts.cancelled) {
+      return `${settled}/${run.totalTasks} settled · ${counts.cancelled} cancelled`;
+    }
     return `${settled}/${run.totalTasks} settled`;
   }
 
@@ -57,5 +60,13 @@ export class ImportedGameJobPanelComponent {
     const counts = run.taskCounts;
     const settled = counts.completed + counts.skipped + counts.failed + counts.cancelled;
     return Math.max(0, Math.min(100, Math.round((settled / run.totalTasks) * 100)));
+  }
+
+  protected isActive(run: JobRunSummary): boolean {
+    return run.status === 'QUEUED' || run.status === 'RUNNING';
+  }
+
+  protected canRetry(run: JobRunSummary): boolean {
+    return !this.isActive(run) && run.taskCounts.failed + run.taskCounts.cancelled > 0;
   }
 }
