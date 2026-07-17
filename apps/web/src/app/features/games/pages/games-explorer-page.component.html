@@ -1,7 +1,7 @@
 <section class="games-page stack">
   <app-page-header
     title="Games"
-    subtitle="Filter imported games and send selected games to analysis."
+    subtitle="Filter imported games and submit durable indexing, analysis, or tag jobs."
     [stats]="headerStats()"
     [actions]="headerActions()"
   />
@@ -15,20 +15,12 @@
     (reset)="store.resetFilters()"
   />
 
-  @if (store.importedGameAnalysis.progress().running || store.importedGameAnalysis.progress().error) {
-    <p class="status-note">
-      {{ store.importedGameAnalysis.progress().error || (store.importedGameAnalysis.progress().message + ' (' + store.importedGameAnalysis.progress().currentPly + '/' + store.importedGameAnalysis.progress().totalPlies + ')') }}
-    </p>
-  }
-
   <app-games-table
     [games]="store.filteredGames()"
     [loading]="store.loading()"
     [error]="store.error()"
     [tableSubtitle]="store.tableSubtitle()"
     [pageInfo]="store.pageInfo()"
-    [analysingGameId]="store.analysingGameId()"
-    [indexingPlyGameId]="store.indexingPlyGameId()"
     (refresh)="store.refresh()"
     (loadMore)="store.loadMore()"
     (analyse)="store.analyse($event)"
