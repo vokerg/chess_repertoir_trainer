@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import prisma from './prisma';
-import { defaultJobTaskExecutorRegistry } from './modules/jobs/job-task-executor';
+import { defaultJobTaskExecutorRegistry } from './modules/jobs/imported-game-job-executors';
 import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
 import { JobWorkerRepository } from './modules/jobs/job-worker.repository.prisma';
 import { createJobWorker } from './modules/jobs/job-worker.service';
