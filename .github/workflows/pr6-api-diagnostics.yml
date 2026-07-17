@@ -1,0 +1,56 @@
+name: PR6 API Diagnostics
+
+on:
+  pull_request:
+    branches:
+      - feature/persistent-game-jobs
+
+jobs:
+  api-diagnostics:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chess_trainer_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d chess_trainer_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      WEB_API_BASE_URL: /api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --silent
+      - run: npm run build:domain --silent
+      - run: npm run build:contracts --silent
+      - run: npm run build:api --silent
+      - run: npm run db:migrate --workspace=apps/api --silent
+      - name: Capture API tests
+        shell: bash
+        run: |
+          set +e
+          npm run test --workspace=apps/api > pr6-api-test.log 2>&1
+          echo $? > pr6-api-test.status
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr6-api-diagnostics
+          path: |
+            pr6-api-test.log
+            pr6-api-test.status
+      - name: Enforce API tests
+        shell: bash
+        run: exit "$(cat pr6-api-test.status)"
