@@ -2,12 +2,7 @@
   <app-game-detail-header
     [game]="store.game()"
     [title]="store.gameTitle()"
-    [selectedLabel]="store.selectedLabel()"
-    [analysisRunning]="store.analysisRunning()"
-    [refreshingTags]="store.refreshingTags()"
     [fullRefreshing]="store.fullRefreshing()"
-    (analyze)="store.analyzeImportedGame($event)"
-    (refreshTags)="store.refreshTags()"
     (fullRefresh)="store.fullRefreshGame()"
   />
 
@@ -25,8 +20,6 @@
       [analysisRun]="store.analysisRun()"
       [analysisStatus]="store.analysisStatusLabel()"
       [analysisSummary]="store.analysisSummaryLabel()"
-      [analysisMessage]="store.analysisMessage()"
-      [analysisMessageIsError]="store.analysisMessageIsError()"
     />
 
     @if (store.tree(); as tree) {
