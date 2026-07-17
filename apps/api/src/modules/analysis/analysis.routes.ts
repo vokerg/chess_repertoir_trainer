@@ -9,22 +9,15 @@ import {
   storePositionAnalysisSchema,
   updatePlyAnalysisSchema,
 } from './analysis.schemas';
-import { isLocalBatchStockfishAnalysisEnabled } from './batch-analysis.config';
-import { ImportedGameBatchAnalysisService } from './batch-game-analysis.service';
 import { GameAnalysisService } from './game-analysis.service';
 import { ImportedGameAnalysisWorkflowService } from './imported-game-analysis-workflow.service';
 import { PositionAnalysisService } from './position-analysis.service';
 import { clearImportedGamePlyAnalysis, updateImportedGamePlyAnalysis } from './analysis.repository.prisma';
 import {
   legacyOpaqueResponseSchema,
-  messageResponseSchema,
   unauthorizedResponseSchema,
 } from '../../routes/legacy-route.schemas';
-import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
-
-const batchAnalysisRequestSchema = z.object({
-  gameIds: z.array(z.number().int().positive()).min(1).max(500),
-});
+import { apiErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const importedGameParamsSchema = z.object({ gameId: z.coerce.number().int().positive() });
 const importedGameAnalysisMoveResponseSchema = z.object({
@@ -49,53 +42,6 @@ const analysisRouteSchema = <T extends Record<string, unknown>>(operationId: str
 });
 
 const analysisModule: FastifyPluginAsyncZod = async (app) => {
-  app.get('/api/imported-games/batch-analysis/config', {
-    schema: analysisRouteSchema('getBatchAnalysisConfig', {
-      summary: 'Get local batch-analysis availability',
-      response: {
-        200: z.object({ enabled: z.boolean() }),
-        401: unauthorizedResponseSchema,
-      },
-    }),
-  }, async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-    return { enabled: isLocalBatchStockfishAnalysisEnabled() };
-  });
-
-  app.post('/api/imported-games/batch-analysis-runs', {
-    schema: analysisRouteSchema('createBatchAnalysisRun', {
-      summary: 'Queue analysis for imported games',
-      body: batchAnalysisRequestSchema,
-      response: {
-        200: z.object({ accepted: z.literal(true), gameIds: z.array(z.number().int().positive()) }),
-        400: apiErrorResponseSchema,
-        401: unauthorizedResponseSchema,
-        403: apiErrorResponseSchema,
-      },
-    }),
-  }, async (request, reply) => {
-    const auth = requireAuth(request, reply);
-    if (!auth) return;
-    if (!isLocalBatchStockfishAnalysisEnabled()) {
-      reply.code(403);
-      return { error: 'Local batch Stockfish analysis is disabled' };
-    }
-
-    const gameIds = Array.from(new Set(request.body.gameIds));
-    try {
-      const acceptedGameIds = await ImportedGameBatchAnalysisService.enqueue(auth.userId, gameIds);
-      reply.code(200);
-      return {
-        accepted: true as const,
-        gameIds: acceptedGameIds,
-      };
-    } catch (err: any) {
-      reply.code(400);
-      return { error: err?.message ?? String(err) };
-    }
-  });
-
   app.route({
     method: 'GET',
     url: '/api/position-analysis',
