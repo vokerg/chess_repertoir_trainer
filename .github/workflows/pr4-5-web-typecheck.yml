@@ -1,0 +1,19 @@
+name: PR4-5 Web Typecheck
+
+on:
+  pull_request:
+    branches:
+      - feature/persistent-game-jobs
+
+jobs:
+  web-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13
+          cache: npm
+      - run: npm ci --silent
+      - run: npm run build:contracts --silent
+      - run: npx ngc -p apps/web/tsconfig.app.json --noEmit
