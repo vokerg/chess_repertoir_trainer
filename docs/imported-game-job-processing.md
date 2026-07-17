@@ -95,15 +95,9 @@ The store:
 
 The global panel shows job kind, status, task totals, settled progress, running count, and failures. Recent terminal jobs remain briefly visible with active work.
 
-Games Explorer submits one durable job for single-game or visible-game indexing, analysis, and explicit tag refresh. Account workflow actions submit one durable job for the confirmed account batch rather than calling one endpoint per game from the browser.
+Games Explorer preserves per-game **Index** and **Analyse** actions and submits one durable job for either a single game or the currently visible games. Its visible-game tag refresh submits one `REFRESH_TAGS` job. Account workflow actions submit one durable job for the confirmed account batch rather than calling one endpoint per game from the browser.
 
-Single-game review preserves its **Analyse**, **Refresh tags**, and **Full refresh** actions:
-
-- Analyse submits `ANALYSE_GAMES` for that game;
-- Refresh tags submits `REFRESH_TAGS` for that game;
-- Full refresh submits `PROCESS_GAMES` for that game.
-
-The single-game page reads `GameAnalysisRun.positionsDone` and `positionsTotal` while an analysis-backed job is active, and reloads game data when the job settles.
+Single-game review preserves its **Full refresh** action and submits `PROCESS_GAMES` for that game. While full processing is active, the page reads `GameAnalysisRun.positionsDone` and `positionsTotal` for move-level progress and reloads game data when the job settles.
 
 The interactive engine used to analyse the currently selected board position remains browser-side. Only persisted whole-game indexing, classification, analysis, and tag workflows moved to the worker.
 
