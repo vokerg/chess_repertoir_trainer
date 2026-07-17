@@ -1,167 +1,140 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import type { CreateImportedGameJobRunResponse, JobRunKind } from '@chess-trainer/contracts/jobs';
+import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import { GamesApiService } from '../data-access/games-api.service';
-import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import { ImportedGameSearchItem } from '../data-access/games.models';
 import { GamesExplorerStore } from './games-explorer.store';
 
 describe('GamesExplorerStore', () => {
   let store: GamesExplorerStore;
   let api: jasmine.SpyObj<GamesApiService>;
-  let analysis: jasmine.SpyObj<ImportedGameAnalysisService>;
+  let submit: jasmine.Spy;
+  let isGameActive: jasmine.Spy;
 
   beforeEach(() => {
-    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['indexPlies', 'runIndexWorkflow', 'refreshGameTags', 'searchGames']);
-    analysis = jasmine.createSpyObj<ImportedGameAnalysisService>('ImportedGameAnalysisService', ['analyzeGame']);
+    api = jasmine.createSpyObj<GamesApiService>('GamesApiService', [
+      'getFacets',
+      'searchGames',
+    ]);
+    submit = jasmine.createSpy('submit').and.callFake(
+      async (kind: JobRunKind, gameIds: readonly number[], force = false) =>
+        acceptedJob(kind, gameIds, force),
+    );
+    isGameActive = jasmine.createSpy('isGameActive').and.returnValue(false);
 
     TestBed.configureTestingModule({
       providers: [
         GamesExplorerStore,
         { provide: GamesApiService, useValue: api },
-        { provide: ImportedGameAnalysisService, useValue: analysis },
+        {
+          provide: ImportedGameJobStore,
+          useValue: {
+            terminalBatch: signal(null),
+            submit,
+            isGameActive,
+          },
+        },
       ],
     });
     store = TestBed.inject(GamesExplorerStore);
     store.games.set([game(1), game(2)]);
   });
 
-  it('patches one indexed row without reloading or replacing the other row', () => {
-    const untouched = store.games()[1];
-    api.indexPlies.and.returnValue(of({
-      importedGameId: 1,
-      eligible: true,
-      plyIndex: {
-        importedGameId: 1,
-        status: 'INDEXED',
-        plyIndexedAt: '2026-06-07T12:00:00.000Z',
-      },
-      openingAssignment: {
-        importedGameId: 1,
-        status: 'ASSIGNED',
-        openingEco: 'B20',
-        openingName: 'Sicilian Defense',
-      },
-    }));
+  it('only includes blitz and rapid games without active jobs in bulk index candidates', () => {
+    isGameActive.and.callFake((gameId: number) => gameId === 3);
+    store.games.set([
+      game(1, 'bullet'),
+      game(2, 'blitz'),
+      game(3, 'rapid'),
+      { ...game(4, 'rapid'), plyIndex: { status: 'INDEXED' } },
+    ]);
 
-    store.indexPlies(store.games()[0]);
-
-    expect(store.games()[0].plyIndex).toEqual({ status: 'INDEXED' });
-    expect(store.games()[0].opening).toEqual(jasmine.objectContaining({
-      eco: 'B20',
-      name: 'Sicilian Defense',
-    }));
-    expect(store.games()[1]).toBe(untouched);
-    expect(api.searchGames).not.toHaveBeenCalled();
+    expect(store.bulkIndexableGames().map((item) => item.id)).toEqual([2]);
   });
 
-  it('records an indexing failure with immutable nested state', () => {
+  it('submits one-game indexing without optimistic row mutation', async () => {
     const original = store.games()[0];
-    const originalPlyIndex = original.plyIndex;
-    api.indexPlies.and.returnValue(throwError(() => new Error('Index failed')));
 
     store.indexPlies(original);
+    await settlePromises();
 
-    expect(store.games()[0]).not.toBe(original);
-    expect(store.games()[0].plyIndex).not.toBe(originalPlyIndex);
-    expect(store.games()[0].plyIndex).toEqual(jasmine.objectContaining({
-      status: 'FAILED',
-    }));
-    expect(originalPlyIndex.status).toBe('NOT_INDEXED');
+    expect(submit).toHaveBeenCalledOnceWith('INDEX_GAMES', [1], false);
+    expect(store.games()[0]).toBe(original);
+    expect(store.games()[0].plyIndex.status).toBe('NOT_INDEXED');
   });
 
-  it('only includes blitz and rapid games in bulk index candidates', () => {
-    store.games.set([
-      game(1, 0, 'bullet'),
-      game(2, 0, 'blitz'),
-      game(3, 0, 'rapid'),
-      { ...game(4, 0, 'rapid'), plyIndex: { status: 'INDEXED' } },
-    ]);
+  it('submits forced one-game analysis through the persistent job store', async () => {
+    store.forceReanalyse(store.games()[0]);
+    await settlePromises();
 
-    expect(store.bulkIndexableGames().map((item) => item.id)).toEqual([2, 3]);
+    expect(submit).toHaveBeenCalledOnceWith('ANALYSE_GAMES', [1], true);
+    expect(store.games()[0].analysis.status).toBe('NOT_ANALYZED');
   });
 
-  it('marks analysis complete and reloads the list so refreshed tags are visible', async () => {
-    analysis.analyzeGame.and.resolveTo({});
-    api.searchGames.and.returnValue(of({
-      items: [
-        { ...game(1), analysis: { ...game(1).analysis, status: 'COMPLETED' }, tagCount: 1 },
-        store.games()[1],
-      ],
-      pageInfo: { nextCursor: null, hasMore: false },
-      appliedFilters: { sort: 'endedAtDesc', limit: 50 },
-    }));
+  it('submits all visible indexing candidates as one durable job', async () => {
+    store.games.set([game(1, 'blitz'), game(2, 'rapid'), game(3, 'bullet')]);
 
-    store.analyse(store.games()[0]);
-    await Promise.resolve();
-    await Promise.resolve();
+    store.indexAllVisibleGames();
+    await settlePromises();
 
-    expect(store.games().length).toBe(2);
-    expect(store.games()[0].analysis.status).toBe('COMPLETED');
-    expect(store.games()[0].tagCount).toBe(1);
-    expect(api.searchGames).toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledOnceWith('INDEX_GAMES', [1, 2], false);
   });
 
-  it('refreshes tags for visible rows without reloading the list', async () => {
-    const untouchedPlyIndex = store.games()[1].plyIndex;
-    api.refreshGameTags.and.callFake((gameId: number) => of({
-      importedGameId: gameId,
-      tagCodes: [gameId],
-      tags: [{ code: gameId, name: `Tag ${gameId}` }],
-    }));
+  it('submits visible tag refresh as one durable job', async () => {
+    store.refreshTagsForVisibleGames();
+    await settlePromises();
 
-    await store.refreshTagsForVisibleGames();
-
-    expect(store.games()[0].tagCount).toBe(1);
-    expect(store.games()[1].tagCount).toBe(1);
-    expect(store.games()[1].plyIndex).toBe(untouchedPlyIndex);
-    expect(store.bulkRefreshingTags()).toBeFalse();
-    expect(store.bulkRefreshTagsCompleted()).toBe(2);
-    expect(api.searchGames).not.toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledOnceWith('REFRESH_TAGS', [1, 2], false);
   });
 
-  it('skips bulk tag refresh for rows that already have at least three tags', async () => {
-    store.games.set([
-      game(1),
-      game(2, 3),
-    ]);
-    api.refreshGameTags.and.returnValue(of({
-      importedGameId: 1,
-      tagCodes: [10],
-      tags: [{ code: 10, name: 'Needs review' }],
-    }));
-
-    await store.refreshTagsForVisibleGames();
-
-    expect(api.refreshGameTags).toHaveBeenCalledOnceWith(1);
-    expect(store.games()[0].tagCount).toBe(1);
-    expect(store.games()[1].tagCount).toBe(3);
-    expect(store.bulkRefreshTagsTotal()).toBe(2);
-    expect(store.bulkRefreshTagsCompleted()).toBe(2);
-  });
-
-  it('keeps successful tag patches and records the first bulk refresh failure', async () => {
-    api.refreshGameTags.and.callFake((gameId: number) => {
-      if (gameId === 2) return throwError(() => new Error('Tag refresh failed'));
-      return of({
-        importedGameId: gameId,
-        tagCodes: [10],
-        tags: [{ code: 10, name: 'Needs review' }],
-      });
+  it('surfaces rejected games without pretending the rows are running', async () => {
+    submit.and.resolveTo({
+      ...acceptedJob('ANALYSE_GAMES', [1], false),
+      rejectedGameIds: [1],
     });
 
-    await store.refreshTagsForVisibleGames();
+    store.analyse(store.games()[0]);
+    await settlePromises();
 
-    expect(store.games()[0].tagCount).toBe(1);
-    expect(store.games()[1].tagCount).toBe(0);
-    expect(store.error()).toBe('Tag refresh failed');
-    expect(store.bulkRefreshingTags()).toBeFalse();
-    expect(store.bulkRefreshTagsCompleted()).toBe(2);
+    expect(store.error()).toContain('1 selected game was not available');
+    expect(store.games()[0].analysis.status).toBe('NOT_ANALYZED');
   });
 });
 
+function acceptedJob(
+  kind: JobRunKind,
+  gameIds: readonly number[],
+  force: boolean,
+): CreateImportedGameJobRunResponse {
+  return {
+    jobRun: {
+      id: 100,
+      kind,
+      source: 'USER_ACTION',
+      priority: 300,
+      status: 'QUEUED',
+      totalTasks: gameIds.length,
+      force,
+      taskCounts: {
+        queued: gameIds.length,
+        running: 0,
+        completed: 0,
+        skipped: 0,
+        failed: 0,
+        cancelled: 0,
+      },
+      createdAt: '2026-07-17T10:00:00.000Z',
+      updatedAt: '2026-07-17T10:00:00.000Z',
+      startedAt: null,
+      completedAt: null,
+    },
+    rejectedGameIds: [],
+  };
+}
+
 function game(
   id: number,
-  tagCount = 0,
   speedCategory: string | null = 'rapid',
 ): ImportedGameSearchItem {
   return {
@@ -177,7 +150,7 @@ function game(
     userColor: null,
     resultForUser: null,
     opening: { eco: null, name: null },
-    tagCount,
+    tagCount: 0,
     plyIndex: { status: 'NOT_INDEXED' },
     analysis: {
       status: 'NOT_ANALYZED',
@@ -186,4 +159,9 @@ function game(
       userAccuracy: null,
     },
   };
+}
+
+async function settlePromises(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
 }

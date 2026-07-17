@@ -112,21 +112,17 @@
                           type="button"
                           class="secondary"
                           (click)="confirmIndexNewImportedGames(account, result)"
-                          [disabled]="newImportedUnindexedGameIds(account.id, result).length === 0 || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id"
+                          [disabled]="newImportedUnindexedGameIds(account.id, result).length === 0 || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id)"
                         >
-                          @if (store.indexingWorkflowAccountId() === account.id) {
-                            Indexing {{ store.indexWorkflowCompleted() }}/{{ store.indexWorkflowTotal() }}
-                          } @else {
-                            Index new games
-                          }
+                          {{ store.isAccountIndexing(account.id) ? 'Indexing in background...' : 'Index new games' }}
                         </button>
                         <button
                           type="button"
                           class="secondary"
                           (click)="confirmAnalyseNewImportedGames(account, result)"
-                          [disabled]="newImportedIndexedGameIds(account.id, result).length === 0 || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id"
+                          [disabled]="newImportedIndexedGameIds(account.id, result).length === 0 || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id)"
                         >
-                          {{ store.analysingWorkflowAccountId() === account.id ? 'Submitting analysis...' : 'Analyse new indexed games' }}
+                          {{ store.isAccountAnalysing(account.id) ? 'Analysis in background...' : 'Analyse new indexed games' }}
                         </button>
                       </div>
                     </div>
@@ -164,17 +160,17 @@
                 type="button"
                 class="secondary"
                 (click)="confirmIndexEligibleAccountGames(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id) || store.deletingAccountId() === account.id || !account.isActive"
               >
-                {{ store.indexingWorkflowAccountId() === account.id ? 'Indexing...' : 'Index blitz/rapid games' }}
+                {{ store.isAccountIndexing(account.id) ? 'Indexing in background...' : 'Index blitz/rapid games' }}
               </button>
               <button
                 type="button"
                 class="secondary"
                 (click)="confirmAnalyseEligibleAccountGames(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.indexingWorkflowAccountId() === account.id || store.analysingWorkflowAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id) || store.deletingAccountId() === account.id || !account.isActive"
               >
-                {{ store.analysingWorkflowAccountId() === account.id ? 'Submitting...' : 'Analyse indexed blitz/rapid games' }}
+                {{ store.isAccountAnalysing(account.id) ? 'Analysis in background...' : 'Analyse indexed blitz/rapid games' }}
               </button>
               <button
                 type="button"

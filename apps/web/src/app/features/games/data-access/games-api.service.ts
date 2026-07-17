@@ -1,20 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
+import { GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { mapGameFiltersToQueryString } from '../../../shared/games/filters/game-filter-query.mapper';
 import {
-  BatchAnalysisAcceptedResponse,
-  BatchAnalysisConfig,
   GameTagDefinitionsResponse,
   ImportedGameAnalysisResponse,
   ImportedGameDetail,
   ImportedGameFacetsResponse,
-  ImportedGameFullRefreshAcceptedResponse,
-  ImportedGameIndexWorkflowResult,
   ImportedGameSearchResponse,
-  ImportedGameTagsRefreshResponse,
 } from './games.models';
-import { GameFilters } from '../../../shared/games/filters/game-filter.model';
-import { mapGameFiltersToQueryString } from '../../../shared/games/filters/game-filter-query.mapper';
 
 @Injectable({ providedIn: 'root' })
 export class GamesApiService {
@@ -37,33 +32,8 @@ export class GamesApiService {
   }
 
   searchGames(filters: GameFilters, cursor?: string | null): Observable<ImportedGameSearchResponse> {
-    return this.api.get<ImportedGameSearchResponse>(`/imported-games${mapGameFiltersToQueryString(filters, cursor)}`);
-  }
-
-  getBatchAnalysisConfig(): Observable<BatchAnalysisConfig> {
-    return this.api.get<BatchAnalysisConfig>('/imported-games/batch-analysis/config');
-  }
-
-  startBatchAnalysis(gameIds: number[]): Observable<BatchAnalysisAcceptedResponse> {
-    return this.api.post<BatchAnalysisAcceptedResponse>('/imported-games/batch-analysis-runs', { gameIds });
-  }
-
-  runIndexWorkflow(gameId: number, force = false): Observable<ImportedGameIndexWorkflowResult> {
-    return this.api.post<ImportedGameIndexWorkflowResult>(`/imported-games/${gameId}/ply-index`, force ? { force: true } : {});
-  }
-
-  indexPlies(gameId: number, force = false): Observable<ImportedGameIndexWorkflowResult> {
-    return this.runIndexWorkflow(gameId, force);
-  }
-
-  refreshGameTags(gameId: number): Observable<ImportedGameTagsRefreshResponse> {
-    return this.api.post<ImportedGameTagsRefreshResponse>(`/imported-games/${gameId}/tags/refresh`, {});
-  }
-
-  fullRefreshGame(gameId: number): Observable<ImportedGameFullRefreshAcceptedResponse> {
-    return this.api.post<ImportedGameFullRefreshAcceptedResponse>(
-      `/imported-games/${gameId}/full-refresh-runs`,
-      {},
+    return this.api.get<ImportedGameSearchResponse>(
+      `/imported-games${mapGameFiltersToQueryString(filters, cursor)}`,
     );
   }
 }

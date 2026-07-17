@@ -9,8 +9,6 @@ import {
   DeleteAccountResponse,
   DefaultProgressAccountResponse,
   ExternalAccount,
-  BatchAnalysisAcceptedResponse,
-  ImportedGameIndexWorkflowResult,
   ImportedGameWorkflowCandidates,
   ImportRunSummary,
   LichessConnectionStatus,
@@ -62,7 +60,11 @@ export class AccountsApiService {
     );
   }
 
-  createAccount(body: { provider: string; username: string; displayName?: string }): Observable<ExternalAccount> {
+  createAccount(body: {
+    provider: string;
+    username: string;
+    displayName?: string;
+  }): Observable<ExternalAccount> {
     return this.api.post<ExternalAccount>('/me/accounts', body);
   }
 
@@ -71,15 +73,9 @@ export class AccountsApiService {
   }
 
   getWorkflowCandidates(accountId: number): Observable<ImportedGameWorkflowCandidates> {
-    return this.api.get<ImportedGameWorkflowCandidates>(`/me/accounts/${accountId}/imported-game-workflow-candidates`);
-  }
-
-  runIndexWorkflow(gameId: number): Observable<ImportedGameIndexWorkflowResult> {
-    return this.api.post<ImportedGameIndexWorkflowResult>(`/imported-games/${gameId}/ply-index`, {});
-  }
-
-  startBatchAnalysis(gameIds: number[]): Observable<BatchAnalysisAcceptedResponse> {
-    return this.api.post<BatchAnalysisAcceptedResponse>('/imported-games/batch-analysis-runs', { gameIds });
+    return this.api.get<ImportedGameWorkflowCandidates>(
+      `/me/accounts/${accountId}/imported-game-workflow-candidates`,
+    );
   }
 
   resetCursor(accountId: number): Observable<ExternalAccount> {
@@ -95,7 +91,9 @@ export class AccountsApiService {
   }
 
   setDefaultProgressAccount(accountId: number | null): Observable<DefaultProgressAccountResponse> {
-    return this.api.patch<DefaultProgressAccountResponse>('/me/default-progress-account', { accountId });
+    return this.api.patch<DefaultProgressAccountResponse>('/me/default-progress-account', {
+      accountId,
+    });
   }
 
   getLichessConnection(): Observable<LichessConnectionStatus> {

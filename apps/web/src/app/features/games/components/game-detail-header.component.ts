@@ -21,13 +21,10 @@ export class GameDetailHeaderComponent {
   readonly fullRefreshing = input(false);
   readonly fullRefresh = output<void>();
 
-  protected readonly fullRefreshAction = computed(() => {
-    const game = this.game();
-    return {
-      disabled: !game || game.analysis.status === 'RUNNING' || this.fullRefreshing(),
-      label: this.fullRefreshing() ? 'Submitting...' : 'Full refresh',
-    };
-  });
+  protected readonly fullRefreshAction = computed(() => ({
+    disabled: !this.game() || this.fullRefreshing(),
+    label: this.fullRefreshing() ? 'Full refresh in background...' : 'Full refresh',
+  }));
 
   protected readonly providerLabel = providerLabel;
   protected readonly gameDateLabel = gameDateLabel;

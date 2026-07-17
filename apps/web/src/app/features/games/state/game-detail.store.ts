@@ -1,7 +1,8 @@
-import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Chess } from 'chess.js';
 import { firstValueFrom } from 'rxjs';
+import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import {
   PositionAnalysisCacheService,
   RICH_INTERACTIVE_CACHE_MIN_DEPTH,
@@ -38,23 +39,26 @@ const EMPTY_ENGINE_ANALYSIS: EngineAnalysis = {
 @Injectable()
 export class GameDetailStore implements OnDestroy {
   private readonly api = inject(GamesApiService);
+  private readonly jobs = inject(ImportedGameJobStore);
   private readonly positionAnalysis = inject(PositionAnalysisCacheService);
-
   private readonly gameId = signal<number | null>(null);
+  private readonly submittingFullRefresh = signal(false);
+  private nextLocalNodeId = 1_000_000;
+  private analysisTimer?: ReturnType<typeof setTimeout>;
+  private lastTerminalSequence = 0;
+  private lastPollVersion = -1;
+  private loadingAnalysisProgress = false;
+
   readonly game = signal<ImportedGameDetail | null>(null);
   readonly analysisRun = signal<ImportedGameAnalysisRun | null>(null);
   readonly tree = signal<GameTree | null>(null);
   readonly selectedNodeId = signal(0);
   readonly boardPositionVersion = signal(0);
   readonly loading = signal(true);
-  readonly fullRefreshing = signal(false);
   readonly error = signal<string | null>(null);
   readonly engineAnalysis = toSignal(this.positionAnalysis.state$, {
     initialValue: EMPTY_ENGINE_ANALYSIS,
   });
-
-  private nextLocalNodeId = 1_000_000;
-  private analysisTimer?: ReturnType<typeof setTimeout>;
 
   readonly selectedNode = computed(() =>
     findGameTreeNode(this.selectedNodeId(), this.tree()?.root),
@@ -95,19 +99,53 @@ export class GameDetailStore implements OnDestroy {
     const game = this.game();
     return game ? `${playerLabel(game.white)} vs ${playerLabel(game.black)}` : 'Imported game';
   });
+  readonly processJob = computed(() => {
+    const gameId = this.gameId();
+    return gameId ? this.jobs.activeRunForGame(gameId, ['PROCESS_GAMES']) : null;
+  });
+  readonly fullRefreshing = computed(() =>
+    this.submittingFullRefresh() || this.processJob() !== null,
+  );
   readonly analysisStatusLabel = computed(() => {
-    if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED')
+    const job = this.processJob();
+    if (job?.status === 'QUEUED') return 'Queued';
+    if (job?.status === 'RUNNING') return 'Running';
+    if (this.analysisRun()?.status === 'COMPLETED' || this.game()?.analysis.status === 'COMPLETED') {
       return 'Saved';
-    if (this.game()?.analysis.status === 'RUNNING') return 'Running';
-    if (this.game()?.analysis.status === 'FAILED') return 'Failed';
+    }
+    if (this.analysisRun()?.status === 'RUNNING' || this.game()?.analysis.status === 'RUNNING') {
+      return 'Running';
+    }
+    if (this.analysisRun()?.status === 'FAILED' || this.game()?.analysis.status === 'FAILED') {
+      return 'Failed';
+    }
     return 'None';
   });
   readonly analysisSummaryLabel = computed(() => {
     const run = this.analysisRun();
-    return run
-      ? `${run.moves.length} analysed moves · ${run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length} critical`
-      : 'No saved analysis loaded';
+    if (!run) return this.processJob() ? 'Waiting for analysis progress...' : 'No saved analysis loaded';
+    if (run.status === 'RUNNING') {
+      return `${run.positionsDone ?? 0}/${run.positionsTotal ?? 0} positions analysed`;
+    }
+    return `${run.moves.length} analysed moves · ${run.moves.filter((move) => move.classificationCode === 5 || move.classificationCode === 6).length} critical`;
   });
+
+  constructor() {
+    effect(() => {
+      const batch = this.jobs.terminalBatch();
+      if (!batch || batch.sequence === this.lastTerminalSequence) return;
+      this.lastTerminalSequence = batch.sequence;
+      const gameId = this.gameId();
+      if (gameId && batch.gameIds.includes(gameId)) void this.loadGame();
+    });
+
+    effect(() => {
+      const pollVersion = this.jobs.pollVersion();
+      if (pollVersion === this.lastPollVersion) return;
+      this.lastPollVersion = pollVersion;
+      if (this.processJob()) void this.loadSavedAnalysis(false);
+    });
+  }
 
   initialize(gameId: number): void {
     if (!Number.isFinite(gameId) || gameId <= 0) {
@@ -234,30 +272,25 @@ export class GameDetailStore implements OnDestroy {
 
   async fullRefreshGame(): Promise<void> {
     const gameId = this.gameId();
-    if (
-      !gameId ||
-      this.fullRefreshing() ||
-      this.game()?.analysis.status === 'RUNNING'
-    ) {
-      return;
-    }
+    if (!gameId || this.fullRefreshing() || this.jobs.isGameActive(gameId)) return;
 
     this.error.set(null);
-    this.fullRefreshing.set(true);
+    this.submittingFullRefresh.set(true);
     try {
-      await firstValueFrom(this.api.fullRefreshGame(gameId));
+      await this.jobs.submit('PROCESS_GAMES', [gameId]);
     } catch (error) {
-      this.error.set(readError(error, 'Could not start full refresh.'));
+      this.error.set(readError(error, 'Could not submit full refresh.'));
     } finally {
-      this.fullRefreshing.set(false);
+      this.submittingFullRefresh.set(false);
     }
   }
 
   handleKeyboard(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
     const tag = target?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable)
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) {
       return;
+    }
     const commands: Record<string, () => void> = {
       ArrowLeft: () => this.goToPrevious(),
       ArrowRight: () => this.goToNext(),
@@ -275,10 +308,11 @@ export class GameDetailStore implements OnDestroy {
     this.positionAnalysis.stop();
   }
 
-  private async loadSavedAnalysis(): Promise<void> {
+  private async loadSavedAnalysis(resetOnMissing = true): Promise<void> {
     const gameId = this.gameId();
     const game = this.game();
-    if (!gameId || !game) return;
+    if (!gameId || !game || this.loadingAnalysisProgress) return;
+    this.loadingAnalysisProgress = true;
     try {
       const response = await firstValueFrom(this.api.getAnalysis(gameId));
       const analysisByPly = Object.fromEntries(
@@ -289,7 +323,9 @@ export class GameDetailStore implements OnDestroy {
         tree ? { root: attachGameTreeAnalysis(tree.root, analysisByPly) } : tree,
       );
     } catch {
-      this.analysisRun.set(null);
+      if (resetOnMissing) this.analysisRun.set(null);
+    } finally {
+      this.loadingAnalysisProgress = false;
     }
   }
 
@@ -301,7 +337,6 @@ export class GameDetailStore implements OnDestroy {
   private resetViewState(): void {
     if (this.analysisTimer) clearTimeout(this.analysisTimer);
     this.loading.set(true);
-    this.fullRefreshing.set(false);
     this.error.set(null);
     this.game.set(null);
     this.analysisRun.set(null);
