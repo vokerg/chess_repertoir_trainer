@@ -23,7 +23,7 @@ export class GameDetailHeaderComponent {
 
   protected readonly fullRefreshAction = computed(() => ({
     disabled: !this.game() || this.fullRefreshing(),
-    label: this.fullRefreshing() ? 'Full refresh in background...' : 'Full refresh',
+    label: this.fullRefreshing() ? 'Game workflow in background...' : 'Full refresh',
   }));
 
   protected readonly providerLabel = providerLabel;
