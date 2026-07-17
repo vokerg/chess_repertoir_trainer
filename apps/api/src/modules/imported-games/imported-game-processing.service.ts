@@ -1,8 +1,8 @@
 import type { StockfishEngine } from '../analysis/stockfish-engine';
 import {
-  ImportedGameAnalysisService,
+  ImportedGameAnalysisExecutionService,
   type ImportedGameAnalysisOptions,
-} from '../analysis/imported-game-analysis.service';
+} from '../analysis/imported-game-analysis-execution.service';
 import { GameOpeningAssignmentService } from './game-opening-assignment.service';
 import { ImportedGamePlyIndexService } from './ply-index.service';
 
@@ -18,7 +18,7 @@ export type ImportedGameProcessExecutionOptions = ImportedGameAnalysisOptions;
 interface ImportedGameProcessingDependencies {
   indexOne: typeof ImportedGamePlyIndexService.indexOne;
   assignMissingOpening: typeof GameOpeningAssignmentService.assignMissingOpening;
-  analyseOne: typeof ImportedGameAnalysisService.analyseOne;
+  analyseOne: typeof ImportedGameAnalysisExecutionService.analyseOne;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -91,5 +91,5 @@ export function createImportedGameProcessingService(
 export const ImportedGameProcessingService = createImportedGameProcessingService({
   indexOne: ImportedGamePlyIndexService.indexOne,
   assignMissingOpening: GameOpeningAssignmentService.assignMissingOpening,
-  analyseOne: ImportedGameAnalysisService.analyseOne,
+  analyseOne: ImportedGameAnalysisExecutionService.analyseOne,
 });
