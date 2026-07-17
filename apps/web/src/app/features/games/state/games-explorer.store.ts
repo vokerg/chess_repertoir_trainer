@@ -10,6 +10,7 @@ import {
   ImportedGameFacetsResponse,
   ImportedGamePageInfo,
   ImportedGameSearchItem,
+  ImportedGameSearchResponse,
 } from '../data-access/games.models';
 
 @Injectable()
@@ -211,7 +212,9 @@ export class GamesExplorerStore {
 
     try {
       do {
-        const data = await firstValueFrom(this.api.searchGames(this.filters(), cursor));
+        const data: ImportedGameSearchResponse = await firstValueFrom(
+          this.api.searchGames(this.filters(), cursor),
+        );
         items.push(...data.items);
         pageInfo = data.pageInfo;
         cursor = data.pageInfo.nextCursor;
