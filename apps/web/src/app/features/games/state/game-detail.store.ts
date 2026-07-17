@@ -283,7 +283,7 @@ export class GameDetailStore implements OnDestroy {
     this.error.set(null);
     this.submittingFullRefresh.set(true);
     try {
-      await this.jobs.submit('PROCESS_GAMES', [gameId]);
+      await this.jobs.submit('PROCESS_GAMES', [gameId], true);
     } catch (error) {
       this.error.set(readError(error, 'Could not submit full refresh.'));
     } finally {
