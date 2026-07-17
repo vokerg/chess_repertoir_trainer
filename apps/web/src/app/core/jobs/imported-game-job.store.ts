@@ -186,7 +186,7 @@ export class ImportedGameJobStore {
       this.error.set(null);
       this.pollVersion.update((version) => version + 1);
 
-      if (response.items.length) this.schedulePoll();
+      if (this.activeRuns().length) this.schedulePoll();
       else this.stopPolling();
     } catch (error) {
       this.error.set(readError(error, 'Could not refresh active jobs.'));
