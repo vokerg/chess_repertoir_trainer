@@ -33,6 +33,14 @@ export class ImportedGameJobApiService {
     return this.api.get<JobRunDetailResponse>(`/job-runs/${jobRunId}`);
   }
 
+  cancelJob(jobRunId: number): Observable<JobRunDetailResponse> {
+    return this.api.post<JobRunDetailResponse>(`/job-runs/${jobRunId}/cancel`, {});
+  }
+
+  retryJob(jobRunId: number): Observable<CreateImportedGameJobRunResponse> {
+    return this.api.post<CreateImportedGameJobRunResponse>(`/job-runs/${jobRunId}/retry`, {});
+  }
+
   listTasks(jobRunId: number, offset = 0, limit = 500): Observable<JobTaskListResponse> {
     return this.api.get<JobTaskListResponse>(
       `/job-runs/${jobRunId}/tasks?offset=${offset}&limit=${limit}`,
