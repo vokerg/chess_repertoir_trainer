@@ -16,4 +16,19 @@ jobs:
           cache: npm
       - run: npm ci --silent
       - run: npm run build:contracts --silent
-      - run: npx ngc -p apps/web/tsconfig.app.json --noEmit
+      - name: Capture web typecheck
+        shell: bash
+        run: |
+          set +e
+          npx ngc -p apps/web/tsconfig.app.json --noEmit > web-typecheck.log 2>&1
+          echo $? > web-typecheck.status
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr4-5-web-typecheck
+          path: |
+            web-typecheck.log
+            web-typecheck.status
+      - name: Enforce web typecheck
+        shell: bash
+        run: exit "$(cat web-typecheck.status)"
