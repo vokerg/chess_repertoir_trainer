@@ -88,7 +88,8 @@
   background: var(--surface-muted);
 }
 
-.job-row-heading {
+.job-row-heading,
+.job-row-footer {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -116,15 +117,47 @@
   transition: width 180ms ease;
 }
 
+.job-row-footer {
+  align-items: center;
+  margin-top: 0.4rem;
+}
+
 .job-progress-label,
 .job-panel-note,
 .job-panel-error {
-  margin: 0.4rem 0 0;
+  margin: 0;
 }
 
 .job-panel-error {
   color: var(--danger);
   font-size: 0.86rem;
+}
+
+.job-action {
+  flex: 0 0 auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  background: var(--surface-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.job-action:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.job-action-cancel:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.job-action:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 @media (max-width: 760px) {
