@@ -19,7 +19,7 @@ Contracts may contain HTTP params/query/body/response schemas, stable wire liter
 - Public position-analysis lines require `pvUci`. Historical persisted JSON is normalized at the API mapping boundary so legacy rows cannot weaken the wire contract.
 - Lab performance-by-rating requests and responses are exported from `@chess-trainer/contracts/lab`; requests may filter by minimum opponent rating, the API owns filtering/descending rating-band aggregation order, and Angular owns only report presentation state.
 - Opening-struggles requests, successful responses, coverage status literals, and the bounded-scope `422` response are exported from `@chess-trainer/contracts/opening-struggles`. Angular keeps only its UI criteria model because full-move depth is converted into wire-level plies.
-- Persistent job kinds, sources, run/task statuses, creation input, read summaries, ordered task responses, pagination inputs, and stable errors are exported from `@chess-trainer/contracts/jobs`. A task's `importedGameId` is nullable because persisted task history survives source-game deletion. Prisma rows and active execution keys remain backend-only.
+- Persistent job kinds, sources, run/task statuses, creation/cancel/retry responses, read summaries, ordered task responses, pagination inputs, and stable errors are exported from `@chess-trainer/contracts/jobs`. A task's `importedGameId` is nullable because persisted task history survives source-game deletion. Prisma rows and active execution keys remain backend-only.
 
 The package exports compiled `dist` files. Focused API and mobile scripts prepare both `chess-domain` and `contracts`; focused web scripts prepare `contracts`. This keeps focused commands valid after `npm ci` without importing unpublished package source.
 
