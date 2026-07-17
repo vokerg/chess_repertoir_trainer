@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { JobTaskExecutorRegistry } from '../../dist/modules/jobs/job-task-executor.js';
 import { createJobWorker } from '../../dist/modules/jobs/job-worker.service.js';
 
 let claimed = false;
@@ -14,7 +15,6 @@ const task = {
   jobRunId: 10,
   userId: 100,
   kind: 'INDEX_GAMES',
-  source: 'USER_ACTION',
   priority: 400,
   force: false,
   importedGameId: 1_000,
@@ -51,24 +51,23 @@ const repository = {
   async touchJobRun() {},
 };
 
-const executors = new Map([
-  ['INDEX_GAMES', {
-    async execute(_task, context) {
-      await new Promise((resolve, reject) => {
-        const safetyTimer = setTimeout(() => {
-          reject(new Error('Timed out waiting for cancellation-driven claim loss.'));
-        }, 1_000);
-        context.signal.addEventListener('abort', () => {
-          clearTimeout(safetyTimer);
-          executorAborted = true;
-          worker.requestStop('Cancellation claim-loss test completed.');
-          reject(context.signal.reason);
-        }, { once: true });
-      });
-      return 'COMPLETED';
-    },
-  }],
-]);
+const executors = new JobTaskExecutorRegistry([{
+  kind: 'INDEX_GAMES',
+  async execute(_task, context) {
+    await new Promise((resolve, reject) => {
+      const safetyTimer = setTimeout(() => {
+        reject(new Error('Timed out waiting for cancellation-driven claim loss.'));
+      }, 1_000);
+      context.signal.addEventListener('abort', () => {
+        clearTimeout(safetyTimer);
+        executorAborted = true;
+        worker.requestStop('Cancellation claim-loss test completed.');
+        reject(context.signal.reason);
+      }, { once: true });
+    });
+    return 'COMPLETED';
+  },
+}]);
 
 worker = createJobWorker({
   repository,
