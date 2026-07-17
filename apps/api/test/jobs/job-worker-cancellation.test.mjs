@@ -55,7 +55,11 @@ const executors = new Map([
   ['INDEX_GAMES', {
     async execute(_task, context) {
       await new Promise((resolve, reject) => {
+        const safetyTimer = setTimeout(() => {
+          reject(new Error('Timed out waiting for cancellation-driven claim loss.'));
+        }, 1_000);
         context.signal.addEventListener('abort', () => {
+          clearTimeout(safetyTimer);
           executorAborted = true;
           worker.requestStop('Cancellation claim-loss test completed.');
           reject(context.signal.reason);
