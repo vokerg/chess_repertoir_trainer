@@ -109,7 +109,7 @@
                 [checked]="isTagSelected(tagCode(tag))"
                 (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
               />
-              <span>{{ facetLabel(tag) }}</span>
+              <span>{{ tagLabel(tag) }}</span>
             </label>
           }
         </div>
@@ -117,13 +117,19 @@
       </div>
     </div>
     <label class="games-field compact"
-      ><span>From</span
-      ><input type="date" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)"
-    /></label>
-    <label class="games-field compact"
-      ><span>To</span
-      ><input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)"
-    /></label>
+      ><span>Period</span
+      ><select [ngModel]="selectedPeriod()" (ngModelChange)="setPeriod($event)">
+        <option value="TODAY">Today</option>
+        <option value="1M">1M</option>
+        <option value="3M">3M</option>
+        <option value="YTD">YTD</option>
+        <option value="1Y">1Y</option>
+        <option value="3Y">3Y</option>
+        <option value="5Y">5Y</option>
+        <option value="ALL">All</option>
+        <option value="CUSTOM">Custom</option>
+      </select></label
+    >
     <div class="games-field more-filters-field">
       <span>&nbsp;</span>
       <button
@@ -138,6 +144,14 @@
   </div>
   @if (moreFiltersOpen()) {
     <div class="games-filter-grid advanced-filters">
+      <label class="games-field compact"
+        ><span>From</span
+        ><input type="date" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)"
+      /></label>
+      <label class="games-field compact"
+        ><span>To</span
+        ><input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)"
+      /></label>
       <label class="games-field"
         ><span>Indexed</span
         ><select
