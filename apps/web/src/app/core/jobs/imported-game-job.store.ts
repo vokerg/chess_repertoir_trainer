@@ -24,8 +24,10 @@ export class ImportedGameJobStore {
   private readonly runsState = signal<JobRunSummary[]>([]);
   private readonly gameIdsByRunState = signal<Record<number, readonly number[]>>({});
   private pollTimer?: ReturnType<typeof setTimeout>;
+  private initializationInFlight: Promise<void> | null = null;
   private refreshInFlight: Promise<void> | null = null;
   private initialized = false;
+  private sessionGeneration = 0;
   private terminalSequence = 0;
 
   readonly runs = this.runsState.asReadonly();
@@ -51,25 +53,24 @@ export class ImportedGameJobStore {
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
-    this.initialized = true;
-    this.loading.set(true);
-    this.error.set(null);
+    if (this.initializationInFlight) return this.initializationInFlight;
+
+    const generation = this.sessionGeneration;
+    const task = this.performInitialization(generation);
+    this.initializationInFlight = task;
 
     try {
-      const response = await firstValueFrom(this.api.listJobs(true));
-      this.mergeRuns(response.items);
-      await Promise.all(response.items.map((run) => this.ensureRunGameIds(run.id)));
-      if (response.items.length) this.schedulePoll(0);
-    } catch (error) {
-      this.error.set(readError(error, 'Could not load active jobs.'));
+      await task;
     } finally {
-      this.loading.set(false);
+      if (this.initializationInFlight === task) this.initializationInFlight = null;
     }
   }
 
   reset(): void {
+    this.sessionGeneration += 1;
     this.stopPolling();
     this.initialized = false;
+    this.initializationInFlight = null;
     this.refreshInFlight = null;
     this.runsState.set([]);
     this.gameIdsByRunState.set({});
@@ -89,20 +90,25 @@ export class ImportedGameJobStore {
     );
     if (!uniqueGameIds.length) throw new Error('Select at least one imported game.');
 
+    const generation = this.sessionGeneration;
     this.error.set(null);
     try {
       const response = await firstValueFrom(this.api.createJob(kind, uniqueGameIds, force));
+      if (!this.isCurrentGeneration(generation)) return response;
+
       const rejected = new Set(response.rejectedGameIds);
       const acceptedGameIds = uniqueGameIds.filter((gameId) => !rejected.has(gameId));
       this.setRunGameIds(response.jobRun.id, acceptedGameIds);
       this.mergeRuns([response.jobRun]);
       this.expanded.set(true);
       this.pollVersion.update((version) => version + 1);
-      this.schedulePoll(350);
+      this.schedulePoll(350, generation);
       return response;
     } catch (error) {
-      const message = readError(error, 'Could not submit imported-game job.');
-      this.error.set(message);
+      if (this.isCurrentGeneration(generation)) {
+        const message = readError(error, 'Could not submit imported-game job.');
+        this.error.set(message);
+      }
       throw error;
     }
   }
@@ -129,11 +135,49 @@ export class ImportedGameJobStore {
     this.expanded.update((expanded) => !expanded);
   }
 
-  private schedulePoll(delay = POLL_INTERVAL_MS): void {
+  private async performInitialization(generation: number): Promise<void> {
+    if (!this.isCurrentGeneration(generation)) return;
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(this.api.listJobs(true));
+      if (!this.isCurrentGeneration(generation)) return;
+
+      this.mergeRuns(response.items);
+      if (response.items.length) this.schedulePoll(POLL_INTERVAL_MS, generation);
+      else this.stopPolling();
+
+      await Promise.all(
+        response.items.map((run) => this.ensureRunGameIds(run.id, generation)),
+      );
+      if (!this.isCurrentGeneration(generation)) return;
+
+      this.initialized = true;
+      this.error.set(null);
+    } catch (error) {
+      if (!this.isCurrentGeneration(generation)) return;
+
+      this.initialized = false;
+      this.error.set(readError(error, 'Could not load active jobs.'));
+      if (this.activeRuns().length) this.schedulePoll(POLL_INTERVAL_MS, generation);
+    } finally {
+      if (this.isCurrentGeneration(generation)) this.loading.set(false);
+    }
+  }
+
+  private schedulePoll(
+    delay = POLL_INTERVAL_MS,
+    generation = this.sessionGeneration,
+  ): void {
+    if (!this.isCurrentGeneration(generation)) return;
+
     this.stopPolling();
     this.pollTimer = setTimeout(() => {
       this.pollTimer = undefined;
-      void this.refreshActiveJobs();
+      if (!this.isCurrentGeneration(generation)) return;
+      void this.refreshActiveJobs(generation);
     }, delay);
   }
 
@@ -142,10 +186,11 @@ export class ImportedGameJobStore {
     this.pollTimer = undefined;
   }
 
-  private refreshActiveJobs(): Promise<void> {
+  private refreshActiveJobs(generation = this.sessionGeneration): Promise<void> {
+    if (!this.isCurrentGeneration(generation)) return Promise.resolve();
     if (this.refreshInFlight) return this.refreshInFlight;
 
-    const task = this.performActiveRefresh();
+    const task = this.performActiveRefresh(generation);
     this.refreshInFlight = task;
     void task.finally(() => {
       if (this.refreshInFlight === task) this.refreshInFlight = null;
@@ -153,29 +198,38 @@ export class ImportedGameJobStore {
     return task;
   }
 
-  private async performActiveRefresh(): Promise<void> {
+  private async performActiveRefresh(generation: number): Promise<void> {
+    if (!this.isCurrentGeneration(generation)) return;
+
     const previousActiveRuns = this.activeRuns();
     const previousActiveById = new Map(previousActiveRuns.map((run) => [run.id, run]));
 
     try {
       const response = await firstValueFrom(this.api.listJobs(true));
+      if (!this.isCurrentGeneration(generation)) return;
+
       const activeRunIds = new Set(response.items.map((run) => run.id));
       const disappearedRuns = previousActiveRuns.filter((run) => !activeRunIds.has(run.id));
       const terminalRuns = await Promise.all(
         disappearedRuns.map(async (run) => {
           try {
-            return (await firstValueFrom(this.api.getJob(run.id))).jobRun;
+            const result = await firstValueFrom(this.api.getJob(run.id));
+            return this.isCurrentGeneration(generation) ? result.jobRun : null;
           } catch {
             return null;
           }
         }),
       );
-      const settledRuns = terminalRuns.filter((run): run is JobRunSummary => run !== null);
+      if (!this.isCurrentGeneration(generation)) return;
 
+      const settledRuns = terminalRuns.filter((run): run is JobRunSummary => run !== null);
       this.mergeRuns([...response.items, ...settledRuns]);
       await Promise.all(
-        [...response.items, ...settledRuns].map((run) => this.ensureRunGameIds(run.id)),
+        [...response.items, ...settledRuns].map((run) =>
+          this.ensureRunGameIds(run.id, generation),
+        ),
       );
+      if (!this.isCurrentGeneration(generation)) return;
 
       const newlyTerminal = settledRuns.filter((run) => {
         const previous = previousActiveById.get(run.id);
@@ -183,18 +237,22 @@ export class ImportedGameJobStore {
       });
       if (newlyTerminal.length) this.publishTerminalBatch(newlyTerminal);
 
+      this.initialized = true;
       this.error.set(null);
       this.pollVersion.update((version) => version + 1);
 
-      if (this.activeRuns().length) this.schedulePoll();
+      if (this.activeRuns().length) this.schedulePoll(POLL_INTERVAL_MS, generation);
       else this.stopPolling();
     } catch (error) {
+      if (!this.isCurrentGeneration(generation)) return;
+
       this.error.set(readError(error, 'Could not refresh active jobs.'));
-      if (this.activeRuns().length) this.schedulePoll();
+      if (this.activeRuns().length) this.schedulePoll(POLL_INTERVAL_MS, generation);
     }
   }
 
-  private async ensureRunGameIds(jobRunId: number): Promise<void> {
+  private async ensureRunGameIds(jobRunId: number, generation: number): Promise<void> {
+    if (!this.isCurrentGeneration(generation)) return;
     if (Object.prototype.hasOwnProperty.call(this.gameIdsByRunState(), jobRunId)) return;
 
     const gameIds: number[] = [];
@@ -202,6 +260,8 @@ export class ImportedGameJobStore {
     let total = 0;
     do {
       const response = await firstValueFrom(this.api.listTasks(jobRunId, offset));
+      if (!this.isCurrentGeneration(generation)) return;
+
       total = response.total;
       for (const task of response.items) {
         if (task.importedGameId !== null) gameIds.push(task.importedGameId);
@@ -210,6 +270,7 @@ export class ImportedGameJobStore {
       if (!response.items.length) break;
     } while (offset < total);
 
+    if (!this.isCurrentGeneration(generation)) return;
     this.setRunGameIds(jobRunId, gameIds);
   }
 
@@ -243,6 +304,10 @@ export class ImportedGameJobStore {
       runs,
       gameIds,
     });
+  }
+
+  private isCurrentGeneration(generation: number): boolean {
+    return generation === this.sessionGeneration;
   }
 }
 
