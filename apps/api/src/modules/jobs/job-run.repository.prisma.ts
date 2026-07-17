@@ -54,6 +54,13 @@ export interface StoredRetryableJobRun {
   importedGameIds: number[];
 }
 
+const terminalJobRunStatuses = [
+  'COMPLETED',
+  'PARTIALLY_FAILED',
+  'FAILED',
+  'CANCELLED',
+] as const;
+
 const jobRunSelect = {
   id: true,
   kind: true,
@@ -237,6 +244,16 @@ export const JobRunRepository = {
         )),
       };
     });
+  },
+
+  async deleteTerminalCompletedBefore(completedBefore: Date): Promise<number> {
+    const result = await prisma.jobRun.deleteMany({
+      where: {
+        status: { in: [...terminalJobRunStatuses] },
+        completedAt: { lt: completedBefore },
+      },
+    });
+    return result.count;
   },
 
   async countTaskStatuses(jobRunIds: number[]): Promise<StoredTaskStatusCount[]> {
