@@ -1,0 +1,46 @@
+@if (store.visibleRuns().length || store.loading() || store.error()) {
+  <aside class="job-panel" aria-label="Imported-game jobs">
+    <button
+      type="button"
+      class="job-panel-header"
+      (click)="store.toggleExpanded()"
+      [attr.aria-expanded]="store.expanded()"
+    >
+      <span class="job-panel-title">
+        Imported-game jobs
+        @if (store.hasActiveJobs()) {
+          <span class="job-panel-active-count">{{ store.activeRuns().length }} active</span>
+        }
+      </span>
+      <span class="job-panel-toggle">{{ store.expanded() ? 'Hide' : 'Show' }}</span>
+    </button>
+
+    @if (store.expanded()) {
+      <div class="job-panel-body">
+        @if (store.loading() && store.visibleRuns().length === 0) {
+          <p class="job-panel-note">Loading active jobs...</p>
+        }
+        @if (store.error(); as error) {
+          <p class="job-panel-error">{{ error }}</p>
+        }
+
+        @for (run of store.visibleRuns(); track run.id) {
+          <article class="job-row">
+            <div class="job-row-heading">
+              <div>
+                <strong>{{ kindLabel(run.kind) }}</strong>
+                <span class="job-row-meta">{{ run.totalTasks }} {{ run.totalTasks === 1 ? 'game' : 'games' }}</span>
+              </div>
+              <span class="job-status" [class]="statusClass(run.status)">{{ statusLabel(run.status) }}</span>
+            </div>
+
+            <div class="job-progress-track" aria-hidden="true">
+              <span class="job-progress-value" [style.width.%]="progressPercent(run)"></span>
+            </div>
+            <p class="job-progress-label">{{ progressLabel(run) }}</p>
+          </article>
+        }
+      </div>
+    }
+  </aside>
+}
