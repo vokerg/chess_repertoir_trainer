@@ -47,10 +47,22 @@ describe('GamesExplorerStore', () => {
       game(1, 'bullet'),
       game(2, 'blitz'),
       game(3, 'rapid'),
-      { ...game(4, 'rapid'), plyIndex: { status: 'INDEXED' } },
+      game(4, 'rapid', true),
     ]);
 
     expect(store.bulkIndexableGames().map((item) => item.id)).toEqual([2]);
+  });
+
+  it('only includes indexed blitz and rapid games in bulk analysis candidates', () => {
+    isGameActive.and.callFake((gameId: number) => gameId === 4);
+    store.games.set([
+      game(1, 'rapid'),
+      game(2, 'blitz', true),
+      game(3, 'bullet', true),
+      game(4, 'rapid', true),
+    ]);
+
+    expect(store.bulkAnalyzableGames().map((item) => item.id)).toEqual([2]);
   });
 
   it('submits one-game indexing without optimistic row mutation', async () => {
@@ -65,6 +77,8 @@ describe('GamesExplorerStore', () => {
   });
 
   it('submits forced one-game analysis through the persistent job store', async () => {
+    store.games.set([game(1, 'rapid', true)]);
+
     store.forceReanalyse(store.games()[0]);
     await settlePromises();
 
@@ -81,6 +95,19 @@ describe('GamesExplorerStore', () => {
     expect(submit).toHaveBeenCalledOnceWith('INDEX_GAMES', [1, 2], false);
   });
 
+  it('submits indexed visible analysis candidates as one durable job', async () => {
+    store.games.set([
+      game(1, 'blitz', true),
+      game(2, 'rapid'),
+      game(3, 'bullet', true),
+    ]);
+
+    store.batchAnalyzeVisibleGames();
+    await settlePromises();
+
+    expect(submit).toHaveBeenCalledOnceWith('ANALYSE_GAMES', [1], false);
+  });
+
   it('submits visible tag refresh as one durable job', async () => {
     store.refreshTagsForVisibleGames();
     await settlePromises();
@@ -89,6 +116,7 @@ describe('GamesExplorerStore', () => {
   });
 
   it('surfaces rejected games without pretending the rows are running', async () => {
+    store.games.set([game(1, 'rapid', true)]);
     submit.and.resolveTo({
       ...acceptedJob('ANALYSE_GAMES', [1], false),
       rejectedGameIds: [1],
@@ -136,6 +164,7 @@ function acceptedJob(
 function game(
   id: number,
   speedCategory: string | null = 'rapid',
+  indexed = false,
 ): ImportedGameSearchItem {
   return {
     id,
@@ -151,7 +180,7 @@ function game(
     resultForUser: null,
     opening: { eco: null, name: null },
     tagCount: 0,
-    plyIndex: { status: 'NOT_INDEXED' },
+    plyIndex: { status: indexed ? 'INDEXED' : 'NOT_INDEXED' },
     analysis: {
       status: 'NOT_ANALYZED',
       whiteAccuracy: null,
