@@ -1,9 +1,14 @@
 .app-shell { padding: 12px 0 28px; }
 .app-main { min-width: 0; padding: 14px 0 40px; }
+.app-shell-with-job-panel .app-main { padding-bottom: 170px; }
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
 @media (max-width: 760px) {
   .app-shell {
     padding-top: 10px;
+  }
+
+  .app-shell-with-job-panel .app-main {
+    padding-bottom: 190px;
   }
 }

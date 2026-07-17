@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, inject, signal } from '@angular/core';
+import { effect, inject, Injectable, signal } from '@angular/core';
+import type { JobRunKind } from '@chess-trainer/contracts/jobs';
 import { firstValueFrom } from 'rxjs';
+import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import {
   AccountForm,
@@ -14,7 +16,9 @@ import { providerLabel } from '../helpers/account-labels';
 @Injectable()
 export class AccountsStore {
   private readonly api = inject(AccountsApiService);
+  private readonly jobs = inject(ImportedGameJobStore);
   private readonly document = inject(DOCUMENT);
+  private lastTerminalSequence = 0;
 
   readonly accounts = signal<ExternalAccount[]>([]);
   readonly lichessConnection = signal<LichessConnectionStatus | null>(null);
@@ -36,6 +40,28 @@ export class AccountsStore {
   readonly indexWorkflowTotal = signal(0);
   readonly analysingWorkflowAccountId = signal<number | null>(null);
   readonly form = signal<AccountForm>(defaultForm());
+
+  constructor() {
+    effect(() => {
+      const batch = this.jobs.terminalBatch();
+      if (!batch || batch.sequence === this.lastTerminalSequence) return;
+      this.lastTerminalSequence = batch.sequence;
+      const completedIds = new Set(batch.gameIds);
+      for (const [accountIdText, candidates] of Object.entries(this.workflowCandidates())) {
+        const candidateIds = [
+          ...candidates.eligibleImportedGameIds,
+          ...candidates.eligibleUnindexedGameIds,
+          ...candidates.eligibleIndexedGameIds,
+          ...candidates.eligibleMissingOpeningGameIds,
+        ];
+        if (!candidateIds.some((gameId) => completedIds.has(gameId))) continue;
+        const accountId = Number(accountIdText);
+        void this.loadWorkflowCandidates(accountId).catch((error) => {
+          this.error.set(readApiError(error, 'Job finished, but account workflow data could not be refreshed.'));
+        });
+      }
+    });
+  }
 
   async loadAccounts(): Promise<void> {
     this.loading.set(true);
@@ -62,11 +88,17 @@ export class AccountsStore {
     try {
       const displayName = form.displayName.trim();
       const account = await firstValueFrom(
-        this.api.createAccount({ provider: form.provider, username, ...(displayName ? { displayName } : {}) }),
+        this.api.createAccount({
+          provider: form.provider,
+          username,
+          ...(displayName ? { displayName } : {}),
+        }),
       );
       this.accounts.update((accounts) =>
         [account, ...accounts.filter((item) => item.id !== account.id)].sort(
-          (a, b) => providerLabel(a.provider).localeCompare(providerLabel(b.provider)) || a.username.localeCompare(b.username),
+          (left, right) =>
+            providerLabel(left.provider).localeCompare(providerLabel(right.provider))
+            || left.username.localeCompare(right.username),
         ),
       );
       this.notice.set(`Account ${account.username} is ready to sync.`);
@@ -166,7 +198,6 @@ export class AccountsStore {
       }
 
       await this.loadAccounts();
-
       if (failedAccounts.length > 0) {
         const summary = `Refreshed games for ${syncedCount} ${syncedCount === 1 ? 'account' : 'accounts'}.`;
         this.error.set(`${summary} Failed: ${failedAccounts.join('; ')}.`);
@@ -231,16 +262,8 @@ export class AccountsStore {
     try {
       const result = await firstValueFrom(this.api.deleteAccount(account.id));
       this.accounts.update((accounts) => accounts.filter((item) => item.id !== account.id));
-      this.syncResults.update((results) => {
-        const next = { ...results };
-        delete next[account.id];
-        return next;
-      });
-      this.workflowCandidates.update((candidates) => {
-        const next = { ...candidates };
-        delete next[account.id];
-        return next;
-      });
+      this.syncResults.update((results) => omitKey(results, account.id));
+      this.workflowCandidates.update((candidates) => omitKey(candidates, account.id));
       this.notice.set(`${providerLabel(result.account.provider)} account ${result.account.username} was deleted with its imported data.`);
     } catch (error) {
       this.error.set(readApiError(error, `Could not delete ${account.username}.`));
@@ -257,72 +280,86 @@ export class AccountsStore {
     return this.loadWorkflowCandidates(accountId);
   }
 
-  async indexEligibleAccountGames(account: ExternalAccount, gameIds?: readonly number[]): Promise<void> {
+  async indexEligibleAccountGames(
+    account: ExternalAccount,
+    gameIds?: readonly number[],
+  ): Promise<void> {
     const candidates = gameIds ? null : await this.ensureWorkflowCandidates(account.id);
-    const selectedGameIds = Array.from(new Set(gameIds ?? candidates?.eligibleUnindexedGameIds ?? []));
-    if (!selectedGameIds.length || this.indexingWorkflowAccountId()) return;
+    const selectedGameIds = Array.from(
+      new Set(gameIds ?? candidates?.eligibleUnindexedGameIds ?? []),
+    );
+    if (!selectedGameIds.length || this.isAccountIndexing(account.id)) return;
 
-    await this.indexAccountGames(account, selectedGameIds);
+    await this.submitAccountJob('INDEX_GAMES', account, selectedGameIds);
   }
 
-  async analyseEligibleAccountGames(account: ExternalAccount, gameIds?: readonly number[]): Promise<void> {
+  async analyseEligibleAccountGames(
+    account: ExternalAccount,
+    gameIds?: readonly number[],
+  ): Promise<void> {
     const candidates = gameIds ? null : await this.ensureWorkflowCandidates(account.id);
-    const selectedGameIds = Array.from(new Set(gameIds ?? candidates?.eligibleIndexedGameIds ?? []));
-    if (!selectedGameIds.length || this.analysingWorkflowAccountId()) return;
+    const selectedGameIds = Array.from(
+      new Set(gameIds ?? candidates?.eligibleIndexedGameIds ?? []),
+    );
+    if (!selectedGameIds.length || this.isAccountAnalysing(account.id)) return;
 
-    await this.analyseAccountGames(account, selectedGameIds);
+    await this.submitAccountJob('ANALYSE_GAMES', account, selectedGameIds);
   }
 
-  private async indexAccountGames(account: ExternalAccount, gameIds: number[]): Promise<void> {
-    if (!gameIds.length || this.indexingWorkflowAccountId()) return;
+  isAccountIndexing(accountId: number): boolean {
+    if (this.indexingWorkflowAccountId() === accountId) return true;
+    const gameIds = this.workflowCandidates()[accountId]?.eligibleUnindexedGameIds ?? [];
+    return gameIds.some((gameId) =>
+      this.jobs.isGameActive(gameId, ['INDEX_GAMES', 'PROCESS_GAMES']),
+    );
+  }
 
+  isAccountAnalysing(accountId: number): boolean {
+    if (this.analysingWorkflowAccountId() === accountId) return true;
+    const gameIds = this.workflowCandidates()[accountId]?.eligibleIndexedGameIds ?? [];
+    return gameIds.some((gameId) =>
+      this.jobs.isGameActive(gameId, ['ANALYSE_GAMES', 'PROCESS_GAMES']),
+    );
+  }
+
+  private async submitAccountJob(
+    kind: JobRunKind,
+    account: ExternalAccount,
+    gameIds: readonly number[],
+  ): Promise<void> {
     this.clearMessages();
-    this.indexingWorkflowAccountId.set(account.id);
-    this.indexWorkflowCompleted.set(0);
-    this.indexWorkflowTotal.set(gameIds.length);
-    const failures: string[] = [];
-
-    try {
-      for (const gameId of gameIds) {
-        try {
-          const result = await firstValueFrom(this.api.runIndexWorkflow(gameId));
-          if (!result.eligible || result.plyIndex?.status === 'FAILED') {
-            failures.push(result.plyIndex?.error || `Could not index game #${gameId}.`);
-          }
-        } catch (error) {
-          failures.push(readApiError(error, `Could not index game #${gameId}.`));
-        } finally {
-          this.indexWorkflowCompleted.update((completed) => completed + 1);
-        }
-      }
-
-      await this.loadWorkflowCandidates(account.id);
-      if (failures.length) {
-        this.error.set(failures[0]);
-      } else {
-        this.notice.set(`Indexed ${gameIds.length} blitz/rapid ${gameIds.length === 1 ? 'game' : 'games'}.`);
-      }
-    } finally {
-      this.indexingWorkflowAccountId.set(null);
+    if (kind === 'INDEX_GAMES') {
+      this.indexingWorkflowAccountId.set(account.id);
+      this.indexWorkflowCompleted.set(0);
+      this.indexWorkflowTotal.set(gameIds.length);
+    } else {
+      this.analysingWorkflowAccountId.set(account.id);
     }
-  }
 
-  private async analyseAccountGames(account: ExternalAccount, gameIds: number[]): Promise<void> {
-    this.clearMessages();
-    this.analysingWorkflowAccountId.set(account.id);
     try {
-      const result = await firstValueFrom(this.api.startBatchAnalysis(gameIds));
-      this.notice.set(`Submitted ${result.gameIds.length} indexed blitz/rapid ${result.gameIds.length === 1 ? 'game' : 'games'} for analysis.`);
-      await this.loadWorkflowCandidates(account.id);
+      const response = await this.jobs.submit(kind, gameIds);
+      const acceptedCount = response.jobRun.totalTasks;
+      const action = kind === 'INDEX_GAMES' ? 'indexing' : 'analysis';
+      this.notice.set(
+        `Submitted ${acceptedCount} blitz/rapid ${acceptedCount === 1 ? 'game' : 'games'} for ${action}.`,
+      );
+      if (response.rejectedGameIds.length) {
+        this.error.set(
+          `${response.rejectedGameIds.length} ${response.rejectedGameIds.length === 1 ? 'game was' : 'games were'} not available for this job.`,
+        );
+      }
     } catch (error) {
-      this.error.set(readApiError(error, 'Could not submit standard analysis workflow.'));
+      this.error.set(readApiError(error, 'Could not submit standard game workflow.'));
     } finally {
-      this.analysingWorkflowAccountId.set(null);
+      if (kind === 'INDEX_GAMES') this.indexingWorkflowAccountId.set(null);
+      else this.analysingWorkflowAccountId.set(null);
     }
   }
 
   private patchAccount(updated: ExternalAccount): void {
-    this.accounts.update((accounts) => accounts.map((account) => (account.id === updated.id ? updated : account)));
+    this.accounts.update((accounts) =>
+      accounts.map((account) => (account.id === updated.id ? updated : account)),
+    );
   }
 
   private clearMessages(): void {
@@ -330,13 +367,17 @@ export class AccountsStore {
     this.notice.set(null);
   }
 
-  private async ensureWorkflowCandidates(accountId: number): Promise<ImportedGameWorkflowCandidates> {
+  private async ensureWorkflowCandidates(
+    accountId: number,
+  ): Promise<ImportedGameWorkflowCandidates> {
     const existing = this.workflowCandidates()[accountId];
     if (existing) return existing;
     return this.loadWorkflowCandidates(accountId);
   }
 
-  private async loadWorkflowCandidates(accountId: number): Promise<ImportedGameWorkflowCandidates> {
+  private async loadWorkflowCandidates(
+    accountId: number,
+  ): Promise<ImportedGameWorkflowCandidates> {
     const candidates = await firstValueFrom(this.api.getWorkflowCandidates(accountId));
     this.workflowCandidates.update((items) => ({ ...items, [accountId]: candidates }));
     return candidates;
@@ -351,14 +392,23 @@ function accountSummary(account: ExternalAccount): string {
   return `${providerLabel(account.provider)} @${account.username}`;
 }
 
+function omitKey<T>(record: Record<number, T>, key: number): Record<number, T> {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
 function readApiError(error: unknown, fallback: string): string {
   const payload = (error as { error?: unknown })?.error;
   if (typeof payload === 'string') return payload;
   const structured = payload as { message?: string; error?: unknown } | undefined;
   if (structured?.message) return structured.message;
   if (Array.isArray(structured?.error)) {
-    return structured.error.map((item) => (item as { message?: string })?.message || String(item)).join(', ');
+    return structured.error
+      .map((item) => (item as { message?: string })?.message || String(item))
+      .join(', ');
   }
   if (typeof structured?.error === 'string') return structured.error;
+  if (error instanceof Error && error.message) return error.message;
   return fallback;
 }

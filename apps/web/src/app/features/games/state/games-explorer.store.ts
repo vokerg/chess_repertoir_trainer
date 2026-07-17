@@ -1,71 +1,68 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import type { JobRunKind } from '@chess-trainer/contracts/jobs';
 import { firstValueFrom } from 'rxjs';
-import { GamesApiService } from '../data-access/games-api.service';
-import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
-import {
-  ImportedGameFacetsResponse,
-  ImportedGameIndexWorkflowResult,
-  ImportedGameSearchItem,
-  ImportedGamePageInfo,
-  ImportedGamePlyIndexResult,
-} from '../data-access/games.models';
+import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
+import { emptyImportedGameFacets } from '../../../shared/games/game.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game-workflow-eligibility';
-import { emptyImportedGameFacets } from '../../../shared/games/game.models';
+import { GamesApiService } from '../data-access/games-api.service';
+import {
+  ImportedGameFacetsResponse,
+  ImportedGamePageInfo,
+  ImportedGameSearchItem,
+  ImportedGameSearchResponse,
+} from '../data-access/games.models';
 
 @Injectable()
 export class GamesExplorerStore {
   private readonly api = inject(GamesApiService);
-  readonly importedGameAnalysis = inject(ImportedGameAnalysisService);
+  private readonly jobs = inject(ImportedGameJobStore);
+  private lastTerminalSequence = 0;
 
   readonly games = signal<ImportedGameSearchItem[]>([]);
   readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly analysingGameId = signal<number | null>(null);
-  readonly indexingPlyGameId = signal<number | null>(null);
-  readonly bulkIndexing = signal(false);
-  readonly bulkIndexCompleted = signal(0);
-  readonly bulkIndexTotal = signal(0);
-  readonly bulkRefreshingTags = signal(false);
-  readonly bulkRefreshTagsCompleted = signal(0);
-  readonly bulkRefreshTagsTotal = signal(0);
-  readonly batchAnalysisEnabled = signal(false);
-  readonly batchAnalysisSubmitting = signal(false);
+  readonly submittingKind = signal<JobRunKind | null>(null);
   readonly pageInfo = signal<ImportedGamePageInfo>({ nextCursor: null, hasMore: false });
   readonly filters = signal<GameFilters>(defaultGameFilters());
 
   readonly filteredGames = computed(() => this.games());
-
   readonly analysedCount = computed(
-    () => this.filteredGames().filter((game) => game.analysis?.status === 'COMPLETED').length
+    () => this.filteredGames().filter((game) => game.analysis?.status === 'COMPLETED').length,
   );
-
   readonly plyIndexedCount = computed(
-    () => this.filteredGames().filter((game) => game.plyIndex?.status === 'INDEXED').length
+    () => this.filteredGames().filter((game) => game.plyIndex?.status === 'INDEXED').length,
   );
-
   readonly bulkIndexableGames = computed(() =>
     this.filteredGames().filter((game) =>
-      isStandardImportedGameSpeed(game.speedCategory) && game.plyIndex?.status !== 'INDEXED'
-    )
+      isStandardImportedGameSpeed(game.speedCategory)
+      && game.plyIndex?.status !== 'INDEXED'
+      && !this.jobs.isGameActive(game.id),
+    ),
   );
-
-  readonly bulkIndexProgressLabel = computed(() => {
-    if (!this.bulkIndexing()) return String(this.bulkIndexableGames().length);
-    return `${this.bulkIndexCompleted()}/${this.bulkIndexTotal()}`;
-  });
-
-  readonly bulkRefreshTagsProgressLabel = computed(() => {
-    if (!this.bulkRefreshingTags()) return String(this.filteredGames().length);
-    return `${this.bulkRefreshTagsCompleted()}/${this.bulkRefreshTagsTotal()}`;
-  });
-
-  readonly batchAnalysisProgressLabel = computed(() => {
-    if (this.batchAnalysisSubmitting()) return 'Starting...';
-    return String(this.filteredGames().length);
-  });
-
+  readonly bulkAnalyzableGames = computed(() =>
+    this.filteredGames().filter((game) =>
+      isStandardImportedGameSpeed(game.speedCategory)
+      && game.plyIndex?.status === 'INDEXED'
+      && !this.jobs.isGameActive(game.id),
+    ),
+  );
+  readonly bulkIndexProgressLabel = computed(() =>
+    this.submittingKind() === 'INDEX_GAMES'
+      ? 'Starting...'
+      : String(this.bulkIndexableGames().length),
+  );
+  readonly bulkRefreshTagsProgressLabel = computed(() =>
+    this.submittingKind() === 'REFRESH_TAGS'
+      ? 'Starting...'
+      : String(this.filteredGames().filter((game) => !this.jobs.isGameActive(game.id)).length),
+  );
+  readonly batchAnalysisProgressLabel = computed(() =>
+    this.submittingKind() === 'ANALYSE_GAMES'
+      ? 'Starting...'
+      : String(this.bulkAnalyzableGames().length),
+  );
   readonly tableSubtitle = computed(() => {
     const filteredGames = this.filteredGames();
     const games = this.games();
@@ -76,24 +73,25 @@ export class GamesExplorerStore {
     return `${filteredGames.length} games shown${totalNote}${pageInfo.hasMore ? ' · more available' : ''}`;
   });
 
+  constructor() {
+    effect(() => {
+      const batch = this.jobs.terminalBatch();
+      if (!batch || batch.sequence === this.lastTerminalSequence) return;
+      this.lastTerminalSequence = batch.sequence;
+      const visibleIds = new Set(this.games().map((game) => game.id));
+      if (batch.gameIds.some((gameId) => visibleIds.has(gameId))) {
+        void this.reloadCurrentList();
+      }
+    });
+  }
+
   loadFacets(): void {
     this.api.getFacets().subscribe({
       next: (data) => this.facets.set(data),
     });
   }
 
-  loadBatchAnalysisConfig(): void {
-    this.api.getBatchAnalysisConfig().subscribe({
-      next: (config) => this.batchAnalysisEnabled.set(config.enabled === true),
-      error: () => {
-        this.batchAnalysisEnabled.set(false);
-      },
-    });
-  }
-
   refresh(): void {
-    this.resetBulkIndexState();
-    this.resetBulkRefreshTagsState();
     this.games.set([]);
     this.pageInfo.set({ nextCursor: null, hasMore: false });
     this.loadGames();
@@ -114,8 +112,8 @@ export class GamesExplorerStore {
         this.pageInfo.set(data.pageInfo);
         this.loading.set(false);
       },
-      error: (err) => {
-        this.error.set(readApiError(err, 'Could not load imported games.'));
+      error: (error) => {
+        this.error.set(readApiError(error, 'Could not load imported games.'));
         this.loading.set(false);
       },
     });
@@ -131,281 +129,112 @@ export class GamesExplorerStore {
   }
 
   analyse(game: ImportedGameSearchItem): void {
-    this.runAnalysis(game);
+    if (!this.canAnalyse(game)) return;
+    void this.submitJob('ANALYSE_GAMES', [game.id]);
   }
 
   forceReanalyse(game: ImportedGameSearchItem): void {
-    this.runAnalysis(game, true);
+    if (!this.canAnalyse(game)) return;
+    void this.submitJob('ANALYSE_GAMES', [game.id], true);
   }
 
   indexPlies(game: ImportedGameSearchItem): void {
-    if (game.plyIndex?.status === 'INDEXED') return;
-
-    this.indexingPlyGameId.set(game.id);
-    this.error.set(null);
-    this.markGamePlyIndexing(game.id);
-    const force = game.plyIndex?.status === 'FAILED';
-    this.api.indexPlies(game.id, force).subscribe({
-      next: (result) => {
-        if (!result.eligible) {
-          const message = 'Only blitz and rapid games are eligible for the standard indexing workflow.';
-          this.error.set(message);
-        } else if (result.plyIndex?.status === 'FAILED') {
-          const message = result.plyIndex.error || 'Could not index game plies.';
-          this.markGamePlyIndexFailed(game.id, message);
-          this.error.set(message);
-        } else {
-          this.markGameIndexWorkflowCompleted(game.id, result);
-        }
-        this.indexingPlyGameId.set(null);
-      },
-      error: (err) => {
-        const message = readApiError(err, 'Could not index game plies.');
-        this.markGamePlyIndexFailed(game.id, message);
-        this.error.set(message);
-        this.indexingPlyGameId.set(null);
-      },
-    });
+    if (game.plyIndex?.status === 'INDEXED' || this.jobs.isGameActive(game.id)) return;
+    void this.submitJob('INDEX_GAMES', [game.id], game.plyIndex?.status === 'FAILED');
   }
 
-  async indexAllVisibleGames(): Promise<void> {
-    const games = this.bulkIndexableGames();
-    if (!games.length || this.bulkIndexing()) return;
-
-    this.error.set(null);
-    this.bulkIndexing.set(true);
-    this.bulkIndexCompleted.set(0);
-    this.bulkIndexTotal.set(games.length);
-
-    const concurrency = 4;
-    let nextIndex = 0;
-    const failures: string[] = [];
-
-    const runWorker = async () => {
-      while (nextIndex < games.length) {
-        const game = games[nextIndex];
-        nextIndex += 1;
-        try {
-          await this.indexSingleGame(game);
-        } catch (err: unknown) {
-          failures.push(readApiError(err, `Could not index game #${game.id}.`));
-        } finally {
-          this.bulkIndexCompleted.update((completed) => completed + 1);
-        }
-      }
-    };
-
-    await Promise.all(Array.from({ length: Math.min(concurrency, games.length) }, () => runWorker()));
-
-    this.bulkIndexing.set(false);
-    this.indexingPlyGameId.set(null);
-    if (failures.length) {
-      this.error.set(failures[0]);
-    }
+  indexAllVisibleGames(): void {
+    void this.submitJob(
+      'INDEX_GAMES',
+      this.bulkIndexableGames().map((game) => game.id),
+    );
   }
 
   batchAnalyzeVisibleGames(): void {
+    void this.submitJob(
+      'ANALYSE_GAMES',
+      this.bulkAnalyzableGames().map((game) => game.id),
+    );
+  }
+
+  refreshTagsForVisibleGames(): void {
     const gameIds = this.filteredGames()
-      .filter((game) => isStandardImportedGameSpeed(game.speedCategory))
+      .filter((game) => !this.jobs.isGameActive(game.id))
       .map((game) => game.id);
-    if (!gameIds.length || this.batchAnalysisSubmitting()) return;
-
-    this.error.set(null);
-    this.batchAnalysisSubmitting.set(true);
-    this.api.startBatchAnalysis(gameIds).subscribe({
-      next: (result) => {
-        for (const gameId of result.gameIds) this.markGameAnalysisRunning(gameId);
-        this.batchAnalysisSubmitting.set(false);
-      },
-      error: (err) => {
-        this.error.set(readApiError(err, 'Could not start batch analysis.'));
-        this.batchAnalysisSubmitting.set(false);
-      },
-    });
+    void this.submitJob('REFRESH_TAGS', gameIds);
   }
 
-  async refreshTagsForVisibleGames(): Promise<void> {
-    const games = this.filteredGames();
-    if (!games.length || this.bulkRefreshingTags()) return;
+  isSubmitting(kind: JobRunKind): boolean {
+    return this.submittingKind() === kind;
+  }
 
-    this.error.set(null);
-    this.bulkRefreshingTags.set(true);
-    this.bulkRefreshTagsCompleted.set(0);
-    this.bulkRefreshTagsTotal.set(games.length);
-
-    const concurrency = 4;
-    let nextIndex = 0;
-    const failures: string[] = [];
-
-    const runWorker = async () => {
-      while (nextIndex < games.length) {
-        const game = games[nextIndex];
-        nextIndex += 1;
-        try {
-          if (this.gameTagCount(game) >= 3) continue;
-          const response = await firstValueFrom(this.api.refreshGameTags(game.id));
-          this.patchGameTagCount(response.importedGameId, response.tagCodes.length);
-        } catch (err: unknown) {
-          failures.push(readApiError(err, `Could not refresh tags for game #${game.id}.`));
-        } finally {
-          this.bulkRefreshTagsCompleted.update((completed) => completed + 1);
-        }
-      }
-    };
-
-    await Promise.all(Array.from({ length: Math.min(concurrency, games.length) }, () => runWorker()));
-
-    this.bulkRefreshingTags.set(false);
-    if (failures.length) {
-      this.error.set(failures[0]);
+  private canAnalyse(game: ImportedGameSearchItem): boolean {
+    if (this.jobs.isGameActive(game.id)) return false;
+    if (!isStandardImportedGameSpeed(game.speedCategory)) {
+      this.error.set('Only blitz and rapid games are eligible for saved analysis.');
+      return false;
     }
-  }
-
-  private async runAnalysis(game: ImportedGameSearchItem, force = false): Promise<void> {
-    this.analysingGameId.set(game.id);
-    this.error.set(null);
-    this.markGameAnalysisRunning(game.id);
-    try {
-      await this.importedGameAnalysis.analyzeGame(game.id, force);
-      this.markGameAnalysisCompleted(game.id);
-      try {
-        await this.reloadCurrentList();
-      } catch (reloadError) {
-        this.error.set(readApiError(reloadError, 'Analysis completed, but refreshed tags could not be loaded.'));
-      }
-      this.analysingGameId.set(null);
-    } catch (err) {
-      const message = readApiError(err, 'Could not analyse game.');
-      this.markGameAnalysisFailed(game.id);
-      this.error.set(message);
-      this.analysingGameId.set(null);
+    if (game.plyIndex?.status !== 'INDEXED') {
+      this.error.set('Index game plies before starting analysis.');
+      return false;
     }
+    return true;
   }
 
-  private async indexSingleGame(game: ImportedGameSearchItem): Promise<void> {
-    this.indexingPlyGameId.set(game.id);
-    this.markGamePlyIndexing(game.id);
-    const force = game.plyIndex?.status === 'FAILED';
+  private async submitJob(
+    kind: JobRunKind,
+    gameIds: readonly number[],
+    force = false,
+  ): Promise<void> {
+    if (!gameIds.length || this.submittingKind() !== null) return;
+
+    this.error.set(null);
+    this.submittingKind.set(kind);
     try {
-      const result = await firstValueFrom(this.api.runIndexWorkflow(game.id, force));
-      if (!result.eligible) {
-        const message = 'Only blitz and rapid games are eligible for the standard indexing workflow.';
-        this.markGamePlyIndexFailed(game.id, message);
-        throw new Error(message);
+      const response = await this.jobs.submit(kind, gameIds, force);
+      if (response.rejectedGameIds.length) {
+        this.error.set(
+          `${response.rejectedGameIds.length} selected ${response.rejectedGameIds.length === 1 ? 'game was' : 'games were'} not available for this job.`,
+        );
       }
-      if (result.plyIndex?.status === 'FAILED') {
-        const message = result.plyIndex.error || 'Could not index game plies.';
-        this.markGamePlyIndexFailed(game.id, message);
-        throw new Error(message);
-      }
-      this.markGameIndexWorkflowCompleted(game.id, result);
     } catch (error) {
-      const message = readApiError(error, `Could not index game #${game.id}.`);
-      this.markGamePlyIndexFailed(game.id, message);
-      throw error;
+      this.error.set(readApiError(error, 'Could not submit imported-game job.'));
+    } finally {
+      this.submittingKind.set(null);
     }
-  }
-
-  private patchGameById(
-    gameId: number,
-    updater: (game: ImportedGameSearchItem) => ImportedGameSearchItem,
-  ): void {
-    this.games.update((games) => games.map((game) => (game.id === gameId ? updater(game) : game)));
-  }
-
-  private markGameAnalysisRunning(gameId: number): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      analysis: { ...game.analysis, status: 'RUNNING' },
-    }));
-  }
-
-  private markGameAnalysisCompleted(gameId: number): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      analysis: { ...game.analysis, status: 'COMPLETED' },
-    }));
-  }
-
-  private markGameAnalysisFailed(gameId: number): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      analysis: { ...game.analysis, status: 'FAILED' },
-    }));
-  }
-
-  private markGamePlyIndexing(gameId: number): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      plyIndex: { status: 'NOT_INDEXED' },
-    }));
-  }
-
-  private markGamePlyIndexed(gameId: number, result: ImportedGamePlyIndexResult): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      plyIndex: { status: 'INDEXED' },
-    }));
-  }
-
-  private markGamePlyIndexFailed(gameId: number, error: string): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      plyIndex: { status: 'FAILED' },
-    }));
-  }
-
-  private markGameIndexWorkflowCompleted(gameId: number, result: ImportedGameIndexWorkflowResult): void {
-    const plyIndex = result.plyIndex;
-    if (plyIndex) this.markGamePlyIndexed(gameId, plyIndex);
-    const openingAssignment = result.openingAssignment;
-    if (!openingAssignment || openingAssignment.status === 'FAILED') return;
-
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      opening: {
-        ...game.opening,
-        eco: openingAssignment.openingEco ?? game.opening?.eco ?? null,
-        name: openingAssignment.openingName ?? game.opening?.name ?? null,
-      },
-    }));
-  }
-
-  private patchGameTagCount(gameId: number, tagCount: number): void {
-    this.patchGameById(gameId, (game) => ({
-      ...game,
-      tagCount,
-    }));
   }
 
   private async reloadCurrentList(): Promise<void> {
-    const data = await firstValueFrom(this.api.searchGames(this.filters()));
-    this.games.set(data.items);
-    this.pageInfo.set(data.pageInfo);
-  }
+    const targetCount = Math.max(1, this.games().length);
+    const items: ImportedGameSearchItem[] = [];
+    let cursor: string | null = null;
+    let pageInfo: ImportedGamePageInfo = { nextCursor: null, hasMore: false };
 
-  private gameTagCount(game: ImportedGameSearchItem): number {
-    return game.tagCount;
-  }
+    try {
+      do {
+        const data: ImportedGameSearchResponse = await firstValueFrom(
+          this.api.searchGames(this.filters(), cursor),
+        );
+        items.push(...data.items);
+        pageInfo = data.pageInfo;
+        cursor = data.pageInfo.nextCursor;
+      } while (pageInfo.hasMore && cursor && items.length < targetCount);
 
-  private resetBulkIndexState(): void {
-    this.bulkIndexing.set(false);
-    this.bulkIndexCompleted.set(0);
-    this.bulkIndexTotal.set(0);
+      this.games.set(items);
+      this.pageInfo.set(pageInfo);
+    } catch (error) {
+      this.error.set(readApiError(error, 'Job finished, but the game list could not be refreshed.'));
+    }
   }
-
-  private resetBulkRefreshTagsState(): void {
-    this.bulkRefreshingTags.set(false);
-    this.bulkRefreshTagsCompleted.set(0);
-    this.bulkRefreshTagsTotal.set(0);
-  }
-
 }
 
-function readApiError(err: unknown, fallback: string): string {
-  if (typeof err === 'object' && err !== null) {
-    const maybeHttp = err as { error?: { message?: string; error?: string }; message?: string };
-    return maybeHttp.error?.message || maybeHttp.error?.error || maybeHttp.message || fallback;
+function readApiError(error: unknown, fallback: string): string {
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as {
+      error?: { message?: string; error?: string };
+      message?: string;
+    };
+    return candidate.error?.message || candidate.error?.error || candidate.message || fallback;
   }
   return fallback;
 }

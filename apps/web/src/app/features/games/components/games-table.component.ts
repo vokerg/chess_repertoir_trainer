@@ -3,14 +3,16 @@ import {
   Component,
   HostListener,
   computed,
+  inject,
   input,
   output,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
-import { ImportedGameSearchItem, ImportedGamePageInfo } from '../data-access/games.models';
+import { ImportedGamePageInfo, ImportedGameSearchItem } from '../data-access/games.models';
 import {
   accuracyLabel,
   colorLabel,
@@ -35,13 +37,13 @@ import { GameActionMenuComponent } from './game-action-menu.component';
   styleUrl: './games-table.component.css',
 })
 export class GamesTableComponent {
+  private readonly jobs = inject(ImportedGameJobStore);
+
   readonly games = input.required<ImportedGameSearchItem[]>();
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly tableSubtitle = input('No games loaded');
   readonly pageInfo = input.required<ImportedGamePageInfo>();
-  readonly analysingGameId = input<number | null>(null);
-  readonly indexingPlyGameId = input<number | null>(null);
   readonly refresh = output<void>();
   readonly loadMore = output<void>();
   readonly analyse = output<ImportedGameSearchItem>();
@@ -105,16 +107,32 @@ export class GamesTableComponent {
     this.indexPlies.emit(game);
   }
 
+  protected isAnalysing(game: ImportedGameSearchItem): boolean {
+    return this.jobs.isGameActive(game.id, ['ANALYSE_GAMES', 'PROCESS_GAMES']);
+  }
+
+  protected isIndexing(game: ImportedGameSearchItem): boolean {
+    return this.jobs.isGameActive(game.id, ['INDEX_GAMES', 'PROCESS_GAMES']);
+  }
+
   protected analysisStatusLabel(game: ImportedGameSearchItem): string {
-    if (this.analysingGameId() === game.id || game.analysis?.status === 'RUNNING')
-      return 'Analysing...';
+    const active = this.jobs.activeRunForGame(game.id, ['ANALYSE_GAMES', 'PROCESS_GAMES']);
+    if (active?.kind === 'PROCESS_GAMES') {
+      return active.status === 'QUEUED' ? 'Processing queued' : 'Processing...';
+    }
+    if (active) return active.status === 'QUEUED' ? 'Analysis queued' : 'Analysing...';
+    if (game.analysis?.status === 'RUNNING') return 'Analysing...';
     if (game.analysis?.status === 'COMPLETED') return 'Analysed';
+    if (game.analysis?.status === 'FAILED') return 'Analysis failed';
     return 'Not analysed';
   }
 
   protected plyIndexStatusLabel(game: ImportedGameSearchItem): string {
-    if (this.indexingPlyGameId() === game.id) return 'Indexing...';
+    const active = this.jobs.activeRunForGame(game.id, ['INDEX_GAMES', 'PROCESS_GAMES']);
+    if (active?.kind === 'PROCESS_GAMES') return 'Included in full processing';
+    if (active) return active.status === 'QUEUED' ? 'Index queued' : 'Indexing...';
     if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
+    if (game.plyIndex?.status === 'FAILED') return 'Index failed';
     return 'Not indexed';
   }
 

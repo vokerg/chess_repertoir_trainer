@@ -6,9 +6,9 @@ The feature is under active migration. Sections labeled **Current** describe beh
 
 ## Why this exists
 
-Imported-game indexing and analysis currently mix browser-side orchestration with an API-process compatibility queue. Accepted work is therefore difficult to observe and parts of the old flow still depend on the browser or API process lifetime.
+Imported-game processing previously mixed browser-side indexing and whole-game Stockfish orchestration with an API-process compatibility queue. Accepted work was difficult to observe and depended on the browser or API process lifetime.
 
-The migration replaces that orchestration with PostgreSQL-backed jobs that remain visible across navigation, browser restarts, and API restarts.
+The current feature branch routes user-requested indexing, analysis, full processing, and explicit tag refresh through PostgreSQL-backed jobs that remain visible across navigation, browser reloads, and API restarts.
 
 ## Delivery model
 
@@ -62,13 +62,13 @@ npm run start --workspace=apps/api
 npm run start:worker --workspace=apps/api
 ```
 
-The worker registers all four imported-game domain executors. The existing API-process in-memory queue remains temporarily for compatibility, but it delegates to the same imported-game processing and analysis services as the persistent worker rather than owning a second analysis implementation.
+The worker registers all four imported-game domain executors. The existing API-process in-memory queue remains temporarily for backend compatibility, but it delegates to the same imported-game processing and analysis services as the persistent worker rather than owning a second analysis implementation.
 
 Analysis-backed jobs use the existing batch Stockfish configuration. `LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED` must be enabled in the worker environment, and the selected local or WASM engine configuration must be usable there.
 
 ## Current domain execution
 
-The worker executor registry maps persisted job kinds to the existing imported-game services:
+The worker executor registry maps persisted job kinds to imported-game services:
 
 - `INDEX_GAMES`: index plies and assign a missing opening;
 - `ANALYSE_GAMES`: analyse an already-indexed standard-speed game and refresh analysis-derived tags after success;
@@ -79,7 +79,29 @@ Opening assignment remains part of indexing. Tag refresh remains part of success
 
 Each analysis or processing task owns one Stockfish engine instance. The executor disposes it on completion, failure, or abort. Indexing and tag-only tasks do not create an engine.
 
-The old batch queue now calls the same `ImportedGameProcessingService`, so migration compatibility does not duplicate the analysis algorithm.
+The old batch queue calls the same `ImportedGameProcessingService`, so migration compatibility does not duplicate the analysis algorithm.
+
+## Current frontend integration
+
+**Current:** Angular owns one root-scoped imported-game job API/store and a bottom job panel mounted by `AppComponent`.
+
+The store:
+
+- restores active jobs and their game ids after authentication and page reload;
+- polls only while active jobs exist;
+- exposes queued/running state from persisted job data rather than optimistic row patches;
+- detects jobs that become terminal and publishes the affected game ids;
+- keeps progress visible across route navigation.
+
+The global panel shows job kind, status, task totals, settled progress, running count, and failures. Recent terminal jobs remain briefly visible with active work.
+
+Games Explorer preserves per-game **Index** and **Analyse** actions and submits one durable job for either a single game or the currently visible games. Its visible-game tag refresh submits one `REFRESH_TAGS` job. Account workflow actions submit one durable job for the confirmed account batch rather than calling one endpoint per game from the browser.
+
+Single-game review preserves its **Full refresh** action and submits `PROCESS_GAMES` for that game. While full processing is active, the page reads `GameAnalysisRun.positionsDone` and `positionsTotal` for move-level progress and reloads game data when the job settles.
+
+The interactive engine used to analyse the currently selected board position remains browser-side. Only persisted whole-game indexing, classification, analysis, and tag workflows moved to the worker.
+
+The browser no longer controls imported-game indexing concurrency, loops through whole-game Stockfish analysis, or marks accepted games as already running.
 
 ## Data model
 
@@ -171,19 +193,13 @@ Domain execution is idempotent at the existing service boundaries:
 - processing composes those checks;
 - forced work reruns the requested indexing and analysis behavior.
 
-During migration, analysis can still arrive from both the legacy client workflow and the persistent worker. A PostgreSQL guard prevents an older `GameAnalysisRun` from overwriting the denormalized latest-analysis snapshot of a newer run on `ImportedGame`.
+During migration, analysis can still arrive from both compatibility API routes and the persistent worker. A PostgreSQL guard prevents an older `GameAnalysisRun` from overwriting the denormalized latest-analysis snapshot of a newer run on `ImportedGame`.
 
 ## Graceful shutdown
 
 **Current:** `SIGINT` and `SIGTERM` stop new claims and abort the active executor through an `AbortSignal`. Executors check the signal between domain steps and analysis chunks. Engine-backed executors dispose Stockfish on abort. The worker releases an aborted claim back to `QUEUED` and waits up to `JOB_WORKER_SHUTDOWN_TIMEOUT_MS` before reporting an unsuccessful shutdown. A process that dies without releasing its claim is handled by heartbeat expiry and stale recovery.
 
 Worker timing settings are documented in `.env.example`. `JOB_WORKER_STALE_AFTER_MS` must be greater than twice `JOB_WORKER_HEARTBEAT_INTERVAL_MS`.
-
-## Frontend direction
-
-**Target:** the Angular application owns a root-scoped job store and a bottom job panel that survives route navigation. It polls only while active work exists and uses `GameAnalysisRun` for move-level analysis progress.
-
-Browser code will no longer control indexing concurrency or mark every accepted game as already running.
 
 ## Incremental delivery
 
@@ -195,7 +211,6 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Preserve newest-first task order and job-level priority constants.
 - Preserve task history after imported-game/account deletion.
 - Enforce lifecycle literals at the PostgreSQL boundary and fail loudly on count corruption.
-- Do not execute tasks or remove the old queue yet.
 
 ### PR2 — worker runtime and safe claiming
 
@@ -211,26 +226,24 @@ Browser code will no longer control indexing concurrency or mark every accepted 
 - Implement indexing, analysis, complete processing, and explicit tag-refresh executors.
 - Reuse one shared imported-game processing and analysis path from both worker and compatibility queue.
 - Add idempotency, force behavior, abort propagation, isolated engine lifecycle, and stale-analysis snapshot protection.
-- Keep the in-memory queue only as a compatibility wrapper until later API/frontend routing removes it.
 
-### PR4 — global frontend progress
+### PR4 and PR5 — global frontend progress and browser-orchestration removal
 
 - Add the root job store/API and bottom job panel.
+- Recover active work after reload and poll only while active work exists.
 - Expose queued/running state without optimistic fake statuses.
-- Refresh affected game data when jobs finish.
-
-### PR5 — remove browser orchestration
-
+- Refresh affected game and account workflow data when jobs finish.
 - Replace Games Explorer and account-page loops with job submission.
 - Track single-game full refresh through `PROCESS_GAMES`.
-- Remove obsolete client methods and compatibility code.
+- Remove the browser whole-game analysis service and obsolete frontend workflow API methods.
+- Keep interactive selected-position analysis in the browser.
 
 ### PR6 — account refresh, onboarding, retention, and cleanup
 
 - Create processing jobs for newly imported games.
 - Add low-priority onboarding.
 - Add terminal-job retention, cancellation completion, and retry-by-new-job behavior.
-- Remove obsolete queue code, settings, tests, comments, and documentation.
+- Remove obsolete backend queue code, settings, tests, comments, and documentation.
 
 ## Documentation rules during migration
 
@@ -239,7 +252,6 @@ Every incremental pull request updates the canonical documentation for behavior 
 - `docs/README.md` indexes this canonical topic.
 - `docs/architecture.md` changes only when module/runtime boundaries are implemented.
 - `docs/deployment.md` changes when worker runtime requirements change.
-- `README.md` stops describing imported-game analysis as synchronous only after the old implementation is retired.
 - OpenAPI remains generated from Fastify route schemas.
 - Final cleanup searches README, `docs/`, package scripts, environment examples, tests, and code comments for obsolete or contradictory queue descriptions.
 

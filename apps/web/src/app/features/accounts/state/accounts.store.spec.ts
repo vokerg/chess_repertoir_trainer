@@ -1,5 +1,8 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import type { CreateImportedGameJobRunResponse, JobRunKind } from '@chess-trainer/contracts/jobs';
 import { of, throwError } from 'rxjs';
+import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
 import { AccountsStore } from './accounts.store';
@@ -7,6 +10,7 @@ import { AccountsStore } from './accounts.store';
 describe('AccountsStore', () => {
   let store: AccountsStore;
   let api: jasmine.SpyObj<AccountsApiService>;
+  let submit: jasmine.Spy;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<AccountsApiService>('AccountsApiService', [
@@ -14,8 +18,6 @@ describe('AccountsStore', () => {
       'createAccount',
       'syncAccount',
       'getWorkflowCandidates',
-      'runIndexWorkflow',
-      'startBatchAnalysis',
       'resetCursor',
       'setActive',
       'deleteAccount',
@@ -24,9 +26,24 @@ describe('AccountsStore', () => {
       'startLichessConnection',
       'disconnectLichess',
     ]);
+    submit = jasmine.createSpy('submit').and.callFake(
+      async (kind: JobRunKind, gameIds: readonly number[], force = false) =>
+        acceptedJob(kind, gameIds, force),
+    );
 
     TestBed.configureTestingModule({
-      providers: [AccountsStore, { provide: AccountsApiService, useValue: api }],
+      providers: [
+        AccountsStore,
+        { provide: AccountsApiService, useValue: api },
+        {
+          provide: ImportedGameJobStore,
+          useValue: {
+            terminalBatch: signal(null),
+            submit,
+            isGameActive: jasmine.createSpy('isGameActive').and.returnValue(false),
+          },
+        },
+      ],
     });
 
     store = TestBed.inject(AccountsStore);
@@ -98,7 +115,9 @@ describe('AccountsStore', () => {
     const failing = account(1, 'first', true);
     const succeeding = account(2, 'second', true);
     store.accounts.set([failing, succeeding]);
-    api.syncAccount.withArgs(failing.id).and.returnValue(throwError(() => ({ error: { message: 'Boom' } })));
+    api.syncAccount.withArgs(failing.id).and.returnValue(
+      throwError(() => ({ error: { message: 'Boom' } })),
+    );
     api.syncAccount.withArgs(succeeding.id).and.returnValue(of(syncResult(200)));
     api.getAccounts.and.returnValue(of([failing, succeeding]));
 
@@ -128,7 +147,58 @@ describe('AccountsStore', () => {
     expect(store.accounts()).toEqual(updatedAccounts);
     expect(store.notice()).toBe('Lichess @first is now the default progress account.');
   });
+
+  it('submits account indexing as one durable job instead of looping in the browser', async () => {
+    const tracked = account(1, 'tracked', true);
+
+    await store.indexEligibleAccountGames(tracked, [10, 11, 10]);
+
+    expect(submit).toHaveBeenCalledOnceWith('INDEX_GAMES', [10, 11]);
+    expect(store.notice()).toBe('Submitted 2 blitz/rapid games for indexing.');
+    expect(store.indexingWorkflowAccountId()).toBeNull();
+  });
+
+  it('submits account analysis as one durable job', async () => {
+    const tracked = account(1, 'tracked', true);
+
+    await store.analyseEligibleAccountGames(tracked, [20, 21]);
+
+    expect(submit).toHaveBeenCalledOnceWith('ANALYSE_GAMES', [20, 21]);
+    expect(store.notice()).toBe('Submitted 2 blitz/rapid games for analysis.');
+    expect(store.analysingWorkflowAccountId()).toBeNull();
+  });
 });
+
+function acceptedJob(
+  kind: JobRunKind,
+  gameIds: readonly number[],
+  force: boolean,
+): CreateImportedGameJobRunResponse {
+  return {
+    jobRun: {
+      id: 300,
+      kind,
+      source: 'USER_ACTION',
+      priority: 300,
+      status: 'QUEUED',
+      totalTasks: gameIds.length,
+      force,
+      taskCounts: {
+        queued: gameIds.length,
+        running: 0,
+        completed: 0,
+        skipped: 0,
+        failed: 0,
+        cancelled: 0,
+      },
+      createdAt: '2026-07-17T10:00:00.000Z',
+      updatedAt: '2026-07-17T10:00:00.000Z',
+      startedAt: null,
+      completedAt: null,
+    },
+    rejectedGameIds: [],
+  };
+}
 
 function account(id: number, username: string, isActive: boolean): ExternalAccount {
   return {
