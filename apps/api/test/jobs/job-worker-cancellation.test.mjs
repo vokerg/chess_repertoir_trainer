@@ -295,6 +295,9 @@ try {
     });
     assert.equal(storedTask.status, 'CANCELLED');
     assert.equal(storedTask.workKey, null, 'worker acknowledgement releases the cancelled game lease');
+    assert.ok(storedTask.startedAt);
+    assert.ok(storedTask.settledAt);
+    assert.ok(storedTask.settledAt >= storedTask.startedAt);
     assert.equal(
       await prisma.gameAnalysisRun.count({ where: { importedGameId: game.id } }),
       0,
@@ -327,6 +330,9 @@ try {
       where: { id: originalClaim.id },
     });
     assert.equal(cancelledTask.status, 'CANCELLED');
+    assert.ok(cancelledTask.startedAt);
+    assert.ok(cancelledTask.settledAt);
+    assert.ok(cancelledTask.settledAt >= cancelledTask.startedAt);
     assert.equal(
       cancelledTask.workKey,
       originalClaim.workKey,

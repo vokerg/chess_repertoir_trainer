@@ -340,6 +340,7 @@ model JobRun {
   updatedAt   DateTime @updatedAt
   startedAt   DateTime?
   completedAt DateTime?
+  dismissedAt DateTime?
   tasks       JobTask[]
 
   @@index([status, priority, updatedAt])
@@ -356,6 +357,8 @@ model JobTask {
   status         String
   workKey        String?       @unique
   error          String?
+  startedAt      DateTime?
+  settledAt      DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

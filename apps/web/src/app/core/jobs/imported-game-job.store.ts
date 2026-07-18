@@ -6,15 +6,12 @@ import type {
   JobRunSummary,
 } from '@chess-trainer/contracts/jobs';
 import { firstValueFrom } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
 import { ImportedGameJobApiService } from './imported-game-job-api.service';
 
 const ACTIVE_JOB_STATUSES: ReadonlySet<JobRunStatus> = new Set(['QUEUED', 'RUNNING']);
 const POLL_INTERVAL_MS = 1_500;
 const MAX_VISIBLE_TERMINAL_RUNS = 3;
 const RECENT_JOB_HISTORY_LIMIT = 100;
-const DISMISSED_JOB_RUN_IDS_STORAGE_PREFIX =
-  'chess-repertoire-trainer:imported-game-jobs:dismissed-run-ids:user';
 
 export interface ImportedGameJobTerminalBatch {
   sequence: number;
@@ -25,17 +22,14 @@ export interface ImportedGameJobTerminalBatch {
 @Injectable({ providedIn: 'root' })
 export class ImportedGameJobStore {
   private readonly api = inject(ImportedGameJobApiService);
-  private readonly auth = inject(AuthService);
   private readonly runsState = signal<JobRunSummary[]>([]);
   private readonly gameIdsByRunState = signal<Record<number, readonly number[]>>({});
-  private readonly dismissedRunIdsState = signal<ReadonlySet<number>>(new Set());
   private pollTimer?: ReturnType<typeof setTimeout>;
   private initializationInFlight: Promise<void> | null = null;
   private refreshInFlight: Promise<void> | null = null;
   private initialized = false;
   private sessionGeneration = 0;
   private terminalSequence = 0;
-  private dismissalStorageKey: string | null = null;
 
   readonly runs = this.runsState.asReadonly();
   readonly gameIdsByRun = this.gameIdsByRunState.asReadonly();
@@ -46,6 +40,7 @@ export class ImportedGameJobStore {
   readonly terminalBatch = signal<ImportedGameJobTerminalBatch | null>(null);
   readonly cancellingRunId = signal<number | null>(null);
   readonly retryingRunId = signal<number | null>(null);
+  readonly dismissingRunId = signal<number | null>(null);
 
   readonly activeRuns = computed(() =>
     this.runsState().filter((run) => isActiveStatus(run.status)),
@@ -53,10 +48,9 @@ export class ImportedGameJobStore {
   readonly hasActiveJobs = computed(() => this.activeRuns().length > 0);
   readonly visibleRuns = computed(() => {
     const runs = this.runsState();
-    const dismissedRunIds = this.dismissedRunIdsState();
     const active = runs.filter((run) => isActiveStatus(run.status));
     const terminal = runs
-      .filter((run) => !isActiveStatus(run.status) && !dismissedRunIds.has(run.id))
+      .filter((run) => !isActiveStatus(run.status))
       .slice(0, MAX_VISIBLE_TERMINAL_RUNS);
     return [...active, ...terminal].sort(compareNewestFirst);
   });
@@ -65,7 +59,6 @@ export class ImportedGameJobStore {
     if (this.initialized) return;
     if (this.initializationInFlight) return this.initializationInFlight;
 
-    this.loadDismissedRunIds();
     const generation = this.sessionGeneration;
     const task = this.performInitialization(generation);
     this.initializationInFlight = task;
@@ -85,25 +78,43 @@ export class ImportedGameJobStore {
     this.refreshInFlight = null;
     this.runsState.set([]);
     this.gameIdsByRunState.set({});
-    this.dismissedRunIdsState.set(new Set());
-    this.clearPersistedDismissedRunIds();
     this.loading.set(false);
     this.error.set(null);
     this.terminalBatch.set(null);
     this.pollVersion.set(0);
     this.cancellingRunId.set(null);
     this.retryingRunId.set(null);
+    this.dismissingRunId.set(null);
   }
 
-  dismiss(jobRunId: number): void {
+  async dismiss(jobRunId: number): Promise<void> {
+    if (this.dismissingRunId() !== null) return;
+
     const run = this.runsState().find((candidate) => candidate.id === jobRunId);
     if (!run || isActiveStatus(run.status)) return;
 
-    this.dismissedRunIdsState.update((current) => {
-      if (current.has(jobRunId)) return current;
-      return new Set([...current, jobRunId]);
-    });
-    this.persistDismissedRunIds();
+    const generation = this.sessionGeneration;
+    this.dismissingRunId.set(jobRunId);
+    this.error.set(null);
+    try {
+      await firstValueFrom(this.api.dismissJob(jobRunId));
+      if (!this.isCurrentGeneration(generation)) return;
+
+      this.runsState.update((runs) => runs.filter((candidate) => candidate.id !== jobRunId));
+      this.gameIdsByRunState.update((gameIdsByRun) => {
+        const { [jobRunId]: dismissed, ...remaining } = gameIdsByRun;
+        void dismissed;
+        return remaining;
+      });
+    } catch (error) {
+      if (this.isCurrentGeneration(generation)) {
+        this.error.set(readError(error, 'Could not dismiss imported-game job.'));
+      }
+    } finally {
+      if (this.isCurrentGeneration(generation) && this.dismissingRunId() === jobRunId) {
+        this.dismissingRunId.set(null);
+      }
+    }
   }
 
   async submit(
@@ -236,8 +247,6 @@ export class ImportedGameJobStore {
         this.api.listJobs(false, RECENT_JOB_HISTORY_LIMIT),
       );
       if (!this.isCurrentGeneration(generation)) return;
-
-      this.pruneDismissedRunIds([...activeResponse.items, ...recentResponse.items]);
 
       const recentTerminalRuns = recentResponse.items
         .filter((run) => !isActiveStatus(run.status))
@@ -391,59 +400,6 @@ export class ImportedGameJobStore {
         .slice(0, MAX_VISIBLE_TERMINAL_RUNS);
       return [...active, ...terminal].sort(compareNewestFirst);
     });
-  }
-
-  private loadDismissedRunIds(): void {
-    const userId = this.auth.appUser()?.user.id;
-    this.dismissalStorageKey = Number.isInteger(userId) && Number(userId) > 0
-      ? `${DISMISSED_JOB_RUN_IDS_STORAGE_PREFIX}:${userId}`
-      : null;
-    this.dismissedRunIdsState.set(new Set());
-    if (!this.dismissalStorageKey) return;
-
-    try {
-      const raw = globalThis.localStorage?.getItem(this.dismissalStorageKey);
-      if (!raw) return;
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      const dismissedRunIds = parsed.filter(
-        (value): value is number => Number.isInteger(value) && value > 0,
-      );
-      this.dismissedRunIdsState.set(new Set(dismissedRunIds));
-    } catch {
-      this.dismissedRunIdsState.set(new Set());
-    }
-  }
-
-  private pruneDismissedRunIds(loadedRuns: readonly JobRunSummary[]): void {
-    const loadedRunIds = new Set(loadedRuns.map((run) => run.id));
-    const current = this.dismissedRunIdsState();
-    const next = new Set([...current].filter((jobRunId) => loadedRunIds.has(jobRunId)));
-    if (next.size === current.size) return;
-    this.dismissedRunIdsState.set(next);
-    this.persistDismissedRunIds();
-  }
-
-  private persistDismissedRunIds(): void {
-    if (!this.dismissalStorageKey) return;
-    try {
-      globalThis.localStorage?.setItem(
-        this.dismissalStorageKey,
-        JSON.stringify([...this.dismissedRunIdsState()].sort((left, right) => left - right)),
-      );
-    } catch {
-      // localStorage can be unavailable or disabled; dismissal remains in memory.
-    }
-  }
-
-  private clearPersistedDismissedRunIds(): void {
-    if (!this.dismissalStorageKey) return;
-    try {
-      globalThis.localStorage?.removeItem(this.dismissalStorageKey);
-    } catch {
-      // localStorage can be unavailable or disabled.
-    }
-    this.dismissalStorageKey = null;
   }
 
   private publishTerminalBatch(runs: readonly JobRunSummary[]): void {

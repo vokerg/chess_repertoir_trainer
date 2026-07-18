@@ -25,6 +25,8 @@ export interface StoredJobTask {
   ordinal: number;
   status: string;
   error: string | null;
+  startedAt: Date | null;
+  settledAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +56,8 @@ export interface StoredRetryableJobRun {
   importedGameIds: number[];
 }
 
+export type DismissTerminalJobRunResult = 'DISMISSED' | 'NOT_DISMISSIBLE' | 'NOT_FOUND';
+
 const terminalJobRunStatuses = [
   'COMPLETED',
   'PARTIALLY_FAILED',
@@ -81,6 +85,8 @@ const jobTaskSelect = {
   ordinal: true,
   status: true,
   error: true,
+  startedAt: true,
+  settledAt: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -137,6 +143,7 @@ export const JobRunRepository = {
     return prisma.jobRun.findMany({
       where: {
         userId,
+        dismissedAt: null,
         ...(statuses ? { status: { in: statuses } } : {}),
       },
       select: jobRunSelect,
@@ -150,20 +157,43 @@ export const JobRunRepository = {
 
   findForUser(userId: number, jobRunId: number): Promise<StoredJobRun | null> {
     return prisma.jobRun.findFirst({
-      where: { id: jobRunId, userId },
+      where: { id: jobRunId, userId, dismissedAt: null },
       select: jobRunSelect,
     });
+  },
+
+  async dismissTerminalForUser(
+    userId: number,
+    jobRunId: number,
+  ): Promise<DismissTerminalJobRunResult> {
+    const result = await prisma.jobRun.updateMany({
+      where: {
+        id: jobRunId,
+        userId,
+        dismissedAt: null,
+        status: { in: [...terminalJobRunStatuses] },
+      },
+      data: { dismissedAt: new Date() },
+    });
+    if (result.count === 1) return 'DISMISSED';
+
+    const visibleRun = await prisma.jobRun.findFirst({
+      where: { id: jobRunId, userId, dismissedAt: null },
+      select: { id: true },
+    });
+    return visibleRun ? 'NOT_DISMISSIBLE' : 'NOT_FOUND';
   },
 
   async cancelForUser(userId: number, jobRunId: number): Promise<StoredJobRun | null> {
     return prisma.$transaction(async (transaction) => {
       const ownedRun = await transaction.jobRun.findFirst({
-        where: { id: jobRunId, userId },
+        where: { id: jobRunId, userId, dismissedAt: null },
         select: { id: true, status: true },
       });
       if (!ownedRun) return null;
 
       if (ownedRun.status === 'QUEUED' || ownedRun.status === 'RUNNING') {
+        const settledAt = new Date();
         // Worker settlement updates JobTask before locking JobRun. Cancellation must
         // use the same order so completion and cancellation cannot deadlock.
         await transaction.jobTask.updateMany({
@@ -172,6 +202,7 @@ export const JobRunRepository = {
             status: 'CANCELLED',
             workKey: null,
             error: 'Cancelled by user.',
+            settledAt,
             updatedAt: new Date(),
           },
         });
@@ -183,6 +214,7 @@ export const JobRunRepository = {
             // fence is keyed by this lease, so an immediate retry cannot overlap
             // the cancelled executor before worker acknowledgement.
             error: 'Cancelled by user.',
+            settledAt,
             updatedAt: new Date(),
           },
         });
@@ -239,7 +271,7 @@ export const JobRunRepository = {
   ): Promise<StoredRetryableJobRun | null> {
     return prisma.$transaction(async (transaction) => {
       const jobRun = await transaction.jobRun.findFirst({
-        where: { id: jobRunId, userId },
+        where: { id: jobRunId, userId, dismissedAt: null },
         select: jobRunSelect,
       });
       if (!jobRun) return null;
@@ -299,7 +331,7 @@ export const JobRunRepository = {
     limit: number,
   ): Promise<{ total: number; items: StoredJobTask[] } | null> {
     const ownedJob = await prisma.jobRun.findFirst({
-      where: { id: jobRunId, userId },
+      where: { id: jobRunId, userId, dismissedAt: null },
       select: { id: true },
     });
     if (!ownedJob) return null;

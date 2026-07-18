@@ -152,6 +152,11 @@ try {
         [undatedGame.id, 2, 'QUEUED'],
       ],
     );
+    assert.deepEqual(
+      taskPayload.items.map((task) => [task.startedAt, task.settledAt]),
+      [[null, null], [null, null], [null, null]],
+      'existing tasks without execution timing remain readable through the task API',
+    );
 
     await assert.rejects(
       prisma.$executeRaw`UPDATE "JobRun" SET "kind" = ${'UNKNOWN'} WHERE "id" = ${created.jobRun.id}`,
@@ -213,6 +218,7 @@ try {
     assert.equal(invalidResponse.statusCode, 400);
     assert.deepEqual(invalidResponse.json(), { error: 'Validation failed' });
 
+    const runningTaskStartedAt = new Date('2026-07-17T12:01:00.000Z');
     await prisma.$transaction([
       prisma.jobRun.update({
         where: { id: created.jobRun.id },
@@ -224,7 +230,11 @@ try {
       }),
       prisma.jobTask.update({
         where: { id: taskPayload.items[1].id },
-        data: { status: 'RUNNING', workKey: `GAME_WORK:cancel-${suffix}` },
+        data: {
+          status: 'RUNNING',
+          workKey: `GAME_WORK:cancel-${suffix}`,
+          startedAt: runningTaskStartedAt,
+        },
       }),
     ]);
 
@@ -256,7 +266,33 @@ try {
     ]);
     assert.match(cancelledTasks[1].workKey, /^GAME_WORK:cancel-/);
     assert.equal(cancelledTasks[1].error, 'Cancelled by user.');
+    assert.deepEqual(cancelledTasks[1].startedAt, runningTaskStartedAt);
+    assert.ok(cancelledTasks[1].settledAt);
+    assert.ok(cancelledTasks[1].settledAt >= runningTaskStartedAt);
     assert.equal(cancelledTasks[2].workKey, null);
+    assert.equal(
+      cancelledTasks[2].startedAt,
+      null,
+      'cancelling an unclaimed queued task does not invent an execution start',
+    );
+    assert.ok(cancelledTasks[2].settledAt);
+
+    const cancelledTaskResponse = await app.inject({
+      method: 'GET',
+      url: `/api/job-runs/${created.jobRun.id}/tasks`,
+    });
+    assert.equal(cancelledTaskResponse.statusCode, 200);
+    const cancelledTaskPayload = cancelledTaskResponse.json();
+    assert.equal(cancelledTaskPayload.items[1].startedAt, runningTaskStartedAt.toISOString());
+    assert.equal(
+      cancelledTaskPayload.items[1].settledAt,
+      cancelledTasks[1].settledAt.toISOString(),
+    );
+    assert.equal(cancelledTaskPayload.items[2].startedAt, null);
+    assert.equal(
+      cancelledTaskPayload.items[2].settledAt,
+      cancelledTasks[2].settledAt.toISOString(),
+    );
 
     const repeatedCancelResponse = await app.inject({
       method: 'POST',
@@ -310,6 +346,60 @@ try {
     assert.equal(foreignRetryResponse.statusCode, 404);
     assert.equal(foreignRetryResponse.json().code, 'JOB_RUN_NOT_FOUND');
 
+    const activeDismissResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/job-runs/${retried.jobRun.id}`,
+    });
+    assert.equal(activeDismissResponse.statusCode, 409);
+    assert.equal(activeDismissResponse.json().code, 'JOB_RUN_NOT_DISMISSIBLE');
+
+    const foreignDismissResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/job-runs/${foreignJob.id}`,
+    });
+    assert.equal(foreignDismissResponse.statusCode, 404);
+    assert.equal(foreignDismissResponse.json().code, 'JOB_RUN_NOT_FOUND');
+
+    const dismissResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/job-runs/${created.jobRun.id}`,
+    });
+    assert.equal(dismissResponse.statusCode, 204);
+    assert.equal(dismissResponse.body, '');
+
+    const dismissedRun = await prisma.jobRun.findUnique({
+      where: { id: created.jobRun.id },
+      select: { dismissedAt: true },
+    });
+    assert.ok(dismissedRun?.dismissedAt);
+    assert.equal(
+      await prisma.jobTask.count({ where: { jobRunId: created.jobRun.id } }),
+      3,
+      'dismissal retains task rows and active cancellation leases for worker safety',
+    );
+
+    const dismissedDetailResponse = await app.inject({
+      method: 'GET',
+      url: `/api/job-runs/${created.jobRun.id}`,
+    });
+    assert.equal(dismissedDetailResponse.statusCode, 404);
+
+    const dismissedTasksResponse = await app.inject({
+      method: 'GET',
+      url: `/api/job-runs/${created.jobRun.id}/tasks`,
+    });
+    assert.equal(dismissedTasksResponse.statusCode, 404);
+
+    const recentAfterDismissResponse = await app.inject({
+      method: 'GET',
+      url: '/api/job-runs?active=false&limit=100',
+    });
+    assert.equal(recentAfterDismissResponse.statusCode, 200);
+    assert.equal(
+      recentAfterDismissResponse.json().items.some((jobRun) => jobRun.id === created.jobRun.id),
+      false,
+    );
+
     const retentionCreateResponse = await app.inject({
       method: 'POST',
       url: '/api/imported-games/job-runs',
@@ -359,6 +449,7 @@ try {
     assert.equal(paths['/api/imported-games/job-runs'].post.operationId, 'createImportedGameJobRun');
     assert.equal(paths['/api/job-runs'].get.operationId, 'listJobRuns');
     assert.equal(paths['/api/job-runs/{jobRunId}'].get.operationId, 'getJobRun');
+    assert.equal(paths['/api/job-runs/{jobRunId}'].delete.operationId, 'dismissJobRun');
     assert.equal(paths['/api/job-runs/{jobRunId}/cancel'].post.operationId, 'cancelJobRun');
     assert.equal(paths['/api/job-runs/{jobRunId}/retry'].post.operationId, 'retryJobRun');
     assert.equal(paths['/api/job-runs/{jobRunId}/tasks'].get.operationId, 'listJobRunTasks');

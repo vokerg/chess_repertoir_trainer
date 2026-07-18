@@ -5,36 +5,27 @@ import type {
   JobTask,
 } from '@chess-trainer/contracts/jobs';
 import { of, Subject, throwError } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
 import { ImportedGameJobApiService } from './imported-game-job-api.service';
 import { ImportedGameJobStore } from './imported-game-job.store';
-
-const TEST_USER_ID = 42;
-const TEST_DISMISSAL_STORAGE_KEY =
-  `chess-repertoire-trainer:imported-game-jobs:dismissed-run-ids:user:${TEST_USER_ID}`;
 
 describe('ImportedGameJobStore', () => {
   let store: ImportedGameJobStore;
   let api: jasmine.SpyObj<ImportedGameJobApiService>;
 
   beforeEach(() => {
-    localStorage.removeItem(TEST_DISMISSAL_STORAGE_KEY);
     api = jasmine.createSpyObj<ImportedGameJobApiService>('ImportedGameJobApiService', [
       'createJob',
       'listJobs',
       'getJob',
       'cancelJob',
       'retryJob',
+      'dismissJob',
       'listTasks',
     ]);
     TestBed.configureTestingModule({
       providers: [
         ImportedGameJobStore,
         { provide: ImportedGameJobApiService, useValue: api },
-        {
-          provide: AuthService,
-          useValue: { appUser: () => ({ user: { id: TEST_USER_ID } }) },
-        },
       ],
     });
     store = TestBed.inject(ImportedGameJobStore);
@@ -42,7 +33,6 @@ describe('ImportedGameJobStore', () => {
 
   afterEach(() => {
     store.reset();
-    localStorage.removeItem(TEST_DISMISSAL_STORAGE_KEY);
   });
 
   it('recovers active jobs and recent terminal jobs with their game ids', async () => {
@@ -75,7 +65,7 @@ describe('ImportedGameJobStore', () => {
     expect(api.listJobs.calls.argsFor(1)).toEqual([false, 100]);
   });
 
-  it('dismisses only the selected terminal job from visible runs', async () => {
+  it('permanently dismisses only the selected terminal job through the API', async () => {
     const completed = jobRun(80, 'INDEX_GAMES', 'COMPLETED', 1);
     const failed = jobRun(81, 'ANALYSE_GAMES', 'FAILED', 1);
     api.listJobs.and.callFake((activeOnly: boolean) => of({
@@ -85,21 +75,20 @@ describe('ImportedGameJobStore', () => {
       total: 1,
       items: [task(jobRunId, 800 + jobRunId, jobRunId === failed.id ? 'FAILED' : 'COMPLETED')],
     }));
+    api.dismissJob.and.returnValue(of(undefined));
 
     await store.initialize();
-    store.dismiss(completed.id);
+    await store.dismiss(completed.id);
 
-    expect(store.runs()).toContain(completed);
+    expect(api.dismissJob).toHaveBeenCalledOnceWith(completed.id);
+    expect(store.runs()).not.toContain(completed);
     expect(store.visibleRuns()).toEqual([failed]);
+    expect(store.gameIdsForRun(completed.id)).toEqual([]);
     expect(store.terminalBatch()).toBeNull();
-    expect(JSON.parse(localStorage.getItem(TEST_DISMISSAL_STORAGE_KEY) ?? '[]')).toEqual([
-      completed.id,
-    ]);
   });
 
-  it('does not hide an active job even when its id is persisted as dismissed', async () => {
+  it('does not dismiss an active job', async () => {
     const active = jobRun(82, 'PROCESS_GAMES', 'RUNNING', 1);
-    localStorage.setItem(TEST_DISMISSAL_STORAGE_KEY, JSON.stringify([active.id]));
     api.listJobs.and.callFake((activeOnly: boolean) => of({
       items: activeOnly ? [active] : [],
     }));
@@ -109,15 +98,13 @@ describe('ImportedGameJobStore', () => {
     }));
 
     await store.initialize();
-    store.dismiss(active.id);
+    await store.dismiss(active.id);
 
+    expect(api.dismissJob).not.toHaveBeenCalled();
     expect(store.visibleRuns()).toEqual([active]);
-    expect(JSON.parse(localStorage.getItem(TEST_DISMISSAL_STORAGE_KEY) ?? '[]')).toEqual([
-      active.id,
-    ]);
   });
 
-  it('restores dismissed terminal jobs from localStorage when the store is recreated', async () => {
+  it('keeps a terminal job visible when the dismissal request fails', async () => {
     const completed = jobRun(83, 'INDEX_GAMES', 'COMPLETED', 1);
     api.listJobs.and.callFake((activeOnly: boolean) => of({
       items: activeOnly ? [] : [completed],
@@ -126,100 +113,14 @@ describe('ImportedGameJobStore', () => {
       total: 1,
       items: [task(83, 883, 'COMPLETED')],
     }));
+    api.dismissJob.and.returnValue(throwError(() => new Error('Temporary dismiss failure')));
 
     await store.initialize();
-    store.dismiss(completed.id);
+    await store.dismiss(completed.id);
 
-    const recreatedStore = TestBed.runInInjectionContext(() => new ImportedGameJobStore());
-    await recreatedStore.initialize();
-
-    expect(recreatedStore.runs()).toContain(completed);
-    expect(recreatedStore.visibleRuns()).toEqual([]);
-    recreatedStore.reset();
-  });
-
-  it('ignores malformed dismissal data in localStorage', async () => {
-    const completed = jobRun(84, 'INDEX_GAMES', 'COMPLETED', 1);
-    localStorage.setItem(TEST_DISMISSAL_STORAGE_KEY, '{not valid json');
-    api.listJobs.and.callFake((activeOnly: boolean) => of({
-      items: activeOnly ? [] : [completed],
-    }));
-    api.listTasks.and.returnValue(of({
-      total: 1,
-      items: [task(84, 884, 'COMPLETED')],
-    }));
-
-    await expectAsync(store.initialize()).toBeResolved();
-
+    expect(store.runs()).toContain(completed);
     expect(store.visibleRuns()).toEqual([completed]);
-  });
-
-  it('removes stale dismissed ids that are absent from loaded job history', async () => {
-    const completed = jobRun(85, 'INDEX_GAMES', 'COMPLETED', 1);
-    localStorage.setItem(TEST_DISMISSAL_STORAGE_KEY, JSON.stringify([completed.id, 9999]));
-    api.listJobs.and.callFake((activeOnly: boolean) => of({
-      items: activeOnly ? [] : [completed],
-    }));
-    api.listTasks.and.returnValue(of({
-      total: 1,
-      items: [task(85, 885, 'COMPLETED')],
-    }));
-
-    await store.initialize();
-
-    expect(store.visibleRuns()).toEqual([]);
-    expect(JSON.parse(localStorage.getItem(TEST_DISMISSAL_STORAGE_KEY) ?? '[]')).toEqual([
-      completed.id,
-    ]);
-  });
-
-  it('clears persisted dismissal state on reset so another session does not inherit it', async () => {
-    const failed = jobRun(86, 'ANALYSE_GAMES', 'FAILED', 1);
-    api.listJobs.and.callFake((activeOnly: boolean) => of({
-      items: activeOnly ? [] : [failed],
-    }));
-    api.listTasks.and.returnValue(of({
-      total: 1,
-      items: [task(86, 886, 'FAILED')],
-    }));
-
-    await store.initialize();
-    store.dismiss(failed.id);
-    expect(store.visibleRuns()).toEqual([]);
-
-    store.reset();
-    expect(localStorage.getItem(TEST_DISMISSAL_STORAGE_KEY)).toBeNull();
-
-    const nextSessionStore = TestBed.runInInjectionContext(() => new ImportedGameJobStore());
-    await nextSessionStore.initialize();
-    expect(nextSessionStore.visibleRuns()).toEqual([failed]);
-    nextSessionStore.reset();
-  });
-
-  it('shows a new active job when retrying a dismissed terminal job', async () => {
-    const failed = jobRun(12, 'ANALYSE_GAMES', 'FAILED', 1);
-    const retried = jobRun(13, 'ANALYSE_GAMES', 'QUEUED', 1);
-    api.listJobs.and.callFake((activeOnly: boolean) => of({
-      items: activeOnly ? [] : [failed],
-    }));
-    api.listTasks.and.callFake((jobRunId: number) => of({
-      total: 1,
-      items: [task(jobRunId, 1201, jobRunId === failed.id ? 'FAILED' : 'QUEUED')],
-    }));
-    api.retryJob.and.returnValue(of({ jobRun: retried, rejectedGameIds: [] }));
-
-    await store.initialize();
-    expect(store.runs()).toContain(failed);
-    expect(store.gameIdsForRun(failed.id)).toEqual([1201]);
-    store.dismiss(failed.id);
-    expect(store.visibleRuns()).toEqual([]);
-
-    await store.retry(failed.id);
-
-    expect(api.retryJob).toHaveBeenCalledOnceWith(failed.id);
-    expect(store.activeRuns()).toEqual([retried]);
-    expect(store.visibleRuns()).toEqual([retried]);
-    expect(store.gameIdsForRun(retried.id)).toEqual([1201]);
+    expect(store.error()).toContain('Temporary dismiss failure');
   });
 
   it('submits one deduplicated durable job and tracks accepted games immediately', async () => {
@@ -437,6 +338,15 @@ function task(
     ordinal: Math.max(0, id - 1),
     status,
     error: status === 'FAILED' || status === 'CANCELLED' ? 'Terminal task' : null,
+    startedAt: status === 'RUNNING' || status === 'COMPLETED' || status === 'FAILED'
+      ? '2026-07-17T10:00:01.000Z'
+      : null,
+    settledAt: status === 'COMPLETED'
+      || status === 'FAILED'
+      || status === 'CANCELLED'
+      || status === 'SKIPPED'
+      ? '2026-07-17T10:00:02.000Z'
+      : null,
     createdAt: '2026-07-17T10:00:00.000Z',
     updatedAt: '2026-07-17T10:00:00.000Z',
   };

@@ -31,6 +31,7 @@ assert.deepEqual(jobRunListQuerySchema.parse({ active: 'true', limit: '25' }), {
 });
 assert.deepEqual(jobTaskListQuerySchema.parse({}), { offset: 0, limit: 100 });
 assert.equal(jobRunErrorCodeSchema.parse('JOB_RUN_NOT_RETRYABLE'), 'JOB_RUN_NOT_RETRYABLE');
+assert.equal(jobRunErrorCodeSchema.parse('JOB_RUN_NOT_DISMISSIBLE'), 'JOB_RUN_NOT_DISMISSIBLE');
 
 const summary = {
   id: 9,
@@ -65,9 +66,22 @@ const retainedTask = {
   ordinal: 0,
   status: 'QUEUED',
   error: null,
+  startedAt: null,
+  settledAt: null,
   createdAt: '2026-07-16T08:00:00.000Z',
   updatedAt: '2026-07-16T08:00:00.000Z',
 };
 assert.deepEqual(jobTaskSchema.parse(retainedTask), retainedTask);
+const settledTask = {
+  ...retainedTask,
+  status: 'COMPLETED',
+  startedAt: '2026-07-16T08:01:00.000Z',
+  settledAt: '2026-07-16T08:01:02.000Z',
+};
+assert.deepEqual(jobTaskSchema.parse(settledTask), settledTask);
+assert.equal(
+  jobTaskSchema.safeParse({ ...settledTask, startedAt: new Date(settledTask.startedAt) }).success,
+  false,
+);
 
 console.log('Persistent job contract tests passed.');

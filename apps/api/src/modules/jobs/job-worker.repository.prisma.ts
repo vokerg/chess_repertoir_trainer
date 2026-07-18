@@ -159,6 +159,8 @@ export function createJobWorkerRepository(
           SET "status" = 'QUEUED',
               "workKey" = NULL,
               "error" = NULL,
+              "startedAt" = NULL,
+              "settledAt" = NULL,
               "updatedAt" = NOW()
           WHERE "status" = 'RUNNING'
             AND "updatedAt" < ${staleBefore}
@@ -189,6 +191,7 @@ export function createJobWorkerRepository(
           SET "status" = 'SKIPPED',
               "workKey" = NULL,
               "error" = 'Imported game no longer exists.',
+              "settledAt" = NOW(),
               "updatedAt" = NOW()
           WHERE "status" = 'QUEUED'
             AND "importedGameId" IS NULL
@@ -245,6 +248,8 @@ async function claimNextTaskOnce(
         SET "status" = 'RUNNING',
             "workKey" = ${workKey},
             "error" = NULL,
+            "startedAt" = NOW(),
+            "settledAt" = NULL,
             "updatedAt" = NOW()
         FROM candidate
         WHERE task."id" = candidate."id"
@@ -313,6 +318,7 @@ async function settleTask(
       SET "status" = ${status},
           "workKey" = NULL,
           "error" = ${error},
+          "settledAt" = NOW(),
           "updatedAt" = NOW()
       WHERE "id" = ${claim.id}
         AND "jobRunId" = ${claim.jobRunId}
@@ -337,6 +343,8 @@ async function releaseTask(
       SET "status" = 'QUEUED',
           "workKey" = NULL,
           "error" = NULL,
+          "startedAt" = NULL,
+          "settledAt" = NULL,
           "updatedAt" = NOW()
       WHERE "id" = ${claim.id}
         AND "jobRunId" = ${claim.jobRunId}

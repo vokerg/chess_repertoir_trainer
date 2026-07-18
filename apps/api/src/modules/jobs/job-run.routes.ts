@@ -12,8 +12,12 @@ import {
 } from '@chess-trainer/contracts/jobs';
 import { requireAuth } from '../../auth/request-auth';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
-import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import {
+  noContentResponseSchema,
+  unauthorizedResponseSchema,
+} from '../../routes/legacy-route.schemas';
+import {
+  JobRunNotDismissibleError,
   JobRunNotFoundError,
   JobRunNotRetryableError,
   JobRunService,
@@ -53,6 +57,45 @@ const jobRunModule: FastifyPluginAsyncZod = async (app) => {
       } catch (error) {
         if (error instanceof NoImportedGamesFoundError) {
           reply.code(404);
+          return { error: error.message, code: error.code };
+        }
+        throw error;
+      }
+    },
+  });
+
+  app.route({
+    method: 'DELETE',
+    url: '/api/job-runs/:jobRunId',
+    schema: {
+      operationId: 'dismissJobRun',
+      tags: ['Jobs'],
+      summary: 'Permanently dismiss one current-user terminal job run',
+      description: 'Marks a terminal job run as dismissed so it no longer appears in current-user job reads. Active jobs must be cancelled and allowed to settle first.',
+      params: jobRunParamsSchema,
+      response: {
+        204: noContentResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: jobRunErrorResponseSchema,
+        409: jobRunErrorResponseSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const auth = requireAuth(request, reply);
+      if (!auth) return;
+
+      try {
+        await JobRunService.dismissForUser(auth.userId, request.params.jobRunId);
+        reply.code(204);
+        return;
+      } catch (error) {
+        if (error instanceof JobRunNotFoundError) {
+          reply.code(404);
+          return { error: error.message, code: error.code };
+        }
+        if (error instanceof JobRunNotDismissibleError) {
+          reply.code(409);
           return { error: error.message, code: error.code };
         }
         throw error;

@@ -54,6 +54,7 @@ POST /api/imported-games/job-runs
 GET  /api/job-runs
 GET  /api/job-runs/:jobRunId
 GET  /api/job-runs/:jobRunId/tasks
+DELETE /api/job-runs/:jobRunId
 POST /api/job-runs/:jobRunId/cancel
 POST /api/job-runs/:jobRunId/retry
 ```
@@ -62,7 +63,7 @@ All routes use shared schemas from `@chess-trainer/contracts/jobs`, Fastify rout
 
 Job creation validates ownership, removes duplicate requested ids, selects owned games in newest-first order, and records stable task ordinals. Missing and non-owned ids are returned together as rejected ids without exposing which case applied.
 
-Cancellation and retry are ownership-scoped. A job belonging to another user is reported as not found.
+Cancellation, retry, and dismissal are ownership-scoped. A job belonging to another user is reported as not found. Dismissal is available only for terminal jobs and permanently removes them from current-user job reads.
 
 ## Data model
 
@@ -83,6 +84,7 @@ A job owns:
 - lifecycle status;
 - requested task count;
 - force mode;
+- nullable user-dismissal timestamp;
 - timestamps.
 
 ### JobTask
@@ -95,7 +97,8 @@ A task represents one imported game inside one job. It owns:
 - lifecycle status;
 - optional opaque active-claim key;
 - terminal error;
-- timestamps.
+- creation/update timestamps;
+- nullable per-claim execution timestamps.
 
 If an imported game is deleted, including through external-account deletion, task history remains and `importedGameId` becomes `null`. Worker maintenance marks queued orphaned tasks `SKIPPED` with an explanatory error.
 
@@ -132,9 +135,10 @@ The store:
 - detects terminal transitions and publishes affected game ids;
 - discards stale responses after sign-out or account-session changes;
 - keeps progress visible across route navigation;
-- submits cancellation and retry actions.
+- submits cancellation and retry actions;
+- permanently dismisses terminal runs through the API without browser-local persistence.
 
-The panel shows job kind, status, task totals, settled progress, running count, failures, and cancellations. Active jobs expose **Cancel**. Terminal jobs containing failed or cancelled tasks expose **Retry failed**.
+The panel shows job kind, status, task totals, settled progress, running count, failures, and cancellations. Active jobs expose **Cancel**. Terminal jobs containing failed or cancelled tasks expose **Retry failed**, and all terminal jobs expose **Dismiss**. A dismissed run remains hidden across browsers and sessions for that user.
 
 Games Explorer preserves per-game **Index** and **Analyse** actions and submits one durable job for a single game or the currently visible games. Visible-game tag refresh submits one `REFRESH_TAGS` job.
 
@@ -188,6 +192,38 @@ Heartbeat, completion, failure, and release writes require the exact task id, jo
 
 Workers heartbeat active tasks. Maintenance returns stale `RUNNING` tasks to `QUEUED`, clears their claim key, and updates the parent scheduler timestamp. This is infrastructure recovery after a lost process, not configurable business retry machinery.
 
+## Per-claim task execution timing
+
+`JobTask.startedAt` records when a worker most recently claimed that task successfully. Every successful claim overwrites it and clears `settledAt`. The claim timestamp is written inside the successful claim transaction, before executor work begins.
+
+`JobTask.settledAt` records when that claim reaches a terminal task status: `COMPLETED`, `SKIPPED`, `FAILED`, or `CANCELLED`. Worker completion and failure, orphan skipping, and user cancellation all set it. A queued task cancelled before any claim therefore has `startedAt = NULL` and a cancellation timestamp in `settledAt`; it has no measurable execution duration.
+
+Graceful worker release and stale-task recovery return unfinished work to `QUEUED` and clear both timestamps. A later claim establishes a new `startedAt`, so the measured duration represents only the most recent claim attempt. Queue wait and earlier abandoned attempts are intentionally excluded rather than accumulated.
+
+For a terminal claimed task, processing duration is calculated from the timestamps:
+
+```sql
+SELECT
+    "id",
+    "jobRunId",
+    "importedGameId",
+    "status",
+    "startedAt",
+    "settledAt",
+    "settledAt" - "startedAt" AS "processingDuration",
+    ROUND(
+        EXTRACT(EPOCH FROM ("settledAt" - "startedAt"))::numeric,
+        2
+    ) AS "processingSeconds"
+FROM "JobTask"
+WHERE "jobRunId" = $1
+  AND "startedAt" IS NOT NULL
+  AND "settledAt" IS NOT NULL
+ORDER BY "ordinal";
+```
+
+This measures worker task execution time. It does not measure time waiting in the queue, total `JobRun` wall-clock duration, Stockfish-only engine time, or cumulative execution across multiple claims. Full attempt history would require a separate `JobTaskAttempt` model and is outside this design.
+
 Domain execution remains idempotent at existing service boundaries:
 
 - indexing skips when plies are current and opening work is complete or unmatched;
@@ -205,11 +241,12 @@ The cancel transaction:
 
 1. locks and ownership-checks the job;
 2. changes every queued or running task to `CANCELLED`;
-3. clears active `workKey` values;
+3. clears queued-task claim keys and retains a running task's claim key until worker acknowledgement;
 4. records a cancellation error on affected tasks;
-5. reconciles the parent job to `CANCELLED` or `PARTIALLY_FAILED`.
+5. records `settledAt` on affected tasks;
+6. reconciles the parent job to `CANCELLED` or `PARTIALLY_FAILED`.
 
-Clearing a running task's key causes its next heartbeat to lose the fenced claim. The worker aborts the executor through its existing `AbortSignal`, and the stale executor cannot later write completion or failure.
+Changing a running task to `CANCELLED` causes its next heartbeat to lose the fenced claim. The worker aborts the executor through its existing `AbortSignal`, acknowledges cancellation, and then clears the retained key. The stale executor cannot later write completion or failure.
 
 Cancellation is idempotent for an already-terminal owned job.
 
@@ -226,6 +263,8 @@ Deleted games are omitted naturally because their task references are `null`. An
 ## Terminal history retention
 
 The worker removes terminal jobs whose `completedAt` is older than the configured retention window. `JobTask` rows are removed through the existing cascade.
+
+User dismissal sets `JobRun.dismissedAt` and immediately excludes that run from user-facing list, detail, task, cancel, and retry operations. It does not immediately delete task rows because a cancelled executor may still hold a fenced work key while acknowledging cancellation. The normal terminal-retention cleanup later deletes the run and tasks safely.
 
 ```text
 JOB_WORKER_TERMINAL_RETENTION_DAYS=30

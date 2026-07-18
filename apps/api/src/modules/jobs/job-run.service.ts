@@ -53,6 +53,14 @@ export class JobRunNotRetryableError extends Error {
   }
 }
 
+export class JobRunNotDismissibleError extends Error {
+  readonly code = 'JOB_RUN_NOT_DISMISSIBLE' as const;
+
+  constructor() {
+    super('Only completed, failed, or cancelled job runs can be dismissed.');
+  }
+}
+
 export const JobRunService = {
   async createUserAction(input: {
     userId: number;
@@ -102,6 +110,12 @@ export const JobRunService = {
 
     const counts = await JobRunRepository.countTaskStatuses([jobRunId]);
     return toJobRunSummary(run, counts);
+  },
+
+  async dismissForUser(userId: number, jobRunId: number): Promise<void> {
+    const result = await JobRunRepository.dismissTerminalForUser(userId, jobRunId);
+    if (result === 'NOT_FOUND') throw new JobRunNotFoundError();
+    if (result === 'NOT_DISMISSIBLE') throw new JobRunNotDismissibleError();
   },
 
   async retryForUser(
@@ -217,6 +231,8 @@ function toJobTask(task: StoredJobTask): JobTask {
     ordinal: task.ordinal,
     status: jobTaskStatusSchema.parse(task.status),
     error: task.error,
+    startedAt: task.startedAt?.toISOString() ?? null,
+    settledAt: task.settledAt?.toISOString() ?? null,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };

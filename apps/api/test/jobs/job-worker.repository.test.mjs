@@ -67,6 +67,10 @@ try {
     priority: 200,
     gameIds: [gameB.id, gameC.id],
   });
+  await prisma.jobTask.updateMany({
+    where: { jobRunId: highJob.id, ordinal: 0 },
+    data: { settledAt: new Date('2026-07-01T00:00:00.000Z') },
+  });
 
   assert.equal(
     await repository.hasHigherPriorityRunnableWork(100, ['INDEX_GAMES']),
@@ -79,7 +83,13 @@ try {
   assert.equal(first.importedGameId, gameB.id);
   assert.equal(first.ordinal, 0);
   assert.match(first.workKey, /^GAME_WORK:/);
+  const firstClaimedTask = await prisma.jobTask.findUniqueOrThrow({ where: { id: first.id } });
+  assert.ok(firstClaimedTask.startedAt);
+  assert.equal(firstClaimedTask.settledAt, null, 'claim clears timing from any prior settlement');
   assert.equal(await repository.finishTask(first, 'COMPLETED'), true);
+  const firstSettledTask = await prisma.jobTask.findUniqueOrThrow({ where: { id: first.id } });
+  assert.ok(firstSettledTask.settledAt);
+  assert.ok(firstSettledTask.settledAt >= firstClaimedTask.startedAt);
 
   const second = await repository.claimNextTask({
     supportedKinds: ['INDEX_GAMES'],
@@ -109,14 +119,24 @@ try {
   assert.equal(originalClaim.jobRunId, duplicateJob.id);
   assert.equal(originalClaim.importedGameId, gameA.id);
 
+  const abandonedStartedAt = new Date('2026-07-01T00:00:00.000Z');
+  const abandonedSettledAt = new Date('2026-07-01T00:00:01.000Z');
   await prisma.jobTask.update({
     where: { id: originalClaim.id },
-    data: { updatedAt: new Date('2026-07-01T00:00:00.000Z') },
+    data: {
+      startedAt: abandonedStartedAt,
+      settledAt: abandonedSettledAt,
+      updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+    },
   });
   assert.equal(
     await repository.recoverStaleTasks(new Date('2026-07-02T00:00:00.000Z')),
     1,
   );
+  const recoveredTask = await prisma.jobTask.findUniqueOrThrow({ where: { id: originalClaim.id } });
+  assert.equal(recoveredTask.status, 'QUEUED');
+  assert.equal(recoveredTask.startedAt, null);
+  assert.equal(recoveredTask.settledAt, null);
 
   const replacementClaim = await repository.claimNextTask({
     supportedKinds: ['INDEX_GAMES'],
@@ -124,6 +144,11 @@ try {
   });
   assert.ok(replacementClaim);
   assert.notEqual(replacementClaim.workKey, originalClaim.workKey);
+  const replacementClaimedTask = await prisma.jobTask.findUniqueOrThrow({
+    where: { id: replacementClaim.id },
+  });
+  assert.ok(replacementClaimedTask.startedAt > abandonedStartedAt);
+  assert.equal(replacementClaimedTask.settledAt, null);
   assert.equal(
     await repository.finishTask(originalClaim, 'COMPLETED'),
     false,
@@ -171,10 +196,31 @@ try {
   const lowClaim = await repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] });
   assert.ok(lowClaim);
   assert.equal(lowClaim.jobRunId, lowJob.id);
+  await prisma.jobTask.update({
+    where: { id: lowClaim.id },
+    data: {
+      startedAt: new Date('2026-07-03T00:00:00.000Z'),
+      settledAt: new Date('2026-07-03T00:00:01.000Z'),
+    },
+  });
   assert.equal(await repository.releaseTask(lowClaim), true);
   const released = await prisma.jobTask.findUniqueOrThrow({ where: { id: lowClaim.id } });
   assert.equal(released.status, 'QUEUED');
   assert.equal(released.workKey, null);
+  assert.equal(released.startedAt, null);
+  assert.equal(released.settledAt, null);
+
+  const failedClaim = await repository.claimNextTask({
+    supportedKinds: ['INDEX_GAMES'],
+    jobRunId: lowJob.id,
+  });
+  assert.ok(failedClaim);
+  assert.equal(await repository.failTask(failedClaim, 'Expected test failure.'), true);
+  const failedTask = await prisma.jobTask.findUniqueOrThrow({ where: { id: failedClaim.id } });
+  assert.equal(failedTask.status, 'FAILED');
+  assert.ok(failedTask.startedAt);
+  assert.ok(failedTask.settledAt);
+  assert.ok(failedTask.settledAt >= failedTask.startedAt);
 
   const orphanJob = await createJob({
     userId,
@@ -187,6 +233,8 @@ try {
   const orphanTask = await prisma.jobTask.findFirstOrThrow({ where: { jobRunId: orphanJob.id } });
   assert.equal(orphanTask.status, 'SKIPPED');
   assert.equal(orphanTask.importedGameId, null);
+  assert.equal(orphanTask.startedAt, null);
+  assert.ok(orphanTask.settledAt);
   const completedOrphanJob = await prisma.jobRun.findUniqueOrThrow({ where: { id: orphanJob.id } });
   assert.equal(completedOrphanJob.status, 'COMPLETED');
 

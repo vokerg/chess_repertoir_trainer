@@ -77,6 +77,8 @@ export const jobTaskSchema = z.object({
   ordinal: z.number().int().nonnegative(),
   status: jobTaskStatusSchema,
   error: z.string().nullable(),
+  startedAt: nullableDateTimeSchema,
+  settledAt: nullableDateTimeSchema,
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 });
@@ -131,6 +133,7 @@ export type JobTaskListResponse = z.infer<typeof jobTaskListResponseSchema>;
 export const jobRunErrorCodeSchema = z.enum([
   'NO_IMPORTED_GAMES_FOUND',
   'JOB_RUN_NOT_FOUND',
+  'JOB_RUN_NOT_DISMISSIBLE',
   'JOB_RUN_NOT_RETRYABLE',
 ]);
 export type JobRunErrorCode = z.infer<typeof jobRunErrorCodeSchema>;
