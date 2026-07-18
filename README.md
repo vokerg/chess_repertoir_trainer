@@ -199,6 +199,8 @@ npm run dev:api
 npm run dev:web
 ```
 
+`dev:api` and `dev:worker` can run together. They reuse the existing Prisma Client rather than regenerating it at process startup. After changing `apps/api/prisma/schema.prisma`, stop both processes and run `npm run db:generate` before starting them again.
+
 ## Run mobile
 
 Create the mobile environment file:

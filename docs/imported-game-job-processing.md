@@ -34,6 +34,8 @@ npm run dev:api
 npm run dev:worker
 ```
 
+The API and worker share one generated Prisma Client and may run concurrently. When the Prisma schema changes, stop both processes and run `npm run db:generate` before restarting them.
+
 Production commands:
 
 ```bash
