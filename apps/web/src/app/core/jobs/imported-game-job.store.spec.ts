@@ -2,6 +2,7 @@ import { fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing
 import type {
   CreateImportedGameJobRunResponse,
   JobRunSummary,
+  JobTask,
 } from '@chess-trainer/contracts/jobs';
 import { of, Subject, throwError } from 'rxjs';
 import { ImportedGameJobApiService } from './imported-game-job-api.service';
@@ -31,23 +32,57 @@ describe('ImportedGameJobStore', () => {
 
   afterEach(() => store.reset());
 
-  it('recovers active jobs and their game ids on initialization', async () => {
-    const run = jobRun(10, 'ANALYSE_GAMES', 'RUNNING', 2);
-    api.listJobs.and.returnValue(of({ items: [run] }));
-    api.listTasks.and.returnValue(of({
-      total: 2,
-      items: [
-        task(1, 101, 'RUNNING'),
-        task(2, 102, 'QUEUED'),
-      ],
+  it('recovers active jobs and recent terminal jobs with their game ids', async () => {
+    const active = jobRun(10, 'ANALYSE_GAMES', 'RUNNING', 2);
+    const cancelled = jobRun(11, 'PROCESS_GAMES', 'CANCELLED', 1);
+    api.listJobs.and.callFake((activeOnly: boolean) => of({
+      items: activeOnly ? [active] : [cancelled, active],
     }));
+    api.listTasks.and.callFake((jobRunId: number) => of(jobRunId === active.id
+      ? {
+          total: 2,
+          items: [
+            task(1, 101, 'RUNNING'),
+            task(2, 102, 'QUEUED'),
+          ],
+        }
+      : {
+          total: 1,
+          items: [task(3, 103, 'CANCELLED')],
+        }));
 
     await store.initialize();
 
-    expect(store.activeRuns()).toEqual([run]);
-    expect(store.gameIdsForRun(run.id)).toEqual([101, 102]);
+    expect(store.activeRuns()).toEqual([active]);
+    expect(store.runs()).toContain(cancelled);
+    expect(store.gameIdsForRun(active.id)).toEqual([101, 102]);
+    expect(store.gameIdsForRun(cancelled.id)).toEqual([103]);
     expect(store.isGameActive(102, ['ANALYSE_GAMES'])).toBeTrue();
-    expect(api.listJobs).toHaveBeenCalledOnceWith(true);
+    expect(api.listJobs.calls.argsFor(0)).toEqual([true]);
+    expect(api.listJobs.calls.argsFor(1)).toEqual([false, 100]);
+  });
+
+  it('keeps retry available for a terminal job restored after reload', async () => {
+    const failed = jobRun(12, 'ANALYSE_GAMES', 'FAILED', 1);
+    const retried = jobRun(13, 'ANALYSE_GAMES', 'QUEUED', 1);
+    api.listJobs.and.callFake((activeOnly: boolean) => of({
+      items: activeOnly ? [] : [failed],
+    }));
+    api.listTasks.and.callFake((jobRunId: number) => of({
+      total: 1,
+      items: [task(jobRunId, 1201, jobRunId === failed.id ? 'FAILED' : 'QUEUED')],
+    }));
+    api.retryJob.and.returnValue(of({ jobRun: retried, rejectedGameIds: [] }));
+
+    await store.initialize();
+    expect(store.runs()).toContain(failed);
+    expect(store.gameIdsForRun(failed.id)).toEqual([1201]);
+
+    await store.retry(failed.id);
+
+    expect(api.retryJob).toHaveBeenCalledOnceWith(failed.id);
+    expect(store.activeRuns()).toEqual([retried]);
+    expect(store.gameIdsForRun(retried.id)).toEqual([1201]);
   });
 
   it('submits one deduplicated durable job and tracks accepted games immediately', async () => {
@@ -71,30 +106,34 @@ describe('ImportedGameJobStore', () => {
     await store.initialize();
 
     expect(store.hasActiveJobs()).toBeFalse();
+    expect(api.listJobs).toHaveBeenCalledTimes(2);
     expect(api.listTasks).not.toHaveBeenCalled();
   });
 
   it('allows initialization to retry after the active-job list fails', async () => {
-    api.listJobs.and.returnValues(
-      throwError(() => new Error('Temporary list failure')),
-      of({ items: [] }),
-    );
+    let activeCalls = 0;
+    api.listJobs.and.callFake((activeOnly: boolean) => {
+      if (!activeOnly) return of({ items: [] });
+      activeCalls += 1;
+      return activeCalls === 1
+        ? throwError(() => new Error('Temporary list failure'))
+        : of({ items: [] });
+    });
 
     await store.initialize();
     expect(store.error()).toContain('Temporary list failure');
 
     await store.initialize();
 
-    expect(api.listJobs).toHaveBeenCalledTimes(2);
+    expect(api.listJobs).toHaveBeenCalledTimes(3);
     expect(store.error()).toBeNull();
   });
 
   it('keeps polling and recovers when task hydration fails', fakeAsync(() => {
     const run = jobRun(30, 'ANALYSE_GAMES', 'RUNNING', 1);
-    api.listJobs.and.returnValues(
-      of({ items: [run] }),
-      of({ items: [run] }),
-    );
+    api.listJobs.and.callFake((activeOnly: boolean) => of({
+      items: activeOnly ? [run] : [],
+    }));
     api.listTasks.and.returnValues(
       throwError(() => new Error('Temporary task failure')),
       of({
@@ -112,7 +151,7 @@ describe('ImportedGameJobStore', () => {
     tick(1_500);
     flushMicrotasks();
 
-    expect(api.listJobs).toHaveBeenCalledTimes(2);
+    expect(api.listJobs).toHaveBeenCalledTimes(3);
     expect(store.gameIdsForRun(run.id)).toEqual([301]);
     expect(store.error()).toBeNull();
     store.reset();
@@ -120,7 +159,9 @@ describe('ImportedGameJobStore', () => {
 
   it('discards an initialization response after reset changes the session', async () => {
     const response$ = new Subject<{ items: JobRunSummary[] }>();
-    api.listJobs.and.returnValue(response$);
+    api.listJobs.and.callFake((activeOnly: boolean) => (
+      activeOnly ? response$ : of({ items: [] })
+    ));
 
     const initialization = store.initialize();
     store.reset();
@@ -140,7 +181,9 @@ describe('ImportedGameJobStore', () => {
       total: number;
       items: ReturnType<typeof task>[];
     }>();
-    api.listJobs.and.returnValue(of({ items: [run] }));
+    api.listJobs.and.callFake((activeOnly: boolean) => of({
+      items: activeOnly ? [run] : [],
+    }));
     api.listTasks.and.returnValue(tasks$);
 
     const initialization = store.initialize();
@@ -163,7 +206,9 @@ describe('ImportedGameJobStore', () => {
   it('cancels an active job and publishes its affected games', async () => {
     const active = jobRun(60, 'PROCESS_GAMES', 'RUNNING', 1);
     const cancelled = jobRun(60, 'PROCESS_GAMES', 'CANCELLED', 1);
-    api.listJobs.and.returnValue(of({ items: [active] }));
+    api.listJobs.and.callFake((activeOnly: boolean) => of({
+      items: activeOnly ? [active] : [],
+    }));
     api.listTasks.and.returnValue(of({
       total: 1,
       items: [task(1, 601, 'RUNNING')],
@@ -247,14 +292,14 @@ function jobRun(
 function task(
   id: number,
   importedGameId: number,
-  status: 'QUEUED' | 'RUNNING',
-) {
+  status: JobTask['status'],
+): JobTask {
   return {
     id,
     importedGameId,
-    ordinal: id - 1,
+    ordinal: Math.max(0, id - 1),
     status,
-    error: null,
+    error: status === 'FAILED' || status === 'CANCELLED' ? 'Terminal task' : null,
     createdAt: '2026-07-17T10:00:00.000Z',
     updatedAt: '2026-07-17T10:00:00.000Z',
   };
