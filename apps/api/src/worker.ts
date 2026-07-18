@@ -1,9 +1,13 @@
 import 'dotenv/config';
 import prisma from './prisma';
 import { defaultJobTaskExecutorRegistry } from './modules/jobs/imported-game-job-executors';
+import { JobRunRepository } from './modules/jobs/job-run.repository.prisma';
 import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
 import { JobWorkerRepository } from './modules/jobs/job-worker.repository.prisma';
 import { createJobWorker } from './modules/jobs/job-worker.service';
+
+const DAY_MS = 24 * 60 * 60_000;
+const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
 
 async function bootstrap() {
   const config = loadJobWorkerConfig();
@@ -13,6 +17,36 @@ async function bootstrap() {
     config,
   });
   let shuttingDown = false;
+  let retentionTimer: NodeJS.Timeout | undefined;
+  let retentionInFlight: Promise<void> | null = null;
+
+  const runTerminalRetention = (): Promise<void> => {
+    if (retentionInFlight) return retentionInFlight;
+
+    const task = (async () => {
+      const completedBefore = new Date(Date.now() - config.terminalRetentionDays * DAY_MS);
+      try {
+        const deleted = await JobRunRepository.deleteTerminalCompletedBefore(completedBefore);
+        if (deleted > 0) {
+          console.info('Persistent job terminal retention completed', {
+            deletedJobRuns: deleted,
+            completedBefore: completedBefore.toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error('Persistent job terminal retention failed', error);
+      }
+    })();
+    retentionInFlight = task;
+    void task.finally(() => {
+      if (retentionInFlight === task) retentionInFlight = null;
+    });
+    return task;
+  };
+
+  await runTerminalRetention();
+  retentionTimer = setInterval(() => void runTerminalRetention(), TERMINAL_RETENTION_INTERVAL_MS);
+  retentionTimer.unref();
 
   const runPromise = worker.run();
 
@@ -43,6 +77,8 @@ async function bootstrap() {
     console.error('Persistent job worker failed', error);
     process.exitCode = 1;
   } finally {
+    if (retentionTimer) clearInterval(retentionTimer);
+    await retentionInFlight;
     process.removeListener('SIGINT', onSigint);
     process.removeListener('SIGTERM', onSigterm);
     await disconnectPrisma();

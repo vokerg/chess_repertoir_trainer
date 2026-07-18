@@ -115,6 +115,7 @@ try {
       payload: {
         kind: 'PROCESS_GAMES',
         gameIds: [undatedGame.id, olderGame.id, foreignGame.id, newerGame.id, olderGame.id],
+        force: true,
       },
     });
     assert.equal(createResponse.statusCode, 202);
@@ -125,7 +126,7 @@ try {
     assert.equal(created.jobRun.priority, 350);
     assert.equal(created.jobRun.status, 'QUEUED');
     assert.equal(created.jobRun.totalTasks, 3);
-    assert.equal(created.jobRun.force, false);
+    assert.equal(created.jobRun.force, true);
     assert.deepEqual(created.jobRun.taskCounts, {
       queued: 3,
       running: 0,
@@ -212,6 +213,102 @@ try {
     assert.equal(invalidResponse.statusCode, 400);
     assert.deepEqual(invalidResponse.json(), { error: 'Validation failed' });
 
+    await prisma.$transaction([
+      prisma.jobRun.update({
+        where: { id: created.jobRun.id },
+        data: { status: 'RUNNING', startedAt: new Date('2026-07-17T12:00:00.000Z') },
+      }),
+      prisma.jobTask.update({
+        where: { id: taskPayload.items[0].id },
+        data: { status: 'COMPLETED' },
+      }),
+      prisma.jobTask.update({
+        where: { id: taskPayload.items[1].id },
+        data: { status: 'RUNNING', workKey: `GAME_WORK:cancel-${suffix}` },
+      }),
+    ]);
+
+    const cancelResponse = await app.inject({
+      method: 'POST',
+      url: `/api/job-runs/${created.jobRun.id}/cancel`,
+    });
+    assert.equal(cancelResponse.statusCode, 200);
+    const cancelled = cancelResponse.json().jobRun;
+    assert.equal(cancelled.status, 'PARTIALLY_FAILED');
+    assert.deepEqual(cancelled.taskCounts, {
+      queued: 0,
+      running: 0,
+      completed: 1,
+      skipped: 0,
+      failed: 0,
+      cancelled: 2,
+    });
+    assert.ok(cancelled.completedAt);
+
+    const cancelledTasks = await prisma.jobTask.findMany({
+      where: { jobRunId: created.jobRun.id },
+      orderBy: [{ ordinal: 'asc' }, { id: 'asc' }],
+    });
+    assert.deepEqual(cancelledTasks.map((task) => task.status), [
+      'COMPLETED',
+      'CANCELLED',
+      'CANCELLED',
+    ]);
+    assert.equal(cancelledTasks[1].workKey, null);
+    assert.equal(cancelledTasks[1].error, 'Cancelled by user.');
+
+    const repeatedCancelResponse = await app.inject({
+      method: 'POST',
+      url: `/api/job-runs/${created.jobRun.id}/cancel`,
+    });
+    assert.equal(repeatedCancelResponse.statusCode, 200);
+    assert.equal(repeatedCancelResponse.json().jobRun.status, 'PARTIALLY_FAILED');
+
+    const foreignCancelResponse = await app.inject({
+      method: 'POST',
+      url: `/api/job-runs/${foreignJob.id}/cancel`,
+    });
+    assert.equal(foreignCancelResponse.statusCode, 404);
+    assert.equal(foreignCancelResponse.json().code, 'JOB_RUN_NOT_FOUND');
+
+    const retryResponse = await app.inject({
+      method: 'POST',
+      url: `/api/job-runs/${created.jobRun.id}/retry`,
+    });
+    assert.equal(retryResponse.statusCode, 202);
+    const retried = retryResponse.json();
+    jobRunIds.push(retried.jobRun.id);
+    assert.notEqual(retried.jobRun.id, created.jobRun.id);
+    assert.equal(retried.jobRun.kind, 'PROCESS_GAMES');
+    assert.equal(retried.jobRun.source, 'USER_ACTION');
+    assert.equal(retried.jobRun.force, true);
+    assert.equal(retried.jobRun.totalTasks, 2);
+    assert.deepEqual(retried.rejectedGameIds, []);
+
+    const retryTasksResponse = await app.inject({
+      method: 'GET',
+      url: `/api/job-runs/${retried.jobRun.id}/tasks`,
+    });
+    assert.equal(retryTasksResponse.statusCode, 200);
+    assert.deepEqual(
+      retryTasksResponse.json().items.map((task) => task.importedGameId),
+      [olderGame.id, undatedGame.id],
+    );
+
+    const retryActiveResponse = await app.inject({
+      method: 'POST',
+      url: `/api/job-runs/${retried.jobRun.id}/retry`,
+    });
+    assert.equal(retryActiveResponse.statusCode, 409);
+    assert.equal(retryActiveResponse.json().code, 'JOB_RUN_NOT_RETRYABLE');
+
+    const foreignRetryResponse = await app.inject({
+      method: 'POST',
+      url: `/api/job-runs/${foreignJob.id}/retry`,
+    });
+    assert.equal(foreignRetryResponse.statusCode, 404);
+    assert.equal(foreignRetryResponse.json().code, 'JOB_RUN_NOT_FOUND');
+
     const retentionCreateResponse = await app.inject({
       method: 'POST',
       url: '/api/imported-games/job-runs',
@@ -261,7 +358,11 @@ try {
     assert.equal(paths['/api/imported-games/job-runs'].post.operationId, 'createImportedGameJobRun');
     assert.equal(paths['/api/job-runs'].get.operationId, 'listJobRuns');
     assert.equal(paths['/api/job-runs/{jobRunId}'].get.operationId, 'getJobRun');
+    assert.equal(paths['/api/job-runs/{jobRunId}/cancel'].post.operationId, 'cancelJobRun');
+    assert.equal(paths['/api/job-runs/{jobRunId}/retry'].post.operationId, 'retryJobRun');
     assert.equal(paths['/api/job-runs/{jobRunId}/tasks'].get.operationId, 'listJobRunTasks');
+    assert.equal(paths['/api/imported-games/batch-analysis-runs'], undefined);
+    assert.equal(paths['/api/imported-games/{gameId}/full-refresh-runs'], undefined);
   } finally {
     await app.close();
   }

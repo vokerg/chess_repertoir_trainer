@@ -19,14 +19,12 @@ import {
 } from './imported-games.schemas';
 import { ImportedGameIndexWorkflowService } from './imported-game-index-workflow.service';
 import { OpeningAnalysisService } from './opening-analysis.service';
-import { isLocalBatchStockfishAnalysisEnabled } from '../analysis/batch-analysis.config';
-import { ImportedGameBatchAnalysisService } from '../analysis/batch-game-analysis.service';
 import { z } from 'zod';
 import {
   legacyOpaqueResponseSchema,
   unauthorizedResponseSchema,
 } from '../../routes/legacy-route.schemas';
-import { apiErrorResponseSchema, validationErrorResponseSchema } from '../../routes/api-error.schemas';
+import { apiErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const forceSchema = z.object({ force: z.boolean().optional() });
 const openingTopGamesResponseSchema = z.object({
@@ -213,47 +211,6 @@ const importedGamesModule: FastifyPluginAsyncZod = async (app) => {
         }
         reply.code(400);
         return { error: message };
-      }
-    },
-  });
-
-  app.route({
-    method: 'POST',
-    url: '/api/imported-games/:gameId/full-refresh-runs',
-    schema: importedGamesRouteSchema('createImportedGameFullRefreshRun', {
-      summary: 'Queue a full imported-game refresh',
-      description: 'Bodyless action: force re-indexes, assigns an opening, recalculates analysis, and refreshes tags.',
-      params: importedGameIdParamsSchema,
-      response: {
-        200: z.object({
-          accepted: z.literal(true),
-          importedGameId: z.number().int().positive(),
-          steps: z.array(z.enum(['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'])).length(4),
-        }),
-        400: apiErrorResponseSchema,
-        401: unauthorizedResponseSchema,
-        403: apiErrorResponseSchema,
-      },
-    }),
-    handler: async (request, reply) => {
-      const auth = requireAuth(request, reply);
-      if (!auth) return;
-      const gameId = request.params.gameId;
-      if (!isLocalBatchStockfishAnalysisEnabled()) {
-        reply.code(403);
-        return { error: 'Local batch Stockfish analysis is disabled' };
-      }
-
-      try {
-        await ImportedGameBatchAnalysisService.enqueueFullRefresh(auth.userId, gameId);
-        return {
-          accepted: true as const,
-          importedGameId: gameId,
-          steps: ['PLY_INDEX', 'OPENING_ASSIGNMENT', 'ANALYSIS', 'TAGS'] as Array<'PLY_INDEX' | 'OPENING_ASSIGNMENT' | 'ANALYSIS' | 'TAGS'>,
-        };
-      } catch (err: any) {
-        reply.code(400);
-        return { error: err?.message ?? String(err) };
       }
     },
   });

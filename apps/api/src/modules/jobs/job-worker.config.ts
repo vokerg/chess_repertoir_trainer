@@ -3,6 +3,7 @@ export interface JobWorkerConfig {
   heartbeatIntervalMs: number;
   staleAfterMs: number;
   staleRecoveryIntervalMs: number;
+  terminalRetentionDays: number;
   sliceSize: number;
   shutdownTimeoutMs: number;
 }
@@ -11,6 +12,7 @@ const DEFAULT_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000;
 const DEFAULT_STALE_AFTER_MS = 15 * 60_000;
 const DEFAULT_STALE_RECOVERY_INTERVAL_MS = 60_000;
+const DEFAULT_TERMINAL_RETENTION_DAYS = 30;
 const DEFAULT_SLICE_SIZE = 25;
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30_000;
 
@@ -37,6 +39,11 @@ export function loadJobWorkerConfig(
       environment['JOB_WORKER_STALE_RECOVERY_INTERVAL_MS'],
       DEFAULT_STALE_RECOVERY_INTERVAL_MS,
       'JOB_WORKER_STALE_RECOVERY_INTERVAL_MS',
+    ),
+    terminalRetentionDays: positiveInteger(
+      environment['JOB_WORKER_TERMINAL_RETENTION_DAYS'],
+      DEFAULT_TERMINAL_RETENTION_DAYS,
+      'JOB_WORKER_TERMINAL_RETENTION_DAYS',
     ),
     sliceSize: positiveInteger(
       environment['JOB_WORKER_SLICE_SIZE'],

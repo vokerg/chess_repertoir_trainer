@@ -37,7 +37,28 @@
             <div class="job-progress-track" aria-hidden="true">
               <span class="job-progress-value" [style.width.%]="progressPercent(run)"></span>
             </div>
-            <p class="job-progress-label">{{ progressLabel(run) }}</p>
+            <div class="job-row-footer">
+              <p class="job-progress-label">{{ progressLabel(run) }}</p>
+              @if (isActive(run)) {
+                <button
+                  type="button"
+                  class="job-action job-action-cancel"
+                  (click)="store.cancel(run.id)"
+                  [disabled]="store.cancellingRunId() !== null || store.retryingRunId() !== null"
+                >
+                  {{ store.cancellingRunId() === run.id ? 'Cancelling...' : 'Cancel' }}
+                </button>
+              } @else if (canRetry(run)) {
+                <button
+                  type="button"
+                  class="job-action"
+                  (click)="store.retry(run.id)"
+                  [disabled]="store.cancellingRunId() !== null || store.retryingRunId() !== null"
+                >
+                  {{ store.retryingRunId() === run.id ? 'Retrying...' : 'Retry failed' }}
+                </button>
+              }
+            </div>
           </article>
         }
       </div>

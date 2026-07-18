@@ -21,7 +21,7 @@ try {
   const malformedRequests = [
     { method: 'GET', url: '/api/imported-games/not-a-number' },
     { method: 'GET', url: '/api/imported-games?limit=not-a-number' },
-    { method: 'POST', url: '/api/imported-games/batch-analysis-runs', payload: { gameIds: [] } },
+    { method: 'POST', url: '/api/job-runs/not-a-number/cancel' },
     { method: 'GET', url: '/api/board-image?fen=startpos&pov=sideways' },
   ];
 

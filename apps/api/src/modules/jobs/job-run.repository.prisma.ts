@@ -49,6 +49,18 @@ export interface CreateQueuedJobRunResult {
   acceptedImportedGameIds: number[];
 }
 
+export interface StoredRetryableJobRun {
+  jobRun: StoredJobRun;
+  importedGameIds: number[];
+}
+
+const terminalJobRunStatuses = [
+  'COMPLETED',
+  'PARTIALLY_FAILED',
+  'FAILED',
+  'CANCELLED',
+] as const;
+
 const jobRunSelect = {
   id: true,
   kind: true,
@@ -141,6 +153,119 @@ export const JobRunRepository = {
       where: { id: jobRunId, userId },
       select: jobRunSelect,
     });
+  },
+
+  async cancelForUser(userId: number, jobRunId: number): Promise<StoredJobRun | null> {
+    return prisma.$transaction(async (transaction) => {
+      const ownedRun = await transaction.jobRun.findFirst({
+        where: { id: jobRunId, userId },
+        select: { id: true, status: true },
+      });
+      if (!ownedRun) return null;
+
+      if (ownedRun.status === 'QUEUED' || ownedRun.status === 'RUNNING') {
+        // Worker settlement updates JobTask before locking JobRun. Cancellation must
+        // use the same order so completion and cancellation cannot deadlock.
+        await transaction.jobTask.updateMany({
+          where: {
+            jobRunId,
+            status: { in: ['QUEUED', 'RUNNING'] },
+          },
+          data: {
+            status: 'CANCELLED',
+            workKey: null,
+            error: 'Cancelled by user.',
+            updatedAt: new Date(),
+          },
+        });
+
+        const lockedRows = await transaction.$queryRaw<Array<{ id: number; status: string }>>`
+          SELECT "id", "status"
+          FROM "JobRun"
+          WHERE "id" = ${jobRunId}
+            AND "userId" = ${userId}
+          FOR UPDATE
+        `;
+        const lockedRun = lockedRows[0];
+        if (!lockedRun) return null;
+
+        // If worker settlement won the task-row race, it also reconciled the run.
+        // Preserve that terminal result rather than rewriting it as cancellation.
+        if (lockedRun.status === 'QUEUED' || lockedRun.status === 'RUNNING') {
+          const groups = await transaction.jobTask.groupBy({
+            by: ['status'],
+            where: { jobRunId },
+            _count: { _all: true },
+          });
+          const counts = new Map(groups.map((group) => [group.status, group._count._all]));
+          const failed = counts.get('FAILED') ?? 0;
+          const cancelled = counts.get('CANCELLED') ?? 0;
+          const total = groups.reduce((sum, group) => sum + group._count._all, 0);
+          const status = cancelled === total && total > 0
+            ? 'CANCELLED'
+            : failed > 0 || cancelled > 0
+              ? 'PARTIALLY_FAILED'
+              : 'COMPLETED';
+
+          await transaction.jobRun.update({
+            where: { id: jobRunId },
+            data: {
+              status,
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      return transaction.jobRun.findUnique({
+        where: { id: jobRunId },
+        select: jobRunSelect,
+      });
+    });
+  },
+
+  async findRetryableForUser(
+    userId: number,
+    jobRunId: number,
+  ): Promise<StoredRetryableJobRun | null> {
+    return prisma.$transaction(async (transaction) => {
+      const jobRun = await transaction.jobRun.findFirst({
+        where: { id: jobRunId, userId },
+        select: jobRunSelect,
+      });
+      if (!jobRun) return null;
+
+      const tasks = await transaction.jobTask.findMany({
+        where: {
+          jobRunId,
+          status: { in: ['FAILED', 'CANCELLED'] },
+          importedGameId: { not: null },
+        },
+        select: { importedGameId: true },
+        orderBy: [
+          { ordinal: 'asc' },
+          { id: 'asc' },
+        ],
+      });
+
+      return {
+        jobRun,
+        importedGameIds: tasks.flatMap((task) => (
+          task.importedGameId === null ? [] : [task.importedGameId]
+        )),
+      };
+    });
+  },
+
+  async deleteTerminalCompletedBefore(completedBefore: Date): Promise<number> {
+    const result = await prisma.jobRun.deleteMany({
+      where: {
+        status: { in: [...terminalJobRunStatuses] },
+        completedAt: { lt: completedBefore },
+      },
+    });
+    return result.count;
   },
 
   async countTaskStatuses(jobRunIds: number[]): Promise<StoredTaskStatusCount[]> {
