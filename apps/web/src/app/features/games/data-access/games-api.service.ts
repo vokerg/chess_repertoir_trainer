@@ -1,8 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
-import { GameFilters } from '../../../shared/games/filters/game-filter.model';
-import { mapGameFiltersToQueryString } from '../../../shared/games/filters/game-filter-query.mapper';
 import {
   GameTagDefinitionsResponse,
   ImportedGameAnalysisResponse,
@@ -10,6 +8,10 @@ import {
   ImportedGameFacetsResponse,
   ImportedGameSearchResponse,
 } from './games.models';
+import {
+  serializeImportedGameSearchQuery,
+  type ImportedGameSearchCriteria,
+} from '../../../shared/games/filters/imported-game-search-query.codec';
 
 @Injectable({ providedIn: 'root' })
 export class GamesApiService {
@@ -31,9 +33,11 @@ export class GamesApiService {
     return this.api.get<GameTagDefinitionsResponse>('/imported-games/tag-definitions');
   }
 
-  searchGames(filters: GameFilters, cursor?: string | null): Observable<ImportedGameSearchResponse> {
-    return this.api.get<ImportedGameSearchResponse>(
-      `/imported-games${mapGameFiltersToQueryString(filters, cursor)}`,
-    );
+  searchGames(
+    criteria: ImportedGameSearchCriteria,
+    cursor?: string | null,
+  ): Observable<ImportedGameSearchResponse> {
+    const params = serializeImportedGameSearchQuery(criteria, { cursor });
+    return this.api.get<ImportedGameSearchResponse>(`/imported-games?${params.toString()}`);
   }
 }

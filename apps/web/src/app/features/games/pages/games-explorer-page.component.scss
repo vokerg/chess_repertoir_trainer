@@ -1,1 +1,16 @@
 .games-page { gap: 1rem; }
+
+.route-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.route-filter-summary strong {
+  color: var(--text);
+}
