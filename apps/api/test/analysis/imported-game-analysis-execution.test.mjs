@@ -24,6 +24,7 @@ const baseOptions = {
     },
     getExecutionState: async () => ({
       totalPlies: 20,
+      analysedPlies: 20,
       maxRunId: 4,
       latest: {
         id: 4,
@@ -44,6 +45,35 @@ const baseOptions = {
 }
 
 {
+  let analyseCalls = 0;
+  const service = createImportedGameAnalysisExecutionService({
+    analyseOne: async () => {
+      analyseCalls += 1;
+      return 'COMPLETED';
+    },
+    refreshTags: async () => {},
+    getExecutionState: async () => ({
+      totalPlies: 20,
+      analysedPlies: 0,
+      maxRunId: 5,
+      latest: {
+        id: 5,
+        status: 'COMPLETED',
+        positionsTotal: 20,
+        positionsDone: 20,
+        createdAt: new Date('2026-07-17T06:00:30.000Z'),
+      },
+      hasOtherCurrentRunAtLatestTimestamp: false,
+    }),
+    findAbortCleanupCandidate: async () => null,
+    abandonRun: async () => true,
+  });
+
+  assert.equal(await service.analyseOne(engine, 1, 2, baseOptions), 'COMPLETED');
+  assert.equal(analyseCalls, 1, 'cleared ply analysis prevents the completed-run fast skip');
+}
+
+{
   let receivedOptions;
   const service = createImportedGameAnalysisExecutionService({
     analyseOne: async (_engine, _userId, _gameId, options) => {
@@ -53,6 +83,7 @@ const baseOptions = {
     refreshTags: async () => {},
     getExecutionState: async () => ({
       totalPlies: 20,
+      analysedPlies: 20,
       maxRunId: 8,
       latest: {
         id: 8,
@@ -83,6 +114,7 @@ const baseOptions = {
     refreshTags: async () => {},
     getExecutionState: async () => ({
       totalPlies: 20,
+      analysedPlies: 20,
       maxRunId: 10,
       latest: null,
       hasOtherCurrentRunAtLatestTimestamp: false,
@@ -139,6 +171,7 @@ const baseOptions = {
     refreshTags: async () => {},
     getExecutionState: async () => ({
       totalPlies: 20,
+      analysedPlies: 20,
       maxRunId: 12,
       latest: null,
       hasOtherCurrentRunAtLatestTimestamp: false,

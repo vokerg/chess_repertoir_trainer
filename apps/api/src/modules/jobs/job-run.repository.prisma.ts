@@ -167,13 +167,21 @@ export const JobRunRepository = {
         // Worker settlement updates JobTask before locking JobRun. Cancellation must
         // use the same order so completion and cancellation cannot deadlock.
         await transaction.jobTask.updateMany({
-          where: {
-            jobRunId,
-            status: { in: ['QUEUED', 'RUNNING'] },
-          },
+          where: { jobRunId, status: 'QUEUED' },
           data: {
             status: 'CANCELLED',
             workKey: null,
+            error: 'Cancelled by user.',
+            updatedAt: new Date(),
+          },
+        });
+        await transaction.jobTask.updateMany({
+          where: { jobRunId, status: 'RUNNING' },
+          data: {
+            status: 'CANCELLED',
+            // Keep the claim key until the executor has stopped. The active-game
+            // fence is keyed by this lease, so an immediate retry cannot overlap
+            // the cancelled executor before worker acknowledgement.
             error: 'Cancelled by user.',
             updatedAt: new Date(),
           },

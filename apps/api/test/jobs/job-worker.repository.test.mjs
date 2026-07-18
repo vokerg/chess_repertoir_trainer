@@ -33,6 +33,7 @@ try {
     'fair-a2',
     'fair-b1',
     'fair-b2',
+    'cancel-stale',
   ].map((name) => (
     prisma.importedGame.create({
       data: {
@@ -53,6 +54,7 @@ try {
     fairGameA2,
     fairGameB1,
     fairGameB2,
+    cancelStaleGame,
   ] = games;
 
   const lowJob = await createJob({
@@ -128,6 +130,43 @@ try {
     'a stale worker cannot settle a replacement claim',
   );
   assert.equal(await repository.finishTask(replacementClaim, 'COMPLETED'), true);
+
+  const cancelStaleJob = await createJob({
+    userId,
+    priority: 250,
+    gameIds: [cancelStaleGame.id],
+  });
+  const cancelStaleClaim = await repository.claimNextTask({
+    supportedKinds: ['INDEX_GAMES'],
+    jobRunId: cancelStaleJob.id,
+  });
+  assert.ok(cancelStaleClaim);
+  await prisma.$transaction([
+    prisma.jobTask.update({
+      where: { id: cancelStaleClaim.id },
+      data: {
+        status: 'CANCELLED',
+        error: 'Cancelled by user.',
+        updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
+    }),
+    prisma.jobRun.update({
+      where: { id: cancelStaleJob.id },
+      data: {
+        status: 'CANCELLED',
+        completedAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
+    }),
+  ]);
+  assert.equal(
+    await repository.recoverStaleTasks(new Date('2026-07-02T00:00:00.000Z')),
+    1,
+  );
+  const recoveredCancelledTask = await prisma.jobTask.findUniqueOrThrow({
+    where: { id: cancelStaleClaim.id },
+  });
+  assert.equal(recoveredCancelledTask.status, 'CANCELLED');
+  assert.equal(recoveredCancelledTask.workKey, null);
 
   const lowClaim = await repository.claimNextTask({ supportedKinds: ['INDEX_GAMES'] });
   assert.ok(lowClaim);

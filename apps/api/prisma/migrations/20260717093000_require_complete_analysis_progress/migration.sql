@@ -4,6 +4,14 @@
 UPDATE "GameAnalysisRun"
 SET
   "status" = 'FAILED',
+  "summary" = NULL,
+  "accuracyVersion" = NULL,
+  "whiteAccuracy" = NULL,
+  "blackAccuracy" = NULL,
+  "whiteAverageCentipawnLoss" = NULL,
+  "blackAverageCentipawnLoss" = NULL,
+  "whiteMovesAnalyzed" = 0,
+  "blackMovesAnalyzed" = 0,
   "error" = COALESCE("error", 'Analysis run completed with incomplete progress.'),
   "completedAt" = COALESCE("completedAt", NOW())
 WHERE "status" = 'COMPLETED'
@@ -12,7 +20,9 @@ WHERE "status" = 'COMPLETED'
 UPDATE "ImportedGame" AS game
 SET
   "latestAnalysisStatus" = 'FAILED',
-  "latestAnalysisCompletedAt" = COALESCE(run."completedAt", NOW())
+  "latestAnalysisCompletedAt" = COALESCE(run."completedAt", NOW()),
+  "latestWhiteAccuracy" = NULL,
+  "latestBlackAccuracy" = NULL
 FROM "GameAnalysisRun" AS run
 WHERE game."latestAnalysisRunId" = run."id"
   AND run."status" = 'FAILED'

@@ -185,6 +185,29 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
     }
   }
 
+  async function acknowledgeCancelledClaim(
+    task: ClaimedJobTask,
+    repository: JobWorkerRepository,
+    taskLogger: JobWorkerLogger,
+  ): Promise<boolean> {
+    try {
+      const acknowledged = await repository.acknowledgeCancelledTask(task);
+      if (acknowledged) {
+        taskLogger.info(
+          { taskId: task.id, jobRunId: task.jobRunId },
+          'Persistent job task cancellation acknowledged after executor stop',
+        );
+      }
+      return acknowledged;
+    } catch (error) {
+      taskLogger.error(
+        { err: error, taskId: task.id, jobRunId: task.jobRunId },
+        'Could not release cancelled task claim; stale recovery will clear it',
+      );
+      return false;
+    }
+  }
+
   async function executeClaimedTask(
     task: ClaimedJobTask,
     repository: JobWorkerRepository,
@@ -235,6 +258,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
     try {
       if (outcome.ok) {
         if (claimLost) {
+          await acknowledgeCancelledClaim(task, repository, taskLogger);
           taskLogger.warn(
             { taskId: task.id, jobRunId: task.jobRunId },
             'Persistent job task completed after its claim was lost',
@@ -245,6 +269,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
         try {
           const settled = await repository.finishTask(task, outcome.status);
           if (!settled) {
+            await acknowledgeCancelledClaim(task, repository, taskLogger);
             taskLogger.warn(
               { taskId: task.id, jobRunId: task.jobRunId },
               'Persistent job task completed after its claim was lost',
@@ -260,6 +285,7 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
       }
 
       if (claimLost) {
+        await acknowledgeCancelledClaim(task, repository, taskLogger);
         taskLogger.warn(
           { err: outcome.error, taskId: task.id, jobRunId: task.jobRunId },
           'Persistent job task stopped because its claim was lost',
@@ -270,6 +296,9 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
       if (stopRequested || controller.signal.aborted) {
         try {
           const released = await repository.releaseTask(task);
+          if (!released) {
+            await acknowledgeCancelledClaim(task, repository, taskLogger);
+          }
           taskLogger.info(
             { taskId: task.id, jobRunId: task.jobRunId, released },
             'Persistent job task released during worker shutdown',
@@ -285,6 +314,9 @@ export function createJobWorker(input: CreateJobWorkerInput): JobWorker {
 
       try {
         const failed = await repository.failTask(task, errorMessage(outcome.error));
+        if (!failed) {
+          await acknowledgeCancelledClaim(task, repository, taskLogger);
+        }
         taskLogger.error(
           { err: outcome.error, taskId: task.id, jobRunId: task.jobRunId, failed },
           'Persistent job task failed',

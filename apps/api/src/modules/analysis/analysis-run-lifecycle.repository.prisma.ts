@@ -51,6 +51,7 @@ export async function getLatestGameAnalysisRunDeterministic(
 
 export interface ImportedGameAnalysisExecutionState {
   totalPlies: number;
+  analysedPlies: number;
   maxRunId: number;
   latest: {
     id: number;
@@ -75,7 +76,7 @@ export async function getImportedGameAnalysisExecutionState(
   });
   if (!game) return null;
 
-  const [latest, maxRun] = await Promise.all([
+  const [latest, maxRun, analysedPlies] = await Promise.all([
     prisma.gameAnalysisRun.findFirst({
       where: {
         importedGameId,
@@ -98,6 +99,13 @@ export async function getImportedGameAnalysisExecutionState(
       orderBy: { id: 'desc' },
       select: { id: true },
     }),
+    prisma.importedGamePly.count({
+      where: {
+        importedGameId,
+        scoreLossCp: { not: null },
+        classificationCode: { not: null },
+      },
+    }),
   ]);
 
   const hasOtherCurrentRunAtLatestTimestamp = latest
@@ -116,6 +124,7 @@ export async function getImportedGameAnalysisExecutionState(
 
   return {
     totalPlies: game._count.plies,
+    analysedPlies,
     maxRunId: maxRun?.id ?? 0,
     latest,
     hasOtherCurrentRunAtLatestTimestamp,

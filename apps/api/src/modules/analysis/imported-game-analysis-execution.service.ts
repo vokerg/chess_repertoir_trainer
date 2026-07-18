@@ -33,7 +33,8 @@ function isCurrent(
 ): boolean {
   return state.latest?.status === 'COMPLETED'
     && state.latest.positionsDone >= state.totalPlies
-    && state.latest.positionsTotal >= state.totalPlies;
+    && state.latest.positionsTotal >= state.totalPlies
+    && state.analysedPlies >= state.totalPlies;
 }
 
 function errorMessage(error: unknown): string {

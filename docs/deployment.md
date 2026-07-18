@@ -131,7 +131,7 @@ JOB_WORKER_SLICE_SIZE=25
 JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 ```
 
-The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; shutdown aborts the active executor, disposes its engine, and releases the fenced task claim when possible.
+The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; that budget covers executor abort, retained cancellation leases, terminal-retention work, and Prisma disconnection. The worker exits unsuccessfully if complete cleanup exceeds the budget.
 
 Terminal job retention runs at worker startup and hourly. It removes only terminal jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs are never removed by retention.
 

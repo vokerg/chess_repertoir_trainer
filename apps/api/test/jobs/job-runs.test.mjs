@@ -254,8 +254,9 @@ try {
       'CANCELLED',
       'CANCELLED',
     ]);
-    assert.equal(cancelledTasks[1].workKey, null);
+    assert.match(cancelledTasks[1].workKey, /^GAME_WORK:cancel-/);
     assert.equal(cancelledTasks[1].error, 'Cancelled by user.');
+    assert.equal(cancelledTasks[2].workKey, null);
 
     const repeatedCancelResponse = await app.inject({
       method: 'POST',

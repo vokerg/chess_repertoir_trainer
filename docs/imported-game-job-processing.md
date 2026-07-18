@@ -182,7 +182,7 @@ Different jobs may contain tasks for the same game so each job retains understan
 
 A PostgreSQL partial unique index allows only one `RUNNING` task for an imported game across all job kinds. Each successful claim receives a new opaque `workKey`.
 
-Heartbeat, completion, failure, and release writes require the exact task id, job id, `RUNNING` state, and work key. Once stale recovery or cancellation clears the key, an old worker cannot settle that claim.
+Heartbeat, completion, failure, and release writes require the exact task id, job id, `RUNNING` state, and work key. Cancellation marks the task terminal but retains its work key as an active-game lease until the executor stops and the worker acknowledges cancellation. Stale recovery clears abandoned cancelled leases. An old worker can never settle after its exact claim is lost.
 
 Workers heartbeat active tasks. Maintenance returns stale `RUNNING` tasks to `QUEUED`, clears their claim key, and updates the parent scheduler timestamp. This is infrastructure recovery after a lost process, not configurable business retry machinery.
 
@@ -235,7 +235,7 @@ Cleanup runs at worker startup and hourly. It never deletes queued or running jo
 
 `SIGINT` and `SIGTERM` stop new claims and abort the active executor through an `AbortSignal`. Executors check the signal between domain steps and analysis chunks. Engine-backed executors dispose Stockfish on abort.
 
-During shutdown, the worker releases an active claim back to `QUEUED` when possible and waits up to `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`. A process that dies without releasing its claim is handled by heartbeat expiry and stale recovery.
+During shutdown, the worker releases an active claim back to `QUEUED` when possible. `JOB_WORKER_SHUTDOWN_TIMEOUT_MS` bounds the complete signal-driven cleanup path, including active execution, terminal-retention work, and Prisma disconnection; the process exits unsuccessfully if that budget is exceeded. A process that dies without releasing its claim is handled by heartbeat expiry and stale recovery.
 
 `JOB_WORKER_STALE_AFTER_MS` must remain greater than twice `JOB_WORKER_HEARTBEAT_INTERVAL_MS`.
 

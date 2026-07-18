@@ -251,6 +251,7 @@ function fakeRepository(overrides = {}) {
     claimNextTask: async () => null,
     hasHigherPriorityRunnableWork: async () => false,
     heartbeatTask: async () => true,
+    acknowledgeCancelledTask: async () => false,
     finishTask: async () => true,
     failTask: async () => true,
     releaseTask: async () => true,

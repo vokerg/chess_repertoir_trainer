@@ -24,6 +24,7 @@ export interface JobWorkerRepository {
   claimNextTask(input: ClaimNextJobTaskInput): Promise<ClaimedJobTask | null>;
   hasHigherPriorityRunnableWork(priority: number, supportedKinds: JobRunKind[]): Promise<boolean>;
   heartbeatTask(claim: ActiveJobTaskClaim): Promise<boolean>;
+  acknowledgeCancelledTask(claim: ActiveJobTaskClaim): Promise<boolean>;
   finishTask(
     claim: ActiveJobTaskClaim,
     status: JobTaskExecutionStatus,
@@ -97,7 +98,7 @@ export function createJobWorkerRepository(
             AND NOT EXISTS (
               SELECT 1
               FROM "JobTask" AS active_task
-              WHERE active_task."status" = 'RUNNING'
+              WHERE active_task."workKey" IS NOT NULL
                 AND active_task."importedGameId" = task."importedGameId"
             )
         ) AS "exists"
@@ -112,6 +113,19 @@ export function createJobWorkerRepository(
         WHERE "id" = ${claim.id}
           AND "jobRunId" = ${claim.jobRunId}
           AND "status" = 'RUNNING'
+          AND "workKey" = ${claim.workKey}
+      `;
+      return updated === 1;
+    },
+
+    async acknowledgeCancelledTask(claim) {
+      const updated = await database.$executeRaw`
+        UPDATE "JobTask"
+        SET "workKey" = NULL,
+            "updatedAt" = NOW()
+        WHERE "id" = ${claim.id}
+          AND "jobRunId" = ${claim.jobRunId}
+          AND "status" = 'CANCELLED'
           AND "workKey" = ${claim.workKey}
       `;
       return updated === 1;
@@ -151,11 +165,20 @@ export function createJobWorkerRepository(
           RETURNING "jobRunId"
         `;
 
+        const cancelledClaimsCleared = await transaction.$executeRaw`
+          UPDATE "JobTask"
+          SET "workKey" = NULL,
+              "updatedAt" = NOW()
+          WHERE "status" = 'CANCELLED'
+            AND "workKey" IS NOT NULL
+            AND "updatedAt" < ${staleBefore}
+        `;
+
         const jobRunIds = uniqueJobRunIds(rows);
         for (const jobRunId of jobRunIds) {
           await reconcileJobRun(transaction, jobRunId, true);
         }
-        return rows.length;
+        return rows.length + cancelledClaimsCleared;
       });
     },
 
@@ -206,7 +229,7 @@ async function claimNextTaskOnce(
           AND NOT EXISTS (
             SELECT 1
             FROM "JobTask" AS active_task
-            WHERE active_task."status" = 'RUNNING'
+            WHERE active_task."workKey" IS NOT NULL
               AND active_task."importedGameId" = task."importedGameId"
           )
         ORDER BY

@@ -14,6 +14,7 @@ import {
   createImportedGameAnalysisExecutionService,
 } from '../../dist/modules/analysis/imported-game-analysis-execution.service.js';
 import { JobRunRepository } from '../../dist/modules/jobs/job-run.repository.prisma.js';
+import { JobRunService } from '../../dist/modules/jobs/job-run.service.js';
 import { JobTaskExecutorRegistry } from '../../dist/modules/jobs/job-task-executor.js';
 import { createJobWorkerRepository } from '../../dist/modules/jobs/job-worker.repository.prisma.js';
 import { createJobWorker } from '../../dist/modules/jobs/job-worker.service.js';
@@ -39,6 +40,7 @@ const silentLogger = {
   let finishCalls = 0;
   let failCalls = 0;
   let releaseCalls = 0;
+  let acknowledgeCalls = 0;
   let executorAborted = false;
   let worker;
 
@@ -66,6 +68,10 @@ const silentLogger = {
     async heartbeatTask() {
       heartbeatCalls += 1;
       return false;
+    },
+    async acknowledgeCancelledTask() {
+      acknowledgeCalls += 1;
+      return true;
     },
     async finishTask() {
       finishCalls += 1;
@@ -108,6 +114,7 @@ const silentLogger = {
   assert.equal(finishCalls, 0);
   assert.equal(failCalls, 0);
   assert.equal(releaseCalls, 0);
+  assert.equal(acknowledgeCalls, 1, 'claim-loss cancellation releases the retained lease after executor stop');
 }
 
 const prisma = prismaModule.default;
@@ -287,6 +294,7 @@ try {
       where: { id: jobRun.tasks[0].id },
     });
     assert.equal(storedTask.status, 'CANCELLED');
+    assert.equal(storedTask.workKey, null, 'worker acknowledgement releases the cancelled game lease');
     assert.equal(
       await prisma.gameAnalysisRun.count({ where: { importedGameId: game.id } }),
       0,
@@ -295,6 +303,58 @@ try {
     const storedGame = await prisma.importedGame.findUniqueOrThrow({ where: { id: game.id } });
     assert.equal(storedGame.latestAnalysisRunId, null);
     assert.equal(storedGame.latestAnalysisStatus, null);
+  }
+
+  {
+    const game = await createGame('immediate-retry-fence');
+    const sourceJob = await JobRunService.createUserAction({
+      userId,
+      kind: 'INDEX_GAMES',
+      importedGameIds: [game.id],
+      force: false,
+    });
+    const workerOneRepository = createJobWorkerRepository(prisma);
+    const workerTwoRepository = createJobWorkerRepository(prisma);
+    const originalClaim = await workerOneRepository.claimNextTask({
+      supportedKinds: ['INDEX_GAMES'],
+      jobRunId: sourceJob.jobRun.id,
+    });
+    assert.ok(originalClaim, 'first worker claims the source task');
+
+    const cancelled = await JobRunService.cancelForUser(userId, sourceJob.jobRun.id);
+    assert.equal(cancelled.status, 'CANCELLED');
+    const cancelledTask = await prisma.jobTask.findUniqueOrThrow({
+      where: { id: originalClaim.id },
+    });
+    assert.equal(cancelledTask.status, 'CANCELLED');
+    assert.equal(
+      cancelledTask.workKey,
+      originalClaim.workKey,
+      'cancellation retains the active-game lease until worker acknowledgement',
+    );
+
+    const retry = await JobRunService.retryForUser(userId, sourceJob.jobRun.id);
+    assert.deepEqual(retry.rejectedGameIds, []);
+    assert.equal(
+      await workerTwoRepository.claimNextTask({
+        supportedKinds: ['INDEX_GAMES'],
+        jobRunId: retry.jobRun.id,
+      }),
+      null,
+      'a second worker cannot claim an immediate retry while the cancelled executor retains its lease',
+    );
+
+    assert.equal(
+      await workerOneRepository.acknowledgeCancelledTask(originalClaim),
+      true,
+      'the stopped first worker acknowledges cancellation and releases the lease',
+    );
+    const retryClaim = await workerTwoRepository.claimNextTask({
+      supportedKinds: ['INDEX_GAMES'],
+      jobRunId: retry.jobRun.id,
+    });
+    assert.ok(retryClaim, 'the retry becomes claimable only after cancellation acknowledgement');
+    assert.equal(await workerTwoRepository.finishTask(retryClaim, 'COMPLETED'), true);
   }
 
   console.log('Persistent job cancellation and analysis lifecycle tests passed.');
