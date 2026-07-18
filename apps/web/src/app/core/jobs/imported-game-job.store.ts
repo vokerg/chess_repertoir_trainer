@@ -11,6 +11,7 @@ import { ImportedGameJobApiService } from './imported-game-job-api.service';
 const ACTIVE_JOB_STATUSES: ReadonlySet<JobRunStatus> = new Set(['QUEUED', 'RUNNING']);
 const POLL_INTERVAL_MS = 1_500;
 const MAX_VISIBLE_TERMINAL_RUNS = 3;
+const RECENT_JOB_HISTORY_LIMIT = 100;
 
 export interface ImportedGameJobTerminalBatch {
   sequence: number;
@@ -207,15 +208,25 @@ export class ImportedGameJobStore {
     this.error.set(null);
 
     try {
-      const response = await firstValueFrom(this.api.listJobs(true));
+      const activeResponse = await firstValueFrom(this.api.listJobs(true));
       if (!this.isCurrentGeneration(generation)) return;
 
-      this.mergeRuns(response.items);
-      if (response.items.length) this.schedulePoll(POLL_INTERVAL_MS, generation);
+      const recentResponse = await firstValueFrom(
+        this.api.listJobs(false, RECENT_JOB_HISTORY_LIMIT),
+      );
+      if (!this.isCurrentGeneration(generation)) return;
+
+      const recentTerminalRuns = recentResponse.items
+        .filter((run) => !isActiveStatus(run.status))
+        .slice(0, MAX_VISIBLE_TERMINAL_RUNS);
+      const restoredRuns = [...activeResponse.items, ...recentTerminalRuns];
+
+      this.mergeRuns(restoredRuns);
+      if (activeResponse.items.length) this.schedulePoll(POLL_INTERVAL_MS, generation);
       else this.stopPolling();
 
       await Promise.all(
-        response.items.map((run) => this.ensureRunGameIds(run.id, generation)),
+        restoredRuns.map((run) => this.ensureRunGameIds(run.id, generation)),
       );
       if (!this.isCurrentGeneration(generation)) return;
 
@@ -225,7 +236,7 @@ export class ImportedGameJobStore {
       if (!this.isCurrentGeneration(generation)) return;
 
       this.initialized = false;
-      this.error.set(readError(error, 'Could not load active jobs.'));
+      this.error.set(readError(error, 'Could not load imported-game jobs.'));
       if (this.activeRuns().length) this.schedulePoll(POLL_INTERVAL_MS, generation);
     } finally {
       if (this.isCurrentGeneration(generation)) this.loading.set(false);
