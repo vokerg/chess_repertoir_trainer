@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { type UiShellAction, type UiShellStat } from '../ui-shell.model';
+import {
+  type UiShellAction,
+  type UiShellActionAppearance,
+  type UiShellStat,
+} from '../ui-shell.model';
 
 @Component({
   selector: 'app-ui-shell-actions',
@@ -16,5 +20,9 @@ export class ShellActionsComponent {
 
   protected run(action: UiShellAction): void {
     if (!action.disabled) action.run?.();
+  }
+
+  protected appearance(action: UiShellAction): UiShellActionAppearance {
+    return action.kind === 'toggle' ? 'secondary' : (action.appearance ?? 'secondary');
   }
 }
