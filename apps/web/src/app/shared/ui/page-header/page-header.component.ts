@@ -4,13 +4,14 @@ import { type UiShellAction, type UiShellStat } from '../ui-shell.model';
 
 export type PageHeaderAction = UiShellAction;
 export type PageHeaderStat = UiShellStat;
+export type PageHeaderAppearance = 'flat' | 'raised';
 
 @Component({
   selector: 'app-page-header',
   standalone: true,
   imports: [ShellActionsComponent],
   template: `
-    <header class="page-header">
+    <header class="page-header" [class.page-header-raised]="appearance() === 'raised'">
       <div class="page-header-copy">
         <h2 class="page-header-title">{{ title() }}</h2>
         @if (subtitle(); as subtitle) {
@@ -35,4 +36,5 @@ export class PageHeaderComponent {
   readonly subtitleLink = input<string | null>(null);
   readonly stats = input<readonly PageHeaderStat[]>([]);
   readonly actions = input<readonly PageHeaderAction[]>([]);
+  readonly appearance = input<PageHeaderAppearance>('flat');
 }
