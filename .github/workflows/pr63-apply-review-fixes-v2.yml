@@ -17,47 +17,20 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Extract and apply verified patch
-        id: apply
+      - name: Apply verified review patch
         shell: bash
         run: |
-          set +e
-          exec > >(tee /tmp/pr63-apply.log) 2>&1
-          set -x
-          python - <<'PY'
-          from pathlib import Path
-
-          source = Path('.github/workflows/pr63-apply-review-fixes.yml').read_text().splitlines()
-          start = next(i for i, line in enumerate(source) if "cat > /tmp/pr63-review.patch <<'PATCH'" in line) + 1
-          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PATCH')
-          prefix = ' ' * 10
-          patch = '\n'.join(line[len(prefix):] if line.startswith(prefix) else line for line in source[start:end])
-          Path('/tmp/pr63-review.patch').write_text(patch + '\n')
-          PY
-          status=$?
-          if [ "$status" -eq 0 ]; then git apply --check -p1 /tmp/pr63-review.patch; status=$?; fi
-          if [ "$status" -eq 0 ]; then git apply -p1 /tmp/pr63-review.patch; status=$?; fi
-          if [ "$status" -eq 0 ]; then
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add apps/api/src/modules/analysis/analysis.repository.prisma.ts \
-              apps/api/test/analysis/latest-analysis-snapshot.test.mjs \
-              apps/api/test/jobs/job-worker-cancellation.test.mjs \
-              docs/imported-game-job-processing.md
-            git commit -m "fix(jobs): address final lifecycle review"
-            status=$?
-          fi
-          if [ "$status" -eq 0 ]; then git push origin HEAD:feature/persistent-game-jobs-pr6; status=$?; fi
-          echo "$status" > /tmp/pr63-apply.status
-          exit 0
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pr63-apply-diagnostics
-          path: |
-            /tmp/pr63-apply.log
-            /tmp/pr63-apply.status
-            /tmp/pr63-review.patch
-      - name: Enforce apply result
-        shell: bash
-        run: exit "$(cat /tmp/pr63-apply.status)"
+          cat .github/pr63-patch/chunk-* > /tmp/pr63-review.patch.b64
+          echo 'ee710d648a4cc9723374de1c4cfa1a21c23a0649d58b312e1656b5aa5f6d776a  /tmp/pr63-review.patch.b64' | sha256sum --check
+          base64 --decode /tmp/pr63-review.patch.b64 > /tmp/pr63-review.patch
+          echo '3a3d33b5dd175c254551688de7bb88ef53d7ae71499ff5c6ad5e3fc91490a1e6  /tmp/pr63-review.patch' | sha256sum --check
+          git apply --check -p1 /tmp/pr63-review.patch
+          git apply -p1 /tmp/pr63-review.patch
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add apps/api/src/modules/analysis/analysis.repository.prisma.ts \
+            apps/api/test/analysis/latest-analysis-snapshot.test.mjs \
+            apps/api/test/jobs/job-worker-cancellation.test.mjs \
+            docs/imported-game-job-processing.md
+          git commit -m "fix(jobs): address final lifecycle review"
+          git push origin HEAD:feature/persistent-game-jobs-pr6
