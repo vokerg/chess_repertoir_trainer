@@ -19,7 +19,7 @@ describe('ShellActionsComponent', () => {
     const actions: UiShellAction[] = [
       { id: 'games', kind: 'toggle', label: 'My games', pressed: false, run },
       { id: 'engine', kind: 'toggle', label: 'Engine', pressed: true, run },
-      { id: 'challenge', label: 'Challenge bot', run },
+      { id: 'challenge', label: 'Challenge bot', appearance: 'primary', run },
     ];
     fixture.componentRef.setInput('actions', actions);
     fixture.detectChanges();
@@ -39,8 +39,25 @@ describe('ShellActionsComponent', () => {
     expect(buttons[1].classList).toContain('active');
     expect(buttons[2].getAttribute('aria-pressed')).toBeNull();
     expect(buttons[2].classList).not.toContain('ui-shell-toggle');
+    expect(buttons[2].classList).toContain('ui-shell-action-primary');
 
     buttons[0].click();
     expect(run).toHaveBeenCalled();
+  });
+
+  it('defaults commands to secondary and supports destructive emphasis', () => {
+    const run = jasmine.createSpy('run');
+    const actions: UiShellAction[] = [
+      { id: 'refresh', label: 'Refresh', run },
+      { id: 'delete', label: 'Delete', appearance: 'danger', run },
+    ];
+    fixture.componentRef.setInput('actions', actions);
+    fixture.detectChanges();
+
+    const buttons = Array.from(
+      fixture.nativeElement.querySelectorAll('button'),
+    ) as HTMLButtonElement[];
+    expect(buttons[0].classList).toContain('ui-shell-action-secondary');
+    expect(buttons[1].classList).toContain('ui-shell-action-danger');
   });
 });
