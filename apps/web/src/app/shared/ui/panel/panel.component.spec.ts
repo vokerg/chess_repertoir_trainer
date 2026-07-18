@@ -26,4 +26,13 @@ describe('PanelComponent', () => {
     expect(fixture.nativeElement.querySelector('.app-panel-header')).toBeNull();
     expect(fixture.nativeElement.querySelector('.app-panel-body')?.textContent).toContain('Panel content');
   });
+
+  it('uses the subtle comfortable surface by default', () => {
+    fixture.detectChanges();
+
+    const panel = fixture.nativeElement.querySelector('.app-panel') as HTMLElement;
+    expect(panel.classList).toContain('app-panel-subtle');
+    expect(panel.classList).not.toContain('app-panel-raised');
+    expect(panel.classList).not.toContain('app-panel-compact');
+  });
 });
