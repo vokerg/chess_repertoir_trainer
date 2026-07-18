@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import {
+  getLatestGameAnalysisForImportedGame,
+} from '../../dist/modules/analysis/analysis.repository.prisma.js';
+import {
   abandonGameAnalysisRun,
   getLatestGameAnalysisRunDeterministic,
 } from '../../dist/modules/analysis/analysis-run-lifecycle.repository.prisma.js';
@@ -125,6 +128,13 @@ try {
 
     const latest = await getLatestGameAnalysisRunDeterministic(userId, game.id);
     assert.equal(latest?.id, higherIdRun.id, 'equal timestamps use the higher run id');
+
+    const legacyLatest = await getLatestGameAnalysisForImportedGame(userId, game.id);
+    assert.equal(
+      legacyLatest?.id,
+      higherIdRun.id,
+      'the imported-game analysis helper uses the same deterministic tie-breaker',
+    );
   }
 
   {

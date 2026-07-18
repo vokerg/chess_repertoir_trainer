@@ -407,7 +407,10 @@ export async function getLatestGameAnalysisForImportedGame(userId: number, impor
       importedGame: { userId },
       status: { in: ['RUNNING', 'COMPLETED', 'FAILED'] },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [
+      { createdAt: 'desc' },
+      { id: 'desc' },
+    ],
     include: compactGameAnalysisRunInclude,
   });
 }

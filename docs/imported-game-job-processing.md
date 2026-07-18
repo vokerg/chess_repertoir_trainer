@@ -10,11 +10,11 @@ User-requested indexing, analysis, full processing, and explicit tag refresh now
 
 ## Delivery model
 
-The complete feature accumulates on `feature/persistent-game-jobs`, with a pull request targeting `main`.
+The durable-processing migration accumulates on `feature/persistent-game-jobs`, with a pull request targeting `main`.
 
 Implementation was delivered through reviewed child pull requests for persistence, worker infrastructure, domain executors, frontend migration, and lifecycle completion.
 
-Onboarding and automatic processing immediately after account imports are deliberately deferred to separate product stories.
+Onboarding and automatic processing immediately after account imports are deliberately separate product stories and are not acceptance criteria for this migration.
 
 ## Runtime boundary
 
