@@ -11,6 +11,10 @@
       @if (action.link) {
         <a
           class="ui-shell-action"
+          [class.ui-shell-action-primary]="appearance(action) === 'primary'"
+          [class.ui-shell-action-secondary]="appearance(action) === 'secondary'"
+          [class.ui-shell-action-ghost]="appearance(action) === 'ghost'"
+          [class.ui-shell-action-danger]="appearance(action) === 'danger'"
           [class.disabled]="action.disabled"
           [attr.aria-disabled]="action.disabled || null"
           [routerLink]="action.disabled ? null : action.link"
@@ -23,6 +27,10 @@
           class="ui-shell-action"
           [class.ui-shell-toggle]="action.kind === 'toggle'"
           [class.active]="action.kind === 'toggle' && action.pressed"
+          [class.ui-shell-action-primary]="action.kind !== 'toggle' && appearance(action) === 'primary'"
+          [class.ui-shell-action-secondary]="action.kind !== 'toggle' && appearance(action) === 'secondary'"
+          [class.ui-shell-action-ghost]="action.kind !== 'toggle' && appearance(action) === 'ghost'"
+          [class.ui-shell-action-danger]="action.kind !== 'toggle' && appearance(action) === 'danger'"
           [class.disabled]="action.disabled"
           [attr.aria-pressed]="action.kind === 'toggle' ? action.pressed : null"
           [disabled]="action.disabled"
