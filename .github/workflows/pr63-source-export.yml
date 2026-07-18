@@ -18,3 +18,4 @@ jobs:
             apps/api/test/analysis/latest-analysis-snapshot.test.mjs
             apps/api/test/jobs/job-worker-cancellation.test.mjs
             docs/imported-game-job-processing.md
+            .github/pr63-patch
