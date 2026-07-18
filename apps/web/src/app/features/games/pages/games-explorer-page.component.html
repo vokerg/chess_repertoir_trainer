@@ -11,9 +11,16 @@
     [facets]="store.facets()"
     [loading]="store.loading()"
     (filtersChange)="store.setFilters($event)"
-    (apply)="store.refresh()"
-    (reset)="store.resetFilters()"
+    (apply)="applyFilters()"
+    (reset)="resetFilters()"
   />
+
+  @if (store.unrepresentedCriteriaSummary().length) {
+    <aside class="route-filter-summary" aria-label="Additional applied filters">
+      <strong>Additional URL filters</strong>
+      <span>{{ store.unrepresentedCriteriaSummary().join(' · ') }}</span>
+    </aside>
+  }
 
   @if (store.importedGameAnalysis.progress().running || store.importedGameAnalysis.progress().error) {
     <p class="status-note">

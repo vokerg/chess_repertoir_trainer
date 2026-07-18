@@ -27,6 +27,73 @@ Frontend web consumers should reuse the shared `apps/web/src/app/shared/games/po
 
 Backend-process consumers should continue to use `ImportedGameQueryService` directly and must not call REST over HTTP.
 
+## Games explorer URL contract
+
+The Angular Games explorer treats `/games` query parameters as validated, applied search state. The contract schema `importedGameSearchQuerySchema` from `@chess-trainer/contracts/imported-games` is the source of truth; the web client does not forward arbitrary URL parameters to `GET /api/imported-games`.
+
+A plain `/games` URL uses the current `defaultGameFilters()` behavior: the default three-month date range and the `blitz,rapid` speed selection, plus the contract defaults `sort=endedAtDesc` and `limit=50`. A URL with `filterMode=explicit` has different omission semantics: every omitted optional filter is unfiltered. This makes an explicit no-filter search representable as:
+
+```text
+/games?filterMode=explicit&sort=endedAtDesc&limit=50
+```
+
+The durable supported parameters are:
+
+- `accountIds`
+- `providers`
+- `from`
+- `to`
+- `resultForUser`
+- `userColor`
+- `rated`
+- `speedCategory`
+- `variant`
+- `openingEco`
+- `openingName`
+- `opponent`
+- `timeControl`
+- `minUserRating`
+- `maxUserRating`
+- `minOpponentRating`
+- `maxOpponentRating`
+- `analysisStatus`
+- `plyIndexStatus`
+- `tagFilter`
+- `tagCodes`
+- `classification`
+- `minAccuracy`
+- `maxAccuracy`
+- `sort`
+- `limit`
+
+Array-valued parameters use one comma-separated value. This applies to `accountIds`, `providers`, `resultForUser`, `userColor`, `speedCategory`, `variant`, `openingEco`, `analysisStatus`, `plyIndexStatus`, `tagCodes`, and `classification`. For example:
+
+```text
+/games?filterMode=explicit&providers=CHESS_COM,LICHESS&resultForUser=DRAW,WIN&variant=chess960,standard&sort=endedAtDesc&limit=50
+```
+
+`rated` uses `true` or `false`. Rating bounds and `limit` are integers; accuracy bounds accept numbers from 0 through 100. `from` and `to` accept either `YYYY-MM-DD` dates or ISO timestamps with an offset, as defined by the shared schema. `sort` accepts `endedAtDesc` or `endedAtAsc`, and `limit` is from 1 through 200.
+
+Unknown parameters are ignored. Recognized values are validated independently: an invalid value is ignored while other valid parameters remain applied. In default mode, the ignored field therefore retains the Games default when that field has one; in `filterMode=explicit`, it remains unfiltered. Stable canonical serialization sorts and deduplicates array values.
+
+`cursor` is intentionally not durable route state. A cursor found in a `/games` URL is ignored, and route serialization removes it. `GamesApiService` adds the current in-memory `pageInfo.nextCursor` only for a Load more request. `openingNameExact` is also not part of this endpoint contract: it belongs to opening-analysis queries and is never serialized for `GET /api/imported-games`.
+
+Other Angular features must build Games explorer links through the typed shared helper instead of hand-assembling query parameters:
+
+```ts
+import { gamesExplorerLinkQueryParams } from '../shared/games/navigation/games-explorer-link.helper';
+
+const queryParams = gamesExplorerLinkQueryParams({
+  providers: ['LICHESS'],
+  variant: ['standard'],
+  minUserRating: 1400,
+});
+
+// <a routerLink="/games" [queryParams]="queryParams">View games</a>
+```
+
+The helper always includes `filterMode=explicit`, includes the contract `sort` and `limit` defaults when omitted, uses CSV for arrays, and returns Angular-compatible string query parameters.
+
 Current REST flow:
 
 ```text

@@ -9,13 +9,21 @@ import {
   ImportedGamePageInfo,
   ImportedGamePlyIndexResult,
 } from '../data-access/games.models';
-import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
+import type { GameFilters } from '../../../shared/games/filters/game-filter.model';
 import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game-workflow-eligibility';
 import { emptyImportedGameFacets } from '../../../shared/games/game.models';
+import type { ImportedGameSearchCriteria } from '../../../shared/games/filters/imported-game-search-query.codec';
+import {
+  defaultGamesExplorerQuery,
+  patchGamesExplorerDraftQuery,
+  projectGamesExplorerFilters,
+  summarizeUnrepresentedGamesExplorerCriteria,
+} from '../helpers/games-explorer-route-query.helpers';
 
 @Injectable()
 export class GamesExplorerStore {
   private readonly api = inject(GamesApiService);
+  private searchRequestId = 0;
   readonly importedGameAnalysis = inject(ImportedGameAnalysisService);
 
   readonly games = signal<ImportedGameSearchItem[]>([]);
@@ -33,7 +41,12 @@ export class GamesExplorerStore {
   readonly batchAnalysisEnabled = signal(false);
   readonly batchAnalysisSubmitting = signal(false);
   readonly pageInfo = signal<ImportedGamePageInfo>({ nextCursor: null, hasMore: false });
-  readonly filters = signal<GameFilters>(defaultGameFilters());
+  readonly appliedQuery = signal<ImportedGameSearchCriteria>(defaultGamesExplorerQuery());
+  readonly draftQuery = signal<ImportedGameSearchCriteria>(defaultGamesExplorerQuery());
+  readonly filters = computed<GameFilters>(() => projectGamesExplorerFilters(this.draftQuery()));
+  readonly unrepresentedCriteriaSummary = computed(() =>
+    summarizeUnrepresentedGamesExplorerCriteria(this.appliedQuery()),
+  );
 
   readonly filteredGames = computed(() => this.games());
 
@@ -106,15 +119,18 @@ export class GamesExplorerStore {
   }
 
   loadGames(cursor?: string | null): void {
+    const requestId = ++this.searchRequestId;
     this.loading.set(true);
     this.error.set(null);
-    this.api.searchGames(this.filters(), cursor).subscribe({
+    this.api.searchGames(this.appliedQuery(), cursor).subscribe({
       next: (data) => {
+        if (requestId !== this.searchRequestId) return;
         this.games.set(cursor ? [...this.games(), ...data.items] : data.items);
         this.pageInfo.set(data.pageInfo);
         this.loading.set(false);
       },
       error: (err) => {
+        if (requestId !== this.searchRequestId) return;
         this.error.set(readApiError(err, 'Could not load imported games.'));
         this.loading.set(false);
       },
@@ -122,11 +138,15 @@ export class GamesExplorerStore {
   }
 
   setFilters(filters: GameFilters): void {
-    this.filters.set(filters);
+    const previousFilters = this.filters();
+    this.draftQuery.update((query) =>
+      patchGamesExplorerDraftQuery(query, previousFilters, filters),
+    );
   }
 
-  resetFilters(): void {
-    this.filters.set(defaultGameFilters());
+  applyRouteQuery(query: ImportedGameSearchCriteria): void {
+    this.appliedQuery.set(query);
+    this.draftQuery.set(query);
     this.refresh();
   }
 
@@ -379,7 +399,7 @@ export class GamesExplorerStore {
   }
 
   private async reloadCurrentList(): Promise<void> {
-    const data = await firstValueFrom(this.api.searchGames(this.filters()));
+    const data = await firstValueFrom(this.api.searchGames(this.appliedQuery()));
     this.games.set(data.items);
     this.pageInfo.set(data.pageInfo);
   }
