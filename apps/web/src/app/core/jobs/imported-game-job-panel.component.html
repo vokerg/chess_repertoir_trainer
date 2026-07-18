@@ -39,25 +39,37 @@
             </div>
             <div class="job-row-footer">
               <p class="job-progress-label">{{ progressLabel(run) }}</p>
-              @if (isActive(run)) {
-                <button
-                  type="button"
-                  class="job-action job-action-cancel"
-                  (click)="store.cancel(run.id)"
-                  [disabled]="store.cancellingRunId() !== null || store.retryingRunId() !== null"
-                >
-                  {{ store.cancellingRunId() === run.id ? 'Cancelling...' : 'Cancel' }}
-                </button>
-              } @else if (canRetry(run)) {
-                <button
-                  type="button"
-                  class="job-action"
-                  (click)="store.retry(run.id)"
-                  [disabled]="store.cancellingRunId() !== null || store.retryingRunId() !== null"
-                >
-                  {{ store.retryingRunId() === run.id ? 'Retrying...' : 'Retry failed' }}
-                </button>
-              }
+              <div class="job-row-actions">
+                @if (isActive(run)) {
+                  <button
+                    type="button"
+                    class="job-action job-action-cancel"
+                    (click)="store.cancel(run.id)"
+                    [disabled]="store.cancellingRunId() !== null || store.retryingRunId() !== null"
+                  >
+                    {{ store.cancellingRunId() === run.id ? 'Cancelling...' : 'Cancel' }}
+                  </button>
+                } @else {
+                  @if (canRetry(run)) {
+                    <button
+                      type="button"
+                      class="job-action"
+                      (click)="store.retry(run.id)"
+                      [disabled]="store.cancellingRunId() !== null || store.retryingRunId() !== null"
+                    >
+                      {{ store.retryingRunId() === run.id ? 'Retrying...' : 'Retry failed' }}
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="job-action"
+                    (click)="store.dismiss(run.id)"
+                    [attr.aria-label]="'Dismiss ' + kindLabel(run.kind) + ' job'"
+                  >
+                    Dismiss
+                  </button>
+                }
+              </div>
             </div>
           </article>
         }
