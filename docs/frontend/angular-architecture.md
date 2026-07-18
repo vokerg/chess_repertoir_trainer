@@ -68,9 +68,13 @@ Some older `pages/*` files and large route components still own too much state o
 ## Styling rules
 
 - Global styles contain design tokens, resets, layout primitives, and truly reusable utilities.
+- `apps/web/src/design-system.css` owns the semantic visual foundation and compatibility aliases while older global selectors migrate incrementally.
 - Feature-specific selectors remain colocated with their component.
 - Large inline style blocks are not permitted in route pages.
 - Components should use existing tokens rather than adding isolated colors, spacing values, or shadows without reason.
+- Route-level `app-page-header` instances are flat by default; use the raised appearance only when the header itself is a meaningful contained surface.
+- `app-panel` defaults to a subtle surface. Use raised for the primary elevated surface, flat for structural grouping, and compact density for dense tools.
+- Shell command actions default to secondary. Primary and danger appearances must be explicit so pages retain one clear action hierarchy.
 - Responsive viewport constants live in `apps/web/src/app/shared/ui/responsive/breakpoints.ts`; shared CSS visibility/alignment utilities live in `apps/web/src/responsive.css`. Numeric CSS media queries should include a nearby sync comment because CSS custom properties cannot be used as breakpoint thresholds.
 
 ## Validation
