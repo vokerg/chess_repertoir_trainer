@@ -173,7 +173,7 @@ try {
         data: { status: 'COMPLETED', workKey: null, error: null },
       });
       taskRowLocked();
-      await transaction.$queryRaw`SELECT pg_sleep(0.15)`;
+      await transaction.$queryRaw`SELECT 1::int AS "slept" FROM pg_sleep(0.15)`;
       await transaction.$queryRaw`
         SELECT "id"
         FROM "JobRun"
