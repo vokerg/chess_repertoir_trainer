@@ -26,12 +26,13 @@ jobs:
           set -x
           python - <<'PY'
           from pathlib import Path
-          import textwrap
 
           source = Path('.github/workflows/pr63-apply-review-fixes.yml').read_text().splitlines()
           start = next(i for i, line in enumerate(source) if "cat > /tmp/pr63-review.patch <<'PATCH'" in line) + 1
           end = next(i for i in range(start, len(source)) if source[i].strip() == 'PATCH')
-          Path('/tmp/pr63-review.patch').write_text(textwrap.dedent('\n'.join(source[start:end])) + '\n')
+          prefix = ' ' * 10
+          patch = '\n'.join(line[len(prefix):] if line.startswith(prefix) else line for line in source[start:end])
+          Path('/tmp/pr63-review.patch').write_text(patch + '\n')
           PY
           status=$?
           if [ "$status" -eq 0 ]; then git apply --check -p1 /tmp/pr63-review.patch; status=$?; fi
