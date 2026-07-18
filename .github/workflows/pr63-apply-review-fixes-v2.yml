@@ -1,0 +1,40 @@
+name: PR63 Apply Review Fixes V2
+
+on:
+  pull_request:
+    branches:
+      - feature/persistent-game-jobs
+
+permissions:
+  contents: write
+
+jobs:
+  apply-review-fixes:
+    if: github.event.pull_request.head.ref == 'feature/persistent-game-jobs-pr6'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Extract and apply verified patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('.github/workflows/pr63-apply-review-fixes.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "cat > /tmp/pr63-review.patch <<'PATCH'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PATCH')
+          Path('/tmp/pr63-review.patch').write_text(textwrap.dedent('\n'.join(source[start:end])) + '\n')
+          PY
+          git apply -p1 /tmp/pr63-review.patch
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add apps/api/src/modules/analysis/analysis.repository.prisma.ts \
+            apps/api/test/analysis/latest-analysis-snapshot.test.mjs \
+            apps/api/test/jobs/job-worker-cancellation.test.mjs \
+            docs/imported-game-job-processing.md
+          git commit -m "fix(jobs): address final lifecycle review"
+          git push origin HEAD:feature/persistent-game-jobs-pr6
