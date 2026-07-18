@@ -1,4 +1,10 @@
-<section class="app-panel">
+<section
+  class="app-panel"
+  [class.app-panel-raised]="appearance() === 'raised'"
+  [class.app-panel-subtle]="appearance() === 'subtle'"
+  [class.app-panel-flat]="appearance() === 'flat'"
+  [class.app-panel-compact]="density() === 'compact'"
+>
   @if (title() || subtitle() || stats().length || actions().length) {
     <header class="app-panel-header">
       @if (title() || subtitle()) {
