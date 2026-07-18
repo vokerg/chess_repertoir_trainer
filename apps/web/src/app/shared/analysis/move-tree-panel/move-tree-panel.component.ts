@@ -29,7 +29,9 @@ export class MoveTreePanelComponent {
     if (!tree) return '';
 
     const selectedPath = this.selectedPath(tree);
-    const path = selectedPath.length ? selectedPath : this.mainlinePath(tree.root);
+    const path = selectedPath.at(-1)?.node.id === 0
+      ? this.mainlinePath(tree.root)
+      : selectedPath;
     return path
       .filter((node) => node.node.id !== 0)
       .map((node) => node.node.moveSan || node.node.moveUci)
