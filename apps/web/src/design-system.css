@@ -1,0 +1,275 @@
+:root {
+  /* Semantic foundation. Existing tokens remain compatibility aliases while
+     feature styles migrate toward the semantic names below. */
+  --canvas: #f2f0ea;
+  --canvas-deep: #e9e5dc;
+  --surface-primary: #fffdf9;
+  --surface-secondary: #f7f4ed;
+  --surface-tertiary: #eeebe3;
+  --surface-overlay: #ffffff;
+
+  --text-primary: #25231f;
+  --text-secondary: #625e55;
+  --text-tertiary: #817b70;
+
+  --accent-primary: #a76618;
+  --accent-hover: #7b470c;
+  --accent-subtle: rgba(167, 102, 24, 0.11);
+  --accent-border: rgba(167, 102, 24, 0.28);
+
+  --border-subtle: rgba(52, 47, 39, 0.11);
+  --border-default: rgba(52, 47, 39, 0.17);
+  --border-emphasis: rgba(52, 47, 39, 0.27);
+
+  --radius-control: 9px;
+  --radius-card: 13px;
+  --radius-overlay: 16px;
+
+  --shadow-card: 0 8px 24px rgba(45, 39, 30, 0.065);
+  --shadow-overlay: 0 22px 56px rgba(45, 39, 30, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(167, 102, 24, 0.15);
+
+  /* Backward-compatible aliases used throughout current feature styles. */
+  --bg: var(--canvas);
+  --bg-strong: var(--canvas-deep);
+  --surface: var(--surface-primary);
+  --surface-strong: var(--surface-primary);
+  --surface-muted: var(--surface-secondary);
+  --border: var(--border-subtle);
+  --border-strong: var(--border-emphasis);
+  --text: var(--text-primary);
+  --muted: var(--text-tertiary);
+  --muted-strong: var(--text-secondary);
+  --accent: var(--accent-primary);
+  --accent-strong: var(--accent-hover);
+  --accent-soft: var(--accent-subtle);
+  --radius-sm: var(--radius-control);
+  --radius-md: 11px;
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-overlay);
+  --shadow: var(--shadow-overlay);
+  --shadow-soft: var(--shadow-card);
+  --shadow-lifted: var(--shadow-overlay);
+}
+
+body {
+  font-family: "Segoe UI Variable", "Aptos", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at 8% -12%, rgba(167, 102, 24, 0.09), transparent 32rem),
+    linear-gradient(180deg, #faf8f3 0%, var(--canvas) 48%, #ece8df 100%);
+  color: var(--text-primary);
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+::selection {
+  background: rgba(167, 102, 24, 0.2);
+}
+
+.page-shell {
+  width: min(1540px, calc(100vw - 32px));
+}
+
+.page-heading,
+.page-header-title,
+.app-panel-title,
+.workbench-title,
+.collection-title {
+  text-wrap: balance;
+}
+
+.page-header {
+  align-items: flex-end;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  padding: 0.4rem 0 1rem;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.page-header.page-header-raised {
+  align-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.1rem;
+  background: color-mix(in srgb, var(--surface-primary) 94%, transparent);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+}
+
+.page-header-title {
+  font-size: clamp(1.55rem, 2.4vw, 2.15rem);
+  font-weight: 780;
+  letter-spacing: -0.035em;
+}
+
+.page-header-subtitle {
+  margin-top: 0.38rem;
+  color: var(--text-secondary);
+}
+
+.section-card {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--surface-secondary) 74%, var(--surface-primary));
+  box-shadow: none;
+}
+
+.collection-card {
+  border-color: var(--border-subtle);
+  border-radius: 11px;
+  background: var(--surface-primary);
+  box-shadow: none;
+}
+
+.collection-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-card);
+}
+
+.metric-card {
+  border-color: var(--border-subtle);
+  border-radius: 11px;
+  background: var(--surface-secondary);
+}
+
+.metric-label {
+  color: var(--text-tertiary);
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.075em;
+}
+
+.metric-value {
+  font-weight: 780;
+}
+
+input,
+select,
+textarea {
+  border-color: var(--border-default);
+  border-radius: var(--radius-control);
+  padding: 0.72rem 0.82rem;
+  background: var(--surface-primary);
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--border-emphasis);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-focus);
+}
+
+.app-shell button:where(.primary, .secondary, .danger, .danger-text) {
+  min-height: 38px;
+  border-radius: var(--radius-control);
+  padding: 0.65rem 0.92rem;
+  letter-spacing: 0;
+}
+
+.app-shell button:where(.primary) {
+  background: var(--accent-primary);
+  box-shadow: 0 5px 13px rgba(123, 71, 12, 0.16);
+}
+
+.app-shell button:where(.primary):hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.app-shell button:where(.secondary) {
+  border-color: var(--border-default);
+  background: var(--surface-primary);
+}
+
+.compact-action,
+.library-button-link {
+  border-radius: var(--radius-control);
+  background: var(--accent-primary);
+  box-shadow: 0 5px 13px rgba(123, 71, 12, 0.14);
+}
+
+.compact-action.secondary,
+.library-button-link.secondary {
+  background: var(--surface-primary);
+}
+
+.empty-state {
+  border-color: var(--border-default);
+  background: var(--surface-secondary);
+}
+
+.library-browser {
+  border-color: var(--border-default);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.library-toolbar,
+.library-column,
+.library-lines-column,
+.library-detail {
+  background: transparent;
+}
+
+.library-row {
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+
+.library-row:hover {
+  background: var(--surface-secondary);
+}
+
+.library-row-active {
+  border-color: var(--accent-border);
+  background: var(--accent-subtle);
+}
+
+.workbench-header {
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  padding: 0.35rem 0 0.95rem;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workbench-panel {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-primary);
+  box-shadow: none;
+}
+
+.mode-pill,
+.inspector-tab,
+.move-tree-node-button {
+  border-radius: var(--radius-control);
+}
+
+.mode-pill-active {
+  background: var(--accent-primary);
+}
+
+.engine-line-modern {
+  border-radius: var(--radius-control);
+  background: var(--surface-secondary);
+}
+
+@media (max-width: 760px) {
+  .page-shell {
+    width: min(100% - 20px, 1540px);
+  }
+
+  .page-header {
+    align-items: flex-start;
+  }
+}
