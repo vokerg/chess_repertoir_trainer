@@ -3,6 +3,8 @@ import { of, throwError } from 'rxjs';
 import { GamesApiService } from '../data-access/games-api.service';
 import { ImportedGameAnalysisService } from '../data-access/imported-game-analysis.service';
 import { ImportedGameSearchItem } from '../data-access/games.models';
+import type { ImportedGameSearchCriteria } from '../../../shared/games/filters/imported-game-search-query.codec';
+import { defaultGamesExplorerQuery } from '../helpers/games-explorer-route-query.helpers';
 import { GamesExplorerStore } from './games-explorer.store';
 
 describe('GamesExplorerStore', () => {
@@ -101,6 +103,60 @@ describe('GamesExplorerStore', () => {
     expect(api.searchGames).toHaveBeenCalled();
   });
 
+  it('applies route criteria as applied and draft state and loads exactly once', () => {
+    const query = { ...defaultGamesExplorerQuery(), variant: ['standard'] };
+    api.searchGames.and.returnValue(of(searchResponse([game(3)])));
+
+    store.applyRouteQuery(query);
+
+    expect(store.appliedQuery()).toEqual(query);
+    expect(store.draftQuery()).toEqual(query);
+    expect(api.searchGames).toHaveBeenCalledOnceWith(query, undefined);
+    expect(store.games().map((item) => item.id)).toEqual([3]);
+  });
+
+  it('patches only changed form fields into the draft without loading or losing hidden criteria', () => {
+    const query: ImportedGameSearchCriteria = {
+      ...defaultGamesExplorerQuery(),
+      providers: ['CHESS_COM', 'LICHESS'],
+      resultForUser: ['DRAW', 'WIN'],
+      variant: ['chess960', 'standard'],
+      openingEco: ['B20', 'C50'],
+      classification: ['BLUNDER'],
+      minUserRating: 1500,
+    };
+    store.appliedQuery.set(query);
+    store.draftQuery.set(query);
+    const filters = store.filters();
+
+    store.setFilters({ ...filters, opponent: 'New opponent' });
+
+    expect(store.draftQuery()).toEqual(jasmine.objectContaining({
+      opponent: 'New opponent',
+      providers: ['CHESS_COM', 'LICHESS'],
+      resultForUser: ['DRAW', 'WIN'],
+      variant: ['chess960', 'standard'],
+      openingEco: ['B20', 'C50'],
+      classification: ['BLUNDER'],
+      minUserRating: 1500,
+    }));
+    expect(store.appliedQuery()).toEqual(query);
+    expect(api.searchGames).not.toHaveBeenCalled();
+    expect(store.unrepresentedCriteriaSummary()).toContain('Variants: chess960, standard');
+  });
+
+  it('loads the next cursor internally with applied criteria and appends the page', () => {
+    const query = { ...defaultGamesExplorerQuery(), openingEco: ['B20'] };
+    store.appliedQuery.set(query);
+    store.pageInfo.set({ nextCursor: 'next-page', hasMore: true });
+    api.searchGames.and.returnValue(of(searchResponse([game(3)])));
+
+    store.loadMore();
+
+    expect(api.searchGames).toHaveBeenCalledOnceWith(query, 'next-page');
+    expect(store.games().map((item) => item.id)).toEqual([1, 2, 3]);
+  });
+
   it('refreshes tags for visible rows without reloading the list', async () => {
     const untouchedPlyIndex = store.games()[1].plyIndex;
     api.refreshGameTags.and.callFake((gameId: number) => of({
@@ -185,5 +241,13 @@ function game(
       blackAccuracy: null,
       userAccuracy: null,
     },
+  };
+}
+
+function searchResponse(items: ImportedGameSearchItem[]) {
+  return {
+    items,
+    pageInfo: { nextCursor: null, hasMore: false },
+    appliedFilters: { sort: 'endedAtDesc' as const, limit: 50 },
   };
 }
