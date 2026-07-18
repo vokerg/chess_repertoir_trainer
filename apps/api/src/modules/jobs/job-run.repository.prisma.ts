@@ -157,17 +157,15 @@ export const JobRunRepository = {
 
   async cancelForUser(userId: number, jobRunId: number): Promise<StoredJobRun | null> {
     return prisma.$transaction(async (transaction) => {
-      const ownedRows = await transaction.$queryRaw<Array<{ id: number; status: string }>>`
-        SELECT "id", "status"
-        FROM "JobRun"
-        WHERE "id" = ${jobRunId}
-          AND "userId" = ${userId}
-        FOR UPDATE
-      `;
-      const ownedRun = ownedRows[0];
+      const ownedRun = await transaction.jobRun.findFirst({
+        where: { id: jobRunId, userId },
+        select: { id: true, status: true },
+      });
       if (!ownedRun) return null;
 
       if (ownedRun.status === 'QUEUED' || ownedRun.status === 'RUNNING') {
+        // Worker settlement updates JobTask before locking JobRun. Cancellation must
+        // use the same order so completion and cancellation cannot deadlock.
         await transaction.jobTask.updateMany({
           where: {
             jobRunId,
@@ -181,29 +179,43 @@ export const JobRunRepository = {
           },
         });
 
-        const groups = await transaction.jobTask.groupBy({
-          by: ['status'],
-          where: { jobRunId },
-          _count: { _all: true },
-        });
-        const counts = new Map(groups.map((group) => [group.status, group._count._all]));
-        const failed = counts.get('FAILED') ?? 0;
-        const cancelled = counts.get('CANCELLED') ?? 0;
-        const total = groups.reduce((sum, group) => sum + group._count._all, 0);
-        const status = cancelled === total && total > 0
-          ? 'CANCELLED'
-          : failed > 0 || cancelled > 0
-            ? 'PARTIALLY_FAILED'
-            : 'COMPLETED';
+        const lockedRows = await transaction.$queryRaw<Array<{ id: number; status: string }>>`
+          SELECT "id", "status"
+          FROM "JobRun"
+          WHERE "id" = ${jobRunId}
+            AND "userId" = ${userId}
+          FOR UPDATE
+        `;
+        const lockedRun = lockedRows[0];
+        if (!lockedRun) return null;
 
-        await transaction.jobRun.update({
-          where: { id: jobRunId },
-          data: {
-            status,
-            completedAt: new Date(),
-            updatedAt: new Date(),
-          },
-        });
+        // If worker settlement won the task-row race, it also reconciled the run.
+        // Preserve that terminal result rather than rewriting it as cancellation.
+        if (lockedRun.status === 'QUEUED' || lockedRun.status === 'RUNNING') {
+          const groups = await transaction.jobTask.groupBy({
+            by: ['status'],
+            where: { jobRunId },
+            _count: { _all: true },
+          });
+          const counts = new Map(groups.map((group) => [group.status, group._count._all]));
+          const failed = counts.get('FAILED') ?? 0;
+          const cancelled = counts.get('CANCELLED') ?? 0;
+          const total = groups.reduce((sum, group) => sum + group._count._all, 0);
+          const status = cancelled === total && total > 0
+            ? 'CANCELLED'
+            : failed > 0 || cancelled > 0
+              ? 'PARTIALLY_FAILED'
+              : 'COMPLETED';
+
+          await transaction.jobRun.update({
+            where: { id: jobRunId },
+            data: {
+              status,
+              completedAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+        }
       }
 
       return transaction.jobRun.findUnique({
