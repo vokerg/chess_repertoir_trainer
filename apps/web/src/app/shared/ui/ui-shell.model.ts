@@ -4,20 +4,25 @@ export interface UiShellStat {
   value: string | number;
 }
 
+export type UiShellActionAppearance = 'primary' | 'secondary' | 'ghost' | 'danger';
+
 interface UiShellActionBase {
   id: string;
   label: string;
   disabled?: boolean;
 }
 
+interface UiShellCommandBase extends UiShellActionBase {
+  kind?: 'command';
+  appearance?: UiShellActionAppearance;
+}
+
 export type UiShellAction =
-  | (UiShellActionBase & {
-      kind?: 'command';
+  | (UiShellCommandBase & {
       link: string | Array<string | number>;
       run?: never;
     })
-  | (UiShellActionBase & {
-      kind?: 'command';
+  | (UiShellCommandBase & {
       link?: never;
       run: () => void;
     })
