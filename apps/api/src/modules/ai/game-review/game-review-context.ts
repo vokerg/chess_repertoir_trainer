@@ -19,7 +19,9 @@ export interface GameReviewAnalysisMove {
 }
 
 export interface GameReviewAnalysisRun {
+  id: number;
   status: string;
+  completedAt: string | null;
   whiteAccuracy: number | null;
   blackAccuracy: number | null;
   whiteAverageCentipawnLoss: number | null;
