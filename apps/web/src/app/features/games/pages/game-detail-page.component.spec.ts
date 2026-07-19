@@ -1,13 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
+import { AiCapabilitiesService } from '../../../core/ai/ai-capabilities.service';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { GameDetailStore } from '../state/game-detail.store';
+import { GameAiReviewStore } from '../state/game-ai-review.store';
 import { GameDetailPageComponent } from './game-detail-page.component';
 
 describe('GameDetailPageComponent', () => {
   let fixture: ComponentFixture<GameDetailPageComponent>;
   let store: jasmine.SpyObj<GameDetailStore>;
+  let aiReviewStore: jasmine.SpyObj<GameAiReviewStore>;
   let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
 
   beforeEach(async () => {
@@ -17,6 +20,7 @@ describe('GameDetailPageComponent', () => {
       'handleKeyboard',
       'initialize',
     ]);
+    aiReviewStore = jasmine.createSpyObj<GameAiReviewStore>('GameAiReviewStore', ['reset']);
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
 
     await TestBed.configureTestingModule({
@@ -27,12 +31,19 @@ describe('GameDetailPageComponent', () => {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ gameId: '1' })) },
         },
+        {
+          provide: AiCapabilitiesService,
+          useValue: { getCapabilities: () => of({ widgets: { gameReview: false } }) },
+        },
       ],
     })
       .overrideComponent(GameDetailPageComponent, {
         set: {
           template: '',
-          providers: [{ provide: GameDetailStore, useValue: store }],
+          providers: [
+            { provide: GameDetailStore, useValue: store },
+            { provide: GameAiReviewStore, useValue: aiReviewStore },
+          ],
         },
       })
       .compileComponents();

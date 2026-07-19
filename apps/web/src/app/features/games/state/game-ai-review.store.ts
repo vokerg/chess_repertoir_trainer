@@ -13,6 +13,12 @@ export class GameAiReviewStore {
   readonly review = signal<AiGameReviewResponse | null>(null);
   readonly error = signal<string | null>(null);
 
+  reset(): void {
+    this.status.set('IDLE');
+    this.review.set(null);
+    this.error.set(null);
+  }
+
   async generate(gameId: number): Promise<void> {
     if (this.status() === 'GENERATING') return;
     this.status.set('GENERATING');

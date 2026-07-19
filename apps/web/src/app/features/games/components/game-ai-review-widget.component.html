@@ -1,27 +1,9 @@
-@if (available()) {
+@if (review(); as response) {
   <app-panel
     title="AI game review"
     subtitle="Experimental, generated on demand from saved game and engine data."
-    [actions]="actions()"
   >
-    @if (!analysisReady()) {
-      <p class="ai-review-muted">Complete the saved game analysis before generating an AI review.</p>
-    } @else {
-      @switch (store.status()) {
-        @case ('IDLE') {
-          <p class="ai-review-muted">
-            Generate a concise coaching overview with opening context, turning points, strengths, and practice priorities.
-          </p>
-        }
-        @case ('GENERATING') {
-          <p class="ai-review-muted">Generating the review… You can keep using the board.</p>
-        }
-        @case ('ERROR') {
-          <p class="status-error">{{ store.error() }}</p>
-        }
-        @case ('READY') {
-          @if (store.review(); as response) {
-            <article class="ai-review-content">
+    <article class="ai-review-content">
               <header class="ai-review-lead">
                 <h4>{{ response.review.headline }}</h4>
                 <p>{{ response.review.overview }}</p>
@@ -101,10 +83,6 @@
                   }
                 </div>
               }
-            </article>
-          }
-        }
-      }
-    }
+    </article>
   </app-panel>
 }

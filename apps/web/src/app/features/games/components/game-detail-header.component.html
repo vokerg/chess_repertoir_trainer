@@ -22,6 +22,16 @@
       >
         {{ fullRefreshAction().label }}
       </button>
+      @if (aiReviewAvailable()) {
+        <button
+          type="button"
+          class="mode-pill game-header-action"
+          [disabled]="aiReviewAction().disabled"
+          (click)="generateAiReview.emit()"
+        >
+          {{ aiReviewAction().label }}
+        </button>
+      }
     }
     @if (game()?.providerUrl; as providerUrl) {
       <a class="mode-pill" [href]="providerUrl" target="_blank" rel="noreferrer">

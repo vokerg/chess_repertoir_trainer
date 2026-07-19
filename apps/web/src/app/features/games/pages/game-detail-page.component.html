@@ -3,10 +3,18 @@
     [game]="store.game()"
     [title]="store.gameTitle()"
     [fullRefreshing]="store.fullRefreshing()"
+    [aiReviewAvailable]="aiReviewAvailable()"
+    [aiReviewGenerated]="aiReviewStore.review() !== null"
+    [aiReviewGenerating]="aiReviewStore.status() === 'GENERATING'"
+    [aiReviewDisabled]="store.analysisStatusLabel() !== 'Saved'"
     (fullRefresh)="store.fullRefreshGame()"
+    (generateAiReview)="generateAiReview()"
   />
 
   @if (store.error(); as error) {
+    <p class="status-error">{{ error }}</p>
+  }
+  @if (aiReviewStore.error(); as error) {
     <p class="status-error">{{ error }}</p>
   }
 
@@ -23,8 +31,7 @@
     />
 
     <app-game-ai-review-widget
-      [gameId]="game.id"
-      [analysisReady]="store.analysisStatusLabel() === 'Saved'"
+      [review]="aiReviewStore.review()"
     />
 
     @if (store.tree(); as tree) {
