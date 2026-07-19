@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   input,
+  output,
 } from '@angular/core';
 import type { AiGameReviewResponse } from '@chess-trainer/contracts/ai';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
@@ -16,6 +17,8 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 })
 export class GameAiReviewWidgetComponent {
   readonly review = input<AiGameReviewResponse | null>(null);
+  readonly selectedPlyNumber = input<number | null>(null);
+  readonly moveSelected = output<number>();
 
   protected warningLabel(warning: string): string {
     if (warning === 'INCOMPLETE_MOVE_DATA') return 'Only part of this long game was sent for review.';
