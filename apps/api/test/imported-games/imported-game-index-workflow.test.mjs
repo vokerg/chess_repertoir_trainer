@@ -107,6 +107,27 @@ try {
   }
 
   {
+    const { user, account } = await createUserWithAccount('chess960');
+    const game = await createImportedGame(user.id, account.id, {
+      speedCategory: 'blitz',
+      variant: 'chess960',
+    });
+
+    const result = await ImportedGameIndexWorkflowService.indexGame(user.id, game.id);
+    const updated = await prisma.importedGame.findUniqueOrThrow({
+      where: { id: game.id },
+      include: { plies: true },
+    });
+
+    assert.equal(result.eligible, false);
+    assert.equal(result.skippedReason, 'UNSUPPORTED_VARIANT');
+    assert.equal(updated.plyIndexedAt, null);
+    assert.equal(updated.openingEco, null);
+    assert.equal(updated.openingName, null);
+    assert.equal(updated.plies.length, 0);
+  }
+
+  {
     const { user, account } = await createUserWithAccount('provider-opening');
     const game = await createImportedGame(user.id, account.id, {
       speedCategory: 'rapid',

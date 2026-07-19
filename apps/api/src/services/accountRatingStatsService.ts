@@ -11,6 +11,10 @@ import {
   PerformanceGame,
   buildAccountPerformanceStatsData,
 } from './accountPerformanceStatsService';
+import {
+  STANDARD_IMPORTED_GAME_VARIANTS,
+  isStandardImportedGameVariant,
+} from '../modules/imported-games/imported-game-workflow-eligibility';
 
 export type RatingStatsSpeed = RatingSpeed;
 export type DashboardPeriodKey = '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
@@ -89,6 +93,7 @@ type ImportedRatingGame = {
   id: number;
   endedAt: Date | null;
   speedCategory: string | null;
+  variant: string | null;
   userColor: string | null;
   whiteRating: number | null;
   blackRating: number | null;
@@ -149,7 +154,11 @@ function buildRatingStatsProjection(games: ImportedRatingGame[]): { gamesCount: 
   }
 
   for (const game of games) {
-    if (!game.endedAt || !isRatingSpeed(game.speedCategory)) continue;
+    if (
+      !game.endedAt
+      || !isRatingSpeed(game.speedCategory)
+      || !isStandardImportedGameVariant(game.variant)
+    ) continue;
 
     const rating = getUserRating(game);
     if (rating === null) continue;
@@ -322,12 +331,17 @@ export const AccountRatingStatsService = {
         accountId,
         endedAt: { not: null },
         speedCategory: { in: [...SPEEDS] },
+        OR: [
+          { variant: null },
+          { variant: { in: [...STANDARD_IMPORTED_GAME_VARIANTS] } },
+        ],
         userColor: { in: ['WHITE', 'BLACK'] },
       },
       select: {
         id: true,
         endedAt: true,
         speedCategory: true,
+        variant: true,
         userColor: true,
         whiteRating: true,
         blackRating: true,

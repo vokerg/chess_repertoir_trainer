@@ -1,5 +1,9 @@
 import prisma from '../prisma';
-import { isStandardImportedGameSpeed } from '../modules/imported-games/imported-game-workflow-eligibility';
+import {
+  isStandardImportedGameSpeed,
+  isStandardImportedGameVariant,
+  normalizeImportedGameVariant,
+} from '../modules/imported-games/imported-game-workflow-eligibility';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const LICHESS_GAMES_URL = 'https://lichess.org/api/games/user';
@@ -151,7 +155,7 @@ function normalizeGame(game: LichessGame, account: { id: number; userId: number;
     providerUrl: game.url ?? getPgnHeader(game.pgn, 'Site') ?? buildLichessUrl(game.id),
     pgn: game.pgn ?? null,
     rated: game.rated ?? null,
-    variant: game.variant ?? getPgnHeader(game.pgn, 'Variant'),
+    variant: normalizeImportedGameVariant(game.variant ?? getPgnHeader(game.pgn, 'Variant')),
     speedCategory: game.speed ?? game.perf ?? null,
     timeControlRaw: timeControl.raw,
     timeControlInitial: timeControl.initial,
@@ -252,6 +256,13 @@ export const LichessImportService = {
         gamesSeen += 1;
         try {
           const data = normalizeGame(game, account);
+          if (!isStandardImportedGameVariant(data.variant)) {
+            gamesSkipped += 1;
+            if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
+              maxEndedAt = data.endedAt;
+            }
+            continue;
+          }
           const existing = await prisma.importedGame.findUnique({
             where: {
               accountId_providerGameId: {

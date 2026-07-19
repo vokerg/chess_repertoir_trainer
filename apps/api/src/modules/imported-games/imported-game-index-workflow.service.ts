@@ -1,9 +1,13 @@
 import prisma from '../../prisma';
 import { GameOpeningAssignmentService, OpeningAssignmentResult } from './game-opening-assignment.service';
-import { isStandardImportedGameSpeed, normalizeSpeedCategory } from './imported-game-workflow-eligibility';
+import {
+  isStandardImportedGameSpeed,
+  isStandardImportedGameVariant,
+  normalizeSpeedCategory,
+} from './imported-game-workflow-eligibility';
 import { ImportedGamePlyIndexResult, ImportedGamePlyIndexService } from './ply-index.service';
 
-export type ImportedGameIndexWorkflowSkipReason = 'UNSUPPORTED_SPEED_CATEGORY';
+export type ImportedGameIndexWorkflowSkipReason = 'UNSUPPORTED_SPEED_CATEGORY' | 'UNSUPPORTED_VARIANT';
 
 export interface ImportedGameIndexWorkflowResult {
   importedGameId: number;
@@ -20,6 +24,7 @@ async function getWorkflowGame(userId: number, importedGameId: number) {
     select: {
       id: true,
       speedCategory: true,
+      variant: true,
     },
   });
 }
@@ -40,6 +45,14 @@ export const ImportedGameIndexWorkflowService = {
         eligible: false,
         speedCategory,
         skippedReason: 'UNSUPPORTED_SPEED_CATEGORY',
+      };
+    }
+    if (!isStandardImportedGameVariant(game.variant)) {
+      return {
+        importedGameId: game.id,
+        eligible: false,
+        speedCategory,
+        skippedReason: 'UNSUPPORTED_VARIANT',
       };
     }
 
