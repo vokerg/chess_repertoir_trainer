@@ -19,6 +19,7 @@ describe('GameDetailPageComponent', () => {
       'deleteSelectedSubtree',
       'handleKeyboard',
       'initialize',
+      'selectNode',
     ]);
     aiReviewStore = jasmine.createSpyObj<GameAiReviewStore>('GameAiReviewStore', ['reset']);
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
@@ -70,9 +71,19 @@ describe('GameDetailPageComponent', () => {
     expect(store.deleteSelectedSubtree).toHaveBeenCalled();
   });
 
-  function page(): { confirmDeleteSelectedSubtree(): Promise<void> } {
+  it('delegates an AI turning point to the existing game tree selection', () => {
+    page().selectAiReviewMove(37);
+
+    expect(store.selectNode).toHaveBeenCalledOnceWith(37);
+  });
+
+  function page(): {
+    confirmDeleteSelectedSubtree(): Promise<void>;
+    selectAiReviewMove(plyNumber: number): void;
+  } {
     return fixture.componentInstance as unknown as {
       confirmDeleteSelectedSubtree(): Promise<void>;
+      selectAiReviewMove(plyNumber: number): void;
     };
   }
 });
