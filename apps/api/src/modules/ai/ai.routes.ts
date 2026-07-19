@@ -1,3 +1,4 @@
+import type { FastifyReply } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
@@ -90,7 +91,7 @@ const aiModule: FastifyPluginAsyncZod = async (app) => {
   });
 };
 
-function sendAiError(reply: any, error: unknown) {
+function sendAiError(reply: FastifyReply, error: unknown) {
   const mapped = asAiFeatureError(error);
   return reply.code(mapped.statusCode).send({
     code: mapped.code,
