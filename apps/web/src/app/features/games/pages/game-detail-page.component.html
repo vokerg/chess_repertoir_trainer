@@ -22,6 +22,11 @@
       [analysisSummary]="store.analysisSummaryLabel()"
     />
 
+    <app-game-ai-review-widget
+      [gameId]="game.id"
+      [analysisReady]="store.analysisStatusLabel() === 'Saved'"
+    />
+
     @if (store.tree(); as tree) {
       <app-game-workbench
         [tree]="tree"
