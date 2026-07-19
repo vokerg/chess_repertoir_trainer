@@ -26,15 +26,17 @@ export const performanceWdlSchema = z.object({
 });
 
 export const performanceReportTypeSchema = z.enum([
+  'LICHESS_BULLET',
   'LICHESS_BLITZ',
   'LICHESS_RAPID',
+  'CHESS_COM_BULLET',
   'CHESS_COM_BLITZ',
   'CHESS_COM_RAPID',
 ]);
 
 export const performanceByRatingRowSchema = z.object({
   provider: z.enum(['LICHESS', 'CHESS_COM']),
-  speed: z.enum(['blitz', 'rapid']),
+  speed: z.enum(['bullet', 'blitz', 'rapid']),
   type: performanceReportTypeSchema,
   ratingFrom: z.number().int().nonnegative(),
   ratingTo: z.number().int().nonnegative(),
