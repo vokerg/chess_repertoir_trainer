@@ -12,6 +12,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./ai": {
+      "types": "./dist/ai/index.d.ts",
+      "default": "./dist/ai/index.js"
+    },
     "./imported-games": {
       "types": "./dist/imported-games/index.d.ts",
       "default": "./dist/imported-games/index.js"
