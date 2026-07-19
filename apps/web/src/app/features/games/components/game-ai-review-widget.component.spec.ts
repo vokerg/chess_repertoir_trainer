@@ -47,7 +47,8 @@ describe('GameAiReviewWidgetComponent', () => {
     fixture.componentInstance.review.set(reviewResponse());
     fixture.detectChanges();
 
-    const turningPoint = fixture.nativeElement.querySelector<HTMLButtonElement>('.ai-review-turning-point');
+    const root = fixture.nativeElement as HTMLElement;
+    const turningPoint = root.querySelector<HTMLButtonElement>('.ai-review-turning-point');
     expect(turningPoint).not.toBeNull();
     turningPoint?.click();
     expect(fixture.componentInstance.selectedMove()).toBe(3);
