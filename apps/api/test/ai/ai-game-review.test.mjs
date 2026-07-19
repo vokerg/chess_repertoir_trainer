@@ -121,7 +121,9 @@ const game = {
 };
 
 const run = {
+  id: 19,
   status: 'COMPLETED',
+  completedAt: '2026-07-19T10:05:00.000Z',
   whiteAccuracy: 88,
   blackAccuracy: 79,
   whiteAverageCentipawnLoss: 22,
@@ -142,11 +144,17 @@ const run = {
   assert.equal(built.context.moves[0].before, undefined, 'FEN is not included in provider context');
 }
 
+let savedReviewInput = null;
+let generatedResponse;
 {
   const service = createGameReviewService({
     loadConfig: () => config,
     getGame: async () => game,
     getAnalysis: async () => ({ run }),
+    getStoredReview: async () => null,
+    saveStoredReview: async (input) => {
+      savedReviewInput = input;
+    },
     createClient: () => ({
       generateJson: async () => ({
         value: {
@@ -165,11 +173,34 @@ const run = {
     now: () => new Date('2026-07-19T14:00:00.000Z'),
   });
 
-  const response = await service.generate(1, 7);
-  assert.equal(response.review.turningPoints[0].classification, 'MISTAKE');
-  assert.equal(response.review.turningPoints[0].scoreLossCp, 95);
-  assert.equal(response.review.turningPoints[0].bestMoveSan, 'Bc4');
-  assert.equal(response.generatedAt, '2026-07-19T14:00:00.000Z');
+  generatedResponse = await service.generate(1, 7);
+  assert.equal(generatedResponse.review.turningPoints[0].classification, 'MISTAKE');
+  assert.equal(generatedResponse.review.turningPoints[0].scoreLossCp, 95);
+  assert.equal(generatedResponse.review.turningPoints[0].bestMoveSan, 'Bc4');
+  assert.equal(generatedResponse.generatedAt, '2026-07-19T14:00:00.000Z');
+  assert.equal(savedReviewInput.analysisRunId, 19);
+  assert.equal(savedReviewInput.content, generatedResponse);
+  assert.equal(savedReviewInput.inputHash.length, 64);
+  assert.equal(savedReviewInput.schemaVersion, 1);
+  assert.equal(savedReviewInput.promptVersion, 1);
+}
+
+{
+  const service = createGameReviewService({
+    loadConfig: () => config,
+    getGame: async () => game,
+    getStoredReview: async () => ({ content: generatedResponse }),
+  });
+  assert.deepEqual(await service.getStored(1, 7), { review: generatedResponse });
+}
+
+{
+  const service = createGameReviewService({
+    loadConfig: () => config,
+    getGame: async () => game,
+    getStoredReview: async () => null,
+  });
+  assert.deepEqual(await service.getStored(1, 7), { review: null });
 }
 
 function move(plyNumber, side, playedMoveUci, classification, scoreLossCp, bestMoveUci) {
