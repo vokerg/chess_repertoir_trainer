@@ -1,0 +1,101 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.ai-review-muted,
+.ai-review-content p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ai-review-muted,
+.ai-review-detail,
+.ai-review-move-heading span,
+.ai-review-warnings {
+  color: var(--muted);
+}
+
+.ai-review-content,
+.ai-review-section,
+.ai-review-turning-points {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ai-review-lead {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ai-review-lead h4,
+.ai-review-section h5 {
+  margin: 0;
+}
+
+.ai-review-lead h4 {
+  font-size: 1.05rem;
+}
+
+.ai-review-section h5 {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ai-review-turning-point {
+  display: grid;
+  gap: 0.3rem;
+  padding-block: 0.6rem;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+}
+
+.ai-review-move-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ai-review-move-heading span,
+.ai-review-detail,
+.ai-review-warnings {
+  font-size: 0.82rem;
+}
+
+.ai-review-columns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ai-review-section ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.ai-review-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ai-review-themes span {
+  padding: 0.18rem 0.45rem;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.ai-review-warnings {
+  display: grid;
+  gap: 0.2rem;
+}
+
+@media (max-width: 760px) {
+  .ai-review-columns {
+    grid-template-columns: 1fr;
+  }
+}
