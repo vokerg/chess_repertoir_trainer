@@ -1,7 +1,10 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
   aiGameReviewResponseSchema,
+  aiGameReviewStateResponseSchema,
   type AiGameReviewResponse,
+  type AiGameReviewStateResponse,
 } from '@chess-trainer/contracts/ai';
 import { ImportedGamesService } from '../../imported-games/imported-games.service';
 import { GameAnalysisService } from '../../analysis/game-analysis.service';
@@ -13,6 +16,13 @@ import {
   type GameReviewAnalysisRun,
 } from './game-review-context';
 import { GAME_REVIEW_SYSTEM_PROMPT } from './game-review.prompt';
+import {
+  findStoredGameReview,
+  upsertStoredGameReview,
+} from './game-review.repository.prisma';
+
+const GAME_REVIEW_SCHEMA_VERSION = 1;
+const GAME_REVIEW_PROMPT_VERSION = 1;
 
 const modelGameReviewSchema = z.object({
   headline: z.string().min(1).max(160),
@@ -38,6 +48,19 @@ interface ReviewLogger {
 export interface GameReviewDependencies {
   getGame(userId: number, gameId: number): Promise<GameDetail | null>;
   getAnalysis(userId: number, gameId: number): Promise<{ run: GameReviewAnalysisRun }>;
+  getStoredReview(userId: number, gameId: number): Promise<{ content: unknown } | null>;
+  saveStoredReview(input: {
+    userId: number;
+    importedGameId: number;
+    analysisRunId: number;
+    inputHash: string;
+    schemaVersion: number;
+    promptVersion: number;
+    provider: string;
+    model: string;
+    content: AiGameReviewResponse;
+    generatedAt: Date;
+  }): Promise<unknown>;
   loadConfig(): AiConfig;
   createClient(config: AiConfig, logger?: ReviewLogger): OpenAiCompatibleLlmClient;
   now(): Date;
@@ -46,6 +69,8 @@ export interface GameReviewDependencies {
 const defaultDependencies: GameReviewDependencies = {
   getGame: (userId, gameId) => ImportedGamesService.get(userId, gameId),
   getAnalysis: (userId, gameId) => GameAnalysisService.getImportedGameAnalysis(userId, gameId),
+  getStoredReview: findStoredGameReview,
+  saveStoredReview: upsertStoredGameReview,
   loadConfig: loadAiConfig,
   createClient: (config, logger) => new OpenAiCompatibleLlmClient(config, fetch, logger),
   now: () => new Date(),
@@ -57,15 +82,37 @@ export function createGameReviewService(
   const deps = { ...defaultDependencies, ...dependencies };
 
   return {
+    getStored: async (userId: number, gameId: number): Promise<AiGameReviewStateResponse> => {
+      const config = deps.loadConfig();
+      ensureFeatureEnabled(config);
+
+      const game = await deps.getGame(userId, gameId);
+      if (!game) {
+        throw new AiFeatureError(404, 'IMPORTED_GAME_NOT_FOUND', 'Imported game not found.');
+      }
+
+      let stored: { content: unknown } | null;
+      try {
+        stored = await deps.getStoredReview(userId, gameId);
+      } catch {
+        throw new AiFeatureError(500, 'AI_REVIEW_STORAGE_ERROR', 'Could not load the saved AI game review.');
+      }
+      if (!stored) return aiGameReviewStateResponseSchema.parse({ review: null });
+
+      const parsed = aiGameReviewResponseSchema.safeParse(stored.content);
+      if (!parsed.success) {
+        throw new AiFeatureError(500, 'AI_STORED_RESPONSE_INVALID', 'The saved AI game review is invalid.');
+      }
+      return aiGameReviewStateResponseSchema.parse({ review: parsed.data });
+    },
+
     generate: async (
       userId: number,
       gameId: number,
       logger?: ReviewLogger,
     ): Promise<AiGameReviewResponse> => {
       const config = deps.loadConfig();
-      if (!config.enabled || !config.gameReviewEnabled) {
-        throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'AI game review is disabled.');
-      }
+      ensureFeatureEnabled(config);
       if (!config.configured) {
         throw new AiFeatureError(503, 'AI_PROVIDER_UNAVAILABLE', 'AI provider is not configured.');
       }
@@ -117,10 +164,11 @@ export function createGameReviewService(
         };
       });
 
-      return aiGameReviewResponseSchema.parse({
+      const generatedAt = deps.now();
+      const response = aiGameReviewResponseSchema.parse({
         kind: 'GAME_REVIEW',
-        schemaVersion: 1,
-        generatedAt: deps.now().toISOString(),
+        schemaVersion: GAME_REVIEW_SCHEMA_VERSION,
+        generatedAt: generatedAt.toISOString(),
         review: {
           headline: generated.value.headline,
           overview: generated.value.overview,
@@ -133,8 +181,53 @@ export function createGameReviewService(
         },
         warnings: built.warnings,
       });
+
+      try {
+        await deps.saveStoredReview({
+          userId,
+          importedGameId: gameId,
+          analysisRunId: analysis.run.id,
+          inputHash: reviewInputHash({
+            gameUpdatedAt: game.updatedAt,
+            analysisRunId: analysis.run.id,
+            analysisCompletedAt: analysis.run.completedAt,
+            model: config.model,
+            context: built.context,
+          }),
+          schemaVersion: GAME_REVIEW_SCHEMA_VERSION,
+          promptVersion: GAME_REVIEW_PROMPT_VERSION,
+          provider: config.provider,
+          model: config.model,
+          content: response,
+          generatedAt,
+        });
+      } catch {
+        throw new AiFeatureError(500, 'AI_REVIEW_STORAGE_ERROR', 'The AI review was generated but could not be saved.');
+      }
+
+      return response;
     },
   };
+}
+
+function ensureFeatureEnabled(config: AiConfig): void {
+  if (!config.enabled || !config.gameReviewEnabled) {
+    throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'AI game review is disabled.');
+  }
+}
+
+function reviewInputHash(input: {
+  gameUpdatedAt: string;
+  analysisRunId: number;
+  analysisCompletedAt: string | null;
+  model: string;
+  context: Record<string, unknown>;
+}): string {
+  return createHash('sha256').update(JSON.stringify({
+    schemaVersion: GAME_REVIEW_SCHEMA_VERSION,
+    promptVersion: GAME_REVIEW_PROMPT_VERSION,
+    ...input,
+  })).digest('hex');
 }
 
 export const GameReviewService = createGameReviewService();
