@@ -98,8 +98,10 @@ export class PerformanceByRatingExperimentComponent implements OnInit {
   }
 
   protected typeLabel(type: PerformanceReportType): string {
+    if (type === 'LICHESS_BULLET') return 'Lichess Bullet';
     if (type === 'LICHESS_BLITZ') return 'Lichess Blitz';
     if (type === 'LICHESS_RAPID') return 'Lichess Rapid';
+    if (type === 'CHESS_COM_BULLET') return 'Chess.com Bullet';
     if (type === 'CHESS_COM_BLITZ') return 'Chess.com Blitz';
     return 'Chess.com Rapid';
   }
@@ -134,5 +136,4 @@ export class PerformanceByRatingExperimentComponent implements OnInit {
   protected visibleCount(group: ColumnGroup): number {
     return group.columns.filter((column) => this.store.isColumnVisible(column.id)).length;
   }
-
 }
