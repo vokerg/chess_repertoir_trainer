@@ -1,5 +1,7 @@
 # Hobby deployment guide
 
+This document keeps the existing Neon/Render/Vercel deployment path intact. A manual single-image Docker/Oracle-style VM deployment is available as a parallel alternative in [Manual Docker deployment](docker-manual-deployment.md); it does not replace or automatically deploy this hosted setup.
+
 The hosted web/API stack is prepared for a split hobby deployment:
 
 - Neon Postgres for the API database;
@@ -10,7 +12,7 @@ The hosted web/API stack is prepared for a split hobby deployment:
 
 The native Expo client is built from `apps/mobile` and connects to the same deployed API, but app-store distribution is not automated by the current repository.
 
-No Docker, Kubernetes, Helm, Terraform, or deployment-from-CI is required.
+The Render/Vercel path does not require Docker, Kubernetes, Helm, Terraform, or deployment from CI.
 
 ## Prerequisites
 

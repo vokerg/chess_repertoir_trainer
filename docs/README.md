@@ -18,6 +18,7 @@
 - [API contracts](api-contracts.md): shared HTTP schema ownership.
 - [OpenAPI](openapi.md): generated documentation rules.
 - [Deployment](deployment.md): environment and hosting setup.
+- [Manual Docker deployment](docker-manual-deployment.md): local Compose testing, manual multi-platform GHCR publishing, and VM update/rollback operations.
 - [Mobile development](mobile/development.md): Expo setup, device networking, validation, and release gates.
 - [MCP](mcp.md): backend MCP transport.
 - [Project working guides](skills/README.md): detailed human-readable change guides.
