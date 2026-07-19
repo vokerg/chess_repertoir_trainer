@@ -96,6 +96,26 @@ try {
       endedAt: '2026-07-14T23:59:59.000Z',
     },
     {
+      accountId: lichessAccount.id,
+      provider: 'LICHESS',
+      speedCategory: 'bullet',
+      userColor: 'WHITE',
+      resultForUser: 'WIN',
+      opponentRating: 1699,
+      tagCodes: [],
+      endedAt: '2026-07-07T12:00:00.000Z',
+    },
+    {
+      accountId: chessComAccount.id,
+      provider: 'CHESS_COM',
+      speedCategory: 'bullet',
+      userColor: 'BLACK',
+      resultForUser: 'LOSS',
+      opponentRating: 1799,
+      tagCodes: [],
+      endedAt: '2026-07-08T12:00:00.000Z',
+    },
+    {
       accountId: chessComAccount.id,
       provider: 'CHESS_COM',
       speedCategory: 'rapid',
@@ -164,15 +184,24 @@ try {
     assert.equal(response.statusCode, 200);
     const body = response.json();
     assert.deepEqual(body.range, { from: '2026-07-01', to: '2026-07-14' });
-    assert.equal(body.items.length, 5);
+    assert.equal(body.items.length, 7);
     assert.deepEqual(
       body.items.map((item) => item.ratingFrom),
-      [1500, 1300, 1200, 1200, 1100],
+      [1700, 1600, 1500, 1300, 1200, 1200, 1100],
       'rating bands are ordered descending before report type',
     );
 
     const byKey = new Map(body.items.map((item) => [`${item.type}:${item.ratingFrom}`, item]));
     assert.equal(byKey.has('LICHESS_RAPID:500'), false, 'minimum rating is applied before aggregation');
+
+    const chessComBullet = byKey.get('CHESS_COM_BULLET:1700');
+    assert.deepEqual(chessComBullet.wdl, { wins: 0, draws: 0, losses: 1 });
+    assert.equal(chessComBullet.speed, 'bullet');
+
+    const lichessBullet = byKey.get('LICHESS_BULLET:1600');
+    assert.deepEqual(lichessBullet.wdl, { wins: 1, draws: 0, losses: 0 });
+    assert.equal(lichessBullet.speed, 'bullet');
+
     const lichessBlitz1200 = byKey.get('LICHESS_BLITZ:1200');
     assert.deepEqual(lichessBlitz1200.wdl, { wins: 1, draws: 0, losses: 0 });
     assert.deepEqual(lichessBlitz1200.whiteWdl, { wins: 1, draws: 0, losses: 0 });
