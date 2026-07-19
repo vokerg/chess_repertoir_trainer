@@ -44,10 +44,34 @@
 }
 
 .ai-review-turning-point {
+  appearance: none;
   display: grid;
+  width: 100%;
   gap: 0.3rem;
-  padding-block: 0.6rem;
+  padding: 0.65rem 0.55rem;
+  border: 0;
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 0.35rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.ai-review-turning-point:hover {
+  background: color-mix(in srgb, var(--accent, #d97706) 7%, transparent);
+}
+
+.ai-review-turning-point:focus-visible {
+  outline: 2px solid var(--accent, #d97706);
+  outline-offset: 2px;
+}
+
+.ai-review-turning-point.active {
+  background: color-mix(in srgb, var(--accent, #d97706) 10%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent, #d97706);
 }
 
 .ai-review-move-heading {
@@ -55,6 +79,10 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.ai-review-explanation {
+  line-height: 1.5;
 }
 
 .ai-review-move-heading span,
