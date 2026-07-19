@@ -49,9 +49,12 @@ jobs:
         if: always()
         continue-on-error: true
         run: npm run test --workspace=apps/web
-      - name: Diagnostic gate
+      - name: Contract outcome
         if: always()
-        run: |
-          test "${{ steps.contracts.outcome }}" = success
-          test "${{ steps.api.outcome }}" = success
-          test "${{ steps.web.outcome }}" = success
+        run: test "${{ steps.contracts.outcome }}" = success
+      - name: API outcome
+        if: always()
+        run: test "${{ steps.api.outcome }}" = success
+      - name: Web outcome
+        if: always()
+        run: test "${{ steps.web.outcome }}" = success
