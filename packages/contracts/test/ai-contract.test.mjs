@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   aiCapabilitiesResponseSchema,
   aiGameReviewResponseSchema,
+  aiGameReviewStateResponseSchema,
 } from '../dist/ai/index.js';
 
 assert.deepEqual(aiCapabilitiesResponseSchema.parse({ widgets: { gameReview: true } }), {
@@ -35,6 +36,8 @@ const review = {
 };
 
 assert.deepEqual(aiGameReviewResponseSchema.parse(review), review);
+assert.deepEqual(aiGameReviewStateResponseSchema.parse({ review }), { review });
+assert.deepEqual(aiGameReviewStateResponseSchema.parse({ review: null }), { review: null });
 assert.equal(
   aiGameReviewResponseSchema.safeParse({
     ...review,
