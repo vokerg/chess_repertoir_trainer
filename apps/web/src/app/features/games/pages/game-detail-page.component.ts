@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
+import { GameAiReviewWidgetComponent } from '../components/game-ai-review-widget.component';
 import { GameDetailHeaderComponent } from '../components/game-detail-header.component';
 import { GameSummaryComponent } from '../components/game-summary.component';
 import { GameWorkbenchComponent } from '../components/game-workbench.component';
@@ -20,6 +21,7 @@ import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-
   selector: 'app-game-detail-page',
   standalone: true,
   imports: [
+    GameAiReviewWidgetComponent,
     GameDetailHeaderComponent,
     GameSummaryComponent,
     GameWorkbenchComponent,
