@@ -1,21 +1,25 @@
 # AI widgets
 
-AI widgets are optional, on-demand product features backed by a server-side OpenAI-compatible provider. The first widget generates a coaching overview for one imported game. The subsystem is deliberately isolated so it can be removed without a database rollback or changes to Stockfish, tagging, imported-game processing, or the analysis workbench.
+AI widgets are optional, on-demand product features backed by a server-side OpenAI-compatible provider. The first widget generates a coaching overview for one imported game. The subsystem is deliberately isolated from Stockfish execution, tagging, imported-game processing, and the shared analysis workbench.
 
 ## Runtime boundaries
 
 ```text
-Angular game widget
+Angular game page
   -> GET /api/ai/capabilities
+  -> GET /api/imported-games/:gameId/ai-review
+       -> current persisted review or null
   -> POST /api/imported-games/:gameId/ai-review
        -> game-review context builder
        -> OpenAI-compatible JSON client
        -> DeepSeek chat completions
+       -> authoritative move reconciliation
+       -> persisted current review
 ```
 
-`apps/api/src/modules/ai` owns provider configuration, request execution, prompts, output validation, and AI-specific errors. Feature adapters under that module own subject-specific context and reconciliation. Game review reads existing imported-game and completed analysis application services; it does not call REST internally and does not run Stockfish.
+`apps/api/src/modules/ai` owns provider configuration, request execution, prompts, output validation, persistence, and AI-specific errors. Feature adapters under that module own subject-specific context and reconciliation. Game review reads existing imported-game and completed analysis application services; it does not call REST internally and does not run Stockfish.
 
-Angular owns only capability visibility, command state, and rendering. Provider keys, model names, prompts, and raw context never reach the browser.
+Angular owns capability visibility, loading/generation state, rendering, and interaction with the existing game workbench. Provider keys, model names, prompts, input hashes, and raw context never reach the browser.
 
 ## Feature flags
 
@@ -59,13 +63,25 @@ PGN is replayed server-side with `chess.js` to derive SAN. FEN strings, MultiPV 
 
 The model is instructed to reference only supplied ply numbers and to avoid invented evaluations, best moves, opening names, intentions, or psychological claims. After JSON validation, the service replaces move number, side, played SAN, best SAN, classification, and score loss with authoritative server values. An unknown model-supplied ply invalidates the response.
 
-## Response and storage
+## Response and persistence
 
-The wire response is versioned and validated by `@chess-trainer/contracts/ai`. Model-generated labels are called `themes`; they are not persisted deterministic game tags.
+The wire response is versioned and validated by `@chess-trainer/contracts/ai`. Model-generated labels are called `themes`; they are not deterministic game tags.
 
-Phase one does not persist provider requests, raw responses, or generated reviews. Reloading the page discards the review. This keeps the feature removable and avoids a migration before value and invalidation requirements are understood.
+`ImportedGameAiReview` stores one current review per imported game. Regeneration uses an upsert and replaces that current artifact rather than accumulating hidden history. The row is owned by the authenticated user and imported game and records:
 
-Persistence should be considered only after repeated use demonstrates value. A stored review must include an input hash covering the game revision, latest analysis run, tag codes, prompt version, response schema version, and relevant model configuration.
+- the analysis run used to generate the review;
+- response schema and prompt versions;
+- provider and model identifiers;
+- a SHA-256 input hash covering the game revision, analysis run, model, prompt/schema versions, and bounded provider context;
+- the validated review JSON and generation timestamp.
+
+Raw provider requests and raw provider responses are not stored. Deleting the imported game or user cascades to the review. Deleting the source analysis run leaves the review intact and clears its optional analysis-run reference.
+
+When a game page opens, Angular loads the persisted artifact. No provider request is made. Clicking **Regenerate AI overview** performs a new provider request and replaces the saved artifact only after validation and authoritative reconciliation succeed.
+
+## Board navigation
+
+Each AI turning point is a button backed by its authoritative `plyNumber`. The game tree uses the mainline ply number as the imported move node ID, so selecting a turning point delegates to `GameDetailStore.selectNode()` instead of creating a second board model. The page then scrolls the existing workbench into view. The selected turning point is visually marked while the board, move tree, engine, and keyboard navigation remain synchronized.
 
 ## Failure semantics
 
@@ -76,6 +92,9 @@ Known failures use explicit codes:
 - `GAME_ANALYSIS_REQUIRED` — 409
 - `GAME_PGN_REQUIRED` — 409
 - `AI_RATE_LIMITED` — 429
+- `AI_REVIEW_STORAGE_ERROR` — 500
+- `AI_STORED_RESPONSE_INVALID` — 500
+- `AI_INTERNAL_ERROR` — 500
 - `AI_PROVIDER_ERROR` — 502
 - `AI_INVALID_RESPONSE` — 502
 - `AI_PROVIDER_UNAVAILABLE` — 503
@@ -85,7 +104,7 @@ Network failures, timeouts, rate limits, provider 5xx responses, empty content, 
 
 ## Logging and privacy
 
-Normal operation does not log prompts, PGN, context JSON, raw model output, authorization headers, or API keys. Optional debug logging contains only the use case, duration, attempt number, status category, retry decision, and token usage.
+Normal operation does not log prompts, PGN, context JSON, raw model output, persisted review content, authorization headers, or API keys. Optional debug logging contains only the use case, duration, attempt number, status category, retry decision, and token usage.
 
 ## Removal procedure
 
@@ -93,7 +112,6 @@ To remove the experiment:
 
 1. Remove `apps/api/src/modules/ai` and its route registration.
 2. Remove `packages/contracts/src/ai` and the package export.
-3. Remove the Angular AI capability service, game-review data access/store/component, and the single game-page composition entry.
-4. Remove the AI environment variables and this document.
-
-No Prisma rollback or data cleanup is required in phase one.
+3. Remove the Angular AI capability service, game-review data access/store/component, and the game-page composition entries.
+4. Add a migration that drops `ImportedGameAiReview`, then remove the model and its relations from `schema.prisma`.
+5. Remove the AI environment variables and this document.
