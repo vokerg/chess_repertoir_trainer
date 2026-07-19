@@ -10,7 +10,7 @@
     "dev:worker": "ts-node-dev --respawn --transpile-only src/worker.ts",
     "prebuild": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts && prisma generate --schema prisma/schema.prisma",
     "build": "tsc -p tsconfig.json",
-    "prelint": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts",
+    "prelint": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts && prisma generate --schema prisma/schema.prisma",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
     "start:worker": "node dist/worker.js",
