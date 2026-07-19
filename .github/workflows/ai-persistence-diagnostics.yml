@@ -1,0 +1,70 @@
+name: AI persistence diagnostics
+
+on:
+  pull_request:
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chess_trainer_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d chess_trainer_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/chess_trainer_ci
+      WEB_API_BASE_URL: /api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Apply database migrations
+        run: npm run db:migrate --workspace=apps/api
+      - name: AI contract test
+        id: contracts
+        continue-on-error: true
+        run: node packages/contracts/test/ai-contract.test.mjs
+      - name: AI API service test
+        id: api_service
+        if: always()
+        continue-on-error: true
+        run: node apps/api/test/ai/ai-game-review.test.mjs
+      - name: AI persistence test
+        id: persistence
+        if: always()
+        continue-on-error: true
+        run: node apps/api/test/ai/ai-game-review-persistence.test.mjs
+      - name: AI Angular tests
+        id: web
+        if: always()
+        continue-on-error: true
+        run: npm run test --workspace=apps/web -- --include='src/app/features/games/components/game-ai-review-widget.component.spec.ts' --include='src/app/features/games/state/game-ai-review.store.spec.ts' --include='src/app/features/games/pages/game-detail-page.component.spec.ts'
+      - name: Contract outcome
+        if: always()
+        run: test "${{ steps.contracts.outcome }}" = success
+      - name: API service outcome
+        if: always()
+        run: test "${{ steps.api_service.outcome }}" = success
+      - name: Persistence outcome
+        if: always()
+        run: test "${{ steps.persistence.outcome }}" = success
+      - name: Web outcome
+        if: always()
+        run: test "${{ steps.web.outcome }}" = success
