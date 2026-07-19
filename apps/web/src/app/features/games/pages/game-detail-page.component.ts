@@ -2,9 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  effect,
+  ElementRef,
   HostListener,
   inject,
   OnInit,
+  signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
@@ -39,6 +43,8 @@ export class GameDetailPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly capabilities = inject(AiCapabilitiesService);
+  private readonly currentGameId = signal<number | null>(null);
+  private readonly workbenchAnchor = viewChild<ElementRef<HTMLElement>>('gameWorkbench');
   protected readonly store = inject(GameDetailStore);
   protected readonly aiReviewStore = inject(GameAiReviewStore);
 
@@ -46,6 +52,14 @@ export class GameDetailPageComponent implements OnInit {
     this.capabilities.getCapabilities().pipe(map((response) => response.widgets.gameReview)),
     { initialValue: false },
   );
+
+  constructor() {
+    effect(() => {
+      const gameId = this.currentGameId();
+      if (!gameId || !this.aiReviewAvailable()) return;
+      void this.aiReviewStore.load(gameId);
+    });
+  }
 
   ngOnInit(): void {
     this.route.paramMap
@@ -56,6 +70,7 @@ export class GameDetailPageComponent implements OnInit {
       )
       .subscribe((gameId) => {
         this.aiReviewStore.reset();
+        this.currentGameId.set(gameId);
         this.store.initialize(gameId);
       });
   }
@@ -84,5 +99,15 @@ export class GameDetailPageComponent implements OnInit {
     const game = this.store.game();
     if (!game || this.store.analysisStatusLabel() !== 'Saved') return;
     void this.aiReviewStore.generate(game.id);
+  }
+
+  protected selectAiReviewMove(plyNumber: number): void {
+    this.store.selectNode(plyNumber);
+    queueMicrotask(() => {
+      this.workbenchAnchor()?.nativeElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
   }
 }
