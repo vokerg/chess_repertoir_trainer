@@ -21,6 +21,7 @@ export class GameDetailHeaderComponent {
   readonly fullRefreshing = input(false);
   readonly aiReviewAvailable = input(false);
   readonly aiReviewGenerated = input(false);
+  readonly aiReviewLoading = input(false);
   readonly aiReviewGenerating = input(false);
   readonly aiReviewDisabled = input(false);
   readonly fullRefresh = output<void>();
@@ -32,10 +33,12 @@ export class GameDetailHeaderComponent {
   }));
 
   protected readonly aiReviewAction = computed(() => ({
-    disabled: this.aiReviewDisabled() || this.aiReviewGenerating(),
-    label: this.aiReviewGenerating()
-      ? 'Generating AI overview...'
-      : this.aiReviewGenerated() ? 'Regenerate AI overview' : 'Generate AI overview',
+    disabled: this.aiReviewDisabled() || this.aiReviewLoading() || this.aiReviewGenerating(),
+    label: this.aiReviewLoading()
+      ? 'Loading saved AI overview...'
+      : this.aiReviewGenerating()
+        ? 'Generating AI overview...'
+        : this.aiReviewGenerated() ? 'Regenerate AI overview' : 'Generate AI overview',
   }));
 
   protected readonly providerLabel = providerLabel;
