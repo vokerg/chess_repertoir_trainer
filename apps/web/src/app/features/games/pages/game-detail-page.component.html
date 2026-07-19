@@ -5,6 +5,7 @@
     [fullRefreshing]="store.fullRefreshing()"
     [aiReviewAvailable]="aiReviewAvailable()"
     [aiReviewGenerated]="aiReviewStore.review() !== null"
+    [aiReviewLoading]="aiReviewStore.status() === 'LOADING'"
     [aiReviewGenerating]="aiReviewStore.status() === 'GENERATING'"
     [aiReviewDisabled]="store.analysisStatusLabel() !== 'Saved'"
     (fullRefresh)="store.fullRefreshGame()"
@@ -32,31 +33,35 @@
 
     <app-game-ai-review-widget
       [review]="aiReviewStore.review()"
+      [selectedPlyNumber]="store.selectedNode()?.node?.plyNumber ?? null"
+      (moveSelected)="selectAiReviewMove($event)"
     />
 
     @if (store.tree(); as tree) {
-      <app-game-workbench
-        [tree]="tree"
-        [selectedNodeId]="store.selectedNodeId()"
-        [currentFen]="store.currentFen()"
-        [side]="store.boardSide()"
-        [blackPerspective]="store.blackPerspective()"
-        [lastMove]="store.lastMove()"
-        [arrows]="store.analysisArrows()"
-        [boardPositionVersion]="store.boardPositionVersion()"
-        [analysis]="store.engineAnalysis()"
-        [savedScoreCpWhite]="store.savedScoreCpWhite()"
-        [canGoBackward]="store.canGoBackward()"
-        [canGoForward]="store.canGoForward()"
-        [deleteDisabled]="!store.canDeleteSelectedSubtree()"
-        (boardMove)="store.playBoardMove($event)"
-        (nodeSelected)="store.selectNode($event)"
-        (goStart)="store.goToStart()"
-        (goPrevious)="store.goToPrevious()"
-        (goNext)="store.goToNext()"
-        (goEnd)="store.goToEnd()"
-        (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
-      />
+      <div #gameWorkbench>
+        <app-game-workbench
+          [tree]="tree"
+          [selectedNodeId]="store.selectedNodeId()"
+          [currentFen]="store.currentFen()"
+          [side]="store.boardSide()"
+          [blackPerspective]="store.blackPerspective()"
+          [lastMove]="store.lastMove()"
+          [arrows]="store.analysisArrows()"
+          [boardPositionVersion]="store.boardPositionVersion()"
+          [analysis]="store.engineAnalysis()"
+          [savedScoreCpWhite]="store.savedScoreCpWhite()"
+          [canGoBackward]="store.canGoBackward()"
+          [canGoForward]="store.canGoForward()"
+          [deleteDisabled]="!store.canDeleteSelectedSubtree()"
+          (boardMove)="store.playBoardMove($event)"
+          (nodeSelected)="store.selectNode($event)"
+          (goStart)="store.goToStart()"
+          (goPrevious)="store.goToPrevious()"
+          (goNext)="store.goToNext()"
+          (goEnd)="store.goToEnd()"
+          (deleteSelectedSubtree)="confirmDeleteSelectedSubtree()"
+        />
+      </div>
     }
   }
 </section>
