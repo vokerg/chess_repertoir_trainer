@@ -6,6 +6,7 @@ import {
   aiGameReviewResponseSchema,
 } from '@chess-trainer/contracts/ai';
 import { requireAuth } from '../../auth/request-auth';
+import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { loadAiConfig, gameReviewAvailable } from './ai.config';
 import { asAiFeatureError } from './ai.errors';
 import { GameReviewService } from './game-review/game-review.service';
@@ -23,7 +24,7 @@ const aiModule: FastifyPluginAsyncZod = async (app) => {
       description: 'Returns provider-neutral AI widget availability for the authenticated client.',
       response: {
         200: aiCapabilitiesResponseSchema,
-        401: aiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
       },
     },
   }, async (request, reply) => {
@@ -41,7 +42,7 @@ const aiModule: FastifyPluginAsyncZod = async (app) => {
       params: gameIdParamsSchema,
       response: {
         200: aiGameReviewResponseSchema,
-        401: aiErrorResponseSchema,
+        401: unauthorizedResponseSchema,
         404: aiErrorResponseSchema,
         409: aiErrorResponseSchema,
         429: aiErrorResponseSchema,
