@@ -51,11 +51,21 @@ jobs:
         if: always()
         continue-on-error: true
         run: node apps/api/test/ai/ai-game-review-persistence.test.mjs
-      - name: AI Angular tests
-        id: web
+      - name: AI widget test
+        id: widget
         if: always()
         continue-on-error: true
-        run: npm run test --workspace=apps/web -- --include='src/app/features/games/components/game-ai-review-widget.component.spec.ts' --include='src/app/features/games/state/game-ai-review.store.spec.ts' --include='src/app/features/games/pages/game-detail-page.component.spec.ts'
+        run: npm run test --workspace=apps/web -- --include='src/app/features/games/components/game-ai-review-widget.component.spec.ts'
+      - name: AI store test
+        id: store
+        if: always()
+        continue-on-error: true
+        run: npm run test --workspace=apps/web -- --include='src/app/features/games/state/game-ai-review.store.spec.ts'
+      - name: AI page test
+        id: page
+        if: always()
+        continue-on-error: true
+        run: npm run test --workspace=apps/web -- --include='src/app/features/games/pages/game-detail-page.component.spec.ts'
       - name: Contract outcome
         if: always()
         run: test "${{ steps.contracts.outcome }}" = success
@@ -65,6 +75,12 @@ jobs:
       - name: Persistence outcome
         if: always()
         run: test "${{ steps.persistence.outcome }}" = success
-      - name: Web outcome
+      - name: Widget outcome
         if: always()
-        run: test "${{ steps.web.outcome }}" = success
+        run: test "${{ steps.widget.outcome }}" = success
+      - name: Store outcome
+        if: always()
+        run: test "${{ steps.store.outcome }}" = success
+      - name: Page outcome
+        if: always()
+        run: test "${{ steps.page.outcome }}" = success
