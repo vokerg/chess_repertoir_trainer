@@ -65,6 +65,7 @@ CHESS_COM_USER_AGENT="chess-repertoire-trainer/0.1 (+https://github.com/vokerg/c
 ## Current limitations
 
 - Import is synchronous, like the existing Lichess flow.
+- Only standard chess is persisted. Chess.com `chess` and Lichess `standard` games are accepted; Chess960 and other nonstandard variants are counted as skipped and never enter imported-game analysis or account rating projections.
 - First sync for very large accounts may take a while because all monthly archives must be fetched.
 - There is no per-request archive limit yet.
 - There is no Chess.com OAuth integration; only public finished games are imported.

@@ -1,5 +1,9 @@
 import prisma from '../../prisma';
-import { isStandardImportedGameSpeed, normalizeSpeedCategory } from './imported-game-workflow-eligibility';
+import {
+  isStandardImportedGameSpeed,
+  isStandardImportedGameVariant,
+  normalizeSpeedCategory,
+} from './imported-game-workflow-eligibility';
 
 export interface ImportedGameWorkflowCandidates {
   accountId: number;
@@ -19,6 +23,7 @@ export const ImportedGameWorkflowCandidatesService = {
       select: {
         id: true,
         speedCategory: true,
+        variant: true,
         plyIndexedAt: true,
         openingEco: true,
         openingName: true,
@@ -30,7 +35,8 @@ export const ImportedGameWorkflowCandidatesService = {
     });
 
     const eligibleGames = games.filter((game) =>
-      isStandardImportedGameSpeed(normalizeSpeedCategory(game.speedCategory)),
+      isStandardImportedGameSpeed(normalizeSpeedCategory(game.speedCategory))
+      && isStandardImportedGameVariant(game.variant),
     );
 
     return {

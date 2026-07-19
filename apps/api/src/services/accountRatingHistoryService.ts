@@ -1,5 +1,9 @@
 import prisma from '../prisma';
 import { ExternalProvider } from './externalAccountService';
+import {
+  STANDARD_IMPORTED_GAME_VARIANTS,
+  isStandardImportedGameVariant,
+} from '../modules/imported-games/imported-game-workflow-eligibility';
 
 export type RatingSpeed = 'bullet' | 'blitz' | 'rapid';
 
@@ -48,6 +52,7 @@ const SPEED_ORDER: readonly RatingSpeed[] = ['bullet', 'blitz', 'rapid'];
 export type RatingHistoryGame = {
   endedAt: Date | null;
   speedCategory: string | null;
+  variant?: string | null;
   userColor: string | null;
   whiteRating: number | null;
   blackRating: number | null;
@@ -90,7 +95,7 @@ export function buildAccountRatingHistoryData(
   const bucketsBySpeed = new Map<RatingSpeed, Map<string, RatingBucket>>();
 
   for (const game of games) {
-    if (!game.endedAt) continue;
+    if (!game.endedAt || !isStandardImportedGameVariant(game.variant)) continue;
     const speed = game.speedCategory?.toLowerCase();
     if (speed !== 'bullet' && speed !== 'blitz' && speed !== 'rapid') continue;
     if (!requestedSpeeds.has(speed)) continue;
@@ -171,10 +176,15 @@ export const AccountRatingHistoryService = {
         accountId: account.id,
         endedAt: buildEndedAtRange(query),
         userColor: { in: ['WHITE', 'BLACK'] },
+        OR: [
+          { variant: null },
+          { variant: { in: [...STANDARD_IMPORTED_GAME_VARIANTS] } },
+        ],
       },
       select: {
         endedAt: true,
         speedCategory: true,
+        variant: true,
         userColor: true,
         whiteRating: true,
         blackRating: true,

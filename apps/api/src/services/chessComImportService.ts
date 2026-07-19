@@ -1,5 +1,9 @@
 import prisma from '../prisma';
-import { isStandardImportedGameSpeed } from '../modules/imported-games/imported-game-workflow-eligibility';
+import {
+  isStandardImportedGameSpeed,
+  isStandardImportedGameVariant,
+  normalizeImportedGameVariant,
+} from '../modules/imported-games/imported-game-workflow-eligibility';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
@@ -203,7 +207,7 @@ function normalizeGame(game: ChessComGame, account: { id: number; userId: number
     providerUrl: buildChessComGameUrl(game),
     pgn: game.pgn ?? null,
     rated: game.rated ?? null,
-    variant: game.rules ?? getPgnHeader(game.pgn, 'Variant'),
+    variant: normalizeImportedGameVariant(game.rules ?? getPgnHeader(game.pgn, 'Variant')),
     speedCategory: game.time_class ?? null,
     timeControlRaw: timeControl.raw,
     timeControlInitial: timeControl.initial,
@@ -354,6 +358,13 @@ export const ChessComImportService = {
             const data = normalizeGame(game, account);
             if (syncSince && data.endedAt && data.endedAt < syncSince) {
               gamesSkipped += 1;
+              continue;
+            }
+            if (!isStandardImportedGameVariant(data.variant)) {
+              gamesSkipped += 1;
+              if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
+                maxEndedAt = data.endedAt;
+              }
               continue;
             }
 
