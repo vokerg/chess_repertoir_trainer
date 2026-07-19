@@ -9,11 +9,15 @@ import { GameAiReviewWidgetComponent } from './game-ai-review-widget.component';
   template: `
     <app-game-ai-review-widget
       [review]="review()"
+      [selectedPlyNumber]="selectedPlyNumber()"
+      (moveSelected)="selectedMove.set($event)"
     />
   `,
 })
 class TestHostComponent {
   readonly review = signal<AiGameReviewResponse | null>(null);
+  readonly selectedPlyNumber = signal<number | null>(null);
+  readonly selectedMove = signal<number | null>(null);
 }
 
 describe('GameAiReviewWidgetComponent', () => {
@@ -38,6 +42,22 @@ describe('GameAiReviewWidgetComponent', () => {
     expect(text(fixture)).toContain('Engine preference: Bc4');
   });
 
+  it('emits the turning point ply and marks the selected move', () => {
+    const fixture = createFixture();
+    fixture.componentInstance.review.set(reviewResponse());
+    fixture.detectChanges();
+
+    const turningPoint = fixture.nativeElement.querySelector<HTMLButtonElement>('.ai-review-turning-point');
+    expect(turningPoint).not.toBeNull();
+    turningPoint?.click();
+    expect(fixture.componentInstance.selectedMove()).toBe(3);
+
+    fixture.componentInstance.selectedPlyNumber.set(3);
+    fixture.detectChanges();
+    expect(turningPoint?.classList.contains('active')).toBeTrue();
+    expect(turningPoint?.getAttribute('aria-pressed')).toBe('true');
+  });
+
   function createFixture(): ComponentFixture<TestHostComponent> {
     const fixture = TestBed.createComponent(TestHostComponent);
     fixture.detectChanges();
@@ -47,7 +67,6 @@ describe('GameAiReviewWidgetComponent', () => {
   function text(fixture: ComponentFixture<TestHostComponent>): string {
     return (fixture.nativeElement as HTMLElement).textContent ?? '';
   }
-
 });
 
 function reviewResponse(): AiGameReviewResponse {
