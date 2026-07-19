@@ -35,6 +35,19 @@ describe('PerformanceByRatingStore', () => {
     }));
   });
 
+  it('disables bullet types by default while keeping blitz and rapid enabled', () => {
+    expect(store.isTypeEnabled('LICHESS_BULLET')).toBeFalse();
+    expect(store.isTypeEnabled('CHESS_COM_BULLET')).toBeFalse();
+    expect(store.isTypeEnabled('LICHESS_BLITZ')).toBeTrue();
+    expect(store.isTypeEnabled('LICHESS_RAPID')).toBeTrue();
+    expect(store.isTypeEnabled('CHESS_COM_BLITZ')).toBeTrue();
+    expect(store.isTypeEnabled('CHESS_COM_RAPID')).toBeTrue();
+
+    store.toggleType('LICHESS_BULLET');
+
+    expect(store.isTypeEnabled('LICHESS_BULLET')).toBeTrue();
+  });
+
   it('clamps the minimum rating to the contract range as an integer', () => {
     store.setMinRating('850.9');
     expect(store.minRating()).toBe(850);
