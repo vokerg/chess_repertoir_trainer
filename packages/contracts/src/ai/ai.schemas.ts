@@ -40,6 +40,10 @@ export const aiGameReviewResponseSchema = z.object({
   warnings: z.array(aiGameReviewWarningSchema),
 });
 
+export const aiGameReviewStateResponseSchema = z.object({
+  review: aiGameReviewResponseSchema.nullable(),
+});
+
 export const aiErrorResponseSchema = z.object({
   code: z.string().min(1),
   error: z.string().min(1),
@@ -47,5 +51,6 @@ export const aiErrorResponseSchema = z.object({
 
 export type AiCapabilitiesResponse = z.output<typeof aiCapabilitiesResponseSchema>;
 export type AiGameReviewResponse = z.output<typeof aiGameReviewResponseSchema>;
+export type AiGameReviewStateResponse = z.output<typeof aiGameReviewStateResponseSchema>;
 export type AiGameReviewTurningPoint = z.output<typeof aiGameReviewTurningPointSchema>;
 export type AiGameReviewWarning = z.output<typeof aiGameReviewWarningSchema>;
