@@ -11,6 +11,7 @@ tmp/
 # Environment files
 .env
 .env.local
+deploy/docker/stack.env
 
 # SQLite database files
 *.db
