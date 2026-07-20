@@ -8,6 +8,7 @@ import {
   inject,
   OnInit,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -57,7 +58,7 @@ export class GameDetailPageComponent implements OnInit {
     effect(() => {
       const gameId = this.currentGameId();
       if (!gameId || !this.aiReviewAvailable()) return;
-      void this.aiReviewStore.load(gameId);
+      untracked(() => void this.aiReviewStore.load(gameId));
     });
   }
 
