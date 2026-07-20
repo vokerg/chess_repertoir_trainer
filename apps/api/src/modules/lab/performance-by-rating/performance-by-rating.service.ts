@@ -60,8 +60,15 @@ function scorePercent(wins: number, draws: number, games: number): number | null
 }
 
 function reportType(provider: PerformanceProvider, speed: PerformanceSpeed): PerformanceReportType {
-  if (provider === 'LICHESS') return speed === 'blitz' ? 'LICHESS_BLITZ' : 'LICHESS_RAPID';
-  return speed === 'blitz' ? 'CHESS_COM_BLITZ' : 'CHESS_COM_RAPID';
+  if (provider === 'LICHESS') {
+    if (speed === 'bullet') return 'LICHESS_BULLET';
+    if (speed === 'blitz') return 'LICHESS_BLITZ';
+    return 'LICHESS_RAPID';
+  }
+
+  if (speed === 'bullet') return 'CHESS_COM_BULLET';
+  if (speed === 'blitz') return 'CHESS_COM_BLITZ';
+  return 'CHESS_COM_RAPID';
 }
 
 export async function getPerformanceByRating(

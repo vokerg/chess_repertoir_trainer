@@ -23,6 +23,15 @@ export type PerformanceColumnId =
 export type PerformanceColumnPreset = 'core' | 'stories' | 'all' | 'custom';
 
 export const PERFORMANCE_REPORT_TYPES: readonly PerformanceReportType[] = [
+  'LICHESS_BULLET',
+  'LICHESS_BLITZ',
+  'LICHESS_RAPID',
+  'CHESS_COM_BULLET',
+  'CHESS_COM_BLITZ',
+  'CHESS_COM_RAPID',
+];
+
+const DEFAULT_ENABLED_REPORT_TYPES: readonly PerformanceReportType[] = [
   'LICHESS_BLITZ',
   'LICHESS_RAPID',
   'CHESS_COM_BLITZ',
@@ -110,7 +119,7 @@ export class PerformanceByRatingStore {
   readonly to = signal(this.defaults.to);
   readonly minRating = signal(600);
   readonly items = signal<readonly PerformanceByRatingRow[]>([]);
-  readonly enabledTypes = signal<readonly PerformanceReportType[]>(PERFORMANCE_REPORT_TYPES);
+  readonly enabledTypes = signal<readonly PerformanceReportType[]>(DEFAULT_ENABLED_REPORT_TYPES);
   readonly visibleColumns = signal<readonly PerformanceColumnId[]>(CORE_COLUMNS);
   readonly loading = signal(false);
   readonly loaded = signal(false);

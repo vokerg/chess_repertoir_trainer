@@ -3,7 +3,7 @@ import prisma from '../../../prisma';
 import { GAME_TAG } from '../../imported-games/game-tags';
 
 export type PerformanceProvider = 'LICHESS' | 'CHESS_COM';
-export type PerformanceSpeed = 'blitz' | 'rapid';
+export type PerformanceSpeed = 'bullet' | 'blitz' | 'rapid';
 
 export interface PerformanceByRatingAggregateRow {
   provider: PerformanceProvider;
@@ -62,7 +62,7 @@ export async function findPerformanceByRatingRows(
         AND "endedAt" >= ${fromDate}
         AND "endedAt" < ${toExclusive}
         AND "provider" IN ('LICHESS', 'CHESS_COM')
-        AND lower(coalesce("speedCategory", '')) IN ('blitz', 'rapid')
+        AND lower(coalesce("speedCategory", '')) IN ('bullet', 'blitz', 'rapid')
         AND "userColor" IN ('WHITE', 'BLACK')
         AND "resultForUser" IN ('WIN', 'DRAW', 'LOSS')
     ), rated_games AS (
@@ -103,6 +103,6 @@ export async function findPerformanceByRatingRows(
     ORDER BY
       "ratingFrom" DESC,
       CASE "provider" WHEN 'LICHESS' THEN 0 ELSE 1 END,
-      CASE "speed" WHEN 'blitz' THEN 0 ELSE 1 END
+      CASE "speed" WHEN 'bullet' THEN 0 WHEN 'blitz' THEN 1 ELSE 2 END
   `);
 }
