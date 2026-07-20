@@ -19,11 +19,26 @@ export class GameDetailHeaderComponent {
   readonly game = input<ImportedGameDetail | null>(null);
   readonly title = input.required<string>();
   readonly fullRefreshing = input(false);
+  readonly aiReviewAvailable = input(false);
+  readonly aiReviewGenerated = input(false);
+  readonly aiReviewLoading = input(false);
+  readonly aiReviewGenerating = input(false);
+  readonly aiReviewDisabled = input(false);
   readonly fullRefresh = output<void>();
+  readonly generateAiReview = output<void>();
 
   protected readonly fullRefreshAction = computed(() => ({
     disabled: !this.game() || this.fullRefreshing(),
     label: this.fullRefreshing() ? 'Game workflow in background...' : 'Full refresh',
+  }));
+
+  protected readonly aiReviewAction = computed(() => ({
+    disabled: this.aiReviewDisabled() || this.aiReviewLoading() || this.aiReviewGenerating(),
+    label: this.aiReviewLoading()
+      ? 'Loading saved AI overview...'
+      : this.aiReviewGenerating()
+        ? 'Generating AI overview...'
+        : this.aiReviewGenerated() ? 'Regenerate AI overview' : 'Generate AI overview',
   }));
 
   protected readonly providerLabel = providerLabel;

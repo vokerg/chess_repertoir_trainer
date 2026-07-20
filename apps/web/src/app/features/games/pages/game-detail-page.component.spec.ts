@@ -1,14 +1,20 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
+import type { AiCapabilitiesResponse } from '@chess-trainer/contracts/ai';
+import { AiCapabilitiesService } from '../../../core/ai/ai-capabilities.service';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { GameDetailStore } from '../state/game-detail.store';
+import { GameAiReviewStore } from '../state/game-ai-review.store';
 import { GameDetailPageComponent } from './game-detail-page.component';
 
 describe('GameDetailPageComponent', () => {
   let fixture: ComponentFixture<GameDetailPageComponent>;
   let store: jasmine.SpyObj<GameDetailStore>;
+  let aiReviewStore: jasmine.SpyObj<GameAiReviewStore>;
   let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
+  let capabilities: BehaviorSubject<AiCapabilitiesResponse>;
 
   beforeEach(async () => {
     store = jasmine.createSpyObj<GameDetailStore>('GameDetailStore', [
@@ -16,8 +22,11 @@ describe('GameDetailPageComponent', () => {
       'deleteSelectedSubtree',
       'handleKeyboard',
       'initialize',
+      'selectNode',
     ]);
+    aiReviewStore = jasmine.createSpyObj<GameAiReviewStore>('GameAiReviewStore', ['load', 'reset']);
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
+    capabilities = new BehaviorSubject<AiCapabilitiesResponse>({ widgets: { gameReview: false } });
 
     await TestBed.configureTestingModule({
       imports: [GameDetailPageComponent],
@@ -27,12 +36,19 @@ describe('GameDetailPageComponent', () => {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ gameId: '1' })) },
         },
+        {
+          provide: AiCapabilitiesService,
+          useValue: { getCapabilities: () => capabilities.asObservable() },
+        },
       ],
     })
       .overrideComponent(GameDetailPageComponent, {
         set: {
           template: '',
-          providers: [{ provide: GameDetailStore, useValue: store }],
+          providers: [
+            { provide: GameDetailStore, useValue: store },
+            { provide: GameAiReviewStore, useValue: aiReviewStore },
+          ],
         },
       })
       .compileComponents();
@@ -59,9 +75,34 @@ describe('GameDetailPageComponent', () => {
     expect(store.deleteSelectedSubtree).toHaveBeenCalled();
   });
 
-  function page(): { confirmDeleteSelectedSubtree(): Promise<void> } {
+  it('delegates an AI turning point to the existing game tree selection', () => {
+    page().selectAiReviewMove(37);
+
+    expect(store.selectNode).toHaveBeenCalledOnceWith(37);
+  });
+
+  it('loads the saved review once without tracking signals touched inside the request path', () => {
+    const incidentalRequestSignal = signal(0);
+    aiReviewStore.load.and.callFake(async () => {
+      incidentalRequestSignal();
+    });
+    capabilities.next({ widgets: { gameReview: true } });
+
+    fixture.detectChanges();
+    expect(aiReviewStore.load).toHaveBeenCalledOnceWith(1);
+
+    incidentalRequestSignal.set(1);
+    fixture.detectChanges();
+    expect(aiReviewStore.load).toHaveBeenCalledTimes(1);
+  });
+
+  function page(): {
+    confirmDeleteSelectedSubtree(): Promise<void>;
+    selectAiReviewMove(plyNumber: number): void;
+  } {
     return fixture.componentInstance as unknown as {
       confirmDeleteSelectedSubtree(): Promise<void>;
+      selectAiReviewMove(plyNumber: number): void;
     };
   }
 });

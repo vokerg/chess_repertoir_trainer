@@ -1,0 +1,95 @@
+@if (review(); as response) {
+  <app-panel
+    title="AI game review"
+    subtitle="Experimental, generated on demand from saved game and engine data."
+  >
+    <article class="ai-review-content">
+      <header class="ai-review-lead">
+        <h4>{{ response.review.headline }}</h4>
+        <p>{{ response.review.overview }}</p>
+      </header>
+
+      <section class="ai-review-section">
+        <h5>Opening</h5>
+        <p>{{ response.review.openingAssessment }}</p>
+      </section>
+
+      @if (response.review.turningPoints.length) {
+        <section class="ai-review-section">
+          <h5>Turning points</h5>
+          <div class="ai-review-turning-points">
+            @for (point of response.review.turningPoints; track point.plyNumber) {
+              <button
+                type="button"
+                class="ai-review-turning-point"
+                [class.active]="selectedPlyNumber() === point.plyNumber"
+                [attr.aria-pressed]="selectedPlyNumber() === point.plyNumber"
+                [attr.aria-label]="'Show ' + point.moveNumber + (point.side === 'BLACK' ? '...' : '.') + ' ' + (point.playedMoveSan || 'move') + ' on the board'"
+                (click)="moveSelected.emit(point.plyNumber)"
+              >
+                <span class="ai-review-move-heading">
+                  <strong>
+                    {{ point.moveNumber }}{{ point.side === 'BLACK' ? '...' : '.' }}
+                    {{ point.playedMoveSan || 'Move' }}
+                  </strong>
+                  @if (point.classification) {
+                    <span>{{ point.classification }}</span>
+                  }
+                </span>
+                <span class="ai-review-explanation">{{ point.explanation }}</span>
+                @if (point.bestMoveSan) {
+                  <span class="ai-review-detail">Engine preference: {{ point.bestMoveSan }}</span>
+                }
+              </button>
+            }
+          </div>
+        </section>
+      }
+
+      <div class="ai-review-columns">
+        <section class="ai-review-section">
+          <h5>Strengths</h5>
+          <ul>
+            @for (item of response.review.strengths; track $index) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </section>
+
+        <section class="ai-review-section">
+          <h5>Improve</h5>
+          <ul>
+            @for (item of response.review.improvements; track $index) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </section>
+
+        <section class="ai-review-section">
+          <h5>Practice next</h5>
+          <ul>
+            @for (item of response.review.practicePriorities; track $index) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </section>
+      </div>
+
+      @if (response.review.themes.length) {
+        <div class="ai-review-themes" aria-label="AI review themes">
+          @for (theme of response.review.themes; track $index) {
+            <span>{{ theme }}</span>
+          }
+        </div>
+      }
+
+      @if (response.warnings.length) {
+        <div class="ai-review-warnings">
+          @for (warning of response.warnings; track warning) {
+            <p>{{ warningLabel(warning) }}</p>
+          }
+        </div>
+      }
+    </article>
+  </app-panel>
+}

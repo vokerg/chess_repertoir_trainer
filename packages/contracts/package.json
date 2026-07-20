@@ -12,6 +12,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./ai": {
+      "types": "./dist/ai/index.d.ts",
+      "default": "./dist/ai/index.js"
+    },
     "./imported-games": {
       "types": "./dist/imported-games/index.d.ts",
       "default": "./dist/imported-games/index.js"
@@ -52,7 +56,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node test/contracts.test.mjs && node test/jobs-contract.test.mjs"
+    "test": "npm run build && node test/contracts.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"

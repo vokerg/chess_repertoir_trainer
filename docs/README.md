@@ -10,6 +10,7 @@
 - [Masters Explorer](masters-explorer.md): system-wide Lichess Masters position statistics and persistent cache behavior.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Opening struggles](opening-struggles.md): report modes, course coverage semantics, and performance boundary.
+- [AI widgets](ai-widgets.md): optional provider boundary, game-review context, feature flags, privacy, and removal procedure.
 - [Course and training performance](performance/course-training-optimisation.md): phase measurements and structural regression constraints.
 
 ## Operational guides

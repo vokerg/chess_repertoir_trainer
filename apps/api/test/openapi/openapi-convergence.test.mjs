@@ -55,6 +55,7 @@ const bodylessActions = new Map([
   ['POST /api/training-marathons/{runId}/next', 'The run id selects the prepared marathon state'],
   ['POST /api/training/{sessionId}/complete', 'completion uses the persisted session state'],
   ['POST /api/training/{sessionId}/abandon', 'abandonment uses the persisted session state'],
+  ['POST /api/imported-games/{gameId}/ai-review', 'using persisted game metadata and completed engine analysis'],
   ['POST /api/imported-games/{gameId}/plies/analysis/clear', 'the imported game id fully identifies the analysis rows to clear'],
   ['POST /api/imported-games/{gameId}/tags/refresh', 'tags are recalculated from the persisted game and analysis'],
   ['POST /api/job-runs/{jobRunId}/cancel', 'cancels every queued or running task'],
