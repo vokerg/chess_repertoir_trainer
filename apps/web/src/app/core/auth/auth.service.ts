@@ -58,6 +58,8 @@ export class AuthService {
   });
 
   async initialize(): Promise<void> {
+    if (this.initializedState()) return;
+
     const inFlight = this.initializingState();
     if (inFlight) return inFlight;
 
