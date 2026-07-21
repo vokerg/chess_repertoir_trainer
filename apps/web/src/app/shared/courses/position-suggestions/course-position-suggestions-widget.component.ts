@@ -53,7 +53,6 @@ export class CoursePositionSuggestionsWidgetComponent {
     const requestId = ++this.requestSeq;
     this.loading.set(true);
     this.error.set(null);
-    this.suggestions.set([]);
 
     try {
       const response = await firstValueFrom(this.api.listForFen(fen));

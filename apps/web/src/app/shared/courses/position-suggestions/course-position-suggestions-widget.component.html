@@ -12,7 +12,7 @@
     <p class="status-error">{{ message }}</p>
   }
 
-  @if (!loading() && !error() && suggestionGroups().length === 0) {
+  @if (!error() && suggestionGroups().length === 0) {
     <div class="empty-state compact-empty">No course move found for this position.</div>
   } @else if (suggestionGroups().length > 0) {
     <app-progressive-list
