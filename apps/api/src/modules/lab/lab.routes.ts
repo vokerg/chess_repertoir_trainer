@@ -1,10 +1,13 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
+  courseExtensionCandidatesQuerySchema,
+  courseExtensionCandidatesResponseSchema,
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
 } from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
+import { getCourseExtensionCandidates } from './course-extension-candidates/course-extension-candidates.service';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { getPerformanceByRating } from './performance-by-rating/performance-by-rating.service';
 import {
@@ -18,7 +21,7 @@ import {
 import { trainingLogQuerySchema } from './training-log/training-log.schema';
 import { getTrainingLog } from './training-log/training-log.service';
 import { getTopOpponents } from './top-opponents/top-opponents.service';
-import { legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { legacyOpaqueResponseSchema, messageResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const limitQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) });
@@ -64,6 +67,25 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     return getPerformanceByRating(auth.userId, request.query);
+  });
+
+  app.get('/api/lab/course-extension-candidates', {
+    schema: labSchema('getCourseExtensionCandidates', 'Find common opponent continuations after course lines end', {
+      description: 'Finds terminal course positions after the user move, then groups opponent continuations by distinct indexed games.',
+      querystring: courseExtensionCandidatesQuerySchema,
+      response: {
+        200: courseExtensionCandidatesResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: messageResponseSchema,
+      },
+    }),
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+    const report = await getCourseExtensionCandidates(auth.userId, request.query);
+    if (!report) return reply.status(404).send({ message: 'Course not found' });
+    return report;
   });
 
   app.get('/api/lab/training-log', {
