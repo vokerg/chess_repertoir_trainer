@@ -14,6 +14,7 @@ describe('GamesExplorerStore', () => {
   let api: jasmine.SpyObj<GamesApiService>;
   let submit: jasmine.Spy;
   let isGameActive: jasmine.Spy;
+  let settledGameBatch: ReturnType<typeof signal>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<GamesApiService>('GamesApiService', ['getFacets', 'searchGames']);
@@ -21,17 +22,32 @@ describe('GamesExplorerStore', () => {
       async (kind: JobRunKind, gameIds: readonly number[], force = false) => acceptedJob(kind, gameIds, force),
     );
     isGameActive = jasmine.createSpy('isGameActive').and.returnValue(false);
+    settledGameBatch = signal(null);
     TestBed.configureTestingModule({
       providers: [
         GamesExplorerStore,
         { provide: GamesApiService, useValue: api },
-        { provide: ImportedGameJobStore, useValue: { terminalBatch: signal(null), submit, isGameActive } },
+        { provide: ImportedGameJobStore, useValue: { terminalBatch: signal(null), settledGameBatch, submit, isGameActive } },
       ],
     });
     store = TestBed.inject(GamesExplorerStore);
     store.games.set([game(1), game(2)]);
   });
 
+  it('reloads visible rows once when an individual task settles', async () => {
+    api.searchGames.and.returnValue(of(searchResponse([game(1), game(2)])));
+    settledGameBatch.set({ sequence: 1, gameIds: [1] });
+    await settlePromises();
+    expect(api.searchGames).toHaveBeenCalledOnceWith(store.appliedQuery(), null);
+
+    settledGameBatch.set({ sequence: 1, gameIds: [1] });
+    await settlePromises();
+    expect(api.searchGames).toHaveBeenCalledTimes(1);
+
+    settledGameBatch.set({ sequence: 2, gameIds: [99] });
+    await settlePromises();
+    expect(api.searchGames).toHaveBeenCalledTimes(1);
+  });
   it('only includes eligible inactive games in bulk candidates', () => {
     isGameActive.and.callFake((gameId: number) => gameId === 3);
     store.games.set([game(1, 'bullet'), game(2, 'blitz'), game(3, 'rapid'), game(4, 'rapid', true)]);

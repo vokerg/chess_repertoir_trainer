@@ -26,6 +26,7 @@ export class GamesExplorerStore {
   private readonly api = inject(GamesApiService);
   private readonly jobs = inject(ImportedGameJobStore);
   private lastTerminalSequence = 0;
+  private lastSettledGameSequence = 0;
   private searchRequestId = 0;
 
   readonly games = signal<ImportedGameSearchItem[]>([]);
@@ -77,7 +78,7 @@ export class GamesExplorerStore {
     const pageInfo = this.pageInfo();
     if (this.loading() && games.length === 0) return 'Loading matching games...';
     if (games.length === 0) return 'No games loaded';
-    return `${games.length} games shown${pageInfo.hasMore ? ' · more available' : ''}`;
+    return `${games.length} games shown${pageInfo.hasMore ? ' ï¿½ more available' : ''}`;
   });
 
   constructor() {
@@ -88,7 +89,13 @@ export class GamesExplorerStore {
       const visibleIds = new Set(this.games().map((game) => game.id));
       if (batch.gameIds.some((gameId) => visibleIds.has(gameId))) void this.reloadCurrentList();
     });
-  }
+    effect(() => {
+      const batch = this.jobs.settledGameBatch();
+      if (!batch || batch.sequence === this.lastSettledGameSequence) return;
+      this.lastSettledGameSequence = batch.sequence;
+      const visibleIds = new Set(this.games().map((game) => game.id));
+      if (batch.gameIds.some((gameId) => visibleIds.has(gameId))) void this.reloadCurrentList();
+    });  }
 
   loadFacets(): void {
     this.api.getFacets().subscribe({ next: (data) => this.facets.set(data) });

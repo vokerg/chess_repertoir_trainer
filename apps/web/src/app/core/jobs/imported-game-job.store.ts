@@ -4,11 +4,13 @@ import type {
   JobRunKind,
   JobRunStatus,
   JobRunSummary,
+  JobTask,
 } from '@chess-trainer/contracts/jobs';
 import { firstValueFrom } from 'rxjs';
 import { ImportedGameJobApiService } from './imported-game-job-api.service';
 
 const ACTIVE_JOB_STATUSES: ReadonlySet<JobRunStatus> = new Set(['QUEUED', 'RUNNING']);
+const ACTIVE_TASK_STATUSES: ReadonlySet<JobTask['status']> = new Set(['QUEUED', 'RUNNING']);
 const POLL_INTERVAL_MS = 1_500;
 const MAX_VISIBLE_TERMINAL_RUNS = 3;
 const RECENT_JOB_HISTORY_LIMIT = 100;
@@ -19,25 +21,36 @@ export interface ImportedGameJobTerminalBatch {
   gameIds: readonly number[];
 }
 
+export interface ImportedGameJobSettledGameBatch {
+  sequence: number;
+  gameIds: readonly number[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ImportedGameJobStore {
   private readonly api = inject(ImportedGameJobApiService);
   private readonly runsState = signal<JobRunSummary[]>([]);
   private readonly gameIdsByRunState = signal<Record<number, readonly number[]>>({});
+  private readonly taskStatusesByRunState = signal<
+    Record<number, Readonly<Record<number, JobTask['status']>>>
+  >({});
   private pollTimer?: ReturnType<typeof setTimeout>;
   private initializationInFlight: Promise<void> | null = null;
   private refreshInFlight: Promise<void> | null = null;
   private initialized = false;
   private sessionGeneration = 0;
   private terminalSequence = 0;
+  private settledGameSequence = 0;
 
   readonly runs = this.runsState.asReadonly();
   readonly gameIdsByRun = this.gameIdsByRunState.asReadonly();
+  readonly taskStatusesByRun = this.taskStatusesByRunState.asReadonly();
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly expanded = signal(true);
   readonly pollVersion = signal(0);
   readonly terminalBatch = signal<ImportedGameJobTerminalBatch | null>(null);
+  readonly settledGameBatch = signal<ImportedGameJobSettledGameBatch | null>(null);
   readonly cancellingRunId = signal<number | null>(null);
   readonly retryingRunId = signal<number | null>(null);
   readonly dismissingRunId = signal<number | null>(null);
@@ -78,9 +91,11 @@ export class ImportedGameJobStore {
     this.refreshInFlight = null;
     this.runsState.set([]);
     this.gameIdsByRunState.set({});
+    this.taskStatusesByRunState.set({});
     this.loading.set(false);
     this.error.set(null);
     this.terminalBatch.set(null);
+    this.settledGameBatch.set(null);
     this.pollVersion.set(0);
     this.cancellingRunId.set(null);
     this.retryingRunId.set(null);
@@ -103,6 +118,11 @@ export class ImportedGameJobStore {
       this.runsState.update((runs) => runs.filter((candidate) => candidate.id !== jobRunId));
       this.gameIdsByRunState.update((gameIdsByRun) => {
         const { [jobRunId]: dismissed, ...remaining } = gameIdsByRun;
+        void dismissed;
+        return remaining;
+      });
+      this.taskStatusesByRunState.update((taskStatusesByRun) => {
+        const { [jobRunId]: dismissed, ...remaining } = taskStatusesByRun;
         void dismissed;
         return remaining;
       });
@@ -136,6 +156,10 @@ export class ImportedGameJobStore {
       const rejected = new Set(response.rejectedGameIds);
       const acceptedGameIds = uniqueGameIds.filter((gameId) => !rejected.has(gameId));
       this.setRunGameIds(response.jobRun.id, acceptedGameIds);
+      this.setRunTaskStatuses(
+        response.jobRun.id,
+        Object.fromEntries(acceptedGameIds.map((gameId) => [gameId, 'QUEUED' as const])),
+      );
       this.mergeRuns([response.jobRun]);
       this.expanded.set(true);
       this.pollVersion.update((version) => version + 1);
@@ -194,7 +218,7 @@ export class ImportedGameJobStore {
       this.pollVersion.update((version) => version + 1);
       this.schedulePoll(350, generation);
       try {
-        await this.ensureRunGameIds(response.jobRun.id, generation);
+        await this.refreshRunTasks(response.jobRun.id, generation, false);
       } catch (error) {
         if (this.isCurrentGeneration(generation)) {
           this.error.set(readError(error, 'Retry started, but its game list could not be loaded.'));
@@ -217,7 +241,7 @@ export class ImportedGameJobStore {
   ): JobRunSummary | null {
     return this.activeRuns().find((run) => {
       if (kinds && !kinds.includes(run.kind)) return false;
-      return this.gameIdsForRun(run.id).includes(gameId);
+      return isActiveTaskStatus(this.taskStatusForGame(run.id, gameId));
     }) ?? null;
   }
 
@@ -227,6 +251,10 @@ export class ImportedGameJobStore {
 
   gameIdsForRun(jobRunId: number): readonly number[] {
     return this.gameIdsByRunState()[jobRunId] ?? [];
+  }
+
+  taskStatusForGame(jobRunId: number, gameId: number): JobTask['status'] | null {
+    return this.taskStatusesByRunState()[jobRunId]?.[gameId] ?? null;
   }
 
   toggleExpanded(): void {
@@ -258,7 +286,7 @@ export class ImportedGameJobStore {
       else this.stopPolling();
 
       await Promise.all(
-        restoredRuns.map((run) => this.ensureRunGameIds(run.id, generation)),
+        restoredRuns.map((run) => this.refreshRunTasks(run.id, generation, false)),
       );
       if (!this.isCurrentGeneration(generation)) return;
 
@@ -332,12 +360,14 @@ export class ImportedGameJobStore {
 
       const settledRuns = terminalRuns.filter((run): run is JobRunSummary => run !== null);
       this.mergeRuns([...response.items, ...settledRuns]);
-      await Promise.all(
+      const settledGameIds = (await Promise.all(
         [...response.items, ...settledRuns].map((run) =>
-          this.ensureRunGameIds(run.id, generation),
+          this.refreshRunTasks(run.id, generation, true),
         ),
-      );
+      )).flat();
       if (!this.isCurrentGeneration(generation)) return;
+
+      if (settledGameIds.length) this.publishSettledGameBatch(settledGameIds);
 
       const newlyTerminal = settledRuns.filter((run) => {
         const previous = previousActiveById.get(run.id);
@@ -359,34 +389,44 @@ export class ImportedGameJobStore {
     }
   }
 
-  private async ensureRunGameIds(jobRunId: number, generation: number): Promise<void> {
-    if (!this.isCurrentGeneration(generation)) return;
-    if (Object.prototype.hasOwnProperty.call(this.gameIdsByRunState(), jobRunId)) return;
-
+  private async refreshRunTasks(jobRunId: number, generation: number, force: boolean): Promise<readonly number[]> {
+    if (!this.isCurrentGeneration(generation)) return [];
+    if (!force && Object.prototype.hasOwnProperty.call(this.gameIdsByRunState(), jobRunId)) return [];
     const gameIds: number[] = [];
+    const taskStatuses: Record<number, JobTask['status']> = {};
     let offset = 0;
     let total = 0;
     do {
       const response = await firstValueFrom(this.api.listTasks(jobRunId, offset));
-      if (!this.isCurrentGeneration(generation)) return;
-
+      if (!this.isCurrentGeneration(generation)) return [];
       total = response.total;
       for (const task of response.items) {
-        if (task.importedGameId !== null) gameIds.push(task.importedGameId);
+        if (task.importedGameId !== null) {
+          gameIds.push(task.importedGameId);
+          taskStatuses[task.importedGameId] = task.status;
+        }
       }
       offset += response.items.length;
       if (!response.items.length) break;
     } while (offset < total);
-
-    if (!this.isCurrentGeneration(generation)) return;
+    if (!this.isCurrentGeneration(generation)) return [];
+    const previousStatuses = this.taskStatusesByRunState()[jobRunId] ?? {};
+    const newlySettledGameIds = Object.entries(taskStatuses)
+      .filter(([gameId, status]) => isActiveTaskStatus(previousStatuses[Number(gameId)] ?? null) && !isActiveTaskStatus(status))
+      .map(([gameId]) => Number(gameId));
     this.setRunGameIds(jobRunId, gameIds);
+    this.setRunTaskStatuses(jobRunId, taskStatuses);
+    return newlySettledGameIds;
   }
-
   private setRunGameIds(jobRunId: number, gameIds: readonly number[]): void {
     this.gameIdsByRunState.update((current) => ({
       ...current,
       [jobRunId]: Array.from(new Set(gameIds)),
     }));
+  }
+
+  private setRunTaskStatuses(jobRunId: number, taskStatuses: Readonly<Record<number, JobTask['status']>>): void {
+    this.taskStatusesByRunState.update((current) => ({ ...current, [jobRunId]: { ...taskStatuses } }));
   }
 
   private mergeRuns(incoming: readonly JobRunSummary[]): void {
@@ -414,6 +454,13 @@ export class ImportedGameJobStore {
     });
   }
 
+  private publishSettledGameBatch(gameIds: readonly number[]): void {
+    const uniqueGameIds = Array.from(new Set(gameIds));
+    if (!uniqueGameIds.length) return;
+    this.settledGameSequence += 1;
+    this.settledGameBatch.set({ sequence: this.settledGameSequence, gameIds: uniqueGameIds });
+  }
+
   private isCurrentGeneration(generation: number): boolean {
     return generation === this.sessionGeneration;
   }
@@ -421,6 +468,10 @@ export class ImportedGameJobStore {
 
 function isActiveStatus(status: JobRunStatus): boolean {
   return ACTIVE_JOB_STATUSES.has(status);
+}
+
+function isActiveTaskStatus(status: JobTask['status'] | null): boolean {
+  return status !== null && ACTIVE_TASK_STATUSES.has(status);
 }
 
 function compareNewestFirst(left: JobRunSummary, right: JobRunSummary): number {

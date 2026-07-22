@@ -65,6 +65,22 @@ describe('ImportedGameJobStore', () => {
     expect(api.listJobs.calls.argsFor(1)).toEqual([false, 100]);
   });
 
+  it('tracks each task status independently while the parent run remains running', async () => {
+    const active = jobRun(12, 'ANALYSE_GAMES', 'RUNNING', 4);
+    api.listJobs.and.callFake((activeOnly: boolean) => of({ items: activeOnly ? [active] : [] }));
+    api.listTasks.and.returnValue(of({ total: 4, items: [
+      task(1, 101, 'COMPLETED'), task(2, 102, 'RUNNING'),
+      task(3, 103, 'QUEUED'), task(4, 104, 'FAILED'),
+    ] }));
+
+    await store.initialize();
+
+    expect(store.isGameActive(101)).toBeFalse();
+    expect(store.isGameActive(102)).toBeTrue();
+    expect(store.isGameActive(103)).toBeTrue();
+    expect(store.isGameActive(104)).toBeFalse();
+    expect(store.taskStatusForGame(active.id, 101)).toBe('COMPLETED');
+  });
   it('permanently dismisses only the selected terminal job through the API', async () => {
     const completed = jobRun(80, 'INDEX_GAMES', 'COMPLETED', 1);
     const failed = jobRun(81, 'ANALYSE_GAMES', 'FAILED', 1);
@@ -84,6 +100,7 @@ describe('ImportedGameJobStore', () => {
     expect(store.runs()).not.toContain(completed);
     expect(store.visibleRuns()).toEqual([failed]);
     expect(store.gameIdsForRun(completed.id)).toEqual([]);
+    expect(store.taskStatusForGame(completed.id, 880 + completed.id)).toBeNull();
     expect(store.terminalBatch()).toBeNull();
   });
 
@@ -135,6 +152,7 @@ describe('ImportedGameJobStore', () => {
     expect(result).toBe(response);
     expect(api.createJob).toHaveBeenCalledOnceWith('INDEX_GAMES', [201, 202, 999], false);
     expect(store.gameIdsForRun(20)).toEqual([201, 202]);
+    expect(store.taskStatusForGame(20, 201)).toBe('QUEUED');
     expect(store.activeRunForGame(202)?.id).toBe(20);
   });
 
