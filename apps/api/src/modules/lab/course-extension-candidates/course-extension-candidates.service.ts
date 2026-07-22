@@ -9,18 +9,18 @@ import {
   buildRepertoireGraph,
   formatPathToNode,
   normalizeFenForPosition,
-  RepertoireLineInput,
   sideToMoveFromFen,
 } from 'chess-domain';
+import type { RepertoireLineInput } from 'chess-domain';
 import {
   getCoverageCourse,
   getCourseReviewLines,
 } from '../../repertoire-coverage/repertoire-coverage.repository.prisma';
 import {
-  CourseExtensionCandidatePlyRow,
   findCourseExtensionCandidatePlies,
   findCourseExtensionPositions,
 } from './course-extension-candidates.repository.prisma';
+import type { CourseExtensionCandidatePlyRow } from './course-extension-candidates.repository.prisma';
 
 type CourseColor = 'WHITE' | 'BLACK';
 type CourseReviewLine = Awaited<ReturnType<typeof getCourseReviewLines>>[number];
