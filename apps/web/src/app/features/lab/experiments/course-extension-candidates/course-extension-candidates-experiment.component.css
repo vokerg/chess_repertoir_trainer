@@ -1,0 +1,82 @@
+.extension-controls {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 16rem) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.field-stack {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field-stack select,
+.field-stack input {
+  width: 100%;
+}
+
+.extension-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.extension-card {
+  display: grid;
+  grid-template-columns: minmax(13rem, 18rem) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.extension-board {
+  display: block;
+  align-self: start;
+}
+
+.extension-content {
+  min-width: 0;
+}
+
+.extension-heading,
+.issue-summary,
+.example-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.move-sequence {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.line-reference-list,
+.collection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.example-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.example-row {
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 800px) {
+  .extension-controls,
+  .extension-card {
+    grid-template-columns: 1fr;
+  }
+
+  .extension-heading,
+  .issue-summary,
+  .example-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
