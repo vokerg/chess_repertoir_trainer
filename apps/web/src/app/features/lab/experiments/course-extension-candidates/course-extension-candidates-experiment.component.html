@@ -1,0 +1,153 @@
+<section class="stack">
+  <section class="section-card extension-controls" aria-label="Course extension filters">
+    <label class="field-stack">
+      <span class="metric-label">Course</span>
+      <select
+        [value]="store.courseId() ?? ''"
+        (change)="store.setCourseId(selectedNumber($event))"
+        [disabled]="store.loadingCourses() || store.loading()"
+      >
+        @for (course of store.courses(); track course.id) {
+          <option [value]="course.id">{{ course.name }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field-stack compact-number">
+      <span class="metric-label">Minimum games</span>
+      <input
+        type="number"
+        min="1"
+        max="1000"
+        step="1"
+        [value]="store.minGames()"
+        (change)="store.setMinGames(selectedNumber($event))"
+        [disabled]="store.loading()"
+      />
+      <small class="field-hint">Count distinct games with the same opponent continuation.</small>
+    </label>
+
+    <button type="button" class="primary" (click)="store.load()" [disabled]="!store.canLoad()">
+      {{ store.loading() ? 'Checking...' : 'Find extensions' }}
+    </button>
+  </section>
+
+  @if (store.error(); as error) {
+    <p class="status-error">{{ error }}</p>
+  }
+
+  @if (store.report(); as report) {
+    <div class="grid-auto">
+      <div class="metric-card">
+        <p class="metric-label">Course endings</p>
+        <p class="metric-value">{{ report.summary.terminalPositions }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Games reaching them</p>
+        <p class="metric-value">{{ report.summary.gamesMatched }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Continuations found</p>
+        <p class="metric-value">{{ report.summary.continuationsFound }}</p>
+      </div>
+      <div class="metric-card">
+        <p class="metric-label">Meet threshold</p>
+        <p class="metric-value">{{ report.summary.qualifyingContinuations }}</p>
+      </div>
+    </div>
+
+    @if (report.items.length === 0) {
+      <div class="empty-state">
+        No opponent continuations were seen in at least {{ report.filters.minGames }} games. Try a lower threshold.
+      </div>
+    } @else {
+      <div class="extension-list">
+        @for (candidate of report.items; track candidate.key) {
+          <article class="collection-card extension-card">
+            <a
+              class="extension-board"
+              [routerLink]="['/analysis']"
+              [queryParams]="analysisQueryParams(candidate)"
+              aria-label="Analyze the course ending"
+            >
+              <app-board-image
+                [fen]="candidate.normalizedFen"
+                [pov]="boardPov(candidate)"
+                turn="auto"
+                [alt]="'Course ending before ' + (candidate.moveSan || candidate.moveUci)"
+              />
+            </a>
+
+            <div class="extension-content stack">
+              <div class="extension-heading">
+                <div>
+                  <span class="eyebrow">Course ends here</span>
+                  <h3 class="collection-title">
+                    Opponent continues with {{ candidate.moveSan || candidate.moveUci }}
+                  </h3>
+                </div>
+                <span class="pill">{{ candidate.count }} games</span>
+              </div>
+
+              @if (candidate.lineRefs[0]?.moveSequenceSan; as sequence) {
+                <p class="move-sequence">{{ sequence }}</p>
+              }
+
+              <app-copyable-fen
+                [fen]="candidate.normalizedFen"
+                accessibleName="Course ending FEN"
+              />
+
+              <div class="line-reference-list">
+                @for (lineRef of candidate.lineRefs; track lineRef.lineId + ':' + lineRef.nodeId) {
+                  <a [routerLink]="['/chapters', lineRef.chapterId, 'lines']">
+                    {{ lineRef.lineName }}
+                  </a>
+                }
+              </div>
+
+              <div class="issue-summary">
+                <span>Seen in {{ candidate.count }} distinct games</span>
+                <span class="pill">
+                  {{ candidate.results.win }}W {{ candidate.results.draw }}D {{ candidate.results.loss }}L
+                </span>
+              </div>
+
+              <div class="collection-actions">
+                <a [routerLink]="['/analysis']" [queryParams]="analysisQueryParams(candidate)">
+                  Analyze position
+                </a>
+              </div>
+
+              <div class="example-list">
+                @for (example of candidate.examples; track example.gameId) {
+                  <div class="example-row">
+                    <span>
+                      {{ example.endedAt | date: 'mediumDate' }} vs
+                      {{ example.opponentUsername || 'Unknown opponent' }}
+                      @if (example.resultForUser) {
+                        <span class="pill">{{ example.resultForUser }}</span>
+                      }
+                    </span>
+                    <div class="collection-actions">
+                      <a [routerLink]="['/games', example.gameId]">Open review</a>
+                      @if (example.providerUrl) {
+                        <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer">
+                          Open on {{ example.provider }}
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  } @else if (store.loading() || store.loadingCourses()) {
+    <p class="status-note">Checking course endings against indexed games...</p>
+  } @else if (store.loaded()) {
+    <div class="empty-state">Choose a course to inspect.</div>
+  }
+</section>
