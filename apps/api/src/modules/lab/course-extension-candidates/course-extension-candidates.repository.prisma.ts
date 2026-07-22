@@ -22,11 +22,18 @@ const candidatePlySelect = {
   },
 } as const;
 
+export interface CourseExtensionPositionRow {
+  id: number;
+  normalizedFen: string;
+}
+
 export type CourseExtensionCandidatePlyRow = Prisma.ImportedGamePlyGetPayload<{
   select: typeof candidatePlySelect;
 }>;
 
-export async function findCourseExtensionPositions(normalizedFens: string[]) {
+export async function findCourseExtensionPositions(
+  normalizedFens: string[],
+): Promise<CourseExtensionPositionRow[]> {
   if (normalizedFens.length === 0) return [];
   return prisma.position.findMany({
     where: {
