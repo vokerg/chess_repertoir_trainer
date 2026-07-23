@@ -1,9 +1,5 @@
 @if (review(); as response) {
-  <app-panel
-    title="AI game review"
-    subtitle="Experimental, generated on demand from saved game and engine data."
-  >
-    <article class="ai-review-content">
+  <article class="ai-review-content">
       <header class="ai-review-lead">
         <h4>{{ response.review.headline }}</h4>
         <p>{{ response.review.overview }}</p>
@@ -90,6 +86,5 @@
           }
         </div>
       }
-    </article>
-  </app-panel>
+  </article>
 }

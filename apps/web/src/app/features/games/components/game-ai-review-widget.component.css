@@ -6,7 +6,7 @@
 .ai-review-muted,
 .ai-review-content p {
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 .ai-review-muted,
@@ -20,12 +20,12 @@
 .ai-review-section,
 .ai-review-turning-points {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.45rem;
 }
 
 .ai-review-lead {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.2rem;
 }
 
 .ai-review-lead h4,
@@ -34,23 +34,27 @@
 }
 
 .ai-review-lead h4 {
-  font-size: 1.05rem;
+  font-size: 0.98rem;
 }
 
 .ai-review-section h5 {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.ai-review-turning-points {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0.4rem;
 }
 
 .ai-review-turning-point {
   appearance: none;
   display: grid;
   width: 100%;
-  gap: 0.3rem;
-  padding: 0.65rem 0.55rem;
-  border: 0;
-  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  gap: 0.2rem;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   border-radius: 0.35rem;
   background: transparent;
   color: inherit;
@@ -82,7 +86,8 @@
 }
 
 .ai-review-explanation {
-  line-height: 1.5;
+  line-height: 1.35;
+  font-size: 0.84rem;
 }
 
 .ai-review-move-heading span,
@@ -93,15 +98,17 @@
 
 .ai-review-columns {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .ai-review-section ul {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.2rem;
   margin: 0;
   padding-left: 1.1rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
 }
 
 .ai-review-themes {
@@ -111,7 +118,7 @@
 }
 
 .ai-review-themes span {
-  padding: 0.18rem 0.45rem;
+  padding: 0.12rem 0.4rem;
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
   border-radius: 999px;
   font-size: 0.75rem;

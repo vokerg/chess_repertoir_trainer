@@ -1,0 +1,44 @@
+<section class="tactical-findings">
+  @if (missedShotCount() > 0 || blunderCount() > 0) {
+    <div class="collection-actions">
+      @if (missedShotCount() > 0) {
+        <a [routerLink]="['/scenario-training/tactical-missed-shot']" [queryParams]="{ gameId: gameId() }">
+          Train missed shots ({{ missedShotCount() }})
+        </a>
+      }
+      @if (blunderCount() > 0) {
+        <a [routerLink]="['/scenario-training/tactical-blunder']" [queryParams]="{ gameId: gameId() }">
+          Train blunders ({{ blunderCount() }})
+        </a>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="status-note">Loading tactical findings...</p>
+  } @else if (error(); as message) {
+    <div class="finding-error">
+      <p class="status-error">{{ message }}</p>
+      <button type="button" class="secondary" (click)="retry.emit()">Retry</button>
+    </div>
+  } @else {
+    <div class="finding-list">
+      @for (item of findings(); track item.id) {
+        <article class="finding-row">
+          <div class="finding-summary">
+            <strong class="finding-kind">{{ kindLabel(item) }}</strong>
+            <strong class="finding-move">{{ moveLabel(item) }}</strong>
+            @if (item.bestMoveUci) { <span>Best {{ item.bestMoveUci }}</span> }
+            @if (item.swingCp !== null) { <span>{{ item.swingCp }} cp swing</span> }
+          </div>
+          <div class="collection-actions">
+            <button type="button" class="secondary" (click)="moveSelected.emit(item.triggerPlyNumber)">Show</button>
+            @if (trainingRoute(item); as route) {
+              <a [routerLink]="[route]" [queryParams]="{ detectionId: item.id }">Train</a>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

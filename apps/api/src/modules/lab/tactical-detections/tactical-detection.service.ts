@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { tacticalDetectionThresholds } from './tactical-detection.constants';
 import { getTacticalDetectionGameState } from './tactical-detection-game.repository.prisma';
 import { TacticalDetectionListQuery, TacticalDetectionRunInput } from './tactical-detection.schema';
+import { listFilteredTacticalDetections } from './tactical-detection-list.repository.prisma';
 import {
   clearTacticalDetectionsForGames,
   countTacticalDetectionMatchingGames,
@@ -9,7 +10,6 @@ import {
   findTacticalDetectionCandidatesForGames,
   findTacticalDetectionMatchingGameIds,
   insertTacticalDetections,
-  listTacticalDetections,
   markTacticalDetectionProcessedGames,
   markTacticalDetectionRunComplete,
   markTacticalDetectionRunFailed,
@@ -22,20 +22,11 @@ function defaultMonthRange(now = new Date()) {
   return { from, to };
 }
 
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 function normalizeRange(input: { from?: Date; to?: Date }) {
   const defaults = defaultMonthRange();
-  const from = input.from ?? defaults.from;
-  const to = input.to ?? defaults.to;
   return {
-    from,
-    to,
-    toExclusive: addDays(to, 1),
+    from: input.from ?? defaults.from,
+    to: input.to ?? defaults.to,
   };
 }
 
@@ -107,6 +98,8 @@ export async function runTacticalDetection(userId: number, input: TacticalDetect
   const range = normalizeRange(input);
   const force = input.force ?? false;
   const hash = currentTacticalDetectionThresholdsHash();
+  const toExclusive = new Date(range.to);
+  toExclusive.setDate(toExclusive.getDate() + 1);
   const run = await createTacticalDetectionRun(userId, {
     from: range.from,
     to: range.to,
@@ -116,9 +109,10 @@ export async function runTacticalDetection(userId: number, input: TacticalDetect
   });
 
   try {
-    const totalMatchingGames = await countTacticalDetectionMatchingGames(userId, range);
+    const totalMatchingGames = await countTacticalDetectionMatchingGames(userId, { ...range, toExclusive });
     const gameIds = await findTacticalDetectionMatchingGameIds(userId, {
       ...range,
+      toExclusive,
       thresholdsHash: hash,
       force,
     });
@@ -191,18 +185,19 @@ export async function refreshTacticalDetectionsForGame(
 }
 
 export async function getTacticalDetections(userId: number, query: TacticalDetectionListQuery) {
-  const range = normalizeRange(query);
-  const items = await listTacticalDetections(userId, {
+  const range = query.gameId
+    ? { from: query.from, to: query.to }
+    : normalizeRange(query);
+  const items = await listFilteredTacticalDetections(userId, {
     ...query,
     from: range.from,
     to: range.to,
-    toExclusive: range.toExclusive,
     thresholdsHash: currentTacticalDetectionThresholdsHash(),
     detectionVersion: currentTacticalDetectionVersion(),
   });
   return {
-    from: range.from,
-    to: range.to,
+    from: range.from ?? null,
+    to: range.to ?? null,
     limit: query.limit,
     kind: query.kind ?? null,
     items,

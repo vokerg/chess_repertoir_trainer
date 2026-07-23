@@ -5,12 +5,10 @@ import {
   output,
 } from '@angular/core';
 import type { AiGameReviewResponse } from '@chess-trainer/contracts/ai';
-import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 
 @Component({
   selector: 'app-game-ai-review-widget',
   standalone: true,
-  imports: [PanelComponent],
   templateUrl: './game-ai-review-widget.component.html',
   styleUrl: './game-ai-review-widget.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -2,6 +2,12 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { requireAuth } from '../../auth/request-auth';
 import {
+  currentTacticalDetectionThresholdsHash,
+  currentTacticalDetectionVersion,
+} from '../lab/tactical-detections/tactical-detection.service';
+import { findGameScopedTacticalScenarioDetection } from './scenario-training-game-scope.repository.prisma';
+import type { TacticalScenarioStartInput } from './scenario-training.schema';
+import {
   completeScenarioTraining,
   dislikeScenarioTrainingSource,
   getScenarioTrainingHistory,
@@ -23,8 +29,39 @@ const scenarioSchema = <T extends Record<string, unknown>>(operationId: string, 
 
 function statusFor(error: unknown): 400 | 404 {
   if (!(error instanceof Error)) return 400;
-  if (error.message.includes('not found')) return 404;
+  if (error.message.includes('not found') || error.message.includes('No more')) return 404;
   return 400;
+}
+
+async function gameScopedInput(
+  userId: number,
+  input: TacticalScenarioStartInput,
+  options: {
+    detectionKind: 'MISSED_SHOT' | 'USER_BLUNDER';
+    scenarioType: 'MISSED_OPPORTUNITY' | 'BLUNDER_AVOIDANCE';
+    emptyMessage: string;
+  },
+): Promise<TacticalScenarioStartInput> {
+  if (!input.gameId) return input;
+  const scope = {
+    thresholdsHash: currentTacticalDetectionThresholdsHash(),
+    detectionVersion: currentTacticalDetectionVersion(),
+  };
+  let detection = await findGameScopedTacticalScenarioDetection(userId, input, scope, options);
+  if (!detection && input.excludePassedRecently) {
+    detection = await findGameScopedTacticalScenarioDetection(
+      userId,
+      { ...input, excludePassedRecently: false },
+      scope,
+      options,
+    );
+  }
+  if (!detection) throw new Error(options.emptyMessage);
+  return {
+    detectionId: detection.id,
+    random: false,
+    excludePassedRecently: false,
+  };
 }
 
 const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
@@ -37,12 +74,15 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     try {
-      return await startTacticalMissedShotScenario(auth.userId, request.body);
+      const input = await gameScopedInput(auth.userId, request.body, {
+        detectionKind: 'MISSED_SHOT',
+        scenarioType: 'MISSED_OPPORTUNITY',
+        emptyMessage: 'No more missed shots in this game',
+      });
+      return await startTacticalMissedShotScenario(auth.userId, input);
     } catch (error) {
       reply.code(statusFor(error));
-      return {
-        error: error instanceof Error ? error.message : 'Could not start scenario training',
-      };
+      return { error: error instanceof Error ? error.message : 'Could not start scenario training' };
     }
   });
 
@@ -82,11 +122,7 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     try {
-      return await submitScenarioTrainingAttempt(
-        auth.userId,
-        request.params.sessionId,
-        request.body,
-      );
+      return await submitScenarioTrainingAttempt(auth.userId, request.params.sessionId, request.body);
     } catch (error) {
       reply.code(statusFor(error));
       return { error: error instanceof Error ? error.message : 'Could not save scenario attempt' };
@@ -106,9 +142,7 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
       return await completeScenarioTraining(auth.userId, request.params.sessionId);
     } catch (error) {
       reply.code(statusFor(error));
-      return {
-        error: error instanceof Error ? error.message : 'Could not complete scenario training',
-      };
+      return { error: error instanceof Error ? error.message : 'Could not complete scenario training' };
     }
   });
 
@@ -121,12 +155,15 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     try {
-      return await startTacticalBlunderScenario(auth.userId, request.body);
+      const input = await gameScopedInput(auth.userId, request.body, {
+        detectionKind: 'USER_BLUNDER',
+        scenarioType: 'BLUNDER_AVOIDANCE',
+        emptyMessage: 'No more blunders in this game',
+      });
+      return await startTacticalBlunderScenario(auth.userId, input);
     } catch (error) {
       reply.code(statusFor(error));
-      return {
-        error: error instanceof Error ? error.message : 'Could not start scenario training',
-      };
+      return { error: error instanceof Error ? error.message : 'Could not start scenario training' };
     }
   });
 
@@ -140,16 +177,10 @@ const scenarioTrainingModule: FastifyPluginAsyncZod = async (app) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
     try {
-      return await dislikeScenarioTrainingSource(
-        auth.userId,
-        request.params.sessionId,
-        request.body,
-      );
+      return await dislikeScenarioTrainingSource(auth.userId, request.params.sessionId, request.body);
     } catch (error) {
       reply.code(statusFor(error));
-      return {
-        error: error instanceof Error ? error.message : 'Could not dislike scenario source',
-      };
+      return { error: error instanceof Error ? error.message : 'Could not dislike scenario source' };
     }
   });
 };

@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const tacticalScenarioStartSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
+  gameId: z.coerce.number().int().positive().optional(),
   detectionId: z.coerce.number().int().positive().optional(),
   excludeDetectionId: z.coerce.number().int().positive().optional(),
   random: z.boolean().optional(),

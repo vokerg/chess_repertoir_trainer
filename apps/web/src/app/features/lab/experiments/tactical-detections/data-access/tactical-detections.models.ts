@@ -18,13 +18,6 @@ export interface TacticalDetectionRunResponse {
   userBlunders: number;
 }
 
-export interface TacticalDetectionListQuery {
-  from?: string;
-  to?: string;
-  kind?: TacticalDetectionKind;
-  limit: number;
-}
-
 export interface TacticalDetectionItem {
   id: number;
   kind: TacticalDetectionKind;
