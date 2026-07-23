@@ -3,6 +3,11 @@ import { firstValueFrom } from 'rxjs';
 import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts/lab';
 import { CourseDetailApiService } from '../../../../courses/data-access/course-detail-api.service';
 import type { CourseDetail } from '../../../../courses/data-access/course-detail.models';
+import { defaultGameFilters, GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import {
+  emptyImportedGameFacets,
+  ImportedGameFacetsResponse,
+} from '../../../../../shared/games/game.models';
 import { CourseExtensionCandidatesApiService } from '../data-access/course-extension-candidates-api.service';
 
 @Injectable()
@@ -13,6 +18,8 @@ export class CourseExtensionCandidatesStore {
   readonly courses = signal<readonly CourseDetail[]>([]);
   readonly courseId = signal<number | null>(null);
   readonly minGames = signal(4);
+  readonly gameFilters = signal<GameFilters>(defaultGameFilters());
+  readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly report = signal<CourseExtensionCandidatesResponse | null>(null);
   readonly loadingCourses = signal(false);
   readonly loading = signal(false);
@@ -26,8 +33,12 @@ export class CourseExtensionCandidatesStore {
     this.error.set(null);
     let initialCourseId: number | null = null;
     try {
-      const courses = await firstValueFrom(this.coursesApi.getCourses());
+      const [courses, facets] = await Promise.all([
+        firstValueFrom(this.coursesApi.getCourses()),
+        firstValueFrom(this.api.getFacets()).catch(() => emptyImportedGameFacets()),
+      ]);
       this.courses.set(courses);
+      this.facets.set(facets);
       initialCourseId = courses[0]?.id ?? null;
       this.courseId.set(initialCourseId);
     } catch {
@@ -40,13 +51,21 @@ export class CourseExtensionCandidatesStore {
 
   setCourseId(value: number): void {
     this.courseId.set(Number.isInteger(value) && value > 0 ? value : null);
-    this.report.set(null);
-    this.loaded.set(false);
+    this.clearReport();
   }
 
   setMinGames(value: number): void {
     if (!Number.isFinite(value)) return;
     this.minGames.set(Math.max(1, Math.min(1000, Math.trunc(value))));
+  }
+
+  setGameFilters(filters: GameFilters): void {
+    this.gameFilters.set(filters);
+  }
+
+  resetGameFilters(): void {
+    this.gameFilters.set(defaultGameFilters());
+    void this.load();
   }
 
   async load(): Promise<void> {
@@ -58,13 +77,18 @@ export class CourseExtensionCandidatesStore {
       this.report.set(await firstValueFrom(this.api.getCandidates({
         courseId,
         minGames: this.minGames(),
-      })));
+      }, this.gameFilters())));
       this.loaded.set(true);
     } catch (error) {
       this.error.set(readError(error));
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private clearReport(): void {
+    this.report.set(null);
+    this.loaded.set(false);
   }
 }
 
