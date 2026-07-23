@@ -66,8 +66,10 @@ export class GameDetailPageComponent implements OnInit {
     });
 
     effect(() => {
+      const treeSignal = this.store.tree;
+      if (typeof treeSignal !== 'function') return;
       const ply = this.requestedPly();
-      const tree = this.store.tree();
+      const tree = treeSignal();
       if (!tree || !ply || this.appliedPly() === ply) return;
       untracked(() => {
         this.appliedPly.set(ply);
@@ -90,17 +92,20 @@ export class GameDetailPageComponent implements OnInit {
         this.store.initialize(gameId);
       });
 
-    this.route.queryParamMap
-      .pipe(
-        map((params) => Number(params.get('ply'))),
-        map((ply) => Number.isInteger(ply) && ply > 0 ? ply : null),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((ply) => {
-        this.appliedPly.set(null);
-        this.requestedPly.set(ply);
-      });
+    const queryParamMap = this.route.queryParamMap;
+    if (queryParamMap) {
+      queryParamMap
+        .pipe(
+          map((params) => Number(params.get('ply'))),
+          map((ply) => Number.isInteger(ply) && ply > 0 ? ply : null),
+          distinctUntilChanged(),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe((ply) => {
+          this.appliedPly.set(null);
+          this.requestedPly.set(ply);
+        });
+    }
   }
 
   @HostListener('window:keydown', ['$event'])
