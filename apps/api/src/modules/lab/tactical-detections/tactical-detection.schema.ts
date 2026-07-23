@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { importedGameSearchQuerySchema } from '../../imported-games/imported-games.schemas';
 import { tacticalDetectionThresholds } from './tactical-detection.constants';
 
 const boolParam = z.preprocess((value) => {
@@ -19,9 +20,14 @@ export const tacticalDetectionRunSchema = z.object({
   force: boolParam.default(false),
 });
 
-export const tacticalDetectionListSchema = z.object({
-  from: z.coerce.date().optional(),
-  to: z.coerce.date().optional(),
+const tacticalDetectionGameFiltersSchema = importedGameSearchQuerySchema.omit({
+  sort: true,
+  cursor: true,
+  limit: true,
+});
+
+export const tacticalDetectionListSchema = tacticalDetectionGameFiltersSchema.extend({
+  gameId: z.coerce.number().int().positive().optional(),
   kind: tacticalDetectionKindSchema.optional(),
   limit: z.coerce.number().int().min(1).max(tacticalDetectionThresholds.maxLimit)
     .default(tacticalDetectionThresholds.defaultLimit),
