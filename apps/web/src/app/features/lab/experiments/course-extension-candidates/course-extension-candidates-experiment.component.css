@@ -1,6 +1,6 @@
 .extension-controls {
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 16rem) auto;
+  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 16rem);
   gap: 1rem;
   align-items: end;
 }
