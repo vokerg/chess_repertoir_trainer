@@ -142,12 +142,14 @@ export async function refreshTacticalDetectionsForGame(
 ) {
   const hash = currentTacticalDetectionThresholdsHash();
   const game = await getTacticalDetectionGameState(userId, importedGameId, hash);
-  const eligible = game?.latestAnalysisStatus === 'COMPLETED'
-    && game.plyIndexedAt !== null
-    && game._count.plies > 0;
-  const alreadyProcessed = (game?.tacticalDetectionProcessedGames.length ?? 0) > 0;
 
-  if (!eligible || (!input.force && alreadyProcessed)) {
+  if (
+    !game
+    || game.latestAnalysisStatus !== 'COMPLETED'
+    || game.plyIndexedAt === null
+    || game._count.plies === 0
+    || (!input.force && game.tacticalDetectionProcessedGames.length > 0)
+  ) {
     return {
       status: 'SKIPPED' as const,
       runId: null,
