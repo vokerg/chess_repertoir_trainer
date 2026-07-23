@@ -1,4 +1,5 @@
 import { ImportedGamesService } from '../imported-games/imported-games.service';
+import { refreshTacticalDetectionsForGame } from '../lab/tactical-detections/tactical-detection.service';
 import {
   ImportedGameAnalysisService,
   type ImportedGameAnalysisExecutionStatus,
@@ -17,6 +18,7 @@ export type { ImportedGameAnalysisOptions } from './imported-game-analysis.servi
 interface ImportedGameAnalysisExecutionDependencies {
   analyseOne: typeof ImportedGameAnalysisService.analyseOne;
   refreshTags: typeof ImportedGamesService.refreshTags;
+  refreshTacticalDetections: typeof refreshTacticalDetectionsForGame;
   getExecutionState: typeof getImportedGameAnalysisExecutionState;
   findAbortCleanupCandidate: typeof findAbortCleanupCandidate;
   abandonRun: typeof abandonGameAnalysisRun;
@@ -60,6 +62,8 @@ export function createImportedGameAnalysisExecutionService(
         if (options.refreshTagsAfterAnalysis) {
           await dependencies.refreshTags(userId, importedGameId);
           throwIfAborted(options.signal);
+          await dependencies.refreshTacticalDetections(userId, importedGameId, { force: false });
+          throwIfAborted(options.signal);
         }
         return 'SKIPPED';
       }
@@ -70,12 +74,20 @@ export function createImportedGameAnalysisExecutionService(
         : options;
 
       try {
-        return await dependencies.analyseOne(
+        const status = await dependencies.analyseOne(
           engine,
           userId,
           importedGameId,
           effectiveOptions,
         );
+        if (options.refreshTagsAfterAnalysis) {
+          throwIfAborted(options.signal);
+          await dependencies.refreshTacticalDetections(userId, importedGameId, {
+            force: status === 'COMPLETED',
+          });
+          throwIfAborted(options.signal);
+        }
+        return status;
       } catch (error) {
         if (options.signal?.aborted) {
           const candidate = await dependencies.findAbortCleanupCandidate({
@@ -97,6 +109,7 @@ export function createImportedGameAnalysisExecutionService(
 export const ImportedGameAnalysisExecutionService = createImportedGameAnalysisExecutionService({
   analyseOne: ImportedGameAnalysisService.analyseOne,
   refreshTags: ImportedGamesService.refreshTags,
+  refreshTacticalDetections: refreshTacticalDetectionsForGame,
   getExecutionState: getImportedGameAnalysisExecutionState,
   findAbortCleanupCandidate,
   abandonRun: abandonGameAnalysisRun,
