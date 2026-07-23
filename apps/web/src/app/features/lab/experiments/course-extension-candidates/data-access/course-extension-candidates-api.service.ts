@@ -6,8 +6,8 @@ import type {
 } from '@chess-trainer/contracts/lab';
 import { ApiService } from '../../../../../core/api/api.service';
 import { appendGameFilterParams } from '../../../../../shared/games/filters/game-filter-query.mapper';
-import { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
-import { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
+import type { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import type { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
 
 @Injectable()
 export class CourseExtensionCandidatesApiService {
