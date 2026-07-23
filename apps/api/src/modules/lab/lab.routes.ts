@@ -1,12 +1,12 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
-  courseExtensionCandidatesQuerySchema,
   courseExtensionCandidatesResponseSchema,
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
 } from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
+import { courseExtensionCandidatesQuerySchema } from './course-extension-candidates/course-extension-candidates.schema';
 import { getCourseExtensionCandidates } from './course-extension-candidates/course-extension-candidates.service';
 import { getMonthlyGames } from './monthly-games/monthly-games.service';
 import { getPerformanceByRating } from './performance-by-rating/performance-by-rating.service';
@@ -71,7 +71,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/api/lab/course-extension-candidates', {
     schema: labSchema('getCourseExtensionCandidates', 'Find common opponent continuations after course lines end', {
-      description: 'Finds terminal course positions after the user move, then groups opponent continuations by distinct indexed games.',
+      description: 'Finds terminal course positions after the user move, then groups opponent continuations by distinct indexed games matching the selected filters.',
       querystring: courseExtensionCandidatesQuerySchema,
       response: {
         200: courseExtensionCandidatesResponseSchema,
