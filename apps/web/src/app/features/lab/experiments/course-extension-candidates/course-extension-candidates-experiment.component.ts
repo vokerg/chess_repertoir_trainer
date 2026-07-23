@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { RouterLink } from '@angular/router';
 import type { CourseExtensionCandidate } from '@chess-trainer/contracts/lab';
 import { BoardImageComponent } from '../../../../shared/chess/board-image/board-image.component';
+import { GameFilterPanelComponent } from '../../../../shared/games/filters/game-filter-panel.component';
 import { CopyableFenComponent } from '../../../../shared/ui/copyable-fen/copyable-fen.component';
 import { CourseDetailApiService } from '../../../courses/data-access/course-detail-api.service';
 import { CourseExtensionCandidatesApiService } from './data-access/course-extension-candidates-api.service';
@@ -11,7 +12,13 @@ import { CourseExtensionCandidatesStore } from './state/course-extension-candida
 @Component({
   selector: 'app-lab-course-extension-candidates',
   standalone: true,
-  imports: [BoardImageComponent, CopyableFenComponent, DatePipe, RouterLink],
+  imports: [
+    BoardImageComponent,
+    CopyableFenComponent,
+    DatePipe,
+    GameFilterPanelComponent,
+    RouterLink,
+  ],
   providers: [CourseDetailApiService, CourseExtensionCandidatesApiService, CourseExtensionCandidatesStore],
   templateUrl: './course-extension-candidates-experiment.component.html',
   styleUrl: './course-extension-candidates-experiment.component.css',
