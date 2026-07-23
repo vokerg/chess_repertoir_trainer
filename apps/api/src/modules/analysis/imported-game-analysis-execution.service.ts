@@ -18,7 +18,7 @@ export type { ImportedGameAnalysisOptions } from './imported-game-analysis.servi
 interface ImportedGameAnalysisExecutionDependencies {
   analyseOne: typeof ImportedGameAnalysisService.analyseOne;
   refreshTags: typeof ImportedGamesService.refreshTags;
-  refreshTacticalDetections: typeof refreshTacticalDetectionsForGame;
+  refreshTacticalDetections?: typeof refreshTacticalDetectionsForGame;
   getExecutionState: typeof getImportedGameAnalysisExecutionState;
   findAbortCleanupCandidate: typeof findAbortCleanupCandidate;
   abandonRun: typeof abandonGameAnalysisRun;
@@ -62,7 +62,7 @@ export function createImportedGameAnalysisExecutionService(
         if (options.refreshTagsAfterAnalysis) {
           await dependencies.refreshTags(userId, importedGameId);
           throwIfAborted(options.signal);
-          await dependencies.refreshTacticalDetections(userId, importedGameId, { force: false });
+          await dependencies.refreshTacticalDetections?.(userId, importedGameId, { force: false });
           throwIfAborted(options.signal);
         }
         return 'SKIPPED';
@@ -82,7 +82,7 @@ export function createImportedGameAnalysisExecutionService(
         );
         if (options.refreshTagsAfterAnalysis) {
           throwIfAborted(options.signal);
-          await dependencies.refreshTacticalDetections(userId, importedGameId, {
+          await dependencies.refreshTacticalDetections?.(userId, importedGameId, {
             force: status === 'COMPLETED',
           });
           throwIfAborted(options.signal);
