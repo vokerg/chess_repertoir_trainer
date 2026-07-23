@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../../../prisma';
+import {
+  buildImportedGameWhere,
+} from '../../imported-games/imported-games.repository.prisma';
+import { ImportedGameSummaryQuery } from '../../imported-games/imported-games.schemas';
 import { positionKeyForNormalizedFen } from '../../positions/position-key';
 
 const candidatePlySelect = {
@@ -22,14 +26,14 @@ const candidatePlySelect = {
   },
 } as const;
 
+export type CourseExtensionCandidatePlyRow = Prisma.ImportedGamePlyGetPayload<{
+  select: typeof candidatePlySelect;
+}>;
+
 export interface CourseExtensionPositionRow {
   id: number;
   normalizedFen: string;
 }
-
-export type CourseExtensionCandidatePlyRow = Prisma.ImportedGamePlyGetPayload<{
-  select: typeof candidatePlySelect;
-}>;
 
 export async function findCourseExtensionPositions(
   normalizedFens: string[],
@@ -48,12 +52,13 @@ export async function findCourseExtensionPositions(
 export async function findCourseExtensionCandidatePlies(
   userId: number,
   positionIds: number[],
+  filters: ImportedGameSummaryQuery,
 ): Promise<CourseExtensionCandidatePlyRow[]> {
   if (positionIds.length === 0) return [];
   return prisma.importedGamePly.findMany({
     where: {
       positionId: { in: positionIds },
-      importedGame: { userId },
+      importedGame: buildImportedGameWhere(userId, filters),
     },
     distinct: ['positionId', 'moveUci', 'importedGameId'],
     orderBy: [
