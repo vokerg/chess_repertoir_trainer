@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GameFilterPanelComponent } from '../../../../shared/games/filters/game-filter-panel.component';
 import { TacticalDetectionsApiService } from './data-access/tactical-detections-api.service';
 import {
   TacticalDetectionItem,
@@ -10,7 +11,7 @@ import { TacticalDetectionsStore } from './state/tactical-detections.store';
 @Component({
   selector: 'app-lab-tactical-detections',
   standalone: true,
-  imports: [RouterLink],
+  imports: [GameFilterPanelComponent, RouterLink],
   providers: [TacticalDetectionsApiService, TacticalDetectionsStore],
   templateUrl: './tactical-detections-experiment.component.html',
   styleUrl: './tactical-detections-experiment.component.css',
@@ -21,10 +22,6 @@ export class TacticalDetectionsExperimentComponent implements OnInit {
 
   ngOnInit(): void {
     void this.store.initialize();
-  }
-
-  protected textValue(event: Event): string {
-    return (event.target as HTMLInputElement).value;
   }
 
   protected checkedValue(event: Event): boolean {
@@ -66,5 +63,15 @@ export class TacticalDetectionsExperimentComponent implements OnInit {
 
   protected gameLabel(item: TacticalDetectionItem): string {
     return item.opponentUsername ? `vs ${item.opponentUsername}` : `Game ${item.importedGameId}`;
+  }
+
+  protected gameQueryParams(item: TacticalDetectionItem) {
+    return { ply: item.triggerPlyNumber, findingId: item.id };
+  }
+
+  protected trainingRoute(item: TacticalDetectionItem): string | null {
+    if (item.kind === 'MISSED_SHOT') return '/scenario-training/tactical-missed-shot';
+    if (item.kind === 'USER_BLUNDER') return '/scenario-training/tactical-blunder';
+    return null;
   }
 }
