@@ -1,53 +1,60 @@
 <section class="section-card lab-panel stack">
   <div class="lab-panel-header">
-    <div><span class="eyebrow">Analysed games</span><h3 class="collection-title">Tactical detections</h3></div>
+    <div><span class="eyebrow">Analysed games</span><h3 class="collection-title">Tactical findings</h3></div>
     <div class="header-actions">
       <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading() || store.running()">
-        {{ store.loading() ? 'Loading...' : 'Reload' }}
+        {{ store.loading() ? 'Loading...' : 'Apply filters' }}
       </button>
       <button type="button" class="compact-action" (click)="store.runDetection()" [disabled]="store.running() || store.loading()">
         {{ store.running() ? 'Running...' : 'Run detection' }}
       </button>
-      <a class="compact-action" [routerLink]="['/scenario-training/tactical-missed-shot']">
-        Train random missed shot
-      </a>
     </div>
   </div>
 
-  <section class="criteria-panel stack" aria-label="Tactical detection criteria">
-    <div><span class="eyebrow">Scan window</span><h4 class="criteria-title">Analysed imported games</h4></div>
+  <section class="criteria-panel stack" aria-label="Tactical finding filters">
     <div class="lab-controls">
-      <label><span>From</span><input type="date" [value]="store.from()" (input)="store.setFrom(textValue($event))" /></label>
-      <label><span>To</span><input type="date" [value]="store.to()" (input)="store.setTo(textValue($event))" /></label>
-      <label><span>Rows</span><input type="number" min="1" max="500" [value]="store.limit()" (input)="store.limit.set(numberValue($event))" /></label>
       <label><span>Kind</span><select [value]="store.kindFilter()" (change)="store.setKindFilter(filterValue($event))"><option value="ALL">All</option><option value="MISSED_SHOT">Missed shots</option><option value="PUNISHED_OPPONENT_BLUNDER">Punished blunders</option><option value="USER_BLUNDER">My blunders</option></select></label>
-      <label class="checkbox-label"><input type="checkbox" [checked]="store.force()" (change)="store.setForce(checkedValue($event))" /><span>Force recheck</span></label>
+      <label><span>Rows</span><input type="number" min="1" max="500" [value]="store.limit()" (input)="store.limit.set(numberValue($event))" /></label>
+      <label class="checkbox-label"><input type="checkbox" [checked]="store.force()" (change)="store.setForce(checkedValue($event))" /><span>Force recheck when running detection</span></label>
     </div>
   </section>
 
+  <section class="section-card" aria-label="Game filters">
+    <button type="button" class="extension-filter-toggle secondary" (click)="store.toggleFilters()" [attr.aria-expanded]="!store.filtersCollapsed()">
+      <span>Game filters</span><small>{{ store.filterSummary() }}</small><strong>{{ store.filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
+    </button>
+    @if (!store.filtersCollapsed()) {
+      <app-game-filter-panel
+        [filters]="store.gameFilters()"
+        [facets]="store.facets()"
+        [loading]="store.loading() || store.running()"
+        applyLabel="Apply filters"
+        (filtersChange)="store.setGameFilters($event)"
+        (apply)="store.load()"
+        (reset)="store.resetGameFilters()"
+      />
+    }
+  </section>
+
   @if (store.runSummary(); as summary) {
-    <p class="status-note">
-      Run {{ summary.runId }} scanned {{ summary.scannedGames }} games, skipped {{ summary.skippedAlreadyProcessedGames }},
-      inserted {{ summary.detectionsInserted }} detections ({{ summary.missedShots }} missed shots,
-      {{ summary.punishedOpponentBlunders }} punished blunders, {{ summary.userBlunders }} my blunders).
-    </p>
+    <p class="status-note">Run {{ summary.runId }} scanned {{ summary.scannedGames }} games, skipped {{ summary.skippedAlreadyProcessedGames }}, inserted {{ summary.detectionsInserted }} detections.</p>
   }
-  @if (store.loading()) { <p class="status-note">Loading persisted detections...</p> }
+  @if (store.loading()) { <p class="status-note">Loading persisted findings...</p> }
   @if (store.running()) { <p class="status-note">Scanning analysed games for tactical swings...</p> }
   @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
   @if (store.loaded() && !store.loading() && !store.error()) {
-    <p class="status-note">{{ store.items().length }} detections shown: {{ store.missedShots() }} missed shots, {{ store.punishedOpponentBlunders() }} punished blunders, {{ store.userBlunders() }} my blunders.</p>
+    <p class="status-note">{{ store.items().length }} findings shown: {{ store.missedShots() }} missed shots, {{ store.punishedOpponentBlunders() }} punished blunders, {{ store.userBlunders() }} my blunders.</p>
   }
 
   @if (!store.loading() && store.items().length > 0) {
     <div class="table-wrap">
       <table class="lab-table">
-        <thead><tr><th>Kind</th><th>Game</th><th>Date</th><th>Move no.</th><th>Move</th><th>Best move</th><th>Swing</th><th>Eval</th><th>Action</th></tr></thead>
+        <thead><tr><th>Kind</th><th>Game</th><th>Date</th><th>Move no.</th><th>Move</th><th>Best move</th><th>Swing</th><th>Eval</th><th>Actions</th></tr></thead>
         <tbody>
           @for (item of store.items(); track item.id) {
             <tr>
               <td><span class="kind-pill" [class.kind-pill-punished]="item.kind === 'PUNISHED_OPPONENT_BLUNDER'" [class.kind-pill-blunder]="item.kind === 'USER_BLUNDER'">{{ kindLabel(item.kind) }}</span></td>
-              <td class="primary-cell"><a [routerLink]="['/games', item.importedGameId]">{{ gameLabel(item) }}</a></td>
+              <td class="primary-cell"><a [routerLink]="['/games', item.importedGameId]" [queryParams]="gameQueryParams(item)">{{ gameLabel(item) }}</a></td>
               <td>{{ dateLabel(item.endedAt) }}</td>
               <td>{{ moveNumberLabel(item) }}</td>
               <td>{{ item.moveUci }}</td>
@@ -55,11 +62,12 @@
               <td>{{ swingLabel(item.swingCp) }}</td>
               <td class="eval-cell">{{ evalLabel(item.evalBeforeUserCp) }} / {{ evalLabel(item.evalAfterTriggerUserCp) }} / {{ evalLabel(item.evalAfterReplyUserCp) }}</td>
               <td>
-                @if (item.kind === 'MISSED_SHOT') {
-                  <a class="compact-action" [routerLink]="['/scenario-training/tactical-missed-shot']" [queryParams]="{ detectionId: item.id }">Train this</a>
-                } @else {
-                  <span>-</span>
-                }
+                <div class="collection-actions">
+                  <a [routerLink]="['/games', item.importedGameId]" [queryParams]="gameQueryParams(item)">Show in game</a>
+                  @if (trainingRoute(item); as route) {
+                    <a [routerLink]="[route]" [queryParams]="{ detectionId: item.id }">Train this</a>
+                  }
+                </div>
               </td>
             </tr>
           }
@@ -67,8 +75,6 @@
       </table>
     </div>
   } @else if (store.loaded() && !store.loading() && !store.error()) {
-    <div class="empty-state">No persisted tactical detections match this range.</div>
-  } @else if (!store.loaded() && !store.loading()) {
-    <div class="empty-state">Run detection or reload persisted rows for this month.</div>
+    <div class="empty-state">No persisted tactical findings match these filters.</div>
   }
 </section>
