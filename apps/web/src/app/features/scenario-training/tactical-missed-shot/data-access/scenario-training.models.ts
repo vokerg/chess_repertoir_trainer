@@ -73,6 +73,7 @@ export interface ScenarioTrainingSession extends ScenarioGameHeader {
 export interface StartScenarioRequest {
   from?: string;
   to?: string;
+  gameId?: number;
   detectionId?: number;
   excludeDetectionId?: number;
   random?: boolean;
