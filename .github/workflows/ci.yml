@@ -57,14 +57,4 @@ jobs:
         run: npm run db:migrate --workspace=apps/api
 
       - name: Test
-        shell: bash
-        run: |
-          set -o pipefail
-          npm test 2>&1 | tee test-output.log
-
-      - name: Upload test failure output
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-output
-          path: test-output.log
+        run: npm test
