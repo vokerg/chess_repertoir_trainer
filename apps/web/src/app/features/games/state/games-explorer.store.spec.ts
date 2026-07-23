@@ -37,14 +37,17 @@ describe('GamesExplorerStore', () => {
   it('reloads visible rows once when an individual task settles', async () => {
     api.searchGames.and.returnValue(of(searchResponse([game(1), game(2)])));
     settledGameBatch.set({ sequence: 1, gameIds: [1] });
+    TestBed.tick();
     await settlePromises();
     expect(api.searchGames).toHaveBeenCalledOnceWith(store.appliedQuery(), null);
 
     settledGameBatch.set({ sequence: 1, gameIds: [1] });
+    TestBed.tick();
     await settlePromises();
     expect(api.searchGames).toHaveBeenCalledTimes(1);
 
     settledGameBatch.set({ sequence: 2, gameIds: [99] });
+    TestBed.tick();
     await settlePromises();
     expect(api.searchGames).toHaveBeenCalledTimes(1);
   });
