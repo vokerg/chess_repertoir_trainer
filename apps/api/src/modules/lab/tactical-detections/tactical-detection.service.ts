@@ -105,7 +105,9 @@ export async function runTacticalDetection(userId: number, input: TacticalDetect
 }
 
 export async function getTacticalDetections(userId: number, query: TacticalDetectionListQuery) {
-  const range = normalizeRange(query);
+  const range = query.gameId
+    ? { from: query.from, to: query.to }
+    : normalizeRange(query);
   const items = await listFilteredTacticalDetections(userId, {
     ...query,
     from: range.from,
@@ -114,8 +116,8 @@ export async function getTacticalDetections(userId: number, query: TacticalDetec
     detectionVersion: currentTacticalDetectionVersion(),
   });
   return {
-    from: range.from,
-    to: range.to,
+    from: range.from ?? null,
+    to: range.to ?? null,
     limit: query.limit,
     kind: query.kind ?? null,
     items,
