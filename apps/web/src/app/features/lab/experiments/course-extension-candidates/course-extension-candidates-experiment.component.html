@@ -1,5 +1,5 @@
 <section class="stack">
-  <section class="section-card extension-controls" aria-label="Course extension filters">
+  <section class="section-card extension-controls" aria-label="Course extension criteria">
     <label class="field-stack">
       <span class="metric-label">Course</span>
       <select
@@ -26,11 +26,19 @@
       />
       <small class="field-hint">Count distinct games with the same opponent continuation.</small>
     </label>
-
-    <button type="button" class="primary" (click)="store.load()" [disabled]="!store.canLoad()">
-      {{ store.loading() ? 'Checking...' : 'Find extensions' }}
-    </button>
   </section>
+
+  <app-game-filter-panel
+    [filters]="store.gameFilters()"
+    [facets]="store.facets()"
+    [loading]="store.loading() || store.loadingCourses()"
+    applyLabel="Find extensions"
+    (filtersChange)="store.setGameFilters($event)"
+    (apply)="store.load()"
+    (reset)="store.resetGameFilters()"
+  />
+
+  <p class="status-note">Only indexed games matching the selected game filters contribute to continuation counts.</p>
 
   @if (store.error(); as error) {
     <p class="status-error">{{ error }}</p>
@@ -58,7 +66,7 @@
 
     @if (report.items.length === 0) {
       <div class="empty-state">
-        No opponent continuations were seen in at least {{ report.filters.minGames }} games. Try a lower threshold.
+        No opponent continuations were seen in at least {{ report.filters.minGames }} games. Try a lower threshold or broader game filters.
       </div>
     } @else {
       <div class="extension-list">
