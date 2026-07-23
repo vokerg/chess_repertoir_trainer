@@ -1,6 +1,22 @@
 import { z } from 'zod';
+import {
+  importedGameAppliedFiltersSchema,
+  importedGameSearchQuerySchema,
+} from '../imported-games';
 
-export const courseExtensionCandidatesQuerySchema = z.object({
+const courseExtensionGameFiltersQuerySchema = importedGameSearchQuerySchema.omit({
+  sort: true,
+  cursor: true,
+  limit: true,
+});
+
+const courseExtensionAppliedGameFiltersSchema = importedGameAppliedFiltersSchema.omit({
+  sort: true,
+  cursor: true,
+  limit: true,
+});
+
+export const courseExtensionCandidatesQuerySchema = courseExtensionGameFiltersQuerySchema.extend({
   courseId: z.coerce.number().int().positive(),
   minGames: z.coerce.number().int().min(1).max(1000).default(4),
 });
@@ -52,7 +68,7 @@ export const courseExtensionCandidatesResponseSchema = z.object({
     description: z.string().nullable(),
     lineCount: z.number().int().nonnegative(),
   }),
-  filters: z.object({
+  filters: courseExtensionAppliedGameFiltersSchema.extend({
     courseId: z.number().int().positive(),
     minGames: z.number().int().positive(),
   }),
