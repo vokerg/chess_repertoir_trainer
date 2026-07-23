@@ -41,6 +41,7 @@ describe('GamesExplorerPageComponent', () => {
           provide: ImportedGameJobStore,
           useValue: {
             terminalBatch: signal(null),
+            settledGameBatch: signal(null),
             submit: jasmine.createSpy('submit'),
             isGameActive: jasmine.createSpy('isGameActive').and.returnValue(false),
           },
