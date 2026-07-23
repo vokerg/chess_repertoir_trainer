@@ -1,8 +1,30 @@
 .extension-controls {
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 16rem);
+  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, 16rem) auto;
   gap: 1rem;
   align-items: end;
+}
+
+.extension-filter-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.extension-filter-toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+}
+
+.extension-filter-toggle small {
+  color: var(--muted);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field-stack {
@@ -78,5 +100,17 @@
   .example-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .extension-filter-toggle {
+    grid-template-columns: 1fr auto;
+  }
+
+  .extension-filter-toggle small {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
   }
 }
