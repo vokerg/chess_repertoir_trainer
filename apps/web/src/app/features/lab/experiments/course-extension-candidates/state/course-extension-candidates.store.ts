@@ -4,6 +4,7 @@ import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts
 import { CourseDetailApiService } from '../../../../courses/data-access/course-detail-api.service';
 import type { CourseDetail } from '../../../../courses/data-access/course-detail.models';
 import { defaultGameFilters, GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import { summaryGameFilters } from '../../../../../shared/games/filters/game-filter-summary';
 import {
   emptyImportedGameFacets,
   ImportedGameFacetsResponse,
@@ -20,6 +21,7 @@ export class CourseExtensionCandidatesStore {
   readonly minGames = signal(4);
   readonly gameFilters = signal<GameFilters>(defaultGameFilters());
   readonly facets = signal<ImportedGameFacetsResponse>(emptyImportedGameFacets());
+  readonly filtersCollapsed = signal(true);
   readonly report = signal<CourseExtensionCandidatesResponse | null>(null);
   readonly loadingCourses = signal(false);
   readonly loading = signal(false);
@@ -27,6 +29,7 @@ export class CourseExtensionCandidatesStore {
   readonly error = signal<string | null>(null);
 
   readonly canLoad = computed(() => Boolean(this.courseId()) && !this.loading() && !this.loadingCourses());
+  readonly filterSummary = computed(() => summaryGameFilters(this.gameFilters()));
 
   async initialize(): Promise<void> {
     this.loadingCourses.set(true);
@@ -66,6 +69,10 @@ export class CourseExtensionCandidatesStore {
   resetGameFilters(): void {
     this.gameFilters.set(defaultGameFilters());
     void this.load();
+  }
+
+  toggleFilters(): void {
+    this.filtersCollapsed.update((collapsed) => !collapsed);
   }
 
   async load(): Promise<void> {
