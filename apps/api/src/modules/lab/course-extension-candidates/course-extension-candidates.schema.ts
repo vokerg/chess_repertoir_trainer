@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import {
-  importedGameSearchQuerySchema,
-  ImportedGameSummaryQuery,
-} from '../../imported-games/imported-games.schemas';
+import { importedGameSearchQuerySchema } from '../../imported-games/imported-games.schemas';
+import type { ImportedGameSummaryQuery } from '../../imported-games/imported-games.schemas';
 
 const courseExtensionGameFiltersSchema = importedGameSearchQuerySchema.omit({
   sort: true,
