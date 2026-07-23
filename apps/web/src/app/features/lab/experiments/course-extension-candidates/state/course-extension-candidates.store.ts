@@ -3,12 +3,11 @@ import { firstValueFrom } from 'rxjs';
 import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts/lab';
 import { CourseDetailApiService } from '../../../../courses/data-access/course-detail-api.service';
 import type { CourseDetail } from '../../../../courses/data-access/course-detail.models';
-import { defaultGameFilters, GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import { defaultGameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import type { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
 import { summaryGameFilters } from '../../../../../shared/games/filters/game-filter-summary';
-import {
-  emptyImportedGameFacets,
-  ImportedGameFacetsResponse,
-} from '../../../../../shared/games/game.models';
+import { emptyImportedGameFacets } from '../../../../../shared/games/game.models';
+import type { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
 import { CourseExtensionCandidatesApiService } from '../data-access/course-extension-candidates-api.service';
 
 @Injectable()
