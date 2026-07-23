@@ -1,7 +1,6 @@
 import { Chess } from 'chess.js';
 import type {
   CourseExtensionCandidate,
-  CourseExtensionCandidatesQuery,
   CourseExtensionCandidatesResponse,
   CourseExtensionLineRef,
 } from '@chess-trainer/contracts/lab';
@@ -9,18 +8,22 @@ import {
   buildRepertoireGraph,
   formatPathToNode,
   normalizeFenForPosition,
+  RepertoireLineInput,
   sideToMoveFromFen,
 } from 'chess-domain';
-import type { RepertoireLineInput } from 'chess-domain';
 import {
   getCoverageCourse,
   getCourseReviewLines,
 } from '../../repertoire-coverage/repertoire-coverage.repository.prisma';
+import type { CourseExtensionCandidatePlyRow } from './course-extension-candidates.repository.prisma';
 import {
   findCourseExtensionCandidatePlies,
   findCourseExtensionPositions,
 } from './course-extension-candidates.repository.prisma';
-import type { CourseExtensionCandidatePlyRow } from './course-extension-candidates.repository.prisma';
+import {
+  courseExtensionCandidateGameFilters,
+  CourseExtensionCandidatesApiQuery,
+} from './course-extension-candidates.schema';
 
 type CourseColor = 'WHITE' | 'BLACK';
 type CourseReviewLine = Awaited<ReturnType<typeof getCourseReviewLines>>[number];
@@ -202,9 +205,20 @@ export function groupCourseExtensionCandidates(
   return { items, gamesMatched: matchedGameIds.size, continuationsFound };
 }
 
+function serializeFilters(
+  query: CourseExtensionCandidatesApiQuery,
+): CourseExtensionCandidatesResponse['filters'] {
+  const { from, to, ...filters } = query;
+  return {
+    ...filters,
+    ...(from ? { from: from.toISOString() } : {}),
+    ...(to ? { to: to.toISOString() } : {}),
+  };
+}
+
 export async function getCourseExtensionCandidates(
   userId: number,
-  query: CourseExtensionCandidatesQuery,
+  query: CourseExtensionCandidatesApiQuery,
 ): Promise<CourseExtensionCandidatesResponse | null> {
   const course = await getCoverageCourse(userId, query.courseId);
   if (!course) return null;
@@ -213,9 +227,11 @@ export async function getCourseExtensionCandidates(
   const positions = await findCourseExtensionPositions(
     [...new Set(terminals.map((terminal) => terminal.normalizedFen))],
   );
+  const gameFilters = courseExtensionCandidateGameFilters(query);
   const rows = await findCourseExtensionCandidatePlies(
     userId,
     positions.map((position) => position.id),
+    gameFilters,
   );
   const grouped = groupCourseExtensionCandidates(terminals, rows, query.minGames);
 
@@ -225,7 +241,7 @@ export async function getCourseExtensionCandidates(
       description: course.description ?? null,
       lineCount: lines.length,
     },
-    filters: query,
+    filters: serializeFilters(query),
     summary: {
       terminalPositions: terminals.length,
       gamesMatched: grouped.gamesMatched,
