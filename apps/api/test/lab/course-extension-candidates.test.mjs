@@ -1,9 +1,34 @@
 import assert from 'node:assert/strict';
 import { Chess } from 'chess.js';
 import {
+  courseExtensionCandidateGameFilters,
+  courseExtensionCandidatesQuerySchema,
+} from '../../dist/modules/lab/course-extension-candidates/course-extension-candidates.schema.js';
+import {
   collectCourseTerminalPositions,
   groupCourseExtensionCandidates,
 } from '../../dist/modules/lab/course-extension-candidates/course-extension-candidates.service.js';
+
+const parsedQuery = courseExtensionCandidatesQuerySchema.parse({
+  courseId: '21',
+  minGames: '4',
+  providers: 'LICHESS',
+  speedCategory: 'blitz,rapid',
+  from: '2026-04-01T00:00:00.000Z',
+  to: '2026-07-01T23:59:59.999Z',
+});
+assert.equal(parsedQuery.courseId, 21);
+assert.equal(parsedQuery.minGames, 4);
+assert.deepEqual(parsedQuery.providers, ['LICHESS']);
+assert.deepEqual(parsedQuery.speedCategory, ['blitz', 'rapid']);
+assert.ok(parsedQuery.from instanceof Date);
+assert.ok(parsedQuery.to instanceof Date);
+assert.deepEqual(courseExtensionCandidateGameFilters(parsedQuery), {
+  providers: ['LICHESS'],
+  speedCategory: ['blitz', 'rapid'],
+  from: new Date('2026-04-01T00:00:00.000Z'),
+  to: new Date('2026-07-01T23:59:59.999Z'),
+});
 
 function buildLine({ id, chapterId, name, sideToTrain, moves }) {
   const chess = new Chess();
