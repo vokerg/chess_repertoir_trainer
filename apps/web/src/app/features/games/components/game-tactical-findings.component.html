@@ -1,39 +1,40 @@
-<section class="section-card tactical-findings stack">
-  <div class="tactical-findings-header">
-    <div>
-      <span class="eyebrow">Analysed game</span>
-      <h3 class="collection-title">Tactical findings</h3>
-    </div>
+<section class="tactical-findings">
+  @if (missedShotCount() > 0 || blunderCount() > 0) {
     <div class="collection-actions">
       @if (missedShotCount() > 0) {
-        <a [routerLink]="['/scenario-training/tactical-missed-shot']" [queryParams]="{ gameId: gameId() }">Train missed shots ({{ missedShotCount() }})</a>
+        <a [routerLink]="['/scenario-training/tactical-missed-shot']" [queryParams]="{ gameId: gameId() }">
+          Train missed shots ({{ missedShotCount() }})
+        </a>
       }
       @if (blunderCount() > 0) {
-        <a [routerLink]="['/scenario-training/tactical-blunder']" [queryParams]="{ gameId: gameId() }">Train blunders ({{ blunderCount() }})</a>
+        <a [routerLink]="['/scenario-training/tactical-blunder']" [queryParams]="{ gameId: gameId() }">
+          Train blunders ({{ blunderCount() }})
+        </a>
       }
     </div>
-  </div>
+  }
 
   @if (loading()) {
     <p class="status-note">Loading tactical findings...</p>
   } @else if (error(); as message) {
-    <p class="status-error">{{ message }}</p>
-  } @else if (findings().length === 0) {
-    <p class="status-note">No tactical findings were detected for this game.</p>
+    <div class="finding-error">
+      <p class="status-error">{{ message }}</p>
+      <button type="button" class="secondary" (click)="retry.emit()">Retry</button>
+    </div>
   } @else {
     <div class="finding-list">
       @for (item of findings(); track item.id) {
         <article class="finding-row">
-          <div>
-            <strong>{{ kindLabel(item) }}</strong>
-            <span>{{ moveLabel(item) }}</span>
-            @if (item.bestMoveUci) { <span>Best: {{ item.bestMoveUci }}</span> }
-            @if (item.swingCp !== null) { <span>{{ item.swingCp }} cp</span> }
+          <div class="finding-summary">
+            <strong class="finding-kind">{{ kindLabel(item) }}</strong>
+            <strong class="finding-move">{{ moveLabel(item) }}</strong>
+            @if (item.bestMoveUci) { <span>Best {{ item.bestMoveUci }}</span> }
+            @if (item.swingCp !== null) { <span>{{ item.swingCp }} cp swing</span> }
           </div>
           <div class="collection-actions">
-            <button type="button" class="secondary" (click)="moveSelected.emit(item.triggerPlyNumber)">Show move</button>
+            <button type="button" class="secondary" (click)="moveSelected.emit(item.triggerPlyNumber)">Show</button>
             @if (trainingRoute(item); as route) {
-              <a [routerLink]="[route]" [queryParams]="{ detectionId: item.id }">Train this</a>
+              <a [routerLink]="[route]" [queryParams]="{ detectionId: item.id }">Train</a>
             }
           </div>
         </article>

@@ -1,46 +1,24 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import {
-  GameTacticalFinding,
-  GameTacticalFindingsApiService,
-} from '../data-access/game-tactical-findings-api.service';
+import { type GameTacticalFinding } from '../data-access/game-tactical-findings-api.service';
 
 @Component({
   selector: 'app-game-tactical-findings',
   standalone: true,
   imports: [RouterLink],
-  providers: [GameTacticalFindingsApiService],
   templateUrl: './game-tactical-findings.component.html',
   styleUrl: './game-tactical-findings.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GameTacticalFindingsComponent implements OnInit {
-  private readonly api = inject(GameTacticalFindingsApiService);
-
+export class GameTacticalFindingsComponent {
   readonly gameId = input.required<number>();
+  readonly findings = input<readonly GameTacticalFinding[]>([]);
+  readonly loading = input(false);
+  readonly error = input<string | null>(null);
+  readonly retry = output<void>();
   readonly moveSelected = output<number>();
-  readonly findings = signal<readonly GameTacticalFinding[]>([]);
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
   readonly missedShotCount = computed(() => this.findings().filter((item) => item.kind === 'MISSED_SHOT').length);
   readonly blunderCount = computed(() => this.findings().filter((item) => item.kind === 'USER_BLUNDER').length);
-
-  ngOnInit(): void {
-    void this.load();
-  }
-
-  protected async load(): Promise<void> {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      this.findings.set(await firstValueFrom(this.api.getForGame(this.gameId())));
-    } catch {
-      this.error.set('Could not load tactical findings for this game.');
-    } finally {
-      this.loading.set(false);
-    }
-  }
 
   protected kindLabel(item: GameTacticalFinding): string {
     if (item.kind === 'MISSED_SHOT') return 'Missed shot';

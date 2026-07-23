@@ -7,12 +7,14 @@ import { AiCapabilitiesService } from '../../../core/ai/ai-capabilities.service'
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { GameDetailStore } from '../state/game-detail.store';
 import { GameAiReviewStore } from '../state/game-ai-review.store';
+import { GameTacticalFindingsStore } from '../state/game-tactical-findings.store';
 import { GameDetailPageComponent } from './game-detail-page.component';
 
 describe('GameDetailPageComponent', () => {
   let fixture: ComponentFixture<GameDetailPageComponent>;
   let store: jasmine.SpyObj<GameDetailStore>;
   let aiReviewStore: jasmine.SpyObj<GameAiReviewStore>;
+  let tacticalFindingsStore: jasmine.SpyObj<GameTacticalFindingsStore>;
   let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
   let capabilities: BehaviorSubject<AiCapabilitiesResponse>;
 
@@ -25,6 +27,10 @@ describe('GameDetailPageComponent', () => {
       'selectNode',
     ]);
     aiReviewStore = jasmine.createSpyObj<GameAiReviewStore>('GameAiReviewStore', ['load', 'reset']);
+    tacticalFindingsStore = jasmine.createSpyObj<GameTacticalFindingsStore>(
+      'GameTacticalFindingsStore',
+      ['load', 'reset'],
+    );
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
     capabilities = new BehaviorSubject<AiCapabilitiesResponse>({ widgets: { gameReview: false } });
 
@@ -48,6 +54,7 @@ describe('GameDetailPageComponent', () => {
           providers: [
             { provide: GameDetailStore, useValue: store },
             { provide: GameAiReviewStore, useValue: aiReviewStore },
+            { provide: GameTacticalFindingsStore, useValue: tacticalFindingsStore },
           ],
         },
       })
@@ -75,8 +82,8 @@ describe('GameDetailPageComponent', () => {
     expect(store.deleteSelectedSubtree).toHaveBeenCalled();
   });
 
-  it('delegates an AI turning point to the existing game tree selection', () => {
-    page().selectAiReviewMove(37);
+  it('delegates an insight move to the existing game tree selection', () => {
+    page().selectFindingMove(37);
 
     expect(store.selectNode).toHaveBeenCalledOnceWith(37);
   });
@@ -98,11 +105,11 @@ describe('GameDetailPageComponent', () => {
 
   function page(): {
     confirmDeleteSelectedSubtree(): Promise<void>;
-    selectAiReviewMove(plyNumber: number): void;
+    selectFindingMove(plyNumber: number): void;
   } {
     return fixture.componentInstance as unknown as {
       confirmDeleteSelectedSubtree(): Promise<void>;
-      selectAiReviewMove(plyNumber: number): void;
+      selectFindingMove(plyNumber: number): void;
     };
   }
 });

@@ -31,15 +31,15 @@
       [analysisSummary]="store.analysisSummaryLabel()"
     />
 
-    <app-game-tactical-findings
+    <app-game-insights
       [gameId]="game.id"
-      (moveSelected)="selectFindingMove($event)"
-    />
-
-    <app-game-ai-review-widget
+      [findings]="tacticalFindingsStore.findings()"
+      [findingsLoading]="tacticalFindingsStore.status() === 'LOADING'"
+      [findingsError]="tacticalFindingsStore.error()"
       [review]="aiReviewStore.review()"
       [selectedPlyNumber]="store.selectedNode()?.node?.plyNumber ?? null"
-      (moveSelected)="selectAiReviewMove($event)"
+      (retryFindings)="retryTacticalFindings()"
+      (moveSelected)="selectFindingMove($event)"
     />
 
     @if (store.tree(); as tree) {
