@@ -5,18 +5,29 @@ import type {
   CourseExtensionCandidatesResponse,
 } from '@chess-trainer/contracts/lab';
 import { ApiService } from '../../../../../core/api/api.service';
+import { appendGameFilterParams } from '../../../../../shared/games/filters/game-filter-query.mapper';
+import { GameFilters } from '../../../../../shared/games/filters/game-filter.model';
+import { ImportedGameFacetsResponse } from '../../../../../shared/games/game.models';
 
 @Injectable()
 export class CourseExtensionCandidatesApiService {
   private readonly api = inject(ApiService);
 
-  getCandidates(query: CourseExtensionCandidatesQuery): Observable<CourseExtensionCandidatesResponse> {
+  getCandidates(
+    query: Pick<CourseExtensionCandidatesQuery, 'courseId' | 'minGames'>,
+    gameFilters: GameFilters,
+  ): Observable<CourseExtensionCandidatesResponse> {
     const params = new URLSearchParams({
       courseId: String(query.courseId),
       minGames: String(query.minGames),
     });
+    appendGameFilterParams(params, gameFilters);
     return this.api.get<CourseExtensionCandidatesResponse>(
       `/lab/course-extension-candidates?${params.toString()}`,
     );
+  }
+
+  getFacets(): Observable<ImportedGameFacetsResponse> {
+    return this.api.get<ImportedGameFacetsResponse>('/imported-games/facets');
   }
 }
