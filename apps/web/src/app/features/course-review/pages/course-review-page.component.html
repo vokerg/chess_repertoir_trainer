@@ -8,122 +8,161 @@
 
   <app-page-header
     [title]="store.course()?.name || 'Course review'"
-    subtitle="Review imported games after they enter this course repertoire, then find your deviations and uncovered opponent moves."
+    subtitle="Compare imported games with this course and identify where the repertoire needs attention."
     [stats]="headerStats()"
   />
 
-  <section class="section-card review-filter-card" aria-label="Course review filters">
-    <button
-      type="button"
-      class="review-filter-toggle secondary"
-      (click)="store.toggleFilters()"
-      [attr.aria-expanded]="!store.filtersCollapsed()"
-    >
-      <span>Filters</span>
-      <small>{{ store.filterSummary() }}</small>
-      <strong>{{ store.filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
-    </button>
+  <app-course-review-mode-tabs
+    [tabs]="modeTabs()"
+    [activeMode]="store.activeMode()"
+    (modeChange)="selectMode($event)"
+  />
 
-    @if (!store.filtersCollapsed()) {
-      <app-game-filter-panel
-        [filters]="store.gameFilters()"
-        [facets]="store.facets()"
-        [loading]="store.loading()"
-        [lockedUserColor]="store.lockedUserColor()"
-        (filtersChange)="store.setGameFilters($event)"
-        (apply)="store.loadReview()"
-        (reset)="store.resetGameFilters()"
-      />
+  <app-panel
+    class="review-filter-panel"
+    title="Review scope"
+    subtitle="The same imported-game filters are preserved while you switch between review modes."
+  >
+    <div class="review-filter-content">
+      <button
+        type="button"
+        class="review-filter-toggle secondary"
+        (click)="store.toggleFilters()"
+        [attr.aria-expanded]="!store.filtersCollapsed()"
+      >
+        <span>Game filters</span>
+        <small>{{ store.filterSummary() }}</small>
+        <strong>{{ store.filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
+      </button>
+
+      @if (!store.filtersCollapsed()) {
+        <app-game-filter-panel
+          [filters]="store.gameFilters()"
+          [facets]="store.facets()"
+          [loading]="store.loading()"
+          [lockedUserColor]="store.lockedUserColor()"
+          [applyLabel]="actionLabel()"
+          (filtersChange)="store.setGameFilters($event)"
+          (apply)="store.applyFilters()"
+          (reset)="store.resetGameFilters()"
+        />
+      }
 
       <div class="review-criteria">
-        <div class="stack review-criteria-copy">
-          <span class="eyebrow">Course review criteria</span>
-          <label for="review-min-covered-plies" class="metric-label">Minimum course overlap</label>
-          <p class="field-hint">Only review games after this many half-moves matched the course.</p>
-        </div>
-        <input
-          id="review-min-covered-plies"
-          type="number"
-          min="0"
-          max="20"
-          step="1"
-          [ngModel]="store.minCoveredPlies()"
-          (ngModelChange)="store.setMinCoveredPlies($event)"
-        />
-        <button type="button" class="primary" (click)="store.loadReview()" [disabled]="!store.canReview()">
-          {{ store.loading() ? 'Reviewing...' : 'Review' }}
+        @if (store.activeMode() === 'COURSE_ENDINGS') {
+          <div class="stack review-criteria-copy">
+            <label for="review-min-games" class="metric-label">Minimum games</label>
+            <p class="field-hint">
+              Count distinct games with the same opponent continuation after a course ending.
+            </p>
+          </div>
+          <input
+            id="review-min-games"
+            type="number"
+            min="1"
+            max="1000"
+            step="1"
+            [ngModel]="store.minGames()"
+            (ngModelChange)="store.setMinGames($event)"
+          />
+        } @else {
+          <div class="stack review-criteria-copy">
+            <label for="review-min-covered-plies" class="metric-label">Minimum course overlap</label>
+            <p class="field-hint">
+              Only review games after this many half-moves matched the course.
+            </p>
+          </div>
+          <input
+            id="review-min-covered-plies"
+            type="number"
+            min="0"
+            max="20"
+            step="1"
+            [ngModel]="store.minCoveredPlies()"
+            (ngModelChange)="store.setMinCoveredPlies($event)"
+          />
+        }
+
+        <button type="button" class="primary" (click)="store.refreshActive()" [disabled]="!store.canLoad()">
+          {{ actionLabel() }}
         </button>
       </div>
-    }
-  </section>
+    </div>
+  </app-panel>
 
   @if (store.error(); as error) {
     <p class="status-error">{{ error }}</p>
   }
 
-  @if (store.review(); as review) {
-    @if (review.course.hasMixedSides) {
-      <p class="status-note">
-        This course contains both White and Black lines. Review works best for a single-side
-        repertoire.
-      </p>
-    }
+  @if (store.course()?.hasMixedSides && store.activeMode() !== 'COURSE_ENDINGS') {
+    <p class="status-note">
+      This course contains both White and Black lines. Review works best for a single-side repertoire.
+    </p>
+  }
 
-    <div class="grid-auto">
-      <div class="metric-card">
-        <p class="metric-label">Games checked</p>
-        <p class="metric-value">{{ review.summary.gamesChecked }}</p>
+  @if (store.activeMode() === 'COURSE_ENDINGS') {
+    @if (store.endings(); as report) {
+      <div class="grid-auto">
+        <div class="metric-card">
+          <p class="metric-label">Course endings</p>
+          <p class="metric-value">{{ report.summary.terminalPositions }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="metric-label">Games reaching them</p>
+          <p class="metric-value">{{ report.summary.gamesMatched }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="metric-label">Continuations found</p>
+          <p class="metric-value">{{ report.summary.continuationsFound }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="metric-label">Meet threshold</p>
+          <p class="metric-value">{{ report.summary.qualifyingContinuations }}</p>
+        </div>
       </div>
-      <div class="metric-card">
-        <p class="metric-label">In course scope</p>
-        <p class="metric-value">{{ review.summary.inScopeGames }}</p>
-      </div>
-      <div class="metric-card">
-        <p class="metric-label">My deviations</p>
-        <p class="metric-value">{{ review.summary.myDeviations }}</p>
-      </div>
-      <div class="metric-card">
-        <p class="metric-label">Opponent uncovered</p>
-        <p class="metric-value">{{ review.summary.opponentUncovered }}</p>
-      </div>
-      <div class="metric-card">
-        <p class="metric-label">Repertoire ended</p>
-        <p class="metric-value">{{ review.summary.repertoireEnded }}</p>
-      </div>
-      <div class="metric-card">
-        <p class="metric-label">Out of scope</p>
-        <p class="metric-value">{{ review.summary.outOfScopeGames }}</p>
-      </div>
-      <div class="metric-card">
-        <p class="metric-label">Unindexed</p>
-        <p class="metric-value">{{ review.summary.unindexedGames }}</p>
-      </div>
-      <div class="metric-card">
-        <p class="metric-label">Course conflicts</p>
-        <p class="metric-value">{{ review.summary.courseConflicts }}</p>
-      </div>
-    </div>
 
-    @if (review.conflicts.length > 0) {
-      <app-course-review-conflicts [conflicts]="review.conflicts" />
-    }
-
-    <div class="review-results">
       <app-course-review-issue-list
-        eyebrow="My play"
-        title="My deviations"
-        emptyMessage="No personal deviations found with the current filters."
-        [groups]="review.myDeviations"
+        [title]="resultTitle()"
+        [subtitle]="resultSubtitle()"
+        [emptyMessage]="emptyMessage()"
+        [findings]="store.activeFindings()"
       />
+    } @else if (store.loading()) {
+      <p class="status-note">Checking course endings against indexed games...</p>
+    }
+  } @else {
+    @if (store.review(); as review) {
+      <div class="grid-auto">
+        <div class="metric-card">
+          <p class="metric-label">Games checked</p>
+          <p class="metric-value">{{ review.summary.gamesChecked }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="metric-label">In course scope</p>
+          <p class="metric-value">{{ review.summary.inScopeGames }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="metric-label">My deviations</p>
+          <p class="metric-value">{{ review.summary.myDeviations }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="metric-label">Opponent gaps</p>
+          <p class="metric-value">{{ review.summary.opponentUncovered }}</p>
+        </div>
+      </div>
+
+      @if (review.conflicts.length > 0) {
+        <app-course-review-conflicts [conflicts]="review.conflicts" />
+      }
+
       <app-course-review-issue-list
-        eyebrow="Opponent play"
-        title="Opponent uncovered"
-        emptyMessage="No uncovered opponent moves found with the current filters."
-        [groups]="review.opponentUncovered"
-        [opponent]="true"
+        [title]="resultTitle()"
+        [subtitle]="resultSubtitle()"
+        [emptyMessage]="emptyMessage()"
+        [findings]="store.activeFindings()"
       />
-    </div>
-  } @else if (store.loading()) {
-    <p class="status-note">Reviewing imported games...</p>
+    } @else if (store.loading()) {
+      <p class="status-note">Reviewing imported games...</p>
+    }
   }
 </section>
