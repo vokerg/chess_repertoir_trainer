@@ -235,6 +235,17 @@ async function claimNextTaskOnce(
             WHERE active_task."workKey" IS NOT NULL
               AND active_task."importedGameId" = task."importedGameId"
           )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "JobTask" AS higher_priority_task
+            JOIN "JobRun" AS higher_priority_job
+              ON higher_priority_job."id" = higher_priority_task."jobRunId"
+            WHERE higher_priority_task."status" = 'QUEUED'
+              AND higher_priority_task."importedGameId" = task."importedGameId"
+              AND higher_priority_job."status" IN ('QUEUED', 'RUNNING')
+              AND higher_priority_job."kind" IN (${kinds})
+              AND higher_priority_job."priority" > job."priority"
+          )
         ORDER BY
           job."priority" DESC,
           job."updatedAt" ASC,
