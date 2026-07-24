@@ -6,15 +6,15 @@
     aria-label="Analyze this position"
   >
     <app-board-image
-      [fen]="displayedFen()"
-      [pov]="boardPov()"
+      [fen]="finding().positionFen"
+      [pov]="finding().boardPov"
       turn="auto"
-      [alt]="'Position after ' + (group().playedSan || group().playedMoveUci)"
+      [alt]="finding().title"
     />
   </a>
 
   <div class="issue-content stack">
-    @if (group().moveSequenceSan; as sequence) {
+    @if (finding().sequence; as sequence) {
       <div class="position-label">
         <span class="metric-label">Sequence</span>
         <strong class="move-sequence">{{ sequence }}</strong>
@@ -23,10 +23,23 @@
       <span class="metric-label">Position</span>
     }
 
+    <div>
+      <h3 class="collection-title">{{ finding().title }}</h3>
+      <p class="collection-description">{{ finding().description }}</p>
+    </div>
+
     <app-copyable-fen
-      [fen]="displayedFen()"
+      [fen]="finding().positionFen"
       accessibleName="Displayed position FEN"
     />
+
+    @if (finding().lineReferences.length > 0) {
+      <div class="line-reference-list">
+        @for (lineRef of finding().lineReferences; track lineRef.lineId + ':' + lineRef.nodeId) {
+          <a [routerLink]="['/chapters', lineRef.chapterId, 'lines']">{{ lineRef.lineName }}</a>
+        }
+      </div>
+    }
 
     <div class="collection-actions">
       <a
@@ -38,27 +51,15 @@
       </a>
     </div>
 
-    @if (opponent()) {
-      <p class="collection-description">
-        Opponent played: <strong>{{ group().playedSan || group().playedMoveUci }}</strong>
-      </p>
-    } @else {
-      <p class="collection-description">
-        Expected: <strong>{{ expectedMoves() }}</strong
-        ><br />
-        You played: <strong>{{ group().playedSan || group().playedMoveUci }}</strong>
-      </p>
-    }
-
     <div class="issue-summary">
-      <span>Seen in {{ group().count }} games</span>
-      <span class="pill"
-        >{{ group().results.win }}W {{ group().results.draw }}D {{ group().results.loss }}L</span
-      >
+      <span>Seen in {{ finding().count }} games</span>
+      <span class="pill">
+        {{ finding().results.win }}W {{ finding().results.draw }}D {{ finding().results.loss }}L
+      </span>
     </div>
 
     <div class="example-list">
-      @for (example of group().examples; track example.gameId) {
+      @for (example of finding().examples; track example.gameId) {
         <div class="example-row">
           <span>
             {{ example.endedAt | date: 'mediumDate' }} vs
@@ -76,9 +77,9 @@
               Analyze position
             </a>
             @if (example.providerUrl) {
-              <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer"
-                >Open on {{ example.provider }}</a
-              >
+              <a [href]="example.providerUrl" target="_blank" rel="noopener noreferrer">
+                Open on {{ example.provider }}
+              </a>
             }
           </div>
         </div>
