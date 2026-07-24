@@ -1,0 +1,43 @@
+<section class="stack">
+  <app-lab-experiment-page-header
+    title="Course endings"
+    subtitle="Open the unified course review workspace directly on common continuations after course lines end."
+  />
+
+  <app-panel
+    title="Choose a course"
+    subtitle="The report now shares filters, cards and navigation with the other course review modes."
+  >
+    <div class="course-review-launcher">
+      <label class="field-stack">
+        <span class="metric-label">Course</span>
+        <select
+          [value]="store.courseId() ?? ''"
+          (change)="store.setCourseId(selectedNumber($event))"
+          [disabled]="store.loading()"
+        >
+          @for (course of store.courses(); track course.id) {
+            <option [value]="course.id">{{ course.name }}</option>
+          }
+        </select>
+      </label>
+
+      <button
+        type="button"
+        class="primary"
+        [disabled]="!store.canOpen()"
+        (click)="openCourseEndings()"
+      >
+        Open course endings
+      </button>
+    </div>
+  </app-panel>
+
+  @if (store.error(); as error) {
+    <p class="status-error">{{ error }}</p>
+  } @else if (store.loading()) {
+    <p class="status-note">Loading courses...</p>
+  } @else if (store.courses().length === 0) {
+    <div class="empty-state">Create a course before reviewing its endings.</div>
+  }
+</section>
