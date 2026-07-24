@@ -1,0 +1,22 @@
+.course-review-launcher {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+}
+
+.field-stack {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field-stack select {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .course-review-launcher {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
