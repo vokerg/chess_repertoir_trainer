@@ -37,6 +37,9 @@ export function defaultCourseReviewGameFilters(): GameFilters {
 export class CourseReviewStore {
   private readonly api = inject(CourseReviewApiService);
   private readonly courseId = signal<number | null>(null);
+  private readonly appliedGameFilters = signal(defaultCourseReviewGameFilters());
+  private readonly appliedMinCoveredPlies = signal(2);
+  private readonly appliedMinGames = signal(4);
   private reviewRequestVersion = 0;
   private endingsRequestVersion = 0;
   private facetsLoaded = false;
@@ -126,22 +129,19 @@ export class CourseReviewStore {
   setMinCoveredPlies(value: string | number): void {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return;
-    const nextValue = Math.max(0, Math.min(20, Math.trunc(parsed)));
-    if (nextValue === this.minCoveredPlies()) return;
-    this.minCoveredPlies.set(nextValue);
-    this.invalidateReview();
+    this.minCoveredPlies.set(Math.max(0, Math.min(20, Math.trunc(parsed))));
   }
 
   setMinGames(value: string | number): void {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return;
-    const nextValue = Math.max(1, Math.min(1000, Math.trunc(parsed)));
-    if (nextValue === this.minGames()) return;
-    this.minGames.set(nextValue);
-    this.invalidateEndings();
+    this.minGames.set(Math.max(1, Math.min(1000, Math.trunc(parsed))));
   }
 
   applyFilters(): void {
+    this.appliedGameFilters.set(this.gameFilters());
+    this.appliedMinCoveredPlies.set(this.minCoveredPlies());
+    this.appliedMinGames.set(this.minGames());
     this.invalidateReview();
     this.invalidateEndings();
     void this.ensureActiveLoaded();
@@ -183,10 +183,10 @@ export class CourseReviewStore {
     try {
       const review = await firstValueFrom(
         this.api.getCourseReview(courseId, {
-          gameFilters: this.gameFilters(),
+          gameFilters: this.appliedGameFilters(),
           limit: 100,
           offset: 0,
-          minCoveredPlies: this.minCoveredPlies(),
+          minCoveredPlies: this.appliedMinCoveredPlies(),
         }),
       );
       if (requestVersion !== this.reviewRequestVersion) return;
@@ -205,7 +205,9 @@ export class CourseReviewStore {
         const sideToTrain = review.course.sideToTrain;
         if (this.gameFilters().userColor !== sideToTrain) {
           this.gameFilters.update((filters) => ({ ...filters, userColor: sideToTrain }));
-          this.invalidateEndings();
+        }
+        if (this.appliedGameFilters().userColor !== sideToTrain) {
+          this.appliedGameFilters.update((filters) => ({ ...filters, userColor: sideToTrain }));
         }
       }
 
@@ -228,7 +230,7 @@ export class CourseReviewStore {
 
     try {
       const report = await firstValueFrom(
-        this.api.getCourseEndings(courseId, this.minGames(), this.gameFilters()),
+        this.api.getCourseEndings(courseId, this.appliedMinGames(), this.appliedGameFilters()),
       );
       if (requestVersion !== this.endingsRequestVersion) return;
 
@@ -266,14 +268,18 @@ export class CourseReviewStore {
   }
 
   private resetForCourse(): void {
+    const filters = defaultCourseReviewGameFilters();
     this.reviewRequestVersion += 1;
     this.endingsRequestVersion += 1;
     this.course.set(null);
     this.review.set(null);
     this.endings.set(null);
-    this.gameFilters.set(defaultCourseReviewGameFilters());
+    this.gameFilters.set(filters);
+    this.appliedGameFilters.set(filters);
     this.minCoveredPlies.set(2);
+    this.appliedMinCoveredPlies.set(2);
     this.minGames.set(4);
+    this.appliedMinGames.set(4);
     this.filtersCollapsed.set(true);
     this.reviewLoading.set(false);
     this.endingsLoading.set(false);
