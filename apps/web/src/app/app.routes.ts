@@ -148,7 +148,7 @@ export const routes: Routes = [
   },
   {
     path: 'lab/course-extension-candidates',
-    title: 'Course extension candidates | Chess Repertoire Trainer',
+    title: 'Course endings | Chess Repertoire Trainer',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/lab/pages/course-extension-candidates-page.component').then(
