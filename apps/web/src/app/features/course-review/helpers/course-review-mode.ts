@@ -17,7 +17,7 @@ const modeByQueryValue = new Map(
 );
 
 export function courseReviewModeFromQuery(value: string | null): CourseReviewMode {
-  return (value && modeByQueryValue.get(value)) || 'MY_DEVIATIONS';
+  return value ? modeByQueryValue.get(value) ?? 'MY_DEVIATIONS' : 'MY_DEVIATIONS';
 }
 
 export function courseReviewModeToQuery(mode: CourseReviewMode): string {
