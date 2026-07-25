@@ -35,7 +35,7 @@ Every meaningful transformation change must update the relevant files under `tra
 
 ## Current checkpoint
 
-The visual direction is selected, but production implementation has not started.
+The analytical direction is selected and the first Phase 0A visual proof has been prepared for review. Production Angular implementation has not started.
 
 Locked direction:
 
@@ -46,4 +46,9 @@ Locked direction:
 - Three distinct experiences: public website, authentication, and signed-in application
 - A new signed-in `/home` entry point rather than using Study/Train as the product home
 
-The next step must be discussed and approved before implementation begins. See [`transformation/STATUS.md`](./transformation/STATUS.md).
+Review next:
+
+1. [`transformation/reports/PHASE_0A_LANDING_PROOF.md`](./transformation/reports/PHASE_0A_LANDING_PROOF.md)
+2. [`transformation/prototypes/phase-0a-landing/`](./transformation/prototypes/phase-0a-landing/)
+
+The next step is to review and refine this proof, then explicitly approve or revise the mark geometry, palette, typography, copy, and landing composition before auth/home visualization or Phase 1 Angular implementation begins.
