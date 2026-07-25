@@ -9,17 +9,21 @@ describe('CourseReviewStore', () => {
   let store: CourseReviewStore;
   let api: jasmine.SpyObj<CourseReviewApiService>;
   let reviewResponse$: Subject<any>;
+  let opponentGapsResponse$: Subject<any>;
   let endingsResponse$: Subject<any>;
 
   beforeEach(() => {
     reviewResponse$ = new Subject();
+    opponentGapsResponse$ = new Subject();
     endingsResponse$ = new Subject();
     api = jasmine.createSpyObj<CourseReviewApiService>('CourseReviewApiService', [
       'getCourseReview',
       'getCourseEndings',
       'getFacets',
     ]);
-    api.getCourseReview.and.returnValue(reviewResponse$);
+    api.getCourseReview.and.callFake((_courseId, params) =>
+      params.findingType === 'MY_DEVIATIONS' ? reviewResponse$ : opponentGapsResponse$,
+    );
     api.getCourseEndings.and.returnValue(endingsResponse$);
     api.getFacets.and.returnValue(of(emptyImportedGameFacets()));
 
@@ -80,13 +84,32 @@ describe('CourseReviewStore', () => {
       items: [],
     } as any;
 
-    store.review.set(review);
+    store.myDeviationsReview.set(review);
+    store.opponentGapsReview.set(review);
     store.endings.set(endings);
     store.setMinCoveredPlies(6);
     store.setMinGames(8);
 
     expect(store.review()).toBe(review);
     expect(store.endings()).toBe(endings);
+  });
+
+  it('loads each findings tab only when that tab is opened', () => {
+    store.initialize(21, 'MY_DEVIATIONS');
+
+    expect(api.getCourseReview).toHaveBeenCalledTimes(1);
+    expect(api.getCourseReview.calls.mostRecent().args[1].findingType).toBe('MY_DEVIATIONS');
+    expect(api.getCourseEndings).not.toHaveBeenCalled();
+
+    store.initialize(21, 'OPPONENT_GAPS');
+
+    expect(api.getCourseReview).toHaveBeenCalledTimes(2);
+    expect(api.getCourseReview.calls.mostRecent().args[1].findingType).toBe('OPPONENT_GAPS');
+    expect(api.getCourseEndings).not.toHaveBeenCalled();
+
+    store.initialize(21, 'COURSE_ENDINGS');
+
+    expect(api.getCourseEndings).toHaveBeenCalledTimes(1);
   });
 
   it('uses a one-month game period by default', () => {

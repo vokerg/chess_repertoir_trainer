@@ -69,12 +69,12 @@ export class CourseReviewPageComponent implements OnInit {
     {
       id: 'MY_DEVIATIONS',
       label: 'My deviations',
-      count: this.store.review()?.summary.myDeviations ?? null,
+      count: this.store.myDeviationsReview()?.summary.myDeviations ?? null,
     },
     {
       id: 'OPPONENT_GAPS',
       label: 'Opponent gaps',
-      count: this.store.review()?.summary.opponentUncovered ?? null,
+      count: this.store.opponentGapsReview()?.summary.opponentUncovered ?? null,
     },
     {
       id: 'COURSE_ENDINGS',

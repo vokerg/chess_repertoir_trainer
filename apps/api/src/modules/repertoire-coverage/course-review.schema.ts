@@ -12,6 +12,7 @@ export const courseReviewQuerySchema = importedGameSearchQuerySchema
     limit: z.coerce.number().int().min(1).max(500).default(100),
     offset: z.coerce.number().int().min(0).default(0),
     minCoveredPlies: z.coerce.number().int().min(0).max(20).default(2),
+    findingType: z.enum(['ALL', 'MY_DEVIATIONS', 'OPPONENT_GAPS']).default('ALL'),
   })
   .refine((value) => !value.to || value.to >= value.from, {
     message: 'to must be greater than or equal to from',
@@ -21,6 +22,12 @@ export const courseReviewQuerySchema = importedGameSearchQuerySchema
 export type CourseReviewQuery = z.infer<typeof courseReviewQuerySchema>;
 
 export function courseReviewGameFilters(query: CourseReviewQuery): ImportedGameSummaryQuery {
-  const { limit: _limit, offset: _offset, minCoveredPlies: _minCoveredPlies, ...filters } = query;
+  const {
+    limit: _limit,
+    offset: _offset,
+    minCoveredPlies: _minCoveredPlies,
+    findingType: _findingType,
+    ...filters
+  } = query;
   return filters;
 }

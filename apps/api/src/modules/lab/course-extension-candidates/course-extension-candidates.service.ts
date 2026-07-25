@@ -35,6 +35,11 @@ export interface CourseTerminalPosition {
   lineRefs: CourseExtensionLineRef[];
 }
 
+export interface CourseExtensionCoverage {
+  terminals: CourseTerminalPosition[];
+  coveredUserReplyPositions: ReadonlySet<string>;
+}
+
 function asColor(value: string | null): CourseColor | null {
   return value === 'WHITE' || value === 'BLACK' ? value : null;
 }
@@ -50,13 +55,19 @@ function domainLine(line: CourseReviewLine, sideToTrain: CourseColor): Repertoir
   };
 }
 
-export function collectCourseTerminalPositions(lines: CourseReviewLine[]): CourseTerminalPosition[] {
+export function collectCourseExtensionCoverage(lines: CourseReviewLine[]): CourseExtensionCoverage {
   const result = new Map<string, CourseTerminalPosition>();
+  const coveredUserReplyPositions = new Set<string>();
 
   for (const userColor of ['WHITE', 'BLACK'] as const) {
     const sideLines = lines.filter((line) => (asColor(line.sideToTrain) ?? 'WHITE') === userColor);
     if (sideLines.length === 0) continue;
     const graph = buildRepertoireGraph(sideLines.map((line) => domainLine(line, userColor)));
+    for (const position of graph.positions.values()) {
+      if (position.userMoves.size > 0) {
+        coveredUserReplyPositions.add(`${userColor}:${position.normalizedFen}`);
+      }
+    }
 
     for (const line of sideLines) {
       const parentIds = new Set(
@@ -93,11 +104,16 @@ export function collectCourseTerminalPositions(lines: CourseReviewLine[]): Cours
     }
   }
 
-  return [...result.values()].sort((left, right) => {
+  const terminals = [...result.values()].sort((left, right) => {
     const leftSequence = left.lineRefs[0]?.moveSequenceSan ?? '';
     const rightSequence = right.lineRefs[0]?.moveSequenceSan ?? '';
     return leftSequence.localeCompare(rightSequence);
   });
+  return { terminals, coveredUserReplyPositions };
+}
+
+export function collectCourseTerminalPositions(lines: CourseReviewLine[]): CourseTerminalPosition[] {
+  return collectCourseExtensionCoverage(lines).terminals;
 }
 
 type MutableCandidate = CourseExtensionCandidate & {
@@ -127,6 +143,7 @@ export function groupCourseExtensionCandidates(
   terminals: CourseTerminalPosition[],
   rows: CourseExtensionCandidatePlyRow[],
   minGames: number,
+  coveredUserReplyPositions: ReadonlySet<string> = new Set(),
 ): {
   items: CourseExtensionCandidate[];
   gamesMatched: number;
@@ -148,6 +165,15 @@ export function groupCourseExtensionCandidates(
     let group = groups.get(key);
     if (!group) {
       const details = moveDetails(terminal.normalizedFen, row.moveUci);
+      const normalizedFenAfter = details.fenAfter
+        ? normalizeFenForPosition(details.fenAfter)
+        : null;
+      if (
+        normalizedFenAfter &&
+        coveredUserReplyPositions.has(`${userColor}:${normalizedFenAfter}`)
+      ) {
+        continue;
+      }
       group = {
         key,
         normalizedFen: terminal.normalizedFen,
@@ -223,7 +249,7 @@ export async function getCourseExtensionCandidates(
   const course = await getCoverageCourse(userId, query.courseId);
   if (!course) return null;
   const lines = await getCourseReviewLines(userId, query.courseId);
-  const terminals = collectCourseTerminalPositions(lines);
+  const { terminals, coveredUserReplyPositions } = collectCourseExtensionCoverage(lines);
   const positions = await findCourseExtensionPositions(
     [...new Set(terminals.map((terminal) => terminal.normalizedFen))],
   );
@@ -233,7 +259,12 @@ export async function getCourseExtensionCandidates(
     positions.map((position) => position.id),
     gameFilters,
   );
-  const grouped = groupCourseExtensionCandidates(terminals, rows, query.minGames);
+  const grouped = groupCourseExtensionCandidates(
+    terminals,
+    rows,
+    query.minGames,
+    coveredUserReplyPositions,
+  );
 
   return {
     course: {

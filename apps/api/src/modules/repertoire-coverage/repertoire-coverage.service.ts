@@ -159,6 +159,8 @@ export const CourseReviewService = {
       results.filter((result) => result.status === status).length;
     const unindexedGames = count('UNINDEXED_GAME');
     const outOfScopeGames = count('OUT_OF_SCOPE');
+    const includeMyDeviations = input.findingType !== 'OPPONENT_GAPS';
+    const includeOpponentGaps = input.findingType !== 'MY_DEVIATIONS';
 
     return {
       course: {
@@ -187,8 +189,8 @@ export const CourseReviewService = {
         courseConflicts: count('COURSE_CONFLICT'),
       },
       conflicts,
-      myDeviations: groupResults(results, 'MY_DEVIATION'),
-      opponentUncovered: groupResults(results, 'OPPONENT_UNCOVERED'),
+      myDeviations: includeMyDeviations ? groupResults(results, 'MY_DEVIATION') : [],
+      opponentUncovered: includeOpponentGaps ? groupResults(results, 'OPPONENT_UNCOVERED') : [],
       pagination: { limit: input.limit, offset: input.offset, returnedGames: results.length },
     };
   },

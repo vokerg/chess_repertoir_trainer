@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal, type WritableSignal } from '@angular/core';
 import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts/lab';
 import { firstValueFrom } from 'rxjs';
 import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
@@ -23,6 +23,8 @@ export interface CourseReviewCourseSummary {
   moveCount: number | null;
 }
 
+type FindingReviewMode = Exclude<CourseReviewMode, 'COURSE_ENDINGS'>;
+
 export function defaultCourseReviewGameFilters(): GameFilters {
   return { ...defaultGameFilters(), ...gameFilterPeriodRange('1M') };
 }
@@ -34,7 +36,10 @@ export class CourseReviewStore {
   private readonly appliedGameFilters = signal(defaultCourseReviewGameFilters());
   private readonly appliedMinCoveredPlies = signal(2);
   private readonly appliedMinGames = signal(4);
-  private reviewRequestVersion = 0;
+  private readonly reviewRequestVersions: Record<FindingReviewMode, number> = {
+    MY_DEVIATIONS: 0,
+    OPPONENT_GAPS: 0,
+  };
   private endingsRequestVersion = 0;
   private facetsLoaded = false;
 
@@ -45,12 +50,27 @@ export class CourseReviewStore {
   readonly filtersCollapsed = signal(true);
   readonly minCoveredPlies = signal(2);
   readonly minGames = signal(4);
-  readonly review = signal<CourseReviewResponse | null>(null);
+  readonly myDeviationsReview = signal<CourseReviewResponse | null>(null);
+  readonly opponentGapsReview = signal<CourseReviewResponse | null>(null);
   readonly endings = signal<CourseExtensionCandidatesResponse | null>(null);
-  readonly reviewLoading = signal(false);
+  readonly myDeviationsLoading = signal(false);
+  readonly opponentGapsLoading = signal(false);
   readonly endingsLoading = signal(false);
-  readonly reviewError = signal<string | null>(null);
+  readonly myDeviationsError = signal<string | null>(null);
+  readonly opponentGapsError = signal<string | null>(null);
   readonly endingsError = signal<string | null>(null);
+  private readonly reviews: Record<FindingReviewMode, WritableSignal<CourseReviewResponse | null>> = {
+    MY_DEVIATIONS: this.myDeviationsReview,
+    OPPONENT_GAPS: this.opponentGapsReview,
+  };
+  private readonly reviewLoadings: Record<FindingReviewMode, WritableSignal<boolean>> = {
+    MY_DEVIATIONS: this.myDeviationsLoading,
+    OPPONENT_GAPS: this.opponentGapsLoading,
+  };
+  private readonly reviewErrors: Record<FindingReviewMode, WritableSignal<string | null>> = {
+    MY_DEVIATIONS: this.myDeviationsError,
+    OPPONENT_GAPS: this.opponentGapsError,
+  };
 
   readonly filterSummary = computed(() => summaryGameFilters(this.gameFilters()));
   readonly lockedUserColor = computed(() => {
@@ -61,18 +81,32 @@ export class CourseReviewStore {
     const { from, to } = this.gameFilters();
     return Boolean(from) && (!to || to >= from);
   });
-  readonly loading = computed(() =>
-    this.activeMode() === 'COURSE_ENDINGS' ? this.endingsLoading() : this.reviewLoading(),
-  );
-  readonly error = computed(() =>
-    this.activeMode() === 'COURSE_ENDINGS' ? this.endingsError() : this.reviewError(),
-  );
+  readonly review = computed(() => {
+    const mode = this.activeMode();
+    return mode === 'COURSE_ENDINGS' ? null : this.reviews[mode]();
+  });
+  readonly reviewLoading = computed(() => {
+    const mode = this.activeMode();
+    return mode === 'COURSE_ENDINGS' ? false : this.reviewLoadings[mode]();
+  });
+  readonly loading = computed(() => {
+    const mode = this.activeMode();
+    return mode === 'COURSE_ENDINGS' ? this.endingsLoading() : this.reviewLoadings[mode]();
+  });
+  readonly error = computed(() => {
+    const mode = this.activeMode();
+    return mode === 'COURSE_ENDINGS' ? this.endingsError() : this.reviewErrors[mode]();
+  });
   readonly canLoad = computed(() => Boolean(this.courseId()) && this.filtersValid() && !this.loading());
   readonly myDeviationFindings = computed(() =>
-    (this.review()?.myDeviations ?? []).map((group) => mapCourseReviewGroup(group, 'MY_DEVIATION')),
+    (this.myDeviationsReview()?.myDeviations ?? []).map((group) =>
+      mapCourseReviewGroup(group, 'MY_DEVIATION'),
+    ),
   );
   readonly opponentGapFindings = computed(() =>
-    (this.review()?.opponentUncovered ?? []).map((group) => mapCourseReviewGroup(group, 'OPPONENT_GAP')),
+    (this.opponentGapsReview()?.opponentUncovered ?? []).map((group) =>
+      mapCourseReviewGroup(group, 'OPPONENT_GAP'),
+    ),
   );
   readonly courseEndingFindings = computed(() =>
     (this.endings()?.items ?? []).map(mapCourseExtensionCandidate),
@@ -89,8 +123,10 @@ export class CourseReviewStore {
   });
 
   initialize(courseId: number, mode: CourseReviewMode): void {
+    this.activeMode.set(mode);
     if (!Number.isInteger(courseId) || courseId <= 0) {
-      this.reviewError.set('Invalid course id.');
+      if (mode === 'COURSE_ENDINGS') this.endingsError.set('Invalid course id.');
+      else this.reviewErrors[mode].set('Invalid course id.');
       return;
     }
 
@@ -99,7 +135,6 @@ export class CourseReviewStore {
       this.courseId.set(courseId);
     }
 
-    this.activeMode.set(mode);
     this.loadFacets();
     void this.ensureActiveLoaded();
   }
@@ -148,7 +183,8 @@ export class CourseReviewStore {
       if (!this.endings()) await this.loadEndings();
       return;
     }
-    if (!this.review()) await this.loadReview();
+    const mode = this.activeMode();
+    if (mode !== 'COURSE_ENDINGS' && !this.reviews[mode]()) await this.loadReview(mode);
   }
 
   private loadFacets(): void {
@@ -162,13 +198,16 @@ export class CourseReviewStore {
     });
   }
 
-  private async loadReview(): Promise<void> {
+  private async loadReview(mode: FindingReviewMode): Promise<void> {
     const courseId = this.courseId();
-    if (!courseId || !this.filtersValid() || this.reviewLoading()) return;
+    const loading = this.reviewLoadings[mode];
+    const error = this.reviewErrors[mode];
+    const report = this.reviews[mode];
+    if (!courseId || !this.filtersValid() || loading()) return;
 
-    const requestVersion = ++this.reviewRequestVersion;
-    this.reviewLoading.set(true);
-    this.reviewError.set(null);
+    const requestVersion = ++this.reviewRequestVersions[mode];
+    loading.set(true);
+    error.set(null);
 
     try {
       const review = await firstValueFrom(
@@ -177,9 +216,10 @@ export class CourseReviewStore {
           limit: 100,
           offset: 0,
           minCoveredPlies: this.appliedMinCoveredPlies(),
+          findingType: mode,
         }),
       );
-      if (requestVersion !== this.reviewRequestVersion) return;
+      if (requestVersion !== this.reviewRequestVersions[mode]) return;
 
       this.course.set({
         id: review.course.id,
@@ -201,12 +241,12 @@ export class CourseReviewStore {
         }
       }
 
-      this.review.set(review);
-    } catch (error) {
-      if (requestVersion !== this.reviewRequestVersion) return;
-      this.reviewError.set(readCourseReviewError(error));
+      report.set(review);
+    } catch (requestError) {
+      if (requestVersion !== this.reviewRequestVersions[mode]) return;
+      error.set(readCourseReviewError(requestError));
     } finally {
-      if (requestVersion === this.reviewRequestVersion) this.reviewLoading.set(false);
+      if (requestVersion === this.reviewRequestVersions[mode]) loading.set(false);
     }
   }
 
@@ -244,10 +284,12 @@ export class CourseReviewStore {
   }
 
   private invalidateReview(): void {
-    this.reviewRequestVersion += 1;
-    this.review.set(null);
-    this.reviewError.set(null);
-    this.reviewLoading.set(false);
+    for (const mode of ['MY_DEVIATIONS', 'OPPONENT_GAPS'] as const) {
+      this.reviewRequestVersions[mode] += 1;
+      this.reviews[mode].set(null);
+      this.reviewErrors[mode].set(null);
+      this.reviewLoadings[mode].set(false);
+    }
   }
 
   private invalidateEndings(): void {
@@ -259,10 +301,12 @@ export class CourseReviewStore {
 
   private resetForCourse(): void {
     const filters = defaultCourseReviewGameFilters();
-    this.reviewRequestVersion += 1;
+    this.reviewRequestVersions.MY_DEVIATIONS += 1;
+    this.reviewRequestVersions.OPPONENT_GAPS += 1;
     this.endingsRequestVersion += 1;
     this.course.set(null);
-    this.review.set(null);
+    this.myDeviationsReview.set(null);
+    this.opponentGapsReview.set(null);
     this.endings.set(null);
     this.gameFilters.set(filters);
     this.appliedGameFilters.set(filters);
@@ -271,9 +315,11 @@ export class CourseReviewStore {
     this.minGames.set(4);
     this.appliedMinGames.set(4);
     this.filtersCollapsed.set(true);
-    this.reviewLoading.set(false);
+    this.myDeviationsLoading.set(false);
+    this.opponentGapsLoading.set(false);
     this.endingsLoading.set(false);
-    this.reviewError.set(null);
+    this.myDeviationsError.set(null);
+    this.opponentGapsError.set(null);
     this.endingsError.set(null);
   }
 }

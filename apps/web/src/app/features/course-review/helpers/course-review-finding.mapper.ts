@@ -27,6 +27,8 @@ export interface CourseReviewFindingViewModel {
   positionFen: string;
   boardPov: 'white' | 'black';
   sequence: string | null;
+  sequenceLabel: string;
+  countLabel: string;
   title: string;
   description: string;
   count: number;
@@ -50,6 +52,8 @@ export function mapCourseReviewGroup(
     positionFen: positionAfterMove(group.normalizedFenBefore, group.playedMoveUci),
     boardPov: opponentGap ? oppositePov(group.sideToMove) : colorPov(group.sideToMove),
     sequence: group.moveSequenceSan,
+    sequenceLabel: 'Sequence',
+    countLabel: 'Seen in',
     title: opponentGap ? `Opponent played ${playedMove}` : `${playedMove} instead of ${expectedMoves}`,
     description: opponentGap
       ? 'This opponent continuation is not covered by the course.'
@@ -71,8 +75,10 @@ export function mapCourseExtensionCandidate(
     positionFen: candidate.normalizedFen,
     boardPov: colorPov(candidate.userColor),
     sequence: candidate.lineRefs[0]?.moveSequenceSan ?? null,
-    title: `Opponent continues with ${move}`,
-    description: `The course ends before this opponent continuation.` ,
+    sequenceLabel: 'Course path — stops at this position',
+    countLabel: 'Same position and next move in',
+    title: `Next opponent move observed: ${move}`,
+    description: `${move} was played immediately after this exact terminal position. The report groups the next move, not the games' full move order.`,
     count: candidate.count,
     results: candidate.results,
     examples: candidate.examples,

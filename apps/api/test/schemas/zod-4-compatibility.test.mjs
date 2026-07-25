@@ -50,6 +50,10 @@ assert.equal(courseReviewQuerySchema.safeParse({
   from: '2026-02-02T00:00:00.000Z',
   to: '2026-02-01T00:00:00.000Z',
 }).success, false);
+assert.equal(courseReviewQuerySchema.parse({
+  from: '2026-02-01T00:00:00.000Z',
+  findingType: 'OPPONENT_GAPS',
+}).findingType, 'OPPONENT_GAPS');
 
 assert.deepEqual(storePositionAnalysisSchema.parse({
   fen: 'startpos',

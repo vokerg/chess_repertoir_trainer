@@ -16,7 +16,7 @@
   <div class="issue-content stack">
     @if (finding().sequence; as sequence) {
       <div class="position-label">
-        <span class="metric-label">Sequence</span>
+        <span class="metric-label">{{ finding().sequenceLabel }}</span>
         <strong class="move-sequence">{{ sequence }}</strong>
       </div>
     } @else {
@@ -52,7 +52,10 @@
     </div>
 
     <div class="issue-summary">
-      <span>Seen in {{ finding().count }} games</span>
+      <span>
+        {{ finding().countLabel }} {{ finding().count }}
+        {{ finding().count === 1 ? 'game' : 'games' }}
+      </span>
       <span class="pill">
         {{ finding().results.win }}W {{ finding().results.draw }}D {{ finding().results.loss }}L
       </span>

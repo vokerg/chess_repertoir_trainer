@@ -18,6 +18,7 @@ export class CourseReviewApiService {
       limit?: number;
       offset?: number;
       minCoveredPlies?: number;
+      findingType: 'MY_DEVIATIONS' | 'OPPONENT_GAPS';
     },
   ): Observable<CourseReviewResponse> {
     const query = new URLSearchParams();
@@ -27,6 +28,7 @@ export class CourseReviewApiService {
     if (params.minCoveredPlies !== undefined) {
       query.set('minCoveredPlies', String(params.minCoveredPlies));
     }
+    query.set('findingType', params.findingType);
     return this.api.get<CourseReviewResponse>(`/courses/${courseId}/review?${query.toString()}`);
   }
 
