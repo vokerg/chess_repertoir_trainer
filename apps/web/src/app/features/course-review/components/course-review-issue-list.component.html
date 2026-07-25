@@ -1,14 +1,11 @@
-<section class="section-card stack">
-  <div>
-    <span class="eyebrow">{{ eyebrow() }}</span>
-    <h3 class="collection-title">{{ title() }}</h3>
-  </div>
-
-  @if (groups().length === 0) {
-    <div class="empty-state">{{ emptyMessage() }}</div>
-  } @else {
-    @for (group of groups(); track group.key) {
-      <app-course-review-issue-card [group]="group" [opponent]="opponent()" />
+<app-panel [title]="title()" [subtitle]="subtitle()">
+  <div class="finding-list">
+    @if (findings().length === 0) {
+      <div class="empty-state">{{ emptyMessage() }}</div>
+    } @else {
+      @for (finding of findings(); track finding.id) {
+        <app-course-review-issue-card [finding]="finding" />
+      }
     }
-  }
-</section>
+  </div>
+</app-panel>

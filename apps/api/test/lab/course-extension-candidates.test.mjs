@@ -5,6 +5,7 @@ import {
   courseExtensionCandidatesQuerySchema,
 } from '../../dist/modules/lab/course-extension-candidates/course-extension-candidates.schema.js';
 import {
+  collectCourseExtensionCoverage,
   collectCourseTerminalPositions,
   groupCourseExtensionCandidates,
 } from '../../dist/modules/lab/course-extension-candidates/course-extension-candidates.service.js';
@@ -128,5 +129,52 @@ assert.equal(grouped.items[0].count, 3, 'a game is counted once per continuation
 assert.deepEqual(grouped.items[0].results, { win: 1, draw: 1, loss: 1, unknown: 0 });
 assert.equal(grouped.items[0].moveSan, 'd6');
 assert.equal(grouped.items[0].examples[0].gameId, 3, 'examples are newest first');
+
+const transpositionTerminal = buildLine({
+  id: 4,
+  chapterId: 10,
+  name: 'Slav terminal',
+  sideToTrain: 'WHITE',
+  moves: ['d4', 'd5', 'c4', 'c6', 'e3', 'Bf5', 'Nc3', 'e6', 'Nf3'],
+});
+const transpositionReply = buildLine({
+  id: 5,
+  chapterId: 10,
+  name: 'Slav covered reply',
+  sideToTrain: 'WHITE',
+  moves: ['d4', 'd5', 'c4', 'c6', 'e3', 'Nf6', 'Nc3', 'Bf5', 'Nf3', 'e6', 'Nh4'],
+});
+const transpositionCoverage = collectCourseExtensionCoverage([
+  transpositionTerminal,
+  transpositionReply,
+]);
+const reportedTerminal = transpositionCoverage.terminals.find(
+  (terminal) => terminal.lineRefs[0]?.lineName === 'Slav terminal',
+);
+assert.ok(reportedTerminal, 'the move-order branch still produces a terminal position');
+
+const transpositionResult = groupCourseExtensionCandidates(
+  [reportedTerminal],
+  [
+    {
+      ...row(5, 'WIN', '2026-07-05T00:00:00.000Z', 'g8f6'),
+      position: { normalizedFen: reportedTerminal.normalizedFen },
+    },
+    {
+      ...row(6, 'LOSS', '2026-07-06T00:00:00.000Z', 'a7a6'),
+      position: { normalizedFen: reportedTerminal.normalizedFen },
+    },
+  ],
+  1,
+  transpositionCoverage.coveredUserReplyPositions,
+);
+assert.equal(
+  transpositionResult.items.length,
+  1,
+  'continuations that transpose into a covered user reply are excluded',
+);
+assert.equal(transpositionResult.items[0].moveUci, 'a7a6', 'genuinely uncovered moves remain');
+assert.equal(transpositionResult.continuationsFound, 1);
+assert.equal(transpositionResult.gamesMatched, 1);
 
 console.log('Course extension candidate tests passed.');

@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts/lab';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import { appendGameFilterParams } from '../../../shared/games/filters/game-filter-query.mapper';
@@ -17,6 +18,7 @@ export class CourseReviewApiService {
       limit?: number;
       offset?: number;
       minCoveredPlies?: number;
+      findingType: 'MY_DEVIATIONS' | 'OPPONENT_GAPS';
     },
   ): Observable<CourseReviewResponse> {
     const query = new URLSearchParams();
@@ -26,7 +28,23 @@ export class CourseReviewApiService {
     if (params.minCoveredPlies !== undefined) {
       query.set('minCoveredPlies', String(params.minCoveredPlies));
     }
+    query.set('findingType', params.findingType);
     return this.api.get<CourseReviewResponse>(`/courses/${courseId}/review?${query.toString()}`);
+  }
+
+  getCourseEndings(
+    courseId: number,
+    minGames: number,
+    gameFilters: GameFilters,
+  ): Observable<CourseExtensionCandidatesResponse> {
+    const query = new URLSearchParams({
+      courseId: String(courseId),
+      minGames: String(minGames),
+    });
+    appendGameFilterParams(query, gameFilters);
+    return this.api.get<CourseExtensionCandidatesResponse>(
+      `/lab/course-extension-candidates?${query.toString()}`,
+    );
   }
 
   getFacets(): Observable<ImportedGameFacetsResponse> {

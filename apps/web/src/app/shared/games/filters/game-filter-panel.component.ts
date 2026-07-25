@@ -40,6 +40,7 @@ export class GameFilterPanelComponent {
   readonly facets = input<ImportedGameFacetsResponse>(emptyImportedGameFacets());
   readonly loading = input(false);
   readonly applyLabel = input('Apply filters');
+  readonly showActions = input(true);
   readonly lockedUserColor = input<UserColor | null>(null);
   readonly filtersChange = output<GameFilters>();
   readonly apply = output<void>();

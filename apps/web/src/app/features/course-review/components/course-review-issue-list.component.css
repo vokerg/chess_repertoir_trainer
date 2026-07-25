@@ -2,3 +2,9 @@
   display: block;
   min-width: 0;
 }
+
+.finding-list {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}

@@ -27,14 +27,11 @@ export class CourseDetailPageComponent implements OnInit {
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
     { id: 'chapters', label: 'Chapters', value: this.store.chapters().length },
     { id: 'sublines', label: 'Active sublines', value: this.store.stats()?.activeSublineCount ?? 0 },
-    { id: 'attempts', label: 'Recent attempts', value: this.store.stats()?.totalAttempts ?? 0 },
-    { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.stats()?.passRate ?? 0) * 100)}%` },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const courseId = this.store.courseId();
     if (!courseId) return [];
     return [
-      { id: 'back', label: 'Back', link: '/courses' },
       { id: 'marathon', label: 'Marathon', link: ['/courses', courseId, 'marathon'] },
       { id: 'review', label: 'Review', link: ['/courses', courseId, 'review'] },
       ...(!this.store.editingCourseName()
