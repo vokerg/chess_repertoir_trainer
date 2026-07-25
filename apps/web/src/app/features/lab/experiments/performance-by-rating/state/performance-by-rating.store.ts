@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type { PerformanceByRatingRow, PerformanceReportType } from '@chess-trainer/contracts/lab';
+import type { RatingNormalizationProfile } from '@chess-trainer/contracts/rating-normalization';
 import { PerformanceByRatingApiService } from '../data-access/performance-by-rating-api.service';
 
 export type PerformanceColumnId =
@@ -124,6 +125,9 @@ export class PerformanceByRatingStore {
   readonly loading = signal(false);
   readonly loaded = signal(false);
   readonly error = signal<string | null>(null);
+  readonly normalizationProfile = signal<RatingNormalizationProfile | null>(null);
+  readonly normalizationLoading = signal(false);
+  readonly normalizationError = signal<string | null>(null);
 
   readonly filteredItems = computed(() => {
     const enabled = new Set(this.enabledTypes());
@@ -184,7 +188,21 @@ export class PerformanceByRatingStore {
   }
 
   async initialize(): Promise<void> {
-    await this.load();
+    await Promise.all([this.load(), this.loadNormalizationProfile()]);
+  }
+
+  async loadNormalizationProfile(): Promise<void> {
+    if (this.normalizationProfile() || this.normalizationLoading()) return;
+
+    this.normalizationLoading.set(true);
+    this.normalizationError.set(null);
+    try {
+      this.normalizationProfile.set(await firstValueFrom(this.api.getRatingNormalizationProfile()));
+    } catch {
+      this.normalizationError.set('Could not load the rating grade reference.');
+    } finally {
+      this.normalizationLoading.set(false);
+    }
   }
 
   async load(): Promise<void> {
