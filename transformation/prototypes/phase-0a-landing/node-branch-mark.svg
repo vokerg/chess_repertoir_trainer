@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Node Branch mark</title>
+  <desc id="desc">A source node branching into two continuations and training targets.</desc>
+  <g fill="none" stroke="#172321" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50"/>
+  </g>
+  <g fill="#172321">
+    <circle cx="18" cy="50" r="5.5"/>
+    <circle cx="34" cy="14" r="5.5"/>
+    <circle cx="51" cy="44" r="5.5"/>
+  </g>
+</svg>
