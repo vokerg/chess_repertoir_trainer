@@ -51,6 +51,10 @@
     "./jobs": {
       "types": "./dist/jobs/index.d.ts",
       "default": "./dist/jobs/index.js"
+    },
+    "./rating-normalization": {
+      "types": "./dist/rating-normalization/index.d.ts",
+      "default": "./dist/rating-normalization/index.js"
     }
   },
   "scripts": {
