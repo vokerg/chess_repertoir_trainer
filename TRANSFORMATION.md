@@ -35,7 +35,7 @@ Every meaningful transformation change must update the relevant files under `tra
 
 ## Current checkpoint
 
-The analytical direction is selected and the first Phase 0A visual proof has been prepared for review. Production Angular implementation has not started.
+The Phase 0A landing proof has been merged into `visual_transformation`, and a focused review refinement has been prepared. Production Angular implementation has not started.
 
 Locked direction:
 
@@ -48,7 +48,9 @@ Locked direction:
 
 Review next:
 
-1. [`transformation/reports/PHASE_0A_LANDING_PROOF.md`](./transformation/reports/PHASE_0A_LANDING_PROOF.md)
-2. [`transformation/prototypes/phase-0a-landing/`](./transformation/prototypes/phase-0a-landing/)
+1. [`transformation/reports/PHASE_0A_REVIEW_REFINEMENT.md`](./transformation/reports/PHASE_0A_REVIEW_REFINEMENT.md)
+2. [`transformation/prototypes/phase-0a-landing/review-sheet.svg`](./transformation/prototypes/phase-0a-landing/review-sheet.svg)
+3. [`transformation/reports/PHASE_0A_LANDING_PROOF.md`](./transformation/reports/PHASE_0A_LANDING_PROOF.md)
+4. [`transformation/prototypes/phase-0a-landing/`](./transformation/prototypes/phase-0a-landing/)
 
-The next step is to review and refine this proof, then explicitly approve or revise the mark geometry, palette, typography, copy, and landing composition before auth/home visualization or Phase 1 Angular implementation begins.
+The next decision is to approve or revise the Phase 0A recommendations for mark geometry, the strong-mint text token, typography/wordmark proportions, and landing composition. Do not begin auth/home visualization or Phase 1 Angular implementation until that decision is explicit.
