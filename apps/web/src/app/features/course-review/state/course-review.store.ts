@@ -3,6 +3,7 @@ import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts
 import { firstValueFrom } from 'rxjs';
 import { emptyImportedGameFacets, ImportedGameFacetsResponse } from '../../../shared/games/game.models';
 import { defaultGameFilters, GameFilters } from '../../../shared/games/filters/game-filter.model';
+import { gameFilterPeriodRange } from '../../../shared/games/filters/game-filter-period';
 import { summaryGameFilters } from '../../../shared/games/filters/game-filter-summary';
 import { CourseReviewApiService } from '../data-access/course-review-api.service';
 import { CourseReviewResponse } from '../data-access/course-review.models';
@@ -22,15 +23,8 @@ export interface CourseReviewCourseSummary {
   moveCount: number | null;
 }
 
-function localDate(daysFromToday = 0): string {
-  const date = new Date();
-  date.setDate(date.getDate() + daysFromToday);
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10);
-}
-
 export function defaultCourseReviewGameFilters(): GameFilters {
-  return { ...defaultGameFilters(), from: localDate(-7) };
+  return { ...defaultGameFilters(), ...gameFilterPeriodRange('1M') };
 }
 
 @Injectable()
@@ -115,10 +109,12 @@ export class CourseReviewStore {
     this.gameFilters.set(lockedUserColor ? { ...filters, userColor: lockedUserColor } : filters);
   }
 
-  resetGameFilters(): void {
+  resetFilters(): void {
     const filters = defaultCourseReviewGameFilters();
     const lockedUserColor = this.lockedUserColor();
     this.gameFilters.set(lockedUserColor ? { ...filters, userColor: lockedUserColor } : filters);
+    this.minCoveredPlies.set(2);
+    this.minGames.set(4);
     this.applyFilters();
   }
 
@@ -144,12 +140,6 @@ export class CourseReviewStore {
     this.appliedMinGames.set(this.minGames());
     this.invalidateReview();
     this.invalidateEndings();
-    void this.ensureActiveLoaded();
-  }
-
-  refreshActive(): void {
-    if (this.activeMode() === 'COURSE_ENDINGS') this.invalidateEndings();
-    else this.invalidateReview();
     void this.ensureActiveLoaded();
   }
 

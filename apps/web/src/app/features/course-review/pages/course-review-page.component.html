@@ -41,10 +41,8 @@
           [facets]="store.facets()"
           [loading]="store.loading()"
           [lockedUserColor]="store.lockedUserColor()"
-          [applyLabel]="actionLabel()"
+          [showActions]="false"
           (filtersChange)="store.setGameFilters($event)"
-          (apply)="store.applyFilters()"
-          (reset)="store.resetGameFilters()"
         />
       }
 
@@ -83,9 +81,24 @@
           />
         }
 
-        <button type="button" class="primary" (click)="store.refreshActive()" [disabled]="!store.canLoad()">
-          {{ actionLabel() }}
-        </button>
+        <div class="review-actions">
+          <button
+            type="button"
+            class="primary"
+            (click)="store.applyFilters()"
+            [disabled]="!store.canLoad()"
+          >
+            {{ actionLabel() }}
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="store.resetFilters()"
+            [disabled]="store.loading()"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </div>
   </app-panel>

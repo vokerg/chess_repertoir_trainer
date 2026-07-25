@@ -47,10 +47,19 @@
   font-size: 0.82rem;
 }
 
+.review-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 @media (max-width: 900px) {
   .review-criteria {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .review-actions {
+    flex-wrap: wrap;
   }
 }
 

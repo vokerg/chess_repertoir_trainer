@@ -219,11 +219,13 @@
       /></label>
     </div>
   }
-  <div class="games-filter-actions">
-    <button type="button" class="primary" (click)="apply.emit()" [disabled]="loading()">
-      {{ loading() ? 'Loading...' : applyLabel() }}</button
-    ><button type="button" class="secondary" (click)="reset.emit()" [disabled]="loading()">
-      Reset
-    </button>
-  </div>
+  @if (showActions()) {
+    <div class="games-filter-actions">
+      <button type="button" class="primary" (click)="apply.emit()" [disabled]="loading()">
+        {{ loading() ? 'Loading...' : applyLabel() }}</button
+      ><button type="button" class="secondary" (click)="reset.emit()" [disabled]="loading()">
+        Reset
+      </button>
+    </div>
+  }
 </section>

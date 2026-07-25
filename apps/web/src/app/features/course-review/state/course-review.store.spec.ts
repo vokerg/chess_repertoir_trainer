@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { emptyImportedGameFacets } from '../../../shared/games/game.models';
+import { detectGameFilterPeriod } from '../../../shared/games/filters/game-filter-period';
 import { CourseReviewApiService } from '../data-access/course-review-api.service';
 import { CourseReviewStore } from './course-review.store';
 
@@ -86,5 +87,38 @@ describe('CourseReviewStore', () => {
 
     expect(store.review()).toBe(review);
     expect(store.endings()).toBe(endings);
+  });
+
+  it('uses a one-month game period by default', () => {
+    expect(detectGameFilterPeriod(store.gameFilters())).toBe('1M');
+  });
+
+  it('applies draft game filters and minimum games in the same endings request', () => {
+    store.initialize(21, 'COURSE_ENDINGS');
+    store.setGameFilters({ ...store.gameFilters(), opponent: 'Carlsen' });
+    store.setMinGames(5);
+
+    store.applyFilters();
+
+    expect(api.getCourseEndings).toHaveBeenCalledTimes(2);
+    const [, minGames, filters] = api.getCourseEndings.calls.mostRecent().args;
+    expect(minGames).toBe(5);
+    expect(filters.opponent).toBe('Carlsen');
+  });
+
+  it('resets game filters and thresholds together', () => {
+    store.initialize(21, 'COURSE_ENDINGS');
+    store.setGameFilters({ ...store.gameFilters(), opponent: 'Carlsen' });
+    store.setMinCoveredPlies(8);
+    store.setMinGames(12);
+
+    store.resetFilters();
+
+    expect(store.gameFilters().opponent).toBe('');
+    expect(store.minCoveredPlies()).toBe(2);
+    expect(store.minGames()).toBe(4);
+    const [, minGames, filters] = api.getCourseEndings.calls.mostRecent().args;
+    expect(minGames).toBe(4);
+    expect(filters.opponent).toBe('');
   });
 });

@@ -147,15 +147,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'lab/course-extension-candidates',
-    title: 'Course endings | Chess Repertoire Trainer',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/lab/pages/course-extension-candidates-page.component').then(
-        (m) => m.CourseExtensionCandidatesPageComponent,
-      ),
-  },
-  {
     path: 'lab/tactical-detections',
     title: 'Tactical detections | Chess Repertoire Trainer',
     canActivate: [authGuard],
