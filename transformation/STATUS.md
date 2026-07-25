@@ -4,13 +4,15 @@ Last updated: 2026-07-25
 
 ## Current state
 
-**Program state:** Planning and identity direction established
+**Program state:** Phase 0A visual proof prepared for review
 
-**Implementation state:** Not started
+**Implementation state:** Static transformation prototype only; production Angular implementation not started
 
 **Integration branch:** `visual_transformation`
 
-The branch and documentation structure now exist so design and implementation context can persist across sessions.
+**Active review branch:** `visual-transformation/phase-0a-landing-proof`
+
+The persistent branch and documentation structure exist so design and implementation context can survive across sessions. The first complete identity and landing-page proof now exists under `transformation/` without changing runtime application behavior.
 
 ## Completed
 
@@ -28,29 +30,40 @@ The branch and documentation structure now exist so design and implementation co
 - [x] Established the phased transformation plan.
 - [x] Created the `visual_transformation` branch from `main`.
 - [x] Added persistent transformation documentation.
+- [x] Created Node Branch geometry version 1 in normal, reversed, and monochrome treatments.
+- [x] Created a complete static responsive landing-page visualization.
+- [x] Created a pull-request-friendly SVG proof sheet.
+- [x] Produced a detailed Phase 0A work and validation report.
+- [x] Rendered and inspected the prototype at desktop, tablet, and mobile widths with no horizontal overflow detected.
 
 ## Current checkpoint
 
-No production assets, Angular components, routes, or styles have been changed yet.
+No production assets, Angular components, routes, global styles, authentication behavior, API contracts, or signed-in application behavior have changed.
 
-The next step must be discussed with the user before implementation begins.
+Review:
 
-Recommended next checkpoint:
+- `transformation/reports/PHASE_0A_LANDING_PROOF.md`
+- `transformation/prototypes/phase-0a-landing/`
 
-1. Create a production-oriented Node Branch geometry proof.
-2. Test it at 16px, 24px, 32px, and 48px, plus reversed and monochrome contexts.
-3. Create a high-fidelity responsive landing-page visualization using the chosen identity.
-4. Review the page and lock the production palette, typography hierarchy, and wordmark proportions.
+The visual proof must now be reviewed as one coherent system. The following remain open until explicit approval or revision:
+
+1. final Node Branch optical geometry;
+2. final production palette;
+3. final public copy and section composition;
+4. typography hierarchy and wordmark proportions;
+5. whether the visual density and mobile composition are appropriate.
+
+Do not begin auth/home visualization or Phase 1 Angular implementation until this checkpoint is reviewed.
 
 ## Program backlog
 
 ### Phase 0 — identity and visual proof
 
-- [ ] Finalize Node Branch geometry.
-- [ ] Validate small-size, normal, reversed, and monochrome behavior.
-- [ ] Finalize wordmark proportions.
-- [ ] Produce high-fidelity landing-page visualization.
-- [ ] Validate desktop and mobile landing compositions.
+- [ ] Finalize Node Branch geometry. Version 1 is prepared; approval pending.
+- [x] Validate small-size, normal, reversed, and monochrome behavior at proof level.
+- [ ] Finalize wordmark proportions. A working treatment is shown; approval pending.
+- [x] Produce high-fidelity landing-page visualization.
+- [ ] Approve desktop and mobile landing compositions. Technical rendering is complete; design approval pending.
 - [ ] Lock production palette.
 - [ ] Lock typography hierarchy and analytical numeric treatment.
 - [ ] Produce auth visualization.
@@ -58,7 +71,7 @@ Recommended next checkpoint:
 
 ### Phase 1 — shell and entry points
 
-- [ ] Add brand SVG assets.
+- [ ] Add production brand SVG assets.
 - [ ] Add shared brand mark and lockup components.
 - [ ] Add public layout.
 - [ ] Add public landing page at `/`.
@@ -95,6 +108,16 @@ Recommended next checkpoint:
 - [ ] Complete accessibility and responsive review.
 
 ## Session log
+
+### 2026-07-25 — Phase 0A landing proof
+
+- Branched `visual-transformation/phase-0a-landing-proof` from `visual_transformation`.
+- Created controlled Node Branch SVG geometry in monochrome, normal badge, and reversed badge forms.
+- Created a complete static HTML/CSS landing-page prototype grounded in real product concepts.
+- Added desktop, tablet, and mobile responsive behavior.
+- Added a summary proof sheet that renders directly in GitHub.
+- Added `transformation/reports/PHASE_0A_LANDING_PROOF.md` with rationale, review instructions, validation, skipped checks, and residual risks.
+- Kept all product code and runtime behavior unchanged.
 
 ### 2026-07-25 — Program setup
 
