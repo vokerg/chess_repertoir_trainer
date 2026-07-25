@@ -4,15 +4,15 @@ Last updated: 2026-07-25
 
 ## Current state
 
-**Program state:** Phase 0A visual proof prepared for review
+**Program state:** Phase 0A review refinement prepared; explicit decision approval pending
 
-**Implementation state:** Static transformation prototype only; production Angular implementation not started
+**Implementation state:** Static transformation prototypes and review evidence only; production Angular implementation not started
 
 **Integration branch:** `visual_transformation`
 
-**Active review branch:** `visual-transformation/phase-0a-landing-proof`
+**Active review branch:** `visual-transformation/phase-0a-review-refinement`
 
-The persistent branch and documentation structure exist so design and implementation context can survive across sessions. The first complete identity and landing-page proof now exists under `transformation/` without changing runtime application behavior.
+The initial Phase 0A landing proof was merged through PR #74. The current branch adds focused review evidence and corrections without changing runtime application behavior.
 
 ## Completed
 
@@ -35,36 +35,43 @@ The persistent branch and documentation structure exist so design and implementa
 - [x] Created a pull-request-friendly SVG proof sheet.
 - [x] Produced a detailed Phase 0A work and validation report.
 - [x] Rendered and inspected the prototype at desktop, tablet, and mobile widths with no horizontal overflow detected.
+- [x] Merged the initial Phase 0A proof into `visual_transformation` through PR #74.
+- [x] Corrected the small-size review evidence so the complete mark is rendered at 16px, 24px, 32px, and 48px.
+- [x] Recorded objective contrast evidence for the provisional strong-mint text token.
+- [x] Added explicit Phase 0A recommendations without silently locking the remaining open decisions.
 
 ## Current checkpoint
 
 No production assets, Angular components, routes, global styles, authentication behavior, API contracts, or signed-in application behavior have changed.
 
-Review:
+Review in this order:
 
+- `transformation/reports/PHASE_0A_REVIEW_REFINEMENT.md`
+- `transformation/prototypes/phase-0a-landing/review-sheet.svg`
 - `transformation/reports/PHASE_0A_LANDING_PROOF.md`
 - `transformation/prototypes/phase-0a-landing/`
 
-The visual proof must now be reviewed as one coherent system. The following remain open until explicit approval or revision:
+The following remain open until explicit approval or revision:
 
-1. final Node Branch optical geometry;
-2. final production palette;
-3. final public copy and section composition;
-4. typography hierarchy and wordmark proportions;
-5. whether the visual density and mobile composition are appropriate.
+1. final Node Branch optical geometry and 16px usage;
+2. whether to replace strong mint `#23836D` with accessible candidate `#1F7865`;
+3. final production palette beyond this one identified contrast issue;
+4. final public copy and section composition;
+5. typography hierarchy and wordmark proportions;
+6. whether the visual density and mobile composition are appropriate.
 
-Do not begin auth/home visualization or Phase 1 Angular implementation until this checkpoint is reviewed.
+Do not begin auth/home visualization or Phase 1 Angular implementation until this checkpoint is explicitly approved or revised.
 
 ## Program backlog
 
 ### Phase 0 — identity and visual proof
 
-- [ ] Finalize Node Branch geometry. Version 1 is prepared; approval pending.
-- [x] Validate small-size, normal, reversed, and monochrome behavior at proof level.
-- [ ] Finalize wordmark proportions. A working treatment is shown; approval pending.
+- [ ] Finalize Node Branch geometry. Version 1 is recommended for approval; decision pending.
+- [x] Validate complete small-size, normal, reversed, and monochrome behavior at proof level.
+- [ ] Finalize wordmark proportions. A working treatment and recommendation are shown; approval pending.
 - [x] Produce high-fidelity landing-page visualization.
 - [ ] Approve desktop and mobile landing compositions. Technical rendering is complete; design approval pending.
-- [ ] Lock production palette.
+- [ ] Lock production palette. One strong-mint contrast correction is recommended; broader analytical testing remains.
 - [ ] Lock typography hierarchy and analytical numeric treatment.
 - [ ] Produce auth visualization.
 - [ ] Produce signed-in home visualization.
@@ -108,6 +115,18 @@ Do not begin auth/home visualization or Phase 1 Angular implementation until thi
 - [ ] Complete accessibility and responsive review.
 
 ## Session log
+
+### 2026-07-25 — Phase 0A review refinement
+
+- Branched `visual-transformation/phase-0a-review-refinement` from `visual_transformation`.
+- Confirmed PR #74 had already merged the initial Phase 0A proof.
+- Identified that the original proof-sheet small-size row rendered only one node rather than the complete mark.
+- Added `review-sheet.svg` with complete normal, reversed, and monochrome rendering at 16px, 24px, 32px, and 48px.
+- Calculated and documented the strong-mint contrast issue on the workspace canvas.
+- Proposed `#1F7865` as an accessible strong-mint text candidate while keeping D-302 open.
+- Added recommendations for D-301, D-302, D-303, and typography/wordmark proportions.
+- Added `transformation/reports/PHASE_0A_REVIEW_REFINEMENT.md`.
+- Kept all production code and runtime behavior unchanged.
 
 ### 2026-07-25 — Phase 0A landing proof
 
