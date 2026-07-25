@@ -160,6 +160,6 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The branch and planning documents are established. Stop after this setup and discuss the next step with the user.
+The Phase 0A Node Branch and landing-page visual proof has been prepared for review.
 
-Do not create brand assets, landing-page code, route layouts, navigation changes, or implementation instructions until the user approves the next checkpoint.
+Stop after focused corrections to this proof. Do not begin auth-page visualization, signed-in home visualization, production brand assets, Angular route/layout work, or Phase 1 implementation until the user explicitly reviews and approves or revises the Phase 0A checkpoint.
