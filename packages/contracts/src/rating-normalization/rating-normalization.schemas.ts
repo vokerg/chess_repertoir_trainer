@@ -183,7 +183,7 @@ export const ratingNormalizationProfileSchema = z.object({
     }
 
     const finalRange = ranges.at(-1);
-    if (finalRange === null || finalRange.maxExclusive !== null) {
+    if (!finalRange || finalRange.maxExclusive !== null) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['grades', ranges.length - 1, 'ranges', pool, 'maxExclusive'],
