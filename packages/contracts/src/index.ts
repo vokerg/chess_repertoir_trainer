@@ -8,3 +8,4 @@ export * from './lab';
 export * from './opening-struggles';
 export * from './masters-explorer';
 export * from './jobs';
+export * from './rating-normalization';
