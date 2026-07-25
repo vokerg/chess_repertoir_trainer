@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Phase 0A landing-page visual proof for Chess Repertoire Trainer.">
+  <title>Chess Repertoire Trainer — Landing proof</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="site-header">
+    <a class="brand-lockup" href="#" aria-label="Chess Repertoire Trainer home">
+      <img src="node-branch-badge.svg" alt="" width="42" height="42">
+      <span class="brand-copy">
+        <strong>Chess Repertoire</strong>
+        <small>TRAINER</small>
+      </span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="#workflow">Workflow</a>
+      <a href="#capabilities">Product</a>
+      <a href="#progress">Progress</a>
+    </nav>
+
+    <div class="header-actions">
+      <a class="text-action" href="#">Sign in</a>
+      <a class="button button-primary button-small" href="#">Start building</a>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero section-shell">
+      <div class="hero-copy">
+        <p class="eyebrow">YOUR CHESS, CONNECTED</p>
+        <h1>Turn your games into a repertoire you actually train.</h1>
+        <p class="hero-lead">
+          Import your games, uncover recurring weaknesses, strengthen your courses and practise the positions that matter in real play.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#">Start building your repertoire</a>
+          <a class="button button-secondary" href="#workflow">See the workflow</a>
+        </div>
+        <dl class="hero-proof" aria-label="Product highlights">
+          <div><dt>One system</dt><dd>Games, openings and training</dd></div>
+          <div><dt>Focused</dt><dd>Actions based on your own play</dd></div>
+          <div><dt>Practical</dt><dd>Repertoire gaps you can fix</dd></div>
+        </dl>
+      </div>
+
+      <div class="product-stage" aria-label="Example opening intelligence workspace">
+        <div class="browser-frame">
+          <div class="browser-bar" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <p>Opening intelligence</p>
+          </div>
+
+          <div class="workspace-bar">
+            <div>
+              <p class="workspace-kicker">COURSE REVIEW</p>
+              <strong>Sicilian Defence</strong>
+            </div>
+            <span class="status-chip">8 gaps found</span>
+          </div>
+
+          <div class="analysis-layout">
+            <div class="board-wrap">
+              <div class="chessboard" role="img" aria-label="Illustrative chess position">
+                <span class="piece black-rook" style="--file:1;--rank:1">♜</span>
+                <span class="piece black-king" style="--file:7;--rank:1">♚</span>
+                <span class="piece black-pawn" style="--file:3;--rank:3">♟</span>
+                <span class="piece black-pawn" style="--file:6;--rank:2">♟</span>
+                <span class="piece black-knight" style="--file:5;--rank:3">♞</span>
+                <span class="piece white-king" style="--file:7;--rank:8">♔</span>
+                <span class="piece white-rook" style="--file:1;--rank:8">♖</span>
+                <span class="piece white-knight" style="--file:6;--rank:6">♘</span>
+                <span class="piece white-pawn" style="--file:4;--rank:5">♙</span>
+                <span class="piece white-pawn" style="--file:7;--rank:6">♙</span>
+                <span class="last-move" style="--file:5;--rank:3"></span>
+              </div>
+              <div class="board-meta"><span>White to move</span><code>+0.42</code></div>
+            </div>
+
+            <div class="insight-column">
+              <article class="insight-card insight-card-primary">
+                <div class="insight-heading">
+                  <p class="workspace-kicker">COURSE GAP</p>
+                  <code>14 games</code>
+                </div>
+                <h2>9...Be7 is common in your games, but the course stops here.</h2>
+                <p>Add the continuation before this position becomes another repeated surprise.</p>
+                <div class="frequency"><span style="width:72%"></span></div>
+                <div class="move-line" aria-label="Illustrative move line">
+                  <span>8. O-O</span><i>→</i><span>Be7</span><i>→</i><strong>9. Re1</strong>
+                </div>
+              </article>
+
+              <article class="insight-card next-action-card">
+                <div>
+                  <p class="workspace-kicker">RECOMMENDED NEXT</p>
+                  <h3>Add the continuation, then train both responses.</h3>
+                </div>
+                <span class="action-arrow" aria-hidden="true">→</span>
+              </article>
+
+              <div class="metric-grid">
+                <article><strong>184</strong><span>games reviewed</span></article>
+                <article><strong>12</strong><span>weak lines</span></article>
+                <article><strong>82%</strong><span>review accuracy</span></article>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="floating-insight" aria-label="Training recommendation">
+          <span class="floating-icon"><img src="node-branch-badge-reversed.svg" alt="" width="34" height="34"></span>
+          <div><small>Training ready</small><strong>8 positions selected</strong></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="workflow" class="workflow section-shell" aria-labelledby="workflow-title">
+      <div class="section-intro">
+        <p class="eyebrow">ONE CONTINUOUS WORKFLOW</p>
+        <h2 id="workflow-title">Every game should improve the next one.</h2>
+        <p>The application connects data collection, understanding, repertoire work and training instead of leaving them as separate tools.</p>
+      </div>
+
+      <ol class="workflow-steps">
+        <li><span>01</span><strong>Import games</strong><p>Bring in recent play and keep analysis current.</p></li>
+        <li><span>02</span><strong>Find patterns</strong><p>Expose recurring decisions, gaps and tactical misses.</p></li>
+        <li><span>03</span><strong>Build repertoire</strong><p>Extend courses with continuations you actually meet.</p></li>
+        <li><span>04</span><strong>Train positions</strong><p>Practise weak lines and high-value decisions.</p></li>
+        <li><span>05</span><strong>Measure progress</strong><p>See what improved and where to focus next.</p></li>
+      </ol>
+    </section>
+
+    <section id="capabilities" class="capabilities section-shell" aria-labelledby="capabilities-title">
+      <div class="section-intro compact-intro">
+        <p class="eyebrow">FROM DATA TO DECISIONS</p>
+        <h2 id="capabilities-title">A practical chess system built around your play.</h2>
+      </div>
+
+      <article class="capability capability-games">
+        <div class="capability-copy">
+          <span class="capability-number">01</span>
+          <p class="eyebrow">UNDERSTAND YOUR GAMES</p>
+          <h3>See the patterns behind individual results.</h3>
+          <p>Review engine analysis, tags, opening assignments, tactical detections and performance trends in one connected history.</p>
+          <ul>
+            <li>Missed opportunities and punished blunders</li>
+            <li>Opening and opponent trends</li>
+            <li>Focused filters instead of endless game lists</li>
+          </ul>
+        </div>
+        <div class="capability-demo games-demo" aria-label="Illustrative recent games analysis">
+          <div class="demo-toolbar"><strong>Recent games</strong><span>Last 3 months</span></div>
+          <div class="game-row"><span class="result result-win">W</span><div><strong>vs. northstar_64</strong><small>Sicilian Defence · 31 moves</small></div><code>91%</code></div>
+          <div class="game-row"><span class="result result-loss">L</span><div><strong>vs. stonebishop</strong><small>French Defence · 42 moves</small></div><code>74%</code></div>
+          <div class="game-row"><span class="result result-draw">D</span><div><strong>vs. quietrook</strong><small>Queen's Gambit · 38 moves</small></div><code>83%</code></div>
+          <div class="demo-footer"><span>Common issue</span><strong>Early queenside pressure</strong></div>
+        </div>
+      </article>
+
+      <article class="capability capability-repertoire">
+        <div class="capability-copy">
+          <span class="capability-number">02</span>
+          <p class="eyebrow">BUILD A PRACTICAL REPERTOIRE</p>
+          <h3>Grow courses from positions that occur in real games.</h3>
+          <p>Compare your repertoire with your game history, discover where lines end too early and add useful continuations without guessing.</p>
+          <ul>
+            <li>Course review and continuation discovery</li>
+            <li>Opening explorer grounded in your games</li>
+            <li>Clear line and chapter structure</li>
+          </ul>
+        </div>
+        <div class="capability-demo repertoire-demo" aria-label="Illustrative repertoire branch">
+          <div class="tree-header"><strong>Sicilian · Classical</strong><span>Coverage 68%</span></div>
+          <div class="branch-map" aria-hidden="true">
+            <span class="node node-source">e4</span>
+            <i class="branch-line line-a"></i><i class="branch-line line-b"></i><i class="branch-line line-c"></i>
+            <span class="node node-one">c5</span>
+            <span class="node node-two">Nf3</span>
+            <span class="node node-target">Be7<small>14 games</small></span>
+          </div>
+          <div class="tree-action"><span>Most useful next addition</span><strong>9...Be7 continuation</strong></div>
+        </div>
+      </article>
+
+      <article class="capability capability-training">
+        <div class="capability-copy">
+          <span class="capability-number">03</span>
+          <p class="eyebrow">TRAIN WHAT MATTERS</p>
+          <h3>Turn weaknesses into small, deliberate sessions.</h3>
+          <p>Build training from weak lines, missed tactical shots and recent repertoire changes instead of reviewing everything equally.</p>
+          <ul>
+            <li>Targeted line and marathon training</li>
+            <li>Tactical scenarios from your own games</li>
+            <li>Progress that points to the next action</li>
+          </ul>
+        </div>
+        <div class="capability-demo training-demo" aria-label="Illustrative targeted training session">
+          <div class="session-head"><span class="session-icon"><img src="node-branch-badge.svg" alt="" width="38" height="38"></span><div><small>Focused session</small><strong>Weak Sicilian lines</strong></div></div>
+          <div class="session-progress"><span style="width:62%"></span></div>
+          <div class="session-stats"><div><strong>5 / 8</strong><small>positions</small></div><div><strong>84%</strong><small>accuracy</small></div><div><strong>6m</strong><small>elapsed</small></div></div>
+          <a href="#" class="button button-primary full-width">Continue session</a>
+        </div>
+      </article>
+    </section>
+
+    <section id="progress" class="progress-section">
+      <div class="section-shell progress-layout">
+        <div class="progress-copy">
+          <p class="eyebrow">PROGRESS WITH CONTEXT</p>
+          <h2>Know what changed—and what deserves attention next.</h2>
+          <p>Progress is not a decorative dashboard. It connects recent training and game outcomes to the next useful decision.</p>
+          <a class="button button-reversed" href="#">Explore your progress</a>
+        </div>
+        <div class="progress-dashboard" aria-label="Illustrative progress dashboard">
+          <div class="progress-main"><small>Repertoire coverage</small><strong>68%</strong><div class="coverage-track"><span style="width:68%"></span></div><p>+9 percentage points in 30 days</p></div>
+          <div class="progress-side"><article><small>Lines trained</small><strong>34</strong><span>this month</span></article><article><small>Review accuracy</small><strong>82%</strong><span>+6 points</span></article><article><small>Games analysed</small><strong>19</strong><span>5 need review</span></article></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta section-shell">
+      <div class="final-cta-mark"><img src="node-branch-badge-reversed.svg" alt="" width="72" height="72"></div>
+      <div>
+        <p class="eyebrow">BUILD FROM YOUR OWN GAMES</p>
+        <h2>Make your repertoire respond to the chess you actually play.</h2>
+      </div>
+      <a class="button button-primary" href="#">Start building</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="brand-lockup footer-brand">
+      <img src="node-branch-badge.svg" alt="" width="36" height="36">
+      <span class="brand-copy"><strong>Chess Repertoire</strong><small>TRAINER</small></span>
+    </div>
+    <p>Phase 0A visual proof. Static content; no product behavior is changed.</p>
+  </footer>
+</body>
+</html>
