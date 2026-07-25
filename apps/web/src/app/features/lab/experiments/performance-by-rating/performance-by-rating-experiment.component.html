@@ -76,6 +76,55 @@
     </div>
   </section>
 
+  <details class="normalization-reference">
+    <summary>
+      <span>Rating grade reference</span>
+      @if (store.normalizationProfile(); as profile) {
+        <small>{{ profile.version }}</small>
+      }
+    </summary>
+
+    @if (store.normalizationLoading()) {
+      <p class="status-note">Loading rating grade reference...</p>
+    } @else if (store.normalizationError(); as error) {
+      <p class="status-note danger-copy">{{ error }}</p>
+    } @else if (store.normalizationProfile(); as profile) {
+      <div class="normalization-copy">
+        <p>{{ profile.description }}</p>
+        <p>FIDE Standard is an OTB reference only and is not used as an imported-game report type. “Not calibrated” means the source does not support a reliable lower-range mapping.</p>
+      </div>
+      <div class="normalization-table-wrap">
+        <table class="normalization-table">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              @for (pool of normalizationPools; track pool) {
+                <th>
+                  {{ profile.pools[pool].label }}
+                  @if (profile.pools[pool].referenceOnly) {
+                    <span class="reference-badge">Reference</span>
+                  }
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (grade of profile.grades; track grade.id) {
+              <tr>
+                <th>{{ grade.label }}</th>
+                @for (pool of normalizationPools; track pool) {
+                  <td [class.not-calibrated]="grade.ranges[pool] === null">
+                    {{ ratingRangeLabel(grade.ranges[pool]) }}
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </details>
+
   @if (store.loading()) {
     <p class="status-note">Aggregating imported games...</p>
   }
