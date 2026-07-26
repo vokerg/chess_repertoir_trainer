@@ -4,7 +4,7 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** Phase 0D signed-in Angular home implemented; CI and browser review pending
+**Program state:** Phase 0D signed-in Angular home implemented; automated validation passed, browser review pending
 
 **Integration branch:** `visual_transformation`
 
@@ -28,6 +28,7 @@ The public landing page, authentication shell, Phase 0B checkpoint closure, and 
 - [x] Implemented deterministic Continue and Recommended next rules.
 - [x] Added restrained workspace shortcuts and recent-progress summary.
 - [x] Added focused tests for account selection, Continue priorities, setup recommendations, and stale-sync behavior.
+- [x] Passed lint, full build, architecture guardrails, CI migrations, and the complete monorepo test suite on PR #87.
 - [x] Updated the transformation entry point, decision log, working stop condition, and implementation report.
 
 ## Current checkpoint
@@ -40,7 +41,7 @@ Review in this order:
 4. `/home` with one or more failed supporting API requests
 5. desktop and mobile rendering inside the current application shell
 6. default sign-in/sign-up navigation and explicit `returnUrl`
-7. PR #87 CI and focused tests
+7. PR #87 changed files and final CI
 
 Review focus:
 
@@ -70,9 +71,16 @@ Do not merge PR #87 without explicit approval. When approved, squash merge it in
 
 ### Automated validation
 
-- PR #87 CI is running.
-- focused helper tests are included in the web test suite.
-- final build, lint, architecture, migration, and test results must be recorded after CI completes.
+GitHub Actions CI run #885 completed successfully on the implementation head:
+
+- dependency installation passed;
+- lint passed;
+- full monorepo build passed;
+- architecture guardrails passed;
+- database migrations applied successfully to the CI database;
+- complete monorepo tests passed, including the focused home helper tests.
+
+The final documentation-only validation commit must also complete CI before PR #87 is marked ready for review.
 
 ### Outstanding browser validation
 
@@ -89,7 +97,7 @@ Authentication browser/Clerk validation from D-306 remains open and is not resol
 
 ## Open decisions
 
-- Whether Phase 0D is approved after CI and browser review.
+- Whether Phase 0D is approved after browser review.
 - Whether the seven-day stale-sync threshold should be retained after real-data use.
 - Whether existing request fan-out remains acceptable after browser timing review.
 - Exact production desktop navigation rail and mobile navigation model.
@@ -148,7 +156,7 @@ Authentication browser/Clerk validation from D-306 remains open and is not resol
 - Implemented deterministic Continue and recommendation rules with a named seven-day stale-sync constant.
 - Deferred Recent signals and avoided Lab or new backend dependencies.
 - Added responsive home composition and focused rule tests.
-- Opened draft PR #87 for CI before final review.
+- Opened draft PR #87 and passed lint, build, architecture guardrails, migrations, and the complete test suite.
 
 ### 2026-07-26 — Phase 0C signed-in home discovery
 
