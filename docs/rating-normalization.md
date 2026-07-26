@@ -2,146 +2,148 @@
 
 ## Role
 
-This document is the canonical decision and usage guide for the app's cross-pool rating grades.
+This document is the canonical decision and usage guide for the app's cross-pool rating bands.
 
-The executable profile is defined in:
+The executable profiles and helpers are defined in:
 
 - `apps/api/src/modules/rating-normalization/rating-normalization.config.ts`
 - `apps/api/src/modules/rating-normalization/rating-normalization.service.ts`
 - `packages/contracts/src/rating-normalization/rating-normalization.schemas.ts`
 
-The API exposes the active profile through `GET /api/rating-normalization/default`. The performance-by-rating lab renders it as a reference table, but the profile is intended to be reusable by later comparison, recommendation, filtering, and reporting features.
+`GET /api/rating-normalization/default` exposes the active profile. The performance-by-rating lab renders the active profile as a reference table. Opening Explorer peer targeting also classifies imported-game ratings through this domain before selecting Lichess population groups.
 
-When this document and the executable profile disagree, treat the code and tests as runtime truth and correct this document in the same change.
+When this document and the executable profile disagree, treat code and tests as runtime truth and correct this document in the same change.
 
-## Current profile
+## Active profile
 
 - Profile ID: `universal-online-strength`
-- Version: `2026-07-product-v1`
-- Baseline pool: Chess.com Blitz
-- Online pools: Chess.com and Lichess bullet, blitz, and rapid
+- Version: `2026-07-lichess-bands-v1`
+- Baseline pool: Lichess Blitz
+- Online pools: Chess.com and Lichess bullet, blitz and rapid
 - OTB reference: FIDE Standard
-- Range semantics: `minInclusive` and `maxExclusive`; the final grade is open-ended
+- Range semantics: `minInclusive` and `maxExclusive`; the final band is open-ended
 
-The 13 grades are product-facing strength bands. They are not official titles, exact rating conversions, or claims that a player changes materially at a single-point boundary.
+The active nine bands match the rating groups accepted by Lichess Opening Explorer. They are coarse population filters, not titles, exact conversions, or claims that a player's ability changes materially at a one-point boundary.
 
-## Current ranges
+## Active ranges
 
-| Grade | Chess.com blitz | Chess.com bullet | Chess.com rapid | Lichess blitz | Lichess bullet | Lichess rapid | FIDE Standard OTB |
+| Band | Chess.com blitz | Chess.com bullet | Chess.com rapid | Lichess blitz | Lichess bullet | Lichess rapid | FIDE Standard OTB |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Foundational | `<500` | `<550` | `<815` | `<1000` | `<1060` | `<1290` | Not calibrated |
-| Novice | 500–699 | 550–684 | 815–994 | 1000–1199 | 1060–1179 | 1290–1424 | Not calibrated |
-| Lower beginner | 700–899 | 685–839 | 995–1169 | 1200–1359 | 1180–1304 | 1425–1554 | Not calibrated |
-| Upper beginner | 900–1099 | 840–1009 | 1170–1339 | 1360–1489 | 1305–1444 | 1555–1679 | Not calibrated |
-| Lower intermediate | 1100–1299 | 1010–1194 | 1340–1499 | 1490–1619 | 1445–1584 | 1680–1794 | 1660–1684 |
-| Intermediate | 1300–1499 | 1195–1384 | 1500–1654 | 1620–1754 | 1585–1734 | 1795–1904 | 1685–1739 |
-| Upper intermediate | 1500–1699 | 1385–1589 | 1655–1799 | 1755–1884 | 1735–1889 | 1905–2014 | 1740–1819 |
-| Advanced club | 1700–1899 | 1590–1794 | 1800–1934 | 1885–2014 | 1890–2049 | 2015–2114 | 1820–1914 |
-| Strong club | 1900–2099 | 1795–2004 | 1935–2054 | 2015–2144 | 2050–2214 | 2115–2214 | 1915–2019 |
-| Expert | 2100–2299 | 2005–2214 | 2055–2164 | 2145–2274 | 2215–2379 | 2215–2309 | 2020–2134 |
-| Master-track | 2300–2499 | 2215–2424 | 2165–2259 | 2275–2409 | 2380–2549 | 2310–2399 | 2135–2244 |
-| Master-level | 2500–2699 | 2425–2629 | 2260–2339 | 2410–2539 | 2550–2714 | 2400–2489 | 2245–2349 |
-| Elite | `2700+` | `2630+` | `2340+` | `2540+` | `2715+` | `2490+` | `2350+` |
+| `<1000` | `<500` | `<520` | `<630` | `<1000` | `<1000` | `<1000` | Not calibrated |
+| 1000–1199 | 500–699 | 520–709 | 630–759 | 1000–1199 | 1000–1199 | 1000–1199 | Not calibrated |
+| 1200–1399 | 700–959 | 710–959 | 760–959 | 1200–1399 | 1200–1399 | 1200–1399 | Not calibrated |
+| 1400–1599 | 960–1269 | 960–1209 | 960–1229 | 1400–1599 | 1400–1599 | 1400–1599 | 1660–1679 |
+| 1600–1799 | 1270–1569 | 1210–1469 | 1230–1509 | 1600–1799 | 1600–1799 | 1600–1799 | 1680–1769 |
+| 1800–1999 | 1570–1879 | 1470–1729 | 1510–1779 | 1800–1999 | 1800–1999 | 1800–1999 | 1770–1904 |
+| 2000–2199 | 1880–2179 | 1730–1989 | 1780–2039 | 2000–2199 | 2000–2199 | 2000–2199 | 1905–2069 |
+| 2200–2499 | 2180–2639 | 1990–2359 | 2040–2339 | 2200–2499 | 2200–2499 | 2200–2499 | 2070–2319 |
+| `2500+` | `2640+` | `2360+` | `2340+` | `2500+` | `2500+` | `2500+` | `2320+` |
 
-## Evidence and deliberate product choices
+## How the active profile was derived
 
-The empirical starting point is the July 2026 ChessGoals rating comparison, which uses Chess.com blitz as its baseline and maps active players across online pools and FIDE Standard:
+The empirical starting point remains the July 2026 ChessGoals comparison, which uses Chess.com Blitz as its published baseline and provides cross-pool anchors:
 
 - <https://chessgoals.com/rating-comparison/>
 - <https://chessgoals.com/rating-comparison-explained/>
 
-The table is a product normalization profile derived from that comparison, not a claim that every individual player has an exact equivalent rating in another pool. The profile's source metadata distinguishes empirical inputs from deliberate product adjustments.
+The active profile is a deliberate product projection from those anchors:
 
-The profile does not claim ten-point conversion precision. Its `softPadding` metadata records a practical ambiguity width for each non-baseline pool:
+1. The canonical boundaries are fixed to the nine Lichess Explorer groups.
+2. Lichess bullet, blitz and rapid classify directly into the same Lichess group for population targeting. This deliberately ignores normal speed-specific rating disparity for the first peer-population delivery.
+3. Chess.com bullet, blitz and rapid boundaries are approximate same-speed mappings derived from the previous calibrated profile, interpolated to the Lichess group boundaries and rounded to practical ten-point values.
+4. FIDE remains reference-only and is not used as imported-game population evidence.
+
+The source metadata labels the Lichess-group alignment as `PRODUCT_ADJUSTMENT`. The profile does not claim that the rounded boundaries are empirical ten-point conversions.
+
+## Confidence and soft padding
 
 | Pool | Confidence | Soft padding |
 |---|---|---:|
-| Chess.com blitz | High | 0 |
-| Chess.com bullet | Low | 135 |
-| Chess.com rapid | Medium | 115 |
-| Lichess blitz | Medium | 70 |
-| Lichess bullet | Low | 115 |
-| Lichess rapid | Medium | 90 |
+| Lichess blitz | High | 0 |
+| Lichess bullet | Low | 0 |
+| Lichess rapid | Medium | 0 |
+| Chess.com blitz | Medium | 70 |
+| Chess.com bullet | Low | 115 |
+| Chess.com rapid | Medium | 90 |
 | FIDE Standard | Low | 75 |
 
-### Lichess blitz low-end adjustment
+Zero padding on Lichess pools means the active product band boundary is the exact Explorer filter boundary. It does not mean cross-speed equivalence is exact. Bullet remains the least reliable indicator of broader playing strength.
 
-The current empirical comparison places 500 Chess.com blitz around 1090 Lichess blitz. The product deliberately uses **1000 Lichess blitz** as the first boundary and smooths the next two ranges:
+## Opening Explorer peer targeting
 
-- Foundational: `<1000`
-- Novice: `1000–1199`
-- Lower beginner: `1200–1359`
+The temporary peer resolver classifies each eligible imported-game rating using provider and speed context:
 
-Reasons:
+- Lichess account + bullet game → `LICHESS_BULLET`;
+- Lichess account + blitz game → `LICHESS_BLITZ`;
+- Lichess account + rapid game → `LICHESS_RAPID`;
+- Chess.com account + equivalent speed → the matching `CHESS_COM_*` pool.
 
-- the first empirical row is a low-end edge rather than a well-supported full-tail mapping;
-- the reported uncertainty is much wider than ten points;
-- previous yearly estimates were closer to 1000;
-- a round product boundary avoids false precision;
-- the adjustment avoids classifying established 1000–1089 Lichess blitz players in the bottom grade.
+The returned grade maps directly to the corresponding Lichess Explorer group through the grade's `LICHESS_BLITZ.minInclusive` value. The resolver retains the active profile ID/version in its provenance.
 
-This is encoded as source role `PRODUCT_ADJUSTMENT`, not presented as an empirical fact.
+The active profile does not itself resolve which accounts, periods, or speeds should dominate. That policy belongs to `peer-rating-band.service.ts` for the temporary Opening Explorer use case and later to RB-002 for durable player-level projection.
 
-### Bullet caveat
+## Preserved legacy profile
 
-Bullet has the lowest confidence among the online pools. Fast-time-control skill depends heavily on mouse speed, premoving, clock technique, connection quality, and pool participation. Do not infer a player's rapid, blitz, or OTB strength from bullet alone. Near a bullet boundary, adjacent grades are both plausible within the configured soft padding.
+The previous 13-grade profile is retained in code as `LEGACY_RATING_NORMALIZATION_PROFILE`:
 
-The current bullet ranges remain the empirical profile values. Any future adjustment must be versioned and supported by a separate analysis rather than silently changing the table.
+- Version: `2026-07-product-v1`
+- Baseline: Chess.com Blitz
+- Purpose: historical calibration evidence and compatibility reference
 
-### FIDE Standard caveat
+It is no longer returned by `GET /api/rating-normalization/default`. Durable data that was derived from it must preserve its version rather than being silently reinterpreted through the active profile.
 
-FIDE Standard is **reference-only**:
+## Caveats
+
+### Bullet
+
+Bullet performance depends heavily on mouse speed, premoving, clock technique, connection quality and pool participation. Do not infer rapid, blitz or OTB strength from bullet alone. The temporary peer resolver may use bullet when the selected product preset is Bullet or All speeds, but its contribution remains visible.
+
+### Speed disparity
+
+The active Lichess bands intentionally use one group vocabulary across bullet, blitz and rapid because the Lichess Explorer endpoint accepts one shared rating-group list for a mixed speed query. This is an MVP population-filter decision, not a claim that a rating of 1800 has identical meaning in all three pools.
+
+### FIDE Standard
+
+FIDE Standard is reference-only:
 
 - it is not an imported-game provider or performance report type;
 - it must not be included in online-game SQL grouping;
-- it is not calibrated for the first four grades;
-- `null` means “Not calibrated”, not zero or “below 1660”;
-- published FIDE ratings have participation, federation, age, recency, and post-2024 rating-reform effects that do not exist in the same way online.
-
-The first calibrated point is 1100 Chess.com blitz to approximately 1660 FIDE Standard. The narrow lower FIDE bands are much smaller than the uncertainty window and should be treated as reference anchors, not precise player partitions.
+- `null` means Not calibrated;
+- narrow lower reference bands should not be treated as precise player partitions.
 
 ## Usage rules
 
-1. Use stable grade IDs for storage and behavior; labels are display copy.
-2. Use half-open intervals in code. For example, `1000 <= rating < 1200` is Novice in Lichess blitz.
+1. Use stable band IDs for behavior and storage; labels are display copy.
+2. Use half-open intervals in code.
 3. Use the API profile rather than duplicating ranges in Angular or feature-local constants.
 4. Keep FIDE out of imported online-game report types and provider enums.
 5. Display unsupported ranges as `Not calibrated`.
-6. For similarity or recommendation features, use `softPadding` to consider an adjacent grade near a boundary.
-7. Do not convert one rating into an exact rating in another pool. Prefer grade membership or approximate ranges.
-8. Persist the profile ID and version with any durable derived result that must remain historically reproducible.
+6. Preserve profile ID/version with durable derived results.
+7. Do not convert a rating into an exact rating in another pool. Classify into a band or expose an approximate source range.
+8. Keep factual rating classification separate from profile recommendations and explicit repertoire-target overrides.
 
 ## Storage and configurability
 
-The profile currently lives in source configuration behind a service boundary. This is intentional:
+Profiles live in source configuration behind a service boundary. This remains intentional:
 
-- there is one global profile;
-- changes require research, review, tests, and a release;
-- source control provides a clear history;
-- there is no current administrator or user editing workflow.
+- one profile is active globally;
+- historical versions can remain exported for compatibility;
+- changes require research, review, tests and a release;
+- there is no runtime administrator or user editing workflow.
 
-Do not add a database table merely to make the current profile “configurable”. Move profile storage to the database only when one of these requirements becomes real:
-
-- multiple active or selectable profiles;
-- runtime administration without deployment;
-- user-specific profiles;
-- historical reports pinned to stored profile versions;
-- scheduled ingestion of independently maintained calibration datasets.
-
-If persistence is introduced, keep the existing contract and service API. Prefer a versioned validated JSON profile over one row per range unless querying individual ranges becomes a demonstrated requirement.
+Do not add a database table only to make the current profile configurable. Introduce persistence when multiple active profiles, runtime administration, user-specific profiles, stored historical snapshots, or scheduled external calibration ingestion becomes a real requirement.
 
 ## Change procedure
 
-A change to any grade, label, range, confidence, padding, or source must:
+A change to any band, range, confidence, padding or source must:
 
 1. create a new profile version;
-2. update the API configuration and this document together;
-3. preserve stable grade IDs unless the concept itself changes;
-4. update exact-boundary tests, including the value immediately below and at each changed boundary;
-5. validate online pools for complete, contiguous, non-overlapping coverage;
-6. keep reference-only gaps explicit as `null`;
-7. describe empirical changes separately from product adjustments in the pull request;
-8. consider whether durable consumers need to retain the previous profile version.
+2. update configuration, exact-boundary tests and this document together;
+3. preserve prior versions when durable consumers may reference them;
+4. validate every online pool for complete, contiguous, non-overlapping coverage;
+5. keep reference-only gaps explicit as `null`;
+6. distinguish empirical inputs from product adjustments;
+7. review all consumers of the active default profile.
 
 ## Agent entry points
 
@@ -153,6 +155,5 @@ Before changing rating normalization, inspect:
 - `apps/api/src/modules/rating-normalization/rating-normalization.service.ts`
 - `apps/api/src/modules/rating-normalization/rating-normalization.routes.ts`
 - `apps/api/test/rating-normalization/rating-normalization.test.mjs`
-- the consuming frontend store, API service, component, and tests under `apps/web/src/app/features/lab/experiments/performance-by-rating/`
-
-Do not infer that the profile is used for normalized game aggregation merely because it is rendered in the lab. Check the current repository behavior before proposing or implementing such use.
+- `apps/api/src/modules/opening-explorer/peer-rating-band.service.ts`
+- the performance-by-rating Angular consumer and tests.

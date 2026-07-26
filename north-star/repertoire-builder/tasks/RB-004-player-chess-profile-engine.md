@@ -26,14 +26,14 @@ Create a deterministic, filterable Player Chess Profile calculation that describ
 - which opening characters produce good opening positions;
 - which produce good results relative to appropriate baselines;
 - where early mistakes or trouble cluster;
-- how conclusions differ by speed, color, period, account, and rating context;
+- how conclusions differ by speed preset, color, period, account, and rating context;
 - confidence and evidence behind every conclusion.
 
 The calculation should have standalone value and later advise repertoire targets.
 
 ## Why this task exists
 
-The repository already stores imported games, ratings, opening names/ECO, indexed plies, analyses, and opening-related tags. A profile can turn those facts into a coherent player-facing capability, but only after opening classification and player-level context are available or an approved limited fallback is defined.
+The repository stores imported games, ratings, opening names/ECO, indexed plies, analyses, and opening-related tags. A profile can turn those facts into a coherent player-facing capability, but only after opening classification and durable player-level context are available or an approved limited fallback is defined.
 
 ## Current repo anchors to inspect
 
@@ -50,7 +50,7 @@ The repository already stores imported games, ratings, opening names/ECO, indexe
 
 Blocked on:
 
-- RB-002 player-level resolution;
+- RB-002 durable player-level resolution;
 - RB-003 opening classification or an explicitly approved limited profile taxonomy.
 
 Population-relative conclusions also depend on RB-001.
@@ -59,7 +59,8 @@ May be split into a metric-definition/discovery task and implementation task if 
 
 ## In scope
 
-- define profile query filters: accounts, dates, speeds, colors, rated status, and rating/opponent context;
+- define profile query filters: accounts, dates, RB-001 speed presets, colors, rated status, and rating/opponent context;
+- reference RB-002 factual player-level evidence rather than recalculating or persisting a second level model;
 - define overall and contextual baselines;
 - calculate preference exposure separately from performance;
 - calculate opening-position outcomes from analysis/tags with no double counting;
@@ -75,6 +76,8 @@ May be split into a metric-definition/discovery task and implementation task if 
 
 ## Out of scope
 
+- recalculating or mutating the RB-002 factual player level;
+- arbitrary target speed weights;
 - polished profile UI;
 - storing a permanent personality label;
 - automatically changing courses;
@@ -85,7 +88,7 @@ May be split into a metric-definition/discovery task and implementation task if 
 
 ## Statistical questions to resolve
 
-- baseline hierarchy by speed, color, and rating context;
+- baseline hierarchy by speed preset, color, and benchmark context;
 - minimum samples and confidence grades;
 - shrinkage or conservative wording for small samples;
 - analysed-coverage thresholds;
@@ -100,7 +103,7 @@ May be split into a metric-definition/discovery task and implementation task if 
 
 - Preference and performance are separate response sections.
 - Every conclusion includes sample size, filters/context, baseline, metric delta where applicable, and confidence/evidence strength.
-- Results can differ by speed and color.
+- Results can differ by speed preset and color.
 - Multiple accounts use RB-002 level/account evidence rather than arbitrary raw-rating averaging.
 - Opening categories come from RB-003 or an explicitly named fallback.
 - Opening-related tags may contribute but are not the sole unexplained source.

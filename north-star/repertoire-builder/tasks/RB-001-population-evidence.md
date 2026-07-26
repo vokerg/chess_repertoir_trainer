@@ -1,6 +1,6 @@
-# RB-001 — Integrate speed/rating population evidence and weighting
+# RB-001 — Deliver Lichess-aligned peer population presets
 
-Status: READY
+Status: REVIEW
 
 Priority: P0
 
@@ -10,178 +10,204 @@ Delivery class: Dual-use
 
 Planning maturity: Detailed
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `north-star/rb-001-peer-presets-replan`
 
-Claimed at: none
+Claimed at: 2026-07-26
 
-Claim scope: none
+Claim scope: implement the versioned Lichess-benchmark rating profile, temporary peer-band resolver, compact Opening Explorer preset contract, mixed-query provenance, two-select Peer games UI, focused tests, runtime documentation, and completion synchronization for CRT-3 / RB-001.
+
+Implementation started: 2026-07-26 at runtime commit `bd822d8d6d59fb274f8a0418e0adfb3879675f73`; Jira CRT-3 transitioned to `In Progress`.
+
+Review ready: 2026-07-26 after full CI run `30211739445` passed lint, build, architecture guardrails, migrations and the complete test suite.
 
 ## Outcome
 
-Provide one reusable, typed source of opening-position population evidence that can answer which moves are played and how they score for:
+Turn the merged rated Lichess Opening Explorer into one concise, reusable peer-population capability for Opening Analysis and the future repertoire builder.
 
-- one selected speed;
-- any non-empty combination of bullet, blitz, rapid, and classical;
-- controlled General mode;
-- a source rating range or normalized-grade target;
-- a clearly identified provider/population source.
+The product-facing API and widget expose:
 
-The same capability should improve opening analysis now and later supply the repertoire builder.
+- one fixed speed preset;
+- one rating target;
+- server-controlled source-period and cache policy;
+- the resolved Lichess speeds and rating groups used for the query;
+- position and move popularity/results from one mixed Lichess response.
+
+The task deliberately does not build a client-side per-speed weighting system. The required north-star value is a credible, reproducible population of similar or slightly stronger players, not a statistically reconstructed blend of separate speed datasets.
 
 ## Why this task exists
 
-The rated Lichess Peer games integration has now been merged to `main` through [PR #80](https://github.com/vokerg/chess_repertoir_trainer/pull/80). The north-star program must extend that implementation rather than create a duplicate population explorer.
+PR #80 merged the reusable `opening-explorer` backend, shared contracts, cache, Lichess client and Peer games widget. Its previous UI exposed raw month, rating-group and speed checkboxes, while the service cached each complete filter combination as one profile.
 
-The builder cannot make practical recommendations from master games alone. It needs to know what opponents at the selected speeds and ratings actually play, how common each continuation is, and where population behavior changes. The merged implementation establishes the reusable retrieval, caching, contract, and Opening Analysis consumption foundation, but it does not yet define the product-level weighting and explainability semantics required by this task.
+That flexibility was more complex than the product needed. The north-star builder needs compact target presets and a reusable way to resolve “players like me” into the exact coarse rating groups accepted by Lichess Explorer.
 
-## Current implementation baseline on `main`
+The task extends PR #80 rather than creating a second extractor, cache or population service.
 
-PR #80 provides:
+## Product decisions delivered
 
-- shared backend ownership under `apps/api/src/modules/opening-explorer/`;
-- shared cross-workspace schemas under `packages/contracts/src/opening-explorer/`;
-- distinct authenticated endpoints for Masters and rated Lichess games;
-- optional rated-game month, rating-group, and speed filters;
-- arbitrary non-empty combinations of supported Lichess speed buckets;
-- all Lichess Explorer rating groups from unrestricted through `2500+`;
-- source identity, position and move W/D/L counts, SAN/UCI, average rating, opening metadata, cache state, and source/profile metadata;
-- normalized-position cache reuse, stale fallback, request deduplication, shared throttling, and HTTP 429 backoff;
-- Fastify/Zod/OpenAPI registration and focused contract, service, repository, and Angular tests;
-- a reusable Peer games Angular widget composed by Opening Analysis behind its own header toggle.
+### Speed presets
 
-Supported upstream speeds are `ultraBullet`, `bullet`, `blitz`, `rapid`, `classical`, and `correspondence`. The north-star target remains explicitly focused on arbitrary non-empty combinations of bullet, blitz, rapid, and classical; extra upstream buckets must not silently redefine the product target.
+| API value | UI label | Lichess speeds |
+| --- | --- | --- |
+| `ALL` | All speeds | bullet, blitz, rapid, classical, correspondence |
+| `BLITZ_AND_SLOWER` | Blitz and slower | blitz, rapid, classical, correspondence |
+| `BLITZ` | Blitz | blitz |
+| `BULLET` | Bullet | bullet |
 
-## Current repo anchors to inspect
+Rules:
 
-Reinspect current versions of:
+- `ultraBullet` is unsupported by the product and absent from the product API/UI;
+- arbitrary speed arrays remain a low-level upstream capability, not a product target;
+- the default is `BLITZ_AND_SLOWER`.
 
-- `apps/api/src/modules/opening-explorer/`;
-- `packages/contracts/src/opening-explorer/`;
-- `apps/web/src/app/shared/lichess-games-explorer/`;
-- `apps/web/src/app/features/opening-analysis/`;
-- `docs/opening-explorer.md`;
-- `apps/api/src/modules/imported-games/opening-analysis.service.ts`;
-- rating-normalization contracts and services once RB-002 resolves their working-base status;
-- cache profile serialization and source metadata before changing response provenance.
+### Rating targets
 
-Do not reintroduce `masters-explorer` as the shared module boundary. Masters and rated Lichess games are separate evidence sources implemented through the shared Opening Explorer module.
+The compact target selector exposes:
 
-## Dependencies
+- `ALL` — every Lichess Explorer rating group;
+- `MY_PEERS` — the user's resolved dominant contiguous peer band;
+- `MY_PEERS_PLUS_ONE` — the resolved peer band plus exactly one adjacent higher group when available; UI label **My peers and above**;
+- `GROUP` — one explicit Lichess Explorer group.
 
-The former blocker is resolved:
+The default is `MY_PEERS_PLUS_ONE`.
 
-- the parallel implementation is identified as PR #80;
-- its contract, source limits, cache behavior, supported filters, API, tests, documentation, and Angular consumer have been inspected on `main`.
+## Lichess-benchmark rating bands
 
-The task can now be claimed and started.
+The active rating-normalization profile is `universal-online-strength` version `2026-07-lichess-bands-v1` with these canonical online bands:
 
-The normalized-grade targeting slice still depends on RB-002 player-level resolution and the verified rating-normalization domain. Work on filter provenance, weighting semantics, per-speed explainability, and sparse-data behavior can proceed independently.
+- `<1000`;
+- `1000–1199`;
+- `1200–1399`;
+- `1400–1599`;
+- `1600–1799`;
+- `1800–1999`;
+- `2000–2199`;
+- `2200–2499`;
+- `2500+`.
 
-May run in parallel with:
+Lichess ratings classify directly. Chess.com bullet, blitz and rapid map into the same bands through versioned approximate source ranges derived from the previous calibration evidence. Normal bullet/blitz/rapid disparity is deliberately ignored for one mixed Lichess population query, but raw Chess.com ratings are never compared directly with raw Lichess ratings.
 
-- RB-002 player-level resolution;
-- RB-003 opening classification;
-- RB-008 visual prototype using the verified Peer games contract plus explicit mock extensions for unresolved weighting evidence.
+The previous `2026-07-product-v1` profile remains preserved as `LEGACY_RATING_NORMALIZATION_PROFILE`.
 
-## In scope
+## Temporary peer-band resolver
 
-- extend the merged Opening Explorer integration rather than reimplementing it;
-- retain shared Zod contracts for population position evidence crossing API and web boundaries;
-- preserve source metadata, selected rating range/groups, selected speeds, sample sizes, WDL, move UCI/SAN, and cache/freshness metadata;
-- support arbitrary non-empty combinations of bullet, blitz, rapid, and classical;
-- define controlled weighting for combined speeds and General mode;
-- make weighting explicit in request, response, or a versioned derived configuration rather than hidden;
-- expose per-speed components, or an equivalently explainable decomposition, when a weighted aggregate is returned;
-- map normalized-grade targets to source rating groups after RB-002 defines the shared semantics;
-- define sparse, missing, and unsupported-data behavior;
-- keep population evidence independently consumable by Opening Analysis and future builder services;
-- add focused API/domain tests and update canonical documentation affected by the final implementation.
+A reusable resolver derives a user's population band on demand until durable RB-002 player-level work is delivered.
 
-## Out of scope
+### Evidence selection
 
-- implementing a second Lichess extractor;
-- replacing the merged cache, client, route, or Angular widget without a verified need;
-- candidate ranking or repertoire recommendation policy;
-- player-profile calculation;
-- opening classification;
-- builder session state;
-- final population UI redesign unless required by the integration slice;
-- adding another external provider without a separate task.
+It uses owned rated imported standard games and the user's game-recorded rating.
 
-## Resolved implementation facts
+Personal evidence speeds by selected preset:
 
-- The provider is Lichess and the rated-game source is identified as `LICHESS_GAMES`.
-- The source supports optional month bounds, all Lichess Explorer rating buckets, and six upstream speed buckets.
-- Multiple selected speeds are currently sent as one Lichess Explorer request and returned as one raw aggregate.
-- Masters evidence remains a distinct `LICHESS_MASTERS` source and endpoint.
-- Opening Analysis already consumes the rated-game evidence through the Peer games widget.
-- Shared cache profiles are derived deterministically from canonical filter combinations.
-- The current response identifies source and profile version but does not directly expose the selected month, rating, and speed filters.
+- `ALL`: bullet, blitz and rapid;
+- `BLITZ_AND_SLOWER`: blitz and rapid;
+- `BLITZ`: blitz;
+- `BULLET`: bullet.
 
-## Open questions to resolve
+Classical and correspondence may be queried from Lichess but do not contribute personal rating evidence.
 
-- How are source rating groups mapped to normalized grades?
-- What default weights are useful: equal, player-distribution, or another policy?
-- How is General mode defined and versioned?
-- Should users see or edit weights, or choose understandable presets?
-- Should controlled combinations request each speed separately and aggregate in the service, or can another explainable upstream strategy preserve components?
-- How should small samples and missing speed buckets affect weighting?
-- What exact response provenance should expose selected month, rating, and speed filters?
-- Is a provider-general abstraction needed after Lichess semantics are complete, or should the contract remain source-explicit?
+### Period fallback
 
-## Acceptance progress
+1. Eligible games from the last three months.
+2. All eligible imported history when recent evidence is absent.
+3. The `1400–1599` benchmark band as a visible generic fallback.
 
-Already met by PR #80:
+### Dominant range
 
-- A single position can be queried for one speed and for a multi-speed combination.
-- Existing Masters evidence remains a distinct source.
-- Opening Analysis consumes the new evidence without builder-specific imports.
-- Shared DTOs use `packages/contracts` across workspace boundaries.
-- Fastify route schemas carry intentional OpenAPI metadata and response schemas.
-- Repository and cache work follows the verified normalized-position and Opening Explorer patterns.
-- Focused tests cover current query validation, client, cache, service, repository, contract, OpenAPI, store, and widget behavior.
+Resolver policy `dominant-contiguous-window-v1`:
 
-Still required before `DONE`:
+- considers contiguous windows of one, two or three groups;
+- selects the narrowest window containing at least 70% of eligible games;
+- qualifying ties prefer more games and then the lower starting group;
+- when no window reaches 70%, the highest-mass window wins, followed by narrower and lower tie-breaks.
 
-- General mode cannot be an undocumented raw merge.
-- Weighting for combined speeds is explicit and versioned.
-- Weighted aggregates expose enough component evidence to explain why a move ranks as common.
-- Responses retain selected speeds, rating target/range, source identity, data period, sample size, and per-move evidence directly rather than only through an opaque profile version.
-- Missing, sparse, or unsupported data is explicit.
-- Normalized-grade targeting is integrated through the shared rating-normalization/player-level semantics.
-- Focused tests cover weighting, component explainability, sparse data, filter provenance, normalized-grade mapping, and invalid input.
+The resolver returns:
 
-## Required validation
+- evidence period;
+- contributing providers, accounts and speeds;
+- eligible game count;
+- complete band distribution;
+- selected contiguous groups;
+- normalization profile ID/version;
+- resolver policy version.
 
-Expected for the remaining delivery:
+RB-001 adds no durable player-profile storage. RB-002 must reuse this boundary and own any persisted player-level snapshot, confidence, exclusions and override behavior.
 
-- relevant contract build/tests;
-- API build and focused Opening Explorer tests;
-- web build/tests if the Peer games consumer changes;
-- architecture checks for any changed shared contract or module boundary;
-- regression coverage proving Masters behavior remains distinct and unchanged.
+## API and cache shape
 
-## Completion updates
+The product query contains:
 
-The completion report must:
+- `fen`;
+- `speedPreset`;
+- `ratingTarget`;
+- `ratingGroup` only when `ratingTarget=GROUP`.
 
-- identify PR #80 as the merged implementation baseline;
-- document supported and unsupported speeds/rating filters;
-- record the weighting and General-mode decision;
-- document response-level provenance and sparse-data behavior;
-- assess RB-002, RB-004, RB-006, and RB-007 dependencies;
-- recommend queue changes if normalized-grade support is delayed.
+The authenticated API resolves the preset and target into one canonical Lichess speed/rating list, then makes one mixed Lichess Explorer request.
 
-## Reconciliation
+The existing cache model remains:
 
-Report: `reports/RB-001-2026-07-26-peer-games-reconciliation.md`
+- one cache row per normalized position, source and deterministic effective profile;
+- one stored mixed public snapshot, not separate per-speed components;
+- 30-day TTL and stale fallback;
+- no Redis, scheduled refresh, queue or new cache table.
 
-This report records the status and dependency reconciliation only. It is not a completion report and does not satisfy the remaining acceptance criteria.
+The response directly exposes requested and effective population provenance. Personal resolver provenance is attached after shared cache access and is not persisted.
+
+## Frontend scope delivered
+
+The existing collapsible Peer games filter now contains two compact native selects:
+
+1. Time controls;
+2. Player level.
+
+Defaults:
+
+- speed: **Blitz and slower**;
+- rating: **My peers and above**.
+
+No `since`/`until` controls are exposed. A resolved-population summary identifies effective groups and recent/all-history/fallback evidence.
+
+## Acceptance criteria status
+
+- API speed presets and ultraBullet exclusion: complete.
+- Rating targets and explicit group validation: complete.
+- Defaults: complete.
+- Two compact selects replacing month/checkbox controls: complete.
+- One mixed Lichess request: complete.
+- Existing cache architecture and direct provenance: complete.
+- New versioned normalization profile and Chess.com mappings: complete.
+- Recent/all/default peer fallback: complete.
+- Exactly one higher adjacent group for `MY_PEERS_PLUS_ONE`: complete.
+- Resolver provenance: complete.
+- Masters behavior/source separation: unchanged and covered by full regression tests.
+- Focused provider, preset, fallback, divergence, explicit, top-band, cache, stale and invalid-input tests: complete.
+- Canonical runtime documentation: complete.
+
+## Validation
+
+GitHub Actions CI run `30211739445` passed on implementation head `ba164767f139b8b7efa522edb050d2ca983a6171`:
+
+- lint;
+- contracts/API/web builds;
+- architecture guardrails;
+- PostgreSQL migrations;
+- complete repository test suite.
+
+Browser-level visual review was not available in the connector-only execution environment. Angular build and component tests passed; visual inspection remains a review item.
+
+## Planning reconciliation
+
+Previous baseline report: `reports/RB-001-2026-07-26-peer-games-reconciliation.md`
+
+Revised direction report: `reports/RB-001-2026-07-26-peer-population-direction.md`
+
+Implementation completion report: `reports/RB-001-2026-07-26-peer-population-presets.md`
+
+PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
 
 ## Completion
 
-Report: none
+Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
 
-Completed at: none
+Completed at: none — pending review and merge.

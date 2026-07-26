@@ -1,6 +1,6 @@
 # RB-002 — Define multi-account player level resolution
 
-Status: READY
+Status: BLOCKED
 
 Priority: P0
 
@@ -20,143 +20,123 @@ Claim scope: none
 
 ## Outcome
 
-Create a reusable and inspectable calculation that resolves a player's current level from multiple Chess.com and Lichess accounts, potentially with different ratings by speed, into normalized rating-grade evidence suitable for:
+Create a reusable and inspectable player-level projection from multiple owned Chess.com and Lichess accounts. The durable result must use the Lichess-benchmark rating bands introduced by RB-001 and remain suitable for:
 
+- stored or reproducible practical-level evidence;
 - Chess Profile comparisons;
-- own-level population targeting;
-- own-level plus one or more grades;
-- standalone account and performance views.
+- peer-population defaults;
+- stronger-population targets;
+- standalone account and performance views;
+- later user overrides.
 
-The calculation must show its inputs, confidence, and limitations and allow a builder target to override it.
+The calculation must show its inputs, contribution rules, confidence and limitations. It must not duplicate the temporary on-demand peer-band resolver delivered by RB-001.
 
 ## Why this task exists
 
-A user may have several accounts on the same or different providers. Selecting one arbitrary account or averaging raw ratings across providers would be misleading. The merged rating-normalization domain provides the shared grade vocabulary and cross-pool ranges, but it does not by itself define the user's level across accounts, recency, periods, and speeds.
+A user may have several accounts on the same or different providers, with different ratings and activity by speed. RB-001 needs a bounded on-demand peer range immediately for Opening Analysis and population queries. This task owns the more complete and durable player-level model that can be stored, reused and overridden across the product.
+
+The merged rating-normalization domain provides the service and contract boundary, but RB-001 will revise its active bands so the canonical product levels align directly with Lichess Explorer rating groups. RB-002 must consume that version rather than finalizing against the current 13-grade profile.
 
 ## Verified implementation baseline on `main`
 
-PR #76 is merged and provides:
+PR #76 currently provides:
 
 - shared `@chess-trainer/contracts/rating-normalization` schemas;
-- a versioned profile with stable grade IDs and 13 contiguous product-facing strength bands;
-- calibrated Chess.com and Lichess bullet, blitz, and rapid pools;
-- FIDE Standard as reference-only, with unsupported lower ranges represented as `null`;
-- profile ID, version, source metadata, confidence, and per-pool soft padding;
-- `classifyRating(pool, rating)` for mapping one source rating to one normalized grade;
-- `getRatingRange(profile, gradeId, pool)` for mapping a grade back to a supported source range;
-- `GET /api/rating-normalization/default` with Fastify/OpenAPI schemas;
-- a performance-by-rating lab reference table;
-- focused API boundary and Angular store tests;
-- canonical usage and versioning rules in `docs/rating-normalization.md`.
+- versioned profile metadata;
+- calibrated Chess.com and Lichess bullet, blitz and rapid pools;
+- profile source/confidence metadata;
+- single-rating classification and grade-to-source-range helpers;
+- `GET /api/rating-normalization/default`;
+- tests and canonical documentation.
 
-The active profile is `universal-online-strength`, version `2026-07-product-v1`, with Chess.com Blitz as the baseline pool.
+The repository also stores imported game-recorded ratings and per-account rating/performance projections for bullet, blitz and rapid. RB-001 will use those facts to deliver the first shared peer-band resolver.
 
-## What PR #76 does not provide
+## Dependency
 
-- account selection or ownership projection;
-- multiple-account aggregation;
-- rating observation recency or period selection;
-- activity/volume weighting;
-- per-speed or overall player-level resolution;
-- confidence derived from account evidence;
-- excluded-account reasons;
-- no-data or conflicting-data resolution;
-- a player-level endpoint or consumer-facing override projection.
+Blocked on the RB-001 slice that introduces:
 
-Therefore PR #76 removes the task's prerequisite blocker but does not complete RB-002.
+- the versioned Lichess-benchmark bands;
+- provider/speed conversion into those bands;
+- the shared recent-three-month/all-history/default peer-band resolver contract;
+- resolver provenance and policy versioning.
 
-## Current repo anchors to inspect
+Planning and account-model inspection may continue, but implementation must not create a competing band model or duplicate resolver.
 
-Reinspect current versions of:
-
-- `docs/rating-normalization.md`;
-- `packages/contracts/src/rating-normalization/`;
-- `apps/api/src/modules/rating-normalization/`;
-- `apps/api/test/rating-normalization/rating-normalization.test.mjs`;
-- account models, ownership, and account-list endpoints;
-- `accountRatingStatsService.ts` and rating-history services;
-- imported-game rating fields and provider/speed normalization;
-- account detail and performance-by-rating UI/store patterns;
-- current date-period filter helpers and account selection components.
-
-## Dependencies
-
-No prerequisite blocker remains: PR #76 is available on `main` and is the required normalization baseline.
-
-May run in parallel with RB-001 and RB-003.
-
-RB-004 and RB-006 depend on the result.
+RB-004 and RB-006 remain blocked on the completed durable player-level outcome.
 
 ## In scope
 
-- define the input account set and account inclusion/exclusion behavior;
-- decide whether the primary output is per speed, overall, or both;
-- define which rating observation is used for a selected period;
-- handle multiple accounts for the same provider and speed;
-- map source ratings through the merged versioned normalization profile;
-- define recency, volume, inactivity, and outlier treatment;
-- produce confidence and contribution details;
-- return source accounts, selected ratings, grades, weights, and exclusions;
-- support no-data and partial-data states;
-- define an explicit override shape for consumers without necessarily persisting the override in this task;
-- implement a reusable service and shared contract if used by both API and web;
-- provide a bounded endpoint or integrate with an existing account projection based on inspected architecture;
-- add tests covering realistic multi-account combinations.
+- reuse or extract the RB-001 peer-band resolver as the shared factual calculation boundary;
+- define the default owned-account input set and account inclusion/exclusion behavior;
+- determine how multiple accounts in the same provider/speed pool contribute;
+- refine recency, volume, inactivity and outlier treatment beyond the bounded RB-001 fallback where justified;
+- decide whether the durable output includes per-speed bands, one dominant overall interval, or both;
+- persist or snapshot the resolved level only after inspecting existing projection/storage patterns;
+- preserve normalization profile ID/version and resolver policy version;
+- return source accounts, selected ratings or game distributions, bands, contributions, exclusions and reasons;
+- define player-level confidence without conflating it with normalization-source confidence;
+- handle no-data, partial-data and genuinely conflicting-data states;
+- define an explicit override shape without mutating the factual calculation;
+- provide a reusable service/contract and bounded endpoint or projection based on inspected architecture;
+- make the result consumable by RB-001, RB-004, RB-006 and account/performance views;
+- add focused multi-account tests.
 
 ## Out of scope
 
-- population move extraction;
+- changing the Lichess-benchmark bands introduced by RB-001 without a new versioned calibration decision;
+- population move extraction or Lichess Opening Explorer calls;
+- candidate ranking;
 - player style/profile conclusions;
-- builder target persistence;
-- changing rating-normalization boundaries without evidence, profile versioning, and a separate decision;
+- builder session state;
 - silently merging accounts the user does not own;
-- exact rating-to-rating conversion across pools;
+- exact rating-to-rating conversion across providers;
 - LLM-generated level assessment.
 
 ## Formula questions this task must resolve
 
-- One level per speed, one overall level, or both?
-- Latest recorded rating versus median/weighted rating over the selected period?
-- How many games are needed before an account contributes strongly?
-- How quickly does stale rating evidence decay?
-- Should multiple accounts at the same speed be combined, or should the most active/recent account dominate?
-- How are accounts intentionally used for experimentation or sandbagged ratings handled without unsupported accusations?
-- How are the merged profile's soft-padding values used near grade boundaries?
-- Is confidence based on games, recency, grade agreement, source-profile confidence, or all of them?
-- How does a custom account selection differ from the default player level?
-- How are one or more grades above the resolved level translated into provider- and speed-specific source ranges?
+- Is the persisted output one band interval, per-speed bands, or both?
+- Does the RB-001 recent-game distribution remain the final formula or only the initial fallback?
+- How many games are needed before evidence contributes strongly?
+- How quickly does stale evidence decay?
+- How are multiple accounts at the same provider and speed combined?
+- How are conflicting high-volume bands represented?
+- How is confidence derived from volume, recency, agreement and calibration quality?
+- Where is the durable projection stored, and what invalidates/recomputes it?
+- How does a custom account selection differ from the default factual projection?
+- How is the factual result presented to RB-006 without preventing a manual target override?
 
 ## Acceptance criteria
 
-- Raw ratings from different providers are never directly averaged without normalization.
-- The result identifies the rating-normalization profile and version used.
-- Every contributing account and speed has visible source rating, observation date/period, normalized grade, and contribution.
+- The implementation consumes the RB-001 Lichess-benchmark profile and resolver boundary; no parallel levels table exists.
+- Raw Chess.com and Lichess ratings are never directly averaged.
+- Every contributing account/speed has visible provider, rating evidence period, normalized band and contribution.
 - Excluded or stale accounts include reasons.
 - Multiple accounts on one provider are handled deterministically.
 - No-data and conflicting-data outcomes are explicit.
-- A caller can obtain an own-level range and translate one or more grades above it back to supported source ranges.
-- The user can override the resolved target later without mutating the factual calculation.
-- The implementation is reusable outside the repertoire builder.
-- Focused tests cover one account, multiple providers, multiple same-provider accounts, different speeds, stale data, sparse data, boundary ratings, and no data.
+- A durable or reproducible dominant peer band is available to later product/profile consumers.
+- The result identifies normalization and resolver policy versions.
+- The user can later override the target without mutating factual player-level evidence.
+- Focused tests cover one account, multiple providers, multiple same-provider accounts, different speeds, stale data, sparse data, divergent ratings, boundary values and no data.
 
 ## Required validation
 
 - contracts build/tests if a shared player-level schema is added;
 - API build and focused rating/player-level tests;
-- web tests if account contribution presentation is included;
-- architecture checks for new module registration.
+- storage migration/repository tests only if persistence is introduced;
+- web tests if contribution presentation is included;
+- architecture checks for new module registration or projection ownership.
 
 ## Completion updates
 
 The report must record:
 
-- the chosen formula and rejected alternatives;
+- what was reused from RB-001;
+- the chosen account/recency/contribution formula and rejected alternatives;
 - confidence semantics;
-- period and speed behavior;
+- persisted/snapshot storage and invalidation behavior;
 - override boundary;
-- exact use of the merged rating-normalization profile and soft padding;
-- impact on RB-001, RB-004, and RB-006;
-- whether follow-up calibration tasks are needed.
+- impact on RB-001, RB-004 and RB-006;
+- whether additional calibration tasks are required.
 
 ## Completion
 

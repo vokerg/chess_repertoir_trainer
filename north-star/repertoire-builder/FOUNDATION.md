@@ -11,11 +11,11 @@ The north star is a **human-in-the-loop repertoire architect**.
 The product should help a player construct and continuously evolve a repertoire that:
 
 - is objectively defensible within the player's chosen risk tolerance;
-- fits the positions the player enjoys or deliberately wants to learn;
-- is relevant to the time controls and rating populations the player expects to face;
-- uses master practice, population practice, engine evaluation, personal games, tags, and existing courses as evidence;
-- covers the opponent responses that matter without pretending every legal move must be studied now;
-- remains reviewable, explainable, editable, and owned by the player.
+- fits positions the player enjoys or deliberately wants to learn;
+- is relevant to the time controls and rating populations the player expects;
+- uses master practice, population practice, engine evaluation, personal games, tags and existing courses as evidence;
+- covers important opponent responses without pretending every legal move must be studied now;
+- remains reviewable, explainable, editable and owned by the player.
 
 The system proposes and organizes. The user decides.
 
@@ -25,39 +25,38 @@ Do not collapse these layers into one profile or one unexplained score.
 
 ### 2.1 Intrinsic opening profile
 
-A side-aware description of an opening or variation: soundness, sharpness, tacticality, solidity, theoretical status, practical risk, learning burden, and other future dimensions.
+A side-aware description of an opening or variation: soundness, sharpness, tacticality, solidity, theoretical status, practical risk, learning burden and future dimensions.
 
-The program assumes this information will exist in a reusable form. The method for classifying every named opening is intentionally not decided here and will be solved independently.
+The classification method is intentionally independent and unresolved.
 
 ### 2.2 Target-population profile
 
 How moves and openings behave in a selected playing environment:
 
-- provider or general population;
-- one or more speed categories;
-- rating range or normalized rating grades;
+- provider/population source;
+- one product speed preset;
+- one peer-rating target;
 - move frequency and score;
 - response diversity;
-- changes across rating bands and speeds.
+- changes across benchmark bands and presets.
 
 This layer describes the environment, not the user.
 
-### 2.3 Player chess profile
+### 2.3 Player Chess Profile
 
 What the player tends to choose and how well those choices work, calculated from filtered personal games and analysis.
 
-Preference and performance are separate. A player may prefer sharp openings while performing better in solid ones, or may obtain good opening positions without converting them.
+Preference and performance are separate.
 
 ### 2.4 Repertoire target
 
-The intent of the repertoire being built now. It can deliberately differ from the measured player profile.
+The intent of the repertoire being built now. It can deliberately differ from the measured player profile or factual peer level.
 
 Examples:
 
 - general-purpose repertoire;
-- bullet and blitz repertoire;
-- blitz and rapid repertoire;
-- classical repertoire;
+- Bullet repertoire;
+- Blitz and slower repertoire;
 - solid `1.d4` repertoire;
 - sharp or dubious `1.d4` repertoire;
 - low-theory repertoire;
@@ -65,231 +64,169 @@ Examples:
 
 ## 3. User control is foundational
 
-Profile conclusions are suggestions, never hard constraints.
+Profile conclusions and factual peer ranges are suggestions/defaults, never hard constraints.
 
-The product may say:
+The system must distinguish:
 
-> Based on your recent games, you usually prefer sharp positions and perform well in them against peers.
-
-The user may still choose:
-
-- a solid repertoire;
-- a deliberately dubious repertoire;
-- a second repertoire for another speed;
-- a course designed to stretch weaknesses rather than maximize immediate results;
-- a trap-oriented repertoire when the supporting data exists.
-
-The system must distinguish between:
-
-- `profile-derived recommendation`;
-- `explicit repertoire intent`;
-- `manual user choice`.
+- profile-derived recommendation;
+- factual player-level evidence;
+- explicit repertoire intent;
+- manual user choice.
 
 Manual choice wins. The application may warn about tradeoffs but must not silently override it.
 
-## 4. Speed targeting supports combinations
+## 4. Speed targeting uses product presets
 
-A repertoire target may select any non-empty combination of:
+The first product contract exposes exactly four presets:
 
-- bullet;
-- blitz;
-- rapid;
-- classical.
+- **All speeds** — bullet, blitz, rapid, classical and correspondence;
+- **Blitz and slower** — blitz, rapid, classical and correspondence;
+- **Blitz**;
+- **Bullet**.
 
-Examples include bullet only, bullet plus blitz, blitz plus rapid, or all four.
+UltraBullet is excluded.
 
-`General` is a distinct mode, not a synonym for naively merging every game. It requires controlled weighting so the largest or fastest population does not dominate by accident.
+The upstream Lichess API may accept arbitrary speed arrays, but arbitrary combinations are not part of the product target. A combined preset uses one mixed Lichess Explorer response; the MVP does not fetch and weight every speed separately.
 
-For a selected combination, the system will eventually need explicit or derived weights. The exact defaults remain open. Candidate options include equal weighting, weighting by the user's own playing distribution, and editable weights.
+Default: **Blitz and slower**.
 
-## 5. Rating targeting and multi-account level
+## 5. Rating targeting and player level
 
-The builder should support at least:
+The product peer bands are aligned directly to the nine Lichess Explorer groups:
 
-- general population;
-- around the player's level;
-- the player's level plus one normalized grade;
-- the player's level plus several normalized grades;
-- custom ranges.
+- `<1000`;
+- `1000–1199`;
+- `1200–1399`;
+- `1400–1599`;
+- `1600–1799`;
+- `1800–1999`;
+- `2000–2199`;
+- `2200–2499`;
+- `2500+`.
 
-Cross-provider comparison should reuse the repository's versioned rating-normalization domain once available on the working base.
+Lichess ratings classify directly. Chess.com bullet, blitz and rapid ratings map into the same bands through versioned approximate source ranges in the shared rating-normalization domain. Raw cross-provider ratings must not be averaged or compared directly.
 
-A player may have:
+The population target supports:
 
-- multiple Lichess accounts;
-- multiple Chess.com accounts;
-- different current ratings by speed;
-- accounts with different recency and game volume.
+- all players;
+- my peers;
+- my peers plus one adjacent higher band;
+- one explicit benchmark group.
 
-The program therefore requires a reusable **player level resolution** calculation. The exact formula is intentionally open. It must eventually address:
+Default: **My peers and above**, defined as the resolved peer interval plus exactly one higher group where available.
 
-- account selection and exclusions;
-- provider and speed normalization;
-- current rating versus period rating;
-- recency;
-- game volume and confidence;
-- outlier or inactive accounts;
-- whether one level or one level per selected speed is produced.
+RB-001 provides an on-demand peer resolver from owned imported standard games:
 
-The resolved level must remain inspectable. The user must be able to see which accounts and ratings contributed and override the result when building a repertoire.
+1. last three months;
+2. all history when no recent evidence exists;
+3. `1400–1599` as the generic fallback containing rating 1500.
 
-## 6. Player chess profile principles
+It resolves a dominant contiguous interval from the band distribution and returns visible provenance. The exact dominance threshold is versioned and tested by RB-001.
+
+RB-002 later owns durable multi-account storage/snapshot, confidence, exclusions and override semantics. The factual result remains inspectable and can be overridden for a particular repertoire target without being mutated.
+
+## 6. Player Chess Profile principles
 
 The Chess Profile is a standalone product capability and a north-star input.
 
-It should be recalculable for a selected period, accounts, speeds, colors, and opponent/rating context. Initial periods should align with existing application filters where practical, including last month, last three months, year to date, one year, all time, and custom ranges.
-
-Conclusions must retain evidence:
+It should be recalculable for selected periods, accounts, speed presets, colors and rating context. Conclusions retain:
 
 - total and analysed game counts;
-- color and speed;
-- rating context;
+- color and speed context;
+- peer/benchmark context;
 - baseline comparison;
 - opening-position outcome;
 - score and confidence;
 - supporting openings and games.
 
-Existing game tags are useful signals, especially opening success, advantage, trouble, disaster, early mistakes, and early blunders. They are not sufficient as the sole explanation or statistical model.
+Tags are useful signals but not a complete statistical model.
 
-The profile should distinguish:
-
-- what the player chooses;
-- what produces good opening positions;
-- what produces good results;
-- what holds against peers;
-- what holds against stronger players;
-- what changes by speed, color, and period.
+The profile should distinguish what the player chooses, what produces good positions/results, what holds against peers or stronger players and what changes by context.
 
 ## 7. Opening classification dependency
 
-The plan assumes every named opening can be resolved to a side-aware opening profile one way or another.
+The plan assumes every named opening can be resolved to a side-aware opening profile.
 
-Agreed high-level needs include dimensions such as:
+Agreed needs include soundness, sharpness/tacticality, positional/solid character, mainline/sideline status, theory burden and side perspective.
 
-- soundness or dubiousness;
-- sharp/tactical versus positional/solid character;
-- principal/mainline/sideline status;
-- learning and theory burden;
-- White and Black perspectives.
-
-The following remain deliberately blank in this program foundation:
-
-- classification algorithm;
-- manual versus derived ownership;
-- inheritance model;
-- taxonomy details;
-- persistence format;
-- confidence model;
-- update process.
-
-Those decisions belong to the independent opening-classification task and must not be smuggled into player-profile or builder implementation.
+Algorithm, curation, hierarchy, storage, taxonomy, confidence and update process remain assigned to RB-003.
 
 ## 8. Candidate selection and explanation
 
-At a user decision point, the system should compare a small set of meaningful candidate moves using separated evidence:
+At a user decision point, compare a small set of meaningful candidate moves using separated evidence:
 
-- engine evaluation and distance from best;
+- engine evaluation;
 - master practice;
 - selected population practice;
-- personal familiarity and results;
-- existing repertoire coverage or conflict;
-- opening character and learning burden when available;
-- fit with the selected repertoire target;
-- fit with the player profile, clearly labelled as advisory.
+- personal familiarity/results;
+- existing repertoire coverage/conflict;
+- opening character and learning burden;
+- target fit;
+- advisory profile fit.
 
-At an opponent decision point, the system should prioritize responses using selected-population frequency, personal occurrence, danger, objective relevance, existing coverage, and the chosen coverage budget.
+At an opponent decision point, prioritize responses using selected-population frequency, personal occurrence, danger, objective relevance, existing coverage and coverage budget.
 
-Every recommendation must expose reasons and limitations. Missing datasets must be visible rather than silently replaced with invented certainty.
+Every recommendation exposes reasons, sample size and missing evidence.
 
 ## 9. Visual interaction is required
 
-The final choice experience must be visual, not only a table of SAN lines.
+The final choice experience is visual, not only SAN tables.
 
-The exact composition is open, but it should make positions and consequences understandable through boards, move previews, branch context, or other interactive visual evidence.
-
-A small setup dialog may begin the flow. The substantial builder should be a resumable routed workbench rather than a fragile modal-only wizard.
+The substantial builder should be a routed, resumable workbench. Exact boards/cards/branch-map composition remains a prototype task.
 
 ## 10. Existing courses use the same mechanism
 
-New repertoire generation and existing-course improvement are two entry points into the same decision process.
+New repertoire generation and existing-course improvement are entry points into the same decision process.
 
-Existing courses should eventually enter the builder from:
+Existing courses should eventually enter from uncovered responses, early endings, repeated deviations, weak choices, changed population targets or alternative personas.
 
-- uncovered opponent responses;
-- course endings that stop too early;
-- repeated user deviations;
-- weak or unsuitable repertoire choices;
-- changed speed/rating targets;
-- deliberate creation of another course persona.
-
-Accepted changes should reuse existing course-tree and reintegration patterns where they remain appropriate after current-repo inspection.
+Accepted changes should reuse current course-tree/reintegration patterns after reinspection.
 
 ## 11. Traps and repertoire personas
 
-The plan reserves room for:
+The plan reserves room for solid, sharp, positional, dubious, low-theory and future traps-oriented personas, including multiple courses from the same opening with different intent.
 
-- solid, sharp, positional, dubious, low-theory, and other repertoire personas;
-- multiple courses beginning from the same opening but targeting different intents;
-- a future traps knowledge source and trap-oriented builder mode.
-
-The traps concept is intentionally vague. Required future questions include what constitutes a trap, how positions and refutations are represented, how soundness is labelled, what source data is legitimate, and how a trap line differs from an ordinary practical sideline.
+Traps remain research; no data source or schema is assumed.
 
 ## 12. LLM boundary
 
-LLM integration is possible but not required for the core plan.
+LLM integration is optional.
 
-Potential roles include:
-
-- explaining evidence and tradeoffs;
-- summarizing a player profile;
-- narrating why a recommendation fits a target;
-- helping organize chapters or names;
-- conversational navigation through the builder.
-
-An LLM must not be the unverified source of engine facts, population statistics, ownership checks, course writes, or opening classification unless a later task explicitly establishes a reviewed workflow.
+Possible roles include explanation, summarization, naming and conversational navigation. An LLM is not the factual source of engine data, population statistics, ownership, writes or opening classification without a later reviewed task.
 
 ## 13. Delivery philosophy
 
-The program should advance through small deliveries that have value now and compound toward the north star.
-
-Each capability is labelled as one of:
-
-- standalone/general improvement;
-- dual-use standalone and north-star enabler;
-- north-star-specific;
-- optional research.
+Advance through small deliveries with standalone value that compound toward the north star.
 
 Unknown UX and optional AI work must not block deterministic evidence foundations or the standalone Chess Profile.
 
 ## 14. Verified repository anchors at foundation creation
 
-These anchors were inspected when this foundation was created and must be reverified by future tasks:
+These anchors must be reverified by each task:
 
-- local named opening lookup from generated Lichess opening data;
-- imported-game filters for dates, speeds, ratings, colors, openings, tags, and accounts;
-- game tags including opening success, advantage, trouble, disaster, early mistakes, and speed categories;
-- position-level personal next-move and result analysis;
-- cached masters explorer evidence;
-- course trees with one trained-side choice and multiple opponent branches;
-- line editor integration with engine and personal games;
-- course review, continuation gaps, and course endings;
-- analysis-tree preview and reintegration into new or existing course lines;
-- an open rating-normalization PR defining cross-pool normalized grades.
+- local named opening lookup;
+- imported-game filters and game-recorded ratings;
+- game tags and position-level personal move/results analysis;
+- shared Masters/rated Lichess Opening Explorer and cache;
+- course trees and line editor;
+- course review, continuation gaps and endings;
+- analysis-tree preview/reintegration;
+- shared versioned rating-normalization domain.
 
-These are implementation inputs, not authorization to reuse them without inspecting their current state.
+These are implementation inputs, not authorization to reuse them without current inspection.
 
 ## 15. Non-goals of the foundation
 
 This foundation does not decide:
 
 - exact opening-classification mechanics;
-- the multi-account level formula;
+- the durable RB-002 multi-account formula and persistence;
+- the exact RB-001 dominant-range threshold;
 - candidate-ranking weights;
-- exact general-mode weights;
-- the final builder UI;
-- whether or how an LLM is used;
-- traps data source or schema;
-- persistence for builder sessions;
-- final API boundaries.
+- final builder UI;
+- whether/how an LLM is used;
+- traps data source/schema;
+- builder-session persistence;
+- final API field names beyond the agreed preset/target concepts.
 
-Those are assigned to ordered tasks and must be resolved with evidence.
+Those details belong to ordered tasks and evidence-based implementation decisions.

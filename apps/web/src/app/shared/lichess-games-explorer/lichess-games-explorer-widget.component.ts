@@ -9,11 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type {
-  LichessGamesRatingGroup,
-  LichessGamesSpeed,
-  OpeningExplorerResponse,
-} from '@chess-trainer/contracts/opening-explorer';
+import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { firstValueFrom } from 'rxjs';
 import { percentage, sameOpening } from '../masters-explorer/masters-explorer.helpers';
 import { ProgressiveListComponent } from '../ui/progressive-list/progressive-list.component';
@@ -24,8 +20,13 @@ import {
 } from './lichess-games-explorer.helpers';
 import {
   defaultLichessGamesExplorerFilters,
-  lichessRatingOptions,
-  lichessSpeedOptions,
+  effectiveRatingLabel,
+  evidencePeriodLabel,
+  lichessRatingSelectionOptions,
+  lichessSpeedPresetOptions,
+  ratingSelectionValue,
+  speedPresetLabel,
+  type LichessGamesExplorerFilters,
 } from './lichess-games-explorer.models';
 
 @Component({
@@ -38,29 +39,44 @@ import {
 })
 export class LichessGamesExplorerWidgetComponent {
   private readonly api = inject(LichessGamesExplorerApiService);
+  private readonly defaultFilters = defaultLichessGamesExplorerFilters();
 
   readonly fen = input.required<string>();
   readonly moveSelected = output<string>();
 
-  readonly filters = signal(defaultLichessGamesExplorerFilters());
+  readonly filters = signal(this.defaultFilters);
   readonly response = signal<OpeningExplorerResponse | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly filtersOpen = signal(false);
 
-  protected readonly ratingOptions = lichessRatingOptions;
-  protected readonly speedOptions = lichessSpeedOptions;
+  protected readonly ratingOptions = lichessRatingSelectionOptions;
+  protected readonly speedOptions = lichessSpeedPresetOptions;
   protected readonly percentage = percentage;
   protected readonly sameOpening = sameOpening;
   protected readonly compactGameCount = compactGameCount;
   protected readonly exactGameCount = exactGameCount;
   protected readonly hasGames = computed(() => (this.response()?.games.total ?? 0) > 0);
+  protected readonly currentRatingSelection = computed(() => ratingSelectionValue(this.filters()));
   protected readonly activeFilterCount = computed(() => {
     const filters = this.filters();
-    return Number(Boolean(filters.since))
-      + Number(Boolean(filters.until))
-      + Number(filters.ratings.length !== lichessRatingOptions.length)
-      + Number(filters.speeds.length !== lichessSpeedOptions.length);
+    return Number(filters.speedPreset !== this.defaultFilters.speedPreset)
+      + Number(
+        filters.ratingTarget !== this.defaultFilters.ratingTarget
+        || filters.ratingGroup !== this.defaultFilters.ratingGroup,
+      );
+  });
+  protected readonly populationSummary = computed(() => {
+    const population = this.response()?.population;
+    if (!population) return null;
+    const parts = [
+      speedPresetLabel(population.requested.speedPreset),
+      effectiveRatingLabel(population.effective.ratingGroups),
+    ];
+    if (population.peerResolution) {
+      parts.push(evidencePeriodLabel(population.peerResolution.evidencePeriod));
+    }
+    return parts.join(' · ');
   });
 
   private requestId = 0;
@@ -81,30 +97,22 @@ export class LichessGamesExplorerWidgetComponent {
     this.filtersOpen.update((open) => !open);
   }
 
-  protected setSince(event: Event): void {
-    this.patchMonth('since', event);
+  protected setSpeedPreset(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const option = this.speedOptions.find((candidate) => candidate.value === value);
+    if (!option) return;
+    this.filters.update((filters) => ({ ...filters, speedPreset: option.value }));
   }
 
-  protected setUntil(event: Event): void {
-    this.patchMonth('until', event);
-  }
-
-  protected toggleRating(value: LichessGamesRatingGroup): void {
-    const selected = this.filters().ratings.includes(value);
-    const ratings = selected
-      ? this.filters().ratings.filter((rating) => rating !== value)
-      : [...this.filters().ratings, value];
-    if (ratings.length === 0) return;
-    this.filters.update((filters) => ({ ...filters, ratings }));
-  }
-
-  protected toggleSpeed(value: LichessGamesSpeed): void {
-    const selected = this.filters().speeds.includes(value);
-    const speeds = selected
-      ? this.filters().speeds.filter((speed) => speed !== value)
-      : [...this.filters().speeds, value];
-    if (speeds.length === 0) return;
-    this.filters.update((filters) => ({ ...filters, speeds }));
+  protected setRatingSelection(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const option = this.ratingOptions.find((candidate) => candidate.value === value);
+    if (!option) return;
+    this.filters.update((filters) => ({
+      ...filters,
+      ratingTarget: option.target,
+      ratingGroup: option.ratingGroup,
+    }));
   }
 
   protected resetFilters(): void {
@@ -115,16 +123,9 @@ export class LichessGamesExplorerWidgetComponent {
     void this.load(this.fen(), this.filters());
   }
 
-  private patchMonth(key: 'since' | 'until', event: Event): void {
-    const value = (event.target as HTMLInputElement).value || null;
-    const next = { ...this.filters(), [key]: value };
-    if (next.since && next.until && next.since > next.until) return;
-    this.filters.set(next);
-  }
-
   private async load(
     fen: string,
-    filters: ReturnType<typeof defaultLichessGamesExplorerFilters>,
+    filters: LichessGamesExplorerFilters,
   ): Promise<void> {
     const currentRequestId = ++this.requestId;
     this.loading.set(true);

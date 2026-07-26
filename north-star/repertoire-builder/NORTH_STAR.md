@@ -26,7 +26,7 @@ Start with profile-derived suggestions, then accept, edit, or reject the propose
 
 ### Build an alternative persona
 
-Create another course for the same opening with a different objective, such as solid, sharp, dubious, low-theory, classical, blitz-focused, or eventually traps-focused.
+Create another course for the same opening with a different objective, such as solid, sharp, dubious, low-theory, slower-play focused, blitz-focused, or eventually traps-focused.
 
 ## Setup flow
 
@@ -36,13 +36,13 @@ Expected dimensions:
 
 1. side and starting point;
 2. accounts or player identity to use;
-3. selected speed set, or controlled General mode;
-4. rating target: general, own level, own level plus normalized grades, or custom;
+3. speed preset: All speeds, Blitz and slower, Blitz, or Bullet;
+4. rating target: All players, My peers, My peers and above, or one explicit benchmark group;
 5. repertoire objective and persona;
 6. coverage and theory tolerance;
 7. whether profile suggestions should initialize the target.
 
-Every suggested setup value remains editable.
+Defaults may come from factual player-level evidence, but every suggested setup value remains editable.
 
 ## The interactive decision loop
 
@@ -121,28 +121,38 @@ The Chess Profile may initialize recommendations such as:
 - sharp positions appear to fit recent blitz results;
 - solid structures work better as Black;
 - theory-heavy branches correlate with early mistakes;
-- a style works against peers but not one grade above.
+- a style works against peers but not the next benchmark group.
 
 The builder must show that these are derived conclusions with sample size and confidence.
 
 The player can choose a different target. The UI should distinguish:
 
+- `Factual peer evidence`;
 - `Recommended from your profile`;
 - `Selected for this repertoire`;
 - `Manually chosen despite tradeoff`.
 
 ## Target environment
 
-A target can use one speed or a combination, including bullet plus blitz or blitz plus rapid. General mode uses controlled weighting.
+A target uses one product speed preset:
+
+- All speeds;
+- Blitz and slower;
+- Blitz;
+- Bullet.
+
+For the MVP, a combined preset is represented by one mixed Lichess Explorer population. Separate per-speed weighting is not required unless later evidence demonstrates a material recommendation problem.
 
 A target rating population can be:
 
-- general;
-- around the player's resolved level;
-- the player's level plus one or more normalized grades;
-- custom.
+- all players;
+- around the player's resolved peer interval;
+- the peer interval plus one adjacent higher group;
+- one explicit Lichess-benchmark group.
 
-Population evidence should reflect the selected environment. Master evidence remains a separate source rather than being treated as the only definition of correctness.
+The factual peer interval is resolved from versioned provider-aware rating evidence and remains inspectable. A manual target override does not mutate that factual result.
+
+Population evidence should reflect the selected preset and rating target. Master evidence remains a separate source rather than being treated as the only definition of correctness.
 
 ## Course output
 
@@ -165,8 +175,8 @@ The same workbench should support targeted maintenance:
 - cover a frequent opponent response;
 - extend a line that ends too early;
 - reconsider a user move;
-- adapt a general course for selected speeds;
-- adapt a current-level repertoire for stronger opposition;
+- adapt a general course for a different speed preset;
+- adapt a peer-level repertoire for the next stronger group;
 - create a second persona without replacing the original;
 - defer low-priority branches while keeping an explicit backlog.
 
@@ -178,7 +188,7 @@ Every proposed move or coverage decision should answer:
 - Why is it recommended or not recommended?
 - Which datasets contributed?
 - How much evidence exists?
-- What changes if speed, rating target, or persona changes?
+- What changes if the speed preset, rating target, or persona changes?
 - What objective or practical cost is being accepted?
 
 A narrative layer may eventually help explain this, but deterministic source evidence remains visible.

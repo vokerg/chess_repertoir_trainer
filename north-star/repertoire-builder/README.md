@@ -9,13 +9,21 @@ This workspace defines the long-term program for constructing and evolving a per
 Available in the current product:
 
 - through PR #80: shared Masters and rated Lichess Opening Explorer infrastructure, configurable Peer games evidence by month/rating group/speed, and a reusable Peer games widget in Opening Analysis;
-- through PR #76: a versioned 13-grade rating-normalization profile for Chess.com and Lichess bullet, blitz, and rapid; source confidence and soft-padding metadata; grade classification/range helpers; `GET /api/rating-normalization/default`; and a reference table in the performance-by-rating lab.
+- through PR #76: the current versioned 13-grade rating-normalization profile for Chess.com and Lichess bullet, blitz, and rapid; source confidence and soft-padding metadata; grade classification/range helpers; `GET /api/rating-normalization/default`; and a reference table in the performance-by-rating lab.
 
-Still planned:
+Revised next delivery through RB-001:
 
-- controlled General and combined-speed weighting;
-- explainable per-speed population components and direct filter provenance;
-- multi-account player-level resolution using the merged rating grades;
+- fixed Peer games speed presets: All speeds, Blitz and slower, Blitz, and Bullet;
+- rating targets: All players, My peers, My peers and above, or one explicit Lichess group;
+- a new versioned normalization profile aligned to Lichess Explorer rating groups, including Chess.com mappings;
+- an on-demand peer-band resolver using recent imported games, then all history, then a generic fallback;
+- one mixed Lichess response and the existing mixed cache architecture;
+- two compact dropdowns replacing raw month and checkbox filters;
+- direct requested/effective population provenance.
+
+Still planned after RB-001:
+
+- durable multi-account player-level storage/projection through RB-002;
 - opening classification, Player Chess Profile, candidate ranking, visual builder flow, course materialization, and outcome feedback.
 
 See [Status](STATUS.md), [RB-001](tasks/RB-001-population-evidence.md), and [RB-002](tasks/RB-002-player-level-resolution.md) for exact delivered-versus-remaining assessments.

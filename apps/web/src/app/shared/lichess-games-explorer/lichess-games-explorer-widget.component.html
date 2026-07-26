@@ -6,6 +6,9 @@
         <p class="peers-opening">{{ opening.eco }} · {{ opening.name }}</p>
       }
       <p class="workbench-panel-subtitle">Rated games played on Lichess</p>
+      @if (populationSummary(); as summary) {
+        <p class="peers-population-summary">{{ summary }}</p>
+      }
     </div>
     <button
       type="button"
@@ -22,47 +25,35 @@
       <div class="peers-filter-heading">
         <div>
           <h4>Game population</h4>
-          <p>No restrictions are applied by default.</p>
+          <p>Choose the time controls and player level represented by the Lichess data.</p>
         </div>
         <button type="button" class="compact-action secondary" (click)="resetFilters()">Reset</button>
       </div>
 
-      <div class="peers-months">
-        <label>From month <input type="month" [value]="filters().since ?? ''" (change)="setSince($event)" /></label>
-        <label>Through month <input type="month" [value]="filters().until ?? ''" (change)="setUntil($event)" /></label>
+      <div class="peers-selects">
+        <label>
+          Time controls
+          <select [value]="filters().speedPreset" (change)="setSpeedPreset($event)">
+            @for (option of speedOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Player level
+          <select [value]="currentRatingSelection()" (change)="setRatingSelection($event)">
+            @for (option of ratingOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
       </div>
 
-      <fieldset>
-        <legend>Speeds</legend>
-        <div class="peers-options">
-          @for (option of speedOptions; track option.value) {
-            <label>
-              <input
-                type="checkbox"
-                [checked]="filters().speeds.includes(option.value)"
-                (change)="toggleSpeed(option.value)"
-              />
-              {{ option.label }}
-            </label>
-          }
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Rating groups</legend>
-        <div class="peers-options">
-          @for (option of ratingOptions; track option.value) {
-            <label>
-              <input
-                type="checkbox"
-                [checked]="filters().ratings.includes(option.value)"
-                (change)="toggleRating(option.value)"
-              />
-              {{ option.label }}
-            </label>
-          }
-        </div>
-      </fieldset>
+      <p class="peers-filter-note">
+        Public-game dates are managed by the server cache. “My peers” uses recent imported-game ratings,
+        then all history, then a visible default estimate when no rating evidence exists.
+      </p>
     </section>
   }
 
@@ -83,7 +74,7 @@
     }
 
     @if (!hasGames()) {
-      <div class="empty-state">No rated Lichess games match this position and filter.</div>
+      <div class="empty-state">No rated Lichess games match this position and population.</div>
     } @else {
       <section class="peers-summary" aria-label="Peer game results">
         <div class="peers-summary-heading">

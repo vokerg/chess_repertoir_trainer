@@ -60,8 +60,8 @@ const openingExplorerModule: FastifyPluginAsyncZod = async (app) => {
     schema: {
       operationId: 'getLichessGamesExplorerPosition',
       tags: ['Lichess games explorer'],
-      summary: 'Get aggregated rated-game statistics for a chess position',
-      description: 'Returns system-wide rated Lichess-game statistics from the shared opening-explorer cache, refreshing data older than 30 days before responding when Lichess is available.',
+      summary: 'Get rated-game statistics for a selected peer population',
+      description: 'Resolves one product speed preset and one player-level target into Lichess Explorer speed/rating groups, returns one mixed rated-game aggregate, and exposes the effective population and peer evidence provenance. Cached public data is refreshed after 30 days when Lichess is available.',
       querystring: lichessGamesExplorerQuerySchema,
       response: {
         200: openingExplorerResponseSchema,
