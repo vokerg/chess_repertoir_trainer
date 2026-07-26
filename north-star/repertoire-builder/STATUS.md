@@ -10,6 +10,8 @@ Last updated: 2026-07-26
 
 **Planning foundation:** merged through PR #81, with later reconciliation through PR #83.
 
+**Current planning PR:** [#84](https://github.com/vokerg/chess_repertoir_trainer/pull/84) from `north-star/rb-001-peer-presets-replan` to `main`.
+
 **Jira project:** `CRT` — Chess Repertoire Trainer.
 
 **Jira epic:** `CRT-2` — Repertoire Builder north-star program, `In Progress`.
@@ -79,13 +81,14 @@ A factual peer band may initialize a target, but explicit manual group selection
 
 ## Jira execution status
 
-- `CRT-2` remains `In Progress`.
-- `CRT-3` remains `To Do`, matching repository `READY`; no implementation claim exists.
-- `CRT-4` remains `To Do`, but repository status changes to `BLOCKED` on CRT-3's benchmark profile/resolver boundary.
-- downstream Jira tasks remain `To Do`.
-- no issue is moved to `In Progress` or `Done` by this planning revision.
+Synchronized through PR #84 planning coordination:
 
-The material dependency should be represented as CRT-3 blocking CRT-4.
+- `CRT-2` remains `In Progress` with revised program scope;
+- `CRT-3` remains `To Do`, matching repository `READY`; no implementation claim exists;
+- `CRT-4` remains `To Do`, with repository status `BLOCKED` on CRT-3;
+- `CRT-6` and `CRT-8` descriptions now consume the revised player-level/preset boundaries;
+- Jira records CRT-3 as blocking CRT-4;
+- no issue was moved to `In Progress`, `In Review` or `Done`.
 
 ## Active claims
 
@@ -95,24 +98,28 @@ Claims belong in individual task files and must be synchronized to Jira before s
 
 ## Recommended next coordination
 
-1. Claim RB-001 / CRT-3.
-2. Implement the Lichess-benchmark profile version before finalizing peer resolution.
-3. Reuse existing imported-game rating fields and account rating/performance patterns for the recent/all-history resolver.
-4. Keep one mixed Lichess call and cache profile; do not add per-speed requests or a new cache store.
-5. Replace the current Peer games filter controls with the two compact selects.
-6. Update `docs/rating-normalization.md` and `docs/opening-explorer.md` in the implementation PR.
-7. Unblock RB-002 only after the shared benchmark/resolver boundary is available.
+1. Review and merge planning PR #84 when approved.
+2. Claim RB-001 / CRT-3 on a separate implementation branch.
+3. Implement the Lichess-benchmark profile version before finalizing peer resolution.
+4. Reuse existing imported-game rating fields and account rating/performance patterns for the recent/all-history resolver.
+5. Keep one mixed Lichess call and cache profile; do not add per-speed requests or a new cache store.
+6. Replace the current Peer games filter controls with the two compact selects.
+7. Update `docs/rating-normalization.md` and `docs/opening-explorer.md` in the implementation PR.
+8. Unblock RB-002 only after the shared benchmark/resolver boundary is available.
 
 ## Validation for this planning revision
 
 Performed:
 
-- inspected current RB-001, RB-002 and RB-006 task files;
-- inspected `TASKS.md`, `ROADMAP.md`, `STATUS.md`, `DECISIONS.md`, `OPEN_QUESTIONS.md` and `FEATURES.md`;
+- inspected RB-001, RB-002, RB-004, RB-006 and RB-010 task files;
+- inspected the program foundation, North Star, feature catalog, queue, roadmap, status, decisions, open questions and agent instructions;
 - inspected current Opening Explorer service, client, cache repository, contracts and Peer games widget;
 - inspected current rating-normalization profile/service/documentation;
 - inspected current account rating/performance projection and imported game-recorded rating usage;
-- inspected Jira CRT-2, CRT-3, CRT-4 and CRT-8 assumptions.
+- inspected and synchronized Jira CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8;
+- created and verified the Jira CRT-3 blocks CRT-4 relationship;
+- compared the branch against `main` and confirmed only North Star planning files changed;
+- opened PR #84 and linked it from affected Jira issues.
 
 Not performed:
 
@@ -130,7 +137,6 @@ Reason: this coordination change revises planning and Jira scope only.
 - correspondence and classical may be queried but currently lack supported personal rating evidence;
 - a generic fallback can look factual unless provenance is visible;
 - replacing the current normalization profile may affect lab consumers and any future durable references;
-- Jira and repository state can drift if CRT-4 is not linked as blocked by CRT-3;
 - runtime documentation must not be updated to claim the new behavior before the implementation lands.
 
 ## Update protocol
