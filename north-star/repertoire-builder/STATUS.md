@@ -4,19 +4,19 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** foundation and Jira execution mirror created; user review pending.
+**Program state:** foundation merged and active execution underway.
 
-**Implementation state:** no repertoire-builder feature implementation has been started by this program.
+**Implementation state:** the first dual-use population-evidence foundation is available on `main`; no interactive repertoire-builder workflow has been implemented yet.
 
-**Foundation branch:** `north-star/repertoire-builder-foundation`
+**Planning foundation:** merged through PR #81 at squash commit `ead1d01161228f8dc647a847383f9215a61f966b`.
 
-**Base at creation:** `main` at `e90aab2b87282577f42684b80b088163320e79b3`.
+**Population evidence foundation:** merged through PR #80.
 
 **Jira project:** `CRT` — Chess Repertoire Trainer.
 
-**Jira epic:** `CRT-2` — Repertoire Builder north-star program.
+**Jira epic:** `CRT-2` — Repertoire Builder north-star program, now `In Progress`.
 
-## Completed in this setup
+## Completed program setup
 
 - [x] Recorded the human-controlled repertoire-builder premise.
 - [x] Separated intrinsic opening, target population, player profile, and repertoire target.
@@ -33,12 +33,32 @@ Last updated: 2026-07-26
 - [x] Applied Jira priorities corresponding to repository P0-P3 priorities.
 - [x] Added material Jira `Blocks` links for the foundational profile, target, ranking, builder, and course-delivery chain.
 - [x] Added Jira workflow, PR visibility, claiming, reporting, and synchronization rules.
+- [x] Merged the planning foundation to `main` through PR #81.
+
+## Runtime foundation now available
+
+PR #80 merged the shared Opening Explorer and Peer games capability to `main`:
+
+- authenticated `/api/masters-explorer` and `/api/lichess-games-explorer` endpoints;
+- shared Opening Explorer service, cache, Lichess client, normalized-position reuse, throttling, stale fallback, and request deduplication;
+- shared `@chess-trainer/contracts/opening-explorer` schemas;
+- optional rated-game month, rating-group, and speed filters;
+- arbitrary non-empty combinations of the source's speed buckets;
+- source-separated Masters and rated Lichess evidence;
+- focused contract, API, repository, service, OpenAPI, store, and widget tests;
+- a reusable Peer games Angular widget composed in Opening Analysis behind its own toggle;
+- canonical documentation in `docs/opening-explorer.md`.
+
+This is a substantial part of RB-001 / CRT-3, but it does not complete that task. Controlled General weighting, explainable per-speed components, normalized-grade targeting, direct response-level filter provenance, and sparse-data semantics remain.
 
 ## Jira execution status
 
-All current program tasks are in Jira `To Do`, matching their planning, ready, proposed, or blocked repository state. There are no active claims.
+- `CRT-2` is `In Progress` because the program now has merged runtime foundation work and an active execution queue.
+- `CRT-3` remains `To Do`, matching repository state `READY`; no active implementation claim exists.
+- `CRT-4` through `CRT-18` remain `To Do`, matching their current repository planning, ready, proposed, or blocked states.
+- No Jira task is `Done` because none currently satisfies the repository completion protocol in `JIRA.md`.
 
-The CRT workflow available to these tasks is:
+The CRT workflow is:
 
 ```text
 To Do → In Progress → In Review → Done
@@ -50,15 +70,15 @@ Repository-specific states remain more detailed than Jira. See [`JIRA.md`](JIRA.
 
 ### Population explorer
 
-The user stated that speed- and rating-filtered Lichess top-move extraction is being implemented in parallel. This workspace does not claim or duplicate that implementation. RB-001 / CRT-3 begins with inspection and integration of the actual branch or PR.
+Resolved. The implementation is PR #80 and is merged to `main`. RB-001 / CRT-3 is no longer blocked on discovery and inspection. Its remaining work must extend the verified Opening Explorer and Peer games implementation rather than duplicate it.
 
 ### Rating normalization
 
-At foundation creation, PR #76 contains a versioned cross-pool rating-normalization contract and helpers. It is not part of the inspected `main` base. RB-002 / CRT-4 must verify its merge or branch state before depending on it.
+At foundation creation, PR #76 contained a versioned cross-pool rating-normalization contract and helpers. RB-002 / CRT-4 still needs to verify its current merge and implementation state before depending on it. RB-001 may proceed on weighting, provenance, and sparse-data semantics while normalized-grade targeting waits for RB-002.
 
 ### Visual transformation
 
-A separate visual-transformation program exists on its own branch. RB-008 / CRT-10 and production UI work should inspect and coordinate with the current visual system before implementation.
+A separate visual-transformation program exists. RB-008 / CRT-10 and production UI work should inspect and coordinate with the current visual system before implementation.
 
 ## Active claims
 
@@ -68,46 +88,44 @@ Claims belong in individual task files and must be synchronized to their mapped 
 
 ## Recommended next coordination
 
-1. Review and approve or revise this foundation and Jira setup.
-2. Identify the branch or PR for the parallel population explorer and update RB-001 / CRT-3.
-3. Resolve the integration state of rating-normalization PR #76 before RB-002 / CRT-4.
-4. Allow RB-003 / CRT-5 opening-classification work to proceed independently when its own planning begins.
-5. Consider RB-008 / CRT-10 visual discovery early enough to influence contracts, but do not build production UI from assumptions.
+1. Claim RB-001 / CRT-3 for the remaining weighting, component-explainability, filter-provenance, and sparse-data contract work.
+2. Resolve the current integration state of rating-normalization PR #76 before RB-002 / CRT-4 or the normalized-grade part of RB-001 proceeds.
+3. Allow RB-003 / CRT-5 opening-classification work to proceed independently when its own planning begins.
+4. Consider RB-008 / CRT-10 visual discovery early enough to influence contracts, but do not build production UI from assumptions.
+5. Keep the merged Peer games widget and shared Opening Explorer module as the baseline; do not create a parallel population API or widget.
 
 ## Validation
 
-Performed:
+Performed for this reconciliation:
 
-- inspected root repository instructions and documentation rules;
-- inspected current course, opening-analysis, master-evidence, tagging, and rating/account patterns during the preceding design discussion;
-- inspected the visual-transformation planning and report conventions;
-- verified the foundation branch was created from `main`;
-- reviewed relative links and task IDs within this workspace;
-- inspected CRT project issue types and fields;
-- verified Epic and Task parent support;
-- verified priorities and Jira `Blocks` link type;
-- verified workflow states `To Do`, `In Progress`, `In Review`, and `Done`;
-- created and reviewed Epic `CRT-2` and Tasks `CRT-3` through `CRT-18`.
+- inspected merged PR #80 metadata and changed-file list;
+- inspected the current Opening Explorer contracts, routes, product documentation, and Angular usage on `main`;
+- compared the implementation with every RB-001 acceptance criterion;
+- inspected all fields for Jira Epic `CRT-2` and Tasks `CRT-3` through `CRT-18`;
+- updated `CRT-2` description, labels, and workflow state;
+- updated `CRT-3` description and labels while preserving its priority, parent, dependency links, and `To Do` workflow state;
+- updated the repository queue, roadmap, questions, task scope, and reconciliation report.
 
 Not performed:
 
 - application build;
-- unit or integration tests;
+- unit or integration test execution;
 - lint;
 - architecture checks;
 - browser validation.
 
-Reason: this setup is documentation and project-coordination only and changes no runtime application behavior.
+Reason: this reconciliation changes planning and Jira metadata only. PR #80's runtime implementation and its own validation already exist on `main`; this session did not modify runtime code.
 
 ## Current risks
 
-- population explorer contract is unknown until its parallel implementation is inspected;
-- rating normalization is not yet on the foundation base;
+- a raw multi-speed Lichess response is not yet the controlled General weighting required by the north-star decisions;
+- response payloads identify a deterministic profile version but do not directly expose the selected month, rating, and speed filters;
+- weighted aggregates do not yet expose per-speed components;
+- normalized-grade targeting remains dependent on the rating-normalization and player-level work;
 - opening classification is a required but intentionally undefined dependency;
 - visual choice design may change API and state assumptions;
 - multi-account level and confidence formulas need empirical validation;
-- Jira and repository state can drift if future agents do not follow synchronization rules;
-- the task queue is an initial ordering and should be revised through completion reports.
+- Jira and repository state can drift if future agents do not follow synchronization rules.
 
 ## Update protocol
 
