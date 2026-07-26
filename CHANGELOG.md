@@ -2,7 +2,63 @@
 
 This changelog was reconstructed retrospectively from the repository commit history.
 
-Versions `0.0.x` are daily development snapshots: each version represents a calendar day on which project work was committed, not a separately published package release. The current repository version remains `1.0.0`.
+Versions `0.0.x` are daily development snapshots: each version represents a calendar day on which project work was committed, not a separately published package release. Snapshot numbering continues independently of package versions; the current repository version remains `1.0.0`.
+
+## [0.0.60] - 2026-07-26
+
+- Generalized the Masters integration into a shared Opening Explorer backend with separate Masters and rated-Lichess datasets, source-isolated caching, explicit endpoints, configurable filters, shared contracts, coverage, documentation, and a Lichess Games Explorer widget.
+- Established the Repertoire Builder north-star planning workspace, immutable task queue, Jira coordination protocol, and execution/reporting rules.
+
+## [0.0.59] - 2026-07-25
+
+- Unified course review and course-ending discovery into a single three-mode course review page with tabs, shared finding presentation, consolidated state, and a Lab launcher.
+
+## [0.0.58] - 2026-07-24
+
+- Corrected worker task claiming so a lower-priority task cannot run for a game while a higher-priority queued task is waiting.
+
+## [0.0.57] - 2026-07-23
+
+- Added the Course Extension Candidates Lab report for common opponent continuations after course lines end, with shared game filters, transposition-aware coverage, thresholds, WDL, and example games.
+- Ran tactical detection automatically after whole-game analysis with idempotent refresh and retry-safe post-processing.
+- Added tactical findings to game review with shared filters, direct detected-ply navigation, and game-scoped missed-shot and blunder training.
+
+## [0.0.56] - 2026-07-22
+
+- Fixed imported-game job tracking to release and refresh each game as its individual task settles instead of waiting for the parent run to finish.
+
+## [0.0.55] - 2026-07-21
+
+- Kept the course-moves widget stable while data is loading.
+
+## [0.0.54] - 2026-07-20
+
+- Added Lichess and Chess.com Bullet reports to performance-by-rating while keeping both Bullet toggles disabled by default.
+- Added the optional on-demand AI game-review widget with an OpenAI-compatible provider boundary, feature flags, validated and persisted output, and clickable turning points.
+
+## [0.0.53] - 2026-07-19
+
+- Restricted imported-game processing eligibility to standard chess variants.
+- Added manual Docker deployment through Compose and Nginx configuration.
+- Stabilized lint preparation by generating Prisma before linting.
+
+## [0.0.52] - 2026-07-18
+
+- Completed the persistent imported-game job migration with cancellation, retry, terminal history and dismissal, cooperative worker settlement, retention, and removal of the legacy in-memory queue.
+- Added a complete deep-linkable URL contract for Games Explorer filters while preserving draft/applied filter state and browser navigation.
+- Avoided Prisma generation races in development and applied final batch-processing integration fixes.
+
+## [0.0.51] - 2026-07-17
+
+- Added shared game-filter period presets synchronized with the underlying custom date range.
+- Added the persistent worker runtime, safe PostgreSQL task claiming, imported-game domain executors, and operational documentation.
+- Moved Games Explorer, account, and game-review processing flows to durable jobs with recovery, global progress, and affected-data refresh.
+
+## [0.0.50] - 2026-07-16
+
+- Added the cached Masters Explorer as a configurable analysis-workbench widget.
+- Added standard Tags and Engine toggles to opening analysis, aligned engine behavior with free analysis, and redistributed workbench widgets.
+- Introduced the persisted imported-game job foundation with Prisma models, shared contracts, authenticated routes, ownership checks, and rollout documentation.
 
 ## [1.0.0] - 2026-07-15
 
@@ -10,6 +66,8 @@ Versions `0.0.x` are daily development snapshots: each version represents a cale
 - Promoted Opening Struggles into a standalone report with poor-results, repeated-mistakes, and bad-position modes, course-coverage annotations, scope safety limits, and responsive UI.
 - Refactored Lab into a catalog with dedicated routes for each experiment.
 - Cleaned up opening-analysis presentation and expanded configurable WDL display.
+- Added the cached Lichess Masters Explorer foundation with shared contracts, PostgreSQL persistence, validated upstream access, authenticated API delivery, stale fallback, and coverage.
+- Added compact progressive-list presentation and enabled Vercel deployment from `main`.
 
 ## [0.0.49] - 2026-07-14
 
