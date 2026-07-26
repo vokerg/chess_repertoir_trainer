@@ -8,10 +8,10 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 | Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 10 | RB-001 | CRT-3 | P0 | READY | Integrate speed/rating population evidence and weighting | Dual-use | PR #80 merged; remaining weighting, provenance, component, and sparse-data semantics are unblocked; normalized-grade slice depends on RB-002 |
-| 20 | RB-002 | CRT-4 | P0 | BLOCKED | Define multi-account player level resolution | Dual-use | Rating normalization available on working base |
+| 10 | RB-001 | CRT-3 | P0 | READY | Integrate speed/rating population evidence and weighting | Dual-use | PR #80 merged; remaining weighting, provenance, component, and sparse-data semantics are unblocked; own-level/grade-offset slice depends on RB-002 |
+| 20 | RB-002 | CRT-4 | P0 | READY | Define multi-account player level resolution | Dual-use | PR #76 merged; normalization profile and helpers available; multi-account formula remains |
 | 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
-| 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games evidence plus explicit mock extensions |
+| 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games and rating-grade evidence plus explicit mock extensions |
 | 50 | RB-004 | CRT-6 | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
 | 60 | RB-005 | CRT-7 | P1 | BLOCKED | Deliver Player Chess Profile experience | Standalone | RB-004 |
 | 70 | RB-006 | CRT-8 | P1 | BLOCKED | Define repertoire target contract | North-star | RB-001, RB-002, RB-003; input from RB-008 |
@@ -47,17 +47,36 @@ PR #80 is merged to `main` and establishes the reusable rated Lichess evidence b
 - Peer games widget consumed by Opening Analysis;
 - focused API, contract, repository, service, OpenAPI, store, and widget tests.
 
-RB-001 is therefore `READY`, not `BLOCKED`. It is not `DONE`: controlled General weighting, explainable per-speed components, direct response-level filter provenance, normalized-grade targeting, and sparse-data semantics remain.
+RB-001 is therefore `READY`, not `BLOCKED`. It is not `DONE`: controlled General weighting, explainable per-speed components, direct response-level filter provenance, own-level/grade-offset targeting, and sparse-data semantics remain.
 
-### Immediate coordination blocker
+### Rating normalization baseline
 
-RB-002 remains high priority and must verify that rating normalization is available on the current working base before defining multi-account level resolution. The normalized-grade portion of RB-001 depends on that result, but other RB-001 work can proceed independently.
+PR #76 is merged to `main` and establishes the reusable parity vocabulary:
+
+- versioned profile ID and stable grade IDs;
+- 13 product-facing grades;
+- Chess.com and Lichess bullet, blitz, and rapid ranges;
+- FIDE Standard as reference-only;
+- source confidence and soft padding;
+- one-rating classification and grade-to-source-range helpers;
+- API exposure, lab reference table, tests, and canonical documentation.
+
+RB-002 is therefore `READY`, not `BLOCKED`. It is not `DONE`: account inclusion, period/recency selection, activity weighting, same-provider account handling, per-speed/overall resolution, contribution evidence, confidence aggregation, exclusions, no-data/conflict behavior, and override projection remain.
+
+### Actionable P0 work
+
+RB-001 and RB-002 can now both be claimed independently for bounded slices. Coordinate their shared own-level population-targeting boundary:
+
+- RB-002 owns factual player-level resolution and grade-offset source ranges;
+- RB-001 owns application of a selected target to population evidence and explainable population aggregation.
+
+Neither task should duplicate the merged `opening-explorer` or `rating-normalization` domains.
 
 ### Independent work
 
 RB-003 can be planned independently because opening classification was explicitly separated from this program's implementation design.
 
-RB-008 can begin with the verified Peer games response plus explicit mock extensions for unresolved weighting/component evidence. It must not treat current raw multi-speed aggregation as the final General policy.
+RB-008 can begin with verified Peer games responses and rating-grade metadata plus explicit mock extensions for unresolved player-level, weighting, and component evidence. It must not treat current raw multi-speed aggregation or one-account classification as final product policy.
 
 RB-014 can run as low-risk research without affecting core delivery.
 
@@ -68,7 +87,7 @@ The current critical path is:
 ```text
 RB-001 population evidence (READY; partial foundation on main)
         +
-RB-002 player level
+RB-002 player level (READY; normalization foundation on main)
         +
 RB-003 opening profile
         ↓
@@ -91,11 +110,19 @@ RB-016 feedback
 
 RB-013 personas intersects profile and target work and may be split further after RB-006.
 
-## Completion assessment for PR #80
+## Completion assessment for PR #80 and PR #76
 
 No RB task is moved to `DONE` by this reconciliation.
 
-PR #80 satisfies a substantial subset of RB-001 but not its complete acceptance criteria or completion protocol. It was delivered before the north-star task was claimed and does not have an RB-001 completion report, final weighting decision, normalized-grade integration, direct filter provenance, or sparse-data/component validation.
+PR #80 satisfies a substantial subset of RB-001 but not its complete acceptance criteria or completion protocol.
+
+PR #76 satisfies the prerequisite normalization domain and some primitive operations required by RB-002, but it does not resolve a player from multiple owned accounts and therefore does not satisfy RB-002's outcome or acceptance criteria.
+
+No order or priority changes are recommended. The change is dependency/status only:
+
+- RB-001 remains order 10, P0, `READY`;
+- RB-002 remains order 20, P0, and changes from `BLOCKED` to `READY`;
+- downstream dependency links and blocked states remain valid.
 
 ## Adding tasks
 
