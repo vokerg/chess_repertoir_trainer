@@ -55,6 +55,7 @@ The raw Lichess aggregate is useful evidence, but it is not equivalent to the no
 - `packages/contracts/src/opening-explorer/opening-explorer.schemas.ts`
 - `docs/opening-explorer.md`
 - PR #80 changed-file list
+- `north-star/repertoire-builder/README.md`
 - `north-star/repertoire-builder/STATUS.md`
 - `north-star/repertoire-builder/TASKS.md`
 - `north-star/repertoire-builder/ROADMAP.md`
@@ -66,6 +67,7 @@ The raw Lichess aggregate is useful evidence, but it is not equivalent to the no
 
 ### Changed
 
+- `north-star/repertoire-builder/README.md`
 - `north-star/repertoire-builder/STATUS.md`
 - `north-star/repertoire-builder/TASKS.md`
 - `north-star/repertoire-builder/ROADMAP.md`
@@ -138,7 +140,7 @@ No new locked product or architecture decision is introduced by this reconciliat
 - compared implementation evidence against every RB-001 acceptance criterion;
 - inspected all fields returned for `CRT-2` through `CRT-18`;
 - verified available Jira workflow transitions before changing `CRT-2`;
-- reconciled repository status, queue, roadmap, open questions, task scope, and Jira descriptions.
+- reconciled the Northstar entry point, repository status, queue, roadmap, open questions, task scope, and Jira descriptions.
 
 ### Skipped
 
@@ -182,6 +184,7 @@ Reprioritization is limited to status/dependency state:
 
 ## Planning documents updated
 
+- `README.md` — changes the entry status from planning-only to active execution and records the delivered/current boundary.
 - `STATUS.md` — records merged foundation, current Jira state, remaining gaps, and next coordination.
 - `TASKS.md` — changes RB-001 to `READY` and updates queue/critical-path notes.
 - `ROADMAP.md` — marks Stage 0 complete on `main` and Stage 1 active with partial population delivery.
