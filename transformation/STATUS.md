@@ -4,13 +4,13 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** Phase 0B authentication shell implemented; browser review and validation pending
+**Program state:** Phase 0B integrated; checkpoint documentation reconciliation in progress
 
 **Integration branch:** `visual_transformation`
 
-**Active implementation branch:** `visual-transformation/phase-0b-auth-shell`
+**Active documentation branch:** `visual-transformation/phase-0b-checkpoint-closure`
 
-The public Angular landing page was squash-merged through PR #78. The current slice implements the shared authentication experience and intentionally stops before signed-in home, navigation-shell, and representative workflow changes.
+The public landing page and shared authentication shell are both squash-merged into `visual_transformation`. This slice reconciles the persistent documentation with that repository state and intentionally makes no runtime changes.
 
 ## Completed
 
@@ -20,34 +20,60 @@ The public Angular landing page was squash-merged through PR #78. The current sl
 - [x] Squash-merged the landing implementation into `visual_transformation` through PR #78.
 - [x] Added a shared authentication shell for `/login` and `/signup`.
 - [x] Removed authentication routes from the signed-in navigation shell.
-- [x] Preserved Clerk lifecycle, development auth, return URLs, and existing post-auth behavior.
+- [x] Preserved Clerk lifecycle, development auth, explicit return URLs, and existing post-auth fallback behavior.
 - [x] Applied Clerk appearance variables matching the approved visual direction.
 - [x] Added `transformation/reports/PHASE_0B_AUTH_SHELL_IMPLEMENTATION.md`.
+- [x] Squash-merged the authentication implementation into `visual_transformation` through PR #79.
+- [x] Confirmed PR #79 CI completed successfully.
+- [x] Reconciled the transformation entry point, decision log, status, and working stop condition with the merged Phase 0B state.
 
 ## Current checkpoint
 
-Review in this order:
+Review this documentation-only closure slice in this order:
 
-1. `transformation/reports/PHASE_0B_AUTH_SHELL_IMPLEMENTATION.md`
-2. `/login` at desktop and mobile widths
-3. `/signup` at desktop and mobile widths
-4. configured-Clerk and local-development-auth modes
-5. existing authenticated routes to confirm their shell remains unchanged
+1. `transformation/reports/PHASE_0B_CHECKPOINT_CLOSURE.md`
+2. `TRANSFORMATION.md`
+3. `transformation/STATUS.md`
+4. `transformation/DECISIONS.md`
+5. `transformation/WORKING_RULES.md`
 
-Do not merge without explicit approval. When approved, squash merge into `visual_transformation`.
+The next product checkpoint is a separate Phase 0C signed-in `/home` discovery and visualization slice. It is not approved for production implementation by this documentation change.
+
+Do not merge this branch without explicit approval. When approved, squash merge it into `visual_transformation`.
 
 ## Validation status
 
-Repository inspection and implementation review were completed. Local build, lint, tests, browser rendering, and Clerk interaction testing were not available through the connector-only execution environment. Pull-request CI and direct browser review remain required.
+### Confirmed
+
+- PR #78 is merged into `visual_transformation`.
+- PR #79 is merged into `visual_transformation`.
+- PR #79 targeted `visual_transformation` and CI completed successfully.
+- The current routes still use `/library` as the normal post-auth fallback when no explicit `returnUrl` is supplied.
+- `/home` is not implemented.
+- The current signed-in application still uses the existing navigation shell.
+
+### Not recorded as completed
+
+- `/login` browser review at desktop and mobile widths;
+- `/signup` browser review at desktop and mobile widths;
+- configured-Clerk mount, submit, navigation, and unmount interaction testing;
+- local-development-auth interaction testing;
+- visual regression or accessibility automation for the authentication composition.
+
+These remain a residual validation gap under D-306. They should be completed before Phase 0B is described as fully browser-validated and before auth-specific corrective work is ruled out.
+
+### Documentation-slice validation
+
+Repository state, pull-request metadata, CI status, current routes, shell ownership, authentication fallback behavior, and the affected documentation were inspected directly. Runtime build, lint, tests, and browser checks were not rerun because this branch changes Markdown documentation only.
 
 ## Open decisions
 
-- Whether the authentication composition is approved without revision.
-- Whether the Node Branch mark should now be extracted into shared production assets.
+- Whether direct browser and Clerk validation accepts the Phase 0B authentication composition without revision.
+- The exact production Node Branch asset geometry after SVG extraction and small-size testing.
 - Whether IBM Plex Sans should be loaded or remain a preferred system fallback.
-- Final signed-in `/home` composition.
+- Final signed-in `/home` data and visual composition.
 - Final desktop navigation rail and mobile navigation model.
-- Final production palette beyond the approved strong-mint text token.
+- Final production palette beyond the locked `#1F7865` strong-mint text role.
 
 ## Program backlog
 
@@ -55,9 +81,9 @@ Repository inspection and implementation review were completed. Local build, lin
 
 - [x] Produce identity and landing proof.
 - [x] Implement and merge the landing proof in Angular.
-- [x] Implement the authentication composition in Angular.
-- [ ] Complete browser review and approve or revise authentication.
-- [ ] Produce signed-in home visualization.
+- [x] Implement and merge the authentication composition in Angular.
+- [ ] Complete and record browser review for authentication or approve a focused correction slice.
+- [ ] Produce signed-in home discovery and visualization.
 
 ### Phase 1 — shell and entry points
 
@@ -86,6 +112,17 @@ Repository inspection and implementation review were completed. Local build, lin
 
 ## Session log
 
+### 2026-07-26 — Phase 0B checkpoint closure
+
+- Created `visual-transformation/phase-0b-checkpoint-closure` from `visual_transformation`.
+- Confirmed PR #78 and PR #79 are merged into the integration branch.
+- Confirmed PR #79 CI completed successfully.
+- Reconciled the stale Phase 0A and pre-merge Phase 0B checkpoint text.
+- Locked `#1F7865` as the strong-mint text role while keeping the broader palette provisional.
+- Recorded Node Branch geometry v1 and the current landing composition as provisional production baselines.
+- Preserved authentication browser and Clerk interaction testing as an explicit unresolved validation gap.
+- Established Phase 0C signed-in `/home` discovery and visualization as the next recommended product checkpoint, subject to separate approval.
+
 ### 2026-07-26 — Phase 0B authentication shell
 
 - Branched `visual-transformation/phase-0b-auth-shell` from `visual_transformation` after PR #78 merged.
@@ -94,6 +131,7 @@ Repository inspection and implementation review were completed. Local build, lin
 - Isolated authentication routes from the signed-in application shell.
 - Applied Clerk appearance variables without changing authentication contracts.
 - Preserved local development auth and return URL behavior.
+- Squash-merged the implementation through PR #79.
 
 ### 2026-07-26 — Angular landing implementation
 

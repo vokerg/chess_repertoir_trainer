@@ -1,6 +1,6 @@
 # Visual Transformation Working Rules
 
-Last updated: 2026-07-25
+Last updated: 2026-07-26
 
 These rules apply to ChatGPT, Copilot, Codex, and human contributors working on the visual transformation.
 
@@ -20,13 +20,15 @@ Do not rely on prior chat memory, screenshots alone, the README alone, or assump
 
 - `visual_transformation` is the long-running integration branch for this program.
 - Do not commit transformation work directly to `main`.
-- For large or risky slices, create a short-lived branch from `visual_transformation` and merge it back after review.
+- Every implementation slice and every meaningful documentation checkpoint must use a short-lived branch created from `visual_transformation`.
+- Merge the short-lived branch back through a reviewed pull request only after explicit approval.
+- Use squash merge for transformation pull requests into `visual_transformation`.
 - Do not open a transformation PR to `main` until explicitly requested.
 - Never merge to `main` without explicit user approval.
 
 ## 3. No implementation without an approved checkpoint
 
-At the creation of these documents, production implementation has not begun.
+Production transformation work has begun in narrow reviewed slices. The public landing page and authentication shell are integrated, but their completion does not approve the remaining master plan.
 
 Do not infer that the entire master plan is an instruction to implement everything. Work only on the next explicitly approved checkpoint.
 
@@ -160,6 +162,8 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The Phase 0A Node Branch and landing-page visual proof has been prepared for review.
+The Phase 0A public landing page and Phase 0B authentication shell are squash-merged into `visual_transformation`. The current approved slice is documentation reconciliation only.
 
-Stop after focused corrections to this proof. Do not begin auth-page visualization, signed-in home visualization, production brand assets, Angular route/layout work, or Phase 1 implementation until the user explicitly reviews and approves or revises the Phase 0A checkpoint.
+Stop after the checkpoint-closure documentation and its pull request. Do not begin signed-in `/home` production implementation, navigation-rail implementation, production brand-asset extraction, global token migration, or authenticated workflow redesign without explicit approval.
+
+The next recommended product checkpoint is a separate Phase 0C signed-in `/home` discovery and visualization slice. Authentication browser and Clerk interaction validation remains an explicit residual gap and must not be represented as completed until it is recorded.
