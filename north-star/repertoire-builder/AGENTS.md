@@ -116,8 +116,8 @@ Every implementation or review PR must be visible from its Jira issue.
 - Prefer small deliveries that improve the current product while advancing the north star.
 - Do not add persistence, queues, background jobs, LLM infrastructure, or dependencies without task-specific justification.
 - Treat profile calculations as statistical claims. Preserve sample size, analysed coverage, filters, baseline, and confidence behind conclusions.
-- Keep arbitrary speed combinations possible. Do not hard-code only single-speed presets.
-- Reuse the rating-normalization domain for cross-account level comparison once it is available on the working base.
+- Use the speed presets and peer-rating target vocabulary defined by RB-001. Do not reintroduce arbitrary product-facing speed arrays or editable speed weights without an explicit reviewed decision.
+- Reuse the versioned rating-normalization and peer-resolver domains for cross-account level comparison. Do not create feature-local parity or level tables.
 
 ## Completion protocol
 
