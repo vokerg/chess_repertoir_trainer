@@ -29,7 +29,7 @@ Dataset-specific names are retained only at the public boundary and for profile-
 
 Both are configured instances of the same cached opening-explorer service. The Masters Angular widget remains Masters-specific because it consumes only the Masters endpoint.
 
-The deployed Prisma model and table remain named `MastersExplorerCache` for storage compatibility. That legacy persistence name is isolated inside `opening-explorer.repository.prisma.ts`; it is not part of the service, contract, or route vocabulary. No data migration is required for this integration.
+The deployed Prisma model and table remain named `MastersExplorerCache` for storage compatibility. That legacy persistence name is isolated inside `opening-explorer.repository.prisma.ts`; it is not part of the service, contract, route, or module taxonomy. No data migration is required for this integration.
 
 ## Fixed dataset profiles
 
