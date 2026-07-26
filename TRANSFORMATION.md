@@ -34,7 +34,7 @@ Every meaningful transformation change must update the relevant files under `tra
 - Update `STATUS.md` after each completed implementation slice or design checkpoint.
 - Keep unresolved questions explicit. Do not silently convert provisional ideas into final decisions.
 
-## Current checkpoint
+## Integrated checkpoints
 
 The following slices are squash-merged into `visual_transformation`:
 
@@ -42,23 +42,31 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #79 — shared authentication shell for `/login` and `/signup`;
 - PR #85 — Phase 0B checkpoint reconciliation;
 - PR #86 — signed-in `/home` discovery and visualization;
-- PR #87 — guarded Angular `/home`, normal post-auth fallback to `/home`, and deterministic existing-data recommendations.
+- PR #87 — guarded Angular `/home`, normal post-auth fallback to `/home`, and deterministic existing-data recommendations;
+- PR #88 — production Node Branch assets, shared brand components, favicon, and integrated lockups.
 
-The active branch is `visual-transformation/phase-1a-brand-assets`.
+Automated validation passed for PR #88. Direct browser, favicon, rasterization, authentication, and prior home validation remain residual gaps and must not be represented as completed.
 
-Its approved scope is:
+## Current checkpoint
 
-- extract one production Node Branch SVG geometry;
-- provide standard, reversed, transparent-mark, and favicon assets;
-- add shared Angular brand mark and live-text lockup components;
-- replace duplicated or substitute brand renderings on the landing page, authentication shell, and current signed-in header;
-- preserve every route, navigation behavior, API, and workflow.
+The active branch is `visual-transformation/phase-1b-navigation-discovery`.
+
+Its approved scope is discovery and static visualization only:
+
+- inspect the current signed-in shell and navigation ownership;
+- define the expanded and collapsed desktop rail contract;
+- preserve the existing centralized navigation data model and routes;
+- define keyboard-operable child navigation behavior;
+- retain the current grouped mobile sheet below the shared 760px breakpoint;
+- keep exact bottom-navigation structure open until representative mobile workflows are modernized;
+- provide an interactive static proof, decisions, status, and a detailed report.
 
 Review next:
 
-1. [`transformation/reports/PHASE_1A_BRAND_ASSETS_IMPLEMENTATION.md`](./transformation/reports/PHASE_1A_BRAND_ASSETS_IMPLEMENTATION.md)
-2. `apps/web/src/assets/brand/brand-readme.md`
-3. the shared brand component tests and PR CI;
-4. landing, authentication, signed-in header, mobile menu, and favicon rendering in a real browser.
+1. [`transformation/reports/PHASE_1B_NAVIGATION_DISCOVERY.md`](./transformation/reports/PHASE_1B_NAVIGATION_DISCOVERY.md)
+2. [`transformation/prototypes/phase-1b-navigation/index.html`](./transformation/prototypes/phase-1b-navigation/index.html)
+3. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
+4. [`transformation/STATUS.md`](./transformation/STATUS.md)
+5. the prototype at expanded desktop, collapsed desktop, and mobile widths.
 
-Do not merge the brand-assets pull request, begin the production navigation rail, finalize mobile navigation, migrate global tokens, change typography loading, create social-preview composition, or redesign authenticated workflows without explicit approval.
+Do not implement the production navigation rail, finalize bottom navigation, migrate global tokens, change typography loading, create final social-preview composition, or redesign authenticated workflows until this discovery checkpoint is reviewed and explicitly approved.
