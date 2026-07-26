@@ -40,6 +40,7 @@ This is the first direct north-star delivery. It should prove that deterministic
 
 - approved RB-008 visual direction;
 - RB-006/RB-007/RB-009 contracts and services;
+- RB-001 speed/rating presets and RB-002 factual player-level evidence;
 - current Angular route, workbench, board, store, and data-access patterns;
 - opening-analysis and line-editor composition;
 - authentication and application-shell state, including visual-transformation changes;
@@ -55,6 +56,8 @@ RB-011 depends on a stable draft preview output.
 
 - dedicated authenticated route and feature boundary;
 - bounded setup using an existing target or minimal target form;
+- RB-001 speed preset and rating target selection;
+- factual peer evidence versus explicit target override presentation;
 - visual candidate selection for user moves;
 - opponent-response coverage selection;
 - branch queue navigation;
@@ -69,6 +72,7 @@ RB-011 depends on a stable draft preview output.
 
 ## Out of scope
 
+- arbitrary speed arrays or editable speed weights;
 - generating an entire repertoire without interaction;
 - every possible setup option;
 - traps mode;
@@ -93,7 +97,8 @@ RB-011 depends on a stable draft preview output.
 - The workflow alternates correctly between user-choice and opponent-coverage decisions.
 - Candidate positions are visual.
 - Recommendation reasons and source evidence are inspectable.
-- Arbitrary selected speed combinations are represented through the target.
+- The target exposes one valid RB-001 speed preset and one valid rating target.
+- Factual peer evidence and manual target override remain distinguishable.
 - The user can choose against the profile recommendation.
 - Deferred branches remain visible and reopenable.
 - Draft output is bounded and previewable.
