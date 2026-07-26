@@ -8,8 +8,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 | Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 10 | RB-001 | CRT-3 | P0 | CLAIMED | Deliver Lichess-aligned peer population presets | Dual-use | PR #80 and PR #76 merged; claimed on PR #84 |
-| 20 | RB-002 | CRT-4 | P0 | BLOCKED | Define multi-account player level resolution | Dual-use | Depends on RB-001 Lichess-benchmark profile and shared peer-resolver boundary |
+| 10 | RB-001 | CRT-3 | P0 | REVIEW | Deliver Lichess-aligned peer population presets | Dual-use | PR #84 review/merge |
+| 20 | RB-002 | CRT-4 | P0 | BLOCKED | Define multi-account player level resolution | Dual-use | Depends on accepted RB-001 Lichess-benchmark profile and peer-resolver boundary |
 | 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
 | 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
 | 50 | RB-004 | CRT-6 | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
@@ -35,65 +35,47 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - New RB tasks require a corresponding Jira issue in the same coordination change.
 - `READY` repository tasks remain Jira `To Do` until claimed and substantive work begins.
 
-## Active claim
+## Active review
 
 - Task: RB-001 / CRT-3
-- Claimed by: ChatGPT
 - Branch: `north-star/rb-001-peer-presets-replan`
 - PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
-- Scope: benchmark profile, temporary peer resolver, Opening Explorer presets/provenance, compact Peer games UI, tests, runtime docs and completion synchronization.
+- Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
+- Validation: full CI passed lint, build, architecture guardrails, migrations and complete tests.
+- Remaining review item: human browser-level visual inspection and merge decision.
 
 ## Queue notes
 
-### Revised population direction
+### Delivered population direction
 
-PR #80 remains the reusable rated Lichess evidence baseline:
-
-- shared Opening Explorer API, contracts, cache and source taxonomy;
-- one mixed upstream query and one mixed cached snapshot per canonical filter profile;
-- Peer games widget consumed by Opening Analysis;
-- focused API, contract, repository, service, OpenAPI, store and widget tests.
-
-RB-001 no longer introduces separate per-speed calls, client-side weighting or editable combinations. It now owns:
+PR #84 implements:
 
 - product speed presets: `ALL`, `BLITZ_AND_SLOWER`, `BLITZ`, `BULLET`;
 - rating targets: all players, my peers, my peers plus one higher band, or one explicit group;
 - exclusion of ultraBullet;
-- server-controlled public-game period with the existing approximately monthly cache lifecycle;
-- a new versioned rating-normalization profile aligned to Lichess Explorer groups;
-- Chess.com mappings into those benchmark bands;
-- a temporary recent-three-month/all-history/default peer-band resolver;
-- direct response provenance for the resolved target;
-- two compact frontend dropdowns replacing raw month and checkbox filters.
+- server-controlled unrestricted public-game period with the existing 30-day cache lifecycle;
+- active normalization profile `2026-07-lichess-bands-v1` aligned to Lichess Explorer groups;
+- approximate Chess.com mappings into those benchmark bands;
+- temporary recent-three-month/all-history/default peer resolution;
+- direct response provenance for requested/effective populations;
+- two compact frontend selects replacing raw month and checkbox controls.
 
-The product deliberately accepts one combined Lichess response for the resolved speed/rating population. Per-speed decomposition and weighting are not required for the north-star MVP.
+The product deliberately accepts one combined Lichess response for the resolved speed/rating population. Per-speed decomposition and weighting remain rejected for the MVP.
 
 ### Player-level boundary
 
-RB-002 is `BLOCKED` on the profile/resolver boundary delivered by RB-001. It owns the later durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 resolver rather than create a second level formula.
-
-### Rating normalization migration
-
-PR #76 remains the current runtime foundation and historical calibration source. RB-001 must introduce a new profile version rather than silently mutate `2026-07-product-v1`.
-
-The new canonical peer bands are the nine Lichess Explorer groups. Lichess ratings classify directly; Chess.com bullet, blitz and rapid receive versioned approximate ranges into the same bands.
-
-### Actionable P0 work
-
-RB-001 is the active P0 implementation on PR #84.
-
-RB-002 should not begin implementation until the new benchmark profile and shared resolver boundary are available. RB-003 remains independent.
+RB-002 remains `BLOCKED` until RB-001 is accepted and merged. It owns the later durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 profile/policy versions rather than create a second level formula.
 
 ### Independent work
 
-RB-008 may continue visual discovery with verified Peer games responses and explicit mock target presets. It must not assume the current checkbox UI or arbitrary speed combinations are final.
+RB-008 may continue visual discovery with verified Peer games responses and explicit mocks for unresolved durable level/profile evidence.
 
 RB-014 can run as low-risk research without affecting core delivery.
 
 ### Critical path
 
 ```text
-RB-001 peer presets + benchmark bands + temporary resolver
+RB-001 review/merge
         ↓
 RB-002 durable player level
         +
@@ -120,11 +102,10 @@ RB-013 personas intersects profile and target work and may be split further afte
 
 ## Reprioritization impact
 
-- RB-001 remains order 10 and P0, and is now `CLAIMED` on PR #84.
-- RB-002 remains order 20 and P0, and is `BLOCKED` on RB-001's benchmark profile/resolver contract.
-- RB-006 must use fixed speed presets and peer-rating targets rather than arbitrary weighted combinations.
+- RB-001 remains order 10 and P0, now `REVIEW` on PR #84.
+- RB-002 remains order 20 and P0, `BLOCKED` until RB-001 acceptance/merge.
 - No other order or priority changes are required.
-- Jira descriptions and the material CRT-3 → CRT-4 dependency are synchronized.
+- No new RB/Jira task is required.
 
 ## Adding tasks
 
