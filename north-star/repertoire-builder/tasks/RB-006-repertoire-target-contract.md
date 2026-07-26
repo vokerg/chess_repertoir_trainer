@@ -22,18 +22,19 @@ Claim scope: none
 
 Define a versioned, explainable repertoire-target model that captures what one build is trying to optimize without confusing it with the player's factual profile.
 
-The target must support arbitrary speed combinations, rating goals, persona/objective, theory and risk tolerance, coverage policy, account context, profile-derived defaults, and manual overrides.
+The target must support the product speed presets and peer-rating targets established by RB-001, plus persona/objective, theory and risk tolerance, coverage policy, account context, profile-derived defaults and manual overrides.
 
 ## Why this task exists
 
-Candidate ranking has no meaning without explicit target intent. A move suitable for classical play against stronger opponents may not be the best practical bullet choice. A profile-derived sharp preference should not prevent a user from building a solid course.
+Candidate ranking has no meaning without explicit target intent. A move suitable for slower play against stronger peers may not be the best practical bullet choice. A factual peer band or profile-derived preference should initialize the target without preventing the user from choosing another population or repertoire character.
 
 ## Current repo anchors to inspect
 
-- rating-normalization contracts and RB-002 output;
-- population evidence contract from RB-001;
+- RB-001 speed-preset, rating-target and population-evidence contracts;
+- RB-002 durable player-level output;
+- rating-normalization contracts and profile versions;
 - opening-profile contract from RB-003;
-- course, chapter, line, and tag/notes models;
+- course, chapter, line and tag/notes models;
 - game-filter models and account selectors;
 - profile output from RB-004/RB-005;
 - RB-008 prototype data needs;
@@ -41,7 +42,7 @@ Candidate ranking has no meaning without explicit target intent. A move suitable
 
 ## Dependencies
 
-Blocked on reliable contract direction from RB-001, RB-002, and RB-003.
+Blocked on reliable contract direction from RB-001, RB-002 and RB-003.
 
 Should incorporate reviewed findings from RB-008.
 
@@ -51,21 +52,23 @@ RB-007 and RB-009 depend on it.
 
 - define target identity and version;
 - define source starting point and side;
-- model `GENERAL` versus a non-empty weighted speed set;
+- model one RB-001 speed preset: `ALL`, `BLITZ_AND_SLOWER`, `BLITZ` or `BULLET`;
+- model one population target: all players, my peers, my peers plus one higher band, or one explicit Lichess-benchmark group;
+- snapshot or reference RB-002 factual player-level evidence appropriately;
+- record the normalization profile and peer-resolver policy versions used for derived defaults;
 - model provider/population source selection;
-- model general, own-level, own-level-plus-grades, and custom rating targets;
-- snapshot or reference player-level evidence appropriately;
 - define persona/objective separately from profile suggestions;
 - define objective soundness/risk tolerance without pretending classification details are already fixed;
 - define theory/complexity tolerance and coverage goals;
-- define personal-game inclusion rules such as always cover responses encountered N times;
-- record profile-derived defaults, explicit overrides, and manual choices separately;
+- define personal-game inclusion rules such as always covering responses encountered N times;
+- record profile-derived defaults, explicit overrides and manual choices separately;
 - define forward-compatible optional fields without an unstructured JSON dumping ground;
 - provide Zod schemas and pure helpers where appropriate;
 - document which target fields are mutable during a draft and which require recalculation.
 
 ## Out of scope
 
+- arbitrary speed arrays or editable speed weights;
 - candidate ranking implementation;
 - builder-session persistence;
 - course persistence of target metadata unless separately approved;
@@ -76,11 +79,10 @@ RB-007 and RB-009 depend on it.
 
 ## Open questions to resolve
 
-- Are speed weights always required or derived when omitted?
-- Does General mode have one versioned profile ID?
-- Is provider selection mandatory or can evidence combine providers?
-- Is player level snapshotted to keep a draft reproducible?
-- How are one or several grades above represented?
+- Is the factual peer-band evidence snapshotted to keep a draft reproducible?
+- Can a user choose a different explicit benchmark group without changing the factual profile?
+- Does “my peers plus one” remain exactly one adjacent group in all builder contexts?
+- Is provider selection mandatory or can evidence combine providers later?
 - Is persona a named preset, explicit dimensions, or both?
 - How is deliberately dubious intent separated from accidental low soundness?
 - Can target policy vary by branch?
@@ -88,14 +90,14 @@ RB-007 and RB-009 depend on it.
 
 ## Acceptance criteria
 
-- Bullet plus blitz and blitz plus rapid are valid without special-case schema changes.
-- General mode is distinct and carries or references controlled weighting.
-- Own-level targets use RB-002 evidence and record the normalization version.
-- A profile suggestion can initialize the target but manual override is explicit and authoritative.
+- Every valid target contains one supported speed preset and one supported population target.
+- Defaults can reference RB-002 factual evidence, but a manual override is explicit and authoritative.
+- The target records the effective normalization/profile policy versions required for reproducibility.
+- An explicit benchmark group can replace a peer-derived default without mutating player-level evidence.
 - Solid and dubious alternatives for the same opening can be represented as different targets.
 - Coverage and theory/risk intent are machine-readable enough for ranking.
 - Missing optional evidence does not make the target invalid unless genuinely required.
-- Contract examples cover new course, existing-course adaptation, and alternate persona.
+- Contract examples cover new course, existing-course adaptation and alternate persona.
 - Tests validate invariants and invalid combinations.
 
 ## Required validation
@@ -107,7 +109,7 @@ RB-007 and RB-009 depend on it.
 
 ## Completion updates
 
-The report must include canonical target examples, unresolved persistence questions, and direct impacts on RB-007, RB-009, RB-013, and RB-008 production planning.
+The report must include canonical target examples, unresolved persistence questions, and direct impacts on RB-007, RB-009, RB-013 and RB-008 production planning.
 
 ## Completion
 
