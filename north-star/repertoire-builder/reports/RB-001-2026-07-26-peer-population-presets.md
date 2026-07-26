@@ -2,7 +2,7 @@
 
 Date: 2026-07-26
 
-Status: implementation complete and ready for review; not merged.
+Status: complete and merged to `main`.
 
 Task: RB-001
 
@@ -11,6 +11,8 @@ Jira: CRT-3
 Branch: `north-star/rb-001-peer-presets-replan`
 
 PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
+
+Squash commit: `49dc6499eac9998de864ccb75a607541cd945382`
 
 ## Purpose
 
@@ -164,7 +166,7 @@ It displays the effective population and whether peer evidence came from the rec
 
 ### North Star/Jira coordination
 
-Planning, task, status, roadmap, decision, open-question and dependency documents were synchronized on PR #84. CRT-3 is assigned and moved from In Progress to In Review with the reviewable PR. CRT-3 continues to block CRT-4 until acceptance/merge.
+Planning, task, status, roadmap, decision, open-question and dependency documents were synchronized on PR #84. After merge, RB-001/CRT-3 were completed and RB-002/CRT-4 was unblocked.
 
 ## Validation
 
@@ -175,6 +177,8 @@ Full GitHub Actions CI passed on implementation head `ba164767f139b8b7efa522edb0
 - `npm run check:architecture`;
 - database migrations against PostgreSQL 16;
 - complete repository `npm test`.
+
+Final PR-head CI run `30212157700` also passed before the squash merge.
 
 Focused coverage added or updated:
 
@@ -188,11 +192,7 @@ Focused coverage added or updated:
 - OpenAPI/route query validation;
 - Angular default population, both selects and resolved summary.
 
-Not performed:
-
-- browser-level visual inspection, because the connector-only execution environment has no browser/runtime preview access.
-
-The Angular build and component tests passed in CI; visual review remains a human review item rather than an unreported claim.
+Browser-level visual inspection was not available in the connector-only execution environment. The Angular build and component tests passed, and the user accepted the result and requested the squash merge.
 
 ## Limitations and residual risks
 
@@ -215,16 +215,17 @@ RB-001 now supplies a reusable, versioned target-population boundary:
 
 ## Jira and queue impact
 
-- CRT-3: In Review.
-- RB-001: REVIEW.
-- CRT-4/RB-002: remains To Do/BLOCKED until RB-001 is accepted and merged.
+- CRT-3: Done.
+- RB-001: DONE.
+- CRT-4: To Do and unblocked.
+- RB-002: READY and the next actionable P0 task.
 - No new RB task or Jira issue is required.
 - No task order or priority change is recommended.
 
 ## Roadmap assessment
 
-The revised roadmap remains valid. Review and merge RB-001 first, then unblock RB-002. RB-003 and RB-008 remain independent parallel work.
+The revised roadmap remains valid. RB-002 is now the next critical-path task. RB-003, RB-008 and RB-014 remain independent parallel work.
 
 ## Completion state
 
-Implementation is complete and reviewable. The task is not `DONE` until PR #84 is accepted/merged and final post-merge synchronization is recorded.
+Completed on 2026-07-26 through squash merge PR #84 as commit `49dc6499eac9998de864ccb75a607541cd945382`, followed by repository and Jira synchronization.
