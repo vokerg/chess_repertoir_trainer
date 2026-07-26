@@ -66,7 +66,7 @@ export async function findOpeningExplorerCache(
   profileVersion: number,
 ): Promise<StoredOpeningExplorerCache | null> {
   const positionKey = positionKeyForNormalizedFen(normalizedFen);
-  const row = await prisma.openingExplorerCache.findFirst({
+  const row = await prisma.mastersExplorerCache.findFirst({
     where: {
       source,
       profileVersion,
@@ -82,7 +82,7 @@ export async function upsertOpeningExplorerCache(
   input: StoreOpeningExplorerCacheInput,
 ): Promise<StoredOpeningExplorerCache> {
   const position = await findOrCreatePositionByNormalizedFen(input.normalizedFen);
-  const row = await prisma.openingExplorerCache.upsert({
+  const row = await prisma.mastersExplorerCache.upsert({
     where: {
       positionId_source_profileVersion: {
         positionId: position.id,
