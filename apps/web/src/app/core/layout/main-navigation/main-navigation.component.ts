@@ -11,6 +11,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../../auth/auth.service';
 import { ClerkUserButtonComponent } from '../../auth/clerk-user-button.component';
+import { BrandLockupComponent } from '../../../shared/ui/brand/brand-lockup.component';
 import { NavIconComponent, type NavIconName } from '../../../shared/ui/nav-icon/nav-icon.component';
 
 interface AppNavItem {
@@ -30,7 +31,7 @@ interface AppNavNode extends AppNavItem {
 @Component({
   selector: 'app-main-navigation',
   standalone: true,
-  imports: [RouterModule, ClerkUserButtonComponent, NavIconComponent],
+  imports: [RouterModule, ClerkUserButtonComponent, BrandLockupComponent, NavIconComponent],
   templateUrl: './main-navigation.component.html',
   styleUrl: './main-navigation.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

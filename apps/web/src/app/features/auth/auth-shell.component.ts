@@ -1,19 +1,16 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BrandLockupComponent } from '../../shared/ui/brand/brand-lockup.component';
 
 @Component({
   selector: 'app-auth-shell',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, BrandLockupComponent],
   template: `
     <main class="auth-shell">
       <section class="auth-story" aria-labelledby="auth-story-title">
-        <a routerLink="/" class="brand-lockup" aria-label="Chess Repertoire Trainer home">
-          <span class="brand-mark" aria-hidden="true">
-            <i class="node source"></i><i class="branch branch-a"></i><i class="branch branch-b"></i>
-            <i class="node target target-a"></i><i class="node target target-b"></i>
-          </span>
-          <span class="brand-copy"><strong>Chess Repertoire</strong><small>TRAINER</small></span>
+        <a routerLink="/" class="brand-link" aria-label="Chess Repertoire Trainer home">
+          <app-brand-lockup tone="inverse" markVariant="reversed" />
         </a>
 
         <div class="story-copy">
@@ -32,7 +29,9 @@ import { RouterLink } from '@angular/router';
       </section>
 
       <section class="auth-workspace" [attr.aria-labelledby]="headingId()">
-        <a routerLink="/" class="mobile-brand">Chess Repertoire <small>TRAINER</small></a>
+        <a routerLink="/" class="mobile-brand" aria-label="Chess Repertoire Trainer home">
+          <app-brand-lockup [markSize]="36" />
+        </a>
         <div class="auth-card">
           <div class="auth-heading">
             <p class="eyebrow">{{ eyebrow() }}</p>

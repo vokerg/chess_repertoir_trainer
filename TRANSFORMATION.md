@@ -36,29 +36,29 @@ Every meaningful transformation change must update the relevant files under `tra
 
 ## Current checkpoint
 
-Phase 0A, Phase 0B, and the Phase 0C home discovery checkpoint are integrated into `visual_transformation`:
+The following slices are squash-merged into `visual_transformation`:
 
-- PR #78 added the public Angular landing page at `/`;
-- PR #79 added the shared authentication shell for `/login` and `/signup`;
-- PR #85 reconciled the Phase 0B checkpoint documentation;
-- PR #86 defined and visualized the first signed-in `/home` composition using existing stable APIs.
+- PR #78 — public Angular landing page at `/`;
+- PR #79 — shared authentication shell for `/login` and `/signup`;
+- PR #85 — Phase 0B checkpoint reconciliation;
+- PR #86 — signed-in `/home` discovery and visualization;
+- PR #87 — guarded Angular `/home`, normal post-auth fallback to `/home`, and deterministic existing-data recommendations.
 
-The active branch `visual-transformation/phase-0d-angular-home` implements the approved narrow Angular home slice:
+The active branch is `visual-transformation/phase-1a-brand-assets`.
 
-- guarded `/home` route inside the existing signed-in shell;
-- normal post-auth fallback changed from `/library` to `/home` while explicit `returnUrl` remains authoritative;
-- Home added to the existing navigation model without implementing the future rail;
-- feature-local state composed from existing account, library catalog, game facet, recent-game, and performance services;
-- deterministic Continue and Recommended next rules;
-- Recent signals deferred;
-- no new backend endpoint, persistence, queue, Lab dependency, or authenticated workflow redesign.
+Its approved scope is:
+
+- extract one production Node Branch SVG geometry;
+- provide standard, reversed, transparent-mark, and favicon assets;
+- add shared Angular brand mark and live-text lockup components;
+- replace duplicated or substitute brand renderings on the landing page, authentication shell, and current signed-in header;
+- preserve every route, navigation behavior, API, and workflow.
 
 Review next:
 
-1. [`transformation/reports/PHASE_0D_ANGULAR_HOME_IMPLEMENTATION.md`](./transformation/reports/PHASE_0D_ANGULAR_HOME_IMPLEMENTATION.md)
-2. `/home` with representative empty, partial, and populated data;
-3. default sign-in and sign-up navigation to `/home`;
-4. explicit `returnUrl` preservation;
-5. desktop and mobile rendering inside the current application shell.
+1. [`transformation/reports/PHASE_1A_BRAND_ASSETS_IMPLEMENTATION.md`](./transformation/reports/PHASE_1A_BRAND_ASSETS_IMPLEMENTATION.md)
+2. `apps/web/src/assets/brand/brand-readme.md`
+3. the shared brand component tests and PR CI;
+4. landing, authentication, signed-in header, mobile menu, and favicon rendering in a real browser.
 
-Do not merge the implementation pull request, begin the production navigation rail, finalize mobile navigation, extract production brand assets, migrate global tokens, add a home aggregation API, or redesign authenticated workflows without explicit approval.
+Do not merge the brand-assets pull request, begin the production navigation rail, finalize mobile navigation, migrate global tokens, change typography loading, create social-preview composition, or redesign authenticated workflows without explicit approval.
