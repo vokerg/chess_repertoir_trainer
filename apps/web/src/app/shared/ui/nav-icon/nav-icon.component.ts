@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 export type NavIconName =
+  | 'home'
   | 'study'
   | 'courses'
   | 'target'
@@ -27,6 +28,11 @@ export type NavIconName =
       aria-hidden="true"
     >
       @switch (name()) {
+        @case ('home') {
+          <path d="m3 11 9-8 9 8" />
+          <path d="M5 10v10h14V10" />
+          <path d="M9 20v-6h6v6" />
+        }
         @case ('study') {
           <path d="M5 5h12a2 2 0 0 1 2 2v12H7a2 2 0 0 1-2-2V5Z" />
           <path d="M8 9h1.5" />

@@ -28,7 +28,7 @@ Do not rely on prior chat memory, screenshots alone, the README alone, or assump
 
 ## 3. No implementation without an approved checkpoint
 
-Production transformation work has begun in narrow reviewed slices. The public landing page and authentication shell are integrated, but their completion does not approve the remaining master plan.
+Production transformation work has begun in narrow reviewed slices. The public landing page, authentication shell, and home discovery are integrated, but their completion does not approve the remaining master plan.
 
 Do not infer that the entire master plan is an instruction to implement everything. Work only on the next explicitly approved checkpoint.
 
@@ -162,10 +162,10 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The Phase 0A public landing page, Phase 0B authentication shell, and Phase 0B checkpoint reconciliation are squash-merged into `visual_transformation`.
+The public landing page, authentication shell, Phase 0B closure, and Phase 0C signed-in home discovery are squash-merged into `visual_transformation`.
 
-The current approved slice is Phase 0C signed-in `/home` discovery and visualization. Stop after the evidence review, deterministic rule proposal, static responsive proof, documentation, and pull request.
+The current approved slice is the narrow Phase 0D Angular `/home` implementation on `visual-transformation/phase-0d-angular-home`. Stop after the guarded route, existing-service data composition, deterministic rules, current-shell navigation entry, default post-auth destination change, focused tests, documentation, implementation report, validation, and pull request.
 
-Do not implement `/home`, change the normal post-login destination, implement the production navigation rail, finalize mobile navigation, extract production brand assets, migrate global tokens, add a home aggregation API, or redesign authenticated workflows without explicit approval of the Phase 0C checkpoint.
+Do not implement the production navigation rail, finalize mobile navigation, extract production brand assets, migrate global tokens, add a home aggregation API, introduce Lab dependencies, or redesign authenticated workflows as part of this slice.
 
 Authentication browser and Clerk interaction validation remains an explicit residual gap under D-306 and must not be represented as completed until it is recorded.
