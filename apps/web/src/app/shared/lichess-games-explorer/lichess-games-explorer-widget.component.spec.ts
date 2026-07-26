@@ -4,11 +4,7 @@ import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-e
 import { of } from 'rxjs';
 import { LichessGamesExplorerApiService } from './lichess-games-explorer-api.service';
 import { compactGameCount, exactGameCount } from './lichess-games-explorer.helpers';
-import {
-  defaultLichessGamesExplorerFilters,
-  lichessRatingOptions,
-  lichessSpeedOptions,
-} from './lichess-games-explorer.models';
+import { defaultLichessGamesExplorerFilters } from './lichess-games-explorer.models';
 import { LichessGamesExplorerWidgetComponent } from './lichess-games-explorer-widget.component';
 
 @Component({
@@ -50,30 +46,48 @@ describe('LichessGamesExplorerWidgetComponent', () => {
     fixture.detectChanges();
   });
 
-  it('loads an unrestricted population by default and omits top games from the UI', () => {
+  it('loads the default peer population and shows its resolved provenance', () => {
     expect(api.getPosition).toHaveBeenCalledOnceWith(
       'startpos',
       defaultLichessGamesExplorerFilters(),
     );
     expect(text()).toContain('Peer games');
+    expect(text()).toContain('Blitz and slower · 1400–1799 · recent peer evidence');
     expect(text()).toContain('10 games');
     expect(text()).not.toContain('Top games');
     expect(text()).not.toContain('Example White');
   });
 
-  it('reloads when a speed scenario changes while keeping at least one speed selected', async () => {
+  it('reloads when the speed preset changes', async () => {
     button('.peers-header button').click();
     fixture.detectChanges();
 
-    const bullet = checkbox('Bullet');
-    bullet.click();
+    select('Time controls').value = 'BULLET';
+    select('Time controls').dispatchEvent(new Event('change'));
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const filters = api.getPosition.calls.mostRecent().args[1];
-    expect(filters.speeds).not.toContain('bullet');
-    expect(filters.speeds.length).toBe(lichessSpeedOptions.length - 1);
-    expect(filters.ratings.length).toBe(lichessRatingOptions.length);
+    expect(api.getPosition.calls.mostRecent().args[1]).toEqual({
+      speedPreset: 'BULLET',
+      ratingTarget: 'MY_PEERS_PLUS_ONE',
+      ratingGroup: null,
+    });
+  });
+
+  it('reloads with one explicit Lichess rating group', async () => {
+    button('.peers-header button').click();
+    fixture.detectChanges();
+
+    select('Player level').value = 'GROUP:1800';
+    select('Player level').dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(api.getPosition.calls.mostRecent().args[1]).toEqual({
+      speedPreset: 'BLITZ_AND_SLOWER',
+      ratingTarget: 'GROUP',
+      ratingGroup: 1800,
+    });
   });
 
   it('emits a selected next move', () => {
@@ -91,13 +105,13 @@ describe('LichessGamesExplorerWidgetComponent', () => {
     return element;
   }
 
-  function checkbox(label: string): HTMLInputElement {
+  function select(label: string): HTMLSelectElement {
     const labels = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLLabelElement>('label'),
     );
-    const element = labels.find((candidate) => candidate.textContent?.trim() === label)
-      ?.querySelector<HTMLInputElement>('input');
-    if (!element) throw new Error(`Missing checkbox: ${label}`);
+    const element = labels.find((candidate) => candidate.textContent?.includes(label))
+      ?.querySelector<HTMLSelectElement>('select');
+    if (!element) throw new Error(`Missing select: ${label}`);
     return element;
   }
 });
@@ -140,7 +154,7 @@ function response(): OpeningExplorerResponse {
     }],
     dataset: {
       source: 'LICHESS_GAMES',
-      profileVersion: 1,
+      profileVersion: 666067204,
       sinceYear: 0,
       untilYear: 2026,
       movesLimit: 12,
@@ -150,6 +164,38 @@ function response(): OpeningExplorerResponse {
       status: 'REFRESHED',
       fetchedAt: '2026-07-26T12:00:00.000Z',
       expiresAt: '2026-08-25T12:00:00.000Z',
+    },
+    population: {
+      requested: {
+        speedPreset: 'BLITZ_AND_SLOWER',
+        ratingTarget: 'MY_PEERS_PLUS_ONE',
+        ratingGroup: null,
+      },
+      effective: {
+        speeds: ['blitz', 'classical', 'correspondence', 'rapid'],
+        ratingGroups: [1400, 1600],
+      },
+      peerResolution: {
+        evidencePeriod: 'RECENT_THREE_MONTHS',
+        eligibleGames: 12,
+        selectedGroups: [1400],
+        distribution: [0, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500].map((group) => ({
+          group: group as 0 | 1000 | 1200 | 1400 | 1600 | 1800 | 2000 | 2200 | 2500,
+          games: group === 1400 ? 12 : 0,
+        })),
+        contributions: [{
+          accountId: 1,
+          provider: 'LICHESS',
+          username: 'player',
+          speed: 'blitz',
+          games: 12,
+        }],
+        normalizationProfile: {
+          id: 'universal-online-strength',
+          version: '2026-07-lichess-bands-v1',
+        },
+        resolverPolicyVersion: 'dominant-contiguous-window-v1',
+      },
     },
   };
 }
