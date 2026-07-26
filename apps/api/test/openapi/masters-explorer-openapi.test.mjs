@@ -18,32 +18,45 @@ const app = await buildApp({
 try {
   await app.ready();
   const document = app.swagger();
-  const operation = document.paths['/api/masters-explorer'].get;
-  assert.equal(operation.operationId, 'getMastersExplorerPosition');
-  assert.deepEqual(operation.tags, ['Masters explorer']);
-  assert.ok(operation.responses['200']);
-  assert.ok(operation.responses['400']);
-  assert.ok(operation.responses['401']);
-  assert.ok(operation.responses['503']);
 
-  const invalid = await app.inject({
-    method: 'GET',
-    url: '/api/masters-explorer?fen=not-a-fen',
-  });
-  assert.equal(invalid.statusCode, 400);
-  assert.deepEqual(invalid.json(), {
-    error: 'The supplied FEN is invalid.',
-    code: 'INVALID_FEN',
-  });
+  const mastersOperation = document.paths['/api/masters-explorer'].get;
+  assert.equal(mastersOperation.operationId, 'getMastersExplorerPosition');
+  assert.deepEqual(mastersOperation.tags, ['Masters explorer']);
+  assert.ok(mastersOperation.responses['200']);
+  assert.ok(mastersOperation.responses['400']);
+  assert.ok(mastersOperation.responses['401']);
+  assert.ok(mastersOperation.responses['503']);
 
-  const malformed = await app.inject({
-    method: 'GET',
-    url: '/api/masters-explorer?fen=',
-  });
-  assert.equal(malformed.statusCode, 400);
-  assert.deepEqual(malformed.json(), { error: 'Validation failed' });
+  const lichessGamesOperation = document.paths['/api/lichess-games-explorer'].get;
+  assert.equal(lichessGamesOperation.operationId, 'getLichessGamesExplorerPosition');
+  assert.deepEqual(lichessGamesOperation.tags, ['Opening explorer']);
+  assert.ok(lichessGamesOperation.responses['200']);
+  assert.ok(lichessGamesOperation.responses['400']);
+  assert.ok(lichessGamesOperation.responses['401']);
+  assert.ok(lichessGamesOperation.responses['503']);
 
-  console.log('Masters explorer OpenAPI and route tests passed.');
+  for (const url of [
+    '/api/masters-explorer?fen=not-a-fen',
+    '/api/lichess-games-explorer?fen=not-a-fen',
+  ]) {
+    const invalid = await app.inject({ method: 'GET', url });
+    assert.equal(invalid.statusCode, 400);
+    assert.deepEqual(invalid.json(), {
+      error: 'The supplied FEN is invalid.',
+      code: 'INVALID_FEN',
+    });
+  }
+
+  for (const url of [
+    '/api/masters-explorer?fen=',
+    '/api/lichess-games-explorer?fen=',
+  ]) {
+    const malformed = await app.inject({ method: 'GET', url });
+    assert.equal(malformed.statusCode, 400);
+    assert.deepEqual(malformed.json(), { error: 'Validation failed' });
+  }
+
+  console.log('Opening explorer OpenAPI and route tests passed.');
 } finally {
   await app.close();
 }
