@@ -80,11 +80,15 @@ State: **LOCKED**
 
 The system needs an inspectable formula for players with multiple accounts and ratings.
 
-### RB-D010 — Durable multi-account formula
+### RB-D010 — Raw average and provider-aware peer level are separate
 
-State: **OPEN**
+State: **PROVISIONAL**
 
-RB-002 still owns durable account inclusion, recency, volume, confidence, exclusions, persistence/snapshot behavior and overrides. It must reuse the benchmark profile and temporary resolver boundary delivered by RB-001.
+The imported-game summary already calculates `averageUserRating` as the game-count-weighted arithmetic mean of available game-recorded user ratings for the applied filter. RB-002 reuses that value as descriptive evidence and does not create a second generic average-rating formula.
+
+A mixed Chess.com/Lichess raw average is not an exact provider-neutral strength rating. Cross-provider targeting classifies provider/speed evidence through the active rating-normalization profile and resolves a canonical Lichess-benchmark band distribution and dominant interval.
+
+The first RB-002 delivery should be reproducible on demand. Persistence or snapshot storage requires a demonstrated performance, invalidation or historical-reproducibility need. Repertoire-specific manual overrides belong to RB-006 and must not mutate the factual RB-002 result.
 
 ## Data and profile decisions
 
@@ -238,7 +242,7 @@ RB-001 resolves My peers from owned rated imported standard games:
 
 Resolver policy `dominant-contiguous-window-v1` evaluates contiguous windows of one, two or three groups and selects the narrowest window containing at least 70% of eligible games. Qualifying ties prefer more games and then the lower starting group. When no window reaches 70%, the highest-mass window wins, followed by narrower and lower tie-breaks.
 
-The full distribution and provider/account/speed contributions remain visible. RB-002 later owns durable storage/snapshot, confidence, exclusions and overrides.
+The full distribution and provider/account/speed contributions remain visible. RB-002 turns the temporary result into a reusable provider-aware player-rating projection, adds raw-average context and evidence-quality semantics, and introduces persistence only when justified.
 
 ### RB-D033 — Public-game period is server-controlled
 
