@@ -1,6 +1,6 @@
 # RB-008 — Prototype visual candidate and coverage choices
 
-Status: READY
+Status: CLAIMED
 
 Priority: P1
 
@@ -8,15 +8,15 @@ Order: 40
 
 Delivery class: North-star
 
-Planning maturity: Placeholder
+Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: ChatGPT session
 
-Claim branch: none
+Claim branch: `rb-008/issue-96-visual-candidate-prototype`
 
-Claimed at: none
+Claimed at: 2026-07-26
 
-Claim scope: none
+Claim scope: static discovery and visual proof only — two materially different responsive HTML/CSS/JavaScript interaction directions with realistic mock candidate and opponent-coverage evidence, desktop/mobile review artifacts, and a decision/contract-implication report. No production Angular, API, schema, database, ranking, or course-write changes.
 
 ## Outcome
 
@@ -50,7 +50,7 @@ No runtime dependency beyond this foundation.
 
 May use explicitly documented mock contracts based on RB-006/RB-007 concepts.
 
-May run in parallel with RB-001, RB-002, RB-003, and early profile work.
+May run in parallel with RB-003 and early profile work. RB-001/RB-002 factual population and player-level evidence is complete and may inform realistic mock values.
 
 Production implementation is blocked until relevant evidence contracts and visual direction are reviewed.
 
