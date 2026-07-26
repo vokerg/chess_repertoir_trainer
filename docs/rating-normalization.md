@@ -50,6 +50,8 @@ The empirical starting point is the July 2026 ChessGoals rating comparison, whic
 - <https://chessgoals.com/rating-comparison/>
 - <https://chessgoals.com/rating-comparison-explained/>
 
+The table is a product normalization profile derived from that comparison, not a claim that every individual player has an exact equivalent rating in another pool. The profile's source metadata distinguishes empirical inputs from deliberate product adjustments.
+
 The profile does not claim ten-point conversion precision. Its `softPadding` metadata records a practical ambiguity width for each non-baseline pool:
 
 | Pool | Confidence | Soft padding |
