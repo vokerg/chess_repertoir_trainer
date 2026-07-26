@@ -4,17 +4,15 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** foundation merged; RB-001 implementation complete and in review on PR #84.
+**Program state:** foundation merged; RB-001 completed on `main`; RB-002 is the next actionable P0 task.
 
-**Runtime on `main`:** PR #80 still provides the raw rated-Lichess filters and PR #76 still provides normalization version `2026-07-product-v1`. PR #84 is not merged.
-
-**Review delivery:** PR #84 contains the Lichess-benchmark profile, peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
+**Runtime on `main`:** squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 now provides the Lichess-benchmark profile, temporary peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
 **Jira epic:** CRT-2, `In Progress`.
 
-## RB-001 review scope
+## RB-001 delivered scope
 
-Implemented on PR #84:
+Available on `main`:
 
 - speed presets: All speeds, Blitz and slower, Blitz, Bullet;
 - rating targets: All players, My peers, My peers and above, one explicit Lichess group;
@@ -35,9 +33,10 @@ No database migration, new cache store, queue, background job, dependency, durab
 
 ## Repository and Jira state
 
-- RB-001: `REVIEW`.
-- CRT-3: `In Review` with PR #84.
-- RB-002 / CRT-4: remains `BLOCKED` / `To Do` until RB-001 is accepted and merged.
+- RB-001: `DONE`.
+- CRT-3: `Done` after squash merge PR #84.
+- RB-002: `READY`.
+- CRT-4: `To Do`, unblocked and ready to be claimed.
 - RB-003 and RB-008 remain independent parallel work.
 
 Completion report:
@@ -54,9 +53,7 @@ GitHub Actions run `30211739445` passed on implementation head `ba164767f139b8b7
 - PostgreSQL migrations;
 - complete repository tests.
 
-Latest commits after that run are planning/report synchronization only. Browser-level visual review was unavailable in the connector-only environment and remains a human review item.
-
-No merge to `main` has been performed.
+Final PR-head CI run `30212157700` also passed before merge. The user accepted the delivery and requested the squash merge.
 
 ## Residual risks
 
@@ -70,4 +67,4 @@ No merge to `main` has been performed.
 
 ## Queue recommendation
 
-Review and merge RB-001 first. Unblock RB-002 only after accepted post-merge synchronization. No other task order or priority change is recommended.
+Claim RB-002 / CRT-4 next for the durable multi-account player-level projection. RB-003, RB-008 and RB-014 remain valid independent work streams. No task order or priority change is recommended.
