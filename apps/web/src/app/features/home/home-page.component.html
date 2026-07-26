@@ -1,0 +1,175 @@
+<section class="home-page" aria-labelledby="home-title">
+  <header class="home-header">
+    <div>
+      <p class="eyebrow">YOUR CHESS, CONNECTED</p>
+      <h1 id="home-title">{{ store.greeting() }}</h1>
+      <p class="home-intro">Here is the most useful next move across your games, repertoire, and training.</p>
+    </div>
+
+    <div class="account-summary" aria-label="Selected chess account">
+      <span class="account-dot" aria-hidden="true"></span>
+      <div>
+        <strong>{{ store.accountLabel() }}</strong>
+        <span>{{ store.syncLabel() }}</span>
+      </div>
+      <button type="button" class="refresh-button" [disabled]="store.loading()" (click)="reload()">
+        {{ store.loading() ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+  </header>
+
+  @if (store.error(); as error) {
+    <div class="status-banner status-banner-error" role="alert">
+      <div>
+        <strong>Home is temporarily unavailable</strong>
+        <span>{{ error }}</span>
+      </div>
+      <button type="button" (click)="reload()">Try again</button>
+    </div>
+  }
+
+  @if (store.warnings().length > 0 && !store.error()) {
+    <div class="status-banner" role="status">
+      <div>
+        <strong>Some sections may be incomplete</strong>
+        <span>{{ store.warnings().join(' ') }}</span>
+      </div>
+    </div>
+  }
+
+  @if (store.loading() && !store.error()) {
+    <div class="home-loading" aria-live="polite">
+      <div class="loading-primary"></div>
+      <div class="loading-grid">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  } @else if (!store.error()) {
+    @let continueAction = store.continueAction();
+    <section class="continue-section" aria-labelledby="continue-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CONTINUE</p>
+          <h2 id="continue-title">Pick up where your chess needs you most.</h2>
+        </div>
+      </div>
+
+      <a
+        class="continue-card"
+        [routerLink]="continueAction.link"
+        [queryParams]="continueAction.queryParams || null"
+      >
+        <div class="continue-copy">
+          <span class="action-kicker">{{ continueAction.eyebrow }}</span>
+          <h3>{{ continueAction.title }}</h3>
+          <p>{{ continueAction.description }}</p>
+          @if (continueAction.meta) {
+            <span class="action-meta">{{ continueAction.meta }}</span>
+          }
+        </div>
+        <span class="continue-cta">Continue <span aria-hidden="true">→</span></span>
+      </a>
+    </section>
+
+    <section class="recommendations-section" aria-labelledby="recommendations-title">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">RECOMMENDED NEXT</p>
+          <h2 id="recommendations-title">Small actions with clear reasons.</h2>
+        </div>
+      </div>
+
+      <div class="recommendation-grid">
+        @for (action of store.recommendations(); track action.id) {
+          <a
+            class="recommendation-card"
+            [class.setup-card]="action.tone === 'setup'"
+            [routerLink]="action.link"
+            [queryParams]="action.queryParams || null"
+          >
+            <span class="action-kicker">{{ action.eyebrow }}</span>
+            <h3>{{ action.title }}</h3>
+            <p>{{ action.description }}</p>
+            <div class="recommendation-footer">
+              @if (action.meta) {
+                <span>{{ action.meta }}</span>
+              } @else {
+                <span>Open workflow</span>
+              }
+              <span aria-hidden="true">→</span>
+            </div>
+          </a>
+        } @empty {
+          <article class="recommendation-card empty-card">
+            <span class="action-kicker">WORKSPACE READY</span>
+            <h3>No urgent follow-up right now</h3>
+            <p>Use the shortcuts below to choose the part of your chess you want to work on.</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <div class="lower-grid">
+      <section class="workspace-section" aria-labelledby="workspace-title">
+        <div class="section-heading compact-heading">
+          <div>
+            <p class="eyebrow">WORKSPACES</p>
+            <h2 id="workspace-title">Move directly into the right tool.</h2>
+          </div>
+        </div>
+
+        <div class="shortcut-grid">
+          @for (shortcut of shortcuts; track shortcut.link) {
+            <a class="shortcut-card" [routerLink]="shortcut.link">
+              <span class="shortcut-marker">{{ shortcut.marker }}</span>
+              <div>
+                <strong>{{ shortcut.label }}</strong>
+                <span>{{ shortcut.description }}</span>
+              </div>
+              <span aria-hidden="true">↗</span>
+            </a>
+          }
+        </div>
+      </section>
+
+      <section class="progress-section" aria-labelledby="progress-title">
+        <div class="section-heading compact-heading">
+          <div>
+            <p class="eyebrow">RECENT PROGRESS</p>
+            <h2 id="progress-title">Evidence, not decoration.</h2>
+          </div>
+          @if (store.selectedAccount(); as account) {
+            <a [routerLink]="['/progress/accounts', account.id]">Open progress</a>
+          }
+        </div>
+
+        @let progress = store.progress();
+        <div class="progress-panel">
+          <article class="progress-primary">
+            <span>Last 30 days</span>
+            <strong>{{ progress.gamesCount }}</strong>
+            <p>games recorded</p>
+          </article>
+
+          <div class="progress-metrics">
+            <article>
+              <span>Score</span>
+              <strong>{{ progress.scorePercent === null ? '—' : progress.scorePercent + '%' }}</strong>
+              <small>{{ progress.wins }}W · {{ progress.draws }}D · {{ progress.losses }}L</small>
+            </article>
+            <article>
+              <span>Training attempts</span>
+              <strong>{{ progress.trainingAttempts }}</strong>
+              <small>across current courses</small>
+            </article>
+            <article>
+              <span>Weak sublines</span>
+              <strong>{{ progress.weakSublineCount }}</strong>
+              <small>currently need reinforcement</small>
+            </article>
+          </div>
+        </div>
+      </section>
+    </div>
+  }
+</section>
