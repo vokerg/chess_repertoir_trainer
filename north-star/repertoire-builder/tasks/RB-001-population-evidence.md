@@ -1,6 +1,6 @@
 # RB-001 — Deliver Lichess-aligned peer population presets
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -17,6 +17,8 @@ Claim branch: `north-star/rb-001-peer-presets-replan`
 Claimed at: 2026-07-26
 
 Claim scope: implement the versioned Lichess-benchmark rating profile, temporary peer-band resolver, compact Opening Explorer preset contract, mixed-query provenance, two-select Peer games UI, focused tests, runtime documentation, and completion synchronization for CRT-3 / RB-001.
+
+Implementation started: 2026-07-26 at runtime commit `bd822d8d6d59fb274f8a0418e0adfb3879675f73`; Jira CRT-3 is `In Progress`.
 
 ## Outcome
 
