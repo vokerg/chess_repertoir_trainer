@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RB-008 Direction A — Decision desk</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="prototype.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#decision">Skip to move decision</a>
+  <main class="prototype-shell">
+    <header class="prototype-nav">
+      <a class="brand" href="index.html"><span class="node-mark" aria-hidden="true"></span><span>Chess Repertoire Trainer · RB-008</span></a>
+      <nav aria-label="Prototype directions">
+        <a href="index.html">Overview</a>
+        <a class="active" href="direction-a.html">A · Decision desk</a>
+        <a href="direction-b.html">B · Candidate landscape</a>
+      </nav>
+    </header>
+
+    <section class="context-header">
+      <div>
+        <p class="eyebrow">Direction A · one shared board</p>
+        <h1>Choose White’s sixth move.</h1>
+        <p class="lead">Sicilian Najdorf after 5...a6. Compare the resulting structures, then decide which Black responses belong in the first coverage pass.</p>
+      </div>
+      <div class="context-chips">
+        <span class="chip mint">Target: Solid</span>
+        <span class="chip">Blitz &amp; slower</span>
+        <span class="chip">Peers 1600–1999</span>
+        <span class="chip warning">Profile suggests sharp play</span>
+      </div>
+    </section>
+
+    <section id="decision" class="decision-desk">
+      <div>
+        <article class="panel">
+          <header class="panel-header">
+            <div><h2 class="panel-title">Resulting position</h2><p class="panel-help">Use candidate buttons or arrow keys. The board stays large while evidence changes.</p></div>
+            <span class="chip blue" data-selected-role>Target-aligned</span>
+          </header>
+          <div class="board-panel-body">
+            <div class="board-stage">
+              <div class="primary-board-wrap">
+                <div class="board" data-primary-board role="img" aria-label="Chess position after selected candidate"></div>
+                <div class="preview-line"><span>Preview line</span><strong class="mono" data-selected-line>6.Be3 e5 7.Nb3 Be6 8.f3</strong></div>
+              </div>
+              <div class="candidate-rail" role="group" aria-label="Candidate moves">
+                <button class="candidate-button selected" type="button" data-candidate-button="be3" aria-pressed="true">
+                  <span class="candidate-top"><strong>6.Be3</strong><span class="status-pill">Solid</span></span>
+                  <p>Flexible main line · +0.32 · 31% peers</p>
+                </button>
+                <button class="candidate-button" type="button" data-candidate-button="bg5" aria-pressed="false">
+                  <span class="candidate-top"><strong>6.Bg5</strong><span class="status-pill">Profile</span></span>
+                  <p>Sharp pressure · +0.26 · high theory</p>
+                </button>
+                <button class="candidate-button" type="button" data-candidate-button="g4" aria-pressed="false">
+                  <span class="candidate-top"><strong>6.g4?!</strong><span class="status-pill">Risk</span></span>
+                  <p>Surprise weapon · −0.38 · low theory</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <div class="branch-strip" aria-label="Current branch progress">
+          <div class="branch-step complete"><strong>Start position</strong><span>Target confirmed</span></div>
+          <div class="branch-step active"><strong>Choose White move</strong><span>3 candidates</span></div>
+          <div class="branch-step"><strong>Cover Black replies</strong><span>4 responses</span></div>
+          <div class="branch-step"><strong>Continue branch</strong><span>Next decision</span></div>
+          <div class="branch-step"><strong>Preview draft</strong><span>0 lines written</span></div>
+        </div>
+      </div>
+
+      <aside class="side-stack" aria-label="Decision evidence and coverage">
+        <article class="panel decision-summary">
+          <div class="tension-card"><strong>Profile and intent disagree</strong><p>Your recent games favour sharp positions. This repertoire target is explicitly Solid, so profile fit is advisory rather than authoritative.</p></div>
+          <div class="selected-heading" style="margin-top:.9rem">
+            <div><p class="eyebrow" data-selected-label>Structured main line</p><h2 data-selected-move>6.Be3</h2><p data-selected-headline>Keeps the position flexible without conceding practical pressure.</p></div>
+            <span class="chip mint" data-selected-role>Target-aligned</span>
+          </div>
+          <div class="metric-grid" style="margin-top:.85rem">
+            <div class="metric"><span>Engine</span><strong data-selected-eval>+0.32</strong></div>
+            <div class="metric"><span>Selected peers</span><strong data-selected-peers>31%</strong></div>
+            <div class="metric"><span>Masters</span><strong data-selected-masters>28%</strong></div>
+            <div class="metric"><span>Theory</span><strong data-selected-theory>Medium</strong></div>
+          </div>
+          <ul class="reason-list" data-selected-reasons></ul>
+          <div class="caution"><strong>Preparation:</strong> <span data-selected-burden>14 branches</span>. <span data-selected-caution>Still requires preparation against ...e5 and ...Ng4.</span></div>
+          <div class="card-actions" style="margin-top:.8rem"><button class="action-button primary" type="button">Select this move</button><button class="action-button quiet" type="button">Save as alternate</button></div>
+        </article>
+
+        <article class="panel coverage-panel">
+          <header class="panel-header"><div><h2 class="panel-title">Black responses to cover</h2><p class="panel-help">Frequency is for the selected target. Change each row without losing the move decision.</p></div><span class="coverage-number" data-coverage-total>71%</span></header>
+          <div class="coverage-summary"><div class="progress-track" aria-label="Selected cumulative coverage"><div class="progress-fill" data-coverage-fill></div></div></div>
+          <div class="coverage-list">
+            <div class="coverage-row" data-coverage-row data-status="cover" data-frequency="42">
+              <div class="coverage-move"><strong>6...e5</strong><span>42% · critical main line</span><span class="status-pill" data-coverage-status>Selected</span></div>
+              <div class="coverage-actions"><button data-coverage-action="cover" aria-pressed="true">Cover</button><button data-coverage-action="defer" aria-pressed="false">Defer</button><button data-coverage-action="ignore" aria-pressed="false">Ignore</button></div>
+            </div>
+            <div class="coverage-row" data-coverage-row data-status="cover" data-frequency="29">
+              <div class="coverage-move"><strong>6...e6</strong><span>29% · transposes often</span><span class="status-pill" data-coverage-status>Selected</span></div>
+              <div class="coverage-actions"><button data-coverage-action="cover" aria-pressed="true">Cover</button><button data-coverage-action="defer" aria-pressed="false">Defer</button><button data-coverage-action="ignore" aria-pressed="false">Ignore</button></div>
+            </div>
+            <div class="coverage-row" data-coverage-row data-status="defer" data-frequency="12">
+              <div class="coverage-move"><strong>6...Ng4</strong><span>12% · tactical test</span><span class="status-pill" data-coverage-status>Deferred</span></div>
+              <div class="coverage-actions"><button data-coverage-action="cover" aria-pressed="false">Cover</button><button data-coverage-action="defer" aria-pressed="true">Defer</button><button data-coverage-action="ignore" aria-pressed="false">Ignore</button></div>
+            </div>
+            <div class="coverage-row" data-coverage-row data-status="ignore" data-frequency="5">
+              <div class="coverage-move"><strong>6...b5</strong><span>5% · low relevance</span><span class="status-pill" data-coverage-status>Ignored</span></div>
+              <div class="coverage-actions"><button data-coverage-action="cover" aria-pressed="false">Cover</button><button data-coverage-action="defer" aria-pressed="false">Defer</button><button data-coverage-action="ignore" aria-pressed="true">Ignore</button></div>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </section>
+
+    <p class="prototype-note">Direction A hypothesis: retain the existing board-first two-column workbench, but replace generic side widgets with one decision summary and one branch-coverage queue.</p>
+  </main>
+</body>
+</html>
