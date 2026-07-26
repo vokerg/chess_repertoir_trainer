@@ -11,12 +11,13 @@ This workspace defines the long-term program for constructing and evolving a per
 - [Feature catalog](FEATURES.md) — capabilities, standalone value, north-star role, and planning maturity.
 - [Roadmap](ROADMAP.md) — ordered delivery stages and gates.
 - [Task queue](TASKS.md) — canonical priority and execution order.
+- [Jira coordination](JIRA.md) — Epic/task mapping, workflow transitions, branch/PR visibility, and synchronization rules.
 - [Status](STATUS.md) — current program state and active work.
 - [Decisions](DECISIONS.md) — locked and provisional choices.
 - [Open questions](OPEN_QUESTIONS.md) — unresolved product, data, UX, and architecture questions.
-- [Agent instructions](AGENTS.md) — required reading, task claiming, reporting, and queue-update protocol.
+- [Agent instructions](AGENTS.md) — required reading, task claiming, reporting, Jira, and queue-update protocol.
 
-Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/).
+Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/). Every existing task also maps to one Jira Task under Epic `CRT-2`.
 
 ## Scope boundary
 
