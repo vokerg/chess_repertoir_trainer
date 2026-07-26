@@ -1,7 +1,9 @@
 <header class="app-header">
   <div class="app-header-inner">
     <div class="app-header-copy">
-      <h1 class="app-title">Chess Repertoire Trainer</h1>
+      <a routerLink="/home" class="app-brand-link" aria-label="Chess Repertoire Trainer home">
+        <app-brand-lockup [markSize]="34" />
+      </a>
     </div>
     <div class="app-header-actions">
       @if (auth.isSignedIn()) {
@@ -103,7 +105,7 @@
       <div class="mobile-menu-header">
         <div>
           <p class="mobile-menu-kicker">Navigation</p>
-          <h2 class="mobile-menu-title">Chess Repertoire Trainer</h2>
+          <app-brand-lockup [markSize]="34" />
         </div>
         <button type="button" class="mobile-menu-close" aria-label="Close main menu" (click)="closeMobileMenu()">
           <span></span>

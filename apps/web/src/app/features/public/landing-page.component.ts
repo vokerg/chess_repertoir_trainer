@@ -1,30 +1,18 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BrandLockupComponent } from '../../shared/ui/brand/brand-lockup.component';
+import { BrandMarkComponent } from '../../shared/ui/brand/brand-mark.component';
 
 @Component({
   selector: 'app-landing-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, BrandLockupComponent, BrandMarkComponent],
   template: `
     <a class="skip-link" href="#main-content">Skip to content</a>
 
     <header class="site-header">
-      <a class="brand-lockup" href="#main-content" aria-label="Chess Repertoire Trainer home">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 42 42" role="img">
-            <rect width="42" height="42" rx="12" />
-            <path d="M12 29V13m0 8h9m0 0V12m0 9 9 8m-9-8 9-8" />
-            <circle cx="12" cy="13" r="2.5" />
-            <circle cx="12" cy="29" r="2.5" />
-            <circle cx="21" cy="12" r="2.5" />
-            <circle cx="30" cy="13" r="2.5" />
-            <circle cx="30" cy="29" r="2.5" />
-          </svg>
-        </span>
-        <span class="brand-copy">
-          <strong>Chess Repertoire</strong>
-          <small>TRAINER</small>
-        </span>
+      <a class="brand-link" href="#main-content" aria-label="Chess Repertoire Trainer home">
+        <app-brand-lockup tone="inverse" markVariant="badge" [collapseAtMobile]="true" />
       </a>
 
       <nav class="site-nav" aria-label="Primary navigation">
@@ -105,7 +93,7 @@ import { RouterLink } from '@angular/router';
               </div>
             </div>
           </div>
-          <aside class="floating-insight"><span class="mini-mark">⌁</span><div><small>Training ready</small><strong>8 positions selected</strong></div></aside>
+          <aside class="floating-insight"><app-brand-mark class="mini-mark" variant="mark" [size]="34" /><div><small>Training ready</small><strong>8 positions selected</strong></div></aside>
         </div>
       </section>
 
@@ -150,10 +138,10 @@ import { RouterLink } from '@angular/router';
         </div>
       </section>
 
-      <section class="final-cta section-shell"><span class="final-mark">⌁</span><div><p class="eyebrow">BUILD FROM YOUR OWN GAMES</p><h2>Make your repertoire respond to the chess you actually play.</h2></div><a class="button button-primary" routerLink="/signup">Start building</a></section>
+      <section class="final-cta section-shell"><app-brand-mark class="final-mark" variant="badge" [size]="72" /><div><p class="eyebrow">BUILD FROM YOUR OWN GAMES</p><h2>Make your repertoire respond to the chess you actually play.</h2></div><a class="button button-primary" routerLink="/signup">Start building</a></section>
     </main>
 
-    <footer class="site-footer"><div class="brand-lockup"><span class="brand-mark compact" aria-hidden="true">⌁</span><span class="brand-copy"><strong>Chess Repertoire</strong><small>TRAINER</small></span></div><p>Games become insight. Insight becomes repertoire. Repertoire becomes training.</p><a routerLink="/login">Sign in</a></footer>
+    <footer class="site-footer"><app-brand-lockup [markSize]="36" /><p>Games become insight. Insight becomes repertoire. Repertoire becomes training.</p><a routerLink="/login">Sign in</a></footer>
   `,
   styleUrl: './landing-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

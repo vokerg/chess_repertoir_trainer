@@ -1,0 +1,20 @@
+<svg
+  class="brand-mark"
+  [class.brand-mark-plain]="variant() === 'mark'"
+  [class.brand-mark-reversed]="variant() === 'reversed'"
+  viewBox="0 0 64 64"
+  [attr.role]="label() ? 'img' : null"
+  [attr.aria-hidden]="label() ? null : 'true'"
+  [attr.aria-label]="label()"
+>
+  @if (label()) {
+    <title>{{ label() }}</title>
+  }
+  <rect class="brand-mark-background" width="64" height="64" rx="16" />
+  <path class="brand-mark-branch" d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50" />
+  <g class="brand-mark-nodes">
+    <circle cx="18" cy="50" r="5.5" />
+    <circle cx="34" cy="14" r="5.5" />
+    <circle cx="51" cy="44" r="5.5" />
+  </g>
+</svg>
