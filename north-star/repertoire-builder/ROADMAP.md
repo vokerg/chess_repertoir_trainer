@@ -19,6 +19,7 @@ State: active. RB-001 is complete on `main`; RB-002 is READY as the next actiona
 - PR #80: shared Masters/rated Opening Explorer, mixed cache profile and Peer games widget.
 - PR #76: previous cross-pool rating-normalization profile, contracts, helpers, tests and reference UI.
 - PR #84: fixed peer-population presets, Lichess-benchmark normalization, temporary peer resolver and compact Peer games UI.
+- Existing imported-game summary: filtered `averageUserRating` and `averageOpponentRating` from database aggregates, with API/MCP regression coverage.
 
 ### RB-001 completed delivery
 
@@ -42,7 +43,17 @@ Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
 
 RB-001 owns the temporary factual peer resolver required by Opening Analysis.
 
-RB-002 owns the durable multi-account projection, confidence, exclusions, persistence/snapshot and overrides. It must reuse the merged RB-001 profile and resolver policy.
+The existing imported-game summary owns the descriptive selected-game raw average. It does not define an exact provider-neutral rating when provider/speed pools are mixed.
+
+RB-002 owns the reusable provider-aware composition:
+
+- reuse the selected-game average rather than create another raw formula;
+- preserve account/provider/speed context and sample sizes;
+- normalize evidence into canonical Lichess benchmark bands;
+- expose the dominant interval, full distribution, exclusions and conflicts;
+- make the result available to Opening Explorer, Chess Profile and repertoire-target defaults.
+
+RB-002 should calculate on demand first. Persistence is introduced only when performance, invalidation or historical snapshot requirements justify it. Manual repertoire-target overrides belong to RB-006.
 
 RB-003 owns independent named opening classification.
 
@@ -62,7 +73,7 @@ These conditions were met and PR #84 was accepted and squash-merged.
 
 Stage 1 remains open until:
 
-- RB-002 durable player level is delivered;
+- RB-002 provider-aware player-rating projection is delivered;
 - RB-003 opening classification is delivered or a deliberately limited fallback is approved.
 
 Tasks: RB-001, RB-002, RB-003.
@@ -100,7 +111,7 @@ Gate: one position can produce a deterministic, explainable candidate comparison
 
 ## Stage 4 — visual decision proof
 
-State: RB-008 remains READY and may proceed independently with verified population responses plus explicit mocks for unresolved durable level/profile evidence.
+State: RB-008 remains READY and may proceed independently with verified population responses plus explicit mocks for unresolved player/profile evidence.
 
 Goal: prove how a player visually compares candidate moves, consequences and opponent coverage before production builder architecture is locked.
 
@@ -163,15 +174,15 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 
 Safe parallel work:
 
-- RB-002 durable player-level implementation;
+- RB-002 provider-aware player-rating implementation;
 - RB-003 opening-classification discovery;
 - RB-008 visual candidate/coverage prototype;
 - RB-014 traps research.
 
 High-collision areas requiring coordination:
 
-- population and player-level contracts;
-- Opening Explorer cache/provenance;
+- imported-game summary and player-rating contracts;
+- Opening Explorer peer provenance;
 - rating-normalization profile changes;
 - imported-game/account evidence aggregation;
 - target/candidate schemas;
@@ -181,8 +192,10 @@ High-collision areas requiring coordination:
 ## Queue impact
 
 - RB-001 remains order 10, P0, `DONE`.
-- RB-002 remains order 20, P0, now `READY`.
+- RB-002 remains order 20, P0, `READY`.
+- RB-002 no longer presumes a new average formula or persistence model.
 - No other task order or priority change is recommended.
-- No new task is required.
+- No new product task is required.
+- Execution-tracker migration remains a separate coordination decision.
 
 Every completion report must explicitly state whether this roadmap remains valid.
