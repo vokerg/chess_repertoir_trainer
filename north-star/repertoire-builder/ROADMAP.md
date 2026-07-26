@@ -6,7 +6,7 @@ This roadmap orders capability stages and decision gates. Detailed execution bel
 
 ## Stage 0 — program foundation
 
-State: complete on the foundation branch; review pending.
+State: complete on `main` through PR #81.
 
 Deliverables:
 
@@ -15,24 +15,36 @@ Deliverables:
 - feature catalog with standalone value and maturity;
 - ordered task queue;
 - claim and completion-report protocol;
-- open decisions and questions recorded explicitly.
+- open decisions and questions recorded explicitly;
+- Jira Epic `CRT-2` and one-to-one Tasks `CRT-3` through `CRT-18`.
 
 Gate:
 
-- user reviews the planning workspace and approves or revises the program foundation.
+- passed for execution; later revisions remain governed by the repository and Jira synchronization protocol.
 
 ## Stage 1 — reusable evidence foundations
 
+State: active.
+
+PR #80 has delivered the reusable rated Lichess evidence baseline and Opening Analysis consumer. RB-001 remains `READY`, not complete, because product-level weighting, per-speed explainability, direct filter provenance, normalized-grade targeting, and sparse-data semantics are still unresolved.
+
 Goals:
 
-- integrate speed- and rating-targeted population evidence through a reusable contract;
+- complete speed- and rating-targeted population evidence through the shared Opening Explorer contract;
 - support arbitrary speed combinations and controlled General weighting;
+- expose the component evidence and selected filters needed to explain aggregates;
 - resolve an inspectable player level across multiple accounts using rating normalization;
 - establish the opening-classification dependency through an independent delivery.
 
-Standalone value:
+Standalone value already available:
 
-- stronger opening analysis;
+- rated Peer games evidence in Opening Analysis;
+- reusable shared Opening Explorer API, contracts, cache, and Angular widget;
+- distinct Masters and rated Lichess evidence sources.
+
+Remaining standalone value:
+
+- controlled population weighting and explainable aggregate evidence;
 - reusable rating and player-strength views;
 - reusable opening taxonomy.
 
@@ -42,7 +54,8 @@ Tasks:
 
 Gate:
 
-- one position can be queried for the selected speed/rating population;
+- one position can be queried for the selected speed/rating population — raw source filtering is available; controlled product aggregation remains;
+- weighted combinations expose enough source components and filter provenance to remain explainable;
 - player-level inputs are explainable and overrideable;
 - an opening-profile contract is available or a deliberately limited fallback is approved.
 
@@ -103,7 +116,7 @@ Task:
 
 - RB-008.
 
-This task may start in parallel with Stage 2 or early Stage 3 using explicit mock contracts, but production implementation waits for its reviewed output.
+This task may start in parallel with Stage 2 or early Stage 3. It may use the verified Peer games response from PR #80 plus explicit mock extensions for unresolved weighted/component evidence, but production implementation waits for reviewed contract and interaction output.
 
 Gate:
 
@@ -181,20 +194,29 @@ Gate:
 
 Safe or useful early parallel tracks:
 
-- population explorer implementation/integration;
+- RB-001 weighting, component explainability, filter provenance, and sparse-data semantics on top of the merged Opening Explorer baseline;
 - rating normalization and player-level discovery;
 - independent opening classification;
-- visual candidate-choice prototypes;
+- visual candidate-choice prototypes using verified source data plus clearly marked mock extensions;
 - traps definition research, provided it does not block the core plan.
 
 High-collision areas that should not proceed independently without coordination:
 
-- shared candidate contracts;
+- shared population and candidate contracts;
+- Opening Explorer cache-profile or response-provenance changes;
 - rating-normalization schema changes;
 - opening-profile identifiers;
 - builder persistence models;
 - course reintegration writes;
 - route registration and primary Angular builder state.
+
+## Reprioritization impact of PR #80
+
+- RB-001 changes from `BLOCKED` to `READY` without changing P0 priority or order.
+- RB-002 remains blocked pending verification of rating normalization on the working base.
+- RB-008 can use real Peer games evidence earlier, reducing mock-data risk, but must not assume raw multi-speed aggregation is the final General policy.
+- Downstream tasks remain blocked because the remaining RB-001 semantics, RB-002, and RB-003 are still required.
+- No task is complete solely because PR #80 merged.
 
 ## Reprioritization rules
 
