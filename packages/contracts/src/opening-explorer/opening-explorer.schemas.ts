@@ -14,6 +14,18 @@ export const openingExplorerQuerySchema = z.object({
 });
 export type OpeningExplorerQuery = z.infer<typeof openingExplorerQuerySchema>;
 
+export const LICHESS_GAMES_RATING_GROUPS = [
+  0,
+  1000,
+  1200,
+  1400,
+  1600,
+  1800,
+  2000,
+  2200,
+  2500,
+] as const;
+
 export const lichessGamesRatingGroupSchema = z.union([
   z.literal(0),
   z.literal(1000),
@@ -37,31 +49,120 @@ export const lichessGamesSpeedSchema = z.enum([
 ]);
 export type LichessGamesSpeed = z.infer<typeof lichessGamesSpeedSchema>;
 
-function csvArray<T extends z.ZodType>(itemSchema: T) {
-  return z.preprocess((value) => {
-    if (typeof value !== 'string') return value;
-    return value.split(',').map((item) => item.trim()).filter(Boolean);
-  }, z.array(itemSchema).min(1).optional());
-}
+export const LICHESS_GAMES_POPULATION_SPEEDS = [
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
+  'correspondence',
+] as const;
 
-const ratingCsv = z.preprocess((value) => {
+export const lichessGamesPopulationSpeedSchema = z.enum(LICHESS_GAMES_POPULATION_SPEEDS);
+export type LichessGamesPopulationSpeed = z.infer<typeof lichessGamesPopulationSpeedSchema>;
+
+export const LICHESS_GAMES_SPEED_PRESETS = [
+  'ALL',
+  'BLITZ_AND_SLOWER',
+  'BLITZ',
+  'BULLET',
+] as const;
+
+export const lichessGamesSpeedPresetSchema = z.enum(LICHESS_GAMES_SPEED_PRESETS);
+export type LichessGamesSpeedPreset = z.infer<typeof lichessGamesSpeedPresetSchema>;
+
+export const LICHESS_GAMES_RATING_TARGETS = [
+  'ALL',
+  'MY_PEERS',
+  'MY_PEERS_PLUS_ONE',
+  'GROUP',
+] as const;
+
+export const lichessGamesRatingTargetSchema = z.enum(LICHESS_GAMES_RATING_TARGETS);
+export type LichessGamesRatingTarget = z.infer<typeof lichessGamesRatingTargetSchema>;
+
+const ratingGroupQuerySchema = z.preprocess((value) => {
   if (typeof value !== 'string') return value;
-  return value.split(',').map((item) => Number(item.trim()));
-}, z.array(lichessGamesRatingGroupSchema).min(1).optional());
-
-const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+  return Number(value.trim());
+}, lichessGamesRatingGroupSchema.optional());
 
 export const lichessGamesExplorerQuerySchema = z.object({
   fen: z.string().min(1).default('startpos'),
-  since: monthSchema.optional(),
-  until: monthSchema.optional(),
-  ratings: ratingCsv,
-  speeds: csvArray(lichessGamesSpeedSchema),
-}).refine(
-  ({ since, until }) => !since || !until || since <= until,
-  { message: 'since must not be after until', path: ['since'] },
-);
+  speedPreset: lichessGamesSpeedPresetSchema.default('BLITZ_AND_SLOWER'),
+  ratingTarget: lichessGamesRatingTargetSchema.default('MY_PEERS_PLUS_ONE'),
+  ratingGroup: ratingGroupQuerySchema,
+}).superRefine((query, context) => {
+  if (query.ratingTarget === 'GROUP' && query.ratingGroup === undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['ratingGroup'],
+      message: 'ratingGroup is required when ratingTarget is GROUP',
+    });
+  }
+  if (query.ratingTarget !== 'GROUP' && query.ratingGroup !== undefined) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['ratingGroup'],
+      message: 'ratingGroup is only allowed when ratingTarget is GROUP',
+    });
+  }
+});
 export type LichessGamesExplorerQuery = z.infer<typeof lichessGamesExplorerQuerySchema>;
+
+export const lichessGamesPeerEvidencePeriodSchema = z.enum([
+  'RECENT_THREE_MONTHS',
+  'ALL_HISTORY',
+  'GENERIC_FALLBACK',
+]);
+export type LichessGamesPeerEvidencePeriod = z.infer<typeof lichessGamesPeerEvidencePeriodSchema>;
+
+export const lichessGamesPeerEvidenceProviderSchema = z.enum(['LICHESS', 'CHESS_COM']);
+export type LichessGamesPeerEvidenceProvider = z.infer<typeof lichessGamesPeerEvidenceProviderSchema>;
+
+export const lichessGamesPeerEvidenceSpeedSchema = z.enum(['bullet', 'blitz', 'rapid']);
+export type LichessGamesPeerEvidenceSpeed = z.infer<typeof lichessGamesPeerEvidenceSpeedSchema>;
+
+export const lichessGamesPeerBandDistributionSchema = z.object({
+  group: lichessGamesRatingGroupSchema,
+  games: z.number().int().nonnegative(),
+});
+export type LichessGamesPeerBandDistribution = z.infer<typeof lichessGamesPeerBandDistributionSchema>;
+
+export const lichessGamesPeerContributionSchema = z.object({
+  accountId: z.number().int().positive(),
+  provider: lichessGamesPeerEvidenceProviderSchema,
+  username: z.string().min(1),
+  speed: lichessGamesPeerEvidenceSpeedSchema,
+  games: z.number().int().positive(),
+});
+export type LichessGamesPeerContribution = z.infer<typeof lichessGamesPeerContributionSchema>;
+
+export const lichessGamesPeerResolutionSchema = z.object({
+  evidencePeriod: lichessGamesPeerEvidencePeriodSchema,
+  eligibleGames: z.number().int().nonnegative(),
+  selectedGroups: z.array(lichessGamesRatingGroupSchema).min(1),
+  distribution: z.array(lichessGamesPeerBandDistributionSchema),
+  contributions: z.array(lichessGamesPeerContributionSchema),
+  normalizationProfile: z.object({
+    id: z.string().min(1),
+    version: z.string().min(1),
+  }),
+  resolverPolicyVersion: z.string().min(1),
+});
+export type LichessGamesPeerResolution = z.infer<typeof lichessGamesPeerResolutionSchema>;
+
+export const lichessGamesPopulationSchema = z.object({
+  requested: z.object({
+    speedPreset: lichessGamesSpeedPresetSchema,
+    ratingTarget: lichessGamesRatingTargetSchema,
+    ratingGroup: lichessGamesRatingGroupSchema.nullable(),
+  }),
+  effective: z.object({
+    speeds: z.array(lichessGamesPopulationSpeedSchema).min(1),
+    ratingGroups: z.array(lichessGamesRatingGroupSchema).min(1),
+  }),
+  peerResolution: lichessGamesPeerResolutionSchema.nullable(),
+});
+export type LichessGamesPopulation = z.infer<typeof lichessGamesPopulationSchema>;
 
 export const openingExplorerOpeningSchema = z.object({
   eco: z.string().min(1),
@@ -128,6 +229,7 @@ export const openingExplorerResponseSchema = openingExplorerSnapshotSchema.exten
     fetchedAt: z.iso.datetime({ offset: true }),
     expiresAt: z.iso.datetime({ offset: true }),
   }),
+  population: lichessGamesPopulationSchema.optional(),
 });
 export type OpeningExplorerResponse = z.infer<typeof openingExplorerResponseSchema>;
 
