@@ -1,4 +1,4 @@
-# RB-002 — Define provider-aware multi-account player rating
+# RB-002 — Promote normalized multi-account player level
 
 Status: READY
 
@@ -20,204 +20,186 @@ Claim scope: none
 
 Unblocked at: 2026-07-26 after RB-001 merged through PR #84 as squash commit `49dc6499eac9998de864ccb75a607541cd945382`.
 
-Scope reconciled at: 2026-07-26 on branch `rb-002/crt-4-player-level-reconciliation` after inspecting the existing imported-game summary rating formula on `main`.
+Scope reconciled at: 2026-07-26 on branch `rb-002/crt-4-player-level-reconciliation` after reinspection of the active rating-correlation matrix and RB-001 peer resolver.
 
 ## Outcome
 
-Create a reusable and inspectable provider-aware player-rating projection from multiple owned Chess.com and Lichess accounts.
+Promote the provider-aware, multi-account player-level calculation already delivered by RB-001 into a reusable factual product boundary.
 
-The repository already calculates `averageUserRating` for an arbitrary imported-game filter as the game-count-weighted arithmetic mean of available game-recorded user ratings. RB-002 must reuse that descriptive metric rather than create a second generic average-rating formula.
+RB-002 does **not** need to invent the rating-correlation formula. `main` already contains:
 
-The remaining product outcome is to make the rating evidence safe for cross-provider use:
+- the versioned `2026-07-lichess-bands-v1` correlation matrix across Chess.com and Lichess bullet, blitz and rapid;
+- provider/speed classification through that matrix;
+- game-count weighting into canonical Lichess benchmark bands;
+- recent-three-month → all-history → generic fallback evidence selection;
+- `dominant-contiguous-window-v1`, which selects the narrowest one-to-three-band interval covering at least 70% of evidence;
+- complete band distribution and account/provider/speed contribution provenance.
 
-- retain the familiar raw average inside each comparable provider/speed/account context;
-- normalize provider/speed evidence into the Lichess-benchmark bands introduced by RB-001 before combining it;
-- expose one reproducible dominant peer interval with complete provenance and conflict information;
-- make the result consumable by Opening Explorer, Chess Profile and repertoire-target defaults.
+The remaining task is architectural and product-facing: move that factual capability out of an Opening Explorer-specific ownership boundary, expose it independently, and make later profile and target consumers depend on the shared result.
 
-The initial delivery is reproducible on demand. Persistence is not required unless implementation evidence demonstrates a concrete invalidation, performance or historical-snapshot need.
+## Important distinction
 
-## Why this task exists
+`ImportedGameQueryService.summarize` also returns `averageUserRating`. That value is a raw arithmetic average of the game-recorded ratings in the applied filter. It is useful for a single comparable pool or as a literal description of selected rows, but it is not the cross-provider player-level formula.
 
-A user may have several accounts on the same or different providers, with different ratings and activity by speed.
-
-Two useful concepts already exist and must remain distinct:
-
-1. **Selected-game average rating** — `ImportedGameQueryService.summarize` returns `averageUserRating` for the selected imported games. This is useful descriptive evidence and already supports account, period, provider, speed and other game filters.
-2. **Cross-provider peer level** — raw Chess.com and Lichess numbers are not directly comparable. The shared rating-normalization profile and RB-001 peer resolver map provider/speed evidence into canonical Lichess Explorer bands.
-
-RB-002 composes these existing boundaries. It does not replace the imported-game summary and does not invent an exact universal rating number.
+RB-002 must not combine Chess.com and Lichess by averaging their raw rating numbers. Cross-provider player level is represented by the normalized benchmark-band distribution and dominant interval already produced by the RB-001 resolver.
 
 ## Verified implementation baseline on `main`
 
-### Imported-game summary
+### Established correlation matrix
 
-`apps/api/src/modules/imported-games/imported-game-query.service.ts` already:
+The active profile is:
 
-- calculates `averageUserRating` and `averageOpponentRating` from database aggregate rows;
-- uses a weighted average so White- and Black-side aggregate groups contribute according to the number of non-null ratings;
-- returns the result for the complete applied imported-game filter;
-- supports multiple accounts and providers through the existing imported-game filter contract;
-- is covered by `apps/api/test/imported-games/imported-game-summary.test.mjs`;
-- is also exposed through the imported-game summary MCP tool.
+- ID: `universal-online-strength`;
+- version: `2026-07-lichess-bands-v1`;
+- baseline: `LICHESS_BLITZ`;
+- canonical output: nine Lichess Explorer bands.
 
-The existing mixed-provider number is descriptive of the selected rows. It must not be presented as an exact provider-neutral strength rating.
+The profile contains explicit ranges for:
 
-### RB-001 normalization and peer resolution
+- `CHESS_COM_BULLET`;
+- `CHESS_COM_BLITZ`;
+- `CHESS_COM_RAPID`;
+- `LICHESS_BULLET`;
+- `LICHESS_BLITZ`;
+- `LICHESS_RAPID`;
+- reference-only `FIDE_STANDARD`.
 
-PR #84 provides:
+The mappings are versioned approximate correlations, not exact rating-to-rating conversions.
 
-- active rating-normalization profile `universal-online-strength` / `2026-07-lichess-bands-v1`;
-- nine canonical Lichess Explorer peer bands;
-- versioned Chess.com bullet, blitz and rapid mappings into those bands;
-- provider/speed-aware resolver policy `dominant-contiguous-window-v1`;
-- recent-three-month → all-history → generic fallback evidence selection;
-- complete distribution, selected groups, account/provider/speed contributions and policy/profile provenance;
-- fixed Opening Explorer peer-population presets and direct effective-filter provenance.
+### Delivered normalized formula
 
-### Existing account projections
+`apps/api/src/modules/opening-explorer/peer-rating-band.service.ts` already:
 
-The repository stores per-account rating/performance projections for bullet, blitz and rapid and refreshes them after provider imports. RB-002 may reuse these views where they reduce repeated work, but it must not add persistence merely because a storage pattern exists.
+1. selects eligible rated standard imported games for the requested speed preset;
+2. retains account, provider, speed, rating and game count;
+3. determines the provider/speed pool;
+4. classifies each rating through the active correlation matrix;
+5. maps the grade to the canonical Lichess benchmark band;
+6. weights the band distribution by game count;
+7. selects the dominant interval with `dominant-contiguous-window-v1`;
+8. returns the full distribution, contributions, evidence period and profile/policy versions.
+
+Focused tests prove provider-aware behavior. For example, Lichess blitz `1650`, Chess.com blitz `1300`, and Chess.com rapid `1800` are not averaged as raw numbers; they are classified through their respective matrix columns before contributing to the normalized distribution.
+
+### Separate raw summary metric
+
+`averageUserRating` remains an existing imported-game summary field. Its mixed-provider fixture value `1833.3` is synthetic test data and is not evidence of the normalized player-level formula.
 
 ## Reconciled scope
 
 ### In scope
 
-- reuse the existing selected-game `averageUserRating` formula as the descriptive raw-rating metric;
-- expose per-account/provider/speed average rating, rated-game count and evidence period where useful;
-- reuse or extract the RB-001 provider/speed classification and dominant-band policy as the shared factual level boundary;
-- define the default owned-account input set, using active owned accounts unless an existing explicit account filter is supplied;
-- preserve the existing recent-three-month → all-history → generic fallback unless focused tests demonstrate a concrete defect;
-- represent an overall result as normalized band distribution and dominant interval, not an exact cross-provider average;
-- preserve normalization profile ID/version and resolver policy version;
-- return source accounts, provider/speed pools, raw averages, sample sizes, normalized bands, contributions, exclusions and reasons;
-- make sparse, stale, mixed and conflicting evidence explicit;
-- provide a reusable service/contract and bounded endpoint or projection based on the inspected architecture;
-- make Opening Explorer consume the shared projection rather than retain a second factual formula;
-- add focused multi-account and boundary tests.
+- extract or relocate the normalized player-level calculation into a shared feature module/service with no intentional formula change;
+- retain the active correlation profile and resolver policy versions in every result;
+- expose the factual result independently of an Opening Explorer position query, through a bounded authenticated endpoint or reusable projection;
+- make Opening Explorer delegate to the shared player-level service;
+- preserve the existing eligible-game, speed-preset, recency, fallback, game-count and dominant-window behavior unless a demonstrated defect requires a separately reviewed policy version;
+- expose the dominant interval, complete distribution, eligible-game count, evidence period and account/provider/speed contributions;
+- enrich contribution provenance with the normalized band or source rating evidence where needed for inspectability;
+- make no-data and separated/conflicting distributions explicit;
+- add focused extraction, contract, route and regression tests;
+- document the factual result for RB-004 and RB-006 consumers.
 
 ### Explicitly not required for the first delivery
 
-- a new Prisma model or stored player-level snapshot;
-- a second generic average-rating calculation;
-- an exact provider-neutral numerical rating;
-- custom recency decay, activity caps or statistical weighting without evidence that the existing game-count formula is misleading;
-- a stored user override.
+- a new rating-correlation matrix;
+- a new averaging or weighting formula;
+- an exact provider-neutral numeric rating;
+- a Prisma player-level snapshot;
+- custom decay, caps or statistical weighting;
+- a stored user override;
+- an Angular player-level page.
 
-A repertoire-specific manual rating target belongs to RB-006. It may reference or snapshot the factual RB-002 result without mutating it.
+A repertoire-specific target override belongs to RB-006 and must not mutate the factual player-level result.
 
-## Out of scope
+## Current formula to preserve
 
-- changing the Lichess-benchmark bands introduced by RB-001 without a new versioned calibration decision;
-- population move extraction or additional Lichess Opening Explorer calls;
-- candidate ranking;
-- player style/profile conclusions;
-- builder session state;
-- silently including accounts the user does not own;
-- exact rating-to-rating conversion across providers;
-- LLM-generated level assessment;
-- an Angular player-level page in the initial bounded delivery.
+### Evidence
 
-## Formula direction
+- owned imported games;
+- rated;
+- standard/chess or variant-null;
+- supported personal speed for the selected preset;
+- known user color;
+- non-null game-recorded user rating.
 
-### Descriptive average
+### Provider correlation
 
-For one applied imported-game filter:
+For each evidence row:
 
-```text
-averageUserRating = sum(all non-null game-recorded user ratings) / count(non-null user ratings)
-```
+1. resolve `provider + speed` to a rating pool;
+2. call `classifyRating(pool, rating, activeProfile)`;
+3. map the grade to its `LICHESS_BLITZ.minInclusive` benchmark group;
+4. add the row's game count to that group.
 
-The implementation already calculates this from bounded database aggregates and rounds to one decimal place. White and Black games use the rating belonging to the authenticated user's color.
+### Dominant interval
 
-This value remains valid as a description of the selected rows. When the filter mixes providers or speed pools, the UI/API must not label the raw number as a provider-neutral chess strength.
+- consider every contiguous window of one, two or three benchmark groups;
+- target at least 70% of eligible games;
+- select the narrowest qualifying window;
+- break qualifying ties by more games, then lower starting group;
+- when no window reaches 70%, select highest mass, then narrower, then lower;
+- always retain the full distribution.
 
-### Provider-aware peer interval
+### Period fallback
 
-Cross-provider combination uses the active normalization profile:
-
-1. retain provider, speed, account and rating evidence;
-2. classify evidence into canonical Lichess benchmark bands using the existing rating-normalization service;
-3. build the complete band distribution;
-4. apply `dominant-contiguous-window-v1` to select the dominant interval;
-5. expose the full distribution when the selected interval hides separated or conflicting populations.
-
-The raw average explains the source evidence. The normalized distribution determines the provider-aware peer interval.
-
-### Evidence period and fallback
-
-Keep the RB-001 factual policy for the bounded delivery:
-
-1. eligible evidence from the last three months;
-2. all eligible history when no recent evidence exists;
+1. last three months;
+2. all eligible history when recent evidence is empty;
 3. visibly labelled generic `1400–1599` fallback when no eligible evidence exists.
 
-### Persistence
+## Remaining design decisions
 
-Default decision: calculate reproducibly on demand from indexed imported-game evidence and existing aggregates.
+- shared module and endpoint ownership;
+- whether to expose only the requested preset result or also a compact set of preset/per-speed results;
+- whether all owned accounts or only active accounts remain the default input set;
+- whether cross-account copies of the same physical game require deduplication in this task or a follow-up;
+- minimal evidence-quality/conflict vocabulary derived from existing distribution and period fields;
+- whether contribution rows should expose raw rating ranges, averages, normalized bands, or a bounded combination;
+- whether any realistic query cost justifies later persistence.
 
-Add persistence only when one of these is demonstrated:
-
-- the query is too expensive under realistic data volume;
-- a consumer requires a historical factual snapshot;
-- invalidation semantics are clearer than on-demand calculation;
-- RB-006 needs to freeze evidence for a resumable target/draft.
+These decisions must not reopen the established correlation matrix or dominant-window formula without explicit evidence and a new version.
 
 ## Acceptance criteria
 
-- The existing imported-game `averageUserRating` formula is reused rather than duplicated.
-- Raw Chess.com and Lichess ratings are never treated as one exact universal rating.
-- Raw average rating remains available with its applied account/provider/speed/period context.
-- Every contributing account/speed has visible provider, sample size, raw average or source evidence, normalized band and contribution.
-- The implementation consumes the RB-001 Lichess-benchmark profile and resolver boundary; no parallel levels table exists.
-- Inactive, unsupported, missing-rating or stale evidence includes explicit reasons.
-- Multiple accounts on one provider are handled deterministically through the existing filtered-game aggregation and visible contributions.
-- No-data and conflicting-data outcomes are explicit.
-- A reproducible dominant peer interval is available to Opening Explorer and later profile/target consumers.
-- The result identifies normalization and resolver policy versions.
-- A later repertoire-target override cannot mutate factual player-rating evidence.
-- Focused tests cover one account, multiple providers, multiple same-provider accounts, different speeds, filtered averages, stale data, sparse data, divergent ratings, boundary values and no data.
+- The active rating-correlation matrix is reused unchanged; no feature-local conversion table is added.
+- The shared player-level service reproduces the existing RB-001 normalized distribution and selected groups for identical evidence.
+- Raw Chess.com and Lichess ratings are never directly averaged to produce player level.
+- Every result identifies normalization profile and resolver policy versions.
+- Every result exposes evidence period, eligible-game count, complete distribution and dominant interval.
+- Account/provider/speed contributions remain inspectable.
+- Opening Explorer consumes the shared result rather than owning a second formula.
+- No-data and materially separated distributions remain visible.
+- Focused tests cover one account, multiple providers, multiple same-provider accounts, different speeds, exact matrix boundaries, recent/all-history fallback, separated populations and no data.
+- No persistence or override mechanism is added without demonstrated need.
 
 ## Required validation
 
-- imported-game summary regression tests;
-- contracts build/tests if a shared player-rating schema is added;
-- API build and focused rating/player-level tests;
-- Opening Explorer resolver and route tests;
-- storage migration/repository tests only if persistence is justified and introduced;
-- web tests only if presentation is included;
-- architecture checks for new module registration or shared-boundary extraction.
+- contracts build/tests if a shared schema is added;
+- API build and focused player-level tests;
+- existing rating-normalization boundary tests;
+- existing Opening Explorer resolver and route tests;
+- architecture checks for module registration and dependency direction;
+- storage migration tests only if persistence becomes separately justified.
 
 ## Jira synchronization state
 
 The Atlassian connector was retested on 2026-07-26 and returned HTTP 403 with the explicit detail `The app is not installed on this instance`.
 
-This is not evidence that the user lacks CRT project permissions. It means the ChatGPT Atlassian/Rovo app is not installed or connected for the target Atlassian site, so this session cannot inspect or update CRT-4.
+This is an Atlassian app installation/site-connection failure, not evidence that the user lacks CRT project permissions. This session cannot inspect or update CRT-4.
 
-RB-002 remains `READY` and unclaimed until one of the following happens:
-
-- Atlassian app installation/connectivity is restored and CRT-4 is reconciled;
-- the program explicitly migrates execution tracking to a GitHub-native workflow.
-
-Required Jira checklist if Jira remains the execution mirror:
-
-- verify CRT-4 remains under CRT-2;
-- verify current status, priority, assignee and dependency links;
-- add this scope reconciliation and branch reference;
-- record the eventual claim branch before substantive implementation.
+RB-002 remains `READY` and unclaimed until Jira connectivity is restored or the program explicitly adopts a GitHub-native execution tracker.
 
 ## Completion updates
 
 The completion report must record:
 
-- how the existing imported-game average formula was reused;
-- how raw averages and normalized peer bands are distinguished;
-- the chosen account/period/contribution behavior and rejected alternatives;
-- evidence quality and conflict semantics;
-- whether persistence remained unnecessary or became justified;
-- the override boundary with RB-006;
-- impact on RB-001, RB-004 and RB-006;
-- whether additional calibration tasks are required.
+- how the RB-001 correlation matrix and normalized formula were promoted without semantic drift;
+- the final shared module/contract/endpoint ownership;
+- any contribution or evidence-quality fields added;
+- account inclusion and duplicate-game decisions;
+- whether persistence remained unnecessary;
+- impact on Opening Explorer, RB-004 and RB-006;
+- whether any separately versioned calibration or formula task is required.
 
 ## Completion
 
