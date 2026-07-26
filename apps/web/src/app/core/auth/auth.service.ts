@@ -119,7 +119,19 @@ export class AuthService {
       return;
     }
 
-    await this.clerk.load();
+    await this.clerk.load({
+      appearance: {
+        variables: {
+          colorPrimary: '#1f7865',
+          colorForeground: '#172321',
+          colorBackground: '#ffffff',
+          colorInputBackground: '#f7f9f8',
+          colorInputText: '#172321',
+          borderRadius: '10px',
+          fontFamily: 'IBM Plex Sans, Inter, system-ui, sans-serif',
+        },
+      },
+    });
     this.syncFromClerk();
     this.clerk.addListener(() => {
       this.syncFromClerk();
