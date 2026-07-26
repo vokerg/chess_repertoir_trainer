@@ -1,6 +1,6 @@
 # RB-002 — Define multi-account player level resolution
 
-Status: BLOCKED
+Status: READY
 
 Priority: P0
 
@@ -18,6 +18,8 @@ Claimed at: none
 
 Claim scope: none
 
+Unblocked at: 2026-07-26 after RB-001 merged through PR #84 as squash commit `49dc6499eac9998de864ccb75a607541cd945382`.
+
 ## Outcome
 
 Create a reusable and inspectable player-level projection from multiple owned Chess.com and Lichess accounts. The durable result must use the Lichess-benchmark rating bands introduced by RB-001 and remain suitable for:
@@ -33,34 +35,34 @@ The calculation must show its inputs, contribution rules, confidence and limitat
 
 ## Why this task exists
 
-A user may have several accounts on the same or different providers, with different ratings and activity by speed. RB-001 needs a bounded on-demand peer range immediately for Opening Analysis and population queries. This task owns the more complete and durable player-level model that can be stored, reused and overridden across the product.
+A user may have several accounts on the same or different providers, with different ratings and activity by speed. RB-001 now provides a bounded on-demand peer range for Opening Analysis and population queries. This task owns the more complete and durable player-level model that can be stored, reused and overridden across the product.
 
-The merged rating-normalization domain provides the service and contract boundary, but RB-001 will revise its active bands so the canonical product levels align directly with Lichess Explorer rating groups. RB-002 must consume that version rather than finalizing against the current 13-grade profile.
+The merged rating-normalization domain now uses the Lichess Explorer groups as canonical product bands. RB-002 must consume that active version and the shared resolver policy rather than creating a second normalization or peer-level formula.
 
 ## Verified implementation baseline on `main`
 
-PR #76 currently provides:
+PR #84 now provides:
 
-- shared `@chess-trainer/contracts/rating-normalization` schemas;
-- versioned profile metadata;
-- calibrated Chess.com and Lichess bullet, blitz and rapid pools;
-- profile source/confidence metadata;
-- single-rating classification and grade-to-source-range helpers;
-- `GET /api/rating-normalization/default`;
-- tests and canonical documentation.
+- active rating-normalization profile `universal-online-strength` / `2026-07-lichess-bands-v1`;
+- nine canonical Lichess Explorer peer bands;
+- versioned Chess.com bullet, blitz and rapid mappings into those bands;
+- temporary provider/speed-aware peer resolver `dominant-contiguous-window-v1`;
+- recent-three-month → all-history → generic fallback evidence selection;
+- complete distribution, selected groups, account/provider/speed contributions and policy/profile provenance;
+- fixed Opening Explorer peer-population presets and direct effective-filter provenance.
 
-The repository also stores imported game-recorded ratings and per-account rating/performance projections for bullet, blitz and rapid. RB-001 will use those facts to deliver the first shared peer-band resolver.
+The repository also stores imported game-recorded ratings and per-account rating/performance projections for bullet, blitz and rapid.
 
-## Dependency
+## Dependency resolved
 
-Blocked on the RB-001 slice that introduces:
+RB-001 is merged and the required shared boundary is available on `main`:
 
-- the versioned Lichess-benchmark bands;
+- versioned Lichess-benchmark bands;
 - provider/speed conversion into those bands;
-- the shared recent-three-month/all-history/default peer-band resolver contract;
+- recent-three-month/all-history/default peer-band resolver contract;
 - resolver provenance and policy versioning.
 
-Planning and account-model inspection may continue, but implementation must not create a competing band model or duplicate resolver.
+Implementation may now begin, but it must reuse these contracts and helpers rather than create a competing band model or duplicate resolver.
 
 RB-004 and RB-006 remain blocked on the completed durable player-level outcome.
 
