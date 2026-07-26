@@ -27,37 +27,37 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 
 ### Deferred beyond RB-001
 
-- Whether one very active account should be capped or normalized belongs to RB-002's durable formula.
 - Cross-account duplicate-game handling belongs to RB-002; the temporary resolver does not independently deduplicate copies across accounts.
-- Better empirical Chess.com boundary calibration requires a future versioned profile change, not an RB-001 blocker.
+- Activity caps or alternative weighting are not default requirements; reconsider them only if focused evidence shows the existing game-count weighting is materially misleading.
+- Better empirical Chess.com boundary calibration requires a future versioned profile change, not an RB-002 blocker.
 - Whether mixed Lichess populations are materially misleading across speeds should be evaluated during later candidate/ranking work before weighted fetching is reconsidered.
 
-RB-001 has no remaining implementation-design question. Review/merge is still required before RB-002 is unblocked.
+RB-001 has no remaining implementation-design question.
 
-## Multi-account player level
+## Multi-account player rating
 
 ### Resolved direction
 
-- RB-002 must consume the Lichess-benchmark profile and shared peer resolver policy from RB-001.
-- RB-001 owns the bounded on-demand result needed by Opening Analysis.
-- RB-002 owns durable storage/snapshot, confidence, exclusions and overrides.
-- Raw Chess.com and Lichess ratings are never averaged directly.
-- RB-001's temporary resolver is evidence for the durable design, not an automatic final formula.
+- The imported-game summary already returns `averageUserRating` for the applied game filter.
+- Its formula is the game-count-weighted arithmetic mean of available game-recorded user ratings, with the user's White or Black rating selected according to `userColor`.
+- The existing formula supports multiple accounts and the complete imported-game filter surface and is covered by API/MCP regression tests.
+- RB-002 must reuse that formula rather than create a second raw average.
+- A mixed Chess.com/Lichess raw average is descriptive of the selected rows, not an exact provider-neutral strength rating.
+- Cross-provider strength uses the RB-001 Lichess-benchmark profile and provider/speed-aware band distribution.
+- RB-001's recent-three-month → all-history → generic fallback remains the default factual period policy for the bounded RB-002 delivery.
+- The first RB-002 result should be reproducible on demand; persistence is not required without a demonstrated need.
+- Repertoire-specific manual rating overrides belong to RB-006 and do not mutate factual player-rating evidence.
 
 ### Remaining questions
 
-- Is the durable result one dominant interval, per-speed bands, or both?
-- Which owned accounts are included by default?
-- How are inactive and low-volume accounts handled beyond the RB-001 fallback?
-- Should durable evidence use every recent game, latest rating per pool, median rating, or another summary?
-- How are multiple accounts in the same provider/speed pool combined?
-- How are duplicate imports of the same game across accounts identified?
-- Should one very active account be capped or normalized?
-- How are genuinely conflicting high-volume bands represented?
-- How are normalization-source confidence and player-evidence confidence combined without conflating them?
-- Where is the projection stored and what invalidates/recomputes it?
-- What override is available during builder setup?
-- How does a custom account selection differ from the default factual projection?
+- Should the reusable wire result be added to the imported-game summary, exposed through a dedicated `/api/me/player-rating` endpoint, or both?
+- Should the product expose one dominant overall interval, per-speed intervals, or both?
+- Which active owned accounts are included when no explicit imported-game account filter is supplied?
+- How should cross-account copies of the same physical game be identified and deduplicated?
+- What evidence-quality vocabulary best communicates recent sample size, stale fallback and separated/conflicting populations?
+- Should per-account/provider/speed raw averages be returned directly, or only source rating ranges and distributions?
+- Does realistic query performance justify a snapshot later, or is on-demand database aggregation sufficient?
+- How should a later RB-006 target snapshot reference the factual result and normalization version?
 
 Owner task: RB-002.
 
@@ -82,7 +82,7 @@ Owner task: RB-003. Planning is intentionally blank beyond these questions.
 - Which confidence model is understandable to users?
 - How are opening outcome, result, accuracy, early errors and course adherence combined without double-counting?
 - How should profile changes over time be compared?
-- How is the durable RB-002 level referenced without making level a permanent style label?
+- How is the RB-002 factual peer interval referenced without making level a permanent style label?
 - Can a user correct a profile conclusion, and is that stored as preference evidence or UI feedback?
 - Which conclusions are descriptive versus prescriptive?
 
