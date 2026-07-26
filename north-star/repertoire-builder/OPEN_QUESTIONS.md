@@ -6,61 +6,64 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 
 ## Population evidence
 
-### Resolved implementation facts from PR #80 and PR #76
+### Resolved implementation facts
 
-- The reusable implementation is the shared Opening Explorer module, not a separate builder-specific explorer.
-- Rated population evidence is exposed through `/api/lichess-games-explorer` with source identity `LICHESS_GAMES`.
-- The query supports optional `since` and `until` months, all Lichess Explorer rating groups, and arbitrary non-empty selections from ultraBullet, bullet, blitz, rapid, classical, and correspondence.
-- Multiple selected speeds are currently sent to Lichess as one request and returned as one raw aggregate.
-- Masters evidence remains separate through `/api/masters-explorer` and source identity `LICHESS_MASTERS`.
-- The shared response exposes position and move W/D/L counts, SAN/UCI, average rating, opening metadata, cache timestamps, and dataset source/profile metadata.
-- The current response does not directly expose the selected month, rating, and speed filters; it relies on deterministic cache profile identity.
-- Opening Analysis consumes the rated evidence through the reusable Peer games widget.
-- PR #76 provides stable normalized grade IDs and source ranges for Lichess bullet, blitz, and rapid, but it does not map those continuous ranges to the discrete Lichess Explorer rating buckets used by PR #80.
+- The reusable implementation is the shared Opening Explorer module, not a builder-specific explorer.
+- Rated population evidence is exposed through `/api/lichess-games-explorer` with source `LICHESS_GAMES`.
+- PR #80 currently supports raw optional month, rating-group and speed selections.
+- Multiple selected speeds and rating groups are sent to Lichess as one request and returned as one aggregate.
+- The current cache stores each complete filter combination as one deterministic profile/snapshot.
+- Masters evidence remains a separate endpoint/source.
+- The current response does not directly expose all selected filters; it relies partly on profile identity.
+- Imported games contain game-recorded user ratings and current account projections already cover bullet, blitz and rapid.
+- PR #76 provides the current versioned normalization domain, but its 13 grades are not aligned directly to Lichess Explorer groups.
 
-### Remaining questions
+### Resolved product direction
 
-- How should normalized grade ranges and resolved player-level targets map to Lichess Explorer rating buckets?
-- What weighting should a selected speed combination use by default?
-- Should controlled combinations request each speed separately to retain components, or use another explainable aggregation strategy?
-- Should users edit weights directly or choose understandable presets?
-- How should General mode be weighted and versioned?
-- How should missing or sparse speed buckets affect a weighted result?
-- What selected filter provenance must be returned directly in the response?
-- How should provider-specific and future provider-general evidence coexist?
+- Product speed presets are `ALL`, `BLITZ_AND_SLOWER`, `BLITZ` and `BULLET`.
+- UltraBullet is excluded.
+- Product rating targets are all players, my peers, my peers plus one higher group, or one explicit Lichess group.
+- The default is Blitz and slower plus My peers and above.
+- One mixed Lichess aggregate is accepted; separate per-speed calls and weighting are not required.
+- Public-game month controls are removed; period/cache policy is server-controlled.
+- Lichess Explorer groups become the canonical benchmark bands in a new profile version.
+- RB-001 provides an on-demand recent/all-history/default peer resolver.
 
-Owner task: RB-001, coordinated with RB-002 for own-level and grade-offset targets.
+### Remaining questions for RB-001
+
+- What exact Chess.com bullet, blitz and rapid boundaries map into each Lichess-benchmark band?
+- What new profile ID/version and stable band IDs should be used?
+- What minimum evidence and coverage threshold defines the dominant contiguous peer interval?
+- What tie-break rule applies when two intervals cover the same amount of evidence?
+- Should game counts be capped or otherwise normalized so one very active account does not dominate unreasonably?
+- How are duplicate imported games across owned accounts excluded from the distribution?
+- Does the fixed rated-game source period remain unrestricted, or should the server apply one fixed recent cutoff?
+- What exact response provenance should expose requested target, effective groups, resolver fallback and profile/policy versions?
+- Is the old raw query contract removed immediately or retained briefly as an internal/backward-compatible path?
+
+Owner task: RB-001.
 
 ## Multi-account player level
 
-### Resolved implementation facts from PR #76
+### Resolved direction
 
-- The active profile is `universal-online-strength`, version `2026-07-product-v1`.
-- It defines 13 stable product-facing grades.
-- Chess.com and Lichess bullet, blitz, and rapid are calibrated as complete online pools.
-- FIDE Standard is reference-only and has explicit `null` ranges where it is not calibrated.
-- Each pool exposes confidence and soft-padding metadata.
-- Source metadata distinguishes empirical inputs from deliberate product adjustments.
-- `classifyRating(pool, rating)` maps one source rating to one grade.
-- `getRatingRange(profile, gradeId, pool)` maps one grade back to one source-pool range.
-- `GET /api/rating-normalization/default` exposes the active versioned profile.
-- Exact rating-to-rating conversion is explicitly rejected in favor of grade membership and approximate ranges.
-- No account selection, recency, aggregation, player-level confidence, or override calculation exists yet.
+- RB-002 must consume the Lichess-benchmark profile and shared peer resolver from RB-001.
+- RB-001 owns the bounded on-demand result needed by Opening Analysis.
+- RB-002 owns durable storage/snapshot, confidence, exclusions and overrides.
+- Raw Chess.com and Lichess ratings are never averaged directly.
 
 ### Remaining questions
 
-- Is level resolved once per player, once per speed, once per provider, or all three?
+- Is the durable result one dominant interval, per-speed bands, or both?
 - Which owned accounts are included by default?
-- How are inactive and low-volume accounts handled?
-- Should the calculation use latest rating, median recent rating, weighted recent rating, or another measure?
-- How do selected analysis periods affect the rating observation?
-- How are the merged profile's soft-padding values used near boundaries?
-- How are source-profile confidence and account-evidence confidence combined without conflating them?
-- How is overall confidence calculated from games, recency, and grade agreement?
+- How are inactive and low-volume accounts handled beyond the RB-001 fallback?
+- Should durable evidence use every recent game, latest rating per pool, median rating, or another summary?
+- How are multiple accounts in the same provider/speed pool combined?
+- How are genuinely conflicting high-volume bands represented?
+- How are normalization-source confidence and player-evidence confidence combined without conflating them?
+- Where is the projection stored and what invalidates/recomputes it?
 - What override is available during builder setup?
-- How is a target such as `my level plus two grades` converted back into source ranges and then into provider-specific population filters?
-- How are multiple accounts in the same provider/speed pool combined deterministically?
-- How are conflicting grades represented rather than silently collapsed?
+- How does a custom account selection differ from the default factual projection?
 
 Owner task: RB-002.
 
@@ -68,7 +71,7 @@ Owner task: RB-002.
 
 - What is the stable identity of a named opening or variation?
 - What taxonomy and side-aware dimensions are required?
-- Which values are curated, derived, inherited, or generated?
+- Which values are curated, derived, inherited or generated?
 - How is confidence represented?
 - How are opening families and deep named variations related?
 - How are transpositions handled?
@@ -79,24 +82,26 @@ Owner task: RB-003. Planning is intentionally blank beyond these questions.
 
 ## Player Chess Profile
 
-- What is the statistical baseline: all games, same speed, same color, same rating band, or a hierarchy?
+- What is the statistical baseline: all games, same speed preset, same color, same peer band or a hierarchy?
 - Which conclusions are meaningful with indexed but unanalysed games?
 - How should small samples shrink toward baseline?
 - Which confidence model is understandable to users?
-- How are opening outcome, result, accuracy, early errors, and course adherence combined without double-counting?
+- How are opening outcome, result, accuracy, early errors and course adherence combined without double-counting?
 - How should profile changes over time be compared?
-- Can a user correct a profile conclusion, and is that correction stored as preference evidence or only UI feedback?
+- How is the durable RB-002 level referenced without making level a permanent style label?
+- Can a user correct a profile conclusion, and is that stored as preference evidence or UI feedback?
 - Which conclusions are descriptive versus prescriptive?
 
 Owner tasks: RB-004 and RB-005.
 
 ## Repertoire target
 
-- What is the minimum useful setup?
-- How are persona, objective, theory tolerance, risk tolerance, and coverage represented?
-- Is `dubious` a persona, a soundness tolerance, or both?
+- What is the minimum useful setup beyond the RB-001 speed/rating presets?
+- Is factual peer evidence snapshotted to keep a draft reproducible?
+- How are persona, objective, theory tolerance, risk tolerance and coverage represented?
+- Can the user choose a different explicit benchmark group without changing the factual profile?
+- Is `dubious` a persona, a soundness tolerance or both?
 - Can one target have different policies for White and Black?
-- Are target weights editable during a build?
 - How is target versioning handled when a draft resumes?
 
 Owner tasks: RB-006 and RB-013.
@@ -104,7 +109,7 @@ Owner tasks: RB-006 and RB-013.
 ## Candidate evidence and ranking
 
 - How many engine lines are needed and at what analysis quality?
-- How are mate scores, evaluation uncertainty, and engine version represented?
+- How are mate scores, evaluation uncertainty and engine version represented?
 - How are master and population score interpreted from the choosing side's perspective?
 - How is practical popularity balanced against objective quality?
 - How is course learning burden estimated?
@@ -130,9 +135,9 @@ Owner task: RB-008.
 
 ## Builder session and queue
 
-- Does the MVP need persistence or can it prove the flow in route state/local state first?
+- Does the MVP need persistence or can it prove the flow in route/local state first?
 - What is the immutable target snapshot of a draft?
-- How are accepted, pending, deferred, ignored, and stale decisions represented?
+- How are accepted, pending, deferred, ignored and stale decisions represented?
 - How are transpositions shared across branches?
 - How is a draft invalidated when source courses or evidence change?
 - What is the maximum bounded work returned by one endpoint?
@@ -143,7 +148,7 @@ Owner task: RB-009.
 ## Course writing
 
 - Is the existing analysis-reintegration tree sufficient for builder drafts?
-- When should a builder create a course, chapter, line, or merge at an anchor?
+- When should a builder create a course, chapter, line or merge at an anchor?
 - How are conflicts and duplicate transpositions presented?
 - How are deferred branches preserved after accepted material is written?
 - How are generated names and chapter organization reviewed?
@@ -153,7 +158,7 @@ Owner task: RB-011.
 ## Existing-course adaptation
 
 - Which current findings are safe entry points first?
-- How does the user choose between extending, replacing, and creating an alternative line?
+- How does the user choose between extending, replacing and creating an alternative line?
 - How are course target metadata and original intent represented?
 - Can the same course be retargeted without losing its previous persona?
 
@@ -163,7 +168,7 @@ Owner task: RB-012.
 
 - What qualifies as a trap rather than an ordinary tactical line or dubious gambit?
 - What sources are available and legally usable?
-- How are trigger position, tempting move, punishment, refutation, soundness, and rating/speed relevance represented?
+- How are trigger position, tempting move, punishment, refutation, soundness and rating/speed relevance represented?
 - Is a trap always tied to a named opening?
 - How does the builder prevent misleading users about objective risk?
 
@@ -175,7 +180,7 @@ Owner task: RB-014.
 - What context size and privacy boundaries apply?
 - What generated claims require source references?
 - Can the LLM be removed without breaking the workflow?
-- Is generated text stored, regenerated, or purely transient?
+- Is generated text stored, regenerated or transient?
 
 Owner task: RB-015.
 
