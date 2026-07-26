@@ -8,8 +8,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 | Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 10 | RB-001 | CRT-3 | P0 | REVIEW | Deliver Lichess-aligned peer population presets | Dual-use | PR #84 review/merge |
-| 20 | RB-002 | CRT-4 | P0 | BLOCKED | Define multi-account player level resolution | Dual-use | Depends on accepted RB-001 Lichess-benchmark profile and peer-resolver boundary |
+| 10 | RB-001 | CRT-3 | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
+| 20 | RB-002 | CRT-4 | P0 | READY | Define multi-account player level resolution | Dual-use | RB-001 benchmark profile and resolver boundary now available on `main` |
 | 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
 | 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
 | 50 | RB-004 | CRT-6 | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
@@ -35,20 +35,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - New RB tasks require a corresponding Jira issue in the same coordination change.
 - `READY` repository tasks remain Jira `To Do` until claimed and substantive work begins.
 
-## Active review
+## Completed delivery
 
 - Task: RB-001 / CRT-3
-- Branch: `north-star/rb-001-peer-presets-replan`
 - PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
+- Squash commit: `49dc6499eac9998de864ccb75a607541cd945382`
 - Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
-- Validation: full CI passed lint, build, architecture guardrails, migrations and complete tests.
-- Remaining review item: human browser-level visual inspection and merge decision.
+- Validation: final PR-head CI run `30212157700` passed.
 
 ## Queue notes
 
 ### Delivered population direction
 
-PR #84 implements:
+PR #84 provides:
 
 - product speed presets: `ALL`, `BLITZ_AND_SLOWER`, `BLITZ`, `BULLET`;
 - rating targets: all players, my peers, my peers plus one higher band, or one explicit group;
@@ -64,7 +63,7 @@ The product deliberately accepts one combined Lichess response for the resolved 
 
 ### Player-level boundary
 
-RB-002 remains `BLOCKED` until RB-001 is accepted and merged. It owns the later durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 profile/policy versions rather than create a second level formula.
+RB-002 is now `READY`. It owns the durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 profile/policy versions rather than create a second level formula.
 
 ### Independent work
 
@@ -75,9 +74,9 @@ RB-014 can run as low-risk research without affecting core delivery.
 ### Critical path
 
 ```text
-RB-001 review/merge
+RB-001 peer population foundation — DONE
         ↓
-RB-002 durable player level
+RB-002 durable player level — READY
         +
 RB-003 opening profile
         ↓
@@ -102,8 +101,8 @@ RB-013 personas intersects profile and target work and may be split further afte
 
 ## Reprioritization impact
 
-- RB-001 remains order 10 and P0, now `REVIEW` on PR #84.
-- RB-002 remains order 20 and P0, `BLOCKED` until RB-001 acceptance/merge.
+- RB-001 remains order 10 and P0, now `DONE`.
+- RB-002 remains order 20 and P0, now `READY` as the next actionable P0 task.
 - No other order or priority changes are required.
 - No new RB/Jira task is required.
 
