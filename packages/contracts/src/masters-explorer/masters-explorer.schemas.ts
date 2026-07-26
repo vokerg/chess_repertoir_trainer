@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const mastersExplorerSourceSchema = z.literal('LICHESS_MASTERS');
+export const mastersExplorerSourceSchema = z.enum(['LICHESS_MASTERS', 'LICHESS_GAMES']);
 export type MastersExplorerSource = z.infer<typeof mastersExplorerSourceSchema>;
 
 export const mastersExplorerCacheStatusSchema = z.enum(['HIT', 'REFRESHED', 'STALE']);
@@ -82,6 +82,7 @@ export type MastersExplorerResponse = z.infer<typeof mastersExplorerResponseSche
 export const mastersExplorerErrorCodeSchema = z.enum([
   'INVALID_FEN',
   'MASTERS_EXPLORER_UNAVAILABLE',
+  'LICHESS_GAMES_EXPLORER_UNAVAILABLE',
 ]);
 export type MastersExplorerErrorCode = z.infer<typeof mastersExplorerErrorCodeSchema>;
 
