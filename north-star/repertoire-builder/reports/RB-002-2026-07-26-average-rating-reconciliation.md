@@ -1,4 +1,4 @@
-# RB-002 reconciliation — existing average rating and execution tracking
+# RB-002 reconciliation — established correlation matrix and execution tracking
 
 Date: 2026-07-26
 
@@ -14,73 +14,90 @@ This is a scope and coordination reconciliation report, not an RB-002 completion
 
 ## Purpose
 
-Reinspect the latest `main` implementation before starting RB-002, determine whether the repository already defines the user's average rating, narrow the remaining player-level scope, and clarify why Jira is unavailable through the current connector.
+Reinspect the latest `main` implementation before starting RB-002, verify the previously agreed rating-correlation matrix and player-level formula, narrow the remaining task to productization of that existing capability, and clarify why Jira is unavailable through the current connector.
 
-## Finding: the raw average formula already exists
+## Corrected finding: the normalized formula already exists
 
-`apps/api/src/modules/imported-games/imported-game-query.service.ts` already returns `averageUserRating` from the imported-game summary.
+The active profile `universal-online-strength` / `2026-07-lichess-bands-v1` is an executable, versioned correlation matrix, not merely a reference table.
 
-The formula is:
+It defines explicit ranges for Chess.com and Lichess bullet, blitz and rapid and maps them into the nine canonical Lichess Explorer benchmark bands. The matrix is implemented in `rating-normalization.config.ts`, consumed through `classifyRating`, documented in `docs/rating-normalization.md`, and protected by exact-boundary tests.
+
+RB-001 also already implemented the multi-account normalized aggregation formula in `peer-rating-band.service.ts`:
+
+1. select eligible rated standard imported games for the requested speed preset;
+2. retain account, provider, speed, game-recorded user rating and game count;
+3. resolve the provider/speed rating pool;
+4. classify each rating through the active correlation matrix;
+5. map the resulting grade to its canonical Lichess benchmark band;
+6. weight the band distribution by game count;
+7. use recent-three-month evidence, then all history, then a generic fallback;
+8. select the dominant interval with `dominant-contiguous-window-v1`;
+9. return the complete distribution, selected groups, contributions, evidence period and profile/policy versions.
+
+Therefore RB-002 does not own invention of the correlation, normalization, recency, game-count weighting or dominant-window formula. Those parts are already delivered and tested on `main`.
+
+## Focused test evidence
+
+The resolver regression test combines:
+
+- Lichess blitz `1650`, six games;
+- Chess.com blitz `1300`, four games;
+- Chess.com rapid `1800`, two games.
+
+These values are not averaged as raw numbers. Each is classified through its own provider/speed matrix column. The first two contribute ten games to canonical band `1600–1799`; Chess.com rapid `1800` contributes two games to `2000–2199`; the selected dominant group is `1600–1799`.
+
+This directly verifies that the agreed correlation matrix is part of the runtime formula.
+
+## Separate raw summary metric
+
+`ImportedGameQueryService.summarize` also returns `averageUserRating`:
 
 ```text
 sum(non-null game-recorded user ratings) / count(non-null game-recorded user ratings)
 ```
 
-Implementation properties:
+That field is a literal summary of the applied imported-game rows. The mixed-provider fixture value `1833.3` is synthetic test data derived from raw ratings `1600`, `1800`, and `2100`.
 
-- the user's rating is selected from White or Black according to `userColor`;
-- White- and Black-side database aggregate groups are recombined with their rating counts, so the result is correctly weighted;
-- the result is rounded to one decimal place;
-- the complete imported-game filter applies, including accounts, providers, speeds and dates;
-- the same summary also returns `averageOpponentRating` and other breakdowns;
-- the summary is available through the HTTP service and MCP tool;
-- `apps/api/test/imported-games/imported-game-summary.test.mjs` verifies a multi-account, multi-provider result.
+It does **not** test or represent the provider-normalized player-level formula. Using that fixture as the central RB-002 baseline was misleading in the first reconciliation pass.
 
-Therefore RB-002 must not introduce another generic user-average formula.
-
-## Important semantic boundary
-
-The existing raw average answers:
-
-> What was my average recorded rating in this selected set of games?
-
-It does not safely answer:
-
-> What is my exact provider-neutral chess strength?
-
-The current regression fixture intentionally mixes Lichess and Chess.com rows. Its expected `averageUserRating` is a direct arithmetic average of the selected raw ratings. That is valid as a description of those rows, but Chess.com and Lichess ratings cannot be interpreted as the same numerical scale.
-
-The repository already has the second required boundary:
-
-- active normalization profile `universal-online-strength` / `2026-07-lichess-bands-v1`;
-- provider/speed-aware classification into the nine Lichess Explorer benchmark bands;
-- RB-001 `dominant-contiguous-window-v1` band-distribution resolver.
-
-RB-002 is therefore a composition task, not a new rating-formula task.
+The imported-game raw average may remain useful when its provider/speed context is clear, but it must not be combined with the normalized peer-level formula or presented as an exact universal rating.
 
 ## Reconciled RB-002 scope
 
-The bounded implementation should:
+The bounded implementation should now:
 
-1. reuse `averageUserRating` as the descriptive raw metric;
-2. expose account/provider/speed context and rated-game sample size;
-3. classify cross-provider evidence through the active normalization profile;
-4. retain the full normalized band distribution;
-5. resolve the dominant peer interval through the existing RB-001 policy;
-6. expose stale, sparse and conflicting evidence honestly;
-7. make Opening Explorer and later Chess Profile/target consumers use the shared projection.
+1. extract or relocate the existing normalized resolver from Opening Explorer-specific ownership into a shared player-level feature boundary;
+2. expose the factual result independently of an Opening Explorer position query;
+3. make Opening Explorer delegate to the shared service without semantic drift;
+4. preserve the active matrix, supported speed presets, eligible evidence, three-month/all-history/default fallback, game-count weighting and dominant-window policy;
+5. preserve profile and policy versions;
+6. expose the dominant interval, complete distribution, evidence period, eligible-game count and account/provider/speed contributions;
+7. add only the minimum contribution/conflict provenance required by later profile and target consumers;
+8. add extraction, contract, route and regression tests.
 
 The bounded implementation should not:
 
-- invent another generic raw average;
-- return an exact provider-neutral numerical rating;
+- invent a new correlation matrix;
+- invent a new averaging or weighting formula;
+- convert ratings into an exact provider-neutral number;
+- center the player-level result on mixed-provider `averageUserRating`;
 - add a Prisma snapshot by default;
-- add custom weighting, activity caps or decay without evidence;
+- add custom activity caps or decay without demonstrated evidence;
 - store a repertoire-target override.
 
-The first result should be reproducible on demand from existing database aggregates and indexed imported games. Persistence remains available later if realistic performance or historical snapshot requirements justify it.
+Manual repertoire-target overrides belong to RB-006 and may reference the factual result without mutating it.
 
-Manual repertoire-target overrides move clearly to RB-006. They may reference or snapshot factual RB-002 evidence but cannot mutate it.
+## Remaining decisions
+
+- shared module and endpoint ownership;
+- whether one requested preset result is sufficient or a compact multi-preset result is useful;
+- whether all owned accounts or only active accounts remain the default input set;
+- whether cross-account copies of the same physical game must be deduplicated now or tracked as a follow-up limitation;
+- minimum evidence-quality/conflict vocabulary derived from existing period and distribution fields;
+- minimum contribution detail needed for inspectability;
+- whether realistic query cost ever justifies persistence.
+
+These questions do not reopen the established matrix or normalized aggregation policy.
 
 ## Jira clarification
 
@@ -110,37 +127,28 @@ GitHub Actions alone is not a task tracker. A complete GitHub-native replacement
 - branches and pull requests for implementation/review state;
 - GitHub Actions for automated policy checks and validation.
 
-This option has a strong architectural advantage for this repository because repository, branch, issue, PR and CI access would share one permission model and connector.
-
 Migration is not performed in this report. Creating duplicate GitHub issues before an explicit cutover decision would recreate the synchronization problem.
 
 ## Files inspected
 
-- `apps/api/src/modules/imported-games/imported-game-query.service.ts`
-- `apps/api/test/imported-games/imported-game-summary.test.mjs`
+- `apps/api/src/modules/rating-normalization/rating-normalization.config.ts`
+- `apps/api/src/modules/rating-normalization/rating-normalization.service.ts`
+- `apps/api/test/rating-normalization/rating-normalization.test.mjs`
+- `docs/rating-normalization.md`
 - `apps/api/src/modules/opening-explorer/peer-rating-band.service.ts`
 - `apps/api/test/opening-explorer/peer-rating-band.service.test.mjs`
-- `apps/api/src/modules/rating-normalization/rating-normalization.service.ts`
-- `apps/api/src/modules/rating-normalization/rating-normalization.config.ts`
-- `docs/rating-normalization.md`
-- `north-star/repertoire-builder/tasks/RB-002-player-level-resolution.md`
-- `north-star/repertoire-builder/TASKS.md`
-- `north-star/repertoire-builder/STATUS.md`
-- `north-star/repertoire-builder/ROADMAP.md`
-- `north-star/repertoire-builder/DECISIONS.md`
-- `north-star/repertoire-builder/OPEN_QUESTIONS.md`
-- `north-star/repertoire-builder/JIRA.md`
+- `north-star/repertoire-builder/reports/RB-001-2026-07-26-peer-population-presets.md`
+- `apps/api/src/modules/imported-games/imported-game-query.service.ts`
+- `apps/api/test/imported-games/imported-game-summary.test.mjs`
+- current RB-002 planning and coordination documents;
 - recent repository commits and pull-request state.
 
 ## Documentation changed
 
-- `tasks/RB-002-player-level-resolution.md`
-- `TASKS.md`
-- `STATUS.md`
-- `ROADMAP.md`
-- `DECISIONS.md`
-- `OPEN_QUESTIONS.md`
-- `JIRA.md`
+- `tasks/RB-002-player-level-resolution.md`;
+- `TASKS.md`;
+- planning documents describing the corrected boundary;
+- `JIRA.md`;
 - this report.
 
 ## Validation
@@ -148,13 +156,14 @@ Migration is not performed in this report. Creating duplicate GitHub issues befo
 Performed:
 
 - direct repository inspection through the GitHub connector;
-- verified the exact average formula and weighted recombination;
-- verified multi-account/multi-provider regression coverage;
-- verified the active normalization and RB-001 resolver boundary;
-- checked recent branches and pull requests for conflicting RB-002 work;
+- verified the complete active correlation matrix and derivation notes;
+- verified exact matrix-boundary tests;
+- traced `classifyRating` into the peer resolver;
+- verified provider/speed-specific normalization before aggregation;
+- verified game-count weighting and dominant-window selection;
+- distinguished the synthetic mixed-provider raw-average fixture from normalized resolver evidence;
 - created the reconciliation branch from current `main`;
-- retested Atlassian search and recorded the exact error;
-- re-read changed planning documents through the GitHub API after writing.
+- retested Atlassian search and recorded the exact error.
 
 Skipped:
 
@@ -169,27 +178,26 @@ Reason: runtime application code was not changed.
 
 ## Residual risks
 
-- Existing consumers may display a mixed-provider raw average without enough context.
-- Cross-account copies of the same physical game may influence the current temporary resolver more than once.
-- The most useful evidence-quality vocabulary remains unresolved.
-- A dedicated endpoint versus extending the imported-game summary remains an implementation decision.
+- The current normalized resolver is owned by the Opening Explorer module despite being a broader player-level capability.
+- Contribution rows expose game counts but not the exact normalized group or source-rating summary per contribution.
+- Cross-account copies of the same physical game may influence the current resolver more than once.
+- Account activity inclusion is implicit rather than a documented shared player-level policy.
 - Jira and repository execution state may drift while the Atlassian app is unavailable.
-- A GitHub migration would require explicit handling of Jira history and dependency links.
 
 ## Queue and roadmap impact
 
 - RB-002 remains order 20, P0 and `READY`.
-- The task is smaller and better grounded in existing code.
-- RB-004 and RB-006 remain blocked on the reusable provider-aware result.
+- The task is substantially smaller than previously described: it promotes an existing formula rather than designing one.
+- RB-004 and RB-006 remain blocked on the independently reusable product boundary, not on new calibration work.
 - No new product task is required.
 - No task order or priority change is recommended.
-- Execution-tracker migration is a separate coordination decision.
+- Execution-tracker migration remains a separate coordination decision.
 
 ## Recommended next checkpoint
 
-Choose the execution-tracker direction before substantive RB-002 implementation:
+Choose the execution-tracker direction before substantive implementation:
 
 1. restore/install the Atlassian app and reconcile CRT-4; or
 2. explicitly approve migration to GitHub Issues/Projects, define the cutover rules, and use Actions only for automation/enforcement.
 
-After tracker reconciliation, claim RB-002 for the bounded on-demand provider-aware player-rating composition.
+After tracker reconciliation, claim RB-002 for the bounded extraction and independent exposure of the existing normalized player-level formula.
