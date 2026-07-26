@@ -35,13 +35,14 @@ See [Status](STATUS.md), [RB-001](tasks/RB-001-population-evidence.md), and [RB-
 - [Feature catalog](FEATURES.md) — capabilities, standalone value, north-star role, and planning maturity.
 - [Roadmap](ROADMAP.md) — ordered delivery stages and gates.
 - [Task queue](TASKS.md) — canonical priority and execution order.
-- [Jira coordination](JIRA.md) — Epic/task mapping, workflow transitions, branch/PR visibility, and synchronization rules.
+- [GitHub Issues coordination](GITHUB_ISSUES.md) — program/task mapping, issue-state rules, branch/PR visibility, and synchronization protocol.
+- [Program issue #105](https://github.com/vokerg/chess_repertoir_trainer/issues/105) — top-level GitHub execution tracker.
 - [Status](STATUS.md) — current program state and active work.
 - [Decisions](DECISIONS.md) — locked and provisional choices.
 - [Open questions](OPEN_QUESTIONS.md) — unresolved product, data, UX, and architecture questions.
-- [Agent instructions](AGENTS.md) — required reading, task claiming, reporting, Jira, and queue-update protocol.
+- [Agent instructions](AGENTS.md) — required reading, task claiming, reporting, GitHub Issues, and queue-update protocol.
 
-Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/). Meaningful status reconciliations may add explicitly non-completion reports. Every existing task also maps to one Jira Task under Epic `CRT-2`.
+Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/). Meaningful status reconciliations may add explicitly non-completion reports. Every existing task maps to one GitHub issue under program tracker [#105](https://github.com/vokerg/chess_repertoir_trainer/issues/105).
 
 ## Scope boundary
 
