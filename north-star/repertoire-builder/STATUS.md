@@ -96,6 +96,7 @@ The material CRT-3 blocks CRT-4 dependency is present in Jira.
 - Claimed by: ChatGPT
 - Branch: `north-star/rb-001-peer-presets-replan`
 - PR: #84
+- Claim visible at commit: `e0b50788d31f55bfdc0bb2c712c4ec497cfcece8`
 - Scope: normalization profile, temporary peer resolver, Opening Explorer presets/provenance, compact Peer games UI, tests, runtime docs and completion synchronization.
 
 ## Recommended execution sequence
