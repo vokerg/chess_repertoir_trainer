@@ -58,7 +58,7 @@ State: **LOCKED**
 
 For the MVP, the resolved speed and rating groups are sent to Lichess Explorer in one request and the returned aggregate is accepted as the target population. The system does not fetch each speed separately or reconstruct a weighted result.
 
-The response must expose the effective speeds and rating groups so the population remains reproducible.
+The response exposes the effective speeds and rating groups so the population remains reproducible.
 
 ### RB-D007 — Editable or exact speed weights
 
@@ -70,9 +70,9 @@ Client-side equal weights, player-distribution weights and editable weights add 
 
 State: **LOCKED**
 
-Cross-provider strength targeting remains owned by the shared versioned rating-normalization domain. Consumers must preserve profile IDs/versions and must not introduce feature-local conversion tables.
+Cross-provider strength targeting is owned by the shared versioned rating-normalization domain. Consumers preserve profile IDs/versions and do not introduce feature-local conversion tables.
 
-The current `2026-07-product-v1` profile is historical runtime truth until replaced. RB-001 must add a new version rather than silently mutate it.
+The active profile is `universal-online-strength` version `2026-07-lichess-bands-v1`. The former `2026-07-product-v1` profile remains exported as historical calibration evidence and must not be silently reinterpreted.
 
 ### RB-D009 — Multi-account level is required
 
@@ -228,26 +228,38 @@ Lichess ratings classify directly. Chess.com bullet, blitz and rapid receive ver
 
 ### RB-D032 — Temporary peer range comes from imported games
 
-State: **PROVISIONAL**
+State: **LOCKED**
 
-RB-001 resolves My peers from owned imported standard games:
+RB-001 resolves My peers from owned rated imported standard games:
 
 1. eligible ratings from the last three months;
 2. all eligible history when recent evidence is absent;
 3. the `1400–1599` band as the generic fallback containing rating 1500.
 
-The result is a dominant contiguous interval derived from the band distribution. The exact coverage threshold and tie-break rules remain an RB-001 implementation decision and must be versioned and documented.
+Resolver policy `dominant-contiguous-window-v1` evaluates contiguous windows of one, two or three groups and selects the narrowest window containing at least 70% of eligible games. Qualifying ties prefer more games and then the lower starting group. When no window reaches 70%, the highest-mass window wins, followed by narrower and lower tie-breaks.
 
-RB-002 later owns durable storage/snapshot, confidence, exclusions and overrides.
+The full distribution and provider/account/speed contributions remain visible. RB-002 later owns durable storage/snapshot, confidence, exclusions and overrides.
 
 ### RB-D033 — Public-game period is server-controlled
 
 State: **LOCKED**
 
-The Peer games UI and product API do not expose `since`/`until` month controls. The rated Lichess source uses a fixed server-controlled period and the existing approximately monthly cache/stale-fallback lifecycle unless implementation evidence justifies a small policy change.
+The Peer games UI and product API do not expose `since`/`until` month controls. The rated Lichess source remains unrestricted by month and uses the existing 30-day cache/stale-fallback lifecycle.
 
 ### RB-D034 — Peer filters use two compact selects
 
 State: **LOCKED**
 
 The Peer games filter surface contains one speed-preset dropdown and one rating-target dropdown. The defaults are **Blitz and slower** and **My peers and above**. Raw month inputs and speed/rating checkbox matrices are removed.
+
+### RB-D035 — Personal provenance is not stored in the public cache
+
+State: **LOCKED**
+
+The shared cache key is derived from the effective sorted rating groups and speeds. Users resolving to the same effective population share one public cache snapshot. Personal evidence period, distribution and contributions are attached after cache access and are never written into the system-wide public snapshot.
+
+### RB-D036 — Raw rated query contract is replaced
+
+State: **LOCKED**
+
+The product route accepts only `fen`, `speedPreset`, `ratingTarget` and conditional `ratingGroup`. The prior `since`, `until`, raw `ratings` and raw `speeds` parameters are not retained as a second public path.
