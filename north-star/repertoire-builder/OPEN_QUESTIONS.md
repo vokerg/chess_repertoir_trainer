@@ -6,14 +6,27 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 
 ## Population evidence
 
-- What contract will the parallel Lichess speed/rating explorer expose?
-- Which speed categories and rating ranges are available from the source?
-- How are sparse positions and ranges represented?
-- Can population responses be compared consistently across selected speeds?
-- What weighting should a speed combination use by default?
+### Resolved implementation facts from PR #80
+
+- The reusable implementation is the shared Opening Explorer module, not a separate builder-specific explorer.
+- Rated population evidence is exposed through `/api/lichess-games-explorer` with source identity `LICHESS_GAMES`.
+- The query supports optional `since` and `until` months, all Lichess Explorer rating groups, and arbitrary non-empty selections from ultraBullet, bullet, blitz, rapid, classical, and correspondence.
+- Multiple selected speeds are currently sent to Lichess as one request and returned as one raw aggregate.
+- Masters evidence remains separate through `/api/masters-explorer` and source identity `LICHESS_MASTERS`.
+- The shared response exposes position and move W/D/L counts, SAN/UCI, average rating, opening metadata, cache timestamps, and dataset source/profile metadata.
+- The current response does not directly expose the selected month, rating, and speed filters; it relies on deterministic cache profile identity.
+- Opening Analysis consumes the rated evidence through the reusable Peer games widget.
+
+### Remaining questions
+
+- How should source rating groups map to normalized grades after RB-002 defines player-level semantics?
+- What weighting should a selected speed combination use by default?
+- Should controlled combinations request each speed separately to retain components, or use another explainable aggregation strategy?
 - Should users edit weights directly or choose understandable presets?
-- How should General mode be weighted?
-- How should provider-specific and general evidence coexist?
+- How should General mode be weighted and versioned?
+- How should missing or sparse speed buckets affect a weighted result?
+- What selected filter provenance must be returned directly in the response?
+- How should provider-specific and future provider-general evidence coexist?
 
 Owner task: RB-001.
 
