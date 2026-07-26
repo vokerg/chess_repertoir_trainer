@@ -10,6 +10,8 @@ For shared endpoint DTOs, `packages/contracts` owns the Zod wire schema and infe
 
 Every `/api/**` product operation declares explicit OpenAPI metadata and intentional responses; the route-registration guard does not fill gaps. Full-app tests inject `authConfig` rather than modifying global auth environment state. Focused API/web scripts prepare their compiled workspace dependencies.
 
+Before changing rating grades, pool mappings, labels, confidence, or FIDE reference behavior, read `docs/rating-normalization.md` and inspect the executable profile and boundary tests it lists. Do not treat FIDE Standard as an imported-game report type or silently replace documented product adjustments with empirical values.
+
 Use database aggregation for counts, summaries, facets, and averages. Apply the existing repository `where` predicate before grouping and only post-process bounded aggregate rows in Node.
 
 The native Expo client has been removed. Do not recreate native-client code or remove responsive Angular behavior merely because it uses the word “mobile.”
