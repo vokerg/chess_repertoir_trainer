@@ -7,7 +7,8 @@ This file is the stable entry point for every ChatGPT, Copilot, Codex, or human 
 - Long-running integration branch: `visual_transformation`
 - Base branch: `main`
 - Do not commit transformation work directly to `main`.
-- Substantial implementation slices may use short-lived branches created from `visual_transformation` and merged back into it.
+- Substantial implementation slices use short-lived branches created from `visual_transformation` and merged back into it through reviewed pull requests.
+- Merge transformation pull requests into `visual_transformation` with squash merge only after explicit approval.
 - The transformation branch should reach `main` only through an explicitly reviewed pull request when the program is ready.
 
 ## Read before doing transformation work
@@ -35,22 +36,31 @@ Every meaningful transformation change must update the relevant files under `tra
 
 ## Current checkpoint
 
-The Phase 0A landing proof has been merged into `visual_transformation`, and a focused review refinement has been prepared. Production Angular implementation has not started.
+The Phase 0A direction was explicitly approved for a browser-review implementation slice. The working branch `visual-transformation/phase-0a-angular-landing` now contains an isolated Angular landing page at `/` and is awaiting pull-request review into `visual_transformation`.
 
-Locked direction:
+Implemented in this slice:
 
-- Analytical, calm, product-led identity
-- Graphite application chrome with clean light workspaces
-- Mint as the primary signal/accent color
-- Geometric **Node Branch** symbol representing repertoire continuations and training targets
-- Three distinct experiences: public website, authentication, and signed-in application
-- A new signed-in `/home` entry point rather than using Study/Train as the product home
+- standalone public landing component;
+- responsive Phase 0A composition;
+- Node Branch-inspired inline vector mark;
+- approved strong-mint text token `#1F7865`;
+- real `/login` and `/signup` calls to action;
+- root route changed from the authenticated Study redirect to the public landing page;
+- public landing rendered outside the existing authenticated application shell.
+
+Explicitly not included:
+
+- authentication-page redesign;
+- signed-in `/home`;
+- navigation-rail redesign;
+- global production token migration;
+- changes to authenticated feature pages, API behavior, or persistence.
 
 Review next:
 
-1. [`transformation/reports/PHASE_0A_REVIEW_REFINEMENT.md`](./transformation/reports/PHASE_0A_REVIEW_REFINEMENT.md)
-2. [`transformation/prototypes/phase-0a-landing/review-sheet.svg`](./transformation/prototypes/phase-0a-landing/review-sheet.svg)
-3. [`transformation/reports/PHASE_0A_LANDING_PROOF.md`](./transformation/reports/PHASE_0A_LANDING_PROOF.md)
-4. [`transformation/prototypes/phase-0a-landing/`](./transformation/prototypes/phase-0a-landing/)
+1. [`transformation/reports/PHASE_0A_ANGULAR_LANDING_IMPLEMENTATION.md`](./transformation/reports/PHASE_0A_ANGULAR_LANDING_IMPLEMENTATION.md)
+2. the root route in the branch deployment or local Angular application;
+3. desktop, tablet, and mobile composition;
+4. sign-in and sign-up navigation behavior.
 
-The next decision is to approve or revise the Phase 0A recommendations for mark geometry, the strong-mint text token, typography/wordmark proportions, and landing composition. Do not begin auth/home visualization or Phase 1 Angular implementation until that decision is explicit.
+Do not merge the implementation pull request or begin auth/home visualization until the landing page has been visually reviewed and explicitly approved.
