@@ -12,16 +12,17 @@ Gate: passed for execution.
 
 ## Stage 1 — reusable evidence foundations
 
-State: active. RB-001 is implemented and in review on PR #84; RB-002 remains blocked until RB-001 is accepted and merged; RB-003 remains independent.
+State: active. RB-001 is complete on `main`; RB-002 is READY as the next actionable P0 task; RB-003 remains independent.
 
 ### Merged baseline
 
 - PR #80: shared Masters/rated Opening Explorer, mixed cache profile and Peer games widget.
 - PR #76: previous cross-pool rating-normalization profile, contracts, helpers, tests and reference UI.
+- PR #84: fixed peer-population presets, Lichess-benchmark normalization, temporary peer resolver and compact Peer games UI.
 
-### RB-001 review delivery
+### RB-001 completed delivery
 
-PR #84 delivers:
+Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
 
 - speed presets: All speeds, Blitz and slower, Blitz, Bullet;
 - no product-facing ultraBullet;
@@ -41,23 +42,23 @@ PR #84 delivers:
 
 RB-001 owns the temporary factual peer resolver required by Opening Analysis.
 
-RB-002 owns the later durable multi-account projection, confidence, exclusions, persistence/snapshot and overrides. It must reuse the accepted RB-001 profile and resolver policy.
+RB-002 owns the durable multi-account projection, confidence, exclusions, persistence/snapshot and overrides. It must reuse the merged RB-001 profile and resolver policy.
 
 RB-003 owns independent named opening classification.
 
-### Gate
+### RB-001 gate
 
-RB-001 portion is reviewable when:
+The RB-001 gate required:
 
-- fixed presets resolve deterministically;
-- effective speeds/groups are returned directly;
-- personal resolver provenance is inspectable and not stored in the public cache;
-- one mixed cache snapshot retains honest HIT/REFRESHED/STALE semantics;
-- profile and resolver policies are versioned;
-- Masters remains separate;
-- lint, build, architecture, migrations and complete tests pass.
+- deterministic fixed presets;
+- direct effective speed/group provenance;
+- inspectable personal resolver provenance that is not stored in the public cache;
+- one mixed cache snapshot with honest HIT/REFRESHED/STALE semantics;
+- versioned profile and resolver policies;
+- Masters source separation;
+- passing lint, build, architecture, migrations and complete tests.
 
-These conditions are met on PR #84. Merge/acceptance remains required before RB-002 is unblocked.
+These conditions were met and PR #84 was accepted and squash-merged.
 
 Stage 1 remains open until:
 
@@ -68,7 +69,7 @@ Tasks: RB-001, RB-002, RB-003.
 
 ## Stage 2 — Player Chess Profile
 
-State: blocked on RB-002 and RB-003; population-relative conclusions also consume RB-001.
+State: blocked on RB-002 and RB-003; population-relative conclusions consume the completed RB-001 boundary.
 
 Goals:
 
@@ -160,13 +161,12 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 
 ## Parallel-delivery guidance
 
-Safe parallel work while PR #84 is reviewed:
+Safe parallel work:
 
+- RB-002 durable player-level implementation;
 - RB-003 opening-classification discovery;
 - RB-008 visual candidate/coverage prototype;
 - RB-014 traps research.
-
-Do not start RB-002 implementation until the RB-001 contract is accepted and merged.
 
 High-collision areas requiring coordination:
 
@@ -180,8 +180,8 @@ High-collision areas requiring coordination:
 
 ## Queue impact
 
-- RB-001 remains order 10, P0, `REVIEW`.
-- RB-002 remains order 20, P0, `BLOCKED` until RB-001 acceptance/merge.
+- RB-001 remains order 10, P0, `DONE`.
+- RB-002 remains order 20, P0, now `READY`.
 - No other task order or priority change is recommended.
 - No new task is required.
 
