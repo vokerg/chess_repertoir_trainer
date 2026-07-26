@@ -1,8 +1,24 @@
 # Repertoire Builder North Star
 
-Status: planning foundation. The interactive repertoire builder described here is a target direction, not current product behavior.
+Status: active program execution. The planning foundation, rated Lichess Peer games population-evidence baseline, and versioned rating-normalization baseline are merged to `main`, while the interactive repertoire builder remains target behavior rather than current product behavior.
 
 This workspace defines the long-term program for constructing and evolving a personal chess repertoire from engine evaluation, opening populations, the user's own games, existing courses, and explicit user choices.
+
+## Current delivery boundary
+
+Available in the current product:
+
+- through PR #80: shared Masters and rated Lichess Opening Explorer infrastructure, configurable Peer games evidence by month/rating group/speed, and a reusable Peer games widget in Opening Analysis;
+- through PR #76: a versioned 13-grade rating-normalization profile for Chess.com and Lichess bullet, blitz, and rapid; source confidence and soft-padding metadata; grade classification/range helpers; `GET /api/rating-normalization/default`; and a reference table in the performance-by-rating lab.
+
+Still planned:
+
+- controlled General and combined-speed weighting;
+- explainable per-speed population components and direct filter provenance;
+- multi-account player-level resolution using the merged rating grades;
+- opening classification, Player Chess Profile, candidate ranking, visual builder flow, course materialization, and outcome feedback.
+
+See [Status](STATUS.md), [RB-001](tasks/RB-001-population-evidence.md), and [RB-002](tasks/RB-002-player-level-resolution.md) for exact delivered-versus-remaining assessments.
 
 ## Entry points
 
@@ -17,8 +33,8 @@ This workspace defines the long-term program for constructing and evolving a per
 - [Open questions](OPEN_QUESTIONS.md) — unresolved product, data, UX, and architecture questions.
 - [Agent instructions](AGENTS.md) — required reading, task claiming, reporting, Jira, and queue-update protocol.
 
-Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/). Every existing task also maps to one Jira Task under Epic `CRT-2`.
+Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/). Meaningful status reconciliations may add explicitly non-completion reports. Every existing task also maps to one Jira Task under Epic `CRT-2`.
 
 ## Scope boundary
 
-This directory is deliberately separate from canonical current-state architecture documentation. It may describe unimplemented target behavior, but every such statement must remain clearly labelled as planned, provisional, optional, or open.
+This directory is deliberately separate from canonical current-state architecture documentation. It may describe unimplemented target behavior, but every such statement must remain clearly labelled as planned, provisional, optional, or open. Current product behavior must be verified against the implementation and canonical current-state documentation before planning claims are updated.

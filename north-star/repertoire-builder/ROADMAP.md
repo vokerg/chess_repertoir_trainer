@@ -6,7 +6,7 @@ This roadmap orders capability stages and decision gates. Detailed execution bel
 
 ## Stage 0 — program foundation
 
-State: complete on the foundation branch; review pending.
+State: complete on `main` through PR #81.
 
 Deliverables:
 
@@ -15,25 +15,42 @@ Deliverables:
 - feature catalog with standalone value and maturity;
 - ordered task queue;
 - claim and completion-report protocol;
-- open decisions and questions recorded explicitly.
+- open decisions and questions recorded explicitly;
+- Jira Epic `CRT-2` and one-to-one Tasks `CRT-3` through `CRT-18`.
 
 Gate:
 
-- user reviews the planning workspace and approves or revises the program foundation.
+- passed for execution; later revisions remain governed by the repository and Jira synchronization protocol.
 
 ## Stage 1 — reusable evidence foundations
 
+State: active, with two merged foundations and two actionable P0 tasks.
+
+PR #80 delivered the reusable rated Lichess evidence baseline and Opening Analysis consumer. RB-001 remains `READY`, not complete, because product-level weighting, per-speed explainability, direct filter provenance, own-level/grade-offset targeting, and sparse-data semantics remain.
+
+PR #76 delivered the versioned cross-pool rating-normalization profile, contracts, helpers, API, reference UI, tests, and documentation. RB-002 is now `READY`, not complete, because the multi-account player-level formula and evidence projection remain unresolved.
+
 Goals:
 
-- integrate speed- and rating-targeted population evidence through a reusable contract;
+- complete speed- and rating-targeted population evidence through the shared Opening Explorer contract;
 - support arbitrary speed combinations and controlled General weighting;
-- resolve an inspectable player level across multiple accounts using rating normalization;
+- expose the component evidence and selected filters needed to explain population aggregates;
+- resolve an inspectable player level across multiple accounts using the merged rating-normalization profile;
+- map own-level and stronger-level targets back to supported provider/speed ranges and population buckets;
 - establish the opening-classification dependency through an independent delivery.
 
-Standalone value:
+Standalone value already available:
 
-- stronger opening analysis;
-- reusable rating and player-strength views;
+- rated Peer games evidence in Opening Analysis;
+- reusable shared Opening Explorer API, contracts, cache, and Angular widget;
+- distinct Masters and rated Lichess evidence sources;
+- versioned rating grades for Chess.com and Lichess bullet, blitz, and rapid;
+- rating-grade API, classification/range helpers, source confidence, soft padding, and lab reference table.
+
+Remaining standalone value:
+
+- controlled population weighting and explainable aggregate evidence;
+- reusable multi-account player-level calculation and contribution view;
 - reusable opening taxonomy.
 
 Tasks:
@@ -42,8 +59,10 @@ Tasks:
 
 Gate:
 
-- one position can be queried for the selected speed/rating population;
-- player-level inputs are explainable and overrideable;
+- one position can be queried for the selected speed/rating population — raw source filtering is available; controlled product aggregation remains;
+- weighted combinations expose enough source components and filter provenance to remain explainable;
+- player-level inputs, exclusions, contributions, confidence, profile version, and overrides are inspectable;
+- own-level and one-or-more-grades-above targets translate deterministically to supported source ranges;
 - an opening-profile contract is available or a deliberately limited fallback is approved.
 
 ## Stage 2 — Player Chess Profile
@@ -97,13 +116,13 @@ Requirements:
 - desktop and mobile consideration;
 - candidate selection, evidence, and tradeoffs;
 - opponent coverage view;
-- clear distinction between profile recommendation and target choice.
+- clear distinction between factual player-level evidence, profile recommendation, and target choice.
 
 Task:
 
 - RB-008.
 
-This task may start in parallel with Stage 2 or early Stage 3 using explicit mock contracts, but production implementation waits for its reviewed output.
+This task may start in parallel with Stage 2 or early Stage 3. It may use verified Peer games responses from PR #80 and rating-grade metadata from PR #76 plus explicit mock extensions for unresolved player-level, weighted, and component evidence. Production implementation waits for reviewed contract and interaction output.
 
 Gate:
 
@@ -181,20 +200,37 @@ Gate:
 
 Safe or useful early parallel tracks:
 
-- population explorer implementation/integration;
-- rating normalization and player-level discovery;
+- RB-001 weighting, component explainability, filter provenance, and sparse-data semantics on top of the merged Opening Explorer baseline;
+- RB-002 multi-account level discovery and implementation on top of the merged rating-normalization baseline;
 - independent opening classification;
-- visual candidate-choice prototypes;
+- visual candidate-choice prototypes using verified source data and grade metadata plus clearly marked mock extensions;
 - traps definition research, provided it does not block the core plan.
+
+Coordination boundary between RB-001 and RB-002:
+
+- RB-002 owns account evidence, normalized player-level resolution, confidence, and grade-offset source ranges;
+- RB-001 owns population query/aggregation semantics for a selected target;
+- a shared boundary must not duplicate profile IDs, grade IDs, source ranges, or confidence metadata.
 
 High-collision areas that should not proceed independently without coordination:
 
-- shared candidate contracts;
-- rating-normalization schema changes;
+- shared population, player-level, and candidate contracts;
+- Opening Explorer cache-profile or response-provenance changes;
+- rating-normalization schema or profile changes;
 - opening-profile identifiers;
 - builder persistence models;
 - course reintegration writes;
 - route registration and primary Angular builder state.
+
+## Reprioritization impact of PR #80 and PR #76
+
+- RB-001 remains order 10, P0, and `READY` after PR #80.
+- RB-002 remains order 20 and P0, but changes from `BLOCKED` to `READY` after PR #76 merged.
+- RB-008 can use real Peer games and rating-grade evidence earlier, reducing mock-data risk, but must not assume raw multi-speed aggregation or single-rating classification is final product policy.
+- RB-004 and RB-006 remain blocked because they require the completed RB-002 player-level result, not only its normalization prerequisite.
+- Other downstream tasks remain blocked because the remaining RB-001 semantics, RB-002 outcome, and RB-003 are still required.
+- No task is complete solely because PR #80 or PR #76 merged.
+- No task order or priority change is recommended.
 
 ## Reprioritization rules
 
