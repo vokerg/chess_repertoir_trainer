@@ -4,40 +4,40 @@ Last updated: 2026-07-26
 
 This is the canonical ordered queue. IDs are immutable; `Order` and `Priority` may change through reviewed updates.
 
-Normal claim metadata lives in the individual task file to reduce conflicts between parallel agents. Jira execution is governed by [`JIRA.md`](JIRA.md).
+Normal claim metadata lives in the individual task file to reduce conflicts between parallel agents. GitHub Issues execution is governed by [`GITHUB_ISSUES.md`](GITHUB_ISSUES.md).
 
-| Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
+| Order | ID | GitHub issue | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 10 | RB-001 | CRT-3 | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
-| 20 | RB-002 | CRT-4 | P0 | READY | Define multi-account player level resolution | Dual-use | RB-001 benchmark profile and resolver boundary now available on `main` |
-| 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
-| 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
-| 50 | RB-004 | CRT-6 | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
-| 60 | RB-005 | CRT-7 | P1 | BLOCKED | Deliver Player Chess Profile experience | Standalone | RB-004 |
-| 70 | RB-006 | CRT-8 | P1 | BLOCKED | Define repertoire target contract | North-star | RB-001, RB-002, RB-003; input from RB-008 |
-| 80 | RB-013 | CRT-15 | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, RB-006 |
-| 90 | RB-007 | CRT-9 | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | RB-001, RB-002, RB-003, RB-006 |
-| 100 | RB-009 | CRT-11 | P1 | BLOCKED | Define builder session, branch queue, and draft lifecycle | North-star | RB-006, RB-008, RB-007 contract direction |
-| 110 | RB-010 | CRT-12 | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, RB-008, RB-009 |
-| 120 | RB-011 | CRT-13 | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010; current reintegration reinspection |
-| 130 | RB-012 | CRT-14 | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
-| 140 | RB-014 | CRT-16 | P2 | READY | Research traps knowledge foundation | Research | Independent; no MVP dependency |
-| 150 | RB-015 | CRT-17 | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
-| 160 | RB-016 | CRT-18 | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
+| 10 | RB-001 | [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89) | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
+| 20 | RB-002 | [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90) | P0 | READY | Define multi-account player level resolution | Dual-use | RB-001 benchmark profile and resolver boundary now available on `main` |
+| 30 | RB-003 | [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91) | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
+| 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
+| 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
+| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | BLOCKED | Deliver Player Chess Profile experience | Standalone | RB-004 |
+| 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | BLOCKED | Define repertoire target contract | North-star | RB-001, RB-002, RB-003; input from RB-008 |
+| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, RB-006 |
+| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | RB-001, RB-002, RB-003, RB-006 |
+| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | BLOCKED | Define builder session, branch queue, and draft lifecycle | North-star | RB-006, RB-008, RB-007 contract direction |
+| 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, RB-008, RB-009 |
+| 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010; current reintegration reinspection |
+| 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
+| 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | READY | Research traps knowledge foundation | Research | Independent; no MVP dependency |
+| 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
+| 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
-## Jira program
+## GitHub Issues program
 
-- Epic: `CRT-2` — Repertoire Builder north-star program, `In Progress`.
-- Every existing RB task has exactly one Jira Task under the Epic.
-- Jira tracks execution status, assignee, branch, pull request and active blockers.
+- Program tracker: [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105).
+- Every existing RB task has exactly one GitHub issue linked above.
+- GitHub Issues track execution status, assignee, branch, pull request and active blockers.
 - Repository task files remain the detailed scope and acceptance source.
-- Important dependencies must be represented with Jira `Blocks` links as well as documented here.
-- New RB tasks require a corresponding Jira issue in the same coordination change.
-- `READY` repository tasks remain Jira `To Do` until claimed and substantive work begins.
+- Important dependencies must be linked with direct GitHub issue references as well as documented here.
+- New RB tasks require a corresponding GitHub issue in the same coordination change.
+- `READY` repository tasks remain open and unclaimed until ownership and substantive work are visible.
 
 ## Completed delivery
 
-- Task: RB-001 / CRT-3
+- Task: RB-001 / [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89)
 - PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
 - Squash commit: `49dc6499eac9998de864ccb75a607541cd945382`
 - Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
@@ -104,17 +104,18 @@ RB-013 personas intersects profile and target work and may be split further afte
 - RB-001 remains order 10 and P0, now `DONE`.
 - RB-002 remains order 20 and P0, now `READY` as the next actionable P0 task.
 - No other order or priority changes are required.
-- No new RB/Jira task is required.
+- No new RB/GitHub issue is required.
 
 ## Adding tasks
 
 - Use the next unused `RB-###` ID.
 - Never recycle or renumber an ID.
 - Create a separate file under `tasks/` from the template.
-- Create one Jira Task under `CRT-2` and record its key here.
+- Create one GitHub issue and record its number here.
+- Add the issue to program tracker #105.
 - Add order, priority, status, class and dependencies here.
-- Add material Jira `Blocks` relationships.
-- Explain the queue and Jira impact in the report that created the task.
+- Add material issue dependency references.
+- Explain the queue and issue impact in the report that created the task.
 
 ## Reprioritizing
 
@@ -123,5 +124,5 @@ A reprioritization update must state:
 - evidence or dependency that changed;
 - affected task orders and priorities;
 - whether work in progress is disrupted;
-- whether Jira priority, links or comments were updated;
+- whether GitHub issue metadata, links, or comments were updated;
 - whether the roadmap also changes.
