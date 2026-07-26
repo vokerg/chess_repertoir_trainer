@@ -1,8 +1,13 @@
 import { Chess } from 'chess.js';
 import { normalizeFenForPosition } from 'chess-domain';
 import {
+  LICHESS_GAMES_RATING_GROUPS,
   openingExplorerSnapshotSchema,
   type LichessGamesExplorerQuery,
+  type LichessGamesPopulation,
+  type LichessGamesPopulationSpeed,
+  type LichessGamesRatingGroup,
+  type LichessGamesSpeedPreset,
   type OpeningExplorerCacheStatus,
   type OpeningExplorerResponse,
   type OpeningExplorerSnapshot,
@@ -11,8 +16,6 @@ import {
 import {
   defaultLichessGamesClient,
   defaultLichessMastersClient,
-  lichessGamesRatingGroups,
-  lichessGamesSpeeds,
   type LichessGamesClient,
   type LichessMastersClient,
 } from './lichess-opening-explorer.client';
@@ -26,13 +29,26 @@ import {
   type StoredOpeningExplorerCache,
   type StoreOpeningExplorerCacheInput,
 } from './opening-explorer.repository.prisma';
+import {
+  PeerRatingBandResolver,
+  type PeerRatingBandResolver as PeerRatingBandResolverContract,
+} from './peer-rating-band.service';
 
 const profileVersion = 1;
 const sinceYear = 2000;
 const movesLimit = 12;
 const mastersTopGamesLimit = 15;
-const lichessGamesTopGamesLimit = 4;
 const cacheTtlMs = 30 * 24 * 60 * 60 * 1_000;
+
+const SPEEDS_BY_PRESET: Record<
+  LichessGamesSpeedPreset,
+  readonly LichessGamesPopulationSpeed[]
+> = {
+  ALL: ['bullet', 'blitz', 'rapid', 'classical', 'correspondence'],
+  BLITZ_AND_SLOWER: ['blitz', 'rapid', 'classical', 'correspondence'],
+  BLITZ: ['blitz'],
+  BULLET: ['bullet'],
+};
 
 export class InvalidOpeningExplorerFenError extends Error {
   readonly code = 'INVALID_FEN' as const;
@@ -67,6 +83,7 @@ interface MastersExplorerServiceDependencies extends SharedOpeningExplorerServic
 
 interface LichessGamesExplorerServiceDependencies extends SharedOpeningExplorerServiceDependencies {
   client?: LichessGamesClient;
+  peerResolver?: PeerRatingBandResolverContract;
 }
 
 export interface OpeningExplorerService {
@@ -126,34 +143,28 @@ export function createLichessGamesExplorerService(
   dependencies: LichessGamesExplorerServiceDependencies = {},
 ): OpeningExplorerService {
   const client = dependencies.client ?? defaultLichessGamesClient;
+  const peerResolver = dependencies.peerResolver ?? PeerRatingBandResolver;
   const services = new Map<string, OpeningExplorerService>();
+
   return {
-    getPosition(fen, userId, query = { fen }) {
-      const ratings = sortedUnique(query.ratings ?? lichessGamesRatingGroups);
-      const speeds = sortedUnique(query.speeds ?? lichessGamesSpeeds);
-      const profileKey = [
-        query.since ?? '',
-        query.until ?? '',
-        ratings.join(','),
-        speeds.join(','),
-      ].join('|');
-      const defaultProfile = !query.since
-        && !query.until
-        && ratings.length === lichessGamesRatingGroups.length
-        && speeds.length === lichessGamesSpeeds.length;
+    async getPosition(fen, userId, query = defaultLichessGamesQuery(fen)) {
+      const population = await resolveLichessGamesPopulation(query, userId, peerResolver);
+      const ratings = sortedUnique(population.effective.ratingGroups);
+      const speeds = sortedUnique(population.effective.speeds);
+      const profileKey = ['', '', ratings.join(','), speeds.join(',')].join('|');
       let service = services.get(profileKey);
       if (!service) {
         service = createCachedOpeningExplorerService({
           source: 'LICHESS_GAMES',
-          profileVersion: defaultProfile ? profileVersion : stableProfileVersion(profileKey),
-          sinceYear: query.since ? Number(query.since.slice(0, 4)) : 0,
+          profileVersion: stableProfileVersion(profileKey),
+          sinceYear: 0,
           movesLimit,
           topGamesLimit: 0,
           cacheTtlMs,
           fetchPosition: ({ fen: canonicalPosition, accessToken }) => client.fetchPosition({
             fen: canonicalPosition,
-            sinceMonth: query.since,
-            untilMonth: query.until,
+            sinceMonth: undefined,
+            untilMonth: undefined,
             ratings,
             speeds,
             movesLimit,
@@ -166,13 +177,76 @@ export function createLichessGamesExplorerService(
         }, dependencies);
         services.set(profileKey, service);
       }
-      return service.getPosition(fen, userId);
+
+      const response = await service.getPosition(fen, userId);
+      return { ...response, population };
     },
   };
 }
 
+export async function resolveLichessGamesPopulation(
+  query: LichessGamesExplorerQuery,
+  userId: number,
+  peerResolver: PeerRatingBandResolverContract = PeerRatingBandResolver,
+): Promise<LichessGamesPopulation> {
+  const speedPreset = query.speedPreset ?? 'BLITZ_AND_SLOWER';
+  const ratingTarget = query.ratingTarget ?? 'MY_PEERS_PLUS_ONE';
+  const speeds = [...SPEEDS_BY_PRESET[speedPreset]];
+  let ratingGroups: LichessGamesRatingGroup[];
+  let peerResolution: LichessGamesPopulation['peerResolution'] = null;
+
+  if (ratingTarget === 'ALL') {
+    ratingGroups = [...LICHESS_GAMES_RATING_GROUPS];
+  } else if (ratingTarget === 'GROUP') {
+    if (query.ratingGroup === undefined) {
+      throw new Error('ratingGroup is required when ratingTarget is GROUP.');
+    }
+    ratingGroups = [query.ratingGroup];
+  } else {
+    peerResolution = await peerResolver.resolve(userId, speedPreset);
+    ratingGroups = [...peerResolution.selectedGroups];
+    if (ratingTarget === 'MY_PEERS_PLUS_ONE') {
+      ratingGroups = appendHigherGroup(ratingGroups);
+    }
+  }
+
+  return {
+    requested: {
+      speedPreset,
+      ratingTarget,
+      ratingGroup: ratingTarget === 'GROUP' ? query.ratingGroup ?? null : null,
+    },
+    effective: {
+      speeds: sortedUnique(speeds),
+      ratingGroups: sortedUnique(ratingGroups),
+    },
+    peerResolution,
+  };
+}
+
+function defaultLichessGamesQuery(fen: string): LichessGamesExplorerQuery {
+  return {
+    fen,
+    speedPreset: 'BLITZ_AND_SLOWER',
+    ratingTarget: 'MY_PEERS_PLUS_ONE',
+  };
+}
+
+function appendHigherGroup(
+  selectedGroups: readonly LichessGamesRatingGroup[],
+): LichessGamesRatingGroup[] {
+  const selected = sortedUnique(selectedGroups);
+  const highestIndex = Math.max(...selected.map((group) => LICHESS_GAMES_RATING_GROUPS.indexOf(group)));
+  const higher = LICHESS_GAMES_RATING_GROUPS[highestIndex + 1];
+  return higher === undefined ? selected : [...selected, higher];
+}
+
 function sortedUnique<T extends string | number>(values: readonly T[]): T[] {
-  return [...new Set(values)].sort((left, right) => String(left).localeCompare(String(right)));
+  return [...new Set(values)].sort((left, right) => (
+    typeof left === 'number' && typeof right === 'number'
+      ? left - right
+      : String(left).localeCompare(String(right))
+  ));
 }
 
 function stableProfileVersion(value: string): number {
