@@ -147,9 +147,7 @@ Inspected directly from `visual_transformation` and the active branch:
 
 ### Automated validation
 
-Draft PR #88 was opened to run the repository CI. Final results will be recorded before the PR is marked ready for review.
-
-Expected workflow coverage:
+GitHub Actions CI run #894 completed successfully on PR #88:
 
 ```text
 npm run lint
@@ -159,6 +157,15 @@ npm run db:migrate --workspace=apps/api
 npm test
 ```
 
+Confirmed results:
+
+- dependency installation passed;
+- lint passed;
+- full monorepo build passed, including Angular template and type compilation;
+- architecture guardrails passed;
+- database migrations applied successfully to the CI database;
+- complete monorepo tests passed, including the new brand component specs.
+
 ### Unsuccessful local command
 
 A local read-only clone attempt was made for additional validation:
@@ -167,7 +174,7 @@ A local read-only clone attempt was made for additional validation:
 git clone --branch visual-transformation/phase-1a-brand-assets --single-branch https://github.com/vokerg/chess_repertoir_trainer.git
 ```
 
-It failed because the available container could not resolve `github.com`. No local repository change occurred. Repository inspection and writes continued through the GitHub connector, and validation is performed by GitHub Actions.
+It failed because the available container could not resolve `github.com`. No local repository change occurred. Repository inspection and writes continued through the GitHub connector, and validation was completed by GitHub Actions.
 
 ## Browser review required
 
