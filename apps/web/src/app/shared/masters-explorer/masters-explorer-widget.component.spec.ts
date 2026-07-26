@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { MastersExplorerResponse } from '@chess-trainer/contracts/masters-explorer';
+import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { Subject, of, throwError } from 'rxjs';
 import { MastersExplorerApiService } from './masters-explorer-api.service';
 import {
@@ -85,8 +85,8 @@ describe('MastersExplorerWidgetComponent', () => {
   });
 
   it('does not allow an older response to overwrite a newer FEN result', async () => {
-    const oldRequest = new Subject<MastersExplorerResponse>();
-    const newRequest = new Subject<MastersExplorerResponse>();
+    const oldRequest = new Subject<OpeningExplorerResponse>();
+    const newRequest = new Subject<OpeningExplorerResponse>();
     api.getPosition.and.returnValues(oldRequest, newRequest);
 
     host.visible.set(true);
@@ -198,7 +198,7 @@ function responseFor(
     cacheStatus?: 'HIT' | 'REFRESHED' | 'STALE';
     empty?: boolean;
   } = {},
-): MastersExplorerResponse {
+): OpeningExplorerResponse {
   const games = options.empty
     ? { total: 0, whiteWins: 0, draws: 0, blackWins: 0 }
     : { total: 10, whiteWins: 4, draws: 3, blackWins: 3 };
