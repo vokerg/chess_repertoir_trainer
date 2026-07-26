@@ -2,7 +2,7 @@
 
 Date: 2026-07-26
 
-Status: implementation complete; validation in progress; not yet ready for final review transition.
+Status: implementation complete and ready for review; not merged.
 
 Task: RB-001
 
@@ -164,25 +164,35 @@ It displays the effective population and whether peer evidence came from the rec
 
 ### North Star/Jira coordination
 
-Planning, task, status, roadmap, decision, open-question and dependency documents were synchronized on PR #84. CRT-3 is assigned and In Progress; CRT-3 blocks CRT-4.
+Planning, task, status, roadmap, decision, open-question and dependency documents were synchronized on PR #84. CRT-3 is assigned and moved from In Progress to In Review with the reviewable PR. CRT-3 continues to block CRT-4 until acceptance/merge.
 
 ## Validation
 
-Completed:
+Full GitHub Actions CI passed on implementation head `ba164767f139b8b7efa522edb050d2ca983a6171`, run `30211739445`:
 
-- focused contract tests added for defaults, explicit groups and invalid combinations;
-- exact boundary tests added for every active Lichess group and representative Chess.com boundaries;
-- resolver tests added for recent/all/default fallback, provider conversion, dominant windows and separated distributions;
-- service tests added for defaults, explicit group, top band, cache hit, stale fallback, unavailable source and concurrent request deduplication;
-- OpenAPI/route validation tests updated;
-- Angular component tests updated for both selects and population summary;
-- CI lint passed on an implementation head;
-- canonical runtime documentation updated.
+- `npm run lint`;
+- `npm run build`;
+- `npm run check:architecture`;
+- database migrations against PostgreSQL 16;
+- complete repository `npm test`.
 
-Pending at report creation:
+Focused coverage added or updated:
 
-- latest full CI build, architecture, migration and test completion;
-- browser review of the compact controls.
+- contract defaults, explicit groups and invalid combinations;
+- exact boundaries for every active Lichess group and representative Chess.com/FIDE boundaries;
+- recent/all/default peer fallback;
+- provider/speed conversion;
+- dominant contiguous windows and separated distributions;
+- explicit group and top-band behavior;
+- cache hit, refresh, stale fallback, unavailable source and concurrent request deduplication;
+- OpenAPI/route query validation;
+- Angular default population, both selects and resolved summary.
+
+Not performed:
+
+- browser-level visual inspection, because the connector-only execution environment has no browser/runtime preview access.
+
+The Angular build and component tests passed in CI; visual review remains a human review item rather than an unreported claim.
 
 ## Limitations and residual risks
 
@@ -193,7 +203,6 @@ Pending at report creation:
 - The generic fallback is product default evidence, not a factual player measurement.
 - Imported copies of the same game across different owned accounts are not independently deduplicated in the temporary resolver.
 - The active default normalization profile changes what the performance-by-rating lab displays.
-- Browser-level visual validation is not available through the current connector-only execution environment.
 
 ## North-star impact
 
@@ -206,15 +215,16 @@ RB-001 now supplies a reusable, versioned target-population boundary:
 
 ## Jira and queue impact
 
-- CRT-3: In Progress while validation completes.
-- CRT-4: remains To Do / repository BLOCKED on accepted RB-001 delivery.
+- CRT-3: In Review.
+- RB-001: REVIEW.
+- CRT-4/RB-002: remains To Do/BLOCKED until RB-001 is accepted and merged.
 - No new RB task or Jira issue is required.
 - No task order or priority change is recommended.
 
 ## Roadmap assessment
 
-The revised roadmap remains valid. Finish RB-001 review first, then unblock RB-002 after acceptance/merge. RB-003 and RB-008 remain independent parallel work.
+The revised roadmap remains valid. Review and merge RB-001 first, then unblock RB-002. RB-003 and RB-008 remain independent parallel work.
 
 ## Completion state
 
-Report is not final until latest full CI is green and the task/PR/Jira are moved to review.
+Implementation is complete and reviewable. The task is not `DONE` until PR #84 is accepted/merged and final post-merge synchronization is recorded.
