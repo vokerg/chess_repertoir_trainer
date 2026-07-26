@@ -6,7 +6,7 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 
 ## Population evidence
 
-### Resolved implementation facts from PR #80
+### Resolved implementation facts from PR #80 and PR #76
 
 - The reusable implementation is the shared Opening Explorer module, not a separate builder-specific explorer.
 - Rated population evidence is exposed through `/api/lichess-games-explorer` with source identity `LICHESS_GAMES`.
@@ -16,10 +16,11 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 - The shared response exposes position and move W/D/L counts, SAN/UCI, average rating, opening metadata, cache timestamps, and dataset source/profile metadata.
 - The current response does not directly expose the selected month, rating, and speed filters; it relies on deterministic cache profile identity.
 - Opening Analysis consumes the rated evidence through the reusable Peer games widget.
+- PR #76 provides stable normalized grade IDs and source ranges for Lichess bullet, blitz, and rapid, but it does not map those continuous ranges to the discrete Lichess Explorer rating buckets used by PR #80.
 
 ### Remaining questions
 
-- How should source rating groups map to normalized grades after RB-002 defines player-level semantics?
+- How should normalized grade ranges and resolved player-level targets map to Lichess Explorer rating buckets?
 - What weighting should a selected speed combination use by default?
 - Should controlled combinations request each speed separately to retain components, or use another explainable aggregation strategy?
 - Should users edit weights directly or choose understandable presets?
@@ -28,19 +29,38 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 - What selected filter provenance must be returned directly in the response?
 - How should provider-specific and future provider-general evidence coexist?
 
-Owner task: RB-001.
+Owner task: RB-001, coordinated with RB-002 for own-level and grade-offset targets.
 
 ## Multi-account player level
 
+### Resolved implementation facts from PR #76
+
+- The active profile is `universal-online-strength`, version `2026-07-product-v1`.
+- It defines 13 stable product-facing grades.
+- Chess.com and Lichess bullet, blitz, and rapid are calibrated as complete online pools.
+- FIDE Standard is reference-only and has explicit `null` ranges where it is not calibrated.
+- Each pool exposes confidence and soft-padding metadata.
+- Source metadata distinguishes empirical inputs from deliberate product adjustments.
+- `classifyRating(pool, rating)` maps one source rating to one grade.
+- `getRatingRange(profile, gradeId, pool)` maps one grade back to one source-pool range.
+- `GET /api/rating-normalization/default` exposes the active versioned profile.
+- Exact rating-to-rating conversion is explicitly rejected in favor of grade membership and approximate ranges.
+- No account selection, recency, aggregation, player-level confidence, or override calculation exists yet.
+
+### Remaining questions
+
 - Is level resolved once per player, once per speed, once per provider, or all three?
-- Which accounts are included by default?
+- Which owned accounts are included by default?
 - How are inactive and low-volume accounts handled?
 - Should the calculation use latest rating, median recent rating, weighted recent rating, or another measure?
-- How do selected analysis periods affect level?
-- How are normalized-grade boundaries and soft padding used?
-- How is confidence calculated?
+- How do selected analysis periods affect the rating observation?
+- How are the merged profile's soft-padding values used near boundaries?
+- How are source-profile confidence and account-evidence confidence combined without conflating them?
+- How is overall confidence calculated from games, recency, and grade agreement?
 - What override is available during builder setup?
-- How is a target such as `my level plus two grades` converted back into source ranges?
+- How is a target such as `my level plus two grades` converted back into source ranges and then into provider-specific population filters?
+- How are multiple accounts in the same provider/speed pool combined deterministically?
+- How are conflicting grades represented rather than silently collapsed?
 
 Owner task: RB-002.
 
