@@ -192,6 +192,22 @@ Graphite chrome is required. A complete dark analytical workspace may be impleme
 
 Use existing information and deterministic rules before adding new backend aggregation or recommendation infrastructure.
 
+The first rule set should prioritize setup blockers, analysis backlog, weak/untrained repertoire work, the latest completed analysis, stale account sync, and existing progress destinations. Show at most three recommendations and do not duplicate the dominant Continue action.
+
+### D-105 — Initial home action hierarchy
+
+**Status:** Provisional
+
+The signed-in home should be action-led in this order:
+
+1. one dominant **Continue** action;
+2. at most three explained **Recommended next** actions;
+3. direct workspace shortcuts;
+4. a restrained recent-progress summary;
+5. an optional Recent signals block only if it earns its request and visual cost.
+
+The page should not open with a large metric grid or generic dashboard cards.
+
 ### D-301 — Final Node Branch geometry
 
 **Status:** Provisional
@@ -207,6 +223,32 @@ Production SVG extraction must still verify stroke width, node diameter, spacing
 The Phase 0A structure and the Angular landing page merged through PR #78 are the working public-page baseline.
 
 Final wording, example insights, and lower-page composition may be refined after direct browser and product review. Do not restart from a different marketing concept without explicitly revising this decision.
+
+### D-305 — First `/home` data composition
+
+**Status:** Provisional
+
+The first `/home` can be implemented from existing stable APIs without a new aggregation endpoint:
+
+- `GET /me/accounts` for account presence, default/active selection, and sync state;
+- `GET /library/catalog` for course, line, weak, untrained, and attempt statistics;
+- `GET /imported-games/facets` for imported-game and analysis-backlog counts;
+- `GET /imported-games?sort=endedAtDesc&limit=...` for latest games;
+- `GET /me/accounts/:accountId/performance-stats` for period W/D/L, game count, score context, and highlights;
+- optionally rating history or rating stats for the compact trend and delta.
+
+Reuse the existing Progress account-selection rule: default progress account, then active account, then first account.
+
+Do not use `/lab/*` endpoints as first-home dependencies. Do not add a home aggregation API unless an implementation slice measures unacceptable request/loading behavior.
+
+The provisional Continue priority is:
+
+1. course with weak sublines;
+2. course with untrained active sublines;
+3. latest completed analysed game;
+4. Study/library fallback.
+
+For weak/untrained courses, rank by the relevant count descending, failed attempts descending, then stable course id. A sync recommendation may appear when `lastSyncAt` is absent or older than seven days; the threshold must remain a named, reviewable client constant.
 
 ## Rejected directions
 
@@ -258,6 +300,18 @@ Do not expose phrases such as “Use your Clerk session” in normal product cop
 
 Do not begin with a mascot, custom typeface, bespoke icon set, 3D chess assets, or a large generated illustration library.
 
+### D-209 — Lab endpoints as first-home core dependencies
+
+**Status:** Rejected for the first `/home` slice
+
+Do not depend on training-log, tactical-detection, or other `/lab/*` endpoints for the first signed-in home. Promote a Lab capability deliberately before presenting it as stable core product data.
+
+### D-210 — New home aggregation API before implementation evidence
+
+**Status:** Rejected for the discovery checkpoint
+
+Do not add a dashboard/home aggregation endpoint during Phase 0C. The first implementation should use existing typed data sources and measure request/loading behavior before introducing a new backend boundary.
+
 ## Open decisions
 
 ### D-302 — Final production palette
@@ -270,13 +324,7 @@ Lock the remaining exact colors only after the landing page and representative a
 
 **Status:** Open
 
-Determine the primary mobile destinations after prototyping Study, Games, and Opening Analysis on small screens.
-
-### D-305 — First `/home` data composition
-
-**Status:** Open
-
-Inspect existing frontend services and APIs to determine which meaningful home metrics and actions can be implemented without backend changes.
+Determine the primary mobile destinations after prototyping Study, Games, and Opening Analysis on small screens. The Phase 0C home proof intentionally does not lock a bottom-navigation model.
 
 ### D-306 — Phase 0B browser-validation disposition
 
@@ -285,3 +333,19 @@ Inspect existing frontend services and APIs to determine which meaningful home m
 PR #79 is integrated and its CI passed, but the repository does not record direct browser validation of `/login` and `/signup` at desktop and mobile widths or interaction validation in configured-Clerk and local-development-auth modes.
 
 Record those checks when performed and decide whether Phase 0B is accepted without revision or requires a focused correction slice. Do not represent this validation as complete merely because the implementation was merged.
+
+### D-307 — Phase 0C home visualization disposition
+
+**Status:** Open
+
+Review the Phase 0C home report, desktop/mobile review sheet, responsive HTML prototype, data composition, and deterministic rules.
+
+Decide whether to:
+
+- approve the hierarchy and rules for a narrow Angular implementation;
+- require focused visual or rule revisions;
+- remove or defer the Recent signals block;
+- revise the provisional seven-day sync threshold;
+- require a measured data-loading experiment before implementation.
+
+Do not implement `/home` or change post-login navigation until this disposition is explicit.
