@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RB-008 Direction B — Candidate landscape</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="prototype.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#landscape">Skip to candidate landscape</a>
+  <main class="prototype-shell">
+    <header class="prototype-nav">
+      <a class="brand" href="index.html"><span class="node-mark" aria-hidden="true"></span><span>Chess Repertoire Trainer · RB-008</span></a>
+      <nav aria-label="Prototype directions">
+        <a href="index.html">Overview</a>
+        <a href="direction-a.html">A · Decision desk</a>
+        <a class="active" href="direction-b.html">B · Candidate landscape</a>
+      </nav>
+    </header>
+
+    <section class="context-header">
+      <div>
+        <p class="eyebrow">Direction B · all positions visible</p>
+        <h1>Compare structures before choosing.</h1>
+        <p class="lead">The candidate is the resulting position, not only the move label. Swipe candidate cards on narrow screens, then inspect the selected move’s branch coverage.</p>
+      </div>
+      <div class="context-chips">
+        <span class="chip mint">Target: Solid</span>
+        <span class="chip">Blitz &amp; slower</span>
+        <span class="chip">Peers 1600–1999</span>
+        <span class="chip warning">Profile suggests sharp play</span>
+      </div>
+    </section>
+
+    <section id="landscape" class="landscape-layout">
+      <div class="landscape-top">
+        <article class="panel landscape-intro"><p class="eyebrow">White to move after 5...a6</p><h2>Each card is one repertoire promise.</h2><p>The board, evidence, theory burden, and target/profile relationship stay together. The user can compare everything without maintaining a mental snapshot from one shared board.</p></article>
+        <aside class="panel target-summary"><div class="tension-card"><strong>Advisory profile conflict</strong><p>Profile: sharp pressure. Selected target: solid and reusable. The recommended badge follows target intent, while the profile badge remains visible on 6.Bg5.</p></div></aside>
+      </div>
+
+      <div class="candidate-landscape" aria-label="Candidate position cards">
+        <article class="candidate-card recommended">
+          <div class="candidate-board-wrap"><span class="corner-tag">Recommended for target</span><div class="board mini-board" data-board-fen="rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N1B3/PPP2PPP/R2QKB1R b KQkq - 1 6" role="img" aria-label="Position after 6 Be3"></div></div>
+          <div class="candidate-card-body">
+            <h2>6.Be3 <small>Structured main line · flexible plans</small></h2>
+            <div class="chip-row"><span class="chip mint">Target fit</span><span class="chip">+0.32</span><span class="chip">14 branches</span></div>
+            <p class="tradeoff">Keeps options open and scores well in the selected population. Less direct than 6.Bg5, but easier to align with a Solid repertoire.</p>
+            <div class="evidence-bars">
+              <div class="evidence-bar"><span>Peers</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><strong>31%</strong></div>
+              <div class="evidence-bar"><span>Masters</span><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><strong>28%</strong></div>
+              <div class="evidence-bar"><span>Personal</span><div class="bar-track"><div class="bar-fill" style="width:26%"></div></div><strong>4 games</strong></div>
+            </div>
+            <div class="card-actions"><button class="action-button primary" type="button">Choose 6.Be3</button><button class="action-button" type="button">Preview line</button></div>
+          </div>
+        </article>
+
+        <article class="candidate-card profile">
+          <div class="candidate-board-wrap"><span class="corner-tag">Profile-aligned</span><div class="board mini-board" data-board-fen="rnbqkb1r/1p2pppp/p2p1n2/6B1/3NP3/2N5/PPP2PPP/R2QKB1R b KQkq - 1 6" role="img" aria-label="Position after 6 Bg5"></div></div>
+          <div class="candidate-card-body">
+            <h2>6.Bg5 <small>Sharp pressure · forcing structures</small></h2>
+            <div class="chip-row"><span class="chip blue">Profile fit</span><span class="chip">+0.26</span><span class="chip warning">23 branches</span></div>
+            <p class="tradeoff">Matches the player’s attacking history and master practice, but raises theory and conflicts with the chosen Solid intent.</p>
+            <div class="evidence-bars">
+              <div class="evidence-bar"><span>Peers</span><div class="bar-track"><div class="bar-fill" style="width:60%"></div></div><strong>24%</strong></div>
+              <div class="evidence-bar"><span>Masters</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><strong>22%</strong></div>
+              <div class="evidence-bar"><span>Personal</span><div class="bar-track"><div class="bar-fill" style="width:88%"></div></div><strong>17 games</strong></div>
+            </div>
+            <div class="card-actions"><button class="action-button" type="button">Choose 6.Bg5</button><button class="action-button" type="button">Preview line</button></div>
+          </div>
+        </article>
+
+        <article class="candidate-card risky">
+          <div class="candidate-board-wrap"><span class="corner-tag">Practical alternative</span><div class="board mini-board" data-board-fen="rnbqkb1r/1p2pppp/p2p1n2/8/3NP1P1/2N5/PPP2P1P/R1BQKB1R b KQkq - 0 6" role="img" aria-label="Position after 6 g4"></div></div>
+          <div class="candidate-card-body">
+            <h2>6.g4?! <small>Surprise weapon · objective concession</small></h2>
+            <div class="chip-row"><span class="chip warning">Manual alternative</span><span class="chip">−0.38</span><span class="chip">8 branches</span></div>
+            <p class="tradeoff">Low theory and high surprise value, but the engine cost exceeds the default Solid tolerance. Keep only as an explicit alternate persona.</p>
+            <div class="evidence-bars">
+              <div class="evidence-bar"><span>Peers</span><div class="bar-track"><div class="bar-fill" style="width:24%"></div></div><strong>9%</strong></div>
+              <div class="evidence-bar"><span>Masters</span><div class="bar-track"><div class="bar-fill" style="width:8%"></div></div><strong>2%</strong></div>
+              <div class="evidence-bar"><span>Personal</span><div class="bar-track"><div class="bar-fill" style="width:0%"></div></div><strong>0 games</strong></div>
+            </div>
+            <div class="card-actions"><button class="action-button" type="button">Choose 6.g4</button><button class="action-button" type="button">Preview line</button></div>
+          </div>
+        </article>
+      </div>
+
+      <article class="panel coverage-map">
+        <header class="panel-header"><div><h2 class="panel-title">Coverage map after 6.Be3</h2><p class="panel-help">A matrix makes branch state and comparative response relevance visible, but intentionally avoids pretending the queue is a finished tree editor.</p></div><span class="chip mint">71% first pass</span></header>
+        <div class="coverage-grid" role="table" aria-label="Opponent response coverage matrix">
+          <div class="map-head">Evidence</div><div class="map-head">6...e5 · 42%</div><div class="map-head">6...e6 · 29%</div><div class="map-head">6...Ng4 · 12%</div><div class="map-head">Other · 17%</div>
+          <div class="map-label">Selected target</div><div><div class="response-node covered"><strong>Cover now</strong><span>Critical main line · 9 personal encounters</span></div></div><div><div class="response-node covered"><strong>Cover now</strong><span>Frequent transposition · strong master evidence</span></div></div><div><div class="response-node deferred"><strong>Defer</strong><span>Tactical test · add after core coverage</span></div></div><div><div class="response-node muted"><strong>Ignore first pass</strong><span>Grouped tail remains visible</span></div></div>
+          <div class="map-label">Branch state</div><div><div class="response-node covered"><strong>Pending choice</strong><span>3 candidate continuations available</span></div></div><div><div class="response-node covered"><strong>Pending choice</strong><span>2 transpositions detected</span></div></div><div><div class="response-node deferred"><strong>Deferred</strong><span>Explicitly not incomplete</span></div></div><div><div class="response-node muted"><strong>Unscheduled</strong><span>Retained for future relevance</span></div></div>
+        </div>
+      </article>
+
+      <div class="mobile-summary"><div><strong>6.Be3 recommended</strong><br><span>71% first-pass coverage</span></div><button class="action-button primary" type="button">Continue</button></div>
+    </section>
+
+    <p class="prototype-note">Direction B hypothesis: treat each candidate/resulting structure as a comparable visual object; move deeper preview into a secondary action and show coverage as a matrix.</p>
+  </main>
+</body>
+</html>
