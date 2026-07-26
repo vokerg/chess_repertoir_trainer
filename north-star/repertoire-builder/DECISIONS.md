@@ -150,9 +150,16 @@ The user should see positions and consequences, not only SAN lines or a text tab
 
 ### RB-D020 — Exact visual composition
 
-State: **OPEN**
+State: **PROVISIONAL**
 
-Multiple mini-boards, interactive preview, candidate cards, branch map, mobile behavior and information density require prototype evidence.
+PR #110 provides two reviewable directions:
+
+- **Direction A — board-first decision desk:** one large shared board, candidate switcher, focused evidence, opponent-response coverage queue and branch-progress strip;
+- **Direction B — candidate landscape:** simultaneous resulting-position mini-boards, candidate-attached evidence and an opponent-response coverage matrix.
+
+The current recommendation is a hybrid led by Direction A: preserve one readable analytical board and the existing workbench mental model, keep target-fit and profile-fit attached to each candidate, and offer an explicit mini-board comparison mode when structural comparison is needed.
+
+This is not locked. User review must approve Direction A, Direction B, the hybrid, or request a revised third direction before production composition is treated as decided. Do not infer acceptance from prototype completion or CI.
 
 ### RB-D021 — Routed, resumable workbench
 
@@ -165,6 +172,22 @@ A small dialog may launch setup, but the substantial workflow should be a routed
 State: **LOCKED**
 
 The user can deliberately postpone an opponent response without the system treating the course as accidentally incomplete.
+
+### RB-D037 — Target intent remains visible when profile advice disagrees
+
+State: **PROVISIONAL**
+
+Candidate presentation should show factual evidence, profile fit and selected-target fit as separate concepts. When profile advice and explicit repertoire intent disagree, the target remains authoritative for the current build while the disagreement stays visible and explainable.
+
+PR #110 demonstrates this separation. Final prominence and wording remain subject to user review and later RB-004/RB-006 contracts.
+
+### RB-D038 — Coverage state is part of the decision surface
+
+State: **PROVISIONAL**
+
+Opponent responses should expose explicit pending, selected, deferred, ignored and completed states. Cumulative first-pass coverage may help users understand scope, but its final semantics depend on RB-007 relevance evidence and RB-009 session rules.
+
+The exact queue-versus-matrix presentation remains part of the RB-D020 review decision.
 
 ## Persistence and integration decisions
 
