@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RB-008 visual candidate prototype</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to prototype choices</a>
+  <main id="main" class="prototype-shell">
+    <header class="prototype-nav">
+      <a class="brand" href="index.html"><span class="node-mark" aria-hidden="true"></span><span>Chess Repertoire Trainer · RB-008</span></a>
+      <nav aria-label="Prototype directions">
+        <a class="active" href="index.html">Overview</a>
+        <a href="direction-a.html">A · Decision desk</a>
+        <a href="direction-b.html">B · Candidate landscape</a>
+      </nav>
+    </header>
+
+    <section class="context-header">
+      <div>
+        <p class="eyebrow">Visual discovery · realistic mock evidence</p>
+        <h1>How should one repertoire decision feel?</h1>
+        <p class="lead">Both directions use the same Najdorf decision, evidence, target conflict, and opponent-response queue. Only the visual hierarchy changes.</p>
+      </div>
+      <div class="context-chips" aria-label="Scenario context">
+        <span class="chip mint">Blitz &amp; slower</span>
+        <span class="chip mint">My peers + one</span>
+        <span class="chip">White repertoire</span>
+        <span class="chip warning">Profile: sharp · Target: solid</span>
+      </div>
+    </section>
+
+    <section class="index-grid" aria-label="Prototype alternatives">
+      <article class="index-card">
+        <p class="eyebrow">Direction A</p>
+        <h2>Board-first decision desk</h2>
+        <p>One large board remains the spatial anchor. Candidate buttons update the same position preview; evidence and opponent coverage live in a focused side stack.</p>
+        <ul>
+          <li>Optimizes board readability and deep preview.</li>
+          <li>Reuses the current two-column workbench mental model.</li>
+          <li>Requires quick candidate switching to compare structures.</li>
+        </ul>
+        <div class="review-grid">
+          <div class="review-box"><strong>Best for</strong><p>Desktop workbench, keyboard use, deeper line exploration.</p></div>
+          <div class="review-box"><strong>Risk</strong><p>Evidence can feel secondary or require memory between candidates.</p></div>
+        </div>
+        <a class="action-button primary" href="direction-a.html">Review Direction A</a>
+      </article>
+
+      <article class="index-card">
+        <p class="eyebrow">Direction B</p>
+        <h2>Candidate landscape</h2>
+        <p>Three resulting positions are visible at once. Each candidate is a self-contained visual card, followed by a branch coverage matrix.</p>
+        <ul>
+          <li>Optimizes direct comparison and tradeoff scanning.</li>
+          <li>Makes the relationship between move and structure explicit.</li>
+          <li>Uses more screen area and risks card overload.</li>
+        </ul>
+        <div class="review-grid">
+          <div class="review-box"><strong>Best for</strong><p>Initial selection, visual comparison, transparent evidence.</p></div>
+          <div class="review-box"><strong>Risk</strong><p>Mini-boards can become too small; mobile needs horizontal paging.</p></div>
+        </div>
+        <a class="action-button primary" href="direction-b.html">Review Direction B</a>
+      </article>
+    </section>
+
+    <p class="prototype-note">All ratings, percentages, evaluations, and lines are illustrative. The vocabulary is grounded in existing RB-001/RB-002 and planned RB-006/RB-007 concepts; no endpoint is implied.</p>
+  </main>
+</body>
+</html>
