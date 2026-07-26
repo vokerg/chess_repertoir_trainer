@@ -8,7 +8,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 | Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 10 | RB-001 | CRT-3 | P0 | READY | Deliver Lichess-aligned peer population presets | Dual-use | PR #80 and PR #76 merged; compact presets, benchmark-band migration and peer resolver are actionable |
+| 10 | RB-001 | CRT-3 | P0 | CLAIMED | Deliver Lichess-aligned peer population presets | Dual-use | PR #80 and PR #76 merged; claimed on PR #84 |
 | 20 | RB-002 | CRT-4 | P0 | BLOCKED | Define multi-account player level resolution | Dual-use | Depends on RB-001 Lichess-benchmark profile and shared peer-resolver boundary |
 | 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
 | 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
@@ -34,6 +34,14 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Important dependencies must be represented with Jira `Blocks` links as well as documented here.
 - New RB tasks require a corresponding Jira issue in the same coordination change.
 - `READY` repository tasks remain Jira `To Do` until claimed and substantive work begins.
+
+## Active claim
+
+- Task: RB-001 / CRT-3
+- Claimed by: ChatGPT
+- Branch: `north-star/rb-001-peer-presets-replan`
+- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
+- Scope: benchmark profile, temporary peer resolver, Opening Explorer presets/provenance, compact Peer games UI, tests, runtime docs and completion synchronization.
 
 ## Queue notes
 
@@ -62,7 +70,7 @@ The product deliberately accepts one combined Lichess response for the resolved 
 
 ### Player-level boundary
 
-RB-002 is now `BLOCKED` on the profile/resolver boundary delivered by RB-001. It owns the later durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 resolver rather than create a second level formula.
+RB-002 is `BLOCKED` on the profile/resolver boundary delivered by RB-001. It owns the later durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 resolver rather than create a second level formula.
 
 ### Rating normalization migration
 
@@ -72,7 +80,7 @@ The new canonical peer bands are the nine Lichess Explorer groups. Lichess ratin
 
 ### Actionable P0 work
 
-RB-001 is the next P0 task and should be claimed first.
+RB-001 is the active P0 implementation on PR #84.
 
 RB-002 should not begin implementation until the new benchmark profile and shared resolver boundary are available. RB-003 remains independent.
 
@@ -112,11 +120,11 @@ RB-013 personas intersects profile and target work and may be split further afte
 
 ## Reprioritization impact
 
-- RB-001 remains order 10, P0 and `READY`, but its title and delivery scope are revised.
-- RB-002 remains order 20 and P0, and changes from `READY` to `BLOCKED` on RB-001's benchmark profile/resolver contract.
+- RB-001 remains order 10 and P0, and is now `CLAIMED` on PR #84.
+- RB-002 remains order 20 and P0, and is `BLOCKED` on RB-001's benchmark profile/resolver contract.
 - RB-006 must use fixed speed presets and peer-rating targets rather than arbitrary weighted combinations.
 - No other order or priority changes are required.
-- Jira descriptions and the material CRT-3 → CRT-4 dependency must be synchronized.
+- Jira descriptions and the material CRT-3 → CRT-4 dependency are synchronized.
 
 ## Adding tasks
 
