@@ -59,7 +59,7 @@ Equal weights, player-distribution weights, editable weights, and other formulas
 
 State: **LOCKED**
 
-Cross-provider and cross-speed strength targeting should use the repository's versioned rating-normalization domain once available on the working base.
+Cross-provider and cross-speed strength targeting uses the versioned rating-normalization domain merged through PR #76. Consumers must preserve the profile ID/version and stable grade IDs, use grade membership or approximate source ranges rather than exact cross-pool rating conversion, and must not introduce feature-local parity tables.
 
 ### RB-D009 — Multi-account level is required
 
@@ -71,7 +71,7 @@ The system needs an inspectable formula for players with multiple accounts and r
 
 State: **OPEN**
 
-Recency, volume, provider, account selection, period rating, per-speed resolution, confidence, and override behavior remain undecided.
+Recency, volume, provider, account selection, period rating, per-speed resolution, confidence, and override behavior remain undecided. PR #76 supplies the normalization vocabulary but does not resolve this formula.
 
 ## Data and profile decisions
 
