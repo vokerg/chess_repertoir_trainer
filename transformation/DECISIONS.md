@@ -1,6 +1,6 @@
 # Visual Transformation Decisions
 
-Last updated: 2026-07-25
+Last updated: 2026-07-26
 
 This log records decisions that should survive across chats, tools, and implementation sessions.
 
@@ -143,6 +143,14 @@ After the shell and entry points, modernize these representative workflows first
 
 They establish patterns for data exploration, training selection, and board/workbench UI.
 
+### D-014 — Strong-mint text token
+
+**Status:** Locked for the current visual direction
+
+Use `#1F7865` for strong mint text and accessible mint emphasis on light workspace surfaces.
+
+This replaces the earlier `#23836D` candidate for that role. It does not lock the complete production palette or permit mint to replace semantic success, warning, danger, information, evaluation, or chart colors.
+
 ## Provisional decisions
 
 ### D-101 — Palette values
@@ -153,8 +161,8 @@ Working values:
 
 - Graphite: `#172321`
 - Secondary graphite: `#22312E`
-- Mint: `#47B89C`
-- Strong mint: `#23836D`
+- Signal mint: `#47B89C`
+- Strong mint text: `#1F7865`
 - Mint subtle: `#DFF3ED`
 - Workspace: `#EEF3F0`
 - Surface: `#FFFFFF`
@@ -162,7 +170,7 @@ Working values:
 - Secondary text: `#63716D`
 - Border: `#CBD7D2`
 
-Validate contrast and behavior in the landing page, boards, charts, engine evaluations, tables, errors, warnings, and success states before locking.
+The strong-mint text role is locked by D-014. Validate the remaining values and semantic color behavior in boards, charts, engine evaluations, tables, errors, warnings, success states, and representative authenticated workflows before locking the full palette.
 
 ### D-102 — Typography
 
@@ -170,7 +178,7 @@ Validate contrast and behavior in the landing page, boards, charts, engine evalu
 
 Continue with IBM Plex Sans and use a compatible monospaced treatment for analytical numerics.
 
-Validate display hierarchy and dense application readability before locking the complete type scale.
+Validate display hierarchy and dense application readability before locking the complete type scale or adding a font-loading mechanism.
 
 ### D-103 — Dark mode scope
 
@@ -183,6 +191,22 @@ Graphite chrome is required. A complete dark analytical workspace may be impleme
 **Status:** Provisional
 
 Use existing information and deterministic rules before adding new backend aggregation or recommendation infrastructure.
+
+### D-301 — Final Node Branch geometry
+
+**Status:** Provisional
+
+Node Branch geometry v1 is approved as the working geometry used by the Phase 0A proof, the public landing implementation, and the Phase 0B authentication composition.
+
+Production SVG extraction must still verify stroke width, node diameter, spacing, badge radius, monochrome/reversed behavior, and optical balance at 16px, 24px, 32px, and 48px. Focused optical corrections are allowed during that extraction without reopening the symbol concept.
+
+### D-303 — Landing-page copy and composition
+
+**Status:** Provisional
+
+The Phase 0A structure and the Angular landing page merged through PR #78 are the working public-page baseline.
+
+Final wording, example insights, and lower-page composition may be refined after direct browser and product review. Do not restart from a different marketing concept without explicitly revising this decision.
 
 ## Rejected directions
 
@@ -236,23 +260,11 @@ Do not begin with a mascot, custom typeface, bespoke icon set, 3D chess assets, 
 
 ## Open decisions
 
-### D-301 — Final Node Branch geometry
-
-**Status:** Open
-
-Finalize stroke width, node diameter, spacing, badge radius, and optical balance after small-size testing.
-
 ### D-302 — Final production palette
 
 **Status:** Open
 
-Lock the exact colors only after the high-fidelity landing page and representative analytical UI tests.
-
-### D-303 — Final landing-page copy and composition
-
-**Status:** Open
-
-The product promise and workflow are agreed; final wording, section order, and example insights still require visual review.
+Lock the remaining exact colors only after the landing page and representative analytical UI tests. D-014 already locks `#1F7865` for strong mint text on light surfaces.
 
 ### D-304 — Exact mobile navigation structure
 
@@ -265,3 +277,11 @@ Determine the primary mobile destinations after prototyping Study, Games, and Op
 **Status:** Open
 
 Inspect existing frontend services and APIs to determine which meaningful home metrics and actions can be implemented without backend changes.
+
+### D-306 — Phase 0B browser-validation disposition
+
+**Status:** Open
+
+PR #79 is integrated and its CI passed, but the repository does not record direct browser validation of `/login` and `/signup` at desktop and mobile widths or interaction validation in configured-Clerk and local-development-auth modes.
+
+Record those checks when performed and decide whether Phase 0B is accepted without revision or requires a focused correction slice. Do not represent this validation as complete merely because the implementation was merged.
