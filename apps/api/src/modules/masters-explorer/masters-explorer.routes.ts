@@ -22,7 +22,7 @@ const mastersExplorerModule: FastifyPluginAsyncZod = async (app) => {
     url: '/api/masters-explorer',
     schema: {
       operationId: 'getMastersExplorerPosition',
-      tags: ['Opening explorer'],
+      tags: ['Masters explorer'],
       summary: 'Get master-game statistics for a chess position',
       description: 'Returns system-wide Lichess Masters statistics from the persistent cache, refreshing data older than 30 days before responding when Lichess is available.',
       querystring: mastersExplorerQuerySchema,
