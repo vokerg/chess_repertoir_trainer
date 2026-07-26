@@ -4,107 +4,97 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** Phase 0D signed-in Angular home implemented; automated validation passed, browser review pending
+**Program state:** Phase 1A production brand assets and shared lockups implemented; CI and browser review pending
 
 **Integration branch:** `visual_transformation`
 
-**Active implementation branch:** `visual-transformation/phase-0d-angular-home`
+**Active implementation branch:** `visual-transformation/phase-1a-brand-assets`
 
-The public landing page, authentication shell, Phase 0B checkpoint closure, and Phase 0C home discovery are squash-merged into `visual_transformation`. The current slice implements the approved first `/home` inside the existing signed-in shell and intentionally stops before the production navigation rail or representative workflow redesigns.
+The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, and Angular `/home` implementation are squash-merged into `visual_transformation`. The current slice standardizes the production Node Branch geometry and its shared Angular presentation without changing routes, navigation behavior, APIs, or workflows.
 
 ## Completed
 
-- [x] Established the analytical identity, graphite/mint direction, Node Branch concept, and public/auth/app separation.
+- [x] Established the analytical graphite/mint identity and Node Branch concept.
 - [x] Implemented and merged the public landing page through PR #78.
 - [x] Implemented and merged the shared authentication shell through PR #79.
 - [x] Reconciled and merged the Phase 0B checkpoint through PR #85.
 - [x] Defined, visualized, and merged the signed-in home discovery checkpoint through PR #86.
-- [x] Approved the Phase 0C hierarchy with Recent signals deferred and the rail kept separate.
-- [x] Added guarded `/home` inside the existing signed-in shell.
-- [x] Changed the normal sign-in and sign-up fallback to `/home` while preserving explicit `returnUrl`.
-- [x] Added Home to the existing navigation data model and added a matching shared icon.
-- [x] Added a feature-local home store using existing typed account, library, games, and performance services.
-- [x] Implemented partial-request failure handling and manual refresh.
-- [x] Implemented deterministic Continue and Recommended next rules.
-- [x] Added restrained workspace shortcuts and recent-progress summary.
-- [x] Added focused tests for account selection, Continue priorities, setup recommendations, and stale-sync behavior.
-- [x] Passed lint, full build, architecture guardrails, CI migrations, and the complete monorepo test suite on PR #87.
-- [x] Updated the transformation entry point, decision log, working stop condition, and implementation report.
+- [x] Implemented and squash-merged the signed-in Angular home through PR #87 after green CI.
+- [x] Made `/home` the normal post-auth fallback while preserving explicit `returnUrl`.
+- [x] Created one production 64×64 Node Branch geometry.
+- [x] Added standard badge, reversed badge, transparent mark, and SVG favicon assets.
+- [x] Added shared `BrandMarkComponent` and live-text `BrandLockupComponent`.
+- [x] Added decorative and meaningful accessibility behavior for the mark.
+- [x] Replaced the landing page's five-node inline SVG and `⌁` substitutes.
+- [x] Replaced the authentication shell's CSS-drawn mark.
+- [x] Added the shared lockup to the current signed-in header and mobile menu.
+- [x] Added focused component tests for geometry variants, live text, and accessibility.
+- [x] Added `apps/web/src/assets/brand/brand-readme.md`.
 
 ## Current checkpoint
 
 Review in this order:
 
-1. `transformation/reports/PHASE_0D_ANGULAR_HOME_IMPLEMENTATION.md`
-2. `/home` with populated data
-3. `/home` with no connected account, no games, and no courses
-4. `/home` with one or more failed supporting API requests
-5. desktop and mobile rendering inside the current application shell
-6. default sign-in/sign-up navigation and explicit `returnUrl`
-7. PR #87 changed files and final CI
+1. `transformation/reports/PHASE_1A_BRAND_ASSETS_IMPLEMENTATION.md`
+2. `apps/web/src/assets/brand/brand-readme.md`
+3. `apps/web/src/app/shared/ui/brand/`
+4. landing header, floating insight, final CTA, and footer
+5. desktop and mobile authentication lockups
+6. signed-in desktop header and mobile menu
+7. favicon rendering and PR #88 CI
 
 Review focus:
 
-- whether Continue is visually and functionally dominant;
-- whether recommendation reasons and links are correct;
-- whether the existing request fan-out is acceptable;
-- whether empty and partial states remain useful;
-- whether progress stays secondary;
-- whether the current navigation remains usable with Home added;
-- whether the slice should be approved without pulling rail work into scope.
+- whether all product surfaces now show the same Node Branch topology;
+- whether standard and reversed badges have sufficient contrast;
+- whether the transparent mark remains legible on its actual surfaces;
+- whether 16px, 24px, 32px, 42px, and 48px rendering remains optically clear;
+- whether the live-text wordmark proportions remain appropriate;
+- whether the signed-in header remains usable without pulling the future rail into scope.
 
-Do not merge PR #87 without explicit approval. When approved, squash merge it into `visual_transformation`.
+Do not merge PR #88 without explicit approval. When approved, squash merge it into `visual_transformation`.
 
 ## Validation status
 
 ### Confirmed by repository inspection
 
-- `/home` is registered with `authGuard`.
-- `/home` renders inside the existing application shell.
-- login and sign-up use `/home` only when no explicit `returnUrl` is supplied.
-- the existing Progress account-selection order is reused.
-- weak/untrained course actions link to existing course marathon routes and modes.
-- analysed-game actions link to existing game review routes.
-- analysis-backlog actions use the existing Games query codec.
-- no backend, contract, schema, migration, dependency, queue, persistence, or Lab API was added.
-- Recent signals is not included in the implementation.
+- PR #87 is squash-merged into `visual_transformation` at `690e18568b14648a7f8c0d02a7e637d3d8230541`.
+- The landing page previously used a distinct five-node inline SVG and text substitutes.
+- The authentication shell previously used a separate CSS-drawn three-node geometry.
+- The signed-in header previously used plain product-name text without the selected mark.
+- All three surfaces now use the shared components and one geometry.
+- The wordmark remains live HTML text.
+- No route, API, contract, schema, database, dependency, job, or feature workflow changed.
+- Existing navigation data and interaction behavior are unchanged.
 
 ### Automated validation
 
-GitHub Actions CI run #885 completed successfully on the implementation head:
-
-- dependency installation passed;
-- lint passed;
-- full monorepo build passed;
-- architecture guardrails passed;
-- database migrations applied successfully to the CI database;
-- complete monorepo tests passed, including the focused home helper tests.
-
-The final documentation-only validation commit must also complete CI before PR #87 is marked ready for review.
+- Draft PR #88 is open and CI is running.
+- Shared-component unit tests cover default decorative behavior, standalone labels, geometry variants, live wordmark text, and inverse treatment.
+- Final lint, build, architecture, migration, and test results must be recorded after CI completes.
 
 ### Outstanding browser validation
 
-- desktop rendering at representative wide and medium widths;
-- mobile rendering around 390px and the existing 760px breakpoint;
-- keyboard and visible-focus review;
-- populated, empty, loading, error, and partial-warning states;
-- configured-Clerk sign-in and sign-up fallback to `/home`;
-- explicit `returnUrl` navigation;
-- local development-auth navigation;
-- request timing and loading behavior with representative data volume.
+- favicon rendering in supported browsers;
+- landing header and footer at desktop and mobile widths;
+- auth desktop and mobile lockups;
+- signed-in header and mobile navigation sheet;
+- rasterization at 16px, 24px, 32px, 42px, and 48px;
+- standard and reversed contrast on real surfaces;
+- visible keyboard focus on links containing the lockup.
 
-Authentication browser/Clerk validation from D-306 remains open and is not resolved merely by changing the fallback route.
+Authentication browser/Clerk validation from D-306 and home browser validation remain residual gaps; this asset slice does not claim to resolve them.
 
 ## Open decisions
 
-- Whether Phase 0D is approved after browser review.
-- Whether the seven-day stale-sync threshold should be retained after real-data use.
-- Whether existing request fan-out remains acceptable after browser timing review.
+- Whether Phase 1A assets and lockups are accepted after browser review.
+- Whether focused optical corrections are needed after small-size rasterization review.
 - Exact production desktop navigation rail and mobile navigation model.
-- Whether direct browser and Clerk validation accepts the Phase 0B authentication composition without revision.
-- Production Node Branch asset extraction and final geometry.
+- Whether direct browser and Clerk validation accepts the authentication composition.
+- Whether the seven-day home sync threshold remains appropriate after real use.
 - IBM Plex Sans loading strategy.
 - Final production palette beyond the locked strong-mint text role.
+- Final social-preview composition and public metadata beyond the favicon.
 
 ## Program backlog
 
@@ -115,18 +105,20 @@ Authentication browser/Clerk validation from D-306 remains open and is not resol
 - [x] Implement and merge the authentication composition.
 - [x] Reconcile and merge the Phase 0B checkpoint.
 - [x] Produce and merge signed-in home discovery and visualization.
-- [ ] Complete and record browser review for authentication or approve a focused correction slice.
-- [ ] Approve or revise the Angular signed-in home implementation.
+- [x] Implement and merge the signed-in Angular home.
+- [ ] Complete and record browser review for authentication and home.
 
 ### Phase 1 — shell and entry points
 
-- [ ] Add shared production brand assets and lockup components.
+- [ ] Approve and merge shared production brand assets and lockup components.
 - [x] Separate public and authentication routes from the signed-in application shell.
 - [x] Refactor login and sign-up into a shared authentication shell.
 - [x] Theme Clerk presentation consistently at the variable level.
-- [ ] Merge signed-in `/home` and its normal post-login destination change.
+- [x] Add signed-in `/home` and update the normal post-login destination.
 - [ ] Implement the approved desktop navigation rail and mobile navigation behavior.
-- [ ] Evolve global tokens and shared UI treatments only after representative validation.
+- [ ] Establish production global tokens and typography.
+- [ ] Evolve shared page-header, panel, and button treatments after representative validation.
+- [ ] Complete remaining public metadata and social-preview work.
 
 ### Phase 2 — representative workflows
 
@@ -145,44 +137,31 @@ Authentication browser/Clerk validation from D-306 remains open and is not resol
 
 ## Session log
 
+### 2026-07-26 — Phase 1A production brand assets
+
+- Verified PR #87 was green, mergeable, and had no review comments.
+- Squash-merged PR #87 into `visual_transformation`.
+- Created `visual-transformation/phase-1a-brand-assets` from the updated integration branch.
+- Identified inconsistent landing, auth, prototype, and signed-in brand renderings.
+- Standardized the production geometry on the approved three-node Node Branch topology.
+- Added static standard, reversed, mark, and favicon assets.
+- Added shared mark and live-text lockup components plus focused tests.
+- Replaced duplicated brand geometry while preserving page and navigation behavior.
+- Opened draft PR #88 for CI and review.
+
 ### 2026-07-26 — Phase 0D Angular signed-in home
 
-- Confirmed PR #86 CI succeeded and squash-merged it into `visual_transformation`.
-- Created `visual-transformation/phase-0d-angular-home` from the updated integration branch.
-- Implemented the guarded `/home` route in the current signed-in shell.
-- Added Home to the existing navigation model without implementing the planned rail.
-- Changed normal login and sign-up fallback to `/home` while preserving explicit return URLs.
-- Added a feature-local store that composes existing stable services with partial-failure handling.
-- Implemented deterministic Continue and recommendation rules with a named seven-day stale-sync constant.
-- Deferred Recent signals and avoided Lab or new backend dependencies.
-- Added responsive home composition and focused rule tests.
-- Opened draft PR #87 and passed lint, build, architecture guardrails, migrations, and the complete test suite.
+- Implemented guarded `/home` using existing typed APIs and deterministic actions.
+- Preserved explicit return URLs and kept rail work separate.
+- Passed lint, full build, architecture guardrails, migrations, and complete tests.
+- Squash-merged through PR #87.
 
-### 2026-07-26 — Phase 0C signed-in home discovery
+### Earlier integrated checkpoints
 
-- Squash-merged PR #85 after successful CI.
-- Inspected stable frontend data-access services and contracts.
-- Defined a no-new-backend home composition and deterministic action hierarchy.
-- Produced a responsive prototype and review sheet.
-- Squash-merged the approved discovery checkpoint through PR #86 after successful CI.
-
-### 2026-07-26 — Phase 0B checkpoint closure
-
-- Reconciled stale transformation documentation.
-- Preserved the authentication browser-validation gap.
-- Squash-merged the closure through PR #85 after CI passed.
-
-### 2026-07-26 — Phase 0B authentication shell
-
-- Added the shared responsive authentication shell.
-- Preserved Clerk, development auth, and return-URL behavior.
-- Squash-merged through PR #79.
-
-### 2026-07-26 — Angular landing implementation
-
-- Implemented the isolated public landing page at `/`.
-- Preserved authenticated application routes and behavior.
-- Squash-merged through PR #78.
+- PR #78 — public landing page.
+- PR #79 — shared authentication shell.
+- PR #85 — Phase 0B documentation closure.
+- PR #86 — signed-in home discovery and visualization.
 
 ## Update protocol
 
