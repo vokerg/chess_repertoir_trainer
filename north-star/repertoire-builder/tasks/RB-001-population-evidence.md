@@ -1,6 +1,6 @@
 # RB-001 — Deliver Lichess-aligned peer population presets
 
-Status: READY
+Status: CLAIMED
 
 Priority: P0
 
@@ -10,13 +10,13 @@ Delivery class: Dual-use
 
 Planning maturity: Detailed
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `north-star/rb-001-peer-presets-replan`
 
-Claimed at: none
+Claimed at: 2026-07-26
 
-Claim scope: none
+Claim scope: implement the versioned Lichess-benchmark rating profile, temporary peer-band resolver, compact Opening Explorer preset contract, mixed-query provenance, two-select Peer games UI, focused tests, runtime documentation, and completion synchronization for CRT-3 / RB-001.
 
 ## Outcome
 
