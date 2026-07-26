@@ -4,7 +4,7 @@ Last updated: 2026-07-26
 
 Open questions are not decisions. Resolve them in the assigned task and update this document and `DECISIONS.md` together.
 
-## Population evidence
+## Population evidence and factual player level
 
 ### Resolved implementation facts
 
@@ -21,45 +21,23 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 - The response directly exposes requested/effective population and peer-resolution provenance.
 - Active normalization profile `2026-07-lichess-bands-v1` uses the nine Lichess Explorer groups and versioned Chess.com mappings.
 - The former `2026-07-product-v1` profile remains preserved as historical calibration evidence.
-- Temporary peer resolution uses recent three-month evidence, then all history, then the generic 1400–1599 fallback.
+- Factual peer resolution uses recent three-month evidence, then all history, then the generic 1400–1599 fallback.
 - Resolver policy `dominant-contiguous-window-v1` selects the narrowest one-to-three-group window containing at least 70% of evidence, with documented deterministic tie-breaks.
+- Provider and speed are resolved before ratings are classified; raw Chess.com and Lichess values are not averaged into the factual cross-provider result.
+- Multiple accounts contribute through grouped account/provider/speed/rating evidence weighted by game count.
+- The result includes the complete band distribution, selected interval, eligible-game count, evidence period, contributions and profile/policy versions.
 - The raw `since`, `until`, `ratings` and `speeds` product query is replaced rather than maintained as a second public path.
+- RB-001 and RB-002 have no remaining player-level formula question.
 
-### Deferred beyond RB-001
+### Deferred only on demonstrated need
 
-- Whether one very active account should be capped or normalized belongs to RB-002's durable formula.
-- Cross-account duplicate-game handling belongs to RB-002; the temporary resolver does not independently deduplicate copies across accounts.
-- Better empirical Chess.com boundary calibration requires a future versioned profile change, not an RB-001 blocker.
-- Whether mixed Lichess populations are materially misleading across speeds should be evaluated during later candidate/ranking work before weighted fetching is reconsidered.
+- Cross-account duplicate-game handling should change only if a consumer or measured defect shows material distortion.
+- Activity caps, decay, outlier suppression or alternative weighting require evidence and a new resolver policy version.
+- Better empirical Chess.com boundary calibration requires a future versioned normalization-profile change.
+- Whether mixed Lichess populations are materially misleading across speeds should be evaluated during candidate/ranking work before weighted fetching is reconsidered.
+- Extraction into a separately named player-level module or endpoint belongs to the first genuine second consumer.
 
-RB-001 has no remaining implementation-design question. Review/merge is still required before RB-002 is unblocked.
-
-## Multi-account player level
-
-### Resolved direction
-
-- RB-002 must consume the Lichess-benchmark profile and shared peer resolver policy from RB-001.
-- RB-001 owns the bounded on-demand result needed by Opening Analysis.
-- RB-002 owns durable storage/snapshot, confidence, exclusions and overrides.
-- Raw Chess.com and Lichess ratings are never averaged directly.
-- RB-001's temporary resolver is evidence for the durable design, not an automatic final formula.
-
-### Remaining questions
-
-- Is the durable result one dominant interval, per-speed bands, or both?
-- Which owned accounts are included by default?
-- How are inactive and low-volume accounts handled beyond the RB-001 fallback?
-- Should durable evidence use every recent game, latest rating per pool, median rating, or another summary?
-- How are multiple accounts in the same provider/speed pool combined?
-- How are duplicate imports of the same game across accounts identified?
-- Should one very active account be capped or normalized?
-- How are genuinely conflicting high-volume bands represented?
-- How are normalization-source confidence and player-evidence confidence combined without conflating them?
-- Where is the projection stored and what invalidates/recomputes it?
-- What override is available during builder setup?
-- How does a custom account selection differ from the default factual projection?
-
-Owner task: RB-002.
+These are not blockers and do not reopen RB-002.
 
 ## Opening classification
 
@@ -82,7 +60,8 @@ Owner task: RB-003. Planning is intentionally blank beyond these questions.
 - Which confidence model is understandable to users?
 - How are opening outcome, result, accuracy, early errors and course adherence combined without double-counting?
 - How should profile changes over time be compared?
-- How is the durable RB-002 level referenced without making level a permanent style label?
+- How should the completed factual peer interval and distribution be referenced without turning level into a permanent style label?
+- Does the profile need a separately named player-level contract, or can it consume the existing resolver interface directly?
 - Can a user correct a profile conclusion, and is that stored as preference evidence or UI feedback?
 - Which conclusions are descriptive versus prescriptive?
 
