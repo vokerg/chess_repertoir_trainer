@@ -4,114 +4,70 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** foundation merged; RB-001 implementation in progress on PR #84.
+**Program state:** foundation merged; RB-001 implementation complete and in review on PR #84.
 
-**Implementation state:** the branch now contains the Lichess-benchmark profile, temporary peer resolver, preset Opening Explorer contract/service, compact Peer games UI, focused tests and canonical runtime documentation. Validation and completion synchronization remain in progress.
+**Runtime on `main`:** PR #80 still provides the raw rated-Lichess filters and PR #76 still provides normalization version `2026-07-product-v1`. PR #84 is not merged.
 
-**Planning foundation:** merged through PR #81, with later reconciliation through PR #83.
+**Review delivery:** PR #84 contains the Lichess-benchmark profile, peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
-**Active implementation PR:** #84 — `CRT-3 RB-001: deliver peer population presets`.
+**Jira epic:** CRT-2, `In Progress`.
 
-**Jira project:** `CRT` — Chess Repertoire Trainer.
+## RB-001 review scope
 
-**Jira epic:** `CRT-2` — Repertoire Builder north-star program, `In Progress`.
+Implemented on PR #84:
 
-## Runtime baseline on `main`
-
-PR #80 currently provides the shared Masters/rated Opening Explorer, raw rated-game filters, one mixed cache snapshot and the Peer games widget.
-
-PR #76 currently provides profile `universal-online-strength`, version `2026-07-product-v1`, with 13 cross-pool grades.
-
-PR #84 changes this behavior but has not been merged to `main`.
-
-## RB-001 implementation on PR #84
-
-Delivered on the branch:
-
-- fixed speed presets: All speeds, Blitz and slower, Blitz, Bullet;
-- no product-facing ultraBullet;
-- rating targets: All players, My peers, My peers and above, or one explicit Lichess group;
+- speed presets: All speeds, Blitz and slower, Blitz, Bullet;
+- rating targets: All players, My peers, My peers and above, one explicit Lichess group;
 - defaults: Blitz and slower plus My peers and above;
-- no client-selected public-game month bounds;
+- no ultraBullet or public-game month controls;
 - one mixed Lichess request and the existing deterministic cache architecture;
-- active normalization profile `2026-07-lichess-bands-v1` with nine Lichess Explorer bands;
-- the previous `2026-07-product-v1` profile preserved as a historical exported profile;
-- provider/speed-aware Chess.com and Lichess rating classification;
-- recent-three-month → all-history → generic 1400–1599 peer fallback;
-- resolver policy `dominant-contiguous-window-v1`, using the narrowest one-to-three-band window covering at least 70% of evidence;
-- direct requested/effective population and personal resolver provenance in rated responses;
-- two compact native Peer games selects and a resolved-population summary;
-- focused contract, normalization, resolver, service, OpenAPI and Angular component tests;
-- updated `docs/rating-normalization.md` and `docs/opening-explorer.md`.
+- active normalization version `2026-07-lichess-bands-v1` with nine Lichess Explorer bands;
+- historical `2026-07-product-v1` profile preserved;
+- Chess.com and Lichess provider/speed classification;
+- recent-three-month, all-history and generic 1400–1599 peer fallback;
+- `dominant-contiguous-window-v1`: shortest one-to-three-band window covering at least 70%;
+- direct population and resolver provenance;
+- two native filter selects and resolved-population summary;
+- focused contracts, API, resolver, cache, OpenAPI and Angular tests;
+- canonical rating-normalization and Opening Explorer documentation.
 
-Not introduced:
+No database migration, new cache store, queue, background job, dependency, durable player-level model or per-speed weighting was added.
 
-- separate per-speed upstream calls or cache rows;
-- client-editable weights;
-- durable player-level/profile persistence;
-- new database models, migrations, queues, jobs or dependencies.
+## Repository and Jira state
 
-## Player-level boundary
+- RB-001: `REVIEW`.
+- CRT-3: `In Review` with PR #84.
+- RB-002 / CRT-4: remains `BLOCKED` / `To Do` until RB-001 is accepted and merged.
+- RB-003 and RB-008 remain independent parallel work.
 
-RB-001 owns the temporary factual peer resolver required by Opening Analysis. RB-002 / CRT-4 remains blocked and later owns durable multi-account projection, confidence, exclusions, persistence/snapshot and override behavior. It must reuse the RB-001 normalization/profile policy boundary.
+Completion report:
 
-Repository state:
+- `reports/RB-001-2026-07-26-peer-population-presets.md`
 
-- RB-001: `IN_PROGRESS` on `north-star/rb-001-peer-presets-replan`;
-- RB-002: `BLOCKED` on RB-001;
-- RB-003: independent `PROPOSED` planning;
-- downstream profile, target and ranking tasks remain blocked.
+## Validation
 
-## Jira execution status
+GitHub Actions run `30211739445` passed on implementation head `ba164767f139b8b7efa522edb050d2ca983a6171`:
 
-- `CRT-2`: `In Progress`.
-- `CRT-3`: assigned and `In Progress`.
-- `CRT-4`: `To Do`, blocked by CRT-3.
-- downstream Jira tasks remain `To Do`.
+- lint;
+- workspace build;
+- architecture guardrails;
+- PostgreSQL migrations;
+- complete repository tests.
 
-The material CRT-3 blocks CRT-4 relationship is present in Jira.
+Latest commits after that run are planning/report synchronization only. Browser-level visual review was unavailable in the connector-only environment and remains a human review item.
 
-## Active implementation
+No merge to `main` has been performed.
 
-### RB-001 / CRT-3
+## Residual risks
 
-- Claimed by: ChatGPT
-- Branch: `north-star/rb-001-peer-presets-replan`
-- PR: #84
-- Visible claim commit: `e0b50788d31f55bfdc0bb2c712c4ec497cfcece8`
-- First runtime commit: `bd822d8d6d59fb274f8a0418e0adfb3879675f73`
-- Scope: benchmark profile, temporary peer resolver, Opening Explorer presets/provenance, compact Peer games UI, tests, runtime docs and completion synchronization.
-
-## Validation status
-
-Completed so far:
-
-- repository/API/Angular architecture and skill inspection;
-- shared contracts lint;
-- API and web TypeScript lint on CI;
-- implementation-specific tests added;
-- canonical docs updated;
-- Jira claim, assignment and In Progress transition synchronized.
-
-Pending:
-
-- full CI build/test completion on the latest head;
-- browser review of the compact controls where available;
-- completion report;
-- final task/queue/Jira transition to review.
-
-No merge to `main` is authorized or performed.
-
-## Current risks
-
-- Chess.com boundaries are rounded product mappings and must not be presented as exact rating conversion;
-- speed disparity remains deliberately ignored inside one mixed Lichess rating-group query;
-- a dominant interval can hide genuine separated high-volume pools, so the full distribution remains in provenance;
-- classical and correspondence do not contribute personal rating evidence;
-- generic fallback must remain visibly labelled;
-- cross-account duplicate imports are not independently deduplicated by the temporary resolver;
-- the active default-profile change affects every current consumer of `GET /api/rating-normalization/default`.
+- Chess.com band boundaries are rounded product mappings, not exact conversions.
+- One mixed Lichess query deliberately ignores normal speed-rating disparity.
+- The full distribution remains visible because one dominant interval can hide separated populations.
+- Classical and correspondence do not contribute personal rating evidence.
+- The generic fallback must remain visibly labelled.
+- The temporary resolver does not independently deduplicate copies across owned accounts.
+- The active default-profile change affects every current normalization consumer.
 
 ## Queue recommendation
 
-Finish validation and review of RB-001 first. Unblock RB-002 only after PR #84 is accepted and merged. No other task order or priority change is recommended.
+Review and merge RB-001 first. Unblock RB-002 only after accepted post-merge synchronization. No other task order or priority change is recommended.
