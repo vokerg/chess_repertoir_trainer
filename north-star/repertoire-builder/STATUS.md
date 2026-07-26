@@ -6,15 +6,17 @@ Last updated: 2026-07-26
 
 **Program state:** foundation merged and active execution underway.
 
-**Implementation state:** the first dual-use population-evidence foundation is available on `main`; no interactive repertoire-builder workflow has been implemented yet.
+**Implementation state:** two Stage 1 dual-use foundations are available on `main`: rated Lichess population evidence and versioned cross-pool rating normalization. No interactive repertoire-builder workflow has been implemented yet.
 
 **Planning foundation:** merged through PR #81 at squash commit `ead1d01161228f8dc647a847383f9215a61f966b`.
 
 **Population evidence foundation:** merged through PR #80.
 
+**Rating normalization foundation:** merged through PR #76.
+
 **Jira project:** `CRT` — Chess Repertoire Trainer.
 
-**Jira epic:** `CRT-2` — Repertoire Builder north-star program, now `In Progress`.
+**Jira epic:** `CRT-2` — Repertoire Builder north-star program, `In Progress`.
 
 ## Completed program setup
 
@@ -35,7 +37,9 @@ Last updated: 2026-07-26
 - [x] Added Jira workflow, PR visibility, claiming, reporting, and synchronization rules.
 - [x] Merged the planning foundation to `main` through PR #81.
 
-## Runtime foundation now available
+## Runtime foundations now available
+
+### Population evidence — PR #80
 
 PR #80 merged the shared Opening Explorer and Peer games capability to `main`:
 
@@ -49,13 +53,32 @@ PR #80 merged the shared Opening Explorer and Peer games capability to `main`:
 - a reusable Peer games Angular widget composed in Opening Analysis behind its own toggle;
 - canonical documentation in `docs/opening-explorer.md`.
 
-This is a substantial part of RB-001 / CRT-3, but it does not complete that task. Controlled General weighting, explainable per-speed components, normalized-grade targeting, direct response-level filter provenance, and sparse-data semantics remain.
+This is a substantial part of RB-001 / CRT-3, but it does not complete that task. Controlled General weighting, explainable per-speed components, normalized-grade population targeting, direct response-level filter provenance, and sparse-data semantics remain.
+
+### Rating normalization — PR #76
+
+PR #76 merged the shared rating-normalization domain to `main`:
+
+- a versioned `universal-online-strength` profile, currently `2026-07-product-v1`;
+- 13 stable product-facing grades;
+- calibrated Chess.com and Lichess bullet, blitz, and rapid pools;
+- FIDE Standard as reference-only with unsupported lower grades represented as `null`;
+- profile source metadata, per-pool confidence, and soft-padding values;
+- shared `@chess-trainer/contracts/rating-normalization` schemas;
+- helpers to classify one rating into a grade and map a grade back to a source-pool range;
+- `GET /api/rating-normalization/default` with Fastify/OpenAPI metadata;
+- a reference table in the performance-by-rating lab;
+- focused API and Angular store tests;
+- canonical guidance in `docs/rating-normalization.md`.
+
+This removes the prerequisite blocker for RB-002 / CRT-4 but does not complete it. Multi-account selection, recency, period behavior, activity weighting, per-speed/overall resolution, contribution evidence, confidence aggregation, exclusions, and override projection remain.
 
 ## Jira execution status
 
-- `CRT-2` is `In Progress` because the program now has merged runtime foundation work and an active execution queue.
+- `CRT-2` remains `In Progress` because the program has merged runtime foundations and an active execution queue.
 - `CRT-3` remains `To Do`, matching repository state `READY`; no active implementation claim exists.
-- `CRT-4` through `CRT-18` remain `To Do`, matching their current repository planning, ready, proposed, or blocked states.
+- `CRT-4` remains `To Do`, now matching repository state `READY`; PR #76 removed its prerequisite blocker, but no active implementation claim exists.
+- `CRT-5` through `CRT-18` remain `To Do`, matching their current repository proposed, ready, or blocked states.
 - No Jira task is `Done` because none currently satisfies the repository completion protocol in `JIRA.md`.
 
 The CRT workflow is:
@@ -66,7 +89,7 @@ To Do → In Progress → In Review → Done
 
 Repository-specific states remain more detailed than Jira. See [`JIRA.md`](JIRA.md) for the required mapping and synchronization protocol.
 
-## Known parallel or external work
+## Resolved external or parallel foundations
 
 ### Population explorer
 
@@ -74,7 +97,9 @@ Resolved. The implementation is PR #80 and is merged to `main`. RB-001 / CRT-3 i
 
 ### Rating normalization
 
-At foundation creation, PR #76 contained a versioned cross-pool rating-normalization contract and helpers. RB-002 / CRT-4 still needs to verify its current merge and implementation state before depending on it. RB-001 may proceed on weighting, provenance, and sparse-data semantics while normalized-grade targeting waits for RB-002.
+Resolved. PR #76 is merged to `main`. RB-002 / CRT-4 is no longer blocked on availability of a normalization contract. Its remaining work must reuse the merged stable grade IDs, profile ID/version, source confidence, soft padding, classification helper, and source-range helper rather than introducing a second parity model.
+
+The normalized-grade portion of RB-001 may now rely on the shared profile, but own-level targeting and grade-offset semantics still depend on RB-002's unresolved player-level calculation.
 
 ### Visual transformation
 
@@ -89,22 +114,24 @@ Claims belong in individual task files and must be synchronized to their mapped 
 ## Recommended next coordination
 
 1. Claim RB-001 / CRT-3 for the remaining weighting, component-explainability, filter-provenance, and sparse-data contract work.
-2. Resolve the current integration state of rating-normalization PR #76 before RB-002 / CRT-4 or the normalized-grade part of RB-001 proceeds.
-3. Allow RB-003 / CRT-5 opening-classification work to proceed independently when its own planning begins.
-4. Consider RB-008 / CRT-10 visual discovery early enough to influence contracts, but do not build production UI from assumptions.
-5. Keep the merged Peer games widget and shared Opening Explorer module as the baseline; do not create a parallel population API or widget.
+2. Claim RB-002 / CRT-4 for the multi-account level formula, account evidence projection, confidence semantics, and grade-offset source-range behavior using PR #76 as the baseline.
+3. Coordinate the normalized-grade population slice of RB-001 with RB-002, but do not block the rest of RB-001 on the player-level formula.
+4. Allow RB-003 / CRT-5 opening-classification work to proceed independently when its own planning begins.
+5. Consider RB-008 / CRT-10 visual discovery early enough to influence contracts, but do not build production UI from assumptions.
+6. Keep PR #80 and PR #76 as the only verified population and rating-parity foundations; do not create parallel feature-local contracts.
 
 ## Validation
 
 Performed for this reconciliation:
 
-- inspected merged PR #80 metadata and changed-file list;
+- inspected merged PR #80 and PR #76 metadata and changed-file lists;
 - inspected the current Opening Explorer contracts, routes, product documentation, and Angular usage on `main`;
-- compared the implementation with every RB-001 acceptance criterion;
-- inspected all fields for Jira Epic `CRT-2` and Tasks `CRT-3` through `CRT-18`;
-- updated `CRT-2` description, labels, and workflow state;
-- updated `CRT-3` description and labels while preserving its priority, parent, dependency links, and `To Do` workflow state;
-- updated the repository queue, roadmap, questions, task scope, and reconciliation report.
+- inspected the rating-normalization contracts, service helpers, route, canonical documentation, and product usage on `main`;
+- compared PR #80 with every RB-001 acceptance criterion;
+- compared PR #76 with every RB-002 acceptance criterion;
+- inspected all fields for affected Jira issues `CRT-2`, `CRT-3`, `CRT-4`, `CRT-6`, and `CRT-8`;
+- preserved priorities, parents, assignees, dependency links, estimates, and workflow states where the merged foundations did not satisfy task outcomes;
+- updated the repository queue, roadmap, decisions, questions, task scopes, and reconciliation reports.
 
 Not performed:
 
@@ -114,17 +141,18 @@ Not performed:
 - architecture checks;
 - browser validation.
 
-Reason: this reconciliation changes planning and Jira metadata only. PR #80's runtime implementation and its own validation already exist on `main`; this session did not modify runtime code.
+Reason: this reconciliation changes planning and Jira metadata only. PR #80 and PR #76 have their own runtime implementation and validation already on `main`; this session did not modify runtime code.
 
 ## Current risks
 
 - a raw multi-speed Lichess response is not yet the controlled General weighting required by the north-star decisions;
 - response payloads identify a deterministic profile version but do not directly expose the selected month, rating, and speed filters;
-- weighted aggregates do not yet expose per-speed components;
-- normalized-grade targeting remains dependent on the rating-normalization and player-level work;
+- weighted population aggregates do not yet expose per-speed components;
+- the rating profile provides grade boundaries, but no player-level formula chooses or combines account evidence;
+- soft padding and source confidence exist but their role in multi-account confidence remains unresolved;
+- own-level and stronger-level population targeting still need an explicit mapping from resolved player evidence to Lichess Explorer rating buckets;
 - opening classification is a required but intentionally undefined dependency;
 - visual choice design may change API and state assumptions;
-- multi-account level and confidence formulas need empirical validation;
 - Jira and repository state can drift if future agents do not follow synchronization rules.
 
 ## Update protocol
