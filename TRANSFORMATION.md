@@ -36,31 +36,27 @@ Every meaningful transformation change must update the relevant files under `tra
 
 ## Current checkpoint
 
-The Phase 0A direction was explicitly approved for a browser-review implementation slice. The working branch `visual-transformation/phase-0a-angular-landing` now contains an isolated Angular landing page at `/` and is awaiting pull-request review into `visual_transformation`.
+Phase 0A and Phase 0B are integrated into `visual_transformation`:
 
-Implemented in this slice:
+- PR #78 squash-merged the public Angular landing page at `/`;
+- PR #79 squash-merged the shared authentication shell for `/login` and `/signup`;
+- public and authentication routes render outside the existing signed-in application shell;
+- Clerk lifecycle, local development authentication, explicit `returnUrl` behavior, and the existing `/library` fallback remain intact;
+- PR #79 CI completed successfully.
 
-- standalone public landing component;
-- responsive Phase 0A composition;
-- Node Branch-inspired inline vector mark;
-- approved strong-mint text token `#1F7865`;
-- real `/login` and `/signup` calls to action;
-- root route changed from the authenticated Study redirect to the public landing page;
-- public landing rendered outside the existing authenticated application shell.
+The Phase 0B implementation report records that local browser rendering, responsive review, configured-Clerk interaction, and development-auth interaction were not performed in the connector-only implementation environment. No later repository report currently records those checks as completed.
 
-Explicitly not included:
+The active documentation checkpoint is:
 
-- authentication-page redesign;
-- signed-in `/home`;
-- navigation-rail redesign;
-- global production token migration;
-- changes to authenticated feature pages, API behavior, or persistence.
+1. reconcile the persistent transformation documents with the merged Phase 0B state;
+2. preserve the missing browser and Clerk checks as an explicit residual validation gap;
+3. establish the next product gate as a separate Phase 0C signed-in `/home` discovery and visualization checkpoint.
 
 Review next:
 
-1. [`transformation/reports/PHASE_0A_ANGULAR_LANDING_IMPLEMENTATION.md`](./transformation/reports/PHASE_0A_ANGULAR_LANDING_IMPLEMENTATION.md)
-2. the root route in the branch deployment or local Angular application;
-3. desktop, tablet, and mobile composition;
-4. sign-in and sign-up navigation behavior.
+1. [`transformation/reports/PHASE_0B_CHECKPOINT_CLOSURE.md`](./transformation/reports/PHASE_0B_CHECKPOINT_CLOSURE.md)
+2. [`transformation/STATUS.md`](./transformation/STATUS.md)
+3. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
+4. the authentication implementation report and `/login` and `/signup` in a real browser when validation is available.
 
-Do not merge the implementation pull request or begin auth/home visualization until the landing page has been visually reviewed and explicitly approved.
+Do not begin signed-in `/home` production implementation, navigation-rail implementation, production brand-asset extraction, global token migration, or authenticated workflow redesign until the next checkpoint is explicitly approved.
