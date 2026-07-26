@@ -4,9 +4,11 @@ Date: 2026-07-26
 
 Status: planning reconciliation only; not an RB-001 completion report.
 
-Jira: CRT-3, with dependency impact on CRT-4, CRT-8 and the CRT-2 epic.
+Jira: CRT-3, with dependency impact on CRT-4, CRT-6, CRT-8 and the CRT-2 epic.
 
 Branch: `north-star/rb-001-peer-presets-replan`
+
+Pull request: https://github.com/vokerg/chess_repertoir_trainer/pull/84
 
 ## Purpose
 
@@ -108,7 +110,8 @@ No new provider, extractor, cache table, queue, background job or persistence mo
 - RB-006 uses fixed speed/rating presets rather than arbitrary weighted combinations.
 - RB-004 consumes RB-002 factual player level rather than recalculating it.
 - RB-010 represents the target presets in the MVP setup.
-- CRT-3 should block CRT-4 in Jira.
+- Jira now records CRT-3 as blocking CRT-4.
+- Jira descriptions were synchronized for CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8.
 - Jira workflow statuses remain unchanged because this is planning coordination, not an implementation claim.
 
 ## Repository files changed by this reconciliation
@@ -138,7 +141,9 @@ Historical reconciliation reports are not rewritten; this report records the lat
 - inspected the current rating-normalization profile, helper service and canonical documentation;
 - inspected game-recorded rating and three-month/all-history account projection patterns;
 - inspected affected North Star task, roadmap, decision and status documents;
-- inspected Jira CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8 descriptions and dependencies.
+- inspected and synchronized Jira CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8;
+- created the material Jira `Blocks` link from CRT-3 to CRT-4;
+- compared the planning branch against `main` and confirmed only North Star planning files changed.
 
 ## Validation not performed
 
