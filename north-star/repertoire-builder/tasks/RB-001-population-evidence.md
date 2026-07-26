@@ -224,11 +224,15 @@ The completion report must record:
 - documentation and migration impact;
 - the reusable boundary handed to RB-002, RB-004, RB-006 and RB-007.
 
-## Reconciliation
+## Planning reconciliation
 
-Report: `reports/RB-001-2026-07-26-peer-games-reconciliation.md`
+Previous baseline report: `reports/RB-001-2026-07-26-peer-games-reconciliation.md`
 
-This report records the previous PR #80/PR #76 reconciliation and not the revised delivery direction.
+Revised direction report: `reports/RB-001-2026-07-26-peer-population-direction.md`
+
+Planning PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
+
+Neither report is an RB-001 completion report.
 
 ## Completion
 
