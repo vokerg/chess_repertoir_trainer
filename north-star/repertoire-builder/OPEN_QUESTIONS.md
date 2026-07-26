@@ -76,6 +76,7 @@ Owner tasks: RB-004 and RB-005.
 - Is `dubious` a persona, a soundness tolerance or both?
 - Can one target have different policies for White and Black?
 - How is target versioning handled when a draft resumes?
+- Which target/profile disagreement fields are required so the visual layer can explain the override without changing factual evidence?
 
 Owner tasks: RB-006 and RB-013.
 
@@ -91,21 +92,37 @@ Owner tasks: RB-006 and RB-013.
 - How are unavailable datasets handled?
 - Which ranking reasons are stable enough for contracts?
 - Should ranking scores be returned, or only ordered candidates and reason components?
+- What bounded resulting-position and preview-line data is required for board-first and comparison presentations?
+- How is opponent-response relevance converted into cumulative coverage without implying false precision?
 
 Owner task: RB-007.
 
 ## Visual choice experience
 
-- Does each candidate need its own mini-board?
-- Can one main board preview candidates quickly enough?
-- How are evidence density and board size balanced?
-- How is opponent coverage shown visually?
-- How are deferred branches and branch progress represented?
-- What works on mobile?
-- How does a user compare two resulting structures several plies ahead?
-- Which explanation is always visible and which is expandable?
+### Resolved by PR #110 prototypes
 
-Owner task: RB-008.
+- Candidate moves must remain visually connected to resulting positions.
+- Profile fit and selected-target fit are separate and may disagree visibly.
+- Factual evidence, recommendation role, theory burden and warnings can coexist without an LLM narrative.
+- Opponent responses can expose selected, pending, deferred and ignored states directly in the decision surface.
+- Both one-board and multi-board compositions can work at desktop and 390px mobile widths, but they optimize different goals.
+- One large shared board best preserves analytical readability and the current workbench mental model.
+- Simultaneous mini-boards improve structural comparison but reduce board size and increase card/mobile density.
+- A coverage queue is easier to read on narrow screens than a full matrix; a matrix is stronger for comparative overview.
+- Direction A supports keyboard switching between candidates; status text prevents color-only communication.
+
+### User review still required
+
+- Approve Direction A, Direction B, the proposed hybrid, or request a third direction.
+- Should mini-board comparison be an explicit mode or visible by default?
+- Is the board-first side stack sufficiently strong for comparing structures several plies ahead?
+- Should opponent coverage use the Direction A queue, Direction B matrix, or different views by breakpoint/task phase?
+- Is cumulative first-pass coverage useful enough to keep on the primary decision surface?
+- Is Direction B's sticky mobile summary helpful or intrusive?
+- Which candidate metrics stay always visible and which move into expandable evidence?
+- How far ahead should a production preview line or board comparison navigate before it becomes a separate analysis workflow?
+
+Owner task: RB-008. Review vehicle: PR #110.
 
 ## Builder session and queue
 
@@ -116,6 +133,7 @@ Owner task: RB-008.
 - How is a draft invalidated when source courses or evidence change?
 - What is the maximum bounded work returned by one endpoint?
 - How are concurrent edits handled?
+- Does the reviewed coverage presentation require one queue view, one matrix view, or both as different session projections?
 
 Owner task: RB-009.
 
