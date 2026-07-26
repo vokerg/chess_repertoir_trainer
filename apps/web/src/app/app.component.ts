@@ -26,7 +26,7 @@ export class AppComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly jobStore = inject(ImportedGameJobStore);
-  protected readonly isPublicLanding = signal(this.router.url === '/');
+  protected readonly isStandaloneExperience = signal(this.isStandaloneUrl(this.router.url));
 
   constructor() {
     effect(() => {
@@ -40,8 +40,13 @@ export class AppComponent {
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((event) => this.isPublicLanding.set(event.urlAfterRedirects === '/'));
+      .subscribe((event) => this.isStandaloneExperience.set(this.isStandaloneUrl(event.urlAfterRedirects)));
 
     void this.auth.initialize();
+  }
+
+  private isStandaloneUrl(url: string): boolean {
+    const [path] = url.split(/[?#]/, 1);
+    return path === '/' || path === '/login' || path === '/signup';
   }
 }
