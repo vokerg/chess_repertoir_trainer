@@ -7,7 +7,7 @@
 - [Native mobile architecture](mobile/architecture.md): Expo workspace, Chessground DOM boundary, offline persistence, synchronization, and current rollout scope.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
 - [Persistent imported-game job processing](imported-game-job-processing.md): target architecture and staged migration from browser/in-memory orchestration to durable jobs.
-- [Lichess Opening Explorer](masters-explorer.md): system-wide Masters and rated-game position statistics with shared persistent cache behavior.
+- [Opening Explorer](opening-explorer.md): separate Masters and rated-game APIs with shared integration and persistent cache behavior.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Opening struggles](opening-struggles.md): report modes, course coverage semantics, and performance boundary.
 - [AI widgets](ai-widgets.md): optional provider boundary, game-review context, feature flags, privacy, and removal procedure.
@@ -20,7 +20,7 @@
 - [OpenAPI](openapi.md): generated documentation rules.
 - [Deployment](deployment.md): environment and hosting setup.
 - [Manual Docker deployment](docker-manual-deployment.md): local Compose testing, manual multi-platform GHCR publishing, and VM update/rollback operations.
-- [Mobile development](mobile/development.md): Expo setup, device networking, validation, and release gates.
+- [Mobile development](mobile/development.md): Expo setup, device networking, and release gates.
 - [MCP](mcp.md): backend MCP transport.
 - [Project working guides](skills/README.md): detailed human-readable change guides.
 
