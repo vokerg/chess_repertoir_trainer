@@ -1,6 +1,6 @@
 # RB-008 — Prototype visual candidate and coverage choices
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
