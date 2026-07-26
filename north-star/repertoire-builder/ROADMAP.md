@@ -6,135 +6,106 @@ This roadmap orders capability stages and decision gates. Detailed execution bel
 
 ## Stage 0 — program foundation
 
-State: complete on `main` through PR #81, with later planning reconciliation through PR #83.
+State: complete on `main` through PR #81, with planning reconciliation through PR #83.
 
-Deliverables:
-
-- stable foundation agreements;
-- north-star experience description;
-- feature catalog;
-- ordered task queue;
-- claim and completion-report protocol;
-- explicit decisions and open questions;
-- Jira Epic `CRT-2` and one-to-one Tasks `CRT-3` through `CRT-18`.
-
-Gate: passed for execution; later revisions remain governed by repository/Jira synchronization.
+Gate: passed for execution.
 
 ## Stage 1 — reusable evidence foundations
 
-State: active. PR #80 and PR #76 are merged; RB-001 is the next actionable P0 task.
+State: active. RB-001 is implemented and in review on PR #84; RB-002 remains blocked until RB-001 is accepted and merged; RB-003 remains independent.
 
-### Runtime baseline
+### Merged baseline
 
-PR #80 provides the shared rated Lichess Opening Explorer, mixed filter-profile cache and Peer games widget.
+- PR #80: shared Masters/rated Opening Explorer, mixed cache profile and Peer games widget.
+- PR #76: previous cross-pool rating-normalization profile, contracts, helpers, tests and reference UI.
 
-PR #76 provides the current cross-pool normalization profile, contracts, helpers, tests and documentation.
+### RB-001 review delivery
 
-### Revised delivery direction
+PR #84 delivers:
 
-RB-001 will simplify the product surface rather than add weighted per-speed aggregation:
+- speed presets: All speeds, Blitz and slower, Blitz, Bullet;
+- no product-facing ultraBullet;
+- rating targets: All players, My peers, My peers and above, or one explicit group;
+- defaults: Blitz and slower plus My peers and above;
+- one mixed Lichess request and existing deterministic cache architecture;
+- no client-selected public-game months;
+- active normalization profile `2026-07-lichess-bands-v1` using the nine Lichess Explorer groups;
+- versioned approximate Chess.com bullet/blitz/rapid mappings;
+- recent-three-month → all-history → generic peer fallback;
+- resolver policy `dominant-contiguous-window-v1`;
+- direct request/effective-population/resolver provenance;
+- two compact Peer games selects;
+- full CI validation and canonical runtime documentation.
 
-- fixed speed presets: All speeds, Blitz and slower, Blitz, Bullet;
-- no ultraBullet;
-- one rating target: All players, My peers, My peers plus one band, or one explicit Lichess group;
-- server-controlled public-game period;
-- one mixed Lichess request and one mixed cache profile;
-- direct requested/effective filter provenance;
-- a new versioned Lichess-benchmark normalization profile;
-- Chess.com mappings into those benchmark bands;
-- a reusable on-demand peer-band resolver using recent three-month games, then all history, then a generic fallback;
-- compact two-select Peer games UI.
+### Stage 1 boundary
 
-Client-side per-speed weighting, separate component calls and arbitrary product-facing speed combinations are not Stage 1 requirements.
+RB-001 owns the temporary factual peer resolver required by Opening Analysis.
 
-RB-002 follows RB-001 and turns the shared benchmark/resolver boundary into a durable multi-account player-level projection with confidence, exclusions and overrides.
+RB-002 owns the later durable multi-account projection, confidence, exclusions, persistence/snapshot and overrides. It must reuse the accepted RB-001 profile and resolver policy.
 
-RB-003 remains the independent opening-classification dependency.
+RB-003 owns independent named opening classification.
 
-### Goals
+### Gate
 
-- query one position for a compact, reproducible peer-population target;
-- align product levels directly with Lichess Explorer's supported rating groups;
-- convert Chess.com evidence into the same versioned benchmark bands;
-- resolve and explain a user's temporary peer range without requiring the full profile system;
-- preserve source, effective speeds/groups, sample size, cache state and policy versions;
-- establish a durable multi-account player-level model after the shared resolver exists;
-- establish the opening-classification dependency independently.
+RB-001 portion is reviewable when:
 
-### Standalone value
+- fixed presets resolve deterministically;
+- effective speeds/groups are returned directly;
+- personal resolver provenance is inspectable and not stored in the public cache;
+- one mixed cache snapshot retains honest HIT/REFRESHED/STALE semantics;
+- profile and resolver policies are versioned;
+- Masters remains separate;
+- lint, build, architecture, migrations and complete tests pass.
 
-Already available:
+These conditions are met on PR #84. Merge/acceptance remains required before RB-002 is unblocked.
 
-- rated Peer games evidence in Opening Analysis;
-- reusable Opening Explorer API, contracts, cache and Angular widget;
-- distinct Masters and rated Lichess sources;
-- current cross-pool rating-normalization API and lab reference table.
+Stage 1 remains open until:
 
-Remaining:
-
-- compact peer presets and automatic peer targeting;
-- Lichess-benchmark profile version;
-- reusable durable multi-account player level;
-- reusable opening taxonomy.
+- RB-002 durable player level is delivered;
+- RB-003 opening classification is delivered or a deliberately limited fallback is approved.
 
 Tasks: RB-001, RB-002, RB-003.
 
-Gate:
-
-- the Peer games product uses fixed presets and no raw month/checkbox filter matrix;
-- My peers and My peers plus one resolve deterministically with visible provenance;
-- one mixed Lichess response is accepted as the target population for the selected preset;
-- the active benchmark profile is versioned, tested and documented;
-- durable player-level inputs, exclusions, contributions, confidence and overrides are inspectable;
-- an opening-profile contract is available or a deliberately limited fallback is approved.
-
 ## Stage 2 — Player Chess Profile
+
+State: blocked on RB-002 and RB-003; population-relative conclusions also consume RB-001.
 
 Goals:
 
 - calculate preference and performance separately;
 - preserve sample size, filters, baseline and confidence;
-- provide a recalculable visual profile for periods, accounts, speed presets, colors and rating context;
+- support periods, accounts, agreed speed presets, colors and rating context;
 - expose evidence and supporting games/openings;
-- reference the durable RB-002 player-level projection without duplicating it;
-- allow conclusions to be corrected or ignored for future builder setup.
-
-Standalone value: a complete product capability independent of the builder.
+- keep profile conclusions advisory.
 
 Tasks: RB-004, RB-005.
 
-Gate: profile claims are reproducible, evidence-backed and useful enough to advise but not constrain a repertoire target.
+Gate: profile claims are reproducible, evidence-backed and useful enough to advise without constraining a target.
 
 ## Stage 3 — target and candidate decision model
 
+State: blocked on Stage 1 contracts and profile/opening dependencies.
+
 Goals:
 
-- define a repertoire target using RB-001 speed/rating presets, persona, theory, coverage and risk;
-- snapshot or reference factual RB-002 peer evidence while preserving manual override;
+- define a repertoire target using one RB-001 speed preset and one peer/all/explicit rating target;
+- keep factual level, profile recommendation and manual override separate;
 - aggregate engine, master, population, personal, opening-profile and course evidence without collapsing sources;
 - rank candidates with explicit reasons and visible missing evidence.
 
 Tasks: RB-006, RB-007, RB-013.
 
-Gate: for one position, the system can produce a deterministic, explainable candidate comparison for a selected target.
+Gate: one position can produce a deterministic, explainable candidate comparison for a selected target.
 
 ## Stage 4 — visual decision proof
 
-Goal: prove how a player visually compares move choices and consequences before production builder architecture is locked.
+State: RB-008 remains READY and may proceed independently with verified population responses plus explicit mocks for unresolved durable level/profile evidence.
 
-Requirements:
-
-- realistic position data;
-- desktop and mobile consideration;
-- candidate selection, evidence and tradeoffs;
-- opponent coverage view;
-- clear distinction between factual player level, profile suggestion and target override.
+Goal: prove how a player visually compares candidate moves, consequences and opponent coverage before production builder architecture is locked.
 
 Task: RB-008.
 
-This may start in parallel using verified Peer games data plus explicit mocks for unresolved player-level and target evidence. It must use the revised preset direction rather than the current checkbox UI as the future contract.
-
-Gate: one reviewed interaction direction demonstrates an understandable, genuinely visual workflow.
+Gate: one reviewed interaction direction is understandable on desktop and mobile.
 
 ## Stage 5 — resumable builder foundation and MVP
 
@@ -147,111 +118,71 @@ Goals:
 
 Tasks: RB-009, RB-010.
 
-Gate: a user can build one bounded repertoire slice, leave and resume if persistence is approved, and inspect the draft before writing a course.
+Gate: a user can build one bounded repertoire slice and inspect the complete draft before course writes.
 
 ## Stage 6 — course materialization and adaptation
 
 Goals:
 
 - preview and apply accepted trees through current course-writing patterns;
-- create or merge lines safely;
-- enter the builder from gaps, endings, deviations or weak choices;
-- preserve conflicts, transpositions, ownership and revision behavior.
+- create or merge course material safely;
+- enter the builder from gaps, endings, deviations and weak choices;
+- preserve conflicts, transpositions and ownership.
 
 Tasks: RB-011, RB-012.
 
-Gate:
-
-- generated decisions become trainable course material safely;
-- existing courses use the same workflow rather than a parallel recommendation system.
+Gate: accepted decisions become trainable material and existing-course maintenance uses the same workflow.
 
 ## Stage 7 — specialized personas and optional intelligence
 
 Goals:
 
 - support multiple purposeful repertoires for the same opening;
-- research traps representation and data;
-- determine whether LLM explanation/orchestration adds value without becoming a factual dependency.
+- research traps representation/data;
+- determine whether LLM explanation or orchestration adds value without becoming a factual dependency.
 
 Tasks: RB-013, RB-014, RB-015.
 
-Gate: optional capabilities have explicit evidence, safety, data and architecture decisions before implementation.
+Gate: optional capabilities have explicit evidence, safety and architecture decisions before implementation.
 
 ## Stage 8 — outcome feedback
 
 Goals:
 
-- measure whether built and trained choices appear in later games;
+- measure whether built/trained choices appear in later games;
 - distinguish adoption, recall, opening-position quality and results;
 - identify regression and newly relevant coverage;
 - feed validated outcomes back into profile and course maintenance.
 
 Task: RB-016.
 
-Gate: the program can evaluate whether recommendations improve real opening outcomes rather than merely producing larger courses.
+Gate: the program can evaluate real opening outcomes rather than only course size.
 
 ## Parallel-delivery guidance
 
-Safe early parallel tracks:
+Safe parallel work while PR #84 is reviewed:
 
-- RB-001 implementation;
-- independent RB-003 planning/classification work;
-- RB-008 visual prototype using the revised presets and explicit mocks;
+- RB-003 opening-classification discovery;
+- RB-008 visual candidate/coverage prototype;
 - RB-014 traps research.
 
-Do not implement RB-002 against the old 13-grade model while RB-001 is replacing the active benchmark bands.
+Do not start RB-002 implementation until the RB-001 contract is accepted and merged.
 
-High-collision areas:
+High-collision areas requiring coordination:
 
-- rating-normalization schema/profile changes;
-- shared peer resolver and player-level contracts;
-- Opening Explorer cache-profile and provenance changes;
-- target preset contracts;
-- opening-profile identifiers;
-- builder persistence;
+- population and player-level contracts;
+- Opening Explorer cache/provenance;
+- rating-normalization profile changes;
+- imported-game/account evidence aggregation;
+- target/candidate schemas;
+- builder state and persistence;
 - course reintegration writes.
 
-## Critical path
+## Queue impact
 
-```text
-RB-001 peer presets / benchmark bands / temporary resolver
-        ↓
-RB-002 durable player level
-        +
-RB-003 opening profile
-        ↓
-RB-004/005 Player Chess Profile
-        ↓
-RB-006 target contract
-        ↓
-RB-007 candidate evidence/ranking
-        +
-RB-008 visual proof
-        ↓
-RB-009/010 builder
-        ↓
-RB-011/012 course delivery and adaptation
-        ↓
-RB-016 feedback
-```
-
-## Reprioritization impact
-
-- RB-001 remains order 10, P0 and `READY`, with revised scope.
-- RB-002 remains order 20 and P0 but becomes `BLOCKED` on RB-001.
-- RB-006 must use fixed presets and peer targets rather than arbitrary weighted speed sets.
-- Other downstream blocked states remain valid.
-- No task is completed by this planning revision.
-
-## Reprioritization rules
-
-Reprioritize when:
-
-- a shared contract changes;
-- profile calculations show opening classification is insufficient;
-- visual discovery invalidates proposed endpoint/state boundaries;
-- a smaller standalone delivery removes a major risk;
-- a dependency is delayed and independent work can advance safely;
-- completion reports identify missing tasks or obsolete assumptions.
+- RB-001 remains order 10, P0, `REVIEW`.
+- RB-002 remains order 20, P0, `BLOCKED` until RB-001 acceptance/merge.
+- No other task order or priority change is recommended.
+- No new task is required.
 
 Every completion report must explicitly state whether this roadmap remains valid.
