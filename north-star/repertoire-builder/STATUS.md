@@ -4,11 +4,13 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** foundation merged; RB-001 completed on `main`; RB-002 is the next actionable P0 task.
+**Program state:** foundation merged; RB-001 completed on `main`; RB-002 remains the next actionable P0 task with a narrowed provider-aware player-rating scope.
 
-**Runtime on `main`:** squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 now provides the Lichess-benchmark profile, temporary peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
+**Runtime on `main`:** PR #84 provides the Lichess-benchmark profile, temporary peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation. The imported-game summary also already exposes `averageUserRating` for the complete applied game filter.
 
-**Jira epic:** CRT-2, `In Progress`.
+**Scope reconciliation branch:** `rb-002/crt-4-player-level-reconciliation`.
+
+**Jira epic:** CRT-2, last known `In Progress`; current state cannot be verified through the connector.
 
 ## RB-001 delivered scope
 
@@ -29,42 +31,89 @@ Available on `main`:
 - focused contracts, API, resolver, cache, OpenAPI and Angular tests;
 - canonical rating-normalization and Opening Explorer documentation.
 
-No database migration, new cache store, queue, background job, dependency, durable player-level model or per-speed weighting was added.
+No database migration, new cache store, queue, background job, dependency or durable player-level model was added.
 
-## Repository and Jira state
+## Existing selected-game average
+
+`ImportedGameQueryService.summarize` already calculates:
+
+- `averageUserRating`;
+- `averageOpponentRating`;
+- the complete applied imported-game filter and summary breakdowns.
+
+The raw user average is the weighted arithmetic mean of available game-recorded user ratings. It supports account, provider, speed, period and other imported-game filters and is covered by API/MCP regression tests.
+
+This changes the RB-002 narrative: the task does not need to invent a generic user-average formula. It needs to combine the existing descriptive average with provider/speed normalization and a reproducible benchmark-band result.
+
+## Reconciled RB-002 boundary
+
+RB-002 now owns:
+
+- reuse of the selected-game raw average;
+- per-account/provider/speed rating evidence and sample sizes;
+- provider-aware normalization into canonical Lichess bands;
+- dominant peer interval, full distribution and conflict/evidence-quality semantics;
+- reuse by Opening Explorer and later Chess Profile/target consumers.
+
+The first delivery should calculate on demand. A Prisma snapshot is not required unless realistic performance, invalidation or historical-reproducibility evidence justifies it.
+
+A repertoire-specific manual target override belongs to RB-006 and must not mutate the factual RB-002 result.
+
+## Repository and execution state
 
 - RB-001: `DONE`.
-- CRT-3: `Done` after squash merge PR #84.
-- RB-002: `READY`.
-- CRT-4: `To Do`, unblocked and ready to be claimed.
+- CRT-3: last known `Done` after squash merge PR #84.
+- RB-002: `READY`, unclaimed.
+- CRT-4: last known `To Do`, but not currently verifiable.
+- Reconciliation branch: `rb-002/crt-4-player-level-reconciliation`.
 - RB-003 and RB-008 remain independent parallel work.
 
-Completion report:
+## Jira connector clarification
 
-- `reports/RB-001-2026-07-26-peer-population-presets.md`
+The Atlassian/Rovo connector was retested on 2026-07-26 and returned HTTP 403 with:
+
+```text
+The app is not installed on this instance
+```
+
+This points to an Atlassian app installation/site-connection problem, not merely missing CRT project permissions. Granting user-level Jira permissions does not install the connector app on the Atlassian site.
+
+No Jira issue was inspected or updated in this reconciliation. RB-002 remains unclaimed until Jira connectivity is restored or the program explicitly adopts a GitHub-native execution tracker.
 
 ## Validation
 
-GitHub Actions run `30211739445` passed on implementation head `ba164767f139b8b7efa522edb050d2ca983a6171`:
+Performed for this reconciliation:
 
+- inspected current `main` commit and recent pull-request state;
+- inspected the imported-game summary service and database aggregate formula;
+- inspected the summary regression test and MCP exposure;
+- reinspected RB-001 normalization and peer-resolution boundaries;
+- retested Atlassian search and recorded the exact connector error;
+- created the reconciliation branch and updated planning documentation.
+
+Skipped:
+
+- application build;
+- tests;
 - lint;
-- workspace build;
-- architecture guardrails;
-- PostgreSQL migrations;
-- complete repository tests.
+- architecture checks;
+- browser validation.
 
-Final PR-head CI run `30212157700` also passed before merge. The user accepted the delivery and requested the squash merge.
+Reason: this branch changes planning documentation only.
 
 ## Residual risks
 
-- Chess.com band boundaries are rounded product mappings, not exact conversions.
+- A mixed-provider raw average can be misread as provider-neutral strength unless context is explicit.
+- Chess.com band boundaries remain rounded product mappings, not exact conversions.
 - One mixed Lichess query deliberately ignores normal speed-rating disparity.
-- The full distribution remains visible because one dominant interval can hide separated populations.
+- The full normalized distribution remains necessary because one dominant interval can hide separated populations.
 - Classical and correspondence do not contribute personal rating evidence.
 - The generic fallback must remain visibly labelled.
 - The temporary resolver does not independently deduplicate copies across owned accounts.
-- The active default-profile change affects every current normalization consumer.
+- Jira and repository execution metadata may drift while the Atlassian app is unavailable.
 
 ## Queue recommendation
 
-Claim RB-002 / CRT-4 next for the durable multi-account player-level projection. RB-003, RB-008 and RB-014 remain valid independent work streams. No task order or priority change is recommended.
+Keep RB-002 at order 20 and P0, but implement the smaller provider-aware composition rather than a new average formula or assumed persistence model.
+
+Separately decide whether execution coordination stays in Jira or migrates to GitHub Issues/Projects with GitHub Actions used for automation and policy checks. GitHub Actions alone is not a task tracker.
