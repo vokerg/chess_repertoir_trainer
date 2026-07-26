@@ -3,9 +3,9 @@ import {
   boardImageQuerySchema,
   importedGameFacetsResponseSchema,
   importedGameSearchQuerySchema,
-  mastersExplorerQuerySchema,
-  mastersExplorerResponseSchema,
   mobileSyncManifestSchema,
+  openingExplorerQuerySchema,
+  openingExplorerResponseSchema,
   openingStrugglesQuerySchema,
   openingStrugglesResponseSchema,
   performanceByRatingQuerySchema,
@@ -125,8 +125,8 @@ const performanceReport = {
 };
 assert.deepEqual(performanceByRatingResponseSchema.parse(performanceReport), performanceReport);
 
-assert.deepEqual(mastersExplorerQuerySchema.parse({}), { fen: 'startpos' });
-const mastersExplorerResponse = {
+assert.deepEqual(openingExplorerQuerySchema.parse({}), { fen: 'startpos' });
+const openingExplorerResponse = {
   fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
   dataset: {
@@ -162,9 +162,9 @@ const mastersExplorerResponse = {
     month: '2025-05',
   }],
 };
-assert.deepEqual(mastersExplorerResponseSchema.parse(mastersExplorerResponse), mastersExplorerResponse);
+assert.deepEqual(openingExplorerResponseSchema.parse(openingExplorerResponse), openingExplorerResponse);
 assert.equal(
-  mastersExplorerResponseSchema.safeParse({ ...mastersExplorerResponse, cache: { status: 'MISS' } }).success,
+  openingExplorerResponseSchema.safeParse({ ...openingExplorerResponse, cache: { status: 'MISS' } }).success,
   false,
 );
 

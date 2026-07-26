@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   createLichessMastersClient,
-  LichessMastersUpstreamError,
-} from '../../dist/modules/masters-explorer/lichess-masters.client.js';
+  LichessOpeningExplorerUpstreamError,
+} from '../../dist/modules/opening-explorer/lichess-opening-explorer.client.js';
 
 const request = {
   fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -83,7 +83,7 @@ const upstreamPayload = {
   });
   await assert.rejects(
     client.fetchPosition(request),
-    (error) => error instanceof LichessMastersUpstreamError,
+    (error) => error instanceof LichessOpeningExplorerUpstreamError,
   );
 }
 
@@ -143,7 +143,7 @@ const upstreamPayload = {
 
   await assert.rejects(
     client.fetchPosition({ ...request, accessToken: '' }),
-    (error) => error instanceof LichessMastersUpstreamError
+    (error) => error instanceof LichessOpeningExplorerUpstreamError
       && error.message.includes('access token'),
   );
   assert.equal(fetchCalls, 0, 'missing user credentials fail before an upstream request');

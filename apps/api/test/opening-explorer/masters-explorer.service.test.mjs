@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import {
   createMastersExplorerService,
-  InvalidMastersExplorerFenError,
+  InvalidOpeningExplorerFenError,
   MastersExplorerUnavailableError,
-} from '../../dist/modules/masters-explorer/masters-explorer.service.js';
+} from '../../dist/modules/opening-explorer/opening-explorer.service.js';
 
 const now = new Date('2026-07-15T12:00:00.000Z');
 const userId = 42;
@@ -242,7 +242,7 @@ function memoryRepository(initial = null) {
 
   await assert.rejects(
     service.getPosition('not-a-fen', userId),
-    (error) => error instanceof InvalidMastersExplorerFenError,
+    (error) => error instanceof InvalidOpeningExplorerFenError,
   );
   assert.equal(memory.calls.find, 0, 'invalid FEN fails before cache access');
 }

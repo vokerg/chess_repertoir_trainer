@@ -6,5 +6,5 @@ export * from './training';
 export * from './mobile-sync';
 export * from './lab';
 export * from './opening-struggles';
-export * from './masters-explorer';
+export * from './opening-explorer';
 export * from './jobs';

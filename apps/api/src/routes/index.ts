@@ -16,7 +16,7 @@ import mcpModule from '../modules/mcp/mcp.routes';
 import boardImagesModule from '../modules/board-images/board-images.routes';
 import scenarioTrainingModule from '../modules/scenario-training/scenario-training.routes';
 import mobileSyncModule from '../modules/mobile-sync/mobile-sync.routes';
-import mastersExplorerModule from '../modules/masters-explorer/masters-explorer.routes';
+import openingExplorerModule from '../modules/opening-explorer/opening-explorer.routes';
 import aiModule from '../modules/ai/ai.routes';
 
 export default function registerRoutes(app: FastifyInstance): void {
@@ -35,7 +35,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(boardImagesModule);
   app.register(scenarioTrainingModule);
   app.register(mobileSyncModule);
-  app.register(mastersExplorerModule);
+  app.register(openingExplorerModule);
   app.register(aiModule);
   app.register(lichessAuthRoutes);
   app.register(externalAccountsRoutes);

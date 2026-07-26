@@ -1,6 +1,6 @@
 import prisma from '../../prisma';
 
-export interface StoredMastersExplorerAccessToken {
+export interface StoredOpeningExplorerAccessToken {
   accessTokenCiphertext: string;
   accessTokenIv: string;
   accessTokenAuthTag: string;
@@ -8,9 +8,9 @@ export interface StoredMastersExplorerAccessToken {
   revokedAt: Date | null;
 }
 
-export function findMastersExplorerAccessTokenForUser(
+export function findOpeningExplorerAccessTokenForUser(
   userId: number,
-): Promise<StoredMastersExplorerAccessToken | null> {
+): Promise<StoredOpeningExplorerAccessToken | null> {
   return prisma.lichessConnection.findUnique({
     where: { userId },
     select: {

@@ -63,6 +63,7 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly currentFen = signal(new Chess().fen());
   readonly tagsOpen = signal(true);
   readonly mastersOpen = signal(false);
+  readonly peersOpen = signal(false);
   readonly lastGamesOpen = signal(false);
   readonly engineVisible = signal(true);
   readonly engine = toSignal(this.positionAnalysis.state$, { initialValue: EMPTY_ENGINE });
@@ -105,6 +106,10 @@ export class OpeningAnalysisStore implements OnDestroy {
 
   toggleMasters(): void {
     this.mastersOpen.update((open) => !open);
+  }
+
+  togglePeers(): void {
+    this.peersOpen.update((open) => !open);
   }
 
   toggleLastGames(): void {

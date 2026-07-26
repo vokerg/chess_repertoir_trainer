@@ -1,10 +1,13 @@
 import { Prisma } from '@prisma/client';
-import type { MastersExplorerSnapshot, MastersExplorerSource } from '@chess-trainer/contracts/masters-explorer';
+import type {
+  OpeningExplorerSnapshot,
+  OpeningExplorerSource,
+} from '@chess-trainer/contracts/opening-explorer';
 import prisma from '../../prisma';
 import { findOrCreatePositionByNormalizedFen } from '../analysis/analysis.repository.prisma';
 import { positionKeyForNormalizedFen } from '../positions/position-key';
 
-const mastersExplorerCacheInclude = {
+const openingExplorerCacheInclude = {
   position: {
     select: {
       normalizedFen: true,
@@ -12,11 +15,11 @@ const mastersExplorerCacheInclude = {
   },
 } as const;
 
-export interface StoredMastersExplorerCache {
+export interface StoredOpeningExplorerCache {
   id: number;
   positionId: number;
   normalizedFen: string;
-  source: MastersExplorerSource;
+  source: OpeningExplorerSource;
   profileVersion: number;
   sinceYear: number;
   untilYear: number;
@@ -27,20 +30,20 @@ export interface StoredMastersExplorerCache {
   expiresAt: Date;
 }
 
-export interface StoreMastersExplorerCacheInput {
+export interface StoreOpeningExplorerCacheInput {
   normalizedFen: string;
-  source: MastersExplorerSource;
+  source: OpeningExplorerSource;
   profileVersion: number;
   sinceYear: number;
   untilYear: number;
   movesLimit: number;
   topGamesLimit: number;
-  payload: MastersExplorerSnapshot;
+  payload: OpeningExplorerSnapshot;
   fetchedAt: Date;
   expiresAt: Date;
 }
 
-function mapStoredCache(row: any): StoredMastersExplorerCache {
+function mapStoredCache(row: any): StoredOpeningExplorerCache {
   return {
     id: row.id,
     positionId: row.positionId,
@@ -57,27 +60,29 @@ function mapStoredCache(row: any): StoredMastersExplorerCache {
   };
 }
 
-export async function findMastersExplorerCache(
+export async function findOpeningExplorerCache(
   normalizedFen: string,
-  source: MastersExplorerSource,
+  source: OpeningExplorerSource,
   profileVersion: number,
-): Promise<StoredMastersExplorerCache | null> {
+): Promise<StoredOpeningExplorerCache | null> {
   const positionKey = positionKeyForNormalizedFen(normalizedFen);
+  // The deployed Prisma model keeps its original storage name. This repository
+  // is the only opening-explorer boundary allowed to depend on that legacy name.
   const row = await prisma.mastersExplorerCache.findFirst({
     where: {
       source,
       profileVersion,
       position: { positionKey: new Uint8Array(positionKey) },
     },
-    include: mastersExplorerCacheInclude,
+    include: openingExplorerCacheInclude,
   });
 
   return row ? mapStoredCache(row) : null;
 }
 
-export async function upsertMastersExplorerCache(
-  input: StoreMastersExplorerCacheInput,
-): Promise<StoredMastersExplorerCache> {
+export async function upsertOpeningExplorerCache(
+  input: StoreOpeningExplorerCacheInput,
+): Promise<StoredOpeningExplorerCache> {
   const position = await findOrCreatePositionByNormalizedFen(input.normalizedFen);
   const row = await prisma.mastersExplorerCache.upsert({
     where: {
@@ -108,7 +113,7 @@ export async function upsertMastersExplorerCache(
       fetchedAt: input.fetchedAt,
       expiresAt: input.expiresAt,
     },
-    include: mastersExplorerCacheInclude,
+    include: openingExplorerCacheInclude,
   });
 
   return mapStoredCache(row);

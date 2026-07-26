@@ -1,13 +1,13 @@
 import { decryptToken } from '../../services/oauthTokenCrypto';
-import { findMastersExplorerAccessTokenForUser } from './masters-explorer-access-token.repository.prisma';
+import { findOpeningExplorerAccessTokenForUser } from './opening-explorer-access-token.repository.prisma';
 
-export interface MastersExplorerAccessTokenProvider {
+export interface OpeningExplorerAccessTokenProvider {
   getForUser(userId: number): Promise<string>;
 }
 
-export const defaultMastersExplorerAccessTokenProvider: MastersExplorerAccessTokenProvider = {
+export const defaultOpeningExplorerAccessTokenProvider: OpeningExplorerAccessTokenProvider = {
   async getForUser(userId: number): Promise<string> {
-    const connection = await findMastersExplorerAccessTokenForUser(userId);
+    const connection = await findOpeningExplorerAccessTokenForUser(userId);
 
     if (
       !connection

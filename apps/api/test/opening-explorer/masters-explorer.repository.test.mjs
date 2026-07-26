@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { normalizeFenForPosition } from 'chess-domain';
 import prismaModule from '../../dist/prisma.js';
 import {
-  findMastersExplorerCache,
-  upsertMastersExplorerCache,
-} from '../../dist/modules/masters-explorer/masters-explorer.repository.prisma.js';
+  findOpeningExplorerCache,
+  upsertOpeningExplorerCache,
+} from '../../dist/modules/opening-explorer/opening-explorer.repository.prisma.js';
 
 const prisma = prismaModule.default;
 const fen = '8/8/8/8/8/8/4K3/7k w - - 0 1';
@@ -26,7 +26,7 @@ try {
 
   const fetchedAt = new Date('2026-07-15T12:00:00.000Z');
   const expiresAt = new Date('2026-08-14T12:00:00.000Z');
-  const stored = await upsertMastersExplorerCache({
+  const stored = await upsertOpeningExplorerCache({
     normalizedFen,
     source: 'LICHESS_MASTERS',
     profileVersion: 1,
@@ -43,7 +43,7 @@ try {
   assert.equal(stored.normalizedFen, normalizedFen);
   assert.deepEqual(stored.payload, payload);
 
-  const found = await findMastersExplorerCache(
+  const found = await findOpeningExplorerCache(
     normalizeFenForPosition(equivalentFen),
     'LICHESS_MASTERS',
     1,
@@ -51,7 +51,7 @@ try {
   assert.equal(found?.id, stored.id, 'equivalent FENs share the system cache row');
 
   const refreshedAt = new Date('2026-07-16T12:00:00.000Z');
-  const refreshed = await upsertMastersExplorerCache({
+  const refreshed = await upsertOpeningExplorerCache({
     normalizedFen,
     source: 'LICHESS_MASTERS',
     profileVersion: 1,

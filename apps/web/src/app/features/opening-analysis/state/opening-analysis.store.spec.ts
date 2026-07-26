@@ -59,13 +59,16 @@ describe('OpeningAnalysisStore', () => {
   it('defaults Tags to open, optional data panels to closed, and engine to visible', () => {
     expect(store.tagsOpen()).toBeTrue();
     expect(store.mastersOpen()).toBeFalse();
+    expect(store.peersOpen()).toBeFalse();
     expect(store.lastGamesOpen()).toBeFalse();
     expect(store.engineVisible()).toBeTrue();
 
     store.toggleMasters();
+    store.togglePeers();
     store.toggleLastGames();
 
     expect(store.mastersOpen()).toBeTrue();
+    expect(store.peersOpen()).toBeTrue();
     expect(store.lastGamesOpen()).toBeTrue();
 
     store.toggleEngine();
