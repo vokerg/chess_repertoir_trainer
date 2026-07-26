@@ -71,7 +71,7 @@ Use `/home` as the signed-in product entry point. Study/library remains a focuse
 
 **Status:** Locked
 
-Replace the crowded floating horizontal navigation with a compact collapsible left rail in a separately approved slice. Reuse the existing grouped navigation model rather than creating another source of truth.
+Replace the crowded floating horizontal navigation with a compact collapsible left rail in a separately approved implementation slice. Reuse the existing grouped navigation model rather than creating another source of truth.
 
 ### D-011 — Identity asset method
 
@@ -83,7 +83,7 @@ Create the identity as controlled SVG geometry. It must work at favicon size, in
 
 **Status:** Locked
 
-Validate identity, landing, authentication, signed-in home, tokens, and typography before broad page-by-page modernization.
+Validate identity, landing, authentication, signed-in home, tokens, typography, and shell direction before broad page-by-page modernization.
 
 ### D-013 — Representative Phase 2 workflows
 
@@ -119,7 +119,7 @@ The first `/home`:
 
 ### D-016 — Production brand asset and component contract
 
-**Status:** Locked for Phase 1A
+**Status:** Locked and integrated through PR #88
 
 Use one 64×64 Node Branch source geometry for static assets and Angular rendering:
 
@@ -134,7 +134,19 @@ Provide standard graphite/mint, reversed mint/graphite, transparent-mark, and fa
 
 **Status:** Locked and integrated
 
-After successful CI and the instruction to continue to the next stage, PR #87 was squash-merged into `visual_transformation`. Browser, responsive, Clerk, and request-timing review remain residual validation gaps; merge status must not be described as proof those checks occurred.
+PR #87 was squash-merged into `visual_transformation` after successful automated validation. Browser, responsive, Clerk, and request-timing review remain residual validation gaps; merge status is not proof those checks occurred.
+
+### D-018 — Phase 1A production brand disposition
+
+**Status:** Locked and integrated
+
+PR #88 was squash-merged into `visual_transformation` after final-head CI passed. The source geometry and shared component contract are accepted for continued transformation work. Browser favicon rendering, small-size rasterization, surface contrast, live-text proportions, and keyboard-focus review remain residual validation gaps and may justify a later focused optical correction.
+
+### D-019 — Phase 1B checkpoint boundary
+
+**Status:** Locked for the current checkpoint
+
+Phase 1B is discovery and static visualization only. It defines the first desktop rail contract and the interim mobile boundary without modifying Angular runtime files. Production rail implementation requires separate explicit approval after review of the report and prototype.
 
 ## Provisional decisions
 
@@ -185,7 +197,7 @@ Use one dominant Continue action, at most three explained recommendations, works
 
 **Status:** Locked for source topology and coordinates; optical validation remains open
 
-Phase 1A establishes D-016 as the single production source. Browser rasterization must still be reviewed at 16px, 24px, 32px, 42px, and 48px. Focused optical corrections may adjust stroke, node size, spacing, or badge radius only if the source assets and `BrandMarkComponent` are updated together; the topology must not diverge by surface.
+D-016 is the single production source. Browser rasterization must still be reviewed at 16px, 24px, 32px, 42px, and 48px. Focused optical corrections may adjust stroke, node size, spacing, or badge radius only if the source assets and `BrandMarkComponent` are updated together; topology must not diverge by surface.
 
 ### D-303 — Landing-page copy and composition
 
@@ -198,6 +210,30 @@ The landing page merged through PR #78 remains the working public-page baseline.
 **Status:** Locked for the first implementation
 
 Use existing account, library catalog, imported-game facets/search, and account performance APIs. Select the default progress account, then an active account, then the first account. Continue priority is weak course, untrained course, latest analysed game, then Study. Do not add a home aggregation endpoint without measured evidence.
+
+### D-310 — Initial desktop rail geometry
+
+**Status:** Provisional for Phase 1B review
+
+Use an approximately 236–244px expanded rail and a 72–76px collapsed rail. The production implementation should adjust within that range only after testing the actual `NavIconComponent`, live-text lockup, long labels, account controls, and representative content widths.
+
+### D-311 — Initial collapse behavior
+
+**Status:** Provisional for the first production slice
+
+Provide an explicit expanded/collapsed user control. Do not add route-specific auto-collapse or persisted preference in the first implementation. Measure real use before introducing implicit route behavior or storage.
+
+### D-312 — Parent and child navigation interaction
+
+**Status:** Provisional for Phase 1B review
+
+Keep parent anchors pointing to their current default routes and use a distinct keyboard-operable disclosure control for child destinations. Child access must not depend on hover. Collapsed mode uses an anchored flyout; expanded mode may use a compact inline group or anchored flyout after review.
+
+### D-313 — Interim mobile navigation
+
+**Status:** Provisional for the first rail implementation
+
+Below the shared 760px breakpoint, do not render the desktop rail. Retain a compact branded header and the complete grouped modal sheet generated from the existing navigation item model. Improve accessibility and focus behavior without finalizing bottom navigation.
 
 ## Rejected directions
 
@@ -267,6 +303,18 @@ Use existing typed data sources and measure request/loading behavior before intr
 
 Do not maintain separate landing, authentication, signed-in, or decorative branch geometries. Do not use `⌁` or another glyph as a brand-mark substitute.
 
+### D-212 — Duplicate navigation source
+
+**Status:** Rejected
+
+Do not introduce a second hard-coded rail or mobile navigation definition. Continue using `MainNavigationComponent.mainNavItems`, its child definitions, links, icons, quiet state, and active prefixes as the navigation source.
+
+### D-213 — Premature bottom navigation
+
+**Status:** Rejected for Phase 1B and the first rail implementation
+
+Do not select or implement permanent bottom-navigation destinations before Games, Study, and Opening Analysis provide representative mobile evidence.
+
 ## Open decisions
 
 ### D-302 — Final production palette
@@ -279,7 +327,7 @@ Lock remaining exact colors only after representative analytical UI and semantic
 
 **Status:** Open
 
-Determine primary mobile destinations after prototyping Games, Study, and Opening Analysis. Phase 1A retains current mobile navigation behavior.
+Determine primary mobile destinations after prototyping and modernizing Games, Study, and Opening Analysis. Phase 1B retains the complete grouped mobile sheet as the interim structure.
 
 ### D-306 — Authentication browser-validation disposition
 
@@ -287,8 +335,8 @@ Determine primary mobile destinations after prototyping Games, Study, and Openin
 
 Directly review `/login` and `/signup` at desktop/mobile widths and in configured-Clerk and local-development-auth modes. CI and merged status do not satisfy this validation.
 
-### D-309 — Phase 1A production brand asset disposition
+### D-314 — Phase 1B navigation discovery disposition
 
 **Status:** Open
 
-Review static assets, shared components, favicon, standard/reversed contrast, transparent-mark usage, live-text proportions, keyboard focus, and rasterization at 16px, 24px, 32px, 42px, and 48px. Decide whether to approve PR #88, require focused optical corrections, or revise the component/asset contract before squash merge.
+Review the expanded rail, collapsed rail, child-navigation interaction, account placement, workspace pressure, and retained mobile sheet. Decide whether to approve a narrow Angular implementation, require prototype correction, or reopen the desktop interaction contract.
