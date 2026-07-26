@@ -66,6 +66,8 @@ export async function findOpeningExplorerCache(
   profileVersion: number,
 ): Promise<StoredOpeningExplorerCache | null> {
   const positionKey = positionKeyForNormalizedFen(normalizedFen);
+  // The deployed Prisma model keeps its original storage name. This repository
+  // is the only opening-explorer boundary allowed to depend on that legacy name.
   const row = await prisma.mastersExplorerCache.findFirst({
     where: {
       source,
