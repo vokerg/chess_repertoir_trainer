@@ -1,7 +1,7 @@
 import type {
-  MastersExplorerOpening,
-  MastersExplorerPlayer,
-} from '@chess-trainer/contracts/masters-explorer';
+  OpeningExplorerOpening,
+  OpeningExplorerPlayer,
+} from '@chess-trainer/contracts/opening-explorer';
 
 const MONTH_NAMES = [
   'January',
@@ -41,13 +41,13 @@ export function gameDateLabel(year: number, month: string | null): string {
   return month.includes(String(year)) ? month : `${month} ${year}`;
 }
 
-export function playerLabel(player: MastersExplorerPlayer): string {
+export function playerLabel(player: OpeningExplorerPlayer): string {
   return player.rating === null ? player.name : `${player.name} · ${player.rating}`;
 }
 
 export function sameOpening(
-  left: MastersExplorerOpening | null,
-  right: MastersExplorerOpening | null,
+  left: OpeningExplorerOpening | null,
+  right: OpeningExplorerOpening | null,
 ): boolean {
   if (!left || !right) return left === right;
   return left.eco === right.eco && left.name === right.name;
