@@ -1,22 +1,21 @@
-<section class="login-page">
-  <div class="login-panel">
-    <div class="login-copy">
-      <p class="eyebrow">Account</p>
-      <h2>Create account</h2>
-      @if (isDevAuth()) {
-        <p>Clerk is not configured for this web build. Local dev auth is active.</p>
-        <a routerLink="/library" class="login-link">Continue to library</a>
-      } @else {
-        <p>Create your Clerk account to sync your repertoire, games, courses, and analysis.</p>
-        <a routerLink="/login" [queryParams]="authQueryParams" class="login-link">Sign in</a>
-      }
-      @if (appUserError()) {
-        <p class="login-error">{{ appUserError() }}</p>
-      }
+<app-auth-shell
+  eyebrow="Start building"
+  heading="Create account"
+  headingId="signup-title"
+  description="Connect your games, repertoire work, and training in one account."
+>
+  @if (isDevAuth()) {
+    <div class="dev-auth-state">
+      <strong>Local development access</strong>
+      <p>External authentication is not configured for this web build.</p>
+      <a routerLink="/library" class="auth-action">Continue to library</a>
     </div>
+  } @else {
+    <div #signUpMount class="clerk-mount" aria-label="Create account"></div>
+    <p class="switch-auth">Already have an account? <a routerLink="/login" [queryParams]="authQueryParams">Sign in</a></p>
+  }
 
-    @if (!isDevAuth()) {
-      <div #signUpMount class="clerk-mount" aria-label="Create account"></div>
-    }
-  </div>
-</section>
+  @if (appUserError()) {
+    <p class="auth-error" role="alert">{{ appUserError() }}</p>
+  }
+</app-auth-shell>
