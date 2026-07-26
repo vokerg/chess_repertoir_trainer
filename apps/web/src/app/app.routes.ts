@@ -21,6 +21,13 @@ export const routes: Routes = [
       import('./features/auth/signup-page.component').then((m) => m.SignupPageComponent),
   },
   {
+    path: 'home',
+    title: 'Home | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/home/home-page.component').then((m) => m.HomePageComponent),
+  },
+  {
     path: 'library',
     title: 'Study | Chess Repertoire Trainer',
     canActivate: [authGuard],

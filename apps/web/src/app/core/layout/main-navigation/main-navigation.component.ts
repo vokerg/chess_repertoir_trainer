@@ -44,6 +44,13 @@ export class MainNavigationComponent implements OnInit {
 
   protected readonly mainNavItems: readonly AppNavNode[] = [
     {
+      id: 'home',
+      label: 'Home',
+      link: '/home',
+      icon: 'home',
+      activePrefixes: ['/home'],
+    },
+    {
       id: 'study',
       label: 'Study',
       link: '/library',

@@ -26,7 +26,7 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   protected readonly isDevAuth = this.auth.isDevAuth;
   protected readonly appUserError = this.auth.appUserError;
-  protected readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/library';
+  protected readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/home';
   protected readonly authQueryParams = { returnUrl: this.returnUrl };
 
   @ViewChild('signInMount') private signInMount?: ElementRef<HTMLDivElement>;
