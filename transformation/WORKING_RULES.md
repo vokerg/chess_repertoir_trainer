@@ -145,7 +145,7 @@ Report exactly:
 - visual/responsive checks performed;
 - residual risks.
 
-Documentation-only setup does not require application build or test execution, but this must be stated.
+Documentation and static-prototype checkpoints do not require application build or test execution, but this must be stated. Their HTML, CSS, SVG, browser behavior, and reproduction instructions must still be validated as far as the environment permits.
 
 ## 11. Reviewable delivery
 
@@ -162,8 +162,10 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The Phase 0A public landing page and Phase 0B authentication shell are squash-merged into `visual_transformation`. The current approved slice is documentation reconciliation only.
+The Phase 0A public landing page, Phase 0B authentication shell, and Phase 0B checkpoint reconciliation are squash-merged into `visual_transformation`.
 
-Stop after the checkpoint-closure documentation and its pull request. Do not begin signed-in `/home` production implementation, navigation-rail implementation, production brand-asset extraction, global token migration, or authenticated workflow redesign without explicit approval.
+The current approved slice is Phase 0C signed-in `/home` discovery and visualization. Stop after the evidence review, deterministic rule proposal, static responsive proof, documentation, and pull request.
 
-The next recommended product checkpoint is a separate Phase 0C signed-in `/home` discovery and visualization slice. Authentication browser and Clerk interaction validation remains an explicit residual gap and must not be represented as completed until it is recorded.
+Do not implement `/home`, change the normal post-login destination, implement the production navigation rail, finalize mobile navigation, extract production brand assets, migrate global tokens, add a home aggregation API, or redesign authenticated workflows without explicit approval of the Phase 0C checkpoint.
+
+Authentication browser and Clerk interaction validation remains an explicit residual gap under D-306 and must not be represented as completed until it is recorded.
