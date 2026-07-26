@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Chess Repertoire Trainer Node Branch mark</title>
+  <desc id="desc">A three-node branching path inside a rounded graphite badge.</desc>
+  <rect width="64" height="64" rx="16" fill="#172321"/>
+  <path d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50" fill="none" stroke="#47B89C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="18" cy="50" r="5.5" fill="#DFF3ED" stroke="#47B89C" stroke-width="2"/>
+  <circle cx="34" cy="14" r="5.5" fill="#DFF3ED" stroke="#47B89C" stroke-width="2"/>
+  <circle cx="51" cy="44" r="5.5" fill="#DFF3ED" stroke="#47B89C" stroke-width="2"/>
+</svg>
