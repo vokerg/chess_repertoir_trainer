@@ -28,11 +28,13 @@ Do not rely on prior chat memory, screenshots alone, the README alone, or assump
 
 ## 3. No implementation without an approved checkpoint
 
-Production transformation work has begun in narrow reviewed slices. The public landing page, authentication shell, signed-in home discovery, and Angular home are integrated, but their completion does not approve the remaining master plan.
+Production transformation work has begun in narrow reviewed slices. The public landing page, authentication shell, signed-in home, and brand assets are integrated, but their completion does not approve the remaining master plan.
 
 Do not infer that the entire master plan is an instruction to implement everything. Work only on the next explicitly approved checkpoint.
 
 When the user approves a slice, keep it narrow and record its scope in `STATUS.md` before or with the change.
+
+Discovery and prototype approval is not automatically production-implementation approval unless the user clearly authorizes both.
 
 ## 4. Preserve product behavior
 
@@ -162,10 +164,22 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, and Angular `/home` implementation are squash-merged into `visual_transformation`.
+The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, and Phase 1A production brand assets are squash-merged into `visual_transformation`.
 
-The current approved slice is Phase 1A production brand assets on `visual-transformation/phase-1a-brand-assets`. Stop after one controlled Node Branch geometry, standard/reversed/transparent/favicons assets, shared mark and live-text lockup components, replacement of duplicated brand renderings, focused tests, documentation, validation, and a reviewed pull request.
+The current approved slice is Phase 1B navigation shell discovery on `visual-transformation/phase-1b-navigation-discovery`.
 
-Do not implement the production navigation rail, finalize mobile navigation, migrate global tokens, change typography loading, produce final social-preview composition, add backend behavior, or redesign authenticated workflows as part of this slice.
+Stop after:
 
-Authentication, home, responsive, and favicon browser validation remain explicit residual gaps and must not be represented as completed until recorded.
+- direct inspection of current signed-in shell and navigation ownership;
+- a documented expanded/collapsed desktop rail contract;
+- a documented keyboard-operable child-navigation contract;
+- an explicit decision to retain the current grouped mobile sheet as the interim mobile structure;
+- an interactive static prototype;
+- updated entry point, decisions, status, and working rules;
+- a detailed discovery report;
+- validation of the static files as far as the environment permits;
+- a reviewed pull request to `visual_transformation`.
+
+Do not implement the Angular rail, add route-specific auto-collapse, persist collapse state, finalize bottom navigation, change routes, migrate global tokens, change typography loading, produce final social-preview composition, add backend behavior, or redesign authenticated workflows as part of this discovery slice.
+
+Authentication, home, brand rasterization, favicon, responsive, and navigation browser validation remain explicit residual gaps and must not be represented as completed until recorded.
