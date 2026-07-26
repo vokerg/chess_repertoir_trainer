@@ -9,7 +9,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
 | 10 | RB-001 | CRT-3 | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
-| 20 | RB-002 | CRT-4 | P0 | READY | Define provider-aware multi-account player rating | Dual-use | RB-001 profile/resolver plus existing imported-game `averageUserRating` on `main` |
+| 20 | RB-002 | CRT-4 | P0 | READY | Promote normalized multi-account player level | Dual-use | RB-001 already delivered the correlation matrix and factual resolver formula |
 | 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
 | 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
 | 50 | RB-004 | CRT-6 | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
@@ -47,7 +47,7 @@ Current connector clarification: the Atlassian/Rovo connector returns HTTP 403 w
 
 ## Queue notes
 
-### Delivered population direction
+### Delivered population and player-level formula
 
 PR #84 provides:
 
@@ -56,29 +56,31 @@ PR #84 provides:
 - exclusion of ultraBullet;
 - server-controlled unrestricted public-game period with the existing 30-day cache lifecycle;
 - active normalization profile `2026-07-lichess-bands-v1` aligned to Lichess Explorer groups;
-- approximate Chess.com mappings into those benchmark bands;
-- temporary recent-three-month/all-history/default peer resolution;
-- direct response provenance for requested/effective populations;
+- the established provider/speed correlation matrix for Chess.com and Lichess bullet, blitz and rapid;
+- provider-aware classification of each game-recorded user rating before aggregation;
+- game-count-weighted benchmark-band distribution;
+- recent-three-month → all-history → generic fallback;
+- `dominant-contiguous-window-v1`, selecting the narrowest one-to-three-band interval covering at least 70% of evidence;
+- direct response provenance for distribution, selected groups, contributions and policy/profile versions;
 - two compact frontend selects replacing raw month and checkbox controls.
 
-The product deliberately accepts one combined Lichess response for the resolved speed/rating population. Per-speed decomposition and weighting remain rejected for the MVP.
+The product deliberately accepts one combined Lichess response for the resolved speed/rating population. Per-speed decomposition and weighting of the public Explorer response remain rejected for the MVP.
 
-### Existing average-rating direction
+### Separate imported-game average
 
-The imported-game summary already calculates `averageUserRating` for the applied filter using available game-recorded user ratings. This is a reusable descriptive metric across account, provider, speed and period filters.
+The imported-game summary also calculates `averageUserRating` for the applied filter. This is a literal arithmetic average of selected game-recorded ratings, not the provider-normalized player-level formula. A mixed-provider test fixture value such as `1833.3` is synthetic summary-test evidence and must not be presented as universal strength.
 
-It does not by itself define a provider-neutral player level when Chess.com and Lichess rows are mixed.
+### Reconciled RB-002 boundary
 
-### Reconciled player-rating boundary
+RB-002 is `READY`, but the formula-design work is already delivered. The remaining task is to:
 
-RB-002 is `READY`. It now owns the bounded composition of:
+- extract or relocate the normalized resolver from Opening Explorer-specific ownership into a shared player-level boundary;
+- expose it independently for later product consumers;
+- keep Opening Explorer delegating to the same implementation;
+- preserve the established matrix, game-count weighting, recency fallback and dominant-window policy;
+- improve contribution and conflict provenance only where required for an inspectable reusable result.
 
-- the existing selected-game raw average;
-- RB-001 provider/speed normalization and dominant-band resolution;
-- visible source contributions, evidence quality, exclusions and conflicts;
-- a reusable on-demand player-rating result.
-
-Persistence is no longer presumed. A stored snapshot requires demonstrated product or performance need. Repertoire-specific manual overrides belong to RB-006.
+No new normalization table, raw-average composition, exact universal rating, persistence model or override mechanism is presumed. Repertoire-specific manual overrides belong to RB-006.
 
 ### Independent work
 
@@ -89,9 +91,9 @@ RB-014 can run as low-risk research without affecting core delivery.
 ### Critical path
 
 ```text
-RB-001 peer population foundation — DONE
+RB-001 peer population + normalized formula — DONE
         ↓
-RB-002 provider-aware player rating — READY
+RB-002 shared player-level product boundary — READY
         +
 RB-003 opening profile
         ↓
@@ -118,9 +120,9 @@ RB-013 personas intersects profile and target work and may be split further afte
 
 - RB-001 remains order 10 and P0, `DONE`.
 - RB-002 remains order 20 and P0, `READY` as the next actionable task.
-- RB-002 scope is smaller: reuse existing raw-average and peer-band foundations; do not presume persistence.
+- RB-002 is materially smaller: promote and expose an existing formula rather than design a new one.
 - No other order or priority changes are required.
-- No new RB task is required for the scope reconciliation.
+- No new RB task is required for this scope reconciliation.
 - The execution-tracker choice requires clarification but does not change the product queue yet.
 
 ## Adding tasks
