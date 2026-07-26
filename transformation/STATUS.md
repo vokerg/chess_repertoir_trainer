@@ -4,13 +4,13 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** Phase 0B integrated; checkpoint documentation reconciliation in progress
+**Program state:** Phase 0C signed-in home discovery and visualization prepared; review pending
 
 **Integration branch:** `visual_transformation`
 
-**Active documentation branch:** `visual-transformation/phase-0b-checkpoint-closure`
+**Active design branch:** `visual-transformation/phase-0c-home-discovery`
 
-The public landing page and shared authentication shell are both squash-merged into `visual_transformation`. This slice reconciles the persistent documentation with that repository state and intentionally makes no runtime changes.
+The public landing page, authentication shell, and Phase 0B checkpoint reconciliation are squash-merged into `visual_transformation`. The current slice defines and visualizes the first signed-in `/home` using existing repository data and intentionally stops before Angular implementation.
 
 ## Completed
 
@@ -18,26 +18,34 @@ The public landing page and shared authentication shell are both squash-merged i
 - [x] Produced and reviewed the static landing proof.
 - [x] Implemented the public landing page at `/`.
 - [x] Squash-merged the landing implementation into `visual_transformation` through PR #78.
-- [x] Added a shared authentication shell for `/login` and `/signup`.
+- [x] Added and merged the shared authentication shell for `/login` and `/signup` through PR #79.
 - [x] Removed authentication routes from the signed-in navigation shell.
 - [x] Preserved Clerk lifecycle, development auth, explicit return URLs, and existing post-auth fallback behavior.
 - [x] Applied Clerk appearance variables matching the approved visual direction.
-- [x] Added `transformation/reports/PHASE_0B_AUTH_SHELL_IMPLEMENTATION.md`.
-- [x] Squash-merged the authentication implementation into `visual_transformation` through PR #79.
-- [x] Confirmed PR #79 CI completed successfully.
-- [x] Reconciled the transformation entry point, decision log, status, and working stop condition with the merged Phase 0B state.
+- [x] Reconciled Phase 0B documentation and squash-merged PR #85 after successful CI.
+- [x] Inspected existing stable account, game, course, library, performance, rating, route, and navigation sources for `/home`.
+- [x] Defined a no-new-backend first-home data composition and deterministic action hierarchy.
+- [x] Produced the Phase 0C desktop/mobile home visual proof and review sheet.
+- [x] Added `transformation/reports/PHASE_0C_HOME_DISCOVERY.md`.
 
 ## Current checkpoint
 
-Review this documentation-only closure slice in this order:
+Review in this order:
 
-1. `transformation/reports/PHASE_0B_CHECKPOINT_CLOSURE.md`
-2. `TRANSFORMATION.md`
-3. `transformation/STATUS.md`
+1. `transformation/reports/PHASE_0C_HOME_DISCOVERY.md`
+2. `transformation/prototypes/phase-0c-home/review-sheet.svg`
+3. `transformation/prototypes/phase-0c-home/index.html` at desktop and mobile widths
 4. `transformation/DECISIONS.md`
-5. `transformation/WORKING_RULES.md`
+5. `transformation/STATUS.md`
 
-The next product checkpoint is a separate Phase 0C signed-in `/home` discovery and visualization slice. It is not approved for production implementation by this documentation change.
+Review focus:
+
+- whether Continue is clearly the dominant home action;
+- whether Recommended next uses acceptable deterministic priorities;
+- whether the proposed existing-API data composition is sufficient;
+- whether Recent progress remains restrained and useful;
+- whether Recent signals earns its space or should be omitted;
+- whether desktop/mobile hierarchy is approved without locking final mobile navigation.
 
 Do not merge this branch without explicit approval. When approved, squash merge it into `visual_transformation`.
 
@@ -45,34 +53,39 @@ Do not merge this branch without explicit approval. When approved, squash merge 
 
 ### Confirmed
 
-- PR #78 is merged into `visual_transformation`.
-- PR #79 is merged into `visual_transformation`.
-- PR #79 targeted `visual_transformation` and CI completed successfully.
-- The current routes still use `/library` as the normal post-auth fallback when no explicit `returnUrl` is supplied.
-- `/home` is not implemented.
-- The current signed-in application still uses the existing navigation shell.
+- PR #85 CI completed successfully and PR #85 was squash-merged into `visual_transformation` before this branch was created.
+- `/home` is not currently registered.
+- Authentication still falls back to `/library` when there is no explicit `returnUrl`.
+- Existing stable APIs expose the account, sync, library catalog, game facets, recent games, performance, and rating data required by the proposed first home.
+- The existing Progress entry route selects the default progress account, then an active account, then the first account.
+- The proposed first home does not require a Lab endpoint or a new backend aggregation endpoint.
 
-### Not recorded as completed
+### Prototype validation
 
-- `/login` browser review at desktop and mobile widths;
-- `/signup` browser review at desktop and mobile widths;
-- configured-Clerk mount, submit, navigation, and unmount interaction testing;
-- local-development-auth interaction testing;
-- visual regression or accessibility automation for the authentication composition.
+- HTML parsed successfully.
+- CSS brace balance passed.
+- Prototype and review SVGs parsed as XML.
+- The review sheet rendered to PNG through ImageMagick and was visually inspected.
+- A headless Chromium render of the HTML prototype timed out in the available container, so direct browser review remains required.
 
-These remain a residual validation gap under D-306. They should be completed before Phase 0B is described as fully browser-validated and before auth-specific corrective work is ruled out.
+### Outstanding validation
 
-### Documentation-slice validation
-
-Repository state, pull-request metadata, CI status, current routes, shell ownership, authentication fallback behavior, and the affected documentation were inspected directly. Runtime build, lint, tests, and browser checks were not rerun because this branch changes Markdown documentation only.
+- responsive HTML review at 1440px, 1024px, 768px, and 390px;
+- browser keyboard/focus review;
+- final content-density review with the real application shell;
+- configured-Clerk and local-development-auth browser validation from D-306.
 
 ## Open decisions
 
+- Whether to approve or revise the Phase 0C home hierarchy and visual composition.
+- Whether Recent signals belongs in the first implementation.
+- Whether the provisional seven-day account-refresh recommendation threshold is appropriate.
+- Exact production rail grouping and collapsed behavior.
+- Exact mobile navigation structure.
+- Whether request fan-out is acceptable in implementation before considering a dedicated home aggregation endpoint.
 - Whether direct browser and Clerk validation accepts the Phase 0B authentication composition without revision.
 - The exact production Node Branch asset geometry after SVG extraction and small-size testing.
 - Whether IBM Plex Sans should be loaded or remain a preferred system fallback.
-- Final signed-in `/home` data and visual composition.
-- Final desktop navigation rail and mobile navigation model.
 - Final production palette beyond the locked `#1F7865` strong-mint text role.
 
 ## Program backlog
@@ -82,8 +95,10 @@ Repository state, pull-request metadata, CI status, current routes, shell owners
 - [x] Produce identity and landing proof.
 - [x] Implement and merge the landing proof in Angular.
 - [x] Implement and merge the authentication composition in Angular.
+- [x] Reconcile and merge the Phase 0B checkpoint documentation.
 - [ ] Complete and record browser review for authentication or approve a focused correction slice.
-- [ ] Produce signed-in home discovery and visualization.
+- [x] Produce signed-in home discovery and visualization.
+- [ ] Approve or revise the signed-in home checkpoint.
 
 ### Phase 1 — shell and entry points
 
@@ -112,6 +127,17 @@ Repository state, pull-request metadata, CI status, current routes, shell owners
 
 ## Session log
 
+### 2026-07-26 — Phase 0C signed-in home discovery
+
+- Confirmed PR #85 CI succeeded and squash-merged it into `visual_transformation`.
+- Created `visual-transformation/phase-0c-home-discovery` from the updated integration branch.
+- Inspected stable frontend data-access services and contracts for accounts, games, library/catalog, courses, performance, and ratings.
+- Reused the existing default-progress-account selection convention.
+- Excluded Lab endpoints from the first core home dependency set.
+- Defined setup, Continue, Recommended next, shortcut, and recent-progress rules.
+- Produced a responsive HTML/CSS prototype and GitHub-renderable desktop/mobile review sheet.
+- Recorded validation, the unsuccessful headless Chromium attempt, residual risks, and the implementation stop condition.
+
 ### 2026-07-26 — Phase 0B checkpoint closure
 
 - Created `visual-transformation/phase-0b-checkpoint-closure` from `visual_transformation`.
@@ -121,7 +147,8 @@ Repository state, pull-request metadata, CI status, current routes, shell owners
 - Locked `#1F7865` as the strong-mint text role while keeping the broader palette provisional.
 - Recorded Node Branch geometry v1 and the current landing composition as provisional production baselines.
 - Preserved authentication browser and Clerk interaction testing as an explicit unresolved validation gap.
-- Established Phase 0C signed-in `/home` discovery and visualization as the next recommended product checkpoint, subject to separate approval.
+- Established Phase 0C signed-in `/home` discovery and visualization as the next recommended product checkpoint.
+- Squash-merged the closure through PR #85 after CI passed.
 
 ### 2026-07-26 — Phase 0B authentication shell
 
