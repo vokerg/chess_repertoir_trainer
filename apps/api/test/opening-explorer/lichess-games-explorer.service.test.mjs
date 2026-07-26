@@ -2,17 +2,16 @@ import assert from 'node:assert/strict';
 import {
   createLichessGamesExplorerService,
   LichessGamesExplorerUnavailableError,
+  resolveLichessGamesPopulation,
 } from '../../dist/modules/opening-explorer/opening-explorer.service.js';
-import {
-  lichessGamesRatingGroups,
-  lichessGamesSpeeds,
-} from '../../dist/modules/opening-explorer/lichess-opening-explorer.client.js';
 
 const now = new Date('2026-07-15T12:00:00.000Z');
 const userId = 42;
 const accessToken = 'requesting-user-access-token';
 const canonicalStartFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const normalizedStartFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
+const defaultProfileKey = '||1400,1600|blitz,classical,correspondence,rapid';
+const defaultProfileVersion = stableProfileVersion(defaultProfileKey);
 const snapshot = {
   opening: null,
   games: { total: 10, whiteWins: 4, draws: 3, blackWins: 3 },
@@ -20,13 +19,50 @@ const snapshot = {
   topGames: [],
 };
 
+function peerResolution(selectedGroups = [1400], evidencePeriod = 'RECENT_THREE_MONTHS') {
+  return {
+    evidencePeriod,
+    eligibleGames: evidencePeriod === 'GENERIC_FALLBACK' ? 0 : 12,
+    selectedGroups,
+    distribution: [0, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500].map((group) => ({
+      group,
+      games: selectedGroups.includes(group) ? 12 : 0,
+    })),
+    contributions: evidencePeriod === 'GENERIC_FALLBACK' ? [] : [{
+      accountId: 1,
+      provider: 'LICHESS',
+      username: 'player',
+      speed: 'blitz',
+      games: 12,
+    }],
+    normalizationProfile: {
+      id: 'universal-online-strength',
+      version: '2026-07-lichess-bands-v1',
+    },
+    resolverPolicyVersion: 'dominant-contiguous-window-v1',
+  };
+}
+
+function fakePeerResolver(selectedGroups = [1400], evidencePeriod = 'RECENT_THREE_MONTHS') {
+  const calls = [];
+  return {
+    calls,
+    resolver: {
+      async resolve(requestingUserId, speedPreset) {
+        calls.push({ requestingUserId, speedPreset });
+        return peerResolution(selectedGroups, evidencePeriod);
+      },
+    },
+  };
+}
+
 function storedCache(overrides = {}) {
   return {
     id: 1,
     positionId: 1,
     normalizedFen: normalizedStartFen,
     source: 'LICHESS_GAMES',
-    profileVersion: 1,
+    profileVersion: defaultProfileVersion,
     sinceYear: 0,
     untilYear: 2026,
     movesLimit: 12,
@@ -78,9 +114,11 @@ const accessTokenProvider = {
 
 {
   const memory = memoryRepository();
+  const peers = fakePeerResolver();
   let upstreamCalls = 0;
   const service = createLichessGamesExplorerService({
     repository: memory.repository,
+    peerResolver: peers.resolver,
     client: {
       async fetchPosition(input) {
         upstreamCalls += 1;
@@ -88,8 +126,8 @@ const accessTokenProvider = {
           fen: canonicalStartFen,
           sinceMonth: undefined,
           untilMonth: undefined,
-          ratings: [...lichessGamesRatingGroups].sort((left, right) => String(left).localeCompare(String(right))),
-          speeds: [...lichessGamesSpeeds].sort(),
+          ratings: [1400, 1600],
+          speeds: ['blitz', 'classical', 'correspondence', 'rapid'],
           movesLimit: 12,
           topGamesLimit: 0,
           accessToken,
@@ -104,20 +142,35 @@ const accessTokenProvider = {
   const first = await service.getPosition('startpos', userId);
   assert.equal(first.cache.status, 'REFRESHED');
   assert.equal(first.dataset.source, 'LICHESS_GAMES');
+  assert.equal(first.dataset.profileVersion, defaultProfileVersion);
   assert.equal(first.dataset.sinceYear, 0);
   assert.equal(first.dataset.topGamesLimit, 0);
+  assert.deepEqual(first.population.requested, {
+    speedPreset: 'BLITZ_AND_SLOWER',
+    ratingTarget: 'MY_PEERS_PLUS_ONE',
+    ratingGroup: null,
+  });
+  assert.deepEqual(first.population.effective, {
+    speeds: ['blitz', 'classical', 'correspondence', 'rapid'],
+    ratingGroups: [1400, 1600],
+  });
+  assert.equal(first.population.peerResolution.evidencePeriod, 'RECENT_THREE_MONTHS');
   assert.equal(memory.calls.upsert, 1);
+  assert.deepEqual(peers.calls, [{ requestingUserId: userId, speedPreset: 'BLITZ_AND_SLOWER' }]);
 
   const second = await service.getPosition('startpos', userId);
   assert.equal(second.cache.status, 'HIT');
   assert.equal(upstreamCalls, 1, 'fresh population cache avoids another Lichess request');
+  assert.equal(peers.calls.length, 2, 'peer evidence is resolved per authenticated request');
 }
 
 {
   const memory = memoryRepository(storedCache());
+  const peers = fakePeerResolver();
   let accessTokenCalls = 0;
   const service = createLichessGamesExplorerService({
     repository: memory.repository,
+    peerResolver: peers.resolver,
     client: { async fetchPosition() { throw new Error('fresh cache must not refresh'); } },
     accessTokenProvider: {
       async getForUser() {
@@ -131,13 +184,16 @@ const accessTokenProvider = {
   const response = await service.getPosition('startpos', userId);
   assert.equal(response.cache.status, 'HIT');
   assert.equal(accessTokenCalls, 0);
+  assert.equal(response.population.peerResolution.normalizationProfile.version, '2026-07-lichess-bands-v1');
 }
 
 {
   const stale = storedCache({ expiresAt: new Date('2026-06-01T12:00:00.000Z') });
   const memory = memoryRepository(stale);
+  const peers = fakePeerResolver();
   const service = createLichessGamesExplorerService({
     repository: memory.repository,
+    peerResolver: peers.resolver,
     client: { async fetchPosition() { throw new Error('upstream unavailable'); } },
     accessTokenProvider,
     clock: () => new Date(now),
@@ -146,12 +202,15 @@ const accessTokenProvider = {
   const response = await service.getPosition('startpos', userId);
   assert.equal(response.cache.status, 'STALE');
   assert.equal(response.dataset.source, 'LICHESS_GAMES');
+  assert.deepEqual(response.population.effective.ratingGroups, [1400, 1600]);
 }
 
 {
   const memory = memoryRepository();
+  const peers = fakePeerResolver();
   const service = createLichessGamesExplorerService({
     repository: memory.repository,
+    peerResolver: peers.resolver,
     client: { async fetchPosition() { throw new Error('upstream unavailable'); } },
     accessTokenProvider,
     clock: () => new Date(now),
@@ -165,11 +224,13 @@ const accessTokenProvider = {
 
 {
   const memory = memoryRepository();
+  const peers = fakePeerResolver();
   let resolveFetch;
   let upstreamCalls = 0;
   const pendingFetch = new Promise((resolve) => { resolveFetch = resolve; });
   const service = createLichessGamesExplorerService({
     repository: memory.repository,
+    peerResolver: peers.resolver,
     client: {
       async fetchPosition() {
         upstreamCalls += 1;
@@ -188,6 +249,48 @@ const accessTokenProvider = {
   const [firstResponse, secondResponse] = await Promise.all([first, second]);
   assert.equal(firstResponse.cache.status, 'REFRESHED');
   assert.deepEqual(secondResponse, firstResponse);
+}
+
+{
+  let peerCalls = 0;
+  const population = await resolveLichessGamesPopulation({
+    fen: 'startpos',
+    speedPreset: 'BULLET',
+    ratingTarget: 'GROUP',
+    ratingGroup: 1800,
+  }, userId, {
+    async resolve() {
+      peerCalls += 1;
+      return peerResolution();
+    },
+  });
+
+  assert.equal(peerCalls, 0, 'explicit groups do not need personal peer evidence');
+  assert.deepEqual(population, {
+    requested: { speedPreset: 'BULLET', ratingTarget: 'GROUP', ratingGroup: 1800 },
+    effective: { speeds: ['bullet'], ratingGroups: [1800] },
+    peerResolution: null,
+  });
+}
+
+{
+  const population = await resolveLichessGamesPopulation({
+    fen: 'startpos',
+    speedPreset: 'ALL',
+    ratingTarget: 'MY_PEERS_PLUS_ONE',
+  }, userId, fakePeerResolver([2500]).resolver);
+
+  assert.deepEqual(population.effective.ratingGroups, [2500], 'top peer band has no higher group');
+  assert.deepEqual(population.effective.speeds, ['blitz', 'bullet', 'classical', 'correspondence', 'rapid']);
+}
+
+function stableProfileVersion(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 1) + 1;
 }
 
 console.log('Lichess games explorer service tests passed.');
