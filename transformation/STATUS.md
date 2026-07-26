@@ -4,7 +4,7 @@ Last updated: 2026-07-26
 
 ## Current state
 
-**Program state:** Phase 1A production brand assets and shared lockups implemented; CI and browser review pending
+**Program state:** Phase 1A production brand assets and shared lockups implemented; automated validation passed, browser review pending
 
 **Integration branch:** `visual_transformation`
 
@@ -30,6 +30,7 @@ The public landing page, authentication shell, Phase 0B closure, signed-in home 
 - [x] Added the shared lockup to the current signed-in header and mobile menu.
 - [x] Added focused component tests for geometry variants, live text, and accessibility.
 - [x] Added `apps/web/src/assets/brand/brand-readme.md`.
+- [x] Passed lint, full build, architecture guardrails, CI migrations, and the complete monorepo test suite on PR #88.
 
 ## Current checkpoint
 
@@ -69,9 +70,16 @@ Do not merge PR #88 without explicit approval. When approved, squash merge it in
 
 ### Automated validation
 
-- Draft PR #88 is open and CI is running.
-- Shared-component unit tests cover default decorative behavior, standalone labels, geometry variants, live wordmark text, and inverse treatment.
-- Final lint, build, architecture, migration, and test results must be recorded after CI completes.
+GitHub Actions CI run #894 completed successfully:
+
+- dependency installation passed;
+- lint passed;
+- full monorepo build passed, including Angular template/type compilation;
+- architecture guardrails passed;
+- database migrations applied successfully to the CI database;
+- complete monorepo tests passed, including the focused brand component specs.
+
+The final documentation-only validation commits must also complete CI before PR #88 is marked ready for review.
 
 ### Outstanding browser validation
 
@@ -147,7 +155,7 @@ Authentication browser/Clerk validation from D-306 and home browser validation r
 - Added static standard, reversed, mark, and favicon assets.
 - Added shared mark and live-text lockup components plus focused tests.
 - Replaced duplicated brand geometry while preserving page and navigation behavior.
-- Opened draft PR #88 for CI and review.
+- Opened draft PR #88 and passed lint, build, architecture guardrails, migrations, and the complete test suite.
 
 ### 2026-07-26 — Phase 0D Angular signed-in home
 
