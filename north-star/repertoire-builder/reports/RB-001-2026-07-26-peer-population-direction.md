@@ -4,11 +4,9 @@ Date: 2026-07-26
 
 Status: planning reconciliation only; not an RB-001 completion report.
 
-Jira: CRT-3, with dependency impact on CRT-4, CRT-6, CRT-8 and the CRT-2 epic.
+Jira: CRT-3, with dependency impact on CRT-4, CRT-8 and the CRT-2 epic.
 
 Branch: `north-star/rb-001-peer-presets-replan`
-
-Pull request: https://github.com/vokerg/chess_repertoir_trainer/pull/84
 
 ## Purpose
 
@@ -105,14 +103,24 @@ No new provider, extractor, cache table, queue, background job or persistence mo
 
 ## Planning and dependency impact
 
-- RB-001 remains order 10, P0 and `READY`, with revised title/scope.
+- RB-001 remains order 10 and P0.
 - RB-002 changes from `READY` to `BLOCKED` on the RB-001 benchmark profile/resolver boundary.
 - RB-006 uses fixed speed/rating presets rather than arbitrary weighted combinations.
 - RB-004 consumes RB-002 factual player level rather than recalculating it.
 - RB-010 represents the target presets in the MVP setup.
-- Jira now records CRT-3 as blocking CRT-4.
-- Jira descriptions were synchronized for CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8.
-- Jira workflow statuses remain unchanged because this is planning coordination, not an implementation claim.
+- CRT-3 blocks CRT-4 in Jira.
+- Jira workflow statuses remain unchanged by the planning reconciliation.
+
+## Implementation claim
+
+On 2026-07-26, the user approved execution and RB-001 was formally claimed:
+
+- Claimed by: ChatGPT
+- Branch: `north-star/rb-001-peer-presets-replan`
+- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
+- Exact scope: benchmark profile, temporary peer resolver, Opening Explorer presets/provenance, compact Peer games UI, focused tests, runtime documentation and completion synchronization.
+
+This claim does not make this direction report a completion report. The implementation must produce a separate RB-001 completion report.
 
 ## Repository files changed by this reconciliation
 
@@ -141,16 +149,16 @@ Historical reconciliation reports are not rewritten; this report records the lat
 - inspected the current rating-normalization profile, helper service and canonical documentation;
 - inspected game-recorded rating and three-month/all-history account projection patterns;
 - inspected affected North Star task, roadmap, decision and status documents;
-- inspected and synchronized Jira CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8;
-- created the material Jira `Blocks` link from CRT-3 to CRT-4;
-- compared the planning branch against `main` and confirmed only North Star planning files changed.
+- inspected Jira CRT-2, CRT-3, CRT-4, CRT-6 and CRT-8 descriptions and dependencies;
+- opened PR #84 and synchronized affected Jira scope and dependencies;
+- recorded the visible implementation claim.
 
 ## Validation not performed
 
-- no runtime application code changed;
-- no build, unit/integration test, lint, architecture or browser validation was run;
+- runtime application code has not yet been delivered;
+- no build, unit/integration test, lint, architecture or browser validation has yet been run;
 - no database migration was created;
-- no Jira workflow transition was made.
+- Jira has not yet transitioned to `In Progress` because the first substantive implementation commit is still pending.
 
 ## Residual risks and implementation questions
 
@@ -164,4 +172,4 @@ Historical reconciliation reports are not rewritten; this report records the lat
 
 ## Queue recommendation
 
-Proceed with RB-001 first. Keep RB-002 blocked until the new profile and shared peer resolver contract are available. No other task order or priority change is recommended.
+Proceed with the active RB-001 implementation. Keep RB-002 blocked until the new profile and shared peer resolver contract are available. No other task order or priority change is recommended.
