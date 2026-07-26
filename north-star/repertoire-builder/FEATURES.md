@@ -18,64 +18,69 @@ Delivery classes:
 
 | Feature | Class | Maturity | Value now | North-star role |
 | --- | --- | --- | --- | --- |
-| Speed/rating population explorer integration | Dual-use | Outlined; parallel implementation exists | Improves opening analysis and practical research | Supplies target-population moves and results |
-| Combinable speed targets and controlled weighting | Dual-use | Agreed concept, formula open | More accurate population analysis | Defines the environment being optimized |
-| Cross-provider rating normalization | Dual-use | Implementation exists in open PR at foundation creation | Comparable player-strength views | Shared normalized grade model |
-| Multi-account player level resolution | Dual-use | Outlined, formula open | One inspectable level across accounts | Resolves own-level and stronger-level target bands |
+| Rated Lichess population explorer | Dual-use | Runtime foundation merged | Improves opening analysis and practical research | Supplies target-population moves and results |
+| Compact speed/rating population presets | Dual-use | Agreed; RB-001 detailed | Replaces raw filter matrices with useful defaults | Defines the population being optimized |
+| Lichess-benchmark rating bands | Dual-use | Agreed; calibration implementation pending | Makes peer groups match provider query buckets | Shared peer-level vocabulary |
+| Temporary peer-band resolver | Dual-use | Outlined; formula threshold open | Enables My peers immediately | Supplies automatic population target defaults |
+| Durable multi-account player level | Dual-use | Outlined; blocked on RB-001 | One inspectable level across accounts | Stores/reuses factual peer evidence |
 | Named opening classification | Dual-use | Placeholder by agreement | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
 | Player Chess Profile calculation | Dual-use | Outlined | Standalone identity and performance insight | Advises repertoire target and candidate fit |
 | Player Chess Profile experience | Standalone | Outlined | Recalculable profile page with evidence | Entry point into builder |
-| Repertoire target contract | North-star | Outlined | Limited direct value | Captures speed set, rating target, persona, risk, and coverage intent |
+| Repertoire target contract | North-star | Outlined | Limited direct value | Captures preset population, persona, risk and coverage intent |
 | Candidate evidence aggregation | North-star | Outlined | Could support opening analysis | Combines separated evidence at one decision point |
 | Explainable candidate ranking | North-star | Outlined | Could support general recommendations | Orders candidates without hiding source evidence |
 | Visual move-choice experience | North-star | Placeholder pending prototypes | Possible reusable analysis pattern | Core human decision surface |
-| Builder session and branch queue | North-star | Placeholder | None until builder | Supports resume, deferral, and multi-branch coverage |
+| Builder session and branch queue | North-star | Placeholder | None until builder | Supports resume, deferral and multi-branch coverage |
 | Interactive builder MVP | North-star | Outlined | Primary north-star delivery | Alternates user choice and opponent coverage |
 | Course reintegration and preview | Dual-use | Existing pattern, new integration outlined | Safer course edits | Materializes accepted builder tree |
-| Existing-course adaptation | Dual-use | Outlined | Improves current course review | Reuses builder for gaps, endings, and weak choices |
-| Repertoire personas and profile override | Dual-use | Agreed concept | Supports multiple purposeful courses | Prevents player profile from becoming a constraint |
+| Existing-course adaptation | Dual-use | Outlined | Improves current course review | Reuses builder for gaps, endings and weak choices |
+| Repertoire personas and profile override | Dual-use | Agreed concept | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
 | Traps knowledge foundation | Research | Open and intentionally vague | Possible future opening resource | Enables evidence-backed traps persona |
 | LLM explanation/orchestration | Research | Open | Possible narrative value elsewhere | Optional explanation or conversational layer |
-| Outcome feedback and builder evaluation | Dual-use | Placeholder | Better improvement measurement | Validates whether recommendations work in later games |
+| Outcome feedback and builder evaluation | Dual-use | Placeholder | Better improvement measurement | Validates whether recommendations work later |
 
 ## Feature relationships
 
 ### Evidence foundation
 
-Population evidence, rating normalization, player-level resolution, and opening classification are independent reusable capabilities. They should not be implemented as private builder-only utilities.
+The shared Opening Explorer remains the only rated Lichess population implementation. RB-001 adds compact presets, benchmark bands and a temporary peer resolver on top of it; it does not create a second extractor or weighted aggregation subsystem.
+
+Rating normalization remains a shared versioned domain. The new Lichess-benchmark profile must preserve historical version metadata and provide Chess.com mappings through the same contracts/services.
+
+RB-002 then turns the temporary peer evidence into a durable multi-account result. Opening classification remains independent.
 
 ### Chess Profile
 
-The profile requires opening classification and player-level context for its strongest conclusions, but a narrower version may ship earlier if it clearly labels missing dimensions. Its calculation and UI are separate tasks so the data model can be tested before visual conclusions are polished.
+The profile requires opening classification and durable player-level context for its strongest conclusions. It may display or consume the resolved peer band, but it must not silently recalculate or mutate factual level evidence.
 
 ### Repertoire target
 
-The target captures intent for one build. It must support arbitrary speed combinations and profile override. It should reference normalized grades and opening-profile identifiers rather than copying their logic.
+The target captures intent for one build. It uses one RB-001 speed preset and one rating target, may reference factual RB-002 evidence, and permits an explicit override. It does not expose arbitrary speed weights in the MVP.
 
 ### Candidate recommendation
 
-Evidence aggregation and ranking are separate. Aggregation gathers comparable source facts. Ranking applies target-dependent policy and produces reasons. This separation is required for explainability and future experimentation.
+Evidence aggregation and ranking remain separate. Aggregation gathers comparable source facts. Ranking applies target-dependent policy and produces reasons.
 
 ### Visual choice
 
-The final move-choice interaction is known to require visual position comparison, but not yet known well enough for production architecture. Prototype work should use realistic candidate evidence before locking component and endpoint shapes.
+The final move-choice interaction requires visual position comparison, but exact production architecture remains open. Prototype work should use the revised preset direction rather than current raw filter controls.
 
 ### Builder state
 
-The builder needs a queue of unresolved branches, accepted choices, deferred responses, and previewable output. Whether this requires database persistence is intentionally not decided before workflow discovery.
+The builder needs a queue of unresolved branches, accepted choices, deferred responses and previewable output. Persistence remains intentionally undecided before workflow discovery.
 
 ### Existing courses
 
-Course review, endings, gaps, and performance findings become entry points into the same builder decision loop. They should not create separate recommendation engines.
+Course review, endings, gaps and performance findings become entry points into the same builder decision loop. They should not create separate recommendation engines.
 
 ### Repertoire personas
 
-A measured player profile may propose a default persona. The user can create alternatives such as solid, sharp, dubious, or low-theory. Persona is a target choice, not a permanent label attached to the user.
+A measured profile may propose a default persona. The user can create alternatives such as solid, sharp, dubious or low-theory. Persona is a target choice, not a permanent label.
 
 ### Traps
 
-Traps require independent definition and data research. The builder may later consume a verified traps source, but the north-star MVP does not depend on it.
+Traps require independent definition and data research. The north-star MVP does not depend on them.
 
 ### LLM
 
-No core stage depends on an LLM. A later discovery task may identify safe, useful narrative or orchestration roles after deterministic evidence and UX are understood.
+No core stage depends on an LLM. A later discovery task may identify safe narrative or orchestration roles after deterministic evidence and UX are understood.
