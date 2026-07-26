@@ -6,21 +6,22 @@ This roadmap orders capability stages and decision gates. Detailed execution bel
 
 ## Stage 0 — program foundation
 
-State: complete on `main` through PR #81, with planning reconciliation through PR #83.
+State: complete on `main` through PR #81, with planning reconciliation through PR #83 and GitHub Issues migration through PR #106.
 
 Gate: passed for execution.
 
 ## Stage 1 — reusable evidence foundations
 
-State: active. RB-001 is complete on `main`; RB-002 is READY as the next actionable P0 task; RB-003 remains independent.
+State: active. RB-001 and RB-002 are complete; RB-003 remains the only unresolved Stage 1 foundation.
 
 ### Merged baseline
 
 - PR #80: shared Masters/rated Opening Explorer, mixed cache profile and Peer games widget.
 - PR #76: previous cross-pool rating-normalization profile, contracts, helpers, tests and reference UI.
-- PR #84: fixed peer-population presets, Lichess-benchmark normalization, temporary peer resolver and compact Peer games UI.
+- PR #84: fixed peer-population presets, Lichess-benchmark normalization, provider-aware multi-account resolver and compact Peer games UI.
+- PR #106: GitHub Issues execution migration.
 
-### RB-001 completed delivery
+### RB-001 and RB-002 completed delivery
 
 Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
 
@@ -32,44 +33,37 @@ Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
 - no client-selected public-game months;
 - active normalization profile `2026-07-lichess-bands-v1` using the nine Lichess Explorer groups;
 - versioned approximate Chess.com bullet/blitz/rapid mappings;
+- provider/speed classification before aggregation;
+- multi-account game-count-weighted normalized band distribution;
 - recent-three-month → all-history → generic peer fallback;
 - resolver policy `dominant-contiguous-window-v1`;
+- complete distribution, selected groups, eligible-game count, evidence period and account/provider/speed contributions;
 - direct request/effective-population/resolver provenance;
 - two compact Peer games selects;
 - full CI validation and canonical runtime documentation.
 
+RB-002 is complete through this implementation. The earlier expectation of a separate durable formula, stored snapshot, generic confidence score or override foundation is rejected until a real consumer or measured defect justifies additional behavior.
+
 ### Stage 1 boundary
 
-RB-001 owns the temporary factual peer resolver required by Opening Analysis.
+RB-001 supplies the factual peer-population and multi-account player-level resolver used by Opening Analysis and later consumers.
 
-RB-002 owns the durable multi-account projection, confidence, exclusions, persistence/snapshot and overrides. It must reuse the merged RB-001 profile and resolver policy.
+RB-002 records that boundary as complete and prevents a duplicate formula or premature persistence model.
 
 RB-003 owns independent named opening classification.
 
-### RB-001 gate
+### Stage 1 gate
 
-The RB-001 gate required:
+The population/player-level portion of the gate is passed. Stage 1 remains open only until:
 
-- deterministic fixed presets;
-- direct effective speed/group provenance;
-- inspectable personal resolver provenance that is not stored in the public cache;
-- one mixed cache snapshot with honest HIT/REFRESHED/STALE semantics;
-- versioned profile and resolver policies;
-- Masters source separation;
-- passing lint, build, architecture, migrations and complete tests.
-
-These conditions were met and PR #84 was accepted and squash-merged.
-
-Stage 1 remains open until:
-
-- RB-002 durable player level is delivered;
-- RB-003 opening classification is delivered or a deliberately limited fallback is approved.
+- RB-003 opening classification is delivered; or
+- a deliberately limited fallback is explicitly approved.
 
 Tasks: RB-001, RB-002, RB-003.
 
 ## Stage 2 — Player Chess Profile
 
-State: blocked on RB-002 and RB-003; population-relative conclusions consume the completed RB-001 boundary.
+State: blocked on RB-003. It consumes the completed factual player-level and population boundary from RB-001/RB-002.
 
 Goals:
 
@@ -77,7 +71,8 @@ Goals:
 - preserve sample size, filters, baseline and confidence;
 - support periods, accounts, agreed speed presets, colors and rating context;
 - expose evidence and supporting games/openings;
-- keep profile conclusions advisory.
+- keep profile conclusions advisory;
+- extract or rename the factual player-level contract only when the profile becomes the second real consumer.
 
 Tasks: RB-004, RB-005.
 
@@ -85,12 +80,13 @@ Gate: profile claims are reproducible, evidence-backed and useful enough to advi
 
 ## Stage 3 — target and candidate decision model
 
-State: blocked on Stage 1 contracts and profile/opening dependencies.
+State: blocked on opening-profile and target/profile dependencies, not on further player-level formula work.
 
 Goals:
 
 - define a repertoire target using one RB-001 speed preset and one peer/all/explicit rating target;
 - keep factual level, profile recommendation and manual override separate;
+- snapshot factual evidence only when resumability requires it;
 - aggregate engine, master, population, personal, opening-profile and course evidence without collapsing sources;
 - rank candidates with explicit reasons and visible missing evidence.
 
@@ -100,7 +96,7 @@ Gate: one position can produce a deterministic, explainable candidate comparison
 
 ## Stage 4 — visual decision proof
 
-State: RB-008 remains READY and may proceed independently with verified population responses plus explicit mocks for unresolved durable level/profile evidence.
+State: RB-008 is `READY` and is the next actionable issue in queue order. It may proceed with verified population responses plus explicit mocks for unresolved opening-profile and target evidence.
 
 Goal: prove how a player visually compares candidate moves, consequences and opponent coverage before production builder architecture is locked.
 
@@ -163,16 +159,15 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 
 Safe parallel work:
 
-- RB-002 durable player-level implementation;
 - RB-003 opening-classification discovery;
 - RB-008 visual candidate/coverage prototype;
 - RB-014 traps research.
 
 High-collision areas requiring coordination:
 
-- population and player-level contracts;
-- Opening Explorer cache/provenance;
-- rating-normalization profile changes;
+- opening-profile contracts;
+- Opening Explorer cache/provenance changes;
+- rating-normalization profile or resolver-policy changes;
 - imported-game/account evidence aggregation;
 - target/candidate schemas;
 - builder state and persistence;
@@ -181,8 +176,10 @@ High-collision areas requiring coordination:
 ## Queue impact
 
 - RB-001 remains order 10, P0, `DONE`.
-- RB-002 remains order 20, P0, now `READY`.
-- No other task order or priority change is recommended.
+- RB-002 remains order 20, P0, now `DONE`.
+- RB-003 remains order 30, P0, `PROPOSED`.
+- RB-008 remains order 40, P1, `READY`, and is the next actionable task.
+- No task order or priority change is recommended.
 - No new task is required.
 
 Every completion report must explicitly state whether this roadmap remains valid.

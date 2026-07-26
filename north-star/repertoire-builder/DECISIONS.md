@@ -74,17 +74,21 @@ Cross-provider strength targeting is owned by the shared versioned rating-normal
 
 The active profile is `universal-online-strength` version `2026-07-lichess-bands-v1`. The former `2026-07-product-v1` profile remains exported as historical calibration evidence and must not be silently reinterpreted.
 
-### RB-D009 — Multi-account level is required
+### RB-D009 — Multi-account level uses normalized imported-game evidence
 
 State: **LOCKED**
 
-The system needs an inspectable formula for players with multiple accounts and ratings.
+The factual multi-account player level is the provider/speed-normalized imported-game band distribution and dominant interval delivered by RB-001. It preserves account/provider/speed contributions, evidence period, eligible-game count and profile/policy versions.
 
-### RB-D010 — Durable multi-account formula
+Raw Chess.com and Lichess rating numbers are not averaged into this factual result.
 
-State: **OPEN**
+### RB-D010 — No separate durable player-level formula without evidence
 
-RB-002 still owns durable account inclusion, recency, volume, confidence, exclusions, persistence/snapshot behavior and overrides. It must reuse the benchmark profile and temporary resolver boundary delivered by RB-001.
+State: **LOCKED**
+
+RB-002 is complete through the RB-001 resolver. Do not add a second formula, exact provider-neutral number, generic confidence score, activity caps, decay, persistence model or override foundation without a concrete consumer or measured defect.
+
+Later consumers may extract or rename the existing service and contract without changing its semantics. RB-004 owns profile interpretation; RB-006 owns target snapshots and user overrides without mutating factual evidence.
 
 ## Data and profile decisions
 
@@ -226,11 +230,11 @@ The product peer-level model uses the nine Lichess Explorer rating groups as can
 
 Lichess ratings classify directly. Chess.com bullet, blitz and rapid receive versioned approximate mappings into the same bands. Normal speed-specific rating disparity is accepted for the first combined population model.
 
-### RB-D032 — Temporary peer range comes from imported games
+### RB-D032 — Factual peer range comes from imported games
 
 State: **LOCKED**
 
-RB-001 resolves My peers from owned rated imported standard games:
+The system resolves My peers from owned rated imported standard games:
 
 1. eligible ratings from the last three months;
 2. all eligible history when recent evidence is absent;
@@ -238,7 +242,7 @@ RB-001 resolves My peers from owned rated imported standard games:
 
 Resolver policy `dominant-contiguous-window-v1` evaluates contiguous windows of one, two or three groups and selects the narrowest window containing at least 70% of eligible games. Qualifying ties prefer more games and then the lower starting group. When no window reaches 70%, the highest-mass window wins, followed by narrower and lower tie-breaks.
 
-The full distribution and provider/account/speed contributions remain visible. RB-002 later owns durable storage/snapshot, confidence, exclusions and overrides.
+The full distribution and provider/account/speed contributions remain visible. This resolver is the completed factual multi-account player-level boundary. Policy changes require demonstrated defects and explicit versioning.
 
 ### RB-D033 — Public-game period is server-controlled
 

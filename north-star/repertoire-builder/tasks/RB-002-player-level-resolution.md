@@ -1,6 +1,6 @@
 # RB-002 — Define multi-account player level resolution
 
-Status: READY
+Status: DONE
 
 Priority: P0
 
@@ -8,140 +8,113 @@ Order: 20
 
 Delivery class: Dual-use
 
-Planning maturity: Outlined
+Planning maturity: Resolved from merged implementation evidence
 
-Claimed by: unclaimed
+Claimed by: not separately claimed
 
-Claim branch: none
+Claim branch: not applicable
 
-Claimed at: none
+Claimed at: not applicable
 
-Claim scope: none
+Claim scope: closure reconciliation only; no additional runtime implementation
 
 Unblocked at: 2026-07-26 after RB-001 merged through PR #84 as squash commit `49dc6499eac9998de864ccb75a607541cd945382`.
 
+Completed at: 2026-07-26
+
 ## Outcome
 
-Create a reusable and inspectable player-level projection from multiple owned Chess.com and Lichess accounts. The durable result must use the Lichess-benchmark rating bands introduced by RB-001 and remain suitable for:
+The provider-aware multi-account player-level result required by this task is already delivered on `main` by RB-001.
 
-- stored or reproducible practical-level evidence;
-- Chess Profile comparisons;
-- peer-population defaults;
-- stronger-population targets;
-- standalone account and performance views;
-- later user overrides.
+The active runtime capability:
 
-The calculation must show its inputs, contribution rules, confidence and limitations. It must not duplicate the temporary on-demand peer-band resolver delivered by RB-001.
+- uses the versioned `universal-online-strength` / `2026-07-lichess-bands-v1` correlation matrix;
+- classifies Chess.com and Lichess bullet, blitz and rapid ratings through provider/speed-specific ranges;
+- maps every eligible contribution into the canonical Lichess Explorer benchmark bands;
+- weights the normalized distribution by imported-game count;
+- uses recent-three-month evidence, then all eligible history, then a visibly labelled generic fallback;
+- selects the dominant interval through `dominant-contiguous-window-v1`;
+- returns the full distribution, selected groups, evidence period, eligible-game count, account/provider/speed contributions, normalization profile version and resolver policy version.
 
-## Why this task exists
+That is the inspectable multi-account player-level formula. A second “durable” formula, exact provider-neutral numerical rating, persistence model, confidence score or override model is not justified as a separate foundation task.
 
-A user may have several accounts on the same or different providers, with different ratings and activity by speed. RB-001 now provides a bounded on-demand peer range for Opening Analysis and population queries. This task owns the more complete and durable player-level model that can be stored, reused and overridden across the product.
+## Completion rationale
 
-The merged rating-normalization domain now uses the Lichess Explorer groups as canonical product bands. RB-002 must consume that active version and the shared resolver policy rather than creating a second normalization or peer-level formula.
+RB-002 was originally created before the final RB-001 scope was known. PR #84 expanded RB-001 from population presets into the complete factual peer-level boundary needed by later consumers.
 
-## Verified implementation baseline on `main`
+The existing resolver already handles multiple owned accounts deterministically through grouped account/provider/speed/rating evidence and game-count contribution. Provider differences are handled before aggregation through the established correlation matrix; raw Chess.com and Lichess numbers are not averaged into the factual player-level result.
 
-PR #84 now provides:
+The separate imported-game `averageUserRating` field remains a literal summary of selected rows. It is not the cross-provider player-level formula and is not part of this completion claim.
 
-- active rating-normalization profile `universal-online-strength` / `2026-07-lichess-bands-v1`;
-- nine canonical Lichess Explorer peer bands;
-- versioned Chess.com bullet, blitz and rapid mappings into those bands;
-- temporary provider/speed-aware peer resolver `dominant-contiguous-window-v1`;
-- recent-three-month → all-history → generic fallback evidence selection;
-- complete distribution, selected groups, account/provider/speed contributions and policy/profile provenance;
-- fixed Opening Explorer peer-population presets and direct effective-filter provenance.
+## Delivered implementation evidence
 
-The repository also stores imported game-recorded ratings and per-account rating/performance projections for bullet, blitz and rapid.
+### Rating normalization
 
-## Dependency resolved
+- `apps/api/src/modules/rating-normalization/rating-normalization.config.ts`
+- `apps/api/src/modules/rating-normalization/rating-normalization.service.ts`
+- `apps/api/test/rating-normalization/rating-normalization.test.mjs`
+- `docs/rating-normalization.md`
 
-RB-001 is merged and the required shared boundary is available on `main`:
+### Multi-account peer resolution
 
-- versioned Lichess-benchmark bands;
-- provider/speed conversion into those bands;
-- recent-three-month/all-history/default peer-band resolver contract;
-- resolver provenance and policy versioning.
+- `apps/api/src/modules/opening-explorer/peer-rating-band.service.ts`
+- `apps/api/test/opening-explorer/peer-rating-band.service.test.mjs`
+- `packages/contracts/src/opening-explorer/opening-explorer.schemas.ts`
+- `apps/api/src/modules/opening-explorer/opening-explorer.service.ts`
 
-Implementation may now begin, but it must reuse these contracts and helpers rather than create a competing band model or duplicate resolver.
+### Delivery record
 
-RB-004 and RB-006 remain blocked on the completed durable player-level outcome.
+- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
+- Squash commit: `49dc6499eac9998de864ccb75a607541cd945382`
+- Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
 
-## In scope
+## Acceptance assessment
 
-- reuse or extract the RB-001 peer-band resolver as the shared factual calculation boundary;
-- define the default owned-account input set and account inclusion/exclusion behavior;
-- determine how multiple accounts in the same provider/speed pool contribute;
-- refine recency, volume, inactivity and outlier treatment beyond the bounded RB-001 fallback where justified;
-- decide whether the durable output includes per-speed bands, one dominant overall interval, or both;
-- persist or snapshot the resolved level only after inspecting existing projection/storage patterns;
-- preserve normalization profile ID/version and resolver policy version;
-- return source accounts, selected ratings or game distributions, bands, contributions, exclusions and reasons;
-- define player-level confidence without conflating it with normalization-source confidence;
-- handle no-data, partial-data and genuinely conflicting-data states;
-- define an explicit override shape without mutating the factual calculation;
-- provide a reusable service/contract and bounded endpoint or projection based on inspected architecture;
-- make the result consumable by RB-001, RB-004, RB-006 and account/performance views;
-- add focused multi-account tests.
+- The implementation consumes one shared versioned normalization profile; no parallel levels table exists.
+- Raw Chess.com and Lichess ratings are normalized before cross-provider aggregation.
+- Every contribution retains account, provider, speed and game count.
+- Recent, all-history and no-data fallback states are explicit.
+- Multiple accounts contribute deterministically through grouped evidence and game counts.
+- Separated populations remain visible in the complete distribution.
+- The dominant peer interval is reproducible and available to Opening Explorer and later consumers.
+- Normalization and resolver policy versions are returned.
+- Focused tests cover multiple providers, speeds, recent/all-history/no-data fallback, matrix boundaries and divergent distributions.
 
-## Out of scope
+## Explicit non-work
 
-- changing the Lichess-benchmark bands introduced by RB-001 without a new versioned calibration decision;
-- population move extraction or Lichess Opening Explorer calls;
-- candidate ranking;
-- player style/profile conclusions;
-- builder session state;
-- silently merging accounts the user does not own;
-- exact rating-to-rating conversion across providers;
-- LLM-generated level assessment.
+No separate RB-002 implementation is required for:
 
-## Formula questions this task must resolve
+- a new correlation matrix;
+- a new averaging or weighting formula;
+- an exact universal numerical rating;
+- a stored player-level snapshot;
+- a generic confidence score;
+- activity caps, decay or outlier suppression without measured defects;
+- a manual repertoire target override;
+- an independent player-level endpoint before a second consumer requires it.
 
-- Is the persisted output one band interval, per-speed bands, or both?
-- Does the RB-001 recent-game distribution remain the final formula or only the initial fallback?
-- How many games are needed before evidence contributes strongly?
-- How quickly does stale evidence decay?
-- How are multiple accounts at the same provider and speed combined?
-- How are conflicting high-volume bands represented?
-- How is confidence derived from volume, recency, agreement and calibration quality?
-- Where is the durable projection stored, and what invalidates/recomputes it?
-- How does a custom account selection differ from the default factual projection?
-- How is the factual result presented to RB-006 without preventing a manual target override?
+## Follow-on ownership
 
-## Acceptance criteria
+- RB-004 may extract or rename the resolver contract when Player Chess Profile becomes the second factual consumer.
+- RB-006 owns target snapshots and explicit user overrides without mutating factual evidence.
+- Cross-account duplicate handling, account caps or richer conflict vocabulary should be added only when a concrete consumer or measured defect justifies them.
+- Better rating calibration requires a new versioned normalization decision, not reopening RB-002.
 
-- The implementation consumes the RB-001 Lichess-benchmark profile and resolver boundary; no parallel levels table exists.
-- Raw Chess.com and Lichess ratings are never directly averaged.
-- Every contributing account/speed has visible provider, rating evidence period, normalized band and contribution.
-- Excluded or stale accounts include reasons.
-- Multiple accounts on one provider are handled deterministically.
-- No-data and conflicting-data outcomes are explicit.
-- A durable or reproducible dominant peer band is available to later product/profile consumers.
-- The result identifies normalization and resolver policy versions.
-- The user can later override the target without mutating factual player-level evidence.
-- Focused tests cover one account, multiple providers, multiple same-provider accounts, different speeds, stale data, sparse data, divergent ratings, boundary values and no data.
+## Validation
 
-## Required validation
+RB-001 implementation validation already passed:
 
-- contracts build/tests if a shared player-level schema is added;
-- API build and focused rating/player-level tests;
-- storage migration/repository tests only if persistence is introduced;
-- web tests if contribution presentation is included;
-- architecture checks for new module registration or projection ownership.
+- lint;
+- workspace build;
+- architecture guardrails;
+- PostgreSQL migrations;
+- complete repository tests;
+- focused normalization, resolver, contract, OpenAPI and Angular tests.
 
-## Completion updates
-
-The report must record:
-
-- what was reused from RB-001;
-- the chosen account/recency/contribution formula and rejected alternatives;
-- confidence semantics;
-- persisted/snapshot storage and invalidation behavior;
-- override boundary;
-- impact on RB-001, RB-004 and RB-006;
-- whether additional calibration tasks are required.
+This closure is documentation and issue reconciliation only; no runtime code changed.
 
 ## Completion
 
-Report: none
+Report: `reports/RB-002-2026-07-26-delivered-by-rb-001.md`
 
-Completed at: none
+Completed at: 2026-07-26

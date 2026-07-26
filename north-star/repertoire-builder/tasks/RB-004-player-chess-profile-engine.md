@@ -33,7 +33,9 @@ The calculation should have standalone value and later advise repertoire targets
 
 ## Why this task exists
 
-The repository stores imported games, ratings, opening names/ECO, indexed plies, analyses, and opening-related tags. A profile can turn those facts into a coherent player-facing capability, but only after opening classification and durable player-level context are available or an approved limited fallback is defined.
+The repository stores imported games, ratings, opening names/ECO, indexed plies, analyses, and opening-related tags. A profile can turn those facts into a coherent player-facing capability after opening classification is available or an approved limited fallback is defined.
+
+The factual multi-account player-level context is already available from the completed RB-001/RB-002 normalized peer resolver.
 
 ## Current repo anchors to inspect
 
@@ -44,29 +46,30 @@ The repository stores imported games, ratings, opening names/ECO, indexed plies,
 - performance-by-rating lab;
 - course coverage and deviation calculations if course adherence is included;
 - shared contracts and OpenAPI patterns;
-- RB-001, RB-002, and RB-003 delivered contracts.
+- completed RB-001/RB-002 factual player-level contracts;
+- RB-003 opening-classification outcome or approved fallback.
 
 ## Dependencies
 
 Blocked on:
 
-- RB-002 durable player-level resolution;
 - RB-003 opening classification or an explicitly approved limited profile taxonomy.
 
-Population-relative conclusions also depend on RB-001.
+Population-relative and factual player-level conclusions consume the completed RB-001/RB-002 boundary.
 
 May be split into a metric-definition/discovery task and implementation task if statistical scope is too broad.
 
 ## In scope
 
 - define profile query filters: accounts, dates, RB-001 speed presets, colors, rated status, and rating/opponent context;
-- reference RB-002 factual player-level evidence rather than recalculating or persisting a second level model;
+- consume the completed factual peer interval/distribution rather than recalculating or persisting a second level model;
+- extract or rename the existing resolver contract only if that is the minimal clean boundary for a second consumer;
 - define overall and contextual baselines;
 - calculate preference exposure separately from performance;
 - calculate opening-position outcomes from analysis/tags with no double counting;
 - include game score, early mistake/blunder rates, opening success/trouble rates, and other approved metrics;
 - compare against personal baseline and, when available, peer/population baseline;
-- define confidence or evidence-strength semantics;
+- define confidence or evidence-strength semantics for profile conclusions, separate from factual rating normalization;
 - preserve total, indexed, and analysed game counts;
 - return supporting opening groups and bounded example games;
 - support insufficient-data outcomes;
@@ -76,7 +79,8 @@ May be split into a metric-definition/discovery task and implementation task if 
 
 ## Out of scope
 
-- recalculating or mutating the RB-002 factual player level;
+- recalculating or mutating the completed factual player level;
+- changing the established correlation matrix or resolver policy without a separately versioned defect decision;
 - arbitrary target speed weights;
 - polished profile UI;
 - storing a permanent personality label;
@@ -94,7 +98,7 @@ May be split into a metric-definition/discovery task and implementation task if 
 - analysed-coverage thresholds;
 - whether result and opening-evaluation conclusions are shown independently or combined;
 - opponent strength adjustment;
-- treatment of multiple accounts and duplicate imported games;
+- treatment of multiple accounts and duplicate imported games for profile metrics;
 - significance of time forfeits and very short games;
 - comparison of recent period with preceding period;
 - how to avoid presenting correlation as causation.
@@ -104,7 +108,7 @@ May be split into a metric-definition/discovery task and implementation task if 
 - Preference and performance are separate response sections.
 - Every conclusion includes sample size, filters/context, baseline, metric delta where applicable, and confidence/evidence strength.
 - Results can differ by speed preset and color.
-- Multiple accounts use RB-002 level/account evidence rather than arbitrary raw-rating averaging.
+- Multiple accounts consume the completed normalized factual level rather than arbitrary raw-rating averaging.
 - Opening categories come from RB-003 or an explicitly named fallback.
 - Opening-related tags may contribute but are not the sole unexplained source.
 - Insufficient analysis coverage produces qualified or unavailable conclusions.

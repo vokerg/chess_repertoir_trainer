@@ -28,10 +28,11 @@ The target must support the product speed presets and peer-rating targets establ
 
 Candidate ranking has no meaning without explicit target intent. A move suitable for slower play against stronger peers may not be the best practical bullet choice. A factual peer band or profile-derived preference should initialize the target without preventing the user from choosing another population or repertoire character.
 
+The factual multi-account peer interval and distribution are already available from the completed RB-001/RB-002 boundary.
+
 ## Current repo anchors to inspect
 
-- RB-001 speed-preset, rating-target and population-evidence contracts;
-- RB-002 durable player-level output;
+- RB-001 speed-preset, rating-target, population-evidence and factual peer-resolution contracts;
 - rating-normalization contracts and profile versions;
 - opening-profile contract from RB-003;
 - course, chapter, line and tag/notes models;
@@ -42,9 +43,11 @@ Candidate ranking has no meaning without explicit target intent. A move suitable
 
 ## Dependencies
 
-Blocked on reliable contract direction from RB-001, RB-002 and RB-003.
+Blocked on reliable contract direction from RB-003.
 
 Should incorporate reviewed findings from RB-008.
+
+Consumes the completed RB-001/RB-002 factual player-level boundary.
 
 RB-007 and RB-009 depend on it.
 
@@ -54,7 +57,7 @@ RB-007 and RB-009 depend on it.
 - define source starting point and side;
 - model one RB-001 speed preset: `ALL`, `BLITZ_AND_SLOWER`, `BLITZ` or `BULLET`;
 - model one population target: all players, my peers, my peers plus one higher band, or one explicit Lichess-benchmark group;
-- snapshot or reference RB-002 factual player-level evidence appropriately;
+- snapshot or reference completed factual peer-level evidence appropriately;
 - record the normalization profile and peer-resolver policy versions used for derived defaults;
 - model provider/population source selection;
 - define persona/objective separately from profile suggestions;
@@ -68,6 +71,7 @@ RB-007 and RB-009 depend on it.
 
 ## Out of scope
 
+- changing or mutating factual player-level evidence;
 - arbitrary speed arrays or editable speed weights;
 - candidate ranking implementation;
 - builder-session persistence;
@@ -91,7 +95,7 @@ RB-007 and RB-009 depend on it.
 ## Acceptance criteria
 
 - Every valid target contains one supported speed preset and one supported population target.
-- Defaults can reference RB-002 factual evidence, but a manual override is explicit and authoritative.
+- Defaults can reference completed factual evidence, but a manual override is explicit and authoritative.
 - The target records the effective normalization/profile policy versions required for reproducibility.
 - An explicit benchmark group can replace a peer-derived default without mutating player-level evidence.
 - Solid and dubious alternatives for the same opening can be represented as different targets.

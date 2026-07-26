@@ -32,7 +32,7 @@ The builder needs more than Stockfish's first move and more than corpus populari
 
 - position-analysis service, cache, normalization, and multipv support;
 - masters explorer contracts/service/cache;
-- RB-001 population evidence;
+- completed RB-001/RB-002 population and factual player-level evidence;
 - personal opening-analysis next moves and performance;
 - course position suggestions and repertoire graphs;
 - RB-003 opening profiles;
@@ -42,7 +42,9 @@ The builder needs more than Stockfish's first move and more than corpus populari
 
 ## Dependencies
 
-Blocked on RB-001, RB-002, RB-003, and RB-006.
+Blocked on RB-003 and RB-006.
+
+Consumes completed RB-001/RB-002 population and factual player-level evidence.
 
 Should incorporate RB-008 visual data requirements.
 
@@ -78,6 +80,7 @@ RB-009/RB-010 depend on its response and reason semantics.
 
 ## Out of scope
 
+- changing the completed factual player-level formula;
 - final builder UI;
 - builder-session state;
 - course writes;
