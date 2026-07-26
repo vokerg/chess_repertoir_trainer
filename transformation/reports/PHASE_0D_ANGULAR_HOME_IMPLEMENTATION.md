@@ -119,7 +119,6 @@ Runtime and test files:
 
 - `apps/web/src/app/app.routes.ts`
 - `apps/web/src/app/core/layout/main-navigation/main-navigation.component.ts`
-- `apps/web/src/app/core/auth` is unchanged; only auth pages change their fallback
 - `apps/web/src/app/features/auth/login-page.component.ts`
 - `apps/web/src/app/features/auth/signup-page.component.ts`
 - `apps/web/src/app/shared/ui/nav-icon/nav-icon.component.ts`
@@ -160,18 +159,28 @@ Inspected the current branch implementation for:
 
 ### Automated checks
 
-PR #87 was opened as a draft to run the repository CI. Final results will be recorded before the PR is marked ready for review.
+GitHub Actions CI run #885 completed successfully on the implementation head before the final validation-document update.
 
-Expected CI coverage:
+The successful workflow ran:
 
 ```text
+npm ci
 npm run lint
 npm run build
 npm run check:architecture
+npm run db:migrate --workspace=apps/api
 npm test
 ```
 
-The repository workflow also applies database migrations even though this slice has no database changes.
+Results:
+
+- lint passed;
+- the full monorepo build passed, including Angular template and type compilation;
+- architecture guardrails passed;
+- database migrations applied successfully against the CI database;
+- the complete monorepo test suite passed, including the new home helper tests.
+
+The final documentation-only head must also complete CI before PR #87 is marked ready for review.
 
 ### Focused tests added
 
