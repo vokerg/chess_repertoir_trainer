@@ -9,7 +9,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | Order | ID | Jira | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
 | 10 | RB-001 | CRT-3 | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
-| 20 | RB-002 | CRT-4 | P0 | READY | Define multi-account player level resolution | Dual-use | RB-001 benchmark profile and resolver boundary now available on `main` |
+| 20 | RB-002 | CRT-4 | P0 | READY | Define provider-aware multi-account player rating | Dual-use | RB-001 profile/resolver plus existing imported-game `averageUserRating` on `main` |
 | 30 | RB-003 | CRT-5 | P0 | PROPOSED | Establish named opening classification foundation | Dual-use | Independent; planning intentionally blank |
 | 40 | RB-008 | CRT-10 | P1 | READY | Prototype visual candidate and coverage choices | North-star | Foundation; may use verified Peer games plus explicit mocks for unresolved target/profile evidence |
 | 50 | RB-004 | CRT-6 | P1 | BLOCKED | Implement Player Chess Profile calculation | Dual-use | RB-002, RB-003; RB-001 for population-relative claims |
@@ -27,13 +27,15 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 ## Jira program
 
-- Epic: `CRT-2` — Repertoire Builder north-star program, `In Progress`.
-- Every existing RB task has exactly one Jira Task under the Epic.
-- Jira tracks execution status, assignee, branch, pull request and active blockers.
+- Epic: `CRT-2` — Repertoire Builder north-star program, last known `In Progress`.
+- Every existing RB task has exactly one mapped Jira Task.
 - Repository task files remain the detailed scope and acceptance source.
-- Important dependencies must be represented with Jira `Blocks` links as well as documented here.
-- New RB tasks require a corresponding Jira issue in the same coordination change.
+- Jira is intended to track execution status, assignee, branch, pull request and active blockers while the Jira mirror remains in use.
+- Important dependencies should be represented with Jira `Blocks` links as well as documented here.
+- New RB tasks require a corresponding Jira issue only while Jira remains the approved execution mirror.
 - `READY` repository tasks remain Jira `To Do` until claimed and substantive work begins.
+
+Current connector clarification: the Atlassian/Rovo connector returns HTTP 403 with `The app is not installed on this instance`. Current Jira state therefore cannot be verified or changed from this session. See [`JIRA.md`](JIRA.md).
 
 ## Completed delivery
 
@@ -61,13 +63,26 @@ PR #84 provides:
 
 The product deliberately accepts one combined Lichess response for the resolved speed/rating population. Per-speed decomposition and weighting remain rejected for the MVP.
 
-### Player-level boundary
+### Existing average-rating direction
 
-RB-002 is now `READY`. It owns the durable multi-account projection, persistence/snapshot decision, confidence, exclusions and overrides. It must reuse the RB-001 profile/policy versions rather than create a second level formula.
+The imported-game summary already calculates `averageUserRating` for the applied filter using available game-recorded user ratings. This is a reusable descriptive metric across account, provider, speed and period filters.
+
+It does not by itself define a provider-neutral player level when Chess.com and Lichess rows are mixed.
+
+### Reconciled player-rating boundary
+
+RB-002 is `READY`. It now owns the bounded composition of:
+
+- the existing selected-game raw average;
+- RB-001 provider/speed normalization and dominant-band resolution;
+- visible source contributions, evidence quality, exclusions and conflicts;
+- a reusable on-demand player-rating result.
+
+Persistence is no longer presumed. A stored snapshot requires demonstrated product or performance need. Repertoire-specific manual overrides belong to RB-006.
 
 ### Independent work
 
-RB-008 may continue visual discovery with verified Peer games responses and explicit mocks for unresolved durable level/profile evidence.
+RB-008 may continue visual discovery with verified Peer games responses and explicit mocks for unresolved player/profile evidence.
 
 RB-014 can run as low-risk research without affecting core delivery.
 
@@ -76,7 +91,7 @@ RB-014 can run as low-risk research without affecting core delivery.
 ```text
 RB-001 peer population foundation — DONE
         ↓
-RB-002 durable player level — READY
+RB-002 provider-aware player rating — READY
         +
 RB-003 opening profile
         ↓
@@ -101,20 +116,22 @@ RB-013 personas intersects profile and target work and may be split further afte
 
 ## Reprioritization impact
 
-- RB-001 remains order 10 and P0, now `DONE`.
-- RB-002 remains order 20 and P0, now `READY` as the next actionable P0 task.
+- RB-001 remains order 10 and P0, `DONE`.
+- RB-002 remains order 20 and P0, `READY` as the next actionable task.
+- RB-002 scope is smaller: reuse existing raw-average and peer-band foundations; do not presume persistence.
 - No other order or priority changes are required.
-- No new RB/Jira task is required.
+- No new RB task is required for the scope reconciliation.
+- The execution-tracker choice requires clarification but does not change the product queue yet.
 
 ## Adding tasks
 
 - Use the next unused `RB-###` ID.
 - Never recycle or renumber an ID.
 - Create a separate file under `tasks/` from the template.
-- Create one Jira Task under `CRT-2` and record its key here.
+- Create the corresponding execution-tracker item under the currently approved coordination system.
 - Add order, priority, status, class and dependencies here.
-- Add material Jira `Blocks` relationships.
-- Explain the queue and Jira impact in the report that created the task.
+- Add material dependency relationships in the execution tracker.
+- Explain the queue and tracker impact in the report that created the task.
 
 ## Reprioritizing
 
@@ -123,5 +140,5 @@ A reprioritization update must state:
 - evidence or dependency that changed;
 - affected task orders and priorities;
 - whether work in progress is disrupted;
-- whether Jira priority, links or comments were updated;
+- whether execution-tracker priorities, links or comments were updated;
 - whether the roadmap also changes.
