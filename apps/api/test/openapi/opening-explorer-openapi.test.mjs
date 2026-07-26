@@ -35,9 +35,12 @@ try {
   assert.ok(lichessGamesOperation.responses['401']);
   assert.ok(lichessGamesOperation.responses['503']);
 
+  const parameterNames = lichessGamesOperation.parameters.map((parameter) => parameter.name);
+  assert.deepEqual(parameterNames, ['fen', 'speedPreset', 'ratingTarget', 'ratingGroup']);
+
   const filtered = await app.inject({
     method: 'GET',
-    url: '/api/lichess-games-explorer?since=2024-01&until=2024-12&ratings=1600,1800&speeds=blitz,rapid&fen=not-a-fen',
+    url: '/api/lichess-games-explorer?speedPreset=BULLET&ratingTarget=GROUP&ratingGroup=1800&fen=not-a-fen',
   });
   assert.equal(filtered.statusCode, 400);
   assert.deepEqual(filtered.json(), {
@@ -45,16 +48,20 @@ try {
     code: 'INVALID_FEN',
   });
 
-  const invalidFilter = await app.inject({
-    method: 'GET',
-    url: '/api/lichess-games-explorer?ratings=1700',
-  });
-  assert.equal(invalidFilter.statusCode, 400);
-  assert.deepEqual(invalidFilter.json(), { error: 'Validation failed' });
+  for (const url of [
+    '/api/lichess-games-explorer?ratingTarget=GROUP',
+    '/api/lichess-games-explorer?ratingTarget=ALL&ratingGroup=1800',
+    '/api/lichess-games-explorer?speedPreset=ULTRA_BULLET',
+    '/api/lichess-games-explorer?ratingTarget=GROUP&ratingGroup=1700',
+  ]) {
+    const invalidFilter = await app.inject({ method: 'GET', url });
+    assert.equal(invalidFilter.statusCode, 400, url);
+    assert.deepEqual(invalidFilter.json(), { error: 'Validation failed' });
+  }
 
   for (const url of [
     '/api/masters-explorer?fen=not-a-fen',
-    '/api/lichess-games-explorer?fen=not-a-fen',
+    '/api/lichess-games-explorer?ratingTarget=GROUP&ratingGroup=1800&fen=not-a-fen',
   ]) {
     const invalid = await app.inject({ method: 'GET', url });
     assert.equal(invalid.statusCode, 400);
