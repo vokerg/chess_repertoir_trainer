@@ -1,6 +1,6 @@
 # RB-008 — Prototype visual candidate and coverage choices
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 40
 
 Delivery class: North-star
 
-Planning maturity: Outlined
+Planning maturity: Review-ready
 
 Claimed by: ChatGPT session
 
@@ -17,6 +17,8 @@ Claim branch: `rb-008/issue-96-visual-candidate-prototype`
 Claimed at: 2026-07-26
 
 Claim scope: static discovery and visual proof only — two materially different responsive HTML/CSS/JavaScript interaction directions with realistic mock candidate and opponent-coverage evidence, desktop/mobile review artifacts, and a decision/contract-implication report. No production Angular, API, schema, database, ranking, or course-write changes.
+
+Review PR: #110
 
 ## Outcome
 
@@ -30,29 +32,47 @@ Produce a reviewed visual interaction direction for:
 
 The result should reduce product and architecture uncertainty before production builder implementation.
 
+## Delivered review artifacts
+
+Directory: `prototypes/rb-008-visual-candidate-choice/`
+
+- Direction A — board-first decision desk with one large shared board, keyboard-switchable candidates, focused evidence and response coverage queue;
+- Direction B — candidate landscape with simultaneous mini-board cards and response coverage matrix;
+- responsive desktop/mobile behavior;
+- static interaction for candidate switching and cover/defer/ignore states;
+- realistic mock sharp-versus-solid, profile-override, sparse-personal-data and peer-population scenarios;
+- review guide and evidence-responsibility notes.
+
+Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`.
+
+## Provisional recommendation
+
+Pending user review, use Direction A as the default production workbench hypothesis because it preserves board readability and the existing analysis-workbench mental model. Borrow Direction B's candidate-attached target/profile labels and consider an explicit mini-board compare mode rather than showing three full candidate boards by default.
+
+This recommendation is not locked until user review is recorded in `DECISIONS.md`.
+
 ## Why this task exists
 
 The user explicitly requires move selection to be visual, not merely a list of lines. The repository contains boards, workbenches, engine widgets, course trees, finding cards, and a separate visual-transformation program, but no current pattern should be assumed sufficient without realistic proof.
 
-## Current repo anchors to inspect
+## Current repo anchors inspected
 
-- current visual-transformation branch, decisions, tokens, shell, and representative workflow status;
-- shared analysis workbench and chessboard components;
+- current visual-transformation branch decisions, tokens, shell and representative static prototype;
+- shared analysis workbench and chessboard composition;
 - opening-analysis page and widgets;
 - line editor workbench and tree navigation;
 - course review finding cards and board images;
 - responsive/mobile CSS patterns;
-- any Figma or prototype assets approved by the user.
+- current RB-001/RB-002 population and factual player-level vocabulary;
+- planned RB-006/RB-007 target and evidence responsibilities.
 
 ## Dependencies
 
 No runtime dependency beyond this foundation.
 
-May use explicitly documented mock contracts based on RB-006/RB-007 concepts.
+The prototype uses explicitly documented mock responsibilities based on RB-006/RB-007 concepts and does not define their final contracts.
 
-May run in parallel with RB-003 and early profile work. RB-001/RB-002 factual population and player-level evidence is complete and may inform realistic mock values.
-
-Production implementation is blocked until relevant evidence contracts and visual direction are reviewed.
+Production implementation remains blocked until the visual direction and relevant evidence contracts are reviewed.
 
 ## In scope
 
@@ -77,55 +97,68 @@ Production implementation is blocked until relevant evidence contracts and visua
 - full visual-system redesign;
 - traps-specific UI.
 
-## Scenarios to demonstrate
+## Scenarios demonstrated
 
-1. User move with three candidates: objectively safest, profile-aligned sharp choice, and practical/dubious alternative.
-2. Opponent response coverage with frequency differences across selected speeds and rating levels.
+1. User move with three candidates: target-aligned structured choice, profile-aligned sharp choice, and practical/objectively costly alternative.
+2. Opponent response coverage with frequency differences and cumulative first-pass coverage.
 3. A player profile recommending sharp play while the selected repertoire persona is solid.
 4. Sparse personal data but meaningful population/master evidence.
 5. Mobile presentation where boards and evidence remain usable.
 
-## Open questions to resolve
+## Review questions
 
-- multiple mini-boards versus one interactive board;
-- how far ahead a candidate preview should show;
-- which metrics are always visible;
-- how to compare structures rather than only immediate moves;
-- where target settings and profile context live;
-- whether branch queue is a side panel, timeline, map, or separate view;
-- how deferral and coverage percentage are communicated;
-- how to avoid card overload.
+- Direction A, Direction B, or the proposed hybrid?
+- Is one large board more important than simultaneous structural comparison?
+- Should mini-board comparison be a default surface or an explicit mode?
+- Does the response queue communicate selected, deferred and ignored work clearly enough?
+- Is cumulative coverage useful at the decision point?
+- Is target/profile disagreement prominent without becoming obstructive?
+- Is Direction B's sticky mobile summary useful or intrusive?
 
-## Acceptance criteria
+## Acceptance assessment
 
-- At least two interaction directions are reviewable with realistic data.
-- Every candidate is visually connected to a position, not only text.
-- The user can identify why a move is shown and what tradeoff it represents.
-- Profile recommendation and explicit persona choice are visibly separate.
-- Opponent coverage, cumulative relevance, and deferral are understandable.
-- Desktop and mobile behavior are demonstrated.
-- The recommended direction identifies required data, component responsibilities, and unresolved risks without prematurely locking endpoints.
-- User review outcome is recorded in `DECISIONS.md`.
+- Two materially different interaction directions are reviewable with realistic data: met.
+- Every candidate is visually connected to a position: met.
+- Reasons and tradeoffs are visible: met.
+- Profile recommendation and explicit persona choice are visibly separate: met.
+- Opponent coverage, cumulative relevance and deferral are represented: met.
+- Desktop and mobile behavior are demonstrated: met through local Chromium/Playwright review.
+- Required data, component responsibilities and risks are documented without locking endpoints: met.
+- User review outcome is recorded in `DECISIONS.md`: pending.
 
-## Required validation
+## Validation
 
-- visual review at representative desktop and mobile widths;
-- keyboard/focus review for interactive prototypes where applicable;
-- contrast and readable-board-size review;
-- no application build unless production code is changed.
+Performed:
+
+- local Chromium/Playwright rendering at 1440 × 1100 and 390 × 844;
+- visual inspection of both directions at both widths;
+- candidate board/evidence switching;
+- arrow-key candidate navigation;
+- cover/defer/ignore state and cumulative-coverage updates;
+- relative asset-link validation;
+- focus, status-text and color-independence review;
+- repository CI through PR #110.
+
+Skipped pending production work:
+
+- authenticated application-shell integration;
+- assistive-technology screen-reader testing;
+- physical touch-device testing;
+- real data/API integration;
+- production Angular component tests.
 
 ## Completion updates
 
-The report must state:
+After user review:
 
-- reviewed alternatives;
-- approved/rejected visual decisions;
-- contract implications for RB-006, RB-007, RB-009, and RB-010;
-- whether production UI should be split into additional tasks;
-- queue reprioritization recommendation.
+- record the approved/rejected/hybrid direction in `DECISIONS.md`;
+- update this task to `DONE` or revise the prototype scope;
+- update issue #96 and PR #110 disposition;
+- decide whether production UI needs a separate RB task;
+- keep or adjust queue order with explicit rationale.
 
 ## Completion
 
-Report: none
+Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`
 
-Completed at: none
+Completed at: pending user review
