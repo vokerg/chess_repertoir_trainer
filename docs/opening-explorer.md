@@ -6,13 +6,13 @@ The opening-explorer backend exposes position statistics from two public Lichess
 
 ```http
 GET /api/masters-explorer?fen=<fen>
-GET /api/lichess-games-explorer?fen=<fen>
+GET /api/lichess-games-explorer?fen=<fen>&since=<YYYY-MM>&until=<YYYY-MM>&ratings=<csv>&speeds=<csv>
 ```
 
 The endpoints are intentionally distinct:
 
 - `/api/masters-explorer` returns only the Lichess Masters dataset;
-- `/api/lichess-games-explorer` returns aggregated rated games from the configured Lichess population profile.
+- `/api/lichess-games-explorer` returns aggregated rated games from a client-selected or unrestricted Lichess population.
 
 Both routes require normal application authentication. Returned data and persistent cache rows are system-wide rather than user-owned.
 
@@ -31,14 +31,14 @@ Both are configured instances of the same cached opening-explorer service. The M
 
 The deployed Prisma model and table remain named `MastersExplorerCache` for storage compatibility. That legacy persistence name is isolated inside `opening-explorer.repository.prisma.ts`; it is not part of the service, contract, route, or module taxonomy. No data migration is required for this integration.
 
-## Fixed dataset profiles
+## Dataset profiles
 
-Profiles are deliberately server-controlled. Clients cannot currently vary their parameters. Changing profile semantics requires incrementing the corresponding profile version.
+The Masters profile is server-controlled. Rated-game clients may optionally restrict month range, rating groups, and speeds. Omitted rated-game parameters mean no restriction; filtered cache profiles are derived deterministically from the canonical parameter combination.
 
 ### Lichess Masters
 
 - source: `LICHESS_MASTERS`;
-- profile version: `1`;
+- profile version: `1` for the unrestricted population and a deterministic filter-profile version otherwise;
 - games since: `2000`;
 - games until: the current UTC calendar year;
 - next moves: `12`;
@@ -49,15 +49,14 @@ Profiles are deliberately server-controlled. Clients cannot currently vary their
 
 - source: `LICHESS_GAMES`;
 - profile version: `1`;
-- games since: `2000-01`;
-- games until: December of the current UTC calendar year;
+- games since/until: unrestricted by default, optionally bounded by `YYYY-MM`;
 - rating groups: every Lichess explorer bucket (`0` through `2500+`);
 - speeds: ultraBullet, bullet, blitz, rapid, classical, and correspondence;
 - next moves: `12`;
-- top game references: `4`;
+- top game references: `0`;
 - cache lifetime: `30 days`.
 
-The cache table records year-level provenance. For `LICHESS_GAMES`, `source + profileVersion` defines the exact month, rating, and speed semantics listed above.
+The cache table records year-level provenance. For `LICHESS_GAMES`, `source + profileVersion` identifies the canonical month, rating, and speed combination.
 
 ## Cache flow
 
@@ -89,14 +88,13 @@ The cache row also records source/profile provenance, query years and limits, `f
 
 ## Current product usage
 
-The Masters endpoint is consumed by the existing Masters explorer widget. The rated-games endpoint currently exists as an integration point and API only; no Angular, mobile, course-builder, review, or automated repertoire workflow consumes it yet.
+The Masters endpoint is consumed by the existing Masters explorer widget. The reusable Peer games Angular widget consumes the rated-games endpoint and is first composed by Opening analysis behind its own header toggle. It exposes every population parameter supported by this integration and intentionally omits top-game presentation.
 
 ## Non-goals
 
 This integration does not:
 
-- add a frontend or mobile consumer for rated Lichess data;
 - compare either public dataset with imported games or courses;
-- expose arbitrary year, month, rating, speed, or result limits;
+- expose result filters or caller-controlled move limits;
 - download or persist public game PGNs;
 - add scheduled refresh jobs, Redis, or a queue beyond the existing in-process request serialization.

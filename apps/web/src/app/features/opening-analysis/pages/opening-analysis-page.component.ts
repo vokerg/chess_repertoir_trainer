@@ -5,6 +5,7 @@ import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
+import { LichessGamesExplorerWidgetComponent } from '../../../shared/lichess-games-explorer/lichess-games-explorer-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
@@ -23,6 +24,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     AnalysisBoardComponent,
     CoursePositionSuggestionsWidgetComponent,
     MastersExplorerWidgetComponent,
+    LichessGamesExplorerWidgetComponent,
     GameFilterBreakdownPanelComponent,
     PositionGameMovesPanelComponent,
     PositionTopGamesComponent,
@@ -69,6 +71,13 @@ export class OpeningAnalysisPageComponent implements OnInit {
       label: 'Masters',
       pressed: this.store.mastersOpen(),
       run: () => this.store.toggleMasters(),
+    },
+    {
+      id: 'peers',
+      kind: 'toggle',
+      label: 'Peers',
+      pressed: this.store.peersOpen(),
+      run: () => this.store.togglePeers(),
     },
     {
       id: 'last-games',

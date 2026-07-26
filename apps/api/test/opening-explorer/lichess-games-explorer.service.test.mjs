@@ -27,10 +27,10 @@ function storedCache(overrides = {}) {
     normalizedFen: normalizedStartFen,
     source: 'LICHESS_GAMES',
     profileVersion: 1,
-    sinceYear: 2000,
+    sinceYear: 0,
     untilYear: 2026,
     movesLimit: 12,
-    topGamesLimit: 4,
+    topGamesLimit: 0,
     payload: snapshot,
     fetchedAt: new Date('2026-07-01T12:00:00.000Z'),
     expiresAt: new Date('2026-07-31T12:00:00.000Z'),
@@ -86,12 +86,12 @@ const accessTokenProvider = {
         upstreamCalls += 1;
         assert.deepEqual(input, {
           fen: canonicalStartFen,
-          sinceMonth: '2000-01',
-          untilMonth: '2026-12',
-          ratings: lichessGamesRatingGroups,
-          speeds: lichessGamesSpeeds,
+          sinceMonth: undefined,
+          untilMonth: undefined,
+          ratings: [...lichessGamesRatingGroups].sort((left, right) => String(left).localeCompare(String(right))),
+          speeds: [...lichessGamesSpeeds].sort(),
           movesLimit: 12,
-          topGamesLimit: 4,
+          topGamesLimit: 0,
           accessToken,
         });
         return snapshot;
@@ -104,8 +104,8 @@ const accessTokenProvider = {
   const first = await service.getPosition('startpos', userId);
   assert.equal(first.cache.status, 'REFRESHED');
   assert.equal(first.dataset.source, 'LICHESS_GAMES');
-  assert.equal(first.dataset.sinceYear, 2000);
-  assert.equal(first.dataset.topGamesLimit, 4);
+  assert.equal(first.dataset.sinceYear, 0);
+  assert.equal(first.dataset.topGamesLimit, 0);
   assert.equal(memory.calls.upsert, 1);
 
   const second = await service.getPosition('startpos', userId);

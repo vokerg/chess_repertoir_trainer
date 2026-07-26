@@ -2,6 +2,7 @@ import { Chess } from 'chess.js';
 import { normalizeFenForPosition } from 'chess-domain';
 import {
   openingExplorerSnapshotSchema,
+  type LichessGamesExplorerQuery,
   type OpeningExplorerCacheStatus,
   type OpeningExplorerResponse,
   type OpeningExplorerSnapshot,
@@ -69,7 +70,11 @@ interface LichessGamesExplorerServiceDependencies extends SharedOpeningExplorerS
 }
 
 export interface OpeningExplorerService {
-  getPosition(fen: string, userId: number): Promise<OpeningExplorerResponse>;
+  getPosition(
+    fen: string,
+    userId: number,
+    query?: LichessGamesExplorerQuery,
+  ): Promise<OpeningExplorerResponse>;
 }
 
 interface OpeningExplorerProfile {
@@ -121,27 +126,62 @@ export function createLichessGamesExplorerService(
   dependencies: LichessGamesExplorerServiceDependencies = {},
 ): OpeningExplorerService {
   const client = dependencies.client ?? defaultLichessGamesClient;
-  return createCachedOpeningExplorerService({
-    source: 'LICHESS_GAMES',
-    profileVersion,
-    sinceYear,
-    movesLimit,
-    topGamesLimit: lichessGamesTopGamesLimit,
-    cacheTtlMs,
-    fetchPosition: ({ fen, untilYear, accessToken }) => client.fetchPosition({
-      fen,
-      sinceMonth: `${sinceYear}-01`,
-      untilMonth: `${untilYear}-12`,
-      ratings: lichessGamesRatingGroups,
-      speeds: lichessGamesSpeeds,
-      movesLimit,
-      topGamesLimit: lichessGamesTopGamesLimit,
-      accessToken,
-    }),
-    unavailableError: () => new LichessGamesExplorerUnavailableError(
-      'Lichess games explorer is temporarily unavailable.',
-    ),
-  }, dependencies);
+  const services = new Map<string, OpeningExplorerService>();
+  return {
+    getPosition(fen, userId, query = { fen }) {
+      const ratings = sortedUnique(query.ratings ?? lichessGamesRatingGroups);
+      const speeds = sortedUnique(query.speeds ?? lichessGamesSpeeds);
+      const profileKey = [
+        query.since ?? '',
+        query.until ?? '',
+        ratings.join(','),
+        speeds.join(','),
+      ].join('|');
+      const defaultProfile = !query.since
+        && !query.until
+        && ratings.length === lichessGamesRatingGroups.length
+        && speeds.length === lichessGamesSpeeds.length;
+      let service = services.get(profileKey);
+      if (!service) {
+        service = createCachedOpeningExplorerService({
+          source: 'LICHESS_GAMES',
+          profileVersion: defaultProfile ? profileVersion : stableProfileVersion(profileKey),
+          sinceYear: query.since ? Number(query.since.slice(0, 4)) : 0,
+          movesLimit,
+          topGamesLimit: 0,
+          cacheTtlMs,
+          fetchPosition: ({ fen: canonicalPosition, accessToken }) => client.fetchPosition({
+            fen: canonicalPosition,
+            sinceMonth: query.since,
+            untilMonth: query.until,
+            ratings,
+            speeds,
+            movesLimit,
+            topGamesLimit: 0,
+            accessToken,
+          }),
+          unavailableError: () => new LichessGamesExplorerUnavailableError(
+            'Lichess games explorer is temporarily unavailable.',
+          ),
+        }, dependencies);
+        services.set(profileKey, service);
+      }
+      return service.getPosition(fen, userId);
+    },
+  };
+}
+
+function sortedUnique<T extends string | number>(values: readonly T[]): T[] {
+  return [...new Set(values)].sort((left, right) => String(left).localeCompare(String(right)));
+}
+
+function stableProfileVersion(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 1) + 1;
 }
 
 function createCachedOpeningExplorerService(

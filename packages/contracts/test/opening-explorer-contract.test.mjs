@@ -1,8 +1,28 @@
 import assert from 'node:assert/strict';
 import {
+  lichessGamesExplorerQuerySchema,
   openingExplorerErrorResponseSchema,
   openingExplorerResponseSchema,
 } from '../dist/index.js';
+
+assert.deepEqual(lichessGamesExplorerQuerySchema.parse({
+  fen: 'startpos',
+  since: '2024-01',
+  until: '2024-12',
+  ratings: '1600,1800',
+  speeds: 'blitz,rapid',
+}), {
+  fen: 'startpos',
+  since: '2024-01',
+  until: '2024-12',
+  ratings: [1600, 1800],
+  speeds: ['blitz', 'rapid'],
+});
+assert.equal(lichessGamesExplorerQuerySchema.safeParse({ ratings: '1700' }).success, false);
+assert.equal(lichessGamesExplorerQuerySchema.safeParse({
+  since: '2025-01',
+  until: '2024-12',
+}).success, false);
 
 const response = {
   fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',

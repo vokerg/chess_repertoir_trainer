@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type {
+  LichessGamesRatingGroup,
+  LichessGamesSpeed,
   OpeningExplorerCounts,
   OpeningExplorerGameReference,
   OpeningExplorerOpening,
@@ -56,7 +58,7 @@ export interface LichessMastersPositionRequest {
   accessToken: string;
 }
 
-export const lichessGamesRatingGroups = [
+export const lichessGamesRatingGroups: readonly LichessGamesRatingGroup[] = [
   0,
   1000,
   1200,
@@ -67,9 +69,8 @@ export const lichessGamesRatingGroups = [
   2200,
   2500,
 ] as const;
-export type LichessGamesRatingGroup = (typeof lichessGamesRatingGroups)[number];
 
-export const lichessGamesSpeeds = [
+export const lichessGamesSpeeds: readonly LichessGamesSpeed[] = [
   'ultraBullet',
   'bullet',
   'blitz',
@@ -77,12 +78,11 @@ export const lichessGamesSpeeds = [
   'classical',
   'correspondence',
 ] as const;
-export type LichessGamesSpeed = (typeof lichessGamesSpeeds)[number];
 
 export interface LichessGamesPositionRequest {
   fen: string;
-  sinceMonth: string;
-  untilMonth: string;
+  sinceMonth?: string;
+  untilMonth?: string;
   ratings: readonly LichessGamesRatingGroup[];
   speeds: readonly LichessGamesSpeed[];
   movesLimit: number;
@@ -217,8 +217,8 @@ export function createLichessOpeningExplorerClient(
     fetchLichessGamesPosition(input) {
       return fetchPosition('/lichess', 'Lichess games explorer', input.accessToken, (url) => {
         url.searchParams.set('fen', input.fen);
-        url.searchParams.set('since', input.sinceMonth);
-        url.searchParams.set('until', input.untilMonth);
+        if (input.sinceMonth) url.searchParams.set('since', input.sinceMonth);
+        if (input.untilMonth) url.searchParams.set('until', input.untilMonth);
         url.searchParams.set('ratings', input.ratings.join(','));
         url.searchParams.set('speeds', input.speeds.join(','));
         url.searchParams.set('moves', String(input.movesLimit));

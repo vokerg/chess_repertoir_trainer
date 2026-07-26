@@ -35,6 +35,23 @@ try {
   assert.ok(lichessGamesOperation.responses['401']);
   assert.ok(lichessGamesOperation.responses['503']);
 
+  const filtered = await app.inject({
+    method: 'GET',
+    url: '/api/lichess-games-explorer?since=2024-01&until=2024-12&ratings=1600,1800&speeds=blitz,rapid&fen=not-a-fen',
+  });
+  assert.equal(filtered.statusCode, 400);
+  assert.deepEqual(filtered.json(), {
+    error: 'The supplied FEN is invalid.',
+    code: 'INVALID_FEN',
+  });
+
+  const invalidFilter = await app.inject({
+    method: 'GET',
+    url: '/api/lichess-games-explorer?ratings=1700',
+  });
+  assert.equal(invalidFilter.statusCode, 400);
+  assert.deepEqual(invalidFilter.json(), { error: 'Validation failed' });
+
   for (const url of [
     '/api/masters-explorer?fen=not-a-fen',
     '/api/lichess-games-explorer?fen=not-a-fen',

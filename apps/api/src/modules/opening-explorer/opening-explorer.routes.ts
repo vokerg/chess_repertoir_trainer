@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   openingExplorerErrorResponseSchema,
+  lichessGamesExplorerQuerySchema,
   openingExplorerQuerySchema,
   openingExplorerResponseSchema,
 } from '@chess-trainer/contracts/opening-explorer';
@@ -61,7 +62,7 @@ const openingExplorerModule: FastifyPluginAsyncZod = async (app) => {
       tags: ['Lichess games explorer'],
       summary: 'Get aggregated rated-game statistics for a chess position',
       description: 'Returns system-wide rated Lichess-game statistics from the shared opening-explorer cache, refreshing data older than 30 days before responding when Lichess is available.',
-      querystring: openingExplorerQuerySchema,
+      querystring: lichessGamesExplorerQuerySchema,
       response: {
         200: openingExplorerResponseSchema,
         400: z.union([validationErrorResponseSchema, openingExplorerErrorResponseSchema]),
@@ -74,7 +75,11 @@ const openingExplorerModule: FastifyPluginAsyncZod = async (app) => {
       if (!auth) return;
 
       try {
-        return await LichessGamesExplorerService.getPosition(request.query.fen, auth.userId);
+        return await LichessGamesExplorerService.getPosition(
+          request.query.fen,
+          auth.userId,
+          request.query,
+        );
       } catch (error) {
         if (error instanceof InvalidOpeningExplorerFenError) {
           reply.code(400);

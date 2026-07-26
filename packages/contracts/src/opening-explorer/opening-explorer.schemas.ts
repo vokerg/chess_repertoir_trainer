@@ -14,6 +14,55 @@ export const openingExplorerQuerySchema = z.object({
 });
 export type OpeningExplorerQuery = z.infer<typeof openingExplorerQuerySchema>;
 
+export const lichessGamesRatingGroupSchema = z.union([
+  z.literal(0),
+  z.literal(1000),
+  z.literal(1200),
+  z.literal(1400),
+  z.literal(1600),
+  z.literal(1800),
+  z.literal(2000),
+  z.literal(2200),
+  z.literal(2500),
+]);
+export type LichessGamesRatingGroup = z.infer<typeof lichessGamesRatingGroupSchema>;
+
+export const lichessGamesSpeedSchema = z.enum([
+  'ultraBullet',
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
+  'correspondence',
+]);
+export type LichessGamesSpeed = z.infer<typeof lichessGamesSpeedSchema>;
+
+function csvArray<T extends z.ZodType>(itemSchema: T) {
+  return z.preprocess((value) => {
+    if (typeof value !== 'string') return value;
+    return value.split(',').map((item) => item.trim()).filter(Boolean);
+  }, z.array(itemSchema).min(1).optional());
+}
+
+const ratingCsv = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  return value.split(',').map((item) => Number(item.trim()));
+}, z.array(lichessGamesRatingGroupSchema).min(1).optional());
+
+const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+export const lichessGamesExplorerQuerySchema = z.object({
+  fen: z.string().min(1).default('startpos'),
+  since: monthSchema.optional(),
+  until: monthSchema.optional(),
+  ratings: ratingCsv,
+  speeds: csvArray(lichessGamesSpeedSchema),
+}).refine(
+  ({ since, until }) => !since || !until || since <= until,
+  { message: 'since must not be after until', path: ['since'] },
+);
+export type LichessGamesExplorerQuery = z.infer<typeof lichessGamesExplorerQuerySchema>;
+
 export const openingExplorerOpeningSchema = z.object({
   eco: z.string().min(1),
   name: z.string().min(1),
@@ -72,7 +121,7 @@ export const openingExplorerResponseSchema = openingExplorerSnapshotSchema.exten
     sinceYear: z.number().int().nonnegative(),
     untilYear: z.number().int().nonnegative(),
     movesLimit: z.number().int().positive(),
-    topGamesLimit: z.number().int().positive(),
+    topGamesLimit: z.number().int().nonnegative(),
   }),
   cache: z.object({
     status: openingExplorerCacheStatusSchema,
