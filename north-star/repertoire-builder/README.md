@@ -1,24 +1,24 @@
 # Repertoire Builder North Star
 
-Status: active program execution. The planning foundation is merged to `main`; the rated Lichess Peer games population-evidence baseline is also merged, while the interactive repertoire builder remains target behavior rather than current product behavior.
+Status: active program execution. The planning foundation, rated Lichess Peer games population-evidence baseline, and versioned rating-normalization baseline are merged to `main`, while the interactive repertoire builder remains target behavior rather than current product behavior.
 
 This workspace defines the long-term program for constructing and evolving a personal chess repertoire from engine evaluation, opening populations, the user's own games, existing courses, and explicit user choices.
 
 ## Current delivery boundary
 
-Available in the current product through PR #80:
+Available in the current product:
 
-- shared Masters and rated Lichess Opening Explorer infrastructure;
-- configurable Peer games population evidence by month, rating group, and selected speeds;
-- a reusable Peer games widget in Opening Analysis.
+- through PR #80: shared Masters and rated Lichess Opening Explorer infrastructure, configurable Peer games evidence by month/rating group/speed, and a reusable Peer games widget in Opening Analysis;
+- through PR #76: a versioned 13-grade rating-normalization profile for Chess.com and Lichess bullet, blitz, and rapid; source confidence and soft-padding metadata; grade classification/range helpers; `GET /api/rating-normalization/default`; and a reference table in the performance-by-rating lab.
 
 Still planned:
 
 - controlled General and combined-speed weighting;
 - explainable per-speed population components and direct filter provenance;
-- player-level resolution, opening classification, Player Chess Profile, candidate ranking, visual builder flow, course materialization, and outcome feedback.
+- multi-account player-level resolution using the merged rating grades;
+- opening classification, Player Chess Profile, candidate ranking, visual builder flow, course materialization, and outcome feedback.
 
-See [Status](STATUS.md) and [RB-001](tasks/RB-001-population-evidence.md) for the exact delivered-versus-remaining assessment.
+See [Status](STATUS.md), [RB-001](tasks/RB-001-population-evidence.md), and [RB-002](tasks/RB-002-player-level-resolution.md) for exact delivered-versus-remaining assessments.
 
 ## Entry points
 
