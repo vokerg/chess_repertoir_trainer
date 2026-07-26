@@ -70,7 +70,7 @@ Do not merge PR #88 without explicit approval. When approved, squash merge it in
 
 ### Automated validation
 
-GitHub Actions CI run #894 completed successfully:
+GitHub Actions CI run #894 completed successfully on the implementation/documentation head, and run #896 completed successfully after the validation-note updates:
 
 - dependency installation passed;
 - lint passed;
@@ -79,7 +79,7 @@ GitHub Actions CI run #894 completed successfully:
 - database migrations applied successfully to the CI database;
 - complete monorepo tests passed, including the focused brand component specs.
 
-The final documentation-only validation commits must also complete CI before PR #88 is marked ready for review.
+Later documentation-only status corrections do not change the validated runtime surface; normal branch protection and PR checks remain authoritative for the current head.
 
 ### Outstanding browser validation
 
@@ -155,7 +155,7 @@ Authentication browser/Clerk validation from D-306 and home browser validation r
 - Added static standard, reversed, mark, and favicon assets.
 - Added shared mark and live-text lockup components plus focused tests.
 - Replaced duplicated brand geometry while preserving page and navigation behavior.
-- Opened draft PR #88 and passed lint, build, architecture guardrails, migrations, and the complete test suite.
+- Opened draft PR #88 and passed lint, build, architecture guardrails, migrations, and the complete test suite on both the implementation and validation-note heads.
 
 ### 2026-07-26 — Phase 0D Angular signed-in home
 
