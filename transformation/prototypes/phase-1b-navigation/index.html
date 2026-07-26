@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Phase 1B desktop navigation rail and retained mobile navigation discovery for Chess Repertoire Trainer.">
+  <title>Chess Repertoire Trainer — Navigation shell proof</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#prototype-main">Skip to prototype content</a>
+
+  <header class="review-toolbar" aria-label="Prototype controls">
+    <div>
+      <p>PHASE 1B DISCOVERY</p>
+      <strong>Navigation shell proof</strong>
+    </div>
+    <div class="view-controls" role="group" aria-label="Choose prototype view">
+      <button type="button" class="active" data-view="expanded">Expanded rail</button>
+      <button type="button" data-view="collapsed">Collapsed rail</button>
+      <button type="button" data-view="mobile">Mobile sheet</button>
+    </div>
+  </header>
+
+  <main id="prototype-main" class="prototype-stage">
+    <section class="desktop-proof" aria-label="Desktop navigation concept">
+      <div class="app-frame">
+        <aside class="rail" aria-label="Primary application navigation">
+          <div class="rail-brand-row">
+            <a class="brand" href="#" aria-label="Chess Repertoire Trainer home">
+              <img src="node-branch-badge.svg" alt="" width="42" height="42">
+              <span class="brand-copy"><strong>Chess Repertoire</strong><small>TRAINER</small></span>
+            </a>
+            <button class="collapse-button" type="button" aria-label="Collapse navigation rail" title="Collapse navigation rail">‹</button>
+          </div>
+
+          <nav class="rail-nav" aria-label="Main navigation">
+            <a class="nav-item active" href="#"><span class="nav-icon">H</span><span class="nav-label">Home</span></a>
+            <a class="nav-item" href="#"><span class="nav-icon">S</span><span class="nav-label">Study</span><span class="nav-disclosure" aria-hidden="true">›</span></a>
+            <a class="nav-item" href="#"><span class="nav-icon">C</span><span class="nav-label">Courses</span></a>
+            <a class="nav-item" href="#"><span class="nav-icon">G</span><span class="nav-label">Games</span></a>
+            <a class="nav-item" href="#"><span class="nav-icon">O</span><span class="nav-label">Openings</span><span class="nav-disclosure" aria-hidden="true">›</span></a>
+            <a class="nav-item" href="#"><span class="nav-icon">P</span><span class="nav-label">Progress</span></a>
+          </nav>
+
+          <div class="rail-section-label">WORKSPACE</div>
+          <nav class="rail-nav secondary" aria-label="Workspace navigation">
+            <a class="nav-item" href="#"><span class="nav-icon">T</span><span class="nav-label">Tools</span><span class="nav-disclosure" aria-hidden="true">›</span></a>
+            <a class="nav-item" href="#"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-disclosure" aria-hidden="true">›</span></a>
+          </nav>
+
+          <div class="rail-account">
+            <span class="account-avatar" aria-hidden="true">VK</span>
+            <span class="account-copy"><strong>Viktor</strong><small>Account and sign out</small></span>
+            <span class="account-more" aria-hidden="true">•••</span>
+          </div>
+        </aside>
+
+        <div class="workspace">
+          <header class="context-bar">
+            <div>
+              <p>HOME</p>
+              <strong>Your chess workspace</strong>
+            </div>
+            <div class="context-actions">
+              <span>Synced 2h ago</span>
+              <button type="button">Refresh</button>
+            </div>
+          </header>
+
+          <div class="workspace-content">
+            <section class="hero-panel">
+              <p class="eyebrow">CONTINUE</p>
+              <h1>Review 6 weak Sicilian sublines.</h1>
+              <p>The navigation stays persistent while page-specific title, filters, and actions move into the content context area.</p>
+              <button type="button" class="primary-action">Start focused training</button>
+            </section>
+
+            <section class="content-grid" aria-label="Illustrative workspace panels">
+              <article><span>RECOMMENDED NEXT</span><strong>Analyse 11 recent games</strong><p>Existing product content remains the focus; the rail does not become a second dashboard.</p></article>
+              <article><span>RECENT PROGRESS</span><strong>Rapid +34</strong><p>Wide analytical pages receive more horizontal room when the rail is collapsed.</p></article>
+              <article><span>SHELL CONTRACT</span><strong>One navigation data source</strong><p>Parent links, active prefixes, grouped children, account status, and routes remain unchanged.</p></article>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mobile-proof" aria-label="Mobile navigation concept">
+      <div class="phone-frame">
+        <header class="mobile-header">
+          <a href="#" class="mobile-brand" aria-label="Chess Repertoire Trainer home">
+            <img src="node-branch-badge.svg" alt="" width="36" height="36">
+            <span><strong>Chess Repertoire</strong><small>TRAINER</small></span>
+          </a>
+          <button type="button" class="menu-button" aria-label="Open navigation menu"><span></span><span></span><span></span></button>
+        </header>
+        <div class="mobile-page">
+          <p class="eyebrow">HOME</p>
+          <h1>Your chess workspace</h1>
+          <article><strong>Continue training</strong><p>Primary product content remains visible behind the modal sheet.</p></article>
+        </div>
+        <div class="sheet-backdrop"></div>
+        <aside class="mobile-sheet" aria-label="Mobile navigation sheet">
+          <header>
+            <div><p>NAVIGATION</p><strong>All workspaces</strong></div>
+            <button type="button" aria-label="Close navigation menu">×</button>
+          </header>
+          <nav aria-label="Mobile main navigation">
+            <a class="active" href="#"><span>H</span><strong>Home</strong></a>
+            <a href="#"><span>S</span><strong>Study</strong></a>
+            <a href="#"><span>C</span><strong>Courses</strong></a>
+            <a href="#"><span>G</span><strong>Games</strong></a>
+            <a href="#"><span>O</span><strong>Openings</strong></a>
+            <a href="#"><span>P</span><strong>Progress</strong></a>
+            <a href="#"><span>T</span><strong>Tools</strong></a>
+            <a href="#"><span>⚙</span><strong>Settings</strong></a>
+          </nav>
+          <div class="mobile-account"><span>VK</span><div><strong>Viktor</strong><small>Account and sign out</small></div></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="prototype-note">
+    <strong>Discovery boundary:</strong> desktop rail contract only. The production implementation must reuse <code>mainNavItems</code>, <code>NavIconComponent</code>, route-active semantics, Clerk account controls, and the shared 760px mobile breakpoint. Exact bottom-navigation structure remains open.
+  </footer>
+
+  <script src="prototype.js"></script>
+</body>
+</html>
