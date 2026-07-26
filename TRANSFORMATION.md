@@ -36,28 +36,29 @@ Every meaningful transformation change must update the relevant files under `tra
 
 ## Current checkpoint
 
-Phase 0A and Phase 0B are integrated into `visual_transformation`:
+Phase 0A, Phase 0B, and the Phase 0C home discovery checkpoint are integrated into `visual_transformation`:
 
-- PR #78 squash-merged the public Angular landing page at `/`;
-- PR #79 squash-merged the shared authentication shell for `/login` and `/signup`;
-- PR #85 squash-merged the Phase 0B checkpoint documentation after successful CI;
-- public and authentication routes render outside the existing signed-in application shell;
-- Clerk lifecycle, local development authentication, explicit `returnUrl` behavior, and the existing `/library` fallback remain intact.
+- PR #78 added the public Angular landing page at `/`;
+- PR #79 added the shared authentication shell for `/login` and `/signup`;
+- PR #85 reconciled the Phase 0B checkpoint documentation;
+- PR #86 defined and visualized the first signed-in `/home` composition using existing stable APIs.
 
-The active branch `visual-transformation/phase-0c-home-discovery` contains the signed-in `/home` discovery and visualization checkpoint. It includes:
+The active branch `visual-transformation/phase-0d-angular-home` implements the approved narrow Angular home slice:
 
-- direct inspection of existing account, game, course, training-stat, and progress contracts;
-- a proposed first-home data composition using existing stable APIs only;
+- guarded `/home` route inside the existing signed-in shell;
+- normal post-auth fallback changed from `/library` to `/home` while explicit `returnUrl` remains authoritative;
+- Home added to the existing navigation model without implementing the future rail;
+- feature-local state composed from existing account, library catalog, game facet, recent-game, and performance services;
 - deterministic Continue and Recommended next rules;
-- a responsive desktop/mobile static prototype;
-- a GitHub-renderable review sheet;
-- a dedicated discovery, rationale, validation, and risk report.
+- Recent signals deferred;
+- no new backend endpoint, persistence, queue, Lab dependency, or authenticated workflow redesign.
 
 Review next:
 
-1. [`transformation/reports/PHASE_0C_HOME_DISCOVERY.md`](./transformation/reports/PHASE_0C_HOME_DISCOVERY.md)
-2. [`transformation/prototypes/phase-0c-home/review-sheet.svg`](./transformation/prototypes/phase-0c-home/review-sheet.svg)
-3. the responsive HTML prototype under `transformation/prototypes/phase-0c-home/`
-4. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md) and [`transformation/STATUS.md`](./transformation/STATUS.md)
+1. [`transformation/reports/PHASE_0D_ANGULAR_HOME_IMPLEMENTATION.md`](./transformation/reports/PHASE_0D_ANGULAR_HOME_IMPLEMENTATION.md)
+2. `/home` with representative empty, partial, and populated data;
+3. default sign-in and sign-up navigation to `/home`;
+4. explicit `returnUrl` preservation;
+5. desktop and mobile rendering inside the current application shell.
 
-Do not implement `/home`, change the normal post-login destination, implement the production navigation rail, extract production brand assets, migrate global tokens, or redesign authenticated workflows until the Phase 0C composition and rules are explicitly approved.
+Do not merge the implementation pull request, begin the production navigation rail, finalize mobile navigation, extract production brand assets, migrate global tokens, add a home aggregation API, or redesign authenticated workflows without explicit approval.
