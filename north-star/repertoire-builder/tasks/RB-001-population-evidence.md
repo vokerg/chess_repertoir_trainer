@@ -1,6 +1,6 @@
 # RB-001 — Deliver Lichess-aligned peer population presets
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -21,6 +21,8 @@ Claim scope: implement the versioned Lichess-benchmark rating profile, temporary
 Implementation started: 2026-07-26 at runtime commit `bd822d8d6d59fb274f8a0418e0adfb3879675f73`; Jira CRT-3 transitioned to `In Progress`.
 
 Review ready: 2026-07-26 after full CI run `30211739445` passed lint, build, architecture guardrails, migrations and the complete test suite.
+
+Merged: 2026-07-26 through squash merge PR #84 as commit `49dc6499eac9998de864ccb75a607541cd945382` after final PR-head CI run `30212157700` passed.
 
 ## Outcome
 
@@ -194,7 +196,9 @@ GitHub Actions CI run `30211739445` passed on implementation head `ba164767f139b
 - PostgreSQL migrations;
 - complete repository test suite.
 
-Browser-level visual review was not available in the connector-only execution environment. Angular build and component tests passed; visual inspection remains a review item.
+Final PR-head CI run `30212157700` also passed before squash merge.
+
+Browser-level visual review was not available in the connector-only execution environment. The user accepted the delivery and requested the squash merge after reviewing the result.
 
 ## Planning reconciliation
 
@@ -210,4 +214,4 @@ PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
 
 Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
 
-Completed at: none — pending review and merge.
+Completed at: 2026-07-26 via squash commit `49dc6499eac9998de864ccb75a607541cd945382`.
