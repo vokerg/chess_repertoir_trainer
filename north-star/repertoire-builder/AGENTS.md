@@ -15,8 +15,9 @@ Before proposing, claiming, implementing, reviewing, or closing work, read:
 5. [`FEATURES.md`](FEATURES.md);
 6. [`ROADMAP.md`](ROADMAP.md);
 7. [`TASKS.md`](TASKS.md);
-8. [`STATUS.md`](STATUS.md);
-9. the selected file under [`tasks/`](tasks/).
+8. [`JIRA.md`](JIRA.md);
+9. [`STATUS.md`](STATUS.md);
+10. the selected file under [`tasks/`](tasks/).
 
 Read [`DECISIONS.md`](DECISIONS.md) and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) whenever the task could change product direction, ranking logic, data interpretation, architecture, UX, or scope.
 
@@ -53,12 +54,23 @@ Priority meanings:
 - `P2` — valuable follow-on, independent research, or expansion.
 - `P3` — optional or deliberately deferred exploration.
 
+## Jira execution mirror
+
+- Epic `CRT-2` owns the program.
+- Every immutable `RB-###` task maps to exactly one Jira Task listed in [`JIRA.md`](JIRA.md) and [`TASKS.md`](TASKS.md).
+- Repository task files own detailed scope and acceptance criteria; Jira owns execution status, assignee, active branch, PR visibility and operational blockers.
+- Before work, inspect both the repository task and its Jira issue.
+- Agents with Jira access must perform Jira updates themselves. Agents without Jira access must leave an explicit synchronization checklist and must not claim Jira was updated.
+- Jira transitions map as follows: `IN_PROGRESS` → `In Progress`, `REVIEW` → `In Review`, `DONE` → `Done`. Planning-only and blocked repository states normally remain Jira `To Do` with blocker links or comments.
+- Material dependencies must be represented using Jira `Blocks` links as well as repository documentation.
+- New RB tasks require a Jira issue under `CRT-2` in the same coordination change.
+
 ## Claim protocol
 
 No agent may begin substantive work on a task without claiming it.
 
 1. Confirm the task is `READY`, or document why a blocked/proposed task is being converted to `READY`.
-2. Reinspect the current repo, relevant open PRs, and dependencies. Do not rely only on these planning documents.
+2. Reinspect the current repo, relevant open PRs, Jira issue, and dependencies. Do not rely only on these planning documents.
 3. Create a task branch from the current user-approved base. Never work directly on `main`.
 4. Update only the selected task file with:
    - `Status: CLAIMED`;
@@ -66,12 +78,15 @@ No agent may begin substantive work on a task without claiming it.
    - `Claim branch`;
    - `Claimed at` using an ISO date;
    - the exact claimed scope.
-5. Make the claim visible on the shared coordination base before substantive work. Use a small claim-only PR or another user-approved coordination mechanism. A local or unpushed edit is not a claim.
-6. After the claim is visible, change the task to `IN_PROGRESS` with the first meaningful implementation or discovery commit.
+5. Update Jira with the claimant or agent session, exact scope, and branch. Assign it when an appropriate Jira account is available.
+6. Make the claim visible on the shared coordination base before substantive work. Use a small claim-only PR or another user-approved coordination mechanism. A local or unpushed edit is not a claim.
+7. After the claim is visible, change the task to `IN_PROGRESS`, transition Jira to `In Progress`, and begin substantive implementation or discovery.
+
+Prefer branch names containing both identifiers, for example `rb-008/crt-10-visual-candidate-prototype`.
 
 Do not claim a parent and all of its children merely to reserve future work. Claim the smallest executable task.
 
-A claim with no visible progress for seven days is stale. Do not silently take it over. Record the stale state, coordinate with the user or owner, then release or transfer it explicitly.
+A claim with no visible progress for seven days is stale. Do not silently take it over. Record the stale state in the repository and Jira, coordinate with the user or owner, then release or transfer it explicitly.
 
 ## Parallel-work rules
 
@@ -79,8 +94,20 @@ A claim with no visible progress for seven days is stale. Do not silently take i
 - Tasks may run in parallel only when their dependency sections allow it.
 - Do not edit another agent's task file except to resolve an explicitly coordinated transfer, unblock, or review outcome.
 - Avoid broad changes to `TASKS.md` while unrelated claims are being recorded. Normal claim metadata belongs in the individual task file.
-- Shared contracts, schemas, migrations, and route registration are collision points. Tasks touching them must name those files during claiming and coordinate before implementation.
-- Existing parallel work is a dependency, not permission to duplicate it. Integrate or adapt it after inspecting the actual branch or PR.
+- Shared contracts, schemas, migrations, route registration, Jira dependency links, and integration branches are collision points. Tasks touching them must name those areas during claiming and coordinate before implementation.
+- Existing parallel work is a dependency, not permission to duplicate it. Integrate or adapt it after inspecting the actual branch, PR, and Jira issue.
+
+## Pull-request protocol
+
+Every implementation or review PR must be visible from its Jira issue.
+
+- Include the Jira key and RB ID in the PR title or body.
+- Recommended title pattern: `CRT-10 RB-008: prototype visual candidate choices`.
+- Include the Jira key in branch and commit naming where practical so Atlassian development integration can associate activity.
+- Immediately after opening or replacing a PR, add a Jira comment with the PR URL, source and target branches, scope, validation performed, validation pending, and review readiness.
+- Transition Jira to `In Review` only when the PR or review artifact is genuinely reviewable.
+- If automatic Development-panel linkage is unavailable, the Jira comment is mandatory.
+- Do not mark Jira `Done` merely because a PR exists, CI passed, or code was merged into an intermediate integration branch.
 
 ## Implementation discipline
 
@@ -101,12 +128,13 @@ Every completed task must:
 1. create `reports/RB-###-YYYY-MM-DD-<slug>.md` using the report template;
 2. update its task file to `REVIEW` or `DONE` as appropriate;
 3. update [`STATUS.md`](STATUS.md);
-4. update [`TASKS.md`](TASKS.md) if order, priority, dependency, or status changed;
+4. update [`TASKS.md`](TASKS.md) if order, priority, dependency, status, or Jira mapping changed;
 5. update [`ROADMAP.md`](ROADMAP.md) when delivery sequence or gates changed;
 6. update [`DECISIONS.md`](DECISIONS.md) for locked, revised, or rejected decisions;
 7. update [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) for resolved or newly discovered questions;
-8. add any new work as new task files with new immutable IDs;
-9. explicitly recommend whether the queue should remain unchanged or be reprioritized.
+8. add any new work as new task files with new immutable IDs and Jira Tasks under `CRT-2`;
+9. update Jira with PR, report, validation, residual risk, new tasks, and queue impact;
+10. explicitly recommend whether the queue should remain unchanged or be reprioritized.
 
 The completion report must state:
 
@@ -116,10 +144,11 @@ The completion report must state:
 - validation performed and skipped;
 - limitations and residual risks;
 - impact on standalone product value and the north star;
-- new tasks proposed;
+- Jira issue, status, branch, and PR;
+- new tasks proposed with Jira keys;
 - queue and roadmap changes recommended.
 
-Do not mark a task `DONE` without a report. Do not merge any branch without explicit user approval.
+Do not mark a task or Jira issue `Done` without a report and required synchronization. Do not merge any branch without explicit user approval.
 
 ## Planning-document hygiene
 
@@ -127,7 +156,8 @@ Do not mark a task `DONE` without a report. Do not merge any branch without expl
 - `NORTH_STAR.md` describes the target end-to-end experience, not current behavior.
 - `FEATURES.md` records feature value and planning maturity.
 - `ROADMAP.md` records stages and gates, not detailed task execution.
-- `TASKS.md` is the canonical ordered queue.
+- `TASKS.md` is the canonical ordered queue and RB-to-Jira index.
+- `JIRA.md` records Jira execution and synchronization policy.
 - Individual task files own execution scope, claims, acceptance criteria, and completion links.
 - `DECISIONS.md` records decisions and their state.
 - `OPEN_QUESTIONS.md` records uncertainty without disguising it as a decision.
