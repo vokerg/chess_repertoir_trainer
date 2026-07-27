@@ -212,14 +212,7 @@ async function summarizeAggregate(
   };
 }
 
-async function groupedCount(
-  where: Prisma.ImportedGameWhereInput,
-): Promise<Array<{
-  openingEco: string | null;
-  openingName: string | null;
-  userColor: string | null;
-  _count: { _all: number };
-}>> {
+async function groupedCount(where: Prisma.ImportedGameWhereInput) {
   return prisma.importedGame.groupBy({
     by: ['openingEco', 'openingName', 'userColor'],
     where,
@@ -239,7 +232,7 @@ async function summarizeOpeningGroups(
     where: eligibleWhere,
     _count: { _all: true },
     orderBy: [
-      { _count: { _all: 'desc' } },
+      { _count: { id: 'desc' } },
       { openingName: 'asc' },
       { openingEco: 'asc' },
       { userColor: 'asc' },
