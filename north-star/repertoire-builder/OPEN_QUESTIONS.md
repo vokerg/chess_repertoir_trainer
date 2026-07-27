@@ -152,7 +152,7 @@ Owner task: RB-012.
 
 ## Traps
 
-### Resolved by RB-014 discovery
+### Resolved and approved through RB-014
 
 - A trap combines a reproducible trigger, practical temptation, bounded punishment, explicit safe alternatives, and separate setup soundness.
 - Trap occurrence identity uses normalized trigger FEN and ordered move transitions, not opening name or ECO.
@@ -162,20 +162,22 @@ Owner task: RB-012.
 - User-created studies, videos, blogs, books, and unlicensed collections are discovery leads only.
 - A trustworthy source requires versioned engine evidence, rating/speed population evidence, editorial review, and provenance.
 - RB-006 and RB-007 require no forward-compatible contract changes now.
+- The approved next step is the bounded RB-017 data/validator pilot, not a production traps capability.
 
-### User decision pending
+### RB-017 pilot questions
 
-- Approve a bounded 20–50 example curated data/validator pilot, revise its scope, or defer traps.
+- Which exact Stockfish profile provides a useful reproducibility/cost balance?
+- Which minimum population sample rules should produce `INSUFFICIENT` rather than a percentage claim?
+- Which 20–50 examples provide enough soundness, outcome, family, transposition, and refutation diversity?
+- Which evidence fields belong in the canonical source record versus derived snapshots?
+- How is occurrence identity hashed without collapsing positions that differ in castling or en-passant rights?
+- Who owns editorial review, downgrade, rejection, deprecation, and refutation decisions during the pilot?
+- What evidence upgrades confidence from low to medium or high?
+- When should a famous trap be classified as refuted rather than merely dubious or practically obsolete?
+- How are live Explorer refreshes isolated from deterministic tests and rate limits?
+- Does the pilot justify any later optional RB-006/RB-007 extension, or should traps remain separate?
 
-### Pilot questions if approved
-
-- Which exact Stockfish profile and sample thresholds qualify evidence?
-- Which initial examples provide enough diversity to challenge the model?
-- Who owns editorial review and deprecation decisions?
-- What evidence is required to upgrade confidence from medium to high?
-- When should a trap occurrence be marked refuted rather than merely dubious?
-
-Owner task: RB-014. Review vehicle: PR #113.
+Owner task: RB-017. Execution issue: #114.
 
 ## LLM
 

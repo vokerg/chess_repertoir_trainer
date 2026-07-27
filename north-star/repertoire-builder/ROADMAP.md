@@ -137,17 +137,18 @@ Gate: accepted decisions become trainable material and existing-course maintenan
 
 ## Stage 7 — specialized personas and optional intelligence
 
-State: core tasks are proposed or blocked; RB-014 traps-foundation discovery is in review through PR #113.
+State: core tasks are proposed or blocked. RB-014 discovery is complete through PR #113, and RB-017 is the approved isolated traps pilot.
 
 Goals:
 
 - support multiple purposeful repertoires for the same opening;
-- determine whether a trustworthy trap-oriented capability is viable;
+- validate whether trap knowledge can be represented reproducibly and responsibly;
+- determine whether a production trap-oriented capability is justified after the pilot;
 - determine whether LLM explanation or orchestration adds value without becoming a factual dependency.
 
-### RB-014 review direction
+### RB-014 completed discovery
 
-RB-014 recommends a bounded curated pilot after user approval:
+RB-014 established and the user approved:
 
 - normalized position-and-move occurrence identity;
 - optional trap-family grouping across related triggers;
@@ -157,11 +158,23 @@ RB-014 recommends a bounded curated pilot after user approval:
 - explicit setup soundness, temptation, punishment, safe defenses, confidence, and provenance;
 - editorial review and lifecycle state.
 
-The recommendation does not add a production schema, endpoint, UI, course write, or critical-path dependency. RB-006 and RB-007 remain unchanged until a pilot demonstrates a concrete need.
+PR #113 adds no production schema, endpoint, UI, course write, or critical-path dependency. RB-006 and RB-007 remain unchanged.
 
-Tasks: RB-013, RB-014, RB-015.
+### RB-017 bounded pilot
 
-Gate: optional capabilities have explicit evidence, safety and architecture decisions before implementation.
+RB-017 / #114 is limited to:
+
+- 20–50 source-controlled reviewed occurrences;
+- deterministic legality, normalization, identity, duplicate, defense, and provenance validation;
+- versioned Stockfish and bounded Opening Explorer snapshots;
+- explicit missing/insufficient evidence;
+- review output, tests, and documentation.
+
+The pilot must not add Prisma persistence, a production import, REST/OpenAPI/MCP contracts, Angular UI, course writes, or builder integration.
+
+Tasks: RB-013, RB-014, RB-017, RB-015.
+
+Gate: RB-017 demonstrates whether the model survives reproducible engine/population validation, including at least one downgrade or rejection of folklore. A separate user decision is required before production work.
 
 ## Stage 8 — outcome feedback
 
@@ -181,7 +194,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - RB-003 opening-classification discovery;
-- RB-014 user review and, only if approved, a bounded data/validator pilot.
+- RB-017 bounded traps data/validator pilot.
 
 High-collision areas requiring coordination:
 
@@ -195,14 +208,17 @@ High-collision areas requiring coordination:
 - course reintegration writes;
 - any future trap evidence added to candidate contracts.
 
+RB-017 should remain isolated from these high-collision production areas. Live Explorer refreshes must be bounded and deterministic tests must use fixtures.
+
 ## Queue impact
 
 - RB-001 remains order 10, P0, `DONE`.
 - RB-002 remains order 20, P0, `DONE`.
 - RB-003 remains order 30, P0, `PROPOSED`.
 - RB-008 remains order 40, P1, `DONE`.
-- RB-014 remains order 140, P2, now `REVIEW`.
-- No order or priority change is recommended.
-- No trap implementation task is proposed before user approval.
+- RB-014 remains order 140, P2, `DONE`.
+- RB-017 is added at order 145, P2, `CLAIMED`.
+- No existing order or priority changes.
+- No production traps capability is approved.
 
 Every completion report must explicitly state whether this roadmap remains valid.

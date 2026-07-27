@@ -21,7 +21,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, accepted RB-008 dialog/workbench direction, RB-009 |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
-| 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | REVIEW | Research traps knowledge foundation | Research | PR #113; independent; bounded-pilot recommendation pending user review |
+| 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
+| 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; claim branch `rb-017/issue-114-traps-pilot-claim` |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
@@ -54,18 +55,24 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Accepted: focused setup dialog launches a routed board-first workbench.
 - Rejected default: simultaneous candidate mini-board landscape.
 
-## Work in review
-
 ### RB-014 / #102
 
 - PR: https://github.com/vokerg/chess_repertoir_trainer/pull/113
-- Branch: `rb-014/issue-102-traps-foundation-research`
+- Squash commit: `d53ff6e2b6eedcbf5f3abcea137373baa0102397`
 - Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`
-- Recommendation: proceed to a bounded curated pilot only after user approval.
-- Proposed identity: normalized trigger position plus ordered offer/temptation/punishment moves; opening labels are descriptive only.
-- Source direction: CC0 Lichess puzzles/games/evaluations and `chess-openings`, versioned engine/population evidence, and editorial review.
-- Exclusions: no production schema, API, UI, course writes, or RB-006/RB-007 contract changes now.
-- Validation boundary: exact named-example Stockfish and authenticated Explorer snapshots are the pilot's first hard gate; no values are invented in discovery.
+- Accepted: one bounded 20–50 example curated data/validator pilot.
+- Identity: normalized trigger position plus ordered move transitions; opening labels are descriptive only.
+- Source policy: CC0 Lichess data and `chess-openings`, original analysis, explicit provenance, and editorial review.
+- Production boundary: no schema, API, Angular UI, course writes, or builder integration.
+
+## Active claim
+
+### RB-017 / #114
+
+- Claim branch: `rb-017/issue-114-traps-pilot-claim`
+- Claim PR: pending.
+- Scope: source-controlled dataset, deterministic validator, reproducible engine/population snapshots, review output, tests, and documentation.
+- Exclusions: production persistence, public contracts, frontend, course writes, and builder integration.
 
 ## Accepted visual direction
 
@@ -103,12 +110,12 @@ RB-011/012 course materialization and adaptation
 RB-016 feedback
 ```
 
-RB-014 remains outside the critical path.
+RB-014 and RB-017 remain outside the critical path.
 
 ## Queue impact
 
-- RB-008 is `DONE` without order or priority changes.
 - RB-003 remains the unresolved P0 foundation.
-- RB-014 is `REVIEW`; its pilot recommendation does not add a critical-path dependency.
-- No implementation issue is created before user approval.
+- RB-014 is `DONE` after the approved research PR.
+- RB-017 is the only approved traps implementation scope and is now `CLAIMED`.
+- RB-017 does not block or modify RB-006/RB-007.
 - No order or priority change is recommended.
