@@ -23,6 +23,8 @@
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "tags:refresh-analysed": "ts-node --transpile-only src/scripts/refresh-analysed-game-tags.ts",
     "traps:validate": "ts-node --transpile-only src/scripts/validate-trap-pilot.ts",
+    "traps:refresh-engine": "ts-node --transpile-only src/scripts/refresh-trap-pilot-engine-evidence.ts",
+    "traps:refresh-population": "ts-node --transpile-only src/scripts/refresh-trap-pilot-population-evidence.ts",
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
