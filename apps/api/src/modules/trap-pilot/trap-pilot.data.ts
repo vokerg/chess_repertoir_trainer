@@ -181,7 +181,7 @@ export const TRAP_PILOT_DATASET: TrapPilotDataset = {
       sideSettingTrap: 'BLACK',
       setupSoundness: 'UNASSESSED',
       trigger: {
-        normalizedFen: 'r1bqkb1r/pppp1pp1/2n5/1B2p2p/4P1n1/5N1P/PPPP1PP1/RNBQ1RK1 w kq h6',
+        normalizedFen: 'r1bqkb1r/pppp1pp1/2n5/1B2p2p/4P1n1/5N1P/PPPP1PP1/RNBQ1RK1 w kq -',
         setupRoutes: [
           {
             id: 'ruy-lopez-h5-route',
@@ -217,7 +217,7 @@ export const TRAP_PILOT_DATASET: TrapPilotDataset = {
         },
       ],
       editorial: {
-        summary: 'Seed record used to test family grouping, legal en-passant state in identity, and non-mating practical consequences.',
+        summary: 'Seed record used to test family grouping, normalized en-passant identity, and non-mating practical consequences.',
         warnings: [
           'Related Fishing Pole ideas from non-identical positions must not be collapsed into this occurrence.',
           'The POSITIONAL_BIND outcome is provisional and may be downgraded or rejected after engine and population review.',
