@@ -44,7 +44,7 @@ interface AppNavNode extends AppNavItem {
     NavIconComponent,
   ],
   templateUrl: './main-navigation.component.html',
-  styleUrl: './main-navigation.component.css',
+  styleUrls: ['./main-navigation.component.css', './main-navigation-disclosure.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainNavigationComponent implements OnInit {
