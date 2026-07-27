@@ -145,6 +145,91 @@ validateOpeningClassificationRules();
 
 {
   const result = OpeningClassificationService.classify(
+    entry('Zukertort Opening: Kingside Fianchetto'),
+  );
+
+  assert.equal(result.white.soundness, 'SOUND');
+  assert.equal(result.black.soundness, 'SOUND');
+  assert.ok(result.white.character.includes('POSITIONAL'));
+  assert.ok(result.matchedRuleIds.includes('family-zukertort-opening'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('Pterodactyl Defense: Central, Benoni Pterodactyl'),
+  );
+
+  assert.equal(result.white.soundness, 'SOUND');
+  assert.equal(result.black.soundness, 'PLAYABLE');
+  assert.ok(result.black.roles.includes('INITIATOR'));
+  assert.ok(result.black.character.includes('SURPRISE'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('Indian Defense: Anti-Grünfeld, Advance Variation'),
+  );
+
+  assert.equal(result.white.soundness, 'SOUND');
+  assert.equal(result.black.soundness, 'SOUND');
+  assert.ok(result.matchedRuleIds.includes('family-indian-defense-generic'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('King\'s Pawn Game: Damiano Defense'),
+  );
+
+  assert.equal(result.white.soundness, 'SOUND');
+  assert.equal(result.black.soundness, 'DUBIOUS');
+  assert.ok(result.black.character.includes('TACTICAL'));
+  assert.ok(result.matchedRuleIds.includes('line-kings-pawn-damiano-defense'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('Nimzowitsch Defense: Colorado Countergambit Accepted'),
+  );
+
+  assert.equal(result.black.soundness, 'RISKY');
+  assert.ok(result.black.roles.includes('GAMBIT_OFFERER'));
+  assert.ok(result.white.roles.includes('GAMBIT_ACCEPTOR'));
+  assert.ok(result.matchedRuleIds.includes('line-nimzowitsch-colorado-accepted'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('Ponziani Opening: Ponziani Countergambit, Schmidt Attack'),
+  );
+
+  assert.equal(result.white.soundness, 'SOUND');
+  assert.equal(result.black.soundness, 'RISKY');
+  assert.ok(result.black.roles.includes('GAMBIT_OFFERER'));
+  assert.ok(result.matchedRuleIds.includes('line-ponziani-countergambit'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('Blumenfeld Countergambit Accepted'),
+  );
+
+  assert.equal(result.black.soundness, 'PLAYABLE');
+  assert.ok(result.black.roles.includes('GAMBIT_OFFERER'));
+  assert.ok(result.white.roles.includes('GAMBIT_ACCEPTOR'));
+  assert.ok(result.matchedRuleIds.includes('line-blumenfeld-countergambit-accepted'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
+    entry('Owen Defense: Unicorn Variation'),
+  );
+
+  assert.equal(result.black.soundness, 'PLAYABLE');
+  assert.ok(result.matchedRuleIds.includes('family-owens-defense'));
+}
+
+{
+  const result = OpeningClassificationService.classify(
     entry('Unclassified Test Opening'),
   );
 
@@ -170,7 +255,7 @@ validateOpeningClassificationRules();
     if (result.white.roles.join('|') !== result.black.roles.join('|')) asymmetricRoles += 1;
   }
 
-  assert.ok(matched > 0);
+  assert.ok(matched / OPENING_BOOK.length >= 0.99);
   assert.ok(asymmetricSoundness > 0);
   assert.ok(asymmetricRoles > 0);
   console.log(JSON.stringify({
