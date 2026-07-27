@@ -1,107 +1,200 @@
-<header class="app-header">
-  <div class="app-header-inner">
-    <div class="app-header-copy">
-      <a routerLink="/home" class="app-brand-link" aria-label="Chess Repertoire Trainer home">
-        <app-brand-lockup [markSize]="34" />
+@if (auth.isSignedIn()) {
+  <aside
+    class="desktop-rail"
+    [class.desktop-rail-collapsed]="railCollapsed()"
+    aria-label="Primary application navigation"
+  >
+    <div class="rail-brand-row">
+      <a routerLink="/home" class="rail-brand-link" aria-label="Chess Repertoire Trainer home">
+        @if (railCollapsed()) {
+          <app-brand-mark variant="mark" [size]="42" />
+        } @else {
+          <app-brand-lockup tone="inverse" markVariant="mark" [markSize]="40" />
+        }
       </a>
+      <button
+        type="button"
+        class="rail-collapse-button"
+        [attr.aria-label]="railCollapsed() ? 'Expand navigation rail' : 'Collapse navigation rail'"
+        [attr.title]="railCollapsed() ? 'Expand navigation rail' : 'Collapse navigation rail'"
+        [attr.aria-expanded]="!railCollapsed()"
+        (click)="toggleRail()"
+      >
+        <span aria-hidden="true">{{ railCollapsed() ? '›' : '‹' }}</span>
+      </button>
     </div>
-    <div class="app-header-actions">
-      @if (auth.isSignedIn()) {
-        <nav class="app-nav" aria-label="Main navigation">
-          @for (item of mainNavItems; track item.id) {
-            @if (item.children; as children) {
-              <div class="nav-group" [class.nav-group-active]="isNavActive(item)">
-                <a
-                  [routerLink]="item.link"
-                  class="nav-pill nav-pill-parent"
-                  [class.nav-pill-active]="isNavActive(item)"
-                  [class.nav-pill-quiet]="item.quiet"
-                  [attr.aria-current]="isNavActive(item) ? 'page' : null"
-                >
-                  <app-nav-icon [name]="item.icon" />
-                  <span>{{ item.label }}</span>
-                  <span class="nav-caret" aria-hidden="true"></span>
-                </a>
-                <div class="nav-dropdown" role="menu">
-                  @for (child of children; track child.id) {
-                    <a
-                      [routerLink]="child.link"
-                      class="nav-dropdown-item"
-                      [class.nav-dropdown-item-active]="isNavActive(child)"
-                      [class.nav-dropdown-item-quiet]="child.quiet"
-                      role="menuitem"
-                    >
-                      <app-nav-icon [name]="child.icon" />
-                      <span>
-                        <strong>{{ child.label }}</strong>
-                        @if (child.description) {
-                          <small>{{ child.description }}</small>
-                        }
-                      </span>
-                    </a>
-                  }
-                </div>
-              </div>
-            } @else {
-              <a
-                [routerLink]="item.link"
-                class="nav-pill"
-                [class.nav-pill-active]="isNavActive(item)"
-                [class.nav-pill-quiet]="item.quiet"
-                [attr.aria-current]="isNavActive(item) ? 'page' : null"
-              >
-                <app-nav-icon [name]="item.icon" />
-                <span>{{ item.label }}</span>
-              </a>
-            }
+
+    <nav class="rail-nav" aria-label="Main navigation">
+      @for (item of primaryNavItems; track item.id) {
+        <div
+          class="rail-nav-node"
+          [class.rail-nav-node-active]="isNavActive(item)"
+          [class.rail-nav-node-open]="isNavFlyoutOpen(item)"
+        >
+          <a
+            [routerLink]="item.link"
+            class="rail-nav-link"
+            [class.rail-nav-link-quiet]="item.quiet"
+            [attr.aria-current]="isNavActive(item) ? 'page' : null"
+            [attr.title]="railCollapsed() ? item.label : null"
+            (click)="closeNavFlyout()"
+          >
+            <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+            <span class="rail-nav-label">{{ item.label }}</span>
+          </a>
+
+          @if (item.children) {
+            <button
+              type="button"
+              class="rail-nav-disclosure"
+              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Close ' : 'Open ') + item.label + ' destinations'"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="isNavFlyoutOpen(item)"
+              [attr.aria-controls]="navFlyoutId(item)"
+              (click)="toggleNavFlyout(item)"
+            >
+              <span aria-hidden="true">›</span>
+            </button>
           }
-        </nav>
-        <div class="auth-status">
-          <span class="auth-name">{{ auth.displayName() }}</span>
-          @if (!auth.isDevAuth()) {
-            <app-clerk-user-button />
+
+          @if (item.children && isNavFlyoutOpen(item)) {
+            <div [id]="navFlyoutId(item)" class="rail-flyout" role="menu">
+              <div class="rail-flyout-heading">{{ item.label }}</div>
+              @for (child of item.children; track child.id) {
+                <a
+                  [routerLink]="child.link"
+                  class="rail-flyout-item"
+                  [class.rail-flyout-item-active]="isNavActive(child)"
+                  [class.rail-flyout-item-quiet]="child.quiet"
+                  [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                  role="menuitem"
+                  (click)="closeNavFlyout()"
+                >
+                  <span class="rail-flyout-icon"><app-nav-icon [name]="child.icon" /></span>
+                  <span class="rail-flyout-copy">
+                    <strong>{{ child.label }}</strong>
+                    @if (child.description) {
+                      <small>{{ child.description }}</small>
+                    }
+                  </span>
+                </a>
+              }
+            </div>
           }
         </div>
-      } @else {
-        <nav class="app-nav" aria-label="Authentication navigation">
-          @for (item of authNavItems; track item.id) {
-            <a
-              [routerLink]="item.link"
-              class="nav-pill"
-              [class.nav-pill-active]="isNavActive(item)"
-              [attr.aria-current]="isNavActive(item) ? 'page' : null"
-            >
-              <app-nav-icon [name]="item.icon" />
-              <span>{{ item.label }}</span>
-            </a>
-          }
-        </nav>
       }
+    </nav>
+
+    <div class="rail-workspace-label">Workspace</div>
+    <nav class="rail-nav rail-nav-workspace" aria-label="Workspace navigation">
+      @for (item of workspaceNavItems; track item.id) {
+        <div
+          class="rail-nav-node"
+          [class.rail-nav-node-active]="isNavActive(item)"
+          [class.rail-nav-node-open]="isNavFlyoutOpen(item)"
+        >
+          <a
+            [routerLink]="item.link"
+            class="rail-nav-link"
+            [class.rail-nav-link-quiet]="item.quiet"
+            [attr.aria-current]="isNavActive(item) ? 'page' : null"
+            [attr.title]="railCollapsed() ? item.label : null"
+            (click)="closeNavFlyout()"
+          >
+            <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+            <span class="rail-nav-label">{{ item.label }}</span>
+          </a>
+
+          @if (item.children) {
+            <button
+              type="button"
+              class="rail-nav-disclosure"
+              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Close ' : 'Open ') + item.label + ' destinations'"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="isNavFlyoutOpen(item)"
+              [attr.aria-controls]="navFlyoutId(item)"
+              (click)="toggleNavFlyout(item)"
+            >
+              <span aria-hidden="true">›</span>
+            </button>
+          }
+
+          @if (item.children && isNavFlyoutOpen(item)) {
+            <div [id]="navFlyoutId(item)" class="rail-flyout rail-flyout-up" role="menu">
+              <div class="rail-flyout-heading">{{ item.label }}</div>
+              @for (child of item.children; track child.id) {
+                <a
+                  [routerLink]="child.link"
+                  class="rail-flyout-item"
+                  [class.rail-flyout-item-active]="isNavActive(child)"
+                  [class.rail-flyout-item-quiet]="child.quiet"
+                  [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                  role="menuitem"
+                  (click)="closeNavFlyout()"
+                >
+                  <span class="rail-flyout-icon"><app-nav-icon [name]="child.icon" /></span>
+                  <span class="rail-flyout-copy">
+                    <strong>{{ child.label }}</strong>
+                    @if (child.description) {
+                      <small>{{ child.description }}</small>
+                    }
+                  </span>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="rail-account">
+      @if (auth.isDevAuth()) {
+        <span class="rail-account-icon" aria-hidden="true"><app-nav-icon name="account" /></span>
+      } @else {
+        <app-clerk-user-button />
+      }
+      <span class="rail-account-copy">
+        <strong>{{ auth.displayName() }}</strong>
+        <small>{{ auth.isDevAuth() ? 'Development account' : 'Account and sign out' }}</small>
+      </span>
     </div>
+  </aside>
+
+  <header class="mobile-header">
+    <a routerLink="/home" class="mobile-brand-link" aria-label="Chess Repertoire Trainer home">
+      <app-brand-lockup [markSize]="34" collapseAtMobile />
+    </a>
     <button
       type="button"
       class="mobile-menu-button"
-      [attr.aria-expanded]="mobileMenuOpen"
+      [attr.aria-expanded]="mobileMenuOpen()"
       aria-controls="mobile-main-menu"
-      aria-label="Open main menu"
+      [attr.aria-label]="mobileMenuOpen() ? 'Close main menu' : 'Open main menu'"
       (click)="toggleMobileMenu()"
     >
       <span></span>
       <span></span>
       <span></span>
     </button>
-  </div>
-</header>
+  </header>
 
-@if (mobileMenuOpen) {
-  <button
-    type="button"
-    class="mobile-menu-backdrop"
-    aria-label="Close main menu"
-    (click)="closeMobileMenu()"
-  ></button>
-  <aside id="mobile-main-menu" class="mobile-menu-sheet" aria-label="Main navigation">
-    @if (auth.isSignedIn()) {
+  @if (openNavId()) {
+    <button
+      type="button"
+      class="rail-flyout-backdrop"
+      aria-label="Close navigation submenu"
+      (click)="closeNavFlyout()"
+    ></button>
+  }
+
+  @if (mobileMenuOpen()) {
+    <button
+      type="button"
+      class="mobile-menu-backdrop"
+      aria-label="Close main menu"
+      (click)="closeMobileMenu()"
+    ></button>
+    <aside id="mobile-main-menu" class="mobile-menu-sheet" aria-label="Main navigation">
       <div class="mobile-menu-header">
         <div>
           <p class="mobile-menu-kicker">Navigation</p>
@@ -144,23 +237,26 @@
           <app-clerk-user-button />
         }
       </div>
-    } @else {
-      <nav class="mobile-nav" aria-label="Authentication navigation">
-        @for (item of authNavItems; track item.id) {
+    </aside>
+  }
+} @else {
+  <aside class="desktop-rail desktop-rail-auth" aria-label="Authentication navigation">
+    <a routerLink="/" class="rail-brand-link" aria-label="Chess Repertoire Trainer landing page">
+      <app-brand-lockup tone="inverse" markVariant="mark" [markSize]="40" />
+    </a>
+    <nav class="rail-nav" aria-label="Authentication navigation">
+      @for (item of authNavItems; track item.id) {
+        <div class="rail-nav-node" [class.rail-nav-node-active]="isNavActive(item)">
           <a
             [routerLink]="item.link"
-            class="mobile-nav-item"
-            [class.mobile-nav-item-active]="isNavActive(item)"
+            class="rail-nav-link"
             [attr.aria-current]="isNavActive(item) ? 'page' : null"
-            (click)="closeMobileMenu()"
           >
-            <span class="mobile-nav-icon"><app-nav-icon [name]="item.icon" /></span>
-            <span class="mobile-nav-copy">
-              <span class="mobile-nav-label">{{ item.label }}</span>
-            </span>
+            <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+            <span class="rail-nav-label">{{ item.label }}</span>
           </a>
-        }
-      </nav>
-    }
+        </div>
+      }
+    </nav>
   </aside>
 }
