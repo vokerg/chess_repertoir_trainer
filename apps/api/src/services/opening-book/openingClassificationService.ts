@@ -1,4 +1,5 @@
 import type { OpeningBookEntry } from './openingBook.types';
+import { OPENING_CLASSIFICATION_COVERAGE_CORRECTIONS } from './openingClassification.coverage.corrections.rules';
 import { OPENING_CLASSIFICATION_COVERAGE_RULES } from './openingClassification.coverage.rules';
 import { OPENING_CLASSIFICATION_RULES } from './openingClassification.rules';
 import {
@@ -24,10 +25,15 @@ export type {
 export { OPENING_CLASSIFICATION_VERSION } from './openingClassification.types';
 
 const REPLACED_FOUNDATION_RULE_IDS = new Set(['family-owens-defense']);
+const REPLACED_COVERAGE_RULE_IDS = new Set([
+  'family-formation-attacks',
+  'family-rare-white-opening-systems',
+]);
 
 const ALL_OPENING_CLASSIFICATION_RULES: readonly OpeningClassificationRule[] = [
   ...OPENING_CLASSIFICATION_RULES.filter((rule) => !REPLACED_FOUNDATION_RULE_IDS.has(rule.id)),
-  ...OPENING_CLASSIFICATION_COVERAGE_RULES,
+  ...OPENING_CLASSIFICATION_COVERAGE_RULES.filter((rule) => !REPLACED_COVERAGE_RULE_IDS.has(rule.id)),
+  ...OPENING_CLASSIFICATION_COVERAGE_CORRECTIONS,
 ];
 
 const UNKNOWN_SIDE_CLASSIFICATION: OpeningSideClassification = {
