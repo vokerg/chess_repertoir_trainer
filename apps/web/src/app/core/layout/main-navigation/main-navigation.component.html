@@ -47,13 +47,14 @@
             <button
               type="button"
               class="rail-nav-disclosure"
-              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Close ' : 'Open ') + item.label + ' destinations'"
+              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
+              [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
               aria-haspopup="menu"
               [attr.aria-expanded]="isNavFlyoutOpen(item)"
               [attr.aria-controls]="navFlyoutId(item)"
               (click)="toggleNavFlyout(item)"
             >
-              <span aria-hidden="true">›</span>
+              <span class="rail-nav-disclosure-icon" aria-hidden="true"></span>
             </button>
           }
 
@@ -109,13 +110,14 @@
             <button
               type="button"
               class="rail-nav-disclosure"
-              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Close ' : 'Open ') + item.label + ' destinations'"
+              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
+              [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
               aria-haspopup="menu"
               [attr.aria-expanded]="isNavFlyoutOpen(item)"
               [attr.aria-controls]="navFlyoutId(item)"
               (click)="toggleNavFlyout(item)"
             >
-              <span aria-hidden="true">›</span>
+              <span class="rail-nav-disclosure-icon" aria-hidden="true"></span>
             </button>
           }
 
