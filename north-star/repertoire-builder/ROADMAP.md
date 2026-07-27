@@ -12,7 +12,7 @@ Gate: passed for execution.
 
 ## Stage 1 — reusable evidence foundations
 
-State: active. RB-001 and RB-002 are complete; RB-003 remains the only unresolved Stage 1 foundation.
+State: complete through RB-001, RB-002 and RB-003.
 
 ### Merged baseline
 
@@ -21,42 +21,73 @@ State: active. RB-001 and RB-002 are complete; RB-003 remains the only unresolve
 - PR #84: fixed peer-population presets, Lichess-benchmark normalization, provider-aware multi-account resolver and compact Peer games UI.
 - PR #106: GitHub Issues execution migration.
 - PR #107: RB-002 closure reconciliation.
+- PR #111: deterministic side-aware opening-classification foundation.
 
 ### RB-001 and RB-002 completed delivery
 
-Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
+The factual population/player-level foundation provides:
 
-- speed presets: All speeds, Blitz and slower, Blitz, Bullet;
-- no product-facing ultraBullet;
-- rating targets: All players, My peers, My peers and above, or one explicit group;
-- defaults: Blitz and slower plus My peers and above;
-- one mixed Lichess request and existing deterministic cache architecture;
-- no client-selected public-game months;
-- active normalization profile `2026-07-lichess-bands-v1` using the nine Lichess Explorer groups;
-- versioned approximate Chess.com bullet/blitz/rapid mappings;
+- product speed presets and rating targets;
+- Lichess benchmark bands and versioned Chess.com mappings;
 - provider/speed classification before aggregation;
 - multi-account game-count-weighted normalized band distribution;
-- recent-three-month → all-history → generic peer fallback;
-- resolver policy `dominant-contiguous-window-v1`;
-- complete distribution, selected groups, eligible-game count, evidence period and account/provider/speed contributions;
-- direct request/effective-population/resolver provenance;
-- two compact Peer games selects;
-- full CI validation and canonical runtime documentation.
+- recent-three-month, all-history and generic fallback;
+- `dominant-contiguous-window-v1`;
+- complete distribution, evidence period and contribution provenance;
+- compact Peer games UI and typed contracts.
 
-RB-002 is complete through this implementation. A separate durable formula, stored snapshot, generic confidence score or override foundation remains rejected without a concrete consumer or measured defect.
+A separate durable formula, stored snapshot, generic confidence score or override foundation remains rejected without a concrete consumer or measured defect.
+
+### RB-003 completed delivery
+
+The intrinsic opening-profile foundation provides:
+
+- version `2026-07-rules-v1`;
+- deterministic ordered regex rules;
+- family inheritance, safe lexical modifiers and narrow overrides;
+- independent White and Black soundness, character, theoretical status, theory burden, roles and confidence;
+- matched-rule provenance and explicit unknowns;
+- asymmetric gambit handling, including Evans and Benko color directions;
+- generated-book coverage and rule-usage auditing;
+- no persistence, runtime AI, Stockfish audit, public contract or UI.
+
+RB-018 / #116 owns systematic rule coverage and actual-game calibration. It is an expansion track, not a reopened foundation gate.
 
 ### Stage 1 gate
 
-The population/player-level portion is passed. Stage 1 remains open until:
-
-- RB-003 opening classification is delivered; or
-- a deliberately limited fallback is explicitly approved.
+Passed.
 
 Tasks: RB-001, RB-002, RB-003.
 
+## Stage 1A — opening-classification coverage
+
+State: ready.
+
+Task: RB-018 / #116.
+
+Goals:
+
+- keep the implementation regex-based, deterministic and versioned;
+- organize rules into maintainable opening-family modules when useful;
+- group and prioritize unmatched names;
+- expand family, subfamily and exact exception coverage;
+- measure generated-name and actual-game-weighted coverage;
+- retain explicit unknowns and independent White/Black semantics.
+
+Explicit exclusions:
+
+- Stockfish or engine-assisted auditing;
+- runtime LLM calls;
+- database storage or one record per generated row;
+- API, Angular UI, background jobs or profile aggregation.
+
+Gate: major opening families in actual games have useful coverage, high-frequency unknowns are visible, and no generic keyword such as `Gambit` determines soundness by itself.
+
+RB-018 may run in parallel with RB-004.
+
 ## Stage 2 — Player Chess Profile
 
-State: blocked on RB-003. It consumes the completed factual player-level and population boundary from RB-001/RB-002.
+State: ready to begin through RB-004; RB-005 remains blocked on RB-004.
 
 Goals:
 
@@ -65,7 +96,8 @@ Goals:
 - support periods, accounts, agreed speed presets, colors and rating context;
 - expose evidence and supporting games/openings;
 - keep profile conclusions advisory;
-- extract or rename the factual player-level contract only when the profile becomes the second real consumer.
+- report classified and unknown opening samples explicitly;
+- consume RB-018 improvements without treating nominal 100% generated-name coverage as a prerequisite.
 
 Tasks: RB-004, RB-005.
 
@@ -73,7 +105,7 @@ Gate: profile claims are reproducible, evidence-backed and useful enough to advi
 
 ## Stage 3 — target and candidate decision model
 
-State: blocked on opening-profile and target/profile dependencies, not on further player-level formula work. RB-008 supplies concrete visual data responsibilities for this stage.
+State: RB-006 is ready; RB-007 remains blocked on RB-006. RB-008 supplies concrete visual data responsibilities.
 
 Goals:
 
@@ -193,12 +225,14 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 
 Safe parallel work:
 
-- RB-003 opening-classification discovery;
+- RB-004 Player Chess Profile calculation;
+- RB-006 repertoire-target contract;
+- RB-018 regex classification coverage;
 - RB-017 bounded traps data/validator pilot.
 
 High-collision areas requiring coordination:
 
-- opening-profile contracts;
+- opening-profile consumer contracts;
 - Opening Explorer cache/provenance changes;
 - rating-normalization profile or resolver-policy changes;
 - imported-game/account evidence aggregation;
@@ -208,17 +242,21 @@ High-collision areas requiring coordination:
 - course reintegration writes;
 - any future trap evidence added to candidate contracts.
 
-RB-017 should remain isolated from these high-collision production areas. Live Explorer refreshes must be bounded and deterministic tests must use fixtures.
+RB-018 must preserve the RB-003 contract while extending rules. RB-017 must remain isolated from high-collision production areas. Live Explorer refreshes must be bounded and deterministic tests must use fixtures.
 
 ## Queue impact
 
 - RB-001 remains order 10, P0, `DONE`.
 - RB-002 remains order 20, P0, `DONE`.
-- RB-003 remains order 30, P0, `PROPOSED`.
+- RB-003 is order 30, P0, `DONE`.
+- RB-018 is added at order 35, P1, `READY`.
 - RB-008 remains order 40, P1, `DONE`.
+- RB-004 becomes `READY`.
+- RB-006 becomes `READY`.
+- RB-007 remains blocked on RB-006.
 - RB-014 remains order 140, P2, `DONE`.
-- RB-017 is added at order 145, P2, `CLAIMED`.
-- No existing order or priority changes.
+- RB-017 remains order 145, P2, `CLAIMED`.
+- No existing priority changes.
 - No production traps capability is approved.
 
 Every completion report must explicitly state whether this roadmap remains valid.
