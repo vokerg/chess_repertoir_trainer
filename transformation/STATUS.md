@@ -4,7 +4,7 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** Phase 1D restrained public landing-page scroll reveal is implemented on its review branch; final-head automated validation and direct browser review remain gates
+**Program state:** Phase 1D restrained public landing-page scroll reveal is implemented and has passed complete automated validation; direct browser review remains the acceptance gate
 
 **Integration branch:** `visual_transformation`
 
@@ -12,7 +12,7 @@ Last updated: 2026-07-27
 
 The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A production brand assets, Phase 1B navigation discovery, Phase 1C production navigation rail, and Phase 1C integration reconciliation are squash-merged into `visual_transformation`.
 
-PR #118 was squash-merged on 2026-07-27 after PR CI run #1008 passed; integration CI run #1018 also passed. The current slice changes only the public landing feature and transformation records. It does not modify the hero, routes, signed-in shell, APIs, schemas, database behavior, dependencies, or feature workflows.
+PR #118 was squash-merged on 2026-07-27 after PR CI run #1008 passed; integration CI run #1018 also passed. The current Phase 1D slice changes only the public landing feature and transformation records. It does not modify the hero, routes, signed-in shell, APIs, schemas, database behavior, dependencies, or feature workflows.
 
 ## Completed
 
@@ -38,6 +38,7 @@ PR #118 was squash-merged on 2026-07-27 after PR CI run #1008 passed; integratio
 - [x] Locked the Phase 1D boundary in D-021.
 - [x] Added the required Phase 1D implementation report.
 - [x] Opened PR #120 to `visual_transformation`.
+- [x] Passed complete final runtime-head CI run #1045: dependency installation, lint, full monorepo build, architecture guardrails, database migrations, and all tests.
 
 ## Current checkpoint
 
@@ -49,7 +50,7 @@ Review Phase 1D in this order:
 4. lifecycle setup and reveal markers in `landing-page.component.ts`;
 5. `/` with normal motion and reduced motion;
 6. desktop, tablet, compact, and narrow-phone widths;
-7. PR #120 final-head CI and review state.
+7. PR #120 review state and current documentation-only-head CI.
 
 Review focus:
 
@@ -86,10 +87,13 @@ PR #120 validation history:
 - run #1028 failed during Angular lint/type compilation on the initial directive-based implementation;
 - run #1030 failed at the same gate after browser-API test-double cleanup;
 - run #1033 failed at the same gate after replacing the transformed directive input with static delay attributes;
-- the directive implementation was then removed and replaced with the landing-specific helper explicitly allowed by the Phase 1C review contract;
-- run #1038 passed lint on the helper-based runtime head and proceeded to the full build before later documentation commits advanced the branch head.
+- the directive implementation was removed and replaced with the landing-specific helper explicitly allowed by the Phase 1C review contract;
+- run #1038 confirmed helper-based Angular lint/type compilation;
+- run #1043 passed installation, lint, build, architecture, and migrations, then failed in the test step because the new spec used an invalid strict partial `IntersectionObserverEntry` cast;
+- run #1044 passed the same non-test gates, then exposed browser-specific CSS serialization assertions in the helper spec;
+- run #1045 passed dependency installation, lint, full monorepo build, architecture guardrails, database migrations, and the complete test suite after the fixtures and assertions were made strict and behavior-focused.
 
-The current final-head PR CI is authoritative and must pass dependency installation, lint, full build, architecture guardrails, migrations, and complete tests before automated validation is marked complete.
+Run #1045 is the authoritative executable validation for the final runtime and test files. A later documentation-only head should remain green but does not change the validated runtime surface.
 
 ### Local executable validation
 
@@ -107,7 +111,7 @@ Result:
 fatal: unable to access 'https://github.com/vokerg/chess_repertoir_trainer.git/': Could not resolve host: github.com
 ```
 
-The plain TypeScript helper was compiled locally with strict DOM settings, including `strict`, `noImplicitReturns`, and `noPropertyAccessFromIndexSignature`; that focused check passed.
+The helper and its spec were compiled locally with strict DOM settings, including `strict`, `noImplicitReturns`, and `noPropertyAccessFromIndexSignature`; that focused check passed after the final fixture correction.
 
 These repository commands were not available locally:
 
@@ -141,7 +145,7 @@ Prior residual checks:
 
 ## Open decisions
 
-- Whether Phase 1D is accepted after final-head CI and direct browser review.
+- Whether Phase 1D is accepted after direct browser review.
 - Whether the 420ms duration, 18px translation, viewport threshold, or capped stagger needs an optical adjustment.
 - Whether later product motion should reuse this helper or remain surface-specific; no global abstraction is approved.
 - Whether rail widths or flyout placement need adjustment after residual browser review.
@@ -196,8 +200,9 @@ Prior residual checks:
 - Implemented the approved reveal behavior initially as a feature-local directive.
 - Used CI failures #1028, #1030, and #1033 to isolate Angular compilation incompatibility in that approach.
 - Replaced the directive with a smaller landing-specific helper initialized by the existing component, retaining the same motion and accessibility contract.
-- Confirmed helper-based lint success in CI run #1038.
-- Updated the transformation entry point, decisions, status, working rules, report, and PR description to match the final architecture.
+- Used runs #1043 and #1044 to correct strict test fixtures and remove browser-specific CSS serialization assumptions.
+- Passed complete runtime-head CI run #1045.
+- Updated the transformation entry point, decisions, status, working rules, report, and PR description to match the final architecture and validation state.
 
 ### Earlier integrated checkpoints
 
