@@ -6,6 +6,11 @@ export type UnknownOpeningFamilyBacklogItem = {
   examples: readonly string[];
 };
 
+export type OpeningNameFrequency = {
+  name: string;
+  count: number;
+};
+
 function pct(value: number, total: number): number {
   return total ? Math.round((value / total) * 1000) / 10 : 0;
 }
@@ -18,18 +23,19 @@ export function openingRootFamily(name: string): string {
   return beforeQualifier.trim() || name.trim();
 }
 
-export function buildUnknownOpeningFamilyBacklog(
-  unknownEntryNames: readonly string[],
+export function buildUnknownOpeningFamilyBacklogFromFrequencies(
+  unknownNames: readonly OpeningNameFrequency[],
   totalEntries: number,
   exampleLimit = 10,
 ): readonly UnknownOpeningFamilyBacklogItem[] {
   const groups = new Map<string, { entries: number; names: Set<string> }>();
 
-  for (const name of unknownEntryNames) {
-    const family = openingRootFamily(name);
+  for (const item of unknownNames) {
+    if (item.count <= 0) continue;
+    const family = openingRootFamily(item.name);
     const group = groups.get(family) ?? { entries: 0, names: new Set<string>() };
-    group.entries += 1;
-    group.names.add(name);
+    group.entries += item.count;
+    group.names.add(item.name);
     groups.set(family, group);
   }
 
@@ -44,4 +50,16 @@ export function buildUnknownOpeningFamilyBacklog(
     .sort((a, b) => b.entries - a.entries
       || b.uniqueNames - a.uniqueNames
       || a.family.localeCompare(b.family));
+}
+
+export function buildUnknownOpeningFamilyBacklog(
+  unknownEntryNames: readonly string[],
+  totalEntries: number,
+  exampleLimit = 10,
+): readonly UnknownOpeningFamilyBacklogItem[] {
+  return buildUnknownOpeningFamilyBacklogFromFrequencies(
+    unknownEntryNames.map((name) => ({ name, count: 1 })),
+    totalEntries,
+    exampleLimit,
+  );
 }
