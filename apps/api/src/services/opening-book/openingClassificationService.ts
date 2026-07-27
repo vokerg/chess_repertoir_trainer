@@ -1,4 +1,5 @@
 import type { OpeningBookEntry } from './openingBook.types';
+import { OPENING_CLASSIFICATION_COVERAGE_RULES } from './openingClassification.coverage.rules';
 import { OPENING_CLASSIFICATION_RULES } from './openingClassification.rules';
 import {
   OPENING_CLASSIFICATION_VERSION,
@@ -21,6 +22,13 @@ export type {
   OpeningTheoryBurden,
 } from './openingClassification.types';
 export { OPENING_CLASSIFICATION_VERSION } from './openingClassification.types';
+
+const REPLACED_FOUNDATION_RULE_IDS = new Set(['family-owens-defense']);
+
+const ALL_OPENING_CLASSIFICATION_RULES: readonly OpeningClassificationRule[] = [
+  ...OPENING_CLASSIFICATION_RULES.filter((rule) => !REPLACED_FOUNDATION_RULE_IDS.has(rule.id)),
+  ...OPENING_CLASSIFICATION_COVERAGE_RULES,
+];
 
 const UNKNOWN_SIDE_CLASSIFICATION: OpeningSideClassification = {
   soundness: 'UNKNOWN',
@@ -67,7 +75,7 @@ function matchesRule(entry: OpeningBookEntry, rule: OpeningClassificationRule): 
 }
 
 export function validateOpeningClassificationRules(
-  rules: readonly OpeningClassificationRule[] = OPENING_CLASSIFICATION_RULES,
+  rules: readonly OpeningClassificationRule[] = ALL_OPENING_CLASSIFICATION_RULES,
 ): void {
   const ids = new Set<string>();
 
@@ -93,7 +101,7 @@ validateOpeningClassificationRules();
 export const OpeningClassificationService = {
   classify(
     entry: OpeningBookEntry,
-    rules: readonly OpeningClassificationRule[] = OPENING_CLASSIFICATION_RULES,
+    rules: readonly OpeningClassificationRule[] = ALL_OPENING_CLASSIFICATION_RULES,
   ): OpeningClassificationResult {
     let white: OpeningSideClassification = { ...UNKNOWN_SIDE_CLASSIFICATION };
     let black: OpeningSideClassification = { ...UNKNOWN_SIDE_CLASSIFICATION };
@@ -116,6 +124,6 @@ export const OpeningClassificationService = {
   },
 
   rules(): readonly OpeningClassificationRule[] {
-    return OPENING_CLASSIFICATION_RULES;
+    return ALL_OPENING_CLASSIFICATION_RULES;
   },
 };
