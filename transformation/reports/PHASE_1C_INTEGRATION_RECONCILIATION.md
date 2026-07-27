@@ -6,7 +6,7 @@ Branch: `visual-transformation/phase-1c-integration-reconciliation`
 
 Target: `visual_transformation`
 
-Pull request: pending
+Pull request: #118
 
 ## Purpose
 
@@ -30,7 +30,8 @@ This checkpoint changes documentation only. It does not modify application runti
 - updated the Phase 1 backlog and session log;
 - replaced the obsolete PR #112 stop condition in `WORKING_RULES.md`;
 - preserved outstanding browser-validation items and later product decisions;
-- retained landing-page scroll-reveal motion as a candidate requiring separate explicit approval.
+- retained landing-page scroll-reveal motion as a candidate requiring separate explicit approval;
+- opened PR #118 back into `visual_transformation`.
 
 ## Design and implementation rationale
 
@@ -73,7 +74,8 @@ Confirmed through the GitHub connector:
 - `visual_transformation` matched that squash commit before creation of this branch;
 - the merged implementation includes the desktop rail, separate child disclosures, mobile grouped sheet, and focused tests described by the transformation reports;
 - the integrated commit has successful CI run #983;
-- earlier implementation runs #940, #945, and #953 also passed.
+- earlier implementation runs #940, #945, and #953 also passed;
+- PR #118 targets `visual_transformation` from the dedicated reconciliation branch.
 
 ### Documentation review
 
@@ -139,7 +141,7 @@ This reconciliation does not decide:
 
 ## Review instructions
 
-1. Confirm the pull request contains only the five Markdown files listed above.
+1. Confirm PR #118 contains only the five Markdown files listed above.
 2. Confirm `TRANSFORMATION.md` lists PR #112 as integrated.
 3. Confirm D-315 is locked and integrated rather than open.
 4. Confirm `STATUS.md` marks the production rail complete while retaining residual checks.
@@ -156,11 +158,11 @@ For repository-state reproduction:
 1. open PR #112 and verify its merged state and target branch;
 2. inspect the `visual_transformation` history for squash commit `a7d1ed76b827454ed9bb440981f146a421f8702f`;
 3. inspect CI run #983 for the integrated commit;
-4. compare this branch with `visual_transformation` and confirm the diff is limited to transformation Markdown records.
+4. compare PR #118 with `visual_transformation` and confirm the diff is limited to transformation Markdown records.
 
 ## Stop condition
 
-Do not merge the reconciliation pull request without explicit approval. When approved, squash merge it into `visual_transformation`.
+Do not merge PR #118 without explicit approval. When approved, squash merge it into `visual_transformation`.
 
 Do not begin landing-page motion, token migration, typography changes, bottom navigation, representative workflow modernization, route changes, dependency additions, or backend work on this branch.
 
@@ -191,3 +193,4 @@ Do not begin landing-page motion, token migration, typography changes, bottom na
 - `apps/web/src/app/features/public/landing-page.component.ts`
 - `apps/web/src/app/features/public/landing-page.component.css`
 - PR #112 metadata, merge commit, changed-file list, review state, and workflow state
+- PR #118 metadata and changed-file scope
