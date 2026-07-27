@@ -56,20 +56,21 @@ The active branch is `visual-transformation/phase-1d-landing-scroll-reveal`.
 
 Its approved scope is the narrow production implementation of restrained public landing-page motion:
 
-- add a feature-local standalone Angular directive using native `IntersectionObserver`;
-- reveal selected lower-page landing compositions once with opacity and a small vertical translation;
+- add a small feature-local landing helper initialized by `LandingPageComponent` and using native `IntersectionObserver`;
+- mark only selected lower-page compositions with static `data-scroll-reveal` attributes;
+- reveal those compositions once with opacity and a small vertical translation;
 - cover the workflow introduction and steps, capability copy and demonstrations, progress composition, and final call to action;
 - leave the header, hero, first-screen product composition, footer, routes, copy, and layout unchanged;
-- keep content visible when `IntersectionObserver` is unavailable or reduced motion is requested;
+- keep content visible when `IntersectionObserver` or `matchMedia` is unavailable or reduced motion is requested;
 - use short restrained delays only, with no animation dependency or global motion system;
 - add focused tests, transformation documentation, automated validation, and a reviewed pull request.
 
 Review next:
 
 1. [`transformation/reports/PHASE_1D_LANDING_SCROLL_REVEAL_IMPLEMENTATION.md`](./transformation/reports/PHASE_1D_LANDING_SCROLL_REVEAL_IMPLEMENTATION.md)
-2. `apps/web/src/app/features/public/reveal-on-scroll.directive.ts`
-3. `apps/web/src/app/features/public/reveal-on-scroll.directive.spec.ts`
-4. the selected reveal bindings in `landing-page.component.ts`
+2. `apps/web/src/app/features/public/landing-scroll-reveal.ts`
+3. `apps/web/src/app/features/public/landing-scroll-reveal.spec.ts`
+4. lifecycle setup and selected reveal markers in `landing-page.component.ts`
 5. `/` in a real browser with normal motion, reduced motion, desktop, and mobile widths
 6. the Phase 1D pull request validation and review state.
 
