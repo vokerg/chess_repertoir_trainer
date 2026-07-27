@@ -15,7 +15,7 @@ export const OPENING_CLASSIFICATION_COVERAGE_CORRECTIONS: readonly OpeningClassi
   },
   {
     id: 'family-rare-white-opening-systems',
-    namePattern: /^(?:Amsterdam Attack|Anderssen's Opening|Canard Opening|Clemenz Opening|Dresden Opening|Global Opening|Lasker Simul Special|Paleface Attack|Portuguese Opening|Queen's Pawn(?:,|$)|Valencia Opening|Yusupov-Rubinstein System)(?:\b|:|,)?/i,
+    namePattern: /^(?:(?:Amsterdam Attack|Anderssen's Opening|Canard Opening|Clemenz Opening|Dresden Opening|Global Opening|Lasker Simul Special|Paleface Attack|Portuguese Opening|Valencia Opening|Yusupov-Rubinstein System)(?:\b|:|,)|Queen's Pawn(?:,|$))/i,
     white: { character: ['SURPRISE'], theoreticalStatus: 'SURPRISE', theoryBurden: 'LOW', roles: ['INITIATOR'], confidence: 'LOW' },
     black: { character: ['BALANCED'], theoreticalStatus: 'MAINLINE', theoryBurden: 'LOW', roles: ['RESPONDER'], confidence: 'LOW' },
     rationale: 'These rare White systems are grouped only for low-confidence surprise and role traits; objective soundness remains explicitly unknown.',
