@@ -65,5 +65,14 @@ jobs:
       - name: Apply database migrations
         run: npm run db:migrate --workspace=apps/api
 
+      - name: Imported-game opening classification audit
+        run: npm run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
+
+      - name: Upload imported-game opening classification audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: imported-game-opening-classification-audit
+          path: imported-game-opening-classification-audit.json
+
       - name: Test
         run: npm test
