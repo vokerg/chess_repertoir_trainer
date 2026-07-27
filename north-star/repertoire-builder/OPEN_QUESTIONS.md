@@ -53,16 +53,20 @@ These are not blockers and do not reopen RB-002.
 - Runtime LLM calls, Stockfish auditing and engine-assisted classification are excluded.
 - The Evans Gambit and Benko Gambit demonstrate that offerer and acceptor assessments may differ by side.
 
-### Coverage questions owned by RB-018
+### Resolved by RB-018
 
-- What generated-name and actual-game coverage thresholds are sufficient for useful profile conclusions?
-- Which opening families should be classified first based on real imported-game frequency?
-- When does a deep named line justify an exception rather than family inheritance?
-- Should confidence remain profile-level or become dimension-specific after consumer feedback?
-- How should upstream opening-book updates surface naming changes, newly unknown families and unused rules?
-- How should the audit group and rank unknowns so work follows product value rather than alphabetic order?
+- The active rule version is `2026-07-rules-v2`.
+- The pinned generated book has 3,733 matched entries out of 3,733 and 3,167 matched unique names out of 3,167 through 114 active ordered rules.
+- One hundred percent rule-match coverage means every pinned name has characteristics and provenance; it does not require every dimension to be high-confidence or non-unknown.
+- Rare heterogeneous families may safely expose only surprise/role/burden traits with low confidence while retaining `UNKNOWN` soundness.
+- The measured generated backlog is grouped by root family and ranked by affected entry count rather than alphabetically.
+- Broad families are processed before narrow exceptions; exceptions are justified when family inheritance would misrepresent soundness, theoretical status or side-specific gambit roles.
+- Generated-name and actual-game coverage are separate metrics.
+- Actual-game weighting uses existing `ImportedGame.openingName` and `openingEco` values through an on-demand database audit; it adds no persistence or background job.
+- Upstream opening-book changes surface through an empty/non-empty grouped backlog, unused-rule reporting, CI audit artifacts and a regression that fails on newly unmatched pinned entries.
+- Confidence remains profile-level for v2. Dimension-specific confidence is deferred until RB-004/RB-005 consumer evidence demonstrates a concrete need.
 
-Owner task: RB-018 / issue #116. These questions do not reopen the RB-003 method decision.
+RB-018 is complete. Future naming additions or judgment corrections are normal versioned rule maintenance, not an unresolved roadmap task.
 
 ## Player Chess Profile
 
@@ -76,7 +80,7 @@ Owner task: RB-018 / issue #116. These questions do not reopen the RB-003 method
 - Does the profile need a separately named player-level contract, or can it consume the existing resolver interface directly?
 - Can a user correct a profile conclusion, and is that stored as preference evidence or UI feedback?
 - Which conclusions are descriptive versus prescriptive?
-- How are classified and unknown opening samples shown without biasing the result?
+- How are low-confidence and unknown-dimension opening samples shown without biasing the result?
 
 Owner tasks: RB-004 and RB-005.
 
