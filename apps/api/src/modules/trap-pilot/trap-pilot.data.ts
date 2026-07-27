@@ -1,3 +1,4 @@
+import { TRAP_PILOT_CANDIDATE_RECORDS } from './trap-pilot.candidates';
 import type { TrapPilotDataset, TrapPilotRecord } from './trap-pilot.types';
 
 const reportRef = 'north-star/repertoire-builder/reports/RB-014-2026-07-27-traps-foundation-discovery.md';
@@ -28,8 +29,8 @@ function missingPopulationEvidence(reason: string): TrapPilotRecord['evidence'][
 
 export const TRAP_PILOT_DATASET: TrapPilotDataset = {
   schemaVersion: 1,
-  datasetVersion: '2026-07-seed-v1',
-  stage: 'SEED',
+  datasetVersion: '2026-07-pilot-v1',
+  stage: 'PILOT',
   records: [
     {
       id: 'legal-trap-philidor-route-v1',
@@ -240,5 +241,6 @@ export const TRAP_PILOT_DATASET: TrapPilotDataset = {
         population: missingPopulationEvidence('No speed/rating population snapshot has established practical temptation.'),
       },
     },
+    ...TRAP_PILOT_CANDIDATE_RECORDS,
   ],
 };
