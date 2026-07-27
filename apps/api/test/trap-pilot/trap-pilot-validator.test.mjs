@@ -7,6 +7,7 @@ import {
 
 {
   const report = validateTrapPilotDataset(TRAP_PILOT_DATASET);
+  if (!report.valid) console.error(JSON.stringify(report.issues, null, 2));
   assert.equal(report.valid, true);
   assert.equal(report.recordCount, 20);
   assert.equal(report.errorCount, 0);
