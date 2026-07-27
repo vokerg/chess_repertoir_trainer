@@ -145,7 +145,7 @@ export const TRAP_PILOT_CLASSIC_CANDIDATES = [
       explanation: 'White centralizes the rook but permits the bishop sacrifice and knight fork.',
     },
     punishment: {
-      lineUci: ['g4h2', 'g1h2', 'e4f2'],
+      lineUci: ['d6h2', 'g1h2', 'e4f2'],
       outcome: 'MATERIAL',
       explanation: 'The bishop sacrifice drags the king to h2 and the knight forks major pieces from f2.',
     },
