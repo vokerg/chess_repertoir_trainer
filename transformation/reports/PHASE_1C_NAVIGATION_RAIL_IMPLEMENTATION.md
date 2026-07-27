@@ -35,7 +35,7 @@ No new route-layout component, navigation service, state store, persistence mech
 grid-template-columns: auto minmax(0, 1fr)
 ```
 
-The navigation rail owns its current width, allowing the routed workspace to resize naturally without cross-component state or duplicated collapse state.
+The navigation rail owns its width, allowing the routed workspace to resize naturally without cross-component collapse state.
 
 Initial widths:
 
@@ -48,21 +48,12 @@ These values remain within the approved discovery ranges and may receive only fo
 
 `MainNavigationComponent.mainNavItems` remains the only destination definition.
 
-The production rail derives:
+The rail derives:
 
 - primary destinations: Home, Study, Courses, Games, Openings, Progress;
 - quieter workspace destinations: Tools and Settings.
 
-The derivation filters the existing item array. It does not duplicate route definitions.
-
-Existing values remain authoritative:
-
-- `link`;
-- `children`;
-- `icon`;
-- `quiet`;
-- `activePrefixes`;
-- child descriptions.
+The derivation filters the existing array. It does not duplicate routes. Existing `link`, `children`, `icon`, `quiet`, `activePrefixes`, and child descriptions remain authoritative.
 
 ### Collapse behavior
 
@@ -89,7 +80,7 @@ Items with children receive a separate disclosure button with:
 - `aria-expanded`;
 - `aria-controls` tied to a stable flyout id.
 
-Anchored flyouts are used in both expanded and collapsed modes. This keeps one interaction model and avoids hover-only child access.
+Anchored flyouts are used in both expanded and collapsed modes. Child access does not depend on hover.
 
 Transient flyouts close through:
 
@@ -103,14 +94,12 @@ Lower Tools and Settings flyouts open upward to reduce bottom-edge pressure.
 
 ### Branding and account area
 
-Expanded mode uses the shared inverse live-text lockup and plain Node Branch mark.
+Expanded mode uses the shared inverse live-text lockup and plain Node Branch mark. Collapsed mode uses the shared plain mark without the wordmark.
 
-Collapsed mode uses the shared plain Node Branch mark without the wordmark.
-
-The account area remains at the bottom of the rail:
+The account area remains at the bottom:
 
 - Clerk mode retains `ClerkUserButtonComponent`;
-- development authentication retains a shared account icon and display name semantics;
+- development authentication retains a shared account icon and display-name semantics;
 - long display names remain constrained rather than changing account behavior.
 
 ### Mobile boundary
@@ -120,7 +109,7 @@ Below the documented 760px breakpoint:
 - the desktop rail is hidden;
 - the compact branded header remains;
 - the complete grouped modal sheet remains;
-- every destination is still generated from `mainNavItems`;
+- every destination is generated from `mainNavItems`;
 - route navigation and Escape close the sheet;
 - no bottom navigation is selected or implemented.
 
@@ -128,7 +117,7 @@ Below the documented 760px breakpoint:
 
 `main-navigation.component.spec.ts` covers:
 
-- all top-level destinations rendering from the shared model;
+- every top-level destination rendering from the shared model;
 - expanded/collapsed transitions;
 - shared mark/lockup state changes;
 - parent route preservation;
@@ -161,9 +150,8 @@ Transformation records:
 - all URLs and router links;
 - active route prefix semantics;
 - authentication and explicit return-URL behavior;
-- Clerk account mounting;
-- development authentication;
-- imported-game job panel ownership and bottom-padding behavior;
+- Clerk account mounting and development authentication;
+- imported-game job panel ownership and bottom padding;
 - confirmation dialog ownership;
 - page filters, pagination, selected rows, query parameters, and local feature state;
 - board, training, analysis, and course workflows;
@@ -202,6 +190,19 @@ Performed:
 - inspected imported-game job panel positioning;
 - inspected existing Angular component-test conventions.
 
+### Automated validation
+
+GitHub Actions run #940 completed successfully on the implementation and documentation head:
+
+- dependency installation passed;
+- lint passed;
+- full monorepo build passed, including Angular template/type compilation;
+- architecture guardrails passed;
+- database migrations applied successfully;
+- complete monorepo tests passed, including the focused navigation component specs.
+
+The runtime implementation therefore has green executable validation.
+
 ### Local executable validation
 
 A direct repository checkout is unavailable in the execution environment.
@@ -218,7 +219,7 @@ Result:
 fatal: unable to access 'https://github.com/vokerg/chess_repertoir_trainer.git/': Could not resolve host: github.com
 ```
 
-Therefore these commands were not run locally:
+These commands were not run locally:
 
 ```text
 npm run build:web
@@ -227,7 +228,7 @@ npm run lint
 npm run check:architecture
 ```
 
-GitHub Actions CI on PR #112 is the authoritative executable validation. Final-head results must be recorded before the PR is marked ready for review.
+GitHub Actions CI is the authoritative executable validation. Later validation-note edits are documentation-only and do not change the validated runtime surface; current PR checks remain authoritative for the branch head.
 
 ### Browser validation not performed
 
@@ -245,17 +246,17 @@ Direct browser review remains required for:
 
 ## Residual risks
 
-- the exact rail widths may require a small optical correction after real-page review;
-- anchored flyouts may require horizontal or vertical collision handling on constrained desktop/tablet widths;
-- CSS `:has()` support should be confirmed against the project's supported browser set;
+- exact rail widths may require a small optical correction after real-page review;
+- anchored flyouts may require collision handling on constrained desktop/tablet widths;
+- CSS `:has()` support should be confirmed against the supported browser set;
 - long translated labels may pressure collapsed disclosure geometry;
 - mobile focus containment remains the existing sheet behavior rather than a new focus-trap implementation;
-- current global content width may feel constrained on some pages once the rail consumes desktop width;
+- global content width may feel constrained on some pages once the rail consumes desktop width;
 - prior authentication, home, favicon, and brand-rasterization validation gaps remain open.
 
 ## Review order
 
-1. final-head PR #112 CI;
+1. current PR #112 CI;
 2. expanded rail on Home and Games;
 3. collapsed rail on Opening Analysis and free Analysis;
 4. Study, Openings, Tools, and Settings flyouts;
