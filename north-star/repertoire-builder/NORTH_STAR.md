@@ -1,6 +1,6 @@
 # Repertoire Builder North Star
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 This document describes the intended end-state experience. It is not an implementation specification and does not claim that the workflow exists today.
 
@@ -30,7 +30,7 @@ Create another course for the same opening with a different objective, such as s
 
 ## Setup flow
 
-The setup should capture enough intent to rank evidence without forcing premature detail.
+Setup is a focused dialog that captures enough intent to rank evidence without forcing premature detail or containing the recursive builder itself.
 
 Expected dimensions:
 
@@ -42,7 +42,9 @@ Expected dimensions:
 6. coverage and theory tolerance;
 7. whether profile suggestions should initialize the target.
 
-Defaults may come from factual player-level evidence, but every suggested setup value remains editable.
+Defaults may come from factual player-level evidence or the Player Chess Profile, but every suggested value remains editable. The dialog visibly separates factual peer evidence, profile recommendation, and selected repertoire intent.
+
+Selecting **Start building** closes the dialog and opens the routed workbench. The setup dialog does not own recursive candidate decisions, branch progress, draft navigation, or resume behavior.
 
 ## The interactive decision loop
 
@@ -99,20 +101,23 @@ The final stopping model remains open.
 
 ## Visual workbench target
 
-The final builder should be a routed, resumable workbench. A small dialog may launch it, but the core workflow should not depend on a modal remaining open.
+The core builder is a routed, resumable, board-first workbench launched from the setup dialog.
 
-The exact visual design is unresolved. It must nevertheless support:
+The accepted default composition uses:
 
-- current board and move sequence;
-- visual comparison of candidate consequences;
-- evidence and explanation;
-- target and profile context;
+- one readable primary board and current move sequence;
+- a compact candidate switcher that updates the board and evidence;
+- focused objective, population, master, personal, theory, profile-fit, and target-fit evidence;
+- explicit profile-versus-target disagreement;
+- an opponent-response coverage queue;
+- pending, selected, deferred, ignored, and completed states;
 - branch queue and coverage progress;
-- deferred decisions;
 - navigation through accepted and pending branches;
 - preview before course changes are written.
 
-Candidate visualization may use multiple board previews, one main board with interactive previews, position cards, or another proven composition. This requires prototype work with realistic data before production architecture is locked.
+The simultaneous multi-board candidate landscape is not the default because it is visually heavy and reduces board readability, particularly on mobile. A deliberate mini-board comparison mode may be added later if structural comparison proves important enough, but it is not required for the first production workbench.
+
+The recursive workflow must not depend on a modal remaining open.
 
 ## Player profile relationship
 

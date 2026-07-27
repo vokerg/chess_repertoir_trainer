@@ -1,6 +1,6 @@
 # RB-008 — Prototype visual candidate and coverage choices
 
-Status: CLAIMED
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 40
 
 Delivery class: North-star
 
-Planning maturity: Outlined
+Planning maturity: Accepted
 
 Claimed by: ChatGPT session
 
@@ -16,116 +16,117 @@ Claim branch: `rb-008/issue-96-visual-candidate-prototype`
 
 Claimed at: 2026-07-26
 
-Claim scope: static discovery and visual proof only — two materially different responsive HTML/CSS/JavaScript interaction directions with realistic mock candidate and opponent-coverage evidence, desktop/mobile review artifacts, and a decision/contract-implication report. No production Angular, API, schema, database, ranking, or course-write changes.
+Claim scope: static discovery and visual proof only — responsive HTML/CSS/JavaScript artifacts with realistic mock candidate and opponent-coverage evidence, plus decision and contract-implication documentation. No production Angular, API, schema, database, ranking, or course-write changes.
+
+Review PR: #110
 
 ## Outcome
 
-Produce a reviewed visual interaction direction for:
+Produce and review a visual interaction direction for:
 
+- capturing repertoire setup intent;
 - comparing user-move candidates and resulting positions;
 - understanding evidence and tradeoffs;
 - selecting opponent responses to cover;
 - seeing branch progress and deferred work;
-- distinguishing profile recommendations from the user's selected repertoire intent.
+- distinguishing factual evidence, profile recommendations, and selected repertoire intent.
 
-The result should reduce product and architecture uncertainty before production builder implementation.
+## Accepted direction
 
-## Why this task exists
+User review on 2026-07-27 accepted this flow:
 
-The user explicitly requires move selection to be visual, not merely a list of lines. The repository contains boards, workbenches, engine widgets, course trees, finding cards, and a separate visual-transformation program, but no current pattern should be assumed sufficient without realistic proof.
+1. A focused setup dialog captures side, starting point, speed preset, rating target, repertoire persona, and coverage target.
+2. Clicking **Start building** closes the dialog and opens a routed board-first workbench.
+3. The routed workbench uses Direction A: one readable primary board, a candidate switcher, focused evidence, opponent-response coverage queue, and branch progress.
+4. Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy and reduces board readability, especially on mobile.
+5. Candidate-attached target/profile roles are retained. An explicit mini-board comparison mode may be considered later but is not required for the first production workbench.
 
-## Current repo anchors to inspect
+The recursive builder must not remain inside a modal.
 
-- current visual-transformation branch, decisions, tokens, shell, and representative workflow status;
-- shared analysis workbench and chessboard components;
+## Delivered artifacts
+
+Directory: `prototypes/rb-008-visual-candidate-choice/`
+
+- `index.html` — accepted flow overview;
+- `setup-dialog.html` — focused modal setup proof;
+- `direction-a.html` — accepted routed board-first workbench proof;
+- `direction-b.html` — retained rejected-default comparison evidence;
+- `prototype.js` — candidate and coverage interactions;
+- `styles.css` — responsive visual treatment;
+- `README.md` — accepted-flow review guide.
+
+Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`.
+
+## Why this task existed
+
+The user required candidate choice to be visual rather than a list of SAN lines. The repository already contains boards, workbenches, dialogs, trees, and finding cards, but the correct composition and modal boundary needed realistic proof before production builder architecture was locked.
+
+## Repository anchors inspected
+
+- shared analysis workbench and chessboard composition;
 - opening-analysis page and widgets;
 - line editor workbench and tree navigation;
+- analysis reintegration dialog;
 - course review finding cards and board images;
 - responsive/mobile CSS patterns;
-- any Figma or prototype assets approved by the user.
+- current visual-transformation decisions and static prototype conventions;
+- RB-001/RB-002 population and factual player-level vocabulary;
+- planned RB-006/RB-007 target and evidence responsibilities.
 
 ## Dependencies
 
-No runtime dependency beyond this foundation.
+No runtime dependency beyond the North Star foundation.
 
-May use explicitly documented mock contracts based on RB-006/RB-007 concepts.
+The artifacts use explicitly documented mock responsibilities based on RB-006/RB-007 concepts and do not define final contracts.
 
-May run in parallel with RB-003 and early profile work. RB-001/RB-002 factual population and player-level evidence is complete and may inform realistic mock values.
+Production implementation remains owned by later target, candidate, session, and builder tasks.
 
-Production implementation is blocked until relevant evidence contracts and visual direction are reviewed.
+## Acceptance assessment
 
-## In scope
+- Two materially different decision compositions were reviewable with realistic data: met.
+- Every candidate was visually connected to a position: met.
+- Reasons and tradeoffs were visible: met.
+- Profile recommendation and explicit persona choice were visibly separate: met.
+- Opponent coverage, cumulative relevance, and deferral were represented: met.
+- Desktop and mobile behavior were demonstrated: met.
+- Required data, component responsibilities, and risks were documented without locking endpoints: met.
+- User review outcome was recorded: met on 2026-07-27.
+- Setup-dialog versus routed-workbench responsibility was resolved: met.
 
-- define realistic scenarios for a user-move decision and an opponent-coverage decision;
-- include at least one sharp-versus-solid comparison and one profile-override case;
-- include multi-speed/rating target context without overwhelming the primary choice;
-- prototype at least two materially different visual compositions before recommending one;
-- show board positions or interactive position previews as primary evidence;
-- show essential source evidence and expandable detail;
-- represent selected, pending, deferred, and ignored branches;
-- consider desktop and narrow/mobile layouts;
-- identify reusable versus builder-specific visual primitives;
-- record accessibility, keyboard, and information-density considerations;
-- produce review artifacts and a decision report.
+## Validation
 
-## Out of scope
+Performed:
 
-- production Angular implementation unless separately approved after prototype review;
-- final API contracts;
-- real ranking calculations;
-- LLM narrative;
-- full visual-system redesign;
-- traps-specific UI.
+- local Chromium/Playwright rendering at 1440 × 1100 and 390 × 844 for the original alternatives;
+- candidate board/evidence switching;
+- arrow-key candidate navigation;
+- cover/defer/ignore state and cumulative-coverage updates;
+- relative asset-link validation;
+- focus, status-text, and color-independence review;
+- repository CI through PR #110.
 
-## Scenarios to demonstrate
+Skipped because this is not production implementation:
 
-1. User move with three candidates: objectively safest, profile-aligned sharp choice, and practical/dubious alternative.
-2. Opponent response coverage with frequency differences across selected speeds and rating levels.
-3. A player profile recommending sharp play while the selected repertoire persona is solid.
-4. Sparse personal data but meaningful population/master evidence.
-5. Mobile presentation where boards and evidence remain usable.
+- authenticated application-shell integration;
+- assistive-technology screen-reader testing;
+- physical touch-device testing;
+- real data/API integration;
+- production Angular component tests.
 
-## Open questions to resolve
+## Downstream implications
 
-- multiple mini-boards versus one interactive board;
-- how far ahead a candidate preview should show;
-- which metrics are always visible;
-- how to compare structures rather than only immediate moves;
-- where target settings and profile context live;
-- whether branch queue is a side panel, timeline, map, or separate view;
-- how deferral and coverage percentage are communicated;
-- how to avoid card overload.
+- RB-006 should define the setup values and the source/override state of defaults.
+- RB-007 should provide candidate and response evidence without collapsing factual, profile, and target-fit inputs.
+- RB-009 should define routed session, queue, draft, and resume semantics.
+- RB-010 should implement the setup dialog plus routed Direction-A workbench.
+- No separate production UI task is required before those existing tasks.
 
-## Acceptance criteria
+## Queue recommendation
 
-- At least two interaction directions are reviewable with realistic data.
-- Every candidate is visually connected to a position, not only text.
-- The user can identify why a move is shown and what tradeoff it represents.
-- Profile recommendation and explicit persona choice are visibly separate.
-- Opponent coverage, cumulative relevance, and deferral are understandable.
-- Desktop and mobile behavior are demonstrated.
-- The recommended direction identifies required data, component responsibilities, and unresolved risks without prematurely locking endpoints.
-- User review outcome is recorded in `DECISIONS.md`.
-
-## Required validation
-
-- visual review at representative desktop and mobile widths;
-- keyboard/focus review for interactive prototypes where applicable;
-- contrast and readable-board-size review;
-- no application build unless production code is changed.
-
-## Completion updates
-
-The report must state:
-
-- reviewed alternatives;
-- approved/rejected visual decisions;
-- contract implications for RB-006, RB-007, RB-009, and RB-010;
-- whether production UI should be split into additional tasks;
-- queue reprioritization recommendation.
+Keep existing order and priorities. RB-003 remains the unresolved P0 foundation. RB-008 is complete. RB-014 remains an independent ready research stream.
 
 ## Completion
 
-Report: none
+Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`
 
-Completed at: none
+Completed at: 2026-07-27

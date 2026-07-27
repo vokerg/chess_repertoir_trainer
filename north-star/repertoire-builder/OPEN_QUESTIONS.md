@@ -1,6 +1,6 @@
 # Repertoire Builder Open Questions
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 Open questions are not decisions. Resolve them in the assigned task and update this document and `DECISIONS.md` together.
 
@@ -71,11 +71,14 @@ Owner tasks: RB-004 and RB-005.
 
 - What is the minimum useful setup beyond the RB-001 speed/rating presets?
 - Is factual peer evidence snapshotted to keep a draft reproducible?
-- How are persona, objective, theory tolerance, risk tolerance and coverage represented?
+- How are persona, objective, theory tolerance and coverage represented in the setup dialog?
 - Can the user choose a different explicit benchmark group without changing the factual profile?
 - Is `dubious` a persona, a soundness tolerance or both?
 - Can one target have different policies for White and Black?
 - How is target versioning handled when a draft resumes?
+- Which target/profile disagreement fields are required so the visual layer can explain the override without changing factual evidence?
+
+Resolved by RB-008: setup is a focused dialog and the recursive builder launches as a routed workbench.
 
 Owner tasks: RB-006 and RB-013.
 
@@ -91,21 +94,33 @@ Owner tasks: RB-006 and RB-013.
 - How are unavailable datasets handled?
 - Which ranking reasons are stable enough for contracts?
 - Should ranking scores be returned, or only ordered candidates and reason components?
+- What bounded resulting-position and preview-line data is required for the board-first workbench?
+- How is opponent-response relevance converted into cumulative coverage without implying false precision?
 
 Owner task: RB-007.
 
 ## Visual choice experience
 
-- Does each candidate need its own mini-board?
-- Can one main board preview candidates quickly enough?
-- How are evidence density and board size balanced?
-- How is opponent coverage shown visually?
-- How are deferred branches and branch progress represented?
-- What works on mobile?
-- How does a user compare two resulting structures several plies ahead?
-- Which explanation is always visible and which is expandable?
+### Resolved by RB-008
 
-Owner task: RB-008.
+- Setup uses a focused dialog and closes before recursive work begins.
+- The recursive builder is routed and board-first.
+- One readable primary board is the default.
+- Candidates switch the board and focused evidence.
+- Opponent responses use a coverage queue with explicit pending, selected, deferred, ignored and completed states.
+- Target fit and profile fit remain attached to candidates as separate concepts.
+- Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy.
+- Mobile stacks the workbench rather than relying on a multi-card matrix.
+
+### Deferred to production evidence
+
+- Whether an explicit mini-board comparison mode is valuable enough for the MVP or a later slice.
+- How many plies a bounded candidate preview should show.
+- Exact cumulative-coverage semantics after RB-007/RB-009 contracts.
+- Exact responsive placement of branch progress after the production shell is reinspected.
+- Which candidate metrics remain always visible and which move into expandable evidence.
+
+Owner tasks: RB-007, RB-009 and RB-010. RB-008 is complete.
 
 ## Builder session and queue
 

@@ -1,88 +1,85 @@
 # Repertoire Builder Program Status
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** foundation merged; RB-001 and RB-002 are complete on `main`; RB-003 remains the unresolved P0 foundation; RB-008 is the next actionable issue in queue order.
+**Program state:** RB-001, RB-002 and RB-008 are complete; RB-003 remains the unresolved P0 foundation. RB-008 accepted a focused setup dialog that launches a routed board-first workbench.
 
 **Runtime on `main`:** squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
-## RB-001 and RB-002 delivered scope
+## Completed foundations
+
+### RB-001 and RB-002
 
 Available on `main`:
 
-- speed presets: All speeds, Blitz and slower, Blitz, Bullet;
-- rating targets: All players, My peers, My peers and above, one explicit Lichess group;
-- defaults: Blitz and slower plus My peers and above;
-- no ultraBullet or public-game month controls;
-- one mixed Lichess request and the existing deterministic cache architecture;
-- active normalization version `2026-07-lichess-bands-v1` with nine Lichess Explorer bands;
-- historical `2026-07-product-v1` profile preserved;
-- Chess.com and Lichess provider/speed classification through the established correlation matrix;
+- fixed speed presets and rating targets;
+- Lichess benchmark bands and versioned Chess.com mappings;
+- provider/speed classification before aggregation;
 - multi-account game-count-weighted normalized band distribution;
-- recent-three-month, all-history and generic 1400–1599 fallback;
-- `dominant-contiguous-window-v1`: shortest one-to-three-band window covering at least 70%;
-- full distribution, selected groups, eligible-game count, evidence period and account/provider/speed contributions;
-- direct population and resolver provenance;
-- two native filter selects and resolved-population summary;
-- focused contracts, API, resolver, cache, OpenAPI and Angular tests;
-- canonical rating-normalization and Opening Explorer documentation.
+- recent-three-month, all-history and generic fallback;
+- `dominant-contiguous-window-v1`;
+- complete distribution, selected groups, evidence period and contribution provenance;
+- compact Peer games UI and typed API contracts.
 
-RB-002 is closed as delivered by this merged RB-001 implementation. A separate durable formula, exact universal number, persistence model, confidence score or override foundation is not justified without a concrete consumer or measured defect.
+RB-002 is closed as delivered by this merged RB-001 implementation. No separate durable formula, exact universal number, persistence model, confidence score or override foundation is justified without a concrete consumer or measured defect.
 
-No database migration, new cache store, queue, background job, dependency, durable player-level model or per-speed weighting was added.
+### RB-008 visual direction
+
+Issue [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) is complete through PR [#110](https://github.com/vokerg/chess_repertoir_trainer/pull/110).
+
+Accepted flow:
+
+1. a focused setup dialog captures side, starting point, speed preset, rating target, persona and coverage/theory preferences;
+2. **Start building** closes the dialog and opens a routed workbench;
+3. the routed workbench uses one readable primary board, candidate switcher, focused evidence, opponent-response coverage queue and branch progress;
+4. Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy and reduces board readability;
+5. candidate-attached target/profile roles remain; explicit mini-board comparison is deferred unless later evidence justifies it.
+
+Artifacts: `prototypes/rb-008-visual-candidate-choice/`.
+
+Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`.
 
 ## Repository and GitHub issue state
 
-- RB-001: `DONE`.
-- [Issue #89](https://github.com/vokerg/chess_repertoir_trainer/issues/89): closed as completed after squash merge PR #84.
-- RB-002: `DONE` through RB-001 delivery evidence.
-- [Issue #90](https://github.com/vokerg/chess_repertoir_trainer/issues/90): closes as completed with the RB-002 closure documentation PR.
-- RB-003 / [issue #91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `PROPOSED`, P0, independent and still requires scope discovery.
-- RB-008 / [issue #96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `READY` and next actionable in queue order.
-- RB-014 / [issue #102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): remains an independent P2 research stream.
-- Jira coordination for the program is retired; `CRT-2` through `CRT-18` are historical migration records.
-
-Completion reports:
-
-- `reports/RB-001-2026-07-26-peer-population-presets.md`
-- `reports/RB-002-2026-07-26-delivered-by-rb-001.md`
+- RB-001 / [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89): `DONE`.
+- RB-002 / [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90): `DONE` through RB-001 delivery evidence and closure PR #107.
+- RB-003 / [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `PROPOSED`, P0, independent and still requires scope discovery.
+- RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `DONE` through accepted PR #110 direction.
+- RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): independent P2 ready research stream.
+- Jira coordination is retired; `CRT-2` through `CRT-18` are historical migration records.
 
 ## Dependency impact
 
-- RB-004 no longer waits for RB-002; it remains blocked on RB-003.
-- RB-006 no longer waits for RB-002; it remains blocked on RB-003 and requires input from RB-008.
-- RB-007 no longer waits for RB-002; it remains blocked on RB-003 and RB-006.
-- Later consumers may extract or rename the peer resolver when they become a genuine second consumer, without changing the factual formula.
+- RB-004 remains blocked on RB-003 and consumes completed RB-001/RB-002 evidence.
+- RB-006 remains blocked on RB-003 and now owns the accepted setup-dialog target fields and override semantics.
+- RB-007 remains blocked on RB-003 and RB-006 and now owns candidate/response evidence responsibilities for the accepted board-first surface.
+- RB-009 owns routed session, branch queue, draft and resume semantics.
+- RB-010 owns production implementation of the setup dialog and routed board-first workbench.
 
 ## Validation
 
-GitHub Actions run `30211739445` passed on RB-001 implementation head `ba164767f139b8b7efa522edb050d2ca983a6171`:
+RB-008 validation includes:
 
-- lint;
-- workspace build;
-- architecture guardrails;
-- PostgreSQL migrations;
-- complete repository tests.
+- Chromium/Playwright rendering of the original alternatives at 1440 × 1100 and 390 × 844;
+- candidate switching and arrow-key navigation;
+- response cover/defer/ignore interaction and cumulative coverage updates;
+- responsive behavior, visible focus, semantic controls and readable board size;
+- complete repository CI on PR #110.
 
-Final PR-head CI run `30212157700` also passed before merge. The user accepted the delivery and requested the squash merge.
-
-The RB-002 closure is documentation and issue reconciliation only; runtime validation is inherited from PR #84.
+No production runtime code changed.
 
 ## Residual risks
 
-- Chess.com band boundaries are rounded product mappings, not exact conversions.
-- One mixed Lichess query deliberately ignores normal speed-rating disparity.
-- The full distribution remains visible because one dominant interval can hide separated populations.
-- Classical and correspondence do not contribute personal rating evidence.
-- The generic fallback must remain visibly labelled.
-- Duplicate copies across owned accounts may contribute more than once.
-- The resolver remains named and located under Opening Explorer until a second consumer justifies extraction.
-- The active default-profile change affects every current normalization consumer.
+- Chess.com band boundaries remain approximate product mappings.
+- Duplicate copies across owned accounts may contribute more than once to factual level evidence.
+- Direction A may later need an explicit structural-comparison mode.
+- Theory-burden and response-coverage semantics remain pending RB-007/RB-009.
+- Production implementation must reinspect the current visual-transformation branch and approved Angular primitives.
 
 ## Queue recommendation
 
-Claim RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) next because it is the first `READY` issue after the completed foundations. RB-003 remains the higher-priority unresolved foundation but is intentionally `PROPOSED` and requires separate discovery before execution. No new task or priority change is recommended.
+Keep order and priority unchanged. RB-003 remains the unresolved P0 foundation. RB-014 remains the next independent `READY` task if parallel work is desired. No new production UI task is required because RB-006, RB-007, RB-009 and RB-010 already own the downstream work.
