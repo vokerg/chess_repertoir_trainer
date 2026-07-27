@@ -1,6 +1,6 @@
 # RB-004 — Implement Player Chess Profile calculation
 
-Status: BLOCKED
+Status: CLAIMED
 
 Priority: P1
 
@@ -10,13 +10,15 @@ Delivery class: Dual-use
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+GitHub issue: `#92`
 
-Claim branch: none
+Claimed by: ChatGPT session
 
-Claimed at: none
+Claim branch: `rb-004/issue-92-player-chess-profile-claim`
 
-Claim scope: none
+Claimed at: 2026-07-27
+
+Claim scope: implement the deterministic Player Chess Profile calculation using the existing imported-game filter and database-aggregation patterns, completed factual player-level evidence, and the side-aware opening-classification contract. The work covers metric and confidence definitions, a shared wire contract, a thin authenticated API endpoint, bounded supporting opening/game evidence, explicit unknown and insufficient-data outcomes, and focused tests and documentation. It excludes polished UI, profile persistence, player-level recalculation, opening-classification changes, LLM conclusions, candidate ranking, course mutation, and unsupported causal claims.
 
 ## Outcome
 
