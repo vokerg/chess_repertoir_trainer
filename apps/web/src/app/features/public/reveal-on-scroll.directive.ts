@@ -7,8 +7,6 @@ import {
   PLATFORM_ID,
   Renderer2,
   inject,
-  input,
-  numberAttribute,
 } from '@angular/core';
 
 const REVEAL_PENDING_CLASS = 'landing-reveal-pending';
@@ -23,11 +21,6 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
   standalone: true,
 })
 export class RevealOnScrollDirective implements OnInit, OnDestroy {
-  readonly delayMs = input(0, {
-    alias: 'appRevealOnScroll',
-    transform: numberAttribute,
-  });
-
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly renderer = inject(Renderer2);
   private readonly platformId = inject(PLATFORM_ID);
@@ -54,7 +47,7 @@ export class RevealOnScrollDirective implements OnInit, OnDestroy {
       return;
     }
 
-    const delayMs = Math.min(Math.max(this.delayMs(), 0), MAX_STAGGER_DELAY_MS);
+    const delayMs = this.readDelayMs(element);
     const transition = [
       `opacity ${REVEAL_DURATION_MS}ms ${REVEAL_EASING} ${delayMs}ms`,
       `transform ${REVEAL_DURATION_MS}ms ${REVEAL_EASING} ${delayMs}ms`,
@@ -83,6 +76,12 @@ export class RevealOnScrollDirective implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.disconnectObserver();
     this.removeReducedMotionListener();
+  }
+
+  private readDelayMs(element: HTMLElement): number {
+    const requestedDelay = Number(element.dataset['revealDelay'] ?? 0);
+    if (!Number.isFinite(requestedDelay)) return 0;
+    return Math.min(Math.max(requestedDelay, 0), MAX_STAGGER_DELAY_MS);
   }
 
   private reveal(skipTransition: boolean): void {
