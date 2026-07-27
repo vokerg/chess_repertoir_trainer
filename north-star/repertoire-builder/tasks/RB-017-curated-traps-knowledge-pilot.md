@@ -24,7 +24,7 @@ GitHub issue: #114
 
 Claim PR: #115
 
-Implementation PR: pending
+Implementation PR: #117, draft
 
 ## Outcome
 
@@ -88,11 +88,24 @@ Before implementation, inspect and reuse:
 - claims of success rate based only on final game results;
 - fabricated engine or population values.
 
-## Proposed file boundary
+## Implemented boundary
 
-The implementation should prefer a small isolated module under the API scripts/services area, following the closest existing generated-data and validation patterns discovered during implementation. Exact paths are not locked until those patterns are re-inspected on the implementation branch.
+The current branch uses an isolated module under `apps/api/src/modules/trap-pilot` and script/test conventions already present in the API workspace.
 
-The canonical dataset must remain source-controlled and reviewable. Derived evidence may be stored as versioned snapshots in the same pilot boundary, but must not be written to shared production caches merely to run the pilot.
+Implemented:
+
+- pilot-only typed canonical record model;
+- source-controlled seed dataset;
+- deterministic legality, normalized-FEN, side-to-move, route-convergence, identity, duplicate, punishment, safe-defense, lifecycle, and provenance validation;
+- separate source-controlled generated evidence bundle;
+- stable evidence hashing and stale-identity/version validation;
+- deterministic engine target derivation;
+- explicit opt-in Stockfish refresh through the existing engine abstraction;
+- explicit opt-in Lichess Games Explorer refresh through existing product speed/rating presets;
+- fixture-backed tests that require neither live Stockfish nor network credentials;
+- validation and operating documentation.
+
+The canonical dataset remains source-controlled and reviewable. Refresh commands write only the pilot evidence bundle and never write shared production caches.
 
 ## Identity rules
 
@@ -114,7 +127,7 @@ Opening name and ECO are descriptive metadata. Alternate legal setup routes can 
 - preserve engine/package identity, depth, MultiPV, PVs, and white-centric scores;
 - analyse trigger, tempting response, first punishment position, and declared safe defenses;
 - hash the evidence payload;
-- never overwrite shared `PositionAnalysis` with lower-quality pilot analysis.
+- never overwrite shared `PositionAnalysis` with pilot analysis.
 
 ### Population
 
@@ -128,7 +141,8 @@ Opening name and ECO are descriptive metadata. Alternate legal setup routes can 
 
 - preserve title, aliases, family, explanation, warnings, source rationale, reviewer status, and lifecycle state;
 - separate setup soundness from practical temptation and punishment severity;
-- retain reasons for validation, downgrade, rejection, deprecation, or refutation.
+- retain reasons for validation, downgrade, rejection, deprecation, or refutation;
+- require a deliberate canonical marker update after generated evidence is reviewed.
 
 ## Acceptance criteria
 
@@ -147,21 +161,33 @@ Opening name and ECO are descriptive metadata. Alternate legal setup routes can 
 
 ## Required validation
 
-- targeted unit tests for parsing, legality, normalization, identity, duplicate detection, provenance, and review classification;
+- targeted unit tests for parsing, legality, normalization, identity, duplicate detection, provenance, evidence hashing, and review classification;
 - deterministic fixture tests that do not require live network access;
-- an explicit opt-in command for refreshing engine or population snapshots;
+- explicit opt-in commands for refreshing engine and population snapshots;
 - documented live credentials/rate-limit behavior for population refreshes;
 - repository lint, build, architecture guardrails, migrations, and full test suite.
 
 ## Initial implementation slice
 
-The first slice deliberately contains only three structurally different seed records plus deterministic structural validation. It must expose, not hide, the remaining pilot-size and live-evidence gaps.
+The first slice deliberately contains only three structurally different seed records. It exposes, rather than hides, the remaining pilot-size and live-evidence gaps.
 
 Seed coverage:
 
 - Légal trap: sacrifice/offer distinct from the tempting response;
 - Blackburne–Shilling: dubious setup separated from conditional punishment;
-- Fishing Pole: family, move-order, multiple-defense, and positional-consequence complexity.
+- Fishing Pole: family, move-order, multiple-defense, normalized en-passant, and positional-consequence complexity.
+
+The structural slice passed complete repository CI. The evidence-refresh extension is currently being validated in draft PR #117.
+
+## Remaining work
+
+- expand from 3 to 20–50 legally validated reviewed occurrences;
+- cover sound, playable-risk, dubious, refuted, mating, material, family, and transposition cases;
+- execute and review reproducible engine and population snapshots in an environment with Stockfish and Lichess credentials;
+- add explicit minimum-sample and review-classification policy;
+- produce accepted, downgraded, rejected, duplicate, conflicting, and unresolved review output;
+- demonstrate at least one folklore downgrade or rejection;
+- add the final pilot report and recommendation.
 
 ## Completion updates
 
