@@ -30,7 +30,7 @@ describe('setupLandingScrollReveal', () => {
     expect(observe).toHaveBeenCalledOnceWith(element);
 
     observerCallback(
-      [{ target: element, isIntersecting: true } as IntersectionObserverEntry],
+      [{ target: element, isIntersecting: true } as unknown as IntersectionObserverEntry],
       observerInstance,
     );
 
@@ -68,7 +68,7 @@ describe('setupLandingScrollReveal', () => {
     const { root, element } = createRevealRoot();
     setupLandingScrollReveal(root, createEnvironment(false));
 
-    reducedMotionListener?.({ matches: true } as MediaQueryListEvent);
+    reducedMotionListener?.({ matches: true } as unknown as MediaQueryListEvent);
 
     expect(element.style.transition).toBe('none');
     expect(element.style.opacity).toBe('1');
