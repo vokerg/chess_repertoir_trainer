@@ -4,9 +4,9 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-008 and RB-014 are complete; RB-003 remains the unresolved P0 foundation. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-008 and RB-014 are complete. RB-004, RB-006 and RB-018 are ready. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
 
-**Runtime on `main`:** squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
+**Runtime on `main`:** PR #111 adds the deterministic side-aware opening-classification foundation beside the existing opening-book lookup. The earlier squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -26,6 +26,25 @@ Available on `main`:
 - compact Peer games UI and typed API contracts.
 
 RB-002 is closed as delivered by this merged RB-001 implementation. No separate durable formula, exact universal number, persistence model, confidence score or override foundation is justified without a concrete consumer or measured defect.
+
+### RB-003 opening classification
+
+Issue [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91) is complete through PR [#111](https://github.com/vokerg/chess_repertoir_trainer/pull/111).
+
+Report: `reports/RB-003-2026-07-27-opening-classification-rules.md`.
+
+Delivered:
+
+- versioned classification contract `2026-07-rules-v1`;
+- deterministic ordered regex rules with broad family inheritance and narrow overrides;
+- independent White and Black soundness, character, theoretical status, theory burden, roles and confidence;
+- explicit matched-rule provenance and unknown values;
+- Evans, Queen's Gambit Accepted, Benko, Smith-Morra, Marshall, dubious-gambit and Mikenas-Carls examples;
+- generated-book coverage and rule-usage audit;
+- focused tests plus full generated-book processing;
+- no database, runtime LLM, Stockfish audit, API, UI, or generated-book mutation.
+
+RB-018 / [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) owns systematic regex coverage expansion and actual-game calibration. It does not reopen the foundation.
 
 ### RB-008 visual direction
 
@@ -53,18 +72,36 @@ Accepted conclusions:
 - treat related non-identical triggers as one family with separate occurrences;
 - keep production persistence, API, Angular UI, course writes, and RB-006/RB-007 contract changes out of the approved pilot.
 
-Source/license findings:
+## Ready work
 
-- Lichess game, puzzle, and evaluated-position exports are suitable CC0 sources;
-- `lichess-org/chess-openings` is suitable CC0 descriptive metadata;
-- user-created studies, videos, blogs, books, and unlicensed trap collections are discovery leads only;
-- user-generated Lichess content is not automatically CC0.
+### RB-004 Player Chess Profile calculation
+
+RB-004 can now consume completed RB-001/RB-002 factual level evidence and the RB-003 opening-classification contract. It must preserve classified and unknown counts and must not imply that RB-018 coverage is already complete.
+
+### RB-006 repertoire target contract
+
+RB-006 can now define the target contract using completed RB-003 and accepted RB-008 setup responsibilities.
+
+### RB-018 classification coverage
+
+Issue [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) is `READY`.
+
+Scope:
+
+- keep classification regex-based and deterministic;
+- organize rules by opening family where useful;
+- group and prioritize unknowns;
+- add family, subfamily and exact exception rules;
+- measure generated-name and actual-game coverage;
+- preserve explicit unknowns and White/Black asymmetry.
+
+Explicit exclusions: Stockfish, runtime AI, database storage, background jobs, API, UI, and Player Chess Profile aggregation.
 
 ## RB-017 active pilot
 
 Issue [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) is the only approved traps implementation scope.
 
-Claim branch: `rb-017/issue-114-traps-pilot-claim`.
+Implementation branch: `rb-017/issue-114-curated-traps-pilot`.
 
 Scope:
 
@@ -88,22 +125,28 @@ Explicit exclusions:
 
 - RB-001 / [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89): `DONE`.
 - RB-002 / [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90): `DONE` through RB-001 delivery evidence and closure PR #107.
-- RB-003 / [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `PROPOSED`, P0, independent and still requires scope discovery.
+- RB-003 / [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `DONE` through PR #111.
+- RB-004 / [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92): `READY`.
+- RB-006 / [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94): `READY`.
 - RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `DONE` through accepted PR #110 direction.
 - RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): `DONE` through PR #113.
 - RB-017 / [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114): `CLAIMED` for the bounded pilot.
+- RB-018 / [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116): `READY` for regex coverage expansion.
 - Jira coordination is retired; `CRT-2` through `CRT-18` are historical migration records.
 
 ## Dependency impact
 
-- RB-004 remains blocked on RB-003 and consumes completed RB-001/RB-002 evidence.
-- RB-006 remains blocked on RB-003 and owns the accepted setup-dialog target fields and override semantics; no trap field is added now.
-- RB-007 remains blocked on RB-003 and RB-006 and owns candidate/response evidence; no trap-evidence contract is added now.
+- RB-004 is unblocked by RB-003 and may run in parallel with RB-018.
+- RB-005 remains blocked on RB-004.
+- RB-006 is unblocked by RB-003 and owns the accepted setup-dialog target fields and override semantics.
+- RB-007 remains blocked on RB-006; it consumes RB-003 but does not wait for fabricated complete classification coverage.
 - RB-009 owns routed session, branch queue, draft and resume semantics.
 - RB-010 owns production implementation of the setup dialog and routed board-first workbench.
 - RB-017 remains independent and adds no critical-path blocker.
 
 ## Validation
+
+RB-003 GitHub Actions run `30239257847` passed TypeScript lint, complete workspace build, architecture guardrails, PostgreSQL migrations, and the complete repository test suite.
 
 RB-008 validation includes responsive prototype review and complete repository CI on PR #110.
 
@@ -113,16 +156,16 @@ RB-017 must add deterministic offline fixture tests plus an explicit opt-in refr
 
 ## Residual risks
 
+- Initial opening classifications are broad chess judgments and some boundary choices may be controversial.
+- Regex rules depend on upstream naming stability; RB-018 must keep unknowns and unused rules visible.
+- Generated-name coverage is less important than actual-game-weighted coverage.
 - Chess.com band boundaries remain approximate product mappings.
 - Duplicate copies across owned accounts may contribute more than once to factual level evidence.
 - Direction A may later need an explicit structural-comparison mode.
 - Theory-burden and response-coverage semantics remain pending RB-007/RB-009.
-- trap names are inconsistent and user-created source licensing is heterogeneous;
-- a famous trap may be objectively dubious, practically obsolete, or statistically unsupported;
-- transposition merging is unsafe when castling or en-passant rights differ;
-- a trap-oriented persona could mislead users unless setup soundness and safe defenses remain prominent;
-- live Explorer evidence is rate-limited and must not become a required deterministic test dependency.
+- Trap names are inconsistent and user-created source licensing is heterogeneous.
+- Live Explorer evidence is rate-limited and must not become a required deterministic test dependency.
 
 ## Queue recommendation
 
-Keep order and priority unchanged. RB-003 remains the unresolved P0 foundation. Execute RB-017 as an isolated non-production pilot and require a new user review before any production traps capability or RB-006/RB-007 extension is proposed.
+RB-004, RB-006 and RB-018 are now actionable. RB-018 should expand regex coverage in parallel with RB-004 rather than blocking profile calculation on nominal 100% generated-name coverage. Execute RB-017 as an isolated non-production pilot and require a new user review before any production traps capability or RB-006/RB-007 extension is proposed.
