@@ -64,9 +64,12 @@ Evidence can include:
 - learning burden;
 - existing-course relationships;
 - player-profile fit;
-- repertoire-target fit.
+- repertoire-target fit;
+- optional validated trap evidence when a future reviewed source exists.
 
 The recommendation is explicit but non-binding. A candidate may be labelled as profile-aligned, target-aligned, objectively safest, most practical, sharpest, lowest theory, or deliberately dubious when supported by data.
+
+Trap evidence, if implemented later, must not become an opaque reason to recommend a move. It must expose setup soundness, practical temptation, punishment, safe defenses, target-population sample, confidence, and provenance separately.
 
 ### Opponent move: choose coverage
 
@@ -158,6 +161,25 @@ A target rating population can be:
 The factual peer interval is resolved from versioned provider-aware rating evidence and remains inspectable. A manual target override does not mutate that factual result.
 
 Population evidence should reflect the selected preset and rating target. Master evidence remains a separate source rather than being treated as the only definition of correctness.
+
+## Trap-oriented repertoire boundary
+
+A future traps-oriented persona is a willingness to prioritize practical temptation and tactical punishment within explicit objective-risk limits. It is not permission to recommend unsound lines without warning.
+
+A trustworthy trap occurrence requires:
+
+- normalized trigger-position and move identity;
+- a practically tempting opponent response;
+- bounded punishment;
+- explicit safe defenses or refutations;
+- setup soundness separate from practical success;
+- rating/speed population context;
+- engine and source versions;
+- editorial review and lifecycle state.
+
+Opening name and ECO are descriptive links, not trap identity. Related positions may share a trap family without being collapsed into one occurrence.
+
+RB-014 recommends proving this through a bounded curated data/validator pilot before any production database, API, UI, or builder integration is introduced.
 
 ## Course output
 

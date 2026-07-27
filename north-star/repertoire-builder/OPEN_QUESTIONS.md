@@ -71,14 +71,12 @@ Owner tasks: RB-004 and RB-005.
 
 - What is the minimum useful setup beyond the RB-001 speed/rating presets?
 - Is factual peer evidence snapshotted to keep a draft reproducible?
-- How are persona, objective, theory tolerance and coverage represented in the setup dialog?
+- How are persona, objective, theory tolerance, risk tolerance and coverage represented?
 - Can the user choose a different explicit benchmark group without changing the factual profile?
 - Is `dubious` a persona, a soundness tolerance or both?
 - Can one target have different policies for White and Black?
 - How is target versioning handled when a draft resumes?
 - Which target/profile disagreement fields are required so the visual layer can explain the override without changing factual evidence?
-
-Resolved by RB-008: setup is a focused dialog and the recursive builder launches as a routed workbench.
 
 Owner tasks: RB-006 and RB-013.
 
@@ -94,7 +92,7 @@ Owner tasks: RB-006 and RB-013.
 - How are unavailable datasets handled?
 - Which ranking reasons are stable enough for contracts?
 - Should ranking scores be returned, or only ordered candidates and reason components?
-- What bounded resulting-position and preview-line data is required for the board-first workbench?
+- What bounded resulting-position and preview-line data is required for the accepted board-first presentation?
 - How is opponent-response relevance converted into cumulative coverage without implying false precision?
 
 Owner task: RB-007.
@@ -103,24 +101,23 @@ Owner task: RB-007.
 
 ### Resolved by RB-008
 
-- Setup uses a focused dialog and closes before recursive work begins.
-- The recursive builder is routed and board-first.
-- One readable primary board is the default.
-- Candidates switch the board and focused evidence.
-- Opponent responses use a coverage queue with explicit pending, selected, deferred, ignored and completed states.
-- Target fit and profile fit remain attached to candidates as separate concepts.
-- Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy.
-- Mobile stacks the workbench rather than relying on a multi-card matrix.
+- A focused setup dialog launches the substantial workflow.
+- **Start building** closes the dialog and opens a routed workbench.
+- The recursive workbench uses one large primary board, candidate switching, focused evidence, a response queue and branch progress.
+- Candidate moves remain visually connected to resulting positions.
+- Profile fit and selected-target fit remain separate and may disagree visibly.
+- Opponent responses expose selected, pending, deferred, ignored and completed states.
+- A coverage queue is the default narrow-screen and production presentation.
+- Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy and reduces board readability.
+- An explicit mini-board comparison mode is deferred unless later evidence justifies it.
 
-### Deferred to production evidence
+### Remaining implementation questions
 
-- Whether an explicit mini-board comparison mode is valuable enough for the MVP or a later slice.
-- How many plies a bounded candidate preview should show.
-- Exact cumulative-coverage semantics after RB-007/RB-009 contracts.
-- Exact responsive placement of branch progress after the production shell is reinspected.
-- Which candidate metrics remain always visible and which move into expandable evidence.
+- Which candidate metrics stay always visible and which move into expandable evidence?
+- How far ahead should a production preview line navigate before it becomes a separate analysis workflow?
+- What stable semantics should cumulative first-pass coverage use?
 
-Owner tasks: RB-007, RB-009 and RB-010. RB-008 is complete.
+Owners: RB-006, RB-007, RB-009 and RB-010.
 
 ## Builder session and queue
 
@@ -155,13 +152,30 @@ Owner task: RB-012.
 
 ## Traps
 
-- What qualifies as a trap rather than an ordinary tactical line or dubious gambit?
-- What sources are available and legally usable?
-- How are trigger position, tempting move, punishment, refutation, soundness and rating/speed relevance represented?
-- Is a trap always tied to a named opening?
-- How does the builder prevent misleading users about objective risk?
+### Resolved by RB-014 discovery
 
-Owner task: RB-014.
+- A trap combines a reproducible trigger, practical temptation, bounded punishment, explicit safe alternatives, and separate setup soundness.
+- Trap occurrence identity uses normalized trigger FEN and ordered move transitions, not opening name or ECO.
+- Transposed routes reaching the same legal trigger may be one occurrence; related non-identical triggers belong to a family.
+- Practical temptation and objective soundness remain separate evidence dimensions.
+- Suitable reusable sources include CC0 Lichess games, puzzles, evaluated positions, and `lichess-org/chess-openings` labels.
+- User-created studies, videos, blogs, books, and unlicensed collections are discovery leads only.
+- A trustworthy source requires versioned engine evidence, rating/speed population evidence, editorial review, and provenance.
+- RB-006 and RB-007 require no forward-compatible contract changes now.
+
+### User decision pending
+
+- Approve a bounded 20–50 example curated data/validator pilot, revise its scope, or defer traps.
+
+### Pilot questions if approved
+
+- Which exact Stockfish profile and sample thresholds qualify evidence?
+- Which initial examples provide enough diversity to challenge the model?
+- Who owns editorial review and deprecation decisions?
+- What evidence is required to upgrade confidence from medium to high?
+- When should a trap occurrence be marked refuted rather than merely dubious?
+
+Owner task: RB-014. Review vehicle: PR #113.
 
 ## LLM
 

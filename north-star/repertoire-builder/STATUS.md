@@ -4,7 +4,7 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** RB-001, RB-002 and RB-008 are complete; RB-003 remains the unresolved P0 foundation. RB-008 accepted a focused setup dialog that launches a routed board-first workbench.
+**Program state:** RB-001, RB-002 and RB-008 are complete; RB-003 remains the unresolved P0 foundation. RB-014 traps-foundation discovery is in review through PR #113.
 
 **Runtime on `main`:** squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
@@ -39,9 +39,34 @@ Accepted flow:
 4. Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy and reduces board readability;
 5. candidate-attached target/profile roles remain; explicit mini-board comparison is deferred unless later evidence justifies it.
 
-Artifacts: `prototypes/rb-008-visual-candidate-choice/`.
+## RB-014 traps discovery
 
-Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`.
+Issue [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) is `REVIEW` through draft PR [#113](https://github.com/vokerg/chess_repertoir_trainer/pull/113).
+
+Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`.
+
+Recommendation:
+
+- proceed with a bounded 20–50 example curated pilot only after user approval;
+- identify trap occurrences by normalized trigger position and ordered move transitions, not opening name;
+- combine CC0 source candidates, versioned engine evidence, target-population evidence, and editorial review;
+- represent setup soundness, temptation, punishment, safe defenses, sample size, confidence, and provenance separately;
+- treat related non-identical triggers as one family with separate occurrences;
+- do not add production persistence, API, Angular UI, course writes, or RB-006/RB-007 contract changes now.
+
+Source/license findings:
+
+- Lichess game, puzzle, and evaluated-position exports are suitable CC0 sources;
+- `lichess-org/chess-openings` is suitable CC0 descriptive metadata;
+- user-created studies, videos, blogs, books, and unlicensed trap collections are discovery leads only;
+- user-generated Lichess content is not automatically CC0.
+
+Validation boundary:
+
+- repository architecture and official source/license mechanics were inspected;
+- representative Légal, Blackburne–Shilling, and Fishing Pole examples test the proposed model;
+- exact named-example Stockfish and authenticated Explorer snapshots were not available in this connector environment and are the proposed pilot's first hard gate;
+- no engine values, success rates, or population percentages are invented.
 
 ## Repository and GitHub issue state
 
@@ -49,28 +74,23 @@ Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`.
 - RB-002 / [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90): `DONE` through RB-001 delivery evidence and closure PR #107.
 - RB-003 / [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `PROPOSED`, P0, independent and still requires scope discovery.
 - RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `DONE` through accepted PR #110 direction.
-- RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): independent P2 ready research stream.
+- RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): `REVIEW` through PR #113.
 - Jira coordination is retired; `CRT-2` through `CRT-18` are historical migration records.
 
 ## Dependency impact
 
 - RB-004 remains blocked on RB-003 and consumes completed RB-001/RB-002 evidence.
-- RB-006 remains blocked on RB-003 and now owns the accepted setup-dialog target fields and override semantics.
-- RB-007 remains blocked on RB-003 and RB-006 and now owns candidate/response evidence responsibilities for the accepted board-first surface.
+- RB-006 remains blocked on RB-003 and owns the accepted setup-dialog target fields and override semantics; no trap field is added now.
+- RB-007 remains blocked on RB-003 and RB-006 and owns candidate/response evidence; no trap-evidence contract is added now.
 - RB-009 owns routed session, branch queue, draft and resume semantics.
 - RB-010 owns production implementation of the setup dialog and routed board-first workbench.
+- RB-014 remains independent and adds no critical-path blocker.
 
 ## Validation
 
-RB-008 validation includes:
+RB-008 validation includes responsive prototype review and complete repository CI on PR #110.
 
-- Chromium/Playwright rendering of the original alternatives at 1440 × 1100 and 390 × 844;
-- candidate switching and arrow-key navigation;
-- response cover/defer/ignore interaction and cumulative coverage updates;
-- responsive behavior, visible focus, semantic controls and readable board size;
-- complete repository CI on PR #110.
-
-No production runtime code changed.
+RB-014 is documentation-only discovery. Source/license verification and repository inspection were completed. No application build is required for the research branch, but normal repository CI should pass before PR review.
 
 ## Residual risks
 
@@ -78,8 +98,11 @@ No production runtime code changed.
 - Duplicate copies across owned accounts may contribute more than once to factual level evidence.
 - Direction A may later need an explicit structural-comparison mode.
 - Theory-burden and response-coverage semantics remain pending RB-007/RB-009.
-- Production implementation must reinspect the current visual-transformation branch and approved Angular primitives.
+- trap names are inconsistent and user-created source licensing is heterogeneous;
+- a famous trap may be objectively dubious, practically obsolete, or statistically unsupported;
+- transposition merging is unsafe when castling or en-passant rights differ;
+- a trap-oriented persona could mislead users unless setup soundness and safe defenses remain prominent.
 
 ## Queue recommendation
 
-Keep order and priority unchanged. RB-003 remains the unresolved P0 foundation. RB-014 remains the next independent `READY` task if parallel work is desired. No new production UI task is required because RB-006, RB-007, RB-009 and RB-010 already own the downstream work.
+Keep order and priority unchanged. RB-003 remains the unresolved P0 foundation. RB-014 remains non-blocking and awaits user review of the bounded-pilot recommendation. Do not create a production traps issue or modify RB-006/RB-007 before that approval.
