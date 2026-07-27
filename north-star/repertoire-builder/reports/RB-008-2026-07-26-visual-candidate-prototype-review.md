@@ -2,7 +2,9 @@
 
 Date: 2026-07-26
 
-Status: review-ready; user visual decision pending
+Accepted: 2026-07-27
+
+Status: complete; accepted visual direction recorded
 
 Task: RB-008
 
@@ -14,27 +16,29 @@ Pull request: #110
 
 ## Purpose
 
-Reduce product and architecture uncertainty around the core repertoire-builder decision before production Angular, API, ranking, or persistence work begins.
+Reduce product and architecture uncertainty around the core repertoire-builder interaction before production Angular, API, ranking, or persistence work begins.
 
-The prototype tests how the user can:
+The discovery tested how the user can:
 
+- define target intent without being trapped in a long modal workflow;
 - compare candidate moves through resulting positions rather than SAN text alone;
-- understand engine, master, selected-population, personal, theory-burden, target-fit and profile-fit evidence;
+- understand engine, master, selected-population, personal, theory-burden, target-fit, and profile-fit evidence;
 - see an explicit conflict between profile recommendation and chosen repertoire intent;
-- select, defer or ignore opponent responses;
-- understand cumulative first-pass coverage and current branch progress;
+- select, defer, or ignore opponent responses;
+- understand cumulative first-pass coverage and branch progress;
 - use the interaction at desktop and narrow mobile widths.
 
 ## Delivered artifacts
 
 Directory: `north-star/repertoire-builder/prototypes/rb-008-visual-candidate-choice/`
 
-- `index.html` — comparison entry point;
-- `direction-a.html` — board-first decision desk;
-- `direction-b.html` — candidate landscape;
-- `prototype.js` — FEN rendering, candidate switching and coverage-state interaction;
+- `index.html` — accepted-flow overview;
+- `setup-dialog.html` — focused setup modal;
+- `direction-a.html` — routed board-first workbench;
+- `direction-b.html` — retained candidate-landscape alternative;
+- `prototype.js` — FEN rendering, candidate switching, and coverage-state interaction;
 - `styles.css` — responsive visual treatment;
-- `README.md` — review guide, scenario, accessibility and non-goals.
+- `README.md` — accepted-flow guide and non-goals.
 
 These are static review artifacts. They are not production code and define no endpoint.
 
@@ -47,6 +51,9 @@ These are static review artifacts. They are not production code and define no en
 - `apps/web/src/app/features/analysis/components/free-analysis-workbench.component.html`
 - `apps/web/src/app/features/lines/components/line-editor-workbench.component.html`
 - `apps/web/src/app/features/opening-analysis/pages/opening-analysis-page.component.html`
+- `apps/web/src/app/features/analysis/components/analysis-reintegration-dialog.component.ts`
+- `apps/web/src/app/features/analysis/components/analysis-reintegration-dialog.component.html`
+- `apps/web/src/app/features/analysis/components/analysis-reintegration-dialog.component.css`
 - `apps/web/src/app/features/course-review/components/course-review-issue-card.component.ts`
 - `apps/web/src/app/features/course-review/components/course-review-issue-card.component.html`
 - `apps/web/src/app/features/course-review/components/course-review-issue-card.component.css`
@@ -68,7 +75,7 @@ These are static review artifacts. They are not production code and define no en
 
 ## Shared scenario
 
-Both alternatives use the same illustrative Najdorf position after `5...a6` and the same mock evidence:
+Both original decision alternatives used the same illustrative Najdorf position after `5...a6`:
 
 - `6.Be3` — target-aligned structured main line;
 - `6.Bg5` — player-profile-aligned sharp choice;
@@ -84,87 +91,127 @@ Context:
 - player profile suggestion: sharp play;
 - sparse personal evidence but meaningful population/master evidence.
 
-Opponent responses demonstrate selected, deferred and ignored states plus cumulative coverage.
-
 All numbers are explicitly illustrative.
 
-## Alternative A — board-first decision desk
+## Alternatives reviewed
 
-### Composition
+### Direction A — board-first decision desk
+
+Composition:
 
 - one large resulting-position board;
 - compact candidate switcher beside the board;
 - preview line below the board;
 - evidence and target/profile conflict in a focused decision card;
-- opponent-response coverage queue below it;
-- horizontal branch-progress strip.
+- opponent-response coverage queue;
+- branch-progress strip.
 
-### Strengths
+Strengths:
 
 - preserves a readable board as the primary analytical object;
 - closely matches the existing two-column analysis-workbench structure;
-- supports deeper line preview and future board interaction without another navigation mode;
+- supports deeper line preview and future board interaction;
 - candidate buttons work with mouse and arrow keys;
 - responsive stacking is straightforward;
 - coverage controls remain readable on mobile;
 - likely reuses more existing Angular primitives.
 
-### Weaknesses
+Weaknesses:
 
 - only one resulting structure is visible at a time;
 - comparison relies on fast switching and short-term visual memory;
-- evidence may feel secondary to the board;
 - a large board plus full side stack creates a long mobile page.
 
-## Alternative B — candidate landscape
+### Direction B — candidate landscape
 
-### Composition
+Composition:
 
-- three simultaneous candidate cards, each with a resulting-position mini-board;
+- three simultaneous candidate cards with resulting-position mini-boards;
 - evidence bars and target/profile badges within each card;
-- a response-coverage matrix below;
+- response-coverage matrix;
 - horizontal scroll snapping and sticky summary on mobile.
 
-### Strengths
+Strengths:
 
 - makes structural comparison immediate;
-- tightly binds move, board, evidence, theory cost and recommendation role;
-- clearly distinguishes target recommendation from profile alignment;
-- gives objective warnings and sparse personal evidence equal visual footing;
-- makes the candidate set feel finite and reviewable.
+- tightly binds move, board, evidence, theory cost, and recommendation role;
+- clearly distinguishes target recommendation from profile alignment.
 
-### Weaknesses
+Weaknesses:
 
 - mini-boards are materially smaller than the existing analytical board;
-- desktop uses substantial vertical and horizontal space;
-- mobile necessarily exposes one card at a time despite the simultaneous-comparison concept;
-- sticky mobile summary overlays part of the visual workspace;
-- the coverage matrix requires horizontal scrolling on narrow screens;
+- desktop and mobile are visually heavy;
+- mobile still shows one card at a time despite the simultaneous-comparison concept;
+- sticky summary and coverage matrix add overlay and horizontal-scroll complexity;
 - production implementation risks card overload and duplicated board rendering.
 
-## Provisional recommendation for user review
+## User decision
 
-Use **Direction A as the default production workbench hypothesis**, while borrowing two ideas from Direction B:
+The user accepted the following boundary on 2026-07-27:
 
-1. provide a deliberate comparison mode or expandable candidate preview that can show two or three resulting mini-boards when structural comparison is needed;
-2. keep the target-fit/profile-fit distinction attached to each candidate, not only in a global explanation.
+1. **Setup belongs in a focused dialog.**
+2. The dialog captures side, starting point, speed preset, rating target, persona, and coverage target.
+3. Clicking **Start building** closes the modal and opens a routed workbench.
+4. The routed workbench uses Direction A as the production hypothesis.
+5. Direction B is rejected as the default because it is too heavy.
+6. Candidate-attached target/profile roles are retained.
+7. A deliberate mini-board comparison mode may be reconsidered later, but is not required for the first builder MVP.
 
-Do not lock this recommendation until user review. Direction B remains a valid alternate if simultaneous structural comparison is judged more important than board size and workbench continuity.
+The recursive builder must not remain inside a modal.
+
+## Accepted visual responsibility split
+
+### Setup dialog
+
+Owns:
+
+- side and starting point;
+- account/player evidence source where required;
+- speed preset and rating target;
+- repertoire persona/objective;
+- coverage and theory tolerance;
+- whether profile suggestions initialize defaults;
+- visibility of factual peer evidence versus selected target.
+
+Does not own:
+
+- recursive candidate decisions;
+- opponent-response coverage state;
+- branch queue or progress;
+- draft navigation;
+- resume behavior;
+- course preview or writes.
+
+### Routed board-first workbench
+
+Owns:
+
+- one readable primary board and current line;
+- candidate switcher and resulting-position preview;
+- objective, population, master, personal, theory, target-fit, and profile-fit evidence;
+- explicit target/profile disagreement;
+- opponent-response coverage queue;
+- selected, pending, deferred, ignored, and completed states;
+- cumulative coverage where later contracts define stable semantics;
+- branch progress, navigation, draft state, and eventual resume behavior;
+- preview before course changes are written.
 
 ## Reusable versus builder-specific primitives
 
-### Likely reusable
+Likely reusable:
 
 - analysis board and board navigation;
 - static board-image/mini-board presentation;
+- modal overlay and responsive dialog shell;
 - panel and responsive workbench shells;
 - compact target/population context chips;
 - metric/evidence summary rows;
 - warning and provenance presentation;
 - visible focus and semantic button patterns.
 
-### Builder-specific
+Builder-specific:
 
+- target setup and override state;
 - candidate role and target/profile tension;
 - candidate selection state;
 - opponent-response coverage state;
@@ -172,7 +219,7 @@ Do not lock this recommendation until user review. Direction B remains a valid a
 - branch-progress/queue representation;
 - explicit defer/ignore semantics;
 - theory or branch-burden display;
-- draft continuation action.
+- draft continuation and resume actions.
 
 ## Contract implications
 
@@ -180,15 +227,16 @@ These are data responsibilities, not final endpoint designs.
 
 ### RB-006 repertoire target
 
-The visual layer needs:
+The setup dialog needs:
 
 - selected side and starting position;
 - speed preset and rating target;
 - persona/objective label;
+- coverage and theory tolerance;
 - source of each default;
 - explicit override state;
 - factual peer evidence shown separately from target choice;
-- target/profile disagreement that does not invalidate the target.
+- profile disagreement that does not invalidate the target.
 
 ### RB-007 candidate evidence and ranking
 
@@ -207,11 +255,11 @@ Each candidate needs:
 
 Each opponent response needs:
 
-- move identity and resulting position reference;
+- move identity and resulting-position reference;
 - selected-population frequency;
 - personal encounter count where available;
 - relevance/reason inputs;
-- coverage state: pending, selected, deferred, ignored or completed;
+- coverage state;
 - cumulative coverage contribution;
 - transposition/conflict indicators.
 
@@ -219,9 +267,10 @@ Each opponent response needs:
 
 Session state must distinguish:
 
+- completed setup from active recursive work;
 - user-move decision from opponent-response coverage;
 - selected candidate from saved alternate;
-- pending, selected, deferred, ignored and completed responses;
+- pending, selected, deferred, ignored, and completed responses;
 - current branch and overall queue progress;
 - target snapshot or reference used for the decision;
 - state changes that require candidate recalculation.
@@ -230,90 +279,86 @@ Session state must distinguish:
 
 Production UI should begin with:
 
-- one routed board-first workbench;
+- focused setup dialog;
+- routed board-first workbench;
 - candidate switcher/summary;
-- evidence detail that can expand without hiding the board;
+- evidence detail that expands without hiding the board;
 - response coverage queue;
 - explicit branch progress;
-- optional structural compare mode rather than three full boards by default.
+- no simultaneous three-board default;
+- optional structural compare mode only if later evidence justifies it.
 
-No additional production task is proposed until user review determines whether compare mode belongs in the MVP or a later slice.
+No additional production task is required before these existing tasks.
 
 ## Accessibility and responsive review
 
-Implemented and inspected:
+Implemented and inspected in the original alternatives:
 
 - semantic landmarks and controls;
 - skip links;
 - visible focus outlines;
-- arrow-key switching between Direction A candidates;
+- arrow-key switching between Direction-A candidates;
 - `aria-pressed` state for candidate and coverage controls;
 - status text in addition to color;
 - readable board sizes;
-- one-column Direction A mobile composition;
+- one-column Direction-A mobile composition;
 - scroll-snapped candidate cards in Direction B;
 - text-readable horizontally scrollable coverage matrix;
 - 320px minimum layout assumption.
 
+The accepted setup proof adds an explicit modal landmark, labelled fields, and mobile stacking.
+
 ## Validation performed
 
-Local Chromium/Playwright rendering and visual inspection at:
+Local Chromium/Playwright rendering and visual inspection of the original alternatives at:
 
 - 1440 × 1100 desktop;
 - 390 × 844 mobile.
 
 Interaction checks:
 
-- all three Direction A candidates switch board position, line, metrics, reasons and warning;
+- all three Direction-A candidates switch board position, line, metrics, reasons, and warning;
 - arrow keys move between candidate buttons;
 - cover/defer/ignore controls update explicit status and cumulative coverage;
-- Direction B candidate cards and coverage matrix remain usable at desktop and mobile widths;
-- all relative asset links resolve in the local static directory.
-
-Repository CI will run on PR #110 even though runtime code is unchanged.
+- Direction B remains usable as retained comparison evidence;
+- relative asset links resolve in the static directory;
+- repository CI passes on PR #110.
 
 ## Validation skipped
 
-- production Angular build-specific interaction testing beyond repository CI;
+- production Angular integration;
 - real browser review inside the authenticated application shell;
 - screen-reader testing with assistive technology;
-- touch-device testing on physical hardware;
-- real data or API integration;
-- user acceptance of either visual direction.
+- physical touch-device testing;
+- real data or API integration.
 
 ## Limitations and residual risks
 
 - Unicode chess pieces are prototype-only and do not represent the production board renderer.
 - Evidence values and ranking are static mocks.
-- Direction A may still require a stronger structural-comparison affordance.
-- Direction B risks excessive board/card rendering and mobile overlay complexity.
+- Direction A may later need an explicit structural-comparison affordance.
 - Theory burden does not yet have a production formula.
 - Coverage percentage semantics need RB-007/RB-009 contract decisions.
 - Target/profile copy must avoid presenting statistical profile evidence as authority.
-- The visual-transformation branch may evolve before production implementation; approved tokens/components must be reinspected then.
+- The visual-transformation branch must be reinspected when production work begins.
 
 ## Standalone and North Star impact
 
-No standalone product behavior changes in this prototype.
+No standalone runtime behavior changes in this prototype.
 
-North Star uncertainty is reduced because the next contract tasks now have concrete evidence requirements and the builder has a plausible board-first default composition plus a tested comparison alternative.
+North Star uncertainty is materially reduced:
+
+- modal scope is limited to setup;
+- recursive work is routed and resumable;
+- one board-first composition is accepted;
+- Direction B is rejected as the default;
+- downstream contract responsibilities are explicit.
 
 ## GitHub and queue impact
 
-- Issue #96 remains open.
-- Task state moves to `REVIEW`, not `DONE`.
-- PR #110 is the review vehicle and must not use `Closes #96` before user acceptance.
-- No new RB task or issue is proposed yet.
-- Queue order and priorities should remain unchanged until review.
-- RB-003 remains the unresolved P0 foundation; RB-014 remains an independent ready research stream.
-
-## Review decision required
-
-The user should choose one of:
-
-- approve Direction A as the production default hypothesis;
-- approve Direction B as the production default hypothesis;
-- approve the proposed hybrid: Direction A default plus an explicit mini-board compare mode;
-- request a revised third direction.
-
-After that decision, update `DECISIONS.md`, complete or revise RB-008, synchronize issue #96 and determine whether a separate production UI task is needed.
+- Issue #96 can close after PR #110 is accepted and squash-merged.
+- Task state is `DONE`.
+- No new RB task or issue is required.
+- Queue order and priorities remain unchanged.
+- RB-003 remains the unresolved P0 foundation.
+- RB-014 remains an independent ready research stream.
