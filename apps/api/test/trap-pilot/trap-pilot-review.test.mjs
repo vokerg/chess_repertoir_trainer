@@ -7,8 +7,8 @@ import { deriveTrapOccurrenceIdentity } from '../../dist/modules/trap-pilot/trap
 
 {
   const report = buildTrapPilotReviewReport(TRAP_PILOT_DATASET, TRAP_PILOT_EVIDENCE_BUNDLE);
-  assert.equal(report.recordCount, 20);
-  assert.equal(report.counts.NEEDS_EVIDENCE, 20);
+  assert.equal(report.recordCount, 50);
+  assert.equal(report.counts.NEEDS_EVIDENCE, 50);
   assert.equal(report.counts.BLOCKED, 0);
   assert.equal(report.counts.APPROVED, 0);
 }
