@@ -4,13 +4,13 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** VT-000 issue-driven execution migration is in review; Phase 1D is integrated
+**Program state:** VT-000 issue-driven execution migration is integrated; Phase 1D is integrated
 
 **Integration branch:** `visual_transformation`
 
-**Active checkpoint branch:** `visual-transformation/vt-000-issue-driven-queue`
+**Active checkpoint branch:** none recorded in repository documentation
 
-**Active pull request:** #134
+**Active pull request:** none recorded in repository documentation
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -28,16 +28,19 @@ Repository documents retain integrated history, visual direction, decisions, res
 - [x] PR #112 — production navigation rail and disclosure correction.
 - [x] PR #118 — Phase 1C integration-state reconciliation.
 - [x] PR #120 — restrained public landing scroll reveal.
+- [x] PR #134 — issue-driven execution queue and Phase 1D integration reconciliation.
 
 PR #120 was squash-merged into `visual_transformation` as `bf9308d65b61323d534f99eeda0c0223907c20bb`. PR-head CI #1047 and post-merge integration CI #1051 passed.
 
-## VT-000 checkpoint
+VT-000 final-head CI run #1072 passed dependency installation, lint, the full monorepo build, architecture guardrails, database migrations, and the complete test suite before PR #134 was approved for squash merge.
 
-Completed on the branch:
+## VT-000 disposition
+
+Completed:
 
 - [x] Created program issue #122.
 - [x] Created ordered execution issues #123–#133.
-- [x] Recorded priorities, order, readiness, dependencies, canonical documentation, scope, acceptance criteria, exclusions, validation, branches, and PR placeholders.
+- [x] Recorded priorities, order, readiness, dependencies, canonical documentation, scope, acceptance criteria, exclusions, validation, and planned branches.
 - [x] Marked #123 and #124 `READY`.
 - [x] Marked downstream issues `BLOCKED` by explicit numbered dependencies.
 - [x] Established deterministic selection: highest priority, then lowest order, after dependency and claim checks.
@@ -45,7 +48,9 @@ Completed on the branch:
 - [x] Updated the transformation entry point, decisions, status, and working rules.
 - [x] Added the VT-000 migration report.
 - [x] Opened PR #134 to `visual_transformation`.
-- [ ] Confirm current-head PR CI and review state.
+- [x] Passed final-head CI #1072.
+- [x] Received explicit approval for squash merge.
+- [x] Integrated VT-000 through PR #134.
 
 VT-000 changes no Angular, CSS, route, dependency, API, schema, database, or backend file.
 
@@ -53,12 +58,12 @@ VT-000 changes no Angular, CSS, route, dependency, API, schema, database, or bac
 
 The live queue, not this file, determines the next task.
 
-At this checkpoint:
+At this integrated checkpoint:
 
 - #123 — VT-101 inline animated navigation accordion — `READY`, P1, order 10;
 - #124 — VT-102 Home canvas and palette calibration — `READY`, P1, order 20.
 
-Therefore #123 is the deterministic next task. #124 may proceed in parallel only after an explicit collision check confirms there is no overlapping file ownership or unresolved visual-decision conflict.
+Therefore #123 is the deterministic next task while the issue state remains unchanged. #124 may proceed in parallel only after an explicit collision check confirms there is no overlapping file ownership or unresolved visual-decision conflict.
 
 No issue may be implemented before it is claimed in an issue comment and its branch is created from the current `visual_transformation` head.
 
@@ -72,7 +77,7 @@ No issue may be implemented before it is claimed in an issue comment and its bra
 
 ### VT-000 validation
 
-This is a documentation/process-only checkpoint. Application build, test, lint, and architecture commands are not required locally because no runtime or configuration file changes.
+VT-000 is a documentation/process-only checkpoint with no runtime or configuration change.
 
 Validated:
 
@@ -82,11 +87,10 @@ Validated:
 - every later issue is `BLOCKED` by an explicit dependency;
 - repository documents and issues have non-overlapping ownership;
 - no stale Phase 1D active-branch or merge instruction remains;
-- PR #134 contains only transformation Markdown files.
+- PR #134 contains only transformation Markdown files;
+- final-head CI #1072 passed the complete repository workflow.
 
-The current PR #134 head CI is authoritative and must pass before approval.
-
-A direct local clone remains unavailable because the execution environment cannot resolve `github.com`; GitHub connector inspection and PR CI are authoritative for repository state.
+A direct local clone remains unavailable because the execution environment cannot resolve `github.com`; GitHub connector inspection and CI are authoritative for repository state.
 
 ## Residual browser validation
 
@@ -121,7 +125,7 @@ Core implementations are integrated. Residual browser validation remains open.
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, and landing motion are integrated. Navigation accordion, Home palette calibration, production tokens/typography, public metadata, and residual validation remain.
+Public, auth, Home, brand, rail, landing motion, and issue-driven execution governance are integrated. Navigation accordion, Home palette calibration, production tokens/typography, public metadata, and residual validation remain.
 
 ### Phase 2 — representative workflows
 
@@ -143,7 +147,9 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Locked the hybrid documentation/issues ownership model in D-022.
 - Replaced the prose live queue with issue #122 while preserving integrated history and residual risks.
 - Opened PR #134 for the process-only migration.
+- Passed complete final-head CI #1072.
+- Received explicit approval and integrated VT-000 through squash-merged PR #134.
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, and #120 are integrated into `visual_transformation`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, and #134 are integrated into `visual_transformation`.
