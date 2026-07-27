@@ -1,6 +1,6 @@
 # RB-017 — Validate curated traps knowledge pilot
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P2
 
@@ -14,6 +14,8 @@ Claimed by: ChatGPT session
 
 Claim branch: `rb-017/issue-114-traps-pilot-claim`
 
+Implementation branch: `rb-017/issue-114-curated-traps-pilot`
+
 Claimed at: 2026-07-27
 
 Claim scope: implement the approved bounded trap-data and validator pilot. The work is limited to a versioned repository dataset, deterministic validation, reproducible evidence snapshots, tests, review output, and documentation. It does not add production persistence, API/MCP contracts, Angular UI, course writes, or repertoire-builder integration.
@@ -21,6 +23,8 @@ Claim scope: implement the approved bounded trap-data and validator pilot. The w
 GitHub issue: #114
 
 Claim PR: #115
+
+Implementation PR: pending
 
 ## Outcome
 
@@ -149,6 +153,16 @@ Opening name and ECO are descriptive metadata. Alternate legal setup routes can 
 - documented live credentials/rate-limit behavior for population refreshes;
 - repository lint, build, architecture guardrails, migrations, and full test suite.
 
+## Initial implementation slice
+
+The first slice deliberately contains only three structurally different seed records plus deterministic structural validation. It must expose, not hide, the remaining pilot-size and live-evidence gaps.
+
+Seed coverage:
+
+- Légal trap: sacrifice/offer distinct from the tempting response;
+- Blackburne–Shilling: dubious setup separated from conditional punishment;
+- Fishing Pole: family, move-order, multiple-defense, and positional-consequence complexity.
+
 ## Completion updates
 
 On completion:
@@ -160,8 +174,6 @@ On completion:
 - do not create production follow-up issues without user review.
 
 ## Completion
-
-Implementation PR: pending
 
 Report: pending
 
