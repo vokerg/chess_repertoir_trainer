@@ -1,56 +1,28 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 This roadmap orders capability stages and decision gates. Detailed execution belongs in individual task files.
 
 ## Stage 0 — program foundation
 
-State: complete on `main` through PR #81, with planning reconciliation through PR #83 and GitHub Issues migration through PR #106.
+State: complete on `main` through PR #81, planning reconciliation PR #83, GitHub Issues migration PR #106 and RB-002 closure PR #107.
 
-Gate: passed for execution.
+Gate: passed.
 
 ## Stage 1 — reusable evidence foundations
 
 State: active. RB-001 and RB-002 are complete; RB-003 remains the only unresolved Stage 1 foundation.
 
-### Merged baseline
+Merged baseline:
 
-- PR #80: shared Masters/rated Opening Explorer, mixed cache profile and Peer games widget.
-- PR #76: previous cross-pool rating-normalization profile, contracts, helpers, tests and reference UI.
-- PR #84: fixed peer-population presets, Lichess-benchmark normalization, provider-aware multi-account resolver and compact Peer games UI.
-- PR #106: GitHub Issues execution migration.
+- PR #80: shared Masters/rated Opening Explorer and Peer games widget;
+- PR #76: previous rating-normalization profile and reference UI;
+- PR #84: fixed peer-population presets, Lichess-benchmark normalization, provider-aware multi-account resolver and compact Peer games UI;
+- PR #106: GitHub Issues execution migration;
 - PR #107: RB-002 closure reconciliation.
 
-### RB-001 and RB-002 completed delivery
-
-Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
-
-- speed presets: All speeds, Blitz and slower, Blitz, Bullet;
-- no product-facing ultraBullet;
-- rating targets: All players, My peers, My peers and above, or one explicit group;
-- defaults: Blitz and slower plus My peers and above;
-- one mixed Lichess request and existing deterministic cache architecture;
-- no client-selected public-game months;
-- active normalization profile `2026-07-lichess-bands-v1` using the nine Lichess Explorer groups;
-- versioned approximate Chess.com bullet/blitz/rapid mappings;
-- provider/speed classification before aggregation;
-- multi-account game-count-weighted normalized band distribution;
-- recent-three-month → all-history → generic peer fallback;
-- resolver policy `dominant-contiguous-window-v1`;
-- complete distribution, selected groups, eligible-game count, evidence period and account/provider/speed contributions;
-- direct request/effective-population/resolver provenance;
-- two compact Peer games selects;
-- full CI validation and canonical runtime documentation.
-
-RB-002 is complete through this implementation. A separate durable formula, stored snapshot, generic confidence score or override foundation remains rejected without a concrete consumer or measured defect.
-
-### Stage 1 gate
-
-The population/player-level portion is passed. Stage 1 remains open until:
-
-- RB-003 opening classification is delivered; or
-- a deliberately limited fallback is explicitly approved.
+Stage 1 gate remains open until RB-003 opening classification is delivered or a deliberately limited fallback is explicitly approved.
 
 Tasks: RB-001, RB-002, RB-003.
 
@@ -62,10 +34,9 @@ Goals:
 
 - calculate preference and performance separately;
 - preserve sample size, filters, baseline and confidence;
-- support periods, accounts, agreed speed presets, colors and rating context;
+- support periods, accounts, speed presets, colors and rating context;
 - expose evidence and supporting games/openings;
-- keep profile conclusions advisory;
-- extract or rename the factual player-level contract only when the profile becomes the second real consumer.
+- keep profile conclusions advisory.
 
 Tasks: RB-004, RB-005.
 
@@ -73,16 +44,15 @@ Gate: profile claims are reproducible, evidence-backed and useful enough to advi
 
 ## Stage 3 — target and candidate decision model
 
-State: blocked on opening-profile and target/profile dependencies, not on further player-level formula work. RB-008 now supplies concrete visual data responsibilities for this stage.
+State: blocked on opening-profile and target/profile dependencies. RB-008 supplies accepted visual data responsibilities.
 
 Goals:
 
 - define a repertoire target using one RB-001 speed preset and one peer/all/explicit rating target;
-- keep factual level, profile recommendation and manual override separate;
-- snapshot factual evidence only when resumability requires it;
+- populate a focused setup dialog with side, start, persona, coverage and override state;
+- keep factual level, profile recommendation and manual target separate;
 - aggregate engine, master, population, personal, opening-profile and course evidence without collapsing sources;
-- rank candidates with explicit reasons and visible missing evidence;
-- return a resulting position, bounded preview, target/profile roles, burden, warnings and source metadata for each candidate;
+- return resulting position, bounded preview, target/profile roles, burden, warnings and source metadata for each candidate;
 - return explicit opponent-response relevance and coverage inputs.
 
 Tasks: RB-006, RB-007, RB-013.
@@ -91,31 +61,32 @@ Gate: one position can produce a deterministic, explainable candidate comparison
 
 ## Stage 4 — visual decision proof
 
-State: RB-008 is `REVIEW` through PR #110.
+State: complete through RB-008 and PR #110.
 
-Delivered review proof:
+Accepted direction:
 
-- Direction A — one large shared board with candidate switcher, focused evidence, opponent-response queue and branch progress;
-- Direction B — simultaneous candidate mini-boards with attached evidence and a response coverage matrix;
-- realistic sharp-versus-solid, profile-override, sparse-personal-data and peer-target scenarios;
-- responsive desktop and 390px mobile behavior;
-- static candidate and coverage-state interaction;
-- data/component implications for RB-006, RB-007, RB-009 and RB-010.
-
-Provisional recommendation: Direction A as the default production workbench plus candidate-attached target/profile roles and an optional mini-board compare mode borrowed from Direction B.
+- setup is a focused dialog;
+- Start building closes the dialog and opens a routed workbench;
+- the recursive workbench is board-first with one readable primary board;
+- candidates switch board and focused evidence;
+- opponent responses use a coverage queue with explicit branch states;
+- target fit and profile fit remain separate;
+- the simultaneous candidate-landscape direction is rejected as the default because it is too heavy;
+- explicit mini-board comparison is deferred unless later evidence justifies it.
 
 Task: RB-008.
 
-Gate: user selects Direction A, Direction B, the proposed hybrid, or requests a revised third direction. The gate is not passed merely because artifacts and CI exist.
+Gate: passed by user acceptance on 2026-07-27.
 
 ## Stage 5 — resumable builder foundation and MVP
 
-State: blocked on target/ranking contracts and the reviewed RB-008 direction.
+State: blocked on target/ranking contracts, not on further visual discovery.
 
 Goals:
 
 - define branch queue, accepted decisions, deferred responses, target snapshot and draft lifecycle;
-- implement a routed, resumable board-first workbench or other reviewed composition;
+- implement the focused setup dialog;
+- implement the routed, resumable board-first workbench;
 - alternate user-move selection and opponent-response coverage;
 - preserve selected, pending, deferred, ignored and completed states;
 - produce a previewable repertoire tree.
@@ -167,7 +138,6 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - RB-003 opening-classification discovery;
-- RB-008 user review and bounded revision;
 - RB-014 traps research.
 
 High-collision areas requiring coordination:
@@ -178,7 +148,7 @@ High-collision areas requiring coordination:
 - imported-game/account evidence aggregation;
 - target/candidate schemas;
 - builder state and persistence;
-- production workbench/board composition;
+- production setup dialog and workbench composition;
 - course reintegration writes.
 
 ## Queue impact
@@ -186,9 +156,9 @@ High-collision areas requiring coordination:
 - RB-001 remains order 10, P0, `DONE`.
 - RB-002 remains order 20, P0, `DONE`.
 - RB-003 remains order 30, P0, `PROPOSED`.
-- RB-008 remains order 40, P1, now `REVIEW`.
+- RB-008 remains order 40, P1, now `DONE`.
 - RB-014 remains order 140, P2, `READY` and independent.
 - No order or priority change is recommended.
-- No new task is proposed until RB-008 review determines whether a separate production compare-mode slice is needed.
+- No new task is required.
 
 Every completion report must explicitly state whether this roadmap remains valid.
