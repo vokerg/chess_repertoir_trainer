@@ -218,11 +218,26 @@ State: **OPEN**
 
 Explanation, summarization, naming or conversational orchestration may be useful, but factual authority and write behavior require separate review.
 
-### RB-D027 — Traps are tracked but vague
+### RB-D027 — Trap knowledge requires evidence and curation
 
-State: **LOCKED**
+State: **PROVISIONAL**
 
-The roadmap includes traps research, but does not claim a trap definition, database, classification or delivery date.
+RB-014 recommends that a trap be represented as a versioned conditional branch with:
+
+- normalized trigger-position and move identity;
+- a practically tempting opponent response;
+- bounded punishment;
+- explicit safe defenses or refutations;
+- setup soundness kept separate from practical temptation;
+- rating/speed population evidence;
+- engine profile and source provenance;
+- editorial review and lifecycle state.
+
+Opening names and ECO are descriptive metadata, not trap identity. Related non-identical occurrences may share a trap family.
+
+Suitable reusable source inputs are CC0 Lichess games, puzzles, evaluated positions, and `lichess-org/chess-openings`, plus original application analysis and copy. Public studies, videos, blogs, books, and unlicensed collections are discovery leads only and must not be bulk imported.
+
+The recommended next step is a bounded 20–50 example data/validator pilot after user approval. No production database, endpoint, UI, course write, or RB-006/RB-007 contract change is approved by this provisional decision.
 
 ## Rejected shortcuts
 

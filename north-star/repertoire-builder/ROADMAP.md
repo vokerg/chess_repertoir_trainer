@@ -6,23 +6,51 @@ This roadmap orders capability stages and decision gates. Detailed execution bel
 
 ## Stage 0 — program foundation
 
-State: complete on `main` through PR #81, planning reconciliation PR #83, GitHub Issues migration PR #106 and RB-002 closure PR #107.
+State: complete on `main` through PR #81, with planning reconciliation through PR #83 and GitHub Issues migration through PR #106.
 
-Gate: passed.
+Gate: passed for execution.
 
 ## Stage 1 — reusable evidence foundations
 
 State: active. RB-001 and RB-002 are complete; RB-003 remains the only unresolved Stage 1 foundation.
 
-Merged baseline:
+### Merged baseline
 
-- PR #80: shared Masters/rated Opening Explorer and Peer games widget;
-- PR #76: previous rating-normalization profile and reference UI;
-- PR #84: fixed peer-population presets, Lichess-benchmark normalization, provider-aware multi-account resolver and compact Peer games UI;
-- PR #106: GitHub Issues execution migration;
+- PR #80: shared Masters/rated Opening Explorer, mixed cache profile and Peer games widget.
+- PR #76: previous cross-pool rating-normalization profile, contracts, helpers, tests and reference UI.
+- PR #84: fixed peer-population presets, Lichess-benchmark normalization, provider-aware multi-account resolver and compact Peer games UI.
+- PR #106: GitHub Issues execution migration.
 - PR #107: RB-002 closure reconciliation.
 
-Stage 1 gate remains open until RB-003 opening classification is delivered or a deliberately limited fallback is explicitly approved.
+### RB-001 and RB-002 completed delivery
+
+Squash commit `49dc6499eac9998de864ccb75a607541cd945382` provides:
+
+- speed presets: All speeds, Blitz and slower, Blitz, Bullet;
+- no product-facing ultraBullet;
+- rating targets: All players, My peers, My peers and above, or one explicit group;
+- defaults: Blitz and slower plus My peers and above;
+- one mixed Lichess request and existing deterministic cache architecture;
+- no client-selected public-game months;
+- active normalization profile `2026-07-lichess-bands-v1` using the nine Lichess Explorer groups;
+- versioned approximate Chess.com bullet/blitz/rapid mappings;
+- provider/speed classification before aggregation;
+- multi-account game-count-weighted normalized band distribution;
+- recent-three-month → all-history → generic peer fallback;
+- resolver policy `dominant-contiguous-window-v1`;
+- complete distribution, selected groups, eligible-game count, evidence period and account/provider/speed contributions;
+- direct request/effective-population/resolver provenance;
+- two compact Peer games selects;
+- full CI validation and canonical runtime documentation.
+
+RB-002 is complete through this implementation. A separate durable formula, stored snapshot, generic confidence score or override foundation remains rejected without a concrete consumer or measured defect.
+
+### Stage 1 gate
+
+The population/player-level portion is passed. Stage 1 remains open until:
+
+- RB-003 opening classification is delivered; or
+- a deliberately limited fallback is explicitly approved.
 
 Tasks: RB-001, RB-002, RB-003.
 
@@ -34,9 +62,10 @@ Goals:
 
 - calculate preference and performance separately;
 - preserve sample size, filters, baseline and confidence;
-- support periods, accounts, speed presets, colors and rating context;
+- support periods, accounts, agreed speed presets, colors and rating context;
 - expose evidence and supporting games/openings;
-- keep profile conclusions advisory.
+- keep profile conclusions advisory;
+- extract or rename the factual player-level contract only when the profile becomes the second real consumer.
 
 Tasks: RB-004, RB-005.
 
@@ -44,15 +73,16 @@ Gate: profile claims are reproducible, evidence-backed and useful enough to advi
 
 ## Stage 3 — target and candidate decision model
 
-State: blocked on opening-profile and target/profile dependencies. RB-008 supplies accepted visual data responsibilities.
+State: blocked on opening-profile and target/profile dependencies, not on further player-level formula work. RB-008 supplies concrete visual data responsibilities for this stage.
 
 Goals:
 
 - define a repertoire target using one RB-001 speed preset and one peer/all/explicit rating target;
-- populate a focused setup dialog with side, start, persona, coverage and override state;
-- keep factual level, profile recommendation and manual target separate;
+- keep factual level, profile recommendation and manual override separate;
+- snapshot factual evidence only when resumability requires it;
 - aggregate engine, master, population, personal, opening-profile and course evidence without collapsing sources;
-- return resulting position, bounded preview, target/profile roles, burden, warnings and source metadata for each candidate;
+- rank candidates with explicit reasons and visible missing evidence;
+- return a resulting position, bounded preview, target/profile roles, burden, warnings and source metadata for each candidate;
 - return explicit opponent-response relevance and coverage inputs.
 
 Tasks: RB-006, RB-007, RB-013.
@@ -61,32 +91,29 @@ Gate: one position can produce a deterministic, explainable candidate comparison
 
 ## Stage 4 — visual decision proof
 
-State: complete through RB-008 and PR #110.
+State: complete through accepted RB-008 direction in PR #110.
 
-Accepted direction:
+Accepted proof:
 
-- setup is a focused dialog;
-- Start building closes the dialog and opens a routed workbench;
-- the recursive workbench is board-first with one readable primary board;
-- candidates switch board and focused evidence;
-- opponent responses use a coverage queue with explicit branch states;
-- target fit and profile fit remain separate;
-- the simultaneous candidate-landscape direction is rejected as the default because it is too heavy;
-- explicit mini-board comparison is deferred unless later evidence justifies it.
+- a focused setup dialog launches the workflow;
+- **Start building** closes the dialog and opens a routed workbench;
+- Direction A is the production default: one primary board, candidate switcher, focused evidence, response queue and branch progress;
+- candidate-attached target/profile roles remain;
+- Direction B's simultaneous candidate landscape is rejected as the default;
+- optional mini-board comparison is deferred.
 
 Task: RB-008.
 
-Gate: passed by user acceptance on 2026-07-27.
+Gate: passed.
 
 ## Stage 5 — resumable builder foundation and MVP
 
-State: blocked on target/ranking contracts, not on further visual discovery.
+State: blocked on target/ranking contracts and builder-session definition.
 
 Goals:
 
 - define branch queue, accepted decisions, deferred responses, target snapshot and draft lifecycle;
-- implement the focused setup dialog;
-- implement the routed, resumable board-first workbench;
+- implement the accepted setup dialog and routed board-first workbench;
 - alternate user-move selection and opponent-response coverage;
 - preserve selected, pending, deferred, ignored and completed states;
 - produce a previewable repertoire tree.
@@ -110,11 +137,27 @@ Gate: accepted decisions become trainable material and existing-course maintenan
 
 ## Stage 7 — specialized personas and optional intelligence
 
+State: core tasks are proposed or blocked; RB-014 traps-foundation discovery is in review through PR #113.
+
 Goals:
 
 - support multiple purposeful repertoires for the same opening;
-- research traps representation/data;
+- determine whether a trustworthy trap-oriented capability is viable;
 - determine whether LLM explanation or orchestration adds value without becoming a factual dependency.
+
+### RB-014 review direction
+
+RB-014 recommends a bounded curated pilot after user approval:
+
+- normalized position-and-move occurrence identity;
+- optional trap-family grouping across related triggers;
+- CC0 source candidates;
+- versioned Stockfish evidence;
+- rating/speed population evidence;
+- explicit setup soundness, temptation, punishment, safe defenses, confidence, and provenance;
+- editorial review and lifecycle state.
+
+The recommendation does not add a production schema, endpoint, UI, course write, or critical-path dependency. RB-006 and RB-007 remain unchanged until a pilot demonstrates a concrete need.
 
 Tasks: RB-013, RB-014, RB-015.
 
@@ -138,7 +181,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - RB-003 opening-classification discovery;
-- RB-014 traps research.
+- RB-014 user review and, only if approved, a bounded data/validator pilot.
 
 High-collision areas requiring coordination:
 
@@ -148,17 +191,18 @@ High-collision areas requiring coordination:
 - imported-game/account evidence aggregation;
 - target/candidate schemas;
 - builder state and persistence;
-- production setup dialog and workbench composition;
-- course reintegration writes.
+- production workbench/board composition;
+- course reintegration writes;
+- any future trap evidence added to candidate contracts.
 
 ## Queue impact
 
 - RB-001 remains order 10, P0, `DONE`.
 - RB-002 remains order 20, P0, `DONE`.
 - RB-003 remains order 30, P0, `PROPOSED`.
-- RB-008 remains order 40, P1, now `DONE`.
-- RB-014 remains order 140, P2, `READY` and independent.
+- RB-008 remains order 40, P1, `DONE`.
+- RB-014 remains order 140, P2, now `REVIEW`.
 - No order or priority change is recommended.
-- No new task is required.
+- No trap implementation task is proposed before user approval.
 
 Every completion report must explicitly state whether this roadmap remains valid.

@@ -21,7 +21,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, accepted RB-008 dialog/workbench direction, RB-009 |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
-| 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | READY | Research traps knowledge foundation | Research | Independent |
+| 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | REVIEW | Research traps knowledge foundation | Research | PR #113; independent; bounded-pilot recommendation pending user review |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
@@ -53,6 +53,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Artifacts: `prototypes/rb-008-visual-candidate-choice/`
 - Accepted: focused setup dialog launches a routed board-first workbench.
 - Rejected default: simultaneous candidate mini-board landscape.
+
+## Work in review
+
+### RB-014 / #102
+
+- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/113
+- Branch: `rb-014/issue-102-traps-foundation-research`
+- Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`
+- Recommendation: proceed to a bounded curated pilot only after user approval.
+- Proposed identity: normalized trigger position plus ordered offer/temptation/punishment moves; opening labels are descriptive only.
+- Source direction: CC0 Lichess puzzles/games/evaluations and `chess-openings`, versioned engine/population evidence, and editorial review.
+- Exclusions: no production schema, API, UI, course writes, or RB-006/RB-007 contract changes now.
+- Validation boundary: exact named-example Stockfish and authenticated Explorer snapshots are the pilot's first hard gate; no values are invented in discovery.
 
 ## Accepted visual direction
 
@@ -90,9 +103,12 @@ RB-011/012 course materialization and adaptation
 RB-016 feedback
 ```
 
+RB-014 remains outside the critical path.
+
 ## Queue impact
 
 - RB-008 is `DONE` without order or priority changes.
 - RB-003 remains the unresolved P0 foundation.
-- RB-014 remains the next independent `READY` task.
-- No new RB/GitHub issue is required.
+- RB-014 is `REVIEW`; its pilot recommendation does not add a critical-path dependency.
+- No implementation issue is created before user approval.
+- No order or priority change is recommended.
