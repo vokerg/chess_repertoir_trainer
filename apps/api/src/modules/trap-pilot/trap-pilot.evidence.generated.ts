@@ -7,7 +7,7 @@ import type { TrapPilotEvidenceBundle } from './trap-pilot.evidence';
 
 export const TRAP_PILOT_EVIDENCE_BUNDLE: TrapPilotEvidenceBundle = {
   schemaVersion: 1,
-  datasetVersion: '2026-07-pilot-v1',
+  datasetVersion: '2026-07-pilot-v2',
   engineSnapshots: [],
   populationSnapshots: [],
 };
