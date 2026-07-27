@@ -10,6 +10,8 @@ Program issue: #122
 
 Pull request: #134
 
+Disposition: approved and squash-merged into `visual_transformation`
+
 ## Purpose
 
 Move live Visual Transformation execution coordination from a manually maintained prose queue in repository status documentation to an ordered GitHub Issue queue, while keeping repository documents authoritative for visual direction, architecture, decisions, acceptance criteria, integrated history, validation, and reports.
@@ -32,8 +34,12 @@ The migration also reconciles Phase 1D after its approved squash merge.
 - locked the hybrid repository-document/GitHub-Issue ownership model in D-022;
 - reconciled D-021 as integrated through PR #120;
 - updated the transformation entry point, status, and working rules to use issue #122 as the live queue;
-- added a program-issue comment recording branch and PR #134;
+- added program-issue comments recording branch, PR #134, and successful final-head validation;
 - opened PR #134 against `visual_transformation`;
+- passed complete final-head CI run #1072;
+- received explicit approval to squash merge PR #134;
+- finalized the repository records to their post-merge state before integration;
+- squash-merged PR #134 into `visual_transformation`;
 - preserved residual direct-browser validation as open work;
 - made no application or configuration change.
 
@@ -119,7 +125,20 @@ No Angular, CSS, route, package, lockfile, API, contract, schema, database, job,
 - verified only #123 and #124 are marked `READY`;
 - verified every later issue is marked `BLOCKED` by an explicit dependency;
 - verified #123 is the deterministic next task;
-- opened PR #134 and verified its initial changed-file count is five.
+- verified PR #134 contains exactly five transformation Markdown files;
+- verified PR #134 is mergeable;
+- verified complete final-head CI run #1072 passed before merge approval.
+
+### Automated validation
+
+CI run #1072 passed:
+
+- dependency installation;
+- lint;
+- full monorepo build;
+- architecture guardrails;
+- database migrations;
+- complete test suite.
 
 ### Documentation validation
 
@@ -128,9 +147,9 @@ No Angular, CSS, route, package, lockfile, API, contract, schema, database, job,
 - locked D-022;
 - preserved residual browser validation;
 - separated repository-document ownership from issue ownership;
+- changed the VT-000 records to their post-merge state before squash merge;
+- confirmed no active VT-000 branch or PR is presented as the next checkpoint after integration;
 - confirmed the branch changes only the five intended Markdown files.
-
-The current PR #134 head CI is authoritative and must remain successful before approval.
 
 ## Commands skipped and reasons
 
@@ -145,7 +164,7 @@ npm run check:architecture
 
 Reason: VT-000 changes only Markdown process/documentation files and creates GitHub Issues. It does not modify application runtime, configuration, dependencies, contracts, schemas, database, or backend code.
 
-A direct local clone remains unavailable because the execution environment cannot resolve `github.com`. GitHub connector inspection and pull-request CI are the authoritative repository checks.
+A direct local clone remains unavailable because the execution environment cannot resolve `github.com`. GitHub connector inspection and CI are the authoritative repository checks.
 
 ## Warnings and residual risks
 
@@ -157,7 +176,7 @@ A direct local clone remains unavailable because the execution environment canno
 - #124 may run in parallel with #123 only after a documented collision check;
 - #123 revises the integrated D-312 expanded-rail interaction but must preserve the collapsed-rail flyout until its own review is complete.
 
-## Review instructions
+## Review and reproduction instructions
 
 1. Open issue #122 and verify the ordered checklist.
 2. Confirm #123 and #124 are the only ready tasks.
@@ -166,15 +185,16 @@ A direct local clone remains unavailable because the execution environment canno
 5. Review D-022 and confirm the ownership split is unambiguous.
 6. Confirm `STATUS.md` contains integrated state and residuals, not a duplicate live backlog.
 7. Confirm `WORKING_RULES.md` defines claim, branch, PR, merge, closure, and dependency-release rules.
-8. Confirm no stale Phase 1D active-branch or merge instruction remains.
+8. Confirm no stale Phase 1D or VT-000 active-branch/merge instruction remains.
 9. Confirm PR #134 contains only the five intended Markdown files.
-10. Confirm the current PR head CI is successful before approval.
+10. Confirm final-head CI #1072 passed.
+11. Confirm PR #134 is squash-merged into `visual_transformation` and issue #122 records the completed migration.
 
-## Stop condition
+## Final state
 
-Do not implement #123, #124, or any later execution issue on this branch.
+VT-000 is complete. Issue #122 is the live execution queue.
 
-Do not merge PR #134 without explicit approval. When approved, squash merge it into `visual_transformation`, reconcile issue #122 with the merged PR, and then select the next ready task using the locked algorithm.
+While the issue state remains unchanged, the next session must claim #123 before creating `visual-transformation/vt-101-inline-navigation-accordion` from the current `visual_transformation` head.
 
 ## Files inspected
 
@@ -199,4 +219,4 @@ Do not merge PR #134 without explicit approval. When approved, squash merge it i
 - Visual Transformation program issue #122
 - Visual Transformation execution issues #123–#133
 - PR #120 and integration CI #1051
-- PR #134
+- PR #134 and final-head CI #1072
