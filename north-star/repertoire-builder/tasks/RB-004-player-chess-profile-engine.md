@@ -1,6 +1,6 @@
 # RB-004 — Implement Player Chess Profile calculation
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -14,7 +14,7 @@ GitHub issue: `#92`
 
 Claimed by: ChatGPT session
 
-Claim branch: `rb-004/issue-92-player-chess-profile-claim`
+Claim branch: `rb-004/issue-92-player-chess-profile-engine`
 
 Claimed at: 2026-07-27
 
