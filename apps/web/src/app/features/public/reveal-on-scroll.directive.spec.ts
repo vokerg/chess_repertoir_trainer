@@ -5,7 +5,7 @@ import { RevealOnScrollDirective } from './reveal-on-scroll.directive';
 @Component({
   standalone: true,
   imports: [RevealOnScrollDirective],
-  template: '<div [appRevealOnScroll]="80">Reveal content</div>',
+  template: '<div appRevealOnScroll data-reveal-delay="80">Reveal content</div>',
 })
 class RevealHostComponent {}
 
