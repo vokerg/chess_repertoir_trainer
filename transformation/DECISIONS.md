@@ -146,6 +146,14 @@ Phase 1B was discovery and static visualization only. It defined the desktop rai
 
 The approved rail was implemented only in the existing signed-in shell and navigation component. Routes, active-prefix behavior, account behavior, root overlays, mobile access, APIs, schemas, database behavior, dependencies, and feature workflows were preserved. Token, typography, page-header, bottom-navigation, and representative-workflow changes remained outside the slice.
 
+### D-021 — Phase 1D public landing motion boundary
+
+**Status:** Locked for the Phase 1D review branch
+
+Add restrained one-time scroll reveal only to selected lower-page compositions on the public `/` landing page. Use a feature-local standalone Angular directive and native `IntersectionObserver`; keep content visible by default when the API is unavailable or reduced motion is requested. Motion is limited to opacity and an 18px vertical translation with short capped stagger delays.
+
+The header, hero, first-screen product composition, footer, copy, routes, layout, global tokens, and signed-in application remain unchanged. Do not add an animation dependency or establish a global motion abstraction in this slice.
+
 ### D-315 — Phase 1C production rail disposition
 
 **Status:** Locked and integrated through PR #112
