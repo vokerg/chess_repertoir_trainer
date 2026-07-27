@@ -161,21 +161,20 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A brand assets, Phase 1B navigation discovery, and Phase 1C production navigation rail are squash-merged into `visual_transformation`.
+The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A brand assets, Phase 1B navigation discovery, Phase 1C production navigation rail, and Phase 1C integration reconciliation are squash-merged into `visual_transformation`.
 
-The current approved slice is documentation-only Phase 1C integration reconciliation on `visual-transformation/phase-1c-integration-reconciliation`.
+The current approved slice is Phase 1D restrained public landing-page scroll reveal on `visual-transformation/phase-1d-landing-scroll-reveal`.
 
 Stop after:
 
-- recording PR #112 as integrated in `TRANSFORMATION.md` and `STATUS.md`;
-- closing D-315 as locked and integrated in `DECISIONS.md`;
-- removing obsolete instructions that describe PR #112 as awaiting merge;
-- preserving all residual browser-validation gaps and open product decisions;
-- adding a dedicated reconciliation report;
-- opening a reviewed pull request to `visual_transformation`.
+- a small feature-local landing reveal helper initialized by `LandingPageComponent` and using native `IntersectionObserver`;
+- static `data-scroll-reveal` and optional `data-reveal-delay` markers only on the approved lower-page compositions;
+- one-time opacity and 18px vertical translation with short capped stagger delays;
+- visible-by-default behavior when observation or `matchMedia` is unsupported or reduced motion is requested;
+- immediate transition-free reveal when reduced motion becomes active while content is pending;
+- the header, hero, first-screen product composition, footer, copy, routes, layout, and signed-in application preserved;
+- focused tests, updated transformation documentation, automated validation, and a reviewed pull request to `visual_transformation`.
 
-Do not modify Angular, CSS, routes, packages, tests, APIs, schemas, database files, dependencies, or backend behavior in this checkpoint. Do not merge the reconciliation pull request without explicit approval.
+Do not merge the Phase 1D pull request without explicit approval. Do not animate the hero, create a global animation abstraction, add dependencies, change routes, migrate global tokens or typography, implement bottom navigation, redesign route pages, or change backend behavior in this checkpoint.
 
-After this reconciliation is squash-merged, no runtime checkpoint is automatically approved. Restrained public landing-page scroll-reveal motion is the clearest recorded candidate, but it must be approved separately. Bottom navigation, collapse persistence, route-specific auto-collapse, global token migration, typography changes, page-header redesign, representative workflow modernization, and backend changes remain out of scope until explicitly approved.
-
-Authentication, home, brand rasterization, favicon, responsive navigation, long-label, viewport-edge flyout, Clerk, imported-job-panel, and representative-page browser validation remain explicit residual gaps until recorded as complete.
+Authentication, home, brand rasterization, favicon, responsive navigation, long-label, viewport-edge flyout, Clerk, imported-job-panel, representative-page, and Phase 1D direct browser validation remain explicit residual gaps until recorded as complete.
