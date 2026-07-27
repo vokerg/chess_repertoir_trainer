@@ -52,9 +52,10 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #108 — Phase 1B desktop rail and interim mobile-navigation discovery;
 - PR #112 — Phase 1C production navigation rail and submenu-discoverability correction;
 - PR #118 — Phase 1C integration-state reconciliation;
-- PR #120 — Phase 1D restrained landing-page scroll reveal.
+- PR #120 — Phase 1D restrained landing-page scroll reveal;
+- PR #134 — VT-000 issue-driven execution queue and Phase 1D integration reconciliation.
 
-PR #120 was squash-merged as `bf9308d65b61323d534f99eeda0c0223907c20bb`; integration CI run #1051 passed.
+PR #120 was squash-merged as `bf9308d65b61323d534f99eeda0c0223907c20bb`; integration CI run #1051 passed. VT-000 final-head CI run #1072 passed before PR #134 was approved for squash merge.
 
 Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until recorded as complete.
 
@@ -73,18 +74,12 @@ Task selection is deterministic:
 7. keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after squash merge and documentation reconciliation.
 
-At the VT-000 checkpoint, #123 is the next task because it is `READY`, P1, order 10. #124 is also `READY` but may run in parallel only after an explicit file and decision collision check.
+At the integrated VT-000 checkpoint, #123 is the next task because it is `READY`, P1, order 10. #124 is also `READY` but may run in parallel only after an explicit file and decision collision check.
 
 ## Current checkpoint
 
-Active branch: `visual-transformation/vt-000-issue-driven-queue`
+There is no active implementation branch recorded in repository documentation. Live claim and branch state belong in issue #122 and the selected execution issue.
 
-Approved scope:
+The next session must inspect the live queue and, while the recorded state is unchanged, claim issue #123 before creating `visual-transformation/vt-101-inline-navigation-accordion` from the current `visual_transformation` head.
 
-- establish issue #122 as the execution entry point;
-- create the ordered execution issues #123–#133 with priorities, dependencies, branches, scope, acceptance criteria, exclusions, and validation expectations;
-- reconcile Phase 1D as integrated;
-- update the governing transformation records and add the VT-000 migration report;
-- open a documentation/process-only PR to `visual_transformation`.
-
-Do not implement #123, #124, or any later execution issue on the VT-000 branch. Do not modify Angular, CSS, routes, dependencies, APIs, schemas, databases, or backend behavior in this checkpoint.
+Do not implement an unclaimed issue, bypass a higher-priority ready issue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
