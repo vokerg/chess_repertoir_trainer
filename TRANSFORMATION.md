@@ -7,13 +7,13 @@ This file is the stable entry point for every ChatGPT, Copilot, Codex, or human 
 - Long-running integration branch: `visual_transformation`
 - Base branch: `main`
 - Do not commit transformation work directly to `main`.
-- Substantial implementation slices use short-lived branches created from `visual_transformation` and merged back into it through reviewed pull requests.
+- Every meaningful implementation or documentation slice uses a short-lived branch created from `visual_transformation`.
 - Merge transformation pull requests into `visual_transformation` with squash merge only after explicit approval.
-- The transformation branch should reach `main` only through an explicitly reviewed pull request when the program is ready.
+- The transformation branch reaches `main` only through an explicitly reviewed pull request when the program is ready.
 
 ## Read before doing transformation work
 
-Read these files in order:
+Read these sources in order:
 
 1. [`AGENTS.md`](./AGENTS.md)
 2. [Angular frontend skill](./.agents/skills/angular-frontend/SKILL.md) for Angular work
@@ -22,17 +22,22 @@ Read these files in order:
 5. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
 6. [`transformation/STATUS.md`](./transformation/STATUS.md)
 7. [`transformation/WORKING_RULES.md`](./transformation/WORKING_RULES.md)
+8. [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
+9. the selected execution issue and the current implementation it owns.
 
-The repository code and tests remain the source of truth for runtime behavior. These transformation documents are the source of truth for the visual direction, sequencing, and decisions made across sessions.
+The repository code and tests are the source of truth for runtime behavior. Repository transformation documents own visual direction, architecture, decisions, detailed acceptance criteria, and reports. GitHub Issues own the live execution queue, priority, readiness, blockers, claim, branch, pull request, and completion state.
 
 ## Documentation contract
 
-Every meaningful transformation change must update the relevant files under `transformation/` in the same branch:
+Every meaningful transformation change must update the relevant repository records in the same branch:
 
-- Update `MASTER_PLAN.md` when scope, architecture, phases, or target outcomes change.
-- Update `DECISIONS.md` when a design or product decision is locked, revised, or rejected.
-- Update `STATUS.md` after each completed implementation slice or design checkpoint.
-- Keep unresolved questions explicit. Do not silently convert provisional ideas into final decisions.
+- update `MASTER_PLAN.md` when scope, architecture, phases, or target outcomes change;
+- update `DECISIONS.md` when a design, product, or process decision is locked, revised, or rejected;
+- update `STATUS.md` after each integrated checkpoint or meaningful review;
+- add the required report for the slice;
+- keep unresolved questions and residual validation explicit.
+
+Do not use `STATUS.md` as a manually maintained live task queue. The ordered execution queue is issue #122 and its child issues.
 
 ## Integrated checkpoints
 
@@ -42,36 +47,44 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #79 — shared authentication shell for `/login` and `/signup`;
 - PR #85 — Phase 0B checkpoint reconciliation;
 - PR #86 — signed-in `/home` discovery and visualization;
-- PR #87 — guarded Angular `/home`, normal post-auth fallback to `/home`, and deterministic existing-data recommendations;
-- PR #88 — production Node Branch assets, shared brand components, favicon, and integrated lockups;
+- PR #87 — guarded Angular `/home`, post-auth fallback, and deterministic recommendations;
+- PR #88 — production Node Branch assets, shared brand components, favicon, and lockups;
 - PR #108 — Phase 1B desktop rail and interim mobile-navigation discovery;
-- PR #112 — Phase 1C production navigation rail, submenu-discoverability correction, focused tests, and retained grouped mobile sheet;
-- PR #118 — Phase 1C integration-state documentation reconciliation.
+- PR #112 — Phase 1C production navigation rail and submenu-discoverability correction;
+- PR #118 — Phase 1C integration-state reconciliation;
+- PR #120 — Phase 1D restrained landing-page scroll reveal.
 
-Direct browser validation for authentication, home, brand rasterization, favicon, long navigation labels and names, viewport-edge flyouts, Clerk controls, and representative responsive widths remains residual work and must not be represented as completed.
+PR #120 was squash-merged as `bf9308d65b61323d534f99eeda0c0223907c20bb`; integration CI run #1051 passed.
+
+Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until recorded as complete.
+
+## Live execution queue
+
+Use [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122).
+
+Task selection is deterministic:
+
+1. consider only open issues with `Repository state: READY`;
+2. exclude unresolved dependencies and already claimed issues;
+3. choose the highest priority;
+4. within that priority, choose the lowest numeric order;
+5. comment to claim the issue before implementation;
+6. create the issue's recorded branch from `visual_transformation`;
+7. keep branch, PR, blockers, and completion state in the issue;
+8. close the issue only after squash merge and documentation reconciliation.
+
+At the VT-000 checkpoint, #123 is the next task because it is `READY`, P1, order 10. #124 is also `READY` but may run in parallel only after an explicit file and decision collision check.
 
 ## Current checkpoint
 
-The active branch is `visual-transformation/phase-1d-landing-scroll-reveal`.
+Active branch: `visual-transformation/vt-000-issue-driven-queue`
 
-Its approved scope is the narrow production implementation of restrained public landing-page motion:
+Approved scope:
 
-- add a small feature-local landing helper initialized by `LandingPageComponent` and using native `IntersectionObserver`;
-- mark only selected lower-page compositions with static `data-scroll-reveal` attributes;
-- reveal those compositions once with opacity and a small vertical translation;
-- cover the workflow introduction and steps, capability copy and demonstrations, progress composition, and final call to action;
-- leave the header, hero, first-screen product composition, footer, routes, copy, and layout unchanged;
-- keep content visible when `IntersectionObserver` or `matchMedia` is unavailable or reduced motion is requested;
-- use short restrained delays only, with no animation dependency or global motion system;
-- add focused tests, transformation documentation, automated validation, and a reviewed pull request.
+- establish issue #122 as the execution entry point;
+- create the ordered execution issues #123–#133 with priorities, dependencies, branches, scope, acceptance criteria, exclusions, and validation expectations;
+- reconcile Phase 1D as integrated;
+- update the governing transformation records and add the VT-000 migration report;
+- open a documentation/process-only PR to `visual_transformation`.
 
-Review next:
-
-1. [`transformation/reports/PHASE_1D_LANDING_SCROLL_REVEAL_IMPLEMENTATION.md`](./transformation/reports/PHASE_1D_LANDING_SCROLL_REVEAL_IMPLEMENTATION.md)
-2. `apps/web/src/app/features/public/landing-scroll-reveal.ts`
-3. `apps/web/src/app/features/public/landing-scroll-reveal.spec.ts`
-4. lifecycle setup and selected reveal markers in `landing-page.component.ts`
-5. `/` in a real browser with normal motion, reduced motion, desktop, and mobile widths
-6. the Phase 1D pull request validation and review state.
-
-Do not merge the Phase 1D pull request, animate the hero, create a global animation abstraction, add dependencies, migrate global tokens or typography, implement bottom navigation, redesign route pages, or change backend behavior without explicit approval.
+Do not implement #123, #124, or any later execution issue on the VT-000 branch. Do not modify Angular, CSS, routes, dependencies, APIs, schemas, databases, or backend behavior in this checkpoint.
