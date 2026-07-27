@@ -4,7 +4,7 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** Phase 1C production navigation rail implemented on a review branch; automated validation in progress
+**Program state:** Phase 1C production navigation rail implemented; automated validation passed, browser review pending
 
 **Integration branch:** `visual_transformation`
 
@@ -41,6 +41,7 @@ PR #108 was reviewed and explicitly approved. The current slice implements that 
 - [x] Preserved `AppComponent` ownership of the router outlet, imported-game job panel, and confirmation dialog.
 - [x] Added focused navigation component tests.
 - [x] Opened draft PR #112 to `visual_transformation`.
+- [x] Passed dependency installation, lint, full build, architecture guardrails, migrations, and complete tests on GitHub Actions run #940.
 
 ## Current checkpoint
 
@@ -77,14 +78,23 @@ Do not merge PR #112 without explicit approval. When approved, squash merge it i
 - The shell now uses an `auto minmax(0, 1fr)` desktop grid, so rail width drives content width without cross-component state.
 - `MainNavigationComponent.mainNavItems` remains the sole navigation definition.
 - Primary and workspace sections are filtered from that single array.
-- parent anchors retain their existing default links;
-- child access uses a separate disclosure button and no hover dependency;
-- flyout and mobile-sheet state use local Angular signals;
-- `NavigationEnd` and Escape close transient navigation;
-- mobile continues to render all groups and destinations from the same model;
-- no route, contract, API, schema, database, dependency, job, or feature-workflow behavior changed.
+- Parent anchors retain their existing default links.
+- Child access uses a separate disclosure button and no hover dependency.
+- Flyout and mobile-sheet state use local Angular signals.
+- `NavigationEnd` and Escape close transient navigation.
+- Mobile continues to render all groups and destinations from the same model.
+- No route, contract, API, schema, database, dependency, job, or feature-workflow behavior changed.
 
 ### Automated validation
+
+GitHub Actions run #940 completed successfully on the implementation and documentation head:
+
+- dependency installation passed;
+- lint passed;
+- full monorepo build passed, including Angular template/type compilation;
+- architecture guardrails passed;
+- database migrations applied successfully;
+- complete monorepo tests passed, including the focused navigation component specs.
 
 PR #112 CI is the authoritative executable validation because the current execution environment cannot resolve `github.com` for a local clone or checkout.
 
@@ -100,7 +110,7 @@ Result:
 fatal: unable to access 'https://github.com/vokerg/chess_repertoir_trainer.git/': Could not resolve host: github.com
 ```
 
-GitHub Actions run #931 was queued after the initial implementation head. Final-head results must be recorded before the PR is marked ready for review.
+Later validation-record corrections are documentation-only and do not change the validated runtime surface; the current PR checks remain authoritative for the branch head.
 
 ### Outstanding browser validation
 
@@ -116,7 +126,7 @@ GitHub Actions run #931 was queued after the initial implementation head. Final-
 
 ## Open decisions
 
-- Whether Phase 1C is accepted after final-head CI and browser review.
+- Whether Phase 1C is accepted after browser review.
 - Whether real-icon review requires a small adjustment within the approved expanded/collapsed width ranges.
 - Whether child flyouts require viewport-edge repositioning after browser review.
 - Whether collapse persistence is useful after real use; it is intentionally excluded now.
@@ -143,7 +153,7 @@ GitHub Actions run #931 was queued after the initial implementation head. Final-
 - [x] Separate public and authentication routes from the signed-in shell.
 - [x] Add signed-in `/home` and normal post-login navigation.
 - [x] Define, visualize, review, and merge the desktop rail contract.
-- [ ] Validate, review, and merge the Phase 1C production rail.
+- [ ] Review and merge the validated Phase 1C production rail.
 - [ ] Establish production global tokens and typography.
 - [ ] Evolve shared page-header, panel, and button treatments after representative validation.
 - [ ] Complete remaining public metadata and social-preview work.
@@ -178,7 +188,7 @@ GitHub Actions run #931 was queued after the initial implementation head. Final-
 - Retained the complete grouped mobile sheet below 760px.
 - Added focused component tests and opened draft PR #112.
 - Attempted local GitHub access and recorded the exact DNS failure.
-- Triggered GitHub Actions CI for executable validation.
+- Passed final implementation CI run #940: lint, build, architecture, migrations, and full tests.
 
 ### 2026-07-26 — Phase 1B navigation shell discovery
 
