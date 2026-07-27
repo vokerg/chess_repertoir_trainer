@@ -69,7 +69,7 @@ Use `/home` as the signed-in product entry point. Study/library remains a focuse
 
 ### D-010 — Desktop navigation direction
 
-**Status:** Locked and implemented on the Phase 1C review branch
+**Status:** Locked and integrated through PR #112
 
 Replace the crowded floating horizontal navigation with a compact collapsible left rail. Reuse the existing grouped navigation model rather than creating another source of truth.
 
@@ -142,21 +142,29 @@ Phase 1B was discovery and static visualization only. It defined the desktop rai
 
 ### D-020 — Phase 1C implementation boundary
 
-**Status:** Locked for PR #112
+**Status:** Locked and integrated through PR #112
 
-Implement the approved rail only in the existing signed-in shell and navigation component. Preserve routes, active-prefix behavior, account behavior, root overlays, mobile access, APIs, schemas, database behavior, dependencies, and feature workflows. Do not combine token, typography, page-header, bottom-navigation, or representative-workflow changes into this slice.
+The approved rail was implemented only in the existing signed-in shell and navigation component. Routes, active-prefix behavior, account behavior, root overlays, mobile access, APIs, schemas, database behavior, dependencies, and feature workflows were preserved. Token, typography, page-header, bottom-navigation, and representative-workflow changes remained outside the slice.
+
+### D-315 — Phase 1C production rail disposition
+
+**Status:** Locked and integrated through PR #112
+
+Direct browser review accepted the expanded and collapsed rail direction. The identified submenu-discoverability weakness was corrected with larger conventional down/up disclosure controls, stronger interaction states, accessible labels, titles, and focused tests. PR #112 was squash-merged into `visual_transformation` on 2026-07-27 after successful automated validation.
+
+Integration does not close the recorded residual browser checks for long labels and names, viewport-edge flyout placement, Clerk controls, mobile boundary widths, imported-game job-panel spacing, or representative page widths. It also does not approve collapse persistence, route-driven collapse, permanent bottom navigation, global token migration, typography changes, or route-page modernization.
 
 ### D-314 — Phase 1B navigation discovery disposition
 
 **Status:** Locked and approved
 
-The expanded rail, collapsed rail, account placement, anchored child-navigation direction, workspace pressure, and retained mobile sheet were reviewed and explicitly approved. Proceed with the narrow Phase 1C Angular implementation.
+The expanded rail, collapsed rail, account placement, anchored child-navigation direction, workspace pressure, and retained mobile sheet were reviewed and explicitly approved. The resulting production implementation is integrated through PR #112.
 
 ## Locked first-implementation navigation decisions
 
 ### D-310 — Initial desktop rail geometry
 
-**Status:** Locked for Phase 1C browser validation
+**Status:** Locked for the integrated Phase 1C implementation; optical validation remains open
 
 Use a 240px expanded rail and a 74px collapsed rail initially. Focused optical adjustment may remain within the approved 236–244px and 72–76px ranges after real-icon, long-label, account, and representative-page review.
 
@@ -346,9 +354,3 @@ Determine primary mobile destinations after modernizing Games, Study, and Openin
 **Status:** Open
 
 Directly review `/login` and `/signup` at desktop/mobile widths and in configured-Clerk and local-development-auth modes.
-
-### D-315 — Phase 1C production rail disposition
-
-**Status:** Open
-
-Review final-head CI, expanded/collapsed rail behavior, flyout placement, active states, keyboard interaction, account controls, representative page widths, mobile sheet behavior, and overlay coexistence. Decide whether to approve PR #112, require focused corrections, or reopen a specific interaction detail.

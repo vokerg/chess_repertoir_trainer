@@ -161,25 +161,21 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A brand assets, and Phase 1B navigation discovery are squash-merged into `visual_transformation`.
+The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A brand assets, Phase 1B navigation discovery, and Phase 1C production navigation rail are squash-merged into `visual_transformation`.
 
-The current approved slice is Phase 1C production navigation rail on `visual-transformation/phase-1c-navigation-rail`.
+The current approved slice is documentation-only Phase 1C integration reconciliation on `visual-transformation/phase-1c-integration-reconciliation`.
 
 Stop after:
 
-- a 240px expanded and 74px collapsed graphite desktop rail;
-- reuse of `MainNavigationComponent.mainNavItems` as the only destination source;
-- primary and quieter workspace sections derived from that model;
-- existing parent links, children, icons, quiet flags, and active prefixes preserved;
-- explicit local/session-only collapse state;
-- separate keyboard-operable child disclosure controls;
-- anchored child flyouts in expanded and collapsed desktop modes;
-- Escape, backdrop, and route-navigation cleanup of transient navigation;
-- the complete grouped mobile sheet retained below 760px;
-- Clerk and development-auth account behavior preserved;
-- root job and confirmation overlays preserved;
-- focused tests, updated documentation, validation records, and a reviewed pull request to `visual_transformation`.
+- recording PR #112 as integrated in `TRANSFORMATION.md` and `STATUS.md`;
+- closing D-315 as locked and integrated in `DECISIONS.md`;
+- removing obsolete instructions that describe PR #112 as awaiting merge;
+- preserving all residual browser-validation gaps and open product decisions;
+- adding a dedicated reconciliation report;
+- opening a reviewed pull request to `visual_transformation`.
 
-Do not merge PR #112, add bottom navigation, persist collapse state, add route-specific auto-collapse, change routes, migrate global tokens or typography, redesign page headers or feature workflows, add dependencies, or change backend behavior without explicit approval.
+Do not modify Angular, CSS, routes, packages, tests, APIs, schemas, database files, dependencies, or backend behavior in this checkpoint. Do not merge the reconciliation pull request without explicit approval.
 
-Authentication, home, brand rasterization, favicon, responsive, navigation, Clerk, and representative-page browser validation remain explicit residual gaps until recorded.
+After this reconciliation is squash-merged, no runtime checkpoint is automatically approved. Restrained public landing-page scroll-reveal motion is the clearest recorded candidate, but it must be approved separately. Bottom navigation, collapse persistence, route-specific auto-collapse, global token migration, typography changes, page-header redesign, representative workflow modernization, and backend changes remain out of scope until explicitly approved.
+
+Authentication, home, brand rasterization, favicon, responsive navigation, long-label, viewport-edge flyout, Clerk, imported-job-panel, and representative-page browser validation remain explicit residual gaps until recorded as complete.

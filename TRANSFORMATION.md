@@ -44,31 +44,30 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #86 — signed-in `/home` discovery and visualization;
 - PR #87 — guarded Angular `/home`, normal post-auth fallback to `/home`, and deterministic existing-data recommendations;
 - PR #88 — production Node Branch assets, shared brand components, favicon, and integrated lockups;
-- PR #108 — Phase 1B desktop rail and interim mobile-navigation discovery.
+- PR #108 — Phase 1B desktop rail and interim mobile-navigation discovery;
+- PR #112 — Phase 1C production navigation rail, submenu-discoverability correction, focused tests, and retained grouped mobile sheet.
 
-Direct browser validation for authentication, home, brand rasterization, favicon, and the navigation shell remains residual work and must not be represented as completed.
+Direct browser validation for authentication, home, brand rasterization, favicon, long navigation labels and names, viewport-edge flyouts, Clerk controls, and representative responsive widths remains residual work and must not be represented as completed.
 
 ## Current checkpoint
 
-The active branch is `visual-transformation/phase-1c-navigation-rail`.
+The active branch is `visual-transformation/phase-1c-integration-reconciliation`.
 
-Its approved scope is the narrow production implementation of the reviewed navigation contract:
+Its approved scope is documentation-only reconciliation after PR #112 was already squash-merged into `visual_transformation`:
 
-- replace the signed-in desktop floating pill header with an expanded/collapsed graphite rail;
-- keep `MainNavigationComponent.mainNavItems` as the only navigation source;
-- preserve all existing links, children, icons, quiet states, active prefixes, account behavior, and workflow routes;
-- use a separate keyboard-operable disclosure control and anchored child flyouts;
-- keep collapse state local and session-only, with no route-specific automatic collapse;
-- retain the complete grouped mobile sheet below the shared 760px breakpoint;
-- preserve `AppComponent` ownership of signed-in content, imported-game jobs, and confirmation dialogs;
-- add focused tests, documentation, automated validation, and a reviewed pull request.
+- record Phase 1C as integrated in the stable entry point and transformation status;
+- close the Phase 1C production-rail disposition decision;
+- remove obsolete instructions that still describe PR #112 as unmerged;
+- preserve all outstanding browser-validation gaps and later product decisions;
+- add a dedicated reconciliation report and reviewed pull request;
+- make no Angular, CSS, routing, dependency, API, schema, database, or backend changes.
 
 Review next:
 
-1. [`transformation/reports/PHASE_1C_NAVIGATION_RAIL_IMPLEMENTATION.md`](./transformation/reports/PHASE_1C_NAVIGATION_RAIL_IMPLEMENTATION.md)
-2. `apps/web/src/app/core/layout/main-navigation/`
-3. `apps/web/src/app/app.component.css`
-4. expanded desktop rail, collapsed desktop rail, child flyouts, and mobile sheet in a real browser
-5. PR #112 automated validation and review state.
+1. [`transformation/reports/PHASE_1C_INTEGRATION_RECONCILIATION.md`](./transformation/reports/PHASE_1C_INTEGRATION_RECONCILIATION.md)
+2. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
+3. [`transformation/STATUS.md`](./transformation/STATUS.md)
+4. [`transformation/WORKING_RULES.md`](./transformation/WORKING_RULES.md)
+5. the documentation-only pull request into `visual_transformation`.
 
-Do not merge PR #112, implement bottom navigation, persist collapse state, add route-specific auto-collapse, migrate global tokens or typography, redesign route pages, or change backend behavior without explicit approval.
+After this reconciliation is approved and squash-merged, no runtime transformation slice is automatically approved. Restrained public landing-page scroll-reveal motion is the clearest recorded candidate, but it requires separate explicit approval before implementation. Do not begin global tokens, typography, bottom navigation, route-page redesign, representative workflow modernization, or backend changes without an approved checkpoint.
