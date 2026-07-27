@@ -220,9 +220,9 @@ Explanation, summarization, naming or conversational orchestration may be useful
 
 ### RB-D027 — Trap knowledge requires evidence and curation
 
-State: **PROVISIONAL**
+State: **LOCKED**
 
-RB-014 recommends that a trap be represented as a versioned conditional branch with:
+RB-014 established, and the user approved, that a trap is represented as a versioned conditional branch with:
 
 - normalized trigger-position and move identity;
 - a practically tempting opponent response;
@@ -237,7 +237,9 @@ Opening names and ECO are descriptive metadata, not trap identity. Related non-i
 
 Suitable reusable source inputs are CC0 Lichess games, puzzles, evaluated positions, and `lichess-org/chess-openings`, plus original application analysis and copy. Public studies, videos, blogs, books, and unlicensed collections are discovery leads only and must not be bulk imported.
 
-The recommended next step is a bounded 20–50 example data/validator pilot after user approval. No production database, endpoint, UI, course write, or RB-006/RB-007 contract change is approved by this provisional decision.
+The approved next step is RB-017: one bounded 20–50 example source-controlled data/validator pilot. It may add deterministic validation, versioned evidence snapshots, review output, tests, and documentation. It may not add a production database, public endpoint, API/MCP contract, Angular UI, course write, or RB-006/RB-007 contract change.
+
+Any production traps capability requires a new user decision after the pilot report.
 
 ## Rejected shortcuts
 
