@@ -112,7 +112,17 @@ Opening classification uses deterministic, versioned, ordered regex rules over g
 
 Every result exposes separate White and Black profiles, explicit unknowns, stable rule IDs, rationales and confidence. The rule registry is stored separately from `openingBook.generated.ts`; it does not require one database row per generated entry.
 
-Runtime LLM calls, Stockfish or engine-assisted classification auditing, and automatic soundness inference from words such as `Gambit` are rejected for this workflow. Initial rules are authored as reviewable source code. RB-018 may expand family coverage and actual-game calibration without changing this method.
+Runtime LLM calls, Stockfish or engine-assisted classification auditing, and automatic soundness inference from words such as `Gambit` are rejected for this workflow. Initial rules are authored as reviewable source code.
+
+### RB-D039 — Opening coverage means rule matching, not fabricated certainty
+
+State: **LOCKED**
+
+RB-018 completes the pinned generated-book coverage track with `2026-07-rules-v2`: all 3,733 current generated entries and all 3,167 unique names match at least one of 114 active ordered rules.
+
+This metric means every pinned name has extractable characteristics and matched-rule provenance. It does not require every dimension to be asserted with high confidence. Rare heterogeneous families may retain low confidence or explicit `UNKNOWN` soundness while exposing only safely inferable traits, roles and theory burden. Runtime names outside the pinned source retain the complete unknown fallback.
+
+Generated-book breadth and actual-game distribution are separate measurements. The generated audit guards upstream naming changes; the database-backed game audit weights classifications by existing imported-game opening metadata. Neither requires classification persistence, a background job, an API, or one row per generated opening.
 
 ### RB-D014 — Chess Profile is standalone
 
