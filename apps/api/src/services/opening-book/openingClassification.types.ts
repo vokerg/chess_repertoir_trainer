@@ -1,6 +1,6 @@
 import type { OpeningBookEntry } from './openingBook.types';
 
-export const OPENING_CLASSIFICATION_VERSION = '2026-07-rules-v1' as const;
+export const OPENING_CLASSIFICATION_VERSION = '2026-07-rules-v2' as const;
 
 export type OpeningSide = 'WHITE' | 'BLACK';
 

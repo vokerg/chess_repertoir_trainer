@@ -11,13 +11,13 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 10 | RB-001 | [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89) | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
 | 20 | RB-002 | [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90) | P0 | DONE | Define multi-account player level resolution | Dual-use | Delivered by the RB-001 normalized peer resolver in PR #84 |
 | 30 | RB-003 | [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91) | P0 | DONE | Establish named opening classification foundation | Dual-use | Delivered through PR #111 |
-| 35 | RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) | P1 | READY | Complete opening classification coverage | Dual-use | RB-003; may run in parallel with RB-004 |
+| 35 | RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) | P1 | DONE | Complete opening classification coverage | Dual-use | Delivered through PR #121; RB-003 method preserved |
 | 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | DONE | Prototype visual candidate and coverage choices | North-star | Accepted through PR #110: setup dialog to routed board-first workbench |
-| 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | READY | Implement Player Chess Profile calculation | Dual-use | Completed RB-001/RB-002/RB-003; preserve unknown classification coverage while RB-018 expands rules |
+| 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | READY | Implement Player Chess Profile calculation | Dual-use | Completed RB-001/RB-002/RB-003/RB-018; preserve unknown dimensions and low-confidence coverage |
 | 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | BLOCKED | Deliver Player Chess Profile experience | Standalone | RB-004 |
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | READY | Define repertoire target contract | North-star | Completed RB-003; accepted RB-008 setup requirements |
 | 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, RB-006 |
-| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | RB-006; consumes completed RB-003 and accepted RB-008 evidence responsibilities |
+| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | RB-006; consumes completed RB-003/RB-018 and accepted RB-008 evidence responsibilities |
 | 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | BLOCKED | Define builder session, branch queue, and draft lifecycle | North-star | RB-006, accepted RB-008 routed direction, RB-007 contract direction |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, accepted RB-008 dialog/workbench direction, RB-009 |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
@@ -29,7 +29,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 ## GitHub Issues program
 
-- Program tracker: [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105).
+- Program tracker: [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 - GitHub Issues track execution status, assignee, branch, pull request and active blockers.
 - Repository task files remain the detailed scope and acceptance source.
 - New RB tasks require a corresponding GitHub issue in the same coordination change.
@@ -53,7 +53,14 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Report: `reports/RB-003-2026-07-27-opening-classification-rules.md`
 - Delivered: deterministic versioned White/Black opening profiles using ordered regex family rules, modifiers and exact overrides.
 - Boundary: explicit unknowns; no database, runtime AI, engine audit, API, UI, or generated-book mutation.
-- Follow-up: RB-018 / #116 owns systematic family coverage and actual-game calibration.
+
+### RB-018 / #116
+
+- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/121
+- Report: `reports/RB-018-2026-07-27-opening-classification-coverage.md`
+- Delivered: `2026-07-rules-v2`, 100% rule-match coverage for the pinned 3,733 generated entries and 3,167 unique names through 114 ordered rules.
+- Added generated and game-weighted audits, grouped unknown-family backlogs and focused family/exception regressions.
+- Boundary: rule-match coverage does not fabricate semantic certainty; rare families retain low confidence or explicit unknown dimensions.
 
 ### RB-008 / #96
 
@@ -76,20 +83,14 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 ## Ready work
 
-### RB-018 / #116
-
-- Complete the regex rule coverage without changing the RB-003 contract.
-- Prioritize opening families and high-frequency actual-game unknowns.
-- Explicitly excludes Stockfish, runtime AI, persistence, API, and UI.
-
 ### RB-004 / #92
 
 - Calculate the Player Chess Profile using completed factual level and opening-classification foundations.
-- Preserve classified and unknown counts; do not wait for fabricated 100% rule coverage.
+- Preserve low-confidence and unknown-dimension counts; rule-match coverage is not identical to semantic certainty.
 
 ### RB-006 / #94
 
-- Define the repertoire target contract using completed RB-003 and accepted RB-008 setup responsibilities.
+- Define the repertoire target contract using completed RB-003/RB-018 and accepted RB-008 setup responsibilities.
 
 ## Active claim
 
@@ -120,7 +121,7 @@ RB-001 and RB-002 factual population/level — DONE
         +
 RB-003 opening-classification foundation — DONE
         +
-RB-018 coverage expansion — READY, parallel calibration
+RB-018 coverage expansion — DONE
         ↓
 RB-004/005 player profile
         ↓
@@ -141,9 +142,8 @@ RB-014 and RB-017 remain outside the critical path.
 
 ## Queue impact
 
-- RB-003 is `DONE`; the Stage 1 foundation is delivered.
-- RB-018 is added at order 35, P1, `READY` for systematic regex coverage.
-- RB-004 and RB-006 become `READY`.
-- RB-007 remains blocked on RB-006 rather than RB-003.
+- RB-003 and RB-018 are `DONE`; opening classification foundation and pinned-book coverage are delivered.
+- RB-004 and RB-006 remain `READY`.
+- RB-007 remains blocked on RB-006.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
-- No existing priority changes are required.
+- No priority changes are required.
