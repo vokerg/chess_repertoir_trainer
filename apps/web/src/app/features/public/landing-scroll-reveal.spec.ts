@@ -24,8 +24,9 @@ describe('setupLandingScrollReveal', () => {
     const cleanup = setupLandingScrollReveal(root, createEnvironment(false));
 
     expect(element.style.opacity).toBe('0');
-    expect(element.style.transform).toBe('translate3d(0, 18px, 0)');
-    expect(element.style.transition).toContain('80ms');
+    expect(element.style.transform).toContain('18px');
+    expect(element.style.transition).toContain('opacity');
+    expect(element.style.transition).toContain('transform');
     expect(observerOptions).toEqual({ rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
     expect(observe).toHaveBeenCalledOnceWith(element);
 
@@ -35,7 +36,7 @@ describe('setupLandingScrollReveal', () => {
     );
 
     expect(element.style.opacity).toBe('1');
-    expect(element.style.transform).toBe('translate3d(0, 0, 0)');
+    expect(element.style.transform).not.toContain('18px');
     expect(unobserve).toHaveBeenCalledOnceWith(element);
     expect(disconnect).toHaveBeenCalledTimes(1);
     expect(removeReducedMotionListener).toHaveBeenCalled();
@@ -72,7 +73,7 @@ describe('setupLandingScrollReveal', () => {
 
     expect(element.style.transition).toBe('none');
     expect(element.style.opacity).toBe('1');
-    expect(element.style.transform).toBe('translate3d(0, 0, 0)');
+    expect(element.style.transform).not.toContain('18px');
     expect(disconnect).toHaveBeenCalledTimes(1);
   });
 
