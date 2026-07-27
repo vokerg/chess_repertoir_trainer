@@ -224,15 +224,16 @@ Prefer coherent slices over enormous rewrites. A useful slice has:
 
 ## 16. Current stop condition
 
-Phase 1D is integrated through PR #120. The active approved checkpoint is VT-000 on `visual-transformation/vt-000-issue-driven-queue`.
+VT-000 is integrated through PR #134. There is no active implementation branch recorded in repository documentation.
 
-Stop after:
+The next task must be selected from issue #122 using the deterministic algorithm. While the live issue state remains unchanged, issue #123 is next because it is `READY`, P1, order 10.
 
-- program issue #122 and execution issues #123–#133 exist;
-- priorities, order, readiness, dependencies, branches, scope, acceptance criteria, exclusions, and validation are explicit;
-- Phase 1D is reconciled as integrated;
-- D-022 locks the hybrid documentation/issues model;
-- `TRANSFORMATION.md`, `STATUS.md`, and these rules point to the live issue queue;
-- the VT-000 report and reviewed process-only PR are complete.
+Before any implementation:
 
-Do not implement #123, #124, or later issues on the VT-000 branch. Do not modify Angular, CSS, routes, dependencies, APIs, schemas, databases, or backend behavior in this checkpoint.
+- inspect issue #122 and issue #123;
+- inspect open branches and pull requests for collisions;
+- comment on #123 to claim the exact scope;
+- update #123 to `IN_PROGRESS`;
+- create `visual-transformation/vt-101-inline-navigation-accordion` from the current `visual_transformation` head.
+
+Do not implement an unclaimed issue, start a blocked issue, bypass a higher-priority ready issue, or merge a transformation pull request without explicit approval.
