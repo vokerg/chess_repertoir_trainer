@@ -4,106 +4,105 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** Phase 1C production navigation rail is squash-merged into `visual_transformation`; the current checkpoint reconciles persistent documentation that was merged in its pre-integration state
+**Program state:** Phase 1D restrained public landing-page scroll reveal is implemented and has passed complete automated validation; direct browser review remains the acceptance gate
 
 **Integration branch:** `visual_transformation`
 
-**Active documentation branch:** `visual-transformation/phase-1c-integration-reconciliation`
+**Active implementation branch:** `visual-transformation/phase-1d-landing-scroll-reveal`
 
-The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A production brand assets, Phase 1B navigation discovery, and Phase 1C production navigation rail are squash-merged into `visual_transformation`.
+The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A production brand assets, Phase 1B navigation discovery, Phase 1C production navigation rail, and Phase 1C integration reconciliation are squash-merged into `visual_transformation`.
 
-PR #112 was merged on 2026-07-27 after direct browser review accepted the navigation direction, the submenu-discoverability correction was added, and automated validation passed. This reconciliation changes transformation records only; it does not modify application runtime behavior.
+PR #118 was squash-merged on 2026-07-27 after PR CI run #1008 passed; integration CI run #1018 also passed. The current Phase 1D slice changes only the public landing feature and transformation records. It does not modify the hero, routes, signed-in shell, APIs, schemas, database behavior, dependencies, or feature workflows.
 
 ## Completed
 
 - [x] Established the analytical graphite/mint identity and Node Branch concept.
 - [x] Implemented and merged the public landing page through PR #78.
 - [x] Implemented and merged the shared authentication shell through PR #79.
-- [x] Reconciled and merged the Phase 0B checkpoint through PR #85.
+- [x] Reconciled and merged Phase 0B through PR #85.
 - [x] Defined and merged signed-in home discovery through PR #86.
-- [x] Implemented and merged the signed-in Angular home through PR #87.
-- [x] Made `/home` the normal post-auth fallback while preserving explicit `returnUrl`.
-- [x] Implemented and merged production Node Branch assets, favicon, and shared brand components through PR #88.
-- [x] Defined, visualized, reviewed, and merged the desktop rail and interim mobile navigation contract through PR #108.
-- [x] Replaced the desktop floating pill header with a 240px expanded and 74px collapsed graphite rail.
-- [x] Kept `MainNavigationComponent.mainNavItems` as the only route/menu source.
-- [x] Derived primary and quieter workspace rail sections from that source.
-- [x] Kept collapse state local and session-only.
-- [x] Preserved every existing top-level route, child route, icon, quiet flag, and active prefix.
-- [x] Added distinct keyboard-operable child disclosure buttons and anchored flyouts.
-- [x] Added Escape, backdrop, and route-navigation cleanup for transient navigation.
-- [x] Retained the complete grouped mobile sheet below 760px.
-- [x] Preserved Clerk and development-auth account behavior.
-- [x] Preserved `AppComponent` ownership of the router outlet, imported-game job panel, and confirmation dialog.
-- [x] Added focused navigation component tests.
-- [x] Completed direct browser review of the navigation direction.
-- [x] Strengthened child-submenu discoverability with larger down/up chevron controls, stronger states, titles, and accessible labels.
-- [x] Squash-merged the validated Phase 1C implementation through PR #112.
-- [x] Passed implementation and integration validation, including successful GitHub Actions runs #940, #945, #953, and #983.
-- [x] Recorded requested landing-page scroll-reveal motion as a separate focused Phase 1 candidate.
-- [x] Created `visual-transformation/phase-1c-integration-reconciliation` from the integrated Phase 1C head.
-- [x] Reconciled `TRANSFORMATION.md`, `DECISIONS.md`, `STATUS.md`, and `WORKING_RULES.md` with the actual merge state.
-- [x] Added a dedicated Phase 1C integration reconciliation report.
+- [x] Implemented and merged signed-in Angular `/home` through PR #87.
+- [x] Implemented and merged production brand assets, favicon, and shared lockups through PR #88.
+- [x] Defined and merged the desktop navigation contract through PR #108.
+- [x] Implemented and merged the Phase 1C production rail through PR #112.
+- [x] Reconciled the Phase 1C integration state through PR #118.
+- [x] Created `visual-transformation/phase-1d-landing-scroll-reveal` from the updated integration branch.
+- [x] Added a small feature-local `landing-scroll-reveal.ts` helper using native `IntersectionObserver`.
+- [x] Initialized the helper from `LandingPageComponent` through standard `AfterViewInit` and `OnDestroy` lifecycle ownership.
+- [x] Marked only approved lower-page compositions with static `data-scroll-reveal` and optional `data-reveal-delay` attributes.
+- [x] Limited motion to one-time opacity and 18px vertical translation with a 420ms duration and delays capped at 240ms.
+- [x] Kept content visible when `IntersectionObserver` or `matchMedia` is unavailable or reduced motion is requested.
+- [x] Added dynamic reduced-motion handling that reveals pending content immediately with transitions disabled.
+- [x] Left the header, hero, first-screen product composition, footer, copy, routes, and layout unchanged.
+- [x] Added focused helper tests for normal reveal, cleanup, unsupported-browser fallbacks, initial reduced motion, and dynamic reduced motion.
+- [x] Locked the Phase 1D boundary in D-021.
+- [x] Added the required Phase 1D implementation report.
+- [x] Opened PR #120 to `visual_transformation`.
+- [x] Passed complete final runtime-head CI run #1045: dependency installation, lint, full monorepo build, architecture guardrails, database migrations, and all tests.
 
 ## Current checkpoint
 
-Review the documentation-only reconciliation in this order:
+Review Phase 1D in this order:
 
-1. `transformation/reports/PHASE_1C_INTEGRATION_RECONCILIATION.md`;
-2. `TRANSFORMATION.md` integrated-checkpoint and current-checkpoint sections;
-3. D-010, D-020, and D-315 in `transformation/DECISIONS.md`;
-4. the completed Phase 1C status, backlog, and session log in this file;
-5. the revised current stop condition in `transformation/WORKING_RULES.md`;
-6. the pull request diff into `visual_transformation`.
+1. `transformation/reports/PHASE_1D_LANDING_SCROLL_REVEAL_IMPLEMENTATION.md`;
+2. `apps/web/src/app/features/public/landing-scroll-reveal.ts`;
+3. `apps/web/src/app/features/public/landing-scroll-reveal.spec.ts`;
+4. lifecycle setup and reveal markers in `landing-page.component.ts`;
+5. `/` with normal motion and reduced motion;
+6. desktop, tablet, compact, and narrow-phone widths;
+7. PR #120 review state and current documentation-only-head CI.
 
 Review focus:
 
-- PR #112 is represented as squash-merged rather than awaiting approval;
-- D-315 is closed as locked and integrated;
-- implementation CI evidence is recorded without claiming residual browser checks are complete;
-- no runtime source, test, package, route, API, schema, database, or backend file changes are included;
-- landing-page motion remains a candidate that needs separate explicit approval.
+- first-screen header, hero, product composition, and semantics remain unchanged;
+- selected lower-page content remains in the DOM and retains layout space before reveal;
+- reveal occurs once and is restrained rather than continuous or theatrical;
+- workflow-step delays remain short when displayed in a row or stacked on mobile;
+- capability copy and demonstrations enter as paired compositions;
+- unsupported observation or media-query APIs leave content fully visible;
+- initial and dynamically enabled reduced motion remove pending animation;
+- no dependency, global animation service, route change, global token migration, or signed-in behavior change is included.
 
-Do not merge the reconciliation pull request without explicit approval. When approved, squash merge it into `visual_transformation`.
+Do not merge PR #120 without explicit approval. When approved, squash merge it into `visual_transformation`.
 
 ## Validation status
 
 ### Confirmed by repository inspection
 
-- PR #112 is closed and merged into `visual_transformation`.
-- `visual_transformation` pointed at the PR #112 squash commit before this reconciliation branch was created.
-- The integrated implementation retains `AppComponent` shell ownership.
-- The shell uses an `auto minmax(0, 1fr)` desktop grid.
-- `MainNavigationComponent.mainNavItems` remains the sole navigation definition.
-- Parent anchors retain their existing default links.
-- Child access uses a separate disclosure button and no hover dependency.
-- Flyout and mobile-sheet state use local Angular signals.
-- `NavigationEnd` and Escape close transient navigation.
-- Mobile continues to render all groups and destinations from the same model.
-- No route, contract, API, schema, database, dependency, job, or feature-workflow behavior changed in Phase 1C.
-- This reconciliation branch changes Markdown documentation only.
+- `LandingPageComponent` remains a standalone OnPush public-route component.
+- The helper is feature-local under `features/public` and is not promoted to `shared`.
+- The hero and critical first-screen content have no reveal marker.
+- Unsupported observation, unsupported `matchMedia`, and initial reduced-motion paths add no hidden styles.
+- Pending elements remain semantically present and retain layout space.
+- Intersecting elements reveal once and are unobserved.
+- A reduced-motion preference change reveals all pending content without transition.
+- Stagger delay is capped at 240ms.
+- Component destruction disconnects observation and removes the media listener.
+- No landing CSS, copy, route, package, contract, schema, database, or backend file is changed.
 
 ### Automated validation
 
-The integrated Phase 1C commit has successful GitHub Actions CI run #983:
+PR #120 validation history:
 
-- dependency installation passed;
-- lint passed;
-- full monorepo build passed;
-- architecture guardrails passed;
-- database migrations applied successfully;
-- complete monorepo tests passed.
+- run #1028 failed during Angular lint/type compilation on the initial directive-based implementation;
+- run #1030 failed at the same gate after browser-API test-double cleanup;
+- run #1033 failed at the same gate after replacing the transformed directive input with static delay attributes;
+- the directive implementation was removed and replaced with the landing-specific helper explicitly allowed by the Phase 1C review contract;
+- run #1038 confirmed helper-based Angular lint/type compilation;
+- run #1043 passed installation, lint, build, architecture, and migrations, then failed in the test step because the new spec used an invalid strict partial `IntersectionObserverEntry` cast;
+- run #1044 passed the same non-test gates, then exposed browser-specific CSS serialization assertions in the helper spec;
+- run #1045 passed dependency installation, lint, full monorepo build, architecture guardrails, database migrations, and the complete test suite after the fixtures and assertions were made strict and behavior-focused.
 
-Earlier complete implementation runs #940, #945, and #953 also passed, with #953 covering the submenu-discoverability correction before merge.
+Run #1045 is the authoritative executable validation for the final runtime and test files. A later documentation-only head should remain green but does not change the validated runtime surface.
 
 ### Local executable validation
 
-A direct local checkout remains unavailable in the execution environment.
+A direct local checkout remains unavailable in this environment.
 
-Previously attempted:
+Attempted:
 
 ```text
-git ls-remote https://github.com/vokerg/chess_repertoir_trainer.git HEAD
+git clone --branch visual-transformation/phase-1d-landing-scroll-reveal --single-branch https://github.com/vokerg/chess_repertoir_trainer.git
 ```
 
 Result:
@@ -112,11 +111,9 @@ Result:
 fatal: unable to access 'https://github.com/vokerg/chess_repertoir_trainer.git/': Could not resolve host: github.com
 ```
 
-The GitHub connector was used to inspect the integration ref, merged PR metadata, implementation files, documentation files, and CI state directly.
+The helper and its spec were compiled locally with strict DOM settings, including `strict`, `noImplicitReturns`, and `noPropertyAccessFromIndexSignature`; that focused check passed after the final fixture correction.
 
-### Commands skipped for this reconciliation
-
-These commands were not run:
+These repository commands were not available locally:
 
 ```text
 npm run build:web
@@ -125,52 +122,56 @@ npm run lint
 npm run check:architecture
 ```
 
-Reason: this checkpoint modifies Markdown documentation only. Repository working rules explicitly allow documentation checkpoints to skip application build and test execution when no runtime files are changed. The already-integrated runtime implementation has successful complete CI.
-
 ### Outstanding browser validation
 
+Phase 1D:
+
+- normal-motion timing and visual restraint;
+- reduced motion before load and when changed while content is pending;
+- workflow-step stagger on desktop and stacked mobile layouts;
+- capability pairing at desktop and single-column widths;
+- progress and final-call-to-action timing;
+- absence of first-screen flash, layout shift, or hidden focus targets.
+
+Prior residual checks:
+
 - long navigation labels and long user names;
-- child flyout placement near top, bottom, and viewport edges;
-- mobile grouped sheet at 760px, compact, and narrow-phone widths;
+- child flyout placement near viewport edges;
+- mobile grouped navigation at boundary widths;
 - Clerk account interaction;
-- imported-game job panel spacing beside the rail;
+- imported-game job-panel spacing;
 - representative signed-in page widths;
-- prior authentication, home, favicon, and brand-rasterization residual checks.
+- authentication, home, favicon, and brand-rasterization checks.
 
 ## Open decisions
 
-- Whether real-icon and long-label review requires a small adjustment within the approved expanded/collapsed width ranges.
-- Whether child flyouts require viewport-edge repositioning after further browser review.
-- Whether collapse persistence becomes useful after real use; it remains intentionally excluded.
+- Whether Phase 1D is accepted after direct browser review.
+- Whether the 420ms duration, 18px translation, viewport threshold, or capped stagger needs an optical adjustment.
+- Whether later product motion should reuse this helper or remain surface-specific; no global abstraction is approved.
+- Whether rail widths or flyout placement need adjustment after residual browser review.
+- Whether collapse persistence becomes useful after real use.
 - Exact mobile-primary navigation after Games, Study, and Opening Analysis modernization.
 - IBM Plex Sans loading strategy.
 - Final production palette beyond the locked strong-mint text role.
 - Final public metadata and social-preview composition.
-- Which runtime checkpoint should follow this reconciliation. Restrained public landing-page scroll-reveal motion is the clearest recorded candidate but is not yet approved.
 
 ## Program backlog
 
 ### Phase 0 — identity and visual proof
 
-- [x] Produce identity and landing proof.
-- [x] Implement and merge the landing page.
-- [x] Implement and merge the authentication composition.
-- [x] Reconcile and merge the Phase 0B checkpoint.
-- [x] Produce and merge signed-in home discovery and visualization.
-- [x] Implement and merge the signed-in Angular home.
+- [x] Produce and implement identity, landing, authentication, and signed-in home checkpoints.
 - [ ] Complete and record browser review for authentication and home.
 
 ### Phase 1 — shell and entry points
 
-- [x] Implement and merge shared production brand assets and lockup components.
-- [x] Separate public and authentication routes from the signed-in shell.
+- [x] Implement and merge shared production brand assets and lockups.
+- [x] Separate public, authentication, and signed-in experiences.
 - [x] Add signed-in `/home` and normal post-login navigation.
-- [x] Define, visualize, review, and merge the desktop rail contract.
-- [x] Review and merge the validated Phase 1C production rail.
-- [ ] Add restrained one-time scroll-reveal motion to selected public landing-page sections using native `IntersectionObserver`, visible-by-default fallback, and full `prefers-reduced-motion` support.
+- [x] Define and implement the desktop navigation rail.
+- [ ] Review and merge Phase 1D landing scroll reveal.
 - [ ] Establish production global tokens and typography.
 - [ ] Evolve shared page-header, panel, and button treatments after representative validation.
-- [ ] Complete remaining public metadata and social-preview work.
+- [ ] Complete public metadata and social-preview work.
 
 ### Phase 2 — representative workflows
 
@@ -178,59 +179,30 @@ Reason: this checkpoint modifies Markdown documentation only. Repository working
 - [ ] Modernize Study.
 - [ ] Modernize Opening Analysis.
 - [ ] Extract only genuinely reusable patterns into shared UI.
-- [ ] Validate representative mobile workflows.
-- [ ] Decide final mobile-primary navigation from representative evidence.
+- [ ] Validate representative mobile workflows and decide final mobile-primary navigation.
 
 ### Phase 3 — rollout and polish
 
-- [ ] Migrate remaining primary pages and Labs with appropriate hierarchy.
+- [ ] Migrate remaining primary pages and Labs.
 - [ ] Add coherent empty states and onboarding.
-- [ ] Refine home recommendations, appearance preferences, and broader application motion and transitions.
+- [ ] Refine home recommendations, appearance preferences, and broader motion.
 - [ ] Complete accessibility and responsive review.
 
 ## Session log
 
-### 2026-07-27 — Phase 1C integration reconciliation
+### 2026-07-27 — Phase 1D public landing scroll reveal
 
-- Verified that PR #112 was already squash-merged into `visual_transformation` on 2026-07-27.
-- Verified that the integration branch matched the PR #112 squash commit before creating this branch.
-- Verified successful integration-commit CI run #983.
-- Identified that the transformation entry point, decision log, status, and working rules still described PR #112 as unmerged.
-- Created `visual-transformation/phase-1c-integration-reconciliation` from `visual_transformation`.
-- Updated the persistent transformation records without changing runtime files.
-- Closed D-315 as locked and integrated while preserving residual validation and open product decisions.
-- Added a dedicated reconciliation report.
-- Kept landing-page motion, token migration, typography, bottom navigation, and representative workflow modernization outside this checkpoint.
-
-### 2026-07-27 — Phase 1C browser-review follow-up
-
-- Recorded strong approval of the navigation rail direction.
-- Corrected the weak child-submenu affordance with larger conventional down/up chevrons and stronger interaction states.
-- Added focused disclosure semantics and tests.
-- Passed final pre-merge correction CI run #953.
-- Recorded public landing-page scroll-reveal motion as an explicit Phase 1 backlog item and a separate focused slice after PR #112.
-- Kept the motion work out of the navigation PR to preserve reviewability and scope boundaries.
-
-### 2026-07-27 — Phase 1C production navigation rail
-
-- Verified PR #108 was squash-merged into `visual_transformation` after explicit approval.
-- Created `visual-transformation/phase-1c-navigation-rail` from the updated integration branch.
-- Re-read repository Angular, shell, navigation, brand, responsive, and test conventions.
-- Implemented the approved expanded/collapsed graphite rail in `MainNavigationComponent`.
-- Kept the existing navigation array as the only destination source.
-- Selected anchored flyouts for child navigation in both desktop states.
-- Kept collapse state local, explicit, and non-persistent.
-- Retained the complete grouped mobile sheet below 760px.
-- Added focused component tests and opened PR #112.
-- Attempted local GitHub access and recorded the exact DNS failure.
-- Passed implementation CI runs before squash merge.
-
-### 2026-07-26 — Phase 1B navigation shell discovery
-
-- Inspected current shell and navigation ownership.
-- Defined expanded/collapsed desktop and interim mobile contracts.
-- Added an interactive prototype and detailed report.
-- Passed CI and squash-merged through PR #108 after explicit approval.
+- Verified and squash-merged the Phase 1C reconciliation through PR #118.
+- Re-entered through the updated transformation entry point and approved Phase 1D boundary.
+- Inspected the current landing implementation, test conventions, package scripts, and the Phase 1C browser-feedback report.
+- Confirmed there was no existing reveal implementation to reuse.
+- Created the Phase 1D branch and PR #120.
+- Implemented the approved reveal behavior initially as a feature-local directive.
+- Used CI failures #1028, #1030, and #1033 to isolate Angular compilation incompatibility in that approach.
+- Replaced the directive with a smaller landing-specific helper initialized by the existing component, retaining the same motion and accessibility contract.
+- Used runs #1043 and #1044 to correct strict test fixtures and remove browser-specific CSS serialization assumptions.
+- Passed complete runtime-head CI run #1045.
+- Updated the transformation entry point, decisions, status, working rules, report, and PR description to match the final architecture and validation state.
 
 ### Earlier integrated checkpoints
 
@@ -240,15 +212,6 @@ Reason: this checkpoint modifies Markdown documentation only. Repository working
 - PR #86 — signed-in home discovery.
 - PR #87 — signed-in Angular home.
 - PR #88 — production brand assets and shared lockups.
-- PR #108 — navigation-shell discovery.
+- PR #108 — navigation discovery.
 - PR #112 — production navigation rail.
-
-## Update protocol
-
-After every meaningful design or implementation session:
-
-1. Update completed and backlog items.
-2. Add a dated session-log entry.
-3. Record locked, revised, or rejected choices in `DECISIONS.md`.
-4. Update `MASTER_PLAN.md` if scope or architecture changes.
-5. Record validation performed, skipped checks, warnings, and residual risks.
+- PR #118 — Phase 1C integration reconciliation.
