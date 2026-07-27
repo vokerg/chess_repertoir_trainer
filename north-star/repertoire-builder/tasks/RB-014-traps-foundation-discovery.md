@@ -1,6 +1,6 @@
 # RB-014 — Research traps knowledge foundation
 
-Status: REVIEW
+Status: DONE
 
 Priority: P2
 
@@ -8,7 +8,7 @@ Order: 140
 
 Delivery class: Research
 
-Planning maturity: Review-ready
+Planning maturity: Complete
 
 Claimed by: ChatGPT session
 
@@ -18,19 +18,19 @@ Claimed at: 2026-07-27
 
 Claim scope: documentation-only discovery of trustworthy trap definitions, source/license strategies, derivation versus curation, data shape, transposition identity, validation workflow, and representative examples. No schema, import, API, Angular, course, ranking, or production capability changes.
 
-Review PR: #113
+Review PR: #113, squash-merged as `d53ff6e2b6eedcbf5f3abcea137373baa0102397`
 
 ## Outcome
 
 Determine whether the application can support a trustworthy, maintainable traps knowledge source and what a trap-oriented repertoire target would require.
 
-This is discovery, not a commitment to build a traps database.
+This task delivered discovery and an approved pilot direction, not a production traps database.
 
-## Recommendation
+## Accepted recommendation
 
-Proceed with a bounded curated pilot after user approval.
+Proceed with one bounded curated pilot, tracked as RB-017 / #114.
 
-The proposed foundation combines:
+The accepted foundation combines:
 
 - normalized position-and-move identity;
 - versioned engine evidence;
@@ -39,7 +39,7 @@ The proposed foundation combines:
 - editorial review and lifecycle state;
 - source/license/checksum provenance.
 
-Do not add production persistence, API contracts, Angular UI, builder integration, or course-writing behavior yet.
+Do not add production persistence, API contracts, Angular UI, builder integration, or course-writing behavior during the pilot.
 
 ## Definition established
 
@@ -99,14 +99,15 @@ Completed:
 - official source/license verification;
 - legal move sequences and normalized trigger positions documented for representative examples;
 - reproducible engine and population snapshot protocols defined using existing repository boundaries;
-- source limitations, licensing risks, and update/version rules documented.
+- source limitations, licensing risks, and update/version rules documented;
+- complete repository CI passed on PR #113.
 
-Not executed in this connector environment:
+Not executed during discovery:
 
-- exact Stockfish snapshots for the named examples, because the repository runtime/dependency checkout is unavailable here;
-- authenticated Lichess Explorer snapshots, because no Lichess access token is available to the connector.
+- exact Stockfish snapshots for the named examples;
+- authenticated Lichess Explorer snapshots.
 
-These are mandatory acceptance gates for the proposed pilot. The report intentionally does not fabricate values.
+These are mandatory acceptance gates for RB-017. The report intentionally does not fabricate values.
 
 ## Dependencies
 
@@ -116,9 +117,9 @@ Coordinate with RB-003 only for optional opening labels and with RB-007 before a
 
 ## Product impact
 
-- RB-006 should remain unchanged now. A future trap-oriented persona is a target preference, not a factual mutation.
-- RB-007 should remain unchanged now. Future optional trap evidence must remain separate from engine, population, master, personal, and theory evidence.
-- RB-003 must not become a blocker for trap identity.
+- RB-006 remains unchanged. A future trap-oriented persona is a target preference, not a factual mutation.
+- RB-007 remains unchanged. Future optional trap evidence must remain separate from engine, population, master, personal, and theory evidence.
+- RB-003 is not a blocker for trap identity.
 - no critical-path dependency is added.
 
 ## Acceptance assessment
@@ -128,10 +129,10 @@ Coordinate with RB-003 only for optional opening labels and with RB-007 before a
 - Proposed model represents practical appeal and objective risk: met.
 - Several real examples validate or challenge the model: met.
 - Licensing and update risks are recorded: met.
-- Report recommends proceed, revise, or defer: met; proceed to bounded pilot after approval.
+- Report recommends proceed, revise, or defer: met; the bounded pilot was approved.
 - No production capability is claimed without implementation: met.
 - Reproducible engine/population protocol is documented: met.
-- Exact named-example engine/population snapshots: deferred as the pilot's first hard gate; no values are invented.
+- Exact named-example engine/population snapshots: transferred to RB-017 as its first hard gate; no values are invented.
 
 ## Out of scope preserved
 
@@ -142,18 +143,16 @@ Coordinate with RB-003 only for optional opening labels and with RB-007 before a
 - no course/opening schema changes;
 - no new dependency.
 
-## Completion updates after review
+## Completion disposition
 
-After user approval:
-
-- lock or revise RB-D027;
-- decide whether to create one bounded pilot issue;
-- keep RB-006/RB-007 untouched unless the pilot demonstrates a concrete contract requirement;
-- update issue #102 and PR #113 disposition;
-- preserve this task as research evidence rather than claiming production delivery.
+- RB-D027 is accepted as the pilot foundation and will be tested by RB-017.
+- One bounded pilot issue was created: RB-017 / #114.
+- RB-006 and RB-007 remain untouched unless the pilot demonstrates a concrete contract requirement.
+- Issue #102 is closed as completed.
+- The research report remains the authoritative discovery evidence.
 
 ## Completion
 
 Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`
 
-Completed at: pending user review
+Completed at: 2026-07-27
