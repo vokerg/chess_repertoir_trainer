@@ -53,7 +53,8 @@ Implemented:
 - deterministic review output;
 - fixture-backed tests requiring neither live Stockfish nor network credentials;
 - explicit validator execution and uploaded CI report artifact;
-- operating documentation.
+- operating documentation;
+- complete repository CI passing for the 50-record corpus.
 
 Every record remains `DRAFT`. Legal replay does not establish setup soundness, practical frequency, or publication suitability.
 
@@ -129,11 +130,10 @@ An occurrence is anchored by normalized trigger FEN, side setting the trap, offe
 - deterministic fixture tests without live network dependencies;
 - explicit opt-in engine and population refresh commands;
 - documented credential and rate-limit behavior;
-- repository lint, build, architecture guardrails, migrations, validator, and full tests.
+- repository lint, build, opening audits, architecture guardrails, migrations, validator, and full tests.
 
 ## Remaining work
 
-- complete the full CI gate for the 50-record v2 corpus;
 - execute and review Stockfish snapshots;
 - execute and review bounded Lichess population snapshots;
 - apply explicit minimum-sample and editorial classification policy;
