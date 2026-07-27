@@ -46,6 +46,7 @@ export class RevealOnScrollDirective implements OnInit, OnDestroy {
     const IntersectionObserverConstructor = browserWindow?.IntersectionObserver;
 
     if (!browserWindow || typeof IntersectionObserverConstructor !== 'function') return;
+    if (typeof browserWindow.matchMedia !== 'function') return;
 
     this.reducedMotionQuery = browserWindow.matchMedia(REDUCED_MOTION_QUERY);
     if (this.reducedMotionQuery.matches) {
