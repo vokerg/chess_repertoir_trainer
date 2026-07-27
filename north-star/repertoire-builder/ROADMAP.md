@@ -51,7 +51,7 @@ The intrinsic opening-profile foundation provides:
 - generated-book coverage and rule-usage auditing;
 - no persistence, runtime AI, Stockfish audit, public contract or UI.
 
-RB-018 / #116 owns systematic rule coverage and actual-game calibration. It is an expansion track, not a reopened foundation gate.
+RB-018 completed the systematic rule-coverage and actual-game-audit expansion without reopening this method foundation.
 
 ### Stage 1 gate
 
@@ -61,29 +61,30 @@ Tasks: RB-001, RB-002, RB-003.
 
 ## Stage 1A — opening-classification coverage
 
-State: ready.
+State: complete through RB-018 / #116 and PR #121.
 
-Task: RB-018 / #116.
+Delivered:
 
-Goals:
+- active version `2026-07-rules-v2`;
+- deterministic rule-match coverage for all 3,733 entries and all 3,167 unique names in the pinned generated opening book;
+- 114 active ordered rules rather than per-entry application storage;
+- maintainable family expansion and corrected-regex modules;
+- broad family defaults plus narrow soundness and gambit-role exceptions;
+- grouped frequency-ranked unknown-family auditing;
+- database-backed actual-game-weighted coverage auditing over existing imported-game opening metadata;
+- CI artifacts and regression failure when a newly pinned generated name has no matching rule;
+- explicit low confidence and `UNKNOWN` dimensions where a stronger semantic claim would be fabricated.
 
-- keep the implementation regex-based, deterministic and versioned;
-- organize rules into maintainable opening-family modules when useful;
-- group and prioritize unmatched names;
-- expand family, subfamily and exact exception coverage;
-- measure generated-name and actual-game-weighted coverage;
-- retain explicit unknowns and independent White/Black semantics.
-
-Explicit exclusions:
+Explicit exclusions remain:
 
 - Stockfish or engine-assisted auditing;
 - runtime LLM calls;
-- database storage or one record per generated row;
+- database classification storage or one record per generated row;
 - API, Angular UI, background jobs or profile aggregation.
 
-Gate: major opening families in actual games have useful coverage, high-frequency unknowns are visible, and no generic keyword such as `Gambit` determines soundness by itself.
+Gate: passed. Every pinned generated name has extractable characteristics and provenance. Rule-match coverage is not equivalent to high-confidence semantic completeness, and production-user weighting remains an operational audit against a populated database.
 
-RB-018 may run in parallel with RB-004.
+Task: RB-018.
 
 ## Stage 2 — Player Chess Profile
 
@@ -96,8 +97,8 @@ Goals:
 - support periods, accounts, agreed speed presets, colors and rating context;
 - expose evidence and supporting games/openings;
 - keep profile conclusions advisory;
-- report classified and unknown opening samples explicitly;
-- consume RB-018 improvements without treating nominal 100% generated-name coverage as a prerequisite.
+- report low-confidence and unknown-dimension opening samples explicitly;
+- consume completed RB-018 rule coverage without treating rule matching as semantic certainty.
 
 Tasks: RB-004, RB-005.
 
@@ -227,7 +228,6 @@ Safe parallel work:
 
 - RB-004 Player Chess Profile calculation;
 - RB-006 repertoire-target contract;
-- RB-018 regex classification coverage;
 - RB-017 bounded traps data/validator pilot.
 
 High-collision areas requiring coordination:
@@ -242,17 +242,17 @@ High-collision areas requiring coordination:
 - course reintegration writes;
 - any future trap evidence added to candidate contracts.
 
-RB-018 must preserve the RB-003 contract while extending rules. RB-017 must remain isolated from high-collision production areas. Live Explorer refreshes must be bounded and deterministic tests must use fixtures.
+Future opening-book updates are normal maintenance under the completed RB-003/RB-018 contract. RB-017 must remain isolated from high-collision production areas. Live Explorer refreshes must be bounded and deterministic tests must use fixtures.
 
 ## Queue impact
 
 - RB-001 remains order 10, P0, `DONE`.
 - RB-002 remains order 20, P0, `DONE`.
-- RB-003 is order 30, P0, `DONE`.
-- RB-018 is added at order 35, P1, `READY`.
+- RB-003 remains order 30, P0, `DONE`.
+- RB-018 is order 35, P1, `DONE` through PR #121.
 - RB-008 remains order 40, P1, `DONE`.
-- RB-004 becomes `READY`.
-- RB-006 becomes `READY`.
+- RB-004 remains `READY`.
+- RB-006 remains `READY`.
 - RB-007 remains blocked on RB-006.
 - RB-014 remains order 140, P2, `DONE`.
 - RB-017 remains order 145, P2, `CLAIMED`.
