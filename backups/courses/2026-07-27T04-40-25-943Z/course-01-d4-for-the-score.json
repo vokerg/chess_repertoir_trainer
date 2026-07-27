@@ -139,6 +139,25 @@
                                                 ]
                                               }
                                             ]
+                                          },
+                                          {
+                                            "moveUci": "b8c6",
+                                            "children": [
+                                              {
+                                                "moveUci": "g1f3",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f8b4",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "b1c3",
+                                                        "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
                                           }
                                         ]
                                       }
@@ -2613,6 +2632,75 @@
                                                       {
                                                         "moveUci": "e2e3",
                                                         "children": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "moveUci": "g8f6",
+                                    "children": [
+                                      {
+                                        "moveUci": "g1f3",
+                                        "children": [
+                                          {
+                                            "moveUci": "c8g4",
+                                            "children": [
+                                              {
+                                                "moveUci": "c4d5",
+                                                "children": [
+                                                  {
+                                                    "moveUci": "f6d5",
+                                                    "children": [
+                                                      {
+                                                        "moveUci": "e2e4",
+                                                        "children": [
+                                                          {
+                                                            "moveUci": "d5f6",
+                                                            "children": [
+                                                              {
+                                                                "moveUci": "d4d5",
+                                                                "children": [
+                                                                  {
+                                                                    "moveUci": "c6e5",
+                                                                    "children": [
+                                                                      {
+                                                                        "moveUci": "f3e5",
+                                                                        "children": [
+                                                                          {
+                                                                            "moveUci": "g4d1",
+                                                                            "children": [
+                                                                              {
+                                                                                "moveUci": "f1b5",
+                                                                                "children": [
+                                                                                  {
+                                                                                    "moveUci": "c7c6",
+                                                                                    "children": [
+                                                                                      {
+                                                                                        "moveUci": "d5c6",
+                                                                                        "children": []
+                                                                                      }
+                                                                                    ]
+                                                                                  }
+                                                                                ]
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        ]
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                ]
+                                                              }
+                                                            ]
+                                                          }
+                                                        ]
                                                       }
                                                     ]
                                                   }
