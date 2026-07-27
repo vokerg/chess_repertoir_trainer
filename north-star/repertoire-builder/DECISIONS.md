@@ -102,13 +102,17 @@ Intrinsic opening profile, target-population profile, player profile and current
 
 State: **LOCKED**
 
-The program assumes a side-aware classification of named openings will be available one way or another.
+A side-aware intrinsic classification of named openings is delivered by RB-003 and may be consumed independently of target-population, player-performance and repertoire-target evidence.
 
 ### RB-D013 — Opening-classification method
 
-State: **OPEN**
+State: **LOCKED**
 
-The algorithm, curation process, hierarchy, storage, taxonomy and confidence model are intentionally outside the current foundation.
+Opening classification uses deterministic, versioned, ordered regex rules over generated opening names. Broad family rules provide defaults, safe lexical modifiers may add non-soundness traits, and narrower subfamily or line rules override scalar values while preserving matched-rule provenance.
+
+Every result exposes separate White and Black profiles, explicit unknowns, stable rule IDs, rationales and confidence. The rule registry is stored separately from `openingBook.generated.ts`; it does not require one database row per generated entry.
+
+Runtime LLM calls, Stockfish or engine-assisted classification auditing, and automatic soundness inference from words such as `Gambit` are rejected for this workflow. Initial rules are authored as reviewable source code. RB-018 may expand family coverage and actual-game calibration without changing this method.
 
 ### RB-D014 — Chess Profile is standalone
 

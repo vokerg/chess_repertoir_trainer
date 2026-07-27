@@ -41,16 +41,28 @@ These are not blockers and do not reopen RB-002.
 
 ## Opening classification
 
-- What is the stable identity of a named opening or variation?
-- What taxonomy and side-aware dimensions are required?
-- Which values are curated, derived, inherited or generated?
-- How is confidence represented?
-- How are opening families and deep named variations related?
-- How are transpositions handled?
-- How is every named entry guaranteed coverage?
-- How are updates reviewed and versioned?
+### Resolved by RB-003
 
-Owner task: RB-003. Planning is intentionally blank beyond these questions.
+- Classification uses deterministic, versioned, ordered regex rules over generated opening names.
+- Broad family rules provide defaults; narrower subfamily and line rules override scalar values.
+- Safe lexical modifiers may add traits such as sharp/tactical but do not infer soundness from a word such as `Gambit`.
+- White and Black receive independent profiles for soundness, character, theoretical status, theory burden, roles and confidence.
+- Stable rule IDs and matched-rule provenance remain available to consumers.
+- Unmatched dimensions remain explicit `UNKNOWN` values.
+- Rules are stored separately from `openingBook.generated.ts`; no database row per generated entry is required.
+- Runtime LLM calls, Stockfish auditing and engine-assisted classification are excluded.
+- The Evans Gambit and Benko Gambit demonstrate that offerer and acceptor assessments may differ by side.
+
+### Coverage questions owned by RB-018
+
+- What generated-name and actual-game coverage thresholds are sufficient for useful profile conclusions?
+- Which opening families should be classified first based on real imported-game frequency?
+- When does a deep named line justify an exception rather than family inheritance?
+- Should confidence remain profile-level or become dimension-specific after consumer feedback?
+- How should upstream opening-book updates surface naming changes, newly unknown families and unused rules?
+- How should the audit group and rank unknowns so work follows product value rather than alphabetic order?
+
+Owner task: RB-018 / issue #116. These questions do not reopen the RB-003 method decision.
 
 ## Player Chess Profile
 
@@ -64,6 +76,7 @@ Owner task: RB-003. Planning is intentionally blank beyond these questions.
 - Does the profile need a separately named player-level contract, or can it consume the existing resolver interface directly?
 - Can a user correct a profile conclusion, and is that stored as preference evidence or UI feedback?
 - Which conclusions are descriptive versus prescriptive?
+- How are classified and unknown opening samples shown without biasing the result?
 
 Owner tasks: RB-004 and RB-005.
 
