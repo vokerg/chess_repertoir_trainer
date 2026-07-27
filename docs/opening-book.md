@@ -36,7 +36,8 @@ Classification is implemented under `apps/api/src/services/opening-book/` as:
 
 - `openingClassification.types.ts` — versioned vocabulary and result types;
 - `openingClassification.rules.ts` — readable ordered regex rules with stable IDs and rationales;
-- `openingClassificationService.ts` — transport-independent matching and inheritance.
+- `openingClassificationService.ts` — transport-independent matching and inheritance;
+- `openingClassificationAudit.ts` — deterministic grouping and prioritization helpers for unmatched opening families.
 
 The first rule version is `2026-07-rules-v1`.
 
@@ -92,14 +93,14 @@ npm run opening-book:classification-audit --workspace=apps/api
 The report includes:
 
 - generated entry and unique-name totals;
-- matched entry/name coverage;
+- matched and unknown entry/name coverage percentages;
 - entries with useful profiles for both sides;
 - soundness and role asymmetry counts;
 - gambit asymmetry counts;
-- unmatched name examples;
+- a frequency-sorted backlog grouped by unmatched root opening family, including affected entry counts, unique-name counts, and examples;
 - rule usage and unused rule IDs.
 
-The audit measures rule-set breadth. RB-018 expands it into a grouped backlog and later adds coverage weighted by actual imported games, because high-frequency personal openings matter more than obscure generated names.
+The generated-book audit measures rule-set breadth. RB-018 uses its grouped backlog to add broad family rules first, followed by meaningful subfamily and narrow exception rules. Coverage weighted by actual imported games remains the stronger prioritization signal once that integration is available.
 
 ## Non-goals
 
