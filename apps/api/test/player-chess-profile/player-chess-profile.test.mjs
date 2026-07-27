@@ -6,7 +6,7 @@ import prismaModule from '../../dist/prisma.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
-let accountId = null;
+const accountIds = [];
 
 function ratings(userColor, userRating, opponentRating) {
   return userColor === 'WHITE'
@@ -21,13 +21,18 @@ try {
   const devUser = existingDevUser ?? await prisma.appUser.create({
     data: { displayName: 'Local user', authProvider: 'dev', authSubject: 'dev-single-user' },
   });
-  const account = await prisma.externalAccount.create({
-    data: { userId: devUser.id, provider: 'LICHESS', username: `profile-${suffix}` },
+  const primaryAccount = await prisma.externalAccount.create({
+    data: { userId: devUser.id, provider: 'LICHESS', username: `profile-primary-${suffix}` },
   });
-  accountId = account.id;
+  const secondaryAccount = await prisma.externalAccount.create({
+    data: { userId: devUser.id, provider: 'CHESS_COM', username: `profile-secondary-${suffix}` },
+  });
+  accountIds.push(primaryAccount.id, secondaryAccount.id);
 
   const games = [
     {
+      accountId: primaryAccount.id,
+      provider: 'LICHESS',
       speedCategory: 'blitz',
       userColor: 'WHITE',
       resultForUser: 'WIN',
@@ -38,6 +43,8 @@ try {
       endedAt: '2026-07-10T12:00:00.000Z',
     },
     {
+      accountId: primaryAccount.id,
+      provider: 'LICHESS',
       speedCategory: 'blitz',
       userColor: 'WHITE',
       resultForUser: 'LOSS',
@@ -48,6 +55,8 @@ try {
       endedAt: '2026-07-11T12:00:00.000Z',
     },
     {
+      accountId: primaryAccount.id,
+      provider: 'LICHESS',
       speedCategory: 'blitz',
       userColor: 'BLACK',
       resultForUser: 'WIN',
@@ -58,6 +67,8 @@ try {
       endedAt: '2026-07-12T12:00:00.000Z',
     },
     {
+      accountId: primaryAccount.id,
+      provider: 'LICHESS',
       speedCategory: 'rapid',
       userColor: 'WHITE',
       resultForUser: 'WIN',
@@ -67,14 +78,26 @@ try {
       accuracy: 86,
       endedAt: '2026-07-13T12:00:00.000Z',
     },
+    {
+      accountId: secondaryAccount.id,
+      provider: 'CHESS_COM',
+      speedCategory: 'blitz',
+      userColor: 'WHITE',
+      resultForUser: 'WIN',
+      openingEco: 'C50',
+      openingName: 'Italian Game',
+      tagCodes: [103],
+      accuracy: 90,
+      endedAt: '2026-07-14T12:00:00.000Z',
+    },
   ];
 
   for (const [index, game] of games.entries()) {
     await prisma.importedGame.create({
       data: {
         userId: devUser.id,
-        accountId: account.id,
-        provider: 'LICHESS',
+        accountId: game.accountId,
+        provider: game.provider,
         providerGameId: `player-profile-${index}-${suffix}`,
         rated: true,
         variant: 'standard',
@@ -101,11 +124,11 @@ try {
     await app.ready();
     const response = await app.inject({
       method: 'GET',
-      url: `/api/player-chess-profile?accountIds=${account.id}&from=2026-07-01&to=2026-07-31&speedPreset=BLITZ&colors=WHITE&supportingGamesLimit=1`,
+      url: `/api/player-chess-profile?accountIds=${primaryAccount.id}&from=2026-07-01&to=2026-07-31&speedPreset=BLITZ&colors=WHITE&supportingGamesLimit=1`,
     });
     assert.equal(response.statusCode, 200, response.body);
     const body = playerChessProfileResponseSchema.parse(response.json());
-    assert.deepEqual(body.filters.accountIds, [account.id]);
+    assert.deepEqual(body.filters.accountIds, [primaryAccount.id]);
     assert.deepEqual(body.filters.speeds, ['blitz']);
     assert.deepEqual(body.filters.colors, ['WHITE']);
     assert.equal(body.coverage.totalGames, 2);
@@ -119,6 +142,17 @@ try {
     assert.equal(body.supportingGames.length, 1);
     assert.equal(body.openingGroups.every((item) => item.userColor === 'WHITE'), true);
 
+    const multiAccountResponse = await app.inject({
+      method: 'GET',
+      url: `/api/player-chess-profile?accountIds=${secondaryAccount.id},${primaryAccount.id}&from=2026-07-01&to=2026-07-31&speedPreset=BLITZ&colors=WHITE`,
+    });
+    assert.equal(multiAccountResponse.statusCode, 200, multiAccountResponse.body);
+    const multiAccountBody = playerChessProfileResponseSchema.parse(multiAccountResponse.json());
+    assert.deepEqual(multiAccountBody.filters.accountIds, [primaryAccount.id, secondaryAccount.id]);
+    assert.equal(multiAccountBody.coverage.totalGames, 3);
+    assert.deepEqual(multiAccountBody.baseline.wdl, { wins: 2, draws: 0, losses: 1 });
+    assert.equal(multiAccountBody.baseline.scorePercent, 66.7);
+
     const invalid = await app.inject({
       method: 'GET',
       url: '/api/player-chess-profile?from=2026-07-31&to=2026-07-01',
@@ -130,7 +164,7 @@ try {
 
   console.log('Player chess profile integration tests passed.');
 } finally {
-  if (accountId !== null) {
+  for (const accountId of accountIds.reverse()) {
     await prisma.externalAccount.delete({ where: { id: accountId } });
   }
   await prisma.$disconnect();
