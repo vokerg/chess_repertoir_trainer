@@ -20,7 +20,7 @@ Claim scope: implement the approved bounded trap-data and validator pilot. The w
 
 GitHub issue: #114
 
-Claim PR: pending
+Claim PR: #115
 
 ## Outcome
 
