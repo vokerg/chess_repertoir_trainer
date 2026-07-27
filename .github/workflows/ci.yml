@@ -45,7 +45,19 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint
+        run: |
+          set +e
+          npm run lint > lint-diagnostics.log 2>&1
+          status=$?
+          cat lint-diagnostics.log
+          exit $status
+
+      - name: Upload temporary lint diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rb-004-lint-diagnostics
+          path: lint-diagnostics.log
 
       - name: Build
         run: npm run build
