@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { buildUnknownOpeningFamilyBacklog, openingRootFamily } from '../../dist/services/opening-book/openingClassificationAudit.js';
 import { OPENING_BOOK } from '../../dist/services/opening-book/openingBook.generated.js';
 import {
   OPENING_CLASSIFICATION_VERSION,
@@ -18,6 +19,38 @@ function entry(name, options = {}) {
 }
 
 validateOpeningClassificationRules();
+
+{
+  assert.equal(openingRootFamily('Sicilian Defense: Najdorf Variation'), 'Sicilian Defense');
+  assert.equal(openingRootFamily('Polish Opening, with d5'), 'Polish Opening');
+
+  const backlog = buildUnknownOpeningFamilyBacklog([
+    'Sicilian Defense: Najdorf Variation',
+    'Sicilian Defense: Najdorf Variation',
+    'Sicilian Defense: Dragon Variation',
+    'Polish Opening, with d5',
+  ], 4, 2);
+
+  assert.deepEqual(backlog, [
+    {
+      family: 'Sicilian Defense',
+      entries: 3,
+      entriesPct: 75,
+      uniqueNames: 2,
+      examples: [
+        'Sicilian Defense: Dragon Variation',
+        'Sicilian Defense: Najdorf Variation',
+      ],
+    },
+    {
+      family: 'Polish Opening',
+      entries: 1,
+      entriesPct: 25,
+      uniqueNames: 1,
+      examples: ['Polish Opening, with d5'],
+    },
+  ]);
+}
 
 {
   const result = OpeningClassificationService.classify(
