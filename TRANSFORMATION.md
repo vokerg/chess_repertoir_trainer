@@ -43,30 +43,32 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #85 — Phase 0B checkpoint reconciliation;
 - PR #86 — signed-in `/home` discovery and visualization;
 - PR #87 — guarded Angular `/home`, normal post-auth fallback to `/home`, and deterministic existing-data recommendations;
-- PR #88 — production Node Branch assets, shared brand components, favicon, and integrated lockups.
+- PR #88 — production Node Branch assets, shared brand components, favicon, and integrated lockups;
+- PR #108 — Phase 1B desktop rail and interim mobile-navigation discovery.
 
-Automated validation passed for PR #88. Direct browser, favicon, rasterization, authentication, and prior home validation remain residual gaps and must not be represented as completed.
+Direct browser validation for authentication, home, brand rasterization, favicon, and the navigation shell remains residual work and must not be represented as completed.
 
 ## Current checkpoint
 
-The active branch is `visual-transformation/phase-1b-navigation-discovery`.
+The active branch is `visual-transformation/phase-1c-navigation-rail`.
 
-Its approved scope is discovery and static visualization only:
+Its approved scope is the narrow production implementation of the reviewed navigation contract:
 
-- inspect the current signed-in shell and navigation ownership;
-- define the expanded and collapsed desktop rail contract;
-- preserve the existing centralized navigation data model and routes;
-- define keyboard-operable child navigation behavior;
-- retain the current grouped mobile sheet below the shared 760px breakpoint;
-- keep exact bottom-navigation structure open until representative mobile workflows are modernized;
-- provide an interactive static proof, decisions, status, and a detailed report.
+- replace the signed-in desktop floating pill header with an expanded/collapsed graphite rail;
+- keep `MainNavigationComponent.mainNavItems` as the only navigation source;
+- preserve all existing links, children, icons, quiet states, active prefixes, account behavior, and workflow routes;
+- use a separate keyboard-operable disclosure control and anchored child flyouts;
+- keep collapse state local and session-only, with no route-specific automatic collapse;
+- retain the complete grouped mobile sheet below the shared 760px breakpoint;
+- preserve `AppComponent` ownership of signed-in content, imported-game jobs, and confirmation dialogs;
+- add focused tests, documentation, automated validation, and a reviewed pull request.
 
 Review next:
 
-1. [`transformation/reports/PHASE_1B_NAVIGATION_DISCOVERY.md`](./transformation/reports/PHASE_1B_NAVIGATION_DISCOVERY.md)
-2. [`transformation/prototypes/phase-1b-navigation/index.html`](./transformation/prototypes/phase-1b-navigation/index.html)
-3. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
-4. [`transformation/STATUS.md`](./transformation/STATUS.md)
-5. the prototype at expanded desktop, collapsed desktop, and mobile widths.
+1. [`transformation/reports/PHASE_1C_NAVIGATION_RAIL_IMPLEMENTATION.md`](./transformation/reports/PHASE_1C_NAVIGATION_RAIL_IMPLEMENTATION.md)
+2. `apps/web/src/app/core/layout/main-navigation/`
+3. `apps/web/src/app/app.component.css`
+4. expanded desktop rail, collapsed desktop rail, child flyouts, and mobile sheet in a real browser
+5. PR #112 automated validation and review state.
 
-Do not implement the production navigation rail, finalize bottom navigation, migrate global tokens, change typography loading, create final social-preview composition, or redesign authenticated workflows until this discovery checkpoint is reviewed and explicitly approved.
+Do not merge PR #112, implement bottom navigation, persist collapse state, add route-specific auto-collapse, migrate global tokens or typography, redesign route pages, or change backend behavior without explicit approval.
