@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RB-008 Direction A — Decision desk</title>
+  <title>RB-008 — Routed board-first workbench</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="prototype.js"></script>
 </head>
@@ -12,18 +12,19 @@
   <main class="prototype-shell">
     <header class="prototype-nav">
       <a class="brand" href="index.html"><span class="node-mark" aria-hidden="true"></span><span>Chess Repertoire Trainer · RB-008</span></a>
-      <nav aria-label="Prototype directions">
-        <a href="index.html">Overview</a>
-        <a class="active" href="direction-a.html">A · Decision desk</a>
-        <a href="direction-b.html">B · Candidate landscape</a>
+      <nav aria-label="Prototype artifacts">
+        <a href="index.html">Accepted flow</a>
+        <a href="setup-dialog.html">Setup dialog</a>
+        <a class="active" href="direction-a.html">Routed workbench</a>
+        <a href="direction-b.html">Rejected default</a>
       </nav>
     </header>
 
     <section class="context-header">
       <div>
-        <p class="eyebrow">Direction A · one shared board</p>
+        <p class="eyebrow">Accepted workbench · routed after setup</p>
         <h1>Choose White’s sixth move.</h1>
-        <p class="lead">Sicilian Najdorf after 5...a6. Compare the resulting structures, then decide which Black responses belong in the first coverage pass.</p>
+        <p class="lead">The setup dialog has closed. This routed, resumable workspace now owns candidate selection, opponent coverage, branch navigation, and draft progress.</p>
       </div>
       <div class="context-chips">
         <span class="chip mint">Target: Solid</span>
@@ -65,7 +66,7 @@
         </article>
 
         <div class="branch-strip" aria-label="Current branch progress">
-          <div class="branch-step complete"><strong>Start position</strong><span>Target confirmed</span></div>
+          <div class="branch-step complete"><strong>Setup</strong><span>Target confirmed</span></div>
           <div class="branch-step active"><strong>Choose White move</strong><span>3 candidates</span></div>
           <div class="branch-step"><strong>Cover Black replies</strong><span>4 responses</span></div>
           <div class="branch-step"><strong>Continue branch</strong><span>Next decision</span></div>
@@ -116,7 +117,7 @@
       </aside>
     </section>
 
-    <p class="prototype-note">Direction A hypothesis: retain the existing board-first two-column workbench, but replace generic side widgets with one decision summary and one branch-coverage queue.</p>
+    <p class="prototype-note">Accepted hypothesis: the dialog ends after setup. The recursive builder uses this routed board-first composition; simultaneous mini-boards are not the default surface.</p>
   </main>
 </body>
 </html>
