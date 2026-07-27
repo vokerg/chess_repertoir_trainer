@@ -35,17 +35,19 @@ Lookup identity is deliberately not reused as a requirement for one classificati
 Classification is implemented under `apps/api/src/services/opening-book/` as:
 
 - `openingClassification.types.ts` — versioned vocabulary and result types;
-- `openingClassification.rules.ts` — readable ordered regex rules with stable IDs and rationales;
-- `openingClassificationService.ts` — transport-independent matching and inheritance;
-- `openingClassificationAudit.ts` — deterministic grouping and prioritization helpers for unmatched opening families.
+- `openingClassification.rules.ts` — RB-003 foundation families, modifiers and narrow overrides;
+- `openingClassification.coverage.rules.ts` — RB-018 systematic family expansion and exceptions;
+- `openingClassification.coverage.corrections.rules.ts` — stable-ID replacements for corrected regex boundaries;
+- `openingClassificationService.ts` — transport-independent ordered matching and inheritance;
+- `openingClassificationAudit.ts` — deterministic grouping and frequency-weighting helpers for unmatched opening families.
 
-The first rule version is `2026-07-rules-v1`.
+The active rule version is `2026-07-rules-v2`.
 
 ### Rule authorship and runtime boundary
 
-The initial assessments are authored by ChatGPT using chess knowledge and committed as reviewable source code. There is no runtime LLM call and no hidden generated assessment.
+The assessments are authored as reviewable source code. There is no runtime LLM call and no hidden generated assessment.
 
-The classification workflow remains rule-based. Uncertain cases use `UNKNOWN` or lower confidence rather than introducing engine analysis or another classification subsystem.
+The classification workflow remains rule-based. Uncertain cases use `UNKNOWN`, lower confidence, or only safely inferable traits rather than introducing engine analysis or another classification subsystem.
 
 ### Matching and override order
 
@@ -74,15 +76,17 @@ Every classification contains independent `white` and `black` profiles with:
 
 This distinction is mandatory for gambits. In the Evans Gambit, White chooses a playable but risk-bearing pawn sacrifice. Black may accept it as a sound principal response. Both sides enter a sharp tactical position, but they must not receive the same soundness or role label.
 
-The same inversion appears in Black gambits such as the Benko: Black is the offerer and White may be the acceptor.
+The same inversion appears in Black gambits such as the Benko, Blumenfeld, Colorado and Ponziani Countergambits: Black is the offerer and White may be the responder or acceptor.
 
-### Unknowns
+### Unknowns and coverage meaning
 
-The classifier always returns a structurally complete result. Dimensions without a reliable matching rule stay `UNKNOWN`; the service does not manufacture a generic positive or negative label merely to claim complete coverage.
+The classifier always returns a structurally complete result. Dimensions without a reliable matching rule stay `UNKNOWN`; the service does not manufacture a generic positive or negative label merely to claim complete semantic certainty.
 
-Consumer features should preserve unknown sample counts rather than silently removing them from a player profile.
+The pinned generated book currently has rule-match coverage for all 3,733 entries and all 3,167 unique names through 114 active ordered rules. This means every current generated name has extractable characteristics and provenance. It does **not** mean every dimension is asserted with high confidence: rare grouped systems deliberately retain `UNKNOWN` soundness and low confidence while still exposing safe traits such as surprise character, role and theory burden.
 
-## Coverage audit
+Consumer features should preserve unknown dimension and low-confidence counts rather than silently treating a matched rule as complete certainty.
+
+## Generated-book coverage audit
 
 Run the deterministic generated-book audit with:
 
@@ -100,7 +104,24 @@ The report includes:
 - a frequency-sorted backlog grouped by unmatched root opening family, including affected entry counts, unique-name counts, and examples;
 - rule usage and unused rule IDs.
 
-The generated-book audit measures rule-set breadth. RB-018 uses its grouped backlog to add broad family rules first, followed by meaningful subfamily and narrow exception rules. Coverage weighted by actual imported games remains the stronger prioritization signal once that integration is available.
+The grouped backlog makes upstream naming changes actionable. The generated-book regression test also fails if a newly pinned entry has no matching rule, while the runtime service still preserves an explicit unknown fallback for names outside the pinned dataset.
+
+## Imported-game-weighted coverage audit
+
+Run the database-backed audit against an environment containing imported games:
+
+```sh
+npm run opening-book:classification-game-audit --workspace=apps/api
+```
+
+It reports:
+
+- total imported games, games with opening metadata and games missing it;
+- game-weighted matched and unknown coverage;
+- game-weighted useful-profile coverage for both sides;
+- a frequency-ranked unknown-family backlog based on actual games rather than generated-book row count.
+
+The command reads existing `ImportedGame.openingName` and `openingEco` values and classifies them at runtime. It adds no classification table, persistence, backfill, API or background job. CI runs it against the migrated test database to validate the integration and publishes both audit outputs as workflow artifacts.
 
 ## Non-goals
 
