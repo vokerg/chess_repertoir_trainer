@@ -22,6 +22,7 @@
     "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "opening-book:classification-audit": "ts-node --transpile-only src/scripts/audit-opening-classification.ts",
+    "opening-book:classification-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-classification.ts",
     "tags:refresh-analysed": "ts-node --transpile-only src/scripts/refresh-analysed-game-tags.ts",
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
@@ -49,7 +50,7 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
+    "ts-node-dev": "^10.9.1",
     "typescript": "^5.9.0",
     "vitest": "^4.1.7"
   },
