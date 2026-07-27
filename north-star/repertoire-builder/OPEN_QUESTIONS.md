@@ -70,19 +70,32 @@ RB-018 is complete. Future naming additions or judgment corrections are normal v
 
 ## Player Chess Profile
 
-- What is the statistical baseline: all games, same speed preset, same color, same peer band or a hierarchy?
-- Which conclusions are meaningful with indexed but unanalysed games?
-- How should small samples shrink toward baseline?
-- Which confidence model is understandable to users?
-- How are opening outcome, result, accuracy, early errors and course adherence combined without double-counting?
-- How should profile changes over time be compared?
-- How should the completed factual peer interval and distribution be referenced without turning level into a permanent style label?
-- Does the profile need a separately named player-level contract, or can it consume the existing resolver interface directly?
-- Can a user correct a profile conclusion, and is that stored as preference evidence or UI feedback?
-- Which conclusions are descriptive versus prescriptive?
-- How are low-confidence and unknown-dimension opening samples shown without biasing the result?
+### Resolved in the RB-004 review implementation
 
-Owner tasks: RB-004 and RB-005.
+- The statistical baseline is the complete selected personal game set after account, period, speed, color, rated-status and rating-context filters.
+- Preference exposure and performance remain separate response sections and are never inferred from one another.
+- Result score uses all selected recognized results; opening-quality, early-error and accuracy metrics use analysed-game coverage and separate denominators.
+- The profile consumes the existing peer resolver directly and exposes its distribution/provenance rather than introducing a second player-level contract or formula.
+- Result evidence bands are fewer than 5 `INSUFFICIENT`, 5–14 `LOW`, 15–39 `MEDIUM`, and 40+ `HIGH`.
+- Analysis evidence is unavailable below five analysed games or below 50% coverage, then uses the same analysed-game bands.
+- Small samples are qualified rather than silently shrunk toward a hidden estimate.
+- Score, opening-positive, opening-trouble, early-mistake and accuracy metrics remain independent; deterministic conclusions use only explicit minimum samples and five-percentage-point deltas.
+- Multiple owned accounts are supported. Cross-provider duplicate copies remain a disclosed residual risk because the repository has no stable cross-provider game identity.
+- Exact generated-book matches and stored name/ECO rule matching expose separate classification source, rule provenance, confidence and unknown-dimension coverage.
+- The calculation is bounded to 100 opening/ECO/color groups plus 1–10 supporting games and exposes omitted/truncated coverage.
+- Conclusions are descriptive and correlational; they do not prove a permanent style or causal rating effect.
+- RB-004 adds no persisted profile, permanent personality label, correction record, course write, candidate rank or LLM dependency.
+
+### Remaining for RB-005 experience work
+
+- How should recent-period versus preceding-period comparison be presented without implying trend significance?
+- Which profile facts and conclusions stay visible by default and which expand into opening/game evidence?
+- How should low-confidence, unknown-dimension, incomplete-analysis and truncated evidence be explained visually?
+- Can a user reject or correct a conclusion, and should that become stored feedback or remain local presentation state?
+- Which final user-facing terms best distinguish preference, successful results, good opening positions and trouble areas?
+- How should the experience handle no data, partial data, loading, errors, multiple accounts and recalculation?
+
+RB-004 is in review through PR #136. RB-005 remains blocked until accepted integration. No separate calculation task is currently required.
 
 ## Repertoire target
 
