@@ -1,3 +1,4 @@
+import { buildUnknownOpeningFamilyBacklog } from '../services/opening-book/openingClassificationAudit';
 import { OPENING_BOOK } from '../services/opening-book/openingBook.generated';
 import { OpeningClassificationService } from '../services/opening-book/openingClassificationService';
 
@@ -9,6 +10,7 @@ const usage = new Map(OpeningClassificationService.rules().map((rule) => [rule.i
 const names = new Set<string>();
 const matchedNames = new Set<string>();
 const unknownNames = new Set<string>();
+const unknownEntryNames: string[] = [];
 let matched = 0;
 let bothSidesKnown = 0;
 let asymmetricSoundness = 0;
@@ -27,6 +29,7 @@ for (const entry of OPENING_BOOK) {
     matchedNames.add(entry.name);
   } else {
     unknownNames.add(entry.name);
+    unknownEntryNames.push(entry.name);
   }
   if (whiteKnown && blackKnown) bothSidesKnown += 1;
   if (result.white.soundness !== result.black.soundness) asymmetricSoundness += 1;
@@ -47,6 +50,10 @@ const unusedRuleIds = Array.from(usage.entries())
   .filter(([, count]) => count === 0)
   .map(([id]) => id)
   .sort();
+const unknownFamilyBacklog = buildUnknownOpeningFamilyBacklog(
+  unknownEntryNames,
+  OPENING_BOOK.length,
+);
 
 console.log(JSON.stringify({
   version: OpeningClassificationService.classify(OPENING_BOOK[0]).version,
@@ -54,13 +61,17 @@ console.log(JSON.stringify({
   coverage: {
     matchedEntries: matched,
     matchedEntriesPct: pct(matched, OPENING_BOOK.length),
+    unknownEntries: unknownEntryNames.length,
+    unknownEntriesPct: pct(unknownEntryNames.length, OPENING_BOOK.length),
     matchedUniqueNames: matchedNames.size,
     matchedUniqueNamesPct: pct(matchedNames.size, names.size),
+    unknownUniqueNames: unknownNames.size,
+    unknownUniqueNamesPct: pct(unknownNames.size, names.size),
     bothSidesKnown,
     bothSidesKnownPct: pct(bothSidesKnown, OPENING_BOOK.length),
   },
   sideAwareness: { asymmetricSoundness, asymmetricRoles, asymmetricGambitSoundness },
-  unknownNameExamples: Array.from(unknownNames).sort().slice(0, 50),
+  unknownFamilyBacklog,
   ruleUsage,
   unusedRuleIds,
 }, null, 2));
