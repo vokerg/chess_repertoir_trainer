@@ -167,10 +167,10 @@ The current approved slice is Phase 1D restrained public landing-page scroll rev
 
 Stop after:
 
-- a feature-local standalone reveal directive using native `IntersectionObserver`;
+- a small feature-local landing reveal helper initialized by `LandingPageComponent` and using native `IntersectionObserver`;
+- static `data-scroll-reveal` and optional `data-reveal-delay` markers only on the approved lower-page compositions;
 - one-time opacity and 18px vertical translation with short capped stagger delays;
-- reveal bindings only on the workflow introduction and steps, capability introduction/copy/demonstrations, progress composition, and final call to action;
-- visible-by-default behavior when observation is unsupported or reduced motion is requested;
+- visible-by-default behavior when observation or `matchMedia` is unsupported or reduced motion is requested;
 - immediate transition-free reveal when reduced motion becomes active while content is pending;
 - the header, hero, first-screen product composition, footer, copy, routes, layout, and signed-in application preserved;
 - focused tests, updated transformation documentation, automated validation, and a reviewed pull request to `visual_transformation`.
