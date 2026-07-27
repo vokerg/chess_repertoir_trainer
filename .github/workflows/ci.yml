@@ -50,6 +50,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Opening classification audit
+        run: npm run opening-book:classification-audit --workspace=apps/api > opening-classification-audit.json
+
+      - name: Upload opening classification audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: opening-classification-audit
+          path: opening-classification-audit.json
+
       - name: Architecture guardrails
         run: npm run check:architecture
 
