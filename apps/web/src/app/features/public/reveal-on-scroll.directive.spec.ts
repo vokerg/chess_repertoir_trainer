@@ -11,8 +11,8 @@ class RevealHostComponent {}
 
 describe('RevealOnScrollDirective', () => {
   let fixture: ComponentFixture<RevealHostComponent>;
-  let observerCallback: IntersectionObserverCallback;
-  let observerInstance: IntersectionObserver;
+  let observerCallback!: IntersectionObserverCallback;
+  let observerInstance!: IntersectionObserver;
   let observerOptions: IntersectionObserverInit | undefined;
   let reducedMotionListener: ((event: MediaQueryListEvent) => void) | undefined;
   let observe: jasmine.Spy;
@@ -43,7 +43,7 @@ describe('RevealOnScrollDirective', () => {
   });
 
   it('reveals an observed element once it enters the viewport', async () => {
-    await renderDirective({ intersectionObserverSupported: true, reducedMotion: false });
+    await renderDirective({ intersectionObserverSupported: true, matchMediaSupported: true, reducedMotion: false });
     const element = fixture.nativeElement.querySelector('div') as HTMLElement;
 
     expect(element.classList).toContain('landing-reveal-pending');
@@ -69,26 +69,24 @@ describe('RevealOnScrollDirective', () => {
   });
 
   it('keeps content visible when IntersectionObserver is unavailable', async () => {
-    await renderDirective({ intersectionObserverSupported: false, reducedMotion: false });
-    const element = fixture.nativeElement.querySelector('div') as HTMLElement;
+    await renderDirective({ intersectionObserverSupported: false, matchMediaSupported: true, reducedMotion: false });
+    expectContentToRemainVisible();
+  });
 
-    expect(element.classList).not.toContain('landing-reveal-pending');
-    expect(element.classList).not.toContain('landing-reveal-visible');
-    expect(element.style.opacity).toBe('');
-    expect(element.style.transform).toBe('');
+  it('keeps content visible when matchMedia is unavailable', async () => {
+    await renderDirective({ intersectionObserverSupported: true, matchMediaSupported: false, reducedMotion: false });
+    expectContentToRemainVisible();
+    expect(observerConstructor).not.toHaveBeenCalled();
   });
 
   it('keeps content visible and skips observation for reduced motion', async () => {
-    await renderDirective({ intersectionObserverSupported: true, reducedMotion: true });
-    const element = fixture.nativeElement.querySelector('div') as HTMLElement;
-
-    expect(element.classList).not.toContain('landing-reveal-pending');
-    expect(element.style.opacity).toBe('');
+    await renderDirective({ intersectionObserverSupported: true, matchMediaSupported: true, reducedMotion: true });
+    expectContentToRemainVisible();
     expect(observerConstructor).not.toHaveBeenCalled();
   });
 
   it('removes pending motion when reduced motion becomes active', async () => {
-    await renderDirective({ intersectionObserverSupported: true, reducedMotion: false });
+    await renderDirective({ intersectionObserverSupported: true, matchMediaSupported: true, reducedMotion: false });
     const element = fixture.nativeElement.querySelector('div') as HTMLElement;
 
     reducedMotionListener?.({ matches: true } as MediaQueryListEvent);
@@ -103,6 +101,7 @@ describe('RevealOnScrollDirective', () => {
 
   async function renderDirective(options: {
     intersectionObserverSupported: boolean;
+    matchMediaSupported: boolean;
     reducedMotion: boolean;
   }): Promise<void> {
     class MockIntersectionObserver {
@@ -130,12 +129,22 @@ describe('RevealOnScrollDirective', () => {
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       writable: true,
-      value: jasmine.createSpy('matchMedia').and.returnValue(createMediaQueryList(options.reducedMotion)),
+      value: options.matchMediaSupported
+        ? jasmine.createSpy('matchMedia').and.returnValue(createMediaQueryList(options.reducedMotion))
+        : undefined,
     });
 
     await TestBed.configureTestingModule({ imports: [RevealHostComponent] }).compileComponents();
     fixture = TestBed.createComponent(RevealHostComponent);
     fixture.detectChanges();
+  }
+
+  function expectContentToRemainVisible(): void {
+    const element = fixture.nativeElement.querySelector('div') as HTMLElement;
+    expect(element.classList).not.toContain('landing-reveal-pending');
+    expect(element.classList).not.toContain('landing-reveal-visible');
+    expect(element.style.opacity).toBe('');
+    expect(element.style.transform).toBe('');
   }
 
   function createMediaQueryList(matches: boolean): MediaQueryList {
@@ -145,14 +154,16 @@ describe('RevealOnScrollDirective', () => {
       onchange: null,
       addListener: () => undefined,
       removeListener: () => undefined,
-      addEventListener: (type, listener) => {
-        if (type === 'change') {
-          reducedMotionListener = listener as (event: MediaQueryListEvent) => void;
+      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (type === 'change' && typeof listener === 'function') {
+          reducedMotionListener = (event) => listener(event);
         }
       },
-      removeEventListener: removeReducedMotionListener,
+      removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
+        removeReducedMotionListener(type, listener);
+      },
       dispatchEvent: () => true,
-    };
+    } as unknown as MediaQueryList;
   }
 
   function restoreWindowProperty(
