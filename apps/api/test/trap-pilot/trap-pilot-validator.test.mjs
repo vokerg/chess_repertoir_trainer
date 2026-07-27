@@ -8,16 +8,23 @@ import {
 {
   const report = validateTrapPilotDataset(TRAP_PILOT_DATASET);
   assert.equal(report.valid, true);
-  assert.equal(report.recordCount, 3);
+  assert.equal(report.recordCount, 20);
   assert.equal(report.errorCount, 0);
   assert.ok(report.warningCount > 0);
-  assert.ok(report.issues.some((issue) => issue.code === 'PILOT_SIZE_INCOMPLETE'));
+  assert.equal(report.issues.some((issue) => issue.code === 'PILOT_SIZE_INCOMPLETE'), false);
   assert.ok(report.issues.some((issue) => issue.code === 'ENGINE_EVIDENCE_MISSING'));
   assert.ok(report.issues.some((issue) => issue.code === 'POPULATION_EVIDENCE_MISSING'));
 
   const identities = report.records.map((record) => record.occurrenceIdentity);
   assert.equal(new Set(identities).size, TRAP_PILOT_DATASET.records.length);
   for (const identity of identities) assert.match(identity, /^[a-f0-9]{64}$/);
+
+  assert.ok(TRAP_PILOT_DATASET.records.some((record) => record.setupSoundness === 'SOUND'));
+  assert.ok(TRAP_PILOT_DATASET.records.some((record) => record.setupSoundness === 'PLAYABLE_RISK'));
+  assert.ok(TRAP_PILOT_DATASET.records.some((record) => record.setupSoundness === 'DUBIOUS'));
+  assert.ok(TRAP_PILOT_DATASET.records.some((record) => record.punishments.some((item) => item.outcome === 'MATE')));
+  assert.ok(TRAP_PILOT_DATASET.records.some((record) => record.punishments.some((item) => item.outcome === 'MATERIAL')));
+  assert.ok(TRAP_PILOT_DATASET.records.some((record) => record.punishments.some((item) => item.outcome === 'POSITIONAL_BIND')));
 }
 
 {
