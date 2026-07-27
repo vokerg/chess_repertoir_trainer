@@ -13,10 +13,13 @@ describe('RevealOnScrollDirective', () => {
   let fixture: ComponentFixture<RevealHostComponent>;
   let observerCallback: IntersectionObserverCallback;
   let observerInstance: IntersectionObserver;
+  let observerOptions: IntersectionObserverInit | undefined;
+  let reducedMotionListener: ((event: MediaQueryListEvent) => void) | undefined;
   let observe: jasmine.Spy;
   let unobserve: jasmine.Spy;
   let disconnect: jasmine.Spy;
   let observerConstructor: jasmine.Spy;
+  let removeReducedMotionListener: jasmine.Spy;
   let originalIntersectionObserver: PropertyDescriptor | undefined;
   let originalMatchMedia: PropertyDescriptor | undefined;
 
@@ -26,6 +29,10 @@ describe('RevealOnScrollDirective', () => {
     observe = jasmine.createSpy('observe');
     unobserve = jasmine.createSpy('unobserve');
     disconnect = jasmine.createSpy('disconnect');
+    observerConstructor = jasmine.createSpy('IntersectionObserver');
+    removeReducedMotionListener = jasmine.createSpy('removeEventListener');
+    reducedMotionListener = undefined;
+    observerOptions = undefined;
   });
 
   afterEach(() => {
@@ -41,7 +48,10 @@ describe('RevealOnScrollDirective', () => {
 
     expect(element.classList).toContain('landing-reveal-pending');
     expect(element.classList).not.toContain('landing-reveal-visible');
-    expect(element.style.getPropertyValue('--landing-reveal-delay')).toBe('80ms');
+    expect(element.style.opacity).toBe('0');
+    expect(element.style.transform).toBe('translate3d(0, 18px, 0)');
+    expect(element.style.transition).toContain('80ms');
+    expect(observerOptions).toEqual({ rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
     expect(observe).toHaveBeenCalledOnceWith(element);
 
     observerCallback(
@@ -51,8 +61,11 @@ describe('RevealOnScrollDirective', () => {
     fixture.detectChanges();
 
     expect(element.classList).toContain('landing-reveal-visible');
+    expect(element.style.opacity).toBe('1');
+    expect(element.style.transform).toBe('translate3d(0, 0, 0)');
     expect(unobserve).toHaveBeenCalledOnceWith(element);
     expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(removeReducedMotionListener).toHaveBeenCalled();
   });
 
   it('keeps content visible when IntersectionObserver is unavailable', async () => {
@@ -61,7 +74,8 @@ describe('RevealOnScrollDirective', () => {
 
     expect(element.classList).not.toContain('landing-reveal-pending');
     expect(element.classList).not.toContain('landing-reveal-visible');
-    expect(element.style.getPropertyValue('--landing-reveal-delay')).toBe('');
+    expect(element.style.opacity).toBe('');
+    expect(element.style.transform).toBe('');
   });
 
   it('keeps content visible and skips observation for reduced motion', async () => {
@@ -69,33 +83,49 @@ describe('RevealOnScrollDirective', () => {
     const element = fixture.nativeElement.querySelector('div') as HTMLElement;
 
     expect(element.classList).not.toContain('landing-reveal-pending');
+    expect(element.style.opacity).toBe('');
     expect(observerConstructor).not.toHaveBeenCalled();
+  });
+
+  it('removes pending motion when reduced motion becomes active', async () => {
+    await renderDirective({ intersectionObserverSupported: true, reducedMotion: false });
+    const element = fixture.nativeElement.querySelector('div') as HTMLElement;
+
+    reducedMotionListener?.({ matches: true } as MediaQueryListEvent);
+    fixture.detectChanges();
+
+    expect(element.classList).toContain('landing-reveal-visible');
+    expect(element.style.transition).toBe('none');
+    expect(element.style.opacity).toBe('1');
+    expect(element.style.transform).toBe('translate3d(0, 0, 0)');
+    expect(disconnect).toHaveBeenCalledTimes(1);
   });
 
   async function renderDirective(options: {
     intersectionObserverSupported: boolean;
     reducedMotion: boolean;
   }): Promise<void> {
-    observerConstructor = jasmine
-      .createSpy('IntersectionObserver')
-      .and.callFake((callback: IntersectionObserverCallback) => {
+    class MockIntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = '0px 0px -8% 0px';
+      readonly thresholds = [0.12];
+      readonly observe = observe;
+      readonly unobserve = unobserve;
+      readonly disconnect = disconnect;
+      readonly takeRecords = (): IntersectionObserverEntry[] => [];
+
+      constructor(callback: IntersectionObserverCallback, init?: IntersectionObserverInit) {
+        observerConstructor(callback, init);
         observerCallback = callback;
-        observerInstance = {
-          root: null,
-          rootMargin: '0px 0px -8% 0px',
-          thresholds: [0.12],
-          observe,
-          unobserve,
-          disconnect,
-          takeRecords: () => [],
-        };
-        return observerInstance;
-      });
+        observerOptions = init;
+        observerInstance = this as unknown as IntersectionObserver;
+      }
+    }
 
     Object.defineProperty(window, 'IntersectionObserver', {
       configurable: true,
       writable: true,
-      value: options.intersectionObserverSupported ? observerConstructor : undefined,
+      value: options.intersectionObserverSupported ? MockIntersectionObserver : undefined,
     });
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
@@ -115,8 +145,12 @@ describe('RevealOnScrollDirective', () => {
       onchange: null,
       addListener: () => undefined,
       removeListener: () => undefined,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
+      addEventListener: (type, listener) => {
+        if (type === 'change') {
+          reducedMotionListener = listener as (event: MediaQueryListEvent) => void;
+        }
+      },
+      removeEventListener: removeReducedMotionListener,
       dispatchEvent: () => true,
     };
   }
