@@ -1,6 +1,6 @@
 # RB-018 — Complete opening classification coverage
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -16,7 +16,11 @@ Claimed by: ChatGPT session
 
 Claim branch: `rb-018/issue-116-opening-classification-coverage-claim`
 
+Implementation branch: `rb-018/issue-116-opening-classification-coverage`
+
 Claimed at: 2026-07-27
+
+Started at: 2026-07-27
 
 Claim scope: complete the deterministic opening-classification coverage track without changing the RB-003 contract. The work covers maintainable family-rule organization, a grouped and prioritized unknown-name audit, representative family/subfamily/exception rules and tests, generated-entry and unique-name coverage reporting, and actual imported-game-weighted coverage where the current assignment data makes that possible. It excludes Stockfish, runtime AI, persistence, API/UI work, background jobs, generated-book edits, and Player Chess Profile aggregation.
 
