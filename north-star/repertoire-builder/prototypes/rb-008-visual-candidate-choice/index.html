@@ -3,70 +3,70 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RB-008 visual candidate prototype</title>
+  <title>RB-008 accepted visual direction</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to prototype choices</a>
+  <a class="skip-link" href="#main">Skip to accepted flow</a>
   <main id="main" class="prototype-shell">
     <header class="prototype-nav">
       <a class="brand" href="index.html"><span class="node-mark" aria-hidden="true"></span><span>Chess Repertoire Trainer · RB-008</span></a>
-      <nav aria-label="Prototype directions">
-        <a class="active" href="index.html">Overview</a>
-        <a href="direction-a.html">A · Decision desk</a>
-        <a href="direction-b.html">B · Candidate landscape</a>
+      <nav aria-label="Prototype artifacts">
+        <a class="active" href="index.html">Accepted flow</a>
+        <a href="setup-dialog.html">Setup dialog</a>
+        <a href="direction-a.html">Routed workbench</a>
+        <a href="direction-b.html">Rejected default</a>
       </nav>
     </header>
 
     <section class="context-header">
       <div>
-        <p class="eyebrow">Visual discovery · realistic mock evidence</p>
-        <h1>How should one repertoire decision feel?</h1>
-        <p class="lead">Both directions use the same Najdorf decision, evidence, target conflict, and opponent-response queue. Only the visual hierarchy changes.</p>
+        <p class="eyebrow">Accepted visual direction · 2026-07-27</p>
+        <h1>Setup in a dialog. Build in a routed board-first workbench.</h1>
+        <p class="lead">The dialog captures intent and target context only. Clicking Start building opens the recursive Direction-A workbench, where candidate choices, opponent coverage, branch progress, and resume behavior remain visible.</p>
       </div>
-      <div class="context-chips" aria-label="Scenario context">
-        <span class="chip mint">Blitz &amp; slower</span>
-        <span class="chip mint">My peers + one</span>
-        <span class="chip">White repertoire</span>
-        <span class="chip warning">Profile: sharp · Target: solid</span>
+      <div class="context-chips" aria-label="Accepted decisions">
+        <span class="chip mint">Dialog: setup only</span>
+        <span class="chip mint">Workbench: Direction A</span>
+        <span class="chip">One primary board</span>
+        <span class="chip warning">Direction B not default</span>
       </div>
     </section>
 
-    <section class="index-grid" aria-label="Prototype alternatives">
+    <section class="index-grid" aria-label="Accepted flow stages">
       <article class="index-card">
-        <p class="eyebrow">Direction A</p>
-        <h2>Board-first decision desk</h2>
-        <p>One large board remains the spatial anchor. Candidate buttons update the same position preview; evidence and opponent coverage live in a focused side stack.</p>
+        <p class="eyebrow">Step 1</p>
+        <h2>Focused setup dialog</h2>
+        <p>Capture side, starting point, speed preset, rating target, persona, and coverage target without placing the recursive workflow inside a modal.</p>
         <ul>
-          <li>Optimizes board readability and deep preview.</li>
-          <li>Reuses the current two-column workbench mental model.</li>
-          <li>Requires quick candidate switching to compare structures.</li>
+          <li>Suggested defaults remain editable.</li>
+          <li>Factual peer evidence stays separate from selected intent.</li>
+          <li>Profile disagreement is visible before launch.</li>
         </ul>
-        <div class="review-grid">
-          <div class="review-box"><strong>Best for</strong><p>Desktop workbench, keyboard use, deeper line exploration.</p></div>
-          <div class="review-box"><strong>Risk</strong><p>Evidence can feel secondary or require memory between candidates.</p></div>
-        </div>
-        <a class="action-button primary" href="direction-a.html">Review Direction A</a>
+        <a class="action-button primary" href="setup-dialog.html">Review setup dialog</a>
       </article>
 
       <article class="index-card">
-        <p class="eyebrow">Direction B</p>
-        <h2>Candidate landscape</h2>
-        <p>Three resulting positions are visible at once. Each candidate is a self-contained visual card, followed by a branch coverage matrix.</p>
+        <p class="eyebrow">Step 2</p>
+        <h2>Routed board-first workbench</h2>
+        <p>Use one readable board, a candidate switcher, focused evidence, an opponent-response queue, and branch progress for the recursive decision loop.</p>
         <ul>
-          <li>Optimizes direct comparison and tradeoff scanning.</li>
-          <li>Makes the relationship between move and structure explicit.</li>
-          <li>Uses more screen area and risks card overload.</li>
+          <li>Optimizes board readability and deeper preview.</li>
+          <li>Supports navigation, resumability, and future draft state.</li>
+          <li>May add an explicit mini-board comparison mode later.</li>
         </ul>
-        <div class="review-grid">
-          <div class="review-box"><strong>Best for</strong><p>Initial selection, visual comparison, transparent evidence.</p></div>
-          <div class="review-box"><strong>Risk</strong><p>Mini-boards can become too small; mobile needs horizontal paging.</p></div>
-        </div>
-        <a class="action-button primary" href="direction-b.html">Review Direction B</a>
+        <a class="action-button primary" href="direction-a.html">Review routed workbench</a>
       </article>
     </section>
 
-    <p class="prototype-note">All ratings, percentages, evaluations, and lines are illustrative. The vocabulary is grounded in existing RB-001/RB-002 and planned RB-006/RB-007 concepts; no endpoint is implied.</p>
+    <section class="index-card" style="margin-top:1rem">
+      <p class="eyebrow">Rejected as the production default</p>
+      <h2>Direction B · candidate landscape</h2>
+      <p>The simultaneous mini-board composition remains useful discovery evidence, but it is too heavy for the default builder surface. Its candidate-attached target/profile roles may be reused, and structural mini-board comparison may return as an explicit secondary mode.</p>
+      <a class="action-button quiet" href="direction-b.html">View retained alternative</a>
+    </section>
+
+    <p class="prototype-note">All ratings, percentages, evaluations, and lines are illustrative. These artifacts define visual responsibilities, not production endpoints or ranking formulas.</p>
   </main>
 </body>
 </html>
