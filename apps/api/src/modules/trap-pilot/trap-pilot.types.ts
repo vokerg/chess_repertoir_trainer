@@ -22,12 +22,13 @@ export type TrapEvidenceStatus = 'MISSING' | 'INSUFFICIENT' | 'AVAILABLE';
 
 export type TrapSourceType =
   | 'PROJECT_RESEARCH'
+  | 'DISCOVERY_REFERENCE'
   | 'LICHESS_GAME'
   | 'LICHESS_PUZZLE'
   | 'LICHESS_EVALUATION'
   | 'LICHESS_OPENINGS';
 
-export type TrapSourceLicense = 'PROJECT_ORIGINAL' | 'CC0-1.0';
+export type TrapSourceLicense = 'PROJECT_ORIGINAL' | 'REFERENCE_ONLY' | 'CC0-1.0';
 
 export interface TrapEvidenceProfile {
   id: string;
