@@ -150,7 +150,7 @@ The approved rail was implemented only in the existing signed-in shell and navig
 
 **Status:** Locked for the Phase 1D review branch
 
-Add restrained one-time scroll reveal only to selected lower-page compositions on the public `/` landing page. Use a feature-local standalone Angular directive and native `IntersectionObserver`; keep content visible by default when the API is unavailable or reduced motion is requested. Motion is limited to opacity and an 18px vertical translation with short capped stagger delays.
+Add restrained one-time scroll reveal only to selected lower-page compositions on the public `/` landing page. Use a small feature-local helper initialized by `LandingPageComponent`, static `data-scroll-reveal` markers, and native `IntersectionObserver`. Keep content visible by default when observation or `matchMedia` is unavailable or reduced motion is requested. Motion is limited to opacity and an 18px vertical translation with short capped stagger delays.
 
 The header, hero, first-screen product composition, footer, copy, routes, layout, global tokens, and signed-in application remain unchanged. Do not add an animation dependency or establish a global motion abstraction in this slice.
 
