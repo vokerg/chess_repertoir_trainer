@@ -8,7 +8,7 @@ Target: `visual_transformation`
 
 Program issue: #122
 
-Pull request: pending
+Pull request: #134
 
 ## Purpose
 
@@ -32,6 +32,8 @@ The migration also reconciles Phase 1D after its approved squash merge.
 - locked the hybrid repository-document/GitHub-Issue ownership model in D-022;
 - reconciled D-021 as integrated through PR #120;
 - updated the transformation entry point, status, and working rules to use issue #122 as the live queue;
+- added a program-issue comment recording branch and PR #134;
+- opened PR #134 against `visual_transformation`;
 - preserved residual direct-browser validation as open work;
 - made no application or configuration change.
 
@@ -116,7 +118,8 @@ No Angular, CSS, route, package, lockfile, API, contract, schema, database, job,
 - verified child issues #123–#133 exist with real numbered dependencies;
 - verified only #123 and #124 are marked `READY`;
 - verified every later issue is marked `BLOCKED` by an explicit dependency;
-- verified #123 is the deterministic next task.
+- verified #123 is the deterministic next task;
+- opened PR #134 and verified its initial changed-file count is five.
 
 ### Documentation validation
 
@@ -126,6 +129,8 @@ No Angular, CSS, route, package, lockfile, API, contract, schema, database, job,
 - preserved residual browser validation;
 - separated repository-document ownership from issue ownership;
 - confirmed the branch changes only the five intended Markdown files.
+
+The current PR #134 head CI is authoritative and must remain successful before approval.
 
 ## Commands skipped and reasons
 
@@ -162,14 +167,14 @@ A direct local clone remains unavailable because the execution environment canno
 6. Confirm `STATUS.md` contains integrated state and residuals, not a duplicate live backlog.
 7. Confirm `WORKING_RULES.md` defines claim, branch, PR, merge, closure, and dependency-release rules.
 8. Confirm no stale Phase 1D active-branch or merge instruction remains.
-9. Confirm the pull request contains only the five intended Markdown files.
-10. Confirm pull-request CI is successful before approval.
+9. Confirm PR #134 contains only the five intended Markdown files.
+10. Confirm the current PR head CI is successful before approval.
 
 ## Stop condition
 
 Do not implement #123, #124, or any later execution issue on this branch.
 
-Do not merge the VT-000 pull request without explicit approval. When approved, squash merge it into `visual_transformation`, reconcile issue #122 with the merged PR, and then select the next ready task using the locked algorithm.
+Do not merge PR #134 without explicit approval. When approved, squash merge it into `visual_transformation`, reconcile issue #122 with the merged PR, and then select the next ready task using the locked algorithm.
 
 ## Files inspected
 
@@ -194,3 +199,4 @@ Do not merge the VT-000 pull request without explicit approval. When approved, s
 - Visual Transformation program issue #122
 - Visual Transformation execution issues #123–#133
 - PR #120 and integration CI #1051
+- PR #134
