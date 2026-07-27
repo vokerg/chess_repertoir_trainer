@@ -30,6 +30,7 @@ This implements the follow-up recorded during Phase 1C browser review. The behav
 - revealed pending content immediately without transition when reduced motion becomes active later;
 - disconnected observation and media listeners on completion or component destruction;
 - added focused pure Jasmine tests;
+- passed complete final runtime-head CI run #1045;
 - updated the transformation entry point, decision log, status, working rules, and PR description;
 - kept `MASTER_PLAN.md` unchanged because program phases, architecture, and target outcomes did not change.
 
@@ -49,7 +50,7 @@ It is not promoted to `shared`, injected through a service, or presented as a ge
 
 The first branch version used a standalone attribute directive. PR CI runs #1028, #1030, and #1033 failed during Angular lint/type compilation before build or tests. The visual and accessibility contract was retained, but the Angular metadata/input surface was removed.
 
-The final implementation uses the alternative explicitly allowed by the reviewed Phase 1C contract: an equally small landing-specific setup helper. `LandingPageComponent` owns setup and cleanup, while the helper contains pure DOM observation and transition behavior. CI run #1038 confirmed that this helper-based runtime head passes Angular lint/type compilation.
+The final implementation uses the alternative explicitly allowed by the reviewed Phase 1C contract: an equally small landing-specific setup helper. `LandingPageComponent` owns setup and cleanup, while the helper contains pure DOM observation and transition behavior. CI run #1038 confirmed that this helper-based runtime passed Angular lint/type compilation.
 
 ### Visible-by-default enhancement
 
@@ -110,6 +111,35 @@ Transformation records:
 
 No CSS, route, package, lockfile, API, contract, schema, database, job, mobile, or backend file is changed.
 
+## Behavior deliberately preserved
+
+- public route `/`;
+- landing-page header and navigation anchors;
+- all landing copy and calls to action;
+- hero and first-screen product composition;
+- page section order and responsive layout;
+- authentication routes and return-URL behavior;
+- signed-in shell and navigation rail;
+- all feature workflows;
+- APIs, contracts, schemas, database models, jobs, and dependencies.
+
+## Explicit exclusions
+
+This slice does not include:
+
+- hero, header, or footer animation;
+- global route transitions;
+- a shared or global animation service;
+- Angular animation APIs;
+- a third-party animation dependency;
+- scroll-linked or continuous animation;
+- global token or typography migration;
+- landing copy or layout redesign;
+- public metadata or social-preview work;
+- bottom navigation;
+- representative Games, Study, or Opening Analysis modernization;
+- backend behavior.
+
 ## Validation performed
 
 ### Repository inspection
@@ -128,7 +158,7 @@ No CSS, route, package, lockfile, API, contract, schema, database, job, mobile, 
 `landing-scroll-reveal.spec.ts` covers:
 
 - observation options and normal reveal;
-- delay application;
+- delay application without relying on browser-specific CSS serialization;
 - one-time unobserve/disconnect cleanup;
 - missing `IntersectionObserver` fallback;
 - missing `matchMedia` fallback;
@@ -141,15 +171,18 @@ No CSS, route, package, lockfile, API, contract, schema, database, job, mobile, 
 - PR #120 run #1028: failed at Angular lint/type compilation on the first directive implementation;
 - run #1030: failed at the same gate after browser-API mock cleanup;
 - run #1033: failed at the same gate after removing the transformed directive input;
-- run #1038: helper-based runtime head passed lint and advanced to the full build before later documentation updates changed the branch head.
+- run #1038: helper-based runtime passed lint and advanced to the full build before later documentation updates changed the branch head;
+- run #1043: passed installation, lint, build, architecture, and migrations, then failed in the test step because the new spec used an invalid strict partial `IntersectionObserverEntry` cast;
+- run #1044: passed the same non-test gates, then the test step exposed browser-specific CSS serialization assumptions;
+- run #1045: passed dependency installation, lint, full monorepo build, architecture guardrails, database migrations, and the complete test suite after the fixtures and assertions were corrected.
 
-The final reviewed branch head must pass the complete GitHub Actions workflow before automated validation is considered complete.
+Run #1045 is the authoritative executable validation for the final runtime and test files. Later documentation-only commits do not change that validated runtime surface, but their CI should remain green.
 
 ### Local checks
 
 A direct clone failed because this environment could not resolve `github.com`. Therefore repository build, test, lint, and architecture commands were not available locally.
 
-The plain TypeScript helper was compiled independently with strict DOM settings, including `strict`, `noImplicitReturns`, and `noPropertyAccessFromIndexSignature`; that focused check passed.
+The helper and its spec were compiled independently with strict DOM settings, including `strict`, `noImplicitReturns`, and `noPropertyAccessFromIndexSignature`; that focused check passed.
 
 Commands skipped locally:
 
@@ -173,7 +206,7 @@ npm run check:architecture
 
 ## Open decisions
 
-- whether Phase 1D is accepted after final-head CI and browser review;
+- whether Phase 1D is accepted after browser review;
 - whether duration, translation, threshold, root margin, or stagger needs adjustment;
 - whether later surfaces should reuse this helper or remain feature-local;
 - whether broader motion belongs in Phase 3;
@@ -189,7 +222,7 @@ npm run check:architecture
 6. Enable reduced motion before load and confirm immediate visibility.
 7. Toggle reduced motion while lower content is pending and confirm transition-free visibility.
 8. Confirm no layout shift or delayed semantic content.
-9. Confirm final-head lint, build, architecture, migrations, and tests pass.
+9. Confirm the current PR head remains green after the documentation-only validation update.
 10. Confirm transformation records match the helper architecture and retain residual risks.
 
 ## Reproduction instructions
@@ -238,6 +271,7 @@ Do not add hero motion, a global animation system, dependencies, tokens, typogra
 - `apps/web/package.json`
 - `apps/web/tsconfig.json`
 - `apps/web/tsconfig.app.json`
+- `apps/web/tsconfig.spec.json`
 - `tsconfig.base.json`
 - `apps/web/src/app/features/public/landing-page.component.ts`
 - `apps/web/src/app/features/public/landing-page.component.css`
