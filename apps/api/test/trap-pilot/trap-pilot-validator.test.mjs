@@ -9,7 +9,7 @@ import {
   const report = validateTrapPilotDataset(TRAP_PILOT_DATASET);
   if (!report.valid) console.error(JSON.stringify(report.issues, null, 2));
   assert.equal(report.valid, true);
-  assert.equal(report.recordCount, 20);
+  assert.equal(report.recordCount, 50);
   assert.equal(report.errorCount, 0);
   assert.ok(report.warningCount > 0);
   assert.equal(report.issues.some((issue) => issue.code === 'PILOT_SIZE_INCOMPLETE'), false);
