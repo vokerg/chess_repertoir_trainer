@@ -10,6 +10,8 @@ Delivery class: Dual-use
 
 Planning maturity: Agreed
 
+GitHub issue: `#116`
+
 Claimed by: unclaimed
 
 Claim branch: none
