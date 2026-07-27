@@ -82,20 +82,24 @@ describe('MainNavigationComponent', () => {
     expect(toggle.getAttribute('aria-label')).toBe('Collapse navigation rail');
   });
 
-  it('keeps the parent route and opens child destinations with a separate disclosure', () => {
+  it('keeps the parent route and exposes child destinations through a clear disclosure', () => {
     const studyLink = Array.from(
       fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
     ).find((link) => link.textContent?.includes('Study'));
     const disclosure = fixture.nativeElement.querySelector(
-      '[aria-label="Open Study destinations"]',
+      '[aria-label="Show Study submenu"]',
     ) as HTMLButtonElement;
 
     expect(studyLink?.getAttribute('href')).toBe('/library');
+    expect(disclosure.getAttribute('title')).toBe('Show Study submenu');
+    expect(disclosure.querySelector('.rail-nav-disclosure-icon')).not.toBeNull();
 
     disclosure.click();
     fixture.detectChanges();
 
     expect(disclosure.getAttribute('aria-expanded')).toBe('true');
+    expect(disclosure.getAttribute('aria-label')).toBe('Hide Study submenu');
+    expect(disclosure.getAttribute('title')).toBe('Hide Study submenu');
     expect(fixture.nativeElement.querySelectorAll('.rail-flyout-item').length).toBe(3);
     expect(fixture.nativeElement.querySelector('.rail-flyout-heading').textContent.trim()).toBe(
       'Study',
@@ -104,7 +108,7 @@ describe('MainNavigationComponent', () => {
 
   it('closes an open child flyout on Escape', () => {
     const disclosure = fixture.nativeElement.querySelector(
-      '[aria-label="Open Study destinations"]',
+      '[aria-label="Show Study submenu"]',
     ) as HTMLButtonElement;
 
     disclosure.click();
