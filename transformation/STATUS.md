@@ -4,11 +4,13 @@ Last updated: 2026-07-27
 
 ## Current state
 
-**Program state:** VT-000 issue-driven execution migration is in progress; Phase 1D is integrated
+**Program state:** VT-000 issue-driven execution migration is in review; Phase 1D is integrated
 
 **Integration branch:** `visual_transformation`
 
 **Active checkpoint branch:** `visual-transformation/vt-000-issue-driven-queue`
+
+**Active pull request:** #134
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -41,8 +43,9 @@ Completed on the branch:
 - [x] Established deterministic selection: highest priority, then lowest order, after dependency and claim checks.
 - [x] Reconciled Phase 1D as integrated.
 - [x] Updated the transformation entry point, decisions, status, and working rules.
-- [ ] Add the VT-000 migration report.
-- [ ] Open and validate the documentation/process-only pull request.
+- [x] Added the VT-000 migration report.
+- [x] Opened PR #134 to `visual_transformation`.
+- [ ] Confirm current-head PR CI and review state.
 
 VT-000 changes no Angular, CSS, route, dependency, API, schema, database, or backend file.
 
@@ -71,14 +74,17 @@ No issue may be implemented before it is claimed in an issue comment and its bra
 
 This is a documentation/process-only checkpoint. Application build, test, lint, and architecture commands are not required locally because no runtime or configuration file changes.
 
-Validate VT-000 by:
+Validated:
 
-- re-reading issue #122 and issues #123–#133;
-- confirming only #123 and #124 are `READY`;
-- confirming every blocked issue names real issue dependencies;
-- confirming repository documents and issues have non-overlapping ownership;
-- confirming no stale Phase 1D active-branch or merge instruction remains;
-- confirming the PR changes only transformation Markdown files.
+- issue #122 contains the ordered checklist and deterministic selection contract;
+- issues #123–#133 exist with real numbered dependencies;
+- only #123 and #124 are `READY`;
+- every later issue is `BLOCKED` by an explicit dependency;
+- repository documents and issues have non-overlapping ownership;
+- no stale Phase 1D active-branch or merge instruction remains;
+- PR #134 contains only transformation Markdown files.
+
+The current PR #134 head CI is authoritative and must pass before approval.
 
 A direct local clone remains unavailable because the execution environment cannot resolve `github.com`; GitHub connector inspection and PR CI are authoritative for repository state.
 
@@ -136,6 +142,7 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Created execution issues #123–#133 with deterministic priority and dependency metadata.
 - Locked the hybrid documentation/issues ownership model in D-022.
 - Replaced the prose live queue with issue #122 while preserving integrated history and residual risks.
+- Opened PR #134 for the process-only migration.
 
 ### Earlier integrated checkpoints
 
