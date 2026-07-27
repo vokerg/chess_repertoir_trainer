@@ -1,6 +1,6 @@
 # Visual Transformation Working Rules
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 These rules apply to ChatGPT, Copilot, Codex, and human contributors working on the visual transformation.
 
@@ -28,13 +28,9 @@ Do not rely on prior chat memory, screenshots alone, the README alone, or assump
 
 ## 3. No implementation without an approved checkpoint
 
-Production transformation work has begun in narrow reviewed slices. The public landing page, authentication shell, signed-in home, and brand assets are integrated, but their completion does not approve the remaining master plan.
+Production transformation work proceeds in narrow reviewed slices. Do not infer that the whole master plan is an instruction to implement everything.
 
-Do not infer that the entire master plan is an instruction to implement everything. Work only on the next explicitly approved checkpoint.
-
-When the user approves a slice, keep it narrow and record its scope in `STATUS.md` before or with the change.
-
-Discovery and prototype approval is not automatically production-implementation approval unless the user clearly authorizes both.
+Work only on the next explicitly approved checkpoint. Record its scope in `STATUS.md` before or with the change.
 
 ## 4. Preserve product behavior
 
@@ -73,7 +69,7 @@ Existing legacy code may require narrow changes; do not reproduce legacy structu
 ## 6. Design-system discipline
 
 - Use the analytical direction recorded in `DECISIONS.md`.
-- Use the Node Branch concept; do not restart broad logo exploration unless the user explicitly reopens it.
+- Use the Node Branch concept; do not restart broad logo exploration unless explicitly reopened.
 - Use controlled SVG geometry for identity assets.
 - Use live HTML text for the wordmark.
 - Use global tokens for shared semantic roles.
@@ -112,7 +108,7 @@ Public and onboarding visuals should be grounded in actual application capabilit
 - weak-line training;
 - progress.
 
-Do not invent capabilities or present experimental Labs as established core product features without explicit positioning.
+Do not invent capabilities or present experimental Labs as established core features without explicit positioning.
 
 ## 9. Documentation is part of the change
 
@@ -124,7 +120,7 @@ For every meaningful slice:
 - add a dated session-log entry;
 - leave unresolved matters clearly marked as open.
 
-Do not leave the documentation describing an older plan after the implementation changes.
+Do not leave documentation describing an older plan after implementation changes.
 
 ## 10. Validation and reporting
 
@@ -134,6 +130,7 @@ Use the narrowest relevant repository checks. For significant web slices, expect
 npm run build:web
 npm run test --workspace=apps/web
 npm run lint
+npm run check:architecture
 ```
 
 Run broader checks when the change crosses workspace or architecture boundaries.
@@ -147,7 +144,7 @@ Report exactly:
 - visual/responsive checks performed;
 - residual risks.
 
-Documentation and static-prototype checkpoints do not require application build or test execution, but this must be stated. Their HTML, CSS, SVG, browser behavior, and reproduction instructions must still be validated as far as the environment permits.
+Documentation and static-prototype checkpoints do not require application build or test execution, but their HTML, CSS, SVG, browser behavior, and reproduction instructions must still be validated as far as the environment permits.
 
 ## 11. Reviewable delivery
 
@@ -164,22 +161,25 @@ A useful slice should have:
 
 ## 12. Current stop condition
 
-The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, and Phase 1A production brand assets are squash-merged into `visual_transformation`.
+The public landing page, authentication shell, Phase 0B closure, signed-in home discovery, Angular `/home`, Phase 1A brand assets, and Phase 1B navigation discovery are squash-merged into `visual_transformation`.
 
-The current approved slice is Phase 1B navigation shell discovery on `visual-transformation/phase-1b-navigation-discovery`.
+The current approved slice is Phase 1C production navigation rail on `visual-transformation/phase-1c-navigation-rail`.
 
 Stop after:
 
-- direct inspection of current signed-in shell and navigation ownership;
-- a documented expanded/collapsed desktop rail contract;
-- a documented keyboard-operable child-navigation contract;
-- an explicit decision to retain the current grouped mobile sheet as the interim mobile structure;
-- an interactive static prototype;
-- updated entry point, decisions, status, and working rules;
-- a detailed discovery report;
-- validation of the static files as far as the environment permits;
-- a reviewed pull request to `visual_transformation`.
+- a 240px expanded and 74px collapsed graphite desktop rail;
+- reuse of `MainNavigationComponent.mainNavItems` as the only destination source;
+- primary and quieter workspace sections derived from that model;
+- existing parent links, children, icons, quiet flags, and active prefixes preserved;
+- explicit local/session-only collapse state;
+- separate keyboard-operable child disclosure controls;
+- anchored child flyouts in expanded and collapsed desktop modes;
+- Escape, backdrop, and route-navigation cleanup of transient navigation;
+- the complete grouped mobile sheet retained below 760px;
+- Clerk and development-auth account behavior preserved;
+- root job and confirmation overlays preserved;
+- focused tests, updated documentation, validation records, and a reviewed pull request to `visual_transformation`.
 
-Do not implement the Angular rail, add route-specific auto-collapse, persist collapse state, finalize bottom navigation, change routes, migrate global tokens, change typography loading, produce final social-preview composition, add backend behavior, or redesign authenticated workflows as part of this discovery slice.
+Do not merge PR #112, add bottom navigation, persist collapse state, add route-specific auto-collapse, change routes, migrate global tokens or typography, redesign page headers or feature workflows, add dependencies, or change backend behavior without explicit approval.
 
-Authentication, home, brand rasterization, favicon, responsive, and navigation browser validation remain explicit residual gaps and must not be represented as completed until recorded.
+Authentication, home, brand rasterization, favicon, responsive, navigation, Clerk, and representative-page browser validation remain explicit residual gaps until recorded.

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  HostListener,
   OnInit,
   inject,
   signal,
@@ -12,7 +13,10 @@ import { filter } from 'rxjs';
 import { AuthService } from '../../auth/auth.service';
 import { ClerkUserButtonComponent } from '../../auth/clerk-user-button.component';
 import { BrandLockupComponent } from '../../../shared/ui/brand/brand-lockup.component';
+import { BrandMarkComponent } from '../../../shared/ui/brand/brand-mark.component';
 import { NavIconComponent, type NavIconName } from '../../../shared/ui/nav-icon/nav-icon.component';
+
+type AppNavSection = 'primary' | 'workspace';
 
 interface AppNavItem {
   id: string;
@@ -25,22 +29,32 @@ interface AppNavItem {
 }
 
 interface AppNavNode extends AppNavItem {
+  section?: AppNavSection;
   children?: readonly AppNavItem[];
 }
 
 @Component({
   selector: 'app-main-navigation',
   standalone: true,
-  imports: [RouterModule, ClerkUserButtonComponent, BrandLockupComponent, NavIconComponent],
+  imports: [
+    RouterModule,
+    ClerkUserButtonComponent,
+    BrandLockupComponent,
+    BrandMarkComponent,
+    NavIconComponent,
+  ],
   templateUrl: './main-navigation.component.html',
-  styleUrl: './main-navigation.component.css',
+  styleUrls: ['./main-navigation.component.css', './main-navigation-disclosure.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainNavigationComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  protected mobileMenuOpen = false;
+
+  protected readonly railCollapsed = signal(false);
+  protected readonly mobileMenuOpen = signal(false);
+  protected readonly openNavId = signal<string | null>(null);
   private readonly currentUrl = signal('/');
 
   protected readonly mainNavItems: readonly AppNavNode[] = [
@@ -160,6 +174,7 @@ export class MainNavigationComponent implements OnInit {
       link: '/analysis',
       icon: 'analysis',
       activePrefixes: ['/analysis', '/lab'],
+      section: 'workspace',
       children: [
         {
           id: 'analysis-board',
@@ -186,6 +201,7 @@ export class MainNavigationComponent implements OnInit {
       link: '/settings/accounts',
       icon: 'settings',
       activePrefixes: ['/settings'],
+      section: 'workspace',
       children: [
         {
           id: 'import-accounts',
@@ -215,6 +231,13 @@ export class MainNavigationComponent implements OnInit {
     },
   ];
 
+  protected readonly primaryNavItems = this.mainNavItems.filter(
+    (item) => item.section !== 'workspace',
+  );
+  protected readonly workspaceNavItems = this.mainNavItems.filter(
+    (item) => item.section === 'workspace',
+  );
+
   protected readonly authNavItems: readonly AppNavItem[] = [
     {
       id: 'login',
@@ -243,16 +266,49 @@ export class MainNavigationComponent implements OnInit {
       )
       .subscribe((event) => {
         this.currentUrl.set(event.urlAfterRedirects);
-        this.closeMobileMenu();
+        this.closeTransientNavigation();
       });
   }
 
+  @HostListener('document:keydown.escape')
+  protected handleEscape(): void {
+    this.closeTransientNavigation();
+  }
+
+  protected toggleRail(): void {
+    this.railCollapsed.update((collapsed) => !collapsed);
+    this.closeNavFlyout();
+  }
+
+  protected toggleNavFlyout(item: AppNavNode): void {
+    if (!item.children?.length) return;
+    this.openNavId.update((openId) => (openId === item.id ? null : item.id));
+  }
+
+  protected closeNavFlyout(): void {
+    this.openNavId.set(null);
+  }
+
+  protected isNavFlyoutOpen(item: AppNavNode): boolean {
+    return this.openNavId() === item.id;
+  }
+
+  protected navFlyoutId(item: AppNavNode): string {
+    return `rail-nav-children-${item.id}`;
+  }
+
   protected toggleMobileMenu(): void {
-    this.mobileMenuOpen = !this.mobileMenuOpen;
+    this.mobileMenuOpen.update((open) => !open);
+    this.closeNavFlyout();
   }
 
   protected closeMobileMenu(): void {
-    this.mobileMenuOpen = false;
+    this.mobileMenuOpen.set(false);
+  }
+
+  protected closeTransientNavigation(): void {
+    this.closeNavFlyout();
+    this.closeMobileMenu();
   }
 
   protected isNavActive(item: AppNavItem): boolean {

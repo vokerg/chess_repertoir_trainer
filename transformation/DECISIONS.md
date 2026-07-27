@@ -1,6 +1,6 @@
 # Visual Transformation Decisions
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 This log records decisions that should survive across chats, tools, and implementation sessions.
 
@@ -69,9 +69,9 @@ Use `/home` as the signed-in product entry point. Study/library remains a focuse
 
 ### D-010 — Desktop navigation direction
 
-**Status:** Locked
+**Status:** Locked and implemented on the Phase 1C review branch
 
-Replace the crowded floating horizontal navigation with a compact collapsible left rail in a separately approved implementation slice. Reuse the existing grouped navigation model rather than creating another source of truth.
+Replace the crowded floating horizontal navigation with a compact collapsible left rail. Reuse the existing grouped navigation model rather than creating another source of truth.
 
 ### D-011 — Identity asset method
 
@@ -107,15 +107,7 @@ Use `#1F7865` for strong mint text and accessible mint emphasis on light surface
 
 **Status:** Locked and integrated through PR #87
 
-The first `/home`:
-
-- renders inside the current signed-in shell;
-- is the normal sign-in/sign-up fallback while explicit `returnUrl` remains authoritative;
-- uses existing typed account, library, game, and performance services;
-- adds Home to the existing navigation data model without implementing the future rail;
-- uses deterministic actions and no new aggregation endpoint or Lab dependency;
-- defers Recent signals;
-- retains the seven-day stale-sync threshold as a named provisional constant.
+The first `/home` renders in the signed-in shell, preserves explicit `returnUrl`, uses existing typed services, uses deterministic actions, adds no aggregation endpoint or Lab dependency, and retains the named seven-day stale-sync threshold.
 
 ### D-016 — Production brand asset and component contract
 
@@ -128,25 +120,63 @@ Use one 64×64 Node Branch source geometry for static assets and Angular renderi
 - nodes: `(18,50)`, `(34,14)`, `(51,44)`, radius `5.5`;
 - badge corner radius: `16`.
 
-Provide standard graphite/mint, reversed mint/graphite, transparent-mark, and favicon assets. `BrandMarkComponent` owns inline variants and accessibility behavior. `BrandLockupComponent` owns the live-text wordmark and descriptor. Product surfaces must not redraw alternate topologies or substitute text glyphs for the mark.
+Provide standard, reversed, transparent-mark, and favicon assets. `BrandMarkComponent` owns inline variants and accessibility. `BrandLockupComponent` owns the live-text wordmark and descriptor. Product surfaces must not redraw alternate topologies.
 
 ### D-017 — Phase 0D Angular home disposition
 
 **Status:** Locked and integrated
 
-PR #87 was squash-merged into `visual_transformation` after successful automated validation. Browser, responsive, Clerk, and request-timing review remain residual validation gaps; merge status is not proof those checks occurred.
+PR #87 was squash-merged into `visual_transformation` after successful automated validation. Browser, responsive, Clerk, and request-timing review remain residual gaps.
 
 ### D-018 — Phase 1A production brand disposition
 
 **Status:** Locked and integrated
 
-PR #88 was squash-merged into `visual_transformation` after final-head CI passed. The source geometry and shared component contract are accepted for continued transformation work. Browser favicon rendering, small-size rasterization, surface contrast, live-text proportions, and keyboard-focus review remain residual validation gaps and may justify a later focused optical correction.
+PR #88 was squash-merged after final-head CI passed. The source geometry and shared component contract are accepted. Favicon, rasterization, contrast, proportions, and focus review remain residual gaps.
 
 ### D-019 — Phase 1B checkpoint boundary
 
-**Status:** Locked for the current checkpoint
+**Status:** Locked and completed through PR #108
 
-Phase 1B is discovery and static visualization only. It defines the first desktop rail contract and the interim mobile boundary without modifying Angular runtime files. Production rail implementation requires separate explicit approval after review of the report and prototype.
+Phase 1B was discovery and static visualization only. It defined the desktop rail and interim mobile boundary without modifying Angular runtime files.
+
+### D-020 — Phase 1C implementation boundary
+
+**Status:** Locked for PR #112
+
+Implement the approved rail only in the existing signed-in shell and navigation component. Preserve routes, active-prefix behavior, account behavior, root overlays, mobile access, APIs, schemas, database behavior, dependencies, and feature workflows. Do not combine token, typography, page-header, bottom-navigation, or representative-workflow changes into this slice.
+
+### D-314 — Phase 1B navigation discovery disposition
+
+**Status:** Locked and approved
+
+The expanded rail, collapsed rail, account placement, anchored child-navigation direction, workspace pressure, and retained mobile sheet were reviewed and explicitly approved. Proceed with the narrow Phase 1C Angular implementation.
+
+## Locked first-implementation navigation decisions
+
+### D-310 — Initial desktop rail geometry
+
+**Status:** Locked for Phase 1C browser validation
+
+Use a 240px expanded rail and a 74px collapsed rail initially. Focused optical adjustment may remain within the approved 236–244px and 72–76px ranges after real-icon, long-label, account, and representative-page review.
+
+### D-311 — Initial collapse behavior
+
+**Status:** Locked for the first production slice
+
+Provide an explicit expanded/collapsed control. Keep state local and session-only. Do not add route-specific auto-collapse or persisted preference in Phase 1C.
+
+### D-312 — Parent and child navigation interaction
+
+**Status:** Locked for Phase 1C
+
+Keep parent anchors pointing to their current default routes and use a distinct keyboard-operable disclosure control for child destinations. Use anchored flyouts in both expanded and collapsed desktop modes. Child access must not depend on hover. Escape, backdrop interaction, and route navigation close transient flyouts.
+
+### D-313 — Interim mobile navigation
+
+**Status:** Locked for the first rail implementation
+
+Below the shared 760px breakpoint, do not render the desktop rail. Retain a compact branded header and the complete grouped modal sheet generated from the existing navigation item model. Do not finalize bottom navigation.
 
 ## Provisional decisions
 
@@ -185,7 +215,7 @@ Graphite chrome is required. A complete dark analytical workspace may be deferre
 
 **Status:** Provisional within the integrated implementation
 
-Prioritize setup blockers, analysis backlog, weak/untrained repertoire work, the latest completed analysis, stale sync, and the existing Progress destination. Show at most three recommendations and do not duplicate Continue. Tune after real-data browser use.
+Prioritize setup blockers, analysis backlog, weak/untrained repertoire work, the latest completed analysis, stale sync, and Progress. Show at most three recommendations and do not duplicate Continue.
 
 ### D-105 — Initial home action hierarchy
 
@@ -197,43 +227,19 @@ Use one dominant Continue action, at most three explained recommendations, works
 
 **Status:** Locked for source topology and coordinates; optical validation remains open
 
-D-016 is the single production source. Browser rasterization must still be reviewed at 16px, 24px, 32px, 42px, and 48px. Focused optical corrections may adjust stroke, node size, spacing, or badge radius only if the source assets and `BrandMarkComponent` are updated together; topology must not diverge by surface.
+D-016 is the single source. Browser rasterization must still be reviewed at 16px, 24px, 32px, 42px, and 48px. Any optical correction must update assets and `BrandMarkComponent` together without topology divergence.
 
 ### D-303 — Landing-page copy and composition
 
 **Status:** Provisional
 
-The landing page merged through PR #78 remains the working public-page baseline. Wording and lower-page composition may be refined after direct product review, but the marketing concept must not be restarted silently.
+The landing page merged through PR #78 remains the working baseline. Copy and lower-page composition may be refined after direct review, but the marketing concept must not be restarted silently.
 
 ### D-305 — First `/home` data composition
 
 **Status:** Locked for the first implementation
 
-Use existing account, library catalog, imported-game facets/search, and account performance APIs. Select the default progress account, then an active account, then the first account. Continue priority is weak course, untrained course, latest analysed game, then Study. Do not add a home aggregation endpoint without measured evidence.
-
-### D-310 — Initial desktop rail geometry
-
-**Status:** Provisional for Phase 1B review
-
-Use an approximately 236–244px expanded rail and a 72–76px collapsed rail. The production implementation should adjust within that range only after testing the actual `NavIconComponent`, live-text lockup, long labels, account controls, and representative content widths.
-
-### D-311 — Initial collapse behavior
-
-**Status:** Provisional for the first production slice
-
-Provide an explicit expanded/collapsed user control. Do not add route-specific auto-collapse or persisted preference in the first implementation. Measure real use before introducing implicit route behavior or storage.
-
-### D-312 — Parent and child navigation interaction
-
-**Status:** Provisional for Phase 1B review
-
-Keep parent anchors pointing to their current default routes and use a distinct keyboard-operable disclosure control for child destinations. Child access must not depend on hover. Collapsed mode uses an anchored flyout; expanded mode may use a compact inline group or anchored flyout after review.
-
-### D-313 — Interim mobile navigation
-
-**Status:** Provisional for the first rail implementation
-
-Below the shared 760px breakpoint, do not render the desktop rail. Retain a compact branded header and the complete grouped modal sheet generated from the existing navigation item model. Improve accessibility and focus behavior without finalizing bottom navigation.
+Use existing account, library, imported-game, and performance APIs. Select default progress account, then active account, then first account. Continue priority is weak course, untrained course, latest analysed game, then Study. Do not add a home aggregation endpoint without measured evidence.
 
 ## Rejected directions
 
@@ -253,13 +259,13 @@ Generated raster artwork may support exploration but is not a production identit
 
 **Status:** Rejected
 
-Study is too narrow to represent the full games, courses, openings, analysis, training, and progress product.
+Study is too narrow to represent the full product.
 
 ### D-204 — Keep the current horizontal pill navigation
 
 **Status:** Rejected
 
-The destination count and grouping no longer fit the current desktop navigation pattern.
+The destination count and grouping no longer fit the desktop pattern.
 
 ### D-205 — Page-by-page independent reskin
 
@@ -267,11 +273,11 @@ The destination count and grouping no longer fit the current desktop navigation 
 
 Do not redesign pages independently before identity, layouts, tokens, and representative patterns are established.
 
-### D-206 — Generic marketing imagery as the primary landing visual
+### D-206 — Generic marketing imagery as primary landing visual
 
 **Status:** Rejected
 
-Use realistic application UI, chess positions, insights, and training recommendations rather than stock chess imagery.
+Use realistic application UI and chess data rather than stock chess imagery.
 
 ### D-207 — User-facing authentication-vendor language
 
@@ -289,31 +295,37 @@ Do not add a mascot, custom typeface, bespoke icon set, 3D chess system, or larg
 
 **Status:** Rejected for the first `/home`
 
-Promote experimental Lab capabilities deliberately before using them as stable home data.
+Promote experimental capabilities deliberately before using them as stable home data.
 
-### D-210 — New home aggregation API before implementation evidence
+### D-210 — New home aggregation API before evidence
 
 **Status:** Rejected for the first implementation
 
-Use existing typed data sources and measure request/loading behavior before introducing a dedicated home boundary.
+Use existing typed data sources and measure request/loading behavior first.
 
 ### D-211 — Surface-specific Node Branch redraws
 
 **Status:** Rejected
 
-Do not maintain separate landing, authentication, signed-in, or decorative branch geometries. Do not use `⌁` or another glyph as a brand-mark substitute.
+Do not maintain separate landing, authentication, signed-in, or decorative branch geometries or glyph substitutes.
 
 ### D-212 — Duplicate navigation source
 
 **Status:** Rejected
 
-Do not introduce a second hard-coded rail or mobile navigation definition. Continue using `MainNavigationComponent.mainNavItems`, its child definitions, links, icons, quiet state, and active prefixes as the navigation source.
+Do not introduce a second hard-coded rail or mobile navigation definition. Continue using `MainNavigationComponent.mainNavItems` and its child definitions, links, icons, quiet state, and active prefixes.
 
 ### D-213 — Premature bottom navigation
 
-**Status:** Rejected for Phase 1B and the first rail implementation
+**Status:** Rejected for Phase 1C
 
 Do not select or implement permanent bottom-navigation destinations before Games, Study, and Opening Analysis provide representative mobile evidence.
+
+### D-214 — Persisted or route-driven collapse in the first rail
+
+**Status:** Rejected for Phase 1C
+
+Do not use local storage, account settings, query parameters, or route heuristics for rail collapse in the first implementation.
 
 ## Open decisions
 
@@ -327,16 +339,16 @@ Lock remaining exact colors only after representative analytical UI and semantic
 
 **Status:** Open
 
-Determine primary mobile destinations after prototyping and modernizing Games, Study, and Opening Analysis. Phase 1B retains the complete grouped mobile sheet as the interim structure.
+Determine primary mobile destinations after modernizing Games, Study, and Opening Analysis. Phase 1C retains the complete grouped mobile sheet.
 
 ### D-306 — Authentication browser-validation disposition
 
 **Status:** Open
 
-Directly review `/login` and `/signup` at desktop/mobile widths and in configured-Clerk and local-development-auth modes. CI and merged status do not satisfy this validation.
+Directly review `/login` and `/signup` at desktop/mobile widths and in configured-Clerk and local-development-auth modes.
 
-### D-314 — Phase 1B navigation discovery disposition
+### D-315 — Phase 1C production rail disposition
 
 **Status:** Open
 
-Review the expanded rail, collapsed rail, child-navigation interaction, account placement, workspace pressure, and retained mobile sheet. Decide whether to approve a narrow Angular implementation, require prototype correction, or reopen the desktop interaction contract.
+Review final-head CI, expanded/collapsed rail behavior, flyout placement, active states, keyboard interaction, account controls, representative page widths, mobile sheet behavior, and overlay coexistence. Decide whether to approve PR #112, require focused corrections, or reopen a specific interaction detail.
