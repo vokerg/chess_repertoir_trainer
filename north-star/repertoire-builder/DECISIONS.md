@@ -1,6 +1,6 @@
 # Repertoire Builder Decisions
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 
 States:
 
@@ -148,24 +148,27 @@ State: **LOCKED**
 
 The user should see positions and consequences, not only SAN lines or a text table.
 
-### RB-D020 — Exact visual composition
+### RB-D020 — Board-first default composition
 
-State: **PROVISIONAL**
+State: **LOCKED**
 
-PR #110 provides two reviewable directions:
+PR #110 reviewed two directions and the user selected a Direction-A-led composition:
 
-- **Direction A — board-first decision desk:** one large shared board, candidate switcher, focused evidence, opponent-response coverage queue and branch-progress strip;
-- **Direction B — candidate landscape:** simultaneous resulting-position mini-boards, candidate-attached evidence and an opponent-response coverage matrix.
+- the recursive builder uses one readable primary board;
+- candidates switch the board and focused evidence rather than rendering three full boards by default;
+- opponent responses use a coverage queue rather than a dense matrix;
+- branch progress remains visible;
+- candidate-attached target-fit and profile-fit roles are retained.
 
-The current recommendation is a hybrid led by Direction A: preserve one readable analytical board and the existing workbench mental model, keep target-fit and profile-fit attached to each candidate, and offer an explicit mini-board comparison mode when structural comparison is needed.
+Direction B's simultaneous candidate landscape is **rejected as the default** because it is too heavy, reduces board readability, and becomes awkward on mobile. An explicit mini-board comparison mode may be reconsidered later, but it is not required for the initial production workbench.
 
-This is not locked. User review must approve Direction A, Direction B, the hybrid, or request a revised third direction before production composition is treated as decided. Do not infer acceptance from prototype completion or CI.
+### RB-D021 — Setup dialog launches routed workbench
 
-### RB-D021 — Routed, resumable workbench
+State: **LOCKED**
 
-State: **PROVISIONAL**
+The builder setup is a focused dialog. It captures side, starting point, speed preset, rating target, persona/objective, and coverage/theory preferences, then closes when the user selects **Start building**.
 
-A small dialog may launch setup, but the substantial workflow should be a routed workbench. Persistence requirements remain open.
+The recursive candidate-and-coverage workflow is a routed workbench. It must not remain inside a long-lived modal. Routing supports navigation, branch progress, eventual resumability, and draft review. Persistence requirements remain open under RB-D024.
 
 ### RB-D022 — Deferred coverage is first-class
 
@@ -175,19 +178,17 @@ The user can deliberately postpone an opponent response without the system treat
 
 ### RB-D037 — Target intent remains visible when profile advice disagrees
 
-State: **PROVISIONAL**
+State: **LOCKED**
 
-Candidate presentation should show factual evidence, profile fit and selected-target fit as separate concepts. When profile advice and explicit repertoire intent disagree, the target remains authoritative for the current build while the disagreement stays visible and explainable.
+Candidate presentation shows factual evidence, profile fit and selected-target fit as separate concepts. When profile advice and explicit repertoire intent disagree, the target remains authoritative for the current build while the disagreement stays visible and explainable.
 
-PR #110 demonstrates this separation. Final prominence and wording remain subject to user review and later RB-004/RB-006 contracts.
+Final copy and statistical confidence still depend on RB-004/RB-006 contracts, but the conceptual separation is settled.
 
 ### RB-D038 — Coverage state is part of the decision surface
 
-State: **PROVISIONAL**
+State: **LOCKED**
 
-Opponent responses should expose explicit pending, selected, deferred, ignored and completed states. Cumulative first-pass coverage may help users understand scope, but its final semantics depend on RB-007 relevance evidence and RB-009 session rules.
-
-The exact queue-versus-matrix presentation remains part of the RB-D020 review decision.
+Opponent responses expose explicit pending, selected, deferred, ignored and completed states in the routed workbench. A queue is the default presentation. Cumulative first-pass coverage may be shown when RB-007 relevance evidence and RB-009 session rules define stable semantics.
 
 ## Persistence and integration decisions
 
