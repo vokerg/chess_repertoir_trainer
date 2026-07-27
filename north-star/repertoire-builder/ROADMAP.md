@@ -88,7 +88,19 @@ Task: RB-018.
 
 ## Stage 2 — Player Chess Profile
 
-State: ready to begin through RB-004; RB-005 remains blocked on RB-004.
+State: RB-004 is in `REVIEW` through PR #136; RB-005 remains blocked until RB-004 is accepted and integrated.
+
+RB-004 review implementation provides:
+
+- an authenticated deterministic calculation endpoint and shared wire contract;
+- account, period, fixed speed-preset, color, rated-status and rating-context filters;
+- selected-game baselines and explicit analysis coverage;
+- separate preference exposure and performance measurements;
+- side-aware opening-profile dimensions with rule/source provenance;
+- deterministic sample and analysis evidence grades;
+- bounded opening and game evidence with explicit truncation, omitted, low-confidence and unknown-dimension counts;
+- multi-account tests and a bounded 1,200-game database-backed performance regression;
+- no profile persistence, personality label, LLM, UI, candidate ranking or course write.
 
 Goals:
 
@@ -102,7 +114,7 @@ Goals:
 
 Tasks: RB-004, RB-005.
 
-Gate: profile claims are reproducible, evidence-backed and useful enough to advise without constraining a target.
+Gate: pending review. The calculation contract must be accepted and integrated, then RB-005 must demonstrate that profile claims are reproducible, evidence-backed and useful enough to advise without constraining a target.
 
 ## Stage 3 — target and candidate decision model
 
@@ -226,7 +238,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 
 Safe parallel work:
 
-- RB-004 Player Chess Profile calculation;
+- review of RB-004 Player Chess Profile calculation;
 - RB-006 repertoire-target contract;
 - RB-017 bounded traps data/validator pilot.
 
@@ -251,12 +263,11 @@ Future opening-book updates are normal maintenance under the completed RB-003/RB
 - RB-003 remains order 30, P0, `DONE`.
 - RB-018 is order 35, P1, `DONE` through PR #121.
 - RB-008 remains order 40, P1, `DONE`.
-- RB-004 remains `READY`.
-- RB-006 remains `READY`.
+- RB-004 is order 50, P1, `REVIEW` through PR #136.
+- RB-005 remains blocked until accepted RB-004 integration.
+- RB-006 remains `READY` and is the next ordered unclaimed task.
 - RB-007 remains blocked on RB-006.
 - RB-014 remains order 140, P2, `DONE`.
 - RB-017 remains order 145, P2, `CLAIMED`.
-- No existing priority changes.
+- No existing priority changes and no new task are required.
 - No production traps capability is approved.
-
-Every completion report must explicitly state whether this roadmap remains valid.
