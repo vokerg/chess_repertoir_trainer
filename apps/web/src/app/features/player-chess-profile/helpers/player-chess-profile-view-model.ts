@@ -47,9 +47,7 @@ export function playerChessProfileValueLabel(value: string): string {
     .join(' ');
 }
 
-export function playerChessProfileEvidenceLabel(
-  strength: PlayerChessProfileEvidenceStrength,
-): string {
+export function playerChessProfileEvidenceLabel(strength: PlayerChessProfileEvidenceStrength): string {
   if (strength === 'INSUFFICIENT') return 'Insufficient evidence';
   return `${playerChessProfileValueLabel(strength)} evidence`;
 }
@@ -120,12 +118,18 @@ export function playerChessProfileContextLabel(
   ].join(' · ');
 }
 
-function matchingItem(
+function matchingConclusionItem(
   response: PlayerChessProfileResponse,
-  dimension: PlayerChessProfileDimension | null,
-  value: string | null,
+  conclusion: PlayerChessProfileConclusion,
 ): PlayerChessProfilePreferenceItem | PlayerChessProfilePerformanceItem | null {
+  const dimension = conclusion.dimension;
+  const value = conclusion.value;
   if (!dimension || !value) return null;
+  if (conclusion.code === 'PREFERENCE') {
+    return response.preference.items.find(
+      (item) => item.dimension === dimension && item.value === value,
+    ) ?? null;
+  }
   return response.performance.items.find(
     (item) => item.dimension === dimension && item.value === value,
   ) ?? response.preference.items.find(
@@ -138,14 +142,14 @@ function matchingGames(
   openings: readonly PlayerChessProfileOpeningReference[],
 ): readonly PlayerChessProfileSupportingGame[] {
   if (openings.length === 0) return games;
-  const keys = new Set(openings.map((opening) => `${opening.eco ?? ''}\u0000${opening.name ?? ''}`));
-  const related = games.filter((game) => keys.has(`${game.openingEco ?? ''}\u0000${game.openingName ?? ''}`));
+  const keys = new Set(openings.map((opening) => `${opening.eco ?? ''}:${opening.name ?? ''}`));
+  const related = games.filter(
+    (game) => keys.has(`${game.openingEco ?? ''}:${game.openingName ?? ''}`),
+  );
   return related.length > 0 ? related : games;
 }
 
-function performanceMetrics(
-  item: PlayerChessProfilePerformanceItem,
-): readonly PlayerChessProfileEvidenceMetric[] {
+function performanceMetrics(item: PlayerChessProfilePerformanceItem): readonly PlayerChessProfileEvidenceMetric[] {
   return [
     { label: 'Games', value: String(item.games) },
     { label: 'W–D–L', value: playerChessProfileWdlLabel(item) },
@@ -158,9 +162,7 @@ function performanceMetrics(
   ];
 }
 
-function preferenceMetrics(
-  item: PlayerChessProfilePreferenceItem,
-): readonly PlayerChessProfileEvidenceMetric[] {
+function preferenceMetrics(item: PlayerChessProfilePreferenceItem): readonly PlayerChessProfileEvidenceMetric[] {
   return [
     { label: 'Games', value: String(item.games) },
     { label: 'Exposure', value: playerChessProfilePercentLabel(item.exposurePercent) },
@@ -174,9 +176,7 @@ function conclusionMetrics(
   conclusion: PlayerChessProfileConclusion,
   item: PlayerChessProfilePreferenceItem | PlayerChessProfilePerformanceItem | null,
 ): readonly PlayerChessProfileEvidenceMetric[] {
-  const base: PlayerChessProfileEvidenceMetric[] = [
-    { label: 'Sample', value: String(conclusion.sampleSize) },
-  ];
+  const base: PlayerChessProfileEvidenceMetric[] = [{ label: 'Sample', value: String(conclusion.sampleSize) }];
   if (conclusion.metricValue !== null) {
     base.push({ label: 'Metric', value: playerChessProfilePercentLabel(conclusion.metricValue) });
   }
@@ -207,7 +207,7 @@ export function buildPlayerChessProfileEvidence(
   if (selection.kind === 'CONCLUSION') {
     const conclusion = response.conclusions[selection.index];
     if (!conclusion) return null;
-    const item = matchingItem(response, conclusion.dimension, conclusion.value);
+    const item = matchingConclusionItem(response, conclusion);
     const openings = item?.supportingOpenings ?? [];
     return {
       title: conclusion.summary,
