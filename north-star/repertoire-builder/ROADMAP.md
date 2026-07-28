@@ -75,14 +75,16 @@ RB-004 review implementation provides:
 
 RB-005 review implementation provides:
 
-- `/progress` as the combined recalculable profile entry while retaining account dashboards;
+- the original `/progress` default-account dashboard entry unchanged;
+- a separate authenticated lazy `/progress/profile` route;
+- `Account performance` and `Chess profile` entries under the existing Progress submenu;
 - recent, all-time, custom, account, speed, colour, rated/casual and rating-range filters;
 - explicit `What you choose` and `What works` views;
 - character, soundness, theory-status, theory-burden and role breakdowns;
 - evidence-backed conclusion cards and expandable opening/game support;
 - personal baseline, factual peer context, composite opening-quality/early-error metrics, accuracy and coverage;
-- loading, no-data, error, partial-analysis, low-confidence, unknown and truncated states;
-- feature-local Angular architecture and focused tests;
+- loading, no-data, error, stale-request, partial-analysis, low-confidence, unknown and truncated states;
+- lazy page composition, page-scoped signal state with readonly exposure, typed HTTP-only data access, feature-local presentation models, focused pure helpers, shared breakpoint alignment, and component/store/route tests;
 - no calculation extension, persistence, correction storage, target setup or course write.
 
 Goals:
@@ -91,11 +93,12 @@ Goals:
 - preserve sample, filters, baseline and evidence strength;
 - make conclusions inspectable and advisory;
 - show low-confidence and incomplete evidence rather than hiding it;
-- validate the simplest useful opening-profile experience before adding broader metrics.
+- validate the simplest useful opening-profile experience before adding broader metrics;
+- add the profile alongside, rather than instead of, existing account performance.
 
 Tasks: RB-004, RB-005.
 
-Gate: pending hands-on review and integration. The user must accept the calculation contract and determine whether the page is credible and useful against populated personal data. The stacked branches must then be reconciled before merge.
+Gate: pending corrected review-head CI, hands-on review and integration. The user must accept the calculation contract and determine whether the page is credible and useful against populated personal data. The stacked branches must then be reconciled before merge.
 
 ## Stage 3 — target and candidate decision model
 
@@ -211,7 +214,7 @@ High-collision areas requiring coordination:
 
 - RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 remain `DONE`.
 - RB-004 is `REVIEW` through PR #136.
-- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until RB-004 is accepted and the stack is reconciled.
+- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
 - RB-006 remains `READY` and is the next ordered unclaimed task.
 - RB-007 remains blocked on RB-006.
 - RB-017 remains `CLAIMED` and isolated.
