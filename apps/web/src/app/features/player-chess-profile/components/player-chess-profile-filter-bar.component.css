@@ -60,22 +60,7 @@
 .profile-toggle-group button.active {
   background: var(--surface-strong);
   color: var(--accent-strong);
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
-}
-
-.profile-rated {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 44px;
-  color: var(--muted-strong);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.profile-rated input,
-.profile-picker input {
-  width: auto;
+  box-shadow: var(--shadow-soft);
 }
 
 .profile-recalculate {
@@ -133,6 +118,10 @@
   gap: 0.55rem;
 }
 
+.profile-picker-panel input {
+  width: auto;
+}
+
 .profile-rating-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -151,7 +140,8 @@
   gap: var(--space-3);
 }
 
-@media (max-width: 1000px) {
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */
+@media (max-width: 980px) {
   .profile-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -161,7 +151,8 @@
   }
 }
 
-@media (max-width: 620px) {
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
+@media (max-width: 640px) {
   .profile-filter-grid,
   .profile-custom-range,
   .profile-rating-grid {
