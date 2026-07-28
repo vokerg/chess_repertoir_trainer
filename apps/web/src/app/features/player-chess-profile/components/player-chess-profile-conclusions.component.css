@@ -1,0 +1,77 @@
+:host {
+  display: block;
+}
+
+.profile-conclusion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.profile-conclusion {
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+}
+
+.profile-conclusion.selected {
+  border-color: rgba(183, 121, 39, 0.5);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.profile-conclusion.positive {
+  background: linear-gradient(180deg, var(--success-soft), var(--surface-muted));
+}
+
+.profile-conclusion.negative {
+  background: linear-gradient(180deg, var(--danger-soft), var(--surface-muted));
+}
+
+.profile-conclusion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.profile-conclusion-kind {
+  color: var(--accent-strong);
+}
+
+.profile-conclusion h3,
+.profile-conclusion p {
+  margin: 0;
+}
+
+.profile-conclusion h3 {
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.profile-conclusion p {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.profile-evidence-button {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .profile-conclusion-grid {
+    grid-template-columns: 1fr;
+  }
+}
