@@ -73,7 +73,7 @@ apps/web/src/app/features/player-chess-profile/
 
 ## Validation
 
-The original profile implementation passed complete repository CI before the navigation and architecture review. The corrected review head must again pass:
+Corrected review-head GitHub Actions run `30333247714` / #1206 passed:
 
 - API, web, and mobile TypeScript lint;
 - complete monorepo production build;
@@ -81,7 +81,7 @@ The original profile implementation passed complete repository CI before the nav
 - architecture guardrails;
 - PostgreSQL migrations;
 - imported-game opening-classification audit;
-- complete repository tests, including profile helper, store, stale-request, filter, error, no-data, evidence-expansion, component, and route coverage.
+- complete repository tests, including profile helper, store, stale-request, invalid-recalculation, filter, error, no-data, side-aware evidence, component, and route coverage.
 
 A real browser session against populated personal data remains the intended hands-on review and was not available in the connector-only execution environment.
 
