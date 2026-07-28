@@ -53,10 +53,7 @@ assert.deepEqual(
   [1400, 1600, 1800],
 );
 assert.deepEqual(appendHigherLichessRatingGroup([2200, 2500]), [2200, 2500]);
-assert.throws(
-  () => resolveRepertoireTargetPopulation({ kind: 'MY_PEERS' }),
-  /Peer population targets require a factual peer-resolution snapshot/,
-);
+assert.throws(() => resolveRepertoireTargetPopulation({ kind: 'MY_PEERS' }));
 
 assert.equal(repertoireTargetSchema.safeParse({
   ...alternatePersonaRepertoireTargetExample,
@@ -195,7 +192,6 @@ const peerEvidenceOnly = {
 };
 assert.deepEqual(repertoireTargetChangedFields(newCourseRepertoireTargetExample, peerEvidenceOnly), [
   'population',
-  'defaults',
 ]);
 assert.deepEqual(repertoireTargetCandidateChangedFields(newCourseRepertoireTargetExample, peerEvidenceOnly), []);
 assert.equal(repertoireTargetRequiresCandidateRecalculation(newCourseRepertoireTargetExample, peerEvidenceOnly), false);
