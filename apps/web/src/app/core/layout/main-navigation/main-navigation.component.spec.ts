@@ -82,7 +82,7 @@ describe('MainNavigationComponent', () => {
     expect(toggle.getAttribute('aria-label')).toBe('Collapse navigation rail');
   });
 
-  it('keeps the parent route and exposes child destinations through a clear disclosure', () => {
+  it('keeps the parent route and exposes child destinations as an expanded-rail disclosure group', () => {
     const studyLink = Array.from(
       fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
     ).find((link) => link.textContent?.includes('Study'));
@@ -92,6 +92,7 @@ describe('MainNavigationComponent', () => {
 
     expect(studyLink?.getAttribute('href')).toBe('/library');
     expect(disclosure.getAttribute('title')).toBe('Show Study submenu');
+    expect(disclosure.hasAttribute('aria-haspopup')).toBeFalse();
     expect(disclosure.querySelector('.rail-nav-disclosure-icon')).not.toBeNull();
 
     disclosure.click();
@@ -100,39 +101,97 @@ describe('MainNavigationComponent', () => {
     expect(disclosure.getAttribute('aria-expanded')).toBe('true');
     expect(disclosure.getAttribute('aria-label')).toBe('Hide Study submenu');
     expect(disclosure.getAttribute('title')).toBe('Hide Study submenu');
-    expect(fixture.nativeElement.querySelectorAll('.rail-flyout-item').length).toBe(3);
-    expect(fixture.nativeElement.querySelector('.rail-flyout-heading').textContent.trim()).toBe(
-      'Study',
-    );
+    expect(
+      fixture.nativeElement.querySelectorAll('.rail-inline-accordion-open .rail-inline-item').length,
+    ).toBe(3);
+    expect(
+      fixture.nativeElement.querySelector('.rail-inline-accordion-open [role="group"]').getAttribute(
+        'aria-label',
+      ),
+    ).toBe('Study submenu');
+    expect(fixture.nativeElement.querySelector('.rail-flyout')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).toBeNull();
   });
 
-  it('closes an open child flyout on Escape', () => {
+  it('allows only one expanded-rail parent to be open at a time', () => {
+    const studyDisclosure = fixture.nativeElement.querySelector(
+      '[aria-label="Show Study submenu"]',
+    ) as HTMLButtonElement;
+    const openingsDisclosure = fixture.nativeElement.querySelector(
+      '[aria-label="Show Openings submenu"]',
+    ) as HTMLButtonElement;
+
+    studyDisclosure.click();
+    fixture.detectChanges();
+    expect(studyDisclosure.getAttribute('aria-expanded')).toBe('true');
+
+    openingsDisclosure.click();
+    fixture.detectChanges();
+
+    expect(studyDisclosure.getAttribute('aria-expanded')).toBe('false');
+    expect(openingsDisclosure.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('.rail-inline-accordion-open').length).toBe(1);
+  });
+
+  it('retains popup-menu flyouts when the desktop rail is collapsed', () => {
+    const railToggle = fixture.nativeElement.querySelector(
+      '.rail-collapse-button',
+    ) as HTMLButtonElement;
+
+    railToggle.click();
+    fixture.detectChanges();
+
+    const disclosure = fixture.nativeElement.querySelector(
+      '[aria-label="Show Study submenu"]',
+    ) as HTMLButtonElement;
+    expect(disclosure.getAttribute('aria-haspopup')).toBe('menu');
+
+    disclosure.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.rail-inline-accordion')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.rail-flyout[role="menu"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.rail-flyout-item[role="menuitem"]').length).toBe(
+      3,
+    );
+    expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).not.toBeNull();
+  });
+
+  it('closes open child navigation on Escape', () => {
     const disclosure = fixture.nativeElement.querySelector(
       '[aria-label="Show Study submenu"]',
     ) as HTMLButtonElement;
 
     disclosure.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.rail-flyout')).not.toBeNull();
+    expect(disclosure.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelector('.rail-inline-accordion-open')).not.toBeNull();
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.rail-flyout')).toBeNull();
+    expect(disclosure.getAttribute('aria-expanded')).toBe('false');
+    expect(fixture.nativeElement.querySelector('.rail-inline-accordion-open')).toBeNull();
   });
 
   it('updates active state and closes transient navigation after route navigation', async () => {
+    const disclosure = fixture.nativeElement.querySelector(
+      '[aria-label="Show Study submenu"]',
+    ) as HTMLButtonElement;
     const mobileToggle = fixture.nativeElement.querySelector(
       '.mobile-menu-button',
     ) as HTMLButtonElement;
 
+    disclosure.click();
     mobileToggle.click();
     fixture.detectChanges();
+    expect(disclosure.getAttribute('aria-expanded')).toBe('true');
     expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).not.toBeNull();
 
     await router.navigateByUrl('/games');
     fixture.detectChanges();
 
+    expect(disclosure.getAttribute('aria-expanded')).toBe('false');
     expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).toBeNull();
     const activeLink = fixture.nativeElement.querySelector(
       '.rail-nav-node-active .rail-nav-link',
