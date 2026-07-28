@@ -67,15 +67,25 @@ function matchingConclusionItem(
   ) ?? null;
 }
 
+function openingKey(opening: {
+  eco: string | null;
+  name: string | null;
+  userColor: string;
+}): string {
+  return `${opening.userColor}:${opening.eco ?? ''}:${opening.name ?? ''}`;
+}
+
 function matchingGames(
   games: readonly PlayerChessProfileSupportingGame[],
   openings: readonly PlayerChessProfileOpeningReference[],
 ): readonly PlayerChessProfileSupportingGame[] {
   if (openings.length === 0) return games;
-  const keys = new Set(openings.map((opening) => `${opening.eco ?? ''}:${opening.name ?? ''}`));
-  const related = games.filter(
-    (game) => keys.has(`${game.openingEco ?? ''}:${game.openingName ?? ''}`),
-  );
+  const keys = new Set(openings.map(openingKey));
+  const related = games.filter((game) => keys.has(openingKey({
+    eco: game.openingEco,
+    name: game.openingName,
+    userColor: game.userColor,
+  })));
   return related.length > 0 ? related : games;
 }
 
