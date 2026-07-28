@@ -88,18 +88,21 @@ RB-018 is complete. Future naming additions or judgment corrections are normal v
 
 ### Resolved by the RB-005 review implementation
 
-- `/progress` is the combined profile entry; account-specific progress remains under `/progress/accounts/:accountId`.
-- The first page uses recent/all-time/custom period, account, speed preset, colour, rated/casual and optional rating-range filters.
+- `/progress` preserves the existing default/active account redirect and `/progress/accounts/:accountId` remains the account-performance dashboard.
+- `/progress/profile` is a separate authenticated lazy route, exposed beside `Account performance` under the existing Progress submenu.
+- The profile page uses recent/all-time/custom period, account, speed preset, colour, rated/casual and optional rating-range filters.
 - `What you choose` and `What works` remain explicit independent views.
 - Character, soundness, theoretical status, theory burden and role are selectable breakdown dimensions.
 - Deterministic conclusions and breakdown rows expand into metrics, contributing openings and bounded recent games.
+- Supporting games are matched by colour plus opening identity; unrelated global games are not substituted when bounded evidence has no match.
 - Low-confidence, unknown-dimension, incomplete-analysis and truncated evidence remain visible through the coverage presentation.
-- Loading, no-data, stale-request, recalculation-error and partial-analysis states are handled.
+- Loading, no-data, stale-request, invalid-recalculation, recalculation-error and partial-analysis states are handled.
 - The page uses the existing composite opening-positive, opening-trouble and early-mistake metrics. It does not pre-emptively split success/advantage, trouble/disaster or mistake/blunder.
 - A previous-period comparison is not shown because RB-004 does not return a paired period. It may be added through two explicit requests only if hands-on use justifies the complexity.
 - Users cannot edit factual conclusions or persist rejection/correction feedback in RB-005.
 - `Use as repertoire starting point` remains an honest disabled affordance until a stable RB-006/RB-013 handoff exists.
 - Final user-facing terms distinguish preference, performance relative to baseline, opening-positive positions and trouble areas without assigning one permanent archetype.
+- The Angular implementation uses a lazy composition page, page-scoped signal store with private writable state, typed HTTP-only data access, feature-local display models, focused pure helper modules, shared breakpoint alignment, native control semantics, and route/store/component tests.
 
 ### Remaining review questions
 
