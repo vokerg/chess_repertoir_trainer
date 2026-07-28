@@ -81,12 +81,11 @@ function matchingGames(
 ): readonly PlayerChessProfileSupportingGame[] {
   if (openings.length === 0) return games;
   const keys = new Set(openings.map(openingKey));
-  const related = games.filter((game) => keys.has(openingKey({
+  return games.filter((game) => keys.has(openingKey({
     eco: game.openingEco,
     name: game.openingName,
     userColor: game.userColor,
   })));
-  return related.length > 0 ? related : games;
 }
 
 function evidenceMetrics(
