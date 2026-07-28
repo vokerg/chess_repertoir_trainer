@@ -31,8 +31,9 @@ Repository documents retain integrated history, visual direction, decisions, res
 - [x] PR #134 — issue-driven execution queue and Phase 1D integration reconciliation.
 - [x] PR #137 — expanded-rail inline navigation accordions with collapsed-rail flyouts retained.
 - [x] PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation.
+- [x] PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion.
 
-PR #137 was squash-merged into `visual_transformation` as `033d05ededc03e114a4b02655de91a6313c4d902` after explicit approval. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`.
+PR #137 was squash-merged into `visual_transformation` as `033d05ededc03e114a4b02655de91a6313c4d902` after explicit approval. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`. PR #143 recorded the concurrent VT-102 claim after complete CI run #1140.
 
 ## VT-101 integrated checkpoint
 
@@ -54,6 +55,7 @@ Delivered:
 - [x] Reconciled the program issue, execution issue, dependent issue, entry point, decisions, status, and implementation report through PR #142.
 - [x] Passed the complete reconciliation workflow in CI run #1128.
 - [x] Closed issue #123 as completed.
+- [x] Reconciled the concurrent VT-102 claim through PR #143 after CI run #1140.
 
 Direct browser validation is not claimed as complete. It remains part of issue #126 after VT-102 is integrated.
 
@@ -63,7 +65,7 @@ The live queue, not this file, determines task state and sequencing.
 
 Issue #123 is complete. Issue #124 is `IN_PROGRESS`, P1, order 20 through draft PR #141. Issue #125 remains blocked by #124. Issue #126 remains blocked only by the outstanding #124 dependency; its #123 dependency is satisfied.
 
-PR #141 has no runtime-file overlap with VT-101, but it was created before PR #142 completed the VT-101 documentation reconciliation. Before final review or merge, PR #141 must refresh against current `visual_transformation` head `d1222a205966b10e7b4747adac9e4ff6fc7a116d` and preserve the integrated VT-101 decision, status, and report content.
+PR #141 has no runtime-file overlap with VT-101, but it was created before the completed VT-101 documentation reconciliations. Before final review or merge, refresh PR #141 against the latest `visual_transformation` head, including PRs #142 and #143, and preserve the integrated VT-101 decision, status, and report content.
 
 No later blocked issue may start until its numbered dependency contract is satisfied and its issue is changed to `READY`.
 
@@ -90,7 +92,7 @@ Runtime/test head CI run #1112 passed:
 - database migrations;
 - the complete test suite.
 
-Final documentation-head CI run #1118 passed the same complete workflow before PR #137 was squash-merged. Post-merge reconciliation CI run #1128 passed the same complete workflow before PR #142 was squash-merged.
+Final documentation-head CI run #1118 passed the same complete workflow before PR #137 was squash-merged. Post-merge reconciliation CI run #1128 passed the same complete workflow before PR #142 was squash-merged. Concurrent-queue reconciliation CI run #1140 passed the same complete workflow before PR #143 was squash-merged.
 
 Local npm and browser validation could not run because the execution container could not resolve `github.com` and therefore could not clone the repository. GitHub connector inspection and writes succeeded. Direct browser evidence remains unresolved and is not replaced by static inspection or CI.
 
@@ -150,7 +152,8 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Reconciled issue #122, issue #123, issue #126, `TRANSFORMATION.md`, `DECISIONS.md`, this status file, and the VT-101 report through PR #142.
 - Verified reconciliation CI #1128 and squash-merged PR #142 as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`.
 - Closed #123 as completed and left direct browser evidence explicitly owned by #126 after #124 is integrated.
-- Detected the concurrent VT-102 claim and draft PR #141 during final verification, preserved that legitimate active work, updated issue #122, and recorded the required refresh against the latest integration head.
+- Detected the concurrent VT-102 claim and draft PR #141 during final verification, preserved that legitimate active work, updated issue #122, and reconciled the queue-facing documents through PR #143 after CI #1140.
+- Recorded a stable requirement for PR #141 to refresh against the latest integration head rather than a self-invalidating exact pre-merge SHA.
 
 ### 2026-07-27 — VT-000 issue-driven queue migration
 
@@ -161,4 +164,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, and #142 are integrated into `visual_transformation`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, and #143 are integrated into `visual_transformation`.
