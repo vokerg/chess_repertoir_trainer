@@ -29,11 +29,11 @@ Supporting lifecycle path:
 ```text
 ONB-004 destructive invariants
         +
-ONB-005 administrator authorization/read model
+ONB-005 admin authorization/read model
         +
 ONB-006 shared-position cleanup
         ↓
-Read-only administration
+Read-only admin
         ↓
 Audited purge/reset/delete actions
         ↓
@@ -42,25 +42,23 @@ Bounded cleanup
 
 ## Phase 0 — Program foundation
 
-Status: `REVIEW` on `onb-000/issue-147-program-foundation`
+Status: `DONE` through squash-merged PR #156
 
-Delivered:
+Deliverables:
 
 - canonical planning workspace;
-- current-state repository inspection;
-- foundation and master plan;
-- roadmap, queue, decisions, open questions, and status;
-- agent claim/release/report rules;
-- program issue #147 and research issues #148–#154;
-- task records ONB-000 through ONB-007;
-- completion report.
+- current-state inspection;
+- master plan;
+- initial decisions/open questions;
+- agent execution rules;
+- program issue and research issue mapping.
 
-Exit evidence:
+Exit:
 
 - branch and documents exist;
-- #148–#154 are mapped;
+- #148–#154 are mapped and remain open;
 - no production implementation was mixed into planning;
-- no pull request or merge was created.
+- foundation is integrated into `main`.
 
 ## Phase 1 — Research and contracts
 
@@ -74,7 +72,7 @@ Exit evidence:
 
 ### P1 supporting
 
-- ONB-005 / #152 — administrator access and read/action model.
+- ONB-005 / #152 — admin authentication and read/action model.
 - ONB-006 / #153 — orphan shared-position cleanup.
 
 Exit:
@@ -84,7 +82,7 @@ Exit:
 - preparation parent/wave model approved;
 - performance budgets and wave policy measured;
 - model-by-model destructive matrix approved;
-- administrator authorization and audit direction approved;
+- admin authorization and audit direction approved;
 - cleanup query/concurrency direction approved;
 - implementation tasks opened with immutable ONB IDs.
 
@@ -167,7 +165,7 @@ Blocked on ONB-005 and preparation/import contracts.
 Expected deliveries:
 
 1. administrator guard/capability;
-2. audit foundation;
+2. admin audit foundation;
 3. paginated user list;
 4. user/account/import/job/preparation detail;
 5. game-state aggregates;
@@ -177,7 +175,7 @@ Expected deliveries:
 Exit:
 
 - operator support no longer requires direct database inspection for normal diagnosis;
-- normal users cannot access operator data;
+- normal users cannot access admin data;
 - reads are bounded and database-aggregated.
 
 ## Phase 6 — Destructive lifecycle actions
@@ -204,7 +202,7 @@ Exit:
 
 ## Phase 7 — Shared-position maintenance
 
-Blocked on ONB-006 and the operator action foundation.
+Blocked on ONB-006 and admin action foundation.
 
 Expected deliveries:
 
@@ -229,7 +227,7 @@ Exit:
 - large-account capacity validation;
 - multi-account expansion;
 - purge and re-onboarding;
-- administrator runbook;
+- admin runbook;
 - visual/accessibility acceptance with #133;
 - downstream handoff to Repertoire Builder #105;
 - decide follow-up mobile-native onboarding.
@@ -239,7 +237,7 @@ Exit:
 Safe parallel research:
 
 - ONB-001, ONB-002, ONB-003, ONB-004, and ONB-007 may run in parallel after claim collision review.
-- ONB-005 can progress on access/read-model questions but must not finalize mutation contracts before ONB-004.
+- ONB-005 can progress on auth/read-model questions but must not finalize mutation contracts before ONB-004.
 - ONB-006 can progress on cleanup SQL/race research but must align its action shape with ONB-005.
 
 Unsafe parallel implementation:
