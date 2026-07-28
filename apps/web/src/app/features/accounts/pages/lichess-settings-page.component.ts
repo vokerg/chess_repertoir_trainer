@@ -39,8 +39,8 @@ export class LichessSettingsPageComponent implements OnInit {
     if (confirmed) void this.store.disconnectLichess();
   }
 
-  protected hasChallengeWriteScope(account: { scopes: string[] }): boolean {
-    return account.scopes.includes('challenge:write');
+  protected hasScope(account: { scopes: string[] }, scope: string): boolean {
+    return account.scopes.includes(scope);
   }
 
   private showLichessCallbackNotice(): void {
