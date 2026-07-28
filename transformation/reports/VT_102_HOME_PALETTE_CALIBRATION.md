@@ -6,9 +6,11 @@ Issue: #124
 
 Branch: `visual-transformation/vt-102-home-palette-calibration`
 
-Pull request: #141 — draft
+Pull request: #141
 
 Target: `visual_transformation`
+
+Disposition: approved and squash-merged
 
 ## Purpose
 
@@ -33,7 +35,7 @@ Only `apps/web/src/app/features/home/home-page.component.css` changes at runtime
 
 ### Canvas
 
-The Home host now owns a route-local green-grey workspace:
+The Home host owns a route-local green-grey workspace:
 
 - primary canvas: `#E7EEEA`;
 - soft upper canvas: `#EEF4F1`;
@@ -87,7 +89,7 @@ Reduced-motion handling also removes the small hover transitions added to Contin
 
 ## Palette recommendation for VT-103
 
-VT-103 should treat these as evidence, not automatically copy every literal value:
+VT-103 should treat these as accepted Home evidence, not automatically copy every literal value:
 
 | Role | VT-102 evidence value | Recommendation |
 |---|---:|---|
@@ -123,11 +125,11 @@ No changes are made to:
 
 VT-102 was first claimed while VT-101 was under review. Their runtime scopes did not overlap: VT-101 owned navigation files and VT-102 owns Home-local CSS.
 
-VT-101 and the queue-facing reconciliation work then integrated through PRs #137 and #142–#144. The VT-102 branch was refreshed onto stable queue commit `9b4160e73cad296c3534b3628a8e92e3ac70b26d`; the Home CSS was reapplied unchanged and VT-102 records were rebuilt from that integrated state. No stale draft-navigation or pre-reconciliation queue wording remains in PR #141.
+VT-101 and the queue-facing reconciliation work integrated through PRs #137 and #142–#144. The VT-102 branch was refreshed onto that stable integrated state before final review. No stale draft-navigation or pre-reconciliation queue wording remained in PR #141.
 
 ## Automated validation
 
-Final implementation-head CI #1145 passed:
+Implementation-head CI #1145 and documentation-head CI #1152 passed:
 
 - dependency installation;
 - lint;
@@ -136,43 +138,26 @@ Final implementation-head CI #1145 passed:
 - database migrations;
 - the complete test suite.
 
-No focused component test is added because this slice changes CSS only and does not alter DOM, state, routes, or behavior. Existing Home and complete repository tests remain the regression boundary.
+No focused component test was added because this slice changes CSS only and does not alter DOM, state, routes, or behavior. Existing Home and complete repository tests remain the regression boundary.
 
-The final report/status reconciliation is documentation-only. Its final-head CI is recorded in PR #141 and issue #124 rather than creating another validation-only report edit after that result.
+## Browser review and approval
 
-## Direct browser validation required
+The user reviewed the Home result after being asked to check overall palette cohesion, canvas tone, surface hierarchy, expanded/collapsed desktop rail, responsive layouts, content states, contrast, keyboard focus, reduced motion, long labels, and overflow.
 
-Review `/home` with:
+Review outcome:
 
-- populated data;
-- loading state;
-- warnings and error state;
-- no urgent recommendations/empty recommendation state;
-- desktop expanded rail;
-- desktop collapsed rail;
-- tablet width;
-- mobile width;
-- long account label and long content;
-- keyboard focus across Refresh, Continue, recommendations, shortcuts, and Progress link;
-- normal and reduced motion;
-- contrast of muted text, borders, mint text, and dark surfaces.
+- the user reported that the result “feels good”;
+- the user explicitly approved the change for squash merge;
+- the VT-102 visual direction and merge boundary are accepted.
 
-Confirm specifically:
-
-- the rail and Home read as one product system without making Home dark;
-- the canvas is visibly green-grey but not saturated;
-- dark emphasis is limited and intentional;
-- important white cards remain clear;
-- secondary containers do not look like another layer of floating cards;
-- the Home-local mint focus outline is visible on links and buttons and does not fall back to the shell amber outline;
-- no horizontal overflow or unexpected page-width change occurs.
+This approval does not claim that every Phase 0–1 browser permutation has been exhaustively reproduced. Issue #126 remains responsible for the comprehensive residual matrix across public, authentication, Home, brand, navigation, Clerk/dev-auth, long-content, responsive, and reduced-motion conditions.
 
 ## Residual risks
 
-- direct browser evidence is not yet recorded;
-- the canvas may need a small optical adjustment after viewing it beside both expanded and collapsed rail states;
-- the final global token values remain open until VT-103.
+- comprehensive cross-state and cross-width browser evidence remains owned by issue #126;
+- the final global token names, semantic status colours, compatibility boundary, and typography remain open until VT-103;
+- Home-local values must not be copied globally without the explicit VT-103 migration contract.
 
-## Stop condition
+## Completion
 
-Automated validation is complete. Keep PR #141 in draft until direct browser evidence is recorded. Do not merge without explicit approval. Close issue #124 and change issue #125 to `READY` only after approved squash merge into `visual_transformation` and post-merge documentation/issue reconciliation.
+VT-102 is complete through approved squash merge of PR #141 into `visual_transformation`. Issue #124 is closed. Issues #125 and #126 are `READY`; #125 is the deterministic next task because it has the lower P1 order.
