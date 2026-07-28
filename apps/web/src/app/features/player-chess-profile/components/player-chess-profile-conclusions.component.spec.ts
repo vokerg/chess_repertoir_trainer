@@ -9,16 +9,15 @@ describe('PlayerChessProfileConclusionsComponent', () => {
 
     const fixture = TestBed.createComponent(PlayerChessProfileConclusionsComponent);
     fixture.componentRef.setInput('conclusions', [{
-      code: 'PERFORMS_BETTER',
-      dimension: 'CHARACTER',
-      value: 'DYNAMIC',
-      metric: 'SCORE_PERCENT',
-      sampleSize: 20,
-      metricValue: 58,
-      baselineValue: 50,
-      delta: 8,
-      evidenceStrength: 'MEDIUM',
+      id: '0:PERFORMS_BETTER:CHARACTER:DYNAMIC',
+      index: 0,
       summary: 'Dynamic openings scored above baseline.',
+      sampleLabel: '20 games',
+      metricLabel: '58%',
+      evidenceLabel: 'Medium evidence',
+      kindLabel: 'Above baseline',
+      positive: true,
+      negative: false,
     }]);
     const selected: number[] = [];
     fixture.componentInstance.selectConclusion.subscribe((index) => selected.push(index));
