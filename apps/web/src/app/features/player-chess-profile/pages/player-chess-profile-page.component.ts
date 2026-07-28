@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import {
   PageHeaderComponent,
   type PageHeaderAction,
-  type PageHeaderStat,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { PlayerChessProfileBreakdownComponent } from '../components/player-chess-profile-breakdown.component';
@@ -33,39 +32,14 @@ import { PlayerChessProfileStore } from '../state/player-chess-profile.store';
 export class PlayerChessProfilePageComponent implements OnInit {
   protected readonly store = inject(PlayerChessProfileStore);
 
-  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
-    const profile = this.store.response();
-    if (!profile) return [];
-    return [
-      { id: 'games', label: 'Games', value: profile.coverage.totalGames },
-      {
-        id: 'analysis',
-        label: 'Analysed',
-        value: profile.coverage.analysisPercent === null
-          ? '—'
-          : `${profile.coverage.analysisPercent}%`,
-      },
-      {
-        id: 'classification',
-        label: 'Profiled',
-        value: profile.coverage.classifiedOpeningGames,
-      },
-    ];
-  });
-
-  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
+  protected readonly headerActions: readonly PageHeaderAction[] = [
     {
       id: 'repertoire-start',
       label: 'Use as repertoire starting point · planned',
       disabled: true,
       run: () => undefined,
     },
-  ]);
-
-  protected readonly selectedConclusionIndex = computed(() => {
-    const selection = this.store.evidenceSelection();
-    return selection?.kind === 'CONCLUSION' ? selection.index : null;
-  });
+  ];
 
   ngOnInit(): void {
     void this.store.initialize();
