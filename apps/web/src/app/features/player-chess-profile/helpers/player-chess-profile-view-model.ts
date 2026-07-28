@@ -124,8 +124,9 @@ export function playerChessProfileValueLabel(value: string): string {
 }
 
 export function playerChessProfileEvidenceLabel(strength: PlayerChessProfileEvidenceStrength): string {
-  if (strength === 'INSUFFICIENT') return 'Insufficient evidence';
-  return `${playerChessProfileValueLabel(strength)} evidence`;
+  return strength === 'INSUFFICIENT'
+    ? 'Insufficient evidence'
+    : `${playerChessProfileValueLabel(strength)} evidence`;
 }
 
 export function playerChessProfilePercentLabel(value: number | null): string {
@@ -135,8 +136,7 @@ export function playerChessProfilePercentLabel(value: number | null): string {
 
 export function playerChessProfileDeltaLabel(value: number | null): string {
   if (value === null) return '—';
-  const prefix = value > 0 ? '+' : '';
-  return `${prefix}${value.toFixed(value % 1 === 0 ? 0 : 1)} pp`;
+  return `${value > 0 ? '+' : ''}${value.toFixed(value % 1 === 0 ? 0 : 1)} pp`;
 }
 
 export function playerChessProfileWdlLabel(item: {
@@ -238,7 +238,7 @@ export function buildPlayerChessProfilePreferenceRows(
 ): readonly PlayerChessProfilePreferenceRowViewModel[] {
   return response.preference.items
     .filter((item) => item.dimension === dimension && item.value !== 'UNKNOWN')
-    .toSorted((left, right) => right.games - left.games || left.value.localeCompare(right.value))
+    .sort((left, right) => right.games - left.games || left.value.localeCompare(right.value))
     .map((item) => ({
       id: `${item.dimension}:${item.value}`,
       dimension: item.dimension,
@@ -255,7 +255,7 @@ export function buildPlayerChessProfilePerformanceRows(
 ): readonly PlayerChessProfilePerformanceRowViewModel[] {
   return response.performance.items
     .filter((item) => item.dimension === dimension && item.value !== 'UNKNOWN')
-    .toSorted((left, right) => {
+    .sort((left, right) => {
       const leftDelta = left.scoreDelta ?? Number.NEGATIVE_INFINITY;
       const rightDelta = right.scoreDelta ?? Number.NEGATIVE_INFINITY;
       return rightDelta - leftDelta || right.games - left.games || left.value.localeCompare(right.value);
@@ -280,18 +280,16 @@ function matchingConclusionItem(
   response: PlayerChessProfileResponse,
   conclusion: PlayerChessProfileConclusion,
 ): PlayerChessProfilePreferenceItem | PlayerChessProfilePerformanceItem | null {
-  const dimension = conclusion.dimension;
-  const value = conclusion.value;
-  if (!dimension || !value) return null;
+  if (!conclusion.dimension || !conclusion.value) return null;
   if (conclusion.code === 'PREFERENCE') {
     return response.preference.items.find(
-      (item) => item.dimension === dimension && item.value === value,
+      (item) => item.dimension === conclusion.dimension && item.value === conclusion.value,
     ) ?? null;
   }
   return response.performance.items.find(
-    (item) => item.dimension === dimension && item.value === value,
+    (item) => item.dimension === conclusion.dimension && item.value === conclusion.value,
   ) ?? response.preference.items.find(
-    (item) => item.dimension === dimension && item.value === value,
+    (item) => item.dimension === conclusion.dimension && item.value === conclusion.value,
   ) ?? null;
 }
 
@@ -313,7 +311,9 @@ function evidenceMetrics(
   return entries.map((entry) => ({ id: entry.label, ...entry }));
 }
 
-function performanceMetrics(item: PlayerChessProfilePerformanceItem) {
+function performanceMetrics(
+  item: PlayerChessProfilePerformanceItem,
+): readonly PlayerChessProfileEvidenceMetricViewModel[] {
   return evidenceMetrics([
     { label: 'Games', value: String(item.games) },
     { label: 'W–D–L', value: playerChessProfileWdlLabel(item) },
@@ -326,7 +326,9 @@ function performanceMetrics(item: PlayerChessProfilePerformanceItem) {
   ]);
 }
 
-function preferenceMetrics(item: PlayerChessProfilePreferenceItem) {
+function preferenceMetrics(
+  item: PlayerChessProfilePreferenceItem,
+): readonly PlayerChessProfileEvidenceMetricViewModel[] {
   return evidenceMetrics([
     { label: 'Games', value: String(item.games) },
     { label: 'Exposure', value: playerChessProfilePercentLabel(item.exposurePercent) },
