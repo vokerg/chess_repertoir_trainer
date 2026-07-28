@@ -1,0 +1,30 @@
+<div class="profile-conclusion-grid">
+  @for (conclusion of conclusions(); track conclusion.code + ':' + conclusion.dimension + ':' + conclusion.value; let index = $index) {
+    <article
+      class="profile-conclusion"
+      [class.selected]="selectedIndex() === index"
+      [class.positive]="conclusion.code === 'PERFORMS_BETTER'"
+      [class.negative]="conclusion.code === 'PERFORMS_WORSE' || conclusion.code === 'OPENING_TROUBLE'"
+    >
+      <div class="profile-conclusion-meta">
+        <span class="profile-conclusion-kind">{{ kindLabel(conclusion) }}</span>
+        <span>{{ evidenceLabel(conclusion.evidenceStrength) }}</span>
+      </div>
+      <h3>{{ conclusion.summary }}</h3>
+      <p>
+        {{ conclusion.sampleSize }} game{{ conclusion.sampleSize === 1 ? '' : 's' }}
+        @if (conclusion.metricValue !== null) {
+          · {{ percentLabel(conclusion.metricValue) }}
+        }
+      </p>
+      <button
+        type="button"
+        class="profile-evidence-button"
+        [attr.aria-pressed]="selectedIndex() === index"
+        (click)="selectConclusion.emit(index)"
+      >
+        {{ selectedIndex() === index ? 'Evidence shown' : 'Inspect evidence' }}
+      </button>
+    </article>
+  }
+</div>
