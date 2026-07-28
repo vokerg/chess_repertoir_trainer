@@ -1,29 +1,29 @@
 <div class="profile-conclusion-grid">
-  @for (conclusion of conclusions(); track conclusion.code + ':' + conclusion.dimension + ':' + conclusion.value; let index = $index) {
+  @for (conclusion of conclusions(); track conclusion.id) {
     <article
       class="profile-conclusion"
-      [class.selected]="selectedIndex() === index"
-      [class.positive]="conclusion.code === 'PERFORMS_BETTER'"
-      [class.negative]="conclusion.code === 'PERFORMS_WORSE' || conclusion.code === 'OPENING_TROUBLE'"
+      [class.selected]="selectedIndex() === conclusion.index"
+      [class.positive]="conclusion.positive"
+      [class.negative]="conclusion.negative"
     >
       <div class="profile-conclusion-meta">
-        <span class="profile-conclusion-kind">{{ kindLabel(conclusion) }}</span>
-        <span>{{ evidenceLabel(conclusion.evidenceStrength) }}</span>
+        <span class="profile-conclusion-kind">{{ conclusion.kindLabel }}</span>
+        <span>{{ conclusion.evidenceLabel }}</span>
       </div>
       <h3>{{ conclusion.summary }}</h3>
       <p>
-        {{ conclusion.sampleSize }} game{{ conclusion.sampleSize === 1 ? '' : 's' }}
-        @if (conclusion.metricValue !== null) {
-          · {{ percentLabel(conclusion.metricValue) }}
+        {{ conclusion.sampleLabel }}
+        @if (conclusion.metricLabel) {
+          · {{ conclusion.metricLabel }}
         }
       </p>
       <button
         type="button"
         class="profile-evidence-button"
-        [attr.aria-pressed]="selectedIndex() === index"
-        (click)="selectConclusion.emit(index)"
+        [attr.aria-pressed]="selectedIndex() === conclusion.index"
+        (click)="selectConclusion.emit(conclusion.index)"
       >
-        {{ selectedIndex() === index ? 'Evidence shown' : 'Inspect evidence' }}
+        {{ selectedIndex() === conclusion.index ? 'Evidence shown' : 'Inspect evidence' }}
       </button>
     </article>
   }
