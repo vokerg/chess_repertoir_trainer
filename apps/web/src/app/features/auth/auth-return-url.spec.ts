@@ -1,4 +1,4 @@
-import { signal, Type } from '@angular/core';
+import { signal, type Type } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -43,6 +43,7 @@ describe('authentication return URL handoff', () => {
       imports: [component],
       providers: [
         { provide: AuthService, useValue: auth },
+        provideRouter([]),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -51,7 +52,6 @@ describe('authentication return URL handoff', () => {
             },
           },
         },
-        provideRouter([]),
       ],
     }).compileComponents();
 
