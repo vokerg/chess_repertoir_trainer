@@ -2,14 +2,14 @@
   <app-page-header
     title="Chess profile"
     subtitle="Recalculate how your opening preferences and results differ across selected games."
-    [stats]="headerStats()"
-    [actions]="headerActions()"
+    [stats]="store.headerStats()"
+    [actions]="headerActions"
   />
 
   <app-panel title="Profile context" subtitle="The profile is recalculated from the selected personal games.">
     <app-player-chess-profile-filter-bar
       [filters]="store.filters()"
-      [accounts]="store.accounts()"
+      [accounts]="store.accountOptions()"
       [accountsLoading]="store.accountsLoading()"
       [loading]="store.loading()"
       (periodChange)="store.setPeriod($event)"
@@ -34,7 +34,7 @@
     }
   </app-panel>
 
-  @if (store.response(); as profile) {
+  @if (store.hasResponse()) {
     <p class="profile-context-summary">{{ store.contextLabel() }}</p>
 
     @if (store.hasNoData()) {
@@ -57,8 +57,8 @@
         subtitle="Each statement stays scoped to the selected games and can be inspected."
       >
         <app-player-chess-profile-conclusions
-          [conclusions]="profile.conclusions"
-          [selectedIndex]="selectedConclusionIndex()"
+          [conclusions]="store.conclusionItems()"
+          [selectedIndex]="store.selectedConclusionIndex()"
           (selectConclusion)="store.selectConclusion($event)"
         />
       </app-panel>
@@ -87,12 +87,14 @@
         </app-panel>
       </div>
 
-      <app-panel
-        title="Baseline and data quality"
-        subtitle="Composite opening-positive/trouble rates use the existing opening tags; coverage and uncertainty stay visible."
-      >
-        <app-player-chess-profile-coverage [profile]="profile" />
-      </app-panel>
+      @if (store.coverage(); as coverage) {
+        <app-panel
+          title="Baseline and data quality"
+          subtitle="Composite opening-positive/trouble rates use the existing opening tags; coverage and uncertainty stay visible."
+        >
+          <app-player-chess-profile-coverage [coverage]="coverage" />
+        </app-panel>
+      }
     }
   } @else if (store.loaded() && !store.loading()) {
     <app-panel title="Profile unavailable">
