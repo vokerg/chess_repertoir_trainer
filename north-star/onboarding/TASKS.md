@@ -6,7 +6,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 
 | Order | ID | GitHub issue | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
-| 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | REVIEW | Establish program foundation and master plan | Research/planning | Current repo inspection |
+| 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | DONE | Establish program foundation and master plan | Research/planning | Accepted for squash merge through PR #156 |
 | 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | READY | Define onboarding lifecycle and default preparation recipe | Research | ONB-000 |
 | 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | READY | Design bounded recent-first import and historical backfill | Research | ONB-000 |
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | READY | Design progressive indexing and analysis orchestration | Research | ONB-000; coordinates with ONB-001/002/007 |
@@ -15,9 +15,11 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; mutation contract waits for ONB-004 |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; coordinates with ONB-004/005 |
 
-## Foundation review
+## Completed foundation
 
-ONB-000 is documented on `onb-000/issue-147-program-foundation` with:
+ONB-000 was accepted by the user and prepared for squash merge through [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156).
+
+Delivered:
 
 - the program foundation and master plan;
 - roadmap, decisions, open questions, status, and coordination rules;
@@ -25,7 +27,7 @@ ONB-000 is documented on `onb-000/issue-147-program-foundation` with:
 - report `reports/ONB-000-2026-07-28-program-foundation.md`;
 - GitHub issues #147–#154.
 
-No production implementation or pull request is included.
+Program tracker #147 remains open. Research issues #148–#154 remain open.
 
 ## Deterministic next task
 
