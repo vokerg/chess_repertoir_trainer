@@ -1,11 +1,13 @@
 # Player Chess Profile experience
 
-The authenticated `/progress` route presents a recalculable Player Chess Profile based on the deterministic `/api/player-chess-profile` contract.
+The authenticated `/progress/profile` route presents a recalculable Player Chess Profile based on the deterministic `/api/player-chess-profile` contract.
 
 ## Entry points
 
-- `/progress` opens the combined Player Chess Profile.
-- `/progress/accounts/:accountId` keeps the existing single-account rating and performance dashboard.
+- `/progress` preserves the existing behavior and redirects to the default, active, or first connected account dashboard.
+- `/progress/accounts/:accountId` remains the single-account rating and performance dashboard.
+- `/progress/profile` opens the combined Player Chess Profile.
+- The main Progress navigation contains separate `Account performance` and `Chess profile` submenu entries.
 
 ## Filters
 
@@ -60,13 +62,24 @@ Feature code lives under `apps/web/src/app/features/player-chess-profile/`:
 
 ```text
 components/   presentational filters, findings, breakdown, evidence, coverage
-data-access/  typed HTTP service and UI models
-helpers/      period and view-model transformations
-pages/        route-level composition
-state/        page-scoped signal store and async workflow
+data-access/  typed HTTP service and transport DTOs
+helpers/      period and pure DTO-to-view-model transformations
+pages/        lazy route-level composition
+state/        page-scoped signal store, UI models, and async workflow
 ```
 
-The feature uses standalone OnPush components, immutable signal updates, built-in template control flow, `app-page-header`, and `app-panel`.
+The feature follows the repository Angular boundaries:
+
+- the route is lazy-loaded through the feature public boundary;
+- the page is a composition shell and delegates commands to a page-provided store;
+- writable signals remain private and are exposed as readonly state or computed view models;
+- the store owns filters, request ordering, loading, errors, selection, and recalculation;
+- data access owns typed HTTP calls only;
+- presentational components receive feature-local display models and emit typed user intents rather than consuming backend DTOs directly;
+- pure helpers map the wire response into conclusion, breakdown, evidence, account, and coverage view models;
+- all components are standalone and OnPush and use built-in control flow with stable tracking;
+- route-level shells use `app-page-header` and `app-panel`;
+- responsive media queries use the shared 640, 760, and 980 pixel breakpoints with explicit synchronization comments.
 
 ## Deliberate boundaries
 
