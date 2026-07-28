@@ -85,10 +85,10 @@
             <label>
               <input
                 type="checkbox"
-                [checked]="isAccountSelected(account.id)"
+                [checked]="account.selected"
                 (change)="accountToggle.emit(account.id)"
               />
-              <span>{{ accountLabel(account) }}</span>
+              <span>{{ account.label }}</span>
             </label>
           }
         }
