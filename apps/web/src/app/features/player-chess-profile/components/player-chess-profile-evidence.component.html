@@ -5,11 +5,11 @@
         <h3>{{ item.title }}</h3>
         <p>{{ item.summary }}</p>
       </div>
-      <span class="profile-evidence-badge">{{ evidenceLabel(item.evidenceStrength) }}</span>
+      <span class="profile-evidence-badge">{{ item.evidenceLabel }}</span>
     </div>
 
     <dl class="profile-evidence-metrics">
-      @for (metric of item.metrics; track metric.label) {
+      @for (metric of item.metrics; track metric.id) {
         <div>
           <dt>{{ metric.label }}</dt>
           <dd>{{ metric.value }}</dd>
@@ -22,13 +22,13 @@
         <h4>Contributing openings</h4>
         @if (item.openings.length > 0) {
           <ul class="profile-opening-list">
-            @for (opening of item.openings; track opening.userColor + ':' + opening.eco + ':' + opening.name) {
+            @for (opening of item.openings; track opening.id) {
               <li>
                 <span>
-                  <strong>{{ opening.name || opening.eco || 'Unknown opening' }}</strong>
-                  <small>{{ opening.eco || 'No ECO' }} · {{ valueLabel(opening.userColor) }}</small>
+                  <strong>{{ opening.title }}</strong>
+                  <small>{{ opening.meta }}</small>
                 </span>
-                <span>{{ opening.games }} games</span>
+                <span>{{ opening.gamesLabel }}</span>
               </li>
             }
           </ul>
@@ -44,8 +44,8 @@
             @for (game of item.games; track game.id) {
               <li>
                 <a [routerLink]="['/games', game.id]">
-                  <strong>{{ gameTitle(game) }}</strong>
-                  <small>{{ gameMeta(game) }} · {{ endedAtLabel(game.endedAt) }}</small>
+                  <strong>{{ game.title }}</strong>
+                  <small>{{ game.meta }} · {{ game.endedAtLabel }}</small>
                 </a>
                 @if (game.providerUrl) {
                   <a
