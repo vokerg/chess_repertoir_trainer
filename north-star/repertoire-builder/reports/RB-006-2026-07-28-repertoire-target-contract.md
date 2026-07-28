@@ -2,7 +2,7 @@
 
 Date: 2026-07-28
 
-Status: implementation complete; awaiting review
+Status: completed and integrated
 
 Task: RB-006
 
@@ -11,6 +11,8 @@ GitHub issue: #94
 Branch: `rb-006/issue-94-repertoire-target-contract-v2`
 
 Pull request: #157
+
+Squash commit: `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`
 
 Superseded pull requests: #145 and #146, closed without merge
 
@@ -135,6 +137,8 @@ Review-head CI run `30382976492` / #1251 passed:
 - imported-game opening-classification audit and artifact upload;
 - complete repository tests, including the new repertoire-target contract examples, invalid combinations and pure helper coverage.
 
+Final documentation-head CI run `30383511789` / #1256 passed the same complete workflow.
+
 The first implementation run exposed two test-expectation mismatches around Zod error wording and normalized evidence-only changes. The tests were corrected to assert the stable public behavior rather than incidental error text or duplicated peer-evidence bookkeeping, and the complete review-head workflow then passed.
 
 ## Validation skipped
@@ -191,11 +195,11 @@ North Star uncertainty is reduced materially: candidate ranking and builder-sess
 
 ## GitHub and queue impact
 
-- Issue #94 remains open through review.
-- PR #157 is the active implementation.
+- Issue #94 is completed after accepted integration.
+- PR #157 was squash-merged into `main` as `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`.
 - PRs #145 and #146 were superseded and closed without merge.
 - No new RB task or GitHub issue is required.
-- RB-007 can move from `BLOCKED` to `READY` after RB-006 is accepted and integrated.
-- RB-009 remains blocked on accepted RB-006 plus sufficiently stable RB-007 candidate semantics.
+- RB-007 moves from `BLOCKED` to `READY`.
+- RB-009 remains blocked on sufficiently stable RB-007 candidate semantics.
 - RB-013 remains the next owner of preset/profile initialization UX and course metadata decisions.
-- Queue order and priorities should remain unchanged.
+- Queue order and priorities remain unchanged.

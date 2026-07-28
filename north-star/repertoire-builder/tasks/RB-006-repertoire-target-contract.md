@@ -1,6 +1,6 @@
 # RB-006 — Define repertoire target contract
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -116,5 +116,9 @@ The report includes canonical target examples, unresolved persistence questions,
 ## Completion
 
 Report: `../reports/RB-006-2026-07-28-repertoire-target-contract.md`
+
+Merged PR: https://github.com/vokerg/chess_repertoir_trainer/pull/157
+
+Squash commit: `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`
 
 Completed at: 2026-07-28

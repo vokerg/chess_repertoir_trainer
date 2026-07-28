@@ -1,6 +1,6 @@
 # RB-007 — Aggregate and rank candidate evidence explainably
 
-Status: BLOCKED
+Status: READY
 
 Priority: P1
 
@@ -37,12 +37,12 @@ The builder needs more than Stockfish's first move and more than corpus populari
 - course position suggestions and repertoire graphs;
 - RB-003 opening profiles;
 - RB-004 profile evidence;
-- RB-006 target contract;
+- completed RB-006 target contract;
 - pure domain package conventions and tests.
 
 ## Dependencies
 
-Blocked on RB-003 and RB-006.
+Consumes completed RB-003 and RB-006.
 
 Consumes completed RB-001/RB-002 population and factual player-level evidence.
 
