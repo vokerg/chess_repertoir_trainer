@@ -246,13 +246,14 @@ export class PlayerChessProfileStore {
   }
 
   async load(): Promise<void> {
+    const currentRequest = ++this.requestId;
     const validationError = this.validateFilters(this.filtersState());
     if (validationError) {
+      this.loadingState.set(false);
       this.errorState.set(validationError);
       return;
     }
 
-    const currentRequest = ++this.requestId;
     this.loadingState.set(true);
     this.errorState.set(null);
 
