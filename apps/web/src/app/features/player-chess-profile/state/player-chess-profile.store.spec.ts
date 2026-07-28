@@ -196,7 +196,7 @@ describe('PlayerChessProfileStore', () => {
     await store.load();
     store.selectConclusion(0);
 
-    expect(store.evidence()?.openings[0].name).toBe('Sicilian Defense');
+    expect(store.evidence()?.openings[0].title).toBe('Sicilian Defense');
     expect(store.evidence()?.games[0].id).toBe(7);
   });
 
