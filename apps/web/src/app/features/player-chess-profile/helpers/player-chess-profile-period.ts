@@ -1,7 +1,7 @@
 import type {
   PlayerChessProfileFilters,
   PlayerChessProfilePeriod,
-} from '../data-access/player-chess-profile.models';
+} from '../state/player-chess-profile.models';
 
 function dateInputValue(date: Date): string {
   const year = date.getFullYear();
