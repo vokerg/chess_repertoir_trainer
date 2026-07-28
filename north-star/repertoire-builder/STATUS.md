@@ -1,14 +1,14 @@
 # Repertoire Builder Program Status
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136 with green final-head CI. RB-006 is ready. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 has a stacked hands-on implementation in review through PR #139; its Progress entry point and Angular boundaries were corrected after user review and await final review-head CI. RB-006 is ready. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
 
 **Runtime on `main`:** the deterministic side-aware opening-classification registry is `2026-07-rules-v2` and covers every entry and unique name in the pinned generated opening book with ordered regex rules, while preserving low-confidence and explicit unknown dimensions. PR #111 remains the method foundation. The earlier squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
-**Review runtime in PR #136:** RB-004 adds an authenticated deterministic Player Chess Profile endpoint and shared contract. It separates preference from performance, reuses imported-game ownership/filter predicates, consumes the completed peer resolver and opening-classification registry, exposes coverage and evidence grades, and bounds opening/game evidence without adding persistence or UI.
+**Review stack:** PR #136 adds the Player Chess Profile API and contract. PR #138 records the RB-005 claim. PR #139 adds the Angular experience on top of that unmerged calculation branch. Neither profile PR is integrated into `main`.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -37,8 +37,7 @@ Report: `reports/RB-003-2026-07-27-opening-classification-rules.md`.
 
 Delivered:
 
-- versioned classification contract `2026-07-rules-v1`;
-- deterministic ordered regex rules with broad family inheritance and narrow overrides;
+- deterministic ordered regex rules with family inheritance and narrow overrides;
 - independent White and Black soundness, character, theoretical status, theory burden, roles and confidence;
 - explicit matched-rule provenance and unknown values;
 - representative gambit, dubious-line and Mikenas-Carls examples;
@@ -56,14 +55,12 @@ Delivered:
 - active rule version `2026-07-rules-v2`;
 - 100% rule-match coverage for the pinned 3,733 generated entries and 3,167 unique names through 114 active ordered rules;
 - maintainable coverage modules and stable-ID regex corrections;
-- broad family expansion based on the measured backlog;
-- narrow side-aware exceptions where family inheritance would misrepresent soundness or roles;
 - frequency-ranked generated and imported-game unknown-family backlogs;
-- database-backed game-weighted coverage audit over existing opening metadata;
-- CI audit artifacts and regression failure for newly unmatched pinned names;
-- no persistence, runtime AI, engine workflow, public API, UI, queue or generated-book mutation.
+- database-backed game-weighted coverage auditing;
+- CI audit artifacts and failure on newly unmatched pinned names;
+- explicit low confidence and `UNKNOWN` dimensions where stronger claims would be fabricated.
 
-Rule-match coverage is not semantic overclaiming. Rare heterogeneous families may retain `UNKNOWN` soundness or low confidence while exposing only safe characteristics and provenance. Runtime names outside the pinned book keep the explicit unknown fallback.
+Rule-match coverage is not semantic overclaiming. Rare heterogeneous families may retain `UNKNOWN` soundness or low confidence while exposing only safe characteristics and provenance.
 
 ### RB-008 visual direction
 
@@ -73,9 +70,9 @@ Accepted flow:
 
 1. a focused setup dialog captures side, starting point, speed preset, rating target, persona and coverage/theory preferences;
 2. **Start building** closes the dialog and opens a routed workbench;
-3. the routed workbench uses one readable primary board, candidate switcher, focused evidence, opponent-response coverage queue and branch progress;
-4. Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy and reduces board readability;
-5. candidate-attached target/profile roles remain; explicit mini-board comparison is deferred unless later evidence justifies it.
+3. the workbench uses one readable primary board, candidate switcher, focused evidence, opponent-response coverage queue and branch progress;
+4. simultaneous candidate mini-boards are rejected as the default;
+5. candidate-attached target/profile roles remain.
 
 ### RB-014 traps discovery
 
@@ -83,15 +80,11 @@ Issue [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) is co
 
 Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`.
 
-Accepted conclusions:
+Accepted conclusions include normalized position-and-move identity, CC0 source candidates, versioned engine and population evidence, explicit setup soundness and provenance, and editorial review. No production schema, API, Angular UI, course write, or critical-path dependency was added.
 
-- identify trap occurrences by normalized trigger position and ordered move transitions, not opening name;
-- combine CC0 source candidates, versioned engine evidence, target-population evidence, and editorial review;
-- represent setup soundness, temptation, punishment, safe defenses, sample size, confidence, and provenance separately;
-- treat related non-identical triggers as one family with separate occurrences;
-- keep production persistence, API, Angular UI, course writes, and RB-006/RB-007 contract changes out of the approved pilot.
+## Player Chess Profile review stack
 
-## RB-004 review
+### RB-004 calculation
 
 Issue [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) is implemented for review through PR [#136](https://github.com/vokerg/chess_repertoir_trainer/pull/136).
 
@@ -100,49 +93,56 @@ Report: `reports/RB-004-2026-07-27-player-chess-profile-calculation.md`.
 Review implementation:
 
 - shared request/response schemas at `@chess-trainer/contracts/player-chess-profile`;
-- authenticated `GET /api/player-chess-profile` route with route-schema OpenAPI;
-- account, period, speed-preset, color, rated-status and rating-context filters;
+- authenticated `GET /api/player-chess-profile`;
+- account, period, speed-preset, colour, rated-status and rating-context filters;
 - selected-game score baseline and explicit analysed coverage;
 - separate preference exposure and performance measurements;
-- side-aware RB-003/RB-018 dimensions with rule/source provenance;
+- side-aware opening-profile dimensions with rule/source provenance;
 - deterministic sample and analysis evidence grades;
-- bounded top-100 opening/color groups and 1–10 supporting games;
+- bounded top-100 opening/colour groups and 1–10 supporting games;
 - explicit omitted, truncated, low-confidence and unknown-dimension counts;
 - no Prisma migration, stored profile, UI, LLM, candidate ranking or course write.
 
-Final implementation-head CI run `30287398030` / #1103 passed lint, build, audits, architecture guardrails, migrations and the complete test suite, including real multi-account filtering and a bounded 1,200-game performance regression.
+Final implementation-head CI run `30287398030` / #1103 passed lint, build, audits, architecture guardrails, migrations and complete tests.
 
-RB-004 remains open until user review, accepted integration and final closure reconciliation.
+### RB-005 experience
+
+Issue [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) is implemented for hands-on review through stacked PR [#139](https://github.com/vokerg/chess_repertoir_trainer/pull/139). Claim PR: [#138](https://github.com/vokerg/chess_repertoir_trainer/pull/138).
+
+Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`.
+
+Review implementation:
+
+- `/progress` preserves the existing default/active account redirect and `/progress/accounts/:accountId` retains account dashboards;
+- `/progress/profile` is a separate authenticated lazy route;
+- Progress exposes `Account performance` and `Chess profile` submenu entries;
+- recent, all-time, and custom periods;
+- all or selected accounts, speed preset, White/Black, rated/casual, and rating-range filters;
+- independent `What you choose` and `What works` views;
+- character, soundness, theory status, theory burden, and role breakdowns;
+- conclusion cards and row-level evidence expansion;
+- contributing openings, bounded supporting games, WDL, score baseline, composite opening-positive/trouble and early-mistake rates, accuracy and peer context;
+- coverage, low-confidence, unknown, truncation, loading, no-data, error, stale-request, and partial-analysis states;
+- feature-local standalone OnPush components, HTTP-only typed data access, private writable store signals with readonly/computed exposure, focused pure view-model helpers, and component/store/route tests;
+- no RB-004 formula change, profile persistence, correction storage, target setup, course write, or LLM dependency.
+
+The original implementation passed complete CI before the user-requested navigation and architecture correction. Final corrected review-head CI is pending.
+
+The review stack remains open until the user accepts RB-004, reviews the profile against populated data, and approves stack reconciliation. No profile code is on `main`.
 
 ## Ready work
 
 ### RB-006 repertoire target contract
 
-RB-006 can define the target contract using completed opening-classification evidence and accepted RB-008 setup responsibilities. It remains independent from RB-004 review, subject to normal collision checks around shared contracts and peer evidence.
+RB-006 can define target intent using completed opening classification and accepted RB-008 setup responsibilities. It remains independent from the profile review stack, subject to normal collision checks around shared contracts and peer evidence.
 
 ## RB-017 active pilot
 
-Issue [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) is the only approved traps implementation scope.
+Issue [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) remains the only approved traps implementation scope.
 
 Implementation branch: `rb-017/issue-114-curated-traps-pilot`.
 
-Scope:
-
-- 20–50 source-controlled reviewed occurrences;
-- deterministic legality, normalization, identity, duplicate, defense, and provenance validation;
-- versioned Stockfish and bounded Opening Explorer evidence snapshots;
-- explicit insufficient-evidence states;
-- human-readable review output;
-- tests and documentation.
-
-Explicit exclusions:
-
-- no Prisma model or production import;
-- no public API, OpenAPI, MCP, or Angular surface;
-- no course writes;
-- no repertoire-target or candidate-ranking contract changes;
-- no unlicensed source copying;
-- no fabricated values.
+Scope is limited to a source-controlled reviewed dataset, deterministic validation, versioned engine/population snapshots, explicit insufficient evidence, review output, tests and documentation. It excludes Prisma persistence, public API, Angular UI, course writes, and target/ranking contract changes.
 
 ## Repository and GitHub issue state
 
@@ -150,48 +150,33 @@ Explicit exclusions:
 - RB-002 / [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90): `DONE` through RB-001 delivery evidence and closure PR #107.
 - RB-003 / [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `DONE` through PR #111.
 - RB-004 / [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92): `REVIEW` through PR #136.
+- RB-005 / [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93): `REVIEW` through stacked PR #139.
 - RB-006 / [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94): `READY`.
 - RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `DONE` through accepted PR #110 direction.
 - RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): `DONE` through PR #113.
 - RB-017 / [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114): `CLAIMED` for the bounded pilot.
 - RB-018 / [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116): `DONE` through PR #121.
-- Jira coordination is retired; `CRT-2` through `CRT-18` are historical migration records.
 
 ## Dependency impact
 
-- RB-004 review proposes the complete deterministic calculation contract and no separate metric task.
-- RB-005 remains blocked until RB-004 is accepted and integrated; after that it can proceed using the shared contract.
-- RB-006 is unblocked and owns setup-dialog target fields and override semantics.
-- RB-007 remains blocked on RB-006; it may consume intrinsic classification but must not conflate it with target or population evidence.
-- RB-009 owns routed session, branch queue, draft and resume semantics.
-- RB-010 owns production implementation of the setup dialog and routed board-first workbench.
+- RB-004 proposes the deterministic calculation contract.
+- RB-005 demonstrates the first profile presentation without extending that contract.
+- RB-005 cannot be integrated before RB-004 is accepted and the stacked branches are reconciled.
+- RB-006 remains unblocked and owns target fields and intent semantics.
+- RB-013 should later make profile-derived defaults optional and editable without mutating factual profile evidence.
+- RB-007 remains blocked on RB-006.
+- RB-009 owns routed session, queue, draft and resume semantics.
+- RB-010 owns production builder implementation.
 - RB-017 remains independent and adds no critical-path blocker.
 
 ## Validation
 
-- RB-003 GitHub Actions run `30239257847` passed TypeScript lint, complete workspace build, architecture guardrails, PostgreSQL migrations, and the complete repository test suite.
-- RB-018 final CI and generated/imported-game audit evidence are recorded in its completion report and PR #121.
-- RB-004 implementation-head run `30287398030` / #1103 passed lint, build, both opening-classification audits, architecture guardrails, migrations and complete tests.
+- RB-004 CI `30287398030` / #1103 passed lint, build, audits, architecture guardrails, migrations and complete tests.
+- RB-005 corrected review-head CI is pending after route, submenu, state encapsulation, presentational view-model, helper-splitting, breakpoint, accessibility, and focused component-test changes.
 - RB-008 validation includes responsive prototype review and complete repository CI on PR #110.
 - RB-014 source/license verification, repository inspection, and complete repository CI passed on PR #113.
-- RB-017 must add deterministic offline fixture tests plus an explicit opt-in refresh path for live engine/population evidence, then pass lint, build, architecture guardrails, migrations, and the complete test suite.
+- RB-017 must add deterministic offline fixture tests plus an explicit opt-in live refresh path.
 
 ## Residual risks
 
-- Opening classifications are reviewable chess judgments and some boundary choices may remain controversial.
-- Generated-name rule-match coverage is distinct from actual-game distribution and semantic confidence.
-- Production-user game-weighted opening-classification coverage must be run against a populated environment.
-- RB-004 evidence grades are deterministic volume/coverage bands rather than formal significance estimates.
-- RB-004 has no equivalent peer-population opening-character performance baseline; it exposes factual peer level separately and compares performance with the selected personal baseline.
-- Cross-provider duplicate copies may contribute more than once when multiple accounts are selected.
-- The RB-004 top-100 opening-group cap intentionally exposes omitted long-tail coverage rather than loading unbounded groups.
-- Production RB-004 latency should be observed on a populated environment after integration; CI validates a bounded synthetic 1,200-game dataset.
-- Chess.com band boundaries remain approximate product mappings.
-- Direction A may later need an explicit structural-comparison mode.
-- Theory-burden and response-coverage semantics remain pending RB-007/RB-009.
-- Trap names are inconsistent and user-created source licensing is heterogeneous.
-- Live Explorer evidence is rate-limited and must not become a required deterministic test dependency.
-
-## Queue recommendation
-
-Review RB-004 through PR #136. The next ordered unclaimed `READY` critical-path task is RB-006. Keep RB-005 blocked until RB-004 is accepted and integrated. Execute RB-017 as an isolated non-production pilot and require a new user review before any production traps capability or RB-006/RB-007 extension is proposed.
+- Opening classifications remain reviewable chess judgments.

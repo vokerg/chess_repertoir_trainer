@@ -43,6 +43,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'progress/profile',
+    title: 'Chess profile | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/player-chess-profile').then(
+        (m) => m.PlayerChessProfilePageComponent,
+      ),
+  },
+  {
     path: 'progress/accounts/:accountId',
     title: 'Account | Chess Repertoire Trainer',
     canActivate: [authGuard],

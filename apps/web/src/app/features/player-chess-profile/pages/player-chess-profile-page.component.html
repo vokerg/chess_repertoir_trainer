@@ -1,0 +1,104 @@
+<section class="player-profile-page stack">
+  <app-page-header
+    title="Chess profile"
+    subtitle="Recalculate how your opening preferences and results differ across selected games."
+    [stats]="store.headerStats()"
+    [actions]="headerActions"
+  />
+
+  <app-panel title="Profile context" subtitle="The profile is recalculated from the selected personal games.">
+    <app-player-chess-profile-filter-bar
+      [filters]="store.filters()"
+      [accounts]="store.accountOptions()"
+      [accountsLoading]="store.accountsLoading()"
+      [loading]="store.loading()"
+      (periodChange)="store.setPeriod($event)"
+      (dateChange)="store.setDate($event.key, $event.value)"
+      (speedPresetChange)="store.setSpeedPreset($event)"
+      (ratedChange)="store.setRated($event)"
+      (accountToggle)="store.toggleAccount($event)"
+      (allAccountsSelect)="store.selectAllAccounts()"
+      (colorToggle)="store.toggleColor($event)"
+      (ratingFilterChange)="store.setRatingFilter($event.key, $event.value)"
+      (ratingContextClear)="store.clearRatingContext()"
+      (recalculate)="store.load()"
+    />
+    @if (store.accountsError(); as error) {
+      <p class="status-note">{{ error }}</p>
+    }
+    @if (store.error(); as error) {
+      <p class="status-error">{{ error }}</p>
+    }
+    @if (store.loading()) {
+      <p class="status-note">Calculating profile evidence…</p>
+    }
+  </app-panel>
+
+  @if (store.hasResponse()) {
+    <p class="profile-context-summary">{{ store.contextLabel() }}</p>
+
+    @if (store.hasNoData()) {
+      <app-panel
+        title="No matching games"
+        subtitle="Change the period, account, speed, colour, or rating context and recalculate."
+      >
+        <p class="status-note">No eligible standard games matched this profile context.</p>
+      </app-panel>
+    } @else {
+      @if (store.hasPartialAnalysis()) {
+        <div class="profile-warning" role="status">
+          Analysis coverage is below 50%. Result evidence remains available, but opening-quality
+          and early-error conclusions may be insufficient.
+        </div>
+      }
+
+      <app-panel
+        title="Evidence-backed findings"
+        subtitle="Each statement stays scoped to the selected games and can be inspected."
+      >
+        <app-player-chess-profile-conclusions
+          [conclusions]="store.conclusionItems()"
+          [selectedIndex]="store.selectedConclusionIndex()"
+          (selectConclusion)="store.selectConclusion($event)"
+        />
+      </app-panel>
+
+      <div class="profile-main-grid">
+        <app-panel
+          title="Opening profile"
+          subtitle="Preference exposure and demonstrated performance remain separate."
+        >
+          <app-player-chess-profile-breakdown
+            [activeView]="store.activeView()"
+            [selectedDimension]="store.selectedDimension()"
+            [preferenceItems]="store.preferenceItems()"
+            [performanceItems]="store.performanceItems()"
+            (viewChange)="store.setActiveView($event)"
+            (dimensionChange)="store.setDimension($event)"
+            (inspect)="store.selectBreakdown($event.kind, $event.dimension, $event.value)"
+          />
+        </app-panel>
+
+        <app-panel
+          title="Evidence"
+          subtitle="Contributing opening groups and recent games from the selected context."
+        >
+          <app-player-chess-profile-evidence [evidence]="store.evidence()" />
+        </app-panel>
+      </div>
+
+      @if (store.coverage(); as coverage) {
+        <app-panel
+          title="Baseline and data quality"
+          subtitle="Composite opening-positive/trouble rates use the existing opening tags; coverage and uncertainty stay visible."
+        >
+          <app-player-chess-profile-coverage [coverage]="coverage" />
+        </app-panel>
+      }
+    }
+  } @else if (store.loaded() && !store.loading()) {
+    <app-panel title="Profile unavailable">
+      <p class="status-note">No profile response is available.</p>
+    </app-panel>
+  }
+</section>

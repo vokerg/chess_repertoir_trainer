@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 This roadmap orders capability stages and decision gates. Detailed execution belongs in individual task files.
 
@@ -25,33 +25,15 @@ State: complete through RB-001, RB-002 and RB-003.
 
 ### RB-001 and RB-002 completed delivery
 
-The factual population/player-level foundation provides:
-
-- product speed presets and rating targets;
-- Lichess benchmark bands and versioned Chess.com mappings;
-- provider/speed classification before aggregation;
-- multi-account game-count-weighted normalized band distribution;
-- recent-three-month, all-history and generic fallback;
-- `dominant-contiguous-window-v1`;
-- complete distribution, evidence period and contribution provenance;
-- compact Peer games UI and typed contracts.
+The factual population/player-level foundation provides product speed presets and rating targets, Lichess benchmark bands, provider-aware multi-account resolution, recent/all-history/fallback evidence, `dominant-contiguous-window-v1`, complete provenance, and compact Peer games UI.
 
 A separate durable formula, stored snapshot, generic confidence score or override foundation remains rejected without a concrete consumer or measured defect.
 
 ### RB-003 completed delivery
 
-The intrinsic opening-profile foundation provides:
+The intrinsic opening-profile foundation provides deterministic ordered rules, family inheritance and overrides, independent White/Black soundness, character, theory status, theory burden, roles and confidence, matched-rule provenance, explicit unknowns, and generated-book auditing.
 
-- version `2026-07-rules-v1`;
-- deterministic ordered regex rules;
-- family inheritance, safe lexical modifiers and narrow overrides;
-- independent White and Black soundness, character, theoretical status, theory burden, roles and confidence;
-- matched-rule provenance and explicit unknowns;
-- asymmetric gambit handling, including Evans and Benko color directions;
-- generated-book coverage and rule-usage auditing;
-- no persistence, runtime AI, Stockfish audit, public contract or UI.
-
-RB-018 completed the systematic rule-coverage and actual-game-audit expansion without reopening this method foundation.
+RB-018 completed systematic coverage without reopening the method foundation.
 
 ### Stage 1 gate
 
@@ -66,55 +48,57 @@ State: complete through RB-018 / #116 and PR #121.
 Delivered:
 
 - active version `2026-07-rules-v2`;
-- deterministic rule-match coverage for all 3,733 entries and all 3,167 unique names in the pinned generated opening book;
-- 114 active ordered rules rather than per-entry application storage;
-- maintainable family expansion and corrected-regex modules;
-- broad family defaults plus narrow soundness and gambit-role exceptions;
-- grouped frequency-ranked unknown-family auditing;
-- database-backed actual-game-weighted coverage auditing over existing imported-game opening metadata;
-- CI artifacts and regression failure when a newly pinned generated name has no matching rule;
-- explicit low confidence and `UNKNOWN` dimensions where a stronger semantic claim would be fabricated.
+- rule-match coverage for all 3,733 entries and 3,167 unique names in the pinned book;
+- 114 ordered rules;
+- maintainable family and exception modules;
+- frequency-ranked generated and imported-game auditing;
+- CI regression for newly unmatched pinned names;
+- explicit low confidence and `UNKNOWN` dimensions where stronger claims would be fabricated.
 
-Explicit exclusions remain:
-
-- Stockfish or engine-assisted auditing;
-- runtime LLM calls;
-- database classification storage or one record per generated row;
-- API, Angular UI, background jobs or profile aggregation.
-
-Gate: passed. Every pinned generated name has extractable characteristics and provenance. Rule-match coverage is not equivalent to high-confidence semantic completeness, and production-user weighting remains an operational audit against a populated database.
+Gate: passed. Rule-match coverage is not equivalent to high-confidence semantic completeness.
 
 Task: RB-018.
 
 ## Stage 2 — Player Chess Profile
 
-State: RB-004 is in `REVIEW` through PR #136; RB-005 remains blocked until RB-004 is accepted and integrated.
+State: RB-004 and RB-005 are both in `REVIEW`. RB-005 is a stacked implementation through PR #139 on top of the unmerged RB-004 calculation PR #136.
 
 RB-004 review implementation provides:
 
-- an authenticated deterministic calculation endpoint and shared wire contract;
-- account, period, fixed speed-preset, color, rated-status and rating-context filters;
-- selected-game baselines and explicit analysis coverage;
-- separate preference exposure and performance measurements;
-- side-aware opening-profile dimensions with rule/source provenance;
-- deterministic sample and analysis evidence grades;
-- bounded opening and game evidence with explicit truncation, omitted, low-confidence and unknown-dimension counts;
-- multi-account tests and a bounded 1,200-game database-backed performance regression;
-- no profile persistence, personality label, LLM, UI, candidate ranking or course write.
+- authenticated deterministic calculation endpoint and shared contract;
+- account, period, speed-preset, colour, rated-status and rating-context filters;
+- selected-game baselines and analysis coverage;
+- separate preference and performance measurements;
+- side-aware opening-profile dimensions and evidence grades;
+- bounded opening/game evidence with explicit uncertainty and truncation;
+- no persistence, permanent label, LLM, UI, candidate ranking or course write.
+
+RB-005 review implementation provides:
+
+- the original `/progress` default-account dashboard entry unchanged;
+- a separate authenticated lazy `/progress/profile` route;
+- `Account performance` and `Chess profile` entries under the existing Progress submenu;
+- recent, all-time, custom, account, speed, colour, rated/casual and rating-range filters;
+- explicit `What you choose` and `What works` views;
+- character, soundness, theory-status, theory-burden and role breakdowns;
+- evidence-backed conclusion cards and expandable opening/game support;
+- personal baseline, factual peer context, composite opening-quality/early-error metrics, accuracy and coverage;
+- loading, no-data, error, stale-request, partial-analysis, low-confidence, unknown and truncated states;
+- lazy page composition, page-scoped signal state with readonly exposure, typed HTTP-only data access, feature-local presentation models, focused pure helpers, shared breakpoint alignment, and component/store/route tests;
+- no calculation extension, persistence, correction storage, target setup or course write.
 
 Goals:
 
-- calculate preference and performance separately;
-- preserve sample size, filters, baseline and confidence;
-- support periods, accounts, agreed speed presets, colors and rating context;
-- expose evidence and supporting games/openings;
-- keep profile conclusions advisory;
-- report low-confidence and unknown-dimension opening samples explicitly;
-- consume completed RB-018 rule coverage without treating rule matching as semantic certainty.
+- preserve the separation of preference and performance;
+- preserve sample, filters, baseline and evidence strength;
+- make conclusions inspectable and advisory;
+- show low-confidence and incomplete evidence rather than hiding it;
+- validate the simplest useful opening-profile experience before adding broader metrics;
+- add the profile alongside, rather than instead of, existing account performance.
 
 Tasks: RB-004, RB-005.
 
-Gate: pending review. The calculation contract must be accepted and integrated, then RB-005 must demonstrate that profile claims are reproducible, evidence-backed and useful enough to advise without constraining a target.
+Gate: pending corrected review-head CI, hands-on review and integration. The user must accept the calculation contract and determine whether the page is credible and useful against populated personal data. The stacked branches must then be reconciled before merge.
 
 ## Stage 3 — target and candidate decision model
 
@@ -122,13 +106,11 @@ State: RB-006 is ready; RB-007 remains blocked on RB-006. RB-008 supplies concre
 
 Goals:
 
-- define a repertoire target using one RB-001 speed preset and one peer/all/explicit rating target;
-- keep factual level, profile recommendation and manual override separate;
-- snapshot factual evidence only when resumability requires it;
+- define a repertoire target using one fixed speed preset and one rating target;
+- keep factual level, descriptive profile and manual target override separate;
 - aggregate engine, master, population, personal, opening-profile and course evidence without collapsing sources;
 - rank candidates with explicit reasons and visible missing evidence;
-- return a resulting position, bounded preview, target/profile roles, burden, warnings and source metadata for each candidate;
-- return explicit opponent-response relevance and coverage inputs.
+- return bounded resulting-position, preview, burden, warning and response-coverage data.
 
 Tasks: RB-006, RB-007, RB-013.
 
@@ -140,12 +122,11 @@ State: complete through accepted RB-008 direction in PR #110.
 
 Accepted proof:
 
-- a focused setup dialog launches the workflow;
-- **Start building** closes the dialog and opens a routed workbench;
-- Direction A is the production default: one primary board, candidate switcher, focused evidence, response queue and branch progress;
-- candidate-attached target/profile roles remain;
-- Direction B's simultaneous candidate landscape is rejected as the default;
-- optional mini-board comparison is deferred.
+- focused setup dialog;
+- routed board-first workbench;
+- one primary board, candidate switcher, focused evidence, response queue and branch progress;
+- target/profile roles remain separate;
+- simultaneous candidate mini-board landscape is rejected as the default.
 
 Task: RB-008.
 
@@ -158,14 +139,14 @@ State: blocked on target/ranking contracts and builder-session definition.
 Goals:
 
 - define branch queue, accepted decisions, deferred responses, target snapshot and draft lifecycle;
-- implement the accepted setup dialog and routed board-first workbench;
-- alternate user-move selection and opponent-response coverage;
+- implement the accepted setup dialog and routed workbench;
+- alternate user choices and opponent-response coverage;
 - preserve selected, pending, deferred, ignored and completed states;
 - produce a previewable repertoire tree.
 
 Tasks: RB-009, RB-010.
 
-Gate: a user can build one bounded repertoire slice and inspect the complete draft before course writes.
+Gate: a user can build one bounded repertoire slice and inspect the draft before course writes.
 
 ## Stage 6 — course materialization and adaptation
 
@@ -187,45 +168,21 @@ State: core tasks are proposed or blocked. RB-014 discovery is complete through 
 Goals:
 
 - support multiple purposeful repertoires for the same opening;
-- validate whether trap knowledge can be represented reproducibly and responsibly;
-- determine whether a production trap-oriented capability is justified after the pilot;
-- determine whether LLM explanation or orchestration adds value without becoming a factual dependency.
+- make profile-derived defaults optional and editable without changing factual profile evidence;
+- validate trap knowledge reproducibly before production work;
+- determine whether an LLM adds value without becoming a factual dependency.
 
-### RB-014 completed discovery
-
-RB-014 established and the user approved:
-
-- normalized position-and-move occurrence identity;
-- optional trap-family grouping across related triggers;
-- CC0 source candidates;
-- versioned Stockfish evidence;
-- rating/speed population evidence;
-- explicit setup soundness, temptation, punishment, safe defenses, confidence, and provenance;
-- editorial review and lifecycle state.
-
-PR #113 adds no production schema, endpoint, UI, course write, or critical-path dependency. RB-006 and RB-007 remain unchanged.
-
-### RB-017 bounded pilot
-
-RB-017 / #114 is limited to:
-
-- 20–50 source-controlled reviewed occurrences;
-- deterministic legality, normalization, identity, duplicate, defense, and provenance validation;
-- versioned Stockfish and bounded Opening Explorer snapshots;
-- explicit missing/insufficient evidence;
-- review output, tests, and documentation.
-
-The pilot must not add Prisma persistence, a production import, REST/OpenAPI/MCP contracts, Angular UI, course writes, or builder integration.
+RB-017 remains limited to 20–50 source-controlled occurrences, deterministic validation, versioned engine/population snapshots, explicit missing evidence, review output, tests and documentation. It must not add production persistence, public API, Angular UI, course writes, or builder integration.
 
 Tasks: RB-013, RB-014, RB-017, RB-015.
 
-Gate: RB-017 demonstrates whether the model survives reproducible engine/population validation, including at least one downgrade or rejection of folklore. A separate user decision is required before production work.
+Gate: RB-017 proves whether the trap model survives review; a separate user decision is required before production work.
 
 ## Stage 8 — outcome feedback
 
 Goals:
 
-- measure whether built/trained choices appear in later games;
+- measure whether built and trained choices appear in later games;
 - distinguish adoption, recall, opening-position quality and results;
 - identify regression and newly relevant coverage;
 - feed validated outcomes back into profile and course maintenance.
@@ -238,36 +195,27 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 
 Safe parallel work:
 
-- review of RB-004 Player Chess Profile calculation;
+- review of the stacked RB-004/RB-005 profile implementation;
 - RB-006 repertoire-target contract;
-- RB-017 bounded traps data/validator pilot.
+- RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
 
 - opening-profile consumer contracts;
-- Opening Explorer cache/provenance changes;
-- rating-normalization profile or resolver-policy changes;
-- imported-game/account evidence aggregation;
+- rating-normalization and peer evidence;
+- imported-game aggregation;
 - target/candidate schemas;
 - builder state and persistence;
-- production workbench/board composition;
-- course reintegration writes;
-- any future trap evidence added to candidate contracts.
-
-Future opening-book updates are normal maintenance under the completed RB-003/RB-018 contract. RB-017 must remain isolated from high-collision production areas. Live Explorer refreshes must be bounded and deterministic tests must use fixtures.
+- production workbench composition;
+- course writes;
+- future trap evidence in candidate contracts.
 
 ## Queue impact
 
-- RB-001 remains order 10, P0, `DONE`.
-- RB-002 remains order 20, P0, `DONE`.
-- RB-003 remains order 30, P0, `DONE`.
-- RB-018 is order 35, P1, `DONE` through PR #121.
-- RB-008 remains order 40, P1, `DONE`.
-- RB-004 is order 50, P1, `REVIEW` through PR #136.
-- RB-005 remains blocked until accepted RB-004 integration.
+- RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 remain `DONE`.
+- RB-004 is `REVIEW` through PR #136.
+- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
 - RB-006 remains `READY` and is the next ordered unclaimed task.
 - RB-007 remains blocked on RB-006.
-- RB-014 remains order 140, P2, `DONE`.
-- RB-017 remains order 145, P2, `CLAIMED`.
-- No existing priority changes and no new task are required.
-- No production traps capability is approved.
+- RB-017 remains `CLAIMED` and isolated.
+- No priority change or new task is required.
