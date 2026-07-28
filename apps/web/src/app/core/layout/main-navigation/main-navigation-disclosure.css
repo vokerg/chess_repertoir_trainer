@@ -1,3 +1,10 @@
+.desktop-rail:not(.desktop-rail-collapsed) {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 .rail-nav-node:has(.rail-nav-disclosure) {
   grid-template-columns: minmax(0, 1fr) 40px;
 }
