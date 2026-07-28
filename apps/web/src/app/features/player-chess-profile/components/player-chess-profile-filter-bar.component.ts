@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { PlayerChessProfileAccountViewModel } from '../helpers/player-chess-profile-view-model';
 import type {
-  PlayerChessProfileAccountOption,
   PlayerChessProfileColor,
   PlayerChessProfileFilters,
   PlayerChessProfilePeriod,
-} from '../data-access/player-chess-profile.models';
+} from '../state/player-chess-profile.models';
 
 @Component({
   selector: 'app-player-chess-profile-filter-bar',
@@ -15,7 +15,7 @@ import type {
 })
 export class PlayerChessProfileFilterBarComponent {
   readonly filters = input.required<PlayerChessProfileFilters>();
-  readonly accounts = input<readonly PlayerChessProfileAccountOption[]>([]);
+  readonly accounts = input<readonly PlayerChessProfileAccountViewModel[]>([]);
   readonly accountsLoading = input(false);
   readonly loading = input(false);
 
@@ -32,16 +32,6 @@ export class PlayerChessProfileFilterBarComponent {
   }>();
   readonly ratingContextClear = output<void>();
   readonly recalculate = output<void>();
-
-  protected accountLabel(account: PlayerChessProfileAccountOption): string {
-    const provider = account.provider === 'LICHESS' ? 'Lichess' : 'Chess.com';
-    const name = account.displayName || account.username;
-    return `${name} · ${provider}`;
-  }
-
-  protected isAccountSelected(accountId: number): boolean {
-    return this.filters().accountIds.includes(accountId);
-  }
 
   protected isColorSelected(color: PlayerChessProfileColor): boolean {
     return this.filters().colors.includes(color);
