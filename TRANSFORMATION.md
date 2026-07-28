@@ -60,13 +60,14 @@ The following slices are integrated into `main` through the visual-transformatio
 - PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation;
 - PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion;
 - PR #144 — stable queue wording while VT-102 remained active;
-- PR #141 — VT-102 signed-in Home canvas and surface calibration.
+- PR #141 — VT-102 signed-in Home canvas and surface calibration;
+- PR #158 — VT-103 production token, typography, shared-surface, focus, and wide-workspace foundation.
 
-These checkpoints were originally developed through the former transformation integration branch and were subsequently reintegrated into `main`. Their historical commit and CI records remain valid; the delivery model for all future work is now short-lived branch to `main`, squash merge.
+The earlier checkpoints were originally developed through the former transformation integration branch and were subsequently reintegrated into `main`. Their historical commit and CI records remain valid; the delivery model for all new work is short-lived branch to `main`, squash merge.
 
-VT-102 keeps the change route-local to Home, preserves behavior and global legacy styling, and records concrete palette evidence for VT-103. Implementation-head CI #1145 and documentation-head CI #1152 passed the complete repository workflow. The user reviewed the result in the browser, confirmed that it feels good, and explicitly approved squash merge.
+VT-103 promotes the approved Home palette evidence into the production `--ui-*` contract, keeps the amber-era short tokens as an explicit compatibility layer for unmigrated workflows, uses native system typography without font assets, and raises the signed-in shell/Home caps after direct large-screen review. Final CI #1262 passed before the approved squash merge as `af450eb860819281ad260db364838b9868205508`.
 
-The accepted Home direction does not close the broader residual browser matrix. Authentication, public motion, brand rasterization, navigation edge cases, comprehensive Home states, Clerk controls, imported-game job-panel spacing, and representative responsive widths remain owned by issue #126.
+The accepted foundation does not close the broader residual browser matrix. Authentication, public motion, brand rasterization, navigation edge cases, comprehensive Home states, Clerk controls, imported-game job-panel spacing, representative responsive widths, keyboard/focus behavior, and reduced motion remain owned by issue #126.
 
 ## Live execution queue
 
@@ -83,14 +84,12 @@ Task selection is deterministic:
 7. target the pull request at `main` and keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after approved squash merge into `main` and documentation reconciliation.
 
-Issues #123 and #124 are complete. Issue #125 / VT-103 is `IN_PROGRESS` through draft PR #158. Issue #126 remains `READY` but may proceed in parallel only after its own claim and a renewed collision check.
+Issues #123–#125 are complete. Issue #126 / VT-104 is `READY`, P1, order 40 and is the deterministic next task. Issues #127–#129 are released to `READY` after VT-103 integration but remain later by numeric order.
 
 ## Current checkpoint
 
-VT-103 is active on `visual-transformation/vt-103-production-tokens-typography` through draft PR #158.
+VT-103 is integrated into `main` through squash-merged PR #158. The production token and typography layer is now the foundation for transformed UI, while existing feature-local amber consumers remain migration debt owned by their explicit workflow tasks.
 
-The current slice introduces a namespaced production token and typography layer while preserving `styles.css` as the explicit legacy compatibility layer. Global canvas, controls, shared page headers, panels, shell actions, and focus use the new `--ui-*` contract. Existing feature-local amber usage remains in place until Games, Study, Opening Analysis, and later rollout issues migrate their owning files deliberately.
-
-Before final review, complete the decision/master-plan/status/report reconciliation, pass the complete repository workflow, inspect the resulting diff and CI, and record direct browser evidence or explicit residual limitations. Do not expand into the Phase 2 workflow redesigns.
+The next session must claim issue #126 before implementation. It should complete and record the residual Phase 0–1 browser matrix without redesigning Games, Study, Opening Analysis, or other Phase 2 workflows.
 
 Do not bypass the issue queue, commit directly to `main`, target the retired `visual_transformation` branch, or merge a transformation pull request without explicit approval.
