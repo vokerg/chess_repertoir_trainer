@@ -56,11 +56,13 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #134 — VT-000 issue-driven execution queue and Phase 1D integration reconciliation;
 - PR #137 — VT-101 expanded-rail inline navigation accordions with collapsed-rail flyouts retained;
 - PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation;
-- PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion.
+- PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion;
+- PR #144 — stable queue wording while VT-102 remained active;
+- PR #141 — VT-102 signed-in Home canvas and surface calibration.
 
-PR #137 was squash-merged as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI run #1112 and final documentation-head CI run #1118 passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite before merge. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`; reconciliation CI run #1128 passed the same complete workflow. PR #143 recorded the concurrent VT-102 claim after CI run #1140 passed the same workflow.
+VT-102 keeps the change route-local to Home, preserves behavior and global legacy styling, and records concrete palette evidence for VT-103. Implementation-head CI #1145 and documentation-head CI #1152 passed the complete repository workflow. The user reviewed the result in the browser, confirmed that it feels good, and explicitly approved squash merge.
 
-Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until issue #126 records it. VT-101 navigation checks remain in that matrix rather than being falsely marked complete from static inspection or CI alone.
+The accepted Home direction does not close the broader residual browser matrix. Authentication, public motion, brand rasterization, navigation edge cases, comprehensive Home states, Clerk controls, imported-game job-panel spacing, and representative responsive widths remain owned by issue #126.
 
 ## Live execution queue
 
@@ -77,12 +79,12 @@ Task selection is deterministic:
 7. keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after squash merge and documentation reconciliation.
 
-Issue #123 / VT-101 is complete through PR #137 and reconciliation PRs #142–#143. Issue #124 / VT-102 is already claimed and `IN_PROGRESS` through draft PR #141. Issue #126 remains blocked until #124 is integrated; its #123 dependency is satisfied.
+Issues #123 and #124 are complete. Issues #125 and #126 are dependency-free and `READY`; #125 / VT-103 is the deterministic next task because both are P1 and it has the lower order (30 before 40).
 
 ## Current checkpoint
 
-VT-101 is integrated into `visual_transformation`. Expanded desktop child navigation now uses inline disclosure groups in normal rail flow, while collapsed desktop child navigation retains anchored popup-menu flyouts and the backdrop. The navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged.
+VT-102 is integrated through PR #141. Home now uses a deliberate green-grey workspace canvas, clear strong/muted/quiet surface roles, restrained elevation, white important cards, and limited graphite emphasis. Home data, routes, component/template structure, navigation behavior, global tokens, typography, APIs, schemas, databases, and backend behavior are unchanged.
 
-VT-102 is active on `visual-transformation/vt-102-home-palette-calibration` through draft PR #141. That branch was created before the completed VT-101 post-merge and concurrent-queue reconciliations. Before final review or merge, refresh PR #141 against the latest `visual_transformation` head, including PRs #142 and #143, while preserving the integrated VT-101 decision, status, and report content.
+The next session must inspect the live queue and, while its state remains unchanged, claim issue #125 before creating `visual-transformation/vt-103-production-tokens-typography` from the current `visual_transformation` head. Issue #126 may proceed only through the same claim rules and an explicit collision check if parallel execution is considered.
 
-Do not start issue #126 before #124 is integrated, claim another overlapping transformation task without a new collision check, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
+Do not bypass the issue queue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
