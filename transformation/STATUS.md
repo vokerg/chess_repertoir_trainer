@@ -4,7 +4,7 @@ Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** VT-101 inline navigation is integrated; VT-102 Home palette calibration is in draft implementation
+**Program state:** VT-101 inline navigation is integrated; VT-102 Home palette calibration is in draft browser review
 
 **Integration branch:** `visual_transformation`
 
@@ -67,11 +67,11 @@ Completed on the implementation branch:
 - [x] Retained mint for signal, interaction, and a Home-scoped focus rule with sufficient specificity to override the legacy shell amber button focus rule.
 - [x] Preserved Home component/template/store behavior, routes, loading/data behavior, recommendation logic, and responsive structure.
 - [x] Added `transformation/reports/VT_102_HOME_PALETTE_CALIBRATION.md` with concrete palette evidence for VT-103.
-- [x] Refreshed the branch onto latest integration commit `9b4160e73cad296c3534b3628a8e92e3ac70b26d`, preserving PRs #142–#144 and rebuilding VT-102 records from that state.
+- [x] Refreshed the branch onto integration commit `9b4160e73cad296c3534b3628a8e92e3ac70b26d`, preserving PRs #142–#144 and rebuilding VT-102 records from that state.
+- [x] Passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite in final implementation-head CI #1145.
 
-Still required before review readiness:
+Still required before review completion:
 
-- [ ] successful full repository CI on the final refreshed head;
 - [ ] direct browser validation for populated, loading, empty/error, desktop, tablet, mobile, contrast, focus, and reduced-motion states;
 - [ ] explicit approval before squash merge.
 
@@ -101,11 +101,18 @@ Runtime/test CI #1112, final documentation-head CI #1118, reconciliation CI #112
 
 ### VT-102 validation
 
-Automated validation is pending on the final refreshed PR #141 head.
+Final implementation-head CI #1145 passed:
 
-A prior rebased head passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite in CI #1141. That run does not replace the required check on the final refreshed documentation/focus head.
+- dependency installation;
+- lint;
+- the full repository build;
+- architecture guardrails;
+- database migrations;
+- the complete test suite.
 
 The runtime change is CSS-only. No focused component test is added because DOM, state, routes, data flow, and behavior are unchanged. Existing Home and complete repository tests remain the regression boundary.
+
+The final report/status reconciliation is documentation-only. Its final-head CI is recorded in PR #141 and issue #124 rather than creating another validation-only documentation cycle in this file.
 
 Direct browser evidence remains required and is not replaced by source inspection or automated CI.
 
@@ -129,7 +136,7 @@ These remain open until issue #126 or another explicitly approved issue records 
 
 The decision log remains canonical. Current issue owners include:
 
-- #124 — Home canvas and surface balance under draft review;
+- #124 — Home canvas and surface balance under draft browser review;
 - #125 — production palette tokens and typography;
 - #126 — Phase 0–1 residual browser-validation disposition;
 - #131 — final mobile-primary navigation.
@@ -142,7 +149,7 @@ Core implementations are integrated. Residual browser validation remains open.
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, inline desktop navigation, landing motion, and issue-driven execution governance are integrated. VT-102 is in draft implementation. Production tokens/typography, public metadata, and residual validation remain.
+Public, auth, Home, brand, rail, inline desktop navigation, landing motion, and issue-driven execution governance are integrated. VT-102 is in draft browser review. Production tokens/typography, public metadata, and residual validation remain.
 
 ### Phase 2 — representative workflows
 
@@ -164,7 +171,8 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Added the VT-102 report and palette evidence for VT-103.
 - Preserved and reconciled the concurrently integrated VT-101/queue records from PRs #142–#144.
 - Refreshed the implementation onto `9b4160e73cad296c3534b3628a8e92e3ac70b26d` after confirming no other transformation PR remained open.
-- Final automated and direct browser validation remain pending.
+- Passed the complete repository workflow in final implementation-head CI #1145.
+- Direct browser validation and explicit merge approval remain open.
 
 ### 2026-07-28 — VT-101 integration and concurrent VT-102 handoff
 
