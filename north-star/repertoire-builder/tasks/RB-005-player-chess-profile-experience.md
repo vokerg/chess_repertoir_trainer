@@ -22,7 +22,7 @@ Claim scope: implement a routed Angular Player Chess Profile page on top of the 
 
 Implementation PR: `#139`
 
-Final implementation-head CI: pending after corrected navigation and Angular architecture review
+Final implementation-head CI: `30333247714` / #1206 — success
 
 ## Outcome
 
@@ -111,7 +111,7 @@ Hands-on review against populated personal data remains the acceptance gate. A b
 
 ## Required validation
 
-Required on the corrected review head:
+Corrected review head passed:
 
 - web and complete monorepo build;
 - focused Angular tests and complete repository tests;
