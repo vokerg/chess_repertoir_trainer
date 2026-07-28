@@ -53,11 +53,12 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #112 — Phase 1C production navigation rail and submenu-discoverability correction;
 - PR #118 — Phase 1C integration-state reconciliation;
 - PR #120 — Phase 1D restrained landing-page scroll reveal;
-- PR #134 — VT-000 issue-driven execution queue and Phase 1D integration reconciliation.
+- PR #134 — VT-000 issue-driven execution queue and Phase 1D integration reconciliation;
+- PR #137 — VT-101 expanded-rail inline navigation accordions with collapsed-rail flyouts retained.
 
-PR #120 was squash-merged as `bf9308d65b61323d534f99eeda0c0223907c20bb`; integration CI run #1051 passed. VT-000 final-head CI run #1072 passed before PR #134 was approved for squash merge.
+PR #137 was squash-merged as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI run #1112 and final documentation-head CI run #1118 passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite before merge.
 
-Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until recorded as complete.
+Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until issue #126 records it. VT-101 navigation checks remain in that matrix rather than being falsely marked complete from static inspection or CI alone.
 
 ## Live execution queue
 
@@ -74,14 +75,12 @@ Task selection is deterministic:
 7. keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after squash merge and documentation reconciliation.
 
-At the integrated VT-000 checkpoint, #123 was the deterministic next task because it was `READY`, P1, order 10. Issue #123 now owns the active VT-101 claim and draft PR #137. Issue #124 remains a separate Home palette task and may run in parallel only after an explicit file and decision collision check.
+Issue #123 / VT-101 is complete through PR #137. Issue #124 / VT-102 is now the deterministic next task because it is the highest-priority open `READY` issue and has order 20. Issue #126 remains blocked until #124 is integrated; its #123 dependency is already satisfied.
 
 ## Current checkpoint
 
-VT-101 is active on `visual-transformation/vt-101-inline-navigation-accordion` through draft PR #137 into `visual_transformation`.
+VT-101 is integrated into `visual_transformation`. Expanded desktop child navigation now uses inline disclosure groups in normal rail flow, while collapsed desktop child navigation retains anchored popup-menu flyouts and the backdrop. The navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged.
 
-The draft changes expanded desktop child navigation from popup menus to inline disclosure groups, retains popup-menu flyouts in the collapsed rail, preserves the existing navigation model and transient state, and records focused tests plus the VT-101 implementation report.
+The next implementation session must inspect the live queue and, while its recorded state is unchanged, claim issue #124 before creating `visual-transformation/vt-102-home-palette-calibration` from the current `visual_transformation` head.
 
-Required repository CI and direct browser validation remain unresolved. Issue #123 is authoritative for live claim, validation, blocker, and review state.
-
-Do not start another implementation against the same navigation files, bypass the issue queue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
+Do not start issue #126 before #124 is integrated, bypass the issue queue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.

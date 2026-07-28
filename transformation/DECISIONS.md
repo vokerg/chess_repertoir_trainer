@@ -165,7 +165,7 @@ Repository documents and GitHub Issues have separate ownership:
 
 `STATUS.md` must not duplicate a manually maintained live task queue. A new session selects work only from open `READY` issues, ordered by priority and then numeric order, after excluding unresolved dependencies and active claims. The issue must be claimed before implementation and closed only after squash merge and documentation reconciliation.
 
-## Locked navigation decisions for the integrated Phase 1C baseline
+## Locked navigation decisions
 
 ### D-310 — Initial desktop rail geometry
 
@@ -181,13 +181,15 @@ Provide an explicit expanded/collapsed control. Keep state local and session-onl
 
 ### D-312 — Parent and child navigation interaction
 
-**Status:** Locked for the integrated Phase 1C baseline; draft replacement under review in issue #123
+**Status:** Locked and integrated through PR #137
 
-The integrated baseline uses distinct keyboard-operable disclosure controls and anchored flyouts. Child access does not depend on hover. Escape, backdrop interaction, and route navigation close transient flyouts.
+Expanded desktop child navigation uses inline disclosure groups in normal rail flow so lower destinations move down when a parent opens. Only one parent is open at a time. Expanded-mode child links use ordinary navigation/disclosure semantics rather than popup-menu roles.
 
-Draft PR #137 implements the approved VT-101 replacement direction: expanded desktop child navigation is an inline disclosure group in normal rail flow; collapsed desktop child navigation retains the anchored popup-menu flyout and backdrop. The existing navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged. Motion is native CSS only, restrained, and removed under `prefers-reduced-motion`.
+Collapsed desktop child navigation retains the anchored popup-menu flyout and transparent backdrop. In this mode only, the disclosure exposes popup-menu semantics and child links retain menu-item roles.
 
-Until issue #123 is approved and squash-merged, the Phase 1C behavior on `visual_transformation` remains the integrated runtime source of truth.
+The existing navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged. Motion is native CSS only, restrained, and removed under `prefers-reduced-motion`. Expanded-rail vertical scrolling handles shorter desktop heights.
+
+PR #137 was squash-merged into `visual_transformation` as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI #1112 and final documentation-head CI #1118 passed the complete repository workflow before merge. Direct browser evidence remains owned by issue #126 after issue #124 is integrated.
 
 ### D-313 — Interim mobile navigation
 
