@@ -1,6 +1,6 @@
 # Repertoire Builder Open Questions
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 Open questions are not decisions. Resolve them in the assigned task and update this document and `DECISIONS.md` together.
 
@@ -63,43 +63,56 @@ These are not blockers and do not reopen RB-002.
 - Broad families are processed before narrow exceptions; exceptions are justified when family inheritance would misrepresent soundness, theoretical status or side-specific gambit roles.
 - Generated-name and actual-game coverage are separate metrics.
 - Actual-game weighting uses existing `ImportedGame.openingName` and `openingEco` values through an on-demand database audit; it adds no persistence or background job.
-- Upstream opening-book changes surface through an empty/non-empty grouped backlog, unused-rule reporting, CI audit artifacts and a regression that fails on newly unmatched pinned entries.
-- Confidence remains profile-level for v2. Dimension-specific confidence is deferred until RB-004/RB-005 consumer evidence demonstrates a concrete need.
+- Upstream opening-book changes surface through grouped backlogs, unused-rule reporting, CI artifacts and a regression that fails on newly unmatched pinned entries.
+- Confidence remains profile-level for v2. Dimension-specific confidence is deferred until consumer evidence demonstrates a concrete need.
 
 RB-018 is complete. Future naming additions or judgment corrections are normal versioned rule maintenance, not an unresolved roadmap task.
 
 ## Player Chess Profile
 
-### Resolved in the RB-004 review implementation
+### Resolved by RB-004 calculation
 
-- The statistical baseline is the complete selected personal game set after account, period, speed, color, rated-status and rating-context filters.
+- The statistical baseline is the complete selected personal game set after account, period, speed, colour, rated-status and rating-context filters.
 - Preference exposure and performance remain separate response sections and are never inferred from one another.
 - Result score uses all selected recognized results; opening-quality, early-error and accuracy metrics use analysed-game coverage and separate denominators.
-- The profile consumes the existing peer resolver directly and exposes its distribution/provenance rather than introducing a second player-level contract or formula.
+- The profile consumes the existing peer resolver directly and exposes its distribution/provenance rather than introducing a second player-level formula.
 - Result evidence bands are fewer than 5 `INSUFFICIENT`, 5–14 `LOW`, 15–39 `MEDIUM`, and 40+ `HIGH`.
 - Analysis evidence is unavailable below five analysed games or below 50% coverage, then uses the same analysed-game bands.
 - Small samples are qualified rather than silently shrunk toward a hidden estimate.
-- Score, opening-positive, opening-trouble, early-mistake and accuracy metrics remain independent; deterministic conclusions use only explicit minimum samples and five-percentage-point deltas.
+- Score, opening-positive, opening-trouble, early-mistake and accuracy metrics remain independent; deterministic conclusions use explicit minimum samples and five-percentage-point deltas.
 - Multiple owned accounts are supported. Cross-provider duplicate copies remain a disclosed residual risk because the repository has no stable cross-provider game identity.
 - Exact generated-book matches and stored name/ECO rule matching expose separate classification source, rule provenance, confidence and unknown-dimension coverage.
-- The calculation is bounded to 100 opening/ECO/color groups plus 1–10 supporting games and exposes omitted/truncated coverage.
+- The calculation is bounded to 100 opening/ECO/colour groups plus 1–10 supporting games and exposes omitted/truncated coverage.
 - Conclusions are descriptive and correlational; they do not prove a permanent style or causal rating effect.
 - RB-004 adds no persisted profile, permanent personality label, correction record, course write, candidate rank or LLM dependency.
 
-### Remaining for RB-005 experience work
+### Resolved by the RB-005 review implementation
 
-- How should recent-period versus preceding-period comparison be presented without implying trend significance?
-- Which profile facts and conclusions stay visible by default and which expand into opening/game evidence?
-- How should low-confidence, unknown-dimension, incomplete-analysis and truncated evidence be explained visually?
-- Can a user reject or correct a conclusion, and should that become stored feedback or remain local presentation state?
-- Which final user-facing terms best distinguish preference, successful results, good opening positions and trouble areas?
-- How should the experience handle no data, partial data, loading, errors, multiple accounts and recalculation?
+- `/progress` is the combined profile entry; account-specific progress remains under `/progress/accounts/:accountId`.
+- The first page uses recent/all-time/custom period, account, speed preset, colour, rated/casual and optional rating-range filters.
+- `What you choose` and `What works` remain explicit independent views.
+- Character, soundness, theoretical status, theory burden and role are selectable breakdown dimensions.
+- Deterministic conclusions and breakdown rows expand into metrics, contributing openings and bounded recent games.
+- Low-confidence, unknown-dimension, incomplete-analysis and truncated evidence remain visible through the coverage presentation.
+- Loading, no-data, stale-request, recalculation-error and partial-analysis states are handled.
+- The page uses the existing composite opening-positive, opening-trouble and early-mistake metrics. It does not pre-emptively split success/advantage, trouble/disaster or mistake/blunder.
+- A previous-period comparison is not shown because RB-004 does not return a paired period. It may be added through two explicit requests only if hands-on use justifies the complexity.
+- Users cannot edit factual conclusions or persist rejection/correction feedback in RB-005.
+- `Use as repertoire starting point` remains an honest disabled affordance until a stable RB-006/RB-013 handoff exists.
+- Final user-facing terms distinguish preference, performance relative to baseline, opening-positive positions and trouble areas without assigning one permanent archetype.
 
-RB-004 is in review through PR #136. RB-005 remains blocked until accepted integration. No separate calculation task is currently required.
+### Remaining review questions
+
+- Does the page feel credible and useful against populated personal data across both desktop and mobile widths?
+- Are the five opening dimensions understandable enough without extra explanatory copy?
+- Do hands-on examples demonstrate a need to split composite opening and early-error tag severities?
+- Which profile-derived values should eventually initialize RB-006 target setup, and how should RB-013 expose acceptance or override?
+
+RB-004 and RB-005 remain in review through PRs #136 and #139. No separate calculation or broader-metrics task is currently required.
 
 ## Repertoire target
 
-- What is the minimum useful setup beyond the RB-001 speed/rating presets?
+- What is the minimum useful setup beyond the fixed speed/rating presets?
 - Is factual peer evidence snapshotted to keep a draft reproducible?
 - How are persona, objective, theory tolerance, risk tolerance and coverage represented?
 - Can the user choose a different explicit benchmark group without changing the factual profile?
@@ -138,7 +151,7 @@ Owner task: RB-007.
 - Profile fit and selected-target fit remain separate and may disagree visibly.
 - Opponent responses expose selected, pending, deferred, ignored and completed states.
 - A coverage queue is the default narrow-screen and production presentation.
-- Direction B's simultaneous candidate landscape is rejected as the default because it is too heavy and reduces board readability.
+- Simultaneous candidate mini-boards are rejected as the default.
 - An explicit mini-board comparison mode is deferred unless later evidence justifies it.
 
 ### Remaining implementation questions
