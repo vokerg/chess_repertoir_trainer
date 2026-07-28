@@ -127,18 +127,18 @@ VT-101 and the queue-facing reconciliation work then integrated through PRs #137
 
 ## Automated validation
 
-Pending on the final refreshed draft PR #141 head:
+Final implementation-head CI #1145 passed:
 
 - dependency installation;
 - lint;
-- full repository build;
+- the full repository build;
 - architecture guardrails;
 - database migrations;
-- complete test suite.
-
-A prior rebased head passed the complete repository workflow in CI #1141. That run does not replace the required check on the final refreshed documentation/focus head.
+- the complete test suite.
 
 No focused component test is added because this slice changes CSS only and does not alter DOM, state, routes, or behavior. Existing Home and complete repository tests remain the regression boundary.
+
+The final report/status reconciliation is documentation-only. Its final-head CI is recorded in PR #141 and issue #124 rather than creating another validation-only report edit after that result.
 
 ## Direct browser validation required
 
@@ -175,4 +175,4 @@ Confirm specifically:
 
 ## Stop condition
 
-Keep PR #141 in draft until automated validation and direct browser evidence are recorded. Do not merge without explicit approval. Close issue #124 and change issue #125 to `READY` only after approved squash merge into `visual_transformation` and post-merge documentation/issue reconciliation.
+Automated validation is complete. Keep PR #141 in draft until direct browser evidence is recorded. Do not merge without explicit approval. Close issue #124 and change issue #125 to `READY` only after approved squash merge into `visual_transformation` and post-merge documentation/issue reconciliation.
