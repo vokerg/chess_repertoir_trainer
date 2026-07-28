@@ -1,6 +1,6 @@
 # RB-005 — Deliver Player Chess Profile experience
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -12,7 +12,7 @@ Planning maturity: Outlined
 
 Claimed by: ChatGPT session
 
-Claim branch: `rb-005/issue-93-player-chess-profile-experience-claim`
+Claim branch: `rb-005/issue-93-player-chess-profile-experience`
 
 Claimed at: 2026-07-28
 
