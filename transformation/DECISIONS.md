@@ -10,6 +10,8 @@ Statuses:
 - **Provisional** — current working direction; validate before broad rollout.
 - **Rejected** — considered and intentionally not selected.
 - **Open** — a decision is still required.
+- **Superseded** — retained as historical context; a later locked decision now governs.
+- **Resolved** — the named open question has been answered by a locked decision.
 
 ## Locked decisions
 
@@ -167,6 +169,55 @@ Repository documents and GitHub Issues have separate ownership:
 
 `STATUS.md` must not duplicate a manually maintained live task queue. A new session selects work only from open `READY` issues, ordered by priority and then numeric order, after excluding unresolved dependencies and active claims. The issue must be claimed before implementation and closed only after approved squash merge into `main` and documentation reconciliation.
 
+### D-023 — Production token namespace and migration boundary
+
+**Status:** Locked for VT-103 review
+
+`apps/web/src/design-system.css` owns namespaced production `--ui-*` tokens and is loaded immediately after `apps/web/src/styles.css`.
+
+`styles.css` remains the explicit legacy compatibility layer while feature migrations are incomplete. Its short token names such as `--accent`, `--surface`, `--border`, and `--text` must not be silently redefined to the production system because Games, Study, Opening Analysis, workbench UI, and other unmigrated consumers still depend on their existing meanings.
+
+Global canvas, typography, form controls, focus treatment, shared page headers, shared panels, and shared shell actions may consume the production layer now. Feature-local migration must occur only in the issue that owns that workflow. Do not perform a repository-wide token search-and-replace.
+
+### D-024 — Production colour and semantic-token contract
+
+**Status:** Locked for VT-103 review
+
+Use the canonical roles and values documented in `docs/frontend/design-tokens.md`:
+
+- canvas: `#E7EEEA`, with optional soft canvas `#EEF4F1`;
+- strong surface: `#FFFFFF`;
+- muted surface: `#F2F6F4`;
+- quiet surface: `#EAF1ED`;
+- standard border: `#C4D1CB`;
+- strong border: `#AEBFB7`;
+- primary graphite: `#172321`;
+- raised graphite: `#22312E` and `#2A3D38`;
+- signal mint: `#47B89C`;
+- strong mint: `#1F7865`;
+- mint subtle: `#DFF3ED`.
+
+Semantic status colours remain distinct from mint:
+
+- success: `#256B45`;
+- warning: `#8A4B0F`;
+- danger: `#A7352A`;
+- information: `#2B6480`.
+
+Use tonal separation and borders before elevation. Strong shadows belong primarily to overlays and dominant actions. Status and interaction meaning must never rely on colour alone.
+
+### D-025 — Production typography and font-loading contract
+
+**Status:** Locked for VT-103 review
+
+Do not bundle font files and do not introduce a remote font request. The production UI stack is:
+
+`system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
+
+IBM Plex Sans remains the visual reference used by transformation prototypes, not a runtime dependency. A future font-loading change requires a separately approved decision covering licensing, privacy, performance, offline behavior, and fallbacks.
+
+Use the production monospaced stack only for analytical numerics and notation such as evaluations, ratings, percentages, move counts, coordinates, hashes, PGN, and FEN.
+
 ## Locked navigation decisions
 
 ### D-310 — Initial desktop rail geometry
@@ -203,28 +254,15 @@ Below the shared 760px breakpoint, render a compact branded header and complete 
 
 ### D-101 — Palette values
 
-**Status:** Provisional
+**Status:** Superseded by D-024
 
-Working values:
-
-- Graphite: `#172321`
-- Secondary graphite: `#22312E`
-- Signal mint: `#47B89C`
-- Strong mint text: `#1F7865`
-- Mint subtle: `#DFF3ED`
-- Workspace: `#EEF3F0`
-- Surface: `#FFFFFF`
-- Primary text: `#172321`
-- Secondary text: `#63716D`
-- Border: `#CBD7D2`
-
-Only the strong-mint text role is locked. Issue #124 calibrates Home canvas/surface balance; issue #125 owns production tokens and semantic colours.
+The original graphite/mint palette was provisional evidence. VT-102 calibrated the Home values and D-024 now defines the production colour and semantic-token contract.
 
 ### D-102 — Typography
 
-**Status:** Provisional
+**Status:** Superseded by D-025
 
-Continue with IBM Plex Sans as the preferred UI stack and a compatible monospaced treatment for analytical numerics. Do not add or distribute font files. Issue #125 owns the loading/fallback and production-token decision.
+IBM Plex Sans remains a visual reference only. D-025 defines the production system-font and monospaced stacks without bundled or remote font loading.
 
 ### D-103 — Dark mode scope
 
@@ -352,9 +390,9 @@ Do not use local storage, account settings, query parameters, or route heuristic
 
 ### D-302 — Final production palette
 
-**Status:** Open
+**Status:** Resolved by D-024
 
-Issue #124 calibrates Home; issue #125 locks production tokens after that evidence.
+VT-102 supplied calibrated Home evidence. D-024 and `docs/frontend/design-tokens.md` define the production token contract; workflow migration remains sequenced through issues #127–#133.
 
 ### D-304 — Exact mobile navigation structure
 

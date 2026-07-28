@@ -7,6 +7,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 ## Completed
 
 - Application shell: external template/styles, OnPush, and app-specific navigation extracted to `core/layout/main-navigation`.
+- Production token foundation: `design-system.css` owns namespaced `--ui-*` colour, typography, radius, shadow, focus, and semantic-status roles; the shared page header, panel, shell actions, global controls, and application canvas consume the production layer.
 - Games explorer store: immutable row patching without row-action list reloads.
 - Game detail: feature-local route page, signal store, typed data access, pure tree helpers, presentational summary/workbench components, and built-in control flow.
 - Move tree: OnPush, signal inputs/outputs, built-in control flow, and stable tracking.
@@ -26,6 +27,8 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 
 ## Accepted feature debt
 
+- `apps/web/src/styles.css` and feature styles still contain amber-era short tokens such as `--accent`. They are an explicit compatibility layer for routes awaiting their recorded visual-transformation task, not the source for new styling.
+- Games, Study, Opening Analysis, remaining routes, and Labs still need deliberate migration from legacy short tokens and hard-coded colours to the production `--ui-*` contract.
 - Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
 
 ## Migration order
@@ -33,16 +36,18 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 Prioritize by responsibility count and user-facing risk:
 
 1. Remaining shared board, engine, PGN, and note components.
+2. Visual token migration follows the Visual Transformation issue order: Games, Study, Opening Analysis, proven shared primitives, then remaining pages and Labs.
 
 ## Per-component completion criteria
 
 - Lives under the owning feature where practical.
 - Route page is a composition shell.
 - Uses OnPush and built-in template control flow.
-- Uses external template/styles when non-trivial.
+- Has external template/styles when non-trivial.
 - Has no direct HTTP workflow in a presentational component.
 - Uses signals/computed state and lifecycle-safe observable interop.
 - Uses immutable updates and stable repeated-item tracking.
+- Uses production `--ui-*` tokens when the component is in transformed scope.
 - Relevant validation has been run and reported.
 
 ## Accepted tooling debt

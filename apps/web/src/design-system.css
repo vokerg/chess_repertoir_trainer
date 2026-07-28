@@ -1,0 +1,211 @@
+:root {
+  color-scheme: light;
+
+  /* Production typography: no bundled or remote font dependency. */
+  --ui-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ui-font-family-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* Product canvas and surfaces. */
+  --ui-canvas: #e7eeea;
+  --ui-canvas-soft: #eef4f1;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #f2f6f4;
+  --ui-surface-quiet: #eaf1ed;
+  --ui-surface-overlay: rgba(255, 255, 255, 0.97);
+
+  /* Graphite chrome and content. */
+  --ui-chrome: #172321;
+  --ui-chrome-raised: #22312e;
+  --ui-chrome-soft: #2a3d38;
+  --ui-text: #172321;
+  --ui-text-muted: #63716d;
+  --ui-text-subtle: #73807c;
+  --ui-text-inverse: #f4f8f6;
+
+  /* Structure and elevation. */
+  --ui-border: #c4d1cb;
+  --ui-border-strong: #aebfb7;
+  --ui-radius-control: 10px;
+  --ui-radius-panel: 16px;
+  --ui-radius-large: 20px;
+  --ui-shadow-soft: 0 6px 18px rgba(23, 35, 33, 0.055);
+  --ui-shadow-raised: 0 14px 32px rgba(23, 35, 33, 0.09);
+  --ui-shadow-overlay: 0 22px 54px rgba(23, 35, 33, 0.18);
+
+  /* Mint interaction and focus roles. */
+  --ui-action: #47b89c;
+  --ui-action-hover: #3ca98e;
+  --ui-action-strong: #1f7865;
+  --ui-action-soft: #dff3ed;
+  --ui-action-ink: #071713;
+  --ui-focus-ring: rgba(31, 120, 101, 0.38);
+
+  /* Semantic status roles remain distinct from the brand signal. */
+  --ui-success: #256b45;
+  --ui-success-soft: #e3f2e9;
+  --ui-warning: #8a4b0f;
+  --ui-warning-soft: #f8ead8;
+  --ui-danger: #a7352a;
+  --ui-danger-soft: #f7e5e2;
+  --ui-info: #2b6480;
+  --ui-info-soft: #e3eef3;
+}
+
+body {
+  font-family: var(--ui-font-family);
+  background:
+    radial-gradient(circle at 86% 0%, rgba(71, 184, 156, 0.09), transparent 30rem),
+    linear-gradient(180deg, var(--ui-canvas-soft) 0%, var(--ui-canvas) 68%, #e3ebe7 100%);
+  color: var(--ui-text);
+}
+
+/* Wide signed-in workspaces use large displays without stretching copy blocks. */
+.page-shell {
+  width: min(1920px, calc(100vw - 24px));
+}
+
+.app-shell app-home-page .home-page {
+  width: min(1560px, calc(100% - 48px));
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--ui-font-family-mono);
+}
+
+input,
+select,
+textarea {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--ui-action-strong);
+  background: var(--ui-surface);
+  box-shadow: 0 0 0 4px var(--ui-focus-ring);
+}
+
+.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.app-shell button:where(.primary, .secondary, .danger, .danger-text) {
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-action);
+  color: var(--ui-action-ink);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.app-shell button:where(.primary):hover:not(:disabled) {
+  background: var(--ui-action-hover);
+}
+
+.app-shell button:where(.secondary) {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  box-shadow: none;
+}
+
+.app-shell button:where(.secondary):hover:not(:disabled) {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-action-soft);
+}
+
+.app-shell button:where(.danger) {
+  background: var(--ui-danger);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(167, 53, 42, 0.16);
+}
+
+.app-shell button:where(.danger-text) {
+  background: transparent;
+  color: var(--ui-danger);
+  box-shadow: none;
+}
+
+.page-header {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
+  backdrop-filter: none;
+}
+
+.page-header-title,
+.page-heading {
+  color: var(--ui-text);
+}
+
+.page-header-subtitle,
+.page-subtitle {
+  color: var(--ui-text-muted);
+}
+
+.glass-card,
+.section-card {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
+  backdrop-filter: none;
+}
+
+.compact-action {
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-action);
+  color: var(--ui-action-ink);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.compact-action:hover {
+  background: var(--ui-action-hover);
+}
+
+.compact-action.secondary {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+}
+
+.pill {
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.eyebrow,
+.text-button {
+  color: var(--ui-action-strong);
+}
+
+.metric-card,
+.collection-card,
+.empty-state {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.collection-card:hover {
+  border-color: var(--ui-border-strong);
+  box-shadow: var(--ui-shadow-raised);
+}
+
+.status-error,
+.text-button.danger {
+  color: var(--ui-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell button:where(.primary, .secondary, .danger, .danger-text),
+  .compact-action,
+  .collection-card {
+    transition: none;
+  }
+}

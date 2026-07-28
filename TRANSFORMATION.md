@@ -19,12 +19,13 @@ Read these sources in order:
 1. [`AGENTS.md`](./AGENTS.md)
 2. [Angular frontend skill](./.agents/skills/angular-frontend/SKILL.md) for Angular work
 3. [Angular architecture](./docs/frontend/angular-architecture.md)
-4. [`transformation/MASTER_PLAN.md`](./transformation/MASTER_PLAN.md)
-5. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
-6. [`transformation/STATUS.md`](./transformation/STATUS.md)
-7. [`transformation/WORKING_RULES.md`](./transformation/WORKING_RULES.md)
-8. [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
-9. the selected execution issue and the current implementation it owns.
+4. [Frontend design tokens](./docs/frontend/design-tokens.md) for styling and transformed UI
+5. [`transformation/MASTER_PLAN.md`](./transformation/MASTER_PLAN.md)
+6. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
+7. [`transformation/STATUS.md`](./transformation/STATUS.md)
+8. [`transformation/WORKING_RULES.md`](./transformation/WORKING_RULES.md)
+9. [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
+10. the selected execution issue and the current implementation it owns.
 
 The repository code and tests are the source of truth for runtime behavior. Repository transformation documents own visual direction, architecture, decisions, detailed acceptance criteria, and reports. GitHub Issues own the live execution queue, priority, readiness, blockers, claim, branch, pull request, and completion state.
 
@@ -82,12 +83,14 @@ Task selection is deterministic:
 7. target the pull request at `main` and keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after approved squash merge into `main` and documentation reconciliation.
 
-Issues #123 and #124 are complete. Issues #125 and #126 are dependency-free and `READY`; #125 / VT-103 is the deterministic next task because both are P1 and it has the lower order (30 before 40).
+Issues #123 and #124 are complete. Issue #125 / VT-103 is `IN_PROGRESS` through draft PR #158. Issue #126 remains `READY` but may proceed in parallel only after its own claim and a renewed collision check.
 
 ## Current checkpoint
 
-VT-102 is integrated into `main` through PR #141 and the subsequent visual-transformation reintegration. Home now uses a deliberate green-grey workspace canvas, clear strong/muted/quiet surface roles, restrained elevation, white important cards, and limited graphite emphasis. Home data, routes, component/template structure, navigation behavior, global tokens, typography, APIs, schemas, databases, and backend behavior are unchanged.
+VT-103 is active on `visual-transformation/vt-103-production-tokens-typography` through draft PR #158.
 
-The next session must inspect the live queue and, while its state remains unchanged, claim issue #125 before creating `visual-transformation/vt-103-production-tokens-typography` from the current `main` head. Issue #126 may proceed only through the same claim rules and an explicit collision check if parallel execution is considered.
+The current slice introduces a namespaced production token and typography layer while preserving `styles.css` as the explicit legacy compatibility layer. Global canvas, controls, shared page headers, panels, shell actions, and focus use the new `--ui-*` contract. Existing feature-local amber usage remains in place until Games, Study, Opening Analysis, and later rollout issues migrate their owning files deliberately.
+
+Before final review, complete the decision/master-plan/status/report reconciliation, pass the complete repository workflow, inspect the resulting diff and CI, and record direct browser evidence or explicit residual limitations. Do not expand into the Phase 2 workflow redesigns.
 
 Do not bypass the issue queue, commit directly to `main`, target the retired `visual_transformation` branch, or merge a transformation pull request without explicit approval.
