@@ -8,7 +8,7 @@
     <div class="dev-auth-state">
       <strong>Local development access</strong>
       <p>External authentication is not configured for this web build.</p>
-      <a routerLink="/library" class="auth-action">Continue to library</a>
+      <a [routerLink]="returnUrl" class="auth-action">Continue to application</a>
     </div>
   } @else {
     <div #signUpMount class="clerk-mount" aria-label="Create account"></div>
