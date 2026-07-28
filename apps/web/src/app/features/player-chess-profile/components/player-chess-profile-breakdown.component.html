@@ -33,12 +33,12 @@
 @if (activeView() === 'PREFERENCE') {
   @if (preferenceItems().length > 0) {
     <div class="profile-breakdown-list">
-      @for (item of preferenceItems(); track item.dimension + ':' + item.value) {
+      @for (item of preferenceItems(); track item.id) {
         <article class="profile-breakdown-row">
           <div class="profile-row-heading">
             <div>
-              <h3>{{ valueLabel(item.value) }}</h3>
-              <p>{{ item.games }} games · {{ percentLabel(item.exposurePercent) }} exposure</p>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.summary }}</p>
             </div>
             <button
               type="button"
@@ -50,7 +50,7 @@
           <div
             class="profile-exposure-track"
             role="img"
-            [attr.aria-label]="percentLabel(item.exposurePercent) + ' exposure'"
+            [attr.aria-label]="item.summary"
           >
             <span [style.width.%]="item.exposurePercent"></span>
           </div>
@@ -63,14 +63,12 @@
 } @else {
   @if (performanceItems().length > 0) {
     <div class="profile-breakdown-list">
-      @for (item of performanceItems(); track item.dimension + ':' + item.value) {
+      @for (item of performanceItems(); track item.id) {
         <article class="profile-breakdown-row">
           <div class="profile-row-heading">
             <div>
-              <h3>{{ valueLabel(item.value) }}</h3>
-              <p>
-                {{ item.games }} games · {{ wdlLabel(item) }} · {{ percentLabel(item.scorePercent) }} score
-              </p>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.summary }}</p>
             </div>
             <div class="profile-row-actions">
               <span
@@ -78,7 +76,7 @@
                 [class.positive]="(item.scoreDelta ?? 0) > 0"
                 [class.negative]="(item.scoreDelta ?? 0) < 0"
               >
-                {{ deltaLabel(item.scoreDelta) }}
+                {{ item.deltaLabel }}
               </span>
               <button
                 type="button"
@@ -91,7 +89,7 @@
           <div
             class="profile-delta-track"
             role="img"
-            [attr.aria-label]="'Score difference ' + deltaLabel(item.scoreDelta)"
+            [attr.aria-label]="'Score difference ' + item.deltaLabel"
           >
             @if ((item.scoreDelta ?? 0) > 0) {
               <span class="positive" [style.width.%]="deltaWidth(item.scoreDelta)"></span>
@@ -100,11 +98,11 @@
             }
           </div>
           <div class="profile-secondary-metrics">
-            <span>Opening positive {{ percentLabel(item.openingPositiveRate) }}</span>
-            <span>Opening trouble {{ percentLabel(item.openingTroubleRate) }}</span>
-            <span>Early mistakes {{ percentLabel(item.earlyMistakeRate) }}</span>
-            <span>Accuracy {{ percentLabel(item.averageAccuracy) }}</span>
-            <span>{{ evidenceLabel(item.resultEvidenceStrength) }}</span>
+            <span>Opening positive {{ item.openingPositiveLabel }}</span>
+            <span>Opening trouble {{ item.openingTroubleLabel }}</span>
+            <span>Early mistakes {{ item.earlyMistakeLabel }}</span>
+            <span>Accuracy {{ item.accuracyLabel }}</span>
+            <span>{{ item.evidenceLabel }}</span>
           </div>
         </article>
       }
