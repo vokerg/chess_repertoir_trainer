@@ -4,7 +4,7 @@ Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 has a green stacked hands-on implementation in review through PR #139. RB-006 is ready. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 has a stacked hands-on implementation in review through PR #139; its Progress entry point and Angular boundaries were corrected after user review and await final review-head CI. RB-006 is ready. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
 
 **Runtime on `main`:** the deterministic side-aware opening-classification registry is `2026-07-rules-v2` and covers every entry and unique name in the pinned generated opening book with ordered regex rules, while preserving low-confidence and explicit unknown dimensions. PR #111 remains the method foundation. The earlier squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation.
 
@@ -113,18 +113,20 @@ Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`.
 
 Review implementation:
 
-- `/progress` opens the combined profile; `/progress/accounts/:accountId` retains account dashboards;
+- `/progress` preserves the existing default/active account redirect and `/progress/accounts/:accountId` retains account dashboards;
+- `/progress/profile` is a separate authenticated lazy route;
+- Progress exposes `Account performance` and `Chess profile` submenu entries;
 - recent, all-time, and custom periods;
 - all or selected accounts, speed preset, White/Black, rated/casual, and rating-range filters;
 - independent `What you choose` and `What works` views;
 - character, soundness, theory status, theory burden, and role breakdowns;
 - conclusion cards and row-level evidence expansion;
 - contributing openings, bounded supporting games, WDL, score baseline, composite opening-positive/trouble and early-mistake rates, accuracy and peer context;
-- coverage, low-confidence, unknown, truncation, loading, no-data, error, and partial-analysis states;
-- feature-local standalone OnPush components, typed data access, page-scoped signal store, pure helpers, and focused tests;
+- coverage, low-confidence, unknown, truncation, loading, no-data, error, stale-request, and partial-analysis states;
+- feature-local standalone OnPush components, HTTP-only typed data access, private writable store signals with readonly/computed exposure, focused pure view-model helpers, and component/store/route tests;
 - no RB-004 formula change, profile persistence, correction storage, target setup, course write, or LLM dependency.
 
-Final implementation-head CI run `30329120052` / #1124 passed lint, production build, both audits, architecture guardrails, migrations, and the complete repository test suite.
+The original implementation passed complete CI before the user-requested navigation and architecture correction. Final corrected review-head CI is pending.
 
 The review stack remains open until the user accepts RB-004, reviews the profile against populated data, and approves stack reconciliation. No profile code is on `main`.
 
@@ -170,7 +172,7 @@ Scope is limited to a source-controlled reviewed dataset, deterministic validati
 ## Validation
 
 - RB-004 CI `30287398030` / #1103 passed lint, build, audits, architecture guardrails, migrations and complete tests.
-- RB-005 CI `30329120052` / #1124 passed lint, build, audits, architecture guardrails, migrations and complete tests, including profile helper/store/component coverage.
+- RB-005 corrected review-head CI is pending after route, submenu, state encapsulation, presentational view-model, helper-splitting, breakpoint, accessibility, and focused component-test changes.
 - RB-008 validation includes responsive prototype review and complete repository CI on PR #110.
 - RB-014 source/license verification, repository inspection, and complete repository CI passed on PR #113.
 - RB-017 must add deterministic offline fixture tests plus an explicit opt-in live refresh path.
@@ -178,17 +180,3 @@ Scope is limited to a source-controlled reviewed dataset, deterministic validati
 ## Residual risks
 
 - Opening classifications remain reviewable chess judgments.
-- Rule-match coverage is distinct from semantic confidence and actual-game distribution.
-- RB-004 evidence grades are deterministic volume/coverage bands, not formal significance estimates.
-- No peer-population opening-character performance baseline exists; personal performance uses the selected-game baseline while factual peer level is shown separately.
-- Cross-provider duplicate copies may contribute more than once.
-- The top-100 opening-group cap intentionally exposes omitted long-tail coverage.
-- Production profile latency should be observed against populated data.
-- RB-005 has passed compile/test and static responsive/accessibility review, but real desktop/mobile browser review against personal data remains the acceptance step.
-- Composite opening-positive/trouble and early-mistake metrics intentionally remain unsplit until hands-on evidence justifies more detail.
-- Chess.com band boundaries remain approximate product mappings.
-- Theory-burden and response-coverage semantics remain pending later target/ranking work.
-
-## Queue recommendation
-
-Review the profile stack through PRs #136 and #139. Keep both issues open until accepted integration and hands-on validation. RB-006 remains the next ordered unclaimed `READY` critical-path task. Keep RB-017 isolated from production contracts and require a new user decision before any production traps capability.
