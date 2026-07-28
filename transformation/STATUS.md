@@ -48,12 +48,12 @@ Completed on the implementation branch:
 - [x] Added expanded-rail vertical scrolling for content that exceeds representative short desktop heights.
 - [x] Extended focused component tests for expanded semantics, single-open behavior, collapsed flyouts, Escape, route cleanup, and mobile cleanup.
 - [x] Added `transformation/reports/VT_101_INLINE_NAVIGATION_ACCORDION.md`.
+- [x] Passed the complete repository workflow on the runtime/test head in CI run #1112.
 
 Still required before review readiness:
 
-- [ ] successful required repository CI on the final documentation head;
+- [ ] successful required repository CI on the final documentation head, recorded in PR #137 and issue #123;
 - [ ] direct browser validation for expanded/collapsed states, representative heights, long labels, keyboard navigation, focus, and reduced motion;
-- [ ] final decision/status wording after review evidence;
 - [ ] explicit approval before squash merge.
 
 ## Execution disposition
@@ -87,9 +87,18 @@ Validated:
 
 ### VT-101 validation
 
-Draft PR #137 triggered CI run #1112. The run was in progress when this checkpoint was recorded.
+Runtime/test head CI run #1112 passed:
 
-Local npm and browser validation could not run because the execution container could not resolve `github.com` and therefore could not clone the repository. GitHub connector inspection and writes succeeded. CI and direct browser evidence must be recorded explicitly; neither is replaced by static inspection.
+- dependency installation;
+- lint;
+- the full repository build;
+- architecture guardrails;
+- database migrations;
+- the complete test suite.
+
+The final documentation-head CI result is recorded in draft PR #137 and issue #123 so this status file does not require another validation-only documentation commit.
+
+Local npm and browser validation could not run because the execution container could not resolve `github.com` and therefore could not clone the repository. GitHub connector inspection and writes succeeded. Direct browser evidence remains unresolved and is not replaced by static inspection or CI.
 
 ## Residual browser validation
 
@@ -141,11 +150,12 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Inspected issue #122, issue #123, issue #124, their claim state, the recorded branch names, and open visual-transformation pull-request state.
 - Selected #123 through the deterministic P1/order-10 rule and recorded the collision boundary with #124.
 - Claimed #123, changed it to `IN_PROGRESS`, created the implementation branch from `visual_transformation`, and opened draft PR #137.
-- Inspected `AGENTS.md`, the Angular frontend skill, Angular architecture, transformation decisions/status/working rules, the Phase 1C navigation implementation, and focused tests.
+- Inspected `AGENTS.md`, the Angular frontend skill and playbook, Angular architecture/patterns/migration guidance, transformation master plan/decisions/status/working rules, the Phase 1C navigation implementation, and focused tests.
 - Implemented expanded inline disclosure groups while preserving collapsed popup-menu flyouts and the existing navigation data/state model.
 - Added restrained native CSS motion, reduced-motion handling, focus treatment, and expanded-rail vertical overflow handling.
 - Extended focused unit coverage and added the VT-101 implementation report.
-- Could not clone locally because the execution container could not resolve `github.com`; CI run #1112 was triggered for repository validation.
+- Could not clone locally because the execution container could not resolve `github.com`.
+- Verified complete runtime/test-head CI success in run #1112.
 
 ### 2026-07-27 — VT-000 issue-driven queue migration
 
