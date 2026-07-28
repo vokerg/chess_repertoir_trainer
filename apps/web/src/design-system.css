@@ -83,7 +83,7 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--ui-focus-ring);
 }
 
-.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible):not(.clerk-user-button *) {
+.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible {
   outline: 3px solid var(--ui-focus-ring);
   outline-offset: 2px;
 }
