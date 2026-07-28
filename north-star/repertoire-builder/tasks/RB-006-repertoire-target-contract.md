@@ -1,6 +1,6 @@
 # RB-006 — Define repertoire target contract
 
-Status: BLOCKED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: North-star
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: OpenAI ChatGPT
 
-Claim branch: none
+Claim branch: `rb-006/issue-94-repertoire-target-contract-v2`
 
-Claimed at: none
+Claimed at: 2026-07-28
 
-Claim scope: none
+Claim scope: Define the shared, versioned repertoire-target Zod contract and pure resolution/change-impact helpers; cover supported speed and population targets, starting position and side, reproducible peer/profile defaults, explicit manual overrides, persona/objective, risk/theory/coverage intent, mutability and recalculation semantics, canonical examples, invariant tests, and required North Star documentation. Excludes UI, persistence, candidate ranking, course writes, traps, and LLM work.
 
 ## Outcome
 
@@ -43,11 +43,9 @@ The factual multi-account peer interval and distribution are already available f
 
 ## Dependencies
 
-Blocked on reliable contract direction from RB-003.
+Consumes completed RB-001/RB-002 factual player-level evidence.
 
-Should incorporate reviewed findings from RB-008.
-
-Consumes the completed RB-001/RB-002 factual player-level boundary.
+Consumes completed RB-003/RB-018 opening-classification vocabulary and accepted RB-008 setup/workbench direction.
 
 RB-007 and RB-009 depend on it.
 
