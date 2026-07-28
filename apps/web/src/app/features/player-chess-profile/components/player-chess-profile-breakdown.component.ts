@@ -1,21 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { PlayerChessProfileDimension } from '@chess-trainer/contracts/player-chess-profile';
 import type {
-  PlayerChessProfileDimension,
-  PlayerChessProfilePerformanceItem,
-  PlayerChessProfilePreferenceItem,
-} from '@chess-trainer/contracts/player-chess-profile';
+  PlayerChessProfilePerformanceRowViewModel,
+  PlayerChessProfilePreferenceRowViewModel,
+} from '../helpers/player-chess-profile-view-model';
 import type {
   PlayerChessProfileBreakdownSelection,
   PlayerChessProfileView,
-} from '../data-access/player-chess-profile.models';
-import {
-  playerChessProfileDeltaLabel,
-  playerChessProfileDimensionLabel,
-  playerChessProfileEvidenceLabel,
-  playerChessProfilePercentLabel,
-  playerChessProfileValueLabel,
-  playerChessProfileWdlLabel,
-} from '../helpers/player-chess-profile-view-model';
+} from '../state/player-chess-profile.models';
+import { playerChessProfileDimensionLabel } from '../helpers/player-chess-profile-view-model';
 
 @Component({
   selector: 'app-player-chess-profile-breakdown',
@@ -27,8 +20,8 @@ import {
 export class PlayerChessProfileBreakdownComponent {
   readonly activeView = input.required<PlayerChessProfileView>();
   readonly selectedDimension = input.required<PlayerChessProfileDimension>();
-  readonly preferenceItems = input<readonly PlayerChessProfilePreferenceItem[]>([]);
-  readonly performanceItems = input<readonly PlayerChessProfilePerformanceItem[]>([]);
+  readonly preferenceItems = input<readonly PlayerChessProfilePreferenceRowViewModel[]>([]);
+  readonly performanceItems = input<readonly PlayerChessProfilePerformanceRowViewModel[]>([]);
 
   readonly viewChange = output<PlayerChessProfileView>();
   readonly dimensionChange = output<PlayerChessProfileDimension>();
@@ -42,11 +35,6 @@ export class PlayerChessProfileBreakdownComponent {
     'ROLE',
   ];
   protected dimensionLabel = playerChessProfileDimensionLabel;
-  protected valueLabel = playerChessProfileValueLabel;
-  protected percentLabel = playerChessProfilePercentLabel;
-  protected deltaLabel = playerChessProfileDeltaLabel;
-  protected evidenceLabel = playerChessProfileEvidenceLabel;
-  protected wdlLabel = playerChessProfileWdlLabel;
 
   protected deltaWidth(value: number | null): number {
     return value === null ? 0 : Math.min(48, Math.max(3, Math.abs(value) * 3));
