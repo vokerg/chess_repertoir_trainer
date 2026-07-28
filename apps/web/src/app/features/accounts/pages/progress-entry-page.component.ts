@@ -58,9 +58,7 @@ export class ProgressEntryPageComponent implements OnInit {
   }
 
   private progressAccount(accounts: readonly ExternalAccount[]): ExternalAccount | undefined {
-    return accounts.find((account) => account.isDefaultProgressAccount)
-      ?? accounts.find((account) => account.isActive)
-      ?? accounts[0];
+    return accounts.find((account) => account.isDefaultProgressAccount) ?? accounts.find((account) => account.isActive) ?? accounts[0];
   }
 
   private errorMessage(error: unknown): string {
