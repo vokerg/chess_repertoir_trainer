@@ -109,22 +109,34 @@ RB-018 is complete. Future naming additions or judgment corrections are normal v
 - Does the page feel credible and useful against populated personal data across both desktop and mobile widths?
 - Are the five opening dimensions understandable enough without extra explanatory copy?
 - Do hands-on examples demonstrate a need to split composite opening and early-error tag severities?
-- Which profile-derived values should eventually initialize RB-006 target setup, and how should RB-013 expose acceptance or override?
+- Which profile-derived values should initialize target setup, and how should RB-013 expose acceptance or override through the RB-006 default/provenance contract?
 
 RB-004 and RB-005 remain in review through PRs #136 and #139. No separate calculation or broader-metrics task is currently required.
 
 ## Repertoire target
 
-- What is the minimum useful setup beyond the fixed speed/rating presets?
-- Is factual peer evidence snapshotted to keep a draft reproducible?
-- How are persona, objective, theory tolerance, risk tolerance and coverage represented?
-- Can the user choose a different explicit benchmark group without changing the factual profile?
-- Is `dubious` a persona, a soundness tolerance or both?
-- Can one target have different policies for White and Black?
-- How is target versioning handled when a draft resumes?
-- Which target/profile disagreement fields are required so the visual layer can explain the override without changing factual evidence?
+### Resolved by RB-006
 
-Owner tasks: RB-006 and RB-013.
+- The minimum useful target contains side, starting point, account context, one fixed speed preset, one requested/effective population, explicit objective dimensions and coverage policy.
+- Peer-derived targets snapshot the completed factual peer resolution, including normalization-profile and resolver-policy versions, while keeping factual evidence separate from chosen intent.
+- `MY_PEERS_PLUS_ONE` adds exactly one adjacent Lichess group above the highest factual selected group and caps at `2500+`.
+- An explicit benchmark group may replace a peer-derived default without changing the factual profile or peer snapshot.
+- Persona is a transparent label plus explicit preferred-character, soundness, risk, theory-burden and complexity dimensions.
+- `UNKNOWN` remains valid factual evidence but is not valid target intent. Deliberately dubious intent requires both a `DUBIOUS` target and explicit opt-in.
+- Effective values are authoritative. Field-level defaults retain system, persona, profile or peer provenance, and overrides must exactly identify changed defaulted fields.
+- One target applies to one build/session snapshot; branch-specific target policy is not part of v1.
+- Contract version, target ID and creation time are immutable. Side, start, speed, population, accounts, objective and coverage require candidate recalculation when changed.
+- Provenance, override bookkeeping, update timestamps and changed peer detail do not require recalculation when effective candidate inputs remain unchanged.
+
+### Remaining integration questions
+
+- How should RB-013 map specific Player Chess Profile conclusions into editable target defaults and named preset UX?
+- Should completed courses retain a full target snapshot, a reference, or selected target/persona metadata?
+- How should RB-009 version target revisions, stale descendant decisions and resume behavior?
+- Should reusable custom persona templates become persisted user data?
+- Can a course retain multiple historical target versions when it is adapted later?
+
+Owners: RB-009, RB-011 and RB-013.
 
 ## Candidate evidence and ranking
 
@@ -163,15 +175,15 @@ Owner task: RB-007.
 - How far ahead should a production preview line navigate before it becomes a separate analysis workflow?
 - What stable semantics should cumulative first-pass coverage use?
 
-Owners: RB-006, RB-007, RB-009 and RB-010.
+Owners: RB-007, RB-009 and RB-010.
 
 ## Builder session and queue
 
 - Does the MVP need persistence or can it prove the flow in route/local state first?
-- What is the immutable target snapshot of a draft?
+- How is the immutable/versioned RB-006 target snapshot retained with decision history?
 - How are accepted, pending, deferred, ignored and stale decisions represented?
 - How are transpositions shared across branches?
-- How is a draft invalidated when source courses or evidence change?
+- How is a draft invalidated when source courses, target inputs or evidence change?
 - What is the maximum bounded work returned by one endpoint?
 - How are concurrent edits handled?
 
