@@ -1,6 +1,6 @@
 # Visual Transformation Working Rules
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 These rules apply to ChatGPT, Copilot, Codex, agents, and human contributors working on the visual transformation.
 
@@ -63,7 +63,7 @@ Before implementation, add an issue comment containing:
 - claimant/session identity;
 - exact scope for this claim;
 - planned branch;
-- planned target branch;
+- planned target branch (`main`);
 - planned pull request state;
 - files/modules expected to change;
 - open branches and pull requests checked for collision;
@@ -76,22 +76,23 @@ Do not claim a blocked issue. Do not create implementation code before the claim
 
 ## 5. Branch and pull-request discipline
 
-- `visual_transformation` is the long-running integration branch.
+- `main` is the single integration target for current and future visual-transformation work.
 - Do not commit transformation work directly to `main`.
-- Every implementation slice and meaningful documentation checkpoint uses a short-lived branch created from the current `visual_transformation` head.
+- Every implementation slice and meaningful documentation checkpoint uses a short-lived branch created from the current `main` head.
 - Use the branch recorded in the issue unless a collision forces a documented revision.
-- Open the PR against `visual_transformation`.
+- Open the PR against `main`.
+- Refresh the task branch from current `main` before final review when concurrent merges have moved the base.
 - Keep the issue updated with PR number, validation, blockers, and review state.
 - Merge only after explicit approval.
-- Use squash merge into `visual_transformation`.
-- Do not open a transformation PR to `main` until explicitly requested.
+- Use squash merge into `main`.
+- The former long-running `visual_transformation` branch is retired. Do not create new work from it, target new PRs at it, or use it as an intermediate integration layer.
 - Never merge to `main` without explicit user approval.
 
 ## 6. Issue closure and dependency release
 
 Close an execution issue only after:
 
-- its PR is squash-merged into `visual_transformation`;
+- its PR is squash-merged into `main`;
 - post-merge repository state is verified;
 - required documentation is reconciled;
 - validation and residual risks are recorded;
@@ -185,7 +186,7 @@ For every meaningful slice:
 - add a dated session-log entry;
 - leave unresolved matters and skipped validation explicit.
 
-Do not leave documentation describing an older integrated state.
+Do not leave documentation describing an older integrated state or the retired transformation-branch delivery model.
 
 ## 14. Validation and reporting
 
@@ -224,16 +225,17 @@ Prefer coherent slices over enormous rewrites. A useful slice has:
 
 ## 16. Current stop condition
 
-VT-000 is integrated through PR #134. There is no active implementation branch recorded in repository documentation.
+VT-102 is integrated into `main` through the visual-transformation reintegration. There is no active implementation branch recorded in repository documentation.
 
-The next task must be selected from issue #122 using the deterministic algorithm. While the live issue state remains unchanged, issue #123 is next because it is `READY`, P1, order 10.
+The next task must be selected from issue #122 using the deterministic algorithm. While the live issue state remains unchanged, issue #125 is next because it is `READY`, P1, order 30.
 
 Before any implementation:
 
-- inspect issue #122 and issue #123;
+- inspect issue #122 and issue #125;
 - inspect open branches and pull requests for collisions;
-- comment on #123 to claim the exact scope;
-- update #123 to `IN_PROGRESS`;
-- create `visual-transformation/vt-101-inline-navigation-accordion` from the current `visual_transformation` head.
+- comment on #125 to claim the exact scope;
+- update #125 to `IN_PROGRESS`;
+- create `visual-transformation/vt-103-production-tokens-typography` from the current `main` head;
+- open its pull request against `main`.
 
-Do not implement an unclaimed issue, start a blocked issue, bypass a higher-priority ready issue, or merge a transformation pull request without explicit approval.
+Do not implement an unclaimed issue, start a blocked issue, bypass a higher-priority ready issue, target the retired `visual_transformation` branch, or merge a transformation pull request without explicit approval.

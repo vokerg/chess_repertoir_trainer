@@ -4,12 +4,13 @@ This file is the stable entry point for every ChatGPT, Copilot, Codex, or human 
 
 ## Branch model
 
-- Long-running integration branch: `visual_transformation`
-- Base branch: `main`
+- Integration target: `main`.
 - Do not commit transformation work directly to `main`.
-- Every meaningful implementation or documentation slice uses a short-lived branch created from `visual_transformation`.
-- Merge transformation pull requests into `visual_transformation` with squash merge only after explicit approval.
-- The transformation branch reaches `main` only through an explicitly reviewed pull request when the program is ready.
+- Every meaningful implementation or documentation slice uses a short-lived branch created from the current `main` head.
+- Open transformation pull requests against `main`.
+- Refresh the task branch from current `main` before final review when concurrent integration has moved the base.
+- Squash-merge into `main` only after explicit approval.
+- The former long-running `visual_transformation` integration branch is retired; do not create new work from it or target new pull requests at it.
 
 ## Read before doing transformation work
 
@@ -41,7 +42,7 @@ Do not use `STATUS.md` as a manually maintained live task queue. The ordered exe
 
 ## Integrated checkpoints
 
-The following slices are squash-merged into `visual_transformation`:
+The following slices are integrated into `main` through the visual-transformation program history:
 
 - PR #78 — public Angular landing page at `/`;
 - PR #79 — shared authentication shell for `/login` and `/signup`;
@@ -60,6 +61,8 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #144 — stable queue wording while VT-102 remained active;
 - PR #141 — VT-102 signed-in Home canvas and surface calibration.
 
+These checkpoints were originally developed through the former transformation integration branch and were subsequently reintegrated into `main`. Their historical commit and CI records remain valid; the delivery model for all future work is now short-lived branch to `main`, squash merge.
+
 VT-102 keeps the change route-local to Home, preserves behavior and global legacy styling, and records concrete palette evidence for VT-103. Implementation-head CI #1145 and documentation-head CI #1152 passed the complete repository workflow. The user reviewed the result in the browser, confirmed that it feels good, and explicitly approved squash merge.
 
 The accepted Home direction does not close the broader residual browser matrix. Authentication, public motion, brand rasterization, navigation edge cases, comprehensive Home states, Clerk controls, imported-game job-panel spacing, and representative responsive widths remain owned by issue #126.
@@ -75,16 +78,16 @@ Task selection is deterministic:
 3. choose the highest priority;
 4. within that priority, choose the lowest numeric order;
 5. comment to claim the issue before implementation;
-6. create the issue's recorded branch from `visual_transformation`;
-7. keep branch, PR, blockers, and completion state in the issue;
-8. close the issue only after squash merge and documentation reconciliation.
+6. create the issue's recorded branch from the current `main` head;
+7. target the pull request at `main` and keep branch, PR, blockers, and completion state in the issue;
+8. close the issue only after approved squash merge into `main` and documentation reconciliation.
 
 Issues #123 and #124 are complete. Issues #125 and #126 are dependency-free and `READY`; #125 / VT-103 is the deterministic next task because both are P1 and it has the lower order (30 before 40).
 
 ## Current checkpoint
 
-VT-102 is integrated through PR #141. Home now uses a deliberate green-grey workspace canvas, clear strong/muted/quiet surface roles, restrained elevation, white important cards, and limited graphite emphasis. Home data, routes, component/template structure, navigation behavior, global tokens, typography, APIs, schemas, databases, and backend behavior are unchanged.
+VT-102 is integrated into `main` through PR #141 and the subsequent visual-transformation reintegration. Home now uses a deliberate green-grey workspace canvas, clear strong/muted/quiet surface roles, restrained elevation, white important cards, and limited graphite emphasis. Home data, routes, component/template structure, navigation behavior, global tokens, typography, APIs, schemas, databases, and backend behavior are unchanged.
 
-The next session must inspect the live queue and, while its state remains unchanged, claim issue #125 before creating `visual-transformation/vt-103-production-tokens-typography` from the current `visual_transformation` head. Issue #126 may proceed only through the same claim rules and an explicit collision check if parallel execution is considered.
+The next session must inspect the live queue and, while its state remains unchanged, claim issue #125 before creating `visual-transformation/vt-103-production-tokens-typography` from the current `main` head. Issue #126 may proceed only through the same claim rules and an explicit collision check if parallel execution is considered.
 
-Do not bypass the issue queue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
+Do not bypass the issue queue, commit directly to `main`, target the retired `visual_transformation` branch, or merge a transformation pull request without explicit approval.

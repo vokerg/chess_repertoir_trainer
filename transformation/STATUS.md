@@ -4,9 +4,11 @@ Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** VT-102 Home palette calibration is integrated; production tokens/typography and residual shell validation are next
+**Program state:** the visual-transformation baseline is reintegrated into `main`; production tokens/typography and residual shell validation are next
 
-**Integration branch:** `visual_transformation`
+**Integration target:** `main`
+
+**Former integration branch:** `visual_transformation` is retired for new work
 
 **Active checkpoint branch after reconciliation:** none
 
@@ -15,6 +17,8 @@ Last updated: 2026-07-28
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
 Repository documents retain integrated history, visual direction, decisions, residual risks, meaningful review checkpoints, and reports. Issue #122 and child issues #123–#133 remain authoritative for live priority, order, readiness, dependencies, claim, branch, pull request, blockers, and completion state.
+
+All future visual-transformation tasks use short-lived branches from the current `main` head, open pull requests against `main`, and reach `main` through approved squash merge. Historical reports may describe the former `visual_transformation` branch because that was the delivery model at the time; those records do not authorize new work against the retired branch.
 
 ## Integrated checkpoints
 
@@ -32,6 +36,7 @@ Repository documents retain integrated history, visual direction, decisions, res
 - [x] PR #137 — expanded-rail inline navigation accordions with collapsed-rail flyouts retained.
 - [x] PRs #142–#144 — VT-101 completion and concurrent VT-102 queue reconciliation.
 - [x] PR #141 — signed-in Home canvas and surface calibration.
+- [x] The complete visual-transformation history above was reintegrated into `main` on 2026-07-28.
 
 ## VT-101 integrated checkpoint
 
@@ -42,7 +47,7 @@ Delivered:
 - [x] Existing navigation model, routes, active prefixes, single-open state, Escape/route cleanup, mobile sheet, account placement, and session-only collapse state are preserved.
 - [x] Restrained CSS-only motion, reduced-motion behavior, expanded-rail scrolling, focus treatment, and focused unit coverage were added.
 - [x] Runtime/test CI #1112 and final documentation-head CI #1118 passed the complete repository workflow.
-- [x] PR #137 was explicitly approved and squash-merged.
+- [x] PR #137 was explicitly approved and squash-merged under the former integration model, then reintegrated into `main`.
 - [x] PRs #142–#144 reconciled the completed task and concurrent VT-102 claim.
 - [x] Issue #123 was closed as completed.
 
@@ -66,6 +71,7 @@ Delivered:
 - [x] Passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite in implementation-head CI #1145 and documentation-head CI #1152.
 - [x] Received direct browser feedback that the result feels good and explicit approval to squash-merge PR #141.
 - [x] Kept the broader Phase 0–1 browser matrix explicit under issue #126 rather than overclaiming comprehensive validation from one approval checkpoint.
+- [x] Reintegrated the accepted checkpoint into `main` with the rest of the visual-transformation baseline.
 
 ## Execution disposition
 
@@ -74,6 +80,8 @@ The live queue, not this file, determines task state and sequencing.
 Issues #123 and #124 are complete. Issue #125 is `READY`, P1, order 30. Issue #126 is `READY`, P1, order 40. Issue #125 is the deterministic next task because it has the lower order.
 
 No later blocked issue may start until its numbered dependency contract is satisfied and its issue is changed to `READY`. Parallel execution still requires an explicit file and decision collision check.
+
+Every selected task must branch from current `main`, target `main`, and be squash-merged into `main` only after explicit approval.
 
 ## Validation status
 
@@ -106,6 +114,10 @@ The runtime change is CSS-only. No focused component test was added because DOM,
 
 The user reviewed the visual result and explicitly approved it. This approves the VT-102 direction and merge boundary; it does not replace the comprehensive residual matrix owned by issue #126.
 
+### Main reintegration and documentation correction
+
+The existing visual-transformation history was reintegrated into `main` before this documentation checkpoint. This checkpoint changes documentation and execution governance only; it does not modify application runtime, configuration, APIs, schemas, or dependencies.
+
 ## Residual browser validation
 
 These remain open until issue #126 records completion or an explicit reason they cannot be reproduced:
@@ -135,11 +147,11 @@ The Home-local VT-102 palette values are accepted as evidence for #125, not yet 
 
 ### Phase 0 — identity and visual proof
 
-Core implementations are integrated. Residual browser validation remains open.
+Core implementations are integrated into `main`. Residual browser validation remains open.
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, inline desktop navigation, landing motion, issue-driven execution governance, and Home palette calibration are integrated. Production tokens/typography, public metadata, and residual validation remain.
+Public, auth, Home, brand, rail, inline desktop navigation, landing motion, issue-driven execution governance, and Home palette calibration are integrated into `main`. Production tokens/typography, public metadata, and residual validation remain.
 
 ### Phase 2 — representative workflows
 
@@ -150,6 +162,14 @@ Games, Study, Opening Analysis, proven shared primitives, and final mobile navig
 Remaining-page rollout and onboarding/accessibility/responsive polish are represented by issues #132 and #133.
 
 ## Session log
+
+### 2026-07-28 — Main-based delivery model reconciliation
+
+- Confirmed the visual-transformation history had been reintegrated into `main`.
+- Retired `visual_transformation` as an integration target for new work.
+- Changed future task creation to branch from current `main` and future pull requests to target `main`.
+- Preserved short-lived branches, explicit approval, squash merge, deterministic issue selection, documentation reconciliation, and dependency-release rules.
+- Kept historical branch references valid only as records of how already-integrated checkpoints were originally delivered.
 
 ### 2026-07-28 — VT-102 Home palette calibration integration
 
@@ -178,4 +198,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, and #141 are integrated into `visual_transformation`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, and #141 are integrated into `main` through the visual-transformation reintegration.
