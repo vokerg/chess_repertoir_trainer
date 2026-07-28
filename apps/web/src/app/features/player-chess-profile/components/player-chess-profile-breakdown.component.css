@@ -31,7 +31,7 @@
 .profile-view-tabs button.active {
   background: var(--surface-strong);
   color: var(--accent-strong);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .profile-dimension-select {
@@ -162,6 +162,7 @@
   font-size: 0.82rem;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
 @media (max-width: 640px) {
   .profile-breakdown-header,
   .profile-row-heading {
