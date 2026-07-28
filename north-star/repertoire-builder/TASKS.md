@@ -15,10 +15,10 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | DONE | Prototype visual candidate and coverage choices | North-star | Accepted through PR #110: setup dialog to routed board-first workbench |
 | 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | PR #136; final-head CI #1103 passed; awaiting review and integration |
 | 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004; corrected navigation/architecture review awaiting final CI and hands-on acceptance |
-| 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | REVIEW | Define repertoire target contract | North-star | PR #157; shared contract, examples, tests and report awaiting review |
-| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, accepted RB-006 contract |
-| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | Acceptance/integration of RB-006; consumes completed RB-003/RB-018 and accepted RB-008 evidence responsibilities |
-| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | BLOCKED | Define builder session, branch queue, and draft lifecycle | North-star | Accepted RB-006, accepted RB-008 routed direction, RB-007 contract direction |
+| 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | DONE | Define repertoire target contract | North-star | Squash-merged through PR #157 |
+| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, completed RB-006 contract |
+| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | READY | Aggregate and rank candidate evidence explainably | North-star | Completed RB-006; consumes completed RB-003/RB-018 and accepted RB-008 evidence responsibilities |
+| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | BLOCKED | Define builder session, branch queue, and draft lifecycle | North-star | Completed RB-006, accepted RB-008 routed direction, RB-007 contract direction |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, accepted RB-008 dialog/workbench direction, RB-009 |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
@@ -81,6 +81,16 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Source policy: CC0 Lichess data and `chess-openings`, original analysis, explicit provenance, and editorial review.
 - Production boundary: no schema, API, Angular UI, course writes, or builder integration.
 
+### RB-006 / #94
+
+- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/157
+- Squash commit: `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`
+- Report: `reports/RB-006-2026-07-28-repertoire-target-contract.md`
+- Adds `@chess-trainer/contracts/repertoire-target` with requested/effective population, factual peer snapshot, target-specific intent, per-field default provenance, explicit override validation and mutability/recalculation helpers.
+- Includes canonical new-course, existing-course, profile-override and alternate-persona examples plus invalid-combination and pure-helper tests.
+- Adds no API, UI, persistence, ranking, course write, traps or LLM behavior.
+- PRs #145 and #146 were superseded and closed without merge.
+
 ## Review work
 
 ### RB-004 / #92
@@ -102,17 +112,6 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
-### RB-006 / #94
-
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/157
-- Branch: `rb-006/issue-94-repertoire-target-contract-v2`
-- Report: `reports/RB-006-2026-07-28-repertoire-target-contract.md`
-- Adds `@chess-trainer/contracts/repertoire-target` with requested/effective population, factual peer snapshot, target-specific intent, per-field default provenance, explicit override validation and mutability/recalculation helpers.
-- Includes canonical new-course, existing-course, profile-override and alternate-persona examples plus invalid-combination and pure-helper tests.
-- Adds no API, UI, persistence, ranking, course write, traps or LLM behavior.
-- PRs #145 and #146 were superseded and closed without merge.
-- Await user review and accepted integration before closing #94 or unblocking RB-007.
-
 ## Active claim
 
 ### RB-017 / #114
@@ -133,7 +132,7 @@ PR #110 establishes:
 - target/profile separation;
 - no simultaneous three-board default.
 
-RB-006, RB-007, RB-009 and RB-010 own the downstream production contracts and implementation.
+RB-007, RB-009 and RB-010 own the downstream production contracts and implementation using completed RB-006.
 
 ## Critical path
 
@@ -148,9 +147,9 @@ RB-004 calculation — REVIEW
         +
 RB-005 experience — REVIEW (stacked)
         ↓
-RB-006 target contract — REVIEW
+RB-006 target contract — DONE
         ↓
-RB-007 candidate evidence/ranking
+RB-007 candidate evidence/ranking — READY
         +
 RB-008 visual proof — DONE
         ↓
@@ -168,8 +167,8 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-003 and RB-018 are `DONE`; opening classification foundation and pinned-book coverage are delivered.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
-- RB-006 is `REVIEW` through PR #157; RB-007 remains blocked until the contract is accepted and integrated.
-- After RB-006 acceptance, RB-007 should become the next ordered critical-path task without changing priority or order.
-- RB-009 remains blocked on accepted RB-006 and sufficiently stable RB-007 candidate semantics.
+- RB-006 is `DONE` through squash-merged PR #157.
+- RB-007 is the next ordered `READY` critical-path task.
+- RB-009 remains blocked on sufficiently stable RB-007 candidate semantics.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
 - No new task, issue, priority change or roadmap resequencing is required.
