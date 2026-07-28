@@ -1,6 +1,6 @@
 # ONB-000 — Establish onboarding program foundation
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -11,6 +11,8 @@ Delivery class: Foundation / Research
 Planning maturity: Agreed
 
 GitHub issue: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
+
+Pull request: [#156](https://github.com/vokerg/chess_repertoir_trainer/pull/156)
 
 Claimed by: ChatGPT planning session
 
@@ -47,11 +49,11 @@ See `MASTER_PLAN.md` section “Files inspected.”
 - Agent and GitHub Issues coordination.
 - Initial research issues #148–#154.
 - Foundation completion report.
+- Reviewed squash merge through PR #156 after explicit user acceptance.
 
 ## Out of scope
 
 - Schema, API, worker, Angular, admin, lifecycle, or cleanup implementation.
-- Pull request, merge, or direct `main` changes.
 - Final decisions assigned to ONB-001 through ONB-007.
 
 ## Acceptance criteria
@@ -68,16 +70,19 @@ See `MASTER_PLAN.md` section “Files inspected.”
 - Direct repository inspection.
 - Existing issue overlap search.
 - Documentation link/state review.
+- PR diff limited to planning documentation under `north-star/onboarding/`.
 - No code tests required for documentation-only work.
 
 ## Completion updates
 
 - Report: `reports/ONB-000-2026-07-28-program-foundation.md`.
-- Update STATUS and TASKS to REVIEW.
-- Update issue #147 with branch, deliverables, validation, and next task.
+- PR: #156.
+- STATUS, TASKS, and ROADMAP reconciled for the research-ready state.
+- Issue #147 remains open as the program tracker.
+- Research issues #148–#154 remain open.
 
 ## Completion
 
 Report: `reports/ONB-000-2026-07-28-program-foundation.md`
 
-Completed at: pending user review
+Completed at: 2026-07-28
