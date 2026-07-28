@@ -74,12 +74,14 @@ Task selection is deterministic:
 7. keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after squash merge and documentation reconciliation.
 
-At the integrated VT-000 checkpoint, #123 is the next task because it is `READY`, P1, order 10. #124 is also `READY` but may run in parallel only after an explicit file and decision collision check.
+At the integrated VT-000 checkpoint, #123 was the deterministic next task because it was `READY`, P1, order 10. Issue #123 now owns the active VT-101 claim and draft PR #137. Issue #124 remains a separate Home palette task and may run in parallel only after an explicit file and decision collision check.
 
 ## Current checkpoint
 
-There is no active implementation branch recorded in repository documentation. Live claim and branch state belong in issue #122 and the selected execution issue.
+VT-101 is active on `visual-transformation/vt-101-inline-navigation-accordion` through draft PR #137 into `visual_transformation`.
 
-The next session must inspect the live queue and, while the recorded state is unchanged, claim issue #123 before creating `visual-transformation/vt-101-inline-navigation-accordion` from the current `visual_transformation` head.
+The draft changes expanded desktop child navigation from popup menus to inline disclosure groups, retains popup-menu flyouts in the collapsed rail, preserves the existing navigation model and transient state, and records focused tests plus the VT-101 implementation report.
 
-Do not implement an unclaimed issue, bypass a higher-priority ready issue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
+Required repository CI and direct browser validation remain unresolved. Issue #123 is authoritative for live claim, validation, blocker, and review state.
+
+Do not start another implementation against the same navigation files, bypass the issue queue, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
