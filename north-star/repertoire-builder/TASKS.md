@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 This is the canonical ordered queue. IDs are immutable; `Order` and `Priority` may change through reviewed updates.
 
@@ -14,7 +14,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 35 | RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) | P1 | DONE | Complete opening classification coverage | Dual-use | Delivered through PR #121; RB-003 method preserved |
 | 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | DONE | Prototype visual candidate and coverage choices | North-star | Accepted through PR #110: setup dialog to routed board-first workbench |
 | 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | PR #136; final-head CI #1103 passed; awaiting review and integration |
-| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | BLOCKED | Deliver Player Chess Profile experience | Standalone | Accepted and integrated RB-004 |
+| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004 review implementation; CI #1124 passed |
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | READY | Define repertoire target contract | North-star | Completed RB-003; accepted RB-008 setup requirements |
 | 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, RB-006 |
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | RB-006; consumes completed RB-003/RB-018 and accepted RB-008 evidence responsibilities |
@@ -89,7 +89,16 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Report: `reports/RB-004-2026-07-27-player-chess-profile-calculation.md`
 - Provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance sections, selected-game baselines, evidence grades, explicit classification/analysis coverage, and bounded supporting evidence.
 - Final implementation-head CI #1103 passed lint, build, audits, architecture guardrails, migrations, complete tests, multi-account coverage, and the 1,200-game bounded performance regression.
-- Await user review and accepted integration before unblocking RB-005 or closing #92.
+- Await user review and accepted integration before closing #92.
+
+### RB-005 / #93
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/138
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/139
+- Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`
+- Makes `/progress` a recalculable profile with context filters, separate preference/performance views, conclusion and row evidence, supporting openings/games, peer and coverage context, responsive states, and focused Angular tests.
+- Final implementation-head CI #1124 passed lint, build, audits, architecture guardrails, migrations, and complete tests.
+- Remains stacked on RB-004; hands-on user review and stack reconciliation are required before integration.
 
 ## Ready work
 
@@ -128,7 +137,9 @@ RB-003 opening-classification foundation — DONE
         +
 RB-018 coverage expansion — DONE
         ↓
-RB-004 calculation — REVIEW → RB-005 profile experience
+RB-004 calculation — REVIEW
+        +
+RB-005 experience — REVIEW (stacked)
         ↓
 RB-006 target and setup-dialog contract
         ↓
@@ -148,7 +159,8 @@ RB-014 and RB-017 remain outside the critical path.
 ## Queue impact
 
 - RB-003 and RB-018 are `DONE`; opening classification foundation and pinned-book coverage are delivered.
-- RB-004 is `REVIEW` through PR #136; RB-005 remains blocked until accepted integration.
+- RB-004 is `REVIEW` through PR #136.
+- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until RB-004 is accepted and the stack is reconciled.
 - RB-006 remains the next ordered `READY` critical-path task.
 - RB-007 remains blocked on RB-006.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
