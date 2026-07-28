@@ -6,75 +6,126 @@ import type {
   PlayerChessProfileResponse,
 } from '@chess-trainer/contracts/player-chess-profile';
 import { PlayerChessProfileApiService } from '../data-access/player-chess-profile-api.service';
-import type {
-  PlayerChessProfileAccountOption,
-  PlayerChessProfileColor,
-  PlayerChessProfileEvidenceSelection,
-  PlayerChessProfileFilters,
-  PlayerChessProfilePeriod,
-  PlayerChessProfileView,
-} from '../data-access/player-chess-profile.models';
+import type { PlayerChessProfileAccountDto } from '../data-access/player-chess-profile.models';
 import {
   defaultPlayerChessProfileFilters,
   playerChessProfilePeriodRange,
 } from '../helpers/player-chess-profile-period';
 import {
+  buildPlayerChessProfileAccountViewModels,
+  buildPlayerChessProfileConclusionViewModels,
+  buildPlayerChessProfileCoverageViewModel,
   buildPlayerChessProfileEvidence,
+  buildPlayerChessProfilePerformanceRows,
+  buildPlayerChessProfilePreferenceRows,
   playerChessProfileContextLabel,
 } from '../helpers/player-chess-profile-view-model';
+import type {
+  PlayerChessProfileColor,
+  PlayerChessProfileEvidenceSelection,
+  PlayerChessProfileFilters,
+  PlayerChessProfilePeriod,
+  PlayerChessProfileView,
+} from './player-chess-profile.models';
 
 @Injectable()
 export class PlayerChessProfileStore {
   private readonly api = inject(PlayerChessProfileApiService);
   private requestId = 0;
 
-  readonly filters = signal<PlayerChessProfileFilters>(defaultPlayerChessProfileFilters());
-  readonly accounts = signal<readonly PlayerChessProfileAccountOption[]>([]);
-  readonly accountsLoading = signal(false);
-  readonly accountsError = signal<string | null>(null);
-  readonly response = signal<PlayerChessProfileResponse | null>(null);
-  readonly loading = signal(false);
-  readonly loaded = signal(false);
-  readonly error = signal<string | null>(null);
-  readonly activeView = signal<PlayerChessProfileView>('PREFERENCE');
-  readonly selectedDimension = signal<PlayerChessProfileDimension>('CHARACTER');
-  readonly evidenceSelection = signal<PlayerChessProfileEvidenceSelection | null>(null);
+  private readonly filtersState = signal<PlayerChessProfileFilters>(defaultPlayerChessProfileFilters());
+  private readonly accountsState = signal<readonly PlayerChessProfileAccountDto[]>([]);
+  private readonly accountsLoadingState = signal(false);
+  private readonly accountsErrorState = signal<string | null>(null);
+  private readonly responseState = signal<PlayerChessProfileResponse | null>(null);
+  private readonly loadingState = signal(false);
+  private readonly loadedState = signal(false);
+  private readonly errorState = signal<string | null>(null);
+  private readonly activeViewState = signal<PlayerChessProfileView>('PREFERENCE');
+  private readonly selectedDimensionState = signal<PlayerChessProfileDimension>('CHARACTER');
+  private readonly evidenceSelectionState = signal<PlayerChessProfileEvidenceSelection | null>(null);
+
+  readonly filters = this.filtersState.asReadonly();
+  readonly accountsLoading = this.accountsLoadingState.asReadonly();
+  readonly accountsError = this.accountsErrorState.asReadonly();
+  readonly response = this.responseState.asReadonly();
+  readonly loading = this.loadingState.asReadonly();
+  readonly loaded = this.loadedState.asReadonly();
+  readonly error = this.errorState.asReadonly();
+  readonly activeView = this.activeViewState.asReadonly();
+  readonly selectedDimension = this.selectedDimensionState.asReadonly();
+  readonly evidenceSelection = this.evidenceSelectionState.asReadonly();
+
+  readonly accountOptions = computed(() => buildPlayerChessProfileAccountViewModels(
+    this.accountsState(),
+    this.filtersState().accountIds,
+  ));
+
+  readonly conclusionItems = computed(() => {
+    const response = this.responseState();
+    return response ? buildPlayerChessProfileConclusionViewModels(response) : [];
+  });
 
   readonly preferenceItems = computed(() => {
-    const response = this.response();
-    if (!response) return [];
-    const dimension = this.selectedDimension();
-    return response.preference.items
-      .filter((item) => item.dimension === dimension && item.value !== 'UNKNOWN')
-      .sort((left, right) => right.games - left.games || left.value.localeCompare(right.value));
+    const response = this.responseState();
+    return response
+      ? buildPlayerChessProfilePreferenceRows(response, this.selectedDimensionState())
+      : [];
   });
 
   readonly performanceItems = computed(() => {
-    const response = this.response();
-    if (!response) return [];
-    const dimension = this.selectedDimension();
-    return response.performance.items
-      .filter((item) => item.dimension === dimension && item.value !== 'UNKNOWN')
-      .sort((left, right) => {
-        const leftDelta = left.scoreDelta ?? Number.NEGATIVE_INFINITY;
-        const rightDelta = right.scoreDelta ?? Number.NEGATIVE_INFINITY;
-        return rightDelta - leftDelta || right.games - left.games || left.value.localeCompare(right.value);
-      });
+    const response = this.responseState();
+    return response
+      ? buildPlayerChessProfilePerformanceRows(response, this.selectedDimensionState())
+      : [];
   });
 
   readonly evidence = computed(() => {
-    const response = this.response();
-    return response ? buildPlayerChessProfileEvidence(response, this.evidenceSelection()) : null;
+    const response = this.responseState();
+    return response ? buildPlayerChessProfileEvidence(response, this.evidenceSelectionState()) : null;
+  });
+
+  readonly coverage = computed(() => {
+    const response = this.responseState();
+    return response ? buildPlayerChessProfileCoverageViewModel(response) : null;
   });
 
   readonly contextLabel = computed(() => {
-    const response = this.response();
-    return response ? playerChessProfileContextLabel(response, this.accounts()) : '';
+    const response = this.responseState();
+    return response ? playerChessProfileContextLabel(response, this.accountsState()) : '';
   });
 
-  readonly hasNoData = computed(() => this.loaded() && this.response()?.coverage.totalGames === 0);
+  readonly headerStats = computed(() => {
+    const response = this.responseState();
+    if (!response) return [];
+    return [
+      { id: 'games', label: 'Games', value: response.coverage.totalGames },
+      {
+        id: 'analysis',
+        label: 'Analysed',
+        value: response.coverage.analysisPercent === null
+          ? '—'
+          : `${response.coverage.analysisPercent}%`,
+      },
+      {
+        id: 'classification',
+        label: 'Profiled',
+        value: response.coverage.classifiedOpeningGames,
+      },
+    ] as const;
+  });
+
+  readonly selectedConclusionIndex = computed(() => {
+    const selection = this.evidenceSelectionState();
+    return selection?.kind === 'CONCLUSION' ? selection.index : null;
+  });
+
+  readonly hasResponse = computed(() => this.responseState() !== null);
+  readonly hasNoData = computed(
+    () => this.loadedState() && this.responseState()?.coverage.totalGames === 0,
+  );
   readonly hasPartialAnalysis = computed(() => {
-    const response = this.response();
+    const response = this.responseState();
     return Boolean(
       response
       && response.coverage.totalGames > 0
@@ -107,7 +158,7 @@ export class PlayerChessProfileStore {
   }
 
   toggleAccount(accountId: number): void {
-    const current = this.filters().accountIds;
+    const current = this.filtersState().accountIds;
     const accountIds = current.includes(accountId)
       ? current.filter((id) => id !== accountId)
       : [...current, accountId].sort((left, right) => left - right);
@@ -119,7 +170,7 @@ export class PlayerChessProfileStore {
   }
 
   toggleColor(color: PlayerChessProfileColor): void {
-    const current = this.filters().colors;
+    const current = this.filtersState().colors;
     if (current.includes(color) && current.length === 1) return;
     const colors = current.includes(color)
       ? current.filter((candidate) => candidate !== color)
@@ -153,15 +204,15 @@ export class PlayerChessProfileStore {
   }
 
   setActiveView(view: PlayerChessProfileView): void {
-    this.activeView.set(view);
+    this.activeViewState.set(view);
   }
 
   setDimension(dimension: PlayerChessProfileDimension): void {
-    this.selectedDimension.set(dimension);
+    this.selectedDimensionState.set(dimension);
   }
 
   selectConclusion(index: number): void {
-    this.evidenceSelection.set({ kind: 'CONCLUSION', index });
+    this.evidenceSelectionState.set({ kind: 'CONCLUSION', index });
   }
 
   selectBreakdown(
@@ -169,15 +220,15 @@ export class PlayerChessProfileStore {
     dimension: PlayerChessProfileDimension,
     value: string,
   ): void {
-    this.evidenceSelection.set({ kind, dimension, value });
+    this.evidenceSelectionState.set({ kind, dimension, value });
   }
 
   async loadAccounts(): Promise<void> {
-    this.accountsLoading.set(true);
-    this.accountsError.set(null);
+    this.accountsLoadingState.set(true);
+    this.accountsErrorState.set(null);
     try {
       const accounts = await firstValueFrom(this.api.getAccounts());
-      this.accounts.set([...accounts].sort(
+      this.accountsState.set([...accounts].sort(
         (left, right) =>
           Number(Boolean(right.isDefaultProgressAccount))
           - Number(Boolean(left.isDefaultProgressAccount))
@@ -185,48 +236,48 @@ export class PlayerChessProfileStore {
           || left.username.localeCompare(right.username),
       ));
     } catch {
-      this.accounts.set([]);
-      this.accountsError.set(
+      this.accountsState.set([]);
+      this.accountsErrorState.set(
         'Could not load connected accounts. The combined profile can still be recalculated.',
       );
     } finally {
-      this.accountsLoading.set(false);
+      this.accountsLoadingState.set(false);
     }
   }
 
   async load(): Promise<void> {
-    const validationError = this.validateFilters(this.filters());
+    const validationError = this.validateFilters(this.filtersState());
     if (validationError) {
-      this.error.set(validationError);
+      this.errorState.set(validationError);
       return;
     }
 
     const currentRequest = ++this.requestId;
-    this.loading.set(true);
-    this.error.set(null);
+    this.loadingState.set(true);
+    this.errorState.set(null);
 
     try {
       const response = await firstValueFrom(this.api.getProfile(this.query()));
       if (currentRequest !== this.requestId) return;
-      this.response.set(response);
-      this.loaded.set(true);
-      this.evidenceSelection.set(
+      this.responseState.set(response);
+      this.loadedState.set(true);
+      this.evidenceSelectionState.set(
         response.conclusions.length > 0 ? { kind: 'CONCLUSION', index: 0 } : null,
       );
     } catch {
       if (currentRequest !== this.requestId) return;
-      this.error.set('Could not calculate the player profile.');
+      this.errorState.set('Could not calculate the player profile.');
     } finally {
-      if (currentRequest === this.requestId) this.loading.set(false);
+      if (currentRequest === this.requestId) this.loadingState.set(false);
     }
   }
 
   private patchFilters(patch: Partial<PlayerChessProfileFilters>): void {
-    this.filters.update((filters) => ({ ...filters, ...patch }));
+    this.filtersState.update((filters) => ({ ...filters, ...patch }));
   }
 
   private query(): PlayerChessProfileQuery {
-    const filters = this.filters();
+    const filters = this.filtersState();
     return {
       accountIds: filters.accountIds.length > 0 ? [...filters.accountIds] : undefined,
       from: filters.from,
