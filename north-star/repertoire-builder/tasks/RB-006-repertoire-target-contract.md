@@ -1,6 +1,6 @@
 # RB-006 — Define repertoire target contract
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
