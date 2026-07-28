@@ -22,8 +22,8 @@ export function reconstructLichessPuzzlePosition(
   if (!gamePgn.trim()) {
     throw new LichessPuzzlePositionError('Lichess puzzle game PGN is empty');
   }
-  if (!Number.isInteger(initialPly) || initialPly < 0) {
-    throw new LichessPuzzlePositionError('Lichess puzzle initialPly must be a non-negative integer');
+  if (!Number.isInteger(initialPly) || initialPly < 2) {
+    throw new LichessPuzzlePositionError('Lichess puzzle initialPly must identify a ply after the trigger move');
   }
 
   const game = new Chess();
@@ -34,13 +34,15 @@ export function reconstructLichessPuzzlePosition(
   }
 
   const moves = game.history({ verbose: true }) as VerboseMoveLike[];
-  const triggerMove = moves[initialPly];
-  if (!triggerMove) {
+  const expectedPgnPlies = initialPly - 1;
+  if (moves.length !== expectedPgnPlies) {
     throw new LichessPuzzlePositionError(
-      `Lichess puzzle initialPly ${initialPly} is outside the ${moves.length}-ply game PGN`,
+      `Lichess puzzle initialPly ${initialPly} expects ${expectedPgnPlies} PGN plies, received ${moves.length}`,
     );
   }
-  if (!triggerMove.from || !triggerMove.to || !triggerMove.after) {
+
+  const triggerMove = moves.at(-1);
+  if (!triggerMove?.from || !triggerMove.to || !triggerMove.after) {
     throw new LichessPuzzlePositionError('Could not reconstruct the Lichess puzzle trigger move');
   }
 
