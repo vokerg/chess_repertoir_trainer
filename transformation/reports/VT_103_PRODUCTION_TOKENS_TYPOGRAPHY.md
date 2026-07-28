@@ -6,11 +6,11 @@ Issue: #125
 
 Branch: `visual-transformation/vt-103-production-tokens-typography`
 
-Pull request: draft PR #158
+Pull request: PR #158
 
 Target: `main`
 
-Disposition: implementation validated; direct browser review and explicit approval remain
+Disposition: browser evidence received; user approved completion and squash merge after final CI
 
 ## Purpose
 
@@ -97,7 +97,8 @@ The production layer now owns:
 - global page-header and common-card roles;
 - compact actions, pills, common links, and common status/error roles;
 - shared `app-panel` surfaces;
-- shared shell stats, actions, and toggles.
+- shared shell stats, actions, and toggles;
+- a 1920px signed-in shell cap and 1560px Home cap for wide displays, while preserving copy-level max widths and existing mobile behavior.
 
 This is the smallest shared foundation that can be consumed by Phase 2 without implementing the Phase 2 page redesigns early.
 
@@ -142,7 +143,7 @@ No changes are made to:
 
 Implementation-head CI #1240 passed the complete repository workflow before the branch refresh.
 
-The branch was then refreshed onto the current `main` head, preserving the independently integrated onboarding-program files. Final selector-corrected CI #1245 passed:
+The branch was refreshed onto the then-current `main` head, preserving independently integrated work. Selector-corrected CI #1245, documentation-head CI #1253, and subsequent branch-refresh CI #1257 passed:
 
 - dependency installation;
 - lint;
@@ -152,6 +153,8 @@ The branch was then refreshed onto the current `main` head, preserving the indep
 - database migrations;
 - imported-game opening classification audit;
 - the complete test suite.
+
+The wide-screen correction and final report update require one final CI pass before merge.
 
 No local build was run because direct repository checkout from the execution environment could not resolve `github.com`; the GitHub connector remained available for repository inspection and changes.
 
@@ -170,20 +173,22 @@ These calculations support the selected pairs but do not replace direct browser,
 
 ## Browser review
 
-Direct browser comparison has not been performed in this session. Before approval, review at least:
+The user supplied a 2048×1151 Home screenshot and reviewed the implemented visual direction.
 
-- signed-in Home with expanded and collapsed navigation;
-- representative legacy Games, Study, and Opening Analysis routes to confirm the compatibility boundary;
-- shared page headers, panels, actions, inputs, destructive controls, and visible keyboard focus;
-- public and authentication pages for consistency;
-- desktop and mobile widths;
-- reduced-motion behavior.
+Observed evidence:
 
-Issue #126 continues to own the comprehensive Phase 0–1 browser matrix. VT-103 must not mark unavailable or unobserved states as complete.
+- the approved VT-102 palette is present and visually coherent;
+- the Home-local canvas, white/muted/quiet surface hierarchy, graphite emphasis, and mint interaction match the accepted values;
+- the application under-utilized the wide viewport because `.page-shell` remained capped at 1600px and `.home-page` at 1240px;
+- the outer legacy body gutters confirmed that the screenshot was not yet showing the unmerged global token layer.
+
+The branch now raises the signed-in shell cap to 1920px and Home cap to 1560px without widening constrained copy blocks or changing mobile breakpoints. The user instructed the task to make the necessary correction, merge the unmerged intended work, and proceed.
+
+This is the explicit VT-103 review disposition and merge approval. It does not claim exhaustive validation of every legacy route or state. Issue #126 continues to own the comprehensive public, authentication, Home-state, brand, navigation, Clerk, responsive, keyboard, focus, zoom, and reduced-motion matrix.
 
 ## Residual risks
 
-- global overrides may reveal feature-specific assumptions that only direct browser review can expose;
+- global overrides may reveal feature-specific assumptions that only broader browser review can expose;
 - some legacy components still use short amber tokens and hard-coded colours by design;
 - the native system font will vary optically by operating system, although it avoids licensing, privacy, network, and offline risks;
 - public and auth styles retain some feature-local copies of the accepted values and may be migrated to shared tokens later only where the ownership boundary remains clear;
@@ -191,8 +196,8 @@ Issue #126 continues to own the comprehensive Phase 0–1 browser matrix. VT-103
 
 ## Completion conditions
 
-VT-103 is complete only after:
+VT-103 is complete after:
 
-- direct browser evidence or an explicit review disposition is recorded;
-- PR #158 receives explicit approval and is squash-merged into `main`;
+- final CI passes on the width-corrected documentation head;
+- PR #158 is squash-merged into `main`;
 - issue #125, issue #122, status, and dependent issue readiness are reconciled.
