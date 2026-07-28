@@ -56,9 +56,11 @@ The navigation component specification now covers:
 
 ## Validation status
 
+Runtime/test head CI run #1112 passed dependency installation, lint, the full build, architecture guardrails, database migrations, and the complete test suite.
+
 Local npm and browser validation could not be run because the execution container could not resolve `github.com` and therefore could not clone the repository. GitHub connector inspection and writes succeeded.
 
-Draft PR #137 triggered CI run #1112. Its result must be recorded before the pull request is marked ready for review.
+The final documentation-head CI result is recorded in draft PR #137 and issue #123 so this report does not require another validation-only documentation commit.
 
 Direct browser validation remains required for:
 
