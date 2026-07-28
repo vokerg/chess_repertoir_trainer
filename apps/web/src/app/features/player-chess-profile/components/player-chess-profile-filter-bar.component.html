@@ -1,0 +1,162 @@
+<div class="profile-filter-stack">
+  <div class="profile-filter-grid">
+    <label class="profile-field compact">
+      <span>Period</span>
+      <select [value]="filters().period" (change)="periodChange.emit($any($event.target).value)">
+        <option value="1M">Last month</option>
+        <option value="3M">Last 3 months</option>
+        <option value="1Y">Last year</option>
+        <option value="ALL">All time</option>
+        <option value="CUSTOM">Custom</option>
+      </select>
+    </label>
+
+    <label class="profile-field">
+      <span>Speed</span>
+      <select [value]="filters().speedPreset" (change)="speedPresetChange.emit($any($event.target).value)">
+        <option value="BLITZ_AND_SLOWER">Blitz and slower</option>
+        <option value="ALL">All speeds</option>
+        <option value="BLITZ">Blitz</option>
+        <option value="BULLET">Bullet</option>
+      </select>
+    </label>
+
+    <fieldset class="profile-field profile-colors">
+      <legend>Colour</legend>
+      <div class="profile-toggle-group">
+        <button
+          type="button"
+          [class.active]="isColorSelected('WHITE')"
+          [attr.aria-pressed]="isColorSelected('WHITE')"
+          (click)="colorToggle.emit('WHITE')"
+        >
+          White
+        </button>
+        <button
+          type="button"
+          [class.active]="isColorSelected('BLACK')"
+          [attr.aria-pressed]="isColorSelected('BLACK')"
+          (click)="colorToggle.emit('BLACK')"
+        >
+          Black
+        </button>
+      </div>
+    </fieldset>
+
+    <label class="profile-rated">
+      <input
+        type="checkbox"
+        [checked]="filters().rated"
+        (change)="ratedChange.emit($any($event.target).checked)"
+      />
+      <span>Rated games only</span>
+    </label>
+
+    <button
+      type="button"
+      class="primary profile-recalculate"
+      [disabled]="loading()"
+      (click)="recalculate.emit()"
+    >
+      {{ loading() ? 'Calculating…' : 'Recalculate profile' }}
+    </button>
+  </div>
+
+  <div class="profile-filter-secondary">
+    <details class="profile-picker">
+      <summary>
+        Accounts · {{ filters().accountIds.length === 0 ? 'All' : filters().accountIds.length + ' selected' }}
+      </summary>
+      <div class="profile-picker-panel" role="group" aria-label="Profile accounts">
+        <label>
+          <input
+            type="checkbox"
+            [checked]="filters().accountIds.length === 0"
+            (change)="allAccountsSelect.emit()"
+          />
+          <span>All connected accounts</span>
+        </label>
+        @if (accountsLoading()) {
+          <p class="status-note">Loading accounts…</p>
+        } @else {
+          @for (account of accounts(); track account.id) {
+            <label>
+              <input
+                type="checkbox"
+                [checked]="isAccountSelected(account.id)"
+                (change)="accountToggle.emit(account.id)"
+              />
+              <span>{{ accountLabel(account) }}</span>
+            </label>
+          }
+        }
+      </div>
+    </details>
+
+    <details class="profile-picker">
+      <summary>Rating context</summary>
+      <div class="profile-rating-grid">
+        <label class="profile-field compact">
+          <span>My rating from</span>
+          <input
+            inputmode="numeric"
+            placeholder="Any"
+            [value]="numericValue(filters().minUserRating)"
+            (input)="ratingFilterChange.emit({ key: 'minUserRating', value: $any($event.target).value })"
+          />
+        </label>
+        <label class="profile-field compact">
+          <span>My rating to</span>
+          <input
+            inputmode="numeric"
+            placeholder="Any"
+            [value]="numericValue(filters().maxUserRating)"
+            (input)="ratingFilterChange.emit({ key: 'maxUserRating', value: $any($event.target).value })"
+          />
+        </label>
+        <label class="profile-field compact">
+          <span>Opponent from</span>
+          <input
+            inputmode="numeric"
+            placeholder="Any"
+            [value]="numericValue(filters().minOpponentRating)"
+            (input)="ratingFilterChange.emit({ key: 'minOpponentRating', value: $any($event.target).value })"
+          />
+        </label>
+        <label class="profile-field compact">
+          <span>Opponent to</span>
+          <input
+            inputmode="numeric"
+            placeholder="Any"
+            [value]="numericValue(filters().maxOpponentRating)"
+            (input)="ratingFilterChange.emit({ key: 'maxOpponentRating', value: $any($event.target).value })"
+          />
+        </label>
+        <button type="button" class="secondary profile-clear-rating" (click)="ratingContextClear.emit()">
+          Clear ratings
+        </button>
+      </div>
+    </details>
+  </div>
+
+  @if (filters().period === 'CUSTOM') {
+    <div class="profile-custom-range" aria-label="Custom profile period">
+      <label class="profile-field compact">
+        <span>From</span>
+        <input
+          type="date"
+          [value]="filters().from"
+          (input)="dateChange.emit({ key: 'from', value: $any($event.target).value })"
+        />
+      </label>
+      <label class="profile-field compact">
+        <span>To</span>
+        <input
+          type="date"
+          [value]="filters().to"
+          (input)="dateChange.emit({ key: 'to', value: $any($event.target).value })"
+        />
+      </label>
+    </div>
+  }
+</div>
