@@ -2,8 +2,9 @@
 
 Date: 2026-07-28  
 Issue: #123  
-Draft pull request: #137  
-Branch: `visual-transformation/vt-101-inline-navigation-accordion`
+Pull request: #137 — squash-merged  
+Squash commit: `033d05ededc03e114a4b02655de91a6313c4d902`  
+Implementation branch: `visual-transformation/vt-101-inline-navigation-accordion`
 
 ## Objective
 
@@ -44,7 +45,7 @@ The existing `MainNavigationComponent.mainNavItems` model, routes, active prefix
 
 ## Focused test coverage
 
-The navigation component specification now covers:
+The navigation component specification covers:
 
 - parent-route preservation and expanded disclosure semantics;
 - inline child rendering;
@@ -54,15 +55,22 @@ The navigation component specification now covers:
 - route cleanup and active-state updates;
 - unchanged mobile-sheet route cleanup.
 
-## Validation status
+## Validation
 
-Runtime/test head CI run #1112 passed dependency installation, lint, the full build, architecture guardrails, database migrations, and the complete test suite.
+Runtime/test head CI run #1112 passed:
+
+- dependency installation;
+- lint;
+- the full repository build;
+- architecture guardrails;
+- database migrations;
+- the complete test suite.
+
+Final documentation-head CI run #1118 passed the same complete workflow before merge.
 
 Local npm and browser validation could not be run because the execution container could not resolve `github.com` and therefore could not clone the repository. GitHub connector inspection and writes succeeded.
 
-The final documentation-head CI result is recorded in draft PR #137 and issue #123 so this report does not require another validation-only documentation commit.
-
-Direct browser validation remains required for:
+Direct browser validation remains explicitly assigned to issue #126 after issue #124 is integrated. Its navigation matrix includes:
 
 - expanded and collapsed desktop states;
 - Study, Openings, Tools, and Settings;
@@ -72,6 +80,14 @@ Direct browser validation remains required for:
 - keyboard focus order and Escape;
 - normal and reduced motion;
 - collapsed flyout placement.
+
+No direct browser-completion claim is made from CI or static inspection alone.
+
+## Integration disposition
+
+The user explicitly approved VT-101. PR #137 was squash-merged into `visual_transformation` on 2026-07-28 as `033d05ededc03e114a4b02655de91a6313c4d902`.
+
+Issue #123 is complete after post-merge documentation and queue reconciliation. Issue #124 is the next deterministic `READY` task. Issue #126 remains blocked only by #124; its VT-101 dependency is satisfied.
 
 ## Explicit exclusions preserved
 
