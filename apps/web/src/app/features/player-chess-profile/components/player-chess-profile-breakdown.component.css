@@ -1,0 +1,185 @@
+:host {
+  display: block;
+}
+
+.profile-breakdown-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.profile-view-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.profile-view-tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.68rem 0.95rem;
+  background: transparent;
+  color: var(--muted-strong);
+  font-weight: 800;
+}
+
+.profile-view-tabs button.active {
+  background: var(--surface-strong);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.profile-dimension-select {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.profile-dimension-select span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.profile-dimension-select select {
+  padding-block: 0.68rem;
+}
+
+.profile-breakdown-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.profile-breakdown-row {
+  display: grid;
+  gap: 0.72rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+}
+
+.profile-row-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.profile-row-heading h3,
+.profile-row-heading p {
+  margin: 0;
+}
+
+.profile-row-heading h3 {
+  font-size: 1rem;
+}
+
+.profile-row-heading p {
+  margin-top: 0.22rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.profile-row-heading button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.profile-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.profile-delta {
+  font-weight: 800;
+}
+
+.profile-delta.positive {
+  color: var(--success);
+}
+
+.profile-delta.negative {
+  color: var(--danger);
+}
+
+.profile-exposure-track,
+.profile-delta-track {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-strong);
+}
+
+.profile-exposure-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+}
+
+.profile-delta-track::after {
+  content: '';
+  position: absolute;
+  inset-block: -2px;
+  left: 50%;
+  width: 1px;
+  background: var(--border-strong);
+}
+
+.profile-delta-track > span {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.profile-delta-track > span.positive {
+  left: 50%;
+  background: var(--success);
+}
+
+.profile-delta-track > span.negative {
+  right: 50%;
+  background: var(--danger);
+}
+
+.profile-secondary-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
+@media (max-width: 640px) {
+  .profile-breakdown-header,
+  .profile-row-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-view-tabs,
+  .profile-dimension-select {
+    width: 100%;
+  }
+
+  .profile-view-tabs button {
+    flex: 1;
+  }
+
+  .profile-row-actions {
+    justify-content: space-between;
+  }
+}
