@@ -1,0 +1,115 @@
+<div class="profile-breakdown-header">
+  <div class="profile-view-tabs" role="tablist" aria-label="Profile perspective">
+    <button
+      type="button"
+      role="tab"
+      [class.active]="activeView() === 'PREFERENCE'"
+      [attr.aria-selected]="activeView() === 'PREFERENCE'"
+      (click)="viewChange.emit('PREFERENCE')"
+    >
+      What you choose
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [class.active]="activeView() === 'PERFORMANCE'"
+      [attr.aria-selected]="activeView() === 'PERFORMANCE'"
+      (click)="viewChange.emit('PERFORMANCE')"
+    >
+      What works
+    </button>
+  </div>
+
+  <label class="profile-dimension-select">
+    <span>Dimension</span>
+    <select [value]="selectedDimension()" (change)="dimensionChange.emit($any($event.target).value)">
+      @for (dimension of dimensions; track dimension) {
+        <option [value]="dimension">{{ dimensionLabel(dimension) }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (activeView() === 'PREFERENCE') {
+  @if (preferenceItems().length > 0) {
+    <div class="profile-breakdown-list">
+      @for (item of preferenceItems(); track item.dimension + ':' + item.value) {
+        <article class="profile-breakdown-row">
+          <div class="profile-row-heading">
+            <div>
+              <h3>{{ valueLabel(item.value) }}</h3>
+              <p>{{ item.games }} games · {{ percentLabel(item.exposurePercent) }} exposure</p>
+            </div>
+            <button
+              type="button"
+              (click)="inspect.emit({ kind: 'PREFERENCE', dimension: item.dimension, value: item.value })"
+            >
+              Inspect
+            </button>
+          </div>
+          <div
+            class="profile-exposure-track"
+            role="img"
+            [attr.aria-label]="percentLabel(item.exposurePercent) + ' exposure'"
+          >
+            <span [style.width.%]="item.exposurePercent"></span>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <p class="status-note">No classified preference evidence is available for this dimension.</p>
+  }
+} @else {
+  @if (performanceItems().length > 0) {
+    <div class="profile-breakdown-list">
+      @for (item of performanceItems(); track item.dimension + ':' + item.value) {
+        <article class="profile-breakdown-row">
+          <div class="profile-row-heading">
+            <div>
+              <h3>{{ valueLabel(item.value) }}</h3>
+              <p>
+                {{ item.games }} games · {{ wdlLabel(item) }} · {{ percentLabel(item.scorePercent) }} score
+              </p>
+            </div>
+            <div class="profile-row-actions">
+              <span
+                class="profile-delta"
+                [class.positive]="(item.scoreDelta ?? 0) > 0"
+                [class.negative]="(item.scoreDelta ?? 0) < 0"
+              >
+                {{ deltaLabel(item.scoreDelta) }}
+              </span>
+              <button
+                type="button"
+                (click)="inspect.emit({ kind: 'PERFORMANCE', dimension: item.dimension, value: item.value })"
+              >
+                Inspect
+              </button>
+            </div>
+          </div>
+          <div
+            class="profile-delta-track"
+            role="img"
+            [attr.aria-label]="'Score difference ' + deltaLabel(item.scoreDelta)"
+          >
+            @if ((item.scoreDelta ?? 0) > 0) {
+              <span class="positive" [style.width.%]="deltaWidth(item.scoreDelta)"></span>
+            } @else if ((item.scoreDelta ?? 0) < 0) {
+              <span class="negative" [style.width.%]="deltaWidth(item.scoreDelta)"></span>
+            }
+          </div>
+          <div class="profile-secondary-metrics">
+            <span>Opening positive {{ percentLabel(item.openingPositiveRate) }}</span>
+            <span>Opening trouble {{ percentLabel(item.openingTroubleRate) }}</span>
+            <span>Early mistakes {{ percentLabel(item.earlyMistakeRate) }}</span>
+            <span>Accuracy {{ percentLabel(item.averageAccuracy) }}</span>
+            <span>{{ evidenceLabel(item.resultEvidenceStrength) }}</span>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <p class="status-note">No performance evidence is available for this dimension.</p>
+  }
+}
