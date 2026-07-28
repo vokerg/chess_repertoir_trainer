@@ -43,13 +43,15 @@
       </div>
     </fieldset>
 
-    <label class="profile-rated">
-      <input
-        type="checkbox"
-        [checked]="filters().rated"
-        (change)="ratedChange.emit($any($event.target).checked)"
-      />
-      <span>Rated games only</span>
+    <label class="profile-field compact">
+      <span>Game status</span>
+      <select
+        [value]="filters().rated ? 'true' : 'false'"
+        (change)="ratedChange.emit($any($event.target).value === 'true')"
+      >
+        <option value="true">Rated</option>
+        <option value="false">Casual</option>
+      </select>
     </label>
 
     <button
