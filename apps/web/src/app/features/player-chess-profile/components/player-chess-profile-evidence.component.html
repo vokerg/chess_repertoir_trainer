@@ -1,0 +1,71 @@
+@if (evidence(); as item) {
+  <div class="profile-evidence">
+    <div class="profile-evidence-heading">
+      <div>
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.summary }}</p>
+      </div>
+      <span class="profile-evidence-badge">{{ evidenceLabel(item.evidenceStrength) }}</span>
+    </div>
+
+    <dl class="profile-evidence-metrics">
+      @for (metric of item.metrics; track metric.label) {
+        <div>
+          <dt>{{ metric.label }}</dt>
+          <dd>{{ metric.value }}</dd>
+        </div>
+      }
+    </dl>
+
+    <div class="profile-evidence-grid">
+      <section>
+        <h4>Contributing openings</h4>
+        @if (item.openings.length > 0) {
+          <ul class="profile-opening-list">
+            @for (opening of item.openings; track opening.userColor + ':' + opening.eco + ':' + opening.name) {
+              <li>
+                <span>
+                  <strong>{{ opening.name || opening.eco || 'Unknown opening' }}</strong>
+                  <small>{{ opening.eco || 'No ECO' }} · {{ valueLabel(opening.userColor) }}</small>
+                </span>
+                <span>{{ opening.games }} games</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="status-note">No contributing opening group is available for this finding.</p>
+        }
+      </section>
+
+      <section>
+        <h4>Recent supporting games</h4>
+        @if (item.games.length > 0) {
+          <ul class="profile-game-list">
+            @for (game of item.games; track game.id) {
+              <li>
+                <a [routerLink]="['/games', game.id]">
+                  <strong>{{ gameTitle(game) }}</strong>
+                  <small>{{ gameMeta(game) }} · {{ endedAtLabel(game.endedAt) }}</small>
+                </a>
+                @if (game.providerUrl) {
+                  <a
+                    class="profile-source-link"
+                    [href]="game.providerUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Source
+                  </a>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="status-note">No recent supporting game is available for the selected context.</p>
+        }
+      </section>
+    </div>
+  </div>
+} @else {
+  <p class="status-note">Select a conclusion or breakdown row to inspect its evidence.</p>
+}
