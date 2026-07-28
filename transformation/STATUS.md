@@ -4,7 +4,7 @@ Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** VT-103 production tokens and typography are in draft review; residual shell validation remains next
+**Program state:** VT-103 implementation is validated; direct browser review and explicit approval remain
 
 **Integration target:** `main`
 
@@ -74,7 +74,7 @@ Delivered:
 
 ## VT-103 active checkpoint
 
-Implemented on draft PR #158:
+Implemented and validated on draft PR #158:
 
 - [x] Selected and claimed issue #125 through the deterministic queue rules.
 - [x] Added `apps/web/src/design-system.css` as the namespaced production `--ui-*` layer.
@@ -87,7 +87,9 @@ Implemented on draft PR #158:
 - [x] Added `docs/frontend/design-tokens.md` and updated Angular architecture, migration, and agent guidance.
 - [x] Updated the transformation entry point, master plan, and decision log.
 - [x] Added `transformation/reports/VT_103_PRODUCTION_TOKENS_TYPOGRAPHY.md`.
-- [ ] Final CI result recorded.
+- [x] Refreshed onto current `main` without conflict.
+- [x] Implementation-head CI #1240 and refreshed final-head CI #1245 passed the complete repository workflow.
+- [x] Static contrast checks for the principal text/background pairs all exceeded `5:1`.
 - [ ] Direct browser comparison or explicit review disposition recorded.
 - [ ] Explicit approval and squash merge into `main`.
 - [ ] Issue and dependency reconciliation after merge.
@@ -130,9 +132,24 @@ The existing visual-transformation history was reintegrated into `main`; documen
 
 ### VT-103 validation
 
-GitHub Actions is running the complete repository workflow on the current draft head. No local build was run because the execution environment could not resolve `github.com` for a direct checkout; repository inspection and edits used the GitHub connector.
+Implementation-head CI #1240 passed the complete repository workflow.
 
-Direct browser validation has not yet been performed in this session. PR #158 must retain this limitation until representative transformed and legacy routes are observed or the user records a review disposition. Issue #126 continues to own the comprehensive Phase 0–1 matrix.
+After `main` advanced through the independent onboarding-program foundation, the branch was refreshed with no content collision. Selector-corrected final-head CI #1245 passed:
+
+- dependency installation;
+- lint;
+- the full repository build;
+- opening classification audit;
+- architecture guardrails;
+- database migrations;
+- imported-game opening classification audit;
+- the complete test suite.
+
+No local build was run because the execution environment could not resolve `github.com` for a direct checkout; repository inspection and edits used the GitHub connector.
+
+Static contrast checks for the primary text, muted text, strong mint, mint action ink, and semantic status pairs ranged from `5.11:1` to `13.72:1`. These calculations do not replace direct browser, focus, zoom, and state review.
+
+Direct browser validation has not been performed in this session. PR #158 remains draft until representative transformed and legacy routes are observed or the user records a review disposition. Issue #126 continues to own the comprehensive Phase 0–1 matrix.
 
 ## Residual browser validation
 
@@ -158,7 +175,7 @@ The decision log remains canonical. Current open owners include:
 - #126 — Phase 0–1 residual browser-validation disposition;
 - #131 — final mobile-primary navigation.
 
-Production palette, semantic status roles, namespace, compatibility boundary, and typography are locked for VT-103 review in D-023 through D-025. Final integration still depends on validation and explicit approval.
+Production palette, semantic status roles, namespace, compatibility boundary, and typography are locked for VT-103 review in D-023 through D-025. Final integration still depends on direct review and explicit approval.
 
 ## Program phase state
 
@@ -168,7 +185,7 @@ Core implementations are integrated into `main`. Residual browser validation rem
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, inline desktop navigation, landing motion, issue-driven execution governance, and Home palette calibration are integrated into `main`. Production tokens/typography are under review on PR #158. Public metadata and residual validation remain.
+Public, auth, Home, brand, rail, inline desktop navigation, landing motion, issue-driven execution governance, and Home palette calibration are integrated into `main`. Production tokens/typography are validated and under review on PR #158. Public metadata and residual validation remain.
 
 ### Phase 2 — representative workflows
 
@@ -187,7 +204,9 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Added a namespaced production design-system layer after the legacy compatibility stylesheet.
 - Locked production palette, semantic status, typography, focus, elevation, and migration-boundary decisions.
 - Migrated only global/shared foundations and preserved feature-local migrations for their owning tasks.
-- Opened draft PR #158 and left browser review and final CI explicit.
+- Refreshed onto the independently advanced `main` head with no collision.
+- Passed implementation-head CI #1240 and refreshed final-head CI #1245.
+- Left direct browser review and explicit approval open on draft PR #158.
 
 ### 2026-07-28 — Main-based delivery model reconciliation
 
