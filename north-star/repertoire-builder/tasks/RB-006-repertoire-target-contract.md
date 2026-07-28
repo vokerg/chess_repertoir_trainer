@@ -1,6 +1,6 @@
 # RB-006 — Define repertoire target contract
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -79,16 +79,16 @@ RB-007 and RB-009 depend on it.
 - traps schema;
 - LLM prompts.
 
-## Open questions to resolve
+## Resolved decisions
 
-- Is the factual peer-band evidence snapshotted to keep a draft reproducible?
-- Can a user choose a different explicit benchmark group without changing the factual profile?
-- Does “my peers plus one” remain exactly one adjacent group in all builder contexts?
-- Is provider selection mandatory or can evidence combine providers later?
-- Is persona a named preset, explicit dimensions, or both?
-- How is deliberately dubious intent separated from accidental low soundness?
-- Can target policy vary by branch?
-- Which fields are persisted with a completed course for future maintenance?
+- Factual peer-resolution evidence is snapshotted inside peer-derived population targets for reproducibility.
+- An explicit Lichess benchmark group can replace a peer-derived default without mutating factual player-level evidence.
+- `MY_PEERS_PLUS_ONE` appends exactly one adjacent group above the highest selected peer group and caps at `2500+`.
+- V1 requires the `LICHESS_GAMES` population source; future providers require a versioned contract extension.
+- Persona is a transparent label plus explicit objective dimensions; the dimensions are authoritative for ranking.
+- Deliberately dubious intent requires `minimumSoundness: DUBIOUS` and explicit opt-in. Factual `UNKNOWN` values are not valid target intent.
+- One target applies to one builder target/session snapshot. Branch-specific policy is deferred.
+- Draft/session persistence and completed-course target metadata remain owned by RB-009, RB-013 and RB-011.
 
 ## Acceptance criteria
 
@@ -111,10 +111,10 @@ RB-007 and RB-009 depend on it.
 
 ## Completion updates
 
-The report must include canonical target examples, unresolved persistence questions, and direct impacts on RB-007, RB-009, RB-013 and RB-008 production planning.
+The report includes canonical target examples, unresolved persistence questions, and direct impacts on RB-007, RB-009, RB-013 and RB-008 production planning.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-006-2026-07-28-repertoire-target-contract.md`
 
-Completed at: none
+Completed at: 2026-07-28
