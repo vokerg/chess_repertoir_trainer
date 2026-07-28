@@ -127,6 +127,24 @@ export class MainNavigationComponent implements OnInit {
       link: '/progress',
       icon: 'progress',
       activePrefixes: ['/progress'],
+      children: [
+        {
+          id: 'account-performance',
+          label: 'Account performance',
+          description: 'Rating history and results for your default account',
+          link: '/progress',
+          icon: 'progress',
+          activePrefixes: ['/progress/accounts'],
+        },
+        {
+          id: 'chess-profile',
+          label: 'Chess profile',
+          description: 'Opening preferences, strengths, and supporting evidence',
+          link: '/progress/profile',
+          icon: 'openings',
+          activePrefixes: ['/progress/profile'],
+        },
+      ],
     },
     {
       id: 'tools',
