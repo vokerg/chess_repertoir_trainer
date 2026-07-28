@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { importedGameUserColorSchema } from '../imported-games';
 import {
   lichessGamesPeerResolutionSchema,
+  lichessGamesRatingGroupSchema,
   lichessGamesSpeedPresetSchema,
 } from '../opening-explorer';
 import {
@@ -10,30 +11,26 @@ import {
   playerChessProfileOpeningTheoryBurdenSchema,
 } from '../player-chess-profile';
 
-export const repertoireTargetContractVersionSchema = z.literal('2026-07-v1');
+export const REPERTOIRE_TARGET_CONTRACT_VERSION = '2026-07-v1' as const;
+export const repertoireTargetContractVersionSchema = z.literal(REPERTOIRE_TARGET_CONTRACT_VERSION);
 export type RepertoireTargetContractVersion = z.infer<typeof repertoireTargetContractVersionSchema>;
 
 export const repertoireTargetStartingPointSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('INITIAL_POSITION') }),
   z.object({ kind: z.literal('FEN'), fen: z.string().trim().min(1) }),
-  z.object({ kind: z.literal('COURSE_POSITION'), courseId: z.number().int().positive(), lineId: z.number().int().positive().optional() }),
+  z.object({
+    kind: z.literal('COURSE_POSITION'),
+    courseId: z.number().int().positive(),
+    lineId: z.number().int().positive().optional(),
+  }),
 ]);
 export type RepertoireTargetStartingPoint = z.infer<typeof repertoireTargetStartingPointSchema>;
 
 export const repertoireTargetPopulationSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('ALL_PLAYERS') }),
-  z.object({
-    kind: z.literal('MY_PEERS'),
-    peerResolution: lichessGamesPeerResolutionSchema,
-  }),
-  z.object({
-    kind: z.literal('MY_PEERS_PLUS_ONE'),
-    peerResolution: lichessGamesPeerResolutionSchema,
-  }),
-  z.object({
-    kind: z.literal('EXPLICIT_LICHESS_GROUP'),
-    groupId: z.string().trim().min(1),
-  }),
+  z.object({ kind: z.literal('MY_PEERS'), peerResolution: lichessGamesPeerResolutionSchema }),
+  z.object({ kind: z.literal('MY_PEERS_PLUS_ONE'), peerResolution: lichessGamesPeerResolutionSchema }),
+  z.object({ kind: z.literal('EXPLICIT_LICHESS_GROUP'), ratingGroup: lichessGamesRatingGroupSchema }),
 ]);
 export type RepertoireTargetPopulation = z.infer<typeof repertoireTargetPopulationSchema>;
 
@@ -63,14 +60,26 @@ export const repertoireTargetCoverageSchema = z.object({
 });
 export type RepertoireTargetCoverage = z.infer<typeof repertoireTargetCoverageSchema>;
 
-export const repertoireTargetDerivationSchema = z.object({
-  source: z.enum(['MANUAL', 'PLAYER_PROFILE', 'PERSONA_PRESET']),
-  profileContractVersion: z.string().trim().min(1).nullable(),
-  ratingNormalizationVersion: z.string().trim().min(1).nullable(),
-  peerResolverPolicyVersion: z.string().trim().min(1).nullable(),
-  derivedAt: z.iso.datetime({ offset: true }).nullable(),
-});
+export const repertoireTargetDerivationSchema = z.discriminatedUnion('source', [
+  z.object({ source: z.literal('MANUAL') }),
+  z.object({ source: z.literal('PERSONA_PRESET'), presetVersion: z.string().trim().min(1) }),
+  z.object({
+    source: z.literal('PLAYER_PROFILE'),
+    profileContractVersion: z.string().trim().min(1),
+    derivedAt: z.iso.datetime({ offset: true }),
+  }),
+]);
 export type RepertoireTargetDerivation = z.infer<typeof repertoireTargetDerivationSchema>;
+
+export const repertoireTargetOverrideFieldSchema = z.enum([
+  'speedPreset',
+  'population',
+  'provider',
+  'accountIds',
+  'objective',
+  'coverage',
+]);
+export type RepertoireTargetOverrideField = z.infer<typeof repertoireTargetOverrideFieldSchema>;
 
 export const repertoireTargetSchema = z.object({
   contractVersion: repertoireTargetContractVersionSchema,
@@ -79,19 +88,12 @@ export const repertoireTargetSchema = z.object({
   startingPoint: repertoireTargetStartingPointSchema,
   speedPreset: lichessGamesSpeedPresetSchema,
   population: repertoireTargetPopulationSchema,
-  provider: z.enum(['LICHESS']),
+  provider: z.literal('LICHESS'),
   accountIds: z.array(z.number().int().positive()).default([]),
   objective: repertoireTargetObjectiveSchema,
   coverage: repertoireTargetCoverageSchema,
   derivation: repertoireTargetDerivationSchema,
-  overriddenFields: z.array(z.enum([
-    'speedPreset',
-    'population',
-    'provider',
-    'accountIds',
-    'objective',
-    'coverage',
-  ])).default([]),
+  overriddenFields: z.array(repertoireTargetOverrideFieldSchema).default([]),
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 }).superRefine((target, context) => {
@@ -102,11 +104,11 @@ export const repertoireTargetSchema = z.object({
       message: 'Dubious intent must be explicitly enabled',
     });
   }
-  if (target.derivation.source === 'PLAYER_PROFILE' && !target.derivation.profileContractVersion) {
+  if (target.derivation.source === 'MANUAL' && target.overriddenFields.length > 0) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ['derivation', 'profileContractVersion'],
-      message: 'Player-profile derivation requires profileContractVersion',
+      path: ['overriddenFields'],
+      message: 'Manual targets do not override derived defaults',
     });
   }
 });
@@ -128,8 +130,9 @@ export function repertoireTargetChangedFields(
   previous: RepertoireTarget,
   next: RepertoireTarget,
 ): RepertoireTargetRecalculationField[] {
-  const fields = repertoireTargetRecalculationFieldSchema.options;
-  return fields.filter((field) => JSON.stringify(previous[field]) !== JSON.stringify(next[field]));
+  return repertoireTargetRecalculationFieldSchema.options.filter(
+    (field) => JSON.stringify(previous[field]) !== JSON.stringify(next[field]),
+  );
 }
 
 export function repertoireTargetRequiresCandidateRecalculation(
