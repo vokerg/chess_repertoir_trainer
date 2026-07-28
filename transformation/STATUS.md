@@ -4,13 +4,13 @@ Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** VT-101 inline navigation accordion is integrated; VT-102 Home palette calibration is next
+**Program state:** VT-101 inline navigation accordion is integrated; VT-102 Home palette calibration is in draft implementation
 
 **Integration branch:** `visual_transformation`
 
-**Active checkpoint branch after reconciliation:** none
+**Active checkpoint branch:** `visual-transformation/vt-102-home-palette-calibration`
 
-**Active pull request after reconciliation:** none
+**Active pull request:** #141 — draft, targeting `visual_transformation`
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -30,8 +30,9 @@ Repository documents retain integrated history, visual direction, decisions, res
 - [x] PR #120 — restrained public landing scroll reveal.
 - [x] PR #134 — issue-driven execution queue and Phase 1D integration reconciliation.
 - [x] PR #137 — expanded-rail inline navigation accordions with collapsed-rail flyouts retained.
+- [x] PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation.
 
-PR #137 was squash-merged into `visual_transformation` as `033d05ededc03e114a4b02655de91a6313c4d902` after explicit approval.
+PR #137 was squash-merged into `visual_transformation` as `033d05ededc03e114a4b02655de91a6313c4d902` after explicit approval. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`.
 
 ## VT-101 integrated checkpoint
 
@@ -50,7 +51,9 @@ Delivered:
 - [x] Passed the complete repository workflow on the runtime/test head in CI run #1112.
 - [x] Passed the complete repository workflow on the final documentation head in CI run #1118.
 - [x] Received explicit approval and squash-merged PR #137.
-- [x] Reconciled the program issue, execution issue, dependent issue, entry point, decisions, status, and implementation report.
+- [x] Reconciled the program issue, execution issue, dependent issue, entry point, decisions, status, and implementation report through PR #142.
+- [x] Passed the complete reconciliation workflow in CI run #1128.
+- [x] Closed issue #123 as completed.
 
 Direct browser validation is not claimed as complete. It remains part of issue #126 after VT-102 is integrated.
 
@@ -58,7 +61,9 @@ Direct browser validation is not claimed as complete. It remains part of issue #
 
 The live queue, not this file, determines task state and sequencing.
 
-Issue #123 is complete. Issue #124 remains `READY`, P1, order 20 and is the deterministic next task. Issue #125 remains blocked by #124. Issue #126 remains blocked only by the outstanding #124 dependency; its #123 dependency is satisfied.
+Issue #123 is complete. Issue #124 is `IN_PROGRESS`, P1, order 20 through draft PR #141. Issue #125 remains blocked by #124. Issue #126 remains blocked only by the outstanding #124 dependency; its #123 dependency is satisfied.
+
+PR #141 has no runtime-file overlap with VT-101, but it was created before PR #142 completed the VT-101 documentation reconciliation. Before final review or merge, PR #141 must refresh against current `visual_transformation` head `d1222a205966b10e7b4747adac9e4ff6fc7a116d` and preserve the integrated VT-101 decision, status, and report content.
 
 No later blocked issue may start until its numbered dependency contract is satisfied and its issue is changed to `READY`.
 
@@ -85,7 +90,7 @@ Runtime/test head CI run #1112 passed:
 - database migrations;
 - the complete test suite.
 
-Final documentation-head CI run #1118 passed the same complete workflow before PR #137 was squash-merged.
+Final documentation-head CI run #1118 passed the same complete workflow before PR #137 was squash-merged. Post-merge reconciliation CI run #1128 passed the same complete workflow before PR #142 was squash-merged.
 
 Local npm and browser validation could not run because the execution container could not resolve `github.com` and therefore could not clone the repository. GitHub connector inspection and writes succeeded. Direct browser evidence remains unresolved and is not replaced by static inspection or CI.
 
@@ -108,7 +113,7 @@ These remain open until issue #126 or another explicitly approved issue records 
 
 The decision log remains canonical. Current issue owners include:
 
-- #124 — Home canvas and surface balance;
+- #124 — Home canvas and surface balance, active in PR #141;
 - #125 — production palette tokens and typography;
 - #126 — Phase 0–1 residual browser-validation disposition;
 - #131 — final mobile-primary navigation.
@@ -121,7 +126,7 @@ Core implementations are integrated. Residual browser validation remains open.
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, inline desktop navigation, landing motion, and issue-driven execution governance are integrated. Home palette calibration, production tokens/typography, public metadata, and residual validation remain.
+Public, auth, Home, brand, rail, inline desktop navigation, landing motion, and issue-driven execution governance are integrated. Home palette calibration is in draft implementation. Production tokens/typography, public metadata, and residual validation remain.
 
 ### Phase 2 — representative workflows
 
@@ -133,7 +138,7 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 
 ## Session log
 
-### 2026-07-28 — VT-101 integration and reconciliation
+### 2026-07-28 — VT-101 integration and concurrent VT-102 handoff
 
 - Selected #123 through the deterministic P1/order-10 rule and recorded the collision boundary with #124.
 - Claimed #123, changed it to `IN_PROGRESS`, created the implementation branch, and opened PR #137.
@@ -142,8 +147,10 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 - Added restrained native CSS motion, reduced-motion handling, focus treatment, expanded-rail overflow handling, and focused unit coverage.
 - Verified complete CI success in runtime/test run #1112 and final documentation-head run #1118.
 - Received explicit approval and squash-merged PR #137 as `033d05ededc03e114a4b02655de91a6313c4d902`.
-- Reconciled issue #122, issue #123, issue #126, `TRANSFORMATION.md`, `DECISIONS.md`, this status file, and the VT-101 report.
-- Left direct browser evidence explicitly owned by #126 after #124 is integrated.
+- Reconciled issue #122, issue #123, issue #126, `TRANSFORMATION.md`, `DECISIONS.md`, this status file, and the VT-101 report through PR #142.
+- Verified reconciliation CI #1128 and squash-merged PR #142 as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`.
+- Closed #123 as completed and left direct browser evidence explicitly owned by #126 after #124 is integrated.
+- Detected the concurrent VT-102 claim and draft PR #141 during final verification, preserved that legitimate active work, updated issue #122, and recorded the required refresh against the latest integration head.
 
 ### 2026-07-27 — VT-000 issue-driven queue migration
 
@@ -154,4 +161,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, and #137 are integrated into `visual_transformation`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, and #142 are integrated into `visual_transformation`.
