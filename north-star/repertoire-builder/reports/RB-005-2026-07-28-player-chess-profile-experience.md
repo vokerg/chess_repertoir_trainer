@@ -16,7 +16,7 @@ State: review
 
 RB-005 now has a stacked Angular implementation for hands-on review on top of the unmerged RB-004 calculation branch.
 
-The existing authenticated `/progress` entry opens a recalculable Chess Profile. Existing individual account dashboards remain at `/progress/accounts/:accountId`.
+The existing authenticated `/progress` entry keeps its original default-account redirect behavior. The combined profile is available at `/progress/profile`, and the Progress navigation exposes separate `Account performance` and `Chess profile` submenu entries. Individual account dashboards remain at `/progress/accounts/:accountId`.
 
 ## Delivered presentation
 
@@ -29,7 +29,7 @@ The existing authenticated `/progress` entry opens a recalculable Chess Profile.
 - selected-game WDL and score baseline;
 - composite opening-positive, opening-trouble, and early-mistake rates from RB-004;
 - accuracy, factual peer-band context, analysis coverage, classification coverage, low-confidence, unknown-dimension, omitted, and truncated evidence;
-- loading, no-data, recalculation-error, and partial-analysis states;
+- loading, no-data, recalculation-error, stale-request, and partial-analysis states;
 - responsive layouts and native keyboard controls;
 - a disabled, honestly labelled future repertoire-starting-point affordance.
 
@@ -42,12 +42,13 @@ The implementation deliberately stays simpler than a general-purpose chess ident
 - No radar chart or single permanent archetype is used.
 - Contradictory evidence can coexist because preference and performance are independent.
 - The profile remains recalculated analysis rather than persisted identity.
+- The existing account-performance experience is preserved rather than replaced by the profile.
 
 These choices should now be tested through hands-on use before adding more metrics or contract fields.
 
-## Architecture
+## Architecture review
 
-The new feature follows the repository frontend boundary:
+The feature follows the repository frontend boundary:
 
 ```text
 apps/web/src/app/features/player-chess-profile/
@@ -58,28 +59,31 @@ apps/web/src/app/features/player-chess-profile/
   state/
 ```
 
-- The route page composes the workflow.
-- A page-scoped signal store owns filters, request ordering, loading, errors, selected view/dimension, and evidence expansion.
-- Typed data access owns `/me/accounts` and `/player-chess-profile` calls.
-- Presentational components are HTTP-free and OnPush.
-- Pure period and view-model helpers are separately testable.
+- `/progress/profile` is a separate lazy route loaded through the feature `index.ts` boundary.
+- The route page composes the workflow, uses `app-page-header` and `app-panel`, and delegates commands to a page-provided store.
+- The page-scoped signal store owns filters, request ordering, loading, errors, selected view/dimension, and evidence expansion.
+- Writable store signals remain private; components receive readonly signals and computed view state.
+- Typed data access owns `/me/accounts` and `/player-chess-profile` calls and transport DTOs only.
+- UI filter and selection models live under `state`, not `data-access`.
+- Pure helpers map backend contracts into feature-local account, conclusion, breakdown, evidence, and coverage view models.
+- Presentational components are HTTP-free, OnPush, input/output driven, and do not consume backend response DTOs directly.
+- Templates use built-in control flow and stable identities.
+- Responsive media queries align with shared 640, 760, and 980 pixel breakpoint constants and contain synchronization comments.
+- The `What you choose` / `What works` selector uses native pressed-button semantics rather than claiming incomplete ARIA tab behavior.
 
 ## Validation
 
-Final implementation-head GitHub Actions run: `30329120052` / CI #1124 — success.
+The original profile implementation passed complete repository CI before the navigation and architecture review. The corrected review head must again pass:
 
-Passed:
-
-- dependency installation;
 - API, web, and mobile TypeScript lint;
 - complete monorepo production build;
 - generated opening-classification audit;
 - architecture guardrails;
 - PostgreSQL migrations;
 - imported-game opening-classification audit;
-- complete repository test suite, including new profile helper, store, stale-request, filter, error, no-data, evidence-expansion, and component coverage.
+- complete repository tests, including profile helper, store, stale-request, filter, error, no-data, evidence-expansion, component, and route coverage.
 
-Angular compilation validates templates and accessible names for native controls. CSS was reviewed for desktop and narrow layouts. A real browser session against populated personal data remains the intended hands-on review and was not available in the connector-only execution environment.
+A real browser session against populated personal data remains the intended hands-on review and was not available in the connector-only execution environment.
 
 ## Feedback and correction boundary
 
@@ -94,7 +98,7 @@ The current experience does not let a user edit factual calculations or store re
 
 ## Deliberate exclusions
 
-No RB-004 calculation or contract change, tag-severity expansion, Prisma migration, persisted profile, correction storage, builder target setup, course write, LLM narrative, or global navigation redesign was added.
+No RB-004 calculation or contract change, tag-severity expansion, Prisma migration, persisted profile, correction storage, builder target setup, course write, LLM narrative, or global navigation redesign was added. Adding one child entry to the existing Progress menu is a bounded feature entry-point change, not a navigation redesign.
 
 ## Integration boundary
 
