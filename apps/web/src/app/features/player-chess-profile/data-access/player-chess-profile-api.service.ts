@@ -5,14 +5,14 @@ import type {
   PlayerChessProfileResponse,
 } from '@chess-trainer/contracts/player-chess-profile';
 import { ApiService } from '../../../core/api/api.service';
-import type { PlayerChessProfileAccountOption } from './player-chess-profile.models';
+import type { PlayerChessProfileAccountDto } from './player-chess-profile.models';
 
 @Injectable()
 export class PlayerChessProfileApiService {
   private readonly api = inject(ApiService);
 
-  getAccounts(): Observable<readonly PlayerChessProfileAccountOption[]> {
-    return this.api.get<readonly PlayerChessProfileAccountOption[]>('/me/accounts');
+  getAccounts(): Observable<readonly PlayerChessProfileAccountDto[]> {
+    return this.api.get<readonly PlayerChessProfileAccountDto[]>('/me/accounts');
   }
 
   getProfile(query: PlayerChessProfileQuery): Observable<PlayerChessProfileResponse> {
