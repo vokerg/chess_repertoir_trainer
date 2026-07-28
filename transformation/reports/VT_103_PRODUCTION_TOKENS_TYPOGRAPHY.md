@@ -10,7 +10,7 @@ Pull request: draft PR #158
 
 Target: `main`
 
-Disposition: implementation and review in progress
+Disposition: implementation validated; direct browser review and explicit approval remain
 
 ## Purpose
 
@@ -140,9 +140,33 @@ No changes are made to:
 
 ## Automated validation
 
-GitHub Actions CI runs the complete repository workflow for the draft PR. The current documentation head is under CI review and the final result must be recorded before the PR is marked ready.
+Implementation-head CI #1240 passed the complete repository workflow before the branch refresh.
+
+The branch was then refreshed onto the current `main` head, preserving the independently integrated onboarding-program files. Final selector-corrected CI #1245 passed:
+
+- dependency installation;
+- lint;
+- the full repository build;
+- opening classification audit;
+- architecture guardrails;
+- database migrations;
+- imported-game opening classification audit;
+- the complete test suite.
 
 No local build was run because direct repository checkout from the execution environment could not resolve `github.com`; the GitHub connector remained available for repository inspection and changes.
+
+Static contrast calculations for the principal text/background pairs produced:
+
+- primary text on canvas: `13.72:1`;
+- muted text on white: `5.11:1`;
+- strong mint on white: `5.34:1`;
+- action ink on signal mint: `7.54:1`;
+- success on success-soft: `5.55:1`;
+- warning on warning-soft: `5.74:1`;
+- danger on danger-soft: `5.42:1`;
+- information on information-soft: `5.50:1`.
+
+These calculations support the selected pairs but do not replace direct browser, focus, zoom, and state review.
 
 ## Browser review
 
@@ -169,9 +193,6 @@ Issue #126 continues to own the comprehensive Phase 0–1 browser matrix. VT-103
 
 VT-103 is complete only after:
 
-- final CI succeeds;
-- the branch is current with `main`;
-- the PR diff and compatibility boundary are reviewed;
-- browser evidence or explicit residual limitations are recorded;
+- direct browser evidence or an explicit review disposition is recorded;
 - PR #158 receives explicit approval and is squash-merged into `main`;
 - issue #125, issue #122, status, and dependent issue readiness are reconciled.
