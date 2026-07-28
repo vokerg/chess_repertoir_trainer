@@ -204,6 +204,22 @@ describe('PlayerChessProfileStore', () => {
     expect(store.response()?.conclusions[0].summary).toBe('Second response');
   });
 
+  it('invalidates an in-flight response when the next recalculation is invalid', async () => {
+    const pending = new Subject<PlayerChessProfileResponse>();
+    api.getProfile.and.returnValue(pending.asObservable());
+
+    const pendingLoad = store.load();
+    store.setDate('from', '2026-08-01');
+    await store.load();
+    pending.next(profileFixture(12, 'Should stay stale'));
+    pending.complete();
+    await pendingLoad;
+
+    expect(store.response()).toBeNull();
+    expect(store.loading()).toBeFalse();
+    expect(store.error()).toBe('From date must not be after to date.');
+  });
+
   it('exposes no-data and side-aware evidence states', async () => {
     api.getProfile.and.returnValue(of(profileFixture(0)));
     await store.load();
