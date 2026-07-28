@@ -33,13 +33,12 @@ describe('PlayerChessProfileFilterBarComponent', () => {
     fixture.componentInstance.recalculate.subscribe(() => recalculations += 1);
     fixture.detectChanges();
 
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain('Player · Lichess');
+    expect(fixture.nativeElement.textContent).toContain('Player · Lichess');
 
-    const accountInput = fixture.nativeElement.querySelector(
-      '.profile-picker-panel input[type="checkbox"]:last-of-type',
-    ) as HTMLInputElement;
-    accountInput.dispatchEvent(new Event('change'));
+    const accountInputs = fixture.nativeElement.querySelectorAll(
+      '.profile-picker-panel input[type="checkbox"]',
+    ) as NodeListOf<HTMLInputElement>;
+    accountInputs[1].dispatchEvent(new Event('change'));
     (fixture.nativeElement.querySelector('.profile-recalculate') as HTMLButtonElement).click();
 
     expect(accountIds).toEqual([4]);
