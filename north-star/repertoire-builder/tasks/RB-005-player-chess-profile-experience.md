@@ -1,6 +1,6 @@
 # RB-005 — Deliver Player Chess Profile experience
 
-Status: BLOCKED
+Status: CLAIMED
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: Standalone
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: ChatGPT session
 
-Claim branch: none
+Claim branch: `rb-005/issue-93-player-chess-profile-experience-claim`
 
-Claimed at: none
+Claimed at: 2026-07-28
 
-Claim scope: none
+Claim scope: implement a routed Angular Player Chess Profile page on top of the RB-004 review contract, including profile filters, explicit `What you choose` and `What works` views, evidence-backed conclusions, supporting opening/game evidence, coverage and insufficient-data states, responsive presentation, feature-local signal store/data access/helpers/components, and focused tests. Explicitly exclude RB-004 calculation changes, tag-severity contract expansion, persistence, profile-correction storage, builder target setup, course writes, LLM narrative, and global visual redesign.
 
 ## Outcome
 
@@ -40,7 +40,9 @@ A standalone profile validates whether opening classification, level resolution,
 
 ## Dependencies
 
-Blocked on RB-004.
+RB-004 remains in review through PR #136 and is not merged to `main`.
+
+The user approved a stacked hands-on implementation based on `rb-004/issue-92-player-chess-profile-engine`. The RB-005 implementation must remain based on that branch until RB-004 is accepted and integrated; neither branch may be merged without explicit user approval.
 
 RB-013 and later builder setup can consume approved profile interactions.
 
