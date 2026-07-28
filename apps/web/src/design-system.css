@@ -59,6 +59,15 @@ body {
   color: var(--ui-text);
 }
 
+/* Wide signed-in workspaces use large displays without stretching copy blocks. */
+.page-shell {
+  width: min(1920px, calc(100vw - 24px));
+}
+
+.app-shell app-home-page .home-page {
+  width: min(1560px, calc(100% - 48px));
+}
+
 code,
 kbd,
 pre,
