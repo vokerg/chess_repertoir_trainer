@@ -4,11 +4,11 @@ Last updated: 2026-07-28
 
 ## Program state
 
-`FOUNDATION_REVIEW`
+`RESEARCH_READY`
 
 Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
-Foundation branch: `onb-000/issue-147-program-foundation`
+Foundation delivery: [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156), accepted for squash merge to `main`
 
 Foundation report: `reports/ONB-000-2026-07-28-program-foundation.md`
 
@@ -23,16 +23,17 @@ Foundation report: `reports/ONB-000-2026-07-28-program-foundation.md`
 - separated lifecycle/admin/cleanup into an operator control-plane path;
 - rejected source/client authority material, client-side processing, full-history-first, a replacement queue, and raw destructive table operations.
 
-## Foundation review state
+## Integrated foundation
 
-ONB-000 / #147:
+ONB-000:
 
-- branch complete for review;
-- task status `REVIEW`;
+- accepted by the user;
+- delivered through PR #156 for squash merge to `main`;
+- task status `DONE`;
 - no production implementation;
-- no pull request opened;
-- no merge requested;
-- no build/test gate required for documentation-only work.
+- no build/test gate required for documentation-only work;
+- program tracker #147 remains open;
+- research issues #148–#154 remain open.
 
 ## Ready queue
 
@@ -74,9 +75,12 @@ Documentation-only foundation:
 - repository files inspected directly through GitHub;
 - existing open issues searched for overlap;
 - branch contents and task/issue mapping reconciled;
+- PR #156 contains only onboarding planning documentation;
 - no code, schema, migration, build, test, browser, provider, Stockfish, or deployment changes;
-- no broad test suite run.
+- no broad test suite run locally.
 
 ## Next deterministic action
 
-After foundation review, claim ONB-001 / #148 following `AGENTS.md`.
+Claim ONB-001 / #148 following `AGENTS.md`.
+
+The plan is intentionally revisable through task reports, `DECISIONS.md`, `OPEN_QUESTIONS.md`, and roadmap reconciliation.
