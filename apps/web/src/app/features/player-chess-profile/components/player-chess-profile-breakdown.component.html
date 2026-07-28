@@ -1,19 +1,17 @@
 <div class="profile-breakdown-header">
-  <div class="profile-view-tabs" role="tablist" aria-label="Profile perspective">
+  <div class="profile-view-tabs" aria-label="Profile perspective">
     <button
       type="button"
-      role="tab"
       [class.active]="activeView() === 'PREFERENCE'"
-      [attr.aria-selected]="activeView() === 'PREFERENCE'"
+      [attr.aria-pressed]="activeView() === 'PREFERENCE'"
       (click)="viewChange.emit('PREFERENCE')"
     >
       What you choose
     </button>
     <button
       type="button"
-      role="tab"
       [class.active]="activeView() === 'PERFORMANCE'"
-      [attr.aria-selected]="activeView() === 'PERFORMANCE'"
+      [attr.aria-pressed]="activeView() === 'PERFORMANCE'"
       (click)="viewChange.emit('PERFORMANCE')"
     >
       What works
