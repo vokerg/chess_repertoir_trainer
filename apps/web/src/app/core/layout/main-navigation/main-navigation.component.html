@@ -49,7 +49,7 @@
               class="rail-nav-disclosure"
               [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
               [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
-              aria-haspopup="menu"
+              [attr.aria-haspopup]="railCollapsed() ? 'menu' : null"
               [attr.aria-expanded]="isNavFlyoutOpen(item)"
               [attr.aria-controls]="navFlyoutId(item)"
               (click)="toggleNavFlyout(item)"
@@ -58,7 +58,35 @@
             </button>
           }
 
-          @if (item.children && isNavFlyoutOpen(item)) {
+          @if (item.children && !railCollapsed()) {
+            <div
+              [id]="navFlyoutId(item)"
+              class="rail-inline-accordion"
+              [class.rail-inline-accordion-open]="isNavFlyoutOpen(item)"
+              [attr.aria-hidden]="!isNavFlyoutOpen(item)"
+            >
+              <div class="rail-inline-accordion-clip">
+                <div class="rail-inline-children" role="group" [attr.aria-label]="item.label + ' submenu'">
+                  @for (child of item.children; track child.id) {
+                    <a
+                      [routerLink]="child.link"
+                      class="rail-inline-item"
+                      [class.rail-inline-item-active]="isNavActive(child)"
+                      [class.rail-inline-item-quiet]="child.quiet"
+                      [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                      [attr.title]="child.description ?? null"
+                      (click)="closeNavFlyout()"
+                    >
+                      <span class="rail-inline-icon"><app-nav-icon [name]="child.icon" /></span>
+                      <span class="rail-inline-label">{{ child.label }}</span>
+                    </a>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (item.children && railCollapsed() && isNavFlyoutOpen(item)) {
             <div [id]="navFlyoutId(item)" class="rail-flyout" role="menu">
               <div class="rail-flyout-heading">{{ item.label }}</div>
               @for (child of item.children; track child.id) {
@@ -112,7 +140,7 @@
               class="rail-nav-disclosure"
               [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
               [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
-              aria-haspopup="menu"
+              [attr.aria-haspopup]="railCollapsed() ? 'menu' : null"
               [attr.aria-expanded]="isNavFlyoutOpen(item)"
               [attr.aria-controls]="navFlyoutId(item)"
               (click)="toggleNavFlyout(item)"
@@ -121,7 +149,35 @@
             </button>
           }
 
-          @if (item.children && isNavFlyoutOpen(item)) {
+          @if (item.children && !railCollapsed()) {
+            <div
+              [id]="navFlyoutId(item)"
+              class="rail-inline-accordion"
+              [class.rail-inline-accordion-open]="isNavFlyoutOpen(item)"
+              [attr.aria-hidden]="!isNavFlyoutOpen(item)"
+            >
+              <div class="rail-inline-accordion-clip">
+                <div class="rail-inline-children" role="group" [attr.aria-label]="item.label + ' submenu'">
+                  @for (child of item.children; track child.id) {
+                    <a
+                      [routerLink]="child.link"
+                      class="rail-inline-item"
+                      [class.rail-inline-item-active]="isNavActive(child)"
+                      [class.rail-inline-item-quiet]="child.quiet"
+                      [attr.aria-current]="isNavActive(child) ? 'page' : null"
+                      [attr.title]="child.description ?? null"
+                      (click)="closeNavFlyout()"
+                    >
+                      <span class="rail-inline-icon"><app-nav-icon [name]="child.icon" /></span>
+                      <span class="rail-inline-label">{{ child.label }}</span>
+                    </a>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (item.children && railCollapsed() && isNavFlyoutOpen(item)) {
             <div [id]="navFlyoutId(item)" class="rail-flyout rail-flyout-up" role="menu">
               <div class="rail-flyout-heading">{{ item.label }}</div>
               @for (child of item.children; track child.id) {
@@ -180,7 +236,7 @@
     </button>
   </header>
 
-  @if (openNavId()) {
+  @if (railCollapsed() && openNavId()) {
     <button
       type="button"
       class="rail-flyout-backdrop"

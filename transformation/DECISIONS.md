@@ -1,6 +1,6 @@
 # Visual Transformation Decisions
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 This log records decisions that must survive across chats, tools, agents, and implementation sessions.
 
@@ -181,11 +181,13 @@ Provide an explicit expanded/collapsed control. Keep state local and session-onl
 
 ### D-312 — Parent and child navigation interaction
 
-**Status:** Locked for the integrated Phase 1C baseline; explicitly reopened for issue #123
+**Status:** Locked for the integrated Phase 1C baseline; draft replacement under review in issue #123
 
 The integrated baseline uses distinct keyboard-operable disclosure controls and anchored flyouts. Child access does not depend on hover. Escape, backdrop interaction, and route navigation close transient flyouts.
 
-Issue #123 is approved to replace expanded-rail flyouts with inline animated accordions while retaining collapsed-rail flyouts. Until that issue is integrated, the Phase 1C behavior remains the runtime source of truth.
+Draft PR #137 implements the approved VT-101 replacement direction: expanded desktop child navigation is an inline disclosure group in normal rail flow; collapsed desktop child navigation retains the anchored popup-menu flyout and backdrop. The existing navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged. Motion is native CSS only, restrained, and removed under `prefers-reduced-motion`.
+
+Until issue #123 is approved and squash-merged, the Phase 1C behavior on `visual_transformation` remains the integrated runtime source of truth.
 
 ### D-313 — Interim mobile navigation
 
