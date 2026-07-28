@@ -98,17 +98,17 @@ describe('MainNavigationComponent', () => {
     disclosure.click();
     fixture.detectChanges();
 
+    const childGroup = fixture.nativeElement.querySelector(
+      '.rail-inline-accordion-open [role="group"]',
+    ) as HTMLElement;
+
     expect(disclosure.getAttribute('aria-expanded')).toBe('true');
     expect(disclosure.getAttribute('aria-label')).toBe('Hide Study submenu');
     expect(disclosure.getAttribute('title')).toBe('Hide Study submenu');
     expect(
       fixture.nativeElement.querySelectorAll('.rail-inline-accordion-open .rail-inline-item').length,
     ).toBe(3);
-    expect(
-      fixture.nativeElement.querySelector('.rail-inline-accordion-open [role="group"]').getAttribute(
-        'aria-label',
-      ),
-    ).toBe('Study submenu');
+    expect(childGroup.getAttribute('aria-label')).toBe('Study submenu');
     expect(fixture.nativeElement.querySelector('.rail-flyout')).toBeNull();
     expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).toBeNull();
   });
@@ -174,29 +174,38 @@ describe('MainNavigationComponent', () => {
     expect(fixture.nativeElement.querySelector('.rail-inline-accordion-open')).toBeNull();
   });
 
-  it('updates active state and closes transient navigation after route navigation', async () => {
+  it('updates active state and closes inline child navigation after route navigation', async () => {
     const disclosure = fixture.nativeElement.querySelector(
       '[aria-label="Show Study submenu"]',
     ) as HTMLButtonElement;
-    const mobileToggle = fixture.nativeElement.querySelector(
-      '.mobile-menu-button',
-    ) as HTMLButtonElement;
 
     disclosure.click();
-    mobileToggle.click();
     fixture.detectChanges();
     expect(disclosure.getAttribute('aria-expanded')).toBe('true');
-    expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).not.toBeNull();
 
     await router.navigateByUrl('/games');
     fixture.detectChanges();
 
     expect(disclosure.getAttribute('aria-expanded')).toBe('false');
-    expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).toBeNull();
     const activeLink = fixture.nativeElement.querySelector(
       '.rail-nav-node-active .rail-nav-link',
     ) as HTMLAnchorElement;
     expect(activeLink.textContent).toContain('Games');
     expect(activeLink.getAttribute('aria-current')).toBe('page');
+  });
+
+  it('closes the mobile menu after route navigation', async () => {
+    const mobileToggle = fixture.nativeElement.querySelector(
+      '.mobile-menu-button',
+    ) as HTMLButtonElement;
+
+    mobileToggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).not.toBeNull();
+
+    await router.navigateByUrl('/games');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).toBeNull();
   });
 });
