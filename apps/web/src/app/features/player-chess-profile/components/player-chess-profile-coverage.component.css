@@ -73,13 +73,15 @@
   font-size: 0.85rem;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx (760). */
 @media (max-width: 760px) {
   .profile-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 460px) {
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
+@media (max-width: 640px) {
   .profile-summary-grid {
     grid-template-columns: 1fr;
   }
