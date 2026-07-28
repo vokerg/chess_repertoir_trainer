@@ -22,7 +22,7 @@ Claim scope: implement a routed Angular Player Chess Profile page on top of the 
 
 Implementation PR: `#139`
 
-Final implementation-head CI: run `30329120052` / CI #1124 — success
+Final implementation-head CI: pending after corrected navigation and Angular architecture review
 
 ## Outcome
 
@@ -37,10 +37,12 @@ A standalone profile validates whether opening classification, level resolution,
 ## Current repo anchors inspected
 
 - current account detail and performance pages;
+- current `/progress` account redirect behavior;
+- main navigation parent/child patterns for desktop and mobile;
 - game filter and period selector patterns;
 - performance-by-rating breakdown and store patterns;
-- shared page header and panel primitives;
-- Angular architecture and feature-module rules;
+- shared page header, panel, and responsive-breakpoint primitives;
+- Angular skill, architecture, patterns, migration, and feature-module rules;
 - RB-004 contract, tests, and report.
 
 ## Dependencies
@@ -53,7 +55,10 @@ RB-013 and later builder setup can consume approved profile interactions.
 
 ## Delivered
 
-- the authenticated `/progress` entry presents the Player Chess Profile while `/progress/accounts/:accountId` preserves single-account dashboards;
+- the existing `/progress` entry preserves its default/active account redirect behavior;
+- `/progress/accounts/:accountId` preserves single-account dashboards;
+- `/progress/profile` is a separate authenticated lazy route for the combined Player Chess Profile;
+- Progress has `Account performance` and `Chess profile` submenu entries;
 - recent, all-time, and custom periods;
 - all or selected connected accounts;
 - fixed speed presets, White/Black context, rated/casual status, and optional player/opponent rating ranges;
@@ -62,8 +67,8 @@ RB-013 and later builder setup can consume approved profile interactions.
 - deterministic conclusion cards with sample size and evidence strength;
 - expandable contributing openings, metrics, and bounded recent games;
 - score/WDL baseline, peer context, composite opening-positive/trouble and early-mistake rates, accuracy, and coverage;
-- low-confidence, unknown-dimension, omitted/truncated, no-data, error, loading, and partial-analysis states;
-- responsive feature-local OnPush components, typed data access, signal store, pure helpers, and focused tests;
+- low-confidence, unknown-dimension, omitted/truncated, no-data, error, loading, stale-request, and partial-analysis states;
+- a lazy composition page, page-provided signal store with private writable state, typed HTTP-only data access, pure DTO-to-view-model helpers, presentational OnPush components, and focused tests;
 - an honest disabled repertoire-starting-point affordance until target setup exists.
 
 ## Deliberate exclusions
@@ -84,11 +89,13 @@ RB-013 and later builder setup can consume approved profile interactions.
 - Let the user inspect openings and games behind a conclusion.
 - Treat profile output as recalculated analysis, not immutable personal data.
 - Keep uncertainty and omitted evidence visible.
+- Preserve the established account-performance destination and add the profile alongside it.
 
 ## Acceptance review
 
 Implemented for review:
 
+- separate Progress submenu and profile route without replacing the existing account dashboard flow;
 - period and filter recalculation;
 - visible account/speed/colour/rating context and analysis coverage;
 - separate preference and performance presentation;
@@ -96,14 +103,15 @@ Implemented for review:
 - understandable confidence, insufficient-data, partial-analysis, and no-data states;
 - White/Black and speed-context support;
 - desktop/narrow responsive CSS and native keyboard controls;
-- page/store/data-access/component boundaries;
-- tests for defaults, filters, stale request handling, error/no-data states, evidence expansion, and presentational interaction.
+- lazy page/store/data-access/helper/component boundaries;
+- readonly store exposure and feature-local presentational view models;
+- tests for route separation, defaults, filters, stale request handling, error/no-data states, evidence expansion, and presentational interaction.
 
 Hands-on review against populated personal data remains the acceptance gate. A browser session was not available in the connector-only implementation environment.
 
 ## Required validation
 
-Completed through CI #1124:
+Required on the corrected review head:
 
 - web and complete monorepo build;
 - focused Angular tests and complete repository tests;
@@ -114,10 +122,10 @@ Static responsive and accessible-name review was completed. Real desktop/mobile 
 
 ## Completion updates
 
-The report records the accepted first-pass presentation, correction boundary, and RB-006/RB-013 handoff direction.
+The report records the accepted first-pass presentation, corrected route/navigation boundary, architecture review, correction boundary, and RB-006/RB-013 handoff direction.
 
 ## Completion
 
-Report: `../reports/RB-005-2026-07-28-player-chess-profile-experience.md`
+Report: `north-star/repertoire-builder/reports/RB-005-2026-07-28-player-chess-profile-experience.md`
 
-Completed at: pending user review, accepted RB-004 integration, stack reconciliation, merge, and final closure update
+Completed at: pending user acceptance and integration
