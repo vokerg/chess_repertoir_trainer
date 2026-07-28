@@ -55,9 +55,10 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #120 — Phase 1D restrained landing-page scroll reveal;
 - PR #134 — VT-000 issue-driven execution queue and Phase 1D integration reconciliation;
 - PR #137 — VT-101 expanded-rail inline navigation accordions with collapsed-rail flyouts retained;
-- PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation.
+- PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation;
+- PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion.
 
-PR #137 was squash-merged as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI run #1112 and final documentation-head CI run #1118 passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite before merge. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`; reconciliation CI run #1128 passed the same complete workflow.
+PR #137 was squash-merged as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI run #1112 and final documentation-head CI run #1118 passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite before merge. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`; reconciliation CI run #1128 passed the same complete workflow. PR #143 recorded the concurrent VT-102 claim after CI run #1140 passed the same workflow.
 
 Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until issue #126 records it. VT-101 navigation checks remain in that matrix rather than being falsely marked complete from static inspection or CI alone.
 
@@ -76,12 +77,12 @@ Task selection is deterministic:
 7. keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after squash merge and documentation reconciliation.
 
-Issue #123 / VT-101 is complete through PR #137 and reconciliation PR #142. Issue #124 / VT-102 is already claimed and `IN_PROGRESS` through draft PR #141. Issue #126 remains blocked until #124 is integrated; its #123 dependency is satisfied.
+Issue #123 / VT-101 is complete through PR #137 and reconciliation PRs #142–#143. Issue #124 / VT-102 is already claimed and `IN_PROGRESS` through draft PR #141. Issue #126 remains blocked until #124 is integrated; its #123 dependency is satisfied.
 
 ## Current checkpoint
 
 VT-101 is integrated into `visual_transformation`. Expanded desktop child navigation now uses inline disclosure groups in normal rail flow, while collapsed desktop child navigation retains anchored popup-menu flyouts and the backdrop. The navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged.
 
-VT-102 is active on `visual-transformation/vt-102-home-palette-calibration` through draft PR #141. That branch was created before the VT-101 post-merge reconciliation and must refresh against current `visual_transformation` head `d1222a205966b10e7b4747adac9e4ff6fc7a116d`, preserving the integrated VT-101 decision, status, and report content before final review or merge.
+VT-102 is active on `visual-transformation/vt-102-home-palette-calibration` through draft PR #141. That branch was created before the completed VT-101 post-merge and concurrent-queue reconciliations. Before final review or merge, refresh PR #141 against the latest `visual_transformation` head, including PRs #142 and #143, while preserving the integrated VT-101 decision, status, and report content.
 
 Do not start issue #126 before #124 is integrated, claim another overlapping transformation task without a new collision check, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
