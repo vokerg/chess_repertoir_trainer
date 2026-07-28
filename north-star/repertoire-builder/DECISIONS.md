@@ -1,6 +1,6 @@
 # Repertoire Builder Decisions
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 States:
 
@@ -322,3 +322,41 @@ The shared cache key is derived from the effective sorted rating groups and spee
 State: **LOCKED**
 
 The product route accepts only `fen`, `speedPreset`, `ratingTarget` and conditional `ratingGroup`. The prior `since`, `until`, raw `ratings` and raw `speeds` parameters are not retained as a second public path.
+
+## Repertoire target decisions
+
+### RB-D040 — Effective target intent and defaults remain separate
+
+State: **LOCKED**
+
+A repertoire target stores authoritative effective values for the current build separately from field-level defaults and their provenance. Defaults may come from system policy, a transparent persona preset, Player Chess Profile evidence or factual peer resolution. Explicit overrides must exactly identify the defaulted fields whose effective values changed. Profile or peer evidence is never mutated by the override.
+
+### RB-D041 — Peer-derived target populations are reproducible snapshots
+
+State: **LOCKED**
+
+A peer-derived target stores the requested population, effective Lichess benchmark groups and the factual `LichessGamesPeerResolution` snapshot, including normalization-profile and resolver-policy versions. `MY_PEERS_PLUS_ONE` adds exactly one adjacent group above the highest factual selected group and caps at `2500+`. An explicit benchmark group is a separate authoritative target choice.
+
+### RB-D042 — Persona labels expose explicit objective dimensions
+
+State: **LOCKED**
+
+Persona is a transparent label over explicit preferred character, minimum soundness, risk tolerance, maximum theory burden and complexity tolerance. Candidate ranking must consume and explain the dimensions rather than treating the label as an opaque score or permanent player identity.
+
+### RB-D043 — Unknown evidence is not target intent
+
+State: **LOCKED**
+
+`UNKNOWN` remains valid for factual opening/profile evidence but is not a selectable target soundness or theory burden. A deliberately dubious target requires both `minimumSoundness: DUBIOUS` and explicit opt-in; the opt-in is invalid for non-dubious targets.
+
+### RB-D044 — Target mutability and recalculation are explicit
+
+State: **LOCKED**
+
+Contract version, target identity and creation timestamp are immutable. Changes to side, starting point, speed, requested/effective population, account context, objective or coverage require candidate recalculation. Provenance, override bookkeeping, timestamps and peer-evidence detail do not require recalculation when the effective candidate inputs remain unchanged. RB-009 owns snapshot history, descendant invalidation and resume semantics.
+
+### RB-D045 — V1 uses the Lichess Games population source
+
+State: **LOCKED**
+
+The first repertoire-target contract supports `LICHESS_GAMES` as its population source because its benchmark-group and peer-resolution semantics are already versioned and implemented. Additional providers require an explicit contract version and reviewed evidence semantics. Draft and completed-course persistence remain unresolved under RB-D024 and downstream tasks.
