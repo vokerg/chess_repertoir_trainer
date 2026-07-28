@@ -1,0 +1,92 @@
+<div class="profile-summary-grid">
+  <article>
+    <span>Selected games</span>
+    <strong>{{ profile().baseline.games }}</strong>
+    <small>{{ wdlLabel(profile().baseline) }} W–D–L</small>
+  </article>
+  <article>
+    <span>Score</span>
+    <strong>{{ percentLabel(profile().baseline.scorePercent) }}</strong>
+    <small>Selected-game baseline</small>
+  </article>
+  <article>
+    <span>Opening positive</span>
+    <strong>{{ percentLabel(profile().baseline.openingPositiveRate) }}</strong>
+    <small>Advantage or success</small>
+  </article>
+  <article>
+    <span>Opening trouble</span>
+    <strong>{{ percentLabel(profile().baseline.openingTroubleRate) }}</strong>
+    <small>Trouble or disaster</small>
+  </article>
+  <article>
+    <span>Early mistakes</span>
+    <strong>{{ percentLabel(profile().baseline.earlyMistakeRate) }}</strong>
+    <small>Mistake or blunder</small>
+  </article>
+  <article>
+    <span>Peer context</span>
+    <strong>{{ peerLabel(profile()) }}</strong>
+    <small>{{ profile().peerLevel.eligibleGames }} rating-evidence games</small>
+  </article>
+</div>
+
+<div class="profile-coverage-list">
+  <div>
+    <div class="profile-coverage-heading">
+      <span>Analysis coverage</span>
+      <strong>
+        {{ profile().coverage.analysedGames }}/{{ profile().coverage.totalGames }} ·
+        {{ percentLabel(profile().coverage.analysisPercent) }}
+      </strong>
+    </div>
+    <div class="profile-coverage-track">
+      <span [style.width.%]="profile().coverage.analysisPercent ?? 0"></span>
+    </div>
+  </div>
+  <div>
+    <div class="profile-coverage-heading">
+      <span>Named openings</span>
+      <strong>{{ profile().coverage.namedOpeningGames }}/{{ profile().coverage.totalGames }}</strong>
+    </div>
+    <div class="profile-coverage-track">
+      <span
+        [style.width.%]="coveragePercent(profile().coverage.namedOpeningGames, profile().coverage.totalGames)"
+      ></span>
+    </div>
+  </div>
+  <div>
+    <div class="profile-coverage-heading">
+      <span>Classified openings</span>
+      <strong>
+        {{ profile().coverage.classifiedOpeningGames }}/{{ profile().coverage.profiledOpeningGames }}
+      </strong>
+    </div>
+    <div class="profile-coverage-track">
+      <span
+        [style.width.%]="coveragePercent(profile().coverage.classifiedOpeningGames, profile().coverage.profiledOpeningGames)"
+      ></span>
+    </div>
+  </div>
+</div>
+
+@if (
+  profile().coverage.lowConfidenceOpeningGames > 0
+  || profile().coverage.unknownDimensionOpeningGames > 0
+  || profile().coverage.omittedOpeningGames > 0
+) {
+  <ul class="profile-coverage-notes">
+    @if (profile().coverage.lowConfidenceOpeningGames > 0) {
+      <li>{{ profile().coverage.lowConfidenceOpeningGames }} games use low-confidence opening classification.</li>
+    }
+    @if (profile().coverage.unknownDimensionOpeningGames > 0) {
+      <li>{{ profile().coverage.unknownDimensionOpeningGames }} games contain at least one unknown profile dimension.</li>
+    }
+    @if (profile().coverage.omittedOpeningGames > 0) {
+      <li>
+        {{ profile().coverage.omittedOpeningGames }} long-tail opening games are outside the top
+        {{ profile().coverage.openingGroupLimit }} profile groups.
+      </li>
+    }
+  </ul>
+}
