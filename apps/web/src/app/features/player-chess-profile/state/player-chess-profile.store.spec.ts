@@ -108,21 +108,38 @@ function profileFixture(
       evidenceStrength: games < 5 ? 'INSUFFICIENT' : 'LOW',
       summary: games > 0 ? summary : 'Not enough data',
     }],
-    supportingGames: games > 0 ? [{
-      id: 7,
-      provider: 'LICHESS',
-      providerUrl: null,
-      endedAt: '2026-07-20T12:00:00.000Z',
-      speedCategory: 'blitz',
-      userColor: 'BLACK',
-      resultForUser: 'WIN',
-      openingEco: 'B20',
-      openingName: 'Sicilian Defense',
-      userRating: 1450,
-      opponentRating: 1460,
-      analysisStatus: 'COMPLETED',
-      accuracy: 82,
-    }] : [],
+    supportingGames: games > 0 ? [
+      {
+        id: 7,
+        provider: 'LICHESS',
+        providerUrl: null,
+        endedAt: '2026-07-20T12:00:00.000Z',
+        speedCategory: 'blitz',
+        userColor: 'BLACK',
+        resultForUser: 'WIN',
+        openingEco: 'B20',
+        openingName: 'Sicilian Defense',
+        userRating: 1450,
+        opponentRating: 1460,
+        analysisStatus: 'COMPLETED',
+        accuracy: 82,
+      },
+      {
+        id: 8,
+        provider: 'LICHESS',
+        providerUrl: null,
+        endedAt: '2026-07-19T12:00:00.000Z',
+        speedCategory: 'blitz',
+        userColor: 'WHITE',
+        resultForUser: 'WIN',
+        openingEco: 'B20',
+        openingName: 'Sicilian Defense',
+        userRating: 1450,
+        opponentRating: 1460,
+        analysisStatus: 'COMPLETED',
+        accuracy: 82,
+      },
+    ] : [],
   };
 }
 
@@ -187,7 +204,7 @@ describe('PlayerChessProfileStore', () => {
     expect(store.response()?.conclusions[0].summary).toBe('Second response');
   });
 
-  it('exposes no-data and evidence states', async () => {
+  it('exposes no-data and side-aware evidence states', async () => {
     api.getProfile.and.returnValue(of(profileFixture(0)));
     await store.load();
     expect(store.hasNoData()).toBeTrue();
@@ -197,7 +214,7 @@ describe('PlayerChessProfileStore', () => {
     store.selectConclusion(0);
 
     expect(store.evidence()?.openings[0].title).toBe('Sicilian Defense');
-    expect(store.evidence()?.games[0].id).toBe(7);
+    expect(store.evidence()?.games.map((game) => game.id)).toEqual([7]);
   });
 
   it('keeps the last response while reporting a recalculation error', async () => {
