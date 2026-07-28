@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import type { MastersExplorerResponse } from '@chess-trainer/contracts/masters-explorer';
+import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
 
@@ -7,9 +7,9 @@ import { ApiService } from '../../core/api/api.service';
 export class MastersExplorerApiService {
   private readonly api = inject(ApiService);
 
-  getPosition(fen: string): Observable<MastersExplorerResponse> {
+  getPosition(fen: string): Observable<OpeningExplorerResponse> {
     const params = new URLSearchParams({ fen });
-    return this.api.get<MastersExplorerResponse>(
+    return this.api.get<OpeningExplorerResponse>(
       `/masters-explorer?${params.toString()}`,
     );
   }

@@ -1,4 +1,4 @@
-export type OpeningBookEntry = {
+  export type OpeningBookEntry = {
   eco: string;
   name: string;
   pgn: string;

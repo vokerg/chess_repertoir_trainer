@@ -9,7 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { MastersExplorerResponse } from '@chess-trainer/contracts/masters-explorer';
+import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { firstValueFrom } from 'rxjs';
 import { ProgressiveListComponent } from '../ui/progressive-list/progressive-list.component';
 import { MastersExplorerApiService } from './masters-explorer-api.service';
@@ -35,7 +35,7 @@ export class MastersExplorerWidgetComponent {
   readonly fen = input.required<string>();
   readonly moveSelected = output<string>();
 
-  readonly response = signal<MastersExplorerResponse | null>(null);
+  readonly response = signal<OpeningExplorerResponse | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 

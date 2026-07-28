@@ -96,7 +96,7 @@ for (const fileUrl of sourceFiles(new URL('../apps/web/src/', import.meta.url)))
   assert.doesNotMatch(source, /(?:from|import\s*)\s*['"][^'"]*apps\/mobile[^'"]*['"]/, `web must not import mobile: ${fileUrl.pathname}`);
 }
 
-assert.match(gitignore, /^backups\/courses\/$/m, 'generated course backups must be ignored');
+assert.doesNotMatch(gitignore, /^backups\/courses\/$/m, 'course backups must remain eligible for version control');
 assert.doesNotMatch(importedGameRepository, /findImportedGamesForSummary/);
 assert.doesNotMatch(importedGameQueryService, /summarizeRows/);
 for (const fileUrl of sourceFiles(apiSourceUrl)) {

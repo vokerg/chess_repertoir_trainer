@@ -44,19 +44,27 @@
       "types": "./dist/opening-struggles/index.d.ts",
       "default": "./dist/opening-struggles/index.js"
     },
-    "./masters-explorer": {
-      "types": "./dist/masters-explorer/index.d.ts",
-      "default": "./dist/masters-explorer/index.js"
+    "./opening-explorer": {
+      "types": "./dist/opening-explorer/index.d.ts",
+      "default": "./dist/opening-explorer/index.js"
+    },
+    "./player-chess-profile": {
+      "types": "./dist/player-chess-profile/index.d.ts",
+      "default": "./dist/player-chess-profile/index.js"
     },
     "./jobs": {
       "types": "./dist/jobs/index.d.ts",
       "default": "./dist/jobs/index.js"
+    },
+    "./rating-normalization": {
+      "types": "./dist/rating-normalization/index.d.ts",
+      "default": "./dist/rating-normalization/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node test/contracts.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs"
+    "test": "npm run build && node test/contracts.test.mjs && node test/opening-explorer-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"

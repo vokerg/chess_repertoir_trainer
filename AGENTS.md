@@ -25,6 +25,7 @@ Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web cl
 - OpenAPI operations: Fastify route schemas.
 - Imported-game filters: repository predicates, especially `buildImportedGameWhere`.
 - Architecture: `docs/architecture.md` and topic documents indexed by `docs/README.md`.
+- Rating grades and cross-pool calibration decisions: `docs/rating-normalization.md`; executable values remain in the rating-normalization API configuration and tests.
 - Agent workflows: `.github/skills/*/SKILL.md`.
 
 Do not add `*.openapi.ts`, a separate OpenAPI registry, or hand-maintained path objects. Product endpoints use Fastify route schemas; shared request and response DTOs belong in `packages/contracts` when consumed across workspace boundaries.

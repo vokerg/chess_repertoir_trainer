@@ -76,6 +76,13 @@
         />
       }
 
+      @if (store.peersOpen()) {
+        <app-lichess-games-explorer-widget
+          [fen]="store.currentFen()"
+          (moveSelected)="store.playBoardMove($event)"
+        />
+      }
+
       <app-game-filter-breakdown-panel
         title="My openings in this position"
         subtitle="Grouped by assigned opening. Click to filter."

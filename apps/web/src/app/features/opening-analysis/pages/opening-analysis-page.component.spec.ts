@@ -13,12 +13,14 @@ describe('OpeningAnalysisPageComponent', () => {
       'initialize',
       'toggleTags',
       'toggleMasters',
+      'togglePeers',
       'toggleLastGames',
       'toggleEngine',
     ]);
     Object.assign(store, {
       tagsOpen: signal(true),
       mastersOpen: signal(false),
+      peersOpen: signal(false),
       lastGamesOpen: signal(false),
       engineVisible: signal(true),
       currentFen: signal('startpos'),
@@ -45,12 +47,13 @@ describe('OpeningAnalysisPageComponent', () => {
     fixture = TestBed.createComponent(OpeningAnalysisPageComponent);
   });
 
-  it('orders the header actions with Masters and Last games between Tags and Engine', () => {
+  it('orders the header actions with public explorers before Last games and Engine', () => {
     const actions = page().headerActions();
 
     expect(actions.map((action) => action.id)).toEqual([
       'tags',
       'masters',
+      'peers',
       'last-games',
       'engine',
       'challenge-lichess-bot',
@@ -58,11 +61,14 @@ describe('OpeningAnalysisPageComponent', () => {
     expect(actions[0].pressed).toBeTrue();
     expect(actions[1].pressed).toBeFalse();
     expect(actions[2].pressed).toBeFalse();
+    expect(actions[3].pressed).toBeFalse();
 
     actions[1].run();
     actions[2].run();
+    actions[3].run();
 
     expect(store.toggleMasters).toHaveBeenCalled();
+    expect(store.togglePeers).toHaveBeenCalled();
     expect(store.toggleLastGames).toHaveBeenCalled();
   });
 

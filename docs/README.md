@@ -7,9 +7,12 @@
 - [Native mobile architecture](mobile/architecture.md): Expo workspace, Chessground DOM boundary, offline persistence, synchronization, and current rollout scope.
 - [Position analysis cache](position-analysis-cache.md): compact/rich analysis persistence.
 - [Persistent imported-game job processing](imported-game-job-processing.md): target architecture and staged migration from browser/in-memory orchestration to durable jobs.
-- [Masters Explorer](masters-explorer.md): system-wide Lichess Masters position statistics and persistent cache behavior.
+- [Opening Explorer](opening-explorer.md): separate Masters and rated-game APIs with shared integration and persistent cache behavior.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Opening struggles](opening-struggles.md): report modes, course coverage semantics, and performance boundary.
+- [Player Chess Profile](player-chess-profile.md): deterministic preference/performance calculation, evidence grades, classification coverage, and API boundary.
+- [Player Chess Profile experience](player-chess-profile-experience.md): `/progress` filters, preference/performance presentation, evidence expansion, coverage states, and Angular ownership.
+- [Rating normalization](rating-normalization.md): cross-pool grade ranges, evidence, product adjustments, FIDE reference semantics, versioning, and agent change procedure.
 - [AI widgets](ai-widgets.md): optional provider boundary, game-review context, feature flags, privacy, and removal procedure.
 - [Course and training performance](performance/course-training-optimisation.md): phase measurements and structural regression constraints.
 

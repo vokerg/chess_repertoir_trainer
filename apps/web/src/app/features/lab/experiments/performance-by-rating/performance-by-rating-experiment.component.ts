@@ -4,6 +4,7 @@ import type {
   PerformanceReportType,
   PerformanceWdl,
 } from '@chess-trainer/contracts/lab';
+import type { RatingPool, RatingRange } from '@chess-trainer/contracts/rating-normalization';
 import { PerformanceByRatingApiService } from './data-access/performance-by-rating-api.service';
 import {
   PerformanceByRatingStore,
@@ -35,6 +36,15 @@ interface ColumnGroup {
 export class PerformanceByRatingExperimentComponent implements OnInit {
   protected readonly store = inject(PerformanceByRatingStore);
   protected readonly reportTypes = PERFORMANCE_REPORT_TYPES;
+  protected readonly normalizationPools: readonly RatingPool[] = [
+    'CHESS_COM_BLITZ',
+    'CHESS_COM_BULLET',
+    'CHESS_COM_RAPID',
+    'LICHESS_BLITZ',
+    'LICHESS_BULLET',
+    'LICHESS_RAPID',
+    'FIDE_STANDARD',
+  ];
   protected readonly columnGroups: readonly ColumnGroup[] = [
     {
       id: 'results',
@@ -108,6 +118,13 @@ export class PerformanceByRatingExperimentComponent implements OnInit {
 
   protected ratingLabel(row: PerformanceByRatingRow): string {
     return `${row.ratingFrom}–${row.ratingTo}`;
+  }
+
+  protected ratingRangeLabel(range: RatingRange | null): string {
+    if (range === null) return 'Not calibrated';
+    if (range.maxExclusive === null) return `${range.minInclusive}+`;
+    if (range.minInclusive === 0) return `<${range.maxExclusive}`;
+    return `${range.minInclusive}–${range.maxExclusive - 1}`;
   }
 
   protected wdlLabel(wdl: PerformanceWdl): string {
