@@ -1,6 +1,6 @@
 # RB-004 — Implement Player Chess Profile calculation
 
-Status: BLOCKED
+Status: REVIEW
 
 Priority: P1
 
@@ -8,15 +8,21 @@ Order: 50
 
 Delivery class: Dual-use
 
-Planning maturity: Outlined
+Planning maturity: Implemented
 
-Claimed by: unclaimed
+GitHub issue: `#92`
 
-Claim branch: none
+Claimed by: ChatGPT session
 
-Claimed at: none
+Claim branch: `rb-004/issue-92-player-chess-profile-engine`
 
-Claim scope: none
+Claimed at: 2026-07-27
+
+Claim scope: implement the deterministic Player Chess Profile calculation using the existing imported-game filter and database-aggregation patterns, completed factual player-level evidence, and the side-aware opening-classification contract. The work covers metric and confidence definitions, a shared wire contract, a thin authenticated API endpoint, bounded supporting opening/game evidence, explicit unknown and insufficient-data outcomes, and focused tests and documentation. It excludes polished UI, profile persistence, player-level recalculation, opening-classification changes, LLM conclusions, candidate ranking, course mutation, and unsupported causal claims.
+
+Implementation PR: `#136`
+
+Final implementation-head CI: run `30287398030` / CI #1103 — success
 
 ## Outcome
 
@@ -51,13 +57,13 @@ The factual multi-account player-level context is already available from the com
 
 ## Dependencies
 
-Blocked on:
+Completed:
 
-- RB-003 opening classification or an explicitly approved limited profile taxonomy.
+- RB-001/RB-002 factual population and player-level evidence;
+- RB-003 opening-classification method;
+- RB-018 opening-classification coverage expansion.
 
-Population-relative and factual player-level conclusions consume the completed RB-001/RB-002 boundary.
-
-May be split into a metric-definition/discovery task and implementation task if statistical scope is too broad.
+RB-004 consumes those boundaries without reopening or duplicating them.
 
 ## In scope
 
@@ -90,18 +96,16 @@ May be split into a metric-definition/discovery task and implementation task if 
 - opening-classification implementation itself;
 - unsupported causal claims such as proving a style caused rating improvement.
 
-## Statistical questions to resolve
+## Statistical questions resolved in the implementation proposal
 
-- baseline hierarchy by speed preset, color, and benchmark context;
-- minimum samples and confidence grades;
-- shrinkage or conservative wording for small samples;
-- analysed-coverage thresholds;
-- whether result and opening-evaluation conclusions are shown independently or combined;
-- opponent strength adjustment;
-- treatment of multiple accounts and duplicate imported games for profile metrics;
-- significance of time forfeits and very short games;
-- comparison of recent period with preceding period;
-- how to avoid presenting correlation as causation.
+- the baseline is the complete selected game set after filters;
+- result performance and analysis-derived opening outcomes remain independent metrics;
+- evidence strength uses deterministic sample bands, while analysis evidence is unavailable below five analysed games or 50% coverage;
+- small samples are qualified rather than shrunk into a hidden estimate;
+- multiple accounts remain separate owned evidence rows and use the completed factual peer resolver for level context;
+- cross-provider duplicate copies are reported as a residual risk because no stable cross-provider identity exists;
+- conclusions use correlational wording and never claim causation;
+- period comparison, correction feedback, and final user-facing wording remain RB-005 responsibilities.
 
 ## Acceptance criteria
 
@@ -118,18 +122,20 @@ May be split into a metric-definition/discovery task and implementation task if 
 
 ## Required validation
 
+Completed on CI #1103:
+
 - contracts build/tests;
 - API build and focused profile tests;
 - database query review and boundedness checks;
 - architecture checks;
-- performance check on a realistically sized account dataset where possible.
+- database-backed 1,200-game bounded performance regression.
 
 ## Completion updates
 
-The report must document all formulas and wording constraints, update profile open questions, and state whether RB-005 can proceed without additional metric tasks.
+The report documents formulas, wording constraints, profile open-question resolution, RB-005 readiness, residual risks, and queue impact.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-004-2026-07-27-player-chess-profile-calculation.md`
 
-Completed at: none
+Completed at: pending user review, accepted merge, and final closure reconciliation

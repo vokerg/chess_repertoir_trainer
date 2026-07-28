@@ -10,6 +10,8 @@
 - [Opening Explorer](opening-explorer.md): separate Masters and rated-game APIs with shared integration and persistent cache behavior.
 - [Imported-game query reuse](imported-games-query-reuse.md): shared filter and query ownership.
 - [Opening struggles](opening-struggles.md): report modes, course coverage semantics, and performance boundary.
+- [Player Chess Profile](player-chess-profile.md): deterministic preference/performance calculation, evidence grades, classification coverage, and API boundary.
+- [Player Chess Profile experience](player-chess-profile-experience.md): `/progress` filters, preference/performance presentation, evidence expansion, coverage states, and Angular ownership.
 - [Rating normalization](rating-normalization.md): cross-pool grade ranges, evidence, product adjustments, FIDE reference semantics, versioning, and agent change procedure.
 - [AI widgets](ai-widgets.md): optional provider boundary, game-review context, feature flags, privacy, and removal procedure.
 - [Course and training performance](performance/course-training-optimisation.md): phase measurements and structural regression constraints.

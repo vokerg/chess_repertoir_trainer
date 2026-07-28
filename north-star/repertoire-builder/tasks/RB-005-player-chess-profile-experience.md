@@ -1,6 +1,6 @@
 # RB-005 — Deliver Player Chess Profile experience
 
-Status: BLOCKED
+Status: REVIEW
 
 Priority: P1
 
@@ -8,15 +8,21 @@ Order: 60
 
 Delivery class: Standalone
 
-Planning maturity: Outlined
+Planning maturity: Implemented
 
-Claimed by: unclaimed
+GitHub issue: `#93`
 
-Claim branch: none
+Claimed by: ChatGPT session
 
-Claimed at: none
+Claim branch: `rb-005/issue-93-player-chess-profile-experience`
 
-Claim scope: none
+Claimed at: 2026-07-28
+
+Claim scope: implement a routed Angular Player Chess Profile page on top of the RB-004 review contract, including profile filters, explicit `What you choose` and `What works` views, evidence-backed conclusions, supporting opening/game evidence, coverage and insufficient-data states, responsive presentation, feature-local signal store/data access/helpers/components, and focused tests. Explicitly exclude RB-004 calculation changes, tag-severity contract expansion, persistence, profile-correction storage, builder target setup, course writes, LLM narrative, and global visual redesign.
+
+Implementation PR: `#139`
+
+Final implementation-head CI: `30333247714` / #1206 — success
 
 ## Outcome
 
@@ -28,83 +34,98 @@ The experience should also provide a clear future entry point: use these finding
 
 A standalone profile validates whether opening classification, level resolution, tags, and profile calculations produce conclusions that users find credible. It delivers immediate product value and reduces risk before those conclusions influence move recommendations.
 
-## Current repo anchors to inspect
+## Current repo anchors inspected
 
 - current account detail and performance pages;
+- current `/progress` account redirect behavior;
+- main navigation parent/child patterns for desktop and mobile;
 - game filter and period selector patterns;
-- opening analysis breakdowns and performance widgets;
-- finding cards and expandable evidence patterns;
-- current visual-transformation state and shared UI primitives;
-- Angular feature data-access/store/page conventions;
-- RB-004 contract and examples.
+- performance-by-rating breakdown and store patterns;
+- shared page header, panel, and responsive-breakpoint primitives;
+- Angular skill, architecture, patterns, migration, and feature-module rules;
+- RB-004 contract, tests, and report.
 
 ## Dependencies
 
-Blocked on RB-004.
+RB-004 remains in review through PR #136 and is not merged to `main`.
+
+The user approved a stacked hands-on implementation based on `rb-004/issue-92-player-chess-profile-engine`. PR #139 remains stacked through the RB-005 claim branch and must not be merged until RB-004 is accepted and the stack is reconciled.
 
 RB-013 and later builder setup can consume approved profile interactions.
 
-## In scope
+## Delivered
 
-- a routed authenticated profile page or approved placement in an existing account/player area;
-- period selection including at least recent, all-time, and custom ranges consistent with existing filters;
-- account, speed, and color selection;
-- clear separation of `What you choose` and `What works`;
-- contextual comparisons for peers/stronger opposition when RB-001/RB-002 evidence supports them;
-- confidence and data coverage presentation;
-- expandable evidence listing contributing openings and bounded supporting games;
-- differences by White/Black and selected speeds;
-- comparison with a prior period if supported by RB-004;
-- a non-binding action such as `Use as repertoire starting point` only when target setup exists or as a disabled/planned affordance with honest wording;
-- loading, no-data, insufficient-data, and partial-analysis states;
-- responsive and accessible implementation;
-- focused store/component tests.
+- the existing `/progress` entry preserves its default/active account redirect behavior;
+- `/progress/accounts/:accountId` preserves single-account dashboards;
+- `/progress/profile` is a separate authenticated lazy route for the combined Player Chess Profile;
+- Progress has `Account performance` and `Chess profile` submenu entries;
+- recent, all-time, and custom periods;
+- all or selected connected accounts;
+- fixed speed presets, White/Black context, rated/casual status, and optional player/opponent rating ranges;
+- explicit `What you choose` and `What works` views;
+- character, soundness, theoretical-status, theory-burden, and role breakdowns;
+- deterministic conclusion cards with sample size and evidence strength;
+- expandable contributing openings, metrics, and bounded recent games;
+- score/WDL baseline, peer context, composite opening-positive/trouble and early-mistake rates, accuracy, and coverage;
+- low-confidence, unknown-dimension, omitted/truncated, no-data, error, loading, stale-request, and partial-analysis states;
+- a lazy composition page, page-provided signal store with private writable state, typed HTTP-only data access, pure DTO-to-view-model helpers, presentational OnPush components, and focused tests;
+- an honest disabled repertoire-starting-point affordance until target setup exists.
 
-## Out of scope
+## Deliberate exclusions
 
-- changing the player's profile conclusions manually unless a separate preference/feedback decision is approved;
+- RB-004 formula or contract changes;
+- splitting opening tag composites into severity distributions;
+- stored profile snapshots or correction feedback;
 - automatically writing courses;
 - full builder setup;
-- LLM narrative as a requirement;
-- hiding sample size or uncertainty behind simplified archetype labels;
+- LLM narrative;
+- permanent archetype labels;
 - global visual redesign.
 
-## UX principles
+## UX principles applied
 
 - Lead with specific evidence-backed statements, not a horoscope-like permanent identity.
-- Use phrases such as `in selected blitz games` and `medium confidence`.
-- Make contradictory findings possible: preferred but underperforming, successful but rarely chosen, good opening positions but poor final results.
-- Let the user inspect the games and openings behind a conclusion.
+- Keep preference and performance independent so contradictory findings can coexist.
+- Let the user inspect openings and games behind a conclusion.
 - Treat profile output as recalculated analysis, not immutable personal data.
+- Keep uncertainty and omitted evidence visible.
+- Preserve the established account-performance destination and add the profile alongside it.
 
-## Acceptance criteria
+## Acceptance review
 
-- The user can choose a period and recompute the profile.
-- The selected accounts, speeds, colors, rating context, and analysis coverage are visible.
-- Preference and performance are separate.
-- At least one conclusion can be expanded to contributing openings and games.
-- Confidence and insufficient-data states are understandable.
-- Contradictory profile findings render without forcing one global label.
-- White and Black differences are supported.
-- The page is usable at desktop and mobile widths.
-- The architecture follows Angular feature data-access/store/component boundaries.
-- Tests cover filter changes, stale request handling, loading/error/no-data states, and evidence expansion.
+Implemented for review:
+
+- separate Progress submenu and profile route without replacing the existing account dashboard flow;
+- period and filter recalculation;
+- visible account/speed/colour/rating context and analysis coverage;
+- separate preference and performance presentation;
+- expandable conclusions and breakdown evidence;
+- understandable confidence, insufficient-data, partial-analysis, and no-data states;
+- White/Black and speed-context support;
+- desktop/narrow responsive CSS and native keyboard controls;
+- lazy page/store/data-access/helper/component boundaries;
+- readonly store exposure and feature-local presentational view models;
+- tests for route separation, defaults, filters, stale request handling, error/no-data states, evidence expansion, and presentational interaction.
+
+Hands-on review against populated personal data remains the acceptance gate. A browser session was not available in the connector-only implementation environment.
 
 ## Required validation
 
-- web build;
-- focused Angular tests;
-- lint and architecture checks;
-- responsive browser review;
-- keyboard and accessible-name review;
-- API contract integration tests where needed.
+Corrected review head passed:
+
+- web and complete monorepo build;
+- focused Angular tests and complete repository tests;
+- TypeScript lint and architecture checks;
+- database migrations and opening-classification audits.
+
+Static responsive and accessible-name review was completed. Real desktop/mobile browser review remains part of user acceptance.
 
 ## Completion updates
 
-The report must record which profile presentation patterns were accepted, whether users can correct or only override profile implications, and how RB-006/RB-013 should consume profile defaults.
+The report records the accepted first-pass presentation, corrected route/navigation boundary, architecture review, correction boundary, and RB-006/RB-013 handoff direction.
 
 ## Completion
 
-Report: none
+Report: `north-star/repertoire-builder/reports/RB-005-2026-07-28-player-chess-profile-experience.md`
 
-Completed at: none
+Completed at: pending user acceptance and integration
