@@ -125,17 +125,17 @@ The same FEN and account context can produce a separate Bullet surprise target w
 
 ## Validation performed
 
-Review-head CI is required before PR #157 is marked ready. The complete workflow covers:
+Review-head CI run `30382976492` / #1251 passed:
 
 - root lint;
 - root build;
-- opening-classification audits;
+- opening-classification audit and artifact upload;
 - architecture guardrails;
 - database migrations;
-- imported-game opening-classification audit;
-- complete test suite, including the new repertoire-target contract tests.
+- imported-game opening-classification audit and artifact upload;
+- complete repository tests, including the new repertoire-target contract examples, invalid combinations and pure helper coverage.
 
-The final CI run identifier and result are recorded in the pull request and issue review summary.
+The first implementation run exposed two test-expectation mismatches around Zod error wording and normalized evidence-only changes. The tests were corrected to assert the stable public behavior rather than incidental error text or duplicated peer-evidence bookkeeping, and the complete review-head workflow then passed.
 
 ## Validation skipped
 
