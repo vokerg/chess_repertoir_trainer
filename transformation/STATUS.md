@@ -4,15 +4,15 @@ Last updated: 2026-07-28
 
 ## Current state
 
-**Program state:** VT-103 implementation is validated; direct browser review and explicit approval remain
+**Program state:** VT-103 production tokens and typography are integrated; VT-104 residual browser validation is next
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-103-production-tokens-typography`
+**Active checkpoint branch after reconciliation:** none
 
-**Active pull request:** draft PR #158
+**Active pull request after reconciliation:** none
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -36,7 +36,8 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #137 — expanded-rail inline navigation accordions with collapsed-rail flyouts retained.
 - [x] PRs #142–#144 — VT-101 completion and concurrent VT-102 queue reconciliation.
 - [x] PR #141 — signed-in Home canvas and surface calibration.
-- [x] The complete visual-transformation history above was reintegrated into `main` on 2026-07-28.
+- [x] PR #155 — main-based transformation delivery correction.
+- [x] PR #158 — production tokens, typography, shared visual foundations, and wide signed-in workspace correction.
 
 ## VT-101 integrated checkpoint
 
@@ -57,8 +58,6 @@ The remaining direct navigation/browser matrix is owned by issue #126.
 
 Delivered:
 
-- [x] Selected and claimed issue #124 through the deterministic queue rules.
-- [x] Limited runtime ownership to `apps/web/src/app/features/home/home-page.component.css`.
 - [x] Applied a Home-local green-grey workspace canvas rather than changing the global legacy body background.
 - [x] Kept important recommendation and metric cards on strong white surfaces.
 - [x] Moved the account summary and lower workspace/progress containers to quieter tonal surfaces.
@@ -70,39 +69,37 @@ Delivered:
 - [x] Passed the complete repository workflow in implementation-head CI #1145 and documentation-head CI #1152.
 - [x] Received direct browser feedback that the result feels good and explicit approval to squash-merge PR #141.
 - [x] Kept the broader Phase 0–1 browser matrix explicit under issue #126.
-- [x] Reintegrated the accepted checkpoint into `main` with the rest of the visual-transformation baseline.
 
-## VT-103 active checkpoint
+## VT-103 integrated checkpoint
 
-Implemented and validated on draft PR #158:
+Delivered:
 
-- [x] Selected and claimed issue #125 through the deterministic queue rules.
 - [x] Added `apps/web/src/design-system.css` as the namespaced production `--ui-*` layer.
 - [x] Preserved `apps/web/src/styles.css` as the explicit amber-era compatibility layer.
 - [x] Loaded the production layer after legacy styles in Angular build and test configuration.
 - [x] Locked canvas, strong/muted/quiet surfaces, graphite, mint, borders, radii, shadows, focus, and semantic status roles.
 - [x] Selected a native system UI stack and monospaced analytical stack without font files or remote loading.
-- [x] Migrated global canvas, form controls, focus, shell buttons, page headers, and common cards to production roles.
-- [x] Migrated shared `app-panel` and shell actions to production tokens.
+- [x] Migrated global canvas, form controls, focus, shell buttons, page headers, common cards, shared `app-panel`, and shell actions to production roles.
 - [x] Added `docs/frontend/design-tokens.md` and updated Angular architecture, migration, and agent guidance.
-- [x] Updated the transformation entry point, master plan, and decision log.
-- [x] Added `transformation/reports/VT_103_PRODUCTION_TOKENS_TYPOGRAPHY.md`.
-- [x] Refreshed onto current `main` without conflict.
-- [x] Implementation-head CI #1240 and refreshed final-head CI #1245 passed the complete repository workflow.
-- [x] Static contrast checks for the principal text/background pairs all exceeded `5:1`.
-- [ ] Direct browser comparison or explicit review disposition recorded.
-- [ ] Explicit approval and squash merge into `main`.
-- [ ] Issue and dependency reconciliation after merge.
+- [x] Kept Games, Study, Opening Analysis, workbench UI, and later feature-local amber consumers within their owning migration tasks.
+- [x] Received a 2048×1151 Home screenshot confirming palette cohesion and exposing excessive unused horizontal space.
+- [x] Raised the signed-in shell cap from 1600px to 1920px and Home cap from 1240px to 1560px while preserving copy constraints and mobile breakpoints.
+- [x] Static contrast checks for principal text/background pairs ranged from `5.11:1` to `13.72:1`.
+- [x] CI #1240, #1245, #1253, #1257, and final width-corrected CI #1262 passed the complete repository workflow.
+- [x] The user explicitly instructed completion and merge.
+- [x] PR #158 was squash-merged into `main` as `af450eb860819281ad260db364838b9868205508`.
 
-The compatibility boundary deliberately leaves Games, Study, Opening Analysis, workbench UI, and later routes on existing feature-local styles until their owning issues. No Phase 2 workflow redesign is included in VT-103.
+The user review approves the VT-103 palette, token, typography, and wide-workspace merge boundary. It does not replace the comprehensive residual matrix owned by issue #126.
 
 ## Execution disposition
 
 The live queue, not this file, determines task state and sequencing.
 
-Issue #125 is `IN_PROGRESS`, P1, order 30, through draft PR #158. Issue #126 is `READY`, P1, order 40, and may proceed in parallel only after its own claim and a renewed file/decision collision check.
+Issues #123–#125 are complete. Issue #126 is `READY`, P1, order 40 and is the deterministic next task.
 
-Issues #127–#129 remain blocked until #125 is approved, squash-merged into `main`, reconciled, and their dependency contracts are rechecked. No later blocked issue may start merely because the implementation exists on a draft branch.
+Issues #127–#129 are released to `READY` because the VT-103 dependency is integrated, but they remain later by numeric order. Issues #130–#133 retain their existing downstream dependencies.
+
+Every selected task must branch from current `main`, target `main`, and be squash-merged into `main` only after explicit approval.
 
 ## Validation status
 
@@ -126,15 +123,13 @@ Implementation-head CI #1145 and documentation-head CI #1152 passed dependency i
 
 The user reviewed the visual result and explicitly approved it. This did not replace the comprehensive residual matrix owned by issue #126.
 
-### Main reintegration and documentation correction
+### Main-based delivery correction
 
-The existing visual-transformation history was reintegrated into `main`; documentation/process PR #155 then established the main-based delivery model. CI #1227 passed before approved squash merge.
+Documentation/process PR #155 established the main-based delivery model. CI #1227 passed before approved squash merge.
 
 ### VT-103 validation
 
-Implementation-head CI #1240 passed the complete repository workflow.
-
-After `main` advanced through the independent onboarding-program foundation, the branch was refreshed with no content collision. Selector-corrected final-head CI #1245 passed:
+CI #1240, #1245, #1253, #1257, and #1262 passed:
 
 - dependency installation;
 - lint;
@@ -147,9 +142,7 @@ After `main` advanced through the independent onboarding-program foundation, the
 
 No local build was run because the execution environment could not resolve `github.com` for a direct checkout; repository inspection and edits used the GitHub connector.
 
-Static contrast checks for the primary text, muted text, strong mint, mint action ink, and semantic status pairs ranged from `5.11:1` to `13.72:1`. These calculations do not replace direct browser, focus, zoom, and state review.
-
-Direct browser validation has not been performed in this session. PR #158 remains draft until representative transformed and legacy routes are observed or the user records a review disposition. Issue #126 continues to own the comprehensive Phase 0–1 matrix.
+The user supplied direct large-screen Home evidence, confirmed the palette direction, identified the width-cap issue, and explicitly instructed completion and merge. The width-cap correction was included before final CI and merge.
 
 ## Residual browser validation
 
@@ -164,9 +157,7 @@ These remain open until issue #126 records completion or an explicit reason they
 - grouped mobile navigation at boundary widths;
 - Clerk account interaction;
 - imported-game job-panel spacing;
-- representative signed-in page widths.
-
-VT-103 additionally needs a focused comparison of production-token shared surfaces against representative unmigrated routes so the compatibility boundary is reviewed rather than inferred.
+- representative signed-in page widths and legacy compatibility surfaces.
 
 ## Open design and product decisions
 
@@ -175,7 +166,7 @@ The decision log remains canonical. Current open owners include:
 - #126 — Phase 0–1 residual browser-validation disposition;
 - #131 — final mobile-primary navigation.
 
-Production palette, semantic status roles, namespace, compatibility boundary, and typography are locked for VT-103 review in D-023 through D-025. Final integration still depends on direct review and explicit approval.
+Production palette, semantic status roles, namespace, compatibility boundary, typography, and initial wide-workspace caps are integrated production decisions.
 
 ## Program phase state
 
@@ -185,32 +176,30 @@ Core implementations are integrated into `main`. Residual browser validation rem
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, inline desktop navigation, landing motion, issue-driven execution governance, and Home palette calibration are integrated into `main`. Production tokens/typography are validated and under review on PR #158. Public metadata and residual validation remain.
+Public, auth, Home, brand, rail, inline desktop navigation, landing motion, issue-driven execution governance, Home calibration, production tokens, typography, and wide-workspace foundation are integrated into `main`. Public metadata and residual validation remain.
 
 ### Phase 2 — representative workflows
 
-Games, Study, Opening Analysis, proven shared primitives, and final mobile navigation are represented by issues #127–#131. Workflow implementation remains blocked until the VT-103 dependency is integrated and reconciled.
+Games, Study, and Opening Analysis are released by the VT-103 dependency but remain sequenced after issue #126. Proven shared primitives and final mobile navigation retain their workflow dependencies.
 
 ### Phase 3 — rollout and polish
 
-Remaining-page rollout and onboarding/accessibility/responsive polish are represented by issues #132 and #133.
+Remaining-page rollout and onboarding/accessibility/responsive polish remain represented by issues #132 and #133.
 
 ## Session log
 
-### 2026-07-28 — VT-103 production token foundation
+### 2026-07-28 — VT-103 integration and wide-screen correction
 
-- Selected issue #125 through the live deterministic queue and recorded the claim before implementation.
-- Inspected the existing global amber layer, shared page header/panel/actions, app shell, navigation, Home evidence, public/auth surfaces, and representative legacy-token consumers.
-- Added a namespaced production design-system layer after the legacy compatibility stylesheet.
-- Locked production palette, semantic status, typography, focus, elevation, and migration-boundary decisions.
-- Migrated only global/shared foundations and preserved feature-local migrations for their owning tasks.
-- Refreshed onto the independently advanced `main` head with no collision.
-- Passed implementation-head CI #1240 and refreshed final-head CI #1245.
-- Left direct browser review and explicit approval open on draft PR #158.
+- Added the production token and typography layer with an explicit legacy compatibility boundary.
+- Passed repeated complete repository validation through final CI #1262.
+- Received direct 2048×1151 Home evidence confirming palette cohesion and exposing conservative width caps.
+- Raised signed-in shell/Home caps while preserving copy and mobile constraints.
+- Received explicit completion and merge instruction.
+- Squash-merged PR #158 into `main` as `af450eb860819281ad260db364838b9868205508`.
+- Released dependent workflow issues and selected #126 as the deterministic next task.
 
 ### 2026-07-28 — Main-based delivery model reconciliation
 
-- Confirmed the visual-transformation history had been reintegrated into `main`.
 - Retired `visual_transformation` as an integration target for new work.
 - Changed future task creation to branch from current `main` and future pull requests to target `main`.
 - Preserved short-lived branches, explicit approval, squash merge, deterministic issue selection, documentation reconciliation, and dependency-release rules.
@@ -235,4 +224,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish are repres
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, and #141 are integrated into `main` through the visual-transformation reintegration.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, and #158 are integrated into `main`.
