@@ -14,7 +14,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 35 | RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) | P1 | DONE | Complete opening classification coverage | Dual-use | Delivered through PR #121; RB-003 method preserved |
 | 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | DONE | Prototype visual candidate and coverage choices | North-star | Accepted through PR #110: setup dialog to routed board-first workbench |
 | 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | PR #136; final-head CI #1103 passed; awaiting review and integration |
-| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004 review implementation; CI #1124 passed |
+| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004; corrected navigation/architecture review awaiting final CI and hands-on acceptance |
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | READY | Define repertoire target contract | North-star | Completed RB-003; accepted RB-008 setup requirements |
 | 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, RB-006 |
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | BLOCKED | Aggregate and rank candidate evidence explainably | North-star | RB-006; consumes completed RB-003/RB-018 and accepted RB-008 evidence responsibilities |
@@ -96,9 +96,11 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/138
 - Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/139
 - Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`
-- Makes `/progress` a recalculable profile with context filters, separate preference/performance views, conclusion and row evidence, supporting openings/games, peer and coverage context, responsive states, and focused Angular tests.
-- Final implementation-head CI #1124 passed lint, build, audits, architecture guardrails, migrations, and complete tests.
-- Remains stacked on RB-004; hands-on user review and stack reconciliation are required before integration.
+- Preserves `/progress` as the default-account dashboard entry, adds `/progress/profile`, and exposes `Account performance` plus `Chess profile` under the existing Progress submenu.
+- Provides recalculable context filters, separate preference/performance views, conclusion and row evidence, supporting openings/games, peer and coverage context, responsive states, and focused Angular tests.
+- Uses a lazy composition page, page-scoped store with private writable signals, typed HTTP-only data access, feature-local UI view models, and focused pure transformation helpers.
+- Corrected review-head CI and hands-on user review are required before integration.
+- Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
 ## Ready work
 
@@ -160,7 +162,7 @@ RB-014 and RB-017 remain outside the critical path.
 
 - RB-003 and RB-018 are `DONE`; opening classification foundation and pinned-book coverage are delivered.
 - RB-004 is `REVIEW` through PR #136.
-- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until RB-004 is accepted and the stack is reconciled.
+- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
 - RB-006 remains the next ordered `READY` critical-path task.
 - RB-007 remains blocked on RB-006.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
