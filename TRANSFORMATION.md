@@ -56,11 +56,12 @@ The following slices are squash-merged into `visual_transformation`:
 - PR #134 — VT-000 issue-driven execution queue and Phase 1D integration reconciliation;
 - PR #137 — VT-101 expanded-rail inline navigation accordions with collapsed-rail flyouts retained;
 - PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation;
-- PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion.
+- PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion;
+- PR #144 — stable queue wording while VT-102 remained active.
 
-PR #137 was squash-merged as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI run #1112 and final documentation-head CI run #1118 passed dependency installation, lint, the full repository build, architecture guardrails, database migrations, and the complete test suite before merge. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`; reconciliation CI run #1128 passed the same complete workflow. PR #143 recorded the concurrent VT-102 claim after CI run #1140 passed the same workflow.
+PR #137 was squash-merged as `033d05ededc03e114a4b02655de91a6313c4d902`. Runtime/test CI #1112 and final documentation-head CI #1118 passed the complete repository workflow before merge. PR #142 was squash-merged as `d1222a205966b10e7b4747adac9e4ff6fc7a116d`; reconciliation CI #1128 passed the same workflow. PR #143 recorded the concurrent VT-102 claim after CI #1140, and PR #144 stabilized the queue wording as `9b4160e73cad296c3534b3628a8e92e3ac70b26d`.
 
-Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until issue #126 records it. VT-101 navigation checks remain in that matrix rather than being falsely marked complete from static inspection or CI alone.
+Direct browser validation for authentication, Home, brand rasterization, favicon, navigation edge cases, Clerk controls, imported-game job-panel spacing, representative responsive widths, and Phase 1D motion remains residual work until issue #126 records it. VT-101 navigation checks remain in that matrix rather than being represented as complete from static inspection or CI alone.
 
 ## Live execution queue
 
@@ -77,12 +78,14 @@ Task selection is deterministic:
 7. keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after squash merge and documentation reconciliation.
 
-Issue #123 / VT-101 is complete through PR #137 and reconciliation PRs #142–#143. Issue #124 / VT-102 is already claimed and `IN_PROGRESS` through draft PR #141. Issue #126 remains blocked until #124 is integrated; its #123 dependency is satisfied.
+Issue #123 / VT-101 is complete through PR #137 and reconciliation PRs #142–#144. Issue #124 / VT-102 is `IN_PROGRESS` through draft PR #141. Issue #125 remains blocked until #124 is integrated. Issue #126 remains blocked only by #124 because its #123 dependency is satisfied.
 
 ## Current checkpoint
 
-VT-101 is integrated into `visual_transformation`. Expanded desktop child navigation now uses inline disclosure groups in normal rail flow, while collapsed desktop child navigation retains anchored popup-menu flyouts and the backdrop. The navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged.
+VT-102 is active on `visual-transformation/vt-102-home-palette-calibration` through draft PR #141 into `visual_transformation`.
 
-VT-102 is active on `visual-transformation/vt-102-home-palette-calibration` through draft PR #141. That branch was created before the completed VT-101 post-merge and concurrent-queue reconciliations. Before final review or merge, refresh PR #141 against the latest `visual_transformation` head, including PRs #142 and #143, while preserving the integrated VT-101 decision, status, and report content.
+The branch is refreshed onto current integration commit `9b4160e73cad296c3534b3628a8e92e3ac70b26d`, preserving the integrated VT-101 and queue-reconciliation records. Its runtime change is limited to Home-local CSS: a green-grey workspace canvas, clearer strong/muted/quiet surface roles, restrained elevation, white important cards, and limited graphite emphasis. Home data, routes, component/template structure, navigation behavior, global tokens, typography, APIs, schemas, databases, and backend behavior are unchanged.
 
-Do not start issue #126 before #124 is integrated, claim another overlapping transformation task without a new collision check, commit directly to `visual_transformation` or `main`, or merge a transformation pull request without explicit approval.
+Review `transformation/reports/VT_102_HOME_PALETTE_CALIBRATION.md`, the Home stylesheet diff, current CI, and `/home` in populated, loading, empty/error, desktop, tablet, and mobile states. Issue #124 is authoritative for live validation, blocker, and review state.
+
+Do not start issue #125 or #126 before #124 is integrated, claim another overlapping transformation task without a new collision check, commit directly to `visual_transformation` or `main`, or merge PR #141 without explicit approval.
