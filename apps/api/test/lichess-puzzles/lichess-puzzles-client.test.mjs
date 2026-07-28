@@ -9,13 +9,13 @@ const batchPayload = {
     {
       game: {
         id: 'game-1',
-        pgn: '1. e4 e5 2. Nf3 Nc6',
+        pgn: '1. e4 e5',
         rated: true,
         clock: '5+0',
       },
       puzzle: {
         id: 'puzzle-1',
-        initialPly: 1,
+        initialPly: 3,
         plays: 125,
         rating: 1600,
         solution: ['g1f3', 'b8c6'],
