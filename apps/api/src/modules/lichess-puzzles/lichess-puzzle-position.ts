@@ -76,12 +76,15 @@ function parseBareSanSequence(moveText: string): VerboseMoveLike[] {
     .filter((token) => !/^\d+\.(?:\.\.)?$/.test(token))
     .filter((token) => !GAME_RESULT_TOKENS.has(token));
 
-  try {
-    for (const token of tokens) {
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    try {
       game.move(token);
+    } catch {
+      throw new LichessPuzzlePositionError(
+        `Could not parse Lichess puzzle SAN token ${index + 1}: ${token}`,
+      );
     }
-  } catch {
-    throw new LichessPuzzlePositionError('Could not parse Lichess puzzle game PGN');
   }
 
   const moves = game.history({ verbose: true }) as VerboseMoveLike[];
