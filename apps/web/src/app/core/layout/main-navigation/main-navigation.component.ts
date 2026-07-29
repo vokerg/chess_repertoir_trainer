@@ -74,6 +74,7 @@ export class MainNavigationComponent implements OnInit {
         '/library',
         '/chapters',
         '/lines',
+        '/puzzles',
         '/scenario-training/tactical-missed-shot',
         '/scenario-training/tactical-blunder',
       ],
@@ -85,6 +86,14 @@ export class MainNavigationComponent implements OnInit {
           link: '/library',
           icon: 'study',
           activePrefixes: ['/library', '/chapters', '/lines'],
+        },
+        {
+          id: 'lichess-puzzles',
+          label: 'Lichess puzzles',
+          description: 'Solve rated or practice puzzles without leaving the app.',
+          link: '/puzzles',
+          icon: 'target',
+          activePrefixes: ['/puzzles'],
         },
         {
           id: 'missed-shots',
