@@ -372,6 +372,12 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     this.closeMobileMenu(true);
   }
 
+  protected handleMobileMenuBackdropPointerDown(event: PointerEvent): void {
+    if (event.target === this.mobileMenuDialogRef?.nativeElement) {
+      this.closeMobileMenu(true);
+    }
+  }
+
   protected handleMobileMenuClosed(): void {
     this.mobileMenuOpen.set(false);
     if (!this.restoreMobileMenuFocus) return;
