@@ -33,6 +33,12 @@ describe('TrainingBasketPanelComponent', () => {
     const buttons = Array.from(
       fixture.nativeElement.querySelectorAll('button'),
     ) as HTMLButtonElement[];
+    const stats = Array.from(
+      fixture.nativeElement.querySelectorAll('.basket-stat-row'),
+    ).map((stat) => ({
+      label: stat.querySelector('dt')?.textContent?.trim(),
+      value: stat.querySelector('dd')?.textContent?.trim(),
+    }));
     const selectedScope = buttons.find((button) => button.textContent?.trim() === 'Selected');
     const weakButton = buttons.find((button) => button.textContent?.trim() === 'Train weak');
     const untrainedButton = buttons.find(
@@ -42,8 +48,8 @@ describe('TrainingBasketPanelComponent', () => {
     expect(text).toContain('Training plan');
     expect(text).toContain('3 selected lines');
     expect(text).toContain('Coverage 9/12 · Mastery 73%');
-    expect(text).toContain('Lines 3');
-    expect(text).toContain('Sublines 12');
+    expect(stats).toContain({ label: 'Lines', value: '3' });
+    expect(stats).toContain({ label: 'Sublines', value: '12' });
     expect(selectedScope?.getAttribute('aria-pressed')).toBe('true');
     expect(weakButton?.disabled).toBeFalse();
     expect(untrainedButton?.disabled).toBeTrue();
