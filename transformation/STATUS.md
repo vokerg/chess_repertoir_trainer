@@ -4,15 +4,15 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** Phase 2 is active; VT-201 Games modernization is complete and VT-202 Study modernization is the next ordered ready task
+**Program state:** Phase 2 is active; VT-201 Games modernization is complete and VT-202 Study modernization is in progress
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** none
+**Active checkpoint branch:** `visual-transformation/vt-202-study-modernization`
 
-**Active pull request:** none
+**Active pull request:** draft PR #178
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -42,6 +42,7 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #162 — evidence-bounded Phase 1 browser disposition and local-development auth return-URL correction.
 - [x] PR #165 — VT-104 integration and queue reconciliation.
 - [x] PR #167 — VT-201 Games modernization.
+- [x] PR #176 — VT-201 completion reconciliation.
 
 ## Phase 1 completion
 
@@ -58,59 +59,82 @@ Phase 1 is complete for transformation sequencing. Explicit browser permutations
 
 ## VT-201 integrated checkpoint
 
-Issue #127 is complete through squash-merged PR #167, commit `99cf2bf805b7db846e16c651590bb3fcd2af82ee`.
+Issue #127 is complete through squash-merged PR #167, commit `99cf2bf805b7db846e16c651590bb3fcd2af82ee`, and reconciliation PR #176, commit `f6c74a6cda7cbe875c500231b6dcea3bb1b30559`.
 
 Delivered:
 
-- [x] verified route/page/store/data-access/job ownership before implementation;
 - [x] retained the lazy `/games` route and current URL query contract;
 - [x] added a clearer evidence-set and filter-workspace hierarchy;
-- [x] added an explicit Games-only `explorer` presentation to the shared game filter while leaving all other consumers on the default presentation;
+- [x] added an explicit Games-only `explorer` presentation to the shared game filter;
 - [x] migrated Games filters, results, statuses, action overlay, loading, empty, error, and pagination surfaces to production `--ui-*` roles;
 - [x] retained the semantic desktop table and every existing action binding;
-- [x] replaced the information-poor narrow representation with responsive evidence cards containing players, date, opening, control, user accuracy, analysis state, ply-index state, review link, and row actions;
+- [x] added responsive evidence cards retaining players, date, opening, control, user accuracy, analysis state, ply-index state, review link, and row actions;
 - [x] aligned responsive thresholds with shared 980px and 640px breakpoint contracts;
-- [x] corrected the malformed `more available` subtitle separator without changing pagination behavior;
 - [x] added focused responsive-card and loaded-result tests;
 - [x] documented feature-local extraction candidates for VT-204;
-- [x] passed implementation-head CI #1282, report-head CI #1288, documentation-head CI #1289, and final acceptance-head CI #1299;
+- [x] passed CI #1282, #1288, #1289, #1299, and reconciliation CI #1327;
 - [x] received explicit approval and squash-merged into `main`.
 
 No backend, API, schema, database, job-processing, game-analysis algorithm, Study, Opening Analysis, or Game Detail change was included.
 
-## VT-201 behavior boundary
+## VT-202 active checkpoint
+
+Issue #128 is active through draft PR #178 on `visual-transformation/vt-202-study-modernization`.
+
+Delivered on the active branch:
+
+- [x] verified `/library`, page, store, data-access, presentational-component, mobile-launcher, and marathon-navigation ownership before implementation;
+- [x] retained the lazy `/library` route, selected-lines `/library/marathon` route, course/chapter marathon routes, and direct line Train/Edit destinations;
+- [x] retained `LibraryBrowserStore` ownership of catalog loading, filters, selected course/chapter/line state, selected-line ids, scope fallback, eligibility, and all training navigation;
+- [x] retained `LibraryApiService` HTTP ownership;
+- [x] made the desktop repertoire → section → lines → training-plan progression explicit;
+- [x] added derived current-selection context and restrained page-header stats without duplicate state;
+- [x] migrated the Study page, scope lists, line list, basket, status surfaces, and mobile launcher to production `--ui-*` roles;
+- [x] replaced mouse-only line-row selection with a keyboard-focusable selection button while retaining independent marathon checkbox selection and Train/Edit links;
+- [x] separated training scope from training mode without changing the emitted `{ mode, scope }` command;
+- [x] preserved the course-first mobile entry and feature-local launcher contract;
+- [x] added focused line-list, basket, and mobile-launcher component coverage;
+- [x] documented architecture, behavior preservation, browser checks, and feature-local VT-204 candidates in `transformation/reports/VT_202_STUDY_MODERNIZATION.md`;
+- [ ] complete automated validation on the final documentation head;
+- [ ] direct browser review and explicit approval;
+- [ ] squash merge and completion reconciliation.
+
+No backend, API, contract, schema, database, course-ownership, training-algorithm, Games, Opening Analysis, or final mobile-navigation change is included.
+
+## VT-202 behavior boundary
 
 The following remain unchanged:
 
-- applied versus draft route criteria;
-- canonical query serialization and refresh behavior;
-- period/date synchronization;
-- account, provider, result, color, control, rated, analysis, tag, and advanced filter models;
-- stale search-response rejection;
-- cursor pagination and append behavior;
-- `GamesApiService` HTTP ownership;
-- `GamesExplorerStore` mutable workflow ownership;
-- `ImportedGameJobStore` durable job ownership;
-- job eligibility, force/retry behavior, rejected-game errors, and terminal-job refresh;
-- game review, provider, and player-profile destinations.
+- guarded lazy `/library` route and existing marathon/deep-link destinations;
+- initial catalog load and default course/chapter/line selection;
+- selected-id guards for stale course/chapter workflows;
+- search and review-only filtering;
+- course, chapter, line, and selected-line-id state;
+- course/chapter selection reset behavior;
+- selected-lines scope activation and fallback behavior;
+- select-visible behavior;
+- course, chapter, selected-lines, and single-line marathon navigation;
+- All, Weak, and Untrained mode semantics and eligibility;
+- direct line Train and Edit destinations;
+- `LibraryBrowserStore` workflow ownership;
+- `LibraryApiService` typed HTTP ownership.
 
-The current Games implementation exposes no row-selection model. VT-201 did not invent one solely because the issue template referenced selection behavior.
+## VT-202 browser review required
 
-## Acceptance boundary and residual risk
+Review `/library` with realistic data at desktop, tablet, and narrow-phone widths:
 
-The user explicitly approved integration on 2026-07-29 after final acceptance-head CI #1299 passed. Browser permutations not directly reproduced remain verification risks rather than represented as observed passes.
-
-The preserved browser checklist remains useful for later regression review:
-
-- common and advanced filters, tags, custom dates, apply, reset, and URL persistence;
-- desktop table density and long player/opening names;
-- tablet two-column and compact one-column evidence cards;
-- opening, control, accuracy, analysis, and index visibility on responsive cards;
-- row action menu placement, keyboard focus, and Escape/outside-click closure;
-- loading, error, and empty states where reproducible;
-- cursor load-more behavior and loaded count;
-- queued/running/settled imported-game jobs and job-panel overlap;
-- reduced-motion behavior.
+- repertoire → section → line → training-plan hierarchy;
+- search, review-only filtering, select-visible, and individual selected-line behavior;
+- course, section, and selected-lines scope switching;
+- All, Weak, and Untrained eligibility and navigation;
+- long repertoire, section, and line labels;
+- empty catalog, empty section, empty line, loading, and error states where reproducible;
+- basket wrapping at the feature-owned 1100px threshold;
+- line facts and direct actions at narrower widths;
+- course-first mobile entry and launcher open/close/focus return;
+- Repertoire, Section, and Line launcher scopes;
+- single-line marathon launch;
+- keyboard focus, Escape/backdrop closure, and reduced motion.
 
 Unavailable states must be recorded explicitly rather than treated as observed.
 
@@ -118,7 +142,7 @@ Unavailable states must be recorded explicitly rather than treated as observed.
 
 Issues #123–#127 are complete.
 
-Issue #128 / VT-202 is `READY` and is the next ordered Phase 2 task. Issue #129 remains `READY` after it. Issues #130–#133 retain their downstream dependencies.
+Issue #128 is `IN_PROGRESS` through draft PR #178. Issue #129 remains `READY` but cannot replace the active task. Issues #130–#133 retain their downstream dependencies.
 
 ## Validation status
 
@@ -132,10 +156,11 @@ Issue #128 / VT-202 is `READY` and is the next ordered Phase 2 task. Issue #129 
 - VT-103 CI #1240, #1245, #1253, #1257, and #1262 passed.
 - VT-103 reconciliation CI #1266 passed.
 - VT-104 corrected/final/reconciliation CI #1270, #1273, and #1277 passed.
+- VT-201 CI #1282, #1288, #1289, #1299, and reconciliation CI #1327 passed.
 
-### VT-201 validation
+### VT-202 validation
 
-CI #1282, #1288, #1289, and #1299 passed:
+CI #1366 is running on the focused-test implementation head. The final documentation head must pass:
 
 - dependency installation;
 - lint;
@@ -144,18 +169,19 @@ CI #1282, #1288, #1289, and #1299 passed:
 - architecture guardrails;
 - database migrations;
 - imported-game opening classification audit;
-- complete repository test suite, including the responsive Games tests.
+- complete repository test suite, including the new Study component tests.
+
+Direct browser review remains pending. The active task must not be represented as complete or merged before explicit approval.
 
 ## Open design and product decisions
 
 The decision log remains canonical. Current downstream owners include:
 
-- #128 — Study workflow evidence;
 - #129 — Opening Analysis workflow evidence;
 - #130 — extraction of only the primitives proven across representative workflows;
 - #131 — final mobile-primary navigation after representative mobile evidence exists.
 
-The Games dense-filter presentation, responsive evidence-card hierarchy, result-state treatment, and analytical fact grid remain feature-local candidates until VT-204 compares all representative workflows.
+The Games dense-filter/evidence-card patterns and Study numbered workflow header, selection-context strip, selectable analytical row, scope-versus-mode launch panel, and mobile launcher remain feature-local candidates until VT-204 compares all representative workflows.
 
 ## Program phase state
 
@@ -169,7 +195,7 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Active. Games is complete and integrated. Study is the next ordered ready workflow, followed by Opening Analysis.
+Active. Games is complete and integrated. Study is in progress through draft PR #178. Opening Analysis remains ready after Study.
 
 ### Phase 3 — rollout and polish
 
@@ -177,16 +203,24 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ## Session log
 
+### 2026-07-29 — VT-202 Study modernization
+
+- Selected issue #128 as the next deterministic task after VT-201 completion.
+- Claimed the issue and branched from reconciled `main`.
+- Inspected the Study route, page, store, data-access service, scope lists, line list, basket, mobile launcher, helpers, breakpoints, focused architecture rules, token contract, and transformation decisions.
+- Implemented explicit desktop selection progression, production-token presentation, keyboard line selection, clearer scope/mode launch hierarchy, and a migrated course-first mobile launcher without changing ownership or navigation.
+- Added focused component coverage for line evidence/intents, basket eligibility/commands, and mobile single-line launch behavior.
+- Opened draft PR #178 and documented the implementation and browser-review boundary.
+- Awaiting final-head automated validation and direct browser review.
+
 ### 2026-07-29 — VT-201 integration
 
 - Claimed issue #127 and branched from reconciled `main`.
-- Inspected the current Games route, page, store, API service, filters, table, action menu, job integration, tests, Angular rules, token contract, and responsive breakpoints.
 - Implemented a Games-only production-token filter presentation and responsive analytical result cards without changing ownership or behavior.
 - Added focused responsive-card tests and corrected the malformed result subtitle.
 - Opened PR #167 and passed CI #1282, #1288, #1289, and #1299.
-- Received explicit approval on 2026-07-29.
-- Squash-merged PR #167 into `main` as `99cf2bf805b7db846e16c651590bb3fcd2af82ee`.
-- Closed issue #127 and released VT-202 / issue #128 as the next ordered ready task.
+- Received explicit approval and squash-merged PR #167 into `main` as `99cf2bf805b7db846e16c651590bb3fcd2af82ee`.
+- Reconciled completion through PR #176.
 
 ### 2026-07-29 — VT-104 integration
 
@@ -196,4 +230,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, #165, and #167 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, #165, #167, and #176 are integrated into `main`.
