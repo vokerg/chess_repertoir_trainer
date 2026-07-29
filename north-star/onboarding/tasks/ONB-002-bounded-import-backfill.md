@@ -98,6 +98,6 @@ Report: `../reports/ONB-002-2026-07-29-bounded-import-backfill.md`
 
 Implementation tasks: ONB-011 through ONB-015 / issues #199 through #203
 
-Pull request: pending
+Pull request: [#204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
 Completed at: pending review/merge
