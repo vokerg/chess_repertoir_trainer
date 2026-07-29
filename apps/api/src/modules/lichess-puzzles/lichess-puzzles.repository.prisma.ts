@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type { LichessPuzzleDifficulty } from '@chess-trainer/contracts/lichess-puzzles';
 import prisma from '../../prisma';
+import type { StoredLichessPuzzleMoveAttempt } from './lichess-puzzle-round.logic';
 import type { NormalizedLichessPuzzle } from './lichess-puzzle.types';
 
 const roundInclude = {
@@ -15,12 +16,13 @@ export type LichessPuzzleRoundStateUpdate = Omit<
   Prisma.LichessPuzzleRoundUpdateManyMutationInput,
   'moveAttempts'
 > & {
-  moveAttempts?: unknown;
+  moveAttempts?: StoredLichessPuzzleMoveAttempt[];
 };
 
 export class LichessPuzzleRoundConflictError extends Error {
   constructor() {
     super('Lichess puzzle round changed before the request could be saved');
+    this.name = 'LichessPuzzleRoundConflictError';
   }
 }
 
@@ -102,7 +104,7 @@ export async function updateOwnedLichessPuzzleRound(
   const prismaData: Prisma.LichessPuzzleRoundUpdateManyMutationInput = {
     ...scalarData,
     ...(moveAttempts !== undefined
-      ? { moveAttempts: moveAttempts as Prisma.InputJsonValue }
+      ? { moveAttempts: moveAttempts as unknown as Prisma.InputJsonValue }
       : {}),
   };
 
@@ -161,7 +163,7 @@ export async function claimLichessPuzzleRoundSync(
   userId: number,
   roundId: number,
 ): Promise<LichessPuzzleRoundWithPuzzle | null> {
-  const claimed = await prisma.lichessPuzzleRound.updateMany({
+  await prisma.lichessPuzzleRound.updateMany({
     where: {
       id: roundId,
       userId,
@@ -174,7 +176,6 @@ export async function claimLichessPuzzleRoundSync(
     },
   });
 
-  if (claimed.count !== 1) return findOwnedLichessPuzzleRound(userId, roundId);
   return findOwnedLichessPuzzleRound(userId, roundId);
 }
 
