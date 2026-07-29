@@ -1,0 +1,92 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.puzzle-trainer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.puzzle-board-column {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.puzzle-board-column app-chessground-board {
+  width: min(100%, 680px);
+}
+
+.puzzle-summary {
+  display: grid;
+  gap: 1rem;
+}
+
+.puzzle-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.puzzle-facts div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border-subtle, #d9ddd8);
+  border-radius: var(--ui-radius-sm, 8px);
+}
+
+.puzzle-facts dt {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted, #66716b);
+}
+
+.puzzle-facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.puzzle-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.puzzle-themes span {
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--ui-border-subtle, #d9ddd8);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.puzzle-guidance {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--ui-text-muted, #66716b);
+}
+
+.puzzle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+@media (max-width: 900px) {
+  .puzzle-trainer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .puzzle-board-column app-chessground-board {
+    width: min(100%, 620px);
+  }
+}
+
+@media (max-width: 520px) {
+  .puzzle-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
