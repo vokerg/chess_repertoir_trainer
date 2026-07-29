@@ -10,9 +10,11 @@ Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues
 
 Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156)
 
-Current review: ONB-001 / [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197)
+Completed lifecycle contract: ONB-001 / [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148), squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197) as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`
 
-Current report: `reports/ONB-001-2026-07-29-lifecycle-default-recipe.md`
+Current task: ONB-002 / [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) on `onb-002/issue-149-bounded-import-backfill`
+
+Current report: pending
 
 ## Completed foundation
 
@@ -23,9 +25,7 @@ Current report: `reports/ONB-001-2026-07-29-lifecycle-default-recipe.md`
 - separated lifecycle/admin/cleanup into an operator control-plane path;
 - rejected client-side processing, full-history-first, a replacement queue, and raw destructive table operations.
 
-## ONB-001 review delivery
-
-ONB-001 has produced a reviewable lifecycle and default-recipe contract:
+## ONB-001 completed contract
 
 - user disposition is persisted as `PENDING`, `COMPLETED`, or `SKIPPED`;
 - accepted work is represented by repeatable user-owned `DataPreparationRun` records, with at most one non-terminal run per user;
@@ -49,18 +49,26 @@ ONB-001 has produced a reviewable lifecycle and default-recipe contract:
 
 These tasks must not be claimed until their listed research and implementation dependencies are resolved.
 
+## Current research
+
+ONB-002 owns:
+
+- `BOUNDED_INITIAL`, `INCREMENTAL_FORWARD`, and `HISTORICAL_BACKFILL` semantics;
+- provider-specific continuation and exact no-game coverage;
+- account-level durable import persistence and worker placement;
+- API command/status contracts;
+- idempotency, cancellation, retry, deletion, and bounded database handoff to ONB-003;
+- migration/backward-compatibility and implementation issue decomposition.
+
 ## Ready queue
 
-1. ONB-002 / #149 — bounded import/backfill.
-2. ONB-003 / #150 — progressive orchestration.
-3. ONB-004 / #151 — destructive lifecycle invariants.
-4. ONB-007 / #154 — throughput/progress.
-5. ONB-005 / #152 — administrator architecture.
-6. ONB-006 / #153 — orphan cleanup.
+1. ONB-003 / #150 — progressive orchestration.
+2. ONB-004 / #151 — destructive lifecycle invariants.
+3. ONB-007 / #154 — throughput/progress.
+4. ONB-005 / #152 — administrator architecture.
+5. ONB-006 / #153 — orphan cleanup.
 
-ONB-001 remains `REVIEW` until accepted and merged.
-
-## Critical findings
+## Critical findings carried forward
 
 - current first provider sync is synchronous and unbounded when the account has no cursor;
 - current imported-game jobs are durable and should be reused;
@@ -76,7 +84,7 @@ ONB-001 remains `REVIEW` until accepted and merged.
 
 ## Blockers to production implementation
 
-- ONB-002 has not approved the account-level import request/checkpoint model;
+- ONB-002 has not yet approved the account-level import request/checkpoint model;
 - ONB-003 has not approved the physical preparation schema, child-run reconciliation, or pause/cancel mechanics;
 - ONB-007 has not measured wave size, throughput, or ETA policy;
 - ONB-004 has not approved destructive reset/purge reconciliation;
@@ -84,18 +92,18 @@ ONB-001 remains `REVIEW` until accepted and merged.
 
 ## Validation
 
-ONB-001 documentation-only research:
+ONB-001 merge:
 
-- repository files and related issues inspected directly through GitHub;
-- stale claim branch reconciled onto current `main` before delivery;
-- lifecycle, no-data, failure, recovery, skip, cancellation, restart, legacy-user, and expansion scenarios checked on paper;
-- report, decisions, open questions, queue, task files, and implementation issue mapping reconciled;
-- branch comparison confirmed documentation-only changes and no divergence from current `main`;
-- no code, schema, migration, build, test, browser, provider, Stockfish, or deployment changes;
-- no broad test suite run.
+- PR #197 CI run #1485 passed lint, build, audits, architecture guardrails, migrations, and full tests;
+- squash merge completed to `main` as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`;
+- issue #148 closed completed.
+
+ONB-002 claim:
+
+- issue #149 is open, READY, and had no active claim or branch;
+- branch created from the post-ONB-001 `main` head;
+- claim scope is research/documentation only.
 
 ## Next deterministic action
 
-Review PR #197 for ONB-001, while ONB-002 / #149 is the next claimable research task under the deterministic queue.
-
-Future tasks must consume ONB-001’s locked lifecycle decisions rather than redefine them independently.
+Complete ONB-002 research and move it to review without implementing provider, schema, worker, or Angular changes.
