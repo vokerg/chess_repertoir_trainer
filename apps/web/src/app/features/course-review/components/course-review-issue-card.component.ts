@@ -74,7 +74,11 @@ export class CourseReviewIssueCardComponent {
       sequence: lineRef.moveSequenceSan,
       results: finding.results,
       filterSummary: this.filterSummary(),
-      sourceFilters: serializeImportedGameSearchQuery(gameFilters).toString(),
+      sourceFilters: serializeImportedGameSearchQuery({
+        ...gameFilters,
+        sort: 'endedAtDesc',
+        limit: 50,
+      }).toString(),
     });
   }
 }
