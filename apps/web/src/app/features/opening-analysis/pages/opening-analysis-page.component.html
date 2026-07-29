@@ -6,34 +6,52 @@
     [actions]="headerActions()"
   />
 
-  <div class="opening-workbench">
-    <div class="opening-board-column">
-      <app-panel class="opening-board-panel">
-        <app-analysis-board
-          [currentFen]="store.currentFen()"
-          [side]="store.boardSide()"
-          [blackPerspective]="store.blackPerspective()"
-          [lastMove]="store.lastMove()"
-          [boardPositionVersion]="store.boardPositionVersion()"
-          [analysis]="store.engine()"
-          [engineVisible]="store.engineVisible()"
-          [showNextNavigation]="false"
-          [showEndNavigation]="false"
-          [canGoBackward]="store.history().length > 0"
-          keyboardHint="Keyboard: Left arrow to go back, Home for start"
-          (boardMove)="store.playBoardMove($event)"
-          (goStart)="store.resetBoard()"
-          (goPrevious)="store.goBack()"
-        />
+  <section class="opening-context" aria-label="Current analysis context">
+    <div class="opening-context-primary">
+      <small>Current line</small>
+      <strong>{{ store.lineLabel() }}</strong>
+    </div>
+    <div>
+      <small>Perspective</small>
+      <strong>{{ perspectiveLabel() }}</strong>
+    </div>
+    <div>
+      <small>Game evidence</small>
+      <strong>{{ filterSummary() }}</strong>
+    </div>
+    <div>
+      <small>Visible tools</small>
+      <strong>{{ activeToolCount() }} of 5</strong>
+    </div>
+  </section>
 
-        <app-copyable-line
-          class="opening-line-card"
-          name="Current line"
-          [line]="store.lineLabel()"
-          [link]="['/analysis']"
-          [queryParams]="analysisQueryParams()"
-        />
-      </app-panel>
+  <app-analysis-workbench
+    class="opening-workbench"
+    [currentFen]="store.currentFen()"
+    [side]="store.boardSide()"
+    [blackPerspective]="store.blackPerspective()"
+    [lastMove]="store.lastMove()"
+    [boardPositionVersion]="store.boardPositionVersion()"
+    [analysis]="store.engine()"
+    [engineVisible]="store.engineVisible()"
+    [showTreePanel]="false"
+    [showDangerZone]="false"
+    [showNextNavigation]="false"
+    [showEndNavigation]="false"
+    [canGoBackward]="store.history().length > 0"
+    keyboardHint="Keyboard: Left arrow to go back, Home for start"
+    (boardMove)="store.playBoardMove($event)"
+    (goStart)="store.resetBoard()"
+    (goPrevious)="store.goBack()"
+  >
+    <div analysisWorkbenchLeftExtra class="opening-left-stack">
+      <app-copyable-line
+        class="opening-line-card"
+        name="Current line"
+        [line]="store.lineLabel()"
+        [link]="['/analysis']"
+        [queryParams]="analysisQueryParams()"
+      />
 
       <app-course-position-suggestions-widget
         [fen]="store.currentFen()"
@@ -51,16 +69,18 @@
       }
     </div>
 
-    <div class="opening-side-column">
+    <div analysisWorkbenchSideBeforeTree class="opening-primary-evidence">
       <app-position-game-moves-panel
         title="Next moves from your games"
+        subtitle="Continue from this exact position using your indexed evidence."
         [analysis]="store.analysis()"
         [loading]="store.loading()"
         [error]="store.error()"
         [filters]="store.filters()"
         [facets]="store.facets()"
         [filtersCollapsedInitially]="true"
-        [compact]="false"
+        [compact]="true"
+        [initialVisibleMoveCount]="6"
         [showPositionWdl]="false"
         (filtersChange)="store.setFilters($event)"
         (applyFilters)="store.refresh()"
@@ -68,7 +88,9 @@
         (refresh)="store.refresh()"
         (moveSelected)="store.playNextMove($event)"
       />
+    </div>
 
+    <div analysisWorkbenchSideExtra class="opening-secondary-evidence">
       @if (store.mastersOpen()) {
         <app-masters-explorer-widget
           [fen]="store.currentFen()"
@@ -85,7 +107,7 @@
 
       <app-game-filter-breakdown-panel
         title="My openings in this position"
-        subtitle="Grouped by assigned opening. Click to filter."
+        subtitle="Grouped by assigned opening. Select one to narrow the evidence."
         [items]="openingBreakdownItems()"
         [selectedKeys]="selectedOpeningKeys()"
         [loading]="store.breakdownsLoading()"
@@ -95,18 +117,18 @@
       />
 
       @if (store.lastGamesOpen()) {
-        <section class="workbench-panel">
+        <app-panel class="opening-last-games-panel">
           <app-position-top-games
             [games]="store.topGames()"
             [loading]="store.topGamesLoading()"
             title="Last games in this position"
-            subtitle=""
+            subtitle="Most recent indexed games reaching this exact position."
             [resetKey]="store.currentFen()"
           />
-        </section>
+        </app-panel>
       }
     </div>
-  </div>
+  </app-analysis-workbench>
 
   <app-lichess-bot-challenge-dialog />
 </section>
