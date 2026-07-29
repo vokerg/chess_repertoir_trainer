@@ -16,6 +16,8 @@ Claim branch: `rb-010/issue-98-interactive-builder-claim`
 
 Claimed at: 2026-07-29
 
+Claim PR: pending
+
 Claim scope: Implement the first authenticated `/builder` Angular feature as a page-scoped, non-persistent routed workbench using the accepted RB-008 board-first composition, integrated RB-006 repertoire targets, the existing authenticated `POST /api/candidate-decisions` endpoint, and the RB-009 pure session reducer. The MVP supports one active build at a time, one selected repertoire side, the initial position only, fixed RB-001 speed presets and rating targets, optional peer-resolution loading for peer targets, four transparent persona presets, 50–100% opponent coverage, at most 6 returned candidates, at most 24 accepted decisions and the existing RB-009 hard session/queue/preview bounds. It includes a focused setup dialog, primary board with candidate switching and board-move selection, inspectable evidence/source states, separate target/profile fit, opponent-response multi-selection, bounded branch queue navigation, defer/reopen/ignore/stop actions, branch/status progress, preview tree, stale/error/no-data handling, responsive and keyboard-accessible presentation, typed feature-local data access/store/helpers/components, route/navigation registration, and focused Angular tests. Refresh intentionally starts a new draft; no Prisma model, API session route, browser storage, course write, profile-derived defaults, traps, LLM behavior, full-tree generation, or broad analysis/courses redesign is included.
 
 ## Outcome
