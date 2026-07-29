@@ -1,5 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+} from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { LichessPuzzleDifficulty } from '@chess-trainer/contracts/lichess-puzzles';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
@@ -15,8 +21,10 @@ import { LichessPuzzlesStore } from '../state/lichess-puzzles.store';
   styleUrl: './lichess-puzzles-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LichessPuzzlesPageComponent {
+export class LichessPuzzlesPageComponent implements OnInit {
   protected readonly store = inject(LichessPuzzlesStore);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly difficulties: ReadonlyArray<{
     value: LichessPuzzleDifficulty;
@@ -32,6 +40,20 @@ export class LichessPuzzlesPageComponent {
   protected readonly settingsLocked = computed(
     () => this.store.round()?.status === 'IN_PROGRESS' || this.store.busy(),
   );
+
+  ngOnInit(): void {
+    const roundId = Number(this.route.snapshot.paramMap.get('roundId'));
+    if (Number.isInteger(roundId) && roundId > 0) {
+      void this.store.loadRound(roundId);
+    }
+  }
+
+  protected async startRound(): Promise<void> {
+    const replaceUrl = this.route.snapshot.paramMap.has('roundId');
+    const roundId = await this.store.startRound();
+    if (!roundId) return;
+    await this.router.navigate(['/puzzles', roundId], { replaceUrl });
+  }
 
   protected setRatedFromEvent(event: Event): void {
     this.store.setRated((event.target as HTMLInputElement).checked);
