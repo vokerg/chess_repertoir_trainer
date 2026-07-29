@@ -42,17 +42,20 @@ export class LichessPuzzlesPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    const roundId = Number(this.route.snapshot.paramMap.get('roundId'));
+    const roundId = Number(this.route.snapshot.queryParamMap.get('roundId'));
     if (Number.isInteger(roundId) && roundId > 0) {
       void this.store.loadRound(roundId);
     }
   }
 
   protected async startRound(): Promise<void> {
-    const replaceUrl = this.route.snapshot.paramMap.has('roundId');
+    const replaceUrl = this.route.snapshot.queryParamMap.has('roundId');
     const roundId = await this.store.startRound();
     if (!roundId) return;
-    await this.router.navigate(['/puzzles', roundId], { replaceUrl });
+    await this.router.navigate(['/puzzles'], {
+      queryParams: { roundId },
+      replaceUrl,
+    });
   }
 
   protected setRatedFromEvent(event: Event): void {
