@@ -81,7 +81,7 @@ describe('OpeningAnalysisPageComponent', () => {
   it('derives workspace context without introducing duplicate state', () => {
     expect(page().perspectiveLabel()).toBe('White perspective');
     expect(page().activeToolCount()).toBe(2);
-    expect(page().filterSummary()).toContain('All accounts');
+    expect(page().filterSummary()).toBe('White - Any speed - Rated');
 
     store.blackPerspective.set(true);
     store.mastersOpen.set(true);
