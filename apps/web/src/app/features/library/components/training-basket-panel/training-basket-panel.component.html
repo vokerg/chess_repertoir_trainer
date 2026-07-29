@@ -1,4 +1,12 @@
-<app-panel [title]="sourceLabel()" [subtitle]="basketSubtitle()">
+<app-panel title="Training plan" [subtitle]="sourceLabel()">
+  <div class="basket-step">
+    <span>{{ stepLabel() }}</span>
+    <div>
+      <strong>Choose the session</strong>
+      <small>{{ basketHealth() }}</small>
+    </div>
+  </div>
+
   <dl class="basket-stats" aria-label="Training scope summary">
     @for (stat of basketStats(); track stat.id) {
       <div class="basket-stat-row">
@@ -9,41 +17,54 @@
   </dl>
 
   <div class="basket-train">
-    <p class="basket-train-label">Scope</p>
+    <div class="basket-control-group">
+      <p class="basket-train-label">Training scope</p>
+      <div class="basket-scope-actions" aria-label="Training scope">
+        @for (option of scopeOptions(); track option.id) {
+          <button
+            type="button"
+            class="secondary"
+            [class.active]="scope() === option.id"
+            [attr.aria-pressed]="scope() === option.id"
+            [disabled]="option.disabled"
+            (click)="selectScope(option.id)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+    </div>
 
-    <div class="basket-scope-actions" aria-label="Training scope">
-      @for (option of scopeOptions(); track option.id) {
+    <div class="basket-control-group">
+      <p class="basket-train-label">Start training</p>
+      <div class="basket-train-actions" aria-label="Start marathon">
+        <button
+          type="button"
+          class="primary"
+          [disabled]="!canStartAll()"
+          (click)="startMarathon('ALL')"
+        >
+          Train all
+        </button>
+
         <button
           type="button"
           class="secondary"
-          [class.active]="scope() === option.id"
-          [disabled]="option.disabled"
-          (click)="selectScope(option.id)"
+          [disabled]="!canStartWeak()"
+          (click)="startMarathon('WEAK_SUBLINES')"
         >
-          {{ option.label }}
+          Train weak
         </button>
-      }
-    </div>
 
-    <p class="basket-train-label">Train</p>
-
-    <div class="basket-train-actions" aria-label="Start marathon">
-      <button type="button" class="primary" [disabled]="!canStartAll()" (click)="startMarathon('ALL')">
-        All
-      </button>
-
-      <button type="button" class="secondary" [disabled]="!canStartWeak()" (click)="startMarathon('WEAK_SUBLINES')">
-        Weak
-      </button>
-
-      <button
-        type="button"
-        class="secondary"
-        [disabled]="!canStartUntrained()"
-        (click)="startMarathon('UNTRAINED_SUBLINES')"
-      >
-        Untrained
-      </button>
+        <button
+          type="button"
+          class="secondary"
+          [disabled]="!canStartUntrained()"
+          (click)="startMarathon('UNTRAINED_SUBLINES')"
+        >
+          Train untrained
+        </button>
+      </div>
     </div>
   </div>
 </app-panel>

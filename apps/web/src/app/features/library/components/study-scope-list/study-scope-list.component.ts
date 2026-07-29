@@ -15,7 +15,9 @@ export interface StudyScopeItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StudyScopeListComponent {
+  readonly stepLabel = input.required<string>();
   readonly title = input.required<string>();
+  readonly subtitle = input.required<string>();
   readonly items = input.required<StudyScopeItem[]>();
   readonly selectedId = input<number | null>(null);
   readonly loading = input(false);

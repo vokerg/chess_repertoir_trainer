@@ -1,10 +1,17 @@
-<div class="study-column-header">{{ title() }}</div>
+<header class="study-column-header">
+  <span class="study-step">{{ stepLabel() }}</span>
+  <div>
+    <h3>{{ title() }}</h3>
+    <p>{{ subtitle() }}</p>
+  </div>
+</header>
+
 @if (loading()) {
-  <p class="status-note">Loading...</p>
+  <div class="study-state" aria-live="polite">Loading {{ title().toLowerCase() }}...</div>
 } @else if (error()) {
-  <p class="status-error">{{ error() }}</p>
+  <div class="study-state study-state-error" role="alert">{{ error() }}</div>
 } @else if (items().length === 0) {
-  <div class="empty-state">{{ emptyText() }}</div>
+  <div class="study-state study-state-empty">{{ emptyText() }}</div>
 } @else {
   <div class="study-list">
     @for (item of items(); track item.id) {
@@ -12,11 +19,12 @@
         type="button"
         class="study-row"
         [class.study-row-active]="item.id === selectedId()"
+        [attr.aria-pressed]="item.id === selectedId()"
         (click)="selectItem.emit(item.id)"
       >
         <span class="study-row-title">{{ item.title }}</span>
-        <span class="study-row-meta">{{ item.description }}</span>
-        <span class="study-row-meta strong">{{ item.meta }}</span>
+        <span class="study-row-description">{{ item.description }}</span>
+        <span class="study-row-meta">{{ item.meta }}</span>
       </button>
     }
   </div>
