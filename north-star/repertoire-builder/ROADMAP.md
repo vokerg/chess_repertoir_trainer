@@ -176,9 +176,9 @@ Gate: passed. A user can build one bounded repertoire slice, control opponent-re
 
 ## Stage 6 — course materialization and adaptation
 
-State: RB-011 is implemented for `REVIEW` through PR #189. RB-012 remains `BLOCKED` until safe course preview/apply is accepted and integrated.
+State: RB-011 is complete through squash-merged PR #189. RB-012 is in `REVIEW` through PR #205 for the first Course endings entry slice.
 
-RB-011 review implementation provides:
+RB-011 delivered:
 
 - a completed-builder-session projection into the existing storage-neutral analysis merge tree;
 - explicit exclusion of pending, deferred, ignored and stale branches from writes;
@@ -193,17 +193,35 @@ RB-011 review implementation provides:
 - transactional reuse of the existing move-node writer and course revision path;
 - equivalent-line and repeated-apply safety;
 - feature-local Angular destination, preview, target and apply state;
-- no Prisma model, migration, whole-course/new-chapter orchestration, durable builder persistence or existing-course finding entry point.
+- no Prisma model, migration, whole-course/new-chapter orchestration or durable builder persistence.
+
+PR #189 was squash-merged as `01b36f9503ccfbb3dced55d56589b89cfd163867`. Final review-package CI #1488 passed the complete repository workflow. Issue #99 is closed.
+
+RB-012 first review slice provides:
+
+- a line-specific **Extend this line in builder** action for every exact Course ending line/node reference;
+- a bounded validated launch payload retaining source course context, terminal FEN, observed continuation, game evidence and applied filters;
+- canonical full-FEN expansion for the normalized Course ending position;
+- a `COURSE_POSITION` target and RB-009 session start at the exact terminal position;
+- observed-move inclusion in the initial RB-007 candidate request;
+- fixed source course side with editable speed, population, persona, theory and coverage;
+- visible source evidence and explicit extend-only consequence;
+- source-scope restoration when returning to Course endings;
+- RB-011 preview/apply locked to the exact source course/chapter/line/node;
+- safe no-match behavior for stale or changed source endpoints;
+- no new API route, persistence, migration or recommendation engine.
 
 Remaining Stage 6 goals:
 
-- hands-on review of one created and one merged real course tree;
-- accept and integrate RB-011;
-- enter the builder from gaps, endings, deviations and weak choices through RB-012 using the accepted materialization boundary.
+- hands-on browser review of Course ending → builder → exact source line;
+- accept and integrate the first RB-012 slice;
+- add Opponent gaps as the next explicit coverage-extension entry point;
+- define explicit replace/alternate/keep-course consequences before integrating My deviations;
+- calibrate whether any source report can be retired only after equivalent builder maintenance value is proven.
 
 Tasks: RB-011, RB-012.
 
-Gate: pending. Automated RB-011 acceptance passes, but real-course/browser review and integration remain required before accepted decisions are considered a completed trainable-material workflow or RB-012 can proceed.
+Gate: partially passed. Safe reviewed course materialization is integrated. The first exact existing-course adaptation is implemented and awaits complete CI plus hands-on review before the program can claim an accepted finding-to-trainable-material loop.
 
 ## Stage 7 — specialized personas and optional intelligence
 
@@ -242,7 +260,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- review and acceptance of RB-011 through PR #189;
+- review of RB-012 Course endings entry through PR #205;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -256,10 +274,9 @@ High-collision areas requiring coordination:
 
 ## Queue impact
 
-- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-014 and RB-018 are `DONE`.
+- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-011 is `REVIEW` through PR #189 after final tested implementation-head CI #1479.
-- RB-012 remains `BLOCKED` until RB-011 is accepted and integrated.
+- RB-012 is `REVIEW` through PR #205 for the first Course endings slice.
 - RB-017 remains `CLAIMED` and isolated.
-- No priority change, new task or roadmap resequencing is required.
+- No priority change or roadmap resequencing is required. Opponent gaps is the recommended next RB-012 slice after acceptance.
