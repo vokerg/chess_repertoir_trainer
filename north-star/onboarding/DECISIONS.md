@@ -179,6 +179,78 @@ Status: `LOCKED`
 
 The onboarding projection supplies deterministic action codes and destinations. Angular must not create a second preparation recommendation/ranking engine.
 
+### D-029 — Import requests use the existing `ImportRun` aggregate
+
+Status: `LOCKED`
+
+Extend `ImportRun` with mode, source, immutable scope/range, lifecycle, retry, checkpoint, claim, and progress fields. Do not add a parallel generic request/workflow aggregate without a later demonstrated need.
+
+### D-030 — Coverage is exact account-and-scope time coverage
+
+Status: `LOCKED`
+
+Add an account-owned coverage record keyed by canonical versioned import scope. Store a proved contiguous half-open UTC interval `[coveredFrom, coveredThrough)`, including successful periods containing zero games.
+
+### D-031 — Import modes are distinct
+
+Status: `LOCKED`
+
+Use `BOUNDED_INITIAL`, `INCREMENTAL_FORWARD`, and `HISTORICAL_BACKFILL`. Forward sync extends the future frontier; backfill extends the historical frontier; neither replaces the other.
+
+### D-032 — One non-terminal import exists per account
+
+Status: `LOCKED`
+
+Enforce the invariant in PostgreSQL. Multiple accounts may queue independently, but one account cannot run forward sync and backfill concurrently.
+
+### D-033 — Provider import has a separate worker loop
+
+Status: `LOCKED`
+
+Run account/provider work through a separate PostgreSQL claim/heartbeat/fencing loop in the existing worker deployment. Reuse worker patterns, not imported-game `JobTask` rows. Do not add an external broker or second deployment initially.
+
+### D-034 — Provider windows are replayable coverage units
+
+Status: `LOCKED`
+
+Plan deterministic half-open UTC provider windows. Commit normalized rows in bounded batches, but advance coverage only after a whole window is proved complete or empty. Replay an interrupted window through duplicate-safe writes.
+
+### D-035 — Failed records cannot be skipped under an advancing cursor
+
+Status: `LOCKED`
+
+A provider parse, normalization, or persistence failure makes the current window incomplete and retryable. Do not mark the run complete or advance coverage beyond an unprocessed record.
+
+### D-036 — Import persistence and preparation handoff are database-bounded
+
+Status: `LOCKED`
+
+Replace per-game existence N+1 with duplicate-safe bulk insert and bounded reads. Do not return all imported or eligible IDs. ONB-003 selects eligible unindexed games from PostgreSQL by account, immutable scope/range, state, newest-first ordering, and wave limit.
+
+### D-037 — Legacy cursors are migration hints, not coverage proof
+
+Status: `LOCKED`
+
+Retain `syncCursorTime` temporarily for compatibility, but do not infer exact historical coverage from it. The first durable run establishes coverage only for windows it actually proves.
+
+### D-038 — Historical expansion is explicit backfill
+
+Status: `LOCKED`
+
+Do not implement older-history expansion by clearing a forward cursor. Deprecate raw cursor reset after explicit backfill and ONB-004-approved reset semantics are available.
+
+### D-039 — Rating-stat refresh has one owner
+
+Status: `LOCKED`
+
+Provider adapters and route handlers do not both recompute account rating statistics. Use one provider-neutral coalesced post-import refresh policy.
+
+### D-041 — Import persistence decision finalized
+
+Status: `LOCKED`
+
+The accepted physical direction is extended `ImportRun` plus `AccountImportCoverage`, with retries represented as new linked runs and at most one non-terminal run per account.
+
 ## Provisional
 
 ### D-040 — Visible wave target
@@ -186,12 +258,6 @@ The onboarding projection supplies deterministic action codes and destinations. 
 Status: `PROVISIONAL`
 
 Start research with approximately 50 games per preparation wave. ONB-003/007 decide final policy/configuration.
-
-### D-041 — Import persistence
-
-Status: `PROVISIONAL`
-
-Persist account-level import work with separate bounded-initial, incremental-forward, and historical-backfill modes. ONB-002 decides whether to extend ImportRun or add a request/task model.
 
 ### D-042 — Admin identity
 
@@ -204,6 +270,12 @@ Reuse Clerk authentication plus an environment allowlist of verified administrat
 Status: `PROVISIONAL`
 
 Use a lazy route in the existing web app, hidden and server-authorized, rather than a separate deployment.
+
+### D-044 — Import operational sizing
+
+Status: `PROVISIONAL`
+
+Use deterministic provider windows, bounded database batches, one global import claim, and exact counters initially. ONB-007 finalizes Lichess window duration, batch size, worker timing, backlog, scaling triggers, and any percentage/ETA policy.
 
 ## Rejected
 
@@ -272,6 +344,36 @@ Do not block core completion behind all requested Stockfish analysis.
 Status: `REJECTED`
 
 Do not replace the sign-in guard with a rule that redirects every protected destination to onboarding.
+
+### D-111 — Latest observed game time is coverage
+
+Status: `REJECTED`
+
+A game timestamp cannot prove no-game periods, exact scope, or gap-free provider traversal.
+
+### D-112 — Continue after a failed game and advance coverage
+
+Status: `REJECTED`
+
+Do not count a parse/persistence failure, continue, and move the authoritative frontier beyond it. The current window must remain incomplete.
+
+### D-113 — Return all imported IDs for browser handoff
+
+Status: `REJECTED`
+
+Do not use unbounded response arrays or client-side candidate coordination. Preparation selection is server/database owned.
+
+### D-114 — Model provider fetches as imported-game tasks
+
+Status: `REJECTED`
+
+`JobTask` remains imported-game keyed. Account/provider import uses its own claimable run boundary.
+
+### D-115 — Cursor reset is historical backfill
+
+Status: `REJECTED`
+
+Clearing `syncCursorTime` is ambiguous and can trigger full-history rescans. Older-history expansion and destructive reset are explicit domain commands.
 
 ## Open
 
