@@ -4,6 +4,7 @@ import trainingModule from '../modules/training/training.routes';
 import trainingMarathonsModule from '../modules/training-marathons/training-marathons.routes';
 import statsModule from '../modules/stats/stats.routes';
 import analysisModule from '../modules/analysis/analysis.routes';
+import candidateDecisionModule from '../modules/candidate-decision/candidate-decision.routes';
 import importedGamesModule from '../modules/imported-games/imported-games.routes';
 import openingAnalysisBreakdownsModule from '../modules/imported-games/opening-analysis-breakdowns.routes';
 import openingStrugglesModule from '../modules/opening-struggles/opening-struggles.routes';
@@ -27,6 +28,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(trainingMarathonsModule);
   app.register(statsModule);
   app.register(analysisModule);
+  app.register(candidateDecisionModule);
   app.register(importedGamesModule);
   app.register(openingAnalysisBreakdownsModule);
   app.register(openingStrugglesModule);
