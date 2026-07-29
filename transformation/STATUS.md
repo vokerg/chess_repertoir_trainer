@@ -73,7 +73,7 @@ Delivered on the active branch:
 - [x] added focused responsive-card and loaded-result tests;
 - [x] documented feature-local extraction candidates for VT-204 in `transformation/reports/VT_201_GAMES_MODERNIZATION.md`;
 - [x] implementation-head CI #1282 passed the complete repository workflow;
-- [ ] final documentation-head CI;
+- [x] report-head CI #1288 and final documentation-head CI #1289 passed the complete repository workflow;
 - [ ] direct browser review and explicit approval;
 - [ ] squash merge and completion reconciliation.
 
@@ -136,7 +136,7 @@ Issues #130–#133 retain their downstream dependencies.
 
 ### VT-201 validation
 
-Implementation-head CI #1282 passed:
+CI #1282, #1288, and #1289 passed:
 
 - dependency installation;
 - lint;
@@ -172,7 +172,7 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Active. Games is implemented on draft PR #167 and awaits browser review. Study and Opening Analysis remain ready and ordered after Games.
+Active. Games is implemented and automated-green on draft PR #167, awaiting browser review. Study and Opening Analysis remain ready and ordered after Games.
 
 ### Phase 3 — rollout and polish
 
@@ -187,8 +187,8 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 - Implemented a Games-only production-token filter presentation and responsive analytical result cards without changing ownership or behavior.
 - Added focused responsive-card tests and corrected the malformed result subtitle.
 - Opened draft PR #167.
-- Passed implementation-head CI #1282.
-- Awaiting final documentation-head CI and direct browser review.
+- Passed implementation-head CI #1282, report-head CI #1288, and final documentation-head CI #1289.
+- Awaiting direct browser review and explicit approval.
 
 ### 2026-07-29 — VT-104 integration
 
