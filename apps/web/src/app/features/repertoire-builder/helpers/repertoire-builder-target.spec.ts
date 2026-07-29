@@ -45,6 +45,7 @@ describe('repertoire builder target factory', () => {
       ratingGroup: 1800,
     });
     expect(target.population.peerResolution).toBeNull();
+    expect(target.defaults.some((entry) => entry.field === 'population')).toBeFalse();
     expect(target.overriddenFields).toEqual(['speedPreset', 'objective', 'coverage']);
     expect(targetPopulationLabel(target)).toContain('1800–1999');
   });
@@ -61,6 +62,11 @@ describe('repertoire builder target factory', () => {
     expect(target.population.effectiveRatingGroups).toEqual([1400, 1600, 1800]);
     expect(target.accountIds).toEqual([7]);
     expect(target.population.peerResolution).toEqual(peerResolution);
+    expect(target.defaults).toContain(jasmine.objectContaining({
+      field: 'population',
+      source: { kind: 'PEER_RESOLUTION' },
+    }));
+    expect(target.overriddenFields).not.toContain('population');
     expect(targetPopulationLabel(target)).toContain('My peers and one group higher');
   });
 });
