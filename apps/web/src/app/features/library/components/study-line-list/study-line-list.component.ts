@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../../shared/ui/fact-grid/fact-grid.component';
 import { LibraryLine } from '../../data-access/library.models';
 import {
   coverageLabel,
@@ -12,7 +16,7 @@ import {
 @Component({
   selector: 'app-study-line-list',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, FactGridComponent],
   templateUrl: './study-line-list.component.html',
   styleUrl: './study-line-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,10 +35,40 @@ export class StudyLineListComponent {
   protected readonly lineStatus = lineStatus;
   protected readonly statusLabel = statusLabel;
   protected readonly sideLabel = sideLabel;
-  protected readonly masteryLabel = masteryLabel;
-  protected readonly coverageLabel = coverageLabel;
 
   protected isChecked(lineId: number): boolean {
     return this.selectedLineIds().includes(lineId);
+  }
+
+  protected lineFacts(line: LibraryLine): readonly UiFactItem[] {
+    return [
+      {
+        id: 'coverage',
+        label: 'Coverage',
+        value: coverageLabel(
+          line.trainingStats.trainedSublineCount,
+          line.trainingStats.activeSublineCount,
+        ),
+        mono: true,
+      },
+      {
+        id: 'mastery',
+        label: 'Mastery',
+        value: masteryLabel(line.trainingStats.passRate),
+        mono: true,
+      },
+      {
+        id: 'weak',
+        label: 'Weak',
+        value: line.trainingStats.weakSublineCount,
+        mono: true,
+      },
+      {
+        id: 'untrained',
+        label: 'Untrained',
+        value: line.trainingStats.untrainedSublineCount,
+        mono: true,
+      },
+    ];
   }
 }

@@ -28,11 +28,11 @@ describe('StudyLineListComponent', () => {
       '.line-select-button',
     ) as HTMLButtonElement;
     const factElements = fixture.nativeElement.querySelectorAll(
-      '.line-facts > span',
+      '.line-facts .fact-item',
     ) as NodeListOf<HTMLElement>;
     const facts = Array.from(factElements).map((fact) => ({
-      label: fact.querySelector('small')?.textContent?.trim(),
-      value: fact.querySelector('strong')?.textContent?.trim(),
+      label: fact.querySelector('dt')?.textContent?.trim(),
+      value: fact.querySelector('dd')?.textContent?.trim(),
     }));
 
     expect(text).toContain('3');

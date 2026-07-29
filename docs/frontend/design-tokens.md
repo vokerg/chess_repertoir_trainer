@@ -1,6 +1,6 @@
 # Frontend design tokens
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 This document is the source of truth for the production visual-token and typography contract used by transformed Angular surfaces.
 
@@ -91,12 +91,21 @@ Mint is a product signal and interaction colour. It must not replace success, wa
 
 Do not infer status from colour alone. Preserve text, icons, labels, and accessible state semantics.
 
+## Proven shared primitive roles
+
+The shared page header, panel, shell actions, context strip, and fact grid consume production roles directly.
+
+- `app-context-strip` uses `--ui-surface`, `--ui-border`, `--ui-radius-control`, `--ui-radius-panel`, text roles, mint marker roles, and `--ui-shadow-soft` for its segmented presentation.
+- `app-fact-grid` uses muted or translucent surface roles, subtle labels, primary values, and the mono stack only when the owning feature marks a value as analytical.
+- Shared primitives must not introduce feature colours or remap legacy short token names. Feature-specific semantic data colours remain with the owning component.
+- Layout presentation inputs may alter columns or segmentation, but a token role retains the same meaning across consumers.
+
 ## Migration rules
 
 - New transformed UI uses `--ui-*` tokens.
 - Existing feature-local amber usage may remain until that feature's recorded migration issue.
-- Global controls, shared `app-page-header`, `app-panel`, and shared shell actions use production tokens now.
-- Games, Study, Opening Analysis, remaining routes, and Labs must migrate in their owning VT issues rather than through broad search-and-replace.
+- Global controls, shared `app-page-header`, `app-panel`, `app-context-strip`, `app-fact-grid`, and shared shell actions use production tokens now.
+- Games, Study, and Opening Analysis have completed their representative migrations; remaining routes and Labs migrate in their owning VT issues rather than through broad search-and-replace.
 - Do not add isolated hard-coded brand colours when an existing production token expresses the role.
 - Feature-specific semantic data colours may remain local when they do not represent a shared UI role.
 - A token change is a cross-application contract change and requires transformation documentation, representative browser evidence, and normal frontend validation.

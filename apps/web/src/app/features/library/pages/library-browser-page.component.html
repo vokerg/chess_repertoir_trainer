@@ -27,29 +27,12 @@
         />
       </label>
 
-      <div class="study-selection-context" aria-label="Current study selection">
-        <div class="study-selection-step">
-          <span>1</span>
-          <div>
-            <strong>Repertoire</strong>
-            <small>{{ selectedCourseLabel() }}</small>
-          </div>
-        </div>
-        <div class="study-selection-step">
-          <span>2</span>
-          <div>
-            <strong>Section</strong>
-            <small>{{ selectedChapterLabel() }}</small>
-          </div>
-        </div>
-        <div class="study-selection-step">
-          <span>3</span>
-          <div>
-            <strong>Lines</strong>
-            <small>{{ selectedLinesLabel() }}</small>
-          </div>
-        </div>
-      </div>
+      <app-context-strip
+        class="study-selection-context"
+        presentation="cards"
+        ariaLabel="Current study selection"
+        [items]="selectionContextItems()"
+      />
     </header>
 
     <div class="study-columns">

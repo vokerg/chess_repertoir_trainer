@@ -10,6 +10,10 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ImportedGameJobStore } from '../../../core/jobs/imported-game-job.store';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../shared/ui/fact-grid/fact-grid.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
 import { ImportedGamePageInfo, ImportedGameSearchItem } from '../data-access/games.models';
@@ -31,7 +35,7 @@ import { GameActionMenuComponent } from './game-action-menu.component';
 @Component({
   selector: 'app-games-table',
   standalone: true,
-  imports: [RouterLink, PanelComponent, GameActionMenuComponent],
+  imports: [RouterLink, PanelComponent, FactGridComponent, GameActionMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './games-table.component.html',
   styleUrl: './games-table.component.css',
@@ -134,6 +138,32 @@ export class GamesTableComponent {
     if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
     if (game.plyIndex?.status === 'FAILED') return 'Index failed';
     return 'Not indexed';
+  }
+
+  protected mobileFacts(game: ImportedGameSearchItem): readonly UiFactItem[] {
+    return [
+      {
+        id: 'control',
+        label: 'Control',
+        value: `${this.timeClassLabel(game.speedCategory)} · ${this.displayTimeControl(game)}`,
+      },
+      {
+        id: 'accuracy',
+        label: 'Accuracy',
+        value: this.accuracyLabel(game.analysis?.userAccuracy),
+        mono: true,
+      },
+      {
+        id: 'analysis',
+        label: 'Analysis',
+        value: this.analysisStatusLabel(game),
+      },
+      {
+        id: 'index',
+        label: 'Index',
+        value: this.plyIndexStatusLabel(game),
+      },
+    ];
   }
 
   protected ratedLabel(game: ImportedGameSearchItem): string {

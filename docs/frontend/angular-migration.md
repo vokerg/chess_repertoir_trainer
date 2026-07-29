@@ -24,19 +24,23 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Chapter line health table: chapter lines now use feature-local table/status/action components, store-owned expanded row state, selected line ids, selected subline hashes, and typed subline status data access.
 - Free analysis: `/analysis` now uses a composition-focused route page, feature-local workbench and my-games panel components, signal store workflow state, typed route-query helpers, and built-in control flow.
 - Game detail analysis: `/games/:gameId` now uses `components`, `state`, and `helpers` folders for the route header, summary, shared workbench wrapper, signal store, labels, and game-tree helpers.
+- Representative workflow modernization: Games, Study, and Opening Analysis consume production roles while preserving route, store, data-access, and domain workflow ownership.
+- Proven shared presentation primitives: `shared/ui/context-strip` serves Study and Opening Analysis derived context; `shared/ui/fact-grid` serves Games responsive evidence and Study line health. Both remain typed, OnPush, semantic, and feature-agnostic.
 
 ## Accepted feature debt
 
 - `apps/web/src/styles.css` and feature styles still contain amber-era short tokens such as `--accent`. They are an explicit compatibility layer for routes awaiting their recorded visual-transformation task, not the source for new styling.
-- Games, Study, Opening Analysis, remaining routes, and Labs still need deliberate migration from legacy short tokens and hard-coded colours to the production `--ui-*` contract.
+- Remaining routes and Labs still need deliberate migration from legacy short tokens and hard-coded colours to the production `--ui-*` contract.
+- Opening Analysis retains a feature-scoped compatibility bridge because several shared analytical widgets still consume legacy short role names. Migrate those widgets only when their full consumer set is reviewed; do not redefine the legacy names globally.
 - Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
+- Games evidence cards, Study workflow-step/launcher/training-plan composition, and analysis-workbench evidence slots remain feature-owned. Their current contracts are domain-specific and were intentionally not generalized during VT-204.
 
 ## Migration order
 
 Prioritize by responsibility count and user-facing risk:
 
-1. Remaining shared board, engine, PGN, and note components.
-2. Visual token migration follows the Visual Transformation issue order: Games, Study, Opening Analysis, proven shared primitives, then remaining pages and Labs.
+1. Remaining shared board, engine, PGN, note, and analytical-widget token migration.
+2. Visual token migration follows the Visual Transformation issue order: final mobile navigation, remaining pages and Labs, then onboarding/accessibility/responsive polish.
 
 ## Per-component completion criteria
 

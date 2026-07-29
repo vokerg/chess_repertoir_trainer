@@ -6,24 +6,12 @@
     [actions]="headerActions()"
   />
 
-  <section class="opening-context" aria-label="Current analysis context">
-    <div class="opening-context-primary">
-      <small>Current line</small>
-      <strong>{{ store.lineLabel() }}</strong>
-    </div>
-    <div>
-      <small>Perspective</small>
-      <strong>{{ perspectiveLabel() }}</strong>
-    </div>
-    <div>
-      <small>Game evidence</small>
-      <strong>{{ filterSummary() }}</strong>
-    </div>
-    <div>
-      <small>Visible tools</small>
-      <strong>{{ activeToolCount() }} of 5</strong>
-    </div>
-  </section>
+  <app-context-strip
+    class="opening-context"
+    presentation="segments"
+    ariaLabel="Current analysis context"
+    [items]="contextItems()"
+  />
 
   <app-analysis-workbench
     class="opening-workbench"

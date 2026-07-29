@@ -170,24 +170,13 @@
             </p>
           </a>
 
-          <dl class="games-mobile-facts">
-            <div>
-              <dt>Control</dt>
-              <dd>{{ timeClassLabel(game.speedCategory) }} · {{ displayTimeControl(game) }}</dd>
-            </div>
-            <div>
-              <dt>Accuracy</dt>
-              <dd class="games-metric">{{ accuracyLabel(game.analysis?.userAccuracy) }}</dd>
-            </div>
-            <div>
-              <dt>Analysis</dt>
-              <dd>{{ analysisStatusLabel(game) }}</dd>
-            </div>
-            <div>
-              <dt>Index</dt>
-              <dd>{{ plyIndexStatusLabel(game) }}</dd>
-            </div>
-          </dl>
+          <app-fact-grid
+            class="games-mobile-facts"
+            ariaLabel="Game evidence"
+            [items]="mobileFacts(game)"
+            [columns]="2"
+            [compactColumns]="2"
+          />
         </article>
       }
     </div>

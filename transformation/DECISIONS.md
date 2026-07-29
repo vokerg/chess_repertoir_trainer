@@ -1,6 +1,6 @@
 # Visual Transformation Decisions
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 This log records decisions that must survive across chats, tools, agents, and implementation sessions.
 
@@ -217,6 +217,21 @@ Do not bundle font files and do not introduce a remote font request. The product
 IBM Plex Sans remains the visual reference used by transformation prototypes, not a runtime dependency. A future font-loading change requires a separately approved decision covering licensing, privacy, performance, offline behavior, and fallbacks.
 
 Use the production monospaced stack only for analytical numerics and notation such as evaluations, ratings, percentages, move counts, coordinates, hashes, PGN, and FEN.
+
+### D-026 — Evidence-based shared presentation boundary
+
+**Status:** Locked for VT-204 review
+
+Promote a feature presentation pattern to `shared/ui` only when at least two implemented consumers demonstrate a compatible, feature-agnostic contract.
+
+VT-204 promotes exactly two contracts:
+
+- `app-context-strip` renders typed, read-only label/value context with optional step markers and mono values. Study and Opening Analysis compute their own items from existing feature state.
+- `app-fact-grid` renders typed semantic label/value facts with configurable column presentation. Games responsive cards and Study line health compute their own facts and retain all domain formatting and behavior.
+
+Both components remain OnPush, semantic, router-free, store-free, HTTP-free, and dependent only on production `--ui-*` roles. They must not gain feature-specific inputs or workflow commands.
+
+The following remain feature-owned because the comparison did not prove a common contract: Games filter presentation and responsive evidence cards; Study numbered section headers, training-plan composition, scope-versus-mode controls, and mobile launcher; Opening Analysis workbench slots, evidence-stack hierarchy, header toggle ownership, and feature-scoped legacy-role bridge. Future consumers may reuse the shared primitives, but they must not broaden these contracts speculatively.
 
 ## Locked navigation decisions
 

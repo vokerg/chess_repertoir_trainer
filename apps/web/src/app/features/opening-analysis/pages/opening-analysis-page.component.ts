@@ -1,21 +1,25 @@
 import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
-import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
-import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
-import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
-import { LichessGamesExplorerWidgetComponent } from '../../../shared/lichess-games-explorer/lichess-games-explorer-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
 import { summaryGameFilters } from '../../../shared/games/filters/game-filter-summary';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
+import { scoreLabel, wdlLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
 import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
-import { scoreLabel, wdlLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
+import { LichessGamesExplorerWidgetComponent } from '../../../shared/lichess-games-explorer/lichess-games-explorer-widget.component';
 import { buildChallengeBotHeaderAction } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-action.helper';
 import { LichessBotChallengeApiService } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-api.service';
 import { LichessBotChallengeDialogComponent } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge-dialog.component';
 import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge.store';
+import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
+import {
+  ContextStripComponent,
+  type UiContextItem,
+} from '../../../shared/ui/context-strip/context-strip.component';
+import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
+import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 
 @Component({
@@ -30,6 +34,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     PositionGameMovesPanelComponent,
     PositionTopGamesComponent,
     PageHeaderComponent,
+    ContextStripComponent,
     CopyableLineComponent,
     PanelComponent,
     PositionPerformancePanelComponent,
@@ -123,6 +128,29 @@ export class OpeningAnalysisPageComponent implements OnInit {
       this.store.engineVisible(),
     ].filter(Boolean).length,
   );
+  protected readonly contextItems = computed<readonly UiContextItem[]>(() => [
+    {
+      id: 'line',
+      label: 'Current line',
+      value: this.store.lineLabel(),
+      mono: true,
+    },
+    {
+      id: 'perspective',
+      label: 'Perspective',
+      value: this.perspectiveLabel(),
+    },
+    {
+      id: 'evidence',
+      label: 'Game evidence',
+      value: this.filterSummary(),
+    },
+    {
+      id: 'tools',
+      label: 'Visible tools',
+      value: `${this.activeToolCount()} of 5`,
+    },
+  ]);
 
   ngOnInit(): void {
     this.store.initialize();
