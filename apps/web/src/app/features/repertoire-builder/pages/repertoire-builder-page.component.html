@@ -1,0 +1,62 @@
+<section class="repertoire-builder-page">
+  <app-page-header
+    title="Repertoire builder"
+    subtitle="Build one bounded repertoire slice with explainable evidence and explicit branch control. Drafts are route-local and are not saved after refresh."
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
+
+  <app-repertoire-builder-workbench
+    [session]="store.session()"
+    [activeBranch]="store.activeBranch()"
+    [displayedFen]="store.displayedFen()"
+    [boardSide]="store.boardSide()"
+    [boardMovable]="store.boardMovable()"
+    [response]="store.candidateResponse()"
+    [previewCandidate]="store.previewCandidate()"
+    [loading]="store.candidatesLoading()"
+    [error]="store.candidatesError()"
+    [commandError]="store.commandError()"
+    [selectedResponseUcis]="store.selectedResponseUcis()"
+    [selectedCoveragePercent]="store.selectedCoveragePercent()"
+    [coverageTargetPercent]="store.coverageTargetPercent()"
+    [sourceItems]="store.sourceItems()"
+    [reasonLabels]="store.selectedReasonLabels()"
+    [warningLabels]="store.selectedWarningLabels()"
+    [queue]="store.queue()"
+    [deferredBranches]="store.deferredBranches()"
+    [staleBranches]="store.staleBranches()"
+    [previewRows]="store.previewRows()"
+    [acceptedDecisionCount]="store.acceptedDecisionCount()"
+    [decisionLimitReached]="store.decisionLimitReached()"
+    [targetPopulationLabel]="store.targetPopulationLabel()"
+    [canFinishSession]="store.canFinishSession()"
+    [completed]="store.isCompleted()"
+    [abandoned]="store.isAbandoned()"
+    (boardMove)="store.selectBoardMove($event)"
+    (candidateSelected)="store.selectCandidate($event)"
+    (responseToggled)="store.toggleResponse($event)"
+    (decisionAccepted)="store.acceptCurrentDecision()"
+    (branchDeferred)="store.deferActiveBranch()"
+    (branchIgnored)="store.ignoreActiveBranch()"
+    (branchStopped)="store.stopActiveBranch()"
+    (queueBranchSelected)="store.selectQueuedBranch($event)"
+    (deferredBranchReopened)="store.reopenBranch($event)"
+    (staleBranchRestarted)="store.restartStaleBranch($event)"
+    (queueReordered)="reorderQueue($event)"
+    (sessionFinished)="store.finishSession()"
+    (sessionAbandoned)="store.abandonSession()"
+    (newDraftRequested)="store.startNewDraft()"
+  />
+
+  @if (store.setupOpen()) {
+    <app-repertoire-builder-setup-dialog
+      [initialSetup]="store.setup()"
+      [loading]="store.setupLoading()"
+      [error]="store.setupError()"
+      [cancelAllowed]="store.session() !== null"
+      (submitted)="store.start($event)"
+      (cancelled)="store.closeSetup()"
+    />
+  }
+</section>
