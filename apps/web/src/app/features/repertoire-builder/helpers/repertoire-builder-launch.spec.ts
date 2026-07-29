@@ -7,6 +7,7 @@ import {
 } from './repertoire-builder-launch';
 
 const STARTING_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+const NORMALIZED_STARTING_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -';
 
 function validQuery() {
   return buildCourseEndingBuilderLaunchQueryParams({
@@ -65,13 +66,13 @@ describe('repertoire builder launch payload', () => {
   it('accepts the normalized four-field FEN emitted by Course endings', () => {
     const query = {
       ...validQuery(),
-      fen: STARTING_FEN.split(' ').slice(0, 4).join(' '),
+      fen: NORMALIZED_STARTING_FEN,
     };
 
     const parsed = parseRepertoireBuilderLaunch(convertToParamMap(query));
 
     expect(parsed.error).toBeNull();
-    expect(parsed.context?.startingFen).toBe(STARTING_FEN);
+    expect(parsed.context?.startingFen).toBe(`${NORMALIZED_STARTING_FEN} 0 1`);
   });
 
   it('rejects malformed or incomplete external route state', () => {
