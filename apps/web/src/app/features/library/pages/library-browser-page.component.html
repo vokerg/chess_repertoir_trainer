@@ -1,25 +1,63 @@
-<section class="stack">
+<section class="study-page stack">
   <app-page-header
     class="desktop-only"
     title="Study"
-    subtitle="Build a training basket from a repertoire, section, or selected lines."
+    subtitle="Choose a repertoire, narrow the scope, and launch the training session that matters now."
+    [stats]="headerStats()"
     [actions]="headerActions()"
   />
 
-  <section class="study-browser">
-    <div class="study-toolbar desktop-only">
-      <input
-        class="study-search"
-        [ngModel]="store.searchText()"
-        (ngModelChange)="store.searchText.set($event)"
-        placeholder="Search repertoires, sections, lines..."
-      />
+  <header class="study-mobile-intro mobile-only">
+    <span class="study-mobile-step">1</span>
+    <div>
+      <h2>Choose a repertoire</h2>
+      <p>Select one to open the mobile training planner.</p>
     </div>
+  </header>
+
+  <section class="study-browser" aria-label="Study training planner">
+    <header class="study-toolbar desktop-only">
+      <label class="study-search-field">
+        <span>Search study library</span>
+        <input
+          class="study-search"
+          [ngModel]="store.searchText()"
+          (ngModelChange)="store.searchText.set($event)"
+          placeholder="Repertoires, sections, lines..."
+        />
+      </label>
+
+      <div class="study-selection-context" aria-label="Current study selection">
+        <div class="study-selection-step">
+          <span>1</span>
+          <div>
+            <strong>Repertoire</strong>
+            <small>{{ selectedCourseLabel() }}</small>
+          </div>
+        </div>
+        <div class="study-selection-step">
+          <span>2</span>
+          <div>
+            <strong>Section</strong>
+            <small>{{ selectedChapterLabel() }}</small>
+          </div>
+        </div>
+        <div class="study-selection-step">
+          <span>3</span>
+          <div>
+            <strong>Lines</strong>
+            <small>{{ selectedLinesLabel() }}</small>
+          </div>
+        </div>
+      </div>
+    </header>
 
     <div class="study-columns">
-      <aside class="study-column">
+      <aside class="study-column study-scope-column">
         <app-study-scope-list
+          stepLabel="1"
           title="Repertoires"
+          subtitle="Choose the repertoire you want to train."
           [items]="courseItems()"
           [selectedId]="store.selectedCourseId()"
           [loading]="store.courseLoading()"
@@ -31,7 +69,9 @@
 
       <aside class="study-column desktop-only">
         <app-study-scope-list
+          stepLabel="2"
           title="Sections"
+          subtitle="Narrow the current repertoire."
           [items]="chapterItems()"
           [selectedId]="store.selectedChapterId()"
           [loading]="store.chapterLoading()"
@@ -43,6 +83,9 @@
 
       <main class="study-column study-lines-column desktop-only">
         <app-study-line-list
+          stepLabel="3"
+          title="Lines"
+          subtitle="Review health, select lines, or train directly."
           [lines]="store.filteredLines()"
           [selectedLineId]="store.selectedLineId()"
           [selectedLineIds]="store.selectedLineIds()"
@@ -55,6 +98,7 @@
 
       <app-training-basket-panel
         class="study-column study-basket-column desktop-only"
+        stepLabel="4"
         [lineCountLabel]="store.basketLineCountLabel()"
         [lineCount]="store.basketLineCount()"
         [activeSublineCount]="store.basketActiveSublineCount()"
