@@ -213,3 +213,14 @@ const createInput = {
   assert.equal(abandoned.upstreamStatus, 'NOT_REQUIRED');
   assert.equal(harness.submitted.length, 0);
 }
+
+{
+  const harness = createHarness();
+  const created = await harness.service.createRound(7, createInput);
+  await harness.service.submitMove(7, created.id, { moveUci: 'd2d4' });
+  const abandoned = await harness.service.abandonRound(7, created.id);
+  assert.equal(abandoned.status, 'ABANDONED');
+  assert.equal(abandoned.outcome, 'LOSS');
+  assert.equal(abandoned.upstreamStatus, 'SYNCED');
+  assert.equal(harness.submitted.length, 1);
+}
