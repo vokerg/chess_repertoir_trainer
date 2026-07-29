@@ -74,8 +74,31 @@ export class LichessPuzzlesStore {
     this.ratedState.set(value);
   }
 
-  async startRound(): Promise<void> {
-    if (this.loading()) return;
+  async loadRound(roundId: number): Promise<boolean> {
+    if (this.loading()) return false;
+    this.loadingState.set(true);
+    this.clearMessages();
+    try {
+      const round = await firstValueFrom(this.api.getRound(roundId));
+      this.applyRound(round, round.puzzle.lastMoveUci);
+      this.difficultyState.set(round.difficulty ?? 'normal');
+      this.ratedState.set(round.ratedRequested);
+      this.noticeState.set(
+        round.status === 'IN_PROGRESS'
+          ? 'Puzzle round restored.'
+          : 'Completed puzzle round loaded.',
+      );
+      return true;
+    } catch (error) {
+      this.setError(error, 'Could not load the Lichess puzzle round.');
+      return false;
+    } finally {
+      this.loadingState.set(false);
+    }
+  }
+
+  async startRound(): Promise<number | null> {
+    if (this.loading()) return null;
     this.loadingState.set(true);
     this.clearMessages();
     try {
@@ -91,8 +114,10 @@ export class LichessPuzzlesStore {
           ? 'Rated Lichess puzzle started.'
           : 'Practice puzzle started. This round will not change your Lichess rating.',
       );
+      return round.id;
     } catch (error) {
       this.setError(error, 'Could not start a Lichess puzzle.');
+      return null;
     } finally {
       this.loadingState.set(false);
     }
