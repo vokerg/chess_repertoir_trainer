@@ -13,10 +13,8 @@ import {
 import { requireAuth } from '../../auth/request-auth';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
-import {
-  LichessPuzzleRoundError,
-  LichessPuzzlesService,
-} from './lichess-puzzles.service';
+import { LichessPuzzleRoundError } from './lichess-puzzles.errors';
+import { LichessPuzzlesService } from './lichess-puzzles.service';
 
 const standardErrorResponses = {
   401: unauthorizedResponseSchema,
@@ -45,7 +43,7 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
     try {
       return await LichessPuzzlesService.createRound(auth.userId, request.body);
     } catch (error) {
-      return sendError(reply, error);
+      return sendExpectedError(reply, error);
     }
   });
 
@@ -60,6 +58,7 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
         400: validationErrorResponseSchema,
         401: unauthorizedResponseSchema,
         404: lichessPuzzleErrorResponseSchema,
+        409: lichessPuzzleErrorResponseSchema,
       },
     },
   }, async (request, reply) => {
@@ -68,7 +67,7 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
     try {
       return await LichessPuzzlesService.getRound(auth.userId, request.params.roundId);
     } catch (error) {
-      return sendError(reply, error);
+      return sendExpectedError(reply, error);
     }
   });
 
@@ -99,7 +98,7 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
         request.body,
       );
     } catch (error) {
-      return sendError(reply, error);
+      return sendExpectedError(reply, error);
     }
   });
 
@@ -124,7 +123,7 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
     try {
       return await LichessPuzzlesService.abandonRound(auth.userId, request.params.roundId);
     } catch (error) {
-      return sendError(reply, error);
+      return sendExpectedError(reply, error);
     }
   });
 
@@ -149,22 +148,16 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
     try {
       return await LichessPuzzlesService.retrySync(auth.userId, request.params.roundId);
     } catch (error) {
-      return sendError(reply, error);
+      return sendExpectedError(reply, error);
     }
   });
 };
 
-function sendError(reply: FastifyReply, error: unknown) {
-  const normalized = error instanceof LichessPuzzleRoundError
-    ? error
-    : new LichessPuzzleRoundError(
-        'Could not process the Lichess puzzle request.',
-        400,
-        'LICHESS_PUZZLE_REQUEST_FAILED',
-      );
-  return reply.code(normalized.statusCode).send({
-    error: normalized.message,
-    code: normalized.code,
+function sendExpectedError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof LichessPuzzleRoundError)) throw error;
+  return reply.code(error.statusCode).send({
+    error: error.message,
+    code: error.code,
   });
 }
 
