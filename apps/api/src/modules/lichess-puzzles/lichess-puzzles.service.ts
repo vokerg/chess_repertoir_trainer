@@ -1,4 +1,3 @@
-import { Chess } from 'chess.js';
 import type {
   CreateLichessPuzzleRoundBody,
   LichessPuzzleRound,
@@ -6,13 +5,22 @@ import type {
   SubmitLichessPuzzleMoveBody,
   SubmitLichessPuzzleMoveResponse,
 } from '@chess-trainer/contracts/lichess-puzzles';
-import { LichessPuzzlesClient, LichessPuzzlesClientError } from './lichess-puzzles.client';
-import { getLichessPuzzleAccessToken, LichessPuzzleAccessError } from './lichess-puzzle-access.service';
+import { getLichessPuzzleAccessToken } from './lichess-puzzle-access.service';
+import {
+  applyLichessPuzzleUciMove,
+  parseStoredLichessPuzzleMoveAttempts,
+  type StoredLichessPuzzleMoveAttempt,
+} from './lichess-puzzle-round.logic';
+import { LichessPuzzlesClient } from './lichess-puzzles.client';
+import {
+  LichessPuzzleRoundError,
+  throwMappedLichessPuzzleError,
+} from './lichess-puzzles.errors';
+import { mapLichessPuzzleRound } from './lichess-puzzles.mapper';
 import {
   claimLichessPuzzleRoundSync,
   createFreshLichessPuzzleRound,
   findOwnedLichessPuzzleRound,
-  LichessPuzzleRoundConflictError,
   type LichessPuzzleRoundWithPuzzle,
   markLichessPuzzleRoundSyncFailed,
   markLichessPuzzleRoundSyncSucceeded,
@@ -21,26 +29,6 @@ import {
 
 const MAX_USER_ATTEMPTS = 100;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-interface StoredMoveAttempt {
-  moveUci: string;
-  expectedMoveUci: string;
-  correct: boolean;
-  fenBefore: string;
-  fenAfter: string;
-  forcedMoveUci: string | null;
-  attemptedAt: string;
-}
-
-export class LichessPuzzleRoundError extends Error {
-  constructor(
-    message: string,
-    readonly statusCode: 400 | 401 | 404 | 409 | 429 | 502,
-    readonly code: string,
-  ) {
-    super(message);
-  }
-}
 
 export interface LichessPuzzlesServiceDependencies {
   client: Pick<LichessPuzzlesClient, 'getBatch' | 'submitBatch'>;
@@ -95,27 +83,31 @@ export function createLichessPuzzlesService(
         );
       }
 
-      return mapRound(await repository.createFreshRound(userId, {
+      return mapLichessPuzzleRound(await repository.createFreshRound(userId, {
         angle: input.angle,
         difficulty: input.difficulty,
         rated: input.rated,
         puzzle,
       }));
     } catch (error) {
-      throw normalizeError(error, 'Could not start a Lichess puzzle round.');
+      throwMappedLichessPuzzleError(error);
     }
   }
 
   async function getRound(userId: number, roundId: number): Promise<LichessPuzzleRound> {
-    const round = await repository.findOwnedRound(userId, roundId);
-    if (!round) {
-      throw new LichessPuzzleRoundError(
-        'Lichess puzzle round not found.',
-        404,
-        'LICHESS_PUZZLE_ROUND_NOT_FOUND',
-      );
+    try {
+      const round = await repository.findOwnedRound(userId, roundId);
+      if (!round) {
+        throw new LichessPuzzleRoundError(
+          'Lichess puzzle round not found.',
+          404,
+          'LICHESS_PUZZLE_ROUND_NOT_FOUND',
+        );
+      }
+      return mapLichessPuzzleRound(round);
+    } catch (error) {
+      throwMappedLichessPuzzleError(error);
     }
-    return mapRound(round);
   }
 
   async function submitMove(
@@ -125,7 +117,7 @@ export function createLichessPuzzlesService(
   ): Promise<SubmitLichessPuzzleMoveResponse> {
     try {
       const round = await requireInProgressRound(userId, roundId);
-      const attempts = readMoveAttempts(round.moveAttempts);
+      const attempts = parseStoredLichessPuzzleMoveAttempts(round.moveAttempts);
       if (attempts.length >= MAX_USER_ATTEMPTS) {
         throw new LichessPuzzleRoundError(
           'This puzzle round has reached the attempt limit.',
@@ -150,7 +142,7 @@ export function createLichessPuzzlesService(
         );
       }
 
-      const played = applyUci(round.currentFen, input.moveUci);
+      const playedFen = applyLichessPuzzleUciMove(round.currentFen, input.moveUci);
       const attemptedAt = now();
       if (input.moveUci !== expectedMoveUci) {
         const firstFailure = round.firstWrongAt === null;
@@ -160,7 +152,7 @@ export function createLichessPuzzlesService(
             expectedMoveUci,
             correct: false,
             fenBefore: round.currentFen,
-            fenAfter: played.fen,
+            fenAfter: playedFen,
             forcedMoveUci: null,
             attemptedAt: attemptedAt.toISOString(),
           }),
@@ -177,11 +169,11 @@ export function createLichessPuzzlesService(
         return {
           correct: false,
           forcedMoveUci: null,
-          round: mapRound(await syncIfNeeded(updated)),
+          round: mapLichessPuzzleRound(await syncIfNeeded(updated)),
         };
       }
 
-      let currentFen = played.fen;
+      let currentFen = playedFen;
       let currentStep = round.currentStep + 1;
       let forcedMoveUci: string | null = null;
 
@@ -194,7 +186,7 @@ export function createLichessPuzzlesService(
             'LICHESS_PUZZLE_ROUND_STATE_INVALID',
           );
         }
-        currentFen = applyUci(currentFen, forcedMoveUci).fen;
+        currentFen = applyLichessPuzzleUciMove(currentFen, forcedMoveUci);
         currentStep += 1;
       }
 
@@ -210,7 +202,7 @@ export function createLichessPuzzlesService(
           expectedMoveUci,
           correct: true,
           fenBefore: round.currentFen,
-          fenAfter: played.fen,
+          fenAfter: playedFen,
           forcedMoveUci,
           attemptedAt: attemptedAt.toISOString(),
         }),
@@ -227,10 +219,10 @@ export function createLichessPuzzlesService(
       return {
         correct: true,
         forcedMoveUci,
-        round: mapRound(await syncIfNeeded(updated)),
+        round: mapLichessPuzzleRound(await syncIfNeeded(updated)),
       };
     } catch (error) {
-      throw normalizeError(error, 'Could not submit the Lichess puzzle move.');
+      throwMappedLichessPuzzleError(error);
     }
   }
 
@@ -243,29 +235,33 @@ export function createLichessPuzzlesService(
         outcome: round.firstWrongAt ? 'LOSS' : 'ABANDONED',
         completedAt,
       });
-      return mapRound(await syncIfNeeded(updated));
+      return mapLichessPuzzleRound(await syncIfNeeded(updated));
     } catch (error) {
-      throw normalizeError(error, 'Could not abandon the Lichess puzzle round.');
+      throwMappedLichessPuzzleError(error);
     }
   }
 
   async function retrySync(userId: number, roundId: number): Promise<LichessPuzzleRound> {
-    const round = await repository.findOwnedRound(userId, roundId);
-    if (!round) {
-      throw new LichessPuzzleRoundError(
-        'Lichess puzzle round not found.',
-        404,
-        'LICHESS_PUZZLE_ROUND_NOT_FOUND',
-      );
+    try {
+      const round = await repository.findOwnedRound(userId, roundId);
+      if (!round) {
+        throw new LichessPuzzleRoundError(
+          'Lichess puzzle round not found.',
+          404,
+          'LICHESS_PUZZLE_ROUND_NOT_FOUND',
+        );
+      }
+      if (!round.upstreamOutcome) {
+        throw new LichessPuzzleRoundError(
+          'This puzzle round has no Lichess result to synchronize.',
+          409,
+          'LICHESS_PUZZLE_SYNC_NOT_REQUIRED',
+        );
+      }
+      return mapLichessPuzzleRound(await syncIfNeeded(round));
+    } catch (error) {
+      throwMappedLichessPuzzleError(error);
     }
-    if (!round.upstreamOutcome) {
-      throw new LichessPuzzleRoundError(
-        'This puzzle round has no Lichess result to synchronize.',
-        409,
-        'LICHESS_PUZZLE_SYNC_NOT_REQUIRED',
-      );
-    }
-    return mapRound(await syncIfNeeded(round));
   }
 
   async function requireInProgressRound(
@@ -337,100 +333,9 @@ export function createLichessPuzzlesService(
 
 export const LichessPuzzlesService = createLichessPuzzlesService();
 
-function applyUci(fen: string, moveUci: string): { fen: string } {
-  try {
-    const chess = new Chess(fen);
-    const move = chess.move({
-      from: moveUci.slice(0, 2),
-      to: moveUci.slice(2, 4),
-      promotion: moveUci.slice(4, 5) || undefined,
-    });
-    if (!move) throw new Error('Illegal move');
-    return { fen: chess.fen() };
-  } catch {
-    throw new LichessPuzzleRoundError(
-      'That move is not legal in the current puzzle position.',
-      400,
-      'LICHESS_PUZZLE_MOVE_ILLEGAL',
-    );
-  }
-}
-
-function readMoveAttempts(value: unknown): StoredMoveAttempt[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is StoredMoveAttempt => Boolean(
-    entry
-    && typeof entry === 'object'
-    && typeof (entry as StoredMoveAttempt).moveUci === 'string',
-  ));
-}
-
 function appendAttempt(
-  attempts: StoredMoveAttempt[],
-  attempt: StoredMoveAttempt,
-): StoredMoveAttempt[] {
+  attempts: readonly StoredLichessPuzzleMoveAttempt[],
+  attempt: StoredLichessPuzzleMoveAttempt,
+): StoredLichessPuzzleMoveAttempt[] {
   return [...attempts, attempt];
-}
-
-function currentRoundLastMoveUci(round: LichessPuzzleRoundWithPuzzle): string {
-  if (round.currentStep === 0) return round.puzzle.lastMoveUci;
-  const attempts = readMoveAttempts(round.moveAttempts);
-  for (let index = attempts.length - 1; index >= 0; index -= 1) {
-    const attempt = attempts[index];
-    if (attempt?.correct) return attempt.forcedMoveUci ?? attempt.moveUci;
-  }
-  return round.puzzle.lastMoveUci;
-}
-
-function mapRound(round: LichessPuzzleRoundWithPuzzle): LichessPuzzleRound {
-  return {
-    id: round.id,
-    source: round.source as LichessPuzzleRound['source'],
-    angle: round.angle,
-    difficulty: round.difficulty as LichessPuzzleRound['difficulty'],
-    ratedRequested: round.ratedRequested,
-    status: round.status as LichessPuzzleRound['status'],
-    outcome: round.outcome as LichessPuzzleRound['outcome'],
-    currentFen: round.currentFen,
-    lastMoveUci: currentRoundLastMoveUci(round),
-    currentStep: round.currentStep,
-    firstWrongAt: round.firstWrongAt?.toISOString() ?? null,
-    learningCompletedAt: round.learningCompletedAt?.toISOString() ?? null,
-    upstreamStatus: round.upstreamStatus as LichessPuzzleRound['upstreamStatus'],
-    ratingDiff: round.ratingDiff,
-    startedAt: round.startedAt.toISOString(),
-    completedAt: round.completedAt?.toISOString() ?? null,
-    puzzle: {
-      id: round.puzzle.id,
-      rating: round.puzzle.rating,
-      themes: round.puzzle.themes,
-      startFen: round.puzzle.startFen,
-      lastMoveUci: round.puzzle.lastMoveUci,
-      sideToMove: round.puzzle.sideToMove as LichessPuzzleRound['puzzle']['sideToMove'],
-      solutionPlies: round.puzzle.solutionUci.length,
-    },
-  };
-}
-
-function normalizeError(error: unknown, fallback: string): LichessPuzzleRoundError {
-  if (error instanceof LichessPuzzleRoundError) return error;
-  if (error instanceof LichessPuzzleRoundConflictError) {
-    return new LichessPuzzleRoundError(
-      'The puzzle round changed in another request. Reload it and try again.',
-      409,
-      'LICHESS_PUZZLE_ROUND_CONFLICT',
-    );
-  }
-  if (error instanceof LichessPuzzleAccessError) {
-    return new LichessPuzzleRoundError(error.message, error.statusCode, error.code);
-  }
-  if (error instanceof LichessPuzzlesClientError) {
-    const statusCode = error.statusCode === 429 ? 429 : 502;
-    return new LichessPuzzleRoundError(error.message, statusCode, 'LICHESS_PUZZLE_UPSTREAM_ERROR');
-  }
-  return new LichessPuzzleRoundError(
-    error instanceof Error ? error.message : fallback,
-    400,
-    'LICHESS_PUZZLE_REQUEST_FAILED',
-  );
 }
