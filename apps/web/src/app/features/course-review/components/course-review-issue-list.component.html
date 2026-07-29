@@ -4,7 +4,13 @@
       <div class="empty-state">{{ emptyMessage() }}</div>
     } @else {
       @for (finding of findings(); track finding.id) {
-        <app-course-review-issue-card [finding]="finding" />
+        <app-course-review-issue-card
+          [finding]="finding"
+          [courseId]="courseId()"
+          [courseName]="courseName()"
+          [endingFilters]="endingFilters()"
+          [filterSummary]="filterSummary()"
+        />
       }
     }
   </div>
