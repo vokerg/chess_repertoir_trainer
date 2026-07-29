@@ -1,7 +1,24 @@
-import { ChangeDetectionStrategy, Component, HostListener, computed, input, output, signal } from '@angular/core';
-import { LibraryChapter, LibraryCourse, LibraryLine, LibraryMarathonMode } from '../../data-access/library.models';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  computed,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import {
+  LibraryChapter,
+  LibraryCourse,
+  LibraryLine,
+  LibraryMarathonMode,
+} from '../../data-access/library.models';
 import { coverageLabel, masteryLabel, sideLabel } from '../../helpers/library-line.helpers';
-import { StudyLauncherScope, StudyLauncherStartTraining, StudyLauncherSummary } from './study-mobile-launcher.models';
+import {
+  StudyLauncherScope,
+  StudyLauncherStartTraining,
+  StudyLauncherSummary,
+} from './study-mobile-launcher.models';
 
 interface TrainingModeOption {
   id: LibraryMarathonMode;
@@ -50,11 +67,19 @@ export class StudyMobileLauncherComponent {
   protected readonly trainingModes = computed<TrainingModeOption[]>(() => {
     const summary = this.activeSummary();
     return [
-      { id: 'ALL', label: 'All', disabled: !summary.canStart || summary.activeSublineCount === 0 },
-      { id: 'WEAK_SUBLINES', label: 'Weak', disabled: !summary.canStart || summary.weakSublineCount === 0 },
+      {
+        id: 'ALL',
+        label: 'Train all',
+        disabled: !summary.canStart || summary.activeSublineCount === 0,
+      },
+      {
+        id: 'WEAK_SUBLINES',
+        label: 'Train weak',
+        disabled: !summary.canStart || summary.weakSublineCount === 0,
+      },
       {
         id: 'UNTRAINED_SUBLINES',
-        label: 'Untrained',
+        label: 'Train untrained',
         disabled: !summary.canStart || summary.untrainedSublineCount === 0,
       },
     ];
