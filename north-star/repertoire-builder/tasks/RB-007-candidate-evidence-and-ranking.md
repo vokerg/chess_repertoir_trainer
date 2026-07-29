@@ -1,6 +1,6 @@
 # RB-007 — Aggregate and rank candidate evidence explainably
 
-Status: READY
+Status: CLAIMED
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: North-star
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: OpenAI ChatGPT
 
-Claim branch: none
+Claim branch: `rb-007/issue-95-candidate-evidence-ranking-claim`
 
-Claimed at: none
+Claimed at: 2026-07-29
 
-Claim scope: none
+Claim scope: Define and implement the shared versioned candidate-decision contract and deterministic v1 ranking policy; add a transport-independent API service that aggregates bounded legal engine, Masters, selected-population, personal-game, opening-profile, and course-coverage evidence through explicit injectable provider boundaries; preserve missing/stale/insufficient source states, eligibility warnings, separate user-move and opponent-coverage roles, profile fit versus target fit, stable reason codes, reproducible ordering, focused tests, and required North Star documentation. Excludes final Angular builder UI, builder-session or candidate persistence, course writes, traps integration, LLM ranking, unbounded analysis, and changes to the completed peer-resolution formula.
 
 ## Outcome
 
