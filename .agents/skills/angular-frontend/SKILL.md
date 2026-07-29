@@ -14,6 +14,7 @@ Before editing frontend code, read the relevant parts of:
 * `docs/frontend/angular-architecture.md`
 * `docs/frontend/angular-patterns.md`
 * `docs/frontend/angular-migration.md`
+* `docs/frontend/design-tokens.md` for styling, shared UI, or visual-transformation work
 * `docs/skills/frontend-feature-module.md`
 
 These project docs are authoritative. Generic Angular reference material is not authoritative for this repo.
@@ -95,6 +96,7 @@ Presentational components should:
 
 * Use `app-page-header` for route-level page headers.
 * Use `app-panel` for card/panel shells.
+* Use production `--ui-*` tokens for transformed UI; legacy short token names remain migration-only compatibility.
 * Do not hand-roll `section-card` or custom card shells for new feature panels.
 * Panel headers should use title plus optional subtitle only; avoid eyebrow/kicker labels unless a specific design requires it.
 * Put compact stats/actions into panel inputs instead of large pills inside the body.

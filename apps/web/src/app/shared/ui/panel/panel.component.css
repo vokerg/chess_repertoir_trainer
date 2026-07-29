@@ -6,12 +6,11 @@
 .app-panel {
   display: grid;
   gap: var(--panel-gap, 1rem);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
   padding: var(--panel-padding, 1.35rem);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(14px);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
 }
 
 .app-panel-header {
@@ -28,6 +27,7 @@
 
 .app-panel-title {
   margin: 0;
+  color: var(--ui-text);
   font-size: 1.35rem;
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -36,7 +36,7 @@
 .app-panel-subtitle {
   margin: 0.35rem 0 0;
   max-width: 58ch;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   line-height: 1.45;
 }
 
@@ -49,6 +49,6 @@
 /* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .app-panel {
-    border-radius: var(--radius-md);
+    border-radius: var(--ui-radius-control);
   }
 }

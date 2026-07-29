@@ -1,6 +1,6 @@
 # RB-006 — Define repertoire target contract
 
-Status: BLOCKED
+Status: DONE
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: North-star
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: OpenAI ChatGPT
 
-Claim branch: none
+Claim branch: `rb-006/issue-94-repertoire-target-contract-v2`
 
-Claimed at: none
+Claimed at: 2026-07-28
 
-Claim scope: none
+Claim scope: Define the shared, versioned repertoire-target Zod contract and pure resolution/change-impact helpers; cover supported speed and population targets, starting position and side, reproducible peer/profile defaults, explicit manual overrides, persona/objective, risk/theory/coverage intent, mutability and recalculation semantics, canonical examples, invariant tests, and required North Star documentation. Excludes UI, persistence, candidate ranking, course writes, traps, and LLM work.
 
 ## Outcome
 
@@ -43,11 +43,9 @@ The factual multi-account peer interval and distribution are already available f
 
 ## Dependencies
 
-Blocked on reliable contract direction from RB-003.
+Consumes completed RB-001/RB-002 factual player-level evidence.
 
-Should incorporate reviewed findings from RB-008.
-
-Consumes the completed RB-001/RB-002 factual player-level boundary.
+Consumes completed RB-003/RB-018 opening-classification vocabulary and accepted RB-008 setup/workbench direction.
 
 RB-007 and RB-009 depend on it.
 
@@ -81,16 +79,16 @@ RB-007 and RB-009 depend on it.
 - traps schema;
 - LLM prompts.
 
-## Open questions to resolve
+## Resolved decisions
 
-- Is the factual peer-band evidence snapshotted to keep a draft reproducible?
-- Can a user choose a different explicit benchmark group without changing the factual profile?
-- Does “my peers plus one” remain exactly one adjacent group in all builder contexts?
-- Is provider selection mandatory or can evidence combine providers later?
-- Is persona a named preset, explicit dimensions, or both?
-- How is deliberately dubious intent separated from accidental low soundness?
-- Can target policy vary by branch?
-- Which fields are persisted with a completed course for future maintenance?
+- Factual peer-resolution evidence is snapshotted inside peer-derived population targets for reproducibility.
+- An explicit Lichess benchmark group can replace a peer-derived default without mutating factual player-level evidence.
+- `MY_PEERS_PLUS_ONE` appends exactly one adjacent group above the highest selected peer group and caps at `2500+`.
+- V1 requires the `LICHESS_GAMES` population source; future providers require a versioned contract extension.
+- Persona is a transparent label plus explicit objective dimensions; the dimensions are authoritative for ranking.
+- Deliberately dubious intent requires `minimumSoundness: DUBIOUS` and explicit opt-in. Factual `UNKNOWN` values are not valid target intent.
+- One target applies to one builder target/session snapshot. Branch-specific policy is deferred.
+- Draft/session persistence and completed-course target metadata remain owned by RB-009, RB-013 and RB-011.
 
 ## Acceptance criteria
 
@@ -113,10 +111,14 @@ RB-007 and RB-009 depend on it.
 
 ## Completion updates
 
-The report must include canonical target examples, unresolved persistence questions, and direct impacts on RB-007, RB-009, RB-013 and RB-008 production planning.
+The report includes canonical target examples, unresolved persistence questions, and direct impacts on RB-007, RB-009, RB-013 and RB-008 production planning.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-006-2026-07-28-repertoire-target-contract.md`
 
-Completed at: none
+Merged PR: https://github.com/vokerg/chess_repertoir_trainer/pull/157
+
+Squash commit: `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`
+
+Completed at: 2026-07-28

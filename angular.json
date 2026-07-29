@@ -28,6 +28,7 @@
             ],
             "styles": [
               "apps/web/src/styles.css",
+              "apps/web/src/design-system.css",
               "apps/web/src/responsive.css",
               "apps/web/src/workbench.css"
             ],
@@ -75,6 +76,7 @@
             ],
             "styles": [
               "apps/web/src/styles.css",
+              "apps/web/src/design-system.css",
               "apps/web/src/responsive.css",
               "apps/web/src/workbench.css"
             ],

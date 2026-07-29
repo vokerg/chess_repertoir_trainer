@@ -1,6 +1,6 @@
 # Visual Transformation Master Plan
 
-Last updated: 2026-07-25
+Last updated: 2026-07-28
 
 ## 1. Purpose
 
@@ -96,34 +96,48 @@ Preferred visual hierarchy:
 
 The wordmark should initially be live HTML text rather than text converted into SVG paths. This keeps it accessible, responsive, and easy to revise.
 
-### 3.5 Provisional palette
+### 3.5 Production palette and token contract
 
-The palette is directionally approved but remains technically provisional until tested in a high-fidelity page and real analytical workflows.
+VT-103 promotes the calibrated graphite/mint direction to a namespaced production contract. The canonical roles, values, loading order, compatibility boundary, and accessibility rules live in [`docs/frontend/design-tokens.md`](../docs/frontend/design-tokens.md).
+
+Core production values:
 
 - Graphite chrome: `#172321`
 - Secondary graphite: `#22312E`
+- Raised graphite: `#2A3D38`
 - Signal mint: `#47B89C`
-- Strong mint: `#23836D`
+- Strong mint: `#1F7865`
 - Mint subtle: `#DFF3ED`
-- Workspace canvas: `#EEF3F0`
+- Workspace canvas: `#E7EEEA`
+- Soft canvas: `#EEF4F1`
 - Surface: `#FFFFFF`
+- Muted surface: `#F2F6F4`
+- Quiet surface: `#EAF1ED`
 - Primary text: `#172321`
 - Secondary text: `#63716D`
-- Subtle border: `#CBD7D2`
+- Subtle border: `#C4D1CB`
+- Strong border: `#AEBFB7`
 
-The production system must include accessible semantic colors for success, warning, danger, information, evaluations, and charts. Mint must not be overloaded to mean every positive or selected state.
+The production system uses distinct semantic roles rather than overloading mint:
+
+- success: `#256B45`;
+- warning: `#8A4B0F`;
+- danger: `#A7352A`;
+- information: `#2B6480`.
+
+`apps/web/src/design-system.css` owns the production `--ui-*` namespace and loads after `styles.css`. The existing short amber-era token names remain an explicit compatibility layer for unmigrated workflows; they must not be silently redefined or globally search-and-replaced. Games, Study, Opening Analysis, and later pages migrate deliberately in their owning tasks.
 
 ### 3.6 Typography
 
-Current preferred direction:
+The production runtime uses the native UI stack:
 
-- IBM Plex Sans for product and interface typography;
-- a compatible monospaced treatment for engine evaluations, percentages, ratings, move counts, and analytical numerics;
+- `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` for product and interface typography;
+- `ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace` for engine evaluations, percentages, ratings, move counts, coordinates, hashes, PGN, and FEN;
 - large, tight display headings on the public site;
 - compact, readable typography in dense application workflows;
 - limited use of uppercase eyebrow labels.
 
-No custom font files or bespoke typeface are required.
+IBM Plex Sans remains the visual reference used by the transformation prototypes, not a runtime dependency. Do not bundle font files or introduce a remote font request. A future font-loading change requires a separate reviewed decision covering licensing, privacy, performance, offline behavior, and fallback behavior.
 
 ## 4. Three distinct product experiences
 
@@ -234,9 +248,9 @@ The precise bottom-navigation structure remains open until representative mobile
 
 The current product relies heavily on translucent white panels, rounded cards, borders, and shadows. The transformation should establish a clearer hierarchy:
 
-- **Canvas:** flat page background.
+- **Canvas:** flat or restrained tonal page background.
 - **Section:** often no visible container.
-- **Panel:** subtle fill or hairline border.
+- **Panel:** strong or muted surface with a hairline border.
 - **Interactive card:** clear affordance and hover/focus state.
 - **Overlay:** the primary place for strong shadow, blur, or elevated treatment.
 
@@ -247,10 +261,10 @@ Rules:
 - use shadows selectively;
 - use radius intentionally rather than uniformly;
 - preserve accessibility focus states;
-- use shared tokens and primitives;
+- use shared production tokens and primitives;
 - avoid isolated feature-specific visual systems.
 
-The repository's shared `app-page-header` and `app-panel` remain the starting primitives. Their implementation may evolve, but new feature work should not bypass the shared system with ad hoc shells.
+The repository's shared `app-page-header` and `app-panel` remain the starting primitives. VT-103 moves these proven primitives to the production token contract. Feature tasks must consume or evolve them rather than bypassing the shared system with ad hoc shells.
 
 ## 7. Route-layout architecture target
 
@@ -341,7 +355,7 @@ Deliverables:
 - dedicated auth shell;
 - signed-in `/home` page;
 - post-login default to `/home` while preserving explicit return URLs;
-- revised global tokens and typography;
+- production global tokens and typography contract;
 - desktop navigation rail;
 - shared brand components and assets;
 - favicon and public metadata;
@@ -349,7 +363,7 @@ Deliverables:
 
 Exit condition:
 
-- the product has a coherent public face, authentication experience, signed-in home, and application shell.
+- the product has a coherent public face, authentication experience, signed-in home, application shell, and stable production token foundation.
 
 ### Phase 2 — representative workflow modernization
 
@@ -359,7 +373,7 @@ Migrate representative pages first:
 2. Study — selection hierarchy, training basket, responsive launcher.
 3. Opening Analysis — board/workbench, data widgets, toggles, analysis density.
 
-These pages establish reusable patterns for most remaining workflows.
+These pages establish reusable patterns for most remaining workflows and deliberately migrate feature-local legacy tokens to the production `--ui-*` contract.
 
 Exit condition:
 
@@ -416,7 +430,7 @@ Do not introduce without explicit justification:
 - a UI framework replacement;
 - a global state library;
 - a custom icon library;
-- a custom typeface or shared font files;
+- a custom typeface, shared font files, or remote font loading;
 - a CMS for static landing content;
 - a large recommendation engine;
 - new backend APIs before proven UI requirements;
@@ -446,13 +460,12 @@ The program is successful when:
 
 These remain intentionally unresolved:
 
-- final production palette values after high-fidelity testing;
-- exact Node Branch stroke/node proportions;
+- exact Node Branch optical proportions after direct small-size browser review;
 - final wordmark spacing and casing;
 - exact public navigation labels;
 - exact mobile primary navigation destinations;
-- whether a full dark application workspace is included in Phase 1 or deferred;
-- which existing data can support the first `/home` without backend additions;
-- final landing-page copy and screenshot composition.
+- whether a full dark application workspace is included later or deferred;
+- final landing-page copy and screenshot composition;
+- final residual browser-validation disposition for public, auth, Home, brand, navigation, Clerk, motion, job-panel, and representative responsive states.
 
-Do not treat these as locked until recorded in `DECISIONS.md`.
+The production palette and typography questions are resolved by D-024, D-025, and `docs/frontend/design-tokens.md`. Do not treat the remaining questions as locked until recorded in `DECISIONS.md`.

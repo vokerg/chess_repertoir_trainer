@@ -68,9 +68,12 @@ Some older `pages/*` files and large route components still own too much state o
 ## Styling rules
 
 - Global styles contain design tokens, resets, layout primitives, and truly reusable utilities.
+- [`design-tokens.md`](./design-tokens.md) is the source of truth for production `--ui-*` token roles, typography, loading order, and legacy compatibility.
+- `apps/web/src/styles.css` remains the legacy compatibility layer during migration; new transformed UI must not add new dependencies on its short amber-era token names.
+- `apps/web/src/design-system.css` owns production tokens and narrow global/shared overrides. Feature migration remains owned by the corresponding feature task.
 - Feature-specific selectors remain colocated with their component.
 - Large inline style blocks are not permitted in route pages.
-- Components should use existing tokens rather than adding isolated colors, spacing values, or shadows without reason.
+- Components should use existing production tokens rather than adding isolated colors, spacing values, or shadows without reason.
 - Responsive viewport constants live in `apps/web/src/app/shared/ui/responsive/breakpoints.ts`; shared CSS visibility/alignment utilities live in `apps/web/src/responsive.css`. Numeric CSS media queries should include a nearby sync comment because CSS custom properties cannot be used as breakpoint thresholds.
 
 ## Validation

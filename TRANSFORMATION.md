@@ -19,12 +19,13 @@ Read these sources in order:
 1. [`AGENTS.md`](./AGENTS.md)
 2. [Angular frontend skill](./.agents/skills/angular-frontend/SKILL.md) for Angular work
 3. [Angular architecture](./docs/frontend/angular-architecture.md)
-4. [`transformation/MASTER_PLAN.md`](./transformation/MASTER_PLAN.md)
-5. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
-6. [`transformation/STATUS.md`](./transformation/STATUS.md)
-7. [`transformation/WORKING_RULES.md`](./transformation/WORKING_RULES.md)
-8. [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
-9. the selected execution issue and the current implementation it owns.
+4. [Frontend design tokens](./docs/frontend/design-tokens.md) for styling and transformed UI
+5. [`transformation/MASTER_PLAN.md`](./transformation/MASTER_PLAN.md)
+6. [`transformation/DECISIONS.md`](./transformation/DECISIONS.md)
+7. [`transformation/STATUS.md`](./transformation/STATUS.md)
+8. [`transformation/WORKING_RULES.md`](./transformation/WORKING_RULES.md)
+9. [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
+10. the selected execution issue and the current implementation it owns.
 
 The repository code and tests are the source of truth for runtime behavior. Repository transformation documents own visual direction, architecture, decisions, detailed acceptance criteria, and reports. GitHub Issues own the live execution queue, priority, readiness, blockers, claim, branch, pull request, and completion state.
 
@@ -59,13 +60,14 @@ The following slices are integrated into `main` through the visual-transformatio
 - PR #142 — VT-101 post-merge decision, status, report, and queue reconciliation;
 - PR #143 — concurrent VT-102 claim reconciliation after VT-101 completion;
 - PR #144 — stable queue wording while VT-102 remained active;
-- PR #141 — VT-102 signed-in Home canvas and surface calibration.
+- PR #141 — VT-102 signed-in Home canvas and surface calibration;
+- PR #158 — VT-103 production token, typography, shared-surface, focus, and wide-workspace foundation.
 
-These checkpoints were originally developed through the former transformation integration branch and were subsequently reintegrated into `main`. Their historical commit and CI records remain valid; the delivery model for all future work is now short-lived branch to `main`, squash merge.
+The earlier checkpoints were originally developed through the former transformation integration branch and were subsequently reintegrated into `main`. Their historical commit and CI records remain valid; the delivery model for all new work is short-lived branch to `main`, squash merge.
 
-VT-102 keeps the change route-local to Home, preserves behavior and global legacy styling, and records concrete palette evidence for VT-103. Implementation-head CI #1145 and documentation-head CI #1152 passed the complete repository workflow. The user reviewed the result in the browser, confirmed that it feels good, and explicitly approved squash merge.
+VT-103 promotes the approved Home palette evidence into the production `--ui-*` contract, keeps the amber-era short tokens as an explicit compatibility layer for unmigrated workflows, uses native system typography without font assets, and raises the signed-in shell/Home caps after direct large-screen review. Final CI #1262 passed before the approved squash merge as `af450eb860819281ad260db364838b9868205508`.
 
-The accepted Home direction does not close the broader residual browser matrix. Authentication, public motion, brand rasterization, navigation edge cases, comprehensive Home states, Clerk controls, imported-game job-panel spacing, and representative responsive widths remain owned by issue #126.
+The accepted foundation does not close the broader residual browser matrix. Authentication, public motion, brand rasterization, navigation edge cases, comprehensive Home states, Clerk controls, imported-game job-panel spacing, representative responsive widths, keyboard/focus behavior, and reduced motion remain owned by issue #126.
 
 ## Live execution queue
 
@@ -82,12 +84,12 @@ Task selection is deterministic:
 7. target the pull request at `main` and keep branch, PR, blockers, and completion state in the issue;
 8. close the issue only after approved squash merge into `main` and documentation reconciliation.
 
-Issues #123 and #124 are complete. Issues #125 and #126 are dependency-free and `READY`; #125 / VT-103 is the deterministic next task because both are P1 and it has the lower order (30 before 40).
+Issues #123–#125 are complete. Issue #126 / VT-104 is `READY`, P1, order 40 and is the deterministic next task. Issues #127–#129 are released to `READY` after VT-103 integration but remain later by numeric order.
 
 ## Current checkpoint
 
-VT-102 is integrated into `main` through PR #141 and the subsequent visual-transformation reintegration. Home now uses a deliberate green-grey workspace canvas, clear strong/muted/quiet surface roles, restrained elevation, white important cards, and limited graphite emphasis. Home data, routes, component/template structure, navigation behavior, global tokens, typography, APIs, schemas, databases, and backend behavior are unchanged.
+VT-103 is integrated into `main` through squash-merged PR #158. The production token and typography layer is now the foundation for transformed UI, while existing feature-local amber consumers remain migration debt owned by their explicit workflow tasks.
 
-The next session must inspect the live queue and, while its state remains unchanged, claim issue #125 before creating `visual-transformation/vt-103-production-tokens-typography` from the current `main` head. Issue #126 may proceed only through the same claim rules and an explicit collision check if parallel execution is considered.
+The next session must claim issue #126 before implementation. It should complete and record the residual Phase 0–1 browser matrix without redesigning Games, Study, Opening Analysis, or other Phase 2 workflows.
 
 Do not bypass the issue queue, commit directly to `main`, target the retired `visual_transformation` branch, or merge a transformation pull request without explicit approval.
