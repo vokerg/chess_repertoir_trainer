@@ -70,9 +70,11 @@ describe('RepertoireBuilderCourseDialogComponent', () => {
 
     const emitted: void[] = [];
     fixture.componentInstance.applyRequested.subscribe(() => emitted.push());
-    const applyButton = Array.from(
-      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
-    ).find((button) => button.textContent?.includes('Apply reviewed changes'));
+    const applyButton = fixture.nativeElement.querySelector(
+      '.course-actions .primary-button',
+    ) as HTMLButtonElement | null;
+    expect(applyButton).not.toBeNull();
+    expect(applyButton?.disabled).toBeFalse();
     applyButton?.click();
 
     expect(emitted.length).toBe(1);
