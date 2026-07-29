@@ -1,6 +1,6 @@
 # RB-010 — Implement bounded interactive builder MVP
 
-Status: READY
+Status: CLAIMED
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: North-star
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: OpenAI ChatGPT
 
-Claim branch: none
+Claim branch: `rb-010/issue-98-interactive-builder-claim`
 
-Claimed at: none
+Claimed at: 2026-07-29
 
-Claim scope: none
+Claim scope: Implement the first authenticated `/builder` Angular feature as a page-scoped, non-persistent routed workbench using the accepted RB-008 board-first composition, integrated RB-006 repertoire targets, the existing authenticated `POST /api/candidate-decisions` endpoint, and the RB-009 pure session reducer. The MVP supports one active build at a time, one selected repertoire side, the initial position only, fixed RB-001 speed presets and rating targets, optional peer-resolution loading for peer targets, four transparent persona presets, 50–100% opponent coverage, at most 6 returned candidates, at most 24 accepted decisions and the existing RB-009 hard session/queue/preview bounds. It includes a focused setup dialog, primary board with candidate switching and board-move selection, inspectable evidence/source states, separate target/profile fit, opponent-response multi-selection, bounded branch queue navigation, defer/reopen/ignore/stop actions, branch/status progress, preview tree, stale/error/no-data handling, responsive and keyboard-accessible presentation, typed feature-local data access/store/helpers/components, route/navigation registration, and focused Angular tests. Refresh intentionally starts a new draft; no Prisma model, API session route, browser storage, course write, profile-derived defaults, traps, LLM behavior, full-tree generation, or broad analysis/courses redesign is included.
 
 ## Outcome
 
@@ -82,15 +82,16 @@ RB-011 depends on a stable draft preview output.
 - final onboarding/marketing;
 - broad redesign of opening analysis or courses.
 
-## MVP bounding choices to resolve during claim
+## MVP bounding choices resolved for this claim
 
-- one side and starting-point type;
-- maximum candidates and branches;
-- maximum build depth or number of decisions;
-- whether persistence/resume is included based on RB-009's staged-persistence decision and concrete workbench evidence;
-- whether profile-derived setup is included or mocked;
-- which population sources are mandatory;
-- how preview tree and coverage are summarized.
+- one active build and one selected side per route-local session;
+- initial-position starts only;
+- at most 6 candidate moves returned per decision;
+- at most 24 accepted decisions in the MVP workflow, while retaining the RB-009 hard limits of 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes;
+- no persistence or durable resume; refresh explicitly starts a new draft;
+- no profile-derived setup defaults; available candidate profile evidence remains visible and advisory;
+- the existing candidate endpoint remains the sole candidate/evidence source; peer resolution is loaded only when a peer rating target is selected;
+- preview is summarized through bounded branch nodes, queue order and status counts without course materialization.
 
 ## Acceptance criteria
 
