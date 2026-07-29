@@ -42,8 +42,8 @@ export class RepertoireBuilderPageComponent {
     if (!this.store.session()) return [];
     return [
       {
-        id: 'target',
-        label: 'Target',
+        id: 'restart-setup',
+        label: 'Restart setup',
         run: () => this.store.openSetup(),
       },
       {
