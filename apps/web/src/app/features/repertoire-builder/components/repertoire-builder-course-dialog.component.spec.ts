@@ -76,7 +76,7 @@ describe('RepertoireBuilderCourseDialogComponent', () => {
 
     const emitted: void[] = [];
     fixture.componentInstance.applyRequested.subscribe(() => emitted.push());
-    (fixture.componentInstance as unknown as { apply(): void }).apply();
+    applyButton?.click();
 
     expect(emitted.length).toBe(1);
   });
