@@ -1,0 +1,198 @@
+.mobile-primary-nav {
+  display: none;
+}
+
+.mobile-menu-sheet:not([open]) {
+  display: none;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
+@media (max-width: 760px) {
+  .mobile-header {
+    justify-content: flex-start;
+    border-color: var(--ui-border);
+    background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+    box-shadow: var(--ui-shadow-soft);
+  }
+
+  .mobile-menu-button {
+    display: none;
+  }
+
+  .mobile-primary-nav {
+    position: fixed;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 8px;
+    z-index: 70;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.2rem;
+    border: 1px solid color-mix(in srgb, var(--ui-border-strong) 72%, transparent);
+    border-radius: var(--ui-radius-large);
+    padding: 0.32rem;
+    background: color-mix(in srgb, var(--ui-surface-overlay) 96%, transparent);
+    box-shadow: var(--ui-shadow-overlay);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-primary-nav-item {
+    appearance: none;
+    display: grid;
+    min-width: 0;
+    min-height: 54px;
+    place-items: center;
+    gap: 0.12rem;
+    border: 0;
+    border-radius: var(--ui-radius-control);
+    padding: 0.35rem 0.18rem;
+    background: transparent;
+    color: var(--ui-text-muted);
+    box-shadow: none;
+    font: inherit;
+    text-align: center;
+    text-decoration: none;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
+  }
+
+  .mobile-primary-nav-item:hover {
+    background: var(--ui-surface-muted);
+    color: var(--ui-text);
+    transform: none;
+  }
+
+  .mobile-primary-nav-item-active,
+  .mobile-primary-nav-item-active:hover {
+    background: var(--ui-action-soft);
+    color: var(--ui-action-strong);
+  }
+
+  .mobile-primary-nav-item:focus-visible,
+  .mobile-menu-close:focus-visible,
+  .mobile-nav-item:focus-visible {
+    outline: 3px solid var(--ui-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .mobile-primary-nav-icon {
+    display: inline-grid;
+    width: 25px;
+    height: 25px;
+    place-items: center;
+  }
+
+  .mobile-primary-nav-icon app-nav-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .mobile-primary-nav-label {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.66rem;
+    font-weight: 820;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-more-button {
+    cursor: pointer;
+  }
+
+  dialog.mobile-menu-sheet {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    color: var(--ui-text);
+  }
+
+  dialog.mobile-menu-sheet[open] {
+    display: grid;
+    max-height: calc(100vh - 28px);
+    max-height: calc(100dvh - 28px);
+    border-color: var(--ui-border-strong);
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    background: var(--ui-surface-overlay);
+    box-shadow: var(--ui-shadow-overlay);
+  }
+
+  dialog.mobile-menu-sheet::backdrop {
+    background: color-mix(in srgb, var(--ui-chrome) 42%, transparent);
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-menu-header,
+  .mobile-auth-status {
+    border-color: var(--ui-border);
+  }
+
+  .mobile-menu-kicker,
+  .mobile-nav-group-title,
+  .mobile-nav-description {
+    color: var(--ui-text-muted);
+  }
+
+  .mobile-menu-close {
+    border-color: var(--ui-border);
+    background: var(--ui-surface-muted);
+    color: var(--ui-text);
+  }
+
+  .mobile-menu-close::before,
+  .mobile-menu-close::after {
+    background: var(--ui-text-muted);
+  }
+
+  .mobile-nav-item {
+    border-color: var(--ui-border);
+    background: var(--ui-surface-muted);
+    color: var(--ui-text);
+  }
+
+  .mobile-nav-item:hover {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface);
+  }
+
+  .mobile-nav-item-active,
+  .mobile-nav-item-active:hover {
+    border-color: color-mix(in srgb, var(--ui-action) 62%, var(--ui-border));
+    background: var(--ui-action-soft);
+    color: var(--ui-action-strong);
+  }
+
+  .mobile-nav-icon {
+    background: var(--ui-surface);
+  }
+
+  .mobile-nav-item-quiet:not(.mobile-nav-item-active),
+  .auth-name {
+    color: var(--ui-text-muted);
+  }
+}
+
+@media (max-width: 360px) {
+  .mobile-primary-nav {
+    right: 5px;
+    left: 5px;
+    gap: 0.08rem;
+    padding-inline: 0.2rem;
+  }
+
+  .mobile-primary-nav-item {
+    padding-inline: 0.08rem;
+  }
+
+  .mobile-primary-nav-label {
+    font-size: 0.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-primary-nav-item {
+    transition: none;
+  }
+}
