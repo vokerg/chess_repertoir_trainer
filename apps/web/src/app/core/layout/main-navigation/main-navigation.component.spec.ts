@@ -31,6 +31,7 @@ describe('MainNavigationComponent', () => {
         provideRouter([
           { path: 'home', component: TestRouteComponent },
           { path: 'library', component: TestRouteComponent },
+          { path: 'puzzles', component: TestRouteComponent },
           { path: 'games', component: TestRouteComponent },
         ]),
       ],
@@ -101,13 +102,18 @@ describe('MainNavigationComponent', () => {
     const childGroup = fixture.nativeElement.querySelector(
       '.rail-inline-accordion-open [role="group"]',
     ) as HTMLElement;
+    const childLinks = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.rail-inline-accordion-open .rail-inline-item',
+      ) as NodeListOf<HTMLAnchorElement>,
+    );
+    const puzzlesLink = childLinks.find((link) => link.getAttribute('href') === '/puzzles');
 
     expect(disclosure.getAttribute('aria-expanded')).toBe('true');
     expect(disclosure.getAttribute('aria-label')).toBe('Hide Study submenu');
     expect(disclosure.getAttribute('title')).toBe('Hide Study submenu');
-    expect(
-      fixture.nativeElement.querySelectorAll('.rail-inline-accordion-open .rail-inline-item').length,
-    ).toBe(3);
+    expect(childLinks.length).toBe(4);
+    expect(puzzlesLink?.textContent).toContain('Lichess puzzles');
     expect(childGroup.getAttribute('aria-label')).toBe('Study submenu');
     expect(fixture.nativeElement.querySelector('.rail-flyout')).toBeNull();
     expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).toBeNull();
@@ -149,11 +155,17 @@ describe('MainNavigationComponent', () => {
     disclosure.click();
     fixture.detectChanges();
 
+    const flyoutLinks = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.rail-flyout-item[role="menuitem"]',
+      ) as NodeListOf<HTMLAnchorElement>,
+    );
+    const puzzlesLink = flyoutLinks.find((link) => link.getAttribute('href') === '/puzzles');
+
     expect(fixture.nativeElement.querySelector('.rail-inline-accordion')).toBeNull();
     expect(fixture.nativeElement.querySelector('.rail-flyout[role="menu"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.rail-flyout-item[role="menuitem"]').length).toBe(
-      3,
-    );
+    expect(flyoutLinks.length).toBe(4);
+    expect(puzzlesLink?.textContent).toContain('Lichess puzzles');
     expect(fixture.nativeElement.querySelector('.rail-flyout-backdrop')).not.toBeNull();
   });
 

@@ -10,5 +10,6 @@ export * from './opening-struggles';
 export * from './opening-explorer';
 export * from './player-chess-profile';
 export * from './repertoire-target';
+export * from './lichess-puzzles';
 export * from './jobs';
 export * from './rating-normalization';

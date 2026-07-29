@@ -1,0 +1,91 @@
+<main class="lichess-puzzles-page">
+  <app-page-header
+    title="Lichess puzzles"
+    subtitle="Solve fresh Lichess puzzles here without leaving your training workspace."
+  />
+
+  @if (store.error(); as error) {
+    <div class="puzzle-message puzzle-error" role="alert">
+      <span>{{ error }}</span>
+      @if (store.requiresReconnect()) {
+        <a routerLink="/settings/lichess">Reconnect Lichess</a>
+      }
+    </div>
+  }
+
+  @if (store.notice(); as notice) {
+    <div class="puzzle-message" aria-live="polite">{{ notice }}</div>
+  }
+
+  <app-panel
+    title="Puzzle settings"
+    subtitle="Fresh mixed puzzles are selected relative to your current Lichess puzzle rating."
+  >
+    <div class="puzzle-settings">
+      <label>
+        <span>Difficulty</span>
+        <select
+          [value]="store.difficulty()"
+          [disabled]="settingsLocked()"
+          (change)="setDifficultyFromEvent($event)"
+        >
+          @for (difficulty of difficulties; track difficulty.value) {
+            <option [value]="difficulty.value">{{ difficulty.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="rated-setting">
+        <input
+          type="checkbox"
+          [checked]="store.rated()"
+          [disabled]="settingsLocked()"
+          (change)="setRatedFromEvent($event)"
+        />
+        <span>
+          <strong>Rated on Lichess</strong>
+          <small>First result changes your Lichess puzzle rating.</small>
+        </span>
+      </label>
+
+      <button
+        type="button"
+        class="primary"
+        [disabled]="settingsLocked()"
+        (click)="startRound()"
+      >
+        {{ store.loading() ? 'Loading puzzle...' : store.round() ? 'Start next puzzle' : 'Start puzzle' }}
+      </button>
+    </div>
+
+    @if (store.round()?.status === 'IN_PROGRESS') {
+      <p class="settings-note">Finish or abandon the current puzzle before changing settings.</p>
+    }
+  </app-panel>
+
+  @if (store.trainerView(); as view) {
+    <app-lichess-puzzle-trainer
+      [view]="view"
+      [movable]="store.boardMovable()"
+      [positionVersion]="store.positionVersion()"
+      [busy]="store.busy()"
+      (boardMove)="store.submitMove($event)"
+      (abandon)="store.abandonRound()"
+      (retrySync)="store.retrySync()"
+      (nextPuzzle)="startRound()"
+    />
+  } @else {
+    <app-panel
+      title="Ready when you are"
+      subtitle="Connect Lichess with puzzle access, choose rated or practice mode, then start a puzzle."
+    >
+      <div class="puzzle-intro">
+        <p>
+          Wrong moves in rated mode are submitted as a loss immediately. You can still finish the line here,
+          and failed puzzles are retained for later review.
+        </p>
+        <a routerLink="/settings/lichess">Review Lichess connection</a>
+      </div>
+    </app-panel>
+  }
+</main>

@@ -32,6 +32,8 @@ model AppUser {
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
   tacticalDetectionFeedbacks      TacticalDetectionFeedback[]
   scenarioTrainingSessions        ScenarioTrainingSession[]
+  lichessPuzzleRounds             LichessPuzzleRound[]
+  lichessPuzzleReviewStates       LichessPuzzleReviewState[]
   courses                         Course[]
   trainingSessions                TrainingSession[]
   trainingSublineAttempts         TrainingSublineAttempt[]
@@ -86,6 +88,86 @@ model LichessConnection {
 
   @@index([lichessUserId])
   @@index([username])
+}
+
+model LichessPuzzle {
+  id          String @id @db.VarChar(16)
+  gameId      String @db.VarChar(16)
+  gamePgn     String
+  initialPly  Int    @db.SmallInt
+  startFen    String @db.VarChar(120)
+  lastMoveUci String @db.VarChar(5)
+  sideToMove  String @db.VarChar(5)
+  solutionUci String[]
+  themes      String[]
+  rating      Int
+  plays       Int
+  fetchedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rounds       LichessPuzzleRound[]
+  reviewStates LichessPuzzleReviewState[]
+}
+
+model LichessPuzzleRound {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  puzzleId String        @db.VarChar(16)
+  puzzle   LichessPuzzle @relation(fields: [puzzleId], references: [id], onDelete: Restrict)
+
+  source         String  @db.VarChar(32)
+  angle          String  @db.VarChar(80)
+  difficulty     String? @db.VarChar(16)
+  ratedRequested Boolean @default(true)
+
+  status       String  @default("IN_PROGRESS") @db.VarChar(24)
+  outcome      String? @db.VarChar(16)
+  currentStep  Int     @default(0)
+  currentFen   String  @db.VarChar(120)
+  moveAttempts Json
+
+  firstWrongAt        DateTime?
+  revealedAt          DateTime?
+  learningCompletedAt DateTime?
+
+  upstreamOutcome String? @db.VarChar(8)
+  upstreamStatus  String  @default("NOT_REQUIRED") @db.VarChar(16)
+  upstreamError   String?
+  ratingDiff      Int?
+  syncedAt        DateTime?
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, status, startedAt])
+  @@index([userId, puzzleId, startedAt])
+  @@index([upstreamStatus, updatedAt])
+}
+
+model LichessPuzzleReviewState {
+  userId Int
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  puzzleId String        @db.VarChar(16)
+  puzzle   LichessPuzzle @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  dueAt                DateTime?
+  intervalStage        Int      @default(0)
+  consecutiveSuccesses Int      @default(0)
+  failureCount         Int      @default(0)
+  bookmarked           Boolean  @default(false)
+  lastRoundId          Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@id([userId, puzzleId])
+  @@index([userId, dueAt])
+  @@index([userId, bookmarked, dueAt])
 }
 
 model OAuthLoginState {

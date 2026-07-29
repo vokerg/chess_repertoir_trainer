@@ -1,0 +1,104 @@
+:host {
+  display: block;
+}
+
+.lichess-puzzles-page {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 1500px);
+  margin: 0 auto;
+}
+
+.puzzle-message {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+}
+
+.puzzle-error {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.puzzle-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+}
+
+.puzzle-settings > label:not(.rated-setting) {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.puzzle-settings label > span:first-child {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.puzzle-settings select {
+  min-height: 42px;
+}
+
+.rated-setting {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  min-height: 42px;
+}
+
+.rated-setting input {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.rated-setting span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.rated-setting small,
+.settings-note,
+.puzzle-intro p {
+  color: var(--ui-text-muted);
+}
+
+.settings-note {
+  margin: 0.8rem 0 0;
+  font-size: 0.85rem;
+}
+
+.puzzle-intro {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 720px;
+}
+
+.puzzle-intro p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
+@media (max-width: 760px) {
+  .puzzle-settings {
+    align-items: stretch;
+  }
+
+  .puzzle-settings > * {
+    width: 100%;
+  }
+
+  .puzzle-message {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

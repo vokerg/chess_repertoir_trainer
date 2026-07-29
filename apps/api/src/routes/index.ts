@@ -16,6 +16,7 @@ import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-
 import mcpModule from '../modules/mcp/mcp.routes';
 import boardImagesModule from '../modules/board-images/board-images.routes';
 import scenarioTrainingModule from '../modules/scenario-training/scenario-training.routes';
+import lichessPuzzlesModule from '../modules/lichess-puzzles/lichess-puzzles.routes';
 import mobileSyncModule from '../modules/mobile-sync/mobile-sync.routes';
 import openingExplorerModule from '../modules/opening-explorer/opening-explorer.routes';
 import playerChessProfileModule from '../modules/player-chess-profile/player-chess-profile.routes';
@@ -38,6 +39,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(mcpModule);
   app.register(boardImagesModule);
   app.register(scenarioTrainingModule);
+  app.register(lichessPuzzlesModule);
   app.register(mobileSyncModule);
   app.register(openingExplorerModule);
   app.register(playerChessProfileModule);

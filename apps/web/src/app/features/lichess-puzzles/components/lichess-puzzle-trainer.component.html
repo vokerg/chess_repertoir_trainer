@@ -1,0 +1,82 @@
+<div class="puzzle-trainer-layout">
+  <div class="puzzle-board-column">
+    <app-chessground-board
+      [fen]="view().fen"
+      [side]="view().side"
+      [lastMove]="view().lastMove"
+      [movable]="movable()"
+      [positionVersion]="positionVersion()"
+      (move)="boardMove.emit($event)"
+    />
+  </div>
+
+  <app-panel [title]="view().outcomeLabel" [subtitle]="view().ratingLabel">
+    <div class="puzzle-summary">
+      <dl class="puzzle-facts">
+        <div>
+          <dt>Puzzle rating</dt>
+          <dd>{{ view().puzzleRating }}</dd>
+        </div>
+        <div>
+          <dt>Progress</dt>
+          <dd>{{ view().progressLabel }}</dd>
+        </div>
+        <div>
+          <dt>Mode</dt>
+          <dd>{{ view().modeLabel }}</dd>
+        </div>
+        <div>
+          <dt>Sync</dt>
+          <dd>{{ view().syncLabel }}</dd>
+        </div>
+      </dl>
+
+      @if (view().themes.length) {
+        <div class="puzzle-themes" aria-label="Puzzle themes">
+          @for (theme of view().themes; track theme) {
+            <span>{{ theme }}</span>
+          }
+        </div>
+      }
+
+      @if (view().guidance; as guidance) {
+        <p class="puzzle-guidance">{{ guidance }}</p>
+      }
+
+      <div class="puzzle-actions">
+        @if (view().canAbandon) {
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="busy()"
+            (click)="abandon.emit()"
+          >
+            Abandon
+          </button>
+        }
+
+        @if (view().canStartNext) {
+          <button
+            type="button"
+            class="primary"
+            [disabled]="busy()"
+            (click)="nextPuzzle.emit()"
+          >
+            Next puzzle
+          </button>
+        }
+
+        @if (view().canRetrySync) {
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="busy()"
+            (click)="retrySync.emit()"
+          >
+            Retry Lichess sync
+          </button>
+        }
+      </div>
+    </div>
+  </app-panel>
+</div>

@@ -27,10 +27,21 @@
               <div><span>Tracked account</span><strong>Also tracked as an import account.</strong></div>
             }
             <div>
-              <span>Challenge scope</span>
-              <strong>{{ hasChallengeWriteScope(account) ? 'Ready' : 'Missing' }}</strong>
+              <span>Bot challenges</span>
+              <strong>{{ hasScope(account, 'challenge:write') ? 'Ready' : 'Missing' }}</strong>
+            </div>
+            <div>
+              <span>Read puzzles</span>
+              <strong>{{ hasScope(account, 'puzzle:read') ? 'Ready' : 'Missing' }}</strong>
+            </div>
+            <div>
+              <span>Submit puzzle results</span>
+              <strong>{{ hasScope(account, 'puzzle:write') ? 'Ready' : 'Missing' }}</strong>
             </div>
           </div>
+          @if (!hasScope(account, 'puzzle:read') || !hasScope(account, 'puzzle:write')) {
+            <p class="status-note">Reconnect Lichess to enable puzzle training and rating updates.</p>
+          }
         </div>
         <div class="lichess-actions">
           <button type="button" class="primary" (click)="store.connectLichess()">Reconnect</button>

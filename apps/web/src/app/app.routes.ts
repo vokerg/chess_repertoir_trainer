@@ -46,6 +46,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'puzzles',
+    title: 'Lichess puzzles | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/lichess-puzzles/pages/lichess-puzzles-page.component').then(
+        (m) => m.LichessPuzzlesPageComponent,
+      ),
+  },
+  {
     path: 'progress',
     title: 'Progress | Chess Repertoire Trainer',
     canActivate: [authGuard],
