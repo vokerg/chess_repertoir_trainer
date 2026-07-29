@@ -1,6 +1,6 @@
 # ONB-002 — Design bounded recent-first import and historical backfill
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -12,13 +12,13 @@ Planning maturity: Outlined
 
 GitHub issue: [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT coding/research session for vokerg
 
-Claim branch: none
+Claim branch: `onb-002/issue-149-bounded-import-backfill`
 
-Claimed at: none
+Claimed at: 2026-07-29
 
-Claim scope: none
+Claim scope: re-inspect current Lichess/Chess.com provider import, route, schema, tests, worker/runtime, account deletion, and ONB-001 contracts; verify current provider APIs; produce the ONB-002 report; reconcile decisions/open questions/queue/status; allocate bounded implementation tasks; no production implementation
 
 ## Outcome
 
