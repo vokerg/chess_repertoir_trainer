@@ -63,6 +63,7 @@
   text-transform: uppercase;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
 @media (max-width: 760px) {
   .games-page {
     gap: 0.9rem;
