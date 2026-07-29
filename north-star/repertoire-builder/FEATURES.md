@@ -1,6 +1,6 @@
 # Repertoire Builder Feature Catalog
 
-Last updated: 2026-07-26
+Last updated: 2026-07-29
 
 Planning maturity values:
 
@@ -19,23 +19,23 @@ Delivery classes:
 | Feature | Class | Maturity | Value now | North-star role |
 | --- | --- | --- | --- | --- |
 | Rated Lichess population explorer | Dual-use | Runtime foundation merged | Improves opening analysis and practical research | Supplies target-population moves and results |
-| Compact speed/rating population presets | Dual-use | Agreed; RB-001 detailed | Replaces raw filter matrices with useful defaults | Defines the population being optimized |
-| Lichess-benchmark rating bands | Dual-use | Agreed; calibration implementation pending | Makes peer groups match provider query buckets | Shared peer-level vocabulary |
-| Temporary peer-band resolver | Dual-use | Outlined; formula threshold open | Enables My peers immediately | Supplies automatic population target defaults |
-| Durable multi-account player level | Dual-use | Outlined; blocked on RB-001 | One inspectable level across accounts | Stores/reuses factual peer evidence |
-| Named opening classification | Dual-use | Placeholder by agreement | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
-| Player Chess Profile calculation | Dual-use | Outlined | Standalone identity and performance insight | Advises repertoire target and candidate fit |
-| Player Chess Profile experience | Standalone | Outlined | Recalculable profile page with evidence | Entry point into builder |
-| Repertoire target contract | North-star | Outlined | Limited direct value | Captures preset population, persona, risk and coverage intent |
-| Candidate evidence aggregation | North-star | Outlined | Could support opening analysis | Combines separated evidence at one decision point |
-| Explainable candidate ranking | North-star | Outlined | Could support general recommendations | Orders candidates without hiding source evidence |
-| Visual move-choice experience | North-star | Placeholder pending prototypes | Possible reusable analysis pattern | Core human decision surface |
-| Builder session and branch queue | North-star | Placeholder | None until builder | Supports resume, deferral and multi-branch coverage |
+| Compact speed/rating population presets | Dual-use | Implemented and merged | Replaces raw filter matrices with useful defaults | Defines the population being optimized |
+| Lichess-benchmark rating bands | Dual-use | Implemented and merged | Makes peer groups match provider query buckets | Shared peer-level vocabulary |
+| Factual peer-band resolver | Dual-use | Implemented and merged | Enables My peers immediately | Supplies automatic population target defaults |
+| Durable multi-account player level | Dual-use | Implemented through the shared resolver | One inspectable level across accounts | Reuses factual peer evidence without a second formula |
+| Named opening classification | Dual-use | Implemented and merged | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
+| Player Chess Profile calculation | Dual-use | Implemented for review | Standalone identity and performance insight | Advises repertoire target and candidate fit |
+| Player Chess Profile experience | Standalone | Implemented for review | Recalculable profile page with evidence | Entry point into builder |
+| Repertoire target contract | North-star | Implemented and merged | Limited direct value | Captures preset population, persona, risk and coverage intent |
+| Candidate evidence aggregation | North-star | Implemented and merged | Supports one-position analysis decisions | Combines separated evidence at one decision point |
+| Explainable candidate ranking | North-star | Implemented and merged | Supports deterministic recommendations | Orders candidates without hiding source evidence |
+| Visual move-choice experience | North-star | Accepted prototype direction | Reusable analysis pattern | Core human decision surface |
+| Builder session and branch queue | North-star | Implemented for review | Storage-neutral state foundation | Supports resume semantics, deferral, staleness and multi-branch coverage |
 | Interactive builder MVP | North-star | Outlined | Primary north-star delivery | Alternates user choice and opponent coverage |
 | Course reintegration and preview | Dual-use | Existing pattern, new integration outlined | Safer course edits | Materializes accepted builder tree |
 | Existing-course adaptation | Dual-use | Outlined | Improves current course review | Reuses builder for gaps, endings and weak choices |
 | Repertoire personas and profile override | Dual-use | Agreed concept | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
-| Traps knowledge foundation | Research | Open and intentionally vague | Possible future opening resource | Enables evidence-backed traps persona |
+| Traps knowledge foundation | Research | Discovery complete; bounded pilot claimed | Possible future opening resource | Enables evidence-backed traps persona |
 | LLM explanation/orchestration | Research | Open | Possible narrative value elsewhere | Optional explanation or conversational layer |
 | Outcome feedback and builder evaluation | Dual-use | Placeholder | Better improvement measurement | Validates whether recommendations work later |
 
@@ -43,31 +43,31 @@ Delivery classes:
 
 ### Evidence foundation
 
-The shared Opening Explorer remains the only rated Lichess population implementation. RB-001 adds compact presets, benchmark bands and a temporary peer resolver on top of it; it does not create a second extractor or weighted aggregation subsystem.
+The shared Opening Explorer remains the only rated Lichess population implementation. RB-001 adds compact presets, benchmark bands and a factual peer resolver on top of it; it does not create a second extractor or weighted aggregation subsystem.
 
-Rating normalization remains a shared versioned domain. The new Lichess-benchmark profile must preserve historical version metadata and provide Chess.com mappings through the same contracts/services.
+Rating normalization remains a shared versioned domain. The active Lichess-benchmark profile preserves historical version metadata and provides Chess.com mappings through the same contracts/services.
 
-RB-002 then turns the temporary peer evidence into a durable multi-account result. Opening classification remains independent.
+RB-002 is delivered through the same factual multi-account resolver. Opening classification remains independent.
 
 ### Chess Profile
 
-The profile requires opening classification and durable player-level context for its strongest conclusions. It may display or consume the resolved peer band, but it must not silently recalculate or mutate factual level evidence.
+The profile consumes opening classification and factual player-level context for its strongest conclusions. It may display or consume the resolved peer band, but it must not silently recalculate or mutate factual level evidence.
 
 ### Repertoire target
 
-The target captures intent for one build. It uses one RB-001 speed preset and one rating target, may reference factual RB-002 evidence, and permits an explicit override. It does not expose arbitrary speed weights in the MVP.
+The target captures intent for one build. It uses one RB-001 speed preset and one rating target, may snapshot factual peer evidence, and permits an explicit override. It does not expose arbitrary speed weights in the MVP.
 
 ### Candidate recommendation
 
-Evidence aggregation and ranking remain separate. Aggregation gathers comparable source facts. Ranking applies target-dependent policy and produces reasons.
+Evidence aggregation and ranking remain separate. Aggregation gathers comparable source facts. Ranking applies target-dependent policy and produces stable reasons and warnings.
 
 ### Visual choice
 
-The final move-choice interaction requires visual position comparison, but exact production architecture remains open. Prototype work should use the revised preset direction rather than current raw filter controls.
+The accepted production direction is a routed, board-first workbench launched from a focused setup dialog. Candidate switching updates one readable board and focused evidence; opponent responses use a queue rather than a dense matrix.
 
 ### Builder state
 
-The builder needs a queue of unresolved branches, accepted choices, deferred responses and previewable output. Persistence remains intentionally undecided before workflow discovery.
+RB-009 implements the queue, accepted choices, deferred and ignored responses, staleness, transposition references, decision history and bounded preview as a pure serializable `chess-domain` snapshot. Persistence is staged until the RB-010 workbench demonstrates a concrete durable-resume requirement.
 
 ### Existing courses
 
@@ -79,7 +79,7 @@ A measured profile may propose a default persona. The user can create alternativ
 
 ### Traps
 
-Traps require independent definition and data research. The north-star MVP does not depend on them.
+The critical-path MVP does not depend on traps. RB-017 remains the only approved bounded data/validator pilot after RB-014 discovery.
 
 ### LLM
 

@@ -1,193 +1,191 @@
 # Repertoire Builder Open Questions
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
-Open questions are not decisions. Resolve them in the assigned task and update this document and `DECISIONS.md` together.
+Open questions are not decisions. Resolve them in the assigned task and update this document and `DECISIONS.md` together when a product decision becomes locked, revised or rejected.
 
 ## Population evidence and factual player level
 
 ### Resolved implementation facts
 
-- The reusable implementation is the shared Opening Explorer module, not a builder-specific explorer.
+- The reusable implementation is the shared Opening Explorer module, not a builder-specific extractor.
 - Rated population evidence is exposed through `/api/lichess-games-explorer` with source `LICHESS_GAMES`.
-- Product queries accept `fen`, `speedPreset`, `ratingTarget` and conditional `ratingGroup`.
+- Product queries accept one fixed speed preset and one rating target.
 - Speed presets are `ALL`, `BLITZ_AND_SLOWER`, `BLITZ` and `BULLET`; ultraBullet is excluded.
-- Rating targets are all players, my peers, my peers plus one higher group, or one explicit Lichess group.
-- Defaults are Blitz and slower plus My peers and above.
+- Rating targets are all players, my peers, my peers plus one higher group, or one explicit Lichess benchmark group.
 - Multiple effective speeds and groups are sent to Lichess in one request and returned as one mixed aggregate.
 - The cache stores one deterministic public snapshot per effective population; personal resolver evidence is attached after cache access and is not persisted.
-- Public-game month controls are removed; the rated source is unrestricted by month and uses the existing 30-day cache/stale lifecycle.
-- Masters remains a separate endpoint/source and is unchanged.
-- The response directly exposes requested/effective population and peer-resolution provenance.
+- Public-game month controls are removed; the rated source uses the existing cache/stale lifecycle.
+- Masters remains a separate source.
 - Active normalization profile `2026-07-lichess-bands-v1` uses the nine Lichess Explorer groups and versioned Chess.com mappings.
-- The former `2026-07-product-v1` profile remains preserved as historical calibration evidence.
-- Factual peer resolution uses recent three-month evidence, then all history, then the generic 1400–1599 fallback.
-- Resolver policy `dominant-contiguous-window-v1` selects the narrowest one-to-three-group window containing at least 70% of evidence, with documented deterministic tie-breaks.
-- Provider and speed are resolved before ratings are classified; raw Chess.com and Lichess values are not averaged into the factual cross-provider result.
+- Factual peer resolution uses recent three-month evidence, then all eligible history, then the generic 1400–1599 fallback.
+- Resolver policy `dominant-contiguous-window-v1` selects the narrowest one-to-three-group window containing at least 70% of evidence, with deterministic tie-breaks.
+- Provider and speed are resolved before ratings are classified; raw Chess.com and Lichess values are not averaged.
 - Multiple accounts contribute through grouped account/provider/speed/rating evidence weighted by game count.
-- The result includes the complete band distribution, selected interval, eligible-game count, evidence period, contributions and profile/policy versions.
-- The raw `since`, `until`, `ratings` and `speeds` product query is replaced rather than maintained as a second public path.
 - RB-001 and RB-002 have no remaining player-level formula question.
 
 ### Deferred only on demonstrated need
 
 - Cross-account duplicate-game handling should change only if a consumer or measured defect shows material distortion.
-- Activity caps, decay, outlier suppression or alternative weighting require evidence and a new resolver policy version.
+- Activity caps, decay, outlier suppression or alternative weighting require evidence and a new resolver-policy version.
 - Better empirical Chess.com boundary calibration requires a future versioned normalization-profile change.
-- Whether mixed Lichess populations are materially misleading across speeds should be evaluated during candidate/ranking work before weighted fetching is reconsidered.
-- Extraction into a separately named player-level module or endpoint belongs to the first genuine second consumer.
+- Mixed-population weighting should be reconsidered only if real candidate decisions show the current Lichess aggregate is materially misleading.
 
-These are not blockers and do not reopen RB-002.
+These are not current blockers.
 
 ## Opening classification
 
-### Resolved by RB-003
+### Resolved by RB-003 and RB-018
 
 - Classification uses deterministic, versioned, ordered regex rules over generated opening names.
 - Broad family rules provide defaults; narrower subfamily and line rules override scalar values.
-- Safe lexical modifiers may add traits such as sharp/tactical but do not infer soundness from a word such as `Gambit`.
+- Safe lexical modifiers may add traits but do not infer soundness from words such as `Gambit`.
 - White and Black receive independent profiles for soundness, character, theoretical status, theory burden, roles and confidence.
-- Stable rule IDs and matched-rule provenance remain available to consumers.
-- Unmatched dimensions remain explicit `UNKNOWN` values.
-- Rules are stored separately from `openingBook.generated.ts`; no database row per generated entry is required.
-- Runtime LLM calls, Stockfish auditing and engine-assisted classification are excluded.
-- The Evans Gambit and Benko Gambit demonstrate that offerer and acceptor assessments may differ by side.
+- Stable rule IDs and matched-rule provenance remain available.
+- Uncertain dimensions remain explicit `UNKNOWN` values.
+- Runtime LLM calls, Stockfish auditing and automatic semantic inference are excluded.
+- Active rule version is `2026-07-rules-v2`.
+- All 3,733 pinned entries and 3,167 unique names match at least one of 114 active ordered rules.
+- Rule-match coverage is not fabricated semantic certainty.
+- Generated-name and actual-game coverage remain separate metrics.
+- Upstream naming changes surface through audits, backlogs, unused-rule reporting and CI.
 
-### Resolved by RB-018
-
-- The active rule version is `2026-07-rules-v2`.
-- The pinned generated book has 3,733 matched entries out of 3,733 and 3,167 matched unique names out of 3,167 through 114 active ordered rules.
-- One hundred percent rule-match coverage means every pinned name has characteristics and provenance; it does not require every dimension to be high-confidence or non-unknown.
-- Rare heterogeneous families may safely expose only surprise/role/burden traits with low confidence while retaining `UNKNOWN` soundness.
-- The measured generated backlog is grouped by root family and ranked by affected entry count rather than alphabetically.
-- Broad families are processed before narrow exceptions; exceptions are justified when family inheritance would misrepresent soundness, theoretical status or side-specific gambit roles.
-- Generated-name and actual-game coverage are separate metrics.
-- Actual-game weighting uses existing `ImportedGame.openingName` and `openingEco` values through an on-demand database audit; it adds no persistence or background job.
-- Upstream opening-book changes surface through grouped backlogs, unused-rule reporting, CI artifacts and a regression that fails on newly unmatched pinned entries.
-- Confidence remains profile-level for v2. Dimension-specific confidence is deferred until consumer evidence demonstrates a concrete need.
-
-RB-018 is complete. Future naming additions or judgment corrections are normal versioned rule maintenance, not an unresolved roadmap task.
+Future naming additions and judgment corrections are normal versioned maintenance, not unresolved roadmap work.
 
 ## Player Chess Profile
 
-### Resolved by RB-004 calculation
+### Resolved by the RB-004 calculation implementation
 
-- The statistical baseline is the complete selected personal game set after account, period, speed, colour, rated-status and rating-context filters.
-- Preference exposure and performance remain separate response sections and are never inferred from one another.
-- Result score uses all selected recognized results; opening-quality, early-error and accuracy metrics use analysed-game coverage and separate denominators.
-- The profile consumes the existing peer resolver directly and exposes its distribution/provenance rather than introducing a second player-level formula.
-- Result evidence bands are fewer than 5 `INSUFFICIENT`, 5–14 `LOW`, 15–39 `MEDIUM`, and 40+ `HIGH`.
-- Analysis evidence is unavailable below five analysed games or below 50% coverage, then uses the same analysed-game bands.
-- Small samples are qualified rather than silently shrunk toward a hidden estimate.
-- Score, opening-positive, opening-trouble, early-mistake and accuracy metrics remain independent; deterministic conclusions use explicit minimum samples and five-percentage-point deltas.
-- Multiple owned accounts are supported. Cross-provider duplicate copies remain a disclosed residual risk because the repository has no stable cross-provider game identity.
-- Exact generated-book matches and stored name/ECO rule matching expose separate classification source, rule provenance, confidence and unknown-dimension coverage.
-- The calculation is bounded to 100 opening/ECO/colour groups plus 1–10 supporting games and exposes omitted/truncated coverage.
-- Conclusions are descriptive and correlational; they do not prove a permanent style or causal rating effect.
-- RB-004 adds no persisted profile, permanent personality label, correction record, course write, candidate rank or LLM dependency.
+- Preference exposure and performance remain separate.
+- The statistical baseline is the complete selected personal game set after explicit filters.
+- Result and analysis evidence retain separate denominators and coverage.
+- Evidence bands and deterministic conclusions use explicit minimum samples.
+- Small samples are qualified rather than hidden behind a generic confidence score.
+- Multiple owned accounts are supported; cross-provider duplicate copies remain a disclosed risk.
+- Classification source, rule provenance, confidence and unknown-dimension coverage remain visible.
+- Calculation is bounded and adds no stored profile, permanent personality label, correction record, course write or LLM dependency.
 
 ### Resolved by the RB-005 review implementation
 
-- `/progress` preserves the existing default/active account redirect and `/progress/accounts/:accountId` remains the account-performance dashboard.
-- `/progress/profile` is a separate authenticated lazy route, exposed beside `Account performance` under the existing Progress submenu.
-- The profile page uses recent/all-time/custom period, account, speed preset, colour, rated/casual and optional rating-range filters.
-- `What you choose` and `What works` remain explicit independent views.
-- Character, soundness, theoretical status, theory burden and role are selectable breakdown dimensions.
-- Deterministic conclusions and breakdown rows expand into metrics, contributing openings and bounded recent games.
-- Supporting games are matched by colour plus opening identity; unrelated global games are not substituted when bounded evidence has no match.
-- Low-confidence, unknown-dimension, incomplete-analysis and truncated evidence remain visible through the coverage presentation.
-- Loading, no-data, stale-request, invalid-recalculation, recalculation-error and partial-analysis states are handled.
-- The page uses the existing composite opening-positive, opening-trouble and early-mistake metrics. It does not pre-emptively split success/advantage, trouble/disaster or mistake/blunder.
-- A previous-period comparison is not shown because RB-004 does not return a paired period. It may be added through two explicit requests only if hands-on use justifies the complexity.
-- Users cannot edit factual conclusions or persist rejection/correction feedback in RB-005.
-- `Use as repertoire starting point` remains an honest disabled affordance until a stable RB-006/RB-013 handoff exists.
-- Final user-facing terms distinguish preference, performance relative to baseline, opening-positive positions and trouble areas without assigning one permanent archetype.
-- The Angular implementation uses a lazy composition page, page-scoped signal store with private writable state, typed HTTP-only data access, feature-local display models, focused pure helper modules, shared breakpoint alignment, native control semantics, and route/store/component tests.
+- `/progress` remains the existing account-performance entry.
+- `/progress/profile` is a separate lazy route under the Progress navigation.
+- Recent, all-time, custom, account, speed, colour, rated-status and rating-range filters are supported.
+- `What you choose` and `What works` remain independent views.
+- Evidence expands into metrics, openings and bounded games.
+- Loading, no-data, stale-request, error, partial-analysis, low-confidence, unknown and truncated states are handled.
+- Profile conclusions cannot be edited or persisted in RB-005.
+- `Use as repertoire starting point` remains unavailable until a reviewed handoff exists.
 
 ### Remaining review questions
 
-- Does the page feel credible and useful against populated personal data across both desktop and mobile widths?
-- Are the five opening dimensions understandable enough without extra explanatory copy?
-- Do hands-on examples demonstrate a need to split composite opening and early-error tag severities?
-- Which profile-derived values should initialize target setup, and how should RB-013 expose acceptance or override through the RB-006 default/provenance contract?
+- Does the page feel credible and useful against populated personal data across desktop and mobile widths?
+- Are the five opening dimensions understandable without additional copy?
+- Do real examples justify splitting composite quality/error metrics?
+- Which profile-derived values should RB-013 offer as editable target defaults?
 
-RB-004 and RB-005 remain in review through PRs #136 and #139. No separate calculation or broader-metrics task is currently required.
+Owners: RB-004, RB-005 and RB-013.
 
 ## Repertoire target
 
 ### Resolved by RB-006
 
-- The minimum useful target contains side, starting point, account context, one fixed speed preset, one requested/effective population, explicit objective dimensions and coverage policy.
-- Peer-derived targets snapshot the completed factual peer resolution, including normalization-profile and resolver-policy versions, while keeping factual evidence separate from chosen intent.
-- `MY_PEERS_PLUS_ONE` adds exactly one adjacent Lichess group above the highest factual selected group and caps at `2500+`.
-- An explicit benchmark group may replace a peer-derived default without changing the factual profile or peer snapshot.
-- Persona is a transparent label plus explicit preferred-character, soundness, risk, theory-burden and complexity dimensions.
-- `UNKNOWN` remains valid factual evidence but is not valid target intent. Deliberately dubious intent requires both a `DUBIOUS` target and explicit opt-in.
-- Effective values are authoritative. Field-level defaults retain system, persona, profile or peer provenance, and overrides must exactly identify changed defaulted fields.
-- One target applies to one build/session snapshot; branch-specific target policy is not part of v1.
-- Contract version, target ID and creation time are immutable. Side, start, speed, population, accounts, objective and coverage require candidate recalculation when changed.
-- Provenance, override bookkeeping, update timestamps and changed peer detail do not require recalculation when effective candidate inputs remain unchanged.
+- One target applies to one build/session snapshot.
+- The target contains side, starting point, account context, one fixed speed preset, one requested/effective population, explicit objective dimensions and coverage policy.
+- Peer-derived targets retain factual peer-resolution, normalization-profile and resolver-policy provenance.
+- `MY_PEERS_PLUS_ONE` adds exactly one adjacent higher benchmark group and caps at `2500+`.
+- Persona is a transparent label over explicit target dimensions.
+- `UNKNOWN` is valid factual evidence but not target intent.
+- Deliberately dubious intent requires explicit opt-in.
+- Effective values are authoritative; defaults and overrides retain field-level provenance.
+- Contract version, target ID and creation time are immutable.
+- Candidate-recalculation fields are explicit.
 
 ### Remaining integration questions
 
-- How should RB-013 map specific Player Chess Profile conclusions into editable target defaults and named preset UX?
+- How should RB-013 map profile conclusions into optional target defaults and named preset UX?
 - Should completed courses retain a full target snapshot, a reference, or selected target/persona metadata?
-- How should RB-009 version target revisions, stale descendant decisions and resume behavior?
+- Can a completed course retain multiple historical target versions after adaptation?
 - Should reusable custom persona templates become persisted user data?
-- Can a course retain multiple historical target versions when it is adapted later?
 
-Owners: RB-009, RB-011 and RB-013.
+Owners: RB-011 and RB-013.
 
 ## Candidate evidence and ranking
 
-- How many engine lines are needed and at what analysis quality?
-- How are mate scores, evaluation uncertainty and engine version represented?
-- How are master and population score interpreted from the choosing side's perspective?
-- Is the one-mixed-population approach sufficiently stable for ranking across every speed preset?
-- How is practical popularity balanced against objective quality?
-- How is course learning burden estimated?
-- What is a transposition bonus?
-- How are unavailable datasets handled?
-- Which ranking reasons are stable enough for contracts?
-- Should ranking scores be returned, or only ordered candidates and reason components?
-- What bounded resulting-position and preview-line data is required for the accepted board-first presentation?
-- How is opponent-response relevance converted into cumulative coverage without implying false precision?
+### Resolved by RB-007
 
-Owner task: RB-007.
+- Contract version is `2026-07-v1`; ranking-policy version is `2026-07-deterministic-v1`.
+- User-move and opponent-response decisions are separate roles.
+- Stored MultiPV, Masters, selected-population, personal, opening, profile and course evidence remain separate.
+- Engine work is bounded and does not launch an unbounded live run.
+- Missing, stale and insufficient sources remain explicit.
+- Objective eligibility, target fit, profile fit, course conflict and manual choices remain inspectable.
+- The public response exposes ordered candidates, components, stable reasons, warnings and policy version rather than one opaque aggregate score.
+- Speed presets may change ordering through versioned weights.
+- Sparse personal/profile evidence does not fabricate conclusions.
+- Opponent relevance produces bounded coverage contribution and cumulative coverage.
+- Course transposition evidence is intentionally narrow and does not traverse an arbitrary repertoire graph.
+
+### Remaining calibration questions
+
+- Do real builder sessions justify different weights, objective thresholds, evidence limits or preview depth?
+- Should candidate policy versions retain migration/display support after changes?
+- Does selected-population aggregation remain credible for every speed preset?
+- Which learning-burden signals are measurable beyond opening classification and course coverage?
+
+Owner: RB-010 for hands-on evidence; policy changes require a versioned follow-up.
 
 ## Visual choice experience
 
 ### Resolved by RB-008
 
-- A focused setup dialog launches the substantial workflow.
-- **Start building** closes the dialog and opens a routed workbench.
-- The recursive workbench uses one large primary board, candidate switching, focused evidence, a response queue and branch progress.
-- Candidate moves remain visually connected to resulting positions.
-- Profile fit and selected-target fit remain separate and may disagree visibly.
-- Opponent responses expose selected, pending, deferred, ignored and completed states.
-- A coverage queue is the default narrow-screen and production presentation.
+- A focused setup dialog launches the routed workbench.
+- The workbench uses one readable primary board.
+- Candidates switch the board and focused evidence.
+- Opponent responses use a queue.
+- Branch progress remains visible.
+- Target fit and profile fit remain separate.
 - Simultaneous candidate mini-boards are rejected as the default.
-- An explicit mini-board comparison mode is deferred unless later evidence justifies it.
 
-### Remaining implementation questions
+### Remaining production questions
 
-- Which candidate metrics stay always visible and which move into expandable evidence?
-- How far ahead should a production preview line navigate before it becomes a separate analysis workflow?
-- What stable semantics should cumulative first-pass coverage use?
+- Which candidate metrics remain always visible and which expand on demand?
+- How much preview-line navigation belongs inside the builder before it becomes free analysis?
+- How should bounded queue progress and coverage be worded without false precision?
+- What route-local recovery is sufficient for the first hands-on MVP?
 
-Owners: RB-007, RB-009 and RB-010.
+Owner: RB-010.
 
 ## Builder session and queue
 
-- Does the MVP need persistence or can it prove the flow in route/local state first?
-- How is the immutable/versioned RB-006 target snapshot retained with decision history?
-- How are accepted, pending, deferred, ignored and stale decisions represented?
-- How are transpositions shared across branches?
-- How is a draft invalidated when source courses, target inputs or evidence change?
-- What is the maximum bounded work returned by one endpoint?
-- How are concurrent edits handled?
+### Resolved by the RB-009 review implementation
 
-Owner task: RB-009.
+- Model version is `2026-07-v1`.
+- The session is a pure, serializable `chess-domain` snapshot.
+- One session retains one RB-006 target snapshot and target revision.
+- Owner identity and optimistic session revision are required for every mutation and resume operation.
+- Branch path ID preserves move-order history; normalized FEN plus role identifies transpositions.
+- Branch states are `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE`.
+- Decision history distinguishes active, superseded and stale records.
+- The queue expands lazily by one accepted decision and can be reordered explicitly.
+- Deferred work can be reopened; ignored work is deliberate exclusion.
+- Changing an ancestor stales previous descendants while retaining history.
+- Target replacement stales the snapshot and restarts lazily from the root.
+- Evidence or source-course changes can stale one affected subtree without disturbing unrelated queue entries.
+- Transposed paths reference accepted/completed canonical session positions and avoid duplicate queued work.
+- Preview returns a bounded tree, queue, status counts and truncation metadata.
+- Hard limits are 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
+- No Prisma model, API, Angular UI or storage adapter is added in RB-009.
+
+### Remaining review and integration questions
+
+- Does RB-010 hands-on review demonstrate a need for durable server persistence, or is route/local recovery sufficient for the first MVP?
+- If persistence is justified, what draft list, expiry, archive and deletion behavior is required?
+- Is cross-device resume required before course materialization?
+- Should multiple simultaneous drafts be visible to the user?
+- What source-course revision references must a persisted draft protect?
+- How should a storage adapter handle optimistic conflicts while preserving the pure reducer as the authority?
+
+Owner: RB-010 for workflow evidence. A persistence implementation requires explicit reviewed justification under RB-D024.
 
 ## Course writing
 
@@ -195,47 +193,43 @@ Owner task: RB-009.
 - When should a builder create a course, chapter, line or merge at an anchor?
 - How are conflicts and duplicate transpositions presented?
 - How are deferred branches preserved after accepted material is written?
+- Which target/session metadata belongs on completed courses?
 - How are generated names and chapter organization reviewed?
 
-Owner task: RB-011.
+Owner: RB-011.
 
 ## Existing-course adaptation
 
 - Which current findings are safe entry points first?
 - How does the user choose between extending, replacing and creating an alternative line?
 - How are course target metadata and original intent represented?
-- Can the same course be retargeted without losing its previous persona?
+- Can the same course be retargeted without losing its previous persona/history?
 
-Owner task: RB-012.
+Owner: RB-012.
 
 ## Traps
 
 ### Resolved and approved through RB-014
 
-- A trap combines a reproducible trigger, practical temptation, bounded punishment, explicit safe alternatives, and separate setup soundness.
-- Trap occurrence identity uses normalized trigger FEN and ordered move transitions, not opening name or ECO.
-- Transposed routes reaching the same legal trigger may be one occurrence; related non-identical triggers belong to a family.
-- Practical temptation and objective soundness remain separate evidence dimensions.
-- Suitable reusable sources include CC0 Lichess games, puzzles, evaluated positions, and `lichess-org/chess-openings` labels.
-- User-created studies, videos, blogs, books, and unlicensed collections are discovery leads only.
-- A trustworthy source requires versioned engine evidence, rating/speed population evidence, editorial review, and provenance.
-- RB-006 and RB-007 require no forward-compatible contract changes now.
-- The approved next step is the bounded RB-017 data/validator pilot, not a production traps capability.
+- A trap combines a reproducible trigger, practical temptation, bounded punishment, explicit safe alternatives and separate setup soundness.
+- Identity uses normalized trigger position and ordered move transitions, not opening name or ECO.
+- Practical temptation and objective soundness remain separate.
+- Suitable reusable sources include CC0 Lichess datasets and `lichess-org/chess-openings` labels.
+- Unlicensed studies, videos, blogs and books are discovery leads only.
+- Production traps remain outside RB-006/RB-007 until a pilot proves value.
 
 ### RB-017 pilot questions
 
-- Which exact Stockfish profile provides a useful reproducibility/cost balance?
-- Which minimum population sample rules should produce `INSUFFICIENT` rather than a percentage claim?
-- Which 20–50 examples provide enough soundness, outcome, family, transposition, and refutation diversity?
-- Which evidence fields belong in the canonical source record versus derived snapshots?
-- How is occurrence identity hashed without collapsing positions that differ in castling or en-passant rights?
-- Who owns editorial review, downgrade, rejection, deprecation, and refutation decisions during the pilot?
-- What evidence upgrades confidence from low to medium or high?
-- When should a famous trap be classified as refuted rather than merely dubious or practically obsolete?
+- Which Stockfish profile provides a useful reproducibility/cost balance?
+- Which minimum population samples produce `INSUFFICIENT` rather than percentages?
+- Which 20–50 examples provide useful diversity?
+- Who owns editorial review, downgrade, rejection, deprecation and refutation decisions?
+- What evidence upgrades confidence?
+- When is a famous trap refuted rather than merely dubious or obsolete?
 - How are live Explorer refreshes isolated from deterministic tests and rate limits?
-- Does the pilot justify any later optional RB-006/RB-007 extension, or should traps remain separate?
+- Does the pilot justify a later optional builder extension?
 
-Owner task: RB-017. Execution issue: #114.
+Owner: RB-017. Execution issue: #114.
 
 ## LLM
 
@@ -245,7 +239,7 @@ Owner task: RB-017. Execution issue: #114.
 - Can the LLM be removed without breaking the workflow?
 - Is generated text stored, regenerated or transient?
 
-Owner task: RB-015.
+Owner: RB-015.
 
 ## Outcome feedback
 
@@ -255,4 +249,4 @@ Owner task: RB-015.
 - Which metrics should feed profile recalculation?
 - When is a deferred branch promoted because it appears in new games?
 
-Owner task: RB-016.
+Owner: RB-016.

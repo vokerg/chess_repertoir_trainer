@@ -4,237 +4,185 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 has a stacked hands-on implementation in review through PR #139. RB-009 is the next ordered ready North Star critical-path task. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-009 is implemented for review through PR #177 after complete CI. RB-010 remains blocked until RB-009 is accepted and integrated. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
-**Runtime on `main`:** the deterministic side-aware opening-classification registry is `2026-07-rules-v2` and covers every entry and unique name in the pinned generated opening book with ordered regex rules, while preserving low-confidence and explicit unknown dimensions. Squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation. Squash commit `9d833d910205f687b87f3c54e2ff4ea71ced3cb5` from PR #157 provides the versioned shared repertoire-target contract, examples, invariants and change-impact helpers. Squash commit `25d37b44c273afe0b7e5838a4fb0a00cee89d88a` from PR #166 provides the versioned candidate-decision contract, deterministic explainable ranking policy, bounded evidence aggregation service, authenticated API route, tests, and completion documentation.
+**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, and the deterministic candidate-decision contract, ranking policy and authenticated evidence aggregation API from PR #166.
 
-**Review work:** PR #136 adds the Player Chess Profile API and contract. PR #139 adds the Angular experience on top of that review branch. Neither profile PR is integrated into `main`.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #177 adds the storage-neutral builder-session and branch-queue domain.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
 ## Completed foundations
 
-### RB-001 and RB-002
+### Population and player level — RB-001 / RB-002
 
 Available on `main`:
 
-- fixed speed presets and rating targets;
-- Lichess benchmark bands and versioned Chess.com mappings;
+- fixed speed presets and Lichess rating targets;
+- versioned Chess.com-to-Lichess mappings;
 - provider/speed classification before aggregation;
 - multi-account game-count-weighted normalized band distribution;
 - recent-three-month, all-history and generic fallback;
 - `dominant-contiguous-window-v1`;
-- complete distribution, selected groups, evidence period and contribution provenance;
+- complete distribution, selected interval, evidence period and contribution provenance;
 - compact Peer games UI and typed API contracts.
 
-RB-002 is closed as delivered by this merged RB-001 implementation. No separate durable formula, exact universal number, persistence model, confidence score or override foundation is justified without a concrete consumer or measured defect.
+No second durable player-level formula is justified without a measured defect or concrete consumer.
 
-### RB-003 opening-classification foundation
+### Opening classification — RB-003 / RB-018
 
-Issue [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91) is complete through PR [#111](https://github.com/vokerg/chess_repertoir_trainer/pull/111).
-
-Report: `reports/RB-003-2026-07-27-opening-classification-rules.md`.
-
-Delivered:
+Available on `main`:
 
 - deterministic ordered regex rules with family inheritance and narrow overrides;
-- independent White and Black soundness, character, theoretical status, theory burden, roles and confidence;
+- independent White and Black profiles;
 - explicit matched-rule provenance and unknown values;
-- representative gambit, dubious-line and Mikenas-Carls examples;
-- generated-book coverage and rule-usage audit;
-- no database, runtime LLM, Stockfish audit, API, UI, or generated-book mutation.
-
-### RB-018 opening-classification coverage
-
-Issue [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) is complete through PR [#121](https://github.com/vokerg/chess_repertoir_trainer/pull/121).
-
-Report: `reports/RB-018-2026-07-27-opening-classification-coverage.md`.
-
-Delivered:
-
 - active rule version `2026-07-rules-v2`;
-- 100% rule-match coverage for the pinned 3,733 generated entries and 3,167 unique names through 114 active ordered rules;
-- maintainable coverage modules and stable-ID regex corrections;
-- frequency-ranked generated and imported-game unknown-family backlogs;
-- database-backed game-weighted coverage auditing;
-- CI audit artifacts and failure on newly unmatched pinned names;
-- explicit low confidence and `UNKNOWN` dimensions where stronger claims would be fabricated.
+- rule-match coverage for all 3,733 pinned entries and 3,167 unique names;
+- generated and imported-game weighted audits;
+- CI failure on newly unmatched pinned names.
 
-Rule-match coverage is not semantic overclaiming. Rare heterogeneous families may retain `UNKNOWN` soundness or low confidence while exposing only safe characteristics and provenance.
+Rule matching does not fabricate semantic certainty. Rare families may retain low confidence or explicit `UNKNOWN` dimensions.
 
-### RB-008 visual direction
+### Accepted visual direction — RB-008
 
-Issue [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) is complete through PR [#110](https://github.com/vokerg/chess_repertoir_trainer/pull/110).
+PR #110 establishes:
 
-Accepted flow:
+1. a focused setup dialog for side, start, speed, population, persona and coverage intent;
+2. a routed builder workbench after **Start building**;
+3. one readable primary board;
+4. candidate switching with focused evidence;
+5. an opponent-response queue and visible branch progress;
+6. separate target fit and profile fit;
+7. no simultaneous multi-board default.
 
-1. a focused setup dialog captures side, starting point, speed preset, rating target, persona and coverage/theory preferences;
-2. **Start building** closes the dialog and opens a routed workbench;
-3. the workbench uses one readable primary board, candidate switcher, focused evidence, opponent-response coverage queue and branch progress;
-4. simultaneous candidate mini-boards are rejected as the default;
-5. candidate-attached target/profile roles remain.
+### Repertoire target — RB-006
 
-### RB-014 traps discovery
+Squash-merged PR #157 provides:
 
-Issue [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) is complete through squash-merged PR [#113](https://github.com/vokerg/chess_repertoir_trainer/pull/113), commit `d53ff6e2b6eedcbf5f3abcea137373baa0102397`.
+- versioned target identity and one build/session snapshot;
+- side, starting point and account context;
+- one fixed speed preset and requested/effective population;
+- factual peer-resolution provenance;
+- explicit objective, risk, theory, complexity and coverage intent;
+- field-level defaults and exact overrides;
+- immutable/mutable/recalculation field sets;
+- no API, UI, persistence, ranking or course writes.
 
-Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`.
+### Candidate decisions — RB-007
 
-Accepted conclusions include normalized position-and-move identity, CC0 source candidates, versioned engine and population evidence, explicit setup soundness and provenance, and editorial review. No production schema, API, Angular UI, course write, or critical-path dependency was added.
+Squash-merged PR #166 provides:
 
-### RB-006 repertoire target contract
-
-Issue [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) is complete through squash-merged PR [#157](https://github.com/vokerg/chess_repertoir_trainer/pull/157), commit `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`.
-
-Report: `reports/RB-006-2026-07-28-repertoire-target-contract.md`.
-
-Delivered:
-
-- shared `@chess-trainer/contracts/repertoire-target` export;
-- versioned target identity, side and starting point;
-- one fixed speed preset and requested/effective Lichess population target;
-- factual peer-resolution snapshots with normalization/profile and resolver-policy provenance;
-- `MY_PEERS_PLUS_ONE` as exactly one adjacent higher benchmark group, capped at `2500+`;
-- account context, explicit persona/objective, risk, theory, complexity and coverage policy;
-- target-specific soundness/theory values that exclude factual `UNKNOWN`;
-- explicit opt-in for deliberately dubious intent;
-- per-field system/persona/profile/peer defaults kept separate from authoritative effective values;
-- exact override validation without mutating factual profile or peer evidence;
-- immutable, mutable and candidate-recalculation field sets;
-- pure population-resolution and change-impact helpers;
-- canonical new-course, existing-course, profile-override and alternate-persona examples;
-- invalid-combination and pure-helper tests;
-- no endpoint, UI, persistence, ranking, course write, traps or LLM behavior.
-
-PRs #145 and #146 were superseded and closed without merge.
-
-### RB-007 candidate decisions
-
-Issue [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) is complete through squash-merged PR [#166](https://github.com/vokerg/chess_repertoir_trainer/pull/166), commit `25d37b44c273afe0b7e5838a4fb0a00cee89d88a`. Claim coordination is recorded in PR [#164](https://github.com/vokerg/chess_repertoir_trainer/pull/164).
-
-Implementation report: `reports/RB-007-2026-07-29-candidate-evidence-ranking.md`.
-
-Closure report: `reports/RB-007-2026-07-29-closure.md`.
-
-Delivered:
-
-- shared contract version `2026-07-v1` and deterministic policy version `2026-07-deterministic-v1`;
+- candidate contract version `2026-07-v1`;
+- deterministic policy version `2026-07-deterministic-v1`;
 - authenticated `POST /api/candidate-decisions`;
-- explicit `USER_MOVE` and `OPPONENT_RESPONSE` roles;
-- legal-position canonicalization and bounded candidate generation;
-- stored MultiPV engine, Masters, immutable selected-population target, personal-game, opening-classification, player-profile and owned-course evidence;
-- independently injectable providers and concurrent source loading;
-- explicit available, stale, insufficient and unavailable states;
-- separate objective, population, Masters, personal, target-fit, profile-fit and course components;
+- separate `USER_MOVE` and `OPPONENT_RESPONSE` roles;
+- bounded stored engine, Masters, selected-population, personal, opening, profile and course evidence;
+- explicit unavailable, stale and insufficient source states;
+- separate target fit and profile fit;
 - stable reason and warning codes without a public opaque aggregate score;
-- target-dependent objective eligibility, explicit dubious opt-in and legal manual-candidate inclusion;
-- exact course coverage, current-position conflict and narrow resulting-position transposition evidence;
-- opponent-response contribution and cumulative coverage;
-- no Prisma migration, builder-session state, candidate persistence, course write, Angular UI, traps, LLM ranking, live engine run or peer-formula change.
+- course conflict, narrow transposition and opponent-coverage evidence.
 
-CI runs `30420827852` / #1281, `30421167116` / #1284, and final implementation-head run `30421735252` / #1295 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
+Final implementation-head CI #1295 passed the complete repository workflow.
 
 ## Review work
 
-### RB-004 calculation
+### RB-004 / #92 — Player Chess Profile calculation
 
-Issue [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) is implemented for review through PR [#136](https://github.com/vokerg/chess_repertoir_trainer/pull/136).
+PR #136 provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance evidence, selected-game baselines, evidence grades, opening-classification provenance and bounded supporting games.
 
-Report: `reports/RB-004-2026-07-27-player-chess-profile-calculation.md`.
+CI #1103 passed. User review and accepted integration remain required.
 
-Review implementation:
+### RB-005 / #93 — Player Chess Profile experience
 
-- shared request/response schemas at `@chess-trainer/contracts/player-chess-profile`;
-- authenticated `GET /api/player-chess-profile`;
-- account, period, speed-preset, colour, rated-status and rating-context filters;
-- selected-game score baseline and explicit analysed coverage;
-- separate preference exposure and performance measurements;
-- side-aware opening-profile dimensions with rule/source provenance;
-- deterministic sample and analysis evidence grades;
-- bounded top-100 opening/colour groups and 1–10 supporting games;
-- explicit omitted, truncated, low-confidence and unknown-dimension counts;
-- no Prisma migration, stored profile, UI, LLM, candidate ranking or course write.
+Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
 
-Final implementation-head CI run `30287398030` / #1103 passed lint, build, audits, architecture guardrails, migrations and complete tests.
+It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
 
-### RB-005 experience
+### RB-009 / #97 — Builder session and branch queue
 
-Issue [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) is implemented for hands-on review through stacked PR [#139](https://github.com/vokerg/chess_repertoir_trainer/pull/139).
+Draft implementation PR #177 provides:
 
-Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`.
+- pure model version `2026-07-v1` under `packages/chess-domain`;
+- serializable owner-scoped snapshot and optimistic revision;
+- retained RB-006 target and RB-007 evidence/policy references;
+- path-stable branch IDs plus normalized-position transposition identity;
+- explicit `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE` states;
+- active, superseded and stale decision history;
+- deterministic accept/replace, defer/reopen, stale restart, ignore, complete, reorder, refresh, resume and lifecycle transitions;
+- lazy one-decision expansion rather than full-tree generation;
+- bounded tree and queue preview;
+- limits of 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
 
-Review implementation:
+Persistence is deliberately staged. RB-009 adds no Prisma model, API route, Angular UI or storage adapter. The snapshot is ready for a later adapter, but RB-010 must first demonstrate the routed workbench and a concrete durable-resume requirement.
 
-- `/progress` preserves the existing default/active account redirect and `/progress/accounts/:accountId` retains account dashboards;
-- `/progress/profile` is a separate authenticated lazy route;
-- Progress exposes `Account performance` and `Chess profile` submenu entries;
-- recent, all-time, and custom periods;
-- all or selected accounts, speed preset, White/Black, rated/casual, and rating-range filters;
-- independent `What you choose` and `What works` views;
-- conclusion cards and row-level evidence expansion;
-- contributing openings, bounded supporting games, WDL, score baseline, composite opening-positive/trouble and early-mistake rates, accuracy and peer context;
-- coverage, low-confidence, unknown, truncation, loading, no-data, error, stale-request, and partial-analysis states;
-- feature-local standalone OnPush components, HTTP-only typed data access, private writable store signals with readonly/computed exposure, focused pure view-model helpers, and component/store/route tests;
-- no RB-004 formula change, profile persistence, correction storage, target setup, course write, or LLM dependency.
+Implementation-head CI run `30425427760` / #1328 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
 
-The review stack remains open until RB-004 is accepted, populated profile data is reviewed, and the stacked branches are reconciled.
+Report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`.
 
-## RB-009 ready work
+## Active independent pilot
 
-RB-009 is the next ordered ready North Star critical-path task. Completed RB-006, accepted RB-008 direction, and integrated RB-007 candidate identifiers, reason semantics, policy version, evidence limits, and opponent-coverage contract are now available.
+### RB-017 / #114
 
-RB-009 owns target snapshots, candidate staleness, descendant invalidation, branch states, queue ordering, persistence decisions, drafts and resume behavior. RB-010 remains blocked on RB-009.
+The approved traps pilot remains limited to:
 
-## RB-017 active pilot
+- a source-controlled reviewed dataset;
+- deterministic validation;
+- versioned engine and population snapshots;
+- explicit insufficient evidence;
+- review output, tests and documentation.
 
-Issue [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) remains the only approved traps implementation scope.
-
-Implementation branch: `rb-017/issue-114-curated-traps-pilot`.
-
-Scope is limited to a source-controlled reviewed dataset, deterministic validation, versioned engine/population snapshots, explicit insufficient evidence, review output, tests and documentation. It excludes Prisma persistence, public API, Angular UI, course writes, and target/ranking contract changes.
+It excludes production persistence, public API, Angular UI, course writes and RB-006/RB-007 contract changes.
 
 ## Repository and GitHub issue state
 
-- RB-001 / [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89): `DONE`.
-- RB-002 / [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90): `DONE` through RB-001 delivery evidence and closure PR #107.
-- RB-003 / [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91): `DONE` through PR #111.
-- RB-004 / [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92): `REVIEW` through PR #136.
-- RB-005 / [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93): `REVIEW` through stacked PR #139.
-- RB-006 / [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94): `DONE` through PR #157.
-- RB-007 / [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95): `DONE` through squash-merged PR #166.
-- RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `DONE` through accepted PR #110 direction.
-- RB-009 / [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97): `READY` after RB-007 integration.
-- RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): `DONE` through PR #113.
-- RB-017 / [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114): `CLAIMED` for the bounded pilot.
-- RB-018 / [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116): `DONE` through PR #121.
+- RB-001 / #89: `DONE`.
+- RB-002 / #90: `DONE` through RB-001 delivery evidence.
+- RB-003 / #91: `DONE`.
+- RB-004 / #92: `REVIEW` through PR #136.
+- RB-005 / #93: `REVIEW` through stacked PR #139.
+- RB-006 / #94: `DONE` through PR #157.
+- RB-007 / #95: `DONE` through PR #166.
+- RB-008 / #96: `DONE` through accepted PR #110 direction.
+- RB-009 / #97: `REVIEW` through PR #177.
+- RB-010 / #98: `BLOCKED` pending accepted RB-009 integration.
+- RB-014 / #102: `DONE` through PR #113.
+- RB-017 / #114: `CLAIMED` for the bounded pilot.
+- RB-018 / #116: `DONE` through PR #121.
 
 ## Dependency impact
 
-- RB-004 proposes the deterministic calculation contract.
-- RB-005 demonstrates the first profile presentation without extending that contract.
-- RB-005 cannot be integrated before RB-004 is accepted and the stacked branches are reconciled.
-- RB-006 provides the integrated target fields, default/override provenance and recalculation boundary.
-- RB-013 should consume RB-006 rather than inventing a separate profile-to-target override model.
-- RB-007 provides the integrated versioned candidate contract, deterministic ranking policy, evidence limits, reason taxonomy and opponent-coverage semantics.
-- RB-009 is ready and owns target snapshots, candidate staleness, descendant invalidation, branch states, drafts and resume behavior.
-- RB-010 owns production Angular composition using accepted RB-008 direction and accepted RB-006/RB-007/RB-009 boundaries.
-- RB-017 remains independent and adds no critical-path blocker.
+- RB-006 provides authoritative target snapshots and change-impact semantics.
+- RB-007 provides candidate IDs, decision roles, evidence/policy versions, stable reasons and opponent-coverage contribution.
+- RB-008 provides the accepted routed board-first interaction.
+- RB-009 now provides the review-ready session, decision-history, branch, queue, transposition, stale and preview semantics needed by RB-010.
+- RB-010 remains blocked until RB-009 is accepted and integrated; it then becomes the next ordered ready North Star task.
+- RB-011 remains responsible for course preview and writes.
+- RB-013 remains responsible for profile/persona defaults and overrides.
+- RB-017 remains outside the critical path.
 
 ## Validation
 
-- RB-004 CI `30287398030` / #1103 passed lint, build, audits, architecture guardrails, migrations and complete tests.
-- RB-008 validation includes responsive prototype review and complete repository CI on PR #110.
-- RB-014 source/license verification, repository inspection, and complete repository CI passed on PR #113.
-- RB-006 CI `30382976492` / #1251 and `30383511789` / #1256 passed lint, build, both opening audits, architecture guardrails, migrations and complete tests.
-- RB-007 CI `30420827852` / #1281, `30421167116` / #1284, and `30421735252` / #1295 passed lint, build, both opening audits, architecture guardrails, migrations and complete tests, including missing-source degradation, target/profile disagreement, transposition/conflict and opponent-coverage acceptance cases.
-- RB-017 must add deterministic offline fixture tests plus an explicit opt-in live refresh path.
+- RB-004 CI #1103 passed lint, build, audits, guardrails, migrations and complete tests.
+- RB-006 CI #1251 and #1256 passed the complete repository workflow.
+- RB-007 CI #1281, #1284 and #1295 passed the complete repository workflow and focused acceptance cases.
+- RB-008 validation includes responsive prototype review and complete repository CI.
+- RB-009 CI #1328 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
+- RB-014 source/license verification and complete repository CI passed.
+- RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 
 ## Residual risks
 
 - Opening classifications remain reviewable chess judgments.
-- RB-006 v1 supports only the Lichess Games population source; other providers require versioned evidence semantics.
-- Builder-session and completed-course target persistence remain intentionally unresolved for RB-009/RB-011/RB-013.
-- RB-007 V1 weights, objective thresholds, depth and sample limits require real-builder calibration and a policy-version increment when changed.
-- `complexityTolerance` and learning burden do not yet have independent measured features beyond opening character/theory classification.
-- Course transposition evidence is limited to alternative suggestions at the same current position; arbitrary downstream repertoire-graph traversal is deferred.
-- Engine, personal, course and player-profile providers do not yet share one freshness timestamp model; explorer cache staleness is explicit.
+- RB-006 v1 supports the Lichess Games population source only.
+- RB-007 weights, thresholds and evidence limits require real-builder calibration and version increments when changed.
+- RB-009 has no durable storage, API or browser recovery; persistence remains conditional on RB-010 evidence.
+- RB-009 source freshness is explicit but consumer-driven; no background watcher marks evidence stale.
+- RB-009 transpositions are recognized within the loaded session snapshot, not by arbitrary external repertoire-graph traversal.
+- Course materialization, conflict resolution and completed-course target metadata remain RB-011 work.
+- Engine, personal, course and profile providers do not share one universal freshness timestamp model.
+
+## Queue recommendation
+
+Keep task order and priorities unchanged.
+
+RB-009 is in review. After accepted integration, move RB-010 from `BLOCKED` to `READY`. No new task or roadmap resequencing is required now.
