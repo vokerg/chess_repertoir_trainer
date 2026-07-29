@@ -152,8 +152,8 @@ describe('MainNavigationComponent', () => {
       '.rail-inline-item[href="/library"]',
     ) as HTMLAnchorElement | null;
 
-    expect(studyLink?.classList).toContain('active');
-    expect(repertoireLibraryLink?.classList).toContain('active');
+    expect(studyLink?.classList).toContain('rail-nav-link-active');
+    expect(repertoireLibraryLink?.classList).toContain('rail-inline-item-active');
 
     await router.navigateByUrl('/builder');
     fixture.detectChanges();
@@ -161,6 +161,6 @@ describe('MainNavigationComponent', () => {
     const builderLink = Array.from(
       fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
     ).find((link) => link.textContent?.includes('Builder'));
-    expect(builderLink?.classList).toContain('active');
+    expect(builderLink?.classList).toContain('rail-nav-link-active');
   });
 });
