@@ -1,6 +1,6 @@
 # RB-009 — Define builder session, branch queue, and draft lifecycle
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -22,7 +22,11 @@ Claim PR: `#173`
 
 Implementation PR: `#177`
 
+Squash commit: `00c8f1abff4403d4fe5996cbb41759a1608a9cf9`
+
 Implementation-head CI: run `30425427760` / CI #1328 — success
+
+Final implementation-head CI: run `30426357127` / CI #1360 — success
 
 Claim scope: Define and implement a pure, serializable and versioned builder-session domain in `packages/chess-domain` with retained RB-006 target snapshots, RB-007 policy/evidence references, path-stable branch identities plus normalized-position transposition keys, a lazily generated bounded queue, explicit `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE` states, deterministic accept/defer/reopen/ignore/reorder/complete/ancestor-replacement/refresh transitions, preview-tree projection and focused pure tests. Resolve MVP persistence as staged: no Prisma model, API endpoint, Angular UI or storage adapter in RB-009; storage is deferred until RB-010 demonstrates the routed workbench and concrete resume requirements. Excludes candidate calculation, course writes, background traversal, notifications, LLM state and unbounded tree generation.
 
@@ -58,7 +62,7 @@ A recursive builder is not a simple linear form. It creates multiple pending bra
 
 Completed RB-006 target contract, accepted RB-008 routed visual direction, and integrated RB-007 candidate identifiers, reason semantics, policy version, evidence limits, and opponent-coverage contract are available.
 
-RB-010 depends on accepted RB-009 integration.
+RB-010 is unblocked by the accepted and integrated RB-009 delivery.
 
 ## Delivered scope
 
@@ -157,7 +161,7 @@ RB-010 should first compose the routed workbench against this pure model. Durabl
 
 ## Required validation
 
-Completed through CI #1328:
+Completed through implementation-head CI #1328 and final implementation-head CI #1360:
 
 - root lint;
 - root build;
@@ -172,10 +176,12 @@ No API, Prisma ownership, Angular, course-write or durable-resume validation was
 
 ## Completion updates
 
-The implementation report records the persistence decision, lifecycle, queue algorithm, transposition semantics, hard bounds, residual risks and RB-010 impact.
+The implementation report records the persistence decision, lifecycle, queue algorithm, transposition semantics, hard bounds, residual risks and RB-010 impact. The closure report records user acceptance, squash integration and queue synchronization.
 
 ## Completion
 
-Report: `../reports/RB-009-2026-07-29-builder-session-lifecycle.md`
+Implementation report: `../reports/RB-009-2026-07-29-builder-session-lifecycle.md`
 
-Completed at: pending user review, accepted merge and closure reconciliation
+Closure report: `../reports/RB-009-2026-07-29-closure.md`
+
+Completed at: 2026-07-29

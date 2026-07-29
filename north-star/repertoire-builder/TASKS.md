@@ -18,8 +18,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | DONE | Define repertoire target contract | North-star | Squash-merged through PR #157 |
 | 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, completed RB-006 contract |
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
-| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | REVIEW | Define builder session, branch queue, and draft lifecycle | North-star | PR #177; implementation-head CI #1328 passed; awaiting review and integration |
-| 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | Accepted RB-008 direction, integrated RB-007, and accepted RB-009 integration |
+| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
+| 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | READY | Implement bounded interactive builder MVP | North-star | Integrated RB-007 and RB-009 foundations plus accepted RB-008 direction |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
@@ -104,6 +104,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Publishes no opaque aggregate score and adds no persistence, course write, Angular UI, traps, LLM, live engine run, or peer-formula change.
 - CI #1281, #1284, and final implementation-head CI #1295 passed lint, build, both opening audits, architecture guardrails, migrations, and complete repository tests.
 
+### RB-009 / #97
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/173
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/177
+- Squash commit: `00c8f1abff4403d4fe5996cbb41759a1608a9cf9`
+- Implementation report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`
+- Closure report: `reports/RB-009-2026-07-29-closure.md`
+- Adds a pure, serializable and versioned builder-session domain with owner/revision checks, retained target and evidence provenance, path-stable branches, normalized-position transpositions, explicit branch states, decision history and a lazy bounded queue.
+- Deterministic transitions cover accept/replace, defer/reopen, stale restart, ignore, branch completion, target/evidence invalidation, queue reorder, session completion/abandonment and snapshot resume.
+- Hard bounds are 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
+- Persistence is staged: no Prisma, API, Angular UI or storage adapter until RB-010 demonstrates a concrete durable-resume requirement.
+- CI #1328 and final implementation-head CI #1360 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
+
 ## Review work
 
 ### RB-004 / #92
@@ -125,18 +138,6 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
-### RB-009 / #97
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/173
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/177
-- Report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`
-- Adds a pure, serializable and versioned builder-session domain with owner/revision checks, retained target and evidence provenance, path-stable branches, normalized-position transpositions, explicit branch states, immutable decision history and a lazy bounded queue.
-- Deterministic transitions cover accept/replace, defer/reopen, stale restart, ignore, branch completion, target/evidence invalidation, queue reorder, session completion/abandonment and snapshot resume.
-- Hard bounds are 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
-- Persistence is staged: no Prisma, API, Angular UI or storage adapter until RB-010 demonstrates a concrete durable-resume requirement.
-- CI #1328 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
-- Await user review and accepted integration before closing #97 or unblocking RB-010.
-
 ## Active claim
 
 ### RB-017 / #114
@@ -157,7 +158,7 @@ PR #110 establishes:
 - target/profile separation;
 - no simultaneous three-board default.
 
-RB-010 owns production composition after accepted RB-009 integration, using completed RB-006 and integrated RB-007.
+RB-010 is now the next ordered ready task and owns production composition using integrated RB-006, RB-007 and RB-009 foundations plus the accepted RB-008 direction.
 
 ## Critical path
 
@@ -178,9 +179,9 @@ RB-007 candidate evidence/ranking — DONE
         +
 RB-008 visual proof — DONE
         ↓
-RB-009 session/queue lifecycle — REVIEW
+RB-009 session/queue lifecycle — DONE
         ↓
-RB-010 routed builder — BLOCKED pending RB-009 acceptance
+RB-010 routed builder — READY
         ↓
 RB-011/012 course materialization and adaptation
         ↓
@@ -196,7 +197,7 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
 - RB-006 is `DONE` through squash-merged PR #157.
 - RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
-- RB-009 is `REVIEW` through PR #177 after complete implementation-head CI #1328.
-- RB-010 remains blocked until accepted RB-009 integration; it becomes the next ordered ready North Star task after that gate.
+- RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
+- RB-010 is the next ordered `READY` North Star critical-path task.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
 - No new task, priority change or roadmap resequencing is required.
