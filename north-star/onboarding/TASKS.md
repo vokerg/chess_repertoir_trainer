@@ -7,8 +7,8 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | Order | ID | GitHub issue | Priority | Status | Task | Delivery class | Primary dependencies |
 | ---: | --- | --- | --- | --- | --- | --- | --- |
 | 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | DONE | Establish program foundation and master plan | Research/planning | Squash-merged through PR #156 |
-| 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | REVIEW | Define onboarding lifecycle and default preparation recipe | Research | ONB-000 |
-| 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | READY | Design bounded recent-first import and historical backfill | Research | ONB-000; consumes ONB-001 recipe |
+| 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | DONE | Define onboarding lifecycle and default preparation recipe | Research | Squash-merged through PR #197 |
+| 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | IN_PROGRESS | Design bounded recent-first import and historical backfill | Research | ONB-000; consumes ONB-001 recipe |
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | READY | Design progressive indexing and analysis orchestration | Research | ONB-000; consumes ONB-001; coordinates ONB-002/007 |
 | 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | READY | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | ONB-000; consumes ONB-001 reset/disposition boundary |
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000; consumes ONB-001 no-ETA boundary |
@@ -30,9 +30,11 @@ Delivered:
 - report `reports/ONB-000-2026-07-28-program-foundation.md`;
 - GitHub issues #147–#154.
 
-## ONB-001 review delivery
+## ONB-001 completion
 
-ONB-001 defines:
+ONB-001 was accepted and squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197) as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`.
+
+It defines:
 
 - user disposition and repeatable preparation-run boundaries;
 - fixed three-calendar-month standard blitz/rapid default including rated and unrated games;
@@ -42,9 +44,9 @@ ONB-001 defines:
 - report `reports/ONB-001-2026-07-29-lifecycle-default-recipe.md`;
 - bounded implementation tasks ONB-008 through ONB-010.
 
-## Deterministic next task
+## Current task
 
-ONB-002 / #149 is the lowest-order READY task after ONB-001 entered review.
+ONB-002 / #149 is claimed on `onb-002/issue-149-bounded-import-backfill`.
 
 It owns durable bounded provider import and backfill and must consume ONB-001’s fixed recipe/date/rated/no-data decisions.
 
