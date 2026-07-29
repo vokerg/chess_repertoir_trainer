@@ -12,7 +12,7 @@ Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/ch
 
 Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197) as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`
 
-Current review: ONB-002 / [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149)
+Current review: ONB-002 / [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) / [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
 Current branch: `onb-002/issue-149-bounded-import-backfill`
 
