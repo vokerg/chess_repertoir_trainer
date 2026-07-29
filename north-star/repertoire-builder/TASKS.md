@@ -19,8 +19,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, completed RB-006 contract |
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
 | 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
-| 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | READY | Implement bounded interactive builder MVP | North-star | Integrated RB-007 and RB-009 foundations plus accepted RB-008 direction |
-| 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
+| 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | REVIEW | Implement bounded interactive builder MVP | North-star | PR #184; implementation-head CI #1408 passed; awaiting hands-on review and integration |
+| 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | Accepted and integrated RB-010 preview/workbench boundary |
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
@@ -138,6 +138,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
+### RB-010 / #98
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/182
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/184
+- Report: `reports/RB-010-2026-07-29-interactive-builder-mvp.md`
+- Adds authenticated `/builder` route and top-level navigation entry.
+- Composes schema-valid RB-006 target setup, existing RB-007 candidate evidence and the RB-009 session reducer in one page-scoped Angular workflow.
+- Provides one board, visual candidate switching, manual legal-move inclusion, opponent-response selection, inspectable evidence, bounded queue/defer/reopen/stop/stale controls and structural preview.
+- Bounds the route to initial-position starts, 6 candidates per decision and 24 accepted decisions while preserving RB-009 hard limits.
+- Adds no Prisma model, builder-session API, browser storage or course write; refresh explicitly starts over.
+- Final implementation-head CI #1408 passed lint, builds, both opening audits, architecture guardrails, migrations and complete repository tests.
+- Await authenticated populated-data review, desktop/mobile review, persistence sufficiency decision, preview acceptance and integration before closing #98 or unblocking RB-011.
+
 ## Active claim
 
 ### RB-017 / #114
@@ -158,7 +171,7 @@ PR #110 establishes:
 - target/profile separation;
 - no simultaneous three-board default.
 
-RB-010 is now the next ordered ready task and owns production composition using integrated RB-006, RB-007 and RB-009 foundations plus the accepted RB-008 direction.
+PR #184 implements this direction for review using integrated RB-006, RB-007 and RB-009 boundaries. RB-011 remains blocked until the workbench and structural preview are accepted and integrated.
 
 ## Critical path
 
@@ -181,9 +194,9 @@ RB-008 visual proof — DONE
         ↓
 RB-009 session/queue lifecycle — DONE
         ↓
-RB-010 routed builder — READY
+RB-010 routed builder — REVIEW
         ↓
-RB-011/012 course materialization and adaptation
+RB-011/012 course materialization and adaptation — BLOCKED pending acceptance
         ↓
 RB-016 feedback
 ```
@@ -198,6 +211,7 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-006 is `DONE` through squash-merged PR #157.
 - RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
 - RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
-- RB-010 is the next ordered `READY` North Star critical-path task.
+- RB-010 is `REVIEW` through PR #184 after implementation-head CI #1408.
+- RB-011 remains `BLOCKED` until RB-010 hands-on acceptance and integration; RB-012 remains downstream of RB-010 and RB-011.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
 - No new task, priority change or roadmap resequencing is required.
