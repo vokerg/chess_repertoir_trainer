@@ -1,6 +1,6 @@
 # RB-011 — Preview and apply builder output to courses
 
-Status: READY
+Status: CLAIMED
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: Dual-use
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: OpenAI ChatGPT
 
-Claim branch: none
+Claim branch: `rb-011/issue-99-course-reintegration-claim`
 
-Claimed at: none
+Claimed at: 2026-07-29
 
-Claim scope: none
+Claim scope: Inspect and adapt the current analysis-reintegration and course-write architecture to add mandatory preview and explicit transactional apply for accepted RB-010/RB-009 builder trees. The implementation will define a stable builder-to-course wire boundary, validate ownership and stale anchors, preserve the one-correct-trained-side-move rule, surface create/reuse/skip/conflict outcomes, exclude deferred/ignored/stale work, reuse valid existing nodes/transpositions, increment course content revision and invalidate derived data through verified existing patterns, provide repeated-apply safety, and add the minimal feature-local Angular review/apply interaction. The task explicitly excludes automatic apply, existing-course finding entry points, durable builder persistence, LLM-authored content, training scheduling, and unrelated course or builder redesign.
 
 ## Outcome
 
