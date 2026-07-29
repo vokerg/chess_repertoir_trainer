@@ -4,15 +4,21 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** Phase 2 is complete. VT-301 remaining-page and Labs rollout is the next deterministic task.
+**Program state:** Phase 3 is in progress through VT-301 remaining-page and Labs rollout.
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** none
+**Active checkpoint branches:**
 
-**Active pull request:** none
+- `visual-transformation/vt-301-remaining-page-rollout` — Batch 1, Progress account dashboard;
+- `visual-transformation/vt-301-player-profile` — Batch 2, Player Chess Profile.
+
+**Active pull requests:**
+
+- draft PR #196 — Progress account dashboard; repository CI passed, browser review pending;
+- draft PR #206 — Player Chess Profile; repository CI and browser review pending.
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -106,7 +112,7 @@ Deferred evidence is not represented as observed validation and did not block th
 
 Issues #123–#131 are complete.
 
-Issue #132 / VT-301 is `READY` and is the next deterministic task. Issue #133 / VT-302 remains blocked by #132.
+Issue #132 / VT-301 is `IN_PROGRESS` with two independent draft rollout batches: PR #196 for the Progress account dashboard and PR #206 for Player Chess Profile. Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
 
 ## Validation status
 
@@ -114,6 +120,8 @@ Issue #132 / VT-301 is `READY` and is the next deterministic task. Issue #133 / 
 - VT-203 CI #1392, #1394, and reconciliation CI #1419 passed.
 - VT-204 CI #1425, #1432, #1448, and #1453 passed the complete repository workflow.
 - VT-205 implementation CI #1461 and exact approved-head CI #1472 passed the complete repository workflow.
+- VT-301 Batch 1 CI #1480 passed the complete repository workflow; direct browser review remains pending.
+- VT-301 Batch 2 PR #206 repository CI and direct browser review remain pending.
 
 The VT-205 workflows covered dependency installation, lint, full repository build and Angular template/type compilation, both opening audits, architecture guardrails, database migrations, and the complete test suite including updated navigation tests.
 
@@ -140,9 +148,20 @@ Complete and integrated through VT-205 / PR #191 and reconciliation PR #192.
 
 ### Phase 3 — rollout and polish
 
-VT-301 remaining-page and Labs rollout is next. VT-302 onboarding, empty-state, accessibility, and responsive polish follows it.
+VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state, accessibility, and responsive polish follows it.
 
 ## Session log
+
+### 2026-07-29 — VT-301 Player Chess Profile batch
+
+- Continued the claimed VT-301 rollout using the explicit inventory order after the Progress account-dashboard batch.
+- Inspected the current Player Chess Profile page, store/API boundary, filter bar, conclusions, breakdown, evidence, coverage, production token contract, responsive breakpoints, issue state, and open pull requests.
+- Confirmed PR #196, PR #204, and active RB-012 PR #205 do not touch the Player Chess Profile files.
+- Created `visual-transformation/vt-301-player-profile` from current `main` and opened draft PR #206.
+- Migrated six feature CSS files to production `--ui-*` roles with semantic status colours, analytical mono numerics, responsive composition, overlay treatment, and visible keyboard focus.
+- Preserved all route, store, API, filter, recalculation, evidence-selection, link, and data-state behavior.
+- Added the focused rollout report and updated the Angular migration ledger.
+- Local application checks remain unavailable in this session; repository CI and direct browser review remain pending.
 
 ### 2026-07-29 — VT-205 integration
 
