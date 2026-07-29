@@ -126,7 +126,7 @@ function candidateFixture(input: {
         side: 'WHITE',
         soundness: 'SOUND',
         character: ['BALANCED'],
-        theoreticalStatus: 'MAINSTREAM',
+        theoreticalStatus: 'MAINLINE',
         theoryBurden: 'MEDIUM',
         roles: [],
         confidence: 'HIGH',
