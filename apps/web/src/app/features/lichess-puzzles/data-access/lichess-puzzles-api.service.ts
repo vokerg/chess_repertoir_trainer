@@ -27,10 +27,10 @@ export class LichessPuzzlesApiService {
   }
 
   abandonRound(roundId: number): Observable<LichessPuzzleRound> {
-    return this.api.post<LichessPuzzleRound>(`/lichess-puzzles/rounds/${roundId}/abandon`, {});
+    return this.api.post<LichessPuzzleRound>(`/lichess-puzzles/rounds/${roundId}/abandon`, null);
   }
 
   retrySync(roundId: number): Observable<LichessPuzzleRound> {
-    return this.api.post<LichessPuzzleRound>(`/lichess-puzzles/rounds/${roundId}/retry-sync`, {});
+    return this.api.post<LichessPuzzleRound>(`/lichess-puzzles/rounds/${roundId}/retry-sync`, null);
   }
 }
