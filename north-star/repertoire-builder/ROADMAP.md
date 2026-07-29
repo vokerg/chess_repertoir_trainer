@@ -176,20 +176,34 @@ Gate: passed. A user can build one bounded repertoire slice, control opponent-re
 
 ## Stage 6 — course materialization and adaptation
 
-State: RB-011 is `READY` after integrated RB-010. RB-012 remains `BLOCKED` on safe course preview/apply.
+State: RB-011 is implemented for `REVIEW` through PR #189. RB-012 remains `BLOCKED` until safe course preview/apply is accepted and integrated.
 
-Goals:
+RB-011 review implementation provides:
 
-- define the stable builder-preview-to-course-write boundary;
-- preview and apply accepted trees through current course-writing patterns;
-- create or merge course material safely;
-- preserve ownership, stale-anchor protection, conflicts, transpositions and existing nodes;
-- return explicit created/reused/skipped/conflicted results;
-- enter the builder from gaps, endings, deviations and weak choices after safe apply exists.
+- a completed-builder-session projection into the existing storage-neutral analysis merge tree;
+- explicit exclusion of pending, deferred, ignored and stale branches from writes;
+- retained session/target/revision provenance at the boundary;
+- one shared versioned preview/apply contract;
+- authenticated operations against one owned existing chapter;
+- mandatory preview before explicit apply;
+- reviewed new-line or exact existing-line-anchor targets;
+- explicit created, reused, skipped and conflicting move counts;
+- exact preview fingerprinting over user, full draft, destination, result and course content revision;
+- strict rejection of trained-side conflicts;
+- transactional reuse of the existing move-node writer and course revision path;
+- equivalent-line and repeated-apply safety;
+- feature-local Angular destination, preview, target and apply state;
+- no Prisma model, migration, whole-course/new-chapter orchestration, durable builder persistence or existing-course finding entry point.
+
+Remaining Stage 6 goals:
+
+- hands-on review of one created and one merged real course tree;
+- accept and integrate RB-011;
+- enter the builder from gaps, endings, deviations and weak choices through RB-012 using the accepted materialization boundary.
 
 Tasks: RB-011, RB-012.
 
-Gate: accepted decisions become trainable material and existing-course maintenance uses the same workflow.
+Gate: pending. Automated RB-011 acceptance passes, but real-course/browser review and integration remain required before accepted decisions are considered a completed trainable-material workflow or RB-012 can proceed.
 
 ## Stage 7 — specialized personas and optional intelligence
 
@@ -228,7 +242,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- claim and implementation of RB-011 using integrated RB-010 preview output and current reintegration/course patterns;
+- review and acceptance of RB-011 through PR #189;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -245,7 +259,7 @@ High-collision areas requiring coordination:
 - RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-014 and RB-018 are `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-011 is the next ordered `READY` North Star critical-path task.
-- RB-012 remains `BLOCKED` on RB-011.
+- RB-011 is `REVIEW` through PR #189 after final tested implementation-head CI #1479.
+- RB-012 remains `BLOCKED` until RB-011 is accepted and integrated.
 - RB-017 remains `CLAIMED` and isolated.
 - No priority change, new task or roadmap resequencing is required.
