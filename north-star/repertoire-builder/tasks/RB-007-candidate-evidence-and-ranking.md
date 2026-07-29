@@ -1,6 +1,6 @@
 # RB-007 — Aggregate and rank candidate evidence explainably
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -12,7 +12,7 @@ Planning maturity: Outlined
 
 Claimed by: OpenAI ChatGPT
 
-Claim branch: `rb-007/issue-95-candidate-evidence-ranking-claim`
+Claim branch: `rb-007/issue-95-candidate-evidence-ranking`
 
 Claimed at: 2026-07-29
 
