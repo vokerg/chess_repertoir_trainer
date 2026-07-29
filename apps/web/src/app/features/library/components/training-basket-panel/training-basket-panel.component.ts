@@ -16,6 +16,7 @@ export interface TrainingBasketStart {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TrainingBasketPanelComponent {
+  readonly stepLabel = input.required<string>();
   readonly lineCountLabel = input('Lines');
   readonly lineCount = input.required<number>();
   readonly activeSublineCount = input.required<number>();
@@ -33,8 +34,8 @@ export class TrainingBasketPanelComponent {
   readonly scopeChange = output<LibraryTrainingScope>();
   readonly startMode = output<TrainingBasketStart>();
 
-  protected readonly basketSubtitle = computed(
-    () => `Coverage ${this.coverageLabel()} - Mastery ${this.masteryLabel()}`,
+  protected readonly basketHealth = computed(
+    () => `Coverage ${this.coverageLabel()} · Mastery ${this.masteryLabel()}`,
   );
   protected readonly basketStats = computed(() => [
     { id: 'lines', label: this.lineCountLabel(), value: this.lineCount() },
@@ -44,13 +45,21 @@ export class TrainingBasketPanelComponent {
     { id: 'untrained', label: 'Untrained', value: this.untrainedSublineCount() },
   ]);
   protected readonly canStartAll = computed(() => this.canStart());
-  protected readonly canStartWeak = computed(() => this.canStart() && this.weakSublineCount() > 0);
-  protected readonly canStartUntrained = computed(() => this.canStart() && this.untrainedSublineCount() > 0);
+  protected readonly canStartWeak = computed(
+    () => this.canStart() && this.weakSublineCount() > 0,
+  );
+  protected readonly canStartUntrained = computed(
+    () => this.canStart() && this.untrainedSublineCount() > 0,
+  );
 
   protected readonly scopeOptions = computed(() => [
     { id: 'COURSE' as const, label: 'Course', disabled: !this.canUseCourseScope() },
     { id: 'CHAPTER' as const, label: 'Section', disabled: !this.canUseChapterScope() },
-    { id: 'SELECTED_LINES' as const, label: 'Selected', disabled: !this.canUseSelectedLinesScope() },
+    {
+      id: 'SELECTED_LINES' as const,
+      label: 'Selected',
+      disabled: !this.canUseSelectedLinesScope(),
+    },
   ]);
 
   protected selectScope(scope: LibraryTrainingScope): void {
