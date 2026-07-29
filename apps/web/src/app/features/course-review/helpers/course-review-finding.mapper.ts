@@ -19,6 +19,7 @@ export interface CourseReviewFindingLineReferenceViewModel {
   lineName: string;
   chapterId: number;
   nodeId: number;
+  moveSequenceSan: string | null;
 }
 
 export interface CourseReviewEndingBuilderContextViewModel {
@@ -96,6 +97,7 @@ export function mapCourseExtensionCandidate(
       lineName: lineRef.lineName,
       chapterId: lineRef.chapterId,
       nodeId: lineRef.nodeId,
+      moveSequenceSan: lineRef.moveSequenceSan,
     })),
     courseEndingBuilderContext: {
       sourceKey: candidate.key,
