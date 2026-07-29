@@ -51,7 +51,27 @@ describe('repertoire builder launch payload', () => {
       courseId: 7,
       lineId: 13,
     });
-    expect(builderLaunchReturnUrl(parsed.context!)).toBe('/courses/7/review?view=endings');
+
+    const returnUrl = builderLaunchReturnUrl(parsed.context!);
+    const returnQuery = new URLSearchParams(returnUrl.split('?')[1]);
+    expect(returnUrl).toStartWith('/courses/7/review?');
+    expect(returnQuery.get('view')).toBe('endings');
+    expect(returnQuery.get('restore')).toBe('1');
+    expect(returnQuery.get('minGames')).toBe('4');
+    expect(returnQuery.get('userColor')).toBe('WHITE');
+    expect(returnQuery.get('from')).toBe('2026-06-29T00:00:00.000Z');
+  });
+
+  it('accepts the normalized four-field FEN emitted by Course endings', () => {
+    const query = {
+      ...validQuery(),
+      fen: STARTING_FEN.split(' ').slice(0, 4).join(' '),
+    };
+
+    const parsed = parseRepertoireBuilderLaunch(convertToParamMap(query));
+
+    expect(parsed.error).toBeNull();
+    expect(parsed.context?.startingFen).toBe(STARTING_FEN);
   });
 
   it('rejects malformed or incomplete external route state', () => {
