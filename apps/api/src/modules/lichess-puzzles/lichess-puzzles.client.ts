@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js';
 import {
   LichessPuzzleBatchItemPayload,
   LichessPuzzleBatchOptions,
@@ -6,11 +7,20 @@ import {
   LichessPuzzleSolutionSubmission,
   NormalizedLichessPuzzle,
 } from './lichess-puzzle.types';
-import { reconstructLichessPuzzlePosition } from './lichess-puzzle-position';
+import {
+  LichessPuzzlePositionError,
+  reconstructLichessPuzzlePosition,
+} from './lichess-puzzle-position';
 
 const DEFAULT_BASE_URL = 'https://lichess.org';
 const MAX_BATCH_SIZE = 50;
 const UCI_MOVE_PATTERN = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
+
+interface NormalizedPuzzlePosition {
+  startFen: string;
+  lastMoveUci: string;
+  sideToMove: 'WHITE' | 'BLACK';
+}
 
 export class LichessPuzzlesClientError extends Error {
   constructor(
@@ -31,6 +41,7 @@ export class LichessPuzzlesClient {
     accessToken: string,
     options: LichessPuzzleBatchOptions = {},
   ): Promise<NormalizedLichessPuzzle[]> {
+    const token = requireAccessToken(accessToken);
     const angle = normalizeAngle(options.angle);
     const count = normalizeBatchSize(options.count ?? 1);
     const url = new URL(`/api/puzzle/batch/${encodeURIComponent(angle)}`, this.baseUrl);
@@ -45,7 +56,7 @@ export class LichessPuzzlesClient {
 
     const response = await this.fetchImpl(url, {
       headers: {
-        Authorization: `Bearer ${requireAccessToken(accessToken)}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/json',
       },
     });
@@ -53,7 +64,7 @@ export class LichessPuzzlesClient {
     if (!response.ok) throw upstreamError(response.status, payload, 'Could not fetch Lichess puzzles');
 
     const batch = parseBatchPayload(payload);
-    return batch.puzzles.map(normalizePuzzle);
+    return Promise.all(batch.puzzles.map((item) => this.normalizePuzzle(token, item)));
   }
 
   async submitBatch(
@@ -88,27 +99,89 @@ export class LichessPuzzlesClient {
 
     return parseSolvePayload(payload);
   }
-}
 
-function normalizePuzzle(item: LichessPuzzleBatchItemPayload): NormalizedLichessPuzzle {
-  const position = reconstructLichessPuzzlePosition(item.game.pgn, item.puzzle.initialPly);
-  const solutionUci = item.puzzle.solution.map((move) => validateUciMove(move));
-  if (!solutionUci.length) {
-    throw new LichessPuzzlesClientError(`Lichess puzzle ${item.puzzle.id} has no solution moves`, 502);
+  private async normalizePuzzle(
+    accessToken: string,
+    item: LichessPuzzleBatchItemPayload,
+  ): Promise<NormalizedLichessPuzzle> {
+    const position = await this.resolvePuzzlePosition(accessToken, item);
+    const solutionUci = item.puzzle.solution.map((move) => validateUciMove(move, 'solution'));
+    if (!solutionUci.length) {
+      throw new LichessPuzzlesClientError(`Lichess puzzle ${item.puzzle.id} has no solution moves`, 502);
+    }
+
+    return {
+      providerPuzzleId: item.puzzle.id,
+      providerGameId: item.game.id,
+      gamePgn: item.game.pgn,
+      initialPly: item.puzzle.initialPly,
+      startFen: position.startFen,
+      lastMoveUci: position.lastMoveUci,
+      sideToMove: position.sideToMove,
+      rating: item.puzzle.rating,
+      plays: item.puzzle.plays,
+      themes: [...item.puzzle.themes],
+      solutionUci,
+    };
   }
 
+  private async resolvePuzzlePosition(
+    accessToken: string,
+    item: LichessPuzzleBatchItemPayload,
+  ): Promise<NormalizedPuzzlePosition> {
+    if (item.puzzle.fen && item.puzzle.lastMove) {
+      return normalizeExplicitPosition(item.puzzle.fen, item.puzzle.lastMove);
+    }
+
+    try {
+      return reconstructLichessPuzzlePosition(item.game.pgn, item.puzzle.initialPly);
+    } catch (error) {
+      if (!(error instanceof LichessPuzzlePositionError)) throw error;
+      const detailed = await this.fetchPuzzleById(accessToken, item.puzzle.id);
+      if (!detailed.puzzle.fen || !detailed.puzzle.lastMove) {
+        throw new LichessPuzzlesClientError(
+          `Lichess puzzle ${item.puzzle.id} did not provide a usable initial position`,
+          502,
+        );
+      }
+      return normalizeExplicitPosition(detailed.puzzle.fen, detailed.puzzle.lastMove);
+    }
+  }
+
+  private async fetchPuzzleById(
+    accessToken: string,
+    puzzleId: string,
+  ): Promise<LichessPuzzleBatchItemPayload> {
+    const url = new URL(`/api/puzzle/${encodeURIComponent(puzzleId)}`, this.baseUrl);
+    const response = await this.fetchImpl(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+    const payload = await readJson(response);
+    if (!response.ok) {
+      throw upstreamError(response.status, payload, `Could not fetch Lichess puzzle ${puzzleId}`);
+    }
+    const item = parseBatchItem(payload);
+    if (item.puzzle.id !== puzzleId) {
+      throw new LichessPuzzlesClientError('Lichess puzzle detail response returned a different puzzle', 502);
+    }
+    return item;
+  }
+}
+
+function normalizeExplicitPosition(fen: string, lastMove: string): NormalizedPuzzlePosition {
+  let chess: Chess;
+  try {
+    chess = new Chess(fen);
+  } catch {
+    throw new LichessPuzzlesClientError('Lichess puzzle contains an invalid initial FEN', 502);
+  }
   return {
-    providerPuzzleId: item.puzzle.id,
-    providerGameId: item.game.id,
-    gamePgn: item.game.pgn,
-    initialPly: item.puzzle.initialPly,
-    startFen: position.startFen,
-    lastMoveUci: position.lastMoveUci,
-    sideToMove: position.sideToMove,
-    rating: item.puzzle.rating,
-    plays: item.puzzle.plays,
-    themes: [...item.puzzle.themes],
-    solutionUci,
+    startFen: chess.fen(),
+    lastMoveUci: validateUciMove(lastMove, 'last move'),
+    sideToMove: chess.turn() === 'b' ? 'BLACK' : 'WHITE',
   };
 }
 
@@ -185,9 +258,9 @@ function validateSolutionSubmission(solution: LichessPuzzleSolutionSubmission): 
   requireBoolean(solution.rated, 'Lichess puzzle solution rated');
 }
 
-function validateUciMove(move: string): string {
+function validateUciMove(move: string, label: string): string {
   if (!UCI_MOVE_PATTERN.test(move)) {
-    throw new LichessPuzzlesClientError(`Lichess puzzle solution contains invalid UCI move: ${move}`, 502);
+    throw new LichessPuzzlesClientError(`Lichess puzzle ${label} contains invalid UCI move: ${move}`, 502);
   }
   return move;
 }
