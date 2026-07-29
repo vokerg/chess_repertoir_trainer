@@ -10,7 +10,7 @@ Target: `main`
 
 Pull request: draft PR #183
 
-Disposition: implementation and focused coverage complete; automated validation and direct browser review pending
+Disposition: implementation, focused coverage, and implementation-head automated validation complete; direct browser review pending
 
 ## Objective
 
@@ -136,6 +136,13 @@ VT-203 adds coverage that verifies:
 - filter context is derived from the existing `GameFilters` signal;
 - changing those source signals updates the context without a duplicate state model.
 
+CI exposed two focused-test issues only:
+
+- a read-only computed store signal was mutated through its public type instead of through the writable test stub;
+- the expected filter summary did not reflect the existing `blitz,rapid` Opening Analysis default.
+
+Both corrections were confined to the focused spec. No production code changed.
+
 Angular template/type compilation remains the primary check that the real Opening Analysis template satisfies every shared workbench and widget input/output contract.
 
 ## Candidate patterns for VT-204
@@ -162,7 +169,7 @@ VT-204 should compare these against the Games and Study candidates before promot
 
 ## Automated validation
 
-CI #1387 is running on the implementation/report branch. The required workflow covers:
+Implementation-head CI #1392 passed:
 
 - dependency installation;
 - lint;
@@ -171,9 +178,11 @@ CI #1387 is running on the implementation/report branch. The required workflow c
 - architecture guardrails;
 - database migrations;
 - imported-game opening classification audit;
-- complete repository test suite.
+- complete repository test suite, including the Opening Analysis page coverage.
 
-This section must be updated with the final result before review readiness is represented.
+Earlier CI #1389 and #1391 exposed the focused-test typing and expected-default issues documented above. All production gates passed on those heads, and both corrections were test-only.
+
+The exact final documentation head must pass the same repository workflow before review readiness is represented.
 
 ## Browser review required
 
