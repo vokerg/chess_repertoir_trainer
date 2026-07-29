@@ -12,6 +12,7 @@ describe('toLichessPuzzleTrainerViewModel', () => {
     expect(view.syncLabel).toBe('Awaiting result');
     expect(view.canAbandon).toBeTrue();
     expect(view.canStartNext).toBeFalse();
+    expect(view.mistakeFeedback).toBeNull();
   });
 
   it('maps a failed completed round to explicit retry state', () => {
@@ -28,6 +29,7 @@ describe('toLichessPuzzleTrainerViewModel', () => {
     expect(view.ratingLabel).toBe('Lichess sync failed');
     expect(view.syncLabel).toBe('Failed');
     expect(view.guidance).toBeNull();
+    expect(view.mistakeFeedback).toContain('recorded this rated puzzle as a loss');
     expect(view.canRetrySync).toBeTrue();
     expect(view.canStartNext).toBeTrue();
   });

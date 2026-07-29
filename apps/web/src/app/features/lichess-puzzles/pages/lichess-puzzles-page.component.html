@@ -17,51 +17,49 @@
     <div class="puzzle-message" aria-live="polite">{{ notice }}</div>
   }
 
-  <app-panel
-    title="Puzzle settings"
-    subtitle="Fresh mixed puzzles are selected relative to your current Lichess puzzle rating."
-  >
-    <div class="puzzle-settings">
-      <label>
-        <span>Difficulty</span>
-        <select
-          [value]="store.difficulty()"
+  @if (!store.round()) {
+    <app-panel
+      title="Puzzle settings"
+      subtitle="Fresh mixed puzzles are selected relative to your current Lichess puzzle rating."
+    >
+      <div class="puzzle-settings">
+        <label>
+          <span>Difficulty</span>
+          <select
+            [value]="store.difficulty()"
+            [disabled]="settingsLocked()"
+            (change)="setDifficultyFromEvent($event)"
+          >
+            @for (difficulty of difficulties; track difficulty.value) {
+              <option [value]="difficulty.value">{{ difficulty.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="rated-setting">
+          <input
+            type="checkbox"
+            [checked]="store.rated()"
+            [disabled]="settingsLocked()"
+            (change)="setRatedFromEvent($event)"
+          />
+          <span>
+            <strong>Rated on Lichess</strong>
+            <small>First result changes your Lichess puzzle rating.</small>
+          </span>
+        </label>
+
+        <button
+          type="button"
+          class="primary"
           [disabled]="settingsLocked()"
-          (change)="setDifficultyFromEvent($event)"
+          (click)="startRound()"
         >
-          @for (difficulty of difficulties; track difficulty.value) {
-            <option [value]="difficulty.value">{{ difficulty.label }}</option>
-          }
-        </select>
-      </label>
-
-      <label class="rated-setting">
-        <input
-          type="checkbox"
-          [checked]="store.rated()"
-          [disabled]="settingsLocked()"
-          (change)="setRatedFromEvent($event)"
-        />
-        <span>
-          <strong>Rated on Lichess</strong>
-          <small>First result changes your Lichess puzzle rating.</small>
-        </span>
-      </label>
-
-      <button
-        type="button"
-        class="primary"
-        [disabled]="settingsLocked()"
-        (click)="startRound()"
-      >
-        {{ store.loading() ? 'Loading puzzle...' : store.round() ? 'Start next puzzle' : 'Start puzzle' }}
-      </button>
-    </div>
-
-    @if (store.round()?.status === 'IN_PROGRESS') {
-      <p class="settings-note">Finish or abandon the current puzzle before changing settings.</p>
-    }
-  </app-panel>
+          {{ store.loading() ? 'Loading puzzle...' : 'Start puzzle' }}
+        </button>
+      </div>
+    </app-panel>
+  }
 
   @if (store.trainerView(); as view) {
     <app-lichess-puzzle-trainer
