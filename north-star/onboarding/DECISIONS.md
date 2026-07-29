@@ -1,10 +1,10 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 Statuses:
 
-- `LOCKED` — program foundation agreement; change only through reviewed decision update.
+- `LOCKED` — program agreement; change only through reviewed decision update.
 - `PROVISIONAL` — recommended direction delegated to a research task for finalization.
 - `REJECTED` — approach must not be introduced without reopening the decision.
 - `OPEN` — unresolved.
@@ -27,7 +27,7 @@ The initial recipe starts with a recent bounded sample rather than all available
 
 Status: `LOCKED`
 
-The product default is standard blitz and rapid games. Exact rated/date policy is delegated.
+The product default is standard blitz and rapid games.
 
 ### D-004 — Stage order
 
@@ -51,7 +51,7 @@ No client-side bulk import, indexing, analysis, lifecycle deletion, or cleanup.
 
 Status: `LOCKED`
 
-Show persisted state and counts. ETA is disabled until ONB-007 approves an evidence-based policy.
+Show persisted stage state and exact counts. Percentages require a fixed denominator. ETA and “almost done” wording are disabled until ONB-007 approves an evidence-based policy.
 
 ### D-008 — No hardcoded admin credentials
 
@@ -83,55 +83,127 @@ Status: `LOCKED`
 
 This program owns functional onboarding and data lifecycle. Visual Transformation #133 owns final visual/accessibility polish. Repertoire Builder #105 owns repertoire decisions.
 
+### D-013 — User disposition is separate from preparation runs
+
+Status: `LOCKED`
+
+Persist a user-level onboarding disposition with durable values `PENDING`, `COMPLETED`, and `SKIPPED`. Derive new, active, returning, and reset presentation from disposition plus preparation state rather than persisting competing statuses.
+
+### D-014 — Preparation is repeatable
+
+Status: `LOCKED`
+
+Use repeatable user-owned `DataPreparationRun` records for onboarding, expansion, and recovery. Permit at most one non-terminal preparation run per user. Do not create a generic workflow platform.
+
+### D-015 — A run starts on explicit recipe acceptance
+
+Status: `LOCKED`
+
+Connecting or creating an external account does not create background preparation. Create a run only when the authenticated user accepts a concrete recipe.
+
+### D-016 — Default date range is a fixed three-calendar-month snapshot
+
+Status: `LOCKED`
+
+At start, snapshot an inclusive UTC date-only range from three calendar months before the start date through the start date. The range does not continue moving while durable work runs.
+
+### D-017 — Default rated policy includes rated and unrated games
+
+Status: `LOCKED`
+
+The preparation recipe includes both. Individual product views may keep feature-owned rated defaults and filters.
+
+### D-018 — First run uses one selected account
+
+Status: `LOCKED`
+
+Guide one owned active account through the first run. Additional accounts, older history, bullet, and other broader scopes are explicit expansion runs.
+
+### D-019 — Index and analysis remain separate stages
+
+Status: `LOCKED`
+
+Indexing is required before analysis and provides earlier value. Default preparation requests analysis for successfully indexed games, but analysis remains a distinct stage with independent progress and recovery.
+
+### D-020 — Core onboarding completion does not require full analysis
+
+Status: `LOCKED`
+
+Complete user onboarding when the bounded initial import is terminal, all eligible games have terminal indexing outcomes, at least one game indexed successfully, and no required import/index work remains active. Analysis may continue afterward.
+
+### D-021 — No-data and all-index-failed outcomes need attention
+
+Status: `LOCKED`
+
+Do not silently complete when the initial range contains no eligible games or when every eligible game fails indexing. Expose deterministic actions for expansion, another account, retry, explicit finish, or skip as applicable.
+
+### D-022 — Readiness is feature-specific
+
+Status: `LOCKED`
+
+Expose capability readiness from persisted evidence and feature-owned thresholds rather than one global “insights ready” boolean. Distinguish locked, partial, ready, and checked-empty states.
+
+### D-023 — Home and onboarding route coexist
+
+Status: `LOCKED`
+
+Keep `/home` as the default signed-in destination and preserve login `returnUrl`. Add a protected resumable `/onboarding` route. Do not globally redirect every protected route behind an onboarding guard.
+
+### D-024 — Home consumes one server-owned projection
+
+Status: `LOCKED`
+
+Home may show a prominent Start/Resume treatment before core readiness and a compact preparation card afterward, but it must consume the onboarding projection rather than independently infer lifecycle from accounts and jobs.
+
+### D-025 — The technical job panel remains separate
+
+Status: `LOCKED`
+
+Keep the global imported-game job panel as the child-job execution surface. Do not make it own provider import, recipe, user disposition, milestones, or product-readiness narrative.
+
+### D-026 — Skip is not cancellation
+
+Status: `LOCKED`
+
+Skipping dismisses first-run guidance and does not silently cancel accepted preparation. Pause/cancel/retry are explicit preparation commands. If skipped preparation later reaches core readiness, disposition becomes `COMPLETED`.
+
+### D-027 — Existing users are adopted as complete
+
+Status: `LOCKED`
+
+Migration creates existing `AppUser` rows as onboarding `COMPLETED` with a legacy-adoption reason/timestamp. New users created after rollout begin `PENDING`. Readiness remains independently derived from actual evidence.
+
+### D-028 — Clients render server-allowed actions
+
+Status: `LOCKED`
+
+The onboarding projection supplies deterministic action codes and destinations. Angular must not create a second preparation recommendation/ranking engine.
+
 ## Provisional
 
-### D-020 — Recent window
-
-Status: `PROVISIONAL`
-
-Use the most recent three months. ONB-001/002 must decide rolling/date-only semantics and coverage wording.
-
-### D-021 — Visible wave target
+### D-040 — Visible wave target
 
 Status: `PROVISIONAL`
 
 Start research with approximately 50 games per preparation wave. ONB-003/007 decide final policy/configuration.
 
-### D-022 — Preparation aggregate
-
-Status: `PROVISIONAL`
-
-Add a small user-owned preparation/onboarding aggregate that references import requests and JobRuns. Do not create a generic workflow platform.
-
-### D-023 — Import persistence
+### D-041 — Import persistence
 
 Status: `PROVISIONAL`
 
 Persist account-level import work with separate bounded-initial, incremental-forward, and historical-backfill modes. ONB-002 decides whether to extend ImportRun or add a request/task model.
 
-### D-024 — Admin identity
+### D-042 — Admin identity
 
 Status: `PROVISIONAL`
 
 Reuse Clerk authentication plus an environment allowlist of verified administrator subjects. ONB-005 validates and defines dev behavior/future role migration.
 
-### D-025 — Angular admin surface
+### D-043 — Angular admin surface
 
 Status: `PROVISIONAL`
 
 Use a lazy route in the existing web app, hidden and server-authorized, rather than a separate deployment.
-
-### D-026 — First account
-
-Status: `PROVISIONAL`
-
-Guide one selected account through the first run; treat additional accounts as expansion.
-
-### D-027 — Separate INDEX and ANALYSE stages
-
-Status: `PROVISIONAL`
-
-Use separate JobRuns/waves for clearer value, resource, and recovery semantics instead of onboarding through opaque PROCESS jobs.
 
 ## Rejected
 
@@ -182,6 +254,24 @@ Shared analysis is separately retained and cleaned.
 Status: `REJECTED`
 
 Functional work must coordinate with #133 and use the transformed shared system.
+
+### D-108 — Browser-local onboarding authority
+
+Status: `REJECTED`
+
+Do not derive durable disposition, preparation stage, completion, or readiness from local storage, route history, or browser-only account/job inspection.
+
+### D-109 — Full analysis as onboarding completion
+
+Status: `REJECTED`
+
+Do not block core completion behind all requested Stockfish analysis.
+
+### D-110 — Global onboarding route trap
+
+Status: `REJECTED`
+
+Do not replace the sign-in guard with a rule that redirects every protected destination to onboarding.
 
 ## Open
 

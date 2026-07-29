@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -20,6 +20,9 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) |
 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) |
 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) |
+| ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) |
+| ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) |
+| ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -81,6 +84,10 @@ Comment only on meaningful changes:
 - validation failure that changes risk;
 - review readiness;
 - completion or supersession.
+
+## ONB-001 allocation note
+
+ONB-001 allocated ONB-008 through ONB-010 as bounded implementation tasks. They remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation is planning allocation, not permission to claim or implement them early.
 
 ## Completion
 
