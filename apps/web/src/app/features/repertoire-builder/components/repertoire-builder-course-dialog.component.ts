@@ -8,7 +8,13 @@ import {
   output,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import type {
   BuilderCourseDraft,
   BuilderCourseReintegrationApplyResponse,
@@ -68,11 +74,16 @@ export class RepertoireBuilderCourseDialogComponent {
 
   constructor() {
     effect(() => {
+      const courseId = this.selectedCourseId();
+      const busy = this.destinationsLoading() || this.applyLoading();
       this.form.setValue({
-        courseId: this.selectedCourseId(),
+        courseId,
         chapterId: this.selectedChapterId(),
         newLineName: this.newLineName(),
       }, { emitEvent: false });
+      syncDisabled(this.form.controls.courseId, busy);
+      syncDisabled(this.form.controls.chapterId, busy || courseId === null);
+      syncDisabled(this.form.controls.newLineName, this.applyLoading());
     });
     this.form.controls.courseId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -129,4 +140,9 @@ export class RepertoireBuilderCourseDialogComponent {
   protected apply(): void {
     if (this.canApply()) this.applyRequested.emit();
   }
+}
+
+function syncDisabled(control: AbstractControl, disabled: boolean): void {
+  if (disabled && control.enabled) control.disable({ emitEvent: false });
+  if (!disabled && control.disabled) control.enable({ emitEvent: false });
 }
