@@ -9,9 +9,13 @@
     <header class="setup-header">
       <div>
         <p class="setup-kicker">Repertoire builder</p>
-        <h2 id="builder-setup-title">Choose the target for this draft</h2>
+        <h2 id="builder-setup-title">
+          {{ cancelAllowed() ? 'Restart this draft with a new target' : 'Choose the target for this draft' }}
+        </h2>
         <p>
-          Setup is limited to the initial position for this MVP. The recursive work continues on the routed board.
+          {{ cancelAllowed()
+            ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
+            : 'Setup is limited to the initial position for this MVP. The recursive work continues on the routed board.' }}
         </p>
       </div>
       @if (cancelAllowed()) {
@@ -95,7 +99,11 @@
 
       <aside class="persistence-note">
         <strong>Route-local draft</strong>
-        <span>This version does not persist. Refreshing the page starts a new draft.</span>
+        <span>
+          {{ cancelAllowed()
+            ? 'Submitting this setup replaces the current draft. Refreshing the page also starts over.'
+            : 'This version does not persist. Refreshing the page starts a new draft.' }}
+        </span>
       </aside>
 
       @if (error()) {
@@ -107,7 +115,7 @@
           <button type="button" class="secondary-button" [disabled]="loading()" (click)="cancel()">Cancel</button>
         }
         <button type="submit" class="primary-button" [disabled]="loading() || form.invalid">
-          {{ loading() ? 'Preparing evidence…' : 'Start building' }}
+          {{ loading() ? 'Preparing evidence…' : cancelAllowed() ? 'Replace draft' : 'Start building' }}
         </button>
       </footer>
     </form>
