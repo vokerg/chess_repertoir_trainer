@@ -1,20 +1,40 @@
-<div class="study-column-header">Lines</div>
+<header class="study-column-header">
+  <span class="study-step">{{ stepLabel() }}</span>
+  <div class="study-column-heading-copy">
+    <h3>{{ title() }}</h3>
+    <p>{{ subtitle() }}</p>
+  </div>
+  @if (selectedLineIds().length > 0) {
+    <span class="study-selection-count">{{ selectedLineIds().length }} selected</span>
+  }
+</header>
+
 @if (loading()) {
-  <p class="status-note">Loading lines...</p>
+  <div class="study-state" aria-live="polite">Loading lines...</div>
 } @else if (error()) {
-  <p class="status-error">{{ error() }}</p>
+  <div class="study-state study-state-error" role="alert">{{ error() }}</div>
 } @else if (lines().length === 0) {
-  <div class="empty-state">No lines match this search or filter.</div>
+  <div class="study-state study-state-empty">No lines match this search or filter.</div>
 } @else {
   <div class="study-list">
     @for (line of lines(); track line.id) {
-      <article class="study-line-row" [class.active]="line.id === selectedLineId()" (click)="selectLine.emit(line.id)">
-        <label class="line-check" (click)="$event.stopPropagation()">
-          <input type="checkbox" [checked]="isChecked(line.id)" (change)="toggleLine.emit(line.id)" />
+      <article class="study-line-row" [class.active]="line.id === selectedLineId()">
+        <label class="line-check">
+          <input
+            type="checkbox"
+            [checked]="isChecked(line.id)"
+            (change)="toggleLine.emit(line.id)"
+          />
           <span class="visually-hidden">Select {{ line.name }} for marathon</span>
         </label>
-        <div class="line-copy">
-          <div class="line-title-row">
+
+        <button
+          type="button"
+          class="line-select-button"
+          [attr.aria-pressed]="line.id === selectedLineId()"
+          (click)="selectLine.emit(line.id)"
+        >
+          <span class="line-title-row">
             <strong>{{ line.name }}</strong>
             <span
               class="status-pill"
@@ -26,16 +46,41 @@
             >
               {{ statusLabel(lineStatus(line)) }}
             </span>
-          </div>
-          <p>Train as {{ sideLabel(line.sideToTrain) }} · {{ line.trainingStats.activeSublineCount }} active sublines</p>
-          <p>
-            Coverage {{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }} ·
-            Mastery {{ masteryLabel(line.trainingStats.passRate) }} ·
-            Weak {{ line.trainingStats.weakSublineCount }} ·
-            Untrained {{ line.trainingStats.untrainedSublineCount }}
-          </p>
-        </div>
-        <div class="line-actions" (click)="$event.stopPropagation()">
+          </span>
+
+          <span class="line-summary">
+            Train as {{ sideLabel(line.sideToTrain) }} ·
+            {{ line.trainingStats.activeSublineCount }} active sublines
+          </span>
+
+          <span class="line-facts" aria-label="Line training health">
+            <span>
+              <small>Coverage</small>
+              <strong>
+                {{
+                  coverageLabel(
+                    line.trainingStats.trainedSublineCount,
+                    line.trainingStats.activeSublineCount
+                  )
+                }}
+              </strong>
+            </span>
+            <span>
+              <small>Mastery</small>
+              <strong>{{ masteryLabel(line.trainingStats.passRate) }}</strong>
+            </span>
+            <span>
+              <small>Weak</small>
+              <strong>{{ line.trainingStats.weakSublineCount }}</strong>
+            </span>
+            <span>
+              <small>Untrained</small>
+              <strong>{{ line.trainingStats.untrainedSublineCount }}</strong>
+            </span>
+          </span>
+        </button>
+
+        <div class="line-actions">
           <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'train']">Train</a>
           <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
         </div>
