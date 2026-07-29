@@ -4,11 +4,11 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 has a stacked hands-on implementation in review through PR #139. RB-007 candidate evidence and ranking is in review through PR #166 after complete implementation and expanded acceptance CI. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 has a stacked hands-on implementation in review through PR #139. RB-009 is the next ordered ready North Star critical-path task. RB-017 is the approved bounded traps data/validator pilot and is claimed through issue #114.
 
-**Runtime on `main`:** the deterministic side-aware opening-classification registry is `2026-07-rules-v2` and covers every entry and unique name in the pinned generated opening book with ordered regex rules, while preserving low-confidence and explicit unknown dimensions. The earlier squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation. Squash commit `9d833d910205f687b87f3c54e2ff4ea71ced3cb5` from PR #157 provides the versioned shared repertoire-target contract, examples, invariants and change-impact helpers.
+**Runtime on `main`:** the deterministic side-aware opening-classification registry is `2026-07-rules-v2` and covers every entry and unique name in the pinned generated opening book with ordered regex rules, while preserving low-confidence and explicit unknown dimensions. Squash commit `49dc6499eac9998de864ccb75a607541cd945382` from PR #84 provides the Lichess-benchmark profile, provider-aware multi-account peer resolver, preset Opening Explorer API, compact Peer games UI, tests and runtime documentation. Squash commit `9d833d910205f687b87f3c54e2ff4ea71ced3cb5` from PR #157 provides the versioned shared repertoire-target contract, examples, invariants and change-impact helpers. Squash commit `25d37b44c273afe0b7e5838a4fb0a00cee89d88a` from PR #166 provides the versioned candidate-decision contract, deterministic explainable ranking policy, bounded evidence aggregation service, authenticated API route, tests, and completion documentation.
 
-**Review work:** PR #136 adds the Player Chess Profile API and contract. PR #139 adds the Angular experience on top of that review branch. PR #166 adds the candidate-decision contract, deterministic ranking policy and authenticated evidence-aggregation API. None of this review work is integrated into `main` until accepted and merged.
+**Review work:** PR #136 adds the Player Chess Profile API and contract. PR #139 adds the Angular experience on top of that review branch. Neither profile PR is integrated into `main`.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -108,6 +108,32 @@ Delivered:
 
 PRs #145 and #146 were superseded and closed without merge.
 
+### RB-007 candidate decisions
+
+Issue [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) is complete through squash-merged PR [#166](https://github.com/vokerg/chess_repertoir_trainer/pull/166), commit `25d37b44c273afe0b7e5838a4fb0a00cee89d88a`. Claim coordination is recorded in PR [#164](https://github.com/vokerg/chess_repertoir_trainer/pull/164).
+
+Implementation report: `reports/RB-007-2026-07-29-candidate-evidence-ranking.md`.
+
+Closure report: `reports/RB-007-2026-07-29-closure.md`.
+
+Delivered:
+
+- shared contract version `2026-07-v1` and deterministic policy version `2026-07-deterministic-v1`;
+- authenticated `POST /api/candidate-decisions`;
+- explicit `USER_MOVE` and `OPPONENT_RESPONSE` roles;
+- legal-position canonicalization and bounded candidate generation;
+- stored MultiPV engine, Masters, immutable selected-population target, personal-game, opening-classification, player-profile and owned-course evidence;
+- independently injectable providers and concurrent source loading;
+- explicit available, stale, insufficient and unavailable states;
+- separate objective, population, Masters, personal, target-fit, profile-fit and course components;
+- stable reason and warning codes without a public opaque aggregate score;
+- target-dependent objective eligibility, explicit dubious opt-in and legal manual-candidate inclusion;
+- exact course coverage, current-position conflict and narrow resulting-position transposition evidence;
+- opponent-response contribution and cumulative coverage;
+- no Prisma migration, builder-session state, candidate persistence, course write, Angular UI, traps, LLM ranking, live engine run or peer-formula change.
+
+CI runs `30420827852` / #1281, `30421167116` / #1284, and final implementation-head run `30421735252` / #1295 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
+
 ## Review work
 
 ### RB-004 calculation
@@ -153,29 +179,11 @@ Review implementation:
 
 The review stack remains open until RB-004 is accepted, populated profile data is reviewed, and the stacked branches are reconciled.
 
-### RB-007 candidate decisions
+## RB-009 ready work
 
-Issue [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) is implemented for review through PR [#166](https://github.com/vokerg/chess_repertoir_trainer/pull/166). Claim coordination is recorded in PR [#164](https://github.com/vokerg/chess_repertoir_trainer/pull/164).
+RB-009 is the next ordered ready North Star critical-path task. Completed RB-006, accepted RB-008 direction, and integrated RB-007 candidate identifiers, reason semantics, policy version, evidence limits, and opponent-coverage contract are now available.
 
-Report: `reports/RB-007-2026-07-29-candidate-evidence-ranking.md`.
-
-Review implementation:
-
-- shared contract version `2026-07-v1` and deterministic policy version `2026-07-deterministic-v1`;
-- authenticated `POST /api/candidate-decisions`;
-- explicit `USER_MOVE` and `OPPONENT_RESPONSE` roles;
-- legal-position canonicalization and bounded candidate generation;
-- stored MultiPV engine, Masters, immutable selected-population target, personal-game, opening-classification, player-profile and owned-course evidence;
-- independently injectable providers and concurrent source loading;
-- explicit available, stale, insufficient and unavailable states;
-- separate objective, population, Masters, personal, target-fit, profile-fit and course components;
-- stable reason and warning codes without a public opaque aggregate score;
-- target-dependent objective eligibility, explicit dubious opt-in and legal manual-candidate inclusion;
-- exact course coverage, current-position conflict and narrow resulting-position transposition evidence;
-- opponent-response contribution and cumulative coverage;
-- no Prisma migration, builder-session state, candidate persistence, course write, Angular UI, traps, LLM ranking, live engine run or peer-formula change.
-
-CI run `30420827852` / #1281 and expanded acceptance-head run `30421167116` / #1284 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
+RB-009 owns target snapshots, candidate staleness, descendant invalidation, branch states, queue ordering, persistence decisions, drafts and resume behavior. RB-010 remains blocked on RB-009.
 
 ## RB-017 active pilot
 
@@ -193,8 +201,9 @@ Scope is limited to a source-controlled reviewed dataset, deterministic validati
 - RB-004 / [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92): `REVIEW` through PR #136.
 - RB-005 / [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93): `REVIEW` through stacked PR #139.
 - RB-006 / [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94): `DONE` through PR #157.
-- RB-007 / [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95): `REVIEW` through PR #166.
+- RB-007 / [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95): `DONE` through squash-merged PR #166.
 - RB-008 / [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96): `DONE` through accepted PR #110 direction.
+- RB-009 / [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97): `READY` after RB-007 integration.
 - RB-014 / [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102): `DONE` through PR #113.
 - RB-017 / [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114): `CLAIMED` for the bounded pilot.
 - RB-018 / [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116): `DONE` through PR #121.
@@ -206,8 +215,8 @@ Scope is limited to a source-controlled reviewed dataset, deterministic validati
 - RB-005 cannot be integrated before RB-004 is accepted and the stacked branches are reconciled.
 - RB-006 provides the integrated target fields, default/override provenance and recalculation boundary.
 - RB-013 should consume RB-006 rather than inventing a separate profile-to-target override model.
-- RB-007 provides a review-ready versioned candidate contract, deterministic ranking policy, evidence limits, reason taxonomy and opponent-coverage semantics.
-- RB-009 can now complete detailed session/history/queue planning against RB-007 review semantics, but implementation remains blocked on accepted RB-007 integration. It still owns target snapshots, candidate staleness, descendant invalidation, branch states, drafts and resume behavior.
+- RB-007 provides the integrated versioned candidate contract, deterministic ranking policy, evidence limits, reason taxonomy and opponent-coverage semantics.
+- RB-009 is ready and owns target snapshots, candidate staleness, descendant invalidation, branch states, drafts and resume behavior.
 - RB-010 owns production Angular composition using accepted RB-008 direction and accepted RB-006/RB-007/RB-009 boundaries.
 - RB-017 remains independent and adds no critical-path blocker.
 
@@ -217,7 +226,7 @@ Scope is limited to a source-controlled reviewed dataset, deterministic validati
 - RB-008 validation includes responsive prototype review and complete repository CI on PR #110.
 - RB-014 source/license verification, repository inspection, and complete repository CI passed on PR #113.
 - RB-006 CI `30382976492` / #1251 and `30383511789` / #1256 passed lint, build, both opening audits, architecture guardrails, migrations and complete tests.
-- RB-007 CI `30420827852` / #1281 and `30421167116` / #1284 passed lint, build, both opening audits, architecture guardrails, migrations and complete tests, including missing-source degradation, target/profile disagreement, transposition/conflict and opponent-coverage acceptance cases.
+- RB-007 CI `30420827852` / #1281, `30421167116` / #1284, and `30421735252` / #1295 passed lint, build, both opening audits, architecture guardrails, migrations and complete tests, including missing-source degradation, target/profile disagreement, transposition/conflict and opponent-coverage acceptance cases.
 - RB-017 must add deterministic offline fixture tests plus an explicit opt-in live refresh path.
 
 ## Residual risks

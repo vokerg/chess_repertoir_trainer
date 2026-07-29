@@ -1,6 +1,6 @@
 # RB-007 — Aggregate and rank candidate evidence explainably
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -24,7 +24,9 @@ Claim PR: `#164`
 
 Implementation PR: `#166`
 
-Implementation-head CI: run `30421167116` / CI #1284 — success
+Squash commit: `25d37b44c273afe0b7e5838a4fb0a00cee89d88a`
+
+Final implementation-head CI: run `30421735252` / CI #1295 — success
 
 ## Outcome
 
@@ -136,7 +138,7 @@ RB-009/RB-010 depend on its response and reason semantics.
 
 ## Required validation
 
-Completed through CI #1281 and expanded acceptance-head CI #1284:
+Completed through CI #1281, expanded acceptance-head CI #1284, and final implementation-head CI #1295:
 
 - contracts build and tests;
 - pure domain ranking tests;
@@ -152,10 +154,12 @@ No live engine, upstream Lichess, Angular, persistence, or course-write validati
 
 ## Completion updates
 
-The report publishes policy version, weights, thresholds, reason taxonomy, evidence limits, unresolved calibration work, and direct impacts on RB-009/RB-010 and production visual components.
+The implementation report publishes policy version, weights, thresholds, reason taxonomy, evidence limits, unresolved calibration work, and direct impacts on RB-009/RB-010 and production visual components. The closure report records accepted integration, issue closure, queue impact, and unchanged roadmap sequencing.
 
 ## Completion
 
-Report: `../reports/RB-007-2026-07-29-candidate-evidence-ranking.md`
+Implementation report: `../reports/RB-007-2026-07-29-candidate-evidence-ranking.md`
 
-Completed at: pending user review, accepted merge, and final closure reconciliation
+Closure report: `../reports/RB-007-2026-07-29-closure.md`
+
+Completed at: 2026-07-29

@@ -1,6 +1,6 @@
 # RB-009 — Define builder session, branch queue, and draft lifecycle
 
-Status: BLOCKED
+Status: READY
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 100
 
 Delivery class: North-star
 
-Planning maturity: Placeholder
+Planning maturity: Outlined
 
 Claimed by: unclaimed
 
@@ -38,7 +38,7 @@ A recursive builder is not a simple linear form. It creates multiple pending bra
 
 ## Current repo anchors to inspect
 
-- RB-006 target and RB-007 candidate contracts;
+- completed RB-006 target contract and integrated RB-007 candidate-decision contract/policy;
 - RB-008 approved visual flow;
 - course move-tree and analysis-tree domain helpers;
 - analysis reintegration preview shapes;
@@ -48,7 +48,7 @@ A recursive builder is not a simple linear form. It creates multiple pending bra
 
 ## Dependencies
 
-Blocked on RB-006 and reviewed direction from RB-008. Candidate decision identifiers/reasons from RB-007 must be sufficiently stable.
+Completed RB-006 target contract, accepted RB-008 routed visual direction, and integrated RB-007 candidate identifiers, reason semantics, policy version, evidence limits, and opponent-coverage contract are available.
 
 RB-010 depends on it.
 
