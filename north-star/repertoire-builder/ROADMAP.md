@@ -137,7 +137,7 @@ Gate: passed.
 
 ## Stage 5 — resumable builder foundation and MVP
 
-State: RB-009 is complete and integrated through squash-merged PR #177. RB-010 is implemented for review through PR #184 after complete implementation-head CI #1408.
+State: complete through squash-merged RB-009 PR #177 and RB-010 PR #184.
 
 RB-009 delivered:
 
@@ -151,9 +151,9 @@ RB-009 delivered:
 - lazy bounded queue and explicit reorder;
 - bounded preview tree and queue projection;
 - session complete, abandon and resume semantics;
-- no Prisma model, API, Angular UI or storage adapter before a concrete resume requirement is demonstrated.
+- no Prisma model, API, Angular UI or storage adapter.
 
-RB-010 review implementation provides:
+RB-010 delivered:
 
 - authenticated lazy `/builder` route and top-level navigation;
 - initial-position setup for side, speed, population, persona, theory and opponent-response coverage;
@@ -165,23 +165,27 @@ RB-010 review implementation provides:
 - queue selection/reorder, defer/reopen, ignore, stop, stale restart, complete and abandon controls;
 - a bounded structural draft preview;
 - product bounds of 6 candidates and 24 accepted decisions while preserving RB-009 hard limits;
-- route-local state only, with explicit refresh loss and setup-replacement warnings;
+- accepted route-local state, with explicit refresh loss and setup replacement;
 - no Prisma model, builder-session API, browser storage or course write.
+
+PR #184 was squash-merged as `ea5b2bef4cdc0fa37024213b2e00b9da589b9718` after final tested head `b3a0076bdc75ea8035b3999a8e10a12d24992c6f` passed CI #1417.
 
 Tasks: RB-009, RB-010.
 
-Gate: pending hands-on acceptance and integration. The user must verify the populated desktop/mobile workflow, evidence readability, queue/coverage semantics, route-local lifetime, actual bounds and preview sufficiency. The Stage 5 gate passes only when one bounded repertoire slice can be built and the draft boundary is accepted before course writes.
+Gate: passed. A user can build one bounded repertoire slice, control opponent-response coverage and inspect a structural draft before course writes.
 
 ## Stage 6 — course materialization and adaptation
 
-State: blocked on accepted and integrated RB-010.
+State: RB-011 is `READY` after integrated RB-010. RB-012 remains `BLOCKED` on safe course preview/apply.
 
 Goals:
 
+- define the stable builder-preview-to-course-write boundary;
 - preview and apply accepted trees through current course-writing patterns;
 - create or merge course material safely;
-- enter the builder from gaps, endings, deviations and weak choices;
-- preserve conflicts, transpositions and ownership.
+- preserve ownership, stale-anchor protection, conflicts, transpositions and existing nodes;
+- return explicit created/reused/skipped/conflicted results;
+- enter the builder from gaps, endings, deviations and weak choices after safe apply exists.
 
 Tasks: RB-011, RB-012.
 
@@ -224,7 +228,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- hands-on review of RB-010 through PR #184;
+- claim and implementation of RB-011 using integrated RB-010 preview output and current reintegration/course patterns;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -238,10 +242,10 @@ High-collision areas requiring coordination:
 
 ## Queue impact
 
-- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-014 and RB-018 remain `DONE`.
+- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-014 and RB-018 are `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-010 is `REVIEW` through PR #184 after implementation-head CI #1408.
-- RB-011 remains `BLOCKED` until RB-010 hands-on acceptance and integration; RB-012 remains downstream.
+- RB-011 is the next ordered `READY` North Star critical-path task.
+- RB-012 remains `BLOCKED` on RB-011.
 - RB-017 remains `CLAIMED` and isolated.
 - No priority change, new task or roadmap resequencing is required.
