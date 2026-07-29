@@ -4,15 +4,15 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** Phase 2 is active; VT-201 Games modernization is complete and VT-202 Study modernization is in progress
+**Program state:** Phase 2 is active; VT-201 Games and VT-202 Study are complete, and VT-203 Opening Analysis is the next ordered ready task
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-202-study-modernization`
+**Active checkpoint branch:** none
 
-**Active pull request:** draft PR #178
+**Active pull request:** none
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -43,6 +43,7 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #165 — VT-104 integration and queue reconciliation.
 - [x] PR #167 — VT-201 Games modernization.
 - [x] PR #176 — VT-201 completion reconciliation.
+- [x] PR #178 — VT-202 Study modernization.
 
 ## Phase 1 completion
 
@@ -77,11 +78,11 @@ Delivered:
 
 No backend, API, schema, database, job-processing, game-analysis algorithm, Study, Opening Analysis, or Game Detail change was included.
 
-## VT-202 active checkpoint
+## VT-202 integrated checkpoint
 
-Issue #128 is active through draft PR #178 on `visual-transformation/vt-202-study-modernization`.
+Issue #128 is complete through squash-merged PR #178, commit `c2a1e2531b6b8dca3c6ee9a5347d73d484c9231f`.
 
-Delivered on the active branch:
+Delivered:
 
 - [x] verified `/library`, page, store, data-access, presentational-component, mobile-launcher, and marathon-navigation ownership before implementation;
 - [x] retained the lazy `/library` route, selected-lines `/library/marathon` route, course/chapter marathon routes, and direct line Train/Edit destinations;
@@ -94,12 +95,14 @@ Delivered on the active branch:
 - [x] separated training scope from training mode without changing the emitted `{ mode, scope }` command;
 - [x] preserved the course-first mobile entry and feature-local launcher contract;
 - [x] added focused line-list, basket, and mobile-launcher component coverage;
-- [x] documented architecture, behavior preservation, browser checks, and feature-local VT-204 candidates in `transformation/reports/VT_202_STUDY_MODERNIZATION.md`;
-- [x] passed final-head CI #1372 after focused test-harness corrections;
-- [ ] direct browser review and explicit approval;
-- [ ] squash merge and completion reconciliation.
+- [x] documented architecture, behavior preservation, deferred browser checks, and feature-local VT-204 candidates;
+- [x] passed final implementation CI #1372 and exact reviewable-head CI #1374;
+- [x] received explicit approval on 2026-07-29;
+- [x] squash-merged into `main`.
 
-No backend, API, contract, schema, database, course-ownership, training-algorithm, Games, Opening Analysis, or final mobile-navigation change is included.
+The user approved integration without performing the direct browser checklist. Browser feedback is intentionally deferred for a later consolidated review and is not represented as observed validation. See `transformation/reports/VT_202_STUDY_COMPLETION.md`.
+
+No backend, API, contract, schema, database, course-ownership, training-algorithm, Games, Opening Analysis, or final mobile-navigation change was included.
 
 ## VT-202 behavior boundary
 
@@ -119,9 +122,9 @@ The following remain unchanged:
 - `LibraryBrowserStore` workflow ownership;
 - `LibraryApiService` typed HTTP ownership.
 
-## VT-202 browser review required
+## Deferred Study browser feedback
 
-Review `/library` with realistic data at desktop, tablet, and narrow-phone widths:
+The following checklist remains useful for later consolidated product feedback, but it is not a blocker to the completed VT-202 integration:
 
 - repertoire → section → line → training-plan hierarchy;
 - search, review-only filtering, select-visible, and individual selected-line behavior;
@@ -140,9 +143,9 @@ Unavailable states must be recorded explicitly rather than treated as observed.
 
 ## Execution disposition
 
-Issues #123–#127 are complete.
+Issues #123–#128 are complete.
 
-Issue #128 is `IN_PROGRESS` through draft PR #178. Issue #129 remains `READY` but cannot replace the active task. Issues #130–#133 retain their downstream dependencies.
+Issue #129 / VT-203 is `READY` and is the next ordered Phase 2 task. Issues #130 and #131 remain blocked by #129. Issues #132–#133 retain their downstream dependencies.
 
 ## Validation status
 
@@ -160,7 +163,7 @@ Issue #128 is `IN_PROGRESS` through draft PR #178. Issue #129 remains `READY` bu
 
 ### VT-202 validation
 
-Final-head CI #1372 passed:
+CI #1372 and CI #1374 passed:
 
 - dependency installation;
 - lint;
@@ -171,9 +174,7 @@ Final-head CI #1372 passed:
 - imported-game opening classification audit;
 - complete repository test suite, including the new Study component tests.
 
-CI #1366 and #1370 exposed focused-test assertion and DOM-typing issues only. Those tests were corrected without production-code changes before the passing final-head run.
-
-Direct browser review remains pending. The active task must not be represented as complete or merged before explicit approval.
+CI #1366 and #1370 exposed focused-test assertion and DOM-typing issues only. Those tests were corrected without production-code changes before the passing final-head runs.
 
 ## Open design and product decisions
 
@@ -197,7 +198,7 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Active. Games is complete and integrated. Study is automated-green through draft PR #178 and awaits browser review. Opening Analysis remains ready after Study.
+Active. Games and Study are complete and integrated. Opening Analysis is the next ordered ready workflow.
 
 ### Phase 3 — rollout and polish
 
@@ -205,7 +206,7 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ## Session log
 
-### 2026-07-29 — VT-202 Study modernization
+### 2026-07-29 — VT-202 integration
 
 - Selected issue #128 as the next deterministic task after VT-201 completion.
 - Claimed the issue and branched from reconciled `main`.
@@ -213,9 +214,10 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 - Implemented explicit desktop selection progression, production-token presentation, keyboard line selection, clearer scope/mode launch hierarchy, and a migrated course-first mobile launcher without changing ownership or navigation.
 - Added focused component coverage for line evidence/intents, basket eligibility/commands, and mobile single-line launch behavior.
 - Corrected whitespace-sensitive and untyped DOM test assertions exposed by CI #1366 and #1370; no production code changed in those corrections.
-- Final-head CI #1372 passed the complete repository workflow.
-- Opened draft PR #178 and documented the implementation and browser-review boundary.
-- Awaiting direct browser review and explicit approval.
+- CI #1372 and #1374 passed the complete repository workflow.
+- Received explicit approval without direct browser review; browser feedback was deferred for later consolidated review.
+- Squash-merged PR #178 into `main` as `c2a1e2531b6b8dca3c6ee9a5347d73d484c9231f`.
+- Released VT-203 / issue #129 as the next ordered ready task.
 
 ### 2026-07-29 — VT-201 integration
 
@@ -234,4 +236,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, #165, #167, and #176 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, #165, #167, #176, and #178 are integrated into `main`.
