@@ -137,7 +137,7 @@ Gate: passed.
 
 ## Stage 5 — resumable builder foundation and MVP
 
-State: RB-009 is complete and integrated through squash-merged PR #177. RB-010 is `READY` as the next ordered North Star critical-path task.
+State: RB-009 is complete and integrated through squash-merged PR #177. RB-010 is implemented for review through PR #184 after complete implementation-head CI #1408.
 
 RB-009 delivered:
 
@@ -153,22 +153,28 @@ RB-009 delivered:
 - session complete, abandon and resume semantics;
 - no Prisma model, API, Angular UI or storage adapter before a concrete resume requirement is demonstrated.
 
-Goals remaining for RB-010:
+RB-010 review implementation provides:
 
-- implement the accepted setup dialog and routed workbench;
-- alternate user choices and opponent-response coverage;
-- map RB-007 candidate decisions into RB-009 transitions;
-- present branch queue, progress, staleness, transpositions and preview;
-- validate whether route/local state is sufficient for MVP review or durable persistence is justified;
-- keep the tree bounded and human-controlled.
+- authenticated lazy `/builder` route and top-level navigation;
+- initial-position setup for side, speed, population, persona, theory and opponent-response coverage;
+- factual peer-resolution provenance versus explicit manual rating targets;
+- one primary board with candidate/resulting-position preview and manual legal-move inclusion;
+- existing RB-007 candidate API integration with inspectable source states, reasons, warnings, target fit and profile fit;
+- direct use of RB-009 ownership, revision, queue, deferral, staleness, transposition and preview semantics;
+- explicit user-move and opponent-response decision loops;
+- queue selection/reorder, defer/reopen, ignore, stop, stale restart, complete and abandon controls;
+- a bounded structural draft preview;
+- product bounds of 6 candidates and 24 accepted decisions while preserving RB-009 hard limits;
+- route-local state only, with explicit refresh loss and setup-replacement warnings;
+- no Prisma model, builder-session API, browser storage or course write.
 
 Tasks: RB-009, RB-010.
 
-Gate: a user can build one bounded repertoire slice and inspect the draft before course writes.
+Gate: pending hands-on acceptance and integration. The user must verify the populated desktop/mobile workflow, evidence readability, queue/coverage semantics, route-local lifetime, actual bounds and preview sufficiency. The Stage 5 gate passes only when one bounded repertoire slice can be built and the draft boundary is accepted before course writes.
 
 ## Stage 6 — course materialization and adaptation
 
-State: blocked on the Stage 5 routed builder.
+State: blocked on accepted and integrated RB-010.
 
 Goals:
 
@@ -218,7 +224,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- claim and implementation of RB-010 using the integrated session foundation;
+- hands-on review of RB-010 through PR #184;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -235,6 +241,7 @@ High-collision areas requiring coordination:
 - RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-014 and RB-018 remain `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-010 is the next ordered `READY` North Star critical-path task.
+- RB-010 is `REVIEW` through PR #184 after implementation-head CI #1408.
+- RB-011 remains `BLOCKED` until RB-010 hands-on acceptance and integration; RB-012 remains downstream.
 - RB-017 remains `CLAIMED` and isolated.
 - No priority change, new task or roadmap resequencing is required.
