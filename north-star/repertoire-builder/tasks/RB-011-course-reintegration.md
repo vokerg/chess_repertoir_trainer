@@ -1,6 +1,6 @@
 # RB-011 — Preview and apply builder output to courses
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 120
 
 Delivery class: Dual-use
 
-Planning maturity: Implemented
+Planning maturity: Completed
 
 Claimed by: OpenAI ChatGPT
 
@@ -22,17 +22,23 @@ Claim PR: `#187`
 
 Implementation PR: `#189`
 
+Squash commit: `01b36f9503ccfbb3dced55d56589b89cfd163867`
+
 Final tested implementation head: `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e`
 
 Final implementation-head CI: run `30472169134` / CI #1479 — success
+
+Final review-package head: `30b077377cb5e9337dd455f9f8a8a7a38a152cec`
+
+Final review-package CI: run `30472999505` / CI #1488 — success
 
 Claim scope: Inspect and adapt the current analysis-reintegration and course-write architecture to add mandatory preview and explicit transactional apply for accepted RB-010/RB-009 builder trees. The implementation defines a stable builder-to-course wire boundary, validates ownership and stale anchors, preserves the one-correct-trained-side-move rule, surfaces create/reuse/skip/conflict outcomes, excludes deferred/ignored/stale work, reuses valid existing nodes, increments course content revision through verified existing patterns, provides repeated-apply safety, and adds a minimal feature-local Angular review/apply interaction. The task explicitly excludes automatic apply, existing-course finding entry points, durable builder persistence, LLM-authored content, training scheduling, and unrelated course or builder redesign.
 
 ## Outcome
 
-Allow a reviewed builder draft to become trainable course material safely through mandatory preview and explicit apply operations.
+A reviewed builder draft can become trainable course material safely through mandatory preview and explicit apply operations.
 
-The implemented v1 supports:
+The integrated v1 supports:
 
 - selecting one owned existing course and chapter;
 - creating a reviewed new line in that chapter;
@@ -50,9 +56,9 @@ The integrated RB-010 builder produces a bounded, owner-scoped structural draft 
 
 ## Dependencies
 
-Ready after accepted and squash-merged RB-010 implementation PR #184 (`ea5b2bef4cdc0fa37024213b2e00b9da589b9718`).
+Delivered after squash-merged RB-010 implementation PR #184 (`ea5b2bef4cdc0fa37024213b2e00b9da589b9718`).
 
-RB-012 remains blocked until RB-011 is accepted and integrated.
+RB-012 is unblocked and reuses this integrated boundary.
 
 ## Implemented scope
 
@@ -119,33 +125,29 @@ No Prisma model, migration, queue, worker or background job was introduced.
 
 ## Validation
 
-Final tested implementation head `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e` passed CI run `30472169134` / #1479:
+Final review-package head `30b077377cb5e9337dd455f9f8a8a7a38a152cec` passed CI run `30472999505` / #1488:
 
 - root lint;
 - domain, contracts, API, web and mobile builds;
-- opening-classification audits;
+- both opening-classification audits;
 - architecture guardrails;
 - database migrations;
 - complete repository tests.
 
 Focused tests cover draft projection, contract invariants, route validation, new-line creation, existing-line merge/reuse, conflict rejection, ownership, stale preview/target, rollback, content revision, repeated apply and Angular preview/apply behavior.
 
-Manual review still required before integration:
-
-- inspect one created line in a real owned course tree;
-- inspect one merged line with reused and created nodes;
-- review desktop/mobile readability;
-- review keyboard traversal and focus behavior;
-- accept the existing-course/chapter-only organization for the first slice.
+The user explicitly approved squash-merging PR #189 on 2026-07-29. Issue #99 is closed as completed.
 
 ## Completion updates
 
-The implementation report records that reintegration was reused and extended rather than replaced, plus the line-tree and existing-chapter limitations affecting RB-012 and future whole-course generation.
+The implementation and closure reports record that reintegration was reused and extended rather than replaced, plus the line-tree and existing-chapter limitations affecting RB-012 and future whole-course generation.
 
 ## Completion
 
 Implementation report: `../reports/RB-011-2026-07-29-course-reintegration.md`
 
+Closure report: `../reports/RB-011-2026-07-29-closure.md`
+
 Review state entered at: 2026-07-29
 
-Completed at: none
+Completed at: 2026-07-29

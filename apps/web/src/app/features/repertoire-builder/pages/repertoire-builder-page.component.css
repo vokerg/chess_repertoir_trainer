@@ -7,3 +7,51 @@
   gap: var(--space-4);
   min-width: 0;
 }
+
+.launch-error,
+.launch-boundary {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.launch-error {
+  border-color: var(--danger, #b42318);
+}
+
+.launch-context,
+.launch-facts {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.launch-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.launch-facts > div {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.launch-facts strong,
+.launch-filter-summary,
+.launch-boundary {
+  overflow-wrap: anywhere;
+}
+
+.launch-filter-summary {
+  margin: 0;
+}
+
+.launch-context .secondary {
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  .launch-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

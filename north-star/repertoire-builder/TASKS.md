@@ -20,8 +20,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
 | 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | DONE | Implement bounded interactive builder MVP | North-star | Squash-merged through PR #184; final tested-head CI #1417 passed |
-| 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | REVIEW | Preview and apply builder output to courses | Dual-use | PR #189; final tested implementation head CI #1479 passed; awaiting hands-on review and integration |
-| 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
+| 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | DONE | Preview and apply builder output to courses | Dual-use | Squash-merged through PR #189 as `01b36f9`; final review-package CI #1488 passed |
+| 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | REVIEW | Enter builder from existing-course findings | Dual-use | First Course endings slice implemented through PR #205; hands-on review pending |
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
@@ -135,6 +135,23 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Merge-readiness review restored pre-existing collapsed-navigation, Escape, route-change and mobile-menu regression tests before integration.
 - PR #184 had no review comments or unresolved inline threads at merge time.
 
+### RB-011 / #99
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/187
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/189
+- Squash commit: `01b36f9503ccfbb3dced55d56589b89cfd163867`
+- Final tested implementation head: `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e`
+- Final review-package head: `30b077377cb5e9337dd455f9f8a8a7a38a152cec`
+- Implementation report: `reports/RB-011-2026-07-29-course-reintegration.md`
+- Closure report: `reports/RB-011-2026-07-29-closure.md`
+- Projects completed builder sessions into the existing analysis merge tree and keeps unresolved branches explicit but outside writes.
+- Adds mandatory preview and exact-preview transactional apply into one owned existing chapter, with reviewed new-line or existing-line-anchor targets.
+- Reuses existing conflict planning, move-node writing, ownership, stale-anchor, legal-move and course revision behavior.
+- Adds strict no-conflict behavior, explicit counts, equivalent-line/repeated-apply safety, shared contracts, Fastify routes and a feature-local Angular review dialog/store.
+- Adds no Prisma model, migration, whole-course orchestration, durable builder persistence or existing-course finding entry point.
+- CI #1479 and final review-package CI #1488 passed lint, builds, audits, architecture guardrails, migrations and complete repository tests.
+- Issue #99 is closed; the accepted boundary unblocks RB-012.
+
 ## Review work
 
 ### RB-004 / #92
@@ -156,19 +173,17 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
-### RB-011 / #99
+### RB-012 / #100
 
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/187
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/189
-- Final tested implementation head: `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e`
-- Report: `reports/RB-011-2026-07-29-course-reintegration.md`
-- Projects completed builder sessions into the existing analysis merge tree and keeps unresolved branches explicit but outside writes.
-- Adds mandatory preview and exact-preview transactional apply into one owned existing chapter, with reviewed new-line or existing-line-anchor targets.
-- Reuses existing conflict planning, move-node writing, ownership, stale-anchor, legal-move and course revision behavior.
-- Adds strict no-conflict behavior, explicit counts, equivalent-line/repeated-apply safety, shared contracts, Fastify routes and a feature-local Angular review dialog/store.
-- Adds no Prisma model, migration, whole-course orchestration, durable builder persistence or existing-course finding entry point.
-- CI #1479 passed lint, builds, audits, architecture guardrails, migrations and complete repository tests.
-- Hands-on review of one created and one merged real course tree plus responsive/keyboard UI behavior remains required before integration.
+- Implementation branch: `rb-012/issue-100-course-ending-entry`.
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/205
+- Report: `reports/RB-012-2026-07-29-course-ending-entry.md`
+- Adds line-specific **Extend this line in builder** actions to Course ending findings.
+- Carries validated exact source context, terminal FEN, observed continuation, game evidence and applied filters into the existing route-local builder.
+- Starts RB-009 at the source FEN, includes the observed move in the first RB-007 request, preserves editable target intent and fixes the source course side.
+- Keeps the finding evidence and extend-only consequence visible, restores source filters on return, and constrains RB-011 preview/apply to the exact source line/node.
+- Adds no API route, schema migration, persistence or second recommendation engine.
+- Complete CI and hands-on Course ending → builder → exact line review are required before integration.
 
 ## Active claim
 
@@ -182,7 +197,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 PR #110 establishes the setup dialog, routed board-first workbench, one readable board, candidate switcher, focused evidence, opponent-response queue, explicit branch states and target/profile separation.
 
-Squash-merged PR #184 implements this direction using integrated RB-006, RB-007 and RB-009 boundaries. PR #189 now implements mandatory reviewed course preview/apply on top of the existing reintegration architecture.
+Squash-merged PR #184 implements this direction. Squash-merged PR #189 adds mandatory reviewed course preview/apply. PR #205 now connects the first exact existing-course finding to those integrated boundaries.
 
 ## Critical path
 
@@ -207,9 +222,9 @@ RB-009 session/queue lifecycle — DONE
         ↓
 RB-010 routed builder — DONE
         ↓
-RB-011 course preview/apply — REVIEW
+RB-011 course preview/apply — DONE
         ↓
-RB-012 existing-course adaptation — BLOCKED
+RB-012 Course ending adaptation — REVIEW
         ↓
 RB-016 feedback
 ```
@@ -225,6 +240,7 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
 - RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
 - RB-010 is `DONE` through squash-merged PR #184 after final tested-head CI #1417.
-- RB-011 is `REVIEW` through PR #189 after final tested implementation-head CI #1479; RB-012 remains blocked until RB-011 is accepted and integrated.
+- RB-011 is `DONE` through squash-merged PR #189 after final review-package CI #1488.
+- RB-012 is `REVIEW` through PR #205 for the first Course endings slice; Opponent gaps is the recommended next slice after acceptance.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
-- No new task, priority change or roadmap resequencing is required.
+- No priority or roadmap resequencing is required.

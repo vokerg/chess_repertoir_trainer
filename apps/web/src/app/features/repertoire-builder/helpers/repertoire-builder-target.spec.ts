@@ -69,4 +69,17 @@ describe('repertoire builder target factory', () => {
     expect(target.overriddenFields).not.toContain('population');
     expect(targetPopulationLabel(target)).toContain('My peers and one group higher');
   });
+
+  it('records an exact existing-course starting point', () => {
+    const target = buildRepertoireBuilderTarget(
+      { ...defaultRepertoireBuilderSetup(), ratingTarget: 'ALL' },
+      null,
+      NOW,
+      TARGET_ID,
+      { kind: 'COURSE_POSITION', courseId: 7, lineId: 13 },
+    );
+
+    expect(repertoireTargetSchema.safeParse(target).success).toBeTrue();
+    expect(target.startingPoint).toEqual({ kind: 'COURSE_POSITION', courseId: 7, lineId: 13 });
+  });
 });

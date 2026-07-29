@@ -9,6 +9,7 @@ import {
 import type { RepertoireTarget } from '@chess-trainer/contracts/repertoire-target';
 import {
   buildBuilderCourseDraft,
+  normalizeFenForPosition,
   type BuilderSession,
 } from 'chess-domain';
 import { firstValueFrom } from 'rxjs';
@@ -17,6 +18,7 @@ import {
   type RepertoireBuilderChapterOption,
   type RepertoireBuilderCourseOption,
 } from '../data-access/repertoire-builder-api.service';
+import type { RepertoireBuilderCourseEndingLaunch } from '../helpers/repertoire-builder-launch';
 
 @Injectable()
 export class RepertoireBuilderCourseStore {
@@ -30,6 +32,8 @@ export class RepertoireBuilderCourseStore {
   private readonly draftState = signal<BuilderCourseDraft | null>(null);
   private readonly previewState = signal<BuilderCourseReintegrationPreviewResponse | null>(null);
   private readonly selectedTargetState = signal<BuilderCourseReintegrationTarget | null>(null);
+  private readonly requiredTargetState = signal<BuilderCourseReintegrationTarget | null>(null);
+  private readonly destinationLockedState = signal(false);
   private readonly resultState = signal<BuilderCourseReintegrationApplyResponse | null>(null);
   private readonly destinationsLoadingState = signal(false);
   private readonly previewLoadingState = signal(false);
@@ -47,6 +51,8 @@ export class RepertoireBuilderCourseStore {
   readonly draft = this.draftState.asReadonly();
   readonly preview = this.previewState.asReadonly();
   readonly selectedTarget = this.selectedTargetState.asReadonly();
+  readonly requiredTarget = this.requiredTargetState.asReadonly();
+  readonly destinationLocked = this.destinationLockedState.asReadonly();
   readonly result = this.resultState.asReadonly();
   readonly destinationsLoading = this.destinationsLoadingState.asReadonly();
   readonly previewLoading = this.previewLoadingState.asReadonly();
@@ -63,11 +69,15 @@ export class RepertoireBuilderCourseStore {
   readonly canApply = computed(() => (
     this.preview() !== null
     && this.selectedTarget() !== null
+    && this.targetAllowed(this.selectedTarget()!)
     && !this.previewLoading()
     && !this.applyLoading()
   ));
 
-  async openFor(session: BuilderSession<RepertoireTarget>): Promise<void> {
+  async openFor(
+    session: BuilderSession<RepertoireTarget>,
+    launch: RepertoireBuilderCourseEndingLaunch | null = null,
+  ): Promise<void> {
     this.errorState.set(null);
     try {
       this.draftState.set(buildBuilderCourseDraft(session));
@@ -76,8 +86,10 @@ export class RepertoireBuilderCourseStore {
       return;
     }
     this.resetDestinationState();
+    this.destinationLockedState.set(launch !== null);
     this.openState.set(true);
     await this.loadCourses();
+    if (launch) await this.initializeLockedDestination(launch);
   }
 
   close(): void {
@@ -86,44 +98,32 @@ export class RepertoireBuilderCourseStore {
   }
 
   async selectCourse(courseId: number | null): Promise<void> {
-    this.selectedCourseIdState.set(courseId);
-    this.selectedChapterIdState.set(null);
-    this.chaptersState.set([]);
-    this.clearPreview();
-    if (courseId === null) return;
-    const requestVersion = ++this.destinationRequestVersion;
-    this.destinationsLoadingState.set(true);
-    this.errorState.set(null);
-    try {
-      const chapters = await firstValueFrom(this.api.listChapters(courseId));
-      if (requestVersion !== this.destinationRequestVersion) return;
-      this.chaptersState.set([...chapters].sort((left, right) => (
-        left.sortOrder - right.sortOrder || left.id - right.id
-      )));
-    } catch (error) {
-      if (requestVersion !== this.destinationRequestVersion) return;
-      this.errorState.set(errorMessage(error, 'Could not load course chapters.'));
-    } finally {
-      if (requestVersion === this.destinationRequestVersion) {
-        this.destinationsLoadingState.set(false);
-      }
-    }
+    if (this.destinationLocked()) return;
+    await this.setCourseSelection(courseId);
   }
 
   selectChapter(chapterId: number | null): void {
+    if (this.destinationLocked()) return;
     this.selectedChapterIdState.set(chapterId);
     this.clearPreview();
   }
 
   setNewLineName(value: string): void {
+    if (this.destinationLocked()) return;
     this.newLineNameState.set(value);
     this.clearPreview();
   }
 
   selectTarget(target: BuilderCourseReintegrationTarget): void {
+    if (!this.targetAllowed(target)) return;
     this.selectedTargetState.set(target);
     this.resultState.set(null);
     this.errorState.set(null);
+  }
+
+  targetAllowed(target: BuilderCourseReintegrationTarget): boolean {
+    const required = this.requiredTarget();
+    return required === null || targetsEqual(required, target);
   }
 
   async previewCourseOutput(): Promise<void> {
@@ -145,7 +145,13 @@ export class RepertoireBuilderCourseStore {
       }));
       if (requestVersion !== this.previewRequestVersion) return;
       this.previewState.set(preview);
-      this.selectedTargetState.set(defaultTarget(preview, newLineName));
+      const target = defaultTarget(preview, newLineName, this.requiredTarget());
+      this.selectedTargetState.set(target);
+      if (this.requiredTarget() && !target) {
+        this.errorState.set(
+          'The source course ending no longer matches this exact line endpoint. Return to Course review and refresh the finding.',
+        );
+      }
     } catch (error) {
       if (requestVersion !== this.previewRequestVersion) return;
       this.errorState.set(errorMessage(error, 'Could not preview this draft against the selected chapter.'));
@@ -159,7 +165,14 @@ export class RepertoireBuilderCourseStore {
     const preview = this.preview();
     const target = this.selectedTarget();
     const chapterId = this.selectedChapterId();
-    if (!draft || !preview || !target || chapterId === null || this.applyLoading()) return;
+    if (
+      !draft
+      || !preview
+      || !target
+      || !this.targetAllowed(target)
+      || chapterId === null
+      || this.applyLoading()
+    ) return;
     this.applyLoadingState.set(true);
     this.errorState.set(null);
     this.resultState.set(null);
@@ -178,6 +191,59 @@ export class RepertoireBuilderCourseStore {
       this.selectedTargetState.set(null);
     } finally {
       this.applyLoadingState.set(false);
+    }
+  }
+
+  private async initializeLockedDestination(
+    launch: RepertoireBuilderCourseEndingLaunch,
+  ): Promise<void> {
+    const requiredTarget: BuilderCourseReintegrationTarget = {
+      kind: 'EXISTING_LINE',
+      lineId: launch.lineId,
+      anchor: {
+        kind: 'NODE',
+        nodeId: launch.nodeId,
+        normalizedFen: normalizeFenForPosition(launch.startingFen),
+      },
+    };
+    this.requiredTargetState.set(requiredTarget);
+    this.newLineNameState.set(launch.lineName);
+
+    if (!this.courses().some((course) => course.id === launch.courseId)) {
+      this.errorState.set('The source course is no longer available to this user.');
+      return;
+    }
+
+    await this.setCourseSelection(launch.courseId);
+    if (!this.chapters().some((chapter) => chapter.id === launch.chapterId)) {
+      this.errorState.set('The source chapter is no longer available in this course.');
+      return;
+    }
+    this.selectedChapterIdState.set(launch.chapterId);
+  }
+
+  private async setCourseSelection(courseId: number | null): Promise<void> {
+    this.selectedCourseIdState.set(courseId);
+    this.selectedChapterIdState.set(null);
+    this.chaptersState.set([]);
+    this.clearPreview();
+    if (courseId === null) return;
+    const requestVersion = ++this.destinationRequestVersion;
+    this.destinationsLoadingState.set(true);
+    this.errorState.set(null);
+    try {
+      const chapters = await firstValueFrom(this.api.listChapters(courseId));
+      if (requestVersion !== this.destinationRequestVersion) return;
+      this.chaptersState.set([...chapters].sort((left, right) => (
+        left.sortOrder - right.sortOrder || left.id - right.id
+      )));
+    } catch (error) {
+      if (requestVersion !== this.destinationRequestVersion) return;
+      this.errorState.set(errorMessage(error, 'Could not load course chapters.'));
+    } finally {
+      if (requestVersion === this.destinationRequestVersion) {
+        this.destinationsLoadingState.set(false);
+      }
     }
   }
 
@@ -210,6 +276,8 @@ export class RepertoireBuilderCourseStore {
     this.newLineNameState.set('');
     this.previewState.set(null);
     this.selectedTargetState.set(null);
+    this.requiredTargetState.set(null);
+    this.destinationLockedState.set(false);
     this.resultState.set(null);
     this.destinationsLoadingState.set(false);
     this.previewLoadingState.set(false);
@@ -229,10 +297,23 @@ export class RepertoireBuilderCourseStore {
 function defaultTarget(
   preview: BuilderCourseReintegrationPreviewResponse,
   newLineName: string,
+  requiredTarget: BuilderCourseReintegrationTarget | null,
 ): BuilderCourseReintegrationTarget | null {
+  if (requiredTarget) {
+    const candidate = preview.candidates.find((item) => (
+      item.counts.conflictingMoves === 0
+      && targetsEqual(requiredTarget, candidateTarget(item))
+    ));
+    return candidate ? candidateTarget(candidate) : null;
+  }
   if (preview.newLine.allowed) return { kind: 'NEW_LINE', name: newLineName };
   const candidate = preview.candidates.find((item) => item.counts.conflictingMoves === 0);
-  if (!candidate) return null;
+  return candidate ? candidateTarget(candidate) : null;
+}
+
+function candidateTarget(
+  candidate: BuilderCourseReintegrationPreviewResponse['candidates'][number],
+): BuilderCourseReintegrationTarget {
   return {
     kind: 'EXISTING_LINE',
     lineId: candidate.lineId,
@@ -242,6 +323,19 @@ function defaultTarget(
       normalizedFen: candidate.anchor.normalizedFen,
     },
   };
+}
+
+function targetsEqual(
+  left: BuilderCourseReintegrationTarget,
+  right: BuilderCourseReintegrationTarget,
+): boolean {
+  if (left.kind !== right.kind) return false;
+  if (left.kind === 'NEW_LINE' && right.kind === 'NEW_LINE') return left.name === right.name;
+  if (left.kind !== 'EXISTING_LINE' || right.kind !== 'EXISTING_LINE') return false;
+  return left.lineId === right.lineId
+    && left.anchor.kind === right.anchor.kind
+    && left.anchor.nodeId === right.anchor.nodeId
+    && left.anchor.normalizedFen === right.anchor.normalizedFen;
 }
 
 function errorMessage(error: unknown, fallback: string): string {

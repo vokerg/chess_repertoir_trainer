@@ -22,7 +22,11 @@ import {
   type CourseReviewMode,
   type CourseReviewModeTab,
 } from '../helpers/course-review-mode';
-import { CourseReviewStore } from '../state/course-review.store';
+import { parseCourseReviewRestoredScope } from '../helpers/course-review-route';
+import {
+  CourseReviewStore,
+  defaultCourseReviewGameFilters,
+} from '../state/course-review.store';
 
 @Component({
   selector: 'app-course-review-page',
@@ -46,6 +50,7 @@ export class CourseReviewPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private restoredScopeKey: string | null = null;
   protected readonly store = inject(CourseReviewStore);
 
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
@@ -127,14 +132,28 @@ export class CourseReviewPageComponent implements OnInit {
         map(([params, query]) => ({
           courseId: Number(params.get('courseId')),
           mode: courseReviewModeFromQuery(query.get('view')),
+          restoredScope: parseCourseReviewRestoredScope(query, defaultCourseReviewGameFilters()),
+          restoredScopeKey: query.get('restore') === '1'
+            ? query.keys.slice().sort().map((key) => `${key}=${query.getAll(key).join(',')}`).join('&')
+            : null,
         })),
         distinctUntilChanged(
           (previous, current) =>
-            previous.courseId === current.courseId && previous.mode === current.mode,
+            previous.courseId === current.courseId
+            && previous.mode === current.mode
+            && previous.restoredScopeKey === current.restoredScopeKey,
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(({ courseId, mode }) => this.store.initialize(courseId, mode));
+      .subscribe(({ courseId, mode, restoredScope, restoredScopeKey }) => {
+        this.store.initialize(courseId, mode);
+        if (restoredScope && restoredScopeKey !== this.restoredScopeKey) {
+          this.restoredScopeKey = restoredScopeKey;
+          this.store.setGameFilters(restoredScope.gameFilters);
+          this.store.setMinGames(restoredScope.minGames);
+          this.store.applyFilters();
+        }
+      });
   }
 
   protected selectMode(mode: CourseReviewMode): void {

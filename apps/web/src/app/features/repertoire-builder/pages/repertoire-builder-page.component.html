@@ -6,6 +6,46 @@
     [actions]="headerActions()"
   />
 
+  @if (launchError(); as error) {
+    <p class="launch-error" role="alert">{{ error }}</p>
+  }
+
+  @if (launchContext(); as launch) {
+    <app-panel
+      title="Course ending source"
+      subtitle="This builder draft extends one exact terminal course position. The source evidence remains visible while you adjust the target setup."
+    >
+      <div class="launch-context">
+        <div class="launch-facts">
+          <div>
+            <span class="metric-label">Destination</span>
+            <strong>{{ launch.courseName }} · {{ launch.lineName }}</strong>
+          </div>
+          <div>
+            <span class="metric-label">Course path</span>
+            <strong>{{ launch.sequence || 'Terminal line position' }}</strong>
+          </div>
+          <div>
+            <span class="metric-label">Observed continuation</span>
+            <strong>{{ launch.observedMoveSan || launch.observedMoveUci }}</strong>
+          </div>
+          <div>
+            <span class="metric-label">Evidence</span>
+            <strong>
+              {{ launch.observedGameCount }} games · minimum {{ launch.minGames }} ·
+              {{ launch.results.win }}W {{ launch.results.draw }}D {{ launch.results.loss }}L
+            </strong>
+          </div>
+        </div>
+        <p class="launch-filter-summary">{{ launch.filterSummary }}</p>
+        <p class="launch-boundary">
+          Consequence: extend this existing line only. Replacement, a separate line, and another destination are not treated as equivalent actions.
+        </p>
+        <button type="button" class="secondary" (click)="backToSource()">Back to course endings</button>
+      </div>
+    </app-panel>
+  }
+
   <app-repertoire-builder-workbench
     [session]="store.session()"
     [activeBranch]="store.activeBranch()"
@@ -46,16 +86,17 @@
     (queueReordered)="reorderQueue($event)"
     (sessionFinished)="store.finishSession()"
     (sessionAbandoned)="store.abandonSession()"
-    (newDraftRequested)="store.startNewDraft()"
+    (newDraftRequested)="startNewDraft()"
   />
 
   @if (store.setupOpen()) {
     <app-repertoire-builder-setup-dialog
-      [initialSetup]="store.setup()"
+      [initialSetup]="initialSetup()"
+      [fixedSide]="launchContext()?.side ?? null"
       [loading]="store.setupLoading()"
       [error]="store.setupError()"
       [cancelAllowed]="store.session() !== null"
-      (submitted)="store.start($event)"
+      (submitted)="startBuilder($event)"
       (cancelled)="store.closeSetup()"
     />
   }
@@ -70,6 +111,8 @@
       [draft]="courseStore.draft()"
       [preview]="courseStore.preview()"
       [selectedTarget]="courseStore.selectedTarget()"
+      [requiredTarget]="courseStore.requiredTarget()"
+      [destinationLocked]="courseStore.destinationLocked()"
       [result]="courseStore.result()"
       [destinationsLoading]="courseStore.destinationsLoading()"
       [previewLoading]="courseStore.previewLoading()"

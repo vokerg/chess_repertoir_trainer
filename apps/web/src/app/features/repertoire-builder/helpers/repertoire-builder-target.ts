@@ -10,6 +10,7 @@ import {
   type RepertoireTargetCoverage,
   type RepertoireTargetObjective,
   type RepertoireTargetPopulationRequest,
+  type RepertoireTargetStartingPoint,
 } from '@chess-trainer/contracts/repertoire-target';
 import type {
   RepertoireBuilderPersonaPreset,
@@ -67,6 +68,7 @@ export function buildRepertoireBuilderTarget(
   peerResolution: LichessGamesPeerResolution | null,
   now: string,
   targetId = createId(),
+  startingPoint: RepertoireTargetStartingPoint = { kind: 'INITIAL_POSITION' },
 ): RepertoireTarget {
   const populationRequest = toPopulationRequest(setup.ratingTarget, setup.ratingGroup);
   const population = resolveRepertoireTargetPopulation(populationRequest, peerResolution);
@@ -83,7 +85,7 @@ export function buildRepertoireBuilderTarget(
     contractVersion: REPERTOIRE_TARGET_CONTRACT_VERSION,
     targetId,
     side: setup.side,
-    startingPoint: { kind: 'INITIAL_POSITION' },
+    startingPoint,
     speedPreset: setup.speedPreset,
     population,
     accountIds,

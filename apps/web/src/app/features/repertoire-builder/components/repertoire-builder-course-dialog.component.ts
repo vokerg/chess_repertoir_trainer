@@ -47,6 +47,8 @@ export class RepertoireBuilderCourseDialogComponent {
   readonly draft = input<BuilderCourseDraft | null>(null);
   readonly preview = input<BuilderCourseReintegrationPreviewResponse | null>(null);
   readonly selectedTarget = input<BuilderCourseReintegrationTarget | null>(null);
+  readonly requiredTarget = input<BuilderCourseReintegrationTarget | null>(null);
+  readonly destinationLocked = input(false);
   readonly result = input<BuilderCourseReintegrationApplyResponse | null>(null);
   readonly destinationsLoading = input(false);
   readonly previewLoading = input(false);
@@ -76,14 +78,15 @@ export class RepertoireBuilderCourseDialogComponent {
     effect(() => {
       const courseId = this.selectedCourseId();
       const busy = this.destinationsLoading() || this.applyLoading();
+      const fixedDestination = this.destinationLocked();
       this.form.setValue({
         courseId,
         chapterId: this.selectedChapterId(),
         newLineName: this.newLineName(),
       }, { emitEvent: false });
-      syncDisabled(this.form.controls.courseId, busy);
-      syncDisabled(this.form.controls.chapterId, busy || courseId === null);
-      syncDisabled(this.form.controls.newLineName, this.applyLoading());
+      syncDisabled(this.form.controls.courseId, busy || fixedDestination);
+      syncDisabled(this.form.controls.chapterId, busy || fixedDestination || courseId === null);
+      syncDisabled(this.form.controls.newLineName, this.applyLoading() || fixedDestination);
     });
     this.form.controls.courseId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -109,19 +112,16 @@ export class RepertoireBuilderCourseDialogComponent {
   }
 
   protected selectNewLine(): void {
-    this.targetSelected.emit({ kind: 'NEW_LINE', name: this.form.controls.newLineName.value.trim() });
+    const nextTarget: BuilderCourseReintegrationTarget = {
+      kind: 'NEW_LINE',
+      name: this.form.controls.newLineName.value.trim(),
+    };
+    if (this.isAllowed(nextTarget)) this.targetSelected.emit(nextTarget);
   }
 
   protected selectCandidate(candidate: BuilderCourseMergeCandidate): void {
-    this.targetSelected.emit({
-      kind: 'EXISTING_LINE',
-      lineId: candidate.lineId,
-      anchor: {
-        kind: candidate.anchor.kind,
-        nodeId: candidate.anchor.nodeId,
-        normalizedFen: candidate.anchor.normalizedFen,
-      },
-    });
+    const nextTarget = targetFromCandidate(candidate);
+    if (this.isAllowed(nextTarget)) this.targetSelected.emit(nextTarget);
   }
 
   protected isNewLineSelected(): boolean {
@@ -129,17 +129,54 @@ export class RepertoireBuilderCourseDialogComponent {
   }
 
   protected isCandidateSelected(candidate: BuilderCourseMergeCandidate): boolean {
-    const target = this.selectedTarget();
-    return target?.kind === 'EXISTING_LINE'
-      && target.lineId === candidate.lineId
-      && target.anchor.kind === candidate.anchor.kind
-      && target.anchor.nodeId === candidate.anchor.nodeId
-      && target.anchor.normalizedFen === candidate.anchor.normalizedFen;
+    const current = this.selectedTarget();
+    return current !== null && sameTarget(current, targetFromCandidate(candidate));
+  }
+
+  protected isNewLineAllowed(): boolean {
+    return this.isAllowed({
+      kind: 'NEW_LINE',
+      name: this.form.controls.newLineName.value.trim(),
+    });
+  }
+
+  protected isCandidateAllowed(candidate: BuilderCourseMergeCandidate): boolean {
+    return this.isAllowed(targetFromCandidate(candidate));
   }
 
   protected apply(): void {
     this.applyRequested.emit();
   }
+
+  private isAllowed(candidate: BuilderCourseReintegrationTarget): boolean {
+    const required = this.requiredTarget();
+    return required === null || sameTarget(required, candidate);
+  }
+}
+
+function targetFromCandidate(candidate: BuilderCourseMergeCandidate): BuilderCourseReintegrationTarget {
+  return {
+    kind: 'EXISTING_LINE',
+    lineId: candidate.lineId,
+    anchor: {
+      kind: candidate.anchor.kind,
+      nodeId: candidate.anchor.nodeId,
+      normalizedFen: candidate.anchor.normalizedFen,
+    },
+  };
+}
+
+function sameTarget(
+  left: BuilderCourseReintegrationTarget,
+  right: BuilderCourseReintegrationTarget,
+): boolean {
+  if (left.kind !== right.kind) return false;
+  if (left.kind === 'NEW_LINE' && right.kind === 'NEW_LINE') return left.name === right.name;
+  if (left.kind !== 'EXISTING_LINE' || right.kind !== 'EXISTING_LINE') return false;
+  return left.lineId === right.lineId
+    && left.anchor.kind === right.anchor.kind
+    && left.anchor.nodeId === right.anchor.nodeId
+    && left.anchor.normalizedFen === right.anchor.normalizedFen;
 }
 
 function syncDisabled(control: AbstractControl, disabled: boolean): void {

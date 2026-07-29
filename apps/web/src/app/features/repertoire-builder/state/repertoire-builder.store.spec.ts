@@ -7,6 +7,7 @@ import type {
 import { Subject, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
+import type { RepertoireBuilderCourseEndingLaunch } from '../helpers/repertoire-builder-launch';
 import { defaultRepertoireBuilderSetup } from '../helpers/repertoire-builder-target';
 import { RepertoireBuilderStore } from './repertoire-builder.store';
 
@@ -14,6 +15,28 @@ const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
 const AFTER_D4 = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
 const AFTER_E4_E5 = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+
+const courseEndingLaunch: RepertoireBuilderCourseEndingLaunch = {
+  source: 'COURSE_ENDING',
+  intent: 'EXTEND_EXISTING_LINE',
+  courseId: 7,
+  courseName: 'White repertoire',
+  chapterId: 11,
+  lineId: 13,
+  lineName: 'Open game',
+  nodeId: 17,
+  startingFen: AFTER_E4,
+  side: 'WHITE',
+  observedMoveUci: 'e7e5',
+  observedMoveSan: 'e5',
+  observedGameCount: 8,
+  minGames: 4,
+  sourceKey: 'after-e4:e7e5',
+  sequence: '1. e4',
+  results: { win: 3, draw: 2, loss: 3, unknown: 0 },
+  filterSummary: 'Last 1 month · White games',
+  sourceFilters: 'userColor=WHITE',
+};
 
 function explicitSetup() {
   return {
@@ -154,6 +177,7 @@ describe('RepertoireBuilderStore', () => {
     moveSan: 'e5',
     resultingFen: AFTER_E4_E5,
     contributionPercent: 42,
+    manuallyRequested: true,
   });
 
   beforeEach(() => {
@@ -199,6 +223,26 @@ describe('RepertoireBuilderStore', () => {
     expect(api.getCandidates).toHaveBeenCalledWith(jasmine.objectContaining({
       decisionRole: 'USER_MOVE',
       candidateLimit: 6,
+    }));
+  });
+
+  it('starts at the exact Course ending and includes the observed continuation', async () => {
+    api.getCandidates.and.returnValue(of(responseFixture('OPPONENT_RESPONSE', [e5])));
+
+    await store.start(explicitSetup(), courseEndingLaunch);
+
+    expect(store.session()?.startingFen).toBe(AFTER_E4);
+    expect(store.session()?.targetSnapshot.value.startingPoint).toEqual({
+      kind: 'COURSE_POSITION',
+      courseId: 7,
+      lineId: 13,
+    });
+    expect(store.activeBranch()?.role).toBe('OPPONENT_RESPONSE');
+    expect(store.previewCandidate()?.moveUci).toBe('e7e5');
+    expect(api.getCandidates).toHaveBeenCalledWith(jasmine.objectContaining({
+      fen: AFTER_E4,
+      decisionRole: 'OPPONENT_RESPONSE',
+      includeMoveUci: 'e7e5',
     }));
   });
 

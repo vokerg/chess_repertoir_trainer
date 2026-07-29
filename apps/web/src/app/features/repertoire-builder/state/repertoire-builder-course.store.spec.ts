@@ -15,11 +15,37 @@ import {
 import { Chess } from 'chess.js';
 import { of } from 'rxjs';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
+import type { RepertoireBuilderCourseEndingLaunch } from '../helpers/repertoire-builder-launch';
 import {
   buildRepertoireBuilderTarget,
   defaultRepertoireBuilderSetup,
 } from '../helpers/repertoire-builder-target';
 import { RepertoireBuilderCourseStore } from './repertoire-builder-course.store';
+
+const STARTING_FEN = new Chess().fen();
+const NORMALIZED_STARTING_FEN = normalizeFenForPosition(STARTING_FEN);
+
+const courseEndingLaunch: RepertoireBuilderCourseEndingLaunch = {
+  source: 'COURSE_ENDING',
+  intent: 'EXTEND_EXISTING_LINE',
+  courseId: 1,
+  courseName: 'Course',
+  chapterId: 2,
+  lineId: 13,
+  lineName: 'Source line',
+  nodeId: 17,
+  startingFen: STARTING_FEN,
+  side: 'WHITE',
+  observedMoveUci: 'e2e4',
+  observedMoveSan: 'e4',
+  observedGameCount: 8,
+  minGames: 4,
+  sourceKey: 'start:e2e4',
+  sequence: null,
+  results: { win: 4, draw: 2, loss: 2, unknown: 0 },
+  filterSummary: 'Last 1 month · White games',
+  sourceFilters: 'userColor=WHITE',
+};
 
 function completedSession(): BuilderSession<RepertoireTarget> {
   const now = '2026-07-29T12:00:00.000Z';
@@ -40,7 +66,7 @@ function completedSession(): BuilderSession<RepertoireTarget> {
       value: target,
     },
     repertoireSide: 'WHITE',
-    startingFen: new Chess().fen(),
+    startingFen: STARTING_FEN,
     createdAt: now,
   });
   session = acceptBuilderDecision(session, {
@@ -75,7 +101,9 @@ function completedSession(): BuilderSession<RepertoireTarget> {
   });
 }
 
-function previewFixture(): BuilderCourseReintegrationPreviewResponse {
+function previewFixture(
+  candidates: BuilderCourseReintegrationPreviewResponse['candidates'] = [],
+): BuilderCourseReintegrationPreviewResponse {
   return {
     contractVersion: '2026-07-v1',
     previewToken: `sha256:${'a'.repeat(64)}`,
@@ -93,7 +121,7 @@ function previewFixture(): BuilderCourseReintegrationPreviewResponse {
       transpositionLeafCount: 0,
       excludedBranches: [],
     },
-    candidates: [],
+    candidates,
     newLine: {
       status: 'CREATES',
       allowed: true,
@@ -112,6 +140,31 @@ function previewFixture(): BuilderCourseReintegrationPreviewResponse {
   };
 }
 
+const exactCandidate: BuilderCourseReintegrationPreviewResponse['candidates'][number] = {
+  lineId: 13,
+  lineName: 'Source line',
+  sideToTrain: 'WHITE',
+  anchor: {
+    kind: 'NODE',
+    lineId: 13,
+    lineName: 'Source line',
+    nodeId: 17,
+    fen: STARTING_FEN,
+    normalizedFen: NORMALIZED_STARTING_FEN,
+    moveSequenceSan: null,
+  },
+  counts: {
+    reusedMoves: 0,
+    createdMoves: 1,
+    conflictingMoves: 0,
+    totalDraftMoves: 1,
+    skippedBranches: 0,
+  },
+  conflicts: [],
+  warnings: [],
+  previewTree: [],
+};
+
 const applyFixture: BuilderCourseReintegrationApplyResponse = {
   contractVersion: '2026-07-v1',
   targetKind: 'NEW_LINE',
@@ -126,6 +179,13 @@ const applyFixture: BuilderCourseReintegrationApplyResponse = {
   totalDraftMoves: 1,
   courseContentRevision: 4,
   idempotent: false,
+};
+
+const exactApplyFixture: BuilderCourseReintegrationApplyResponse = {
+  ...applyFixture,
+  targetKind: 'EXISTING_LINE',
+  lineId: 13,
+  lineName: 'Source line',
 };
 
 describe('RepertoireBuilderCourseStore', () => {
@@ -176,6 +236,49 @@ describe('RepertoireBuilderCourseStore', () => {
       target: { kind: 'NEW_LINE', name: 'Reviewed line' },
     }));
     expect(store.result()).toEqual(applyFixture);
+  });
+
+  it('locks a Course ending draft to its exact source endpoint', async () => {
+    api.previewCourseOutput.and.returnValue(of(previewFixture([exactCandidate])));
+    api.applyCourseOutput.and.returnValue(of(exactApplyFixture));
+
+    await store.openFor(completedSession(), courseEndingLaunch);
+
+    expect(store.destinationLocked()).toBeTrue();
+    expect(store.selectedCourseId()).toBe(1);
+    expect(store.selectedChapterId()).toBe(2);
+    expect(store.newLineName()).toBe('Source line');
+    expect(store.requiredTarget()).toEqual({
+      kind: 'EXISTING_LINE',
+      lineId: 13,
+      anchor: {
+        kind: 'NODE',
+        nodeId: 17,
+        normalizedFen: NORMALIZED_STARTING_FEN,
+      },
+    });
+
+    await store.previewCourseOutput();
+
+    expect(store.selectedTarget()).toEqual(store.requiredTarget());
+    expect(store.canApply()).toBeTrue();
+    store.selectTarget({ kind: 'NEW_LINE', name: 'Another line' });
+    expect(store.selectedTarget()).toEqual(store.requiredTarget());
+
+    await store.applyCourseOutput();
+    expect(api.applyCourseOutput).toHaveBeenCalledWith(2, jasmine.objectContaining({
+      target: store.requiredTarget(),
+    }));
+    expect(store.result()).toEqual(exactApplyFixture);
+  });
+
+  it('fails safely when the exact source endpoint is absent from preview', async () => {
+    await store.openFor(completedSession(), courseEndingLaunch);
+    await store.previewCourseOutput();
+
+    expect(store.selectedTarget()).toBeNull();
+    expect(store.canApply()).toBeFalse();
+    expect(store.error()).toContain('no longer matches');
   });
 
   it('invalidates a preview when destination details change', async () => {

@@ -18,6 +18,13 @@
       <button type="button" class="icon-button" aria-label="Close course review" [disabled]="applyLoading()" (click)="close()">×</button>
     </header>
 
+    @if (destinationLocked()) {
+      <p class="scope-note" role="note">
+        This draft came from a Course ending. Its destination is fixed to the exact source line endpoint;
+        creating another line or merging elsewhere is intentionally unavailable.
+      </p>
+    }
+
     <form class="destination-form" [formGroup]="form" (ngSubmit)="requestPreview()">
       <label class="field">
         <span>Course</span>
@@ -40,7 +47,7 @@
       </label>
 
       <label class="field">
-        <span>Reviewed new-line name</span>
+        <span>{{ destinationLocked() ? 'Source line' : 'Reviewed new-line name' }}</span>
         <input type="text" formControlName="newLineName" maxlength="200" placeholder="Enter a line name" />
       </label>
 
@@ -82,15 +89,19 @@
             type="button"
             class="target-card"
             [class.selected]="isNewLineSelected()"
-            [class.blocked]="!reviewed.newLine.allowed"
+            [class.blocked]="!reviewed.newLine.allowed || !isNewLineAllowed()"
             role="radio"
             [attr.aria-checked]="isNewLineSelected()"
-            [disabled]="!reviewed.newLine.allowed || applyLoading()"
+            [disabled]="!reviewed.newLine.allowed || !isNewLineAllowed() || applyLoading()"
             (click)="selectNewLine()"
           >
             <span class="target-title">
               <strong>New line · {{ form.controls.newLineName.value }}</strong>
-              <small>{{ reviewed.newLine.status === 'REUSES_EXISTING_LINE' ? 'Equivalent line already exists' : 'Create in selected chapter' }}</small>
+              <small>
+                {{ isNewLineAllowed()
+                  ? (reviewed.newLine.status === 'REUSES_EXISTING_LINE' ? 'Equivalent line already exists' : 'Create in selected chapter')
+                  : 'Not the source Course ending target' }}
+              </small>
             </span>
             <span class="target-counts">
               <span>{{ reviewed.newLine.counts.createdMoves }} create</span>
@@ -104,15 +115,19 @@
               type="button"
               class="target-card"
               [class.selected]="isCandidateSelected(candidate)"
-              [class.blocked]="candidate.counts.conflictingMoves > 0"
+              [class.blocked]="candidate.counts.conflictingMoves > 0 || !isCandidateAllowed(candidate)"
               role="radio"
               [attr.aria-checked]="isCandidateSelected(candidate)"
-              [disabled]="candidate.counts.conflictingMoves > 0 || applyLoading()"
+              [disabled]="candidate.counts.conflictingMoves > 0 || !isCandidateAllowed(candidate) || applyLoading()"
               (click)="selectCandidate(candidate)"
             >
               <span class="target-title">
                 <strong>Merge into {{ candidate.lineName }}</strong>
-                <small>{{ candidate.anchor.moveSequenceSan || 'Line start' }}</small>
+                <small>
+                  {{ isCandidateAllowed(candidate)
+                    ? (candidate.anchor.moveSequenceSan || 'Line start')
+                    : 'Not the source Course ending endpoint' }}
+                </small>
               </span>
               <span class="target-counts">
                 <span>{{ candidate.counts.createdMoves }} create</span>

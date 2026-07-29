@@ -120,6 +120,10 @@
         [subtitle]="resultSubtitle()"
         [emptyMessage]="emptyMessage()"
         [findings]="store.activeFindings()"
+        [courseId]="store.course()?.id ?? null"
+        [courseName]="store.course()?.name ?? ''"
+        [endingFilters]="store.endings()?.filters ?? null"
+        [filterSummary]="store.filterSummary()"
       />
     } @else if (store.loading()) {
       <p class="status-note">Checking course endings against indexed games...</p>
