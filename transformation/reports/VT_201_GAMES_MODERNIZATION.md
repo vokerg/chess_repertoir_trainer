@@ -10,7 +10,7 @@ Target: `main`
 
 Pull request: draft PR #167
 
-Disposition: implementation in progress; automated and browser validation pending
+Disposition: automated validation complete; direct browser review pending
 
 ## Objective
 
@@ -124,6 +124,8 @@ The existing menu actions are unchanged. Its presentation now uses production ov
 - Terminal/settled jobs still refresh only when they affect visible games.
 - Game review and provider/profile links retain their destinations.
 
+The current Games implementation exposes no row-selection model. VT-201 does not invent one solely because the issue template referenced selection behavior.
+
 ## Focused tests
 
 Added `games-table.component.spec.ts` to verify that the responsive card representation retains:
@@ -137,6 +139,21 @@ Added `games-table.component.spec.ts` to verify that the responsive card represe
 - loaded-result pagination context.
 
 Existing page/store tests continue to own route synchronization, canonical apply behavior, reset, job-settle refresh, bulk eligibility, durable command submission, rejected-game handling, URL-only criteria, and cursor append behavior.
+
+## Automated validation
+
+Implementation-head CI #1282, report-head CI #1288, and final documentation-head CI #1289 passed:
+
+- dependency installation;
+- lint;
+- the full repository build and Angular template/type compilation;
+- opening classification audit;
+- architecture guardrails;
+- database migrations;
+- imported-game opening classification audit;
+- the complete repository test suite, including the new responsive Games tests.
+
+No backend or schema validation exception was required. Direct browser review remains the only open acceptance gate.
 
 ## Candidate patterns for VT-204
 
@@ -201,6 +218,7 @@ Do not approve based only on static code or automated tests. Record any unavaila
 - `apps/web/src/app/features/games/state/games-explorer.store.ts`
 - `apps/web/src/app/features/games/state/games-explorer.store.spec.ts`
 - `apps/web/src/app/features/games/data-access/games-api.service.ts`
+- `apps/web/src/app/features/games/data-access/games.models.ts`
 - `apps/web/src/app/features/games/components/games-table.component.ts`
 - `apps/web/src/app/features/games/components/games-table.component.html`
 - `apps/web/src/app/features/games/components/games-table.component.css`
@@ -208,3 +226,4 @@ Do not approve based only on static code or automated tests. Record any unavaila
 - `apps/web/src/app/features/games/components/game-action-menu.component.html`
 - `apps/web/src/app/features/games/components/game-action-menu.component.css`
 - `apps/web/src/app/features/games/helpers/games-table-display.ts`
+- `apps/web/src/app/features/games/helpers/game-detail-labels.ts`
