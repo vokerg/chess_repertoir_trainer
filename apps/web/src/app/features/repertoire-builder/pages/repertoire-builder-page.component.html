@@ -92,6 +92,7 @@
   @if (store.setupOpen()) {
     <app-repertoire-builder-setup-dialog
       [initialSetup]="initialSetup()"
+      [fixedSide]="launchContext()?.side ?? null"
       [loading]="store.setupLoading()"
       [error]="store.setupError()"
       [cancelAllowed]="store.session() !== null"
