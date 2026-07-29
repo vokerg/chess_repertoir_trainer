@@ -176,7 +176,7 @@ Gate: passed. A user can build one bounded repertoire slice, control opponent-re
 
 ## Stage 6 — course materialization and adaptation
 
-State: RB-011 is complete through squash-merged PR #189. RB-012 is in `REVIEW` through PR #205 for the first Course endings entry slice.
+State: RB-011 is complete through squash-merged PR #189. The first RB-012 Course endings entry slice is integrated through squash-merged PR #205, and RB-012 is `READY` for Opponent gaps.
 
 RB-011 delivered:
 
@@ -197,7 +197,7 @@ RB-011 delivered:
 
 PR #189 was squash-merged as `01b36f9503ccfbb3dced55d56589b89cfd163867`. Final review-package CI #1488 passed the complete repository workflow. Issue #99 is closed.
 
-RB-012 first review slice provides:
+RB-012 integrated first slice provides:
 
 - a line-specific **Extend this line in builder** action for every exact Course ending line/node reference;
 - a bounded validated launch payload retaining source course context, terminal FEN, observed continuation, game evidence and applied filters;
@@ -211,17 +211,18 @@ RB-012 first review slice provides:
 - safe no-match behavior for stale or changed source endpoints;
 - no new API route, persistence, migration or recommendation engine.
 
+PR #205 was squash-merged as `c2266c9a8ffca00696da264abb3476f36ec82b50` after final review-package head `45851192b77327e23546eb691d3629c3a193144d` passed CI #1541.
+
 Remaining Stage 6 goals:
 
-- hands-on browser review of Course ending → builder → exact source line;
-- accept and integrate the first RB-012 slice;
 - add Opponent gaps as the next explicit coverage-extension entry point;
 - define explicit replace/alternate/keep-course consequences before integrating My deviations;
-- calibrate whether any source report can be retired only after equivalent builder maintenance value is proven.
+- calibrate the complete Course ending loop against populated data, responsive layouts and keyboard traversal;
+- consider retiring or consolidating source reports only after multiple finding types demonstrate equivalent builder maintenance value.
 
 Tasks: RB-011, RB-012.
 
-Gate: partially passed. Safe reviewed course materialization is integrated. The first exact existing-course adaptation is implemented and awaits complete CI plus hands-on review before the program can claim an accepted finding-to-trainable-material loop.
+Gate: partially passed. Safe course materialization and the first exact finding-to-trainable-material loop are integrated. The broader multi-finding adaptation stage remains open under RB-012.
 
 ## Stage 7 — specialized personas and optional intelligence
 
@@ -260,7 +261,8 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- review of RB-012 Course endings entry through PR #205;
+- the next RB-012 Opponent gaps slice;
+- post-merge populated-browser calibration of the Course endings loop;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -277,6 +279,6 @@ High-collision areas requiring coordination:
 - RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-012 is `REVIEW` through PR #205 for the first Course endings slice.
+- RB-012 is `READY` after squash-merged PR #205; Opponent gaps is the next bounded slice.
 - RB-017 remains `CLAIMED` and isolated.
-- No priority change or roadmap resequencing is required. Opponent gaps is the recommended next RB-012 slice after acceptance.
+- No priority change or roadmap resequencing is required.
