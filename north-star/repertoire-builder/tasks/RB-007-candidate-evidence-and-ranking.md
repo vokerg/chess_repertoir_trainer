@@ -1,6 +1,6 @@
 # RB-007 — Aggregate and rank candidate evidence explainably
 
-Status: READY
+Status: REVIEW
 
 Priority: P1
 
@@ -8,128 +8,154 @@ Order: 90
 
 Delivery class: North-star
 
-Planning maturity: Outlined
+Planning maturity: Implemented
 
-Claimed by: unclaimed
+GitHub issue: `#95`
 
-Claim branch: none
+Claimed by: OpenAI ChatGPT
 
-Claimed at: none
+Claim branch: `rb-007/issue-95-candidate-evidence-ranking`
 
-Claim scope: none
+Claimed at: 2026-07-29
+
+Claim scope: Define and implement the shared versioned candidate-decision contract and deterministic v1 ranking policy; add a transport-independent API service that aggregates bounded legal engine, Masters, selected-population, personal-game, opening-profile, and course-coverage evidence through explicit injectable provider boundaries; preserve missing/stale/insufficient source states, eligibility warnings, separate user-move and opponent-coverage roles, profile fit versus target fit, stable reason codes, reproducible ordering, focused tests, and required North Star documentation. Excludes final Angular builder UI, builder-session or candidate persistence, course writes, traps integration, LLM ranking, unbounded analysis, and changes to the completed peer-resolution formula.
+
+Claim PR: `#164`
+
+Implementation PR: `#166`
+
+Implementation-head CI: run `30421167116` / CI #1284 — success
 
 ## Outcome
 
 For one position and repertoire target, produce a bounded set of legal candidate moves with separated evidence, eligibility decisions, deterministic ordering, recommendation reasons, and explicit data-quality limitations.
 
-The same domain should distinguish a user-move decision from opponent-response coverage.
+The same domain distinguishes a user-move decision from opponent-response coverage.
 
 ## Why this task exists
 
 The builder needs more than Stockfish's first move and more than corpus popularity. It must compare objective quality, master practice, selected population behavior, personal familiarity/results, opening character, course coverage, and target fit without hiding how the recommendation was made.
 
-## Current repo anchors to inspect
+## Current repo anchors inspected
 
-- position-analysis service, cache, normalization, and multipv support;
-- masters explorer contracts/service/cache;
+- position-analysis service, cache, normalization, and MultiPV support;
+- Masters and Lichess Games explorer contracts, services, caches, and injected peer resolver;
 - completed RB-001/RB-002 population and factual player-level evidence;
 - personal opening-analysis next moves and performance;
-- course position suggestions and repertoire graphs;
-- RB-003 opening profiles;
-- RB-004 profile evidence;
+- course position suggestions;
+- RB-003/RB-018 opening profiles;
+- RB-004 player-profile evidence;
 - completed RB-006 target contract;
-- pure domain package conventions and tests.
+- accepted RB-008 visual data responsibilities;
+- shared contracts, pure domain, Fastify/OpenAPI, authentication, and test conventions.
 
 ## Dependencies
 
-Consumes completed RB-003 and RB-006.
+Consumes completed RB-003, RB-006, RB-018, and RB-001/RB-002 evidence.
 
-Consumes completed RB-001/RB-002 population and factual player-level evidence.
-
-Should incorporate RB-008 visual data requirements.
+Consumes accepted RB-008 visual responsibilities.
 
 RB-009/RB-010 depend on its response and reason semantics.
 
-## In scope
+## Delivered scope
 
 ### Evidence aggregation
 
-- canonicalize the position and legal moves;
-- collect engine candidate lines at an approved bounded quality;
-- join master, target-population, personal, opening-profile, and course evidence;
-- retain source-specific sample sizes and metadata;
-- identify existing coverage, transpositions, and conflicts;
-- represent unavailable, stale, or insufficient sources explicitly;
-- produce bounded candidate count and bounded supporting examples.
+- canonicalizes the position and legal moves;
+- consumes up to three stored MultiPV engine lines rather than launching unbounded analysis;
+- joins Masters, selected-population, personal, opening-profile, player-profile, and owned-course evidence concurrently;
+- retains source-specific sample sizes, versions, fetch metadata, and bounded examples;
+- identifies exact course coverage, current-position conflicts, and narrow resulting-position transpositions;
+- represents unavailable, stale, and insufficient sources explicitly;
+- returns six candidates by default and at most eight;
+- always preserves one explicitly requested legal manual candidate.
 
 ### Eligibility
 
-- define target-dependent hard exclusions and warnings;
-- distinguish objectively losing/invalid moves from deliberately risky but permitted moves;
-- respect explicit dubious/risk tolerance;
-- avoid silently excluding manual candidates the UI may request for comparison.
+- applies target-dependent objective warning and exclusion thresholds;
+- distinguishes forced mate/objectively losing moves from deliberately risky but permitted moves;
+- respects explicit risk tolerance and dubious opt-in;
+- preserves objective cost and warnings for manual candidates instead of silently removing them.
 
 ### Ranking
 
-- apply deterministic versioned policy;
-- keep component contributions and reason codes inspectable;
-- separate profile fit from selected-target fit;
-- vary policy by selected speed set, rating target, objective, and persona;
-- define opponent-response priority separately from user-move preference;
-- support coverage-relevance reasons such as common at own level or personally encountered.
+- applies policy version `2026-07-deterministic-v1`;
+- keeps objective, population, Masters, personal, target-fit, profile-fit, and course components inspectable;
+- omits the internal weighted aggregate from the public response;
+- separates profile fit from selected-target fit;
+- varies user-move weights by the selected RB-001 speed preset;
+- defines opponent-response priority separately from user-move preference;
+- emits stable reasons such as common at target level, personally encountered, dangerous response, course coverage, and profile disagreement;
+- uses stable UCI tie-breaking.
+
+### API and contracts
+
+- adds `@chess-trainer/contracts/candidate-decision` version `2026-07-v1`;
+- adds authenticated `POST /api/candidate-decisions` with route-schema OpenAPI;
+- keeps the service transport-independent and provider boundaries injectable;
+- validates the complete response contract before return.
 
 ## Out of scope
 
 - changing the completed factual player-level formula;
 - final builder UI;
-- builder-session state;
+- builder-session state or persistence;
+- candidate persistence;
 - course writes;
 - LLM-generated ranking;
-- trap-specific evidence until RB-014 creates a verified source;
-- unbounded engine analysis or population traversal;
+- trap-specific evidence;
+- live or unbounded engine analysis;
+- arbitrary population traversal;
 - claiming causal certainty from personal results.
 
-## Open questions to resolve
+## Policy decisions
 
-- engine multipv count, depth, and cache requirements;
-- evaluation-loss thresholds by target;
-- score orientation and mate normalization;
-- treatment of popularity versus score;
-- general and multi-speed weighting;
-- learning-burden estimate;
-- transposition value;
-- minimum evidence for profile-fit reasons;
-- whether numeric aggregate score is public, internal, or omitted;
-- versioning and reproducibility of policy;
-- how users request a candidate omitted from the initial bounded set.
+- Stored engine evidence is bounded to three lines; depth below 12 is insufficient but visible.
+- User-move objective warnings/exclusions vary by explicit risk tolerance; deliberate dubious opt-in raises but does not remove thresholds.
+- Forced mate against the target is excluded.
+- Scores and mates are oriented to the repertoire target side.
+- Selected-population sufficiency uses the target's minimum-population-games setting; Masters support uses ten games.
+- Personal familiarity contributes only from at least three games/encounters.
+- Player-profile matches require at least five games; performance reasons require medium/high evidence and an absolute score delta of at least five percentage points.
+- The public contract exposes component contributions, reasons, warnings, and policy version, not one synthetic aggregate score.
+- Manual legal candidates are included through `includeMoveUci`; illegal requests return a typed error.
+- Current-position course transposition evidence is implemented; arbitrary downstream graph traversal is deferred.
 
 ## Acceptance criteria
 
-- User-move and opponent-coverage decisions have explicit roles.
-- Candidate evidence sources remain separate in the response.
-- Every recommendation has stable reason codes and human-readable inputs can be constructed without an LLM.
-- Profile fit and target fit are distinct.
-- A deliberately dubious target can permit a risky move while showing objective cost.
-- Multi-speed/rating target changes can alter ordering reproducibly.
-- Sparse personal data does not fabricate a personal conclusion.
-- Existing course coverage/conflict is visible.
-- Service is transport-independent and testable with injected/fake evidence providers where appropriate.
-- Tests cover target variants, missing sources, objective warnings, profile override, ties, transpositions, and opponent coverage.
+- User-move and opponent-coverage decisions have explicit roles. — Met.
+- Candidate evidence sources remain separate in the response. — Met.
+- Every recommendation has stable reason codes and human-readable inputs can be constructed without an LLM. — Met.
+- Profile fit and target fit are distinct. — Met.
+- A deliberately dubious target can permit a risky move while showing objective cost. — Met.
+- Multi-speed target changes can alter ordering reproducibly. — Met.
+- Sparse personal data does not fabricate a personal conclusion. — Met.
+- Existing course coverage/conflict is visible. — Met.
+- Service is transport-independent and testable with injected/fake evidence providers. — Met.
+- Tests cover target variants, missing sources, objective warnings, profile disagreement, ties, transpositions, and opponent coverage. — Met.
 
 ## Required validation
 
-- contracts and domain tests;
-- API build and focused service tests;
-- engine/cache integration tests where applicable;
-- boundedness/performance review;
-- architecture checks.
+Completed through CI #1281 and expanded acceptance-head CI #1284:
+
+- contracts build and tests;
+- pure domain ranking tests;
+- API lint/build and focused service tests;
+- missing/stale/insufficient provider-state tests;
+- objective warning, manual candidate, target/profile disagreement, tie, transposition, course conflict, and opponent-coverage tests;
+- boundedness review;
+- opening-classification audits;
+- architecture guardrails;
+- migrations and complete repository tests.
+
+No live engine, upstream Lichess, Angular, persistence, or course-write validation was required because those behaviors are outside this task's implementation boundary.
 
 ## Completion updates
 
-The report must publish policy version, reason taxonomy, evidence limits, unresolved calibration work, and direct impacts on RB-009/RB-010 and production visual components.
+The report publishes policy version, weights, thresholds, reason taxonomy, evidence limits, unresolved calibration work, and direct impacts on RB-009/RB-010 and production visual components.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-007-2026-07-29-candidate-evidence-ranking.md`
 
-Completed at: none
+Completed at: pending user review, accepted merge, and final closure reconciliation
