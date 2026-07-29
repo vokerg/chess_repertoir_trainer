@@ -32,15 +32,15 @@
       >
         <div class="board-stage">
           <app-chessground-board
-            [fen]="displayedFen()"
+            [fen]="boardFen()"
             [side]="boardSide()"
-            [movable]="boardMovable()"
-            (move)="boardMove.emit($event)"
+            [movable]="boardCanMove()"
+            (move)="handleBoardMove($event)"
           />
         </div>
 
         @if (activeBranch()?.role === 'USER_MOVE' && previewCandidate()) {
-          <button type="button" class="board-entry-button" (click)="boardEntryRequested.emit()">
+          <button type="button" class="board-entry-button" (click)="enterBoardMoveMode()">
             Play a different legal move on the board
           </button>
         }
@@ -69,7 +69,7 @@
                     class="candidate-preview"
                     role="option"
                     [attr.aria-selected]="isPreviewed(candidate.moveUci)"
-                    (click)="candidateSelected.emit(candidate.moveUci)"
+                    (click)="previewMove(candidate.moveUci)"
                   >
                     <span class="candidate-rank">#{{ candidate.rank }}</span>
                     <span class="candidate-move">
@@ -101,8 +101,8 @@
                       (click)="responseToggled.emit(candidate.moveUci)"
                     >
                       {{ isResponseSelected(candidate.moveUci) ? 'Covered' : 'Cover' }}
-                      @if (candidate.coverage?.contributionPercent !== null) {
-                        <small>+{{ percent(candidate.coverage?.contributionPercent ?? null) }}</small>
+                      @if (candidate.coverage?.contributionPercent != null) {
+                        <small>+{{ percent(candidate.coverage!.contributionPercent) }}</small>
                       }
                     </button>
                   }
@@ -116,18 +116,9 @@
       @if (previewCandidate(); as candidate) {
         <app-panel title="Focused evidence" [subtitle]="candidate.moveSan + ' · ' + candidate.previewUci.join(' ')">
           <div class="evidence-summary">
-            <div>
-              <span>Eligibility</span>
-              <strong>{{ statusLabel(candidate.eligibility.status) }}</strong>
-            </div>
-            <div>
-              <span>Target fit</span>
-              <strong>{{ statusLabel(candidate.targetFit.status) }}</strong>
-            </div>
-            <div>
-              <span>Profile fit</span>
-              <strong>{{ statusLabel(candidate.profileFit.status) }}</strong>
-            </div>
+            <div><span>Eligibility</span><strong>{{ statusLabel(candidate.eligibility.status) }}</strong></div>
+            <div><span>Target fit</span><strong>{{ statusLabel(candidate.targetFit.status) }}</strong></div>
+            <div><span>Profile fit</span><strong>{{ statusLabel(candidate.profileFit.status) }}</strong></div>
             <div>
               <span>Course state</span>
               <strong>{{ candidate.evidence.course.covered ? 'Covered' : candidate.evidence.course.conflict ? 'Conflict' : 'New' }}</strong>
@@ -139,9 +130,7 @@
               <div class="source-row">
                 <span>{{ source.label }}</span>
                 <strong [attr.data-source-status]="source.status">{{ statusLabel(source.status) }}</strong>
-                @if (source.detail) {
-                  <small>{{ source.detail }}</small>
-                }
+                @if (source.detail) { <small>{{ source.detail }}</small> }
               </div>
             }
           </div>
@@ -149,22 +138,13 @@
           @if (reasonLabels().length > 0) {
             <div class="reason-list">
               <h3>Why it is ranked here</h3>
-              <ul>
-                @for (reason of reasonLabels(); track reason) {
-                  <li>{{ reason }}</li>
-                }
-              </ul>
+              <ul>@for (reason of reasonLabels(); track reason) { <li>{{ reason }}</li> }</ul>
             </div>
           }
-
           @if (warningLabels().length > 0) {
             <div class="warning-list" role="note">
               <h3>Warnings</h3>
-              <ul>
-                @for (warning of warningLabels(); track warning) {
-                  <li>{{ warning }}</li>
-                }
-              </ul>
+              <ul>@for (warning of warningLabels(); track warning) { <li>{{ warning }}</li> }</ul>
             </div>
           }
         </app-panel>
@@ -176,20 +156,19 @@
         @if (activeBranch(); as branch) {
           @if (branch.role === 'OPPONENT_RESPONSE') {
             <div class="coverage-progress">
-              <div>
-                <span>Selected coverage</span>
-                <strong>{{ selectedCoveragePercent() }}%</strong>
-              </div>
-              <div class="coverage-bar" role="progressbar" [attr.aria-valuenow]="selectedCoveragePercent()" aria-valuemin="0" aria-valuemax="100">
-                <span [style.width.%]="selectedCoveragePercent()"></span>
-              </div>
+              <div><span>Selected coverage</span><strong>{{ selectedCoveragePercent() }}%</strong></div>
+              <div
+                class="coverage-bar"
+                role="progressbar"
+                [attr.aria-valuenow]="selectedCoveragePercent()"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ><span [style.width.%]="selectedCoveragePercent()"></span></div>
               <small>Target: {{ coverageTargetPercent() }}%. You remain in control of which responses are included.</small>
             </div>
           }
 
-          @if (commandError()) {
-            <p class="command-error" role="alert">{{ commandError() }}</p>
-          }
+          @if (commandError()) { <p class="command-error" role="alert">{{ commandError() }}</p> }
           @if (decisionLimitReached()) {
             <p class="command-error" role="alert">The 24-decision MVP limit has been reached. Stop or defer remaining work.</p>
           }
@@ -200,9 +179,7 @@
               class="primary-button"
               [disabled]="loading() || decisionLimitReached() || !response()"
               (click)="decisionAccepted.emit()"
-            >
-              {{ branch.role === 'USER_MOVE' ? 'Accept move' : 'Accept covered responses' }}
-            </button>
+            >{{ branch.role === 'USER_MOVE' ? 'Accept move' : 'Accept covered responses' }}</button>
             <button type="button" class="secondary-button" [disabled]="loading()" (click)="branchDeferred.emit()">Defer</button>
             <button type="button" class="secondary-button" [disabled]="loading()" (click)="branchStopped.emit()">Stop line here</button>
             <button type="button" class="text-button danger-text" [disabled]="loading()" (click)="branchIgnored.emit()">Ignore branch</button>
@@ -227,18 +204,8 @@
                   <small>{{ pathLabel(branch.pathUci) }}</small>
                 </button>
                 <div class="queue-order-actions" aria-label="Queue order controls">
-                  <button
-                    type="button"
-                    aria-label="Move branch earlier"
-                    [disabled]="index === 0"
-                    (click)="queueReordered.emit({ branchId: branch.branchId, targetIndex: index - 1 })"
-                  >↑</button>
-                  <button
-                    type="button"
-                    aria-label="Move branch later"
-                    [disabled]="index === queue().length - 1"
-                    (click)="queueReordered.emit({ branchId: branch.branchId, targetIndex: index + 1 })"
-                  >↓</button>
+                  <button type="button" aria-label="Move branch earlier" [disabled]="index === 0" (click)="queueReordered.emit({ branchId: branch.branchId, targetIndex: index - 1 })">↑</button>
+                  <button type="button" aria-label="Move branch later" [disabled]="index === queue().length - 1" (click)="queueReordered.emit({ branchId: branch.branchId, targetIndex: index + 1 })">↓</button>
                 </div>
               </li>
             }
@@ -269,13 +236,11 @@
         <div class="preview-tree">
           @for (row of previewRows(); track row.branchId) {
             <div class="preview-row" [style.padding-left.rem]="row.depth * 0.8">
-              <span class="preview-status" [attr.data-status]="row.status">{{ row.status }}</span>
+              <span class="preview-status">{{ row.status }}</span>
               <div>
                 <strong>{{ row.moveLabel }}</strong>
                 <small>{{ row.roleLabel }}</small>
-                @if (row.transpositionOfBranchId) {
-                  <small>Transposes to {{ row.transpositionOfBranchId }}</small>
-                }
+                @if (row.transpositionOfBranchId) { <small>Transposes to {{ row.transpositionOfBranchId }}</small> }
               </div>
             </div>
           }
@@ -283,9 +248,7 @@
       </app-panel>
 
       <div class="session-actions">
-        @if (canFinishSession()) {
-          <button type="button" class="primary-button" (click)="sessionFinished.emit()">Finish draft</button>
-        }
+        @if (canFinishSession()) { <button type="button" class="primary-button" (click)="sessionFinished.emit()">Finish draft</button> }
         @if (!completed() && !abandoned()) {
           <button type="button" class="text-button danger-text" (click)="sessionAbandoned.emit()">Abandon draft</button>
         }
