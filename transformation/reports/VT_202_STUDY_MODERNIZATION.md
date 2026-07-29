@@ -10,7 +10,7 @@ Target: `main`
 
 Pull request: draft PR #178
 
-Disposition: implementation and focused coverage complete; automated validation and direct browser review pending
+Disposition: automated validation complete; direct browser review pending
 
 ## Objective
 
@@ -140,7 +140,7 @@ Do not extract these into global shared UI during VT-202.
 
 ## Automated validation
 
-CI #1366 is running on the focused-test implementation head. The required workflow includes:
+Final-head CI #1372 passed:
 
 - dependency installation;
 - lint;
@@ -149,9 +149,16 @@ CI #1366 is running on the focused-test implementation head. The required workfl
 - architecture guardrails;
 - database migrations;
 - imported-game opening classification audit;
-- complete repository test suite.
+- complete repository test suite, including the new Study component tests.
 
-This section must be updated with the final result before review readiness is represented.
+Two earlier heads exposed focused-test quality issues only:
+
+- CI #1366 showed that text assertions relied on browser whitespace between semantic fact elements;
+- CI #1370 showed missing explicit DOM node types in those structural assertions.
+
+The tests were corrected to inspect semantic label/value elements with explicit DOM types. No production code changed in either correction.
+
+No backend or schema validation exception was required. Direct browser review remains the only open acceptance gate.
 
 ## Browser review required
 
@@ -186,6 +193,7 @@ Unavailable states must be recorded explicitly rather than represented as observ
 - `transformation/DECISIONS.md`
 - `transformation/STATUS.md`
 - `apps/web/src/app/app.routes.ts`
+- `apps/web/src/design-system.css`
 - `apps/web/src/app/shared/ui/page-header/page-header.component.ts`
 - `apps/web/src/app/shared/ui/panel/panel.component.ts`
 - `apps/web/src/app/shared/ui/ui-shell.model.ts`
