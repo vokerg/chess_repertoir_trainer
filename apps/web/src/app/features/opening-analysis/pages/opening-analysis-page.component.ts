@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inject } from '@angular/core';
-import { AnalysisBoardComponent } from '../../../shared/analysis/board/analysis-board.component';
+import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
@@ -7,6 +7,7 @@ import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/course
 import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
 import { LichessGamesExplorerWidgetComponent } from '../../../shared/lichess-games-explorer/lichess-games-explorer-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
+import { summaryGameFilters } from '../../../shared/games/filters/game-filter-summary';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
 import { PositionPerformancePanelComponent } from '../../../shared/games/position-performance/position-performance-panel.component';
@@ -21,7 +22,7 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
   selector: 'app-opening-analysis-page',
   standalone: true,
   imports: [
-    AnalysisBoardComponent,
+    AnalysisWorkbenchComponent,
     CoursePositionSuggestionsWidgetComponent,
     MastersExplorerWidgetComponent,
     LichessGamesExplorerWidgetComponent,
@@ -109,6 +110,19 @@ export class OpeningAnalysisPageComponent implements OnInit {
     const selected = this.store.filters().openingNameExact;
     return selected ? [selected] : [];
   });
+  protected readonly filterSummary = computed(() => summaryGameFilters(this.store.filters()));
+  protected readonly perspectiveLabel = computed(() =>
+    this.store.blackPerspective() ? 'Black perspective' : 'White perspective',
+  );
+  protected readonly activeToolCount = computed(() =>
+    [
+      this.store.tagsOpen(),
+      this.store.mastersOpen(),
+      this.store.peersOpen(),
+      this.store.lastGamesOpen(),
+      this.store.engineVisible(),
+    ].filter(Boolean).length,
+  );
 
   ngOnInit(): void {
     this.store.initialize();

@@ -1,5 +1,6 @@
-import { signal } from '@angular/core';
+import { signal, type WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { defaultOpeningFilters } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge.store';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 import { OpeningAnalysisPageComponent } from './opening-analysis-page.component';
@@ -7,8 +8,10 @@ import { OpeningAnalysisPageComponent } from './opening-analysis-page.component'
 describe('OpeningAnalysisPageComponent', () => {
   let fixture: ComponentFixture<OpeningAnalysisPageComponent>;
   let store: jasmine.SpyObj<OpeningAnalysisStore>;
+  let blackPerspective: WritableSignal<boolean>;
 
   beforeEach(async () => {
+    blackPerspective = signal(false);
     store = jasmine.createSpyObj<OpeningAnalysisStore>('OpeningAnalysisStore', [
       'initialize',
       'toggleTags',
@@ -24,6 +27,11 @@ describe('OpeningAnalysisPageComponent', () => {
       lastGamesOpen: signal(false),
       engineVisible: signal(true),
       currentFen: signal('startpos'),
+      history: signal([]),
+      filters: signal(defaultOpeningFilters()),
+      blackPerspective,
+      analysis: signal(null),
+      wdl: signal({ total: 0, wins: 0, draws: 0, losses: 0, scorePct: null }),
     });
     const challengeStore = jasmine.createSpyObj<LichessBotChallengeStore>(
       'LichessBotChallengeStore',
@@ -72,11 +80,30 @@ describe('OpeningAnalysisPageComponent', () => {
     expect(store.toggleLastGames).toHaveBeenCalled();
   });
 
+  it('derives workspace context without introducing duplicate state', () => {
+    expect(page().perspectiveLabel()).toBe('White perspective');
+    expect(page().activeToolCount()).toBe(2);
+    expect(page().filterSummary()).toBe('White - blitz + rapid - Rated');
+
+    blackPerspective.set(true);
+    store.mastersOpen.set(true);
+    store.peersOpen.set(true);
+
+    expect(page().perspectiveLabel()).toBe('Black perspective');
+    expect(page().activeToolCount()).toBe(4);
+  });
+
   function page(): {
     headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
+    perspectiveLabel(): string;
+    activeToolCount(): number;
+    filterSummary(): string;
   } {
     return fixture.componentInstance as unknown as {
       headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
+      perspectiveLabel(): string;
+      activeToolCount(): number;
+      filterSummary(): string;
     };
   }
 });
