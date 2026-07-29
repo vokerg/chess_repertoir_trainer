@@ -137,9 +137,9 @@ Gate: passed.
 
 ## Stage 5 — resumable builder foundation and MVP
 
-State: RB-009 is implemented for review through PR #177. RB-010 remains blocked until RB-009 is accepted and integrated.
+State: RB-009 is complete and integrated through squash-merged PR #177. RB-010 is `READY` as the next ordered North Star critical-path task.
 
-RB-009 review implementation provides:
+RB-009 delivered:
 
 - pure serializable session model version `2026-07-v1`;
 - owner identity and optimistic revision;
@@ -218,7 +218,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- review of RB-009 builder-session semantics;
+- claim and implementation of RB-010 using the integrated session foundation;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -232,10 +232,9 @@ High-collision areas requiring coordination:
 
 ## Queue impact
 
-- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-014 and RB-018 remain `DONE`.
+- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-014 and RB-018 remain `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-009 is `REVIEW` through PR #177 after complete CI #1328.
-- RB-010 remains `BLOCKED` until accepted RB-009 integration; it becomes the next ordered ready North Star task after that gate.
+- RB-010 is the next ordered `READY` North Star critical-path task.
 - RB-017 remains `CLAIMED` and isolated.
 - No priority change, new task or roadmap resequencing is required.
