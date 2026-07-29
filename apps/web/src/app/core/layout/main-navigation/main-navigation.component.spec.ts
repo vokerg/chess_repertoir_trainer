@@ -259,6 +259,27 @@ describe('MainNavigationComponent', () => {
     expect(moreButton.getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('closes the complete destination dialog from the backdrop', async () => {
+    const moreButton = fixture.nativeElement.querySelector(
+      '.mobile-more-button',
+    ) as HTMLButtonElement;
+    const dialog = fixture.nativeElement.querySelector(
+      '#mobile-main-menu',
+    ) as HTMLDialogElement;
+
+    moreButton.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(dialog.open).toBeTrue();
+
+    dialog.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(dialog.open).toBeFalse();
+    expect(moreButton.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('delegates secondary-route active state to More', async () => {
     await router.navigateByUrl('/courses');
     fixture.detectChanges();
