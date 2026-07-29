@@ -10,7 +10,7 @@ Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues
 
 Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156)
 
-Current review: ONB-001 / [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148)
+Current review: ONB-001 / [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197)
 
 Current report: `reports/ONB-001-2026-07-29-lifecycle-default-recipe.md`
 
@@ -90,11 +90,12 @@ ONB-001 documentation-only research:
 - stale claim branch reconciled onto current `main` before delivery;
 - lifecycle, no-data, failure, recovery, skip, cancellation, restart, legacy-user, and expansion scenarios checked on paper;
 - report, decisions, open questions, queue, task files, and implementation issue mapping reconciled;
+- branch comparison confirmed documentation-only changes and no divergence from current `main`;
 - no code, schema, migration, build, test, browser, provider, Stockfish, or deployment changes;
 - no broad test suite run.
 
 ## Next deterministic action
 
-Review ONB-001, while ONB-002 / #149 is the next claimable research task under the deterministic queue.
+Review PR #197 for ONB-001, while ONB-002 / #149 is the next claimable research task under the deterministic queue.
 
 Future tasks must consume ONB-001’s locked lifecycle decisions rather than redefine them independently.
