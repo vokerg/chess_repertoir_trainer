@@ -224,11 +224,13 @@ function parseHttpError(
   }
 
   const payload = isRecord(error.error) ? error.error : null;
+  const payloadMessage = payload?.['error'];
+  const payloadCode = payload?.['code'];
   return {
-    message: typeof payload?.['error'] === 'string' && payload['error']
-      ? payload['error']
+    message: typeof payloadMessage === 'string' && payloadMessage
+      ? payloadMessage
       : (error.message || fallback),
-    code: typeof payload?.['code'] === 'string' ? payload['code'] : null,
+    code: typeof payloadCode === 'string' ? payloadCode : null,
   };
 }
 
