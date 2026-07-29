@@ -36,13 +36,13 @@
   display: grid;
   gap: 0.2rem;
   padding: 0.75rem;
-  border: 1px solid var(--ui-border-subtle, #d9ddd8);
-  border-radius: var(--ui-radius-sm, 8px);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
 }
 
 .puzzle-facts dt {
   font-size: 0.78rem;
-  color: var(--ui-text-muted, #66716b);
+  color: var(--ui-text-muted);
 }
 
 .puzzle-facts dd {
@@ -58,15 +58,17 @@
 
 .puzzle-themes span {
   padding: 0.25rem 0.55rem;
-  border: 1px solid var(--ui-border-subtle, #d9ddd8);
+  border: 1px solid var(--ui-border);
   border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
   font-size: 0.78rem;
 }
 
 .puzzle-guidance {
   margin: 0;
   line-height: 1.55;
-  color: var(--ui-text-muted, #66716b);
+  color: var(--ui-text-muted);
 }
 
 .puzzle-actions {
