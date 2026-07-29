@@ -4,15 +4,15 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** Phase 1 is complete; VT-201 Games modernization is the next deterministic transformation task
+**Program state:** Phase 2 is active; VT-201 Games modernization awaits direct browser review
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch after reconciliation:** none
+**Active checkpoint branch:** `visual-transformation/vt-201-games-modernization`
 
-**Active pull request after reconciliation:** none
+**Active pull request:** draft PR #167
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -42,70 +42,82 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #162 — evidence-bounded Phase 1 browser disposition and local-development auth return-URL correction.
 - [x] PR #165 — VT-104 integration and queue reconciliation.
 
-## VT-101 integrated checkpoint
+## Phase 1 completion
 
-- [x] Expanded desktop child navigation uses inline in-flow disclosure regions.
-- [x] Collapsed desktop child navigation retains popup-menu flyouts and backdrop.
-- [x] Existing routes, active prefixes, single-open state, Escape/route cleanup, mobile sheet, account placement, and session-only collapse state are preserved.
-- [x] Restrained CSS-only motion, reduced-motion behavior, expanded-rail scrolling, focus treatment, and focused unit coverage were added.
-- [x] Direct browser review accepted the expanded/collapsed direction and overall composition.
+VT-101 through VT-104 established and validated:
 
-## VT-102 integrated checkpoint
+- production navigation, inline desktop groups, collapsed flyouts, and grouped mobile access;
+- Home palette and surface hierarchy;
+- production `--ui-*` tokens and native typography;
+- wider signed-in shell and Home caps;
+- evidence-bounded public/auth/Home/brand/navigation browser disposition;
+- local-development auth return-URL correction.
 
-- [x] Established the Home green-grey canvas and white/muted/quiet surface hierarchy.
-- [x] Reduced elevation and retained limited graphite emphasis plus mint signal.
-- [x] Preserved Home behavior, routes, loading/data behavior, recommendation logic, and responsive structure.
-- [x] Passed CI #1145 and #1152.
-- [x] Received direct browser approval for the palette direction.
+Phase 1 is complete for transformation sequencing. The explicit browser permutations that could not be reproduced remain documented in `VT_104_SHELL_BROWSER_VALIDATION.md` as risks rather than passes.
 
-## VT-103 integrated checkpoint
+## VT-201 active checkpoint
 
-- [x] Added the namespaced production `--ui-*` layer.
-- [x] Preserved the amber-era short-token compatibility layer for unmigrated workflows.
-- [x] Locked production canvas, surfaces, graphite, mint, borders, focus, semantic statuses, radii, shadows, and native system typography.
-- [x] Migrated global/shared canvas, controls, page headers, common cards, panels, shell actions, and focus.
-- [x] Raised the signed-in shell cap from 1600px to 1920px and Home cap from 1240px to 1560px after direct large-screen evidence exposed unused space.
-- [x] Passed CI #1240, #1245, #1253, #1257, and #1262.
-- [x] PR #158 was squash-merged into `main`; PR #161 reconciled integration state.
+Draft PR #167 modernizes Games as the representative data-exploration workflow.
 
-## VT-104 integrated checkpoint
+Delivered on the active branch:
 
-Delivered through squash-merged PR #162 as `e3bed0323eedd511f53a04cfd2c14be9b0965c76` and reconciled through PR #165:
+- [x] verified route/page/store/data-access/job ownership before implementation;
+- [x] retained the lazy `/games` route and current URL query contract;
+- [x] added a clearer evidence-set and filter-workspace hierarchy;
+- [x] added an explicit Games-only `explorer` presentation to the shared game filter while leaving all other consumers on the default presentation;
+- [x] migrated Games filters, results, statuses, action overlay, loading, empty, error, and pagination surfaces to production `--ui-*` roles;
+- [x] retained the semantic desktop table and every existing action binding;
+- [x] replaced the information-poor narrow representation with responsive evidence cards containing players, date, opening, control, user accuracy, analysis state, ply-index state, review link, and row actions;
+- [x] aligned responsive thresholds with shared 980px and 640px breakpoint contracts;
+- [x] corrected the malformed `more available` subtitle separator without changing pagination behavior;
+- [x] added focused responsive-card and loaded-result tests;
+- [x] documented feature-local extraction candidates for VT-204 in `transformation/reports/VT_201_GAMES_MODERNIZATION.md`;
+- [x] implementation-head CI #1282 passed the complete repository workflow;
+- [ ] final documentation-head CI;
+- [ ] direct browser review and explicit approval;
+- [ ] squash merge and completion reconciliation.
 
-- [x] Added `transformation/reports/VT_104_SHELL_BROWSER_VALIDATION.md` with explicit evidence levels and per-surface matrices.
-- [x] Recorded supplied Home evidence and historical navigation evidence without converting them into blanket completion claims.
-- [x] Documented every unobserved direct-browser check with an explicit reason.
-- [x] Found that local-development login/signup actions hard-coded `/library` and ignored explicit `returnUrl`.
-- [x] Changed both local-development actions to navigate to the resolved return URL.
-- [x] Added focused login/signup return-URL tests.
-- [x] Corrected the initial test harness provider order after CI exposed the focused failure.
-- [x] Corrected-head CI #1270 and final acceptance-head CI #1273 passed the complete repository workflow.
-- [x] The user accepted the evidence boundary despite not having access to a large display for a complete post-fix recheck.
-- [x] Phase 1 is closed for transformation sequencing.
+No backend, API, schema, database, job-processing, game-analysis algorithm, Study, Opening Analysis, or Game Detail change is included.
 
-No Games, Study, Opening Analysis, API, schema, database, backend, dependency, or new navigation-model work was included.
+## VT-201 behavior boundary
 
-## Acceptance boundary and residual risk
+The following remain unchanged and are covered by the existing implementation and focused tests:
 
-VT-104 approval is evidence-bounded. It does not claim that every browser permutation was observed.
+- applied versus draft route criteria;
+- canonical query serialization and refresh behavior;
+- period/date synchronization;
+- account, provider, result, color, control, rated, analysis, tag, and advanced filter models;
+- stale search-response rejection;
+- cursor pagination and append behavior;
+- `GamesApiService` HTTP ownership;
+- `GamesExplorerStore` mutable workflow ownership;
+- `ImportedGameJobStore` durable job ownership;
+- job eligibility, force/retry behavior, rejected-game errors, and terminal-job refresh;
+- game review, provider, and player-profile destinations.
 
-The following remain explicitly unverified because the required display, configured Clerk session, reproducible data state, or direct browser environment was unavailable during final review:
+The current Games implementation exposes no row-selection model. VT-201 does not invent one solely because the issue template referenced selection behavior.
 
-- post-correction large-display Home and representative legacy-route width use;
-- landing normal/reduced-motion and responsive boundary permutations;
-- configured Clerk login/signup, error, and account-control paths;
-- Home loading, warning, error, empty, long-content, and reduced-motion states;
-- brand/favicon rasterization at all required small sizes;
-- navigation long-label, short-height, viewport-edge, mobile-keyboard, and Clerk account cases;
-- job-panel overlap and scrolling with active multi-run data.
+## VT-201 browser review required
 
-These remain verification risks, not represented as passes. Any later reproduced defect should be fixed narrowly in the owning workflow or a focused follow-up.
+Review `/games` with realistic data at desktop, tablet, and narrow-phone widths:
+
+- common filters, advanced filters, tags, custom dates, apply, reset, and URL persistence;
+- desktop table density and long player/opening names;
+- tablet two-column and compact one-column evidence cards;
+- opening, control, accuracy, analysis, and index visibility on responsive cards;
+- row action menu placement, keyboard focus, and Escape/outside-click closure;
+- loading, error, and empty states where reproducible;
+- cursor load-more behavior and loaded count;
+- queued/running/settled imported-game jobs and job-panel overlap;
+- reduced-motion behavior.
+
+Unavailable states must be recorded explicitly rather than treated as observed.
 
 ## Execution disposition
 
 Issues #123–#126 are complete.
 
-Issues #127–#129 are `READY`. Deterministic ordering selects #127 / VT-201 Games modernization first because it is P1 order 100, ahead of #128 order 110 and #129 order 120.
+Issue #127 is `IN_PROGRESS` through draft PR #167. Issues #128 and #129 remain `READY` but cannot replace the active task.
 
 Issues #130–#133 retain their downstream dependencies.
 
@@ -120,21 +132,33 @@ Issues #130–#133 retain their downstream dependencies.
 - Main-delivery correction CI #1227 passed.
 - VT-103 CI #1240, #1245, #1253, #1257, and #1262 passed.
 - VT-103 reconciliation CI #1266 passed.
+- VT-104 corrected/final/reconciliation CI #1270, #1273, and #1277 passed.
 
-### VT-104 validation
+### VT-201 validation
 
-- Initial CI #1268 and status-head CI #1269 passed lint, build, both opening audits, architecture checks, and migrations before a focused Angular test-harness route-provider ordering failure.
-- The test harness was corrected so its mocked `ActivatedRoute` remains authoritative.
-- Corrected-head CI #1270 passed the complete repository workflow.
-- Final acceptance-head CI #1273 passed dependency installation, lint, full build, both opening audits, architecture guardrails, migrations, and the complete test suite.
-- PR #162 was squash-merged into `main` as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`.
-- Reconciliation PR #165 passed its final repository workflow before squash merge.
+Implementation-head CI #1282 passed:
+
+- dependency installation;
+- lint;
+- full repository build and Angular template/type compilation;
+- opening classification audit;
+- architecture guardrails;
+- database migrations;
+- imported-game opening classification audit;
+- complete repository test suite, including the new responsive Games tests.
+
+Direct browser review remains pending. The active task must not be represented as complete or merged before explicit approval.
 
 ## Open design and product decisions
 
-The decision log remains canonical. The remaining open transformation owner is #131 for final mobile-primary navigation after representative workflow evidence exists.
+The decision log remains canonical. Current downstream owners include:
 
-Production palette, semantic statuses, namespace, compatibility boundary, typography, wide-workspace caps, and the Phase 1 evidence-bounded browser disposition are accepted decisions.
+- #128 — Study workflow evidence;
+- #129 — Opening Analysis workflow evidence;
+- #130 — extraction of only the primitives proven across representative workflows;
+- #131 — final mobile-primary navigation after representative mobile evidence exists.
+
+The Games dense-filter presentation, responsive evidence-card hierarchy, result-state treatment, and analytical fact grid remain feature-local candidates until VT-204 compares all representative workflows.
 
 ## Program phase state
 
@@ -144,11 +168,11 @@ Core implementations are integrated. Remaining direct rendering permutations are
 
 ### Phase 1 — shell and entry points
 
-Complete. Public, auth, Home, brand, rail, inline navigation, landing motion, production tokens, typography, wide-workspace foundations, and the evidence-bounded browser disposition are integrated into `main`.
+Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Games, Study, and Opening Analysis are dependency-ready. Games is the next deterministic task.
+Active. Games is implemented on draft PR #167 and awaits browser review. Study and Opening Analysis remain ready and ordered after Games.
 
 ### Phase 3 — rollout and polish
 
@@ -156,21 +180,21 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ## Session log
 
+### 2026-07-29 — VT-201 Games modernization
+
+- Claimed issue #127 and branched from reconciled `main`.
+- Inspected the current Games route, page, store, API service, filters, table, action menu, job integration, tests, Angular rules, token contract, and responsive breakpoints.
+- Implemented a Games-only production-token filter presentation and responsive analytical result cards without changing ownership or behavior.
+- Added focused responsive-card tests and corrected the malformed result subtitle.
+- Opened draft PR #167.
+- Passed implementation-head CI #1282.
+- Awaiting final documentation-head CI and direct browser review.
+
 ### 2026-07-29 — VT-104 integration
 
-- Final acceptance-head CI #1273 passed the complete repository workflow.
-- The user accepted the documented browser-risk boundary and instructed progress.
-- Squash-merged PR #162 into `main` as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`.
-- Reconciled completed status and released VT-201 through PR #165.
+- Final acceptance-head CI #1273 passed.
+- Squash-merged PR #162 and reconciled through PR #165.
 - Closed Phase 1 for transformation sequencing.
-
-### 2026-07-28 — VT-103 integration and wide-screen correction
-
-- Added the production token and typography layer with an explicit legacy compatibility boundary.
-- Passed repeated complete repository validation through CI #1262.
-- Received direct 2048×1151 Home evidence confirming palette cohesion and exposing conservative width caps.
-- Raised signed-in shell/Home caps while preserving copy and mobile constraints.
-- Squash-merged PR #158 and reconciled through PR #161.
 
 ### Earlier integrated checkpoints
 
