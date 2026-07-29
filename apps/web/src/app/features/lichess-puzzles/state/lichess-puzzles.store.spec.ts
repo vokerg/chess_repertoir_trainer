@@ -46,7 +46,7 @@ describe('LichessPuzzlesStore', () => {
       rated: true,
     });
     expect(store.round()).toEqual(round);
-    expect(store.lastMove()).toEqual({ from: 'e7', to: 'e5' });
+    expect(store.trainerView()?.lastMove).toEqual({ from: 'e7', to: 'e5' });
     expect(store.notice()).toContain('Rated Lichess puzzle started');
     expect('solutionUci' in store.round()!.puzzle).toBeFalse();
   });
@@ -69,7 +69,7 @@ describe('LichessPuzzlesStore', () => {
     expect(store.round()).toEqual(round);
     expect(store.difficulty()).toBe('harder');
     expect(store.rated()).toBeFalse();
-    expect(store.lastMove()).toEqual({ from: 'b8', to: 'c6' });
+    expect(store.trainerView()?.lastMove).toEqual({ from: 'b8', to: 'c6' });
     expect(store.notice()).toContain('restored');
   });
 
@@ -98,7 +98,7 @@ describe('LichessPuzzlesStore', () => {
 
     expect(store.submitting()).toBeFalse();
     expect(store.boardMovable()).toBeTrue();
-    expect(store.lastMove()).toEqual({ from: 'b8', to: 'c6' });
+    expect(store.trainerView()?.lastMove).toEqual({ from: 'b8', to: 'c6' });
     expect(store.notice()).toContain('opponent replied');
   });
 
@@ -119,6 +119,7 @@ describe('LichessPuzzlesStore', () => {
 
     expect(store.round()?.status).toBe('IN_PROGRESS');
     expect(store.boardMovable()).toBeTrue();
+    expect(store.trainerView()?.guidance).toContain('rated result is already a loss');
     expect(store.notice()).toContain('rated result is a loss');
   });
 });
