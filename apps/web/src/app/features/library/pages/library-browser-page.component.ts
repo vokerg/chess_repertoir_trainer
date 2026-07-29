@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  ContextStripComponent,
+  type UiContextItem,
+} from '../../../shared/ui/context-strip/context-strip.component';
+import {
   PageHeaderAction,
   PageHeaderComponent,
   PageHeaderStat,
@@ -28,6 +32,7 @@ import { LibraryBrowserStore } from '../state/library-browser.store';
   imports: [
     FormsModule,
     PageHeaderComponent,
+    ContextStripComponent,
     StudyScopeListComponent,
     StudyLineListComponent,
     TrainingBasketPanelComponent,
@@ -100,6 +105,26 @@ export class LibraryBrowserPageComponent implements OnInit {
     const selectedCount = this.store.selectedLineIds().length;
     return selectedCount > 0 ? `${selectedCount} selected` : 'Optional multi-select';
   });
+  protected readonly selectionContextItems = computed<readonly UiContextItem[]>(() => [
+    {
+      id: 'repertoire',
+      marker: '1',
+      label: 'Repertoire',
+      value: this.selectedCourseLabel(),
+    },
+    {
+      id: 'section',
+      marker: '2',
+      label: 'Section',
+      value: this.selectedChapterLabel(),
+    },
+    {
+      id: 'lines',
+      marker: '3',
+      label: 'Lines',
+      value: this.selectedLinesLabel(),
+    },
+  ]);
   protected readonly courseSummary = computed<StudyLauncherSummary>(() => {
     const course = this.store.selectedCourse();
     const stats = this.store.selectedCourseStats();
