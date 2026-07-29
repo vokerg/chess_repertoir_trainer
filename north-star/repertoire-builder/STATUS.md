@@ -4,11 +4,11 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-009 is implemented for review through PR #177 after complete CI. RB-010 remains blocked until RB-009 is accepted and integrated. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-010 is the next ordered ready North Star critical-path task. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
-**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, and the deterministic candidate-decision contract, ranking policy and authenticated evidence aggregation API from PR #166.
+**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, the deterministic candidate-decision contract/ranking/API from PR #166, and the storage-neutral builder-session and branch-queue domain from squash-merged PR #177.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #177 adds the storage-neutral builder-session and branch-queue domain.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -84,6 +84,29 @@ Squash-merged PR #166 provides:
 
 Final implementation-head CI #1295 passed the complete repository workflow.
 
+### Builder session and branch queue — RB-009
+
+Squash-merged PR #177 provides:
+
+- pure model version `2026-07-v1` under `packages/chess-domain`;
+- serializable owner-scoped snapshots and optimistic revision;
+- retained RB-006 target and RB-007 evidence/policy references;
+- path-stable branch IDs plus normalized-position transposition identity;
+- explicit `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE` states;
+- active, superseded and stale decision history;
+- deterministic accept/replace, defer/reopen, stale restart, ignore, complete, reorder, refresh, resume and lifecycle transitions;
+- lazy one-decision expansion rather than full-tree generation;
+- bounded tree and queue preview;
+- limits of 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
+
+Persistence remains staged. RB-009 adds no Prisma model, API route, Angular UI or storage adapter. RB-010 must first demonstrate the routed workbench and a concrete durable-resume requirement.
+
+Implementation-head CI #1328 and final implementation-head CI #1360 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
+
+Implementation report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`.
+
+Closure report: `reports/RB-009-2026-07-29-closure.md`.
+
 ## Review work
 
 ### RB-004 / #92 — Player Chess Profile calculation
@@ -97,27 +120,6 @@ CI #1103 passed. User review and accepted integration remain required.
 Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
 
 It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
-
-### RB-009 / #97 — Builder session and branch queue
-
-Draft implementation PR #177 provides:
-
-- pure model version `2026-07-v1` under `packages/chess-domain`;
-- serializable owner-scoped snapshot and optimistic revision;
-- retained RB-006 target and RB-007 evidence/policy references;
-- path-stable branch IDs plus normalized-position transposition identity;
-- explicit `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE` states;
-- active, superseded and stale decision history;
-- deterministic accept/replace, defer/reopen, stale restart, ignore, complete, reorder, refresh, resume and lifecycle transitions;
-- lazy one-decision expansion rather than full-tree generation;
-- bounded tree and queue preview;
-- limits of 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
-
-Persistence is deliberately staged. RB-009 adds no Prisma model, API route, Angular UI or storage adapter. The snapshot is ready for a later adapter, but RB-010 must first demonstrate the routed workbench and a concrete durable-resume requirement.
-
-Implementation-head CI run `30425427760` / #1328 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
-
-Report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`.
 
 ## Active independent pilot
 
@@ -143,8 +145,8 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-006 / #94: `DONE` through PR #157.
 - RB-007 / #95: `DONE` through PR #166.
 - RB-008 / #96: `DONE` through accepted PR #110 direction.
-- RB-009 / #97: `REVIEW` through PR #177.
-- RB-010 / #98: `BLOCKED` pending accepted RB-009 integration.
+- RB-009 / #97: `DONE` through squash-merged PR #177.
+- RB-010 / #98: `READY` after integrated RB-009.
 - RB-014 / #102: `DONE` through PR #113.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
@@ -154,8 +156,8 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-006 provides authoritative target snapshots and change-impact semantics.
 - RB-007 provides candidate IDs, decision roles, evidence/policy versions, stable reasons and opponent-coverage contribution.
 - RB-008 provides the accepted routed board-first interaction.
-- RB-009 now provides the review-ready session, decision-history, branch, queue, transposition, stale and preview semantics needed by RB-010.
-- RB-010 remains blocked until RB-009 is accepted and integrated; it then becomes the next ordered ready North Star task.
+- RB-009 provides integrated session, decision-history, branch, queue, transposition, stale and preview semantics.
+- RB-010 is now ready and is the next ordered North Star critical-path task.
 - RB-011 remains responsible for course preview and writes.
 - RB-013 remains responsible for profile/persona defaults and overrides.
 - RB-017 remains outside the critical path.
@@ -166,7 +168,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-006 CI #1251 and #1256 passed the complete repository workflow.
 - RB-007 CI #1281, #1284 and #1295 passed the complete repository workflow and focused acceptance cases.
 - RB-008 validation includes responsive prototype review and complete repository CI.
-- RB-009 CI #1328 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
+- RB-009 CI #1328 and #1360 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
 - RB-014 source/license verification and complete repository CI passed.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 
@@ -185,4 +187,4 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 
 Keep task order and priorities unchanged.
 
-RB-009 is in review. After accepted integration, move RB-010 from `BLOCKED` to `READY`. No new task or roadmap resequencing is required now.
+RB-010 is the next ordered `READY` North Star critical-path task. No new task or roadmap resequencing is required.
