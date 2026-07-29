@@ -36,8 +36,9 @@ describe('LichessPuzzlesStore', () => {
     const round = createRound();
     api.createRound.and.returnValue(of(round));
 
-    await store.startRound();
+    const roundId = await store.startRound();
 
+    expect(roundId).toBe(round.id);
     expect(api.createRound).toHaveBeenCalledOnceWith({
       source: 'FRESH',
       angle: 'mix',
@@ -48,6 +49,27 @@ describe('LichessPuzzlesStore', () => {
     expect(store.lastMove()).toEqual({ from: 'e7', to: 'e5' });
     expect(store.notice()).toContain('Rated Lichess puzzle started');
     expect('solutionUci' in store.round()!.puzzle).toBeFalse();
+  });
+
+  it('restores a persisted round and its settings', async () => {
+    const round = createRound({
+      id: 42,
+      difficulty: 'harder',
+      ratedRequested: false,
+      currentStep: 2,
+      currentFen: 'restored-fen',
+    });
+    api.getRound.and.returnValue(of(round));
+
+    const loaded = await store.loadRound(round.id);
+
+    expect(loaded).toBeTrue();
+    expect(api.getRound).toHaveBeenCalledOnceWith(42);
+    expect(store.round()).toEqual(round);
+    expect(store.difficulty()).toBe('harder');
+    expect(store.rated()).toBeFalse();
+    expect(store.lastMove()).toEqual({ from: 'e7', to: 'e5' });
+    expect(store.notice()).toContain('restored');
   });
 
   it('locks the board while a move is being submitted and applies the forced reply', async () => {
