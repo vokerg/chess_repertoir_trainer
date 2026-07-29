@@ -63,12 +63,11 @@
     }
   </app-panel>
 
-  @if (store.round(); as round) {
+  @if (store.trainerView(); as view) {
     <app-lichess-puzzle-trainer
-      [round]="round"
+      [view]="view"
       [movable]="store.boardMovable()"
       [positionVersion]="store.positionVersion()"
-      [lastMove]="store.lastMove()"
       [busy]="store.busy()"
       (boardMove)="store.submitMove($event)"
       (abandon)="store.abandonRound()"
