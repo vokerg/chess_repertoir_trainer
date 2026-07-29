@@ -1,6 +1,6 @@
 # RB-009 — Define builder session, branch queue, and draft lifecycle
 
-Status: READY
+Status: CLAIMED
 
 Priority: P1
 
@@ -10,13 +10,13 @@ Delivery class: North-star
 
 Planning maturity: Outlined
 
-Claimed by: unclaimed
+Claimed by: OpenAI ChatGPT
 
-Claim branch: none
+Claim branch: `rb-009/issue-97-builder-session-claim`
 
-Claimed at: none
+Claimed at: 2026-07-29
 
-Claim scope: none
+Claim scope: Define and implement a pure, serializable and versioned builder-session domain in `packages/chess-domain` with retained RB-006 target snapshots, RB-007 policy/evidence references, path-stable branch identities plus normalized-position transposition keys, a lazily generated bounded queue, explicit `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE` states, deterministic accept/defer/reopen/ignore/reorder/complete/ancestor-replacement/refresh transitions, preview-tree projection and focused pure tests. Resolve MVP persistence as staged: no Prisma model, API endpoint, Angular UI or storage adapter in RB-009; storage is deferred until RB-010 demonstrates the routed workbench and concrete resume requirements. Excludes candidate calculation, course writes, background traversal, notifications, LLM state and unbounded tree generation.
 
 ## Outcome
 
