@@ -98,7 +98,8 @@ Performed:
 - direct repository and issue inspection through GitHub;
 - stale branch reconciliation onto current `main`;
 - paper state-machine checks for failure, recovery, skip, cancellation, restart, no-data, legacy-user, and expansion scenarios;
-- canonical planning and issue allocation reconciliation.
+- canonical planning and issue allocation reconciliation;
+- branch comparison confirms documentation-only changes and no divergence from current `main`.
 
 Skipped:
 
@@ -114,6 +115,6 @@ Implementation tasks:
 - ONB-009 / [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194)
 - ONB-010 / [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195)
 
-Pull request: pending
+Pull request: [#197](https://github.com/vokerg/chess_repertoir_trainer/pull/197)
 
 Ready for review at: 2026-07-29
