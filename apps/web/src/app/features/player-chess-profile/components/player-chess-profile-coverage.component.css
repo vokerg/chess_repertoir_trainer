@@ -13,23 +13,32 @@
   display: grid;
   gap: 0.2rem;
   padding: var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
 }
 
 .profile-summary-grid span,
 .profile-summary-grid small {
-  color: var(--muted);
+  color: var(--ui-text-muted);
 }
 
 .profile-summary-grid span {
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .profile-summary-grid strong {
-  font-size: 1.15rem;
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-summary-grid small {
+  line-height: 1.4;
 }
 
 .profile-coverage-list {
@@ -41,36 +50,46 @@
   display: flex;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
   font-size: 0.86rem;
 }
 
 .profile-coverage-heading span {
-  color: var(--muted-strong);
-  font-weight: 700;
+  color: var(--ui-text-muted);
+  font-weight: 750;
+}
+
+.profile-coverage-heading strong {
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .profile-coverage-track {
-  height: 10px;
+  height: 9px;
   overflow: hidden;
   border-radius: 999px;
-  background: var(--bg-strong);
+  background: var(--ui-surface-quiet);
 }
 
 .profile-coverage-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  background: linear-gradient(90deg, var(--ui-action), var(--ui-action-strong));
 }
 
 .profile-coverage-notes {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.45rem;
   margin: 0;
-  padding-left: 1.25rem;
-  color: var(--muted);
-  font-size: 0.85rem;
+  padding: var(--space-3) var(--space-3) var(--space-3) calc(var(--space-3) + 1rem);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx (760). */
