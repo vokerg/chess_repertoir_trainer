@@ -97,8 +97,8 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
   const sourceKey = boundedText(params.get('sourceKey'), 500);
   const sequence = optionalBoundedText(params.get('sequence'), 2_000);
   const filterSummary = boundedText(params.get('filterSummary'), 1_000);
-  const sourceFilters = boundedText(params.get('sourceFilters'), 8_000);
-  const startingFen = boundedText(params.get('fen'), 200);
+  const sourceFilters = boundedTextAllowEmpty(params.get('sourceFilters'), 8_000);
+  const startingFen = fullFen(params.get('fen'));
   const side = params.get('side');
   const observedMoveUci = params.get('moveUci')?.trim().toLowerCase() ?? '';
   const observedMoveSan = optionalBoundedText(params.get('moveSan'), 30);
@@ -122,7 +122,6 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
     || !startingFen
     || (side !== 'WHITE' && side !== 'BLACK')
     || !UCI_PATTERN.test(observedMoveUci)
-    || !isValidFen(startingFen)
   ) {
     return {
       context: null,
@@ -188,17 +187,25 @@ function boundedText(value: string | null, maxLength: number): string | null {
   return trimmed.length > 0 && trimmed.length <= maxLength ? trimmed : null;
 }
 
+function boundedTextAllowEmpty(value: string | null, maxLength: number): string | null {
+  if (value === null || value.length > maxLength) return null;
+  return value;
+}
+
 function optionalBoundedText(value: string | null, maxLength: number): string | null {
   const trimmed = value?.trim() ?? '';
   if (!trimmed) return null;
   return trimmed.length <= maxLength ? trimmed : null;
 }
 
-function isValidFen(fen: string): boolean {
+function fullFen(value: string | null): string | null {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed || trimmed.length > 200) return null;
+  const parts = trimmed.split(/\s+/);
+  const candidate = parts.length === 4 ? `${trimmed} 0 1` : trimmed;
   try {
-    new Chess(fen);
-    return true;
+    return new Chess(candidate).fen();
   } catch {
-    return false;
+    return null;
   }
 }
