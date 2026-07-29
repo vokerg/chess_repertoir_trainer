@@ -10,7 +10,9 @@ Last updated: 2026-07-29
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-104-integration-reconciliation`
+**Active checkpoint branch after reconciliation:** none
+
+**Active pull request after reconciliation:** none
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -38,6 +40,7 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #158 — production tokens, typography, shared visual foundations, and wide signed-in workspace correction.
 - [x] PR #161 — VT-103 integration and queue reconciliation.
 - [x] PR #162 — evidence-bounded Phase 1 browser disposition and local-development auth return-URL correction.
+- [x] PR #165 — VT-104 integration and queue reconciliation.
 
 ## VT-101 integrated checkpoint
 
@@ -67,7 +70,7 @@ All visual-transformation tasks use short-lived branches from the current `main`
 
 ## VT-104 integrated checkpoint
 
-Delivered through squash-merged PR #162 as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`:
+Delivered through squash-merged PR #162 as `e3bed0323eedd511f53a04cfd2c14be9b0965c76` and reconciled through PR #165:
 
 - [x] Added `transformation/reports/VT_104_SHELL_BROWSER_VALIDATION.md` with explicit evidence levels and per-surface matrices.
 - [x] Recorded supplied Home evidence and historical navigation evidence without converting them into blanket completion claims.
@@ -125,6 +128,7 @@ Issues #130–#133 retain their downstream dependencies.
 - Corrected-head CI #1270 passed the complete repository workflow.
 - Final acceptance-head CI #1273 passed dependency installation, lint, full build, both opening audits, architecture guardrails, migrations, and the complete test suite.
 - PR #162 was squash-merged into `main` as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`.
+- Reconciliation PR #165 passed its final repository workflow before squash merge.
 
 ## Open design and product decisions
 
@@ -157,7 +161,8 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 - Final acceptance-head CI #1273 passed the complete repository workflow.
 - The user accepted the documented browser-risk boundary and instructed progress.
 - Squash-merged PR #162 into `main` as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`.
-- Closed Phase 1 for transformation sequencing and released VT-201 as the next task.
+- Reconciled completed status and released VT-201 through PR #165.
+- Closed Phase 1 for transformation sequencing.
 
 ### 2026-07-28 — VT-103 integration and wide-screen correction
 
@@ -169,4 +174,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, and #162 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, and #165 are integrated into `main`.
