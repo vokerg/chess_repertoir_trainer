@@ -5,11 +5,13 @@ import {
   type PageHeaderStat,
 } from '../../../shared/ui/page-header/page-header.component';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
+import { RepertoireBuilderCourseDialogComponent } from '../components/repertoire-builder-course-dialog.component';
 import { RepertoireBuilderSetupDialogComponent } from '../components/repertoire-builder-setup-dialog.component';
 import {
   RepertoireBuilderWorkbenchComponent,
   type RepertoireBuilderQueueMove,
 } from '../components/repertoire-builder-workbench.component';
+import { RepertoireBuilderCourseStore } from '../state/repertoire-builder-course.store';
 import { RepertoireBuilderStore } from '../state/repertoire-builder.store';
 
 @Component({
@@ -19,14 +21,16 @@ import { RepertoireBuilderStore } from '../state/repertoire-builder.store';
     PageHeaderComponent,
     RepertoireBuilderSetupDialogComponent,
     RepertoireBuilderWorkbenchComponent,
+    RepertoireBuilderCourseDialogComponent,
   ],
-  providers: [RepertoireBuilderApiService, RepertoireBuilderStore],
+  providers: [RepertoireBuilderApiService, RepertoireBuilderStore, RepertoireBuilderCourseStore],
   templateUrl: './repertoire-builder-page.component.html',
   styleUrl: './repertoire-builder-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepertoireBuilderPageComponent {
   protected readonly store = inject(RepertoireBuilderStore);
+  protected readonly courseStore = inject(RepertoireBuilderCourseStore);
 
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
     if (!this.store.session()) return [];
@@ -40,7 +44,15 @@ export class RepertoireBuilderPageComponent {
 
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     if (!this.store.session()) return [];
-    return [
+    const actions: PageHeaderAction[] = [];
+    if (this.store.isCompleted()) {
+      actions.push({
+        id: 'review-course-output',
+        label: 'Review course output',
+        run: () => void this.openCourseReview(),
+      });
+    }
+    actions.push(
       {
         id: 'restart-setup',
         label: 'Restart setup',
@@ -51,10 +63,17 @@ export class RepertoireBuilderPageComponent {
         label: 'New draft',
         run: () => this.store.startNewDraft(),
       },
-    ];
+    );
+    return actions;
   });
 
   protected reorderQueue(change: RepertoireBuilderQueueMove): void {
     this.store.reorderQueue(change.branchId, change.targetIndex);
+  }
+
+  protected async openCourseReview(): Promise<void> {
+    const session = this.store.session();
+    if (!session || session.lifecycle !== 'COMPLETED') return;
+    await this.courseStore.openFor(session);
   }
 }

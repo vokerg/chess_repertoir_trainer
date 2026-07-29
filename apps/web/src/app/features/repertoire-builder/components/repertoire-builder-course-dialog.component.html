@@ -1,0 +1,171 @@
+<div class="course-backdrop" role="presentation" (click)="close()">
+  <section
+    class="course-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="builder-course-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="course-header">
+      <div>
+        <p class="course-kicker">Course materialization</p>
+        <h2 id="builder-course-title">Review this draft before writing</h2>
+        <p>
+          Choose one owned chapter, preview every created, reused, skipped, and conflicting item,
+          then apply the exact unchanged preview.
+        </p>
+      </div>
+      <button type="button" class="icon-button" aria-label="Close course review" [disabled]="applyLoading()" (click)="close()">×</button>
+    </header>
+
+    <form class="destination-form" [formGroup]="form" (ngSubmit)="requestPreview()">
+      <label class="field">
+        <span>Course</span>
+        <select formControlName="courseId">
+          <option [ngValue]="null">Choose a course</option>
+          @for (course of courses(); track course.id) {
+            <option [ngValue]="course.id">{{ course.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Chapter</span>
+        <select formControlName="chapterId">
+          <option [ngValue]="null">Choose a chapter</option>
+          @for (chapter of chapters(); track chapter.id) {
+            <option [ngValue]="chapter.id">{{ chapter.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Reviewed new-line name</span>
+        <input type="text" formControlName="newLineName" maxlength="200" placeholder="Enter a line name" />
+      </label>
+
+      <button type="submit" class="secondary-button preview-button" [disabled]="!canPreview() || form.invalid">
+        {{ previewLoading() ? 'Previewing…' : 'Preview course changes' }}
+      </button>
+    </form>
+
+    @if (draft(); as materializedDraft) {
+      <div class="draft-summary" aria-label="Materializable builder draft summary">
+        <div><span>Accepted moves</span><strong>{{ materializedDraft.materializedMoveCount }}</strong></div>
+        <div><span>Decisions</span><strong>{{ materializedDraft.materializedDecisionCount }}</strong></div>
+        <div><span>Skipped branches</span><strong>{{ materializedDraft.excludedBranches.length }}</strong></div>
+        <div><span>Transposition leaves</span><strong>{{ materializedDraft.transpositionLeafCount }}</strong></div>
+      </div>
+      @if (materializedDraft.excludedBranches.length > 0) {
+        <p class="scope-note">
+          Deferred, ignored, stale, and unresolved branches remain in the route-local draft and are not written to the course.
+        </p>
+      }
+    }
+
+    @if (error()) {
+      <p class="error-message" role="alert">{{ error() }}</p>
+    }
+
+    @if (preview(); as reviewed) {
+      <section class="preview-section" aria-labelledby="builder-preview-title">
+        <div class="preview-heading">
+          <div>
+            <h3 id="builder-preview-title">Reviewed destination</h3>
+            <p>{{ reviewed.course.name }} · {{ reviewed.chapter.name }} · revision {{ reviewed.course.contentRevision }}</p>
+          </div>
+          <span class="preview-boundary">Apply is bound to this revision</span>
+        </div>
+
+        <div class="target-list" role="radiogroup" aria-label="Course write target">
+          <button
+            type="button"
+            class="target-card"
+            [class.selected]="isNewLineSelected()"
+            [class.blocked]="!reviewed.newLine.allowed"
+            role="radio"
+            [attr.aria-checked]="isNewLineSelected()"
+            [disabled]="!reviewed.newLine.allowed || applyLoading()"
+            (click)="selectNewLine()"
+          >
+            <span class="target-title">
+              <strong>New line · {{ form.controls.newLineName.value }}</strong>
+              <small>{{ reviewed.newLine.status === 'REUSES_EXISTING_LINE' ? 'Equivalent line already exists' : 'Create in selected chapter' }}</small>
+            </span>
+            <span class="target-counts">
+              <span>{{ reviewed.newLine.counts.createdMoves }} create</span>
+              <span>{{ reviewed.newLine.counts.reusedMoves }} reuse</span>
+              <span>{{ reviewed.newLine.counts.conflictingMoves }} conflict</span>
+            </span>
+          </button>
+
+          @for (candidate of reviewed.candidates; track candidate.lineId + ':' + candidate.anchor.kind + ':' + (candidate.anchor.nodeId ?? 0)) {
+            <button
+              type="button"
+              class="target-card"
+              [class.selected]="isCandidateSelected(candidate)"
+              [class.blocked]="candidate.counts.conflictingMoves > 0"
+              role="radio"
+              [attr.aria-checked]="isCandidateSelected(candidate)"
+              [disabled]="candidate.counts.conflictingMoves > 0 || applyLoading()"
+              (click)="selectCandidate(candidate)"
+            >
+              <span class="target-title">
+                <strong>Merge into {{ candidate.lineName }}</strong>
+                <small>{{ candidate.anchor.moveSequenceSan || 'Line start' }}</small>
+              </span>
+              <span class="target-counts">
+                <span>{{ candidate.counts.createdMoves }} create</span>
+                <span>{{ candidate.counts.reusedMoves }} reuse</span>
+                <span>{{ candidate.counts.conflictingMoves }} conflict</span>
+              </span>
+            </button>
+          }
+        </div>
+
+        @if (!reviewed.newLine.allowed && reviewed.candidates.length === 0) {
+          <p class="error-message" role="alert">
+            No conflict-free target is available in this chapter. Choose another chapter or revise the builder draft.
+          </p>
+        }
+
+        @if (reviewed.newLine.conflicts.length > 0) {
+          <div class="conflict-list" role="note">
+            <h4>New-line conflicts</h4>
+            @for (conflict of reviewed.newLine.conflicts; track conflict.normalizedFenBefore + ':' + conflict.proposedMoveUci) {
+              <p>
+                {{ conflict.sideToMove }} to move: proposed {{ conflict.proposedMoveSan || conflict.proposedMoveUci }} conflicts with
+                {{ conflict.existingMoves[0]?.moveSan || conflict.existingMoves[0]?.moveUci || 'an existing trained move' }}.
+              </p>
+            }
+          </div>
+        }
+
+        @if (reviewed.newLine.warnings.length > 0) {
+          <ul class="warning-list">
+            @for (warning of reviewed.newLine.warnings; track warning) { <li>{{ warning }}</li> }
+          </ul>
+        }
+      </section>
+    }
+
+    @if (result(); as applied) {
+      <section class="result-message" role="status">
+        <strong>{{ applied.idempotent ? 'Course already matched this draft' : 'Course updated' }}</strong>
+        <span>
+          {{ applied.lineName }} · {{ applied.createdMoves }} created · {{ applied.reusedMoves }} reused ·
+          revision {{ applied.courseContentRevision }}
+        </span>
+      </section>
+    }
+
+    <footer class="course-actions">
+      <button type="button" class="secondary-button" [disabled]="applyLoading()" (click)="close()">Close</button>
+      @if (preview() && !result()) {
+        <button type="button" class="primary-button" [disabled]="!canApply()" (click)="apply()">
+          {{ applyLoading() ? 'Applying reviewed changes…' : 'Apply reviewed changes' }}
+        </button>
+      }
+    </footer>
+  </section>
+</div>

@@ -4,6 +4,12 @@ import type {
   CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
 import type {
+  BuilderCourseReintegrationApplyRequest,
+  BuilderCourseReintegrationApplyResponse,
+  BuilderCourseReintegrationPreviewRequest,
+  BuilderCourseReintegrationPreviewResponse,
+} from '@chess-trainer/contracts/courses';
+import type {
   LichessGamesRatingGroup,
   LichessGamesRatingTarget,
   LichessGamesSpeedPreset,
@@ -11,6 +17,18 @@ import type {
 } from '@chess-trainer/contracts/opening-explorer';
 import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
+
+export interface RepertoireBuilderCourseOption {
+  id: number;
+  name: string;
+}
+
+export interface RepertoireBuilderChapterOption {
+  id: number;
+  courseId: number;
+  name: string;
+  sortOrder: number;
+}
 
 @Injectable()
 export class RepertoireBuilderApiService {
@@ -35,5 +53,33 @@ export class RepertoireBuilderApiService {
       params.set('ratingGroup', String(input.ratingGroup));
     }
     return this.api.get<OpeningExplorerResponse>(`/lichess-games-explorer?${params.toString()}`);
+  }
+
+  listCourses(): Observable<RepertoireBuilderCourseOption[]> {
+    return this.api.get<RepertoireBuilderCourseOption[]>('/courses');
+  }
+
+  listChapters(courseId: number): Observable<RepertoireBuilderChapterOption[]> {
+    return this.api.get<RepertoireBuilderChapterOption[]>(`/courses/${courseId}/chapters`);
+  }
+
+  previewCourseOutput(
+    chapterId: number,
+    request: BuilderCourseReintegrationPreviewRequest,
+  ): Observable<BuilderCourseReintegrationPreviewResponse> {
+    return this.api.post<BuilderCourseReintegrationPreviewResponse>(
+      `/chapters/${chapterId}/builder-course-reintegration/preview`,
+      request,
+    );
+  }
+
+  applyCourseOutput(
+    chapterId: number,
+    request: BuilderCourseReintegrationApplyRequest,
+  ): Observable<BuilderCourseReintegrationApplyResponse> {
+    return this.api.post<BuilderCourseReintegrationApplyResponse>(
+      `/chapters/${chapterId}/builder-course-reintegration/apply`,
+      request,
+    );
   }
 }
