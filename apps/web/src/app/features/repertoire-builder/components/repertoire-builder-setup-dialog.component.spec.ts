@@ -25,13 +25,13 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
   });
 
   it('emits one explicit target setup', () => {
-    let submitted: RepertoireBuilderSetup | null = null;
-    fixture.componentInstance.submitted.subscribe((value) => { submitted = value; });
+    const submissions: RepertoireBuilderSetup[] = [];
+    fixture.componentInstance.submitted.subscribe((value) => submissions.push(value));
 
     const submit = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
     submit.click();
     fixture.detectChanges();
 
-    expect(submitted).toEqual(defaultRepertoireBuilderSetup());
+    expect(submissions).toEqual([defaultRepertoireBuilderSetup()]);
   });
 });
