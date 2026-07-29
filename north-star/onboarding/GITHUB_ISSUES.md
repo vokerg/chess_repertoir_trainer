@@ -23,6 +23,11 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) |
 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) |
 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) |
+| ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) |
+| ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) |
+| ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) |
+| ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) |
+| ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -85,9 +90,13 @@ Comment only on meaningful changes:
 - review readiness;
 - completion or supersession.
 
-## ONB-001 allocation note
+## Allocation notes
 
-ONB-001 allocated ONB-008 through ONB-010 as bounded implementation tasks. They remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation is planning allocation, not permission to claim or implement them early.
+ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular implementation tasks.
+
+ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks.
+
+All allocated implementation issues remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation is planning allocation, not permission to claim or implement them early.
 
 ## Completion
 
