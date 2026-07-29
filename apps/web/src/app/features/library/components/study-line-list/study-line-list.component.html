@@ -53,31 +53,14 @@
             {{ line.trainingStats.activeSublineCount }} active sublines
           </span>
 
-          <span class="line-facts" aria-label="Line training health">
-            <span>
-              <small>Coverage</small>
-              <strong>
-                {{
-                  coverageLabel(
-                    line.trainingStats.trainedSublineCount,
-                    line.trainingStats.activeSublineCount
-                  )
-                }}
-              </strong>
-            </span>
-            <span>
-              <small>Mastery</small>
-              <strong>{{ masteryLabel(line.trainingStats.passRate) }}</strong>
-            </span>
-            <span>
-              <small>Weak</small>
-              <strong>{{ line.trainingStats.weakSublineCount }}</strong>
-            </span>
-            <span>
-              <small>Untrained</small>
-              <strong>{{ line.trainingStats.untrainedSublineCount }}</strong>
-            </span>
-          </span>
+          <app-fact-grid
+            class="line-facts"
+            ariaLabel="Line training health"
+            [items]="lineFacts(line)"
+            [columns]="4"
+            [compactColumns]="2"
+            [highlighted]="line.id === selectedLineId()"
+          />
         </button>
 
         <div class="line-actions">
