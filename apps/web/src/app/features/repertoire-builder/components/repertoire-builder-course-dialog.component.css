@@ -20,7 +20,7 @@
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-panel);
   background: var(--ui-surface);
-  box-shadow: var(--ui-shadow-modal);
+  box-shadow: var(--ui-shadow-overlay);
 }
 
 .course-header,
@@ -272,7 +272,7 @@
 .primary-button {
   border: 1px solid var(--ui-action-strong);
   background: var(--ui-action);
-  color: var(--ui-action-contrast);
+  color: var(--ui-action-ink);
 }
 
 .secondary-button {
