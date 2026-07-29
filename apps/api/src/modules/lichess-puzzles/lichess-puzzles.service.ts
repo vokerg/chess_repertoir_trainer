@@ -372,6 +372,16 @@ function appendAttempt(
   return [...attempts, attempt];
 }
 
+function currentRoundLastMoveUci(round: LichessPuzzleRoundWithPuzzle): string {
+  if (round.currentStep === 0) return round.puzzle.lastMoveUci;
+  const attempts = readMoveAttempts(round.moveAttempts);
+  for (let index = attempts.length - 1; index >= 0; index -= 1) {
+    const attempt = attempts[index];
+    if (attempt?.correct) return attempt.forcedMoveUci ?? attempt.moveUci;
+  }
+  return round.puzzle.lastMoveUci;
+}
+
 function mapRound(round: LichessPuzzleRoundWithPuzzle): LichessPuzzleRound {
   return {
     id: round.id,
@@ -382,6 +392,7 @@ function mapRound(round: LichessPuzzleRoundWithPuzzle): LichessPuzzleRound {
     status: round.status as LichessPuzzleRound['status'],
     outcome: round.outcome as LichessPuzzleRound['outcome'],
     currentFen: round.currentFen,
+    lastMoveUci: currentRoundLastMoveUci(round),
     currentStep: round.currentStep,
     firstWrongAt: round.firstWrongAt?.toISOString() ?? null,
     learningCompletedAt: round.learningCompletedAt?.toISOString() ?? null,
