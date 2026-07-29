@@ -1,6 +1,6 @@
 # RB-010 — Implement bounded interactive builder MVP
 
-Status: BLOCKED
+Status: READY
 
 Priority: P1
 
@@ -39,7 +39,7 @@ This is the first direct north-star delivery. It should prove that deterministic
 ## Current repo anchors to inspect
 
 - approved RB-008 visual direction;
-- RB-006/RB-007/RB-009 contracts and services;
+- integrated RB-006 target contract, RB-007 candidate decisions and RB-009 session/queue domain;
 - RB-001 speed/rating presets and RB-002 factual player-level evidence;
 - current Angular route, workbench, board, store, and data-access patterns;
 - opening-analysis and line-editor composition;
@@ -48,7 +48,7 @@ This is the first direct north-star delivery. It should prove that deterministic
 
 ## Dependencies
 
-Blocked on RB-007, RB-008, and RB-009.
+Completed: integrated RB-007 candidate decisions, accepted RB-008 routed visual direction, and integrated RB-009 builder-session model through squash-merged PR #177.
 
 RB-011 depends on a stable draft preview output.
 
@@ -87,7 +87,7 @@ RB-011 depends on a stable draft preview output.
 - one side and starting-point type;
 - maximum candidates and branches;
 - maximum build depth or number of decisions;
-- whether persistence/resume is included based on RB-009;
+- whether persistence/resume is included based on RB-009's staged-persistence decision and concrete workbench evidence;
 - whether profile-derived setup is included or mocked;
 - which population sources are mandatory;
 - how preview tree and coverage are summarized.
