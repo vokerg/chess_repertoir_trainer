@@ -11,6 +11,13 @@ export type LichessPuzzleRoundWithPuzzle = Prisma.LichessPuzzleRoundGetPayload<{
   include: typeof roundInclude;
 }>;
 
+export type LichessPuzzleRoundStateUpdate = Omit<
+  Prisma.LichessPuzzleRoundUpdateManyMutationInput,
+  'moveAttempts'
+> & {
+  moveAttempts?: unknown;
+};
+
 export class LichessPuzzleRoundConflictError extends Error {
   constructor() {
     super('Lichess puzzle round changed before the request could be saved');
@@ -85,12 +92,20 @@ export async function findOwnedLichessPuzzleRound(
 
 export async function updateOwnedLichessPuzzleRound(
   snapshot: LichessPuzzleRoundWithPuzzle,
-  data: Prisma.LichessPuzzleRoundUpdateManyMutationInput,
+  data: LichessPuzzleRoundStateUpdate,
   options: {
     recordFailure?: boolean;
     failureDueAt?: Date;
   } = {},
 ): Promise<LichessPuzzleRoundWithPuzzle> {
+  const { moveAttempts, ...scalarData } = data;
+  const prismaData: Prisma.LichessPuzzleRoundUpdateManyMutationInput = {
+    ...scalarData,
+    ...(moveAttempts !== undefined
+      ? { moveAttempts: moveAttempts as Prisma.InputJsonValue }
+      : {}),
+  };
+
   return prisma.$transaction(async (tx) => {
     const updated = await tx.lichessPuzzleRound.updateMany({
       where: {
@@ -100,7 +115,7 @@ export async function updateOwnedLichessPuzzleRound(
         currentStep: snapshot.currentStep,
         updatedAt: snapshot.updatedAt,
       },
-      data,
+      data: prismaData,
     });
 
     if (updated.count !== 1) throw new LichessPuzzleRoundConflictError();
