@@ -30,8 +30,8 @@ Delivery classes:
 | Candidate evidence aggregation | North-star | Implemented and merged | Supports one-position analysis decisions | Combines separated evidence at one decision point |
 | Explainable candidate ranking | North-star | Implemented and merged | Supports deterministic recommendations | Orders candidates without hiding source evidence |
 | Visual move-choice experience | North-star | Accepted prototype direction | Reusable analysis pattern | Core human decision surface |
-| Builder session and branch queue | North-star | Implemented for review | Storage-neutral state foundation | Supports resume semantics, deferral, staleness and multi-branch coverage |
-| Interactive builder MVP | North-star | Outlined | Primary north-star delivery | Alternates user choice and opponent coverage |
+| Builder session and branch queue | North-star | Implemented and merged | Storage-neutral state foundation | Supports resume semantics, deferral, staleness and multi-branch coverage |
+| Interactive builder MVP | North-star | Ready for implementation | Primary north-star delivery | Alternates user choice and opponent coverage |
 | Course reintegration and preview | Dual-use | Existing pattern, new integration outlined | Safer course edits | Materializes accepted builder tree |
 | Existing-course adaptation | Dual-use | Outlined | Improves current course review | Reuses builder for gaps, endings and weak choices |
 | Repertoire personas and profile override | Dual-use | Agreed concept | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
@@ -67,7 +67,7 @@ The accepted production direction is a routed, board-first workbench launched fr
 
 ### Builder state
 
-RB-009 implements the queue, accepted choices, deferred and ignored responses, staleness, transposition references, decision history and bounded preview as a pure serializable `chess-domain` snapshot. Persistence is staged until the RB-010 workbench demonstrates a concrete durable-resume requirement.
+RB-009 implements the queue, accepted choices, deferred and ignored responses, staleness, transposition references, decision history and bounded preview as a pure serializable `chess-domain` snapshot. Persistence remains staged until the RB-010 workbench demonstrates a concrete durable-resume requirement.
 
 ### Existing courses
 
