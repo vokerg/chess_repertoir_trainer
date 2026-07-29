@@ -169,7 +169,11 @@ export function builderLaunchStartingPoint(
 }
 
 export function builderLaunchReturnUrl(context: RepertoireBuilderCourseEndingLaunch): string {
-  return `/courses/${context.courseId}/review?view=endings`;
+  const query = new URLSearchParams(context.sourceFilters);
+  query.set('view', 'endings');
+  query.set('minGames', String(context.minGames));
+  query.set('restore', '1');
+  return `/courses/${context.courseId}/review?${query.toString()}`;
 }
 
 function positiveInteger(value: string | null): number | null {
