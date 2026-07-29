@@ -54,7 +54,7 @@ describe('repertoire builder launch payload', () => {
 
     const returnUrl = builderLaunchReturnUrl(parsed.context!);
     const returnQuery = new URLSearchParams(returnUrl.split('?')[1]);
-    expect(returnUrl).toStartWith('/courses/7/review?');
+    expect(returnUrl.startsWith('/courses/7/review?')).toBeTrue();
     expect(returnQuery.get('view')).toBe('endings');
     expect(returnQuery.get('restore')).toBe('1');
     expect(returnQuery.get('minGames')).toBe('4');
