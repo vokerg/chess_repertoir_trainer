@@ -263,12 +263,12 @@
 }
 
 .games-filters-explorer .more-filters-toggle::after {
-  color: currentColor;
-  content: '';
   width: 0.42rem;
   height: 0.42rem;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
+  color: currentColor;
+  content: '';
   transform: rotate(45deg) translateY(-2px);
 }
 
@@ -295,6 +295,7 @@
   padding-top: 0.9rem;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .games-filters-explorer {
     border-radius: var(--ui-radius-panel);
