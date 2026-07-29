@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 This roadmap orders capability stages and decision gates. Detailed execution belongs in individual task files.
 
@@ -98,23 +98,26 @@ Goals:
 
 Tasks: RB-004, RB-005.
 
-Gate: pending corrected review-head CI, hands-on review and integration. The user must accept the calculation contract and determine whether the page is credible and useful against populated personal data. The stacked branches must then be reconciled before merge.
+Gate: pending hands-on review and integration. The user must accept the calculation contract and determine whether the page is credible and useful against populated personal data. The stacked branches must then be reconciled before merge.
 
 ## Stage 3 — target and candidate decision model
 
-State: RB-006 is ready; RB-007 remains blocked on RB-006. RB-008 supplies concrete visual data responsibilities.
+State: complete through integrated RB-006 and RB-007. RB-013 remains proposed as a later dual-use persona/profile-default extension.
 
-Goals:
+Delivered:
 
-- define a repertoire target using one fixed speed preset and one rating target;
-- keep factual level, descriptive profile and manual target override separate;
-- aggregate engine, master, population, personal, opening-profile and course evidence without collapsing sources;
-- rank candidates with explicit reasons and visible missing evidence;
-- return bounded resulting-position, preview, burden, warning and response-coverage data.
+- one versioned repertoire target using fixed speed and population vocabulary;
+- factual peer evidence, descriptive profile advice and explicit target intent kept separate;
+- field-level default and override provenance;
+- deterministic candidate aggregation across engine, Masters, selected population, personal games, opening profile, player profile and course evidence;
+- separate `USER_MOVE` and `OPPONENT_RESPONSE` roles;
+- explicit missing/stale/insufficient evidence;
+- stable reasons, warnings and bounded preview/coverage data;
+- no opaque public aggregate score.
 
 Tasks: RB-006, RB-007, RB-013.
 
-Gate: one position can produce a deterministic, explainable candidate comparison for a selected target.
+Gate: passed. One position can produce a deterministic, explainable candidate comparison for a selected target.
 
 ## Stage 4 — visual decision proof
 
@@ -134,21 +137,38 @@ Gate: passed.
 
 ## Stage 5 — resumable builder foundation and MVP
 
-State: blocked on target/ranking contracts and builder-session definition.
+State: RB-009 is implemented for review through PR #177. RB-010 remains blocked until RB-009 is accepted and integrated.
 
-Goals:
+RB-009 review implementation provides:
 
-- define branch queue, accepted decisions, deferred responses, target snapshot and draft lifecycle;
+- pure serializable session model version `2026-07-v1`;
+- owner identity and optimistic revision;
+- retained target and candidate evidence/policy provenance;
+- path-stable branch history plus normalized-position transposition identity;
+- explicit pending, accepted, deferred, ignored, completed and stale states;
+- decision history with active, superseded and stale records;
+- deterministic ancestor replacement and target/evidence invalidation;
+- lazy bounded queue and explicit reorder;
+- bounded preview tree and queue projection;
+- session complete, abandon and resume semantics;
+- no Prisma model, API, Angular UI or storage adapter before a concrete resume requirement is demonstrated.
+
+Goals remaining for RB-010:
+
 - implement the accepted setup dialog and routed workbench;
 - alternate user choices and opponent-response coverage;
-- preserve selected, pending, deferred, ignored and completed states;
-- produce a previewable repertoire tree.
+- map RB-007 candidate decisions into RB-009 transitions;
+- present branch queue, progress, staleness, transpositions and preview;
+- validate whether route/local state is sufficient for MVP review or durable persistence is justified;
+- keep the tree bounded and human-controlled.
 
 Tasks: RB-009, RB-010.
 
 Gate: a user can build one bounded repertoire slice and inspect the draft before course writes.
 
 ## Stage 6 — course materialization and adaptation
+
+State: blocked on the Stage 5 routed builder.
 
 Goals:
 
@@ -180,6 +200,8 @@ Gate: RB-017 proves whether the trap model survives review; a separate user deci
 
 ## Stage 8 — outcome feedback
 
+State: blocked until builder material is in use.
+
 Goals:
 
 - measure whether built and trained choices appear in later games;
@@ -196,26 +218,24 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- RB-006 repertoire-target contract;
+- review of RB-009 builder-session semantics;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
 
-- opening-profile consumer contracts;
-- rating-normalization and peer evidence;
-- imported-game aggregation;
-- target/candidate schemas;
-- builder state and persistence;
-- production workbench composition;
-- course writes;
+- target/candidate/session contracts and versions;
+- production builder state composition;
+- any new persistence or migration;
+- course preview and writes;
+- profile/persona defaults;
 - future trap evidence in candidate contracts.
 
 ## Queue impact
 
-- RB-001, RB-002, RB-003, RB-008, RB-014 and RB-018 remain `DONE`.
+- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-014 and RB-018 remain `DONE`.
 - RB-004 is `REVIEW` through PR #136.
-- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
-- RB-006 remains `READY` and is the next ordered unclaimed task.
-- RB-007 remains blocked on RB-006.
+- RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
+- RB-009 is `REVIEW` through PR #177 after complete CI #1328.
+- RB-010 remains `BLOCKED` until accepted RB-009 integration; it becomes the next ordered ready North Star task after that gate.
 - RB-017 remains `CLAIMED` and isolated.
-- No priority change or new task is required.
+- No priority change, new task or roadmap resequencing is required.
