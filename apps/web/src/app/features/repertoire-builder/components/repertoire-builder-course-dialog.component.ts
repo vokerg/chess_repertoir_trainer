@@ -138,7 +138,7 @@ export class RepertoireBuilderCourseDialogComponent {
   }
 
   protected apply(): void {
-    if (this.canApply()) this.applyRequested.emit();
+    this.applyRequested.emit();
   }
 }
 
