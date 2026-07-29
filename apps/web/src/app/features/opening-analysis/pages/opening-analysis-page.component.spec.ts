@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { defaultOpeningFilters } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge.store';
@@ -8,8 +8,10 @@ import { OpeningAnalysisPageComponent } from './opening-analysis-page.component'
 describe('OpeningAnalysisPageComponent', () => {
   let fixture: ComponentFixture<OpeningAnalysisPageComponent>;
   let store: jasmine.SpyObj<OpeningAnalysisStore>;
+  let blackPerspective: WritableSignal<boolean>;
 
   beforeEach(async () => {
+    blackPerspective = signal(false);
     store = jasmine.createSpyObj<OpeningAnalysisStore>('OpeningAnalysisStore', [
       'initialize',
       'toggleTags',
@@ -27,7 +29,7 @@ describe('OpeningAnalysisPageComponent', () => {
       currentFen: signal('startpos'),
       history: signal([]),
       filters: signal(defaultOpeningFilters()),
-      blackPerspective: signal(false),
+      blackPerspective,
       analysis: signal(null),
       wdl: signal({ total: 0, wins: 0, draws: 0, losses: 0, scorePct: null }),
     });
@@ -83,7 +85,7 @@ describe('OpeningAnalysisPageComponent', () => {
     expect(page().activeToolCount()).toBe(2);
     expect(page().filterSummary()).toBe('White - Any speed - Rated');
 
-    store.blackPerspective.set(true);
+    blackPerspective.set(true);
     store.mastersOpen.set(true);
     store.peersOpen.set(true);
 
