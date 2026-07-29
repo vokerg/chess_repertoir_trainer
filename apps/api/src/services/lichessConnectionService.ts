@@ -7,6 +7,7 @@ const oauthBaseUrl = 'https://lichess.org/oauth';
 const tokenUrl = 'https://lichess.org/api/token';
 const accountUrl = 'https://lichess.org/api/account';
 const stateTtlMs = 10 * 60 * 1000;
+const requiredScopes = ['puzzle:read', 'puzzle:write'];
 
 export class LichessOAuthError extends Error {
   constructor(
@@ -284,8 +285,10 @@ function readRequiredEnv(name: string): string {
 }
 
 function readScopes(): string[] {
-  return (process.env['LICHESS_OAUTH_SCOPES'] || '')
+  const configuredScopes = (process.env['LICHESS_OAUTH_SCOPES'] || '')
     .split(/\s+/)
     .map((scope) => scope.trim())
     .filter(Boolean);
+
+  return [...new Set([...configuredScopes, ...requiredScopes])];
 }

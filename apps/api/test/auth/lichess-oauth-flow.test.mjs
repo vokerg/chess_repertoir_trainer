@@ -85,6 +85,18 @@ try {
 
   const user = await createUser('route');
   const state = await createState(user.id);
+  const authorizationUrl = new URL(await LichessConnectionService.createAuthorizationUrl(user.id));
+  assert.equal(authorizationUrl.origin, 'https://lichess.org');
+  assert.equal(authorizationUrl.pathname, '/oauth');
+  assert.deepEqual(authorizationUrl.searchParams.get('scope')?.split(' '), ['puzzle:read', 'puzzle:write']);
+  process.env.LICHESS_OAUTH_SCOPES = 'challenge:write puzzle:read challenge:write';
+  const authorizationUrlWithConfiguredScopes = new URL(await LichessConnectionService.createAuthorizationUrl(user.id));
+  assert.deepEqual(authorizationUrlWithConfiguredScopes.searchParams.get('scope')?.split(' '), [
+    'challenge:write',
+    'puzzle:read',
+    'puzzle:write',
+  ]);
+  process.env.LICHESS_OAUTH_SCOPES = '';
 
   app = Fastify({ logger: false });
   app.setValidatorCompiler(validatorCompiler);
@@ -107,6 +119,7 @@ try {
 
   const connection = await prisma.lichessConnection.findUnique({ where: { userId: user.id } });
   assert.equal(connection?.username.startsWith('lichessUser'), true);
+  assert.deepEqual(connection?.scopes, ['puzzle:read', 'puzzle:write']);
   assert.equal(connection?.accessTokenCiphertext.includes('test-access-token'), false);
   assert.equal(await prisma.oAuthLoginState.findUnique({ where: { state } }), null);
 

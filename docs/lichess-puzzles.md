@@ -33,6 +33,8 @@ The required OAuth scopes are:
 - `puzzle:read` for authenticated selection and future activity/replay reads.
 - `puzzle:write` for submitting results and updating the connected player's Lichess puzzle rating.
 
+The API always includes both required puzzle scopes in new Lichess authorization requests, even when `LICHESS_OAUTH_SCOPES` is empty or omits them. That environment variable may add optional scopes such as `challenge:write`; duplicate scopes are removed. Existing connections created without both puzzle scopes must reconnect.
+
 `initialPly` is the one-based ply at which the solver moves. When the batch move text is valid, it contains exactly `initialPly - 1` plies and the normalized challenge position is the final FEN after the trigger move. The explicit puzzle `fen` and `lastMove` response is the fallback source of truth when provider move text is not reconstructable.
 
 A first submitted result can affect the Lichess puzzle rating. Later submissions for the same puzzle can update replay/fixed state, but the application persists one immutable upstream outcome for each fresh round and never recalculates it during retry.
