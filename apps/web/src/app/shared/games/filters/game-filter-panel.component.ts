@@ -25,6 +25,8 @@ import {
 } from './game-filter-period';
 import type { GameFilterPeriod } from './game-filter-period';
 
+export type GameFilterPanelPresentation = 'default' | 'explorer';
+
 @Component({
   selector: 'app-game-filter-panel',
   standalone: true,
@@ -42,6 +44,7 @@ export class GameFilterPanelComponent {
   readonly applyLabel = input('Apply filters');
   readonly showActions = input(true);
   readonly lockedUserColor = input<UserColor | null>(null);
+  readonly presentation = input<GameFilterPanelPresentation>('default');
   readonly filtersChange = output<GameFilters>();
   readonly apply = output<void>();
   readonly reset = output<void>();

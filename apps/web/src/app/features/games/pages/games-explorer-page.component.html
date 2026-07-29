@@ -1,26 +1,37 @@
 <section class="games-page stack">
   <app-page-header
     title="Games"
-    subtitle="Filter imported games and submit durable indexing, analysis, or tag jobs."
+    subtitle="Explore imported games, review the evidence, and submit durable processing jobs."
     [stats]="headerStats()"
     [actions]="headerActions()"
   />
 
-  <app-game-filter-panel
-    [filters]="store.filters()"
-    [facets]="store.facets()"
-    [loading]="store.loading()"
-    (filtersChange)="store.setFilters($event)"
-    (apply)="applyFilters()"
-    (reset)="resetFilters()"
-  />
+  <section class="games-filter-workspace" aria-labelledby="games-filter-title">
+    <header class="games-section-heading">
+      <p class="games-section-kicker">Evidence set</p>
+      <div>
+        <h3 id="games-filter-title">Choose the games that matter now.</h3>
+        <p>Use the common filters first. Dates, ratings, openings, and processing details stay available under More filters.</p>
+      </div>
+    </header>
 
-  @if (store.unrepresentedCriteriaSummary().length) {
-    <aside class="route-filter-summary" aria-label="Additional applied filters">
-      <strong>Additional URL filters</strong>
-      <span>{{ store.unrepresentedCriteriaSummary().join(' · ') }}</span>
-    </aside>
-  }
+    <app-game-filter-panel
+      presentation="explorer"
+      [filters]="store.filters()"
+      [facets]="store.facets()"
+      [loading]="store.loading()"
+      (filtersChange)="store.setFilters($event)"
+      (apply)="applyFilters()"
+      (reset)="resetFilters()"
+    />
+
+    @if (store.unrepresentedCriteriaSummary().length) {
+      <aside class="route-filter-summary" aria-label="Additional applied filters">
+        <strong>Additional URL filters</strong>
+        <span>{{ store.unrepresentedCriteriaSummary().join(' Â· ') }}</span>
+      </aside>
+    }
+  </section>
 
   <app-games-table
     [games]="store.filteredGames()"

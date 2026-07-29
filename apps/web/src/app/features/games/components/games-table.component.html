@@ -1,18 +1,26 @@
 <app-panel title="Imported games" [subtitle]="tableSubtitle()" [actions]="tableActions()">
   @if (error()) {
-    <p class="status-error">{{ error() }}</p>
+    <div class="games-status games-status-error" role="alert">
+      <strong>Games could not be loaded</strong>
+      <span>{{ error() }}</span>
+    </div>
   }
   @if (loading() && games().length === 0) {
-    <p class="status-note">Loading imported games...</p>
+    <div class="games-loading" aria-live="polite">
+      <span></span><span></span><span></span>
+      <p>Loading matching games...</p>
+    </div>
   }
   @if (!loading() && !error() && games().length === 0) {
-    <div class="empty-state games-empty">
-      No imported games match these filters. Try widening provider, control, or analysis filters.
+    <div class="games-empty">
+      <span class="games-empty-kicker">No matching evidence</span>
+      <strong>No imported games match these filters.</strong>
+      <p>Try widening the period, provider, control, or analysis status.</p>
     </div>
   }
 
   @if (games().length > 0) {
-    <div class="games-table-wrap games-desktop-table">
+    <div class="games-table-wrap games-desktop-table" [attr.aria-busy]="loading()">
       <table class="games-table">
         <thead>
           <tr>
@@ -22,7 +30,7 @@
             <th>Control</th>
             <th>Opening</th>
             <th>Accuracy</th>
-            <th aria-label="Status"></th>
+            <th>Status</th>
             <th class="games-actions-heading">Actions</th>
           </tr>
         </thead>
@@ -90,14 +98,14 @@
                 </p>
               </td>
               <td data-label="Accuracy">
-                <p class="game-main">{{ accuracyLabel(game.analysis?.userAccuracy) }}</p>
+                <p class="game-main games-metric">{{ accuracyLabel(game.analysis?.userAccuracy) }}</p>
                 <p class="games-muted">
                   W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} &middot; B
                   {{ accuracyLabel(game.analysis?.blackAccuracy) }}
                 </p>
               </td>
               <td data-label="Status">
-                <p class="game-main">{{ analysisStatusLabel(game) }}</p>
+                <p class="game-main games-status-primary">{{ analysisStatusLabel(game) }}</p>
                 <p class="games-muted games-status-secondary">{{ plyIndexStatusLabel(game) }}</p>
               </td>
               <td data-label="Actions">
@@ -121,7 +129,7 @@
       </table>
     </div>
 
-    <div class="games-mobile-list" aria-label="Imported games">
+    <div class="games-mobile-list" aria-label="Imported games" [attr.aria-busy]="loading()">
       @for (game of games(); track game.id) {
         <article class="games-mobile-card">
           <div class="games-mobile-card-header">
@@ -151,12 +159,35 @@
           </div>
 
           <a class="games-mobile-main-link" [routerLink]="['/games', game.id]">
+            <span class="games-mobile-date">{{ gameDateLabel(game) }}</span>
             <p class="game-main">
-              {{ playerLabel(game.white) }} vs {{ playerLabel(game.black) }}
+              {{ playerLabel(game.white) }} <span class="games-mobile-versus">vs</span>
+              {{ playerLabel(game.black) }}
             </p>
-
-            <p class="games-mobile-date">{{ gameDateLabel(game) }}</p>
+            <p class="games-mobile-opening">
+              <strong>{{ game.opening?.eco || '—' }}</strong>
+              <span>{{ game.opening?.name || 'Opening unavailable' }}</span>
+            </p>
           </a>
+
+          <dl class="games-mobile-facts">
+            <div>
+              <dt>Control</dt>
+              <dd>{{ timeClassLabel(game.speedCategory) }} · {{ displayTimeControl(game) }}</dd>
+            </div>
+            <div>
+              <dt>Accuracy</dt>
+              <dd class="games-metric">{{ accuracyLabel(game.analysis?.userAccuracy) }}</dd>
+            </div>
+            <div>
+              <dt>Analysis</dt>
+              <dd>{{ analysisStatusLabel(game) }}</dd>
+            </div>
+            <div>
+              <dt>Index</dt>
+              <dd>{{ plyIndexStatusLabel(game) }}</dd>
+            </div>
+          </dl>
         </article>
       }
     </div>
@@ -164,6 +195,7 @@
 
   @if (pageInfo().hasMore || games().length > 0) {
     <div class="games-pagination">
+      <span>{{ games().length }} loaded</span>
       <button
         type="button"
         class="secondary"
@@ -174,7 +206,7 @@
           pageInfo().hasMore
             ? loading()
               ? 'Loading...'
-              : 'Load more'
+              : 'Load more games'
             : 'All matching games loaded'
         }}
       </button>

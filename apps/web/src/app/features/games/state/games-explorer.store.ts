@@ -49,21 +49,25 @@ export class GamesExplorerStore {
     () => this.filteredGames().filter((game) => game.plyIndex?.status === 'INDEXED').length,
   );
   readonly bulkIndexableGames = computed(() =>
-    this.filteredGames().filter((game) =>
-      isStandardImportedGameSpeed(game.speedCategory)
-      && game.plyIndex?.status !== 'INDEXED'
-      && !this.jobs.isGameActive(game.id),
+    this.filteredGames().filter(
+      (game) =>
+        isStandardImportedGameSpeed(game.speedCategory) &&
+        game.plyIndex?.status !== 'INDEXED' &&
+        !this.jobs.isGameActive(game.id),
     ),
   );
   readonly bulkAnalyzableGames = computed(() =>
-    this.filteredGames().filter((game) =>
-      isStandardImportedGameSpeed(game.speedCategory)
-      && game.plyIndex?.status === 'INDEXED'
-      && !this.jobs.isGameActive(game.id),
+    this.filteredGames().filter(
+      (game) =>
+        isStandardImportedGameSpeed(game.speedCategory) &&
+        game.plyIndex?.status === 'INDEXED' &&
+        !this.jobs.isGameActive(game.id),
     ),
   );
   readonly bulkIndexProgressLabel = computed(() =>
-    this.submittingKind() === 'INDEX_GAMES' ? 'Starting...' : String(this.bulkIndexableGames().length),
+    this.submittingKind() === 'INDEX_GAMES'
+      ? 'Starting...'
+      : String(this.bulkIndexableGames().length),
   );
   readonly bulkRefreshTagsProgressLabel = computed(() =>
     this.submittingKind() === 'REFRESH_TAGS'
@@ -71,14 +75,16 @@ export class GamesExplorerStore {
       : String(this.filteredGames().filter((game) => !this.jobs.isGameActive(game.id)).length),
   );
   readonly batchAnalysisProgressLabel = computed(() =>
-    this.submittingKind() === 'ANALYSE_GAMES' ? 'Starting...' : String(this.bulkAnalyzableGames().length),
+    this.submittingKind() === 'ANALYSE_GAMES'
+      ? 'Starting...'
+      : String(this.bulkAnalyzableGames().length),
   );
   readonly tableSubtitle = computed(() => {
     const games = this.games();
     const pageInfo = this.pageInfo();
     if (this.loading() && games.length === 0) return 'Loading matching games...';
     if (games.length === 0) return 'No games loaded';
-    return `${games.length} games shown${pageInfo.hasMore ? ' � more available' : ''}`;
+    return `${games.length} games shown${pageInfo.hasMore ? ' · more available' : ''}`;
   });
 
   constructor() {
@@ -89,13 +95,15 @@ export class GamesExplorerStore {
       const visibleIds = new Set(this.games().map((game) => game.id));
       if (batch.gameIds.some((gameId) => visibleIds.has(gameId))) void this.reloadCurrentList();
     });
+
     effect(() => {
       const batch = this.jobs.settledGameBatch();
       if (!batch || batch.sequence === this.lastSettledGameSequence) return;
       this.lastSettledGameSequence = batch.sequence;
       const visibleIds = new Set(this.games().map((game) => game.id));
       if (batch.gameIds.some((gameId) => visibleIds.has(gameId))) void this.reloadCurrentList();
-    });  }
+    });
+  }
 
   loadFacets(): void {
     this.api.getFacets().subscribe({ next: (data) => this.facets.set(data) });
@@ -159,17 +167,25 @@ export class GamesExplorerStore {
   }
 
   indexAllVisibleGames(): void {
-    void this.submitJob('INDEX_GAMES', this.bulkIndexableGames().map((game) => game.id));
+    void this.submitJob(
+      'INDEX_GAMES',
+      this.bulkIndexableGames().map((game) => game.id),
+    );
   }
 
   batchAnalyzeVisibleGames(): void {
-    void this.submitJob('ANALYSE_GAMES', this.bulkAnalyzableGames().map((game) => game.id));
+    void this.submitJob(
+      'ANALYSE_GAMES',
+      this.bulkAnalyzableGames().map((game) => game.id),
+    );
   }
 
   refreshTagsForVisibleGames(): void {
     void this.submitJob(
       'REFRESH_TAGS',
-      this.filteredGames().filter((game) => !this.jobs.isGameActive(game.id)).map((game) => game.id),
+      this.filteredGames()
+        .filter((game) => !this.jobs.isGameActive(game.id))
+        .map((game) => game.id),
     );
   }
 
@@ -190,7 +206,11 @@ export class GamesExplorerStore {
     return true;
   }
 
-  private async submitJob(kind: JobRunKind, gameIds: readonly number[], force = false): Promise<void> {
+  private async submitJob(
+    kind: JobRunKind,
+    gameIds: readonly number[],
+    force = false,
+  ): Promise<void> {
     if (!gameIds.length || this.submittingKind() !== null) return;
     this.error.set(null);
     this.submittingKind.set(kind);
@@ -198,7 +218,9 @@ export class GamesExplorerStore {
       const response = await this.jobs.submit(kind, gameIds, force);
       if (response.rejectedGameIds.length) {
         const count = response.rejectedGameIds.length;
-        this.error.set(`${count} selected ${count === 1 ? 'game was' : 'games were'} not available for this job.`);
+        this.error.set(
+          `${count} selected ${count === 1 ? 'game was' : 'games were'} not available for this job.`,
+        );
       }
     } catch (error) {
       this.error.set(readApiError(error, 'Could not submit imported-game job.'));
@@ -215,7 +237,9 @@ export class GamesExplorerStore {
     let pageInfo: ImportedGamePageInfo = { nextCursor: null, hasMore: false };
     try {
       do {
-        const data: ImportedGameSearchResponse = await firstValueFrom(this.api.searchGames(query, cursor));
+        const data: ImportedGameSearchResponse = await firstValueFrom(
+          this.api.searchGames(query, cursor),
+        );
         items.push(...data.items);
         pageInfo = data.pageInfo;
         cursor = data.pageInfo.nextCursor;
@@ -226,14 +250,19 @@ export class GamesExplorerStore {
         this.pageInfo.set(pageInfo);
       }
     } catch (error) {
-      this.error.set(readApiError(error, 'Job finished, but the game list could not be refreshed.'));
+      this.error.set(
+        readApiError(error, 'Job finished, but the game list could not be refreshed.'),
+      );
     }
   }
 }
 
 function readApiError(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {
-    const candidate = error as { error?: { message?: string; error?: string }; message?: string };
+    const candidate = error as {
+      error?: { message?: string; error?: string };
+      message?: string;
+    };
     return candidate.error?.message || candidate.error?.error || candidate.message || fallback;
   }
   return fallback;
