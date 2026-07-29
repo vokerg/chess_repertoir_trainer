@@ -6,6 +6,7 @@ import type {
   LichessPuzzleRound,
 } from '@chess-trainer/contracts/lichess-puzzles';
 import { LichessPuzzlesApiService } from '../data-access/lichess-puzzles-api.service';
+import { toLichessPuzzleTrainerViewModel } from '../helpers/lichess-puzzle-trainer-view-model';
 
 const DIFFICULTIES: readonly LichessPuzzleDifficulty[] = [
   'easiest',
@@ -22,7 +23,6 @@ export class LichessPuzzlesStore {
   private readonly difficultyState = signal<LichessPuzzleDifficulty>('normal');
   private readonly ratedState = signal(true);
   private readonly roundState = signal<LichessPuzzleRound | null>(null);
-  private readonly lastMoveUciState = signal<string | null>(null);
   private readonly positionVersionState = signal(0);
   private readonly loadingState = signal(false);
   private readonly submittingState = signal(false);
@@ -31,6 +31,7 @@ export class LichessPuzzlesStore {
   private readonly errorState = signal<string | null>(null);
   private readonly errorCodeState = signal<string | null>(null);
   private readonly noticeState = signal<string | null>(null);
+  private loadRoundRequestId = 0;
 
   readonly difficulty = this.difficultyState.asReadonly();
   readonly rated = this.ratedState.asReadonly();
@@ -50,10 +51,9 @@ export class LichessPuzzlesStore {
   readonly boardMovable = computed(
     () => this.round()?.status === 'IN_PROGRESS' && !this.busy(),
   );
-  readonly lastMove = computed(() => {
-    const move = this.lastMoveUciState();
-    if (!move || move.length < 4) return null;
-    return { from: move.slice(0, 2), to: move.slice(2, 4) };
+  readonly trainerView = computed(() => {
+    const round = this.round();
+    return round ? toLichessPuzzleTrainerViewModel(round) : null;
   });
   readonly requiresReconnect = computed(
     () => this.errorCode() === 'LICHESS_NOT_CONNECTED'
@@ -65,9 +65,7 @@ export class LichessPuzzlesStore {
   );
 
   setDifficulty(value: string): void {
-    if (DIFFICULTIES.includes(value as LichessPuzzleDifficulty)) {
-      this.difficultyState.set(value as LichessPuzzleDifficulty);
-    }
+    if (isLichessPuzzleDifficulty(value)) this.difficultyState.set(value);
   }
 
   setRated(value: boolean): void {
@@ -75,11 +73,13 @@ export class LichessPuzzlesStore {
   }
 
   async loadRound(roundId: number): Promise<boolean> {
-    if (this.loading()) return false;
+    const requestId = ++this.loadRoundRequestId;
     this.loadingState.set(true);
     this.clearMessages();
     try {
       const round = await firstValueFrom(this.api.getRound(roundId));
+      if (requestId !== this.loadRoundRequestId) return false;
+
       this.applyRound(round);
       this.difficultyState.set(round.difficulty ?? 'normal');
       this.ratedState.set(round.ratedRequested);
@@ -90,15 +90,17 @@ export class LichessPuzzlesStore {
       );
       return true;
     } catch (error) {
+      if (requestId !== this.loadRoundRequestId) return false;
       this.setError(error, 'Could not load the Lichess puzzle round.');
       return false;
     } finally {
-      this.loadingState.set(false);
+      if (requestId === this.loadRoundRequestId) this.loadingState.set(false);
     }
   }
 
   async startRound(): Promise<number | null> {
     if (this.loading()) return null;
+    this.loadRoundRequestId += 1;
     this.loadingState.set(true);
     this.clearMessages();
     try {
@@ -190,7 +192,6 @@ export class LichessPuzzlesStore {
 
   private applyRound(round: LichessPuzzleRound): void {
     this.roundState.set(round);
-    this.lastMoveUciState.set(round.lastMoveUci);
     this.positionVersionState.update((version) => version + 1);
   }
 
@@ -201,10 +202,36 @@ export class LichessPuzzlesStore {
   }
 
   private setError(error: unknown, fallback: string): void {
-    const response = error as HttpErrorResponse & {
-      error?: { error?: string; code?: string };
-    };
-    this.errorState.set(response.error?.error || response.message || fallback);
-    this.errorCodeState.set(response.error?.code || null);
+    const parsed = parseHttpError(error, fallback);
+    this.errorState.set(parsed.message);
+    this.errorCodeState.set(parsed.code);
   }
+}
+
+function isLichessPuzzleDifficulty(value: string): value is LichessPuzzleDifficulty {
+  return DIFFICULTIES.some((difficulty) => difficulty === value);
+}
+
+function parseHttpError(
+  error: unknown,
+  fallback: string,
+): { message: string; code: string | null } {
+  if (!(error instanceof HttpErrorResponse)) {
+    return {
+      message: error instanceof Error && error.message ? error.message : fallback,
+      code: null,
+    };
+  }
+
+  const payload = isRecord(error.error) ? error.error : null;
+  return {
+    message: typeof payload?.['error'] === 'string' && payload['error']
+      ? payload['error']
+      : (error.message || fallback),
+    code: typeof payload?.['code'] === 'string' ? payload['code'] : null,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
