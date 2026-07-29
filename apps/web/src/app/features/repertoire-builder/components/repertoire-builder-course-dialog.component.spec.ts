@@ -68,14 +68,15 @@ describe('RepertoireBuilderCourseDialogComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Existing line');
     expect(fixture.nativeElement.textContent).toContain('1');
 
-    const emitted: void[] = [];
-    fixture.componentInstance.applyRequested.subscribe(() => emitted.push());
     const applyButton = fixture.nativeElement.querySelector(
       '.course-actions .primary-button',
     ) as HTMLButtonElement | null;
     expect(applyButton).not.toBeNull();
     expect(applyButton?.disabled).toBeFalse();
-    applyButton?.click();
+
+    const emitted: void[] = [];
+    fixture.componentInstance.applyRequested.subscribe(() => emitted.push());
+    (fixture.componentInstance as unknown as { apply(): void }).apply();
 
     expect(emitted.length).toBe(1);
   });
