@@ -15,14 +15,15 @@
   gap: 1rem;
   align-items: center;
   padding: 0.8rem 1rem;
-  border: 1px solid var(--ui-border-subtle, #d9ddd8);
-  border-radius: var(--ui-radius-sm, 8px);
-  background: var(--ui-surface-muted, #f5f7f4);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
 }
 
 .puzzle-error {
-  border-color: var(--ui-status-danger-border, #d7a3a3);
-  background: var(--ui-status-danger-surface, #fff3f2);
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
 }
 
 .puzzle-settings {
@@ -67,7 +68,7 @@
 .rated-setting small,
 .settings-note,
 .puzzle-intro p {
-  color: var(--ui-text-muted, #66716b);
+  color: var(--ui-text-muted);
 }
 
 .settings-note {
