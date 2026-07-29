@@ -255,15 +255,37 @@ Expanded desktop child navigation uses inline disclosure groups in normal rail f
 
 Collapsed desktop child navigation retains the anchored popup-menu flyout and transparent backdrop. In this mode only, the disclosure exposes popup-menu semantics and child links retain menu-item roles.
 
-The existing navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, mobile sheet, account placement, and session-only collapse behavior remain unchanged. Motion is native CSS only, restrained, and removed under `prefers-reduced-motion`. Expanded-rail vertical scrolling handles shorter desktop heights.
+The existing navigation model, parent routes, active prefixes, single-open transient state, Escape cleanup, route cleanup, account placement, and session-only collapse behavior remain unchanged. Motion is native CSS only, restrained, and removed under `prefers-reduced-motion`. Expanded-rail vertical scrolling handles shorter desktop heights.
 
 PR #137 was originally squash-merged under the former integration model as `033d05ededc03e114a4b02655de91a6313c4d902` and is now integrated into `main` through the visual-transformation reintegration. Runtime/test CI #1112 and final documentation-head CI #1118 passed the complete repository workflow before merge. Direct browser evidence remains owned by issue #126.
 
 ### D-313 — Interim mobile navigation
 
-**Status:** Locked for the current baseline
+**Status:** Superseded by D-314
 
-Below the shared 760px breakpoint, render a compact branded header and complete grouped modal sheet from the existing navigation model. Do not finalize bottom navigation before representative workflow evidence; issue #131 owns that later decision.
+The interim baseline used a compact branded header and complete grouped modal sheet below the shared 760px breakpoint. It intentionally deferred permanent primary destinations until Games, Study, and Opening Analysis supplied representative evidence.
+
+### D-314 — Final mobile-primary navigation
+
+**Status:** Locked for VT-205 review
+
+Below the shared 760px breakpoint, use a persistent five-slot mobile-primary navigation:
+
+1. Home;
+2. Study;
+3. Games;
+4. Openings;
+5. More.
+
+Home is the signed-in default. Study, Games, and Openings are the three representative workflows and the first three Home workspace shortcuts. `More` retains complete access to Courses, Builder, Progress, Tools, Settings, account controls, and all child destinations.
+
+The persistent destinations must be derived by stable id from `MainNavigationComponent.mainNavItems`; do not introduce a duplicate mobile route source. The complete `More` dialog also renders the same hierarchical model, including icons, descriptions, quiet state, links, and active prefixes.
+
+Primary routes mark their persistent destination active. Any active secondary top-level destination marks More active. Child routes continue to inherit parent activity through the established active-prefix rules.
+
+Use native modal-dialog behavior for complete destination access, Escape handling, and focus containment. Restore focus to More after user-initiated closure, but do not restore focus after route navigation. Reserve safe-area-aware application and imported-game job-panel clearance above the fixed navigation.
+
+Preserve desktop rail behavior, route taxonomy, account ownership, feature-owned mobile launchers, board/training workflows, APIs, stores, schemas, database behavior, and dependencies.
 
 ## Provisional decisions
 
@@ -391,9 +413,9 @@ Continue using `MainNavigationComponent.mainNavItems` and its child definitions,
 
 ### D-213 — Premature bottom navigation
 
-**Status:** Rejected before representative workflow evidence
+**Status:** Rejected before representative workflow evidence; prerequisite satisfied by D-314
 
-Do not select permanent bottom-navigation destinations before Games, Study, and Opening Analysis provide evidence. Issue #131 owns the final decision.
+Do not select permanent bottom-navigation destinations before Games, Study, and Opening Analysis provide evidence. VT-205 applied that evidence and D-314 now governs the final mobile-primary model.
 
 ### D-214 — Persisted or route-driven rail collapse in the first rail
 
@@ -411,9 +433,9 @@ VT-102 supplied calibrated Home evidence. D-024 and `docs/frontend/design-tokens
 
 ### D-304 — Exact mobile navigation structure
 
-**Status:** Open
+**Status:** Resolved by D-314
 
-Issue #131 decides the structure after Games, Study, and Opening Analysis modernization.
+VT-205 selected Home, Study, Games, Openings, and More after representative workflow evidence. D-314 defines route-source ownership, overflow coverage, active state, modal behavior, safe-area clearance, and preserved boundaries.
 
 ### D-306 — Authentication and shell browser-validation disposition
 
