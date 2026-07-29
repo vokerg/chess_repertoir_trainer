@@ -10,9 +10,9 @@ Last updated: 2026-07-29
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-205-completion`
+**Active checkpoint branch:** none
 
-**Active pull request:** PR #192 — VT-205 completion reconciliation
+**Active pull request:** none
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -49,6 +49,7 @@ All transformation work uses short-lived branches from the current `main` head, 
 - [x] PR #188 — VT-204 proven shared UI primitives.
 - [x] PR #190 — VT-204 completion reconciliation.
 - [x] PR #191 — VT-205 final mobile-primary navigation, squash commit `534533b7d6497ba2802a63abb95e358dc962ef2a`.
+- [x] PR #192 — VT-205 completion reconciliation.
 
 ## Phase 1 completion
 
@@ -79,7 +80,7 @@ Feature-owned cards, workflow steps, launchers, workbench evidence, state, comma
 
 ### VT-205 Final mobile-primary navigation
 
-Issue #131 is complete through squash-merged PR #191, commit `534533b7d6497ba2802a63abb95e358dc962ef2a`.
+Issue #131 is complete through squash-merged PR #191, commit `534533b7d6497ba2802a63abb95e358dc962ef2a`, and completion reconciliation PR #192.
 
 Delivered below the shared 760px breakpoint:
 
@@ -135,7 +136,7 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Complete and integrated through VT-205 / PR #191.
+Complete and integrated through VT-205 / PR #191 and reconciliation PR #192.
 
 ### Phase 3 — rollout and polish
 
@@ -153,9 +154,9 @@ VT-301 remaining-page and Labs rollout is next. VT-302 onboarding, empty-state, 
 - CI #1461 and exact approved-head CI #1472 passed the complete repository workflow.
 - The user explicitly approved integration while deferring direct browser feedback.
 - Squash-merged PR #191 into `main` as `534533b7d6497ba2802a63abb95e358dc962ef2a`.
-- Created completion reconciliation PR #192 from that exact `main` commit.
+- Created and validated completion reconciliation PR #192 from that exact `main` commit.
 - Released VT-301 / issue #132 as the next deterministic task.
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, and #191 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, and #192 are integrated into `main`.
