@@ -32,6 +32,7 @@ import {
     status: 'IN_PROGRESS',
     outcome: null,
     currentFen: 'fen',
+    lastMoveUci: 'e7e5',
     currentStep: 0,
     firstWrongAt: null,
     learningCompletedAt: null,
