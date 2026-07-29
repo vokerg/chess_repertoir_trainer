@@ -29,10 +29,10 @@ Delivery classes:
 | Repertoire target contract | North-star | Implemented and merged | Limited direct value | Captures preset population, persona, risk and coverage intent |
 | Candidate evidence aggregation | North-star | Implemented and merged | Supports one-position analysis decisions | Combines separated evidence at one decision point |
 | Explainable candidate ranking | North-star | Implemented and merged | Supports deterministic recommendations | Orders candidates without hiding source evidence |
-| Visual move-choice experience | North-star | Accepted prototype direction | Reusable analysis pattern | Core human decision surface |
+| Visual move-choice experience | North-star | Accepted and implemented | Reusable analysis pattern | Core human decision surface |
 | Builder session and branch queue | North-star | Implemented and merged | Storage-neutral state foundation | Supports resume semantics, deferral, staleness and multi-branch coverage |
-| Interactive builder MVP | North-star | Implemented for review | First production builder slice | Alternates user choice and opponent coverage in a bounded routed workbench |
-| Course reintegration and preview | Dual-use | Existing pattern, new integration outlined | Safer course edits | Materializes accepted builder tree |
+| Interactive builder MVP | North-star | Implemented and merged | First production builder slice | Alternates user choice and opponent coverage in a bounded routed workbench |
+| Course reintegration and preview | Dual-use | Ready for implementation | Safer course edits | Materializes accepted builder trees through mandatory preview/apply |
 | Existing-course adaptation | Dual-use | Outlined | Improves current course review | Reuses builder for gaps, endings and weak choices |
 | Repertoire personas and profile override | Dual-use | Agreed concept | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
 | Traps knowledge foundation | Research | Discovery complete; bounded pilot claimed | Possible future opening resource | Enables evidence-backed traps persona |
@@ -53,37 +53,37 @@ RB-002 is delivered through the same factual multi-account resolver. Opening cla
 
 The profile consumes opening classification and factual player-level context for its strongest conclusions. It may display or consume the resolved peer band, but it must not silently recalculate or mutate factual level evidence.
 
-RB-010 displays RB-007 profile fit as advisory evidence. It does not derive setup defaults from RB-004/RB-005 and does not prevent a user from choosing against profile evidence.
+The integrated builder displays RB-007 profile fit as advisory evidence. It does not derive setup defaults from RB-004/RB-005 and does not prevent a user from choosing against profile evidence.
 
 ### Repertoire target
 
 The target captures intent for one build. It uses one RB-001 speed preset and one rating target, may snapshot factual peer evidence, and permits an explicit override. It does not expose arbitrary speed weights in the MVP.
 
-RB-010 creates schema-valid targets in the feature boundary. Peer targets retain `PEER_RESOLUTION` provenance; explicit rating groups remain manual authoritative choices.
+The integrated builder creates schema-valid targets in the feature boundary. Peer targets retain `PEER_RESOLUTION` provenance; explicit rating groups remain manual authoritative choices.
 
 ### Candidate recommendation
 
 Evidence aggregation and ranking remain separate. Aggregation gathers comparable source facts. Ranking applies target-dependent policy and produces stable reasons and warnings.
 
-RB-010 consumes the existing authenticated candidate endpoint rather than adding a UI-specific recommendation engine. Manual board moves use `includeMoveUci` and remain subject to the same evidence/eligibility response.
+The builder consumes the existing authenticated candidate endpoint rather than adding a UI-specific recommendation engine. Manual board moves use `includeMoveUci` and remain subject to the same evidence/eligibility response.
 
 ### Visual choice
 
 The accepted production direction is a routed, board-first workbench launched from a focused setup dialog. Candidate switching updates one readable board and focused evidence; opponent responses use a queue rather than a dense matrix.
 
-PR #184 implements that direction for review with one primary board, focused evidence, explicit target/profile separation, opponent-response selection, queue controls and bounded preview.
+Squash-merged PR #184 implements that direction with one primary board, explicit target/profile separation, opponent-response selection, queue controls and bounded structural preview.
 
 ### Builder state
 
 RB-009 implements the queue, accepted choices, deferred and ignored responses, staleness, transposition references, decision history and bounded preview as a pure serializable `chess-domain` snapshot.
 
-RB-010 composes that snapshot through a page-scoped Angular store. It adds no second reducer or global builder state. Drafts are route-local: refresh starts over, and reopening setup explicitly replaces the current draft. Hands-on review must determine whether durable resume is justified.
+RB-010 composes that snapshot through a page-scoped Angular store. It adds no second reducer or global builder state. The accepted first MVP is route-local: refresh starts over, and reopening setup explicitly replaces the current draft. Durable resume requires a separate demonstrated need.
 
 ### Existing courses
 
-Course review, endings, gaps and performance findings become entry points into the same builder decision loop. They should not create separate recommendation engines.
+Course review, endings, gaps and performance findings should enter the same builder decision loop rather than create separate recommendation engines.
 
-RB-010 only displays RB-007 course evidence and a structural draft preview. Course organization and writes remain blocked in RB-011 until the workbench and preview boundary are accepted.
+RB-010 displays RB-007 course evidence and a structural draft preview but performs no write. RB-011 is now ready and owns mandatory preview, explicit transactional apply, conflict handling, reuse and result reporting.
 
 ### Repertoire personas
 
