@@ -4,11 +4,11 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-010 is implemented for review through PR #184 after complete CI #1408. RB-011 remains blocked until RB-010 is accepted and integrated. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-011 is the next ordered ready North Star critical-path task. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
-**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, the deterministic candidate-decision contract/ranking/API from PR #166, and the storage-neutral builder-session and branch-queue domain from squash-merged PR #177.
+**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, and the authenticated bounded `/builder` workbench from squash-merged PR #184.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #184 adds the authenticated bounded `/builder` workbench.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -99,13 +99,41 @@ Squash-merged PR #177 provides:
 - bounded tree and queue preview;
 - limits of 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
 
-Persistence remains staged. RB-009 adds no Prisma model, API route, Angular UI or storage adapter.
+RB-009 adds no Prisma model, API route, Angular UI or storage adapter.
 
-Implementation-head CI #1328 and final implementation-head CI #1360 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
+CI #1328 and final implementation-head CI #1360 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
 
 Implementation report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`.
 
 Closure report: `reports/RB-009-2026-07-29-closure.md`.
+
+### Interactive builder MVP — RB-010
+
+Squash-merged PR #184 provides:
+
+- authenticated lazy `/builder` route and top-level navigation;
+- focused initial-position setup for side, speed, population, persona, theory and coverage;
+- factual peer-resolution provenance versus explicit manual rating targets;
+- one primary Chessground board with candidate preview and manual legal-move inclusion;
+- existing RB-007 candidate API integration with visible source states, reasons, warnings, target fit and profile fit;
+- RB-009 owner/revision-aware transitions through a page-scoped signal store;
+- user-move and opponent-response decision loops;
+- selected coverage progress;
+- queue navigation/reorder, defer/reopen, ignore, stop, stale restart, complete and abandon behavior;
+- bounded structural preview;
+- explicit route-local refresh-loss and setup-replacement behavior;
+- responsive and keyboard-labelled feature-local components;
+- no Prisma model, session API, browser storage or course write.
+
+Accepted bounds are initial-position starts, 6 candidates per request and 24 accepted decisions while preserving RB-009 hard limits.
+
+Final tested head `b3a0076bdc75ea8035b3999a8e10a12d24992c6f` passed CI run `30447177268` / #1417. PR #184 was squash-merged as `ea5b2bef4cdc0fa37024213b2e00b9da589b9718`.
+
+Implementation report: `reports/RB-010-2026-07-29-interactive-builder-mvp.md`.
+
+Closure report: `reports/RB-010-2026-07-29-closure.md`.
+
+The first MVP intentionally remains route-local. Refresh starts a new draft. Durable draft persistence requires a separate demonstrated need.
 
 ## Review work
 
@@ -120,32 +148,6 @@ CI #1103 passed. User review and accepted integration remain required.
 Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
 
 It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
-
-### RB-010 / #98 — Bounded interactive builder MVP
-
-PR #184 provides:
-
-- authenticated lazy `/builder` route and top-level navigation;
-- focused initial-position setup for side, speed, population, persona, theory and coverage;
-- factual peer-resolution provenance versus explicit manual rating targets;
-- one primary Chessground board with candidate preview and manual legal-move inclusion;
-- existing RB-007 candidate API integration with visible source states, reasons, warnings, target fit and profile fit;
-- RB-009 owner/revision-aware session transitions through a page-scoped signal store;
-- user-move and opponent-response decision loops;
-- selected coverage progress;
-- queue navigation/reorder, defer/reopen, ignore, stop, stale restart, complete and abandon behavior;
-- bounded structural preview;
-- route-local refresh-loss and setup-replacement warnings;
-- responsive and keyboard-labelled feature-local components;
-- no Prisma model, session API, browser storage or course write.
-
-Product bounds are initial-position starts, 6 candidates per request and 24 accepted decisions while preserving RB-009 hard limits.
-
-Final implementation-head CI run `30436890029` / #1408 passed lint, builds, both opening audits, architecture guardrails, migrations and complete repository tests.
-
-Report: `reports/RB-010-2026-07-29-interactive-builder-mvp.md`.
-
-Hands-on review remains required for populated peer/candidate data, desktop/mobile usability, keyboard traversal, latency, persistence sufficiency, limit calibration and preview acceptance.
 
 ## Active independent pilot
 
@@ -172,8 +174,9 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-007 / #95: `DONE` through PR #166.
 - RB-008 / #96: `DONE` through accepted PR #110 direction.
 - RB-009 / #97: `DONE` through squash-merged PR #177.
-- RB-010 / #98: `REVIEW` through PR #184.
-- RB-011 / #99: `BLOCKED` pending accepted RB-010 integration.
+- RB-010 / #98: `DONE` through squash-merged PR #184.
+- RB-011 / #99: `READY` for claim.
+- RB-012 / #100: `BLOCKED` on RB-011.
 - RB-014 / #102: `DONE` through PR #113.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
@@ -184,10 +187,10 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-007 provides candidate IDs, decision roles, evidence/policy versions, stable reasons and opponent-coverage contribution.
 - RB-008 provides the accepted routed board-first interaction.
 - RB-009 provides integrated session, decision-history, branch, queue, transposition, stale and preview semantics.
-- RB-010 demonstrates the production route-local composition and is awaiting hands-on acceptance and integration.
-- RB-011 remains responsible for course organization, preview and writes after RB-010 acceptance.
-- RB-012 remains downstream of RB-010 and RB-011.
-- RB-013 remains responsible for profile-derived personas/defaults beyond the transparent local presets used by RB-010.
+- RB-010 provides the integrated production workbench and bounded structural preview.
+- RB-011 is ready and owns course organization, mandatory preview, transactional apply, conflicts, reuse and explicit results.
+- RB-012 remains downstream of RB-011.
+- RB-013 remains responsible for profile-derived personas/defaults beyond RB-010's transparent local presets.
 - RB-017 remains outside the critical path.
 
 ## Validation
@@ -197,7 +200,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-007 CI #1281, #1284 and #1295 passed the complete repository workflow and focused acceptance cases.
 - RB-008 validation includes responsive prototype review and complete repository CI.
 - RB-009 CI #1328 and #1360 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
-- RB-010 CI #1408 passed lint, builds, audits, architecture guardrails, migrations and complete tests, including target provenance, decision-loop, request-race, deferral/reopen, manual-board, setup and navigation coverage.
+- RB-010 CI #1417 passed lint, builds, audits, architecture guardrails, migrations and complete tests, including restored existing navigation regression coverage.
 - RB-014 source/license verification and complete repository CI passed.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 
@@ -206,8 +209,8 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - Opening classifications remain reviewable chess judgments.
 - RB-006 v1 supports the Lichess Games population source only.
 - RB-007 weights, thresholds and evidence limits require real-builder calibration and version increments when changed.
-- RB-010 has no durable storage, API or browser recovery; hands-on review must decide whether route-local lifetime is sufficient.
-- Initial-position-only setup, 6 candidates and 24 decisions require real-use calibration.
+- RB-010 route-local drafts are intentionally lost on refresh.
+- Initial-position-only setup, 6 candidates and 24 decisions require normal product-use calibration.
 - Source freshness remains consumer-driven; no background watcher marks evidence stale.
 - Transpositions are recognized within the loaded session snapshot, not by arbitrary external graph traversal.
 - Course materialization, conflict resolution and completed-course target metadata remain RB-011 work.
@@ -217,4 +220,4 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 
 Keep task order and priorities unchanged.
 
-RB-010 remains `REVIEW` through PR #184. RB-011 stays `BLOCKED` until authenticated hands-on review, preview acceptance and accepted RB-010 integration. No new task or roadmap resequencing is required.
+RB-011 is the next ordered `READY` North Star critical-path task. RB-012 remains blocked until safe course preview/apply is integrated. No new task or roadmap resequencing is required.
