@@ -13,9 +13,13 @@
           {{ cancelAllowed() ? 'Restart this draft with a new target' : 'Choose the target for this draft' }}
         </h2>
         <p>
-          {{ cancelAllowed()
-            ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
-            : 'Setup is limited to the initial position for this MVP. The recursive work continues on the routed board.' }}
+          @if (fixedSide()) {
+            This draft starts from an exact existing-course position. Adjust the evidence population and repertoire intent before building the continuation.
+          } @else {
+            {{ cancelAllowed()
+              ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
+              : 'Setup starts from the initial position. The recursive work continues on the routed board.' }}
+          }
         </p>
       </div>
       @if (cancelAllowed()) {
@@ -35,6 +39,9 @@
             <input type="radio" formControlName="side" value="BLACK" />
             <span>Black</span>
           </label>
+          @if (fixedSide()) {
+            <small>The source course fixes this side. Other target settings remain editable.</small>
+          }
         </fieldset>
 
         <label class="field">
