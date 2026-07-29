@@ -58,6 +58,7 @@ describe('LichessPuzzlesStore', () => {
       ratedRequested: false,
       currentStep: 2,
       currentFen: 'restored-fen',
+      lastMoveUci: 'b8c6',
     });
     api.getRound.and.returnValue(of(round));
 
@@ -68,7 +69,7 @@ describe('LichessPuzzlesStore', () => {
     expect(store.round()).toEqual(round);
     expect(store.difficulty()).toBe('harder');
     expect(store.rated()).toBeFalse();
-    expect(store.lastMove()).toEqual({ from: 'e7', to: 'e5' });
+    expect(store.lastMove()).toEqual({ from: 'b8', to: 'c6' });
     expect(store.notice()).toContain('restored');
   });
 
@@ -86,7 +87,11 @@ describe('LichessPuzzlesStore', () => {
     response.next({
       correct: true,
       forcedMoveUci: 'b8c6',
-      round: createRound({ currentStep: 2, currentFen: 'after-forced-reply' }),
+      round: createRound({
+        currentStep: 2,
+        currentFen: 'after-forced-reply',
+        lastMoveUci: 'b8c6',
+      }),
     });
     response.complete();
     await pending;
@@ -128,6 +133,7 @@ function createRound(overrides: Partial<LichessPuzzleRound> = {}): LichessPuzzle
     status: 'IN_PROGRESS',
     outcome: null,
     currentFen: 'start-fen',
+    lastMoveUci: 'e7e5',
     currentStep: 0,
     firstWrongAt: null,
     learningCompletedAt: null,
