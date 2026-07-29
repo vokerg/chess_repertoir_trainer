@@ -61,6 +61,8 @@ const bodylessActions = new Map([
   ['POST /api/job-runs/{jobRunId}/cancel', 'cancels every queued or running task'],
   ['POST /api/job-runs/{jobRunId}/retry', 'creates a new user-action job containing only the owned games from failed or cancelled tasks'],
   ['POST /api/scenario-training/{sessionId}/complete', 'completion uses the persisted session attempt state'],
+  ['POST /api/lichess-puzzles/rounds/{roundId}/abandon', 'A round abandoned before any wrong move is not submitted to Lichess'],
+  ['POST /api/lichess-puzzles/rounds/{roundId}/retry-sync', 'The already persisted immutable upstream outcome is reused'],
   ['POST /api/me/lichess-connection/start', 'creates an authorization URL for the authenticated user'],
   ['POST /api/me/accounts/{id}/sync', 'provider and cursor state come from the selected account'],
   ['POST /api/me/accounts/{id}/reset-cursor', 'resets the persisted cursor for the selected account'],
