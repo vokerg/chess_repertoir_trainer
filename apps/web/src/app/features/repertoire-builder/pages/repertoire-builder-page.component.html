@@ -47,6 +47,7 @@
     (sessionFinished)="store.finishSession()"
     (sessionAbandoned)="store.abandonSession()"
     (newDraftRequested)="store.startNewDraft()"
+    (courseReviewRequested)="openCourseReview()"
   />
 
   @if (store.setupOpen()) {
@@ -57,6 +58,33 @@
       [cancelAllowed]="store.session() !== null"
       (submitted)="store.start($event)"
       (cancelled)="store.closeSetup()"
+    />
+  }
+
+  @if (courseStore.open()) {
+    <app-repertoire-builder-course-dialog
+      [courses]="courseStore.courses()"
+      [chapters]="courseStore.chapters()"
+      [selectedCourseId]="courseStore.selectedCourseId()"
+      [selectedChapterId]="courseStore.selectedChapterId()"
+      [newLineName]="courseStore.newLineName()"
+      [draft]="courseStore.draft()"
+      [preview]="courseStore.preview()"
+      [selectedTarget]="courseStore.selectedTarget()"
+      [result]="courseStore.result()"
+      [destinationsLoading]="courseStore.destinationsLoading()"
+      [previewLoading]="courseStore.previewLoading()"
+      [applyLoading]="courseStore.applyLoading()"
+      [error]="courseStore.error()"
+      [canPreview]="courseStore.canPreview()"
+      [canApply]="courseStore.canApply()"
+      (courseSelected)="courseStore.selectCourse($event)"
+      (chapterSelected)="courseStore.selectChapter($event)"
+      (newLineNameChanged)="courseStore.setNewLineName($event)"
+      (previewRequested)="courseStore.previewCourseOutput()"
+      (targetSelected)="courseStore.selectTarget($event)"
+      (applyRequested)="courseStore.applyCourseOutput()"
+      (closed)="courseStore.close()"
     />
   }
 </section>
