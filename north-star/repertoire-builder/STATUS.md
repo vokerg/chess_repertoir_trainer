@@ -4,11 +4,11 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-011 is the next ordered ready North Star critical-path task. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-011 is implemented for review through PR #189. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
 **Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, and the authenticated bounded `/builder` workbench from squash-merged PR #184.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #189 adds mandatory builder-course preview/apply.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -79,7 +79,7 @@ Squash-merged PR #166 provides:
 - bounded stored engine, Masters, selected-population, personal, opening, profile and course evidence;
 - explicit unavailable, stale and insufficient source states;
 - separate target fit and profile fit;
-- stable reason and warning codes without a public opaque aggregate score;
+- stable reasons and warnings without a public opaque aggregate score;
 - course conflict, narrow transposition and opponent-coverage evidence.
 
 Final implementation-head CI #1295 passed the complete repository workflow.
@@ -91,8 +91,8 @@ Squash-merged PR #177 provides:
 - pure model version `2026-07-v1` under `packages/chess-domain`;
 - serializable owner-scoped snapshots and optimistic revision;
 - retained RB-006 target and RB-007 evidence/policy references;
-- path-stable branch IDs plus normalized-position transposition identity;
-- explicit `PENDING`, `ACCEPTED`, `DEFERRED`, `IGNORED`, `COMPLETED` and `STALE` states;
+- path-stable branch history plus normalized-position transposition identity;
+- explicit pending, accepted, deferred, ignored, completed and stale states;
 - active, superseded and stale decision history;
 - deterministic accept/replace, defer/reopen, stale restart, ignore, complete, reorder, refresh, resume and lifecycle transitions;
 - lazy one-decision expansion rather than full-tree generation;
@@ -149,6 +149,29 @@ Stacked PR #139 provides `/progress/profile`, recalculable context filters, sepa
 
 It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
 
+### RB-011 / #99 — Builder course reintegration
+
+PR #189 provides:
+
+- pure projection from completed RB-009 sessions to the existing analysis merge tree;
+- explicit excluded pending, deferred, ignored and stale branches;
+- one shared versioned builder-course preview/apply contract;
+- authenticated preview and apply routes for one owned existing chapter;
+- reviewed new-line or exact existing-line-anchor targets;
+- explicit created, reused, skipped and conflicting counts;
+- exact preview binding to user, draft, destination and current course content revision;
+- strict no-conflict behavior;
+- transactional reuse of the existing move-node writer and course revision path;
+- equivalent-line and repeated-apply safety;
+- page-scoped Angular destination, preview, target and apply state;
+- no Prisma model, migration, whole-course orchestration or durable builder persistence.
+
+Final tested implementation head `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e` passed CI run `30472169134` / #1479.
+
+Implementation report: `reports/RB-011-2026-07-29-course-reintegration.md`.
+
+Hands-on review of one created and one merged real course tree, responsive readability, keyboard traversal and the existing-course/chapter-only organization remains required before integration.
+
 ## Active independent pilot
 
 ### RB-017 / #114
@@ -175,8 +198,8 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-008 / #96: `DONE` through accepted PR #110 direction.
 - RB-009 / #97: `DONE` through squash-merged PR #177.
 - RB-010 / #98: `DONE` through squash-merged PR #184.
-- RB-011 / #99: `READY` for claim.
-- RB-012 / #100: `BLOCKED` on RB-011.
+- RB-011 / #99: `REVIEW` through PR #189.
+- RB-012 / #100: `BLOCKED` on accepted and integrated RB-011.
 - RB-014 / #102: `DONE` through PR #113.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
@@ -188,8 +211,8 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-008 provides the accepted routed board-first interaction.
 - RB-009 provides integrated session, decision-history, branch, queue, transposition, stale and preview semantics.
 - RB-010 provides the integrated production workbench and bounded structural preview.
-- RB-011 is ready and owns course organization, mandatory preview, transactional apply, conflicts, reuse and explicit results.
-- RB-012 remains downstream of RB-011.
+- RB-011 now implements course organization within an existing chapter, mandatory preview, transactional apply, conflicts, reuse and explicit results; acceptance and integration remain pending.
+- RB-012 remains downstream of accepted and integrated RB-011.
 - RB-013 remains responsible for profile-derived personas/defaults beyond RB-010's transparent local presets.
 - RB-017 remains outside the critical path.
 
@@ -201,6 +224,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-008 validation includes responsive prototype review and complete repository CI.
 - RB-009 CI #1328 and #1360 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
 - RB-010 CI #1417 passed lint, builds, audits, architecture guardrails, migrations and complete tests, including restored existing navigation regression coverage.
+- RB-011 implementation-head CI #1479 passed lint, builds, both opening audits, architecture guardrails, migrations and complete tests, including focused draft, contract, API, database and Angular coverage.
 - RB-014 source/license verification and complete repository CI passed.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 
@@ -212,12 +236,12 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-010 route-local drafts are intentionally lost on refresh.
 - Initial-position-only setup, 6 candidates and 24 decisions require normal product-use calibration.
 - Source freshness remains consumer-driven; no background watcher marks evidence stale.
-- Transpositions are recognized within the loaded session snapshot, not by arbitrary external graph traversal.
-- Course materialization, conflict resolution and completed-course target metadata remain RB-011 work.
+- Transpositions are recognized within the loaded session snapshot and course preview, but persisted course lines remain separate trees rather than a shared graph.
+- RB-011 targets an existing owned chapter; whole-course/new-chapter organization and persisted target/session metadata are not implemented.
 - Engine, personal, course and profile providers do not share one universal freshness timestamp model.
 
 ## Queue recommendation
 
 Keep task order and priorities unchanged.
 
-RB-011 is the next ordered `READY` North Star critical-path task. RB-012 remains blocked until safe course preview/apply is integrated. No new task or roadmap resequencing is required.
+RB-011 remains in `REVIEW` through PR #189. RB-012 remains blocked until safe course preview/apply is accepted and integrated. No new task or roadmap resequencing is required.
