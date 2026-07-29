@@ -1,18 +1,16 @@
 # Visual Transformation Status
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** VT-104 is approved for integration; Phase 2 workflow modernization is next after merge reconciliation
+**Program state:** Phase 1 is complete; VT-201 Games modernization is the next deterministic transformation task
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-104-shell-browser-validation`
-
-**Active pull request:** PR #162, approved for squash merge after final-head CI
+**Active checkpoint branch:** `visual-transformation/vt-104-integration-reconciliation`
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -39,6 +37,7 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #155 — main-based transformation delivery correction.
 - [x] PR #158 — production tokens, typography, shared visual foundations, and wide signed-in workspace correction.
 - [x] PR #161 — VT-103 integration and queue reconciliation.
+- [x] PR #162 — evidence-bounded Phase 1 browser disposition and local-development auth return-URL correction.
 
 ## VT-101 integrated checkpoint
 
@@ -66,25 +65,22 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] Passed CI #1240, #1245, #1253, #1257, and #1262.
 - [x] PR #158 was squash-merged into `main`; PR #161 reconciled integration state.
 
-## VT-104 approved checkpoint
+## VT-104 integrated checkpoint
 
-Implemented on PR #162:
+Delivered through squash-merged PR #162 as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`:
 
-- [x] Selected and claimed issue #126 through the deterministic queue.
-- [x] Inspected the current public landing, auth, Home, brand, navigation, app shell, job panel, production-token, and historical browser-review implementations.
 - [x] Added `transformation/reports/VT_104_SHELL_BROWSER_VALIDATION.md` with explicit evidence levels and per-surface matrices.
 - [x] Recorded supplied Home evidence and historical navigation evidence without converting them into blanket completion claims.
+- [x] Documented every unobserved direct-browser check with an explicit reason.
 - [x] Found that local-development login/signup actions hard-coded `/library` and ignored explicit `returnUrl`.
 - [x] Changed both local-development actions to navigate to the resolved return URL.
 - [x] Added focused login/signup return-URL tests.
 - [x] Corrected the initial test harness provider order after CI exposed the focused failure.
-- [x] Corrected-head CI #1270 passed the complete repository workflow.
-- [x] Every unobserved direct-browser check remains explicit with a reason.
-- [x] The user accepted the task boundary despite not having access to a large display for a complete post-fix recheck.
-- [x] Phase 1 is approved to close for transformation sequencing after squash merge.
-- [ ] Squash merge PR #162 into `main` and reconcile issue/queue state.
+- [x] Corrected-head CI #1270 and final acceptance-head CI #1273 passed the complete repository workflow.
+- [x] The user accepted the evidence boundary despite not having access to a large display for a complete post-fix recheck.
+- [x] Phase 1 is closed for transformation sequencing.
 
-No Games, Study, Opening Analysis, API, schema, database, backend, dependency, or new navigation-model work is included.
+No Games, Study, Opening Analysis, API, schema, database, backend, dependency, or new navigation-model work was included.
 
 ## Acceptance boundary and residual risk
 
@@ -100,13 +96,13 @@ The following remain explicitly unverified because the required display, configu
 - navigation long-label, short-height, viewport-edge, mobile-keyboard, and Clerk account cases;
 - job-panel overlap and scrolling with active multi-run data.
 
-These are retained in the VT-104 report as verification risks, not represented as passes. Any later reproduced defect should be fixed narrowly in the owning workflow or follow-up task.
+These remain verification risks, not represented as passes. Any later reproduced defect should be fixed narrowly in the owning workflow or a focused follow-up.
 
 ## Execution disposition
 
-Issues #123–#125 are complete. Issue #126 remains `IN_PROGRESS` only until approved PR #162 is squash-merged and reconciled.
+Issues #123–#126 are complete.
 
-Issues #127–#129 are `READY`. After VT-104 integration, deterministic ordering selects #127 / VT-201 Games modernization first because it is P1 order 100, ahead of #128 order 110 and #129 order 120.
+Issues #127–#129 are `READY`. Deterministic ordering selects #127 / VT-201 Games modernization first because it is P1 order 100, ahead of #128 order 110 and #129 order 120.
 
 Issues #130–#133 retain their downstream dependencies.
 
@@ -126,8 +122,9 @@ Issues #130–#133 retain their downstream dependencies.
 
 - Initial CI #1268 and status-head CI #1269 passed lint, build, both opening audits, architecture checks, and migrations before a focused Angular test-harness route-provider ordering failure.
 - The test harness was corrected so its mocked `ActivatedRoute` remains authoritative.
-- Corrected-head CI #1270 passed dependency installation, lint, the full build, both opening audits, architecture guardrails, migrations, and the complete test suite.
-- No local build was run because repository access and edits use the GitHub connector.
+- Corrected-head CI #1270 passed the complete repository workflow.
+- Final acceptance-head CI #1273 passed dependency installation, lint, full build, both opening audits, architecture guardrails, migrations, and the complete test suite.
+- PR #162 was squash-merged into `main` as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`.
 
 ## Open design and product decisions
 
@@ -143,11 +140,11 @@ Core implementations are integrated. Remaining direct rendering permutations are
 
 ### Phase 1 — shell and entry points
 
-Public, auth, Home, brand, rail, inline navigation, landing motion, production tokens, typography, and wide-workspace foundations are integrated. VT-104 is approved to close Phase 1 after PR #162 merges.
+Complete. Public, auth, Home, brand, rail, inline navigation, landing motion, production tokens, typography, wide-workspace foundations, and the evidence-bounded browser disposition are integrated into `main`.
 
 ### Phase 2 — representative workflows
 
-Games, Study, and Opening Analysis are dependency-ready. Games is the next deterministic task after VT-104 integration.
+Games, Study, and Opening Analysis are dependency-ready. Games is the next deterministic task.
 
 ### Phase 3 — rollout and polish
 
@@ -155,13 +152,12 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ## Session log
 
-### 2026-07-28 — VT-104 acceptance and browser-risk disposition
+### 2026-07-29 — VT-104 integration
 
-- Created the evidence-level browser matrix and corrected local-development `returnUrl` handling.
-- Passed the complete repository workflow on corrected-head CI #1270.
-- The user could not repeat every large-screen check but accepted the documented boundary and instructed progress.
-- Retained unobserved browser permutations as explicit risks instead of claiming they passed.
-- Approved PR #162 for final-head CI and squash merge.
+- Final acceptance-head CI #1273 passed the complete repository workflow.
+- The user accepted the documented browser-risk boundary and instructed progress.
+- Squash-merged PR #162 into `main` as `e3bed0323eedd511f53a04cfd2c14be9b0965c76`.
+- Closed Phase 1 for transformation sequencing and released VT-201 as the next task.
 
 ### 2026-07-28 — VT-103 integration and wide-screen correction
 
@@ -173,4 +169,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, and #161 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, and #162 are integrated into `main`.
