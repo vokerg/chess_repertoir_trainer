@@ -153,6 +153,14 @@ export class MainNavigationComponent implements OnInit {
       ],
     },
     {
+      id: 'builder',
+      label: 'Builder',
+      description: 'Build a bounded repertoire draft',
+      link: '/builder',
+      icon: 'target',
+      activePrefixes: ['/builder'],
+    },
+    {
       id: 'progress',
       label: 'Progress',
       link: '/progress',

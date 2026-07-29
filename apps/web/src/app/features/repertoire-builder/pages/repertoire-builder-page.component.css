@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+.repertoire-builder-page {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}

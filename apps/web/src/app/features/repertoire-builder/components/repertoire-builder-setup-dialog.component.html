@@ -1,0 +1,123 @@
+<div class="setup-backdrop" role="presentation" (click)="cancel()">
+  <section
+    class="setup-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="builder-setup-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="setup-header">
+      <div>
+        <p class="setup-kicker">Repertoire builder</p>
+        <h2 id="builder-setup-title">
+          {{ cancelAllowed() ? 'Restart this draft with a new target' : 'Choose the target for this draft' }}
+        </h2>
+        <p>
+          {{ cancelAllowed()
+            ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
+            : 'Setup is limited to the initial position for this MVP. The recursive work continues on the routed board.' }}
+        </p>
+      </div>
+      @if (cancelAllowed()) {
+        <button type="button" class="icon-button" aria-label="Close setup" [disabled]="loading()" (click)="cancel()">×</button>
+      }
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="setup-grid">
+        <fieldset class="field-group side-group">
+          <legend>Repertoire side</legend>
+          <label>
+            <input type="radio" formControlName="side" value="WHITE" />
+            <span>White</span>
+          </label>
+          <label>
+            <input type="radio" formControlName="side" value="BLACK" />
+            <span>Black</span>
+          </label>
+        </fieldset>
+
+        <label class="field">
+          <span>Speed population</span>
+          <select formControlName="speedPreset">
+            @for (option of speedOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Rating target</span>
+          <select formControlName="ratingSelection">
+            @for (option of ratingOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          <small>Peer targets use your factual account evidence. Explicit groups remain a manual target.</small>
+        </label>
+      </div>
+
+      <fieldset class="persona-group">
+        <legend>Repertoire intent</legend>
+        <div class="persona-grid">
+          @for (preset of personaPresets; track preset.id) {
+            <label class="persona-card" [class.selected]="form.controls.persona.value === preset.id">
+              <input type="radio" formControlName="persona" [value]="preset.id" />
+              <strong>{{ preset.label }}</strong>
+              <span>{{ preset.description }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <div class="setup-grid setup-grid-secondary">
+        <label class="field">
+          <span>Maximum theory burden</span>
+          <select formControlName="maximumTheoryBurden">
+            @for (option of theoryOptions; track option) {
+              <option [value]="option">{{ option.toLowerCase() }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field coverage-field">
+          <span>Opponent-response coverage</span>
+          <div class="range-row">
+            <input
+              type="range"
+              formControlName="coveragePercent"
+              min="50"
+              max="100"
+              step="5"
+              aria-label="Opponent-response coverage percent"
+            />
+            <output>{{ form.controls.coveragePercent.value }}%</output>
+          </div>
+          <small>Coverage is a target, not automatic full-tree generation.</small>
+        </label>
+      </div>
+
+      <aside class="persistence-note">
+        <strong>Route-local draft</strong>
+        <span>
+          {{ cancelAllowed()
+            ? 'Submitting this setup replaces the current draft. Refreshing the page also starts over.'
+            : 'This version does not persist. Refreshing the page starts a new draft.' }}
+        </span>
+      </aside>
+
+      @if (error()) {
+        <p class="error-message" role="alert">{{ error() }}</p>
+      }
+
+      <footer class="setup-actions">
+        @if (cancelAllowed()) {
+          <button type="button" class="secondary-button" [disabled]="loading()" (click)="cancel()">Cancel</button>
+        }
+        <button type="submit" class="primary-button" [disabled]="loading() || form.invalid">
+          {{ loading() ? 'Preparing evidence…' : cancelAllowed() ? 'Replace draft' : 'Start building' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>

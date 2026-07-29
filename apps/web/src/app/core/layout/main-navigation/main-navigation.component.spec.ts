@@ -33,6 +33,7 @@ describe('MainNavigationComponent', () => {
           { path: 'library', component: TestRouteComponent },
           { path: 'puzzles', component: TestRouteComponent },
           { path: 'games', component: TestRouteComponent },
+          { path: 'builder', component: TestRouteComponent },
         ]),
       ],
     }).compileComponents();
@@ -53,6 +54,7 @@ describe('MainNavigationComponent', () => {
       'Courses',
       'Games',
       'Openings',
+      'Builder',
       'Progress',
       'Tools',
       'Settings',
@@ -219,5 +221,30 @@ describe('MainNavigationComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).toBeNull();
+  });
+
+  it('uses parent-route activity for direct children and exact child activity for ambiguous parents', async () => {
+    await router.navigateByUrl('/library');
+    fixture.detectChanges();
+
+    const studyLink = Array.from(
+      fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
+    ).find((link) => link.textContent?.includes('Study'));
+    const studyNode = studyLink?.closest('.rail-nav-node');
+    const repertoireLibraryLink = fixture.nativeElement.querySelector(
+      '.rail-inline-item[href="/library"]',
+    ) as HTMLAnchorElement | null;
+
+    expect(studyNode?.classList).toContain('rail-nav-node-active');
+    expect(repertoireLibraryLink?.classList).toContain('rail-inline-item-active');
+
+    await router.navigateByUrl('/builder');
+    fixture.detectChanges();
+
+    const builderLink = Array.from(
+      fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
+    ).find((link) => link.textContent?.includes('Builder'));
+    const builderNode = builderLink?.closest('.rail-nav-node');
+    expect(builderNode?.classList).toContain('rail-nav-node-active');
   });
 });
