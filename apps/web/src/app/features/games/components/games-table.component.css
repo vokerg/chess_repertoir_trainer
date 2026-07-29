@@ -292,6 +292,7 @@
   }
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx. */
 @media (max-width: 980px) {
   .games-desktop-table {
     display: none;
@@ -418,7 +419,8 @@
   }
 }
 
-@media (max-width: 680px) {
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
   :host {
     --panel-padding: 0.75rem;
   }
