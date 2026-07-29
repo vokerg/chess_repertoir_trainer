@@ -52,7 +52,7 @@
         type="button"
         class="primary"
         [disabled]="settingsLocked()"
-        (click)="store.startRound()"
+        (click)="startRound()"
       >
         {{ store.loading() ? 'Loading puzzle...' : store.round() ? 'Start next puzzle' : 'Start puzzle' }}
       </button>
@@ -73,7 +73,7 @@
       (boardMove)="store.submitMove($event)"
       (abandon)="store.abandonRound()"
       (retrySync)="store.retrySync()"
-      (nextPuzzle)="store.startRound()"
+      (nextPuzzle)="startRound()"
     />
   } @else {
     <app-panel
