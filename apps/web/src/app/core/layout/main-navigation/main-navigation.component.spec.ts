@@ -148,11 +148,12 @@ describe('MainNavigationComponent', () => {
     const studyLink = Array.from(
       fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
     ).find((link) => link.textContent?.includes('Study'));
+    const studyNode = studyLink?.closest('.rail-nav-node');
     const repertoireLibraryLink = fixture.nativeElement.querySelector(
       '.rail-inline-item[href="/library"]',
     ) as HTMLAnchorElement | null;
 
-    expect(studyLink?.classList).toContain('rail-nav-link-active');
+    expect(studyNode?.classList).toContain('rail-nav-node-active');
     expect(repertoireLibraryLink?.classList).toContain('rail-inline-item-active');
 
     await router.navigateByUrl('/builder');
@@ -161,6 +162,7 @@ describe('MainNavigationComponent', () => {
     const builderLink = Array.from(
       fixture.nativeElement.querySelectorAll('.rail-nav-link') as NodeListOf<HTMLAnchorElement>,
     ).find((link) => link.textContent?.includes('Builder'));
-    expect(builderLink?.classList).toContain('rail-nav-link-active');
+    const builderNode = builderLink?.closest('.rail-nav-node');
+    expect(builderNode?.classList).toContain('rail-nav-node-active');
   });
 });
