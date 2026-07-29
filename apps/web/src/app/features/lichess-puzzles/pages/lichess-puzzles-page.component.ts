@@ -49,12 +49,11 @@ export class LichessPuzzlesPageComponent implements OnInit {
   }
 
   protected async startRound(): Promise<void> {
-    const replaceUrl = this.route.snapshot.queryParamMap.has('roundId');
     const roundId = await this.store.startRound();
     if (!roundId) return;
     await this.router.navigate(['/puzzles'], {
       queryParams: { roundId },
-      replaceUrl,
+      replaceUrl: true,
     });
   }
 
