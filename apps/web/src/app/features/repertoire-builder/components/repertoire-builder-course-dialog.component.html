@@ -21,7 +21,7 @@
     <form class="destination-form" [formGroup]="form" (ngSubmit)="requestPreview()">
       <label class="field">
         <span>Course</span>
-        <select formControlName="courseId" [disabled]="destinationsLoading() || applyLoading()">
+        <select formControlName="courseId">
           <option [ngValue]="null">Choose a course</option>
           @for (course of courses(); track course.id) {
             <option [ngValue]="course.id">{{ course.name }}</option>
@@ -31,7 +31,7 @@
 
       <label class="field">
         <span>Chapter</span>
-        <select formControlName="chapterId" [disabled]="selectedCourseId() === null || destinationsLoading() || applyLoading()">
+        <select formControlName="chapterId">
           <option [ngValue]="null">Choose a chapter</option>
           @for (chapter of chapters(); track chapter.id) {
             <option [ngValue]="chapter.id">{{ chapter.name }}</option>
@@ -41,7 +41,7 @@
 
       <label class="field">
         <span>Reviewed new-line name</span>
-        <input type="text" formControlName="newLineName" maxlength="200" placeholder="Enter a line name" [readOnly]="applyLoading()" />
+        <input type="text" formControlName="newLineName" maxlength="200" placeholder="Enter a line name" />
       </label>
 
       <button type="submit" class="secondary-button preview-button" [disabled]="!canPreview() || form.invalid">
