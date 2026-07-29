@@ -1,3 +1,4 @@
+import type { FastifyReply } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
@@ -153,13 +154,7 @@ const lichessPuzzlesModule: FastifyPluginAsyncZod = async (app) => {
   });
 };
 
-function sendError(
-  reply: {
-    code(statusCode: number): unknown;
-    send(payload: unknown): unknown;
-  },
-  error: unknown,
-): unknown {
+function sendError(reply: FastifyReply, error: unknown) {
   const normalized = error instanceof LichessPuzzleRoundError
     ? error
     : new LichessPuzzleRoundError(
@@ -167,8 +162,7 @@ function sendError(
         400,
         'LICHESS_PUZZLE_REQUEST_FAILED',
       );
-  reply.code(normalized.statusCode);
-  return reply.send({
+  return reply.code(normalized.statusCode).send({
     error: normalized.message,
     code: normalized.code,
   });
