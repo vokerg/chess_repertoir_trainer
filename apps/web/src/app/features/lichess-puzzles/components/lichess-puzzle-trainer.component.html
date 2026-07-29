@@ -1,0 +1,84 @@
+<div class="puzzle-trainer-layout">
+  <div class="puzzle-board-column">
+    <app-chessground-board
+      [fen]="round().currentFen"
+      [side]="round().puzzle.sideToMove"
+      [lastMove]="lastMove()"
+      [movable]="movable()"
+      [positionVersion]="positionVersion()"
+      (move)="boardMove.emit($event)"
+    />
+  </div>
+
+  <app-panel [title]="outcomeLabel()" [subtitle]="ratingLabel()">
+    <div class="puzzle-summary">
+      <dl class="puzzle-facts">
+        <div>
+          <dt>Puzzle rating</dt>
+          <dd>{{ round().puzzle.rating }}</dd>
+        </div>
+        <div>
+          <dt>Progress</dt>
+          <dd>{{ progressLabel() }}</dd>
+        </div>
+        <div>
+          <dt>Mode</dt>
+          <dd>{{ round().ratedRequested ? 'Rated' : 'Practice' }}</dd>
+        </div>
+        <div>
+          <dt>Sync</dt>
+          <dd>{{ round().upstreamStatus }}</dd>
+        </div>
+      </dl>
+
+      @if (round().puzzle.themes.length) {
+        <div class="puzzle-themes" aria-label="Puzzle themes">
+          @for (theme of round().puzzle.themes; track theme) {
+            <span>{{ theme }}</span>
+          }
+        </div>
+      }
+
+      @if (round().firstWrongAt && round().status === 'IN_PROGRESS') {
+        <p class="puzzle-guidance">
+          The rated result is already a loss. Continue solving to complete the line and schedule it for review.
+        </p>
+      } @else if (round().status === 'IN_PROGRESS') {
+        <p class="puzzle-guidance">Find the best continuation. The opponent replies automatically.</p>
+      }
+
+      <div class="puzzle-actions">
+        @if (round().status === 'IN_PROGRESS') {
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="busy()"
+            (click)="abandon.emit()"
+          >
+            Abandon
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="primary"
+            [disabled]="busy()"
+            (click)="nextPuzzle.emit()"
+          >
+            Next puzzle
+          </button>
+        }
+
+        @if (round().upstreamStatus === 'FAILED') {
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="busy()"
+            (click)="retrySync.emit()"
+          >
+            Retry Lichess sync
+          </button>
+        }
+      </div>
+    </div>
+  </app-panel>
+</div>
