@@ -18,8 +18,7 @@
   background: var(--ui-surface);
 }
 
-.study-mobile-step,
-.study-selection-step > span {
+.study-mobile-step {
   display: inline-flex;
   flex: 0 0 auto;
   width: 1.8rem;
@@ -93,48 +92,7 @@
 }
 
 .study-selection-context {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.study-selection-step {
-  display: flex;
   min-width: 0;
-  gap: 0.55rem;
-  align-items: center;
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-control);
-  padding: 0.58rem 0.65rem;
-  background: var(--ui-surface);
-}
-
-.study-selection-step div {
-  display: grid;
-  min-width: 0;
-  gap: 0.1rem;
-}
-
-.study-selection-step strong,
-.study-selection-step small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.study-selection-step strong {
-  color: var(--ui-text-subtle);
-  font-size: 0.61rem;
-  font-weight: 850;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.study-selection-step small {
-  color: var(--ui-text);
-  font-size: 0.76rem;
-  font-weight: 700;
 }
 
 .study-columns {
