@@ -241,9 +241,10 @@ RB-010 should compose and test the routed workbench against this model first. Pe
 - `north-star/repertoire-builder/STATUS.md`
 - `north-star/repertoire-builder/FEATURES.md`
 - `north-star/repertoire-builder/ROADMAP.md`
-- `north-star/repertoire-builder/DECISIONS.md`
 - `north-star/repertoire-builder/OPEN_QUESTIONS.md`
 - this report.
+
+`DECISIONS.md` was inspected but not changed. Existing open decision RB-D024 already requires demonstrated resume value before persistence and remains the correct governing boundary pending RB-010 evidence.
 
 ## Validation performed
 
@@ -302,6 +303,8 @@ These are absent implementation areas, not untested claims.
 - Owner and optimistic revision checks belong at the domain mutation boundary.
 - Persistence is staged until RB-010 demonstrates concrete resume requirements.
 - No public contracts package is added before an API or cross-workspace consumer exists.
+
+These implementation choices follow existing open decision RB-D024 and do not lock a persistence architecture before user review.
 
 ## Limitations and residual risks
 
