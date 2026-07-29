@@ -52,6 +52,14 @@
       "types": "./dist/player-chess-profile/index.d.ts",
       "default": "./dist/player-chess-profile/index.js"
     },
+    "./repertoire-target": {
+      "types": "./dist/repertoire-target/index.d.ts",
+      "default": "./dist/repertoire-target/index.js"
+    },
+    "./lichess-puzzles": {
+      "types": "./dist/lichess-puzzles/index.d.ts",
+      "default": "./dist/lichess-puzzles/index.js"
+    },
     "./jobs": {
       "types": "./dist/jobs/index.d.ts",
       "default": "./dist/jobs/index.js"
@@ -64,7 +72,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node test/contracts.test.mjs && node test/opening-explorer-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs"
+    "test": "npm run build && node test/contracts.test.mjs && node test/opening-explorer-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/repertoire-target-contract.test.mjs && node test/lichess-puzzles-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"
