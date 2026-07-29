@@ -27,16 +27,24 @@ describe('StudyLineListComponent', () => {
     const selectButton = fixture.nativeElement.querySelector(
       '.line-select-button',
     ) as HTMLButtonElement;
+    const facts = Array.from(
+      fixture.nativeElement.querySelectorAll('.line-facts > span'),
+    ).map((fact) => ({
+      label: fact.querySelector('small')?.textContent?.trim(),
+      value: fact.querySelector('strong')?.textContent?.trim(),
+    }));
 
     expect(text).toContain('3');
     expect(text).toContain('Lines');
     expect(text).toContain('1 selected');
     expect(text).toContain('Sicilian main line');
     expect(text).toContain('Train as Black');
-    expect(text).toContain('Coverage 4/6');
-    expect(text).toContain('Mastery 75%');
-    expect(text).toContain('Weak 2');
-    expect(text).toContain('Untrained 2');
+    expect(facts).toEqual([
+      { label: 'Coverage', value: '4/6' },
+      { label: 'Mastery', value: '75%' },
+      { label: 'Weak', value: '2' },
+      { label: 'Untrained', value: '2' },
+    ]);
     expect(text).toContain('Train');
     expect(text).toContain('Edit');
     expect(selectButton.getAttribute('aria-pressed')).toBe('true');
