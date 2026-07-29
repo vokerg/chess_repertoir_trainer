@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import type { CourseExtensionCandidatesResponse } from '@chess-trainer/contracts/lab';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import type { CourseReviewFindingViewModel } from '../helpers/course-review-finding.mapper';
 import { CourseReviewIssueCardComponent } from './course-review-issue-card.component';
@@ -16,4 +17,8 @@ export class CourseReviewIssueListComponent {
   readonly subtitle = input<string>();
   readonly emptyMessage = input.required<string>();
   readonly findings = input.required<readonly CourseReviewFindingViewModel[]>();
+  readonly courseId = input<number | null>(null);
+  readonly courseName = input('');
+  readonly endingFilters = input<CourseExtensionCandidatesResponse['filters'] | null>(null);
+  readonly filterSummary = input('');
 }
