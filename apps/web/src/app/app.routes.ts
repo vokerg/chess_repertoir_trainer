@@ -128,6 +128,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'builder',
+    title: 'Repertoire builder | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/repertoire-builder').then((m) => m.RepertoireBuilderPageComponent),
+  },
+  {
     path: 'opening-struggles',
     title: 'Opening struggles | Chess Repertoire Trainer',
     canActivate: [authGuard],
