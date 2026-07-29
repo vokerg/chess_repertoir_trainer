@@ -15,6 +15,8 @@ interface VerboseMoveLike {
   after?: string;
 }
 
+const GAME_RESULT_TOKENS = new Set(['1-0', '0-1', '1/2-1/2', '*']);
+
 export function reconstructLichessPuzzlePosition(
   gamePgn: string,
   initialPly: number,
@@ -26,14 +28,7 @@ export function reconstructLichessPuzzlePosition(
     throw new LichessPuzzlePositionError('Lichess puzzle initialPly must identify a ply after the trigger move');
   }
 
-  const game = new Chess();
-  try {
-    game.loadPgn(gamePgn);
-  } catch {
-    throw new LichessPuzzlePositionError('Could not parse Lichess puzzle game PGN');
-  }
-
-  const moves = game.history({ verbose: true }) as VerboseMoveLike[];
+  const moves = parseLichessGameMoves(gamePgn);
   const expectedPgnPlies = initialPly - 1;
   if (moves.length !== expectedPgnPlies) {
     throw new LichessPuzzlePositionError(
@@ -58,4 +53,40 @@ export function reconstructLichessPuzzlePosition(
     lastMoveUci: `${triggerMove.from}${triggerMove.to}${triggerMove.promotion ?? ''}`,
     sideToMove: challenge.turn() === 'b' ? 'BLACK' : 'WHITE',
   };
+}
+
+function parseLichessGameMoves(gamePgn: string): VerboseMoveLike[] {
+  const pgnGame = new Chess();
+  try {
+    pgnGame.loadPgn(gamePgn);
+    return pgnGame.history({ verbose: true }) as VerboseMoveLike[];
+  } catch {
+    return parseBareSanSequence(gamePgn);
+  }
+}
+
+function parseBareSanSequence(moveText: string): VerboseMoveLike[] {
+  const game = new Chess();
+  const tokens = moveText
+    .replace(/\{[^}]*\}/g, ' ')
+    .replace(/;[^\r\n]*/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => !/^\d+\.(?:\.\.)?$/.test(token))
+    .filter((token) => !GAME_RESULT_TOKENS.has(token));
+
+  try {
+    for (const token of tokens) {
+      game.move(token);
+    }
+  } catch {
+    throw new LichessPuzzlePositionError('Could not parse Lichess puzzle game PGN');
+  }
+
+  const moves = game.history({ verbose: true }) as VerboseMoveLike[];
+  if (moves.length !== tokens.length) {
+    throw new LichessPuzzlePositionError('Could not parse Lichess puzzle game PGN');
+  }
+  return moves;
 }
