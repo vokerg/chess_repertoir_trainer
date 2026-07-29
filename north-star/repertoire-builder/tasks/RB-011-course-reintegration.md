@@ -1,6 +1,6 @@
 # RB-011 — Preview and apply builder output to courses
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -13,6 +13,8 @@ Planning maturity: Outlined
 Claimed by: OpenAI ChatGPT
 
 Claim branch: `rb-011/issue-99-course-reintegration-claim`
+
+Implementation branch: `rb-011/issue-99-course-reintegration`
 
 Claimed at: 2026-07-29
 
