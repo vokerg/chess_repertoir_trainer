@@ -50,7 +50,7 @@ Courses, Builder, Progress, Tools, Settings, account access, and every child des
 
 Secondary routes make `More` active. Primary routes keep their corresponding persistent item active. Child routes inherit their parent activity through the existing `activePrefixes` contract.
 
-The mobile destination dialog uses native modal-dialog behavior for focus containment and Escape handling. Closing through the close control or Escape restores focus to `More`; route navigation closes the dialog without moving focus back to a control on the previous page.
+The mobile destination dialog uses native modal-dialog behavior for focus containment and Escape handling. Closing through the close control, backdrop, or Escape restores focus to `More`; route navigation closes the dialog without moving focus back to a control on the previous page.
 
 The bottom navigation respects `env(safe-area-inset-bottom)`. The application content and fixed imported-game job panel reserve clearance above it. Feature-owned mobile launchers, boards, filters, pagination, and training controls remain unchanged.
 
