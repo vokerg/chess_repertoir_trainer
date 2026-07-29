@@ -95,7 +95,7 @@ Delivered on the active branch:
 - [x] preserved the course-first mobile entry and feature-local launcher contract;
 - [x] added focused line-list, basket, and mobile-launcher component coverage;
 - [x] documented architecture, behavior preservation, browser checks, and feature-local VT-204 candidates in `transformation/reports/VT_202_STUDY_MODERNIZATION.md`;
-- [ ] complete automated validation on the final documentation head;
+- [x] passed final-head CI #1372 after focused test-harness corrections;
 - [ ] direct browser review and explicit approval;
 - [ ] squash merge and completion reconciliation.
 
@@ -160,7 +160,7 @@ Issue #128 is `IN_PROGRESS` through draft PR #178. Issue #129 remains `READY` bu
 
 ### VT-202 validation
 
-CI #1366 is running on the focused-test implementation head. The final documentation head must pass:
+Final-head CI #1372 passed:
 
 - dependency installation;
 - lint;
@@ -170,6 +170,8 @@ CI #1366 is running on the focused-test implementation head. The final documenta
 - database migrations;
 - imported-game opening classification audit;
 - complete repository test suite, including the new Study component tests.
+
+CI #1366 and #1370 exposed focused-test assertion and DOM-typing issues only. Those tests were corrected without production-code changes before the passing final-head run.
 
 Direct browser review remains pending. The active task must not be represented as complete or merged before explicit approval.
 
@@ -195,7 +197,7 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Active. Games is complete and integrated. Study is in progress through draft PR #178. Opening Analysis remains ready after Study.
+Active. Games is complete and integrated. Study is automated-green through draft PR #178 and awaits browser review. Opening Analysis remains ready after Study.
 
 ### Phase 3 — rollout and polish
 
@@ -210,8 +212,10 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 - Inspected the Study route, page, store, data-access service, scope lists, line list, basket, mobile launcher, helpers, breakpoints, focused architecture rules, token contract, and transformation decisions.
 - Implemented explicit desktop selection progression, production-token presentation, keyboard line selection, clearer scope/mode launch hierarchy, and a migrated course-first mobile launcher without changing ownership or navigation.
 - Added focused component coverage for line evidence/intents, basket eligibility/commands, and mobile single-line launch behavior.
+- Corrected whitespace-sensitive and untyped DOM test assertions exposed by CI #1366 and #1370; no production code changed in those corrections.
+- Final-head CI #1372 passed the complete repository workflow.
 - Opened draft PR #178 and documented the implementation and browser-review boundary.
-- Awaiting final-head automated validation and direct browser review.
+- Awaiting direct browser review and explicit approval.
 
 ### 2026-07-29 — VT-201 integration
 
