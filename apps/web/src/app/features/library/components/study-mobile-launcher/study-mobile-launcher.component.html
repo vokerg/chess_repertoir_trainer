@@ -8,30 +8,56 @@
   >
     <header class="launcher-header">
       <div>
-        <p class="launcher-kicker">Training plan</p>
+        <p class="launcher-kicker">Selected repertoire</p>
         <h2 id="study-mobile-launcher-title">Plan training</h2>
       </div>
-      <button type="button" class="launcher-close secondary" aria-label="Close training planner" (click)="close.emit()">
+      <button
+        type="button"
+        class="launcher-close secondary"
+        aria-label="Close training planner"
+        (click)="close.emit()"
+      >
         Close
       </button>
     </header>
 
-    <div class="launcher-tabs" aria-label="Training scope">
-      <button type="button" [class.active]="activeScope() === 'COURSE'" (click)="setScope('COURSE')">Course</button>
-      <button type="button" [class.active]="activeScope() === 'CHAPTER'" (click)="setScope('CHAPTER')">Section</button>
-      <button type="button" [class.active]="activeScope() === 'LINE'" (click)="setScope('LINE')">Line</button>
+    <div class="launcher-tabs" role="group" aria-label="Training scope">
+      <button
+        type="button"
+        [class.active]="activeScope() === 'COURSE'"
+        [attr.aria-pressed]="activeScope() === 'COURSE'"
+        (click)="setScope('COURSE')"
+      >
+        Repertoire
+      </button>
+      <button
+        type="button"
+        [class.active]="activeScope() === 'CHAPTER'"
+        [attr.aria-pressed]="activeScope() === 'CHAPTER'"
+        (click)="setScope('CHAPTER')"
+      >
+        Section
+      </button>
+      <button
+        type="button"
+        [class.active]="activeScope() === 'LINE'"
+        [attr.aria-pressed]="activeScope() === 'LINE'"
+        (click)="setScope('LINE')"
+      >
+        Line
+      </button>
     </div>
 
     <div class="launcher-body">
       @switch (activeScope()) {
         @case ('COURSE') {
           <section class="launcher-card">
-            <p class="launcher-label">Selected course</p>
+            <p class="launcher-label">Training repertoire</p>
             @if (selectedCourse(); as course) {
               <h3>{{ course.name }}</h3>
               <p>{{ course.description || 'Personal repertoire' }}</p>
             } @else {
-              <p>Select a course before starting training.</p>
+              <p>Select a repertoire before starting training.</p>
             }
           </section>
         }
@@ -45,6 +71,7 @@
                     type="button"
                     class="launcher-choice"
                     [class.active]="chapter.id === selectedChapter()?.id"
+                    [attr.aria-pressed]="chapter.id === selectedChapter()?.id"
                     (click)="selectChapter.emit(chapter.id)"
                   >
                     <strong>{{ chapter.name }}</strong>
@@ -67,6 +94,7 @@
                     type="button"
                     class="launcher-choice"
                     [class.active]="chapter.id === selectedChapter()?.id"
+                    [attr.aria-pressed]="chapter.id === selectedChapter()?.id"
                     (click)="selectChapter.emit(chapter.id)"
                   >
                     <strong>{{ chapter.name }}</strong>
@@ -88,14 +116,15 @@
                     type="button"
                     class="launcher-choice"
                     [class.active]="line.id === selectedLineId()"
+                    [attr.aria-pressed]="line.id === selectedLineId()"
                     (click)="selectLine.emit(line.id)"
                   >
                     <strong>{{ line.name }}</strong>
                     <span>
                       {{ sideLabel(line.sideToTrain) }} ·
-                      {{ line.trainingStats.activeSublineCount }} active ·
-                      Weak {{ line.trainingStats.weakSublineCount }} ·
-                      Untrained {{ line.trainingStats.untrainedSublineCount }}
+                      {{ line.trainingStats.activeSublineCount }} active · Weak
+                      {{ line.trainingStats.weakSublineCount }} · Untrained
+                      {{ line.trainingStats.untrainedSublineCount }}
                     </span>
                   </button>
                 }
@@ -109,7 +138,8 @@
 
       <section class="launcher-summary" aria-label="Selected training summary">
         <div>
-          <p class="launcher-label">{{ activeSummary().title }}</p>
+          <p class="launcher-label">Ready to train</p>
+          <h3>{{ activeSummary().title }}</h3>
           <p>{{ activeSummary().description }}</p>
         </div>
 
@@ -138,7 +168,13 @@
 
         <div class="launcher-train-actions" aria-label="Start selected training">
           @for (mode of trainingModes(); track mode.id) {
-            <button type="button" [class.primary]="mode.id === 'ALL'" [class.secondary]="mode.id !== 'ALL'" [disabled]="mode.disabled" (click)="start(mode.id)">
+            <button
+              type="button"
+              [class.primary]="mode.id === 'ALL'"
+              [class.secondary]="mode.id !== 'ALL'"
+              [disabled]="mode.disabled"
+              (click)="start(mode.id)"
+            >
               {{ mode.label }}
             </button>
           }
