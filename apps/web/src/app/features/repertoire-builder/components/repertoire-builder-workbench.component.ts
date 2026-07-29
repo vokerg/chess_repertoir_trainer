@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type {
   CandidateDecisionCandidate,
   CandidateDecisionResponse,
@@ -60,7 +60,6 @@ export class RepertoireBuilderWorkbenchComponent {
 
   readonly boardMove = output<string>();
   readonly candidateSelected = output<string>();
-  readonly boardEntryRequested = output<void>();
   readonly responseToggled = output<string>();
   readonly decisionAccepted = output<void>();
   readonly branchDeferred = output<void>();
@@ -75,13 +74,32 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly newDraftRequested = output<void>();
 
   protected readonly decisionLimit = REPERTOIRE_BUILDER_DECISION_LIMIT;
+  private readonly boardEntryMode = signal(false);
+  protected readonly boardFen = computed(() => (
+    this.boardEntryMode() ? this.activeBranch()?.fen ?? this.displayedFen() : this.displayedFen()
+  ));
+  protected readonly boardCanMove = computed(() => this.boardEntryMode() && this.boardMovable());
 
   protected isResponseSelected(moveUci: string): boolean {
     return this.selectedResponseUcis().includes(moveUci);
   }
 
   protected isPreviewed(moveUci: string): boolean {
-    return this.previewCandidate()?.moveUci === moveUci;
+    return !this.boardEntryMode() && this.previewCandidate()?.moveUci === moveUci;
+  }
+
+  protected previewMove(moveUci: string): void {
+    this.boardEntryMode.set(false);
+    this.candidateSelected.emit(moveUci);
+  }
+
+  protected enterBoardMoveMode(): void {
+    this.boardEntryMode.set(true);
+  }
+
+  protected handleBoardMove(moveUci: string): void {
+    this.boardEntryMode.set(false);
+    this.boardMove.emit(moveUci);
   }
 
   protected pathLabel(path: readonly string[]): string {
