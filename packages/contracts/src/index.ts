@@ -1,5 +1,6 @@
 export * from './ai';
 export * from './board-images';
+export * from './candidate-decision';
 export * from './imported-games';
 export * from './courses';
 export * from './training';
