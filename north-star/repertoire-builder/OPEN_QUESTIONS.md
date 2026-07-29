@@ -23,6 +23,7 @@ Open questions are not decisions. Resolve them in the assigned task and update t
 - Provider and speed are resolved before ratings are classified; raw Chess.com and Lichess values are not averaged.
 - Multiple accounts contribute through grouped account/provider/speed/rating evidence weighted by game count.
 - RB-001 and RB-002 have no remaining player-level formula question.
+- RB-010 requests peer resolution only when a peer target is selected. Explicit benchmark groups do not masquerade as peer evidence.
 
 ### Deferred only on demonstrated need
 
@@ -87,7 +88,7 @@ Owners: RB-004, RB-005 and RB-013.
 
 ## Repertoire target
 
-### Resolved by RB-006
+### Resolved by RB-006 and the RB-010 integration
 
 - One target applies to one build/session snapshot.
 - The target contains side, starting point, account context, one fixed speed preset, one requested/effective population, explicit objective dimensions and coverage policy.
@@ -99,6 +100,9 @@ Owners: RB-004, RB-005 and RB-013.
 - Effective values are authoritative; defaults and overrides retain field-level provenance.
 - Contract version, target ID and creation time are immutable.
 - Candidate-recalculation fields are explicit.
+- RB-010 can create schema-valid targets in the Angular feature boundary without inventing a second API or contract.
+- RB-010 records peer-derived population as `PEER_RESOLUTION` default provenance; explicit benchmark groups remain authoritative manual target choices.
+- The four RB-010 personas are transparent local presets over RB-006 dimensions, not stored user templates or permanent labels.
 
 ### Remaining integration questions
 
@@ -111,7 +115,7 @@ Owners: RB-011 and RB-013.
 
 ## Candidate evidence and ranking
 
-### Resolved by RB-007
+### Resolved by RB-007 and the RB-010 integration
 
 - Contract version is `2026-07-v1`; ranking-policy version is `2026-07-deterministic-v1`.
 - User-move and opponent-response decisions are separate roles.
@@ -124,6 +128,9 @@ Owners: RB-011 and RB-013.
 - Sparse personal/profile evidence does not fabricate conclusions.
 - Opponent relevance produces bounded coverage contribution and cumulative coverage.
 - Course transposition evidence is intentionally narrow and does not traverse an arbitrary repertoire graph.
+- RB-010 uses the existing authenticated candidate endpoint as its sole candidate source.
+- Manual legal board moves use `includeMoveUci`, so they retain the same evidence, eligibility, reasons and warnings as ranked candidates.
+- The workbench keeps target fit and profile fit separate and permits selection against profile advice.
 
 ### Remaining calibration questions
 
@@ -131,33 +138,41 @@ Owners: RB-011 and RB-013.
 - Should candidate policy versions retain migration/display support after changes?
 - Does selected-population aggregation remain credible for every speed preset?
 - Which learning-burden signals are measurable beyond opening classification and course coverage?
+- Are 6 visible candidates enough for normal positions without hiding useful alternatives?
 
-Owner: RB-010 for hands-on evidence; policy changes require a versioned follow-up.
+Owner: RB-010 hands-on review for evidence; policy changes require a versioned follow-up.
 
 ## Visual choice experience
 
-### Resolved by RB-008
+### Resolved by RB-008 and implemented for review by RB-010
 
 - A focused setup dialog launches the routed workbench.
 - The workbench uses one readable primary board.
-- Candidates switch the board and focused evidence.
-- Opponent responses use a queue.
-- Branch progress remains visible.
+- Candidates switch the board to their resulting position and focused evidence.
+- A user can return to the active position and play another legal move for evidence-backed inclusion.
+- Opponent responses use explicit multi-selection and a branch queue.
+- Branch progress, deferred work, stale work and bounded preview remain visible.
 - Target fit and profile fit remain separate.
 - Simultaneous candidate mini-boards are rejected as the default.
+- Always-visible candidate comparison includes move/rank, stored engine value, target-population frequency, target fit and profile fit.
+- Expanded focused evidence includes eligibility, source states, reasons, warnings and course state.
+- Preview-line behavior is intentionally limited to candidate resulting-position display and the RB-009 structural tree; the builder does not become a free-analysis board.
+- Queue progress uses actual branch counts. Coverage is labelled as a user-selected target rather than a claim of complete theoretical coverage.
+- Setup restart is explicitly destructive: it replaces the current route-local draft and can be cancelled.
 
-### Remaining production questions
+### Remaining hands-on questions
 
-- Which candidate metrics remain always visible and which expand on demand?
-- How much preview-line navigation belongs inside the builder before it becomes free analysis?
-- How should bounded queue progress and coverage be worded without false precision?
-- What route-local recovery is sufficient for the first hands-on MVP?
+- Is the always-visible candidate row readable against real data and smaller widths?
+- Is focused evidence detailed enough without overwhelming the primary decision?
+- Are queue, deferred/stale states and coverage wording understandable without onboarding?
+- Is one board plus structural preview sufficient for navigating longer branches?
+- Are the responsive layouts and keyboard order usable in the authenticated rendered application?
 
-Owner: RB-010.
+Owner: RB-010 review.
 
 ## Builder session and queue
 
-### Resolved by the RB-009 review implementation
+### Resolved by RB-009 and the RB-010 integration
 
 - Model version is `2026-07-v1`.
 - The session is a pure, serializable `chess-domain` snapshot.
@@ -174,29 +189,37 @@ Owner: RB-010.
 - Transposed paths reference accepted/completed canonical session positions and avoid duplicate queued work.
 - Preview returns a bounded tree, queue, status counts and truncation metadata.
 - Hard limits are 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
-- No Prisma model, API, Angular UI or storage adapter is added in RB-009.
+- RB-010 uses the reducer directly from a page-scoped store and does not duplicate lifecycle rules in Angular.
+- Separate setup and candidate request versions suppress stale responses.
+- Failed mutations do not advance the queue.
+- RB-010 adds product bounds of 6 candidates per request and 24 accepted decisions.
+- No Prisma model, builder-session API, browser storage or storage adapter is added.
+- Refreshing/recreating the route starts a new draft; the behavior is visible rather than presented as resume support.
 
 ### Remaining review and integration questions
 
-- Does RB-010 hands-on review demonstrate a need for durable server persistence, or is route/local recovery sufficient for the first MVP?
+- Is route-local state sufficient for the first usable MVP, or does hands-on review demonstrate a need for durable server persistence?
+- Are typical bounded sessions short enough to complete without recovery?
 - If persistence is justified, what draft list, expiry, archive and deletion behavior is required?
 - Is cross-device resume required before course materialization?
 - Should multiple simultaneous drafts be visible to the user?
 - What source-course revision references must a persisted draft protect?
 - How should a storage adapter handle optimistic conflicts while preserving the pure reducer as the authority?
+- Are the 24-decision product limit and RB-009 hard bounds appropriate in real use?
 
 Owner: RB-010 for workflow evidence. A persistence implementation requires explicit reviewed justification under RB-D024.
 
 ## Course writing
 
 - Is the existing analysis-reintegration tree sufficient for builder drafts?
+- Is the RB-010 structural preview stable and expressive enough to become RB-011 input?
 - When should a builder create a course, chapter, line or merge at an anchor?
 - How are conflicts and duplicate transpositions presented?
 - How are deferred branches preserved after accepted material is written?
 - Which target/session metadata belongs on completed courses?
 - How are generated names and chapter organization reviewed?
 
-Owner: RB-011.
+Owner: RB-011 after accepted RB-010 integration.
 
 ## Existing-course adaptation
 
