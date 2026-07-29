@@ -80,7 +80,7 @@ export class LichessPuzzlesStore {
     this.clearMessages();
     try {
       const round = await firstValueFrom(this.api.getRound(roundId));
-      this.applyRound(round, round.puzzle.lastMoveUci);
+      this.applyRound(round);
       this.difficultyState.set(round.difficulty ?? 'normal');
       this.ratedState.set(round.ratedRequested);
       this.noticeState.set(
@@ -108,7 +108,7 @@ export class LichessPuzzlesStore {
         difficulty: this.difficulty(),
         rated: this.rated(),
       }));
-      this.applyRound(round, round.puzzle.lastMoveUci);
+      this.applyRound(round);
       this.noticeState.set(
         round.ratedRequested
           ? 'Rated Lichess puzzle started.'
@@ -130,10 +130,7 @@ export class LichessPuzzlesStore {
     this.clearMessages();
     try {
       const result = await firstValueFrom(this.api.submitMove(round.id, moveUci));
-      this.applyRound(
-        result.round,
-        result.correct ? (result.forcedMoveUci ?? moveUci) : this.lastMoveUciState(),
-      );
+      this.applyRound(result.round);
       if (!result.correct) {
         this.noticeState.set(
           result.round.ratedRequested
@@ -163,7 +160,7 @@ export class LichessPuzzlesStore {
     this.abandoningState.set(true);
     this.clearMessages();
     try {
-      this.applyRound(await firstValueFrom(this.api.abandonRound(round.id)), this.lastMoveUciState());
+      this.applyRound(await firstValueFrom(this.api.abandonRound(round.id)));
       this.noticeState.set('Puzzle round abandoned.');
     } catch (error) {
       this.setError(error, 'Could not abandon the puzzle round.');
@@ -178,7 +175,7 @@ export class LichessPuzzlesStore {
     this.syncingState.set(true);
     this.clearMessages();
     try {
-      this.applyRound(await firstValueFrom(this.api.retrySync(round.id)), this.lastMoveUciState());
+      this.applyRound(await firstValueFrom(this.api.retrySync(round.id)));
       this.noticeState.set(
         this.round()?.upstreamStatus === 'SYNCED'
           ? 'Lichess result synchronized.'
@@ -191,9 +188,9 @@ export class LichessPuzzlesStore {
     }
   }
 
-  private applyRound(round: LichessPuzzleRound, lastMoveUci: string | null): void {
+  private applyRound(round: LichessPuzzleRound): void {
     this.roundState.set(round);
-    this.lastMoveUciState.set(lastMoveUci);
+    this.lastMoveUciState.set(round.lastMoveUci);
     this.positionVersionState.update((version) => version + 1);
   }
 
