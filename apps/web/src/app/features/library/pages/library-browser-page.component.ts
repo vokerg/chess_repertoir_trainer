@@ -1,11 +1,21 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+  PageHeaderStat,
+} from '../../../shared/ui/page-header/page-header.component';
 import { MEDIA_QUERIES } from '../../../shared/ui/responsive/breakpoints';
 import { StudyLineListComponent } from '../components/study-line-list/study-line-list.component';
 import { StudyMobileLauncherComponent } from '../components/study-mobile-launcher/study-mobile-launcher.component';
-import { StudyLauncherStartTraining, StudyLauncherSummary } from '../components/study-mobile-launcher/study-mobile-launcher.models';
-import { StudyScopeItem, StudyScopeListComponent } from '../components/study-scope-list/study-scope-list.component';
+import {
+  StudyLauncherStartTraining,
+  StudyLauncherSummary,
+} from '../components/study-mobile-launcher/study-mobile-launcher.models';
+import {
+  StudyScopeItem,
+  StudyScopeListComponent,
+} from '../components/study-scope-list/study-scope-list.component';
 import { TrainingBasketPanelComponent } from '../components/training-basket-panel/training-basket-panel.component';
 import { LibraryApiService } from '../data-access/library-api.service';
 import { coverageLabel, masteryLabel } from '../helpers/library-line.helpers';
@@ -48,6 +58,23 @@ export class LibraryBrowserPageComponent implements OnInit {
       meta: this.store.chapterLineMeta(chapter),
     })),
   );
+  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
+    {
+      id: 'repertoires',
+      label: 'Repertoires',
+      value: this.store.filteredCourses().length,
+    },
+    {
+      id: 'sections',
+      label: 'Sections',
+      value: this.store.filteredChapters().length,
+    },
+    {
+      id: 'selected-lines',
+      label: 'Selected lines',
+      value: this.store.selectedLineIds().length,
+    },
+  ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'filters',
@@ -63,6 +90,16 @@ export class LibraryBrowserPageComponent implements OnInit {
       run: () => this.store.selectAllVisibleLines(),
     },
   ]);
+  protected readonly selectedCourseLabel = computed(
+    () => this.store.selectedCourse()?.name ?? 'Choose a repertoire',
+  );
+  protected readonly selectedChapterLabel = computed(
+    () => this.store.selectedChapter()?.name ?? 'Choose a section',
+  );
+  protected readonly selectedLinesLabel = computed(() => {
+    const selectedCount = this.store.selectedLineIds().length;
+    return selectedCount > 0 ? `${selectedCount} selected` : 'Optional multi-select';
+  });
   protected readonly courseSummary = computed<StudyLauncherSummary>(() => {
     const course = this.store.selectedCourse();
     const stats = this.store.selectedCourseStats();
@@ -74,7 +111,9 @@ export class LibraryBrowserPageComponent implements OnInit {
       activeSublineCount: stats?.activeSublineCount ?? 0,
       weakSublineCount: stats?.weakSublineCount ?? 0,
       untrainedSublineCount: stats?.untrainedSublineCount ?? 0,
-      coverageLabel: stats ? coverageLabel(stats.trainedSublineCount, stats.activeSublineCount) : 'Stats loading',
+      coverageLabel: stats
+        ? coverageLabel(stats.trainedSublineCount, stats.activeSublineCount)
+        : 'Stats loading',
       masteryLabel: stats ? masteryLabel(stats.passRate) : 'Stats loading',
       canStart: Boolean(course),
     };
@@ -94,7 +133,9 @@ export class LibraryBrowserPageComponent implements OnInit {
     const line = this.store.selectedLine();
     return {
       title: line ? line.name : 'No line selected',
-      description: line ? `Train one line as ${line.sideToTrain === 'WHITE' ? 'White' : 'Black'}.` : 'Choose one line to train.',
+      description: line
+        ? `Train one line as ${line.sideToTrain === 'WHITE' ? 'White' : 'Black'}.`
+        : 'Choose one line to train.',
       lineCountLabel: 'Lines',
       lineCount: line ? 1 : 0,
       ...lineGroupTrainingSummary(line ? [line] : []),
@@ -107,7 +148,8 @@ export class LibraryBrowserPageComponent implements OnInit {
   }
 
   protected async selectCourse(courseId: number): Promise<void> {
-    this.mobileReturnFocusElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.mobileReturnFocusElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     await this.store.selectCourse(courseId);
     if (window.matchMedia(MEDIA_QUERIES.mobile).matches) {
       this.mobileLauncherOpen.set(true);
