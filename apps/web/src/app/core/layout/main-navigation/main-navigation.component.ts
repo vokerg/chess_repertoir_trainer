@@ -1,9 +1,14 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   HostListener,
+  OnDestroy,
   OnInit,
+  ViewChild,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -44,13 +49,23 @@ interface AppNavNode extends AppNavItem {
     NavIconComponent,
   ],
   templateUrl: './main-navigation.component.html',
-  styleUrls: ['./main-navigation.component.css', './main-navigation-disclosure.css'],
+  styleUrls: [
+    './main-navigation.component.css',
+    './main-navigation-disclosure.css',
+    './main-navigation-mobile-primary.css',
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MainNavigationComponent implements OnInit {
+export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private viewReady = false;
+  private restoreMobileMenuFocus = false;
+
+  @ViewChild('mobileMenuDialog') private mobileMenuDialogRef?: ElementRef<HTMLDialogElement>;
+  @ViewChild('mobileMenuCloseButton') private mobileMenuCloseButtonRef?: ElementRef<HTMLButtonElement>;
+  @ViewChild('mobileMoreButton') private mobileMoreButtonRef?: ElementRef<HTMLButtonElement>;
 
   protected readonly railCollapsed = signal(false);
   protected readonly mobileMenuOpen = signal(false);
@@ -254,6 +269,10 @@ export class MainNavigationComponent implements OnInit {
   protected readonly workspaceNavItems = this.mainNavItems.filter(
     (item) => item.section === 'workspace',
   );
+  private readonly mobilePrimaryNavIds: readonly string[] = ['home', 'study', 'games', 'openings'];
+  protected readonly mobilePrimaryNavItems = this.mainNavItems.filter((item) =>
+    this.mobilePrimaryNavIds.includes(item.id),
+  );
 
   protected readonly authNavItems: readonly AppNavItem[] = [
     {
@@ -272,6 +291,13 @@ export class MainNavigationComponent implements OnInit {
     },
   ];
 
+  constructor() {
+    effect(() => {
+      const open = this.mobileMenuOpen();
+      queueMicrotask(() => this.syncMobileMenuDialog(open));
+    });
+  }
+
   ngOnInit(): void {
     void this.auth.initialize();
     this.currentUrl.set(this.router.url);
@@ -287,9 +313,20 @@ export class MainNavigationComponent implements OnInit {
       });
   }
 
+  ngAfterViewInit(): void {
+    this.viewReady = true;
+    this.syncMobileMenuDialog(this.mobileMenuOpen());
+  }
+
+  ngOnDestroy(): void {
+    this.restoreMobileMenuFocus = false;
+    const dialog = this.mobileMenuDialogRef?.nativeElement;
+    if (dialog?.open) dialog.close();
+  }
+
   @HostListener('document:keydown.escape')
   protected handleEscape(): void {
-    this.closeTransientNavigation();
+    if (!this.mobileMenuOpen()) this.closeNavFlyout();
   }
 
   protected toggleRail(): void {
@@ -315,17 +352,43 @@ export class MainNavigationComponent implements OnInit {
   }
 
   protected toggleMobileMenu(): void {
-    this.mobileMenuOpen.update((open) => !open);
+    if (this.mobileMenuOpen()) {
+      this.closeMobileMenu(true);
+      return;
+    }
+
+    this.restoreMobileMenuFocus = false;
+    this.mobileMenuOpen.set(true);
     this.closeNavFlyout();
   }
 
-  protected closeMobileMenu(): void {
+  protected closeMobileMenu(restoreFocus = false): void {
+    this.restoreMobileMenuFocus = restoreFocus;
     this.mobileMenuOpen.set(false);
+  }
+
+  protected handleMobileMenuCancel(event: Event): void {
+    event.preventDefault();
+    this.closeMobileMenu(true);
+  }
+
+  protected handleMobileMenuBackdropPointerDown(event: PointerEvent): void {
+    if (event.target === this.mobileMenuDialogRef?.nativeElement) {
+      this.closeMobileMenu(true);
+    }
+  }
+
+  protected handleMobileMenuClosed(): void {
+    this.mobileMenuOpen.set(false);
+    if (!this.restoreMobileMenuFocus) return;
+
+    this.restoreMobileMenuFocus = false;
+    setTimeout(() => this.mobileMoreButtonRef?.nativeElement.focus());
   }
 
   protected closeTransientNavigation(): void {
     this.closeNavFlyout();
-    this.closeMobileMenu();
+    this.closeMobileMenu(false);
   }
 
   protected isNavActive(item: AppNavItem): boolean {
@@ -333,8 +396,29 @@ export class MainNavigationComponent implements OnInit {
     return item.activePrefixes.some((prefix) => url === prefix || url.startsWith(`${prefix}/`));
   }
 
+  protected isMobileMoreActive(): boolean {
+    return (
+      this.mainNavItems.some((item) => this.isNavActive(item)) &&
+      !this.mobilePrimaryNavItems.some((item) => this.isNavActive(item))
+    );
+  }
+
   protected navChildren(item: AppNavNode): readonly AppNavItem[] {
     return item.children ?? [item];
+  }
+
+  private syncMobileMenuDialog(open: boolean): void {
+    if (!this.viewReady) return;
+    const dialog = this.mobileMenuDialogRef?.nativeElement;
+    if (!dialog) return;
+
+    if (open) {
+      if (!dialog.open) dialog.showModal();
+      queueMicrotask(() => this.mobileMenuCloseButtonRef?.nativeElement.focus());
+      return;
+    }
+
+    if (dialog.open) dialog.close();
   }
 
   private currentPath(): string {

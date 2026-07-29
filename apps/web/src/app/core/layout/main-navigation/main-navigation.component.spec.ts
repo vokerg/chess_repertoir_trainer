@@ -32,8 +32,11 @@ describe('MainNavigationComponent', () => {
           { path: 'home', component: TestRouteComponent },
           { path: 'library', component: TestRouteComponent },
           { path: 'puzzles', component: TestRouteComponent },
+          { path: 'courses', component: TestRouteComponent },
           { path: 'games', component: TestRouteComponent },
+          { path: 'opening-analysis', component: TestRouteComponent },
           { path: 'builder', component: TestRouteComponent },
+          { path: 'progress', component: TestRouteComponent },
         ]),
       ],
     }).compileComponents();
@@ -60,6 +63,29 @@ describe('MainNavigationComponent', () => {
       'Settings',
     ]);
     expect(auth.initialize).toHaveBeenCalled();
+  });
+
+  it('derives the mobile primary destinations from the shared navigation model', () => {
+    const items = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.mobile-primary-nav-item',
+      ) as NodeListOf<HTMLAnchorElement | HTMLButtonElement>,
+    );
+
+    expect(items.map((item) => item.textContent?.trim())).toEqual([
+      'Home',
+      'Study',
+      'Games',
+      'Openings',
+      'More',
+    ]);
+    expect(items.slice(0, 4).map((item) => item.getAttribute('href'))).toEqual([
+      '/home',
+      '/library',
+      '/games',
+      '/opening-analysis',
+    ]);
+    expect(items[4].getAttribute('aria-controls')).toBe('mobile-main-menu');
   });
 
   it('collapses and expands the desktop rail without persistence', () => {
@@ -208,19 +234,72 @@ describe('MainNavigationComponent', () => {
     expect(activeLink.getAttribute('aria-current')).toBe('page');
   });
 
-  it('closes the mobile menu after route navigation', async () => {
-    const mobileToggle = fixture.nativeElement.querySelector(
-      '.mobile-menu-button',
+  it('opens the complete destination dialog from More and closes it after route navigation', async () => {
+    const moreButton = fixture.nativeElement.querySelector(
+      '.mobile-more-button',
     ) as HTMLButtonElement;
+    const dialog = fixture.nativeElement.querySelector(
+      '#mobile-main-menu',
+    ) as HTMLDialogElement;
 
-    mobileToggle.click();
+    moreButton.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).not.toBeNull();
+    await fixture.whenStable();
+
+    expect(dialog.open).toBeTrue();
+    expect(moreButton.getAttribute('aria-expanded')).toBe('true');
+    expect(dialog.querySelectorAll('.mobile-nav-item').length).toBeGreaterThan(9);
+    expect(dialog.querySelector('[href="/settings/accounts"]')).not.toBeNull();
+
+    await router.navigateByUrl('/games');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(dialog.open).toBeFalse();
+    expect(moreButton.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes the complete destination dialog from the backdrop', async () => {
+    const moreButton = fixture.nativeElement.querySelector(
+      '.mobile-more-button',
+    ) as HTMLButtonElement;
+    const dialog = fixture.nativeElement.querySelector(
+      '#mobile-main-menu',
+    ) as HTMLDialogElement;
+
+    moreButton.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(dialog.open).toBeTrue();
+
+    dialog.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(dialog.open).toBeFalse();
+    expect(moreButton.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('delegates secondary-route active state to More', async () => {
+    await router.navigateByUrl('/courses');
+    fixture.detectChanges();
+
+    const moreButton = fixture.nativeElement.querySelector(
+      '.mobile-more-button',
+    ) as HTMLButtonElement;
+    expect(moreButton.classList).toContain('mobile-primary-nav-item-active');
+    expect(moreButton.getAttribute('aria-current')).toBe('page');
 
     await router.navigateByUrl('/games');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.mobile-menu-sheet')).toBeNull();
+    const gamesLink = fixture.nativeElement.querySelector(
+      '.mobile-primary-nav-item[href="/games"]',
+    ) as HTMLAnchorElement;
+    expect(gamesLink.classList).toContain('mobile-primary-nav-item-active');
+    expect(gamesLink.getAttribute('aria-current')).toBe('page');
+    expect(moreButton.classList).not.toContain('mobile-primary-nav-item-active');
+    expect(moreButton.hasAttribute('aria-current')).toBeFalse();
   });
 
   it('uses parent-route activity for direct children and exact child activity for ambiguous parents', async () => {

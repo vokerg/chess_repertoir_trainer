@@ -26,6 +26,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Game detail analysis: `/games/:gameId` now uses `components`, `state`, and `helpers` folders for the route header, summary, shared workbench wrapper, signal store, labels, and game-tree helpers.
 - Representative workflow modernization: Games, Study, and Opening Analysis consume production roles while preserving route, store, data-access, and domain workflow ownership.
 - Proven shared presentation primitives: `shared/ui/context-strip` serves Study and Opening Analysis derived context; `shared/ui/fact-grid` serves Games responsive evidence and Study line health. Both remain typed, OnPush, semantic, and feature-agnostic.
+- Mobile-primary navigation: `core/layout/main-navigation` derives Home, Study, Games, and Openings from the existing hierarchical model, uses More for complete grouped route/account access, delegates secondary active state to More, and coordinates safe-area/content/job-panel clearance without changing routes or feature ownership.
 
 ## Accepted feature debt
 
@@ -34,13 +35,14 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Opening Analysis retains a feature-scoped compatibility bridge because several shared analytical widgets still consume legacy short role names. Migrate those widgets only when their full consumer set is reviewed; do not redefine the legacy names globally.
 - Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
 - Games evidence cards, Study workflow-step/launcher/training-plan composition, and analysis-workbench evidence slots remain feature-owned. Their current contracts are domain-specific and were intentionally not generalized during VT-204.
+- Direct mobile browser feedback for Study, Opening Analysis, and the shared-primitives regression was deferred by explicit approval. VT-205 preserves those checklists as later consolidated product-review evidence rather than treating them as observed passes.
 
 ## Migration order
 
 Prioritize by responsibility count and user-facing risk:
 
 1. Remaining shared board, engine, PGN, note, and analytical-widget token migration.
-2. Visual token migration follows the Visual Transformation issue order: final mobile navigation, remaining pages and Labs, then onboarding/accessibility/responsive polish.
+2. Visual token migration follows the Visual Transformation issue order: remaining pages and Labs, then onboarding/accessibility/responsive polish after final mobile navigation.
 
 ## Per-component completion criteria
 

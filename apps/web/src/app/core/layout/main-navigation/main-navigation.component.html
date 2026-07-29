@@ -222,19 +222,36 @@
     <a routerLink="/home" class="mobile-brand-link" aria-label="Chess Repertoire Trainer home">
       <app-brand-lockup [markSize]="34" collapseAtMobile />
     </a>
+  </header>
+
+  <nav class="mobile-primary-nav" aria-label="Primary mobile navigation">
+    @for (item of mobilePrimaryNavItems; track item.id) {
+      <a
+        [routerLink]="item.link"
+        class="mobile-primary-nav-item"
+        [class.mobile-primary-nav-item-active]="isNavActive(item)"
+        [attr.aria-current]="isNavActive(item) ? 'page' : null"
+        (click)="closeMobileMenu()"
+      >
+        <span class="mobile-primary-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+        <span class="mobile-primary-nav-label">{{ item.label }}</span>
+      </a>
+    }
     <button
+      #mobileMoreButton
       type="button"
-      class="mobile-menu-button"
+      class="mobile-primary-nav-item mobile-more-button"
+      [class.mobile-primary-nav-item-active]="isMobileMoreActive() || mobileMenuOpen()"
+      [attr.aria-current]="isMobileMoreActive() ? 'page' : null"
       [attr.aria-expanded]="mobileMenuOpen()"
       aria-controls="mobile-main-menu"
-      [attr.aria-label]="mobileMenuOpen() ? 'Close main menu' : 'Open main menu'"
+      aria-label="Open all destinations"
       (click)="toggleMobileMenu()"
     >
-      <span></span>
-      <span></span>
-      <span></span>
+      <span class="mobile-primary-nav-icon"><app-nav-icon name="more" /></span>
+      <span class="mobile-primary-nav-label">More</span>
     </button>
-  </header>
+  </nav>
 
   @if (railCollapsed() && openNavId()) {
     <button
@@ -245,58 +262,64 @@
     ></button>
   }
 
-  @if (mobileMenuOpen()) {
-    <button
-      type="button"
-      class="mobile-menu-backdrop"
-      aria-label="Close main menu"
-      (click)="closeMobileMenu()"
-    ></button>
-    <aside id="mobile-main-menu" class="mobile-menu-sheet" aria-label="Main navigation">
-      <div class="mobile-menu-header">
-        <div>
-          <p class="mobile-menu-kicker">Navigation</p>
-          <app-brand-lockup [markSize]="34" />
-        </div>
-        <button type="button" class="mobile-menu-close" aria-label="Close main menu" (click)="closeMobileMenu()">
-          <span></span>
-        </button>
+  <dialog
+    #mobileMenuDialog
+    id="mobile-main-menu"
+    class="mobile-menu-sheet"
+    aria-label="All application destinations"
+    (cancel)="handleMobileMenuCancel($event)"
+    (close)="handleMobileMenuClosed()"
+    (pointerdown)="handleMobileMenuBackdropPointerDown($event)"
+  >
+    <div class="mobile-menu-header">
+      <div>
+        <p class="mobile-menu-kicker">All destinations</p>
+        <app-brand-lockup [markSize]="34" />
       </div>
-      <nav class="mobile-nav-groups" aria-label="Main navigation">
-        @for (group of mainNavItems; track group.id) {
-          <section class="mobile-nav-group">
-            <h3 class="mobile-nav-group-title">{{ group.label }}</h3>
-            <div class="mobile-nav">
-              @for (item of navChildren(group); track item.id) {
-                <a
-                  [routerLink]="item.link"
-                  class="mobile-nav-item"
-                  [class.mobile-nav-item-active]="isNavActive(item)"
-                  [class.mobile-nav-item-quiet]="item.quiet"
-                  [attr.aria-current]="isNavActive(item) ? 'page' : null"
-                  (click)="closeMobileMenu()"
-                >
-                  <span class="mobile-nav-icon"><app-nav-icon [name]="item.icon" /></span>
-                  <span class="mobile-nav-copy">
-                    <span class="mobile-nav-label">{{ item.label }}</span>
-                    @if (item.description) {
-                      <span class="mobile-nav-description">{{ item.description }}</span>
-                    }
-                  </span>
-                </a>
-              }
-            </div>
-          </section>
-        }
-      </nav>
-      <div class="mobile-auth-status">
-        <span class="auth-name">{{ auth.displayName() }}</span>
-        @if (!auth.isDevAuth()) {
-          <app-clerk-user-button />
-        }
-      </div>
-    </aside>
-  }
+      <button
+        #mobileMenuCloseButton
+        type="button"
+        class="mobile-menu-close"
+        aria-label="Close all destinations"
+        (click)="closeMobileMenu(true)"
+      >
+        <span></span>
+      </button>
+    </div>
+    <nav class="mobile-nav-groups" aria-label="All application destinations">
+      @for (group of mainNavItems; track group.id) {
+        <section class="mobile-nav-group">
+          <h3 class="mobile-nav-group-title">{{ group.label }}</h3>
+          <div class="mobile-nav">
+            @for (item of navChildren(group); track item.id) {
+              <a
+                [routerLink]="item.link"
+                class="mobile-nav-item"
+                [class.mobile-nav-item-active]="isNavActive(item)"
+                [class.mobile-nav-item-quiet]="item.quiet"
+                [attr.aria-current]="isNavActive(item) ? 'page' : null"
+                (click)="closeMobileMenu()"
+              >
+                <span class="mobile-nav-icon"><app-nav-icon [name]="item.icon" /></span>
+                <span class="mobile-nav-copy">
+                  <span class="mobile-nav-label">{{ item.label }}</span>
+                  @if (item.description) {
+                    <span class="mobile-nav-description">{{ item.description }}</span>
+                  }
+                </span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </nav>
+    <div class="mobile-auth-status">
+      <span class="auth-name">{{ auth.displayName() }}</span>
+      @if (!auth.isDevAuth()) {
+        <app-clerk-user-button />
+      }
+    </div>
+  </dialog>
 } @else {
   <aside class="desktop-rail desktop-rail-auth" aria-label="Authentication navigation">
     <a routerLink="/" class="rail-brand-link" aria-label="Chess Repertoire Trainer landing page">

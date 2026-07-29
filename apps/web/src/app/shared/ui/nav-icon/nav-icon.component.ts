@@ -11,7 +11,8 @@ export type NavIconName =
   | 'analysis'
   | 'lab'
   | 'account'
-  | 'settings';
+  | 'settings'
+  | 'more';
 
 @Component({
   selector: 'app-nav-icon',
@@ -100,6 +101,11 @@ export type NavIconName =
           <path d="M19 12h3" />
           <path d="m4.9 19.1 2.1-2.1" />
           <path d="m17 7 2.1-2.1" />
+        }
+        @case ('more') {
+          <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
         }
       }
     </svg>
