@@ -44,40 +44,47 @@ export const AnalysisReintegrationService = {
   },
 
   applyToChapter: async (userId: number, chapterId: number, input: ApplyAnalysisReintegrationInput) =>
-    prisma.$transaction(async (tx) => {
-      const chapter = await getChapterWithCourse(userId, chapterId, tx);
-      if (!chapter) throw new AnalysisReintegrationError('Chapter not found', 404);
-      const courseLines = (await getCourseLinesWithMoves(userId, chapter.courseId, tx)).map(toRepertoireLineInput);
-
-      if (input.target.kind === 'NEW_LINE') {
-        const preview = previewCreateNewLine({ analysisTree: input.analysisTree,
-          lineName: input.target.name, sideToTrain: input.target.sideToTrain, courseLines });
-        if (!input.target.allowConflicts) rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
-        const line = await createLine(userId, chapterId, { name: input.target.name,
-          sideToTrain: input.target.sideToTrain, startingFen: input.analysisTree.rootFen }, tx);
-        if (!line) throw new AnalysisReintegrationError('Chapter not found', 404);
-        const counts = await applyChildren(tx, userId, line.id, null, input.analysisTree.children, []);
-        await incrementCourseContentRevision(chapter.courseId, tx);
-        return { targetKind: 'NEW_LINE' as const, lineId: line.id, lineName: line.name,
-          createdMoves: counts.created, reusedMoves: counts.reused };
-      }
-
-      const selected = await getLineWithMoves(userId, input.target.lineId, tx);
-      if (!selected) throw new AnalysisReintegrationError('Line not found', 404);
-      if (selected.chapterId !== chapterId || selected.chapter.courseId !== chapter.courseId) {
-        throw new AnalysisReintegrationError('Selected line does not belong to this chapter.', 409);
-      }
-      const line = toRepertoireLineInput(selected);
-      const anchor = resolveAnchor(line, input.target.anchor);
-      const preview = previewMergeIntoLine({ analysisTree: input.analysisTree, line, anchor, courseLines });
-      rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
-      const counts = await applyChildren(tx, userId, line.id, anchor.nodeId, input.analysisTree.children,
-        selected.moves.map((node) => ({ id: node.id, parentId: node.parentId, moveUci: node.moveUci })));
-      if (counts.created > 0) await incrementCourseContentRevision(chapter.courseId, tx);
-      return { targetKind: 'EXISTING_LINE' as const, lineId: line.id, lineName: line.name,
-        createdMoves: counts.created, reusedMoves: counts.reused };
-    }),
+    prisma.$transaction((tx) => applyAnalysisReintegrationInTransaction(tx, userId, chapterId, input)),
 };
+
+export async function applyAnalysisReintegrationInTransaction(
+  tx: Prisma.TransactionClient,
+  userId: number,
+  chapterId: number,
+  input: ApplyAnalysisReintegrationInput,
+) {
+  const chapter = await getChapterWithCourse(userId, chapterId, tx);
+  if (!chapter) throw new AnalysisReintegrationError('Chapter not found', 404);
+  const courseLines = (await getCourseLinesWithMoves(userId, chapter.courseId, tx)).map(toRepertoireLineInput);
+
+  if (input.target.kind === 'NEW_LINE') {
+    const preview = previewCreateNewLine({ analysisTree: input.analysisTree,
+      lineName: input.target.name, sideToTrain: input.target.sideToTrain, courseLines });
+    if (!input.target.allowConflicts) rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
+    const line = await createLine(userId, chapterId, { name: input.target.name,
+      sideToTrain: input.target.sideToTrain, startingFen: input.analysisTree.rootFen }, tx);
+    if (!line) throw new AnalysisReintegrationError('Chapter not found', 404);
+    const counts = await applyChildren(tx, userId, line.id, null, input.analysisTree.children, []);
+    await incrementCourseContentRevision(chapter.courseId, tx);
+    return { targetKind: 'NEW_LINE' as const, lineId: line.id, lineName: line.name,
+      createdMoves: counts.created, reusedMoves: counts.reused };
+  }
+
+  const selected = await getLineWithMoves(userId, input.target.lineId, tx);
+  if (!selected) throw new AnalysisReintegrationError('Line not found', 404);
+  if (selected.chapterId !== chapterId || selected.chapter.courseId !== chapter.courseId) {
+    throw new AnalysisReintegrationError('Selected line does not belong to this chapter.', 409);
+  }
+  const line = toRepertoireLineInput(selected);
+  const anchor = resolveAnchor(line, input.target.anchor);
+  const preview = previewMergeIntoLine({ analysisTree: input.analysisTree, line, anchor, courseLines });
+  rejectConflicts(preview.counts.conflictingMoves, preview.conflicts);
+  const counts = await applyChildren(tx, userId, line.id, anchor.nodeId, input.analysisTree.children,
+    selected.moves.map((node) => ({ id: node.id, parentId: node.parentId, moveUci: node.moveUci })));
+  if (counts.created > 0) await incrementCourseContentRevision(chapter.courseId, tx);
+  return { targetKind: 'EXISTING_LINE' as const, lineId: line.id, lineName: line.name,
+    createdMoves: counts.created, reusedMoves: counts.reused };
+}
 
 function resolveAnchor(line: RepertoireLineInput, submitted: {
   kind: 'LINE_START' | 'NODE'; nodeId: number | null; normalizedFen: string;
@@ -127,7 +134,7 @@ function asRepertoireColor(value: string): RepertoireColor {
   throw new Error(`Invalid repertoire side to train: ${value}`);
 }
 
-function toRepertoireLineInput(line: any): RepertoireLineInput {
+export function toRepertoireLineInput(line: any): RepertoireLineInput {
   return { id: line.id, name: line.name, chapterId: line.chapterId,
     sideToTrain: asRepertoireColor(line.sideToTrain), startingFen: line.startingFen || 'startpos',
     moves: [...line.moves].sort(sortMoveNodesStable).map((node: any) => ({ id: node.id,
