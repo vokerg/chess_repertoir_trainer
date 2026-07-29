@@ -1,4 +1,8 @@
-<section class="section-card games-filters" aria-label="Game filters">
+<section
+  class="section-card games-filters"
+  [class.games-filters-explorer]="presentation() === 'explorer'"
+  aria-label="Game filters"
+>
   <div class="games-filter-grid">
     <label class="games-field"
       ><span>Account</span
@@ -92,27 +96,27 @@
           {{ tagSelectionLabel() }}
         </button>
         @if (tagsOpen()) {
-        <div class="tags-options">
-          <label class="tag-option">
-            <input
-              type="checkbox"
-              [checked]="noTagsSelected()"
-              (change)="toggleNoTags($any($event.target).checked)"
-            />
-            <span>No tags</span>
-          </label>
-          @for (tag of facets().tags || []; track tagCode(tag)) {
+          <div class="tags-options">
             <label class="tag-option">
               <input
                 type="checkbox"
-                [disabled]="noTagsSelected()"
-                [checked]="isTagSelected(tagCode(tag))"
-                (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
+                [checked]="noTagsSelected()"
+                (change)="toggleNoTags($any($event.target).checked)"
               />
-              <span>{{ tagLabel(tag) }}</span>
+              <span>No tags</span>
             </label>
-          }
-        </div>
+            @for (tag of facets().tags || []; track tagCode(tag)) {
+              <label class="tag-option">
+                <input
+                  type="checkbox"
+                  [disabled]="noTagsSelected()"
+                  [checked]="isTagSelected(tagCode(tag))"
+                  (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
+                />
+                <span>{{ tagLabel(tag) }}</span>
+              </label>
+            }
+          </div>
         }
       </div>
     </div>
