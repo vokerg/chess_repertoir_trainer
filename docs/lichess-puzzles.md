@@ -84,6 +84,8 @@ The first release supports:
 - explicit rated or practice selection;
 - deliberate start action, so visiting the page cannot accidentally create a rated attempt;
 - shared Chessground interaction;
+- automatic trigger-move animation when a new puzzle appears, with shared board navigation controls and Left/Right Arrow review that do not submit a solution move;
+- persistent danger feedback after an incorrect move, matching the course-drill feedback language;
 - server-validated user moves and automatic forced replies;
 - continued local solving after a rated failure;
 - confirmed Lichess rating difference;

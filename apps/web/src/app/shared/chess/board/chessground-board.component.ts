@@ -332,6 +332,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   private ground: Api | null = null;
   private game = new Chess();
   private pendingMove: string | null = null;
+  private replayTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private sounds: ChessSoundService,
@@ -347,6 +348,7 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   ngOnChanges(changes: SimpleChanges) {
     if (!this.ground) return;
     if (changes['fen'] || changes['side'] || changes['positionVersion']) {
+      this.cancelLastMoveReplay();
       this.playExternalMoveSound(changes);
       this.game = this.createGame(this.fen);
       this.resetPendingMoveState();
@@ -360,9 +362,42 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   }
 
   ngOnDestroy() {
+    this.cancelLastMoveReplay();
     this.resetPendingMoveState();
     this.ground?.destroy?.();
     this.ground = null;
+  }
+
+  replayLastMove(): void {
+    if (!this.showPositionBeforeLastMove()) return;
+    this.replayTimer = setTimeout(() => {
+      this.replayTimer = null;
+      this.showCurrentPosition();
+    }, 120);
+  }
+
+  showPositionBeforeLastMove(): boolean {
+    if (!this.ground || !this.lastMove || this.lastMove.from === this.lastMove.to) return false;
+
+    this.cancelLastMoveReplay();
+    const from = this.lastMove.from as Key;
+    const to = this.lastMove.to as Key;
+    this.ground.set({
+      animation: { enabled: false },
+      movable: { color: undefined, dests: new Map() },
+      lastMove: undefined,
+    });
+    this.ground.move(to, from);
+    return true;
+  }
+
+  showCurrentPosition(): boolean {
+    if (!this.ground) return false;
+
+    this.cancelLastMoveReplay();
+    this.ground.set(this.config());
+    this.sounds.play('move');
+    return true;
   }
 
   private createGame(fen: string) {
@@ -547,6 +582,12 @@ export class ChessgroundBoardComponent implements AfterViewInit, OnChanges, OnDe
   private resetPendingMoveState(): void {
     this.pendingMove = null;
     this.pendingPromotion = null;
+  }
+
+  private cancelLastMoveReplay(): void {
+    if (this.replayTimer === null) return;
+    clearTimeout(this.replayTimer);
+    this.replayTimer = null;
   }
 
   private isPromotionPiece(piece: string | undefined): piece is PromotionPiece {

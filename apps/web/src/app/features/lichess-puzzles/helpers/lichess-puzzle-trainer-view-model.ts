@@ -21,6 +21,7 @@ export interface LichessPuzzleTrainerViewModel {
   ratingLabel: string;
   themes: readonly string[];
   guidance: string | null;
+  mistakeFeedback: string | null;
   canAbandon: boolean;
   canStartNext: boolean;
   canRetrySync: boolean;
@@ -42,10 +43,18 @@ export function toLichessPuzzleTrainerViewModel(
     ratingLabel: toRatingLabel(round),
     themes: [...round.puzzle.themes],
     guidance: toGuidance(round),
+    mistakeFeedback: toMistakeFeedback(round),
     canAbandon: round.status === 'IN_PROGRESS',
     canStartNext: round.status !== 'IN_PROGRESS',
     canRetrySync: round.upstreamStatus === 'FAILED',
   };
+}
+
+function toMistakeFeedback(round: LichessPuzzleRound): string | null {
+  if (!round.firstWrongAt) return null;
+  return round.ratedRequested
+    ? 'Incorrect move. Lichess recorded this rated puzzle as a loss.'
+    : 'Incorrect move. Return to the puzzle position and try again.';
 }
 
 function toBoardLastMove(moveUci: string): LichessPuzzleBoardLastMove | null {

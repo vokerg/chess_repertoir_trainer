@@ -8,6 +8,17 @@
       [positionVersion]="positionVersion()"
       (move)="boardMove.emit($event)"
     />
+    <app-board-action-toolbar
+      [canGoBackward]="!busy() && !reviewingPreviousMove()"
+      [canGoForward]="!busy() && reviewingPreviousMove()"
+      [showStart]="false"
+      [showEnd]="false"
+      previousLabel="Previous move"
+      nextLabel="Puzzle position"
+      keyboardHint="Use the left and right arrow keys to review the trigger move."
+      (goPrevious)="goToPreviousMove()"
+      (goNext)="goToPuzzlePosition()"
+    />
   </div>
 
   <app-panel [title]="view().outcomeLabel" [subtitle]="view().ratingLabel">
@@ -41,6 +52,12 @@
 
       @if (view().guidance; as guidance) {
         <p class="puzzle-guidance">{{ guidance }}</p>
+      }
+
+      @if (view().mistakeFeedback; as mistakeFeedback) {
+        <div class="puzzle-feedback incorrect" role="alert">
+          {{ mistakeFeedback }}
+        </div>
       }
 
       <div class="puzzle-actions">
