@@ -4,15 +4,15 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** Phase 2 is active; VT-201 Games modernization awaits direct browser review
+**Program state:** Phase 2 is active; VT-201 Games modernization is complete and VT-202 Study modernization is the next ordered ready task
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-201-games-modernization`
+**Active checkpoint branch:** none
 
-**Active pull request:** draft PR #167
+**Active pull request:** none
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -41,6 +41,7 @@ All visual-transformation tasks use short-lived branches from the current `main`
 - [x] PR #161 — VT-103 integration and queue reconciliation.
 - [x] PR #162 — evidence-bounded Phase 1 browser disposition and local-development auth return-URL correction.
 - [x] PR #165 — VT-104 integration and queue reconciliation.
+- [x] PR #167 — VT-201 Games modernization.
 
 ## Phase 1 completion
 
@@ -53,13 +54,13 @@ VT-101 through VT-104 established and validated:
 - evidence-bounded public/auth/Home/brand/navigation browser disposition;
 - local-development auth return-URL correction.
 
-Phase 1 is complete for transformation sequencing. The explicit browser permutations that could not be reproduced remain documented in `VT_104_SHELL_BROWSER_VALIDATION.md` as risks rather than passes.
+Phase 1 is complete for transformation sequencing. Explicit browser permutations that could not be reproduced remain documented in `VT_104_SHELL_BROWSER_VALIDATION.md` as risks rather than passes.
 
-## VT-201 active checkpoint
+## VT-201 integrated checkpoint
 
-Draft PR #167 modernizes Games as the representative data-exploration workflow.
+Issue #127 is complete through squash-merged PR #167, commit `99cf2bf805b7db846e16c651590bb3fcd2af82ee`.
 
-Delivered on the active branch:
+Delivered:
 
 - [x] verified route/page/store/data-access/job ownership before implementation;
 - [x] retained the lazy `/games` route and current URL query contract;
@@ -71,17 +72,15 @@ Delivered on the active branch:
 - [x] aligned responsive thresholds with shared 980px and 640px breakpoint contracts;
 - [x] corrected the malformed `more available` subtitle separator without changing pagination behavior;
 - [x] added focused responsive-card and loaded-result tests;
-- [x] documented feature-local extraction candidates for VT-204 in `transformation/reports/VT_201_GAMES_MODERNIZATION.md`;
-- [x] implementation-head CI #1282 passed the complete repository workflow;
-- [x] report-head CI #1288 and final documentation-head CI #1289 passed the complete repository workflow;
-- [ ] direct browser review and explicit approval;
-- [ ] squash merge and completion reconciliation.
+- [x] documented feature-local extraction candidates for VT-204;
+- [x] passed implementation-head CI #1282, report-head CI #1288, documentation-head CI #1289, and final acceptance-head CI #1299;
+- [x] received explicit approval and squash-merged into `main`.
 
-No backend, API, schema, database, job-processing, game-analysis algorithm, Study, Opening Analysis, or Game Detail change is included.
+No backend, API, schema, database, job-processing, game-analysis algorithm, Study, Opening Analysis, or Game Detail change was included.
 
 ## VT-201 behavior boundary
 
-The following remain unchanged and are covered by the existing implementation and focused tests:
+The following remain unchanged:
 
 - applied versus draft route criteria;
 - canonical query serialization and refresh behavior;
@@ -95,13 +94,15 @@ The following remain unchanged and are covered by the existing implementation an
 - job eligibility, force/retry behavior, rejected-game errors, and terminal-job refresh;
 - game review, provider, and player-profile destinations.
 
-The current Games implementation exposes no row-selection model. VT-201 does not invent one solely because the issue template referenced selection behavior.
+The current Games implementation exposes no row-selection model. VT-201 did not invent one solely because the issue template referenced selection behavior.
 
-## VT-201 browser review required
+## Acceptance boundary and residual risk
 
-Review `/games` with realistic data at desktop, tablet, and narrow-phone widths:
+The user explicitly approved integration on 2026-07-29 after final acceptance-head CI #1299 passed. Browser permutations not directly reproduced remain verification risks rather than represented as observed passes.
 
-- common filters, advanced filters, tags, custom dates, apply, reset, and URL persistence;
+The preserved browser checklist remains useful for later regression review:
+
+- common and advanced filters, tags, custom dates, apply, reset, and URL persistence;
 - desktop table density and long player/opening names;
 - tablet two-column and compact one-column evidence cards;
 - opening, control, accuracy, analysis, and index visibility on responsive cards;
@@ -115,11 +116,9 @@ Unavailable states must be recorded explicitly rather than treated as observed.
 
 ## Execution disposition
 
-Issues #123–#126 are complete.
+Issues #123–#127 are complete.
 
-Issue #127 is `IN_PROGRESS` through draft PR #167. Issues #128 and #129 remain `READY` but cannot replace the active task.
-
-Issues #130–#133 retain their downstream dependencies.
+Issue #128 / VT-202 is `READY` and is the next ordered Phase 2 task. Issue #129 remains `READY` after it. Issues #130–#133 retain their downstream dependencies.
 
 ## Validation status
 
@@ -136,7 +135,7 @@ Issues #130–#133 retain their downstream dependencies.
 
 ### VT-201 validation
 
-CI #1282, #1288, and #1289 passed:
+CI #1282, #1288, #1289, and #1299 passed:
 
 - dependency installation;
 - lint;
@@ -145,9 +144,7 @@ CI #1282, #1288, and #1289 passed:
 - architecture guardrails;
 - database migrations;
 - imported-game opening classification audit;
-- complete repository test suite, including the new responsive Games tests.
-
-Direct browser review remains pending. The active task must not be represented as complete or merged before explicit approval.
+- complete repository test suite, including the responsive Games tests.
 
 ## Open design and product decisions
 
@@ -172,7 +169,7 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-Active. Games is implemented and automated-green on draft PR #167, awaiting browser review. Study and Opening Analysis remain ready and ordered after Games.
+Active. Games is complete and integrated. Study is the next ordered ready workflow, followed by Opening Analysis.
 
 ### Phase 3 — rollout and polish
 
@@ -180,15 +177,16 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ## Session log
 
-### 2026-07-29 — VT-201 Games modernization
+### 2026-07-29 — VT-201 integration
 
 - Claimed issue #127 and branched from reconciled `main`.
 - Inspected the current Games route, page, store, API service, filters, table, action menu, job integration, tests, Angular rules, token contract, and responsive breakpoints.
 - Implemented a Games-only production-token filter presentation and responsive analytical result cards without changing ownership or behavior.
 - Added focused responsive-card tests and corrected the malformed result subtitle.
-- Opened draft PR #167.
-- Passed implementation-head CI #1282, report-head CI #1288, and final documentation-head CI #1289.
-- Awaiting direct browser review and explicit approval.
+- Opened PR #167 and passed CI #1282, #1288, #1289, and #1299.
+- Received explicit approval on 2026-07-29.
+- Squash-merged PR #167 into `main` as `99cf2bf805b7db846e16c651590bb3fcd2af82ee`.
+- Closed issue #127 and released VT-202 / issue #128 as the next ordered ready task.
 
 ### 2026-07-29 — VT-104 integration
 
@@ -198,4 +196,4 @@ Remaining-page rollout and onboarding/accessibility/responsive polish remain rep
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, and #165 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #142, #143, #144, #141, #155, #158, #161, #162, #165, and #167 are integrated into `main`.
