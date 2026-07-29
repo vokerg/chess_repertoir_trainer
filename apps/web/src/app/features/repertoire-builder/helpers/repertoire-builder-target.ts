@@ -95,6 +95,13 @@ export function buildRepertoireBuilderTarget(
         source: { kind: 'SYSTEM_DEFAULT', policyVersion: SYSTEM_DEFAULT_VERSION },
         value: 'BLITZ_AND_SLOWER',
       },
+      ...(population.peerResolution === null
+        ? []
+        : [{
+            field: 'population' as const,
+            source: { kind: 'PEER_RESOLUTION' as const },
+            value: population,
+          }]),
       {
         field: 'objective',
         source: { kind: 'PERSONA_PRESET', presetVersion: PERSONA_PRESET_VERSION },
