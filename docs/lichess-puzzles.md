@@ -6,19 +6,23 @@ The application lets a connected player solve Lichess puzzles without leaving th
 
 This feature is separate from imported-game scenario training. Scenario training evaluates one candidate move from an analysed user game. Lichess puzzles use a provider-owned, exact, multi-ply solution and have an upstream rating and replay lifecycle.
 
-## Provider boundary
+## API ownership
 
-The API owns all Lichess puzzle communication. Angular never receives an OAuth access token or the complete solution.
+The API owns all Lichess puzzle communication and the complete solution. Angular never receives an OAuth access token or solution moves.
 
-The provider integration lives under `apps/api/src/modules/lichess-puzzles`:
+The feature lives under `apps/api/src/modules/lichess-puzzles` with explicit boundaries:
 
-- `lichess-puzzles.client.ts` performs authenticated batch selection and batch result submission.
-- `lichess-puzzle-position.ts` reconstructs the challenge FEN and trigger move from the Lichess game move text and `initialPly`.
+- `lichess-puzzles.client.ts` owns Lichess HTTP calls, provider payload validation and normalization. Batch selection remains the primary request; when batch move text cannot reconstruct a legal position, the client fetches the selected puzzle by id and uses its authoritative `fen` and `lastMove`.
+- `lichess-puzzle-position.ts` reconstructs the challenge position from valid Lichess game move text and `initialPly`.
 - `lichess-puzzle.types.ts` contains provider-facing and normalized internal types. These are not public HTTP contracts.
-- `lichess-puzzle-access.service.ts` loads the encrypted user connection, verifies required scopes and decrypts the token server-side.
+- `lichess-puzzle-access.repository.prisma.ts` owns the narrow Lichess-connection projection needed for puzzle access.
+- `lichess-puzzle-access.service.ts` verifies connection state and scopes, checks expiry and decrypts the token server-side. It has no Prisma dependency.
+- `lichess-puzzle-round.logic.ts` owns pure persisted-attempt parsing, legal UCI application and current-position last-move derivation. It has no Fastify or Prisma dependency.
 - `lichess-puzzles.repository.prisma.ts` owns puzzle, round, review-state and synchronization persistence.
-- `lichess-puzzles.service.ts` owns the round state machine, exact solution validation, forced replies and immutable upstream-result semantics.
-- `lichess-puzzles.routes.ts` exposes authenticated, ownership-scoped HTTP operations.
+- `lichess-puzzles.mapper.ts` maps and validates persisted rows into the public round DTO. Prisma rows never cross the HTTP boundary directly.
+- `lichess-puzzles.errors.ts` maps expected access, provider, concurrency and round-logic failures to stable feature errors. Unexpected exceptions remain available to centralized Fastify logging and `500` handling.
+- `lichess-puzzles.service.ts` owns application orchestration: round creation, exact-answer progression, forced replies, abandonment and retryable provider synchronization.
+- `lichess-puzzles.routes.ts` owns authentication, validated transport input, documented response selection and expected-error serialization.
 
 Provider payloads remain API-internal. Shared HTTP contracts are exported from `@chess-trainer/contracts/lichess-puzzles`.
 
@@ -29,7 +33,7 @@ The required OAuth scopes are:
 - `puzzle:read` for authenticated selection and future activity/replay reads.
 - `puzzle:write` for submitting results and updating the connected player's Lichess puzzle rating.
 
-`initialPly` is the one-based ply at which the solver moves. The game move text supplied by the batch endpoint ends after the preceding trigger move, so it contains exactly `initialPly - 1` plies. The normalized challenge position is the final FEN after that move.
+`initialPly` is the one-based ply at which the solver moves. When the batch move text is valid, it contains exactly `initialPly - 1` plies and the normalized challenge position is the final FEN after the trigger move. The explicit puzzle `fen` and `lastMove` response is the fallback source of truth when provider move text is not reconstructable.
 
 A first submitted result can affect the Lichess puzzle rating. Later submissions for the same puzzle can update replay/fixed state, but the application persists one immutable upstream outcome for each fresh round and never recalculates it during retry.
 
@@ -59,9 +63,17 @@ The public puzzle DTO includes the normalized board position, trigger move, orie
 
 Reveal, history, repeat selection and Lichess replay endpoints remain deferred until their consuming workflows are implemented.
 
-## Angular experience
+## Angular ownership
 
-The authenticated `/puzzles` route lives under Study and uses feature-local page, component, store and data-access boundaries.
+The authenticated `/puzzles` route lives under Study and follows the feature-local split:
+
+- `pages` reads route state, composes shared UI and delegates commands.
+- `state` owns mutable signals, async workflows, stale-load protection, notices and errors.
+- `data-access` contains typed HTTP calls only.
+- `helpers` maps wire DTOs into a trainer-specific view model.
+- `components` receives that view model and emits typed user intents. It does not import HTTP DTOs, call the router or perform API work.
+
+The page uses `app-page-header`, `app-panel`, the shared `ChessgroundBoardComponent`, production `--ui-*` tokens and shared responsive breakpoint values. Round URLs retain `roundId` so persisted rounds survive reloads.
 
 The first release supports:
 
@@ -82,11 +94,13 @@ Repeat/history views and theme/opening selection are not part of the first UI re
 
 Focused coverage includes:
 
-- provider request/response and error parsing;
-- official-fixture and boundary tests for position reconstruction;
+- provider request/response, position fallback and error parsing;
+- position reconstruction boundaries;
+- access-scope and expiry behavior without Prisma infrastructure;
+- pure round-move and persisted-attempt behavior;
 - HTTP contract defaults, UCI validation and solution non-disclosure;
 - clean solve, first failure, forced reply, one-time rating submission and abandonment semantics;
-- Angular store creation, board locking, forced replies and continued play after a rated failure.
+- Angular store workflows and DTO-to-view-model mapping.
 
 Required validation before merge:
 
