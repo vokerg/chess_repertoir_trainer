@@ -66,6 +66,47 @@ export class ItemRowComponent {
 
 Outputs communicate user intent. The parent store decides whether that intent causes HTTP, navigation, or state changes.
 
+## Shared context and fact presentation
+
+Use `app-context-strip` for a compact, read-only summary derived from feature state. The feature owns the computed item list and all meaning:
+
+```ts
+readonly contextItems = computed<readonly UiContextItem[]>(() => [
+  { id: 'scope', marker: '1', label: 'Scope', value: this.store.scopeLabel() },
+  { id: 'count', label: 'Selected', value: this.store.selectedIds().length, mono: true },
+]);
+```
+
+```html
+<app-context-strip
+  presentation="cards"
+  ariaLabel="Current selection"
+  [items]="contextItems()"
+/>
+```
+
+Use `app-fact-grid` for repeated semantic label/value evidence. The feature maps its DTO or view model into typed facts; the shared component does not format domain values or infer status:
+
+```ts
+facts(item: FeatureItem): readonly UiFactItem[] {
+  return [
+    { id: 'coverage', label: 'Coverage', value: coverageLabel(item), mono: true },
+    { id: 'status', label: 'Status', value: statusLabel(item) },
+  ];
+}
+```
+
+```html
+<app-fact-grid
+  ariaLabel="Item evidence"
+  [items]="facts(item)"
+  [columns]="2"
+  [compactColumns]="1"
+/>
+```
+
+Keep source signals, DTOs, formatting helpers, selected state, commands, and responsive workflow composition in the owning feature. Do not add feature-specific inputs to either shared component.
+
 ## Feature-local mobile workflows
 
 Mobile-specific workflow UI should still follow the page/store/presentational split. The route page wires store state into a feature-local presentational launcher or sheet, the launcher emits typed intents such as select item or start training, and the feature store owns navigation and workflow state transitions.
