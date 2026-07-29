@@ -1,54 +1,50 @@
 <div class="puzzle-trainer-layout">
   <div class="puzzle-board-column">
     <app-chessground-board
-      [fen]="round().currentFen"
-      [side]="round().puzzle.sideToMove"
-      [lastMove]="lastMove()"
+      [fen]="view().fen"
+      [side]="view().side"
+      [lastMove]="view().lastMove"
       [movable]="movable()"
       [positionVersion]="positionVersion()"
       (move)="boardMove.emit($event)"
     />
   </div>
 
-  <app-panel [title]="outcomeLabel()" [subtitle]="ratingLabel()">
+  <app-panel [title]="view().outcomeLabel" [subtitle]="view().ratingLabel">
     <div class="puzzle-summary">
       <dl class="puzzle-facts">
         <div>
           <dt>Puzzle rating</dt>
-          <dd>{{ round().puzzle.rating }}</dd>
+          <dd>{{ view().puzzleRating }}</dd>
         </div>
         <div>
           <dt>Progress</dt>
-          <dd>{{ progressLabel() }}</dd>
+          <dd>{{ view().progressLabel }}</dd>
         </div>
         <div>
           <dt>Mode</dt>
-          <dd>{{ round().ratedRequested ? 'Rated' : 'Practice' }}</dd>
+          <dd>{{ view().modeLabel }}</dd>
         </div>
         <div>
           <dt>Sync</dt>
-          <dd>{{ round().upstreamStatus }}</dd>
+          <dd>{{ view().syncLabel }}</dd>
         </div>
       </dl>
 
-      @if (round().puzzle.themes.length) {
+      @if (view().themes.length) {
         <div class="puzzle-themes" aria-label="Puzzle themes">
-          @for (theme of round().puzzle.themes; track theme) {
+          @for (theme of view().themes; track theme) {
             <span>{{ theme }}</span>
           }
         </div>
       }
 
-      @if (round().firstWrongAt && round().status === 'IN_PROGRESS') {
-        <p class="puzzle-guidance">
-          The rated result is already a loss. Continue solving to complete the line and schedule it for review.
-        </p>
-      } @else if (round().status === 'IN_PROGRESS') {
-        <p class="puzzle-guidance">Find the best continuation. The opponent replies automatically.</p>
+      @if (view().guidance; as guidance) {
+        <p class="puzzle-guidance">{{ guidance }}</p>
       }
 
       <div class="puzzle-actions">
-        @if (round().status === 'IN_PROGRESS') {
+        @if (view().canAbandon) {
           <button
             type="button"
             class="secondary"
@@ -57,7 +53,9 @@
           >
             Abandon
           </button>
-        } @else {
+        }
+
+        @if (view().canStartNext) {
           <button
             type="button"
             class="primary"
@@ -68,7 +66,7 @@
           </button>
         }
 
-        @if (round().upstreamStatus === 'FAILED') {
+        @if (view().canRetrySync) {
           <button
             type="button"
             class="secondary"
