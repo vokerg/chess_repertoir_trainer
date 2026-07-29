@@ -11,7 +11,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import type {
   BuilderCourseDraft,
-  BuilderCourseMergeCandidate,
   BuilderCourseReintegrationApplyResponse,
   BuilderCourseReintegrationPreviewResponse,
   BuilderCourseReintegrationTarget,
@@ -20,6 +19,8 @@ import type {
   RepertoireBuilderChapterOption,
   RepertoireBuilderCourseOption,
 } from '../data-access/repertoire-builder-api.service';
+
+type BuilderCourseMergeCandidate = BuilderCourseReintegrationPreviewResponse['candidates'][number];
 
 @Component({
   selector: 'app-repertoire-builder-course-dialog',
