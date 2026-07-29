@@ -62,6 +62,7 @@ export class RepertoireBuilderSetupDialogComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly initialSetup = input.required<RepertoireBuilderSetup>();
+  readonly fixedSide = input<'WHITE' | 'BLACK' | null>(null);
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly cancelAllowed = input(false);
@@ -91,7 +92,16 @@ export class RepertoireBuilderSetupDialogComponent {
   });
 
   constructor() {
-    effect(() => this.patchFromSetup(this.initialSetup()));
+    effect(() => {
+      this.patchFromSetup(this.initialSetup());
+      const fixedSide = this.fixedSide();
+      if (fixedSide) {
+        this.form.controls.side.setValue(fixedSide, { emitEvent: false });
+        this.form.controls.side.disable({ emitEvent: false });
+      } else if (this.form.controls.side.disabled) {
+        this.form.controls.side.enable({ emitEvent: false });
+      }
+    });
     this.form.controls.persona.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((persona) => {
