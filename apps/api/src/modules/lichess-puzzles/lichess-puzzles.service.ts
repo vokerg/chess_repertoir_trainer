@@ -240,7 +240,7 @@ export function createLichessPuzzlesService(
       const completedAt = now();
       const updated = await repository.updateOwnedRound(round, {
         status: 'ABANDONED',
-        outcome: 'ABANDONED',
+        outcome: round.firstWrongAt ? 'LOSS' : 'ABANDONED',
         completedAt,
       });
       return mapRound(await syncIfNeeded(updated));
