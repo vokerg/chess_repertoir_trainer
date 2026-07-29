@@ -21,6 +21,13 @@ export interface CourseReviewFindingLineReferenceViewModel {
   nodeId: number;
 }
 
+export interface CourseReviewEndingBuilderContextViewModel {
+  sourceKey: string;
+  side: 'WHITE' | 'BLACK';
+  observedMoveUci: string;
+  observedMoveSan: string | null;
+}
+
 export interface CourseReviewFindingViewModel {
   id: string;
   kind: CourseReviewFindingKind;
@@ -35,6 +42,7 @@ export interface CourseReviewFindingViewModel {
   results: { win: number; draw: number; loss: number; unknown: number };
   examples: readonly CourseReviewFindingExampleViewModel[];
   lineReferences: readonly CourseReviewFindingLineReferenceViewModel[];
+  courseEndingBuilderContext: CourseReviewEndingBuilderContextViewModel | null;
 }
 
 export function mapCourseReviewGroup(
@@ -62,6 +70,7 @@ export function mapCourseReviewGroup(
     results: group.results,
     examples: group.examples,
     lineReferences: [],
+    courseEndingBuilderContext: null,
   };
 }
 
@@ -88,6 +97,12 @@ export function mapCourseExtensionCandidate(
       chapterId: lineRef.chapterId,
       nodeId: lineRef.nodeId,
     })),
+    courseEndingBuilderContext: {
+      sourceKey: candidate.key,
+      side: candidate.userColor,
+      observedMoveUci: candidate.moveUci,
+      observedMoveSan: candidate.moveSan,
+    },
   };
 }
 
