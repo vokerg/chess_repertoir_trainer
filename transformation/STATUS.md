@@ -12,7 +12,7 @@ Last updated: 2026-07-29
 
 **Active checkpoint branch:** `visual-transformation/vt-205-completion`
 
-**Active pull request:** completion reconciliation pending
+**Active pull request:** PR #192 — VT-205 completion reconciliation
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -153,7 +153,7 @@ VT-301 remaining-page and Labs rollout is next. VT-302 onboarding, empty-state, 
 - CI #1461 and exact approved-head CI #1472 passed the complete repository workflow.
 - The user explicitly approved integration while deferring direct browser feedback.
 - Squash-merged PR #191 into `main` as `534533b7d6497ba2802a63abb95e358dc962ef2a`.
-- Created the completion reconciliation branch from that exact `main` commit.
+- Created completion reconciliation PR #192 from that exact `main` commit.
 - Released VT-301 / issue #132 as the next deterministic task.
 
 ### Earlier integrated checkpoints
