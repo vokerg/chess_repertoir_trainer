@@ -17,8 +17,8 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004; corrected navigation/architecture review awaiting final CI and hands-on acceptance |
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | DONE | Define repertoire target contract | North-star | Squash-merged through PR #157 |
 | 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, completed RB-006 contract |
-| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | REVIEW | Aggregate and rank candidate evidence explainably | North-star | PR #166; implementation-head CI #1284 passed; awaiting review and integration |
-| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | BLOCKED | Define builder session, branch queue, and draft lifecycle | North-star | Completed RB-006, accepted RB-008 routed direction, RB-007 review contract/policy; integration still required |
+| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
+| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | READY | Define builder session, branch queue, and draft lifecycle | North-star | Completed RB-006, accepted RB-008 routed direction, integrated RB-007 contract and policy |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | BLOCKED | Implement bounded interactive builder MVP | North-star | RB-007, accepted RB-008 dialog/workbench direction, RB-009 |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | BLOCKED | Preview and apply builder output to courses | Dual-use | RB-010 |
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | BLOCKED | Enter builder from existing-course findings | Dual-use | RB-010, RB-011 |
@@ -91,6 +91,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Adds no API, UI, persistence, ranking, course write, traps or LLM behavior.
 - PRs #145 and #146 were superseded and closed without merge.
 
+### RB-007 / #95
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/164
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/166
+- Squash commit: `25d37b44c273afe0b7e5838a4fb0a00cee89d88a`
+- Implementation report: `reports/RB-007-2026-07-29-candidate-evidence-ranking.md`
+- Closure report: `reports/RB-007-2026-07-29-closure.md`
+- Adds versioned `candidate-decision` contracts, a pure deterministic ranking policy, and authenticated `POST /api/candidate-decisions`.
+- Aggregates bounded stored engine, Masters, selected-population, personal, opening-profile, Player Chess Profile, and owned-course evidence through injectable service boundaries.
+- Keeps source facts, target fit, profile fit, eligibility, components, reasons, warnings, manual candidates, course conflict/transposition, and opponent coverage separate and inspectable.
+- Publishes no opaque aggregate score and adds no persistence, course write, Angular UI, traps, LLM, live engine run, or peer-formula change.
+- CI #1281, #1284, and final implementation-head CI #1295 passed lint, build, both opening audits, architecture guardrails, migrations, and complete repository tests.
+
 ## Review work
 
 ### RB-004 / #92
@@ -112,18 +125,6 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
-### RB-007 / #95
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/164
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/166
-- Report: `reports/RB-007-2026-07-29-candidate-evidence-ranking.md`
-- Adds versioned `candidate-decision` contracts, a pure deterministic ranking policy, and authenticated `POST /api/candidate-decisions`.
-- Aggregates bounded stored engine, Masters, selected-population, personal, opening-profile, Player Chess Profile, and owned-course evidence through injectable service boundaries.
-- Keeps source facts, target fit, profile fit, eligibility, components, reasons, warnings, manual candidates, course conflict/transposition, and opponent coverage separate and inspectable.
-- Publishes no opaque aggregate score and adds no persistence, course write, Angular UI, traps, LLM, live engine run, or peer-formula change.
-- CI #1281 and expanded acceptance-head CI #1284 passed lint, build, both opening audits, architecture guardrails, migrations, and complete repository tests.
-- Await user review and accepted integration before closing #95.
-
 ## Active claim
 
 ### RB-017 / #114
@@ -144,7 +145,7 @@ PR #110 establishes:
 - target/profile separation;
 - no simultaneous three-board default.
 
-RB-007, RB-009 and RB-010 own the downstream production contracts and implementation using completed RB-006.
+RB-009 and RB-010 own the downstream production contracts and implementation using completed RB-006 and integrated RB-007.
 
 ## Critical path
 
@@ -161,11 +162,13 @@ RB-005 experience — REVIEW (stacked)
         ↓
 RB-006 target contract — DONE
         ↓
-RB-007 candidate evidence/ranking — REVIEW
+RB-007 candidate evidence/ranking — DONE
         +
 RB-008 visual proof — DONE
         ↓
-RB-009/010 routed builder
+RB-009 session/queue lifecycle — READY
+        ↓
+RB-010 routed builder — BLOCKED
         ↓
 RB-011/012 course materialization and adaptation
         ↓
@@ -180,8 +183,8 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance, and stack reconciliation.
 - RB-006 is `DONE` through squash-merged PR #157.
-- RB-007 is `REVIEW` through PR #166; its implementation and expanded acceptance heads passed complete CI.
-- RB-009 remains formally blocked on accepted RB-007 integration, but detailed session/queue planning can now consume the review contract and policy semantics.
-- RB-010 remains blocked on RB-009 and accepted RB-007 integration.
+- RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
+- RB-009 is the next ordered `READY` North Star critical-path task.
+- RB-010 remains blocked on RB-009.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
 - No new task, issue, priority change or roadmap resequencing is required.
