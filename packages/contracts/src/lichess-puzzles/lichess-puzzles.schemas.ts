@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const uciMoveSchema = z.string().regex(/^[a-h][1-8][a-h][1-8][qrbn]?$/);
+
 export const lichessPuzzleDifficultySchema = z.enum([
   'easiest',
   'easier',
@@ -48,7 +50,7 @@ export const createLichessPuzzleRoundBodySchema = z.object({
 });
 
 export const submitLichessPuzzleMoveBodySchema = z.object({
-  moveUci: z.string().regex(/^[a-h][1-8][a-h][1-8][qrbn]?$/),
+  moveUci: uciMoveSchema,
 });
 
 export const lichessPuzzlePublicPuzzleSchema = z.object({
@@ -56,7 +58,7 @@ export const lichessPuzzlePublicPuzzleSchema = z.object({
   rating: z.number().int(),
   themes: z.array(z.string()),
   startFen: z.string(),
-  lastMoveUci: z.string(),
+  lastMoveUci: uciMoveSchema,
   sideToMove: lichessPuzzleSideSchema,
   solutionPlies: z.number().int().positive(),
 });
@@ -70,6 +72,7 @@ export const lichessPuzzleRoundSchema = z.object({
   status: lichessPuzzleRoundStatusSchema,
   outcome: lichessPuzzleRoundOutcomeSchema.nullable(),
   currentFen: z.string(),
+  lastMoveUci: uciMoveSchema,
   currentStep: z.number().int().nonnegative(),
   firstWrongAt: z.string().datetime().nullable(),
   learningCompletedAt: z.string().datetime().nullable(),
@@ -84,7 +87,7 @@ export const createLichessPuzzleRoundResponseSchema = lichessPuzzleRoundSchema;
 
 export const submitLichessPuzzleMoveResponseSchema = z.object({
   correct: z.boolean(),
-  forcedMoveUci: z.string().nullable(),
+  forcedMoveUci: uciMoveSchema.nullable(),
   round: lichessPuzzleRoundSchema,
 });
 
