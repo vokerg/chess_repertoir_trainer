@@ -1,11 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { distinctUntilChanged, map } from 'rxjs';
 import type { LichessPuzzleDifficulty } from '@chess-trainer/contracts/lichess-puzzles';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
@@ -25,6 +28,7 @@ export class LichessPuzzlesPageComponent implements OnInit {
   protected readonly store = inject(LichessPuzzlesStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly difficulties: ReadonlyArray<{
     value: LichessPuzzleDifficulty;
@@ -42,10 +46,14 @@ export class LichessPuzzlesPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    const roundId = Number(this.route.snapshot.queryParamMap.get('roundId'));
-    if (Number.isInteger(roundId) && roundId > 0) {
+    this.route.queryParamMap.pipe(
+      map((params) => parseRoundId(params.get('roundId'))),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((roundId) => {
+      if (!roundId || this.store.round()?.id === roundId) return;
       void this.store.loadRound(roundId);
-    }
+    });
   }
 
   protected async startRound(): Promise<void> {
@@ -64,4 +72,10 @@ export class LichessPuzzlesPageComponent implements OnInit {
   protected setDifficultyFromEvent(event: Event): void {
     this.store.setDifficulty((event.target as HTMLSelectElement).value);
   }
+}
+
+function parseRoundId(value: string | null): number | null {
+  if (!value) return null;
+  const roundId = Number(value);
+  return Number.isInteger(roundId) && roundId > 0 ? roundId : null;
 }
