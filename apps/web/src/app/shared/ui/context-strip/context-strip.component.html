@@ -1,0 +1,18 @@
+<dl
+  class="context-strip"
+  [class.context-strip-cards]="presentation() === 'cards'"
+  [class.context-strip-segments]="presentation() === 'segments'"
+  [attr.aria-label]="ariaLabel()"
+>
+  @for (item of items(); track item.id) {
+    <div class="context-item" [class.context-item-mono]="item.mono">
+      @if (item.marker; as marker) {
+        <span class="context-marker" aria-hidden="true">{{ marker }}</span>
+      }
+      <div class="context-copy">
+        <dt>{{ item.label }}</dt>
+        <dd>{{ item.value }}</dd>
+      </div>
+    </div>
+  }
+</dl>
