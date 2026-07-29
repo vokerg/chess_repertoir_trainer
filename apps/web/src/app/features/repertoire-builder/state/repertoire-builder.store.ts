@@ -25,6 +25,10 @@ import {
 import { AuthService } from '../../../core/auth/auth.service';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
 import {
+  builderLaunchStartingPoint,
+  type RepertoireBuilderCourseEndingLaunch,
+} from '../helpers/repertoire-builder-launch';
+import {
   buildRepertoireBuilderTarget,
   defaultRepertoireBuilderSetup,
   requiresPeerResolution,
@@ -161,9 +165,13 @@ export class RepertoireBuilderStore {
     this.setupOpenState.set(false);
   }
 
-  async start(setup: RepertoireBuilderSetup): Promise<void> {
+  async start(
+    setup: RepertoireBuilderSetup,
+    launch: RepertoireBuilderCourseEndingLaunch | null = null,
+  ): Promise<void> {
     const normalizedSetup = normalizeSetup(setup);
     const currentRequest = ++this.setupRequestId;
+    const startingFen = launch?.startingFen ?? 'startpos';
     this.setupState.set(normalizedSetup);
     this.setupLoadingState.set(true);
     this.setupErrorState.set(null);
@@ -176,11 +184,17 @@ export class RepertoireBuilderStore {
 
       const now = new Date().toISOString();
       const peerResolution = requiresPeerResolution(normalizedSetup)
-        ? await this.loadPeerResolution(normalizedSetup)
+        ? await this.loadPeerResolution(normalizedSetup, startingFen)
         : null;
       if (currentRequest !== this.setupRequestId) return;
 
-      const target = buildRepertoireBuilderTarget(normalizedSetup, peerResolution, now);
+      const target = buildRepertoireBuilderTarget(
+        normalizedSetup,
+        peerResolution,
+        now,
+        undefined,
+        builderLaunchStartingPoint(launch),
+      );
       const session = createBuilderSession({
         sessionId: createId(),
         ownerId: String(appUser.id),
@@ -191,14 +205,14 @@ export class RepertoireBuilderStore {
           value: target,
         },
         repertoireSide: normalizedSetup.side,
-        startingFen: 'startpos',
+        startingFen,
         createdAt: now,
       });
       this.sessionState.set(session);
       this.activeBranchIdState.set(session.rootBranchId);
       this.setupOpenState.set(false);
       this.resetCandidateSelection();
-      await this.loadActiveCandidates();
+      await this.loadActiveCandidates(launch?.observedMoveUci);
     } catch (error) {
       if (currentRequest !== this.setupRequestId) return;
       this.setupErrorState.set(readError(error, 'Could not start the repertoire builder.'));
@@ -369,9 +383,10 @@ export class RepertoireBuilderStore {
 
   private async loadPeerResolution(
     setup: RepertoireBuilderSetup,
+    fen: string,
   ): Promise<LichessGamesPeerResolution> {
     const response = await firstValueFrom(this.api.getPopulation({
-      fen: 'startpos',
+      fen,
       speedPreset: setup.speedPreset,
       ratingTarget: setup.ratingTarget,
       ratingGroup: setup.ratingGroup,
