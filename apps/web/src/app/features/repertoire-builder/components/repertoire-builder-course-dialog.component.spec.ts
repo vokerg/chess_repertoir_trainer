@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   BuilderCourseDraft,
   BuilderCourseReintegrationPreviewResponse,
+  BuilderCourseReintegrationTarget,
 } from '@chess-trainer/contracts/courses';
 import { RepertoireBuilderCourseDialogComponent } from './repertoire-builder-course-dialog.component';
 
@@ -39,6 +40,12 @@ const preview: BuilderCourseReintegrationPreviewResponse = {
     counts: { reusedMoves: 0, createdMoves: 3, conflictingMoves: 0, totalDraftMoves: 3, skippedBranches: 1 },
     conflicts: [], warnings: ['One transposition path remains terminal.'], previewTree: [],
   },
+};
+
+const existingTarget: BuilderCourseReintegrationTarget = {
+  kind: 'EXISTING_LINE',
+  lineId: 9,
+  anchor: { kind: 'LINE_START', nodeId: null, normalizedFen: 'normalized-start' },
 };
 
 describe('RepertoireBuilderCourseDialogComponent', () => {
@@ -89,10 +96,25 @@ describe('RepertoireBuilderCourseDialogComponent', () => {
     ).find((button) => button.textContent?.includes('Existing line'));
     existingButton?.click();
 
-    expect(emitted).toEqual([{
-      kind: 'EXISTING_LINE',
-      lineId: 9,
-      anchor: { kind: 'LINE_START', nodeId: null, normalizedFen: 'normalized-start' },
-    }]);
+    expect(emitted).toEqual([existingTarget]);
+  });
+
+  it('disables every destination except the source Course ending endpoint', () => {
+    fixture.componentRef.setInput('destinationLocked', true);
+    fixture.componentRef.setInput('requiredTarget', existingTarget);
+    fixture.componentRef.setInput('selectedTarget', existingTarget);
+    fixture.detectChanges();
+
+    const targetButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.target-card') as NodeListOf<HTMLButtonElement>,
+    );
+    const newLineButton = targetButtons.find((button) => button.textContent?.includes('New line'));
+    const existingButton = targetButtons.find((button) => button.textContent?.includes('Existing line'));
+
+    expect(fixture.nativeElement.textContent).toContain('exact source line endpoint');
+    expect(newLineButton?.disabled).toBeTrue();
+    expect(existingButton?.disabled).toBeFalse();
+    expect((fixture.nativeElement.querySelector('select[formControlName="courseId"]') as HTMLSelectElement).disabled)
+      .toBeTrue();
   });
 });
