@@ -4,11 +4,11 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-012 is implemented for review through PR #205 for the first Course endings entry slice. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-012 has its first Course endings entry slice integrated through squash-merged PR #205 and is `READY` for Opponent gaps as the next bounded slice. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
-**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, and mandatory transactional builder-course preview/apply from squash-merged PR #189.
+**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, and exact Course ending → Builder adaptation from squash-merged PR #205.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #205 connects Course ending findings to the existing builder and exact course endpoint.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -160,23 +160,9 @@ Closure report: `reports/RB-011-2026-07-29-closure.md`.
 
 The accepted v1 writes to an existing owned course/chapter. Whole-course/new-chapter orchestration and persisted builder target/session metadata remain later concerns, not blockers for exact existing-course adaptation.
 
-## Review work
+### Course ending builder entry — RB-012 first slice
 
-### RB-004 / #92 — Player Chess Profile calculation
-
-PR #136 provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance evidence, selected-game baselines, evidence grades, opening-classification provenance and bounded supporting games.
-
-CI #1103 passed. User review and accepted integration remain required.
-
-### RB-005 / #93 — Player Chess Profile experience
-
-Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
-
-It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
-
-### RB-012 / #100 — Course ending builder entry
-
-PR #205 provides the first bounded existing-course adaptation slice:
+Squash-merged PR #205 provides:
 
 - one line-specific **Extend this line in builder** action per Course ending line/node reference;
 - bounded route validation for exact source course, chapter, line, terminal node, FEN, observed continuation, evidence and filters;
@@ -191,9 +177,27 @@ PR #205 provides the first bounded existing-course adaptation slice:
 - focused route, helper, target, builder-store, course-store and dialog tests;
 - no new API route, Prisma model, migration, persistence layer or recommendation engine.
 
+Final review-package head `45851192b77327e23546eb691d3629c3a193144d` passed CI run `30485910525` / #1541. PR #205 was squash-merged as `c2266c9a8ffca00696da264abb3476f36ec82b50`.
+
 Implementation report: `reports/RB-012-2026-07-29-course-ending-entry.md`.
 
-Complete review-package CI and hands-on Course ending → builder → exact line validation remain required before integration.
+Closure report: `reports/RB-012-2026-07-29-course-ending-closure.md`.
+
+Issue #100 remains open because RB-012 covers multiple finding types. Opponent gaps is the next bounded coverage-extension slice.
+
+## Review work
+
+### RB-004 / #92 — Player Chess Profile calculation
+
+PR #136 provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance evidence, selected-game baselines, evidence grades, opening-classification provenance and bounded supporting games.
+
+CI #1103 passed. User review and accepted integration remain required.
+
+### RB-005 / #93 — Player Chess Profile experience
+
+Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
+
+It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
 
 ## Active independent pilot
 
@@ -222,7 +226,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-009 / #97: `DONE` through squash-merged PR #177.
 - RB-010 / #98: `DONE` through squash-merged PR #184.
 - RB-011 / #99: `DONE` through squash-merged PR #189; issue closed.
-- RB-012 / #100: `REVIEW` through PR #205 for the Course endings slice.
+- RB-012 / #100: `READY` after squash-merged PR #205; issue remains open for later slices.
 - RB-014 / #102: `DONE` through PR #113.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
@@ -235,7 +239,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-009 provides integrated session, decision-history, branch, queue, transposition, stale and preview semantics.
 - RB-010 provides the integrated production workbench and bounded structural preview.
 - RB-011 provides integrated course organization within an existing chapter, mandatory preview, transactional apply, conflicts, reuse and explicit results.
-- RB-012 now proves the first exact finding-to-builder adaptation without changing the recommendation or course-write foundations.
+- RB-012 now has its first exact finding-to-builder adaptation integrated without changing the recommendation or course-write foundations.
 - RB-013 remains responsible for profile-derived personas/defaults beyond RB-010's transparent local presets.
 - RB-017 remains outside the critical path.
 
@@ -248,7 +252,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-009 CI #1328 and #1360 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
 - RB-010 CI #1417 passed lint, builds, audits, architecture guardrails, migrations and complete tests, including restored existing navigation regression coverage.
 - RB-011 implementation-head CI #1479 and final review-package CI #1488 passed lint, builds, both opening audits, architecture guardrails, migrations and complete tests.
-- RB-012 adds focused launch, route restoration, target, arbitrary-FEN session, observed-candidate inclusion, exact destination and stale-source tests; final review-package CI is required before readiness.
+- RB-012 final review-package CI #1541 passed lint, all builds, both opening audits, architecture guardrails, migrations and complete tests, including launch, route restoration, target, arbitrary-FEN session, observed-candidate inclusion, exact destination and stale-source coverage.
 - RB-014 source/license verification and complete repository CI passed.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 
@@ -262,7 +266,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - Source freshness remains consumer-driven; no background watcher marks evidence stale.
 - Transpositions are recognized within the loaded session snapshot and course preview, but persisted course lines remain separate trees rather than a shared graph.
 - RB-011 targets an existing owned chapter; whole-course/new-chapter organization and persisted target/session metadata are not implemented.
-- RB-012's first slice supports Course endings and extend-only semantics. Opponent gaps and My deviations require separate reviewed consequence mapping.
+- RB-012's integrated first slice supports Course endings and extend-only semantics. Opponent gaps and My deviations require separate reviewed consequence mapping.
 - Four-field Course ending FENs do not contain move counters; canonical session FENs use neutral `0 1` counters while exact position identity remains the normalized four fields.
 - Engine, personal, course and profile providers do not share one universal freshness timestamp model.
 
@@ -270,4 +274,4 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 
 Keep task order and priorities unchanged.
 
-RB-012 is in `REVIEW` through PR #205 for the first Course endings slice. Opponent gaps is the recommended next slice after acceptance because its consequence remains coverage extension. My deviations should follow only after replace/alternate/keep-course consequences are made explicit. Do not retire the Course endings source report yet.
+RB-012 is `READY` after squash-merged PR #205. Opponent gaps is the recommended next slice because its consequence remains coverage extension. My deviations should follow only after replace/alternate/keep-course consequences are made explicit. Do not retire the Course endings source report yet.
