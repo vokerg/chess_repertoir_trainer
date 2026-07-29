@@ -56,8 +56,9 @@ export const BuilderCourseReintegrationService = {
       );
     }
 
-    if (input.target.kind === 'NEW_LINE') {
-      if (input.target.name.trim() !== input.newLineName.trim()) {
+    const target = input.target;
+    if (target.kind === 'NEW_LINE') {
+      if (target.name.trim() !== input.newLineName.trim()) {
         throw new AnalysisReintegrationError(
           'New-line details changed after preview. Preview again before applying.',
           409,
@@ -90,7 +91,7 @@ export const BuilderCourseReintegrationService = {
         analysisTree: input.draft.analysisTree,
         target: {
           kind: 'NEW_LINE',
-          name: input.target.name.trim(),
+          name: target.name.trim(),
           sideToTrain: input.draft.repertoireSide,
           allowConflicts: false,
         },
@@ -107,10 +108,10 @@ export const BuilderCourseReintegrationService = {
     }
 
     const candidate = prepared.response.candidates.find((item) => (
-      item.lineId === input.target.lineId
-      && item.anchor.kind === input.target.anchor.kind
-      && item.anchor.nodeId === input.target.anchor.nodeId
-      && item.anchor.normalizedFen === input.target.anchor.normalizedFen
+      item.lineId === target.lineId
+      && item.anchor.kind === target.anchor.kind
+      && item.anchor.nodeId === target.anchor.nodeId
+      && item.anchor.normalizedFen === target.anchor.normalizedFen
     ));
     if (!candidate) {
       throw new AnalysisReintegrationError(
@@ -130,8 +131,8 @@ export const BuilderCourseReintegrationService = {
       analysisTree: input.draft.analysisTree,
       target: {
         kind: 'EXISTING_LINE',
-        lineId: input.target.lineId,
-        anchor: input.target.anchor,
+        lineId: target.lineId,
+        anchor: target.anchor,
         allowConflicts: false,
       },
     });
