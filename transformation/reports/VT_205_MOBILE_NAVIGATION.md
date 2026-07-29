@@ -97,7 +97,7 @@ Behavior:
 - opening More shows a modal dialog;
 - the browser provides modal focus containment;
 - Escape uses the dialog cancel event;
-- close-button or Escape closure restores focus to More;
+- close-button, backdrop, or Escape closure restores focus to More;
 - navigation closes the dialog without restoring focus to a control on the previous route;
 - the complete destination hierarchy remains in the DOM but closed dialogs are not displayed.
 
@@ -124,7 +124,7 @@ The authenticated app shell defines `--app-mobile-primary-nav-clearance` and res
 
 The fixed imported-game job panel is offset above the navigation on mobile. When jobs are visible, content reserves both the job panel and navigation clearances.
 
-Feature-owned mobile launchers and bottom sheets are unchanged and remain separate review surfaces.
+Feature-owned mobile launchers and bottom sheets are unchanged and remain separate review surfaces. The Study launcher already owns a higher full-screen layer, so its workflow remains dominant while open.
 
 ## Preserved boundaries
 
@@ -147,6 +147,7 @@ Updated `main-navigation.component.spec.ts` covers:
 - More references the complete destination dialog;
 - the dialog exposes the complete hierarchy, including Settings;
 - route navigation closes the dialog;
+- backdrop interaction closes the dialog;
 - secondary routes delegate activity to More;
 - primary route activity returns to its persistent item;
 - existing desktop rail collapse, disclosure, flyout, Escape, route-cleanup, and child activity behavior remains covered.
@@ -183,7 +184,7 @@ Browser review cannot be represented as completed in this implementation session
 ### More dialog and account access
 
 - opening from More and initial close-button focus;
-- Escape, close control, and route-link closure;
+- Escape, close control, backdrop, and route-link closure;
 - focus return after user-initiated closure;
 - complete route and account access;
 - long descriptions and one-column layout at 420px and below;
