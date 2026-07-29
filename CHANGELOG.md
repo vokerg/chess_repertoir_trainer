@@ -4,6 +4,27 @@ This changelog was reconstructed retrospectively from the repository commit hist
 
 Versions `0.0.x` are daily development snapshots: each version represents a calendar day on which project work was committed, not a separately published package release. Snapshot numbering continues independently of package versions; the current repository version remains `1.0.0`.
 
+## [0.0.63] - 2026-07-29
+
+- Added a persisted Lichess puzzle trainer with server-owned solutions, rated-result synchronization, refresh-safe rounds, OAuth configuration, Prisma persistence, API contracts, Angular UI, and focused tests.
+- Modernized the Games exploration workflow with explorer-focused filters, production design tokens, responsive evidence cards, and preserved route, pagination, service, store, job, and navigation ownership.
+- Added deterministic repertoire-candidate evidence aggregation and explainable ranking behind a versioned contract and authenticated API.
+- Completed shell and entry-point browser validation and corrected local-development authentication return URLs.
+
+## [0.0.62] - 2026-07-28
+
+- Advanced the visual transformation through the production navigation rail, inline expanded-rail accordions, signed-in Home, production brand assets, calibrated Home surfaces, and a shared graphite/mint token and typography contract.
+- Added configurable original Wood, Digital, and Silent chess sound packs with persisted pack and volume preferences, Appearance controls, previews, and tests.
+- Defined the versioned repertoire-target contract, including requested and effective populations, target intent, defaults, override provenance, and recalculation semantics.
+- Established the onboarding and data-lifecycle program with its roadmap, decision and question ledgers, research tasks, and coordination rules.
+
+## [0.0.61] - 2026-07-27
+
+- Added deterministic, side-aware regex opening classification and expanded it to complete pinned generated-book coverage with imported-game audits and regression tests.
+- Defined the repertoire-builder setup flow as a focused dialog followed by a routed, board-first recursive workbench.
+- Established the curated chess-trap knowledge and validator pilot, including identity, sourcing, licensing, validation, examples, and explicit production boundaries.
+- Added the Player Chess Profile foundation and accepted the routed board-first repertoire-builder prototype.
+
 ## [0.0.60] - 2026-07-26
 
 - Generalized the Masters integration into a shared Opening Explorer backend with separate Masters and rated-Lichess datasets, source-isolated caching, explicit endpoints, configurable filters, shared contracts, coverage, documentation, and a Lichess Games Explorer widget.
