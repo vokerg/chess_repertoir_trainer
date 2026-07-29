@@ -87,7 +87,8 @@
   line-height: 1.6;
 }
 
-@media (max-width: 700px) {
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
+@media (max-width: 760px) {
   .puzzle-settings {
     align-items: stretch;
   }
