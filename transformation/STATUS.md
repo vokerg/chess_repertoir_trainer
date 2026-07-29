@@ -4,15 +4,15 @@ Last updated: 2026-07-29
 
 ## Current state
 
-**Program state:** Phase 2 is active; VT-201 through VT-204 are complete and VT-205 final mobile-primary navigation is in progress.
+**Program state:** Phase 2 is complete. VT-301 remaining-page and Labs rollout is the next deterministic task.
 
 **Integration target:** `main`
 
 **Former integration branch:** `visual_transformation` is retired for new work
 
-**Active checkpoint branch:** `visual-transformation/vt-205-mobile-navigation`
+**Active checkpoint branch:** none
 
-**Active pull request:** draft PR #191
+**Active pull request:** none
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -48,12 +48,14 @@ All transformation work uses short-lived branches from the current `main` head, 
 - [x] PR #185 — VT-203 completion reconciliation.
 - [x] PR #188 — VT-204 proven shared UI primitives.
 - [x] PR #190 — VT-204 completion reconciliation.
+- [x] PR #191 — VT-205 final mobile-primary navigation, squash commit `534533b7d6497ba2802a63abb95e358dc962ef2a`.
+- [x] PR #192 — VT-205 completion reconciliation.
 
 ## Phase 1 completion
 
 VT-101 through VT-104 established production navigation, Home calibration, the `--ui-*` token and typography contract, the wide signed-in shell, and evidence-bounded browser disposition. Phase 1 is complete for sequencing; unreproduced browser permutations remain documented risks rather than passes.
 
-## Representative workflow checkpoints
+## Phase 2 completion
 
 ### VT-201 Games
 
@@ -76,11 +78,11 @@ Issue #130 is complete through PR #188 and reconciliation PR #190. It promoted o
 
 Feature-owned cards, workflow steps, launchers, workbench evidence, state, commands, and responsive composition remain feature-owned.
 
-## VT-205 active checkpoint
+### VT-205 Final mobile-primary navigation
 
-Issue #131 is active through draft PR #191 on `visual-transformation/vt-205-mobile-navigation`.
+Issue #131 is complete through squash-merged PR #191, commit `534533b7d6497ba2802a63abb95e358dc962ef2a`, and completion reconciliation PR #192.
 
-Selected model below the shared 760px breakpoint:
+Delivered below the shared 760px breakpoint:
 
 1. Home;
 2. Study;
@@ -88,55 +90,39 @@ Selected model below the shared 760px breakpoint:
 4. Openings;
 5. More.
 
-Evidence and ownership:
+The four persistent destinations are filtered by stable id from `MainNavigationComponent.mainNavItems`. More renders the same complete route/account hierarchy, secondary routes mark More active, and no duplicate mobile route source was added.
 
-- Home is the signed-in default and product-wide next-action entry;
-- Study, Games, and Openings are the representative workflows and first three Home workspace shortcuts;
-- persistent destinations are filtered by stable id from `MainNavigationComponent.mainNavItems`;
-- More renders the same complete route/account hierarchy;
-- secondary active routes mark More active;
-- the desktop rail, routes, account actions, feature stores/APIs/workflows, board/training behavior, and backend remain unchanged.
+The integration also added native modal focus/Escape/backdrop behavior, safe-area-aware application clearance, imported-game job-panel clearance, production-token presentation, narrow-phone behavior, reduced-motion handling, and focused navigation regression coverage.
 
-Implementation delivered on the branch:
-
-- safe-area-aware fixed mobile-primary navigation;
-- native modal destination dialog with Escape/focus behavior;
-- complete route/account access through More;
-- application-content clearance above the navigation;
-- imported-game job-panel clearance above the navigation;
-- production-token navigation and dialog presentation;
-- focused route-order, overflow, closure, active-state, and desktop-regression tests;
-- D-314, navigation/responsive documentation, migration ledger, and implementation report.
+Desktop rail behavior, route taxonomy, account ownership, feature stores/APIs/workflows, board/training behavior, and backend behavior remain unchanged. D-314 governs the final mobile-primary contract.
 
 ## Deferred browser feedback
 
-The user explicitly approved VT-202, VT-203, and VT-204 without direct browser review and will provide feedback later in one consolidated pass. Those checklists are deferred product-review inputs, not observed passes.
+The user explicitly approved VT-202, VT-203, VT-204, and VT-205 without direct browser review. Their recorded checklists remain useful for a later consolidated product-review pass.
 
-VT-205 adds its own required mobile review matrix in `transformation/reports/VT_205_MOBILE_NAVIGATION.md`, covering safe areas, short viewport heights, account access, active state, Home, Games/job panel, Study launcher, Opening Analysis board/workbench, focus, zoom, and reduced motion.
+Deferred evidence is not represented as observed validation and did not block the approved integrations.
 
 ## Execution disposition
 
-Issues #123–#130 are complete.
+Issues #123–#131 are complete.
 
-Issue #131 is `IN_PROGRESS` through draft PR #191. Issue #132 remains `READY` but must not be selected while the lower-order VT-205 task is active. Issue #133 remains blocked by #132.
+Issue #132 / VT-301 is `READY` and is the next deterministic task. Issue #133 / VT-302 remains blocked by #132.
 
 ## Validation status
 
 - VT-202 CI #1372, #1374, and reconciliation CI #1379 passed.
 - VT-203 CI #1392, #1394, and reconciliation CI #1419 passed.
 - VT-204 CI #1425, #1432, #1448, and #1453 passed the complete repository workflow.
-- VT-205 implementation-head CI #1461 passed the complete repository workflow on commit `752cb8c137f58ea0baadff214e5ef1e5d682e90b`.
+- VT-205 implementation CI #1461 and exact approved-head CI #1472 passed the complete repository workflow.
 
-CI #1461 covered dependency installation, lint, full repository build and Angular template/type compilation, both opening audits, architecture guardrails, migrations, and the complete test suite including updated navigation tests.
-
-The exact documentation head must pass the same workflow. Direct browser review and explicit approval remain pending; PR #191 stays draft and unmerged.
+The VT-205 workflows covered dependency installation, lint, full repository build and Angular template/type compilation, both opening audits, architecture guardrails, database migrations, and the complete test suite including updated navigation tests.
 
 ## Open design and product decisions
 
 - #132 — remaining-page and Labs rollout using the production token, shell, final mobile navigation, context, fact, and feature-owned patterns;
 - #133 — onboarding, empty-state, accessibility, and responsive polish after rollout.
 
-D-314 locks the final mobile-primary model and resolves D-304. D-026 continues to lock the evidence-based shared presentation boundary.
+D-314 locks the final mobile-primary model. D-026 continues to lock the evidence-based shared presentation boundary.
 
 ## Program phase state
 
@@ -150,27 +136,27 @@ Complete and integrated.
 
 ### Phase 2 — representative workflows
 
-VT-201 through VT-204 are complete and integrated. VT-205 is active through draft PR #191.
+Complete and integrated through VT-205 / PR #191 and reconciliation PR #192.
 
 ### Phase 3 — rollout and polish
 
-Remaining-page rollout and onboarding/accessibility/responsive polish remain represented by issues #132 and #133.
+VT-301 remaining-page and Labs rollout is next. VT-302 onboarding, empty-state, accessibility, and responsive polish follows it.
 
 ## Session log
 
-### 2026-07-29 — VT-205 final mobile-primary navigation
+### 2026-07-29 — VT-205 integration
 
-- Verified current `main` at `3860c7b63a96a20484e44b87dbe00041306b142c` and claimed issue #131.
-- Created `visual-transformation/vt-205-mobile-navigation` from that exact head.
-- Inspected the single navigation model, desktop/mobile rendering, route taxonomy, app shell, imported-game job panel, breakpoints, Home shortcut order, representative completion reports, Angular rules, token contract, and prior navigation decisions.
-- Selected Home, Study, Games, Openings, and More from actual product/workflow evidence.
-- Retained the complete grouped route/account hierarchy behind More without adding a second route source.
+- Selected and claimed issue #131 after VT-204 completion.
+- Inspected the single navigation model, route taxonomy, app shell, imported-game job panel, responsive breakpoints, Home shortcut order, representative workflow evidence, Angular rules, token contract, and prior navigation decisions.
+- Selected Home, Study, Games, Openings, and More from implemented product evidence.
+- Retained complete route/account access and one hierarchical route source.
 - Implemented native modal behavior, active-state delegation, safe-area/content/job-panel clearance, production-token presentation, and focused tests.
-- Opened draft PR #191.
-- Implementation-head CI #1461 passed the complete repository workflow.
-- Added D-314, navigation/responsive/migration documentation, and the VT-205 implementation report.
-- Exact documentation-head CI and direct browser review remain pending.
+- CI #1461 and exact approved-head CI #1472 passed the complete repository workflow.
+- The user explicitly approved integration while deferring direct browser feedback.
+- Squash-merged PR #191 into `main` as `534533b7d6497ba2802a63abb95e358dc962ef2a`.
+- Created and validated completion reconciliation PR #192 from that exact `main` commit.
+- Released VT-301 / issue #132 as the next deterministic task.
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, and #190 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, and #192 are integrated into `main`.
