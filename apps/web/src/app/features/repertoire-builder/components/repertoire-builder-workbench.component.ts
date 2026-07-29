@@ -72,6 +72,7 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly sessionFinished = output<void>();
   readonly sessionAbandoned = output<void>();
   readonly newDraftRequested = output<void>();
+  readonly courseReviewRequested = output<void>();
 
   protected readonly decisionLimit = REPERTOIRE_BUILDER_DECISION_LIMIT;
   private readonly boardEntryMode = signal(false);
