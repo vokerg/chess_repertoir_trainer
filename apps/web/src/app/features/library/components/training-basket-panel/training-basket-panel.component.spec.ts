@@ -33,9 +33,10 @@ describe('TrainingBasketPanelComponent', () => {
     const buttons = Array.from(
       fixture.nativeElement.querySelectorAll('button'),
     ) as HTMLButtonElement[];
-    const stats = Array.from(
-      fixture.nativeElement.querySelectorAll('.basket-stat-row'),
-    ).map((stat) => ({
+    const statElements = fixture.nativeElement.querySelectorAll(
+      '.basket-stat-row',
+    ) as NodeListOf<HTMLElement>;
+    const stats = Array.from(statElements).map((stat) => ({
       label: stat.querySelector('dt')?.textContent?.trim(),
       value: stat.querySelector('dd')?.textContent?.trim(),
     }));
