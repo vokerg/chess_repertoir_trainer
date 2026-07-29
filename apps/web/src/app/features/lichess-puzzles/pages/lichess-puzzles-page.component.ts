@@ -18,7 +18,7 @@ import { LichessPuzzlesStore } from '../state/lichess-puzzles.store';
 export class LichessPuzzlesPageComponent {
   protected readonly store = inject(LichessPuzzlesStore);
 
-  protected readonly difficulties: readonly Array<{
+  protected readonly difficulties: ReadonlyArray<{
     value: LichessPuzzleDifficulty;
     label: string;
   }> = [
