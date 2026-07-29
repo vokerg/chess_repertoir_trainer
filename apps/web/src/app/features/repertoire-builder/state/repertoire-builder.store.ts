@@ -18,7 +18,6 @@ import {
   reopenBuilderBranch,
   reorderBuilderQueue,
   restartStaleBuilderBranch,
-  type BuilderBranch,
   type BuilderDecisionMoveInput,
   type BuilderSession,
   type BuilderSessionPreview,
@@ -29,7 +28,7 @@ import {
   buildRepertoireBuilderTarget,
   defaultRepertoireBuilderSetup,
   requiresPeerResolution,
-  targetPopulationLabel,
+  targetPopulationLabel as formatTargetPopulationLabel,
 } from '../helpers/repertoire-builder-target';
 import {
   buildRepertoireBuilderEvidenceReference,
@@ -49,7 +48,8 @@ import {
 export class RepertoireBuilderStore {
   private readonly api = inject(RepertoireBuilderApiService);
   private readonly auth = inject(AuthService);
-  private requestId = 0;
+  private setupRequestId = 0;
+  private candidateRequestId = 0;
 
   private readonly setupState = signal<RepertoireBuilderSetup>(defaultRepertoireBuilderSetup());
   private readonly setupOpenState = signal(true);
@@ -125,7 +125,7 @@ export class RepertoireBuilderStore {
   ));
   readonly targetPopulationLabel = computed(() => {
     const target = this.sessionState()?.targetSnapshot.value;
-    return target ? targetPopulationLabel(target) : '';
+    return target ? formatTargetPopulationLabel(target) : '';
   });
   readonly acceptedDecisionCount = computed(() => (
     this.sessionState()?.branches.reduce((total, branch) => total + branch.decisionHistory.length, 0) ?? 0
@@ -143,7 +143,6 @@ export class RepertoireBuilderStore {
   readonly coverageTargetPercent = computed(
     () => this.sessionState()?.targetSnapshot.value.coverage.opponentResponseCoveragePercent ?? 0,
   );
-  readonly hasActiveWork = computed(() => this.activeBranch() !== null);
   readonly canFinishSession = computed(() => (
     Boolean(this.sessionState())
     && this.sessionState()?.lifecycle === 'ACTIVE'
@@ -164,7 +163,7 @@ export class RepertoireBuilderStore {
 
   async start(setup: RepertoireBuilderSetup): Promise<void> {
     const normalizedSetup = normalizeSetup(setup);
-    const currentRequest = ++this.requestId;
+    const currentRequest = ++this.setupRequestId;
     this.setupState.set(normalizedSetup);
     this.setupLoadingState.set(true);
     this.setupErrorState.set(null);
@@ -179,7 +178,7 @@ export class RepertoireBuilderStore {
       const peerResolution = requiresPeerResolution(normalizedSetup)
         ? await this.loadPeerResolution(normalizedSetup)
         : null;
-      if (currentRequest !== this.requestId) return;
+      if (currentRequest !== this.setupRequestId) return;
 
       const target = buildRepertoireBuilderTarget(normalizedSetup, peerResolution, now);
       const session = createBuilderSession({
@@ -201,10 +200,10 @@ export class RepertoireBuilderStore {
       this.resetCandidateSelection();
       await this.loadActiveCandidates();
     } catch (error) {
-      if (currentRequest !== this.requestId) return;
+      if (currentRequest !== this.setupRequestId) return;
       this.setupErrorState.set(readError(error, 'Could not start the repertoire builder.'));
     } finally {
-      if (currentRequest === this.requestId) this.setupLoadingState.set(false);
+      if (currentRequest === this.setupRequestId) this.setupLoadingState.set(false);
     }
   }
 
@@ -228,8 +227,7 @@ export class RepertoireBuilderStore {
   }
 
   toggleResponse(moveUci: string): void {
-    const branch = this.activeBranch();
-    if (branch?.role !== 'OPPONENT_RESPONSE') return;
+    if (this.activeBranch()?.role !== 'OPPONENT_RESPONSE') return;
     this.selectedResponseUcisState.update((selected) => (
       selected.includes(moveUci)
         ? selected.filter((candidate) => candidate !== moveUci)
@@ -260,60 +258,60 @@ export class RepertoireBuilderStore {
       return;
     }
 
-    this.applySessionMutation((session) => acceptBuilderDecision(session, {
+    const changed = this.applySessionMutation((session) => acceptBuilderDecision(session, {
       ...this.mutationContext(session),
       branchId: branch.id,
       evidence: buildRepertoireBuilderEvidenceReference(response),
       selectedMoves: selectedCandidates.map(toDecisionMove),
     }));
-    await this.advanceToQueuedBranch();
+    if (changed) await this.advanceToQueuedBranch();
   }
 
   async deferActiveBranch(): Promise<void> {
     const branch = this.activeBranch();
     if (!branch || branch.status !== 'PENDING') return;
-    this.applySessionMutation((session) => deferBuilderBranch(session, {
+    const changed = this.applySessionMutation((session) => deferBuilderBranch(session, {
       ...this.mutationContext(session),
       branchId: branch.id,
     }));
-    await this.advanceToQueuedBranch();
+    if (changed) await this.advanceToQueuedBranch();
   }
 
   async ignoreActiveBranch(): Promise<void> {
     const branch = this.activeBranch();
     if (!branch) return;
-    this.applySessionMutation((session) => ignoreBuilderBranch(session, {
+    const changed = this.applySessionMutation((session) => ignoreBuilderBranch(session, {
       ...this.mutationContext(session),
       branchId: branch.id,
     }));
-    await this.advanceToQueuedBranch();
+    if (changed) await this.advanceToQueuedBranch();
   }
 
   async stopActiveBranch(reason: 'USER_STOP' | 'DEPTH_LIMIT' | 'THEORY_LIMIT' = 'USER_STOP'): Promise<void> {
     const branch = this.activeBranch();
     if (!branch) return;
-    this.applySessionMutation((session) => completeBuilderBranch(session, {
+    const changed = this.applySessionMutation((session) => completeBuilderBranch(session, {
       ...this.mutationContext(session),
       branchId: branch.id,
       reason,
     }));
-    await this.advanceToQueuedBranch();
+    if (changed) await this.advanceToQueuedBranch();
   }
 
   async reopenBranch(branchId: string): Promise<void> {
-    this.applySessionMutation((session) => reopenBuilderBranch(session, {
+    const changed = this.applySessionMutation((session) => reopenBuilderBranch(session, {
       ...this.mutationContext(session),
       branchId,
     }));
-    await this.selectQueuedBranch(branchId);
+    if (changed) await this.selectQueuedBranch(branchId);
   }
 
   async restartStaleBranch(branchId: string): Promise<void> {
-    this.applySessionMutation((session) => restartStaleBuilderBranch(session, {
+    const changed = this.applySessionMutation((session) => restartStaleBuilderBranch(session, {
       ...this.mutationContext(session),
       branchId,
     }));
-    await this.selectQueuedBranch(branchId);
+    if (changed) await this.selectQueuedBranch(branchId);
   }
 
   async selectQueuedBranch(branchId: string): Promise<void> {
@@ -333,7 +331,10 @@ export class RepertoireBuilderStore {
 
   finishSession(): void {
     if (!this.canFinishSession()) return;
-    this.applySessionMutation((session) => completeBuilderSession(session, this.mutationContext(session)));
+    const changed = this.applySessionMutation(
+      (session) => completeBuilderSession(session, this.mutationContext(session)),
+    );
+    if (!changed) return;
     this.activeBranchIdState.set(null);
     this.resetCandidateSelection();
   }
@@ -341,13 +342,17 @@ export class RepertoireBuilderStore {
   abandonSession(): void {
     const session = this.sessionState();
     if (!session || session.lifecycle !== 'ACTIVE') return;
-    this.applySessionMutation((current) => abandonBuilderSession(current, this.mutationContext(current)));
+    const changed = this.applySessionMutation(
+      (current) => abandonBuilderSession(current, this.mutationContext(current)),
+    );
+    if (!changed) return;
     this.activeBranchIdState.set(null);
     this.resetCandidateSelection();
   }
 
   startNewDraft(): void {
-    this.requestId += 1;
+    this.setupRequestId += 1;
+    this.candidateRequestId += 1;
     this.sessionState.set(null);
     this.activeBranchIdState.set(null);
     this.candidateResponseState.set(null);
@@ -356,6 +361,7 @@ export class RepertoireBuilderStore {
     this.commandErrorState.set(null);
     this.setupState.set(defaultRepertoireBuilderSetup());
     this.setupOpenState.set(true);
+    this.setupLoadingState.set(false);
     this.setupErrorState.set(null);
     this.selectedResponseUcisState.set([]);
     this.previewMoveUciState.set(null);
@@ -387,7 +393,7 @@ export class RepertoireBuilderStore {
       return;
     }
 
-    const currentRequest = ++this.requestId;
+    const currentRequest = ++this.candidateRequestId;
     this.candidatesLoadingState.set(true);
     this.candidatesErrorState.set(null);
     this.commandErrorState.set(null);
@@ -396,14 +402,15 @@ export class RepertoireBuilderStore {
     this.selectedResponseUcisState.set([]);
 
     try {
-      const response = await firstValueFrom(this.api.getCandidates({
+      const request = {
         fen: branch.fen,
         decisionRole: branch.role,
         target: session.targetSnapshot.value,
-        includeMoveUci,
         candidateLimit: REPERTOIRE_BUILDER_CANDIDATE_LIMIT,
-      }));
-      if (currentRequest !== this.requestId || this.activeBranchIdState() !== branch.id) return;
+        ...(includeMoveUci ? { includeMoveUci } : {}),
+      };
+      const response = await firstValueFrom(this.api.getCandidates(request));
+      if (currentRequest !== this.candidateRequestId || this.activeBranchIdState() !== branch.id) return;
       this.candidateResponseState.set(response);
       this.previewMoveUciState.set(
         includeMoveUci && response.candidates.some((candidate) => candidate.moveUci === includeMoveUci)
@@ -411,10 +418,10 @@ export class RepertoireBuilderStore {
           : response.candidates[0]?.moveUci ?? null,
       );
     } catch (error) {
-      if (currentRequest !== this.requestId || this.activeBranchIdState() !== branch.id) return;
+      if (currentRequest !== this.candidateRequestId || this.activeBranchIdState() !== branch.id) return;
       this.candidatesErrorState.set(readError(error, 'Could not load candidate evidence.'));
     } finally {
-      if (currentRequest === this.requestId) this.candidatesLoadingState.set(false);
+      if (currentRequest === this.candidateRequestId) this.candidatesLoadingState.set(false);
     }
   }
 
@@ -435,19 +442,21 @@ export class RepertoireBuilderStore {
 
   private applySessionMutation(
     mutation: (session: BuilderSession<RepertoireTarget>) => BuilderSession<RepertoireTarget>,
-  ): void {
+  ): boolean {
     const session = this.sessionState();
-    if (!session) return;
+    if (!session) return false;
     try {
       this.sessionState.set(mutation(session));
       this.commandErrorState.set(null);
+      return true;
     } catch (error) {
       this.commandErrorState.set(readError(error, 'The builder state could not be updated.'));
+      return false;
     }
   }
 
   private resetCandidateSelection(): void {
-    this.requestId += 1;
+    this.candidateRequestId += 1;
     this.candidateResponseState.set(null);
     this.candidatesLoadingState.set(false);
     this.candidatesErrorState.set(null);
