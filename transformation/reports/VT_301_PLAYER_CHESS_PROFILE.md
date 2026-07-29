@@ -10,7 +10,7 @@ Branch: `visual-transformation/vt-301-player-profile`
 
 Target: `main`
 
-Pull request: pending
+Pull request: draft PR #206
 
 Disposition: behavior-preserving presentation implementation complete; repository CI and direct browser review pending
 
