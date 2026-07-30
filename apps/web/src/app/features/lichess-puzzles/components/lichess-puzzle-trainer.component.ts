@@ -7,19 +7,21 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
+  computed,
   input,
   output,
   signal,
 } from '@angular/core';
 import { BoardActionToolbarComponent } from '../../../shared/chess/board/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
+import { FactGridComponent, UiFactItem } from '../../../shared/ui/fact-grid/fact-grid.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import type { LichessPuzzleTrainerViewModel } from '../helpers/lichess-puzzle-trainer-view-model';
 
 @Component({
   selector: 'app-lichess-puzzle-trainer',
   standalone: true,
-  imports: [BoardActionToolbarComponent, ChessgroundBoardComponent, PanelComponent],
+  imports: [BoardActionToolbarComponent, ChessgroundBoardComponent, FactGridComponent, PanelComponent],
   templateUrl: './lichess-puzzle-trainer.component.html',
   styleUrl: './lichess-puzzle-trainer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,6 +40,12 @@ export class LichessPuzzleTrainerComponent implements AfterViewInit, OnChanges, 
   readonly nextPuzzle = output<void>();
 
   protected readonly reviewingPreviousMove = signal(false);
+  protected readonly facts = computed<readonly UiFactItem[]>(() => [
+    { id: 'rating', label: 'Puzzle rating', value: this.view().puzzleRating, mono: true },
+    { id: 'progress', label: 'Progress', value: this.view().progressLabel, mono: true },
+    { id: 'mode', label: 'Mode', value: this.view().modeLabel },
+    { id: 'sync', label: 'Sync', value: this.view().syncLabel },
+  ]);
   private replayTimer: ReturnType<typeof setTimeout> | null = null;
   private renderedRoundId: number | null = null;
 

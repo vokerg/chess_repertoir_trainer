@@ -3,8 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
+import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { LineHealthTableComponent } from '../components/line-health-table/line-health-table.component';
 import { LineSummary } from '../data-access/lines.models';
 import { LinesPageStore } from '../state/lines-page.store';
@@ -12,7 +13,7 @@ import { LinesPageStore } from '../state/lines-page.store';
 @Component({
   selector: 'app-lines-page',
   standalone: true,
-  imports: [FormsModule, PageHeaderComponent, LineHealthTableComponent],
+  imports: [FormsModule, PageHeaderComponent, PanelComponent, LineHealthTableComponent],
   providers: [LinesPageStore],
   templateUrl: './lines-page.component.html',
   styleUrl: './lines-page.component.css',
@@ -56,6 +57,14 @@ export class LinesPageComponent implements OnInit {
       ...(!this.store.editingChapterName()
         ? [{ id: 'rename', label: 'Rename', run: () => this.store.startChapterEdit() }]
         : []),
+    ];
+  });
+  protected readonly linePanelStats = computed<readonly PageHeaderStat[]>(() => {
+    const selectedSublineCount = Object.values(this.store.selectedSublineHashesByLineId())
+      .reduce((total, hashes) => total + hashes.length, 0);
+    return [
+      { id: 'selected', label: 'Selected lines', value: this.store.selectedLineCount() },
+      { id: 'selected-sublines', label: 'Selected sublines', value: selectedSublineCount },
     ];
   });
 

@@ -1,6 +1,6 @@
 # Visual Transformation Status
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 ## Current state
 
@@ -13,12 +13,14 @@ Last updated: 2026-07-29
 **Active checkpoint branches:**
 
 - `visual-transformation/vt-301-remaining-page-rollout` — Batch 1, Progress account dashboard;
-- `visual-transformation/vt-301-player-profile` — Batch 2, Player Chess Profile.
+- `visual-transformation/vt-301-settings` — Batch 3, Settings;
+- `visual-transformation/vt-301-authoring-training` — Batches 4c and 4d, repertoire authoring plus remaining training.
 
 **Active pull requests:**
 
-- draft PR #196 — Progress account dashboard; repository CI passed, browser review pending;
-- draft PR #206 — Player Chess Profile; repository CI and browser review pending.
+- draft PR #196 — Progress account dashboard; repository CI #1480 passed, browser review pending;
+- draft PR #209 — Settings; exact-head CI #1573 passed, browser review pending;
+- draft PR #221 — repertoire authoring plus remaining training; implementation audit complete, replacement exact-head CI and browser review pending.
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -56,6 +58,11 @@ All transformation work uses short-lived branches from the current `main` head, 
 - [x] PR #190 — VT-204 completion reconciliation.
 - [x] PR #191 — VT-205 final mobile-primary navigation, squash commit `534533b7d6497ba2802a63abb95e358dc962ef2a`.
 - [x] PR #192 — VT-205 completion reconciliation.
+- [x] PR #206 — VT-301 Batch 2 Player Chess Profile, squash commit `bf04e9629f4194c058488ab915a5cfe7b67285bb`.
+- [x] PR #211 — VT-301 Batch 4a marathon and focused line training, squash commit `a59cb7847270db407e950740df804dde4bd1f060`.
+- [x] PR #212 — VT-301 Batch 4a reconciliation, squash commit `4f223f38dd828ace97ad800eed4e9e189870e7fb`.
+- [x] PR #215 — VT-301 Batch 4b Courses and Course Review, squash commit `51e4967bc49b6ca1ad492456b13b1802acd5f45f`.
+- [x] PR #217 — VT-301 Batch 4b reconciliation, squash commit `e585c662988ff6419de56905b268c9f559aeaf0a`.
 
 ## Phase 1 completion
 
@@ -104,7 +111,7 @@ Desktop rail behavior, route taxonomy, account ownership, feature stores/APIs/wo
 
 ## Deferred browser feedback
 
-The user explicitly approved VT-202, VT-203, VT-204, and VT-205 without direct browser review. Their recorded checklists remain useful for a later consolidated product-review pass.
+The user explicitly approved VT-202, VT-203, VT-204, VT-205, VT-301 Batch 2, VT-301 Batch 4a, and VT-301 Batch 4b without direct browser review. Their recorded checklists remain useful for a later consolidated product-review pass.
 
 Deferred evidence is not represented as observed validation and did not block the approved integrations.
 
@@ -112,7 +119,7 @@ Deferred evidence is not represented as observed validation and did not block th
 
 Issues #123–#131 are complete.
 
-Issue #132 / VT-301 is `IN_PROGRESS` with two independent draft rollout batches: PR #196 for the Progress account dashboard and PR #206 for Player Chess Profile. Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
+Issue #132 / VT-301 is `IN_PROGRESS`. Batches 2, 4a, and 4b are integrated. Draft PR #196 owns Batch 1 Progress, draft PR #209 owns Batch 3 Settings, and draft PR #221 combines Batches 4c and 4d for repertoire authoring plus remaining training. Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
 
 ## Validation status
 
@@ -120,10 +127,14 @@ Issue #132 / VT-301 is `IN_PROGRESS` with two independent draft rollout batches:
 - VT-203 CI #1392, #1394, and reconciliation CI #1419 passed.
 - VT-204 CI #1425, #1432, #1448, and #1453 passed the complete repository workflow.
 - VT-205 implementation CI #1461 and exact approved-head CI #1472 passed the complete repository workflow.
-- VT-301 Batch 1 CI #1480 passed the complete repository workflow; direct browser review remains pending.
-- VT-301 Batch 2 PR #206 repository CI and direct browser review remain pending.
+- VT-301 Batch 1 CI #1480 passed; direct browser review remains pending.
+- VT-301 Batch 2 CI #1521 passed; browser review was explicitly deferred before integration.
+- VT-301 Batch 3 CI #1573 passed; direct browser review remains pending.
+- VT-301 Batch 4a CI #1594 passed; browser review was explicitly deferred before integration.
+- VT-301 Batch 4b CI #1606 passed; browser review was explicitly deferred before integration.
+- VT-301 Batches 4c/4d initial pre-audit CI #1620 passed. The audit corrected semantic evidence, accessibility labels, and rollout records, so a replacement exact-final-head CI is required before approval.
 
-The VT-205 workflows covered dependency installation, lint, full repository build and Angular template/type compilation, both opening audits, architecture guardrails, database migrations, and the complete test suite including updated navigation tests.
+The workflows cover dependency installation, lint, full repository build and Angular template/type compilation, both opening audits, architecture guardrails, database migrations, and the complete test suite.
 
 ## Open design and product decisions
 
@@ -152,6 +163,15 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 
 ## Session log
 
+### 2026-07-30 — VT-301 authoring and remaining-training audit
+
+- Combined two recorded rollout slices in draft PR #221 to reduce repeated full-repository CI executions.
+- Audited route coverage, child components, production-token migration, accessibility semantics, evidence labels, canonical documentation, and the declared analytical-workbench exclusion.
+- Confirmed prior PR #211 deliberately left puzzles and tactical scenarios for this later training slice, and PR #215 left chapter-line authoring for this later authoring slice.
+- Found and corrected an inaccurate selected-subline count, mono styling applied to the non-numeric side label, unlabeled subline and PGN controls, incomplete live-region/error semantics, and stale migration/status records.
+- Preserved stores, APIs, routes, board mechanics, engine ownership, scoring, rating, sync, persistence, and backend behavior.
+- Initial pre-audit CI #1620 passed; replacement exact-final-head CI and direct browser review remain pending.
+
 ### 2026-07-29 — VT-301 Player Chess Profile batch
 
 - Continued the claimed VT-301 rollout using the explicit inventory order after the Progress account-dashboard batch.
@@ -178,4 +198,4 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, and #192 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, #192, #206, #211, #212, #215, and #217 are integrated into `main`.

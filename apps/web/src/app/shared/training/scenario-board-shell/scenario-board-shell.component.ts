@@ -3,6 +3,7 @@ import { MoveTreeComponent } from '../../analysis/move-tree/move-tree.component'
 import { AnalysisTree, AnalysisTreeNode } from '../../analysis/workbench/analysis-tree.models';
 import { BoardActionToolbarComponent } from '../../chess/board/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../chess/board/chessground-board.component';
+import { PanelComponent } from '../../ui/panel/panel.component';
 
 export type ScenarioBoardMode = 'intro' | 'context' | 'challenge' | 'result';
 export type ScenarioBoardColor = 'WHITE' | 'BLACK';
@@ -20,7 +21,7 @@ export interface ScenarioBoardContextPly {
 @Component({
   selector: 'app-scenario-board-shell',
   standalone: true,
-  imports: [BoardActionToolbarComponent, ChessgroundBoardComponent, MoveTreeComponent],
+  imports: [BoardActionToolbarComponent, ChessgroundBoardComponent, MoveTreeComponent, PanelComponent],
   templateUrl: './scenario-board-shell.component.html',
   styleUrl: './scenario-board-shell.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
