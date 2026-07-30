@@ -11,6 +11,10 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  SelectMenuComponent,
+  type UiSelectMenuOption,
+} from '../../ui/select-menu/select-menu.component';
+import {
   FacetValue,
   emptyImportedGameFacets,
   ImportedGameFacetsResponse,
@@ -25,12 +29,64 @@ import {
 } from './game-filter-period';
 import type { GameFilterPeriod } from './game-filter-period';
 
+const PROVIDER_OPTIONS = [
+  { value: 'ALL', label: 'Lichess + Chess.com' },
+  { value: 'LICHESS', label: 'Lichess', marker: 'graphite' },
+  { value: 'CHESS_COM', label: 'Chess.com', marker: 'action' },
+] as const satisfies readonly UiSelectMenuOption[];
+
+const RESULT_OPTIONS = [
+  { value: '', label: 'Any result' },
+  { value: 'WIN', label: 'Win', marker: 'success' },
+  { value: 'DRAW', label: 'Draw', marker: 'neutral' },
+  { value: 'LOSS', label: 'Loss', marker: 'danger' },
+] as const satisfies readonly UiSelectMenuOption[];
+
+const COLOR_OPTIONS = [
+  { value: '', label: 'White or Black' },
+  { value: 'WHITE', label: 'White', marker: 'neutral' },
+  { value: 'BLACK', label: 'Black', marker: 'graphite' },
+] as const satisfies readonly UiSelectMenuOption[];
+
+const RATED_OPTIONS = [
+  { value: '', label: 'Rated or casual' },
+  { value: 'true', label: 'Rated', marker: 'action' },
+  { value: 'false', label: 'Casual', marker: 'neutral' },
+] as const satisfies readonly UiSelectMenuOption[];
+
+const ANALYSIS_OPTIONS = [
+  { value: '', label: 'Any status' },
+  { value: 'NOT_ANALYZED', label: 'Not analysed', marker: 'neutral' },
+  { value: 'RUNNING', label: 'Running', marker: 'info' },
+  { value: 'COMPLETED', label: 'Completed', marker: 'success' },
+  { value: 'FAILED', label: 'Failed', marker: 'danger' },
+] as const satisfies readonly UiSelectMenuOption[];
+
+const PERIOD_OPTIONS = [
+  { value: 'TODAY', label: 'Today' },
+  { value: '1M', label: '1M', caption: 'Last month' },
+  { value: '3M', label: '3M', caption: 'Last 3 months' },
+  { value: 'YTD', label: 'YTD', caption: 'Year to date' },
+  { value: '1Y', label: '1Y', caption: 'Last year' },
+  { value: '3Y', label: '3Y', caption: 'Last 3 years' },
+  { value: '5Y', label: '5Y', caption: 'Last 5 years' },
+  { value: 'ALL', label: 'All', caption: 'All imported games' },
+  { value: 'CUSTOM', label: 'Custom', caption: 'Choose exact dates' },
+] as const satisfies readonly UiSelectMenuOption[];
+
+const INDEXED_OPTIONS = [
+  { value: '', label: 'Any status' },
+  { value: 'NOT_INDEXED', label: 'Not indexed', marker: 'neutral' },
+  { value: 'INDEXED', label: 'Indexed', marker: 'success' },
+  { value: 'FAILED', label: 'Failed', marker: 'danger' },
+] as const satisfies readonly UiSelectMenuOption[];
+
 export type GameFilterPanelPresentation = 'default' | 'explorer';
 
 @Component({
   selector: 'app-game-filter-panel',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SelectMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-filter-panel.component.html',
   styleUrl: './game-filter-panel.component.css',
@@ -50,6 +106,32 @@ export class GameFilterPanelComponent {
   readonly reset = output<void>();
   readonly tagsOpen = signal(false);
   readonly moreFiltersOpen = signal(false);
+  readonly providerOptions = PROVIDER_OPTIONS;
+  readonly resultOptions = RESULT_OPTIONS;
+  readonly colorOptions = COLOR_OPTIONS;
+  readonly ratedOptions = RATED_OPTIONS;
+  readonly analysisOptions = ANALYSIS_OPTIONS;
+  readonly periodOptions = PERIOD_OPTIONS;
+  readonly indexedOptions = INDEXED_OPTIONS;
+  readonly accountOptions = computed<readonly UiSelectMenuOption[]>(() => [
+    { value: '', label: 'All accounts' },
+    ...(this.facets().accounts || []).map((account) => ({
+      value: this.facetKey(account),
+      label: this.accountLabel(account),
+    })),
+  ]);
+  readonly controlOptions = computed<readonly UiSelectMenuOption[]>(() => [
+    { value: '', label: 'Any control' },
+    { value: 'bullet', label: 'Bullet' },
+    { value: 'blitz,rapid', label: 'Blitz + rapid', marker: 'action' },
+    { value: 'blitz', label: 'Blitz' },
+    { value: 'rapid', label: 'Rapid' },
+    { value: 'classical', label: 'Classical' },
+    ...this.customSpeedFacets().map((speed) => ({
+      value: this.facetKey(speed),
+      label: this.facetLabel(speed),
+    })),
+  ]);
   readonly selectedPeriod = computed(() =>
     detectGameFilterPeriod({
       from: this.filters().from,
@@ -98,9 +180,14 @@ export class GameFilterPanelComponent {
   }
 
   protected setFilterValue<K extends keyof GameFilters>(key: K, value: string): void {
+    if (key === 'userColor' && this.lockedUserColor()) return;
     const next = { ...this.filters(), [key]: value } as GameFilters;
     if (key === 'openingName') next.openingNameExact = '';
     this.filtersChange.emit(this.withLockedColor(next));
+  }
+
+  protected setPeriodValue(period: string): void {
+    this.setPeriod(period as GameFilterPeriod);
   }
 
   protected setPeriod(period: GameFilterPeriod): void {

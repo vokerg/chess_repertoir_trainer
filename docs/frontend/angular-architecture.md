@@ -40,7 +40,8 @@ Shared UI is extracted only after compatible contracts are demonstrated by multi
 
 - `shared/ui/context-strip` renders typed, read-only label/value context. Features compute the item list from their own source signals; the shared component does not derive selection, filter, position, or workflow meaning.
 - `shared/ui/fact-grid` renders typed semantic facts using `dl`, `dt`, and `dd`. Features map their own DTOs or view models into fact items and retain all status, formatting, eligibility, and command logic.
-- Both components are OnPush, router-free, store-free, HTTP-free, and feature-agnostic. Presentation inputs may control layout, but they must not encode feature names or workflow transitions.
+- `shared/ui/select-menu` renders a controlled, accessible single-choice menu from typed string options. Features own option meaning, current value, and the result of emitted changes; the shared component owns only trigger, overlay, selection, and keyboard presentation.
+- These components are OnPush, router-free, store-free, HTTP-free, and feature-agnostic. Presentation inputs may control layout, but they must not encode feature names or workflow transitions.
 - A pattern remains feature-local when its hierarchy, responsive behavior, actions, or state model is domain-specific. Games evidence cards, Study workflow steps and launchers, and analysis-workbench slot composition are not generic shared contracts.
 
 ## Angular defaults
