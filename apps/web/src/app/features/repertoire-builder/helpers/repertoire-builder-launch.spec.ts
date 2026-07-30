@@ -131,7 +131,9 @@ describe('repertoire builder launch payload', () => {
     const parsed = parseRepertoireBuilderLaunch(convertToParamMap(query));
 
     expect(parsed.error).toBeNull();
-    expect(parsed.context?.startingFen).toBe(`${NORMALIZED_STARTING_FEN} 0 1`);
+    expect(parsed.context?.source).toBe('COURSE_ENDING');
+    if (!parsed.context || parsed.context.source === 'PLAYER_PROFILE') return;
+    expect(parsed.context.startingFen).toBe(`${NORMALIZED_STARTING_FEN} 0 1`);
   });
 
   it('rejects malformed or incomplete external route state', () => {

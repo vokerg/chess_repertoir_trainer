@@ -4,6 +4,7 @@ import type {
   LichessGamesSpeedPreset,
 } from '@chess-trainer/contracts/opening-explorer';
 import type {
+  RepertoireTargetDefaultSource,
   RepertoireTargetPersona,
   RepertoireTargetTheoryBurden,
 } from '@chess-trainer/contracts/repertoire-target';
@@ -12,7 +13,7 @@ export const REPERTOIRE_BUILDER_CANDIDATE_LIMIT = 6;
 export const REPERTOIRE_BUILDER_DECISION_LIMIT = 24;
 export const REPERTOIRE_BUILDER_PREVIEW_LIMIT = 128;
 
-export interface RepertoireBuilderSetup {
+export interface RepertoireBuilderSetupValues {
   side: 'WHITE' | 'BLACK';
   speedPreset: LichessGamesSpeedPreset;
   ratingTarget: LichessGamesRatingTarget;
@@ -22,10 +23,20 @@ export interface RepertoireBuilderSetup {
   coveragePercent: number;
 }
 
+export interface RepertoireBuilderProfileDefaults {
+  source: Extract<RepertoireTargetDefaultSource, { kind: 'PLAYER_PROFILE' }>;
+  setup: RepertoireBuilderSetupValues;
+}
+
+export interface RepertoireBuilderSetup extends RepertoireBuilderSetupValues {
+  profileDefaults?: RepertoireBuilderProfileDefaults;
+}
+
 export interface RepertoireBuilderPersonaPreset {
   id: RepertoireBuilderSetup['persona'];
   label: string;
   description: string;
+  intentSummary: string;
   defaultTheoryBurden: RepertoireTargetTheoryBurden;
   defaultCoveragePercent: number;
 }

@@ -14,6 +14,7 @@ import {
 } from '@chess-trainer/contracts/repertoire-target';
 import type {
   RepertoireBuilderPersonaPreset,
+  RepertoireBuilderProfileDefaults,
   RepertoireBuilderSetup,
 } from '../state/repertoire-builder.models';
 
@@ -25,6 +26,7 @@ export const repertoireBuilderPersonaPresets: readonly RepertoireBuilderPersonaP
     id: 'BALANCED',
     label: 'Balanced',
     description: 'Prefer sound, flexible choices without committing to maximum theory.',
+    intentSummary: 'Balanced and dynamic · playable minimum · medium risk and complexity',
     defaultTheoryBurden: 'MEDIUM',
     defaultCoveragePercent: 80,
   },
@@ -32,6 +34,7 @@ export const repertoireBuilderPersonaPresets: readonly RepertoireBuilderPersonaP
     id: 'SOLID',
     label: 'Solid',
     description: 'Prioritize dependable structures, lower risk, and a lighter theory load.',
+    intentSummary: 'Solid and positional · sound minimum · low risk and complexity',
     defaultTheoryBurden: 'LOW',
     defaultCoveragePercent: 85,
   },
@@ -39,6 +42,7 @@ export const repertoireBuilderPersonaPresets: readonly RepertoireBuilderPersonaP
     id: 'AGGRESSIVE',
     label: 'Aggressive',
     description: 'Accept complexity and theory when it supports active, forcing play.',
+    intentSummary: 'Sharp, tactical, and dynamic · playable minimum · high risk and complexity',
     defaultTheoryBurden: 'HIGH',
     defaultCoveragePercent: 80,
   },
@@ -46,6 +50,7 @@ export const repertoireBuilderPersonaPresets: readonly RepertoireBuilderPersonaP
     id: 'SURPRISE',
     label: 'Surprise',
     description: 'Prefer practical and less expected choices while keeping explicit risk limits.',
+    intentSummary: 'Surprise and tactical · risky minimum · high risk and complexity',
     defaultTheoryBurden: 'LOW',
     defaultCoveragePercent: 70,
   },
@@ -69,17 +74,32 @@ export function buildRepertoireBuilderTarget(
   now: string,
   targetId = createId(),
   startingPoint: RepertoireTargetStartingPoint = { kind: 'INITIAL_POSITION' },
+  profileDefaults: RepertoireBuilderProfileDefaults | null = setup.profileDefaults ?? null,
 ): RepertoireTarget {
+  const activeProfileDefaults = profileDefaults?.setup.side === setup.side ? profileDefaults : null;
   const populationRequest = toPopulationRequest(setup.ratingTarget, setup.ratingGroup);
   const population = resolveRepertoireTargetPopulation(populationRequest, peerResolution);
   const preset = requirePersonaPreset(setup.persona);
-  const presetObjective = objectiveForPersona(setup.persona, preset.defaultTheoryBurden);
-  const objective = objectiveForPersona(setup.persona, setup.maximumTheoryBurden);
-  const presetCoverage = coverageForPreset(preset.defaultCoveragePercent);
-  const coverage = coverageForPreset(setup.coveragePercent);
+  const effectiveObjective = objectiveForPersona(setup.persona, setup.maximumTheoryBurden);
+  const effectiveCoverage = coverageForPreset(setup.coveragePercent);
+  const defaultSetup = activeProfileDefaults?.setup ?? {
+    ...setup,
+    speedPreset: 'BLITZ_AND_SLOWER' as const,
+    maximumTheoryBurden: preset.defaultTheoryBurden,
+    coveragePercent: preset.defaultCoveragePercent,
+  };
+  const defaultObjective = objectiveForPersona(
+    defaultSetup.persona,
+    defaultSetup.maximumTheoryBurden,
+  );
+  const defaultCoverage = coverageForPreset(defaultSetup.coveragePercent);
   const accountIds = peerResolution
     ? [...new Set(peerResolution.contributions.map((entry) => entry.accountId))].sort((a, b) => a - b)
     : [];
+  const speedDefaultSource = activeProfileDefaults?.source
+    ?? { kind: 'SYSTEM_DEFAULT' as const, policyVersion: SYSTEM_DEFAULT_VERSION };
+  const intentDefaultSource = activeProfileDefaults?.source
+    ?? { kind: 'PERSONA_PRESET' as const, presetVersion: PERSONA_PRESET_VERSION };
 
   return repertoireTargetSchema.parse({
     contractVersion: REPERTOIRE_TARGET_CONTRACT_VERSION,
@@ -89,13 +109,13 @@ export function buildRepertoireBuilderTarget(
     speedPreset: setup.speedPreset,
     population,
     accountIds,
-    objective,
-    coverage,
+    objective: effectiveObjective,
+    coverage: effectiveCoverage,
     defaults: [
       {
         field: 'speedPreset',
-        source: { kind: 'SYSTEM_DEFAULT', policyVersion: SYSTEM_DEFAULT_VERSION },
-        value: 'BLITZ_AND_SLOWER',
+        source: speedDefaultSource,
+        value: defaultSetup.speedPreset,
       },
       ...(population.peerResolution === null
         ? []
@@ -106,19 +126,19 @@ export function buildRepertoireBuilderTarget(
           }]),
       {
         field: 'objective',
-        source: { kind: 'PERSONA_PRESET', presetVersion: PERSONA_PRESET_VERSION },
-        value: presetObjective,
+        source: intentDefaultSource,
+        value: defaultObjective,
       },
       {
         field: 'coverage',
-        source: { kind: 'PERSONA_PRESET', presetVersion: PERSONA_PRESET_VERSION },
-        value: presetCoverage,
+        source: intentDefaultSource,
+        value: defaultCoverage,
       },
     ],
     overriddenFields: [
-      ...(setup.speedPreset === 'BLITZ_AND_SLOWER' ? [] : ['speedPreset'] as const),
-      ...(sameValue(objective, presetObjective) ? [] : ['objective'] as const),
-      ...(sameValue(coverage, presetCoverage) ? [] : ['coverage'] as const),
+      ...(setup.speedPreset === defaultSetup.speedPreset ? [] : ['speedPreset'] as const),
+      ...(sameValue(effectiveObjective, defaultObjective) ? [] : ['objective'] as const),
+      ...(sameValue(effectiveCoverage, defaultCoverage) ? [] : ['coverage'] as const),
     ],
     createdAt: now,
     updatedAt: now,

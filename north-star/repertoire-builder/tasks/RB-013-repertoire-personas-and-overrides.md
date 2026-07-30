@@ -1,6 +1,6 @@
 # RB-013 — Support repertoire personas and profile overrides
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -8,15 +8,21 @@ Order: 80
 
 Delivery class: Dual-use
 
-Planning maturity: Outlined
+Planning maturity: Bounded profile-to-Builder composition underway
 
-Claimed by: unclaimed
+GitHub issue: `#101`
 
-Claim branch: none
+Claimed by: `vokerg` / ChatGPT agent session
 
-Claimed at: none
+Claim PR: `#231`
 
-Claim scope: none
+Claim branch: `rb-013/issue-101-profile-persona-claim`
+
+Implementation branch: `rb-013/issue-101-profile-persona-launch`
+
+Claimed at: 2026-07-30
+
+Claim scope: Deliver a bounded profile-to-Builder v1 using the integrated RB-004/RB-005 profile response and the existing RB-006 target provenance/override algebra. Add an explicit Player Chess Profile launch into Builder, deterministic and inspectable profile-derived setup suggestions, immutable profile provenance, editable/rejectable defaults, exact `overriddenFields` behavior, focused Angular/contract tests, and North Star documentation. Excludes course/line persistence, automatic course duplication, hidden persona inference, profile recalculation inside Builder, ranking-policy changes, AI narrative, and trap data.
 
 ## Outcome
 
@@ -35,74 +41,84 @@ Examples:
 
 A player profile is descriptive, not destiny. The product needs an explicit mechanism for turning profile conclusions into optional defaults, recording deliberate overrides, and maintaining multiple course intents without presenting them as contradictions or errors.
 
-## Current repo anchors to inspect
+## Verified repo anchors
 
-- RB-004/RB-005 profile contracts and UI;
-- RB-006 target contract;
-- course/chapter/line metadata, tags, and notes;
-- course list/overview and library presentation;
-- course-copy and reintegration behavior;
-- current filters and route-query patterns.
+- RB-004/RB-005 profile contracts and `/progress/profile` UI are integrated on `main` through the merged RB-004/RB-005 claim stacks;
+- RB-006 already defines `PLAYER_PROFILE` default provenance and exact `overriddenFields` validation;
+- the Builder setup dialog already exposes editable persona, speed, population, theory, coverage, and side controls;
+- route-query launch parsing already exists for exact Course review entry points;
+- candidate evidence already keeps profile fit and target fit separate;
+- RB-011 course apply remains authoritative and is not changed by this slice.
 
 ## Dependencies
 
-Proposed until RB-005 and RB-006 establish actual profile and target shapes.
+Satisfied for the bounded v1:
 
-Parts may be absorbed into those tasks or split into course-metadata and setup-UX tasks after inspection.
+- RB-004 profile calculation is present on `main` through PRs #136 and #135;
+- RB-005 profile experience is present on `main` through PRs #139, #138, and #135;
+- RB-006 target contract is complete through PR #157.
+
+Repository and issue closure state for RB-004/RB-005 remains stale and must be reconciled separately; it does not block use of their integrated runtime contracts.
 
 ## In scope
 
-- define how profile suggestions initialize a target;
-- define explicit override records and user-facing explanation;
-- define named persona presets only when they map to transparent target dimensions;
-- allow multiple courses/targets from the same opening without forcing replacement;
-- determine whether course metadata stores target/persona identity and version;
-- support changing target intent for a new variant while preserving the original course;
-- distinguish optimization for current results from deliberate learning/development;
-- define how candidate ranking reports profile fit versus target fit;
-- add tests for override precedence and multiple-persona cases.
+- derive a deterministic setup suggestion from the loaded profile without assigning a permanent user persona;
+- expose the suggestion from `/progress/profile` only when eligible profile evidence exists;
+- allow the user to choose White or Black when both sides are present;
+- launch Builder with bounded profile provenance and suggested setup values;
+- show clearly that the profile is a starting point and every Builder control remains editable;
+- allow rejecting the suggestion and returning to standard Builder defaults;
+- record profile-derived `speedPreset`, `objective`, and `coverage` defaults through the existing RB-006 `PLAYER_PROFILE` source;
+- preserve peer-resolution population provenance separately;
+- make manual target choices take precedence and appear in exact `overriddenFields`;
+- preserve profile fit and selected-target fit as separate concepts;
+- add focused tests for default acceptance, partial override, complete rejection, malformed/stale launch input, and alternate persona selection.
 
 ## Out of scope
 
 - opening classification mechanics;
 - trap data implementation;
-- candidate ranking details beyond required inputs/reasons;
+- candidate ranking policy changes;
 - automatic course duplication without review;
 - one permanent user persona;
-- LLM-generated persona labels as factual state.
+- LLM-generated persona labels as factual state;
+- Prisma migration or persisted course/line target metadata;
+- automatic profile recalculation or background synchronization;
+- changing RB-011 preview/apply or course-writer behavior.
 
-## Open questions to resolve
+## Decisions for this bounded v1
 
-- Are personas named presets, saved target templates, or course metadata?
-- Can users define custom personas?
-- Should course target metadata be immutable history or editable intent?
-- How are profile changes handled after a course is created?
-- How does a builder explain `not profile-aligned, but chosen intentionally`?
-- Is a dubious repertoire permitted only after an explicit risk acknowledgement?
-- How are multiple courses for the same opening distinguished in library and review views?
+- Personas remain transparent Builder target presets, not factual player labels.
+- The profile produces one deterministic suggested setup per selected side; it does not create a saved persona.
+- Profile provenance is retained in the route-local target snapshot through RB-006 defaults.
+- Manual Builder edits always win and are recorded as overrides against the immutable suggested values.
+- Rejecting the profile suggestion restores the standard Builder setup and removes profile defaults from the target.
+- Persistent course intent and library presentation are deferred until route-local usage demonstrates that retained post-apply intent is valuable.
 
 ## Acceptance criteria
 
 - A profile-derived default can be accepted, edited, or rejected.
 - Manual target choices take precedence without altering the factual profile.
-- Two courses for the same opening can retain distinct, inspectable intents.
-- Persona labels do not hide their underlying dimensions.
-- Candidate explanations can show both profile fit and selected-target fit.
+- Persona labels expose their underlying preferred characters, soundness, risk, theory, complexity, and coverage values.
+- Candidate explanations continue to show profile fit and selected-target fit separately.
+- Different Builder launches from the same profile can choose different personas without mutating the profile or each other.
 - A future traps persona can be added without changing the basic override model.
-- Tests cover default acceptance, partial override, complete override, and alternate-course creation.
+- Malformed, incomplete, unsupported, or stale profile launch data falls back safely to ordinary Builder setup.
+- Tests cover default acceptance, partial override, complete rejection, and alternate-persona creation.
 
 ## Required validation
 
-Depends on final scope. At minimum:
-
-- contract/helper tests;
-- API tests if course metadata changes;
-- web tests and responsive review if persona setup/presentation is implemented;
-- migration validation if persistence is added.
+- profile-to-setup pure-helper tests;
+- route launch serialization/parsing tests;
+- Builder target provenance and override tests;
+- profile page action/store tests;
+- Builder store/setup presentation tests;
+- responsive and keyboard-safe presentation review through existing component patterns;
+- complete repository CI before review.
 
 ## Completion updates
 
-The report must state whether personas became target presets, course metadata, or both, and whether new tasks are required for course library presentation or migration.
+The report must state whether personas became target presets, course metadata, or both, and whether new tasks are required for retained course intent or library presentation.
 
 ## Completion
 
