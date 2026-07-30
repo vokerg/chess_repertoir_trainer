@@ -1,6 +1,6 @@
 # RB-019 — Prototype advisory candidate explanation in Builder
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P3
 
@@ -16,11 +16,11 @@ GitHub issue: `#218`
 
 Claimed by: `vokerg` / ChatGPT agent session
 
-Claim branch: `rb-019/issue-218-candidate-explanation-claim`
+Claim branch: `rb-019/issue-218-candidate-explanation`
 
 Claimed at: 2026-07-30
 
-Claim scope: Convert the dependency-satisfied P3 prototype from `PROPOSED` to an explicit claim and implement the bounded, disabled-by-default candidate-explanation slice: shared AI contracts, authoritative server-side context reconstruction through the existing candidate-decision service, capability gating, transient page-scoped Angular state, optional workbench composition, validation, and program reporting. Excludes ranking/session/course mutations, persistence, background generation, profile narrative, and completion summaries.
+Claim scope: Implement the bounded, disabled-by-default candidate-explanation slice: shared AI contracts, authoritative server-side context reconstruction through the existing candidate-decision service, capability gating, transient page-scoped Angular state, optional workbench composition, validation, and program reporting. Excludes ranking/session/course mutations, persistence, background generation, profile narrative, and completion summaries.
 
 ## Outcome
 
