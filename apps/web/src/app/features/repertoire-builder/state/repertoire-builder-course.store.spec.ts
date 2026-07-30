@@ -15,7 +15,7 @@ import {
 import { Chess } from 'chess.js';
 import { of } from 'rxjs';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
-import type { RepertoireBuilderCourseEndingLaunch } from '../helpers/repertoire-builder-launch';
+import type { RepertoireBuilderCourseFindingLaunch } from '../helpers/repertoire-builder-launch';
 import {
   buildRepertoireBuilderTarget,
   defaultRepertoireBuilderSetup,
@@ -25,7 +25,7 @@ import { RepertoireBuilderCourseStore } from './repertoire-builder-course.store'
 const STARTING_FEN = new Chess().fen();
 const NORMALIZED_STARTING_FEN = normalizeFenForPosition(STARTING_FEN);
 
-const courseEndingLaunch: RepertoireBuilderCourseEndingLaunch = {
+const courseEndingLaunch: RepertoireBuilderCourseFindingLaunch = {
   source: 'COURSE_ENDING',
   intent: 'EXTEND_EXISTING_LINE',
   courseId: 1,
@@ -33,6 +33,7 @@ const courseEndingLaunch: RepertoireBuilderCourseEndingLaunch = {
   chapterId: 2,
   lineId: 13,
   lineName: 'Source line',
+  anchorKind: 'NODE',
   nodeId: 17,
   startingFen: STARTING_FEN,
   side: 'WHITE',
@@ -43,6 +44,29 @@ const courseEndingLaunch: RepertoireBuilderCourseEndingLaunch = {
   sourceKey: 'start:e2e4',
   sequence: null,
   results: { win: 4, draw: 2, loss: 2, unknown: 0 },
+  filterSummary: 'Last 1 month · White games',
+  sourceFilters: 'userColor=WHITE',
+};
+
+const opponentGapLaunch: RepertoireBuilderCourseFindingLaunch = {
+  source: 'OPPONENT_GAP',
+  intent: 'COVER_OPPONENT_GAP',
+  courseId: 1,
+  courseName: 'Course',
+  chapterId: 2,
+  lineId: 13,
+  lineName: 'Source line',
+  anchorKind: 'LINE_START',
+  nodeId: null,
+  startingFen: STARTING_FEN,
+  side: 'WHITE',
+  observedMoveUci: 'e2e4',
+  observedMoveSan: 'e4',
+  observedGameCount: 6,
+  minCoveredPlies: 0,
+  sourceKey: 'OPPONENT_UNCOVERED:start:e2e4',
+  sequence: null,
+  results: { win: 3, draw: 1, loss: 2, unknown: 0 },
   filterSummary: 'Last 1 month · White games',
   sourceFilters: 'userColor=WHITE',
 };
@@ -140,30 +164,34 @@ function previewFixture(
   };
 }
 
-const exactCandidate: BuilderCourseReintegrationPreviewResponse['candidates'][number] = {
-  lineId: 13,
-  lineName: 'Source line',
-  sideToTrain: 'WHITE',
-  anchor: {
-    kind: 'NODE',
+function candidateFixture(
+  kind: 'NODE' | 'LINE_START',
+): BuilderCourseReintegrationPreviewResponse['candidates'][number] {
+  return {
     lineId: 13,
     lineName: 'Source line',
-    nodeId: 17,
-    fen: STARTING_FEN,
-    normalizedFen: NORMALIZED_STARTING_FEN,
-    moveSequenceSan: null,
-  },
-  counts: {
-    reusedMoves: 0,
-    createdMoves: 1,
-    conflictingMoves: 0,
-    totalDraftMoves: 1,
-    skippedBranches: 0,
-  },
-  conflicts: [],
-  warnings: [],
-  previewTree: [],
-};
+    sideToTrain: 'WHITE',
+    anchor: {
+      kind,
+      lineId: 13,
+      lineName: 'Source line',
+      nodeId: kind === 'NODE' ? 17 : null,
+      fen: STARTING_FEN,
+      normalizedFen: NORMALIZED_STARTING_FEN,
+      moveSequenceSan: null,
+    },
+    counts: {
+      reusedMoves: 0,
+      createdMoves: 1,
+      conflictingMoves: 0,
+      totalDraftMoves: 1,
+      skippedBranches: 0,
+    },
+    conflicts: [],
+    warnings: [],
+    previewTree: [],
+  };
+}
 
 const applyFixture: BuilderCourseReintegrationApplyResponse = {
   contractVersion: '2026-07-v1',
@@ -238,8 +266,8 @@ describe('RepertoireBuilderCourseStore', () => {
     expect(store.result()).toEqual(applyFixture);
   });
 
-  it('locks a Course ending draft to its exact source endpoint', async () => {
-    api.previewCourseOutput.and.returnValue(of(previewFixture([exactCandidate])));
+  it('locks a Course ending draft to its exact node endpoint', async () => {
+    api.previewCourseOutput.and.returnValue(of(previewFixture([candidateFixture('NODE')])));
     api.applyCourseOutput.and.returnValue(of(exactApplyFixture));
 
     await store.openFor(completedSession(), courseEndingLaunch);
@@ -272,8 +300,29 @@ describe('RepertoireBuilderCourseStore', () => {
     expect(store.result()).toEqual(exactApplyFixture);
   });
 
+  it('locks an Opponent gap draft to its exact line-start endpoint', async () => {
+    api.previewCourseOutput.and.returnValue(of(previewFixture([candidateFixture('LINE_START')])));
+
+    await store.openFor(completedSession(), opponentGapLaunch);
+
+    expect(store.requiredTarget()).toEqual({
+      kind: 'EXISTING_LINE',
+      lineId: 13,
+      anchor: {
+        kind: 'LINE_START',
+        nodeId: null,
+        normalizedFen: NORMALIZED_STARTING_FEN,
+      },
+    });
+
+    await store.previewCourseOutput();
+
+    expect(store.selectedTarget()).toEqual(store.requiredTarget());
+    expect(store.canApply()).toBeTrue();
+  });
+
   it('fails safely when the exact source endpoint is absent from preview', async () => {
-    await store.openFor(completedSession(), courseEndingLaunch);
+    await store.openFor(completedSession(), opponentGapLaunch);
     await store.previewCourseOutput();
 
     expect(store.selectedTarget()).toBeNull();
