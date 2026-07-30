@@ -10,9 +10,11 @@ Branch: `visual-transformation/vt-301-line-training`
 
 Target: `main`
 
-Pull request: draft PR #211
+Pull request: squash-merged PR #211
 
-Disposition: behavior-preserving implementation complete; repository CI and direct browser review pending
+Squash commit: `a59cb7847270db407e950740df804dde4bd1f060`
+
+Disposition: complete and integrated; exact approved-head CI #1594 passed; direct browser review explicitly deferred by user approval
 
 ## Objective
 
@@ -20,138 +22,75 @@ Modernize the authenticated marathon and focused line-training routes with the v
 
 ## Sequence adjustment
 
-The inventory originally placed Courses, Course Review, chapter lines, and line editing before Training. Active PR #208 currently changes Course Review and Repertoire Builder entry flows, including the Course Review route page and finding components.
+The inventory placed Courses, Course Review, chapter lines, and line editing before Training. Active PR #208 changed Course Review and Repertoire Builder entry flows, so this collision-free training family proceeded first as a reviewable slice.
 
-This batch therefore advances the next collision-free family and splits Training into reviewable slices:
-
-- Batch 4a: marathon routes, `/lines/:lineId/train`, and `LineTrainingSessionComponent` presentation;
-- later Training slice: Lichess puzzles and tactical scenario-training routes.
-
-No PR #208, Settings PR #209, Progress PR #196, or Builder file is modified.
+Batch 4a covers marathon routes, `/lines/:lineId/train`, and `LineTrainingSessionComponent`. Lichess puzzles and tactical scenario-training remain a separate later slice.
 
 ## Verified architecture boundary
 
-The existing implementation already follows the intended Angular ownership model:
-
-- `TrainingMarathonPageComponent` reads route/query state and delegates initialization and commands to `TrainingMarathonStore`;
-- `LineTrainPageComponent` reads the line route id and delegates workflow ownership to `LineTrainStore`;
-- both stores own loading, errors, async commands, session state, board position, hint visibility, completion, accuracy, mistakes, and review loading;
-- `LinesApiService` remains the typed HTTP owner;
-- `LineTrainingSessionComponent` remains a presentational signal-input/output component;
+- `TrainingMarathonPageComponent` reads route/query state and delegates to `TrainingMarathonStore`.
+- `LineTrainPageComponent` reads the route id and delegates to `LineTrainStore`.
+- Both stores retain loading, errors, commands, session state, board position, hints, completion, accuracy, mistakes, and review ownership.
+- `LinesApiService` remains the typed HTTP owner.
+- `LineTrainingSessionComponent` remains a presentational signal-input/output component.
 - `ChessgroundBoardComponent` remains the shared board owner.
 
-VT-301 Batch 4a introduces no second store, API path, route state, board implementation, persistence owner, or training decision.
+No second store, API path, route state, board implementation, persistence owner, or training decision was introduced.
 
-## Implemented presentation
+## Integrated presentation
 
-### Route hierarchy
-
-- replaced legacy `workbench-header` route chrome with the proven `app-page-header` contract;
-- retained route-specific back navigation outside the shared header;
-- represented marathon mode selection through existing shared toggle actions while continuing to call `TrainingMarathonStore.switchMode`;
-- retained current line, training side, run completion, session status, source summary, and edit-tree access;
-- replaced hand-rolled loading cards with `app-panel`.
-
-### Shared training session
-
-- retained the board-first desktop composition and 980px single-column collapse;
-- migrated the remaining mobile legacy token usage to production `--ui-*` roles;
-- strengthened the hint row, progress evidence, result summary, mistake-review panel, and mistake cards through production surfaces, borders, typography, and semantic status roles;
+- replaced legacy route-level workbench headers with `app-page-header`;
+- retained route-specific back navigation and edit-tree access;
+- represented marathon modes through the existing shared toggle-action contract while preserving `TrainingMarathonStore.switchMode`;
+- replaced hand-rolled loading cards with `app-panel`;
+- migrated remaining mobile legacy tokens to production `--ui-*` roles;
+- strengthened hint, progress, result, review, and mistake-card surfaces;
 - applied mono/tabular typography only to moves, percentages, and counts;
-- added visible three-pixel focus treatment for feature-local actions and links;
-- added progressbar semantics to the existing derived progress indicator;
-- retained text labels and status messages so colour is not the only signal;
-- disabled the progress-width transition for reduced-motion users.
-
-### Responsive behavior
-
-- retained the established 980px workbench collapse;
-- retained the 640px compact board/session composition and narrow 420px adjustments;
-- preserved shell-owned mobile-navigation clearance;
-- synchronized numeric media-query comments with the shared breakpoint contract.
+- added visible three-pixel keyboard focus treatment;
+- added progressbar semantics without changing the derived progress calculation;
+- disabled progress-width animation for reduced-motion users;
+- retained the 980px, 640px, and narrow-phone responsive compositions.
 
 ## Behavior preserved
 
 - guarded lazy marathon and line-training routes;
-- marathon chapter, course, selected-line, and selected-subline scopes;
-- marathon query parsing and mode defaults;
-- mode switching, run reset, next-line loading, recent-subline handling, and completed-this-run counting;
+- chapter, course, selected-line, and selected-subline marathon scopes;
+- route/query parsing, mode defaults, mode switching, run reset, next-line loading, recent-subline handling, and run completion counts;
 - focused line loading and session restart;
 - white/black board orientation;
-- board move submission, expected-move hint reveal, finish, retry, next-line, stop, back, and edit-tree commands;
+- board move submission, hint reveal, finish, retry, next-line, stop, back, and edit commands;
 - correct/incorrect feedback and same-position retry behavior;
-- last-move and board-position-version updates;
 - completion, pass/fail, accuracy, mistake counts, and mistake review;
-- stale-request protection and error handling;
-- all `LinesApiService` calls and backend behavior.
+- stale-request protection, API calls, and backend behavior.
+
+## Validation and approval
+
+- PR #211 exact final head: `7f6442c7937276ad51788a641f7a96309d401eb3`;
+- CI run #1594 passed the complete repository workflow;
+- no PR comments, reviews, or unresolved review threads were present at approval;
+- the user explicitly approved squash integration and deferred direct browser review;
+- PR #211 was squash-merged into `main` as `a59cb7847270db407e950740df804dde4bd1f060`.
+
+Deferred browser evidence is not represented as an observed pass. The original review checklist remains applicable for a later consolidated product-review pass.
 
 ## Explicit exclusions
 
 - no route, query, API, contract, schema, migration, database, or dependency change;
 - no training algorithm, eligibility, scoring, accuracy, progress calculation, or session-selection change;
-- no board, sound, animation, engine, or move-validation change;
+- no board, sound, engine, or move-validation change;
 - no Course Review, Builder, line editor, puzzle, tactical-scenario, or Lab change;
-- no new shared state or UI primitive;
-- no merge without explicit approval.
-
-## Automated validation
-
-No working local checkout is available in this session, so local build, lint, tests, architecture checks, and browser validation are not represented as passed.
-
-Pre-documentation branch comparison:
-
-- base: current `main` commit `f1c3a1d5ddfb9e170639b1f1940f5c5f36e4d59e`;
-- branch: eight runtime commits ahead and zero behind before the report commit;
-- runtime changes: the two training route page triplets and shared session template/style only;
-- no store, API, model, helper, route, package, schema, migration, or dependency file changed.
-
-No focused component spec exists for these presentation files. Required validation is:
-
-- repository CI, including Angular template/type compilation, lint, architecture guardrails, migrations, and the complete test suite;
-- exact final documentation-head CI;
-- direct browser review or explicit recorded deferral.
-
-## Browser review required
-
-Review chapter, course, selected-line, selected-subline, and focused-line training with realistic data:
-
-- loading and invalid/unavailable/error states;
-- white and black training sides;
-- All, Weak, Untrained, and Mixed marathon modes;
-- current line/source/status statistics and edit-tree links;
-- correct and incorrect feedback;
-- hidden and revealed expected move;
-- clean completion, failed/needs-review completion, empty review, and populated mistake review;
-- finish, retry, next line, stop marathon, back, and edit commands;
-- long line, source, subline, branch, note, and annotation labels;
-- desktop, 980px, 640px, and narrow-phone layouts;
-- keyboard traversal, focus visibility, reduced motion, and mobile-navigation clearance.
-
-Unavailable states must be recorded explicitly rather than represented as observed passes.
+- no new shared state or UI primitive.
 
 ## Files inspected
 
-- `TRANSFORMATION.md`
-- `AGENTS.md`
 - `.agents/skills/angular-frontend/SKILL.md`
 - `docs/frontend/angular-architecture.md`
 - `docs/frontend/design-tokens.md`
 - `transformation/reports/VT_301_REMAINING_PAGE_INVENTORY.md`
-- issue #132
-- open PR inventory and PR #208 changed-file list
-- `apps/web/src/app/app.routes.ts`
-- `apps/web/src/app/shared/ui/page-header/page-header.component.ts`
-- `apps/web/src/app/shared/ui/shell-actions/shell-actions.component.ts`
-- `apps/web/src/app/shared/ui/shell-actions/shell-actions.component.html`
-- `apps/web/src/app/shared/ui/ui-shell.model.ts`
-- `apps/web/src/app/features/lines/pages/training-marathon-page.component.ts`
-- `apps/web/src/app/features/lines/pages/training-marathon-page.component.html`
-- `apps/web/src/app/features/lines/pages/training-marathon-page.component.css`
-- `apps/web/src/app/features/lines/pages/line-train-page.component.ts`
-- `apps/web/src/app/features/lines/pages/line-train-page.component.html`
-- `apps/web/src/app/features/lines/pages/line-train-page.component.css`
-- `apps/web/src/app/features/lines/components/line-training-session.component.ts`
-- `apps/web/src/app/features/lines/components/line-training-session.component.html`
-- `apps/web/src/app/features/lines/components/line-training-session.component.css`
-- `apps/web/src/app/features/lines/state/training-marathon.store.ts`
-- `apps/web/src/app/features/lines/state/line-train.store.ts`
+- issue #132 and open PR inventory
+- PR #208 changed-file inventory
+- shared page-header and shell-action contracts
+- marathon and focused-line route page TS/HTML/CSS
+- `line-training-session.component.{ts,html,css}`
+- `training-marathon.store.ts`
+- `line-train.store.ts`
