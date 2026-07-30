@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 ## Program state
 
@@ -10,92 +10,97 @@ Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues
 
 Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156)
 
-Current review: ONB-001 / [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197)
+Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197) as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`
 
-Current report: `reports/ONB-001-2026-07-29-lifecycle-default-recipe.md`
+Bounded import/backfill contract: ONB-002 completed through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
-## Completed foundation
+Next ordered task: ONB-003 / [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
-- inspected current account import, provider services, job worker, processing, Prisma lifecycle, authentication, Angular account/job surfaces, course routes, deployment, Player Chess Profile documentation, Repertoire Builder coordination, and Visual Transformation planning;
-- established the complete `north-star/onboarding/` planning workspace;
-- created program issue #147 and research issues #148–#154;
-- identified recent-first durable import and progressive preparation as the critical path;
-- separated lifecycle/admin/cleanup into an operator control-plane path;
-- rejected client-side processing, full-history-first, a replacement queue, and raw destructive table operations.
+Latest report: `reports/ONB-002-2026-07-29-bounded-import-backfill.md`
 
-## ONB-001 review delivery
+## Completed contracts
 
-ONB-001 has produced a reviewable lifecycle and default-recipe contract:
+### ONB-001
 
-- user disposition is persisted as `PENDING`, `COMPLETED`, or `SKIPPED`;
-- accepted work is represented by repeatable user-owned `DataPreparationRun` records, with at most one non-terminal run per user;
-- a run begins only after explicit recipe acceptance;
-- default preparation uses one selected account, a fixed inclusive UTC date-only three-calendar-month range, standard blitz and rapid, rated and unrated, newest first;
-- bounded import and terminal indexing with at least one indexing success form the core completion gate;
-- analysis is requested progressively but does not block user onboarding completion;
-- readiness is feature-specific and evidence-based;
-- `/home` remains signed-in entry, `/onboarding` is resumable, direct protected navigation and login `returnUrl` are preserved;
-- Home consumes one server-owned preparation projection;
-- the global imported-game job panel remains the technical child-job surface;
-- skip does not cancel accepted work;
-- existing users are adopted as completed; new users begin pending;
-- exact stages/counts are allowed, while ETA remains disabled before ONB-007.
+- persisted user disposition and repeatable preparation runs;
+- fixed one-account three-calendar-month standard blitz/rapid recipe including rated and unrated games;
+- import/index core-completion gate;
+- analysis continues progressively;
+- feature-specific readiness;
+- `/home` plus resumable `/onboarding`;
+- skip distinct from cancellation;
+- legacy users adopted as complete;
+- exact progress without ETA.
+
+### ONB-002
+
+- extend existing `ImportRun` rather than create a generic request/workflow platform;
+- add exact account-and-canonical-scope `AccountImportCoverage`;
+- use half-open UTC ranges and distinct `BOUNDED_INITIAL`, `INCREMENTAL_FORWARD`, and `HISTORICAL_BACKFILL` modes;
+- enforce one non-terminal import run per account;
+- execute provider work through a separate PostgreSQL claim/heartbeat/fencing loop in the existing worker deployment;
+- use deterministic replayable provider windows;
+- advance coverage only after a complete or empty window;
+- fail/replay any window containing parse, normalization, or persistence gaps;
+- use Lichess bounded `since`/`until` streaming and Chess.com serial monthly archives;
+- replace per-game existence N+1 with bounded duplicate-safe bulk persistence;
+- hand preparation a database query boundary rather than ID arrays;
+- conservatively migrate legacy cursors and replace raw cursor reset with explicit backfill;
+- assign one owner for account rating-stat refresh.
 
 ## Allocated implementation backlog
 
-- ONB-008 / [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) — disposition and readiness projection — `PROPOSED`.
-- ONB-009 / [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) — lifecycle commands — `PROPOSED`.
-- ONB-010 / [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) — functional Angular onboarding and Home re-entry — `PROPOSED`.
+- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`.
+- ONB-009 / #194 — lifecycle commands — `PROPOSED`.
+- ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`.
+- ONB-011 / #199 — import persistence/coverage — `PROPOSED`.
+- ONB-012 / #200 — import worker/API lifecycle — `PROPOSED`.
+- ONB-013 / #201 — bounded Lichess adapter — `PROPOSED`.
+- ONB-014 / #202 — bounded Chess.com adapter — `PROPOSED`.
+- ONB-015 / #203 — account-sync cutover/preparation handoff — `PROPOSED`.
 
-These tasks must not be claimed until their listed research and implementation dependencies are resolved.
+These tasks must not be claimed until their task-file dependencies are resolved and accepted.
 
-## Ready queue
+## Ready research queue
 
-1. ONB-002 / #149 — bounded import/backfill.
-2. ONB-003 / #150 — progressive orchestration.
-3. ONB-004 / #151 — destructive lifecycle invariants.
-4. ONB-007 / #154 — throughput/progress.
-5. ONB-005 / #152 — administrator architecture.
-6. ONB-006 / #153 — orphan cleanup.
-
-ONB-001 remains `REVIEW` until accepted and merged.
+1. ONB-003 / #150 — progressive preparation orchestration.
+2. ONB-004 / #151 — destructive lifecycle invariants.
+3. ONB-007 / #154 — throughput/progress.
+4. ONB-005 / #152 — administrator architecture.
+5. ONB-006 / #153 — orphan cleanup.
 
 ## Critical findings
 
-- current first provider sync is synchronous and unbounded when the account has no cursor;
-- current imported-game jobs are durable and should be reused;
-- worker slice size is not the same thing as a visible onboarding wave;
-- indexing is the required core-readiness stage and includes missing-opening assignment;
-- analysis-backed value can arrive after onboarding completion;
-- no-data, partial failure, and all-index-failed states require explicit server meanings;
-- Home currently infers setup/recommendations and needs one authoritative lifecycle projection;
-- full account deletion has useful cascade behavior, but reset/active-worker reconciliation remains unresolved;
-- shared Position/PositionAnalysis retention is distinct from course MoveNode data;
-- no administrator authorization boundary exists;
-- throughput is not measured well enough for an ETA.
+- current provider sync is synchronous and unbounded on first run;
+- current `syncCursorTime` is latest-observed-game time, not exact provider coverage;
+- both provider services can continue past per-game failures and advance the cursor, creating silent gaps;
+- current provider persistence is per-game N+1 and returns unbounded ID arrays;
+- account rating stats are currently recomputed twice per sync path;
+- imported-game `JobTask` cannot represent account-level provider fetches;
+- Lichess supports bounded streamed ranges and speed filtering;
+- Chess.com supports serial monthly archives and explicit no-game months;
+- exact coverage and replayable windows remove the need for full-history cursor resets.
 
 ## Blockers to production implementation
 
-- ONB-002 has not approved the account-level import request/checkpoint model;
-- ONB-003 has not approved the physical preparation schema, child-run reconciliation, or pause/cancel mechanics;
-- ONB-007 has not measured wave size, throughput, or ETA policy;
-- ONB-004 has not approved destructive reset/purge reconciliation;
-- Visual Transformation branch integration for ONB-010 remains unresolved.
+- ONB-003 has not approved preparation-run physical orchestration or import pipelining cadence;
+- ONB-004 has not approved active-work acknowledgement for account/user deletion or destructive coverage reset;
+- ONB-007 has not measured import window/batch/worker timing or scaling thresholds;
+- ONB-008/009/010 remain blocked by durable import/preparation implementation;
+- Visual Transformation coordination for final Angular onboarding remains unresolved.
 
 ## Validation
 
-ONB-001 documentation-only research:
+ONB-002 documentation-only research:
 
-- repository files and related issues inspected directly through GitHub;
-- stale claim branch reconciled onto current `main` before delivery;
-- lifecycle, no-data, failure, recovery, skip, cancellation, restart, legacy-user, and expansion scenarios checked on paper;
-- report, decisions, open questions, queue, task files, and implementation issue mapping reconciled;
-- branch comparison confirmed documentation-only changes and no divergence from current `main`;
-- no code, schema, migration, build, test, browser, provider, Stockfish, or deployment changes;
-- no broad test suite run.
+- current repository provider, route, schema, worker, tests, account UI, and planning files inspected directly through GitHub;
+- official Lichess, Chess.com, and Prisma contracts verified;
+- initial/forward/backfill, no-data, partial write, individual failure, provider outage, restart, duplicate replay, pause, cancel, inactive-account, deletion, migration, and expansion scenarios walked through;
+- report, decisions, open questions, queue, roadmap, task records, and issue mapping reconciled;
+- implementation issues #199–#203 created;
+- no production code, schema, migration, provider call, worker, Angular, or deployment behavior changed;
+- build/test/lint/browser/provider/load checks intentionally skipped because this slice changes documentation only.
 
 ## Next deterministic action
 
-Review PR #197 for ONB-001, while ONB-002 / #149 is the next claimable research task under the deterministic queue.
-
-Future tasks must consume ONB-001’s locked lifecycle decisions rather than redefine them independently.
+Claim ONB-003 / #150 as the next ordered research task.
