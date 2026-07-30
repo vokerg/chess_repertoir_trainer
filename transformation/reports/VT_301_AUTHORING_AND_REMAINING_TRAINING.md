@@ -10,9 +10,9 @@ Branch: `visual-transformation/vt-301-authoring-training`
 
 Target: `main`
 
-Pull request: pending
+Pull request: draft PR #221
 
-Disposition: two behavior-preserving visual slices implemented together for one review package and one repository CI execution; direct browser review pending
+Disposition: two behavior-preserving visual slices implemented and audited together; replacement exact-final-head CI and direct browser review pending
 
 ## Objective
 
@@ -27,14 +27,26 @@ The combined delivery contains two independently described scopes:
 
 The branch was created from `main` commit `e585c662988ff6419de56905b268c9f559aeaf0a` after Courses and Course Review reconciliation.
 
-During implementation, `main` advanced by one North Star documentation-only commit, `9a4e6166c9a874b8cb5b5efb04a2a4661e848d45`. That commit does not touch the runtime or transformation-report files in this delivery. The branch intentionally remains one commit behind instead of opening a synchronization pull request that would trigger an unnecessary second CI execution.
+During implementation, `main` advanced by one North Star documentation-only commit, `9a4e6166c9a874b8cb5b5efb04a2a4661e848d45`. That commit does not touch the runtime or transformation-report files in this delivery. The branch intentionally remained one commit behind instead of opening a synchronization pull request that would trigger an unnecessary additional CI execution.
 
 Open pull-request collision review found:
 
-- PR #216 was North Star Builder research and documentation only;
+- PR #216 was North Star Builder research and documentation only and has since integrated without runtime overlap;
 - PR #209 remains isolated to Settings;
 - PR #196 remains isolated to Progress;
 - no open pull request modifies the line-authoring, Lichess-puzzle, tactical-scenario, or shared scenario-shell files in this delivery.
+
+## Audit disposition
+
+The initial PR head `e31fc74447603eb3a8a2a14b6471e2f9adec9d38` passed repository CI #1620. A subsequent completeness audit found issues that compilation and tests did not detect:
+
+- the Training status panel labeled all active sublines belonging to selected lines as “Selected sublines” rather than counting exact checked sublines;
+- the line side value used analytical mono typography even though `WHITE`/`BLACK` is a categorical label;
+- subline checkboxes and the PGN import textarea lacked explicit accessible names;
+- several route-local loading, success, and error messages lacked complete live-region or alert semantics;
+- the Angular migration ledger, transformation status, and this report did not accurately record the integrated and active VT-301 batches.
+
+All identified issues were corrected before approval. CI #1620 is retained as evidence for the pre-audit head only; a replacement exact-final-head run is mandatory.
 
 ## Batch 4c — repertoire authoring
 
@@ -48,12 +60,12 @@ Open pull-request collision review found:
 ### Verified architecture boundary
 
 - `LinesPageComponent` remains the chapter route composition shell backed by `LinesPageStore`;
-- `LinesPageStore` retains all chapter/line loading, selection, expansion, transfer, CRUD, PGN, and training navigation state;
+- `LinesPageStore` retains chapter/line loading, selection, expansion, transfer, CRUD, PGN, and training navigation state;
 - `LineHealthTableComponent`, `LineTrainingStatusPanelComponent`, and `LineActionMenuComponent` remain presentational components emitting typed intents;
 - `LineEditorPageComponent` retains route/query parsing and delegates editor state and commands to `LineEditorStore`;
 - `LineEditorStore` retains tree loading, selected-node state, board position, Stockfish analysis, game-move evidence, note persistence, move creation/deletion, and keyboard navigation;
 - `LineEditorWorkbenchComponent` continues to compose the shared analysis workbench;
-- `LineNotesEditorComponent` remains feature-owned presentation and emits validated note payloads;
+- `LineNotesEditorComponent` remains feature-owned presentation and emits note payloads;
 - `LinesApiService`, the shared board, and the shared analysis workbench remain unchanged.
 
 No second store, API owner, route source, move tree, board implementation, engine owner, persistence path, or training command was added.
@@ -62,9 +74,11 @@ No second store, API owner, route source, move tree, board implementation, engin
 
 - composed chapter rename, line-health evidence, line rename, and line transfer through shared `app-panel` surfaces;
 - retained feature-local disclosures for create-line and PGN workflows while migrating their controls and surfaces to production roles;
-- migrated line and subline tables to production borders, surfaces, status roles, mono numerics, hover treatment, and three-pixel focus;
-- added explicit accessible labels for line selection and subline expansion controls;
-- migrated action-menu controls, selected/transfer evidence, semantic statuses, PGN text, and responsive composition;
+- migrated line and subline tables to production borders, surfaces, status roles, analytical numerics, hover treatment, and three-pixel focus;
+- added explicit accessible labels for line selection, subline expansion, subline selection, and PGN controls;
+- derived the Selected sublines statistic from exact selected hashes rather than selected-line coverage;
+- retained product typography for categorical side labels and mono/tabular typography for counts, percentages, moves, FEN, and PGN;
+- migrated action-menu controls, selected/transfer evidence, semantic statuses, and responsive composition;
 - replaced legacy line-editor workbench header chrome with `app-page-header` stats/actions;
 - composed feature-owned move notes through `app-panel` with explicit saved/error states;
 - retained the shared analysis workbench unchanged for the later analytical-substrate batch.
@@ -122,18 +136,23 @@ No scoring, rating, sync, scenario-selection, engine, store, API, route, board, 
 - context replay, challenge moves, browser Stockfish evaluation, best/original move reveal, retry, next, finish, dislike/exclusion, attempts, and post-pass local analysis;
 - all stores, APIs, engine behavior, shared board behavior, routes, and backend behavior.
 
+## Scope boundary
+
+The two route families are complete within their recorded feature-owned visual scope. They still consume the shared analysis workbench and analytical widgets in Line Editor and tactical post-pass analysis. Those shared consumers are intentionally excluded here and remain part of the later analytical-substrate batch, where the full consumer set can be reviewed together.
+
+This exclusion means PR #221 does not claim universal visual migration of every nested shared analytical widget. It claims complete migration of the authoring and remaining-training route chrome, feature-owned panels, evidence, controls, feedback, and responsive composition.
+
 ## Shared validation boundary
 
-The two slices share one pull request and one repository CI execution, but retain separate browser checklists and can be reverted independently at the feature-file level.
+The two slices share one pull request and one repository CI execution per final review head, but retain separate browser checklists and feature-file rollback boundaries.
 
 No working local checkout is available in this session, so local build, lint, tests, architecture checks, and browser validation are not represented as passed.
 
-Required automated validation:
+Automated validation state:
 
-- repository CI on the exact final branch head;
-- Angular template/type compilation;
-- lint and architecture guardrails;
-- database migrations and the complete repository test suite.
+- initial pre-audit head CI #1620 passed the complete repository workflow;
+- audit corrections changed the branch after that run;
+- repository CI on the replacement exact final head is required, including Angular template/type compilation, lint, architecture guardrails, migrations, and the complete test suite.
 
 ## Browser review required
 
@@ -143,7 +162,7 @@ Review realistic desktop, 980px, 760px, 640px, and narrow-phone states for:
 
 - chapter loading/error/empty/populated states and long chapter/line labels;
 - chapter and line rename;
-- line selection, select all, clear, expanded sublines, subline selection, line/subline training, and status colours with text labels;
+- line selection, select all, clear, expanded sublines, exact subline selection/counts, line/subline training, and status colours with text labels;
 - line create/delete, move/copy destinations, disabled/current-destination states, and confirmations;
 - PGN import/export, long PGN/FEN text, success, and error states;
 - line-editor loading/error states, white/black orientation, move creation/tree selection/navigation/deletion, engine warnings, game-move filters, note save/saved/error states, and train/back actions;
@@ -178,11 +197,13 @@ Unavailable states must be recorded explicitly rather than represented as observ
 - `docs/frontend/angular-migration.md`;
 - `docs/frontend/design-tokens.md`;
 - `docs/skills/frontend-feature-module.md`;
-- `transformation/reports/VT_301_REMAINING_PAGE_INVENTORY.md` from the Batch 1 branch;
-- issue #132 and current open pull-request inventory;
+- `transformation/STATUS.md`;
+- `transformation/reports/VT_301_REMAINING_PAGE_INVENTORY.md`;
+- `transformation/reports/VT_301_LINE_TRAINING.md`;
+- issue #132, PR #221, CI #1620, and current open pull-request inventory;
 - `apps/web/src/app/app.routes.ts`;
 - `LinesPageComponent` and `LinesPageStore`;
-- line-health table, line-training status panel, and line-action menu components;
+- line-health table, line-training status panel, and line action menu components;
 - `LineEditorPageComponent`, `LineEditorStore`, and `LineEditorWorkbenchComponent`;
 - `LineNotesEditorComponent`;
 - `LichessPuzzlesPageComponent`, `LichessPuzzlesStore`, and `LichessPuzzleTrainerComponent`;
