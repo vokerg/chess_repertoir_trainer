@@ -6,6 +6,7 @@ import { parseImportedGameSearchQueryOverrides } from '../../../shared/games/fil
 export interface CourseReviewRestoredScope {
   gameFilters: GameFilters;
   minGames: number;
+  minCoveredPlies: number;
 }
 
 export function parseCourseReviewRestoredScope(
@@ -15,10 +16,12 @@ export function parseCourseReviewRestoredScope(
   if (params.get('restore') !== '1') return null;
   const query = parseImportedGameSearchQueryOverrides(params);
   const minGames = boundedInteger(params.get('minGames'), 1, 1000) ?? 4;
+  const minCoveredPlies = boundedInteger(params.get('minCoveredPlies'), 0, 20) ?? 2;
 
   return {
     gameFilters: projectFilters(baseFilters, query),
     minGames,
+    minCoveredPlies,
   };
 }
 
