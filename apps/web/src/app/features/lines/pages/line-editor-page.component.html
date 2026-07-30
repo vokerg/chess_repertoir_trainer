@@ -3,7 +3,7 @@
     <app-panel title="Loading line editor" subtitle="Preparing the move tree, board position, and supporting evidence.">
       <p class="status-note" aria-live="polite">Loading editor...</p>
       @if (store.error(); as error) {
-        <p class="status-error">{{ error }}</p>
+        <p class="status-error" role="alert">{{ error }}</p>
       }
     </app-panel>
   } @else {
@@ -15,7 +15,7 @@
     />
 
     @if (store.error(); as error) {
-      <p class="status-error">{{ error }}</p>
+      <p class="status-error" role="alert">{{ error }}</p>
     }
 
     @if (store.tree(); as tree) {
