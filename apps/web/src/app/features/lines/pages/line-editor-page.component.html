@@ -1,29 +1,18 @@
 <section class="line-editor-page stack">
   @if (store.loading()) {
-    <section class="section-card stack">
-      <p class="status-note">Loading editor...</p>
+    <app-panel title="Loading line editor" subtitle="Preparing the move tree, board position, and supporting evidence.">
+      <p class="status-note" aria-live="polite">Loading editor...</p>
       @if (store.error(); as error) {
         <p class="status-error">{{ error }}</p>
       }
-    </section>
+    </app-panel>
   } @else {
-    <header class="workbench-header">
-      <div class="workbench-title-group">
-        <a [routerLink]="store.breadcrumbLink()" class="workbench-breadcrumb">
-          {{ store.breadcrumbLabel() }}
-        </a>
-        <h2 class="workbench-title">{{ store.line()?.name || 'Line editor' }}</h2>
-        <div class="workbench-meta">
-          <span>Train as {{ store.line()?.sideToTrain === 'BLACK' ? 'Black' : 'White' }}</span>
-          <span>Selected: {{ store.selectedLabel() }}</span>
-        </div>
-      </div>
-
-      <nav class="workbench-mode-switch" aria-label="Line mode">
-        <span class="mode-pill mode-pill-active">Build</span>
-        <a class="mode-pill" [routerLink]="['/lines', store.line()?.id, 'train']">Train</a>
-      </nav>
-    </header>
+    <app-page-header
+      [title]="store.line()?.name || 'Line editor'"
+      subtitle="Build the repertoire tree, inspect position evidence, and annotate the selected move."
+      [stats]="headerStats()"
+      [actions]="headerActions()"
+    />
 
     @if (store.error(); as error) {
       <p class="status-error">{{ error }}</p>
