@@ -23,7 +23,7 @@ import {
 import {
   builderLaunchReturnUrl,
   parseRepertoireBuilderLaunch,
-  type RepertoireBuilderCourseEndingLaunch,
+  type RepertoireBuilderCourseFindingLaunch,
 } from '../helpers/repertoire-builder-launch';
 import { RepertoireBuilderCourseStore } from '../state/repertoire-builder-course.store';
 import type { RepertoireBuilderSetup } from '../state/repertoire-builder.models';
@@ -49,7 +49,7 @@ export class RepertoireBuilderPageComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly store = inject(RepertoireBuilderStore);
   protected readonly courseStore = inject(RepertoireBuilderCourseStore);
-  protected readonly launchContext = signal<RepertoireBuilderCourseEndingLaunch | null>(null);
+  protected readonly launchContext = signal<RepertoireBuilderCourseFindingLaunch | null>(null);
   protected readonly launchError = signal<string | null>(null);
 
   protected readonly initialSetup = computed<RepertoireBuilderSetup>(() => {
@@ -70,10 +70,11 @@ export class RepertoireBuilderPageComponent implements OnInit {
 
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const actions: PageHeaderAction[] = [];
-    if (this.launchContext()) {
+    const launch = this.launchContext();
+    if (launch) {
       actions.push({
-        id: 'back-to-course-ending',
-        label: 'Back to course endings',
+        id: 'back-to-course-finding',
+        label: this.backLabel(launch),
         run: () => void this.backToSource(),
       });
     }
@@ -104,6 +105,38 @@ export class RepertoireBuilderPageComponent implements OnInit {
     const parsed = parseRepertoireBuilderLaunch(this.route.snapshot.queryParamMap);
     this.launchContext.set(parsed.context);
     this.launchError.set(parsed.error);
+  }
+
+  protected sourceTitle(launch: RepertoireBuilderCourseFindingLaunch): string {
+    return launch.source === 'COURSE_ENDING' ? 'Course ending source' : 'Opponent gap source';
+  }
+
+  protected sourceSubtitle(launch: RepertoireBuilderCourseFindingLaunch): string {
+    return launch.source === 'COURSE_ENDING'
+      ? 'This builder draft extends one exact terminal course position. The source evidence remains visible while you adjust the target setup.'
+      : 'This builder draft covers one observed opponent move from an exact course position. The source evidence remains visible while you adjust the target setup.';
+  }
+
+  protected pathFallback(launch: RepertoireBuilderCourseFindingLaunch): string {
+    if (launch.sequence) return launch.sequence;
+    return launch.anchorKind === 'LINE_START' ? 'Course start position' : 'Course position';
+  }
+
+  protected evidenceLabel(launch: RepertoireBuilderCourseFindingLaunch): string {
+    const threshold = launch.source === 'COURSE_ENDING'
+      ? `minimum ${launch.minGames}`
+      : `minimum overlap ${launch.minCoveredPlies} plies`;
+    return `${launch.observedGameCount} games · ${threshold} · ${launch.results.win}W ${launch.results.draw}D ${launch.results.loss}L`;
+  }
+
+  protected sourceBoundary(launch: RepertoireBuilderCourseFindingLaunch): string {
+    return launch.source === 'COURSE_ENDING'
+      ? 'Consequence: extend this existing line only. Replacement, a separate line, and another destination are not treated as equivalent actions.'
+      : 'Consequence: add coverage for this observed opponent move on this exact line only. Replacement, an alternate line, and another destination are not treated as equivalent actions.';
+  }
+
+  protected backLabel(launch: RepertoireBuilderCourseFindingLaunch): string {
+    return launch.source === 'COURSE_ENDING' ? 'Back to course endings' : 'Back to opponent gaps';
   }
 
   protected reorderQueue(change: RepertoireBuilderQueueMove): void {
