@@ -15,16 +15,17 @@
     <tbody>
       @for (line of lines(); track line.id) {
         <tr [class.transfer-active]="transferLineId() === line.id">
-          <td><input type="checkbox" [checked]="isSelected(line.id)" (change)="toggleLineSelected.emit(line.id)" /></td>
+          <td><input type="checkbox" [attr.aria-label]="'Select ' + line.name" [checked]="isSelected(line.id)" (change)="toggleLineSelected.emit(line.id)" /></td>
           <td>
             <button
               type="button"
               class="line-expand"
               [attr.aria-expanded]="expandedLineId() === line.id"
+              [attr.aria-label]="(expandedLineId() === line.id ? 'Collapse ' : 'Expand ') + line.name + ' sublines'"
               (click)="toggleExpandedLine.emit(line.id)"
             >
               <span>Sublines</span>
-              <span class="line-expand-caret" aria-hidden="true">v</span>
+              <span class="line-expand-caret" aria-hidden="true">⌄</span>
             </button>
             <strong>{{ line.name }}</strong>
             <span
@@ -38,11 +39,11 @@
               {{ trainingStatusLabel(line.trainingStats.status) }}
             </span>
           </td>
-          <td>{{ line.sideToTrain }}</td>
-          <td>{{ line.trainingStats.activeSublineCount }}</td>
-          <td>{{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }}</td>
-          <td>{{ percentLabel(line.trainingStats.passRate) }}</td>
-          <td>{{ line.trainingStats.weakSublineCount }}</td>
+          <td class="numeric-cell">{{ line.sideToTrain }}</td>
+          <td class="numeric-cell">{{ line.trainingStats.activeSublineCount }}</td>
+          <td class="numeric-cell">{{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }}</td>
+          <td class="numeric-cell">{{ percentLabel(line.trainingStats.passRate) }}</td>
+          <td class="numeric-cell">{{ line.trainingStats.weakSublineCount }}</td>
           <td>
             <div class="primary-actions">
               <button type="button" class="secondary line-train-action" (click)="trainLine.emit(line)">Train</button>
