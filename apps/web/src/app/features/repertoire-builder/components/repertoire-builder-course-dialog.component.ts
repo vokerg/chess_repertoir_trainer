@@ -15,6 +15,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import type { AiBuilderCompletionSummaryResponse } from '@chess-trainer/contracts/ai';
 import type {
   BuilderCourseDraft,
   BuilderCourseReintegrationApplyResponse,
@@ -56,6 +57,10 @@ export class RepertoireBuilderCourseDialogComponent {
   readonly error = input<string | null>(null);
   readonly canPreview = input(false);
   readonly canApply = input(false);
+  readonly completionSummaryAvailable = input(false);
+  readonly completionSummaryLoading = input(false);
+  readonly completionSummaryError = input<string | null>(null);
+  readonly completionSummary = input<AiBuilderCompletionSummaryResponse | null>(null);
 
   readonly courseSelected = output<number | null>();
   readonly chapterSelected = output<number | null>();
@@ -63,6 +68,7 @@ export class RepertoireBuilderCourseDialogComponent {
   readonly previewRequested = output<void>();
   readonly targetSelected = output<BuilderCourseReintegrationTarget>();
   readonly applyRequested = output<void>();
+  readonly completionSummaryRequested = output<void>();
   readonly closed = output<void>();
 
   protected readonly form = new FormGroup({
@@ -146,6 +152,11 @@ export class RepertoireBuilderCourseDialogComponent {
 
   protected apply(): void {
     this.applyRequested.emit();
+  }
+
+  protected requestCompletionSummary(): void {
+    if (!this.result() || !this.completionSummaryAvailable() || this.completionSummaryLoading()) return;
+    this.completionSummaryRequested.emit();
   }
 
   private isAllowed(candidate: BuilderCourseReintegrationTarget): boolean {
