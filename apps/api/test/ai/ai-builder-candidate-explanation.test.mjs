@@ -99,12 +99,12 @@ const enabledConfig = {
         providerInput = input.input;
         return {
           value: {
-            summary: 'The supplied facts show different deterministic ranks and target-population frequencies.',
+            summary: 'The supplied facts show deterministic ranks and target-population frequencies.',
             tradeoffs: [{
-              text: 'The selected move has the higher supplied target-population frequency.',
+              text: 'The supplied target-population frequencies are 28% for the selected move and 19% for the comparison move.',
               evidenceReferenceIds: ['selected.population_frequency', 'comparison.population_frequency'],
             }],
-            evidenceReferenceIds: ['selected.rank', 'comparison.rank'],
+            evidenceReferenceIds: ['selected.rank', 'comparison.rank', 'selected.population_frequency'],
             missingEvidenceReferenceId: 'source.playerprofile',
           },
           usage: { promptTokens: 1, completionTokens: 1 },
@@ -116,7 +116,7 @@ const enabledConfig = {
 
   const generated = await service.generate(7, request);
   assert.equal(authoritativeRequest.candidateLimit, 8);
-  assert.equal(authoritativeRequest.includeMoveUci, 'd2d4');
+  assert.equal(authoritativeRequest.includeMoveUci, 'e2e4');
   assert.equal(providerInput.normalizedFen, undefined, 'FEN is not sent to the provider');
   assert.equal(providerInput.facts.some((fact) => fact.id === 'selected.rank'), true);
   assert.equal(generated.selectedCandidate.rank, 1);
@@ -153,6 +153,29 @@ const enabledConfig = {
     (error) => error.code === 'AI_INVALID_RESPONSE',
   );
   assert.equal(providerCalls, 1);
+}
+
+{
+  const service = createCandidateExplanationService({
+    loadConfig: () => enabledConfig,
+    getCandidateDecision: async () => response,
+    createClient: () => ({
+      generateJson: async () => ({
+        value: {
+          summary: 'The selected move causes a winning attack.',
+          tradeoffs: [],
+          evidenceReferenceIds: ['selected.engine_score'],
+          missingEvidenceReferenceId: null,
+        },
+        usage: { promptTokens: 1, completionTokens: 1 },
+      }),
+    }),
+  });
+
+  await assert.rejects(
+    () => service.generate(1, request),
+    (error) => error.code === 'AI_INVALID_RESPONSE',
+  );
 }
 
 {
