@@ -1,6 +1,6 @@
 # Repertoire Builder Decisions
 
-Last updated: 2026-07-28
+Last updated: 2026-07-30
 
 States:
 
@@ -226,11 +226,26 @@ State: **LOCKED**
 
 The core roadmap does not depend on an LLM.
 
-### RB-D026 — LLM role
+### RB-D026 — LLM role is read-only generated interpretation
 
-State: **OPEN**
+State: **LOCKED**
 
-Explanation, summarization, naming or conversational orchestration may be useful, but factual authority and write behavior require separate review.
+An LLM may be tested only as an optional, disabled-by-default, on-demand presentation capability over immutable deterministic snapshots.
+
+Generated output is never an input to chess facts, opening classification, Player Chess Profile calculation, RB-007 ranking/eligibility/reasons/warnings/fit/coverage, selected moves or responses, RB-009 reducers/revisions/branch state/queue, completion eligibility, RB-011 destination/preview/conflict/apply/transaction/revision/course writes, or Course review findings.
+
+The accepted prototype seams are:
+
+- RB-019/#218: advisory candidate explanation immediately after the existing Focused evidence panel;
+- RB-020/#219: post-apply summary immediately after the authoritative RB-011 result.
+
+Each use case requires its own global-plus-specific feature gate, capability boolean, bounded server-side context adapter, schema validation, transient state, stale-response handling, deterministic fallback, provider-failure isolation, human usefulness comparison, and purge path.
+
+A generic mutable Builder-AI layer, automatic generation, persisted prototype output by default, generated commands, model-selected moves, ranking replacement, destination selection, preview approval, conflict resolution or course mutation are rejected.
+
+Player-profile narrative and conversational target refinement remain deferred until accepted populated profile UX demonstrates a concrete gap after deterministic evidence-aware copy and explicit controls.
+
+Provider model names, pricing, API behavior, privacy, retention and regional requirements must be re-verified when a prototype is implemented. Provider uncertainty disables only the optional use case.
 
 ### RB-D027 — Trap knowledge requires evidence and curation
 
