@@ -4,11 +4,12 @@
 
 .marathon-training-page {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .marathon-header {
   order: 1;
+  padding-block: var(--space-2);
 }
 
 .marathon-session {
@@ -21,6 +22,28 @@
 
 .marathon-mobile-summary {
   display: none;
+}
+
+.marathon-title-group {
+  gap: 0.2rem;
+}
+
+.marathon-title-group .workbench-title {
+  font-size: clamp(1.1rem, 1.5vw, 1.4rem);
+}
+
+.marathon-meta {
+  gap: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.marathon-mode-switch {
+  gap: 0.35rem;
+}
+
+.marathon-mode-switch .mode-pill {
+  min-height: 34px;
+  padding: 0.4rem 0.65rem;
 }
 
 @media (max-width: 640px) {

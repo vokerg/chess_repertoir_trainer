@@ -5,24 +5,19 @@
 
 .training-focus-layout {
   display: grid;
-  gap: var(--space-3);
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: clamp(1rem, 2vw, 2rem);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   align-items: start;
 }
 
 .training-board-panel {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: clamp(0.8rem, 1.7vw, var(--space-4));
-  background: var(--surface-strong);
-  box-shadow: var(--shadow-soft);
+  padding: 0;
 }
 
 .training-board-inner {
   display: grid;
   justify-items: center;
-  gap: var(--space-3);
   width: 100%;
   min-width: 0;
   margin: 0 auto;
@@ -31,13 +26,12 @@
 .training-side-panel {
   min-width: 0;
   display: grid;
-  gap: 0.85rem;
+  gap: var(--space-3);
   align-content: start;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
   padding: var(--space-3);
-  background: var(--surface-strong);
-  box-shadow: var(--shadow-soft);
+  background: var(--ui-surface);
 }
 
 .training-goal-title {
@@ -50,20 +44,22 @@
 
 .training-goal-subtitle {
   margin: 0.45rem 0 0;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   line-height: 1.4;
 }
 
-.training-progress-block {
+.training-status-area {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.5rem;
+  padding-block: var(--space-2);
+  border-block: 1px solid var(--ui-border);
 }
 
 .training-progress-labels {
   display: flex;
   justify-content: space-between;
   gap: var(--space-2);
-  color: var(--text);
+  color: var(--ui-text);
   font-size: 0.86rem;
   font-weight: 900;
 }
@@ -72,62 +68,58 @@
   height: 0.75rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(35, 27, 21, 0.1);
+  background: var(--ui-surface-quiet);
 }
 
 .training-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  background: var(--ui-action);
   transition: width 180ms ease;
 }
 
 .training-feedback {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background: rgba(35, 27, 21, 0.045);
-  text-align: center;
+  border-radius: var(--ui-radius-control);
+  padding: 0.65rem 0.75rem;
   font-weight: 900;
 }
 
-.training-board-actions {
+.training-session-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  align-items: center;
-  justify-content: center;
-  width: 100%;
 }
 
-.training-board-actions > * {
-  flex: 1 1 160px;
+.training-session-actions > * {
+  flex: 1 1 120px;
   min-width: 0;
 }
 
 .training-feedback.correct {
-  border-color: rgba(44, 122, 75, 0.22);
-  background: var(--success-soft);
-  color: var(--success);
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
 }
 
 .training-feedback.incorrect {
-  border-color: rgba(179, 58, 43, 0.22);
-  background: var(--danger-soft);
-  color: var(--danger);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
 
-.expected-move-card {
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background: rgba(255, 255, 255, 0.5);
+.expected-move-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.expected-move-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
 .expected-move-label {
-  margin: 0;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   font-size: 0.76rem;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -135,23 +127,40 @@
 }
 
 .expected-move-value {
-  margin: 0.4rem 0 0;
-  font-size: 1.35rem;
-  font-weight: 900;
+  overflow: hidden;
+  color: var(--ui-text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expected-move-action {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
+.training-stats {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--ui-text-muted);
+  font-size: 0.82rem;
+}
+
+.training-stats strong {
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
 }
 
 .training-result-panel {
-  border: 1px solid rgba(44, 122, 75, 0.22);
-  border-radius: var(--radius-xl);
-  padding: var(--space-4);
-  background: var(--success-soft);
-  color: var(--success);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-success);
 }
 
 .training-result-panel.failed {
-  border-color: rgba(196, 122, 27, 0.22);
-  background: var(--warning-soft);
-  color: #65410b;
+  color: var(--ui-warning);
 }
 
 .training-result-title {
@@ -175,10 +184,8 @@
 }
 
 .mistake-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background: rgba(255, 255, 255, 0.62);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--ui-border);
 }
 
 .mistake-card-title {
@@ -188,13 +195,16 @@
 
 .mistake-card-meta {
   margin: 0.35rem 0 0;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
 
 .training-review-panel {
-  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ui-border);
 }
 
 @media (max-width: 980px) {
@@ -221,15 +231,17 @@
 
   .training-board-panel {
     --training-board-size: min(calc(100vw - 20px), 420px);
+    border: 1px solid var(--border);
     border-radius: 18px;
     padding: 0.45rem;
+    background: var(--surface-strong);
   }
 
   .training-board-inner {
     gap: 0.55rem;
   }
 
-  .training-board-actions {
+  .training-session-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
@@ -247,12 +259,6 @@
 
   .training-details {
     display: none;
-  }
-
-  .expected-move-card,
-  .training-result-panel {
-    border-radius: var(--radius-lg);
-    padding: var(--space-2);
   }
 
   .training-result-title {
@@ -274,7 +280,7 @@
   }
 
   .training-review-panel {
-    padding: var(--space-2);
+    padding-top: var(--space-2);
   }
 }
 
@@ -289,7 +295,7 @@
     padding: 0.35rem;
   }
 
-  .training-board-actions {
+  .training-session-actions {
     grid-template-columns: 1fr;
   }
 }
