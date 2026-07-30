@@ -26,9 +26,15 @@ import {
 } from '../components/repertoire-builder-workbench.component';
 import {
   builderLaunchReturnUrl,
+  isRepertoireBuilderCourseFindingLaunch,
   parseRepertoireBuilderLaunch,
   type RepertoireBuilderCourseFindingLaunch,
+  type RepertoireBuilderLaunchContext,
 } from '../helpers/repertoire-builder-launch';
+import {
+  isRepertoireBuilderProfileLaunch,
+  type RepertoireBuilderProfileLaunch,
+} from '../profile-launch';
 import { RepertoireBuilderCandidateExplanationStore } from '../state/repertoire-builder-candidate-explanation.store';
 import { RepertoireBuilderCompletionSummaryStore } from '../state/repertoire-builder-completion-summary.store';
 import { RepertoireBuilderCourseStore } from '../state/repertoire-builder-course.store';
@@ -67,8 +73,16 @@ export class RepertoireBuilderPageComponent implements OnInit {
   protected readonly candidateExplanationStore = inject(RepertoireBuilderCandidateExplanationStore);
   protected readonly completionSummaryStore = inject(RepertoireBuilderCompletionSummaryStore);
   protected readonly courseStore = inject(RepertoireBuilderCourseStore);
-  protected readonly launchContext = signal<RepertoireBuilderCourseFindingLaunch | null>(null);
+  protected readonly launchContext = signal<RepertoireBuilderLaunchContext | null>(null);
   protected readonly launchError = signal<string | null>(null);
+  protected readonly courseLaunchContext = computed<RepertoireBuilderCourseFindingLaunch | null>(() => {
+    const launch = this.launchContext();
+    return isRepertoireBuilderCourseFindingLaunch(launch) ? launch : null;
+  });
+  protected readonly profileLaunchContext = computed<RepertoireBuilderProfileLaunch | null>(() => {
+    const launch = this.launchContext();
+    return isRepertoireBuilderProfileLaunch(launch) ? launch : null;
+  });
   private readonly synchronizeCandidateExplanation = effect(() => {
     this.candidateExplanationStore.sync(
       this.store.candidateResponse(),
@@ -82,7 +96,17 @@ export class RepertoireBuilderPageComponent implements OnInit {
   protected readonly initialSetup = computed<RepertoireBuilderSetup>(() => {
     const setup = this.store.setup();
     const launch = this.launchContext();
-    return launch && !this.store.session() ? { ...setup, side: launch.side } : setup;
+    if (this.store.session() || !launch) return setup;
+    if (isRepertoireBuilderProfileLaunch(launch)) {
+      return {
+        ...launch.setup,
+        profileDefaults: {
+          source: launch.profileSource,
+          setup: launch.setup,
+        },
+      };
+    }
+    return { ...setup, side: launch.side };
   });
 
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
@@ -100,7 +124,7 @@ export class RepertoireBuilderPageComponent implements OnInit {
     const launch = this.launchContext();
     if (launch) {
       actions.push({
-        id: 'back-to-course-finding',
+        id: 'back-to-builder-source',
         label: this.backLabel(launch),
         run: () => void this.backToSource(),
       });
@@ -164,7 +188,8 @@ export class RepertoireBuilderPageComponent implements OnInit {
       : 'Consequence: add coverage for this observed opponent move on this exact line only. Replacement, an alternate line, and another destination are not treated as equivalent actions.';
   }
 
-  protected backLabel(launch: RepertoireBuilderCourseFindingLaunch): string {
+  protected backLabel(launch: RepertoireBuilderLaunchContext): string {
+    if (isRepertoireBuilderProfileLaunch(launch)) return 'Back to Chess profile';
     return launch.source === 'COURSE_ENDING' ? 'Back to course endings' : 'Back to opponent gaps';
   }
 
@@ -173,12 +198,20 @@ export class RepertoireBuilderPageComponent implements OnInit {
   }
 
   protected startBuilder(setup: RepertoireBuilderSetup): void {
-    void this.store.start(setup, this.launchContext());
+    void this.store.start(setup, this.courseLaunchContext());
   }
 
   protected startNewDraft(): void {
     this.courseStore.close();
     this.completionSummaryStore.sync(null);
+    this.launchContext.set(null);
+    this.launchError.set(null);
+    this.store.startNewDraft();
+    void this.router.navigate(['/builder'], { replaceUrl: true });
+  }
+
+  protected discardProfileSuggestion(): void {
+    if (this.store.session() || !this.profileLaunchContext()) return;
     this.launchContext.set(null);
     this.launchError.set(null);
     this.store.startNewDraft();
@@ -214,7 +247,7 @@ export class RepertoireBuilderPageComponent implements OnInit {
   protected async openCourseReview(): Promise<void> {
     const session = this.store.session();
     if (!session || session.lifecycle !== 'COMPLETED') return;
-    await this.courseStore.openFor(session, this.launchContext());
+    await this.courseStore.openFor(session, this.courseLaunchContext());
   }
 
   private currentCandidateDecisionRequest(): CandidateDecisionRequest | null {
