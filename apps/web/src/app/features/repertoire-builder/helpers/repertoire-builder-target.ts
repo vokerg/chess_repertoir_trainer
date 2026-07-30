@@ -76,12 +76,13 @@ export function buildRepertoireBuilderTarget(
   startingPoint: RepertoireTargetStartingPoint = { kind: 'INITIAL_POSITION' },
   profileDefaults: RepertoireBuilderProfileDefaults | null = setup.profileDefaults ?? null,
 ): RepertoireTarget {
+  const activeProfileDefaults = profileDefaults?.setup.side === setup.side ? profileDefaults : null;
   const populationRequest = toPopulationRequest(setup.ratingTarget, setup.ratingGroup);
   const population = resolveRepertoireTargetPopulation(populationRequest, peerResolution);
   const preset = requirePersonaPreset(setup.persona);
   const effectiveObjective = objectiveForPersona(setup.persona, setup.maximumTheoryBurden);
   const effectiveCoverage = coverageForPreset(setup.coveragePercent);
-  const defaultSetup = profileDefaults?.setup ?? {
+  const defaultSetup = activeProfileDefaults?.setup ?? {
     ...setup,
     speedPreset: 'BLITZ_AND_SLOWER' as const,
     maximumTheoryBurden: preset.defaultTheoryBurden,
@@ -95,9 +96,9 @@ export function buildRepertoireBuilderTarget(
   const accountIds = peerResolution
     ? [...new Set(peerResolution.contributions.map((entry) => entry.accountId))].sort((a, b) => a - b)
     : [];
-  const speedDefaultSource = profileDefaults?.source
+  const speedDefaultSource = activeProfileDefaults?.source
     ?? { kind: 'SYSTEM_DEFAULT' as const, policyVersion: SYSTEM_DEFAULT_VERSION };
-  const intentDefaultSource = profileDefaults?.source
+  const intentDefaultSource = activeProfileDefaults?.source
     ?? { kind: 'PERSONA_PRESET' as const, presetVersion: PERSONA_PRESET_VERSION };
 
   return repertoireTargetSchema.parse({
