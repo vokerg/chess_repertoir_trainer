@@ -4,6 +4,8 @@ import { z } from 'zod';
 import {
   aiBuilderCandidateExplanationRequestSchema,
   aiBuilderCandidateExplanationResponseSchema,
+  aiBuilderCompletionSummaryRequestSchema,
+  aiBuilderCompletionSummaryResponseSchema,
   aiCapabilitiesResponseSchema,
   aiErrorResponseSchema,
   aiGameReviewResponseSchema,
@@ -14,12 +16,14 @@ import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import {
   builderCandidateExplanationAvailable,
+  builderCompletionSummaryAvailable,
   gameReviewAvailable,
   loadAiConfig,
 } from './ai.config';
 import { asAiFeatureError } from './ai.errors';
 import { GameReviewService } from './game-review/game-review.service';
 import { CandidateExplanationService } from './repertoire-builder/candidate-explanation/candidate-explanation.service';
+import { CompletionSummaryService } from './repertoire-builder/completion-summary/completion-summary.service';
 
 const gameIdParamsSchema = z.object({
   gameId: z.coerce.number().int().positive(),
@@ -45,6 +49,7 @@ const aiModule: FastifyPluginAsyncZod = async (app) => {
       widgets: {
         gameReview: gameReviewAvailable(config),
         builderCandidateExplanation: builderCandidateExplanationAvailable(config),
+        builderCompletionSummary: builderCompletionSummaryAvailable(config),
       },
     };
   });
@@ -75,6 +80,38 @@ const aiModule: FastifyPluginAsyncZod = async (app) => {
 
     try {
       return await CandidateExplanationService.generate(auth.userId, request.body, request.log);
+    } catch (error) {
+      return sendAiError(reply, error);
+    }
+  });
+
+  app.post('/api/ai/repertoire-builder/completion-summary', {
+    schema: {
+      operationId: 'generateBuilderCompletionSummary',
+      tags: ['AI'],
+      summary: 'Generate an advisory summary after Builder course apply',
+      description: 'Validates a completed Builder draft and authoritative apply response against the owned current destination, then returns a transient generated interpretation and study checklist. It cannot preview, apply, or mutate course content.',
+      body: aiBuilderCompletionSummaryRequestSchema,
+      response: {
+        200: aiBuilderCompletionSummaryResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        403: aiErrorResponseSchema,
+        404: aiErrorResponseSchema,
+        409: aiErrorResponseSchema,
+        429: aiErrorResponseSchema,
+        500: aiErrorResponseSchema,
+        502: aiErrorResponseSchema,
+        503: aiErrorResponseSchema,
+        504: aiErrorResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+
+    try {
+      return await CompletionSummaryService.generate(auth.userId, request.body, request.log);
     } catch (error) {
       return sendAiError(reply, error);
     }

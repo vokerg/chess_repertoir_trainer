@@ -12,9 +12,9 @@
   </div>
 
   @if (loading()) {
-    <p class="status-note">Loading subline status...</p>
+    <p class="status-note" aria-live="polite">Loading subline status...</p>
   } @else if (error()) {
-    <p class="status-error">{{ error() }}</p>
+    <p class="status-error" role="alert">{{ error() }}</p>
   } @else if (sublines().length === 0) {
     <div class="empty-state">No active sublines for this line.</div>
   } @else {
@@ -32,7 +32,14 @@
         <tbody>
           @for (subline of sublines(); track subline.hash) {
             <tr>
-              <td><input type="checkbox" [checked]="isSelected(subline.hash)" (change)="toggleSubline.emit(subline.hash)" /></td>
+              <td>
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Select subline ' + subline.moveText"
+                  [checked]="isSelected(subline.hash)"
+                  (change)="toggleSubline.emit(subline.hash)"
+                />
+              </td>
               <td>
                 <span
                   class="status-chip"
@@ -46,8 +53,8 @@
                 </span>
               </td>
               <td class="move-text">{{ subline.moveText }}</td>
-              <td>{{ subline.recentAttempts }}</td>
-              <td>{{ percentLabel(subline.passRate) }}</td>
+              <td class="numeric-cell">{{ subline.recentAttempts }}</td>
+              <td class="numeric-cell">{{ percentLabel(subline.passRate) }}</td>
             </tr>
           }
         </tbody>

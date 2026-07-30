@@ -1,10 +1,5 @@
 @if (nodeId && nodeId !== 0) {
-  <section class="workbench-panel move-notes-card">
-    <div>
-      <h3 class="workbench-panel-title">Notes</h3>
-      <p class="workbench-panel-subtitle">Capture why this move belongs in the line.</p>
-    </div>
-
+  <app-panel title="Notes" subtitle="Capture why this move belongs in the line.">
     <div class="move-notes-form">
       <label class="form-field">
         <span class="metric-label">Branch label</span>
@@ -26,12 +21,12 @@
           {{ saving ? 'Saving...' : 'Save notes' }}
         </button>
         @if (saved) {
-          <span class="save-state">Saved</span>
+          <span class="save-state success" aria-live="polite">Saved</span>
         }
         @if (error) {
-          <span class="save-state error">{{ error }}</span>
+          <span class="save-state error" role="alert">{{ error }}</span>
         }
       </div>
     </div>
-  </section>
+  </app-panel>
 }

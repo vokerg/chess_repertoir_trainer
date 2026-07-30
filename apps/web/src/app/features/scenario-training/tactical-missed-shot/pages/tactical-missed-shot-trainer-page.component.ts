@@ -13,6 +13,7 @@ import {
   PageHeaderAction,
   PageHeaderComponent,
 } from '../../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../../shared/ui/panel/panel.component';
 import { ScenarioBoardShellComponent } from '../../../../shared/training/scenario-board-shell/scenario-board-shell.component';
 import { TrainerEngineService } from '../../shared/trainer-engine.service';
 import { ScenarioTrainingApiService } from '../data-access/scenario-training-api.service';
@@ -21,7 +22,7 @@ import { TacticalScenarioTrainerStore } from '../state/tactical-missed-shot-trai
 
 @Component({
   standalone: true,
-  imports: [AnalysisWorkbenchComponent, PageHeaderComponent, ScenarioBoardShellComponent],
+  imports: [AnalysisWorkbenchComponent, PageHeaderComponent, PanelComponent, ScenarioBoardShellComponent],
   providers: [ScenarioTrainingApiService, TrainerEngineService, TacticalScenarioTrainerStore],
   templateUrl: './tactical-missed-shot-trainer-page.component.html',
   styleUrl: './tactical-missed-shot-trainer-page.component.css',

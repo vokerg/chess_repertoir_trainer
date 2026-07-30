@@ -12,6 +12,7 @@ export interface AiConfig {
   enabled: boolean;
   gameReviewEnabled: boolean;
   builderCandidateExplanationEnabled: boolean;
+  builderCompletionSummaryEnabled: boolean;
   provider: 'openai-compatible';
   baseUrl: string;
   model: string;
@@ -29,6 +30,8 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
   const gameReviewEnabled = enabled && readBoolean(env['AI_GAME_REVIEW_ENABLED']);
   const builderCandidateExplanationEnabled = enabled
     && readBoolean(env['AI_BUILDER_CANDIDATE_EXPLANATION_ENABLED']);
+  const builderCompletionSummaryEnabled = enabled
+    && readBoolean(env['AI_BUILDER_COMPLETION_SUMMARY_ENABLED']);
   const provider = env['LLM_PROVIDER'] || 'openai-compatible';
   const baseUrl = (env['LLM_BASE_URL'] || '').trim().replace(/\/+$/, '');
   const model = (env['LLM_MODEL'] || '').trim();
@@ -42,6 +45,7 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
     enabled,
     gameReviewEnabled,
     builderCandidateExplanationEnabled,
+    builderCompletionSummaryEnabled,
     provider: 'openai-compatible',
     baseUrl,
     model,
@@ -61,4 +65,8 @@ export function gameReviewAvailable(config: AiConfig = loadAiConfig()): boolean 
 
 export function builderCandidateExplanationAvailable(config: AiConfig = loadAiConfig()): boolean {
   return config.enabled && config.builderCandidateExplanationEnabled && config.configured;
+}
+
+export function builderCompletionSummaryAvailable(config: AiConfig = loadAiConfig()): boolean {
+  return config.enabled && config.builderCompletionSummaryEnabled && config.configured;
 }

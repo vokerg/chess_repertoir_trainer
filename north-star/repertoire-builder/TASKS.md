@@ -26,7 +26,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | DONE | Decide whether an LLM has a justified role | Research | Squash-merged through PR #216 as `9a4e616`; RB-019/#218 and RB-020/#219 created |
 | 152 | RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) | P3 | DONE | Prototype advisory candidate explanation in Builder | North-star prototype | Squash-merged through PR #223 as `ee389cb`; final review-package CI #1634 passed |
-| 154 | RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) | P3 | PROPOSED | Prototype post-apply Builder course summary | North-star prototype | Stretch goal after completed RB-015; integrated RB-009/RB-011/RB-012 |
+| 154 | RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) | P3 | DONE | Prototype post-apply Builder course summary | North-star prototype | Squash-merged through PR #228 as `d795572`; final review-package CI #1652 passed |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
 ## GitHub Issues program
@@ -200,6 +200,21 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Accepted with live provider/browser/usefulness quality still unproven because the prototype remains disabled by default, non-authoritative and removable.
 - Issue #218 is closed as completed.
 
+### RB-020 / #219
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/227
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/228
+- Squash commit: `d79557246330cd68cf762ce54144d2e9bee4b158`
+- Final review-package head: `88209147d3989e53fb949343d0eadf9c25e028ef`
+- Final review-package CI: run `30578456168` / #1652 — success
+- Implementation report: `reports/RB-020-2026-07-30-builder-completion-summary.md`
+- Closure report: `reports/RB-020-2026-07-30-closure.md`
+- Adds a separately gated, explicit and transient completion summary only after authoritative Builder course apply.
+- Reconciles the owned destination, applied line, course revision and result counts before provider work and keeps the factual result server-generated.
+- Keeps dialog-scoped AI state outside `RepertoireBuilderCourseStore` and adds no preview/apply, course, persistence or navigation mutation.
+- Accepted with live provider/browser/usefulness quality still unproven because the prototype remains disabled by default, non-authoritative and removable.
+- Issue #219 closes after closure reconciliation.
+
 ## Review work
 
 ### RB-004 / #92
@@ -228,16 +243,6 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Implementation branch: `rb-017/issue-114-curated-traps-pilot`.
 - Scope: source-controlled dataset, deterministic validator, reproducible engine/population snapshots, review output, tests and documentation.
 - Exclusions: production persistence, public contracts, frontend, course writes and builder integration.
-
-## Stretch goals
-
-### RB-020 / #219
-
-- Completion summary appears only after RB-011 apply succeeds and the authoritative result exists.
-- It is on demand, transient, separately feature toggled, and implemented through AI-specific dialog state outside `RepertoireBuilderCourseStore`.
-- It cannot choose destinations, review targets, approve conflicts, apply, or mutate courses.
-
-RB-020 remains `PROPOSED` after RB-015 completion. It is not critical-path work.
 
 ## Accepted visual direction
 
@@ -292,6 +297,6 @@ RB-014, RB-015, RB-017, RB-019 and RB-020 remain outside the critical path.
 - RB-014 is `DONE`; RB-017 remains an approved claimed traps pilot.
 - RB-015 is `DONE` through squash-merged PR #216; issue #103 closes with closure reconciliation.
 - RB-019 is `DONE` through squash-merged PR #223 as `ee389cb`; issue #218 is closed.
-- RB-020 remains a separate P3 `PROPOSED` stretch goal with issue #219.
+- RB-020 is `DONE` through squash-merged PR #228 as `d795572`; issue #219 closes with closure reconciliation.
 - RB-016 remains blocked on real builder/course usage.
 - No critical-path priority or roadmap resequencing is required.

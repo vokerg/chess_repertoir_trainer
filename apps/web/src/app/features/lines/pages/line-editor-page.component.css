@@ -1,4 +1,19 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .line-editor-page {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.line-editor-page app-line-editor-workbench {
+  min-width: 0;
+}
+
+.line-editor-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
 }

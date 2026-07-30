@@ -27,20 +27,25 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Representative workflow modernization: Games, Study, and Opening Analysis consume production roles while preserving route, store, data-access, and domain workflow ownership.
 - Proven shared presentation primitives: `shared/ui/context-strip` serves Study and Opening Analysis derived context; `shared/ui/fact-grid` serves Games responsive evidence and Study line health. Both remain typed, OnPush, semantic, and feature-agnostic.
 - Mobile-primary navigation: `core/layout/main-navigation` derives Home, Study, Games, and Openings from the existing hierarchical model, uses More for complete grouped route/account access, delegates secondary active state to More, and coordinates safe-area/content/job-panel clearance without changing routes or feature ownership.
+- VT-301 Batch 2: Player Chess Profile presentation is integrated through PR #206 while retaining its store, API, filter, recalculation, evidence-selection, and route contracts.
+- VT-301 Batch 4a: marathon and focused line-training presentation is integrated through PR #211 while retaining stores, APIs, scoring, board mechanics, persistence, and mistake review.
+- VT-301 Batch 4b: Courses and Course Review presentation is integrated through PR #215 while retaining stores, APIs, filters, chapter commands, and exact RB-012 Builder launch contracts.
+- VT-301 Batch 4c: repertoire-authoring presentation is integrated through PR #221 while retaining chapter/line CRUD, transfer, PGN, editor-tree, notes, board, engine, and training ownership.
+- VT-301 Batch 4d: Lichess puzzle and tactical-scenario presentation is integrated through PR #221 while retaining puzzle rating/sync, scenario selection/evaluation, attempts, engine behavior, board mechanics, and persistence ownership.
 
 ## Active rollout
 
 - VT-301 Batch 1 / draft PR #196 migrates `/progress` and `/progress/accounts/:accountId` to the production token and shared fact-grid system; repository CI passed and browser review remains pending.
-- VT-301 Batch 2 / draft PR #206 migrates `/progress/profile` page, filter, conclusions, breakdown, evidence, and coverage presentation to production `--ui-*` roles while preserving the existing store/API/component architecture; repository CI and browser review remain pending.
+- VT-301 Batch 3 / draft PR #209 migrates `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`; exact-head CI #1573 passed and browser review remains pending.
 
 ## Accepted feature debt
 
 - `apps/web/src/styles.css` and feature styles still contain amber-era short tokens such as `--accent`. They are an explicit compatibility layer for routes awaiting their recorded visual-transformation task, not the source for new styling.
-- Remaining routes and Labs still need deliberate migration from legacy short tokens and hard-coded colours to the production `--ui-*` contract.
+- Remaining Progress, Settings, shared analytical-workbench consumers, Builder, Opening Struggles, and Labs still need deliberate migration or integration disposition under their recorded visual-transformation tasks.
 - Opening Analysis retains a feature-scoped compatibility bridge because several shared analytical widgets still consume legacy short role names. Migrate those widgets only when their full consumer set is reviewed; do not redefine the legacy names globally.
 - Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
 - Games evidence cards, Study workflow-step/launcher/training-plan composition, and analysis-workbench evidence slots remain feature-owned. Their current contracts are domain-specific and were intentionally not generalized during VT-204.
-- Direct mobile browser feedback for Study, Opening Analysis, and the shared-primitives regression was deferred by explicit approval. VT-205 preserves those checklists as later consolidated product-review evidence rather than treating them as observed passes.
+- Direct mobile browser feedback for Study, Opening Analysis, the shared-primitives regression, and approved VT-301 batches remains deferred evidence rather than an observed pass.
 
 ## Migration order
 
