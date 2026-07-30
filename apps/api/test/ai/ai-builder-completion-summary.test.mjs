@@ -130,7 +130,7 @@ const enabledConfig = {
             }],
             unresolvedWorkNote: {
               text: 'One deferred branch remains excluded from the course update.',
-              evidenceReferenceIds: ['result.skipped_branches', 'excluded.1'],
+              evidenceReferenceIds: ['result.skipped_branches', 'excluded.1', 'result.destination'],
             },
             warning: null,
           },
