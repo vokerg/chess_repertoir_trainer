@@ -30,11 +30,15 @@ ONB-008 disposition/readiness persistence
 ONB-009 lifecycle commands
         ↓
 ONB-010 functional onboarding and Home re-entry
+        +
+ONB-016 lightweight experience blueprint — REVIEW
         ↓
 Visual/accessibility integration with #133
         ↓
 Production onboarding release
 ```
+
+ONB-016 is a parallel product/experience contract, not a new runtime critical-path predecessor. ONB-010 consumes it when the existing backend dependencies are ready.
 
 Supporting lifecycle path:
 
@@ -79,6 +83,7 @@ Delivered:
 
 - ONB-005 / #152 — admin architecture — `READY`.
 - ONB-006 / #153 — orphan cleanup — `READY`.
+- ONB-016 / #224 — lightweight onboarding product and experience blueprint — `REVIEW` through draft PR #225.
 
 ### Contracts available to consumers
 
@@ -108,11 +113,26 @@ ONB-002:
 - database-based preparation handoff;
 - conservative legacy-cursor migration and explicit backfill.
 
+ONB-016 review contract:
+
+- route-based resumable lightweight experience;
+- one dominant action per focused surface;
+- progressive disclosure and no first-run tables/settings action clusters;
+- one-account first value, then optional multi-account expansion;
+- real persisted milestones and fixed-denominator percentages only;
+- import-only, indexed, and analysed evidence reveals;
+- no more than three evidence-labelled reveal cards;
+- canonical Player Chess Profile/opening/tactical calculations reused;
+- optional personal tactic and Builder handoff;
+- synthetic-data Sites/Codex/Figma prototype workflow with Angular retained as production authority;
+- refined ONB-010 functional slices and state validation matrix.
+
 Phase exit:
 
 - lifecycle state machine approved;
 - import modes/coverage/cursor invariants approved;
-- preparation parent/wave model approved;
+- lightweight functional experience accepted;
+- preparation parent/wave/first-analysis model approved;
 - performance budgets and operational sizing measured;
 - destructive model matrix approved;
 - admin authorization/audit direction approved;
@@ -213,7 +233,61 @@ Expected implementation deliveries:
 3. imported-game source/priority policy;
 4. bounded index waves;
 5. dependent analysis waves;
-6. parent reconciliation;
-7. import batch/window pipelining policy;
-8. pause/resume/cancel/retry propagation;
-9. restart/concurrency tests.
+6. first-analysis lane and lower-priority continuation;
+7. parent reconciliation;
+8. import batch/window pipelining policy;
+9. pause/resume/cancel/retry propagation;
+10. restart/concurrency tests.
+
+Experience constraints consumed from ONB-016:
+
+- a meaningful indexed reveal can occur before full preparation;
+- analysed readiness can appear before the entire analysis tail settles;
+- progress remains exact at every stage;
+- multi-account expansion needs account-specific progress without changing the first-run one-account contract.
+
+## Phase 6 — Lifecycle projection and commands
+
+Implementation tasks:
+
+- ONB-008 / #193 — disposition/readiness projection.
+- ONB-009 / #194 — lifecycle commands.
+
+Expected deliveries:
+
+- authoritative disposition and derived presentation state;
+- stage summaries, exact counters, feature readiness, latest milestone, and bounded reveal summaries/references;
+- deterministic server-allowed primary/secondary actions and destinations;
+- idempotent start, skip, pause, resume, cancel, retry, no-data, and expansion commands;
+- existing-user adoption and ownership/concurrency tests.
+
+Exit:
+
+- Angular does not infer lifecycle from accounts/jobs;
+- every partial/failure state has deterministic actions;
+- the projection can drive both `/home` and `/onboarding` without unbounded payloads.
+
+## Phase 7 — Lightweight functional onboarding
+
+Primary task: ONB-010 / #195.
+
+Product contract: ONB-016 / #224 and `EXPERIENCE_BLUEPRINT.md`.
+
+Expected slices:
+
+1. calm functional skeleton: account, recipe, durable start, exact progress, leave/return, recovery, Home integration;
+2. first indexed reveal using canonical evidence;
+3. analysed reveal and optional own-game tactical scenario;
+4. additional-account expansion;
+5. optional evidence-anchored Repertoire Builder bridge;
+6. accepted fixture-driven prototype and VT-302 final craft.
+
+Exit:
+
+- one dominant action per focused surface;
+- no first-run table or settings-style action cluster;
+- user sees useful evidence before full analysis completion;
+- skipped/partial/failure/returning states remain understandable;
+- Home communicates background continuation without duplicating technical jobs;
+- responsive, keyboard, reduced-motion, zoom, and screen-reader behavior is validated;
+- final visual/accessibility acceptance is coordinated with #133.
