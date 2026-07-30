@@ -25,7 +25,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | DONE | Decide whether an LLM has a justified role | Research | Squash-merged through PR #216 as `9a4e616`; RB-019/#218 and RB-020/#219 created |
-| 152 | RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) | P3 | REVIEW | Prototype advisory candidate explanation in Builder | North-star prototype | PR #223; implementation CI #1630 passed; live provider/browser and human usefulness review pending |
+| 152 | RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) | P3 | DONE | Prototype advisory candidate explanation in Builder | North-star prototype | Squash-merged through PR #223 as `ee389cb`; final review-package CI #1634 passed |
 | 154 | RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) | P3 | PROPOSED | Prototype post-apply Builder course summary | North-star prototype | Stretch goal after completed RB-015; integrated RB-009/RB-011/RB-012 |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
@@ -185,6 +185,21 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Adds no production AI endpoint, prompt, contract, Angular widget, schema, migration, persistence, ranking change, reducer change or course mutation.
 - Issue #103 closes after closure reconciliation.
 
+### RB-019 / #218
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/222
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/223
+- Squash commit: `ee389cbc62bc1fdf8c9c29fcc48c6c566b346652`
+- Final review-package head: `5e8efa9b560fb3c3f34b7187353e3b4d4126b210`
+- Final review-package CI: run `30560305501` / #1634 — success
+- Implementation report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`
+- Closure report: `reports/RB-019-2026-07-30-closure.md`
+- Adds a separately gated, explicit and transient generated interpretation beside deterministic Focused evidence.
+- Rebuilds authoritative context through `CandidateDecisionService`, sends only bounded fact records, and rejects unsupported references, recommendations, causal claims and stale identity.
+- Keeps page-scoped AI state outside `RepertoireBuilderStore` and adds no ranking, session, queue, coverage, course or persistence mutation.
+- Accepted with live provider/browser/usefulness quality still unproven because the prototype remains disabled by default, non-authoritative and removable.
+- Issue #218 is closed as completed.
+
 ## Review work
 
 ### RB-004 / #92
@@ -205,19 +220,6 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Uses a lazy composition page, page-scoped store with private writable signals, typed HTTP-only data access, feature-local UI view models and focused pure transformation helpers.
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
-
-### RB-019 / #218
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/222
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/223
-- Implementation branch: `rb-019/issue-218-candidate-explanation`
-- Tested implementation head: `bd9a1c70f4fc61e6b63fa64ed5b624305d4ed903`
-- Implementation CI: run `30559039592` / #1630 — success
-- Report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`
-- Adds a separately gated, explicit and transient generated interpretation beside deterministic Focused evidence.
-- Rebuilds authoritative context through `CandidateDecisionService`, sends only bounded fact records, and rejects unsupported references, recommendations, causal claims and stale identity.
-- Keeps page-scoped AI state outside `RepertoireBuilderStore` and adds no ranking, session, queue, coverage, course or persistence mutation.
-- Live configured-provider review, authenticated browser walkthrough and human usefulness comparison remain required before acceptance.
 
 ## Active claim
 
@@ -289,7 +291,7 @@ RB-014, RB-015, RB-017, RB-019 and RB-020 remain outside the critical path.
 - RB-013 remains blocked on RB-004/RB-005 acceptance and integration.
 - RB-014 is `DONE`; RB-017 remains an approved claimed traps pilot.
 - RB-015 is `DONE` through squash-merged PR #216; issue #103 closes with closure reconciliation.
-- RB-019 is `REVIEW` through PR #223 after implementation CI #1630.
+- RB-019 is `DONE` through squash-merged PR #223 as `ee389cb`; issue #218 is closed.
 - RB-020 remains a separate P3 `PROPOSED` stretch goal with issue #219.
 - RB-016 remains blocked on real builder/course usage.
 - No critical-path priority or roadmap resequencing is required.

@@ -1,6 +1,6 @@
 # RB-019 — Prototype advisory candidate explanation in Builder
 
-Status: REVIEW
+Status: DONE
 
 Priority: P3
 
@@ -10,7 +10,7 @@ Queue class: Stretch goal
 
 Delivery class: North-star prototype
 
-Planning maturity: Implemented and validation-ready
+Planning maturity: Integrated bounded prototype
 
 GitHub issue: `#218`
 
@@ -21,6 +21,8 @@ Claim PR: `#222`
 Implementation branch: `rb-019/issue-218-candidate-explanation`
 
 Implementation PR: `#223`
+
+Squash commit: `ee389cbc62bc1fdf8c9c29fcc48c6c566b346652`
 
 Claimed at: 2026-07-30
 
@@ -118,7 +120,7 @@ The model does not return a recommended move or replacement ranking.
 
 ## Validation
 
-Implementation head `bd9a1c70f4fc61e6b63fa64ed5b624305d4ed903` passed complete repository CI run `30559039592` / #1630 on 2026-07-30:
+Final review-package head `5e8efa9b560fb3c3f34b7187353e3b4d4126b210` passed complete repository CI run `30560305501` / #1634 on 2026-07-30:
 
 - lint;
 - build;
@@ -129,18 +131,22 @@ Implementation head `bd9a1c70f4fc61e6b63fa64ed5b624305d4ed903` passed complete r
 
 Focused tests cover disabled/unconfigured capability behavior, no automatic provider calls, authoritative context reconstruction, selected and bounded comparison candidates, unsupported references and causal claims, stale identity and stale response suppression, provider timeout, transient lifetime, and unchanged deterministic candidate state.
 
-Live provider requests, authenticated browser walkthrough and human usefulness comparison remain review activities and are not claimed as completed validation.
+Live provider requests, authenticated browser walkthrough and human usefulness comparison were not completed before integration. This residual product-risk evidence is accepted only because the prototype remains independently disabled by default, non-authoritative, transient and removable.
 
 ## Dependency and queue decision
 
-RB-019 remains a P3 stretch goal downstream of RB-015. It does not delay the deterministic builder roadmap, RB-017, RB-013 or RB-016.
+RB-019 remains a completed P3 stretch goal downstream of RB-015. It does not delay the deterministic builder roadmap, RB-017, RB-013 or RB-016.
 
 RB-020 remains independently proposed. No order or priority change is recommended.
 
 ## Completion
 
-Report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`
+Implementation report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`
 
-Review PR: `#223`
+Closure report: `reports/RB-019-2026-07-30-closure.md`
 
-Moved to review: 2026-07-30
+Implementation PR: `#223`
+
+Squash commit: `ee389cbc62bc1fdf8c9c29fcc48c6c566b346652`
+
+Completed at: 2026-07-30
