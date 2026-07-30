@@ -66,7 +66,7 @@ export const aiBuilderCandidateExplanationResponseSchema = z.object({
   selectedCandidate: aiBuilderCandidateExplanationCandidateSchema,
   comparisonCandidate: aiBuilderCandidateExplanationCandidateSchema.nullable(),
   explanation: aiBuilderCandidateExplanationContentSchema,
-  referencedFacts: z.array(aiBuilderCandidateExplanationFactSchema).max(12),
+  referencedFacts: z.array(aiBuilderCandidateExplanationFactSchema).max(16),
   disclaimer: z.literal('Candidate ranking remains deterministic and move choice remains yours.'),
 });
 
@@ -115,7 +115,7 @@ export const aiErrorResponseSchema = z.object({
 
 export type AiCapabilitiesResponse = z.output<typeof aiCapabilitiesResponseSchema>;
 export type AiBuilderCandidateExplanationIdentity = z.output<typeof aiBuilderCandidateExplanationIdentitySchema>;
-export type AiBuilderCandidateExplanationRequest = z.input<typeof aiBuilderCandidateExplanationRequestSchema>;
+export type AiBuilderCandidateExplanationRequest = z.output<typeof aiBuilderCandidateExplanationRequestSchema>;
 export type AiBuilderCandidateExplanationContent = z.output<typeof aiBuilderCandidateExplanationContentSchema>;
 export type AiBuilderCandidateExplanationFact = z.output<typeof aiBuilderCandidateExplanationFactSchema>;
 export type AiBuilderCandidateExplanationResponse = z.output<typeof aiBuilderCandidateExplanationResponseSchema>;
