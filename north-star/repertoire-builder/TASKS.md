@@ -24,7 +24,9 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | DONE | Enter builder from existing-course findings | Dual-use | Course endings merged through PR #205; Opponent gaps merged through PR #208 as `1583b15` |
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
-| 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | CLAIMED | Decide whether an LLM has a justified role | Research | Draft PR #216 on `rb-015/issue-103-llm-role-discovery` |
+| 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | IN_PROGRESS | Decide whether an LLM has a justified role | Research | Draft PR #216; defines removable Builder AI seams and prototype tasks |
+| 152 | RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) | P3 | PROPOSED | Prototype advisory candidate explanation in Builder | North-star prototype | Stretch goal after accepted RB-015; integrated RB-006/RB-007/RB-010 |
+| 154 | RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) | P3 | PROPOSED | Prototype post-apply Builder course summary | North-star prototype | Stretch goal after accepted RB-015; integrated RB-009/RB-011/RB-012 |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
 ## GitHub Issues program
@@ -196,14 +198,31 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 - Research branch: `rb-015/issue-103-llm-role-discovery`.
 - Draft PR: https://github.com/vokerg/chess_repertoir_trainer/pull/216
-- Scope: audit the existing optional AI game-review subsystem, compare bounded candidate explanation, builder/course summary and profile narrative roles against deterministic alternatives, and make a grounded proceed/defer/reject recommendation.
-- Exclusions: production endpoint, provider, prompt, Angular feature, schema, migration, persistence, move-selection, ranking, profile-calculation or course-write changes.
+- Scope: audit the existing optional AI subsystem and define feature-toggled, removable Builder AI prototypes without granting generated text factual, decision, reducer, preview, apply, or write authority.
+- Approved stretch tasks: RB-019/#218 candidate explanation and RB-020/#219 post-apply summary.
+- Exclusions: production prototype implementation, schema/migration/persistence, automatic provider calls, move selection, ranking, profile calculation, course validation, or course writes.
 
 ### RB-017 / #114
 
 - Implementation branch: `rb-017/issue-114-curated-traps-pilot`.
 - Scope: source-controlled dataset, deterministic validator, reproducible engine/population snapshots, review output, tests and documentation.
 - Exclusions: production persistence, public contracts, frontend, course writes and builder integration.
+
+## Stretch goals
+
+### RB-019 / #218
+
+- Candidate explanation appears only after deterministic candidate selection beside the existing Focused evidence panel.
+- It is on demand, transient, separately feature toggled, and implemented through AI-specific page state outside `RepertoireBuilderStore`.
+- It cannot rank, select, accept, defer, reorder, cover, or write moves.
+
+### RB-020 / #219
+
+- Completion summary appears only after RB-011 apply succeeds and the authoritative result exists.
+- It is on demand, transient, separately feature toggled, and implemented through AI-specific dialog state outside `RepertoireBuilderCourseStore`.
+- It cannot choose destinations, review targets, approve conflicts, apply, or mutate courses.
+
+Both remain `PROPOSED` until RB-015 is accepted. They are not critical-path work.
 
 ## Accepted visual direction
 
@@ -241,7 +260,7 @@ RB-012 existing-course adaptation — DONE
 RB-016 feedback
 ```
 
-RB-014, RB-015 and RB-017 remain outside the critical path.
+RB-014, RB-015, RB-017, RB-019 and RB-020 remain outside the critical path.
 
 ## Queue impact
 
@@ -256,6 +275,7 @@ RB-014, RB-015 and RB-017 remain outside the critical path.
 - RB-012 is `DONE` through squash-merged PRs #205 and #208; issue #100 is closed.
 - RB-013 remains blocked on RB-004/RB-005 acceptance and integration.
 - RB-014 is `DONE`; RB-017 remains an approved claimed traps pilot.
-- RB-015 is `CLAIMED` through draft PR #216 as bounded research only.
+- RB-015 is `IN_PROGRESS` through draft PR #216.
+- RB-019 and RB-020 are separate P3 `PROPOSED` stretch goals with issues #218 and #219.
 - RB-016 remains blocked on real builder/course usage.
-- No priority or roadmap resequencing is required.
+- No critical-path priority or roadmap resequencing is required.
