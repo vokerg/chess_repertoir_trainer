@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-07-26
+Last updated: 2026-07-30
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -28,6 +28,10 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) |
 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) |
 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) |
+| RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) |
+| RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) |
+| RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) |
+| RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) |
 
 Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same change or coordination session.
 
