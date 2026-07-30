@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 Statuses:
 
@@ -251,6 +251,54 @@ Status: `LOCKED`
 
 The accepted physical direction is extended `ImportRun` plus `AccountImportCoverage`, with retries represented as new linked runs and at most one non-terminal run per account.
 
+### D-045 — Lightweight presentation uses focused progressive disclosure
+
+Status: `LOCKED`
+
+The functional onboarding experience follows [`EXPERIENCE_BLUEPRINT.md`](EXPERIENCE_BLUEPRINT.md): use a protected resumable route, present one dominant action per focused surface, progressively disclose advanced detail, and do not reproduce account Settings as a first-run dashboard or table.
+
+### D-046 — Additional accounts follow first value
+
+Status: `LOCKED`
+
+Preserve the one-selected-account first run. Offer additional Lichess or Chess.com accounts as explicit expansion after account acceptance and preferably after the first useful result; do not require every account before preparation starts.
+
+### D-047 — Activity is communicated with real milestones
+
+Status: `LOCKED`
+
+Make background work feel active through persisted provider-window, import, index, analysis, readiness, and newly-ready-value milestones. Do not time-smooth, fabricate, or visually advance progress without authoritative state.
+
+### D-048 — Reveals reuse canonical evidence
+
+Status: `LOCKED`
+
+Onboarding may present a bounded ordered subset of import, opening, Player Chess Profile, analysis, or tactical facts, but feature-owned calculations and evidence thresholds remain authoritative. Angular must not create a second insight engine.
+
+### D-049 — Reveal density is bounded
+
+Status: `LOCKED`
+
+Expose useful value progressively and show at most three evidence-labelled insight cards in one onboarding reveal. A reveal may occur before full preparation when its feature-specific evidence threshold is met.
+
+### D-050 — Personal tactics and Builder are optional continuations
+
+Status: `LOCKED`
+
+An eligible personal tactical scenario and an evidence-anchored Repertoire Builder entry may be offered as optional next actions. Neither is a core-completion gate, and onboarding never selects repertoire moves, creates courses, or applies Builder changes.
+
+### D-051 — Generated prototypes are design references, not production authority
+
+Status: `LOCKED`
+
+ChatGPT Sites, Figma Make, Codex/Figma, or repository-local prototypes use synthetic data and private review to validate states and interaction. Production remains the existing Angular/server architecture; generated framework, storage, authentication, routing, or migration choices are not accepted without normal architecture review.
+
+### D-052 — Functional accessibility precedes final visual polish
+
+Status: `LOCKED`
+
+ONB-010 implements semantic, keyboard, focus, reduced-motion, zoom, progress, and state behavior as part of the functional experience. VT-302 / #133 owns final product-wide visual, responsive, empty-state, motion, and accessibility acceptance.
+
 ## Provisional
 
 ### D-040 — Visible wave target
@@ -276,6 +324,18 @@ Use a lazy route in the existing web app, hidden and server-authorized, rather t
 Status: `PROVISIONAL`
 
 Use deterministic provider windows, bounded database batches, one global import claim, and exact counters initially. ONB-007 finalizes Lichess window duration, batch size, worker timing, backlog, scaling triggers, and any percentage/ETA policy.
+
+### D-053 — First-analysis lane
+
+Status: `PROVISIONAL`
+
+The experience should unlock a bounded first analysed sample before the entire requested analysis tail completes. ONB-003 decides deterministic selection, ordering, dependencies, and priority; ONB-007 validates capacity and first-value budgets. Do not hardcode “one month” until those tasks approve it.
+
+### D-054 — Lichess-first speed language
+
+Status: `PROVISIONAL`
+
+The provider-choice UI may prefer Lichess as the quickest first look only if ONB-007 measurements support that claim for the durable adapters. Provider choice remains user-controlled.
 
 ## Rejected
 
@@ -374,6 +434,36 @@ Status: `REJECTED`
 Status: `REJECTED`
 
 Clearing `syncCursorTime` is ambiguous and can trigger full-history rescans. Older-history expansion and destructive reset are explicit domain commands.
+
+### D-116 — First-run account-management dashboard
+
+Status: `REJECTED`
+
+Do not expose sync, index, analyse, cursor, activation, default-account, deletion, and other advanced account controls together as the onboarding experience. Keep them in Settings or progressively disclosed recovery/advanced destinations.
+
+### D-117 — Blocking modal train
+
+Status: `REJECTED`
+
+Do not make the durable onboarding lifecycle a sequence of blocking modals. Use the resumable route; reserve dialogs for bounded confirmations.
+
+### D-118 — Require all accounts before first value
+
+Status: `REJECTED`
+
+Do not delay the initial preparation run until every provider account is connected. Additional accounts are explicit expansion.
+
+### D-119 — Fabricated or weighted overall progress
+
+Status: `REJECTED`
+
+Do not derive progress from elapsed time or combine import, indexing, and analysis into an arbitrary weighted overall percentage.
+
+### D-120 — Adopt generated prototype code as architecture
+
+Status: `REJECTED`
+
+Do not bypass Angular, typed contracts, server-owned state, authentication, feature stores, design tokens, or repository guardrails because a generated prototype appears polished.
 
 ## Open
 
