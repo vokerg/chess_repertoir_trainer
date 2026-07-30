@@ -4,6 +4,7 @@ import {
   getRepertoireConflicts,
   RepertoireLineInput,
 } from 'chess-domain';
+import { findCourseReviewLineAnchors } from './course-review.anchors';
 import { classifyCourseReviewGame } from './course-review.matcher';
 import {
   getCoverageCourse,
@@ -45,8 +46,21 @@ function playedSan(result: CourseReviewGameResult): string | null {
   }
 }
 
-function groupResults(results: CourseReviewGameResult[], status: CourseReviewGroup['status']) {
+function groupResults(
+  results: CourseReviewGameResult[],
+  status: CourseReviewGroup['status'],
+  lines: RepertoireLineInput[],
+) {
   const groups = new Map<string, CourseReviewGroup>();
+  const anchorsByPosition = new Map<string, CourseReviewGroup['lineAnchors']>();
+  const anchorsFor = (normalizedFen: string) => {
+    const cached = anchorsByPosition.get(normalizedFen);
+    if (cached) return cached;
+    const anchors = findCourseReviewLineAnchors(normalizedFen, lines);
+    anchorsByPosition.set(normalizedFen, anchors);
+    return anchors;
+  };
+
   for (const result of results.filter((item) => item.status === status)) {
     if (!result.normalizedFenBefore || !result.sideToMove || !result.playedMoveUci) continue;
     const key = `${status}:${result.normalizedFenBefore}:${result.playedMoveUci}`;
@@ -66,6 +80,9 @@ function groupResults(results: CourseReviewGameResult[], status: CourseReviewGro
         count: 0,
         results: { win: 0, draw: 0, loss: 0, unknown: 0 },
         examples: [],
+        lineAnchors: status === 'OPPONENT_UNCOVERED'
+          ? anchorsFor(result.normalizedFenBefore)
+          : [],
       };
       groups.set(key, group);
     }
@@ -189,8 +206,12 @@ export const CourseReviewService = {
         courseConflicts: count('COURSE_CONFLICT'),
       },
       conflicts,
-      myDeviations: includeMyDeviations ? groupResults(results, 'MY_DEVIATION') : [],
-      opponentUncovered: includeOpponentGaps ? groupResults(results, 'OPPONENT_UNCOVERED') : [],
+      myDeviations: includeMyDeviations
+        ? groupResults(results, 'MY_DEVIATION', domainLines)
+        : [],
+      opponentUncovered: includeOpponentGaps
+        ? groupResults(results, 'OPPONENT_UNCOVERED', domainLines)
+        : [],
       pagination: { limit: input.limit, offset: input.offset, returnedGames: results.length },
     };
   },
