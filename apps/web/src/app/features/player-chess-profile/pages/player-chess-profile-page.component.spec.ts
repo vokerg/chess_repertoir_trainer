@@ -39,7 +39,7 @@ describe('Player Chess Profile Builder actions', () => {
       (suggestion) => launched.push(suggestion),
     );
 
-    actions[0].run();
+    actions[0].run?.();
 
     expect(launched).toEqual([whiteSuggestion]);
   });
