@@ -1,6 +1,6 @@
 # RB-013 — Support repertoire personas and profile overrides
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -8,11 +8,13 @@ Order: 80
 
 Delivery class: Dual-use
 
-Planning maturity: Bounded profile-to-Builder composition ready
+Planning maturity: Bounded profile-to-Builder composition underway
 
 GitHub issue: `#101`
 
 Claimed by: `vokerg` / ChatGPT agent session
+
+Claim PR: `#231`
 
 Claim branch: `rb-013/issue-101-profile-persona-claim`
 
