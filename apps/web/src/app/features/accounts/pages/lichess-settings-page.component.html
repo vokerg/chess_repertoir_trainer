@@ -18,36 +18,23 @@
       <div class="lichess-connection">
         <div class="lichess-connection-main">
           <p class="lichess-status">Connected as <strong>&#64;{{ account.username }}</strong></p>
-          <div class="account-meta-grid">
-            <div><span>Connected</span><strong>{{ dateLabel(account.connectedAt) }}</strong></div>
-            @if (account.expiresAt) {
-              <div><span>Expires</span><strong>{{ dateLabel(account.expiresAt) }}</strong></div>
-            }
-            @if (account.externalAccountId) {
-              <div><span>Tracked account</span><strong>Also tracked as an import account.</strong></div>
-            }
-            <div>
-              <span>Bot challenges</span>
-              <strong>{{ hasScope(account, 'challenge:write') ? 'Ready' : 'Missing' }}</strong>
-            </div>
-            <div>
-              <span>Read puzzles</span>
-              <strong>{{ hasScope(account, 'puzzle:read') ? 'Ready' : 'Missing' }}</strong>
-            </div>
-            <div>
-              <span>Submit puzzle results</span>
-              <strong>{{ hasScope(account, 'puzzle:write') ? 'Ready' : 'Missing' }}</strong>
-            </div>
-          </div>
+          <app-fact-grid
+            [items]="connectionFacts(account)"
+            [ariaLabel]="'Lichess connection facts for ' + account.username"
+            [columns]="3"
+            [compactColumns]="1"
+          />
           @if (!hasScope(account, 'puzzle:read') || !hasScope(account, 'puzzle:write')) {
-            <p class="status-note">Reconnect Lichess to enable puzzle training and rating updates.</p>
+            <p class="lichess-scope-warning" role="status">
+              Reconnect Lichess to enable puzzle training and rating updates.
+            </p>
           }
         </div>
         <div class="lichess-actions">
           <button type="button" class="primary" (click)="store.connectLichess()">Reconnect</button>
           <button
             type="button"
-            class="secondary"
+            class="secondary lichess-disconnect-button"
             (click)="confirmDisconnectLichess()"
             [disabled]="store.disconnectingLichess()"
           >
@@ -56,8 +43,11 @@
         </div>
       </div>
     } @else {
-      <div class="lichess-connection">
-        <p class="accounts-muted">No Lichess account connected.</p>
+      <div class="lichess-empty">
+        <div>
+          <strong>No Lichess account connected</strong>
+          <p class="accounts-muted">Connect Lichess when you need OAuth-powered challenges or puzzle actions.</p>
+        </div>
         <div class="lichess-actions">
           <button type="button" class="primary" (click)="store.connectLichess()">Connect Lichess</button>
         </div>
