@@ -5,9 +5,13 @@ import type {
   PlayerChessProfileResponse,
 } from '@chess-trainer/contracts/player-chess-profile';
 import {
+  builderLaunchReturnUrl,
+  builderLaunchStartingPoint,
+  parseRepertoireBuilderLaunch,
+} from './helpers/repertoire-builder-launch';
+import {
   buildRepertoireBuilderProfileLaunchQueryParams,
   buildRepertoireBuilderProfileSuggestions,
-  parseRepertoireBuilderProfileLaunch,
 } from './profile-launch';
 
 const GENERATED_AT = '2026-07-30T18:00:00.000Z';
@@ -62,10 +66,10 @@ describe('profile-derived Builder launch', () => {
     }));
   });
 
-  it('round-trips one bounded profile suggestion into Builder route state', () => {
+  it('round-trips one bounded profile suggestion through the unified Builder route', () => {
     const suggestion = buildRepertoireBuilderProfileSuggestions(profile)[0];
     const params = buildRepertoireBuilderProfileLaunchQueryParams(suggestion);
-    const parsed = parseRepertoireBuilderProfileLaunch(
+    const parsed = parseRepertoireBuilderLaunch(
       convertToParamMap(params),
       new Date('2026-07-30T19:00:00.000Z'),
     );
@@ -84,25 +88,28 @@ describe('profile-derived Builder launch', () => {
         classificationVersion: '2026-07-rules-v2',
       },
     }));
+    expect(builderLaunchStartingPoint(parsed.context)).toEqual({ kind: 'INITIAL_POSITION' });
+    expect(builderLaunchReturnUrl(parsed.context!)).toBe('/progress/profile');
   });
 
   it('rejects stale profile route state without blocking ordinary Builder setup', () => {
     const suggestion = buildRepertoireBuilderProfileSuggestions(profile)[0];
-    const parsed = parseRepertoireBuilderProfileLaunch(
+    const parsed = parseRepertoireBuilderLaunch(
       convertToParamMap(buildRepertoireBuilderProfileLaunchQueryParams(suggestion)),
       new Date('2026-08-01T19:00:00.000Z'),
     );
 
     expect(parsed.context).toBeNull();
     expect(parsed.error).toContain('expired');
+    expect(builderLaunchStartingPoint(parsed.context)).toEqual({ kind: 'INITIAL_POSITION' });
   });
 
   it('rejects malformed profile provenance and omits insufficient sides', () => {
-    const suggestion = buildRepertoireBuilderProfileSuggestions({
+    const suggestions = buildRepertoireBuilderProfileSuggestions({
       ...profile,
       openingGroups: [openingGroup('WHITE', 4, ['SOLID'], 'LOW')],
     });
-    expect(suggestion).toEqual([]);
+    expect(suggestions).toEqual([]);
 
     const malformed = {
       ...buildRepertoireBuilderProfileLaunchQueryParams(
@@ -110,7 +117,7 @@ describe('profile-derived Builder launch', () => {
       ),
       profileContractVersion: 'unsupported',
     };
-    const parsed = parseRepertoireBuilderProfileLaunch(
+    const parsed = parseRepertoireBuilderLaunch(
       convertToParamMap(malformed),
       new Date('2026-07-30T19:00:00.000Z'),
     );
