@@ -4,11 +4,11 @@ Last updated: 2026-07-30
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014, RB-015, RB-018 and RB-019 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114. RB-020 remains a proposed P3 stretch prototype.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014, RB-015, RB-018, RB-019 and RB-020 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
-**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, exact Course ending → Builder adaptation from PR #205, exact Opponent gap → Builder adaptation from PR #208, and the disabled-by-default transient RB-019 advisory candidate explanation prototype from PR #223.
+**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, exact Course ending → Builder adaptation from PR #205, exact Opponent gap → Builder adaptation from PR #208, the disabled-by-default transient RB-019 advisory candidate explanation prototype from PR #223, and the disabled-by-default transient RB-020 post-apply completion-summary prototype from PR #228.
 
-**Integrated planning on `main`:** PR #216 defines the non-authoritative, removable AI prototype architecture and creates RB-019/#218 plus RB-020/#219. PR #223 implements and integrates RB-019 without making generated text authoritative or persistent.
+**Integrated planning on `main`:** PR #216 defines the non-authoritative, removable AI prototype architecture. PRs #223 and #228 implement the two independently gated prototypes without making generated text authoritative, persistent, or part of deterministic Builder decisions or course writes.
 
 **Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
 
@@ -241,6 +241,28 @@ Closure report: `reports/RB-019-2026-07-30-closure.md`.
 
 Live configured-provider output quality, authenticated browser presentation and comparative human usefulness remain unproven. The accepted boundary keeps that residual risk isolated because the prototype is disabled by default, non-authoritative, transient and removable.
 
+### Post-apply completion summary prototype — RB-020
+
+Squash-merged PR #228 provides:
+
+- separately gated `builderCompletionSummary` capability;
+- versioned shared request/response contracts;
+- post-apply-only explicit generation after the authoritative result exists;
+- authenticated reconciliation of the owned chapter, applied line, result counts and current course revision;
+- bounded result, applied-path and excluded-work facts sent to the existing OpenAI-compatible JSON client;
+- a server-generated authoritative result sentence separated from generated interpretation and study suggestions;
+- rejection of unsupported fact/move references, course-control language, causal claims, stale destination/revision and excluded-work application claims;
+- dialog-scoped transient Angular state outside `RepertoireBuilderCourseStore`;
+- no persistence, automatic generation, preview/apply, course, navigation or deterministic-state mutation.
+
+Final review-package head `88209147d3989e53fb949343d0eadf9c25e028ef` passed complete CI run `30578456168` / #1652. PR #228 was squash-merged as `d79557246330cd68cf762ce54144d2e9bee4b158`.
+
+Implementation report: `reports/RB-020-2026-07-30-builder-completion-summary.md`.
+
+Closure report: `reports/RB-020-2026-07-30-closure.md`.
+
+Live configured-provider output quality, authenticated browser presentation and comparative human usefulness remain unproven. The accepted boundary keeps that residual risk isolated because the prototype is disabled by default, non-authoritative, transient, failure-isolated and removable.
+
 ## Review work
 
 ### RB-004 / #92 — Player Chess Profile calculation
@@ -269,14 +291,6 @@ The approved traps pilot remains limited to:
 
 It excludes production persistence, public API, Angular UI, course writes and RB-006/RB-007 contract changes.
 
-## Proposed stretch prototypes
-
-### RB-020 / #219
-
-Completion summary is on demand only after an authoritative apply result, uses AI-specific dialog state outside `RepertoireBuilderCourseStore`, and cannot select, apply or mutate course state.
-
-RB-020 remains `PROPOSED`, P3 and outside the critical path.
-
 ## Repository and GitHub issue state
 
 - RB-001 / #89: `DONE`.
@@ -296,7 +310,7 @@ RB-020 remains `PROPOSED`, P3 and outside the critical path.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
 - RB-019 / #218: `DONE` through squash-merged PR #223; issue closed.
-- RB-020 / #219: `PROPOSED` stretch prototype.
+- RB-020 / #219: `DONE` through squash-merged PR #228; issue closes with reconciliation.
 
 ## Dependency impact
 
@@ -311,7 +325,7 @@ RB-020 remains `PROPOSED`, P3 and outside the critical path.
 - RB-015 provides the locked non-authority, feature-toggle, transient-lifetime and purge boundaries for optional Builder interpretation.
 - RB-017 remains outside the critical path.
 - RB-019 provides the first integrated optional interpretation prototype without becoming a dependency of deterministic Builder delivery.
-- RB-020 remains an independent stretch prototype.
+- RB-020 provides the integrated post-apply interpretation prototype without becoming a dependency of preview, apply or course-write delivery.
 
 ## Validation
 
@@ -327,7 +341,7 @@ RB-020 remains `PROPOSED`, P3 and outside the critical path.
 - RB-015 final research CI #1617 passed the complete repository workflow; official DeepSeek API, JSON-output, pricing and privacy sources were reviewed on 2026-07-30.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 - RB-019 final review-package CI #1634 passed the complete repository workflow with grounding, stale-response, disabled-feature, provider-failure and state-isolation tests.
-- RB-020 must add grounding, stale-response, disabled-feature, provider-failure, state-isolation and purge tests plus human usefulness review.
+- RB-020 final review-package CI #1652 passed the complete repository workflow with grounding, post-apply-only, stale-response, disabled-feature, provider-failure, state-isolation and purge tests.
 
 ## Residual risks
 
@@ -343,10 +357,10 @@ RB-020 remains `PROPOSED`, P3 and outside the critical path.
 - Four-field source FENs do not contain move counters; canonical session FENs use neutral `0 1` counters while exact position identity remains the normalized four fields.
 - Engine, personal, course and profile providers do not share one universal freshness timestamp model.
 - DeepSeek model names, pricing and terms are mutable; public privacy terms do not establish API-specific zero retention and describe data processing/storage in China. Optional AI use cases must minimize context and re-verify provider/regional requirements before deployment.
-- Generated interpretation can create undue authority even when technically isolated. RB-019 remains disabled by default; production enablement should compare it with deterministic templates and no-feature controls.
+- Generated interpretation can create undue authority even when technically isolated. RB-019 and RB-020 remain disabled by default; production enablement should compare them with deterministic templates and no-feature controls.
 
 ## Queue recommendation
 
 Keep task order and priorities unchanged.
 
-RB-013 remains blocked on RB-004/RB-005 acceptance and integration. RB-017 is already claimed. RB-019 is complete through squash-merged PR #223. RB-020 remains available only as an optional P3 stretch prototype after explicit claim. RB-016 remains blocked on real product use.
+RB-013 remains blocked on RB-004/RB-005 acceptance and integration. RB-017 is already claimed. RB-019 and RB-020 are complete through squash-merged PRs #223 and #228. RB-016 remains blocked on real product use.
