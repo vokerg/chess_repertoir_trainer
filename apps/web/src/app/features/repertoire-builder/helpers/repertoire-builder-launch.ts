@@ -59,9 +59,11 @@ export type RepertoireBuilderCourseFindingLaunch =
   | RepertoireBuilderCourseEndingLaunchContext
   | RepertoireBuilderOpponentGapLaunch;
 
-// Compatibility name used by the existing builder store. The launch boundary now supports
-// both integrated course-finding sources.
-export type RepertoireBuilderCourseEndingLaunch = RepertoireBuilderCourseFindingLaunch;
+// Compatibility name used only by the route-local builder store. Historical in-memory
+// Course-ending fixtures predate explicit anchorKind; parsed external links remain strict.
+export type RepertoireBuilderCourseEndingLaunch =
+  | RepertoireBuilderCourseFindingLaunch
+  | (Omit<RepertoireBuilderCourseEndingLaunchContext, 'anchorKind'> & { anchorKind?: 'NODE' });
 
 export interface RepertoireBuilderLaunchParseResult {
   context: RepertoireBuilderCourseFindingLaunch | null;
@@ -203,7 +205,7 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
 }
 
 export function builderLaunchStartingPoint(
-  context: RepertoireBuilderCourseFindingLaunch | null,
+  context: { courseId: number; lineId: number } | null,
 ): RepertoireTargetStartingPoint {
   return context
     ? { kind: 'COURSE_POSITION', courseId: context.courseId, lineId: context.lineId }
