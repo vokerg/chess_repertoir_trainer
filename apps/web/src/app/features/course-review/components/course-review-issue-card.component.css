@@ -27,6 +27,35 @@
   gap: var(--space-3);
 }
 
+.issue-card .collection-title {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.issue-card .collection-description {
+  margin: 0.4rem 0 0;
+  color: var(--ui-text-muted);
+  line-height: 1.5;
+}
+
+.issue-card .metric-label {
+  color: var(--ui-text-subtle);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.issue-card .pill {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .issue-board {
   grid-column: 2;
   grid-row: 1;
@@ -130,7 +159,7 @@
   font-weight: 800;
 }
 
-/* Keep in sync with the compact finding-card threshold. */
+/* Keep in sync with the shared compact breakpoint. */
 @media (max-width: 640px) {
   .issue-card {
     grid-template-columns: 104px minmax(0, 1fr);
