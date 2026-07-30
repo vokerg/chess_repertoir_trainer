@@ -2,7 +2,7 @@
 
 Date: 2026-07-30
 
-Status: in progress
+Status: in progress — prototype architecture and stretch tasks defined
 
 Task: RB-015
 
@@ -10,209 +10,331 @@ GitHub issue: #103
 
 Research branch: `rb-015/issue-103-llm-role-discovery`
 
+Draft pull request: #216
+
 ## Decision sought
 
-Decide whether an LLM materially improves the Player Chess Profile or repertoire-builder experience after deterministic evidence, ranking, visual decision, course preview/apply and existing-course adaptation are available.
+Decide where generated interpretation adds enough value to justify latency, cost, privacy surface, provider failure, and factuality risk after deterministic target, candidate, session, course-preview/apply, and existing-course adaptation capabilities are available.
 
-The decision is not whether the repository can call an LLM. It already can. The decision is whether a specific new role provides enough user value to justify its factuality risk, latency, cost, privacy surface, persistence semantics and architectural coupling compared with deterministic copy or the current UI.
+The repository can already call an LLM. The architectural question is how to test value without granting generated text authority over chess decisions or course state.
+
+## User direction
+
+On 2026-07-30 the user requested feature-toggled prototypes in the real flow and required that they remain purgeable from decision making.
+
+This report therefore advances from a generic research matrix to two explicit stretch prototypes:
+
+- RB-019 / issue #218 — advisory candidate explanation in Builder;
+- RB-020 / issue #219 — post-apply Builder course summary.
+
+No production prototype code is added in RB-015. The tasks and issues define separate reviewable implementation scopes.
 
 ## Current verified AI baseline
 
-The repository already contains one optional, isolated AI feature for imported-game review.
+The application already has one optional imported-game review feature with these boundaries:
 
-### Availability and provider boundary
+- `AI_WIDGETS_ENABLED` plus a use-case-specific game-review flag;
+- server-side OpenAI-compatible chat-completions requests through native Node `fetch`;
+- no provider SDK;
+- bounded output tokens, timeout, retry, rate-limit, provider, malformed JSON, and schema-invalid response handling;
+- use-case-supplied Zod output validation;
+- bounded game and completed-analysis context;
+- prompt restrictions against invented evaluations, best moves, openings, motifs, intentions, and psychology;
+- authoritative replacement of model-referenced move number, side, played SAN, best SAN, classification, and score loss;
+- one current persisted artifact per owned imported game with input hash and prompt/schema/model provenance;
+- no raw prompt, PGN, context, output, authorization, or API-key logging during normal operation;
+- capability-driven Angular visibility;
+- presentation-only widget composition that delegates board navigation to the existing game store.
 
-- AI widgets and game review have separate disabled-by-default feature flags.
-- Provider configuration remains server-side and currently supports an OpenAI-compatible chat-completions endpoint.
-- The client uses native Node `fetch`; no provider SDK is installed.
-- Requests have bounded output tokens, timeout, retry, rate-limit and provider-error handling.
-- The shared client requires JSON output and validates it with a use-case-supplied Zod schema.
+This is adequate reusable plumbing for experiments. It is not evidence that a new AI role improves the product.
 
-### Game-review use-case boundary
+## Current deterministic Builder authority
 
-- Generation is on demand and requires an owned imported game, PGN and completed engine analysis.
-- The context is built from existing read models rather than internal REST calls or a new analysis pipeline.
-- The model receives bounded structured game and move facts.
-- The prompt forbids invented evaluations, best moves, opening names, tactical motifs, intentions and psychological claims.
-- A model-referenced ply must exist in the authoritative context.
-- Move number, side, played move, best move, classification and score loss are replaced with authoritative server values before the response is accepted.
+### Candidate and decision flow
 
-### Persistence and privacy boundary
+`RepertoireBuilderStore` is the page-scoped owner of:
 
-- One current validated artifact is stored per imported game.
-- The stored row records analysis run, prompt/schema versions, provider, model and an input hash.
-- Regeneration replaces the current artifact rather than accumulating hidden history.
-- Raw provider requests and responses are not stored.
-- Normal logging excludes prompts, PGN, context, output, authorization and API keys.
-- Provider configuration and raw context never reach Angular.
+- target setup and session creation;
+- active branch and candidate-response loading;
+- selected candidate preview;
+- selected opponent-response coverage;
+- accept, defer, ignore, stop, reopen, restart, queue reorder, finish, and abandon commands;
+- stale-request suppression;
+- RB-009 session revisions and transitions.
+
+The candidate response is produced by the existing authenticated RB-007 endpoint. It contains:
+
+- contract and ranking-policy versions;
+- generated time, target ID, normalized position, role, and source summary;
+- ordered legal candidates;
+- engine, Masters, population, personal, opening, course, and Player Chess Profile evidence;
+- eligibility, target fit, profile fit, reason codes, warning codes, and coverage contribution.
+
+No AI prototype may become an input to these values or commands.
+
+### Course preview and apply flow
+
+`RepertoireBuilderCourseStore` is the page-scoped owner of:
+
+- materializable draft projection;
+- course/chapter selection;
+- exact required destination for finding launches;
+- RB-011 preview;
+- target selection;
+- preview-token-bound apply;
+- authoritative apply result.
+
+`RepertoireBuilderCourseDialogComponent` renders destination controls, the preview, conflicts, warnings, and the final result. No AI prototype may become an input to destination, target, preview, apply eligibility, transaction, revision, or course writes.
+
+## Architecture decision
+
+Generated interpretation is allowed only as a leaf presentation capability consuming immutable deterministic snapshots.
+
+It is prohibited from returning or executing commands.
+
+```text
+RB-006 target + RB-007 evidence + RB-009/RB-011 result
+                    |
+                    v
+       bounded AI context adapter
+                    |
+                    v
+    schema-validated interpretation
+                    |
+                    v
+ optional read-only presentation panel
+```
+
+The arrow never points back into ranking, reducers, stores, preview/apply, or persistence.
+
+## Prototype 1 — advisory candidate explanation
+
+Canonical task: `tasks/RB-019-builder-candidate-explanation-prototype.md`
+
+GitHub issue: #218
+
+Queue: order 152, priority P3, stretch goal
+
+### Product location
+
+The existing workbench renders a **Focused evidence** panel after a user previews a candidate. The prototype belongs immediately after that panel, where it can explain the visible evidence without obscuring the candidate list or primary controls.
+
+### Trigger and lifetime
+
+- hidden when disabled or provider configuration is incomplete;
+- explicit **Explain this trade-off** action;
+- no request on page load, candidate load, preview, selection, or response toggle;
+- transient output only;
+- stale output discarded when target, position, role, policy version, response generation, selected candidate, or comparison candidate changes.
+
+### Authority boundary
+
+The server should accept a bounded candidate-decision request and selected move identity, then call the candidate-decision application service directly to rebuild authoritative evidence.
+
+It should not accept client-supplied rank, evaluation, reason, or evidence claims as authority.
+
+Generated output may summarize supplied reasons and evidence. It may not:
+
+- recommend or select a move;
+- reorder candidates;
+- alter eligibility, fit, warning, or coverage state;
+- invent chess evaluation or causality;
+- conceal unavailable/stale/insufficient evidence;
+- mutate the builder session.
 
 ### Angular boundary
 
-- Capability visibility is loaded separately from review state.
-- The page-scoped review store loads a stored artifact only when the feature is available.
-- The review component is presentation-only.
-- Turning-point navigation delegates to the existing game-detail store and board rather than introducing a second chess model.
-- Tactics and AI review remain distinct insight tabs.
+A feature-local page-scoped AI store/data-access service owns request state. `RepertoireBuilderStore` remains unchanged. The workbench receives optional display state and emits only an explanation request event.
 
-## Initial architecture assessment
+### Feature flags
 
-The current experiment already demonstrates several properties RB-015 would require for any future role:
+- global: `AI_WIDGETS_ENABLED`;
+- use case: `AI_BUILDER_CANDIDATE_EXPLANATION_ENABLED`;
+- capability: `widgets.builderCandidateExplanation`.
 
-- optional and feature-flagged;
-- provider-neutral at the product boundary;
-- source-grounded structured input;
-- schema-validated output;
-- authoritative reconciliation where stable identifiers exist;
-- explicit failure semantics;
-- bounded persistence and deletion ownership;
-- removable without breaking the core game workflow.
+## Prototype 2 — post-apply Builder course summary
 
-It also exposes the central limitation: generated prose can be constrained, but it is not authoritative. Game review can reconcile referenced plies and move facts because those identifiers already exist. A builder explanation cannot safely invent candidate evidence, profile conclusions, course conflicts, selected branches or applied results; any such facts must remain deterministic fields supplied by RB-006/RB-007/RB-009/RB-011.
+Canonical task: `tasks/RB-020-builder-completion-summary-prototype.md`
 
-Reusable provider plumbing therefore lowers implementation cost but does not establish product justification.
+GitHub issue: #219
 
-## Candidate role 1 — candidate trade-off explanation
+Queue: order 154, priority P3, stretch goal
 
-### User problem to verify
+### Product location
 
-RB-007 exposes multiple evidence sources, stable reasons, warnings, target fit and profile fit. The question is whether users still struggle to understand why one move is preferable for their selected target or how two candidates trade off.
+The existing course dialog renders `result()` only after RB-011 apply succeeds. The prototype belongs immediately after that authoritative result block.
 
-### Authoritative inputs
+This location deliberately excludes it from destination selection, preview review, conflict handling, target selection, and apply confirmation.
 
-Potential source facts are limited to the selected RB-006 target and the bounded RB-007 candidate response already rendered by the workbench:
+### Trigger and lifetime
 
-- candidate identity and legal move;
+- hidden when disabled or provider configuration is incomplete;
+- explicit request only after apply succeeds;
+- no request during preview or apply;
+- transient output only;
+- cleared when the dialog closes, a new draft starts, or another apply result is produced.
+
+### Authority boundary
+
+Context is bounded to:
+
+- completed RB-009 session/draft facts;
+- exact destination and selected target;
+- excluded/deferred/ignored/stale/unresolved branches;
+- authoritative RB-011 line identity, created/reused counts, idempotence, and course revision.
+
+Generated output may describe the applied slice and suggest a study checklist. It may not:
+
+- claim excluded work was written;
+- invent moves, branches, conflicts, destinations, counts, or revisions;
+- change or retry apply;
+- create course names or organization;
+- mutate course state.
+
+### Angular boundary
+
+A page/dialog-scoped AI summary store owns request state. `RepertoireBuilderCourseStore` remains unchanged and exposes no AI command path.
+
+### Feature flags
+
+- global: `AI_WIDGETS_ENABLED`;
+- use case: `AI_BUILDER_COMPLETION_SUMMARY_ENABLED`;
+- capability: `widgets.builderCompletionSummary`.
+
+## Why two tasks rather than one generic Builder AI task
+
+The candidate explanation is inside an active decision surface and has higher risk of implied authority. The completion summary is post-write and operates on a different snapshot and lifecycle.
+
+Independent tasks provide:
+
+- independent flags and rollout;
+- independent metrics and human review;
+- independent prompts/contracts;
+- independent failure/staleness semantics;
+- independent removal;
+- smaller reviewable diffs.
+
+A generic `AI_REPERTOIRE_BUILDER_ENABLED` flag or one shared mutable Builder-AI store is rejected.
+
+## Deterministic controls
+
+### Candidate explanation control
+
+The existing Focused evidence panel remains the complete control:
+
 - eligibility;
-- stable reasons and warnings;
-- source availability/freshness;
-- engine, Masters, population, personal, opening-profile, Player Chess Profile and course evidence;
-- target fit versus profile fit;
-- opponent-coverage contribution.
+- target and profile fit;
+- course state;
+- source availability and details;
+- stable reasons and warnings.
 
-### Deterministic alternative
+A deterministic comparison template should be evaluated beside the LLM prototype using the same source snapshot.
 
-Build a deterministic comparison template over existing reason codes and evidence states, for example:
+### Completion summary control
 
-- strongest support for each candidate;
-- principal trade-off;
-- missing or weak evidence;
-- target/profile disagreement;
-- course conflict or coverage consequence.
+The existing result block plus a deterministic structured summary remains the complete control:
 
-This is cheaper, immediate, auditable and localizable. It should be the baseline, not an afterthought.
+- destination;
+- accepted/materialized decisions;
+- excluded branches;
+- created/reused/skipped/conflicting counts;
+- idempotence and course revision.
 
-### LLM hypothesis
+Generated prose is not permitted to replace these fields.
 
-An LLM may produce a more natural synthesis when evidence is numerous or contradictory. It must not rank candidates, introduce new reasons, infer intentions or claim chess facts absent from the structured response.
+## Profile narrative disposition
 
-### Provisional disposition
+No profile prototype task is created.
 
-**Unproven.** Do not implement before demonstrating that deterministic comparison copy is materially insufficient in the accepted workbench.
+RB-004/RB-005 remain under acceptance review. A profile narrative or conversational target-refinement prototype is deferred until populated-data use demonstrates a specific gap after deterministic evidence-aware copy and explicit target controls.
 
-## Candidate role 2 — completed builder/course-change summary
+## Existing game-review disposition
 
-### User problem to verify
+Retain unchanged during RB-015.
 
-After a builder session and RB-011 apply, users may benefit from a concise account of what they selected, which opponent responses were covered, which branches remained unresolved and what course material was created or reused.
+Its persisted lifetime should not be copied automatically. The new Builder prototypes default to transient output because:
 
-### Authoritative inputs
+- candidate evidence changes with target, position, policy, and source freshness;
+- a completion interpretation can become stale after later course edits;
+- persistence would require deletion, staleness, and historical-version UX without demonstrated value.
 
-- RB-006 target snapshot;
-- RB-009 completed session and explicit unresolved/excluded branches;
-- RB-011 preview and apply result counts;
-- exact destination course/chapter/line anchors;
-- source-finding context for RB-012 launches.
+## Purge test
 
-### Deterministic alternative
+Each prototype must be removable by deleting only:
 
-A structured completion summary can directly group:
+- its AI use-case adapter/prompt;
+- its contract fields;
+- its use-case flag and capability boolean;
+- its feature-local data-access/store;
+- its optional presentational composition;
+- its tests/docs.
 
-- chosen repertoire moves;
-- added opponent coverage;
-- unresolved/deferred/ignored branches;
-- created/reused/skipped counts;
-- conflicts or stale-source failures;
-- destination links.
+Removal must not require:
 
-This information is already authoritative and naturally tabular. A deterministic summary may be clearer than prose.
+- database migration;
+- ranking-policy change;
+- builder-session conversion;
+- course repair;
+- API compatibility for the deterministic workflow;
+- navigation or route changes.
 
-### LLM hypothesis
+## Evaluation requirements for both prototypes
 
-An optional narrative could explain the strategic shape of the completed slice or produce a study checklist. That interpretation is harder to reconcile than identifiers/counts and may become stale after course edits.
+### Grounding
 
-### Provisional disposition
+- every move, branch, reason, warning, source, count, destination, and revision reference must map to supplied authoritative data;
+- unsupported references fail validation or are replaced by authoritative values;
+- missing/stale/insufficient evidence remains visible;
+- generated text is labelled as interpretation.
 
-**Likely deterministic first.** Any LLM narrative should be transient, explicitly interpretive and downstream of a complete authoritative summary.
+### State isolation
 
-## Candidate role 3 — Player Chess Profile narrative or target refinement
+- snapshot builder/course-store state before request;
+- execute successful, failed, timed-out, and invalid provider responses;
+- assert that all deterministic state and command eligibility remains unchanged.
 
-### User problem to verify
+### Product usefulness
 
-Users may need help interpreting preference versus performance evidence, uncertainty, target defaults and deliberate overrides.
+Compare:
 
-### Authoritative inputs
+1. current UI/no new feature;
+2. deterministic template;
+3. LLM output.
 
-This role depends on the accepted RB-004/RB-005 contract and UI, including evidence grades, selected-game baselines, opening evidence, uncertainty and separate preference/performance conclusions.
+Review criteria should include factual accuracy, clarity, decision confidence without undue authority, time saved, verbosity, and usefulness for novice, club, and stronger players.
 
-### Deterministic alternative
+### Operational boundary
 
-Use evidence-aware conclusion templates and explicit target controls. A factual profile should not be rewritten into an opaque personality label.
+- no automatic generation;
+- no background job;
+- no persistence for the prototype;
+- bounded context and output;
+- explicit timeout/rate-limit/provider failure;
+- no prompt/context/output logging during normal operation;
+- no provider configuration in Angular.
 
-### LLM hypothesis
+## Queue impact
 
-A conversational explanation might answer follow-up questions or translate evidence into accessible language. It risks collapsing uncertainty, inventing causal explanations or presenting generated advice as profile fact.
+- RB-019 and RB-020 are added after RB-015 at orders 152 and 154.
+- Both are P3 stretch goals.
+- Both remain `PROPOSED` until RB-015 is accepted.
+- They do not block RB-004/RB-005 review, RB-013, RB-016, or the already-claimed RB-017 pilot.
+- No critical-path reprioritization is made.
 
-### Provisional disposition
+## Current recommendation
 
-**Defer production judgment until RB-004/RB-005 are accepted and reviewed with populated data.** Contract-level research may continue, but this task must not approve a profile feature against an unaccepted product surface.
+Proceed with the two feature-toggled prototypes as isolated stretch goals.
 
-## Evaluation matrix
+Do not add a generic Builder AI layer and do not place generated output inside the deterministic decision or write pipeline.
 
-| Dimension | Candidate trade-off | Builder/course summary | Profile narrative |
-| --- | --- | --- | --- |
-| Current deterministic facts | RB-006/RB-007 | RB-006/RB-009/RB-011/RB-012 | RB-004/RB-005 |
-| Stable identifiers available | moves, reason codes, source states | branches, anchors, preview/apply counts | evidence sections and grades |
-| Strong deterministic alternative | yes | yes | yes |
-| Main possible LLM value | synthesis of competing evidence | narrative/study checklist | conversational explanation |
-| Main factuality risk | new chess/ranking claims | invented strategic meaning or stale summary | false causality/personality certainty |
-| Persistence default | none/transient | none/transient | none until accepted need |
-| AI-disabled fallback | existing workbench + template | authoritative structured summary | existing profile UI + templates |
-| Initial disposition | unproven | deterministic first | defer |
+Candidate explanation should be tested at the edge of the active evidence surface. Completion summary should be tested only after apply. Profile narrative remains deferred.
 
-This matrix is provisional. It records the current evidence threshold, not the final recommendation.
-
-## Required next research
-
-1. Inspect RB-004/RB-005 conclusion and evidence contracts rather than assuming the profile explanation gap.
-2. Inspect RB-007 reason taxonomy and the RB-010 candidate presentation to enumerate what deterministic synthesis can already express.
-3. Inspect RB-009/RB-011 result projections for a deterministic completion-summary shape.
-4. Build representative source payloads for all three roles without adding production code.
-5. Draft deterministic output for each payload before drafting any prompt.
-6. Define factuality tests that fail on invented evidence, changed rankings, unsupported causality, unknown identifiers and missing-source concealment.
-7. Verify current provider API behavior, pricing, privacy/data-retention terms and JSON/structured-output constraints from primary sources before making cost or provider recommendations.
-8. Define human review criteria across at least novice, club and stronger-player perspectives.
-
-## Current risks and open decisions
-
-- There is not yet product-use evidence that current deterministic explanations are confusing.
-- The existing game-review artifact is persisted; that lifetime should not be copied automatically to builder or profile interpretation.
-- Input hashing can detect generation provenance but does not automatically tell the user that generated interpretation is stale.
-- A generic AI capability boolean may need use-case-specific expansion only if another role is approved; changing it during research would be premature.
-- The current shared client is sufficient for JSON generation, but provider-specific structured-output guarantees and pricing may differ.
-- Evaluation by another LLM would not substitute for source-grounding checks and human usefulness review.
-
-## Interim recommendation
-
-Do not add a new production LLM widget during RB-015.
-
-Continue the research with deterministic alternatives as the baseline. The burden of proof is highest for candidate explanation because the product already has structured reasons, and for builder summaries because authoritative data naturally supports deterministic output. Profile narrative remains dependent on acceptance of the profile surface.
-
-The existing game-review experiment should remain unchanged during this research unless inspection reveals a concrete defect. Its architecture is useful evidence, but its existence is not a mandate for more AI features.
-
-## Files inspected so far
+## Files inspected
 
 - `north-star/repertoire-builder/tasks/RB-015-llm-role-discovery.md`
 - `north-star/repertoire-builder/GITHUB_ISSUES.md`
+- `north-star/repertoire-builder/DECISIONS.md`
+- `north-star/repertoire-builder/OPEN_QUESTIONS.md`
 - `docs/ai-widgets.md`
 - `apps/api/src/modules/ai/ai.config.ts`
 - `apps/api/src/modules/ai/ai.routes.ts`
@@ -220,10 +342,22 @@ The existing game-review experiment should remain unchanged during this research
 - `apps/api/src/modules/ai/game-review/game-review.service.ts`
 - `apps/api/src/modules/ai/game-review/game-review.prompt.ts`
 - `packages/contracts/src/ai/ai.schemas.ts`
-- `apps/web/src/app/features/games/components/game-ai-review-widget.component.ts`
-- `apps/web/src/app/features/games/components/game-insights.component.ts`
-- `apps/web/src/app/features/games/pages/game-detail-page.component.ts`
+- `packages/contracts/src/candidate-decision/candidate-decision.schemas.ts`
+- `apps/web/src/app/core/ai/ai-capabilities.service.ts`
+- `apps/web/src/app/features/repertoire-builder/pages/repertoire-builder-page.component.ts`
+- `apps/web/src/app/features/repertoire-builder/pages/repertoire-builder-page.component.html`
+- `apps/web/src/app/features/repertoire-builder/components/repertoire-builder-workbench.component.ts`
+- `apps/web/src/app/features/repertoire-builder/components/repertoire-builder-workbench.component.html`
+- `apps/web/src/app/features/repertoire-builder/state/repertoire-builder.store.ts`
+- `apps/web/src/app/features/repertoire-builder/components/repertoire-builder-course-dialog.component.ts`
+- `apps/web/src/app/features/repertoire-builder/components/repertoire-builder-course-dialog.component.html`
+- `apps/web/src/app/features/repertoire-builder/state/repertoire-builder-course.store.ts`
+- `apps/web/src/app/features/repertoire-builder/data-access/repertoire-builder-api.service.ts`
 
 ## Validation state
 
-Repository CI will validate documentation and architecture consistency through the draft PR. No provider request, prompt prototype or human usefulness test has been performed yet. Those must not be represented as passed.
+Repository CI will validate the planning/task changes through draft PR #216.
+
+No provider request, generated prototype output, browser prototype, or human usefulness test has been performed. These are requirements of RB-019/RB-020 and must not be represented as completed in RB-015.
+
+External provider API behavior, pricing, privacy, and retention research remains required before RB-015 final completion.
