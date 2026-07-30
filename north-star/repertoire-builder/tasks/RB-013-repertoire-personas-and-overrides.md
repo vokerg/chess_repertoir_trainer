@@ -1,6 +1,6 @@
 # RB-013 — Support repertoire personas and profile overrides
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Dual-use
 
-Planning maturity: Bounded profile-to-Builder composition underway
+Planning maturity: Implemented bounded profile-to-Builder composition
 
 GitHub issue: `#101`
 
@@ -19,6 +19,8 @@ Claim PR: `#231`
 Claim branch: `rb-013/issue-101-profile-persona-claim`
 
 Implementation branch: `rb-013/issue-101-profile-persona-launch`
+
+Implementation PR: `#232`
 
 Claimed at: 2026-07-30
 
@@ -60,19 +62,22 @@ Satisfied for the bounded v1:
 
 Repository and issue closure state for RB-004/RB-005 remains stale and must be reconciled separately; it does not block use of their integrated runtime contracts.
 
-## In scope
+## Delivered scope
 
-- derive a deterministic setup suggestion from the loaded profile without assigning a permanent user persona;
-- expose the suggestion from `/progress/profile` only when eligible profile evidence exists;
-- allow the user to choose White or Black when both sides are present;
-- launch Builder with bounded profile provenance and suggested setup values;
-- show clearly that the profile is a starting point and every Builder control remains editable;
-- allow rejecting the suggestion and returning to standard Builder defaults;
-- record profile-derived `speedPreset`, `objective`, and `coverage` defaults through the existing RB-006 `PLAYER_PROFILE` source;
-- preserve peer-resolution population provenance separately;
-- make manual target choices take precedence and appear in exact `overriddenFields`;
-- preserve profile fit and selected-target fit as separate concepts;
-- add focused tests for default acceptance, partial override, complete rejection, malformed/stale launch input, and alternate persona selection.
+- deterministic suggestions are derived independently for eligible White and Black profile evidence;
+- a side requires at least five classified opening-group games before its Builder action appears;
+- the strongest weighted opening character maps to the existing Balanced, Solid, Aggressive, or Surprise preset;
+- profile speed, dominant theory burden, visible persona coverage default, provenance version, generation time, classification version, side, and evidence count travel through one bounded route snapshot;
+- route input expires after 24 hours and malformed, unsupported, future-dated, or stale input falls back safely;
+- the Builder displays profile source evidence and an explicit standard-default rejection action;
+- existing setup controls remain the only effective target editor;
+- profile-derived `speedPreset`, `objective`, and `coverage` use RB-006 `PLAYER_PROFILE` provenance;
+- population remains independent `PEER_RESOLUTION` or explicit manual evidence;
+- manual differences appear through exact RB-006 `overriddenFields`;
+- changing side removes profile provenance while preserving the values as manual choices;
+- persona cards expose preferred character, soundness, risk, complexity, theory, and coverage details;
+- profile launch composition is exposed through the Repertoire Builder public boundary;
+- no API, profile formula, ranking, reducer, course preview/apply, writer, persistence, migration, background job, AI, or trap behavior changed.
 
 ## Out of scope
 
@@ -89,39 +94,51 @@ Repository and issue closure state for RB-004/RB-005 remains stale and must be r
 ## Decisions for this bounded v1
 
 - Personas remain transparent Builder target presets, not factual player labels.
-- The profile produces one deterministic suggested setup per selected side; it does not create a saved persona.
-- Profile provenance is retained in the route-local target snapshot through RB-006 defaults.
-- Manual Builder edits always win and are recorded as overrides against the immutable suggested values.
-- Rejecting the profile suggestion restores the standard Builder setup and removes profile defaults from the target.
-- Persistent course intent and library presentation are deferred until route-local usage demonstrates that retained post-apply intent is valuable.
+- The profile produces one deterministic suggested setup per eligible side; it does not create a saved persona.
+- Profile provenance is retained only in the route-local RB-006 target snapshot.
+- Manual Builder edits always win and are recorded as overrides against immutable suggested values.
+- Rejecting the suggestion restores standard Builder setup and removes profile defaults.
+- Changing side rejects the side-specific profile inference and removes profile provenance.
+- Personas did not become course metadata in v1.
+- Persistent course intent and library presentation remain deferred until route-local use demonstrates value.
 
-## Acceptance criteria
+## Acceptance status
 
 - A profile-derived default can be accepted, edited, or rejected.
 - Manual target choices take precedence without altering the factual profile.
 - Persona labels expose their underlying preferred characters, soundness, risk, theory, complexity, and coverage values.
-- Candidate explanations continue to show profile fit and selected-target fit separately.
+- Candidate evidence continues to show profile fit and selected-target fit separately because no candidate-policy path changed.
 - Different Builder launches from the same profile can choose different personas without mutating the profile or each other.
-- A future traps persona can be added without changing the basic override model.
-- Malformed, incomplete, unsupported, or stale profile launch data falls back safely to ordinary Builder setup.
-- Tests cover default acceptance, partial override, complete rejection, and alternate-persona creation.
+- A future traps persona can be added without changing the override model.
+- Malformed, incomplete, unsupported, future-dated, or stale profile launch data falls back safely to ordinary Builder setup.
+- Tests cover default acceptance, partial override, complete rejection, alternate-persona creation, side-change rejection, and legacy launch compatibility.
 
-## Required validation
+## Validation
 
-- profile-to-setup pure-helper tests;
-- route launch serialization/parsing tests;
-- Builder target provenance and override tests;
-- profile page action/store tests;
-- Builder store/setup presentation tests;
-- responsive and keyboard-safe presentation review through existing component patterns;
-- complete repository CI before review.
+Implementation head `bf37e06ca20f157d2e6af16d2ad294263fab6df8`, tested against current `main` through merge commit `64853bc48d20c1b954434ab21d4cd3ba2b4b2ea1`, passed complete repository CI run `30583815998` / #1690 on 2026-07-30:
+
+- lint;
+- repository build;
+- generated opening-classification audit;
+- architecture guardrails;
+- database migrations;
+- imported-game opening-classification audit;
+- complete API and Angular tests.
+
+Focused validation covers side-specific suggestion derivation, evidence eligibility, strict and expiring route state, safe malformed fallback, initial-position/return routing, accepted defaults, separate peer provenance, partial overrides, alternate personas, side-change provenance removal, standard setup isolation, profile action composition, setup-dialog rejection, and Course-ending/Opponent-gap compatibility.
+
+Hands-on authenticated review against populated personal data and desktop/mobile visual review remain review activities.
 
 ## Completion updates
 
-The report must state whether personas became target presets, course metadata, or both, and whether new tasks are required for retained course intent or library presentation.
+Personas became route-local target presets only. They did not become course or line metadata.
+
+No new retained-intent or library-presentation task is created. Such a task should require demonstrated post-apply value rather than being added speculatively.
 
 ## Completion
 
-Report: none
+Report: `reports/RB-013-2026-07-30-profile-persona-launch.md`
 
-Completed at: none
+Review PR: `#232`
+
+Moved to review: 2026-07-30
