@@ -9,6 +9,9 @@ import {
   builderCourseDraftSchema,
   builderCourseReintegrationApplyResponseSchema,
   builderCourseReintegrationTargetSchema,
+  type BuilderCourseDraft,
+  type BuilderCourseReintegrationApplyResponse,
+  type BuilderCourseReintegrationTarget,
 } from '../courses';
 
 export const aiCapabilitiesResponseSchema = z.object({
@@ -98,12 +101,24 @@ export const aiBuilderCompletionSummaryIdentitySchema = z.object({
   courseContentRevision: z.number().int().positive(),
 });
 
-export const aiBuilderCompletionSummaryRequestSchema = z.object({
+export interface AiBuilderCompletionSummaryRequest {
+  draft: BuilderCourseDraft;
+  destination: {
+    courseId: number;
+    courseName: string;
+    chapterId: number;
+    chapterName: string;
+  };
+  selectedTarget: BuilderCourseReintegrationTarget;
+  applyResult: BuilderCourseReintegrationApplyResponse;
+}
+
+export const aiBuilderCompletionSummaryRequestSchema: z.ZodType<AiBuilderCompletionSummaryRequest> = z.object({
   draft: builderCourseDraftSchema,
   destination: aiBuilderCompletionSummaryDestinationSchema,
   selectedTarget: builderCourseReintegrationTargetSchema,
   applyResult: builderCourseReintegrationApplyResponseSchema,
-});
+}) as z.ZodType<AiBuilderCompletionSummaryRequest>;
 
 export const aiBuilderCompletionSummaryReferencedTextSchema = z.object({
   text: z.string().min(1).max(500),
@@ -204,7 +219,6 @@ export type AiBuilderCandidateExplanationFact = z.output<typeof aiBuilderCandida
 export type AiBuilderCandidateExplanationResponse = z.output<typeof aiBuilderCandidateExplanationResponseSchema>;
 export type AiBuilderCompletionSummaryDestination = z.output<typeof aiBuilderCompletionSummaryDestinationSchema>;
 export type AiBuilderCompletionSummaryIdentity = z.output<typeof aiBuilderCompletionSummaryIdentitySchema>;
-export type AiBuilderCompletionSummaryRequest = z.output<typeof aiBuilderCompletionSummaryRequestSchema>;
 export type AiBuilderCompletionSummaryContent = z.output<typeof aiBuilderCompletionSummaryContentSchema>;
 export type AiBuilderCompletionSummaryFact = z.output<typeof aiBuilderCompletionSummaryFactSchema>;
 export type AiBuilderCompletionSummaryAuthoritativeResult = z.output<typeof aiBuilderCompletionSummaryAuthoritativeResultSchema>;
