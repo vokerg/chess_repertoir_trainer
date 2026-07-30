@@ -41,7 +41,7 @@ export const aiBuilderCandidateExplanationTradeoffSchema = z.object({
 export const aiBuilderCandidateExplanationContentSchema = z.object({
   summary: z.string().min(1).max(900),
   tradeoffs: z.array(aiBuilderCandidateExplanationTradeoffSchema).max(3),
-  evidenceReferenceIds: z.array(aiBuilderCandidateExplanationFactIdSchema).max(3),
+  evidenceReferenceIds: z.array(aiBuilderCandidateExplanationFactIdSchema).min(1).max(3),
   missingEvidenceReferenceId: aiBuilderCandidateExplanationFactIdSchema.nullable(),
 });
 
