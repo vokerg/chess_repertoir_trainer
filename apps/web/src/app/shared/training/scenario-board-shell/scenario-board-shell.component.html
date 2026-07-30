@@ -31,15 +31,14 @@
     <aside class="scenario-side-panel">
       <ng-content />
 
-      <section class="move-list-panel">
-        <h3>Game context</h3>
+      <app-panel title="Game context" subtitle="Review the moves that led to the challenge position.">
         <app-move-tree
           [tree]="contextTree()"
           [selectedNodeId]="selectedContextPly()"
           rootLabel="Before"
           (nodeSelected)="selectTreeNode($event)"
         />
-      </section>
+      </app-panel>
     </aside>
   </div>
 </section>
