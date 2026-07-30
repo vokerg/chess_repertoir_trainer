@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -8,7 +8,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | ---: | --- | --- | --- | --- | --- | --- | --- |
 | 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | DONE | Establish program foundation and master plan | Research/planning | Squash-merged through PR #156 |
 | 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | DONE | Define onboarding lifecycle and default preparation recipe | Research | Squash-merged through PR #197 |
-| 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | REVIEW | Design bounded recent-first import and historical backfill | Research | ONB-000/001 |
+| 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | DONE | Design bounded recent-first import and historical backfill | Research | Squash-merged through PR #204 |
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | READY | Design progressive indexing and analysis orchestration | Research | ONB-000/001; consumes ONB-002 handoff; coordinates ONB-007 |
 | 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | READY | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | ONB-000/001; consumes ONB-002 active-import boundary |
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000/001; consumes ONB-002 sizing handoff |
@@ -29,7 +29,9 @@ ONB-000 established the program through squash-merged PR #156.
 
 ONB-001 established the lifecycle/default recipe through squash-merged PR #197 and allocated ONB-008 through ONB-010.
 
-## ONB-002 review delivery
+ONB-002 established bounded import/backfill contracts through squash-merged PR #204 and allocated ONB-011 through ONB-015.
+
+## ONB-002 completed delivery
 
 ONB-002 defines:
 
@@ -48,7 +50,7 @@ ONB-002 defines:
 
 ## Deterministic next task
 
-ONB-003 / #150 is the lowest-order READY task after ONB-002 entered review.
+ONB-003 / #150 is the lowest-order READY task after ONB-002 completion.
 
 It owns the preparation parent, bounded index/analysis waves, import-progress reconciliation, and the choice of batch-versus-window pipelining.
 
