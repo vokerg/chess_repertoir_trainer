@@ -123,7 +123,8 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
   const filterSummary = boundedText(params.get('filterSummary'), 1_000);
   const sourceFilters = boundedTextAllowEmpty(params.get('sourceFilters'), 8_000);
   const startingFen = fullFen(params.get('fen'));
-  const side = params.get('side');
+  const rawSide = params.get('side');
+  const side = rawSide === 'WHITE' || rawSide === 'BLACK' ? rawSide : null;
   const observedMoveUci = params.get('moveUci')?.trim().toLowerCase() ?? '';
   const observedMoveSan = optionalBoundedText(params.get('moveSan'), 30);
 
@@ -144,7 +145,7 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
     || !filterSummary
     || sourceFilters === null
     || !startingFen
-    || (side !== 'WHITE' && side !== 'BLACK')
+    || side === null
     || !UCI_PATTERN.test(observedMoveUci)
   ) {
     return invalidLaunch(source);
