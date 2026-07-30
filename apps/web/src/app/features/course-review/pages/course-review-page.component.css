@@ -1,57 +1,90 @@
-.course-review-page {
+:host {
+  display: block;
   min-width: 0;
 }
 
+.course-review-page,
 .review-filter-panel {
   min-width: 0;
 }
 
 .review-filter-content {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-3);
 }
 
 .review-filter-toggle {
-  width: 100%;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
   text-align: left;
 }
 
+.review-filter-toggle:hover {
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+}
+
 .review-filter-toggle small {
-  color: var(--muted);
-  font-weight: 600;
   overflow: hidden;
+  color: var(--ui-text-muted);
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.review-filter-toggle strong {
+  color: var(--ui-action-strong);
 }
 
 .review-criteria {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 120px auto;
   align-items: end;
-  gap: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ui-border);
 }
 
 .review-criteria-copy {
   gap: 0.35rem;
 }
 
+.review-criteria input {
+  width: 100%;
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .field-hint {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.82rem;
+  color: var(--ui-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .review-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-2);
 }
 
+.review-filter-toggle:focus-visible,
+.review-criteria input:focus-visible,
+.review-actions button:focus-visible,
+.subtle-link:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Keep in sync with the review-workspace collapse. */
 @media (max-width: 900px) {
   .review-criteria {
     grid-template-columns: 1fr;
@@ -61,16 +94,33 @@
   .review-actions {
     flex-wrap: wrap;
   }
+
+  .review-actions > * {
+    flex: 1 1 140px;
+  }
 }
 
+/* Keep in sync with the shared compact breakpoint. */
 @media (max-width: 640px) {
   .review-filter-toggle {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
   }
 
   .review-filter-toggle small {
     grid-column: 1 / -1;
     grid-row: 2;
     white-space: normal;
+  }
+
+  .review-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-filter-toggle {
+    transition: none;
   }
 }
