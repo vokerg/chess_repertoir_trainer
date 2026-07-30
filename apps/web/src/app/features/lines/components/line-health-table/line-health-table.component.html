@@ -39,7 +39,7 @@
               {{ trainingStatusLabel(line.trainingStats.status) }}
             </span>
           </td>
-          <td class="numeric-cell">{{ line.sideToTrain }}</td>
+          <td>{{ line.sideToTrain }}</td>
           <td class="numeric-cell">{{ line.trainingStats.activeSublineCount }}</td>
           <td class="numeric-cell">{{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }}</td>
           <td class="numeric-cell">{{ percentLabel(line.trainingStats.passRate) }}</td>
