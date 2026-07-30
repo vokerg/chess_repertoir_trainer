@@ -1,8 +1,6 @@
 import {
   aiBuilderCandidateExplanationContentSchema,
   aiBuilderCandidateExplanationResponseSchema,
-  type AiBuilderCandidateExplanationContent,
-  type AiBuilderCandidateExplanationFact,
   type AiBuilderCandidateExplanationRequest,
   type AiBuilderCandidateExplanationResponse,
 } from '@chess-trainer/contracts/ai';
@@ -10,12 +8,12 @@ import type {
   CandidateDecisionCandidate,
   CandidateDecisionRequest,
   CandidateDecisionResponse,
-  CandidateEvidenceStatus,
 } from '@chess-trainer/contracts/candidate-decision';
 import { CandidateDecisionService } from '../../../candidate-decision/candidate-decision.service';
 import { loadAiConfig, type AiConfig } from '../../ai.config';
 import { AiFeatureError } from '../../ai.errors';
 import { OpenAiCompatibleLlmClient } from '../../openai-compatible-llm.client';
+import { buildCandidateExplanationContext } from './candidate-explanation-context';
 import { BUILDER_CANDIDATE_EXPLANATION_SYSTEM_PROMPT } from './candidate-explanation.prompt';
 
 const SCHEMA_VERSION = 1;
@@ -60,7 +58,7 @@ export function createCandidateExplanationService(
       const authoritativeRequest: CandidateDecisionRequest = {
         ...request.decisionRequest,
         candidateLimit: 8,
-        includeMoveUci: request.identity.comparisonMoveUci ?? request.identity.selectedMoveUci,
+        includeMoveUci: request.identity.selectedMoveUci,
       };
 
       let response: CandidateDecisionResponse;
@@ -79,26 +77,19 @@ export function createCandidateExplanationService(
         throw new AiFeatureError(409, 'AI_CONTEXT_INVALID', 'Comparison candidate must differ from the selected candidate.');
       }
 
-      const facts = buildFacts(response, selected, comparison);
-      const factsById = new Map(facts.map((fact) => [fact.id, fact]));
+      const context = buildCandidateExplanationContext(response, selected, comparison);
       const generated = await deps.createClient(config, logger).generateJson({
         useCase: 'builder-candidate-explanation',
         systemPrompt: BUILDER_CANDIDATE_EXPLANATION_SYSTEM_PROMPT,
         input: {
           selectedCandidate: candidateIdentity(selected),
           comparisonCandidate: comparison ? candidateIdentity(comparison) : null,
-          facts,
+          facts: context.facts,
         },
         outputSchema: aiBuilderCandidateExplanationContentSchema,
         maxOutputTokens: 900,
       });
-
-      const explanation = reconcileExplanation(
-        generated.value,
-        factsById,
-        new Set([selected.moveUci, comparison?.moveUci].filter(isString)),
-      );
-      const referencedFacts = collectReferencedFacts(explanation, factsById);
+      const explanation = context.reconcile(generated.value);
 
       return aiBuilderCandidateExplanationResponseSchema.parse({
         kind: 'BUILDER_CANDIDATE_EXPLANATION',
@@ -108,7 +99,7 @@ export function createCandidateExplanationService(
         selectedCandidate: candidateIdentity(selected),
         comparisonCandidate: comparison ? candidateIdentity(comparison) : null,
         explanation,
-        referencedFacts,
+        referencedFacts: context.referencedFacts(explanation),
         disclaimer: DISCLAIMER,
       });
     },
@@ -147,211 +138,12 @@ function findCandidate(
   return candidate;
 }
 
-function buildFacts(
-  response: CandidateDecisionResponse,
-  selected: CandidateDecisionCandidate,
-  comparison: CandidateDecisionCandidate | null,
-): AiBuilderCandidateExplanationFact[] {
-  const facts = new Map<string, AiBuilderCandidateExplanationFact>();
-  const add = (fact: AiBuilderCandidateExplanationFact) => facts.set(fact.id, fact);
-
-  for (const [source, status] of Object.entries(response.sourceSummary)) {
-    add({
-      id: `source.${source.toLowerCase()}`,
-      label: `${humanize(source)} source`,
-      value: humanize(status),
-      missing: status !== 'AVAILABLE',
-    });
-  }
-
-  addCandidateFacts(add, 'selected', selected);
-  if (comparison) addCandidateFacts(add, 'comparison', comparison);
-  return [...facts.values()];
-}
-
-function addCandidateFacts(
-  add: (fact: AiBuilderCandidateExplanationFact) => void,
-  prefix: 'selected' | 'comparison',
-  candidate: CandidateDecisionCandidate,
-): void {
-  addFact(add, `${prefix}.move`, `${humanize(prefix)} move`, `${candidate.moveSan} (${candidate.moveUci})`);
-  addFact(add, `${prefix}.rank`, `${humanize(prefix)} deterministic rank`, `#${candidate.rank}`);
-  addFact(add, `${prefix}.eligibility`, `${humanize(prefix)} eligibility`, humanize(candidate.eligibility.status));
-  addFact(add, `${prefix}.target_fit`, `${humanize(prefix)} target fit`, humanize(candidate.targetFit.status));
-  addFact(add, `${prefix}.profile_fit`, `${humanize(prefix)} profile fit`, humanize(candidate.profileFit.status));
-
-  for (const code of candidate.reasonCodes) {
-    addFact(add, `${prefix}.reason.${code.toLowerCase()}`, `${humanize(prefix)} reason`, humanize(code));
-  }
-  for (const code of candidate.warningCodes) {
-    addFact(add, `${prefix}.warning.${code.toLowerCase()}`, `${humanize(prefix)} warning`, humanize(code));
-  }
-
-  const engine = candidate.evidence.engine;
-  addStatusFact(add, `${prefix}.engine_status`, `${humanize(prefix)} engine evidence`, engine.status);
-  if (engine.scoreCpForTarget !== null) {
-    addFact(add, `${prefix}.engine_score`, `${humanize(prefix)} engine score`, formatCentipawns(engine.scoreCpForTarget));
-  }
-  if (engine.depth !== null) {
-    addFact(add, `${prefix}.engine_depth`, `${humanize(prefix)} engine depth`, String(engine.depth));
-  }
-
-  addCorpusFacts(add, prefix, 'population', candidate.evidence.population);
-  addCorpusFacts(add, prefix, 'masters', candidate.evidence.masters);
-
-  const personal = candidate.evidence.personal;
-  addStatusFact(add, `${prefix}.personal_status`, `${humanize(prefix)} personal evidence`, personal.status);
-  if (personal.occurrences > 0) {
-    addFact(add, `${prefix}.personal_occurrences`, `${humanize(prefix)} personal occurrences`, String(personal.occurrences));
-  }
-  if (personal.scorePercent !== null) {
-    addFact(add, `${prefix}.personal_score`, `${humanize(prefix)} personal score`, formatPercent(personal.scorePercent));
-  }
-
-  const opening = candidate.evidence.opening;
-  addStatusFact(add, `${prefix}.opening_status`, `${humanize(prefix)} opening evidence`, opening.status);
-  if (opening.opening) {
-    addFact(add, `${prefix}.opening_name`, `${humanize(prefix)} opening`, opening.opening.name);
-  }
-
-  const course = candidate.evidence.course;
-  addStatusFact(add, `${prefix}.course_status`, `${humanize(prefix)} course evidence`, course.status);
-  addFact(
-    add,
-    `${prefix}.course_state`,
-    `${humanize(prefix)} course state`,
-    course.conflict ? 'Conflict' : course.covered ? 'Covered' : course.transposesToCoveredPosition ? 'Transposes to coverage' : 'New',
-  );
-
-  addStatusFact(
-    add,
-    `${prefix}.player_profile_status`,
-    `${humanize(prefix)} player profile evidence`,
-    candidate.evidence.playerProfile.status,
-  );
-
-  if (candidate.coverage?.contributionPercent !== null && candidate.coverage?.contributionPercent !== undefined) {
-    addFact(
-      add,
-      `${prefix}.coverage_contribution`,
-      `${humanize(prefix)} coverage contribution`,
-      formatPercent(candidate.coverage.contributionPercent),
-    );
-  }
-}
-
-function addCorpusFacts(
-  add: (fact: AiBuilderCandidateExplanationFact) => void,
-  prefix: 'selected' | 'comparison',
-  source: 'population' | 'masters',
-  evidence: CandidateDecisionCandidate['evidence']['population'],
-): void {
-  addStatusFact(add, `${prefix}.${source}_status`, `${humanize(prefix)} ${source} evidence`, evidence.status);
-  if (evidence.games > 0) addFact(add, `${prefix}.${source}_games`, `${humanize(prefix)} ${source} games`, String(evidence.games));
-  if (evidence.frequencyPercent !== null) {
-    addFact(add, `${prefix}.${source}_frequency`, `${humanize(prefix)} ${source} frequency`, formatPercent(evidence.frequencyPercent));
-  }
-  if (evidence.scorePercentForTarget !== null) {
-    addFact(add, `${prefix}.${source}_score`, `${humanize(prefix)} ${source} score`, formatPercent(evidence.scorePercentForTarget));
-  }
-}
-
-function addStatusFact(
-  add: (fact: AiBuilderCandidateExplanationFact) => void,
-  id: string,
-  label: string,
-  status: CandidateEvidenceStatus,
-): void {
-  add({ id, label, value: humanize(status), missing: status !== 'AVAILABLE' });
-}
-
-function addFact(
-  add: (fact: AiBuilderCandidateExplanationFact) => void,
-  id: string,
-  label: string,
-  value: string,
-): void {
-  add({ id, label, value, missing: false });
-}
-
-function reconcileExplanation(
-  explanation: AiBuilderCandidateExplanationContent,
-  factsById: ReadonlyMap<string, AiBuilderCandidateExplanationFact>,
-  allowedMoves: ReadonlySet<string>,
-): AiBuilderCandidateExplanationContent {
-  const referenceIds = [
-    ...explanation.evidenceReferenceIds,
-    ...explanation.tradeoffs.flatMap((tradeoff) => tradeoff.evidenceReferenceIds),
-    ...(explanation.missingEvidenceReferenceId ? [explanation.missingEvidenceReferenceId] : []),
-  ];
-  if (referenceIds.length === 0) {
-    throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI explanation did not reference authoritative evidence.');
-  }
-  for (const referenceId of referenceIds) {
-    if (!factsById.has(referenceId)) {
-      throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI explanation referenced unsupported evidence.');
-    }
-  }
-  if (explanation.missingEvidenceReferenceId
-    && !factsById.get(explanation.missingEvidenceReferenceId)?.missing) {
-    throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI explanation marked available evidence as missing.');
-  }
-
-  const text = [explanation.summary, ...explanation.tradeoffs.map((tradeoff) => tradeoff.text)].join(' ');
-  if (/\b(i recommend|you should|you must|must play|choose this|pick this|the move to play)\b/i.test(text)) {
-    throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI explanation attempted to recommend a move.');
-  }
-  const mentionedMoves = text.match(/\b[a-h][1-8][a-h][1-8][qrbn]?\b/gi) ?? [];
-  if (mentionedMoves.some((move) => !allowedMoves.has(move.toLowerCase()))) {
-    throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI explanation referenced an unsupported move.');
-  }
-
-  return explanation;
-}
-
-function collectReferencedFacts(
-  explanation: AiBuilderCandidateExplanationContent,
-  factsById: ReadonlyMap<string, AiBuilderCandidateExplanationFact>,
-): AiBuilderCandidateExplanationFact[] {
-  const ids = new Set([
-    ...explanation.evidenceReferenceIds,
-    ...explanation.tradeoffs.flatMap((tradeoff) => tradeoff.evidenceReferenceIds),
-    ...(explanation.missingEvidenceReferenceId ? [explanation.missingEvidenceReferenceId] : []),
-  ]);
-  return [...ids].map((id) => factsById.get(id)).filter(isFact);
-}
-
 function candidateIdentity(candidate: CandidateDecisionCandidate) {
   return {
     moveUci: candidate.moveUci,
     moveSan: candidate.moveSan,
     rank: candidate.rank,
   };
-}
-
-function formatCentipawns(score: number): string {
-  const pawns = score / 100;
-  return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
-}
-
-function formatPercent(value: number): string {
-  return `${Math.round(value * 10) / 10}%`;
-}
-
-function humanize(value: string): string {
-  return value
-    .replaceAll('_', ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .toLowerCase()
-    .replace(/^./, (letter) => letter.toUpperCase());
-}
-
-function isString(value: string | null | undefined): value is string {
-  return typeof value === 'string';
-}
-
-function isFact(value: AiBuilderCandidateExplanationFact | undefined): value is AiBuilderCandidateExplanationFact {
-  return value !== undefined;
 }
 
 export const CandidateExplanationService = createCandidateExplanationService();
