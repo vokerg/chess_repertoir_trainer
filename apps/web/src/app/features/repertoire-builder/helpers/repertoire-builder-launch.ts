@@ -124,7 +124,9 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
   const sourceFilters = boundedTextAllowEmpty(params.get('sourceFilters'), 8_000);
   const startingFen = fullFen(params.get('fen'));
   const rawSide = params.get('side');
-  const side = rawSide === 'WHITE' || rawSide === 'BLACK' ? rawSide : null;
+  const side: 'WHITE' | 'BLACK' | null = rawSide === 'WHITE' || rawSide === 'BLACK'
+    ? rawSide
+    : null;
   const observedMoveUci = params.get('moveUci')?.trim().toLowerCase() ?? '';
   const observedMoveSan = optionalBoundedText(params.get('moveSan'), 30);
 
