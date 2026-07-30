@@ -143,8 +143,7 @@ describe('repertoire builder launch payload', () => {
   });
 
   it('rejects an Opponent gap without an explicit anchor kind', () => {
-    const query = { ...opponentGapQuery() };
-    delete query.anchorKind;
+    const { anchorKind: _anchorKind, ...query } = opponentGapQuery();
     const parsed = parseRepertoireBuilderLaunch(convertToParamMap(query));
 
     expect(parsed.context).toBeNull();
