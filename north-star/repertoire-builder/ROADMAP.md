@@ -240,24 +240,37 @@ Gate: passed for the accepted materialization and coverage-extension adaptation 
 
 ## Stage 7 — specialized personas and optional intelligence
 
-State: RB-013 and RB-015 are proposed. RB-014 discovery is complete through PR #113, and RB-017 is the approved isolated traps pilot.
+State: RB-015 is complete through squash-merged PR #216. RB-014 discovery is complete through PR #113. RB-017 is the approved isolated traps pilot and remains claimed. RB-013 is proposed but blocked. RB-019 and RB-020 are proposed P3 stretch prototypes.
 
 Goals:
 
 - support multiple purposeful repertoires for the same opening;
 - make profile-derived defaults optional and editable without changing factual profile evidence;
 - validate trap knowledge reproducibly before production work;
-- determine whether an LLM adds value without becoming a factual dependency.
+- test whether generated interpretation adds value without becoming factual, decision, reducer, preview/apply or write authority.
 
 RB-013 remains blocked until RB-004/RB-005 are accepted and integrated.
 
 RB-017 remains limited to 20–50 source-controlled occurrences, deterministic validation, versioned engine/population snapshots, explicit missing evidence, review output, tests and documentation. It must not add production persistence, public API, Angular UI, course writes, or builder integration.
 
-RB-015 is available as bounded research because deterministic evidence, ranking and visual interaction are now sufficiently mature to identify concrete explanation gaps. It must not add production provider infrastructure without a separately approved use case.
+RB-015 delivered:
 
-Tasks: RB-013, RB-014, RB-017, RB-015.
+- verification of the existing optional AI provider/capability/validation architecture;
+- a locked read-only leaf boundary over immutable deterministic snapshots;
+- explicit prohibition on generated input to RB-007 ranking, RB-009 reducers/queue, completion eligibility, RB-011 preview/apply and course writes;
+- independent global-plus-use-case feature gates, transient lifetime, failure isolation and purge requirements;
+- RB-019/#218 for advisory candidate explanation beside Focused evidence;
+- RB-020/#219 for post-apply summary after the authoritative result;
+- profile narrative deferral until accepted populated profile UX demonstrates a gap;
+- current official DeepSeek API/pricing/privacy review with re-verification required at prototype implementation.
 
-Gate: RB-017 proves whether the trap model survives review; RB-015 must make a clear proceed/defer/reject recommendation. Separate user decisions are required before production work.
+PR #216 final research head `7e7495485969c8dca1c515066c41df472817b6e8` passed CI #1617 and was squash-merged as `9a4e6166c9a874b8cb5b5efb04a2a4661e848d45`.
+
+RB-019 and RB-020 remain separate non-critical prototypes. They may not introduce a generic mutable Builder-AI layer, persistence by default, automatic generation or generated commands.
+
+Tasks: RB-013, RB-014, RB-015, RB-017, RB-019, RB-020.
+
+Gate: RB-015 decision gate passed. RB-017 must prove whether the trap model survives review. RB-019/RB-020 each require explicit claim, implementation review, deterministic controls and human usefulness evidence before any retention or promotion decision.
 
 ## Stage 8 — outcome feedback
 
@@ -279,7 +292,7 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- RB-015 bounded LLM-role research;
+- RB-019 or RB-020 only after an explicit stretch-goal claim;
 - post-merge populated-browser calibration of Course endings and Opponent gaps;
 - RB-017 bounded traps pilot.
 
@@ -290,15 +303,15 @@ High-collision areas requiring coordination:
 - any new persistence or migration;
 - course preview and writes;
 - profile/persona defaults;
-- future trap or LLM evidence in candidate contracts.
+- future trap or AI evidence in candidate contracts.
 
 ## Queue impact
 
-- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014 and RB-018 are `DONE`.
+- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014, RB-015 and RB-018 are `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
 - RB-013 remains proposed but blocked on accepted profile implementation.
 - RB-017 remains `CLAIMED` and isolated.
-- RB-015 is the next unclaimed task whose dependency condition is satisfied.
+- RB-019 and RB-020 remain `PROPOSED` P3 stretch prototypes.
 - RB-016 remains blocked on real product use.
-- No priority change or roadmap resequencing is required.
+- No critical-path priority change or roadmap resequencing is required.
