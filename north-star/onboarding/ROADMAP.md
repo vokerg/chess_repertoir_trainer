@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -9,7 +9,7 @@ Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 ```text
 ONB-001 lifecycle/default recipe — DONE
         +
-ONB-002 durable bounded import/backfill — REVIEW
+ONB-002 durable bounded import/backfill — DONE
         +
 ONB-003 progressive preparation orchestration
         +
@@ -70,7 +70,7 @@ Delivered:
 ### P0 critical path
 
 - ONB-001 / #148 — lifecycle/default recipe — `DONE` through PR #197.
-- ONB-002 / #149 — bounded import/backfill — `REVIEW`.
+- ONB-002 / #149 — bounded import/backfill — `DONE` through PR #204.
 - ONB-003 / #150 — preparation orchestration — `READY`.
 - ONB-004 / #151 — destructive lifecycle — `READY`.
 - ONB-007 / #154 — throughput/progress — `READY`.
@@ -128,7 +128,6 @@ Implementation tasks:
 
 Blocked on:
 
-- ONB-002 acceptance;
 - ONB-004 for final destructive cutover;
 - ONB-007 for production operational defaults.
 
@@ -218,140 +217,3 @@ Expected implementation deliveries:
 7. import batch/window pipelining policy;
 8. pause/resume/cancel/retry propagation;
 9. restart/concurrency tests.
-
-Exit:
-
-- recent games become indexed progressively;
-- analysis begins only for indexed games;
-- exact partial/failure states are persisted;
-- direct user jobs remain responsive;
-- no browser advances the workflow;
-- one-active-preparation invariant is verified.
-
-## Phase 6 — Disposition and readiness projection
-
-Primary task: ONB-008 / [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193), `PROPOSED`.
-
-Blocked on the physical preparation model and stable import projection.
-
-Expected deliveries:
-
-- shared onboarding/readiness contracts;
-- user disposition/preparation persistence;
-- legacy-user adoption;
-- authenticated read projection;
-- stage/milestone/count/warning/readiness facts;
-- bounded ownership/migration/threshold tests.
-
-## Phase 7 — Lifecycle commands
-
-Primary task: ONB-009 / [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194), `PROPOSED`.
-
-Blocked on ONB-008 and durable import/preparation implementations.
-
-Expected deliveries:
-
-- start default recipe;
-- skip guidance;
-- pause/resume;
-- acknowledged cancel;
-- retry;
-- explicit expansion;
-- core-ready transition;
-- idempotency/ownership/restart/concurrency tests.
-
-## Phase 8 — Functional onboarding experience
-
-Primary task: ONB-010 / [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195), `PROPOSED`.
-
-Blocked on lifecycle commands and Visual Transformation coordination.
-
-Expected deliveries:
-
-- Angular onboarding feature and typed client;
-- welcome/account/recipe start;
-- progress/readiness/recovery;
-- Home start/resume and compact preparation card;
-- navigation/cross-session re-entry;
-- server-allowed controls;
-- job-panel coexistence;
-- focused browser/responsive/keyboard/screen-reader validation.
-
-## Phase 9 — Read-only administration
-
-Blocked on ONB-005 and stable preparation/import contracts.
-
-Expected deliveries:
-
-- administrator guard/capability;
-- audit foundation;
-- paginated users;
-- account/import/job/preparation detail;
-- game-state aggregates;
-- read-only course inventory;
-- stalled-work diagnostics.
-
-## Phase 10 — Destructive lifecycle actions
-
-Blocked on ONB-004 and read-only administration.
-
-Order:
-
-1. preview/idempotency/action status;
-2. purge imported data while retaining account;
-3. acknowledged account deletion;
-4. un-analyse;
-5. un-index/index reset;
-6. whole-user deletion;
-7. onboarding disposition/import coverage reconciliation;
-8. large-data and active-worker race validation.
-
-## Phase 11 — Shared-position maintenance
-
-Blocked on ONB-006 and admin action foundation.
-
-Expected deliveries:
-
-- orphan dry-run;
-- bounded manual cleanup;
-- progress/cancel/audit;
-- concurrency/performance validation;
-- scheduling decision.
-
-## Phase 12 — Release hardening and feedback
-
-- privacy/data-control wording;
-- onboarding milestone metrics;
-- provider outage drills;
-- import/game worker restart drills;
-- disabled-analysis drills;
-- large-account capacity validation;
-- multi-account and older-history expansion;
-- purge and explicit re-onboarding;
-- admin runbook;
-- final visual/accessibility acceptance with #133;
-- downstream handoff to Repertoire Builder #105;
-- native mobile follow-up decision.
-
-## Parallelism rules
-
-Safe research:
-
-- ONB-003, ONB-004, and ONB-007 may run in parallel after collision review.
-- ONB-005 may progress on auth/read models but not destructive actions before ONB-004.
-- ONB-006 may progress on cleanup SQL/races but must align with ONB-005 action shape.
-
-Safe implementation after dependencies:
-
-- ONB-013 and ONB-014 can run in parallel after ONB-011/012.
-
-Unsafe implementation:
-
-- claim ONB-011 before ONB-002 acceptance;
-- claim ONB-008 before ONB-003 settles the preparation persistence boundary;
-- claim ONB-009 before durable import/preparation and ONB-008 exist;
-- edit account-delete/reset behavior before ONB-004;
-- onboarding route work during conflicting Visual Transformation route/layout changes;
-- competing Prisma migrations for lifecycle/import models;
-- separate changes to worker/import priorities without one owner;
-- introduce a broker, second deployment, or generic workflow abstraction without new evidence.
