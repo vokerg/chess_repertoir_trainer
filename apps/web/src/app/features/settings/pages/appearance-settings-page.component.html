@@ -1,0 +1,72 @@
+<section class="appearance-settings-page stack">
+  <app-page-header
+    title="Appearance"
+    subtitle="Choose the board feedback preferences used on this device."
+  />
+
+  <app-panel
+    title="Board sounds"
+    subtitle="Use original in-browser sound design without copying sounds from another chess site."
+  >
+    <div class="sound-settings">
+      <label class="setting-field">
+        <span class="setting-label">Sound pack</span>
+        <select [value]="sounds.pack()" (change)="changePack($event)">
+          @for (option of soundPacks; track option.id) {
+            <option [value]="option.id">{{ option.label }}</option>
+          }
+        </select>
+        <span class="setting-help">{{ selectedPackDescription() }}</span>
+      </label>
+
+      <label class="setting-field">
+        <span class="setting-heading">
+          <span class="setting-label">Volume</span>
+          <strong>{{ volumePercent() }}%</strong>
+        </span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          [value]="volumePercent()"
+          [disabled]="sounds.pack() === 'silent'"
+          (input)="changeVolume($event)"
+          aria-label="Board sound volume"
+        />
+        <span class="setting-help">Stored locally in this browser.</span>
+      </label>
+
+      <div class="preview-group" aria-label="Sound previews">
+        <span class="setting-label">Preview</span>
+        <p class="setting-help">Test the current pack without leaving this page.</p>
+        <div class="preview-actions">
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="sounds.pack() === 'silent'"
+            (click)="preview('move')"
+          >
+            Move
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="sounds.pack() === 'silent'"
+            (click)="preview('capture')"
+          >
+            Capture
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            [disabled]="sounds.pack() === 'silent'"
+            (click)="preview('error')"
+          >
+            Error
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-panel>
+</section>
