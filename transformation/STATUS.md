@@ -18,7 +18,7 @@ Last updated: 2026-07-30
 **Active pull requests:**
 
 - draft PR #196 — Progress account dashboard; repository CI passed, browser review pending;
-- Settings batch PR pending.
+- draft PR #209 — Settings; repository CI and browser review pending.
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -94,7 +94,7 @@ Deferred evidence is not represented as observed validation and did not block th
 
 Issues #123–#131 are complete.
 
-Issue #132 / VT-301 remains `IN_PROGRESS`. Batch 1 is draft PR #196. Batch 2 is integrated through PR #206. Batch 3 Settings is active. Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
+Issue #132 / VT-301 remains `IN_PROGRESS`. Batch 1 is draft PR #196. Batch 2 is integrated through PR #206. Batch 3 is draft PR #209. Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
 
 ## Validation status
 
@@ -104,6 +104,7 @@ Issue #132 / VT-301 remains `IN_PROGRESS`. Batch 1 is draft PR #196. Batch 2 is 
 - VT-205 implementation CI #1461 and exact approved-head CI #1472 passed.
 - VT-301 Batch 1 CI #1480 passed; direct browser review remains pending.
 - VT-301 Batch 2 CI #1521 passed on exact head `6dc2a8d7e8d6ae4fa0984348dcd3cb4e07778e76`; direct browser review was explicitly deferred before squash merge.
+- VT-301 Batch 3 PR #209 repository CI and direct browser review remain pending.
 
 ## Open design and product decisions
 
@@ -141,6 +142,7 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 - Inspected the current Settings routes, account/import page, Lichess OAuth page, Appearance sound-preference page, shared fact-grid contract, token contract, route registration, issue state, and open PR collisions.
 - Claimed VT-301 Batch 3 and created `visual-transformation/vt-301-settings` from current `main`.
 - Migrated the three Settings routes to production roles, reused `app-fact-grid` for account and Lichess facts, and externalized the Appearance template/styles without changing feature behavior.
+- Opened draft PR #209 against `main`.
 - Local application checks remain unavailable; repository CI and browser review remain required.
 
 ### Earlier integrated checkpoints
