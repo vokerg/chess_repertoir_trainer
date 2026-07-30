@@ -15,15 +15,18 @@ export interface CourseReviewFindingExampleViewModel {
 }
 
 export interface CourseReviewFindingLineReferenceViewModel {
+  anchorKind: 'LINE_START' | 'NODE';
   lineId: number;
   lineName: string;
   chapterId: number;
-  nodeId: number;
+  nodeId: number | null;
   moveSequenceSan: string | null;
 }
 
-export interface CourseReviewEndingBuilderContextViewModel {
+export interface CourseReviewBuilderContextViewModel {
+  source: 'COURSE_ENDING' | 'OPPONENT_GAP';
   sourceKey: string;
+  startingFen: string;
   side: 'WHITE' | 'BLACK';
   observedMoveUci: string;
   observedMoveSan: string | null;
@@ -43,7 +46,7 @@ export interface CourseReviewFindingViewModel {
   results: { win: number; draw: number; loss: number; unknown: number };
   examples: readonly CourseReviewFindingExampleViewModel[];
   lineReferences: readonly CourseReviewFindingLineReferenceViewModel[];
-  courseEndingBuilderContext: CourseReviewEndingBuilderContextViewModel | null;
+  builderContext: CourseReviewBuilderContextViewModel | null;
 }
 
 export function mapCourseReviewGroup(
@@ -70,8 +73,26 @@ export function mapCourseReviewGroup(
     count: group.count,
     results: group.results,
     examples: group.examples,
-    lineReferences: [],
-    courseEndingBuilderContext: null,
+    lineReferences: opponentGap
+      ? group.lineAnchors.map((anchor) => ({
+          anchorKind: anchor.kind,
+          lineId: anchor.lineId,
+          lineName: anchor.lineName,
+          chapterId: anchor.chapterId,
+          nodeId: anchor.nodeId,
+          moveSequenceSan: anchor.moveSequenceSan,
+        }))
+      : [],
+    builderContext: opponentGap
+      ? {
+          source: 'OPPONENT_GAP',
+          sourceKey: group.key,
+          startingFen: group.normalizedFenBefore,
+          side: oppositeColor(group.sideToMove),
+          observedMoveUci: group.playedMoveUci,
+          observedMoveSan: group.playedSan,
+        }
+      : null,
   };
 }
 
@@ -93,14 +114,17 @@ export function mapCourseExtensionCandidate(
     results: candidate.results,
     examples: candidate.examples,
     lineReferences: candidate.lineRefs.map((lineRef) => ({
+      anchorKind: 'NODE',
       lineId: lineRef.lineId,
       lineName: lineRef.lineName,
       chapterId: lineRef.chapterId,
       nodeId: lineRef.nodeId,
       moveSequenceSan: lineRef.moveSequenceSan,
     })),
-    courseEndingBuilderContext: {
+    builderContext: {
+      source: 'COURSE_ENDING',
       sourceKey: candidate.key,
+      startingFen: candidate.normalizedFen,
       side: candidate.userColor,
       observedMoveUci: candidate.moveUci,
       observedMoveSan: candidate.moveSan,
@@ -128,4 +152,8 @@ function colorPov(color: 'WHITE' | 'BLACK'): 'white' | 'black' {
 
 function oppositePov(color: 'WHITE' | 'BLACK'): 'white' | 'black' {
   return color === 'WHITE' ? 'black' : 'white';
+}
+
+function oppositeColor(color: 'WHITE' | 'BLACK'): 'WHITE' | 'BLACK' {
+  return color === 'WHITE' ? 'BLACK' : 'WHITE';
 }
