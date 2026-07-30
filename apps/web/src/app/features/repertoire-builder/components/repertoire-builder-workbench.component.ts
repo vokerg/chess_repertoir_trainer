@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import type { AiBuilderCandidateExplanationResponse } from '@chess-trainer/contracts/ai';
 import type {
   CandidateDecisionCandidate,
   CandidateDecisionResponse,
@@ -27,7 +28,10 @@ export interface RepertoireBuilderQueueMove {
   standalone: true,
   imports: [ChessgroundBoardComponent, PanelComponent],
   templateUrl: './repertoire-builder-workbench.component.html',
-  styleUrl: './repertoire-builder-workbench.component.css',
+  styleUrls: [
+    './repertoire-builder-workbench.component.css',
+    './repertoire-builder-workbench-explanation.component.css',
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepertoireBuilderWorkbenchComponent {
@@ -57,6 +61,11 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly canFinishSession = input(false);
   readonly completed = input(false);
   readonly abandoned = input(false);
+  readonly candidateExplanationAvailable = input(false);
+  readonly candidateExplanationLoading = input(false);
+  readonly candidateExplanationError = input<string | null>(null);
+  readonly candidateExplanation = input<AiBuilderCandidateExplanationResponse | null>(null);
+  readonly candidateExplanationComparisonMoveUci = input<string | null>(null);
 
   readonly boardMove = output<string>();
   readonly candidateSelected = output<string>();
@@ -72,6 +81,8 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly sessionFinished = output<void>();
   readonly sessionAbandoned = output<void>();
   readonly newDraftRequested = output<void>();
+  readonly candidateExplanationRequested = output<void>();
+  readonly candidateExplanationComparisonChanged = output<string | null>();
 
   protected readonly decisionLimit = REPERTOIRE_BUILDER_DECISION_LIMIT;
   private readonly boardEntryMode = signal(false);
@@ -79,6 +90,10 @@ export class RepertoireBuilderWorkbenchComponent {
     this.boardEntryMode() ? this.activeBranch()?.fen ?? this.displayedFen() : this.displayedFen()
   ));
   protected readonly boardCanMove = computed(() => this.boardEntryMode() && this.boardMovable());
+  protected readonly comparisonCandidates = computed(() => {
+    const selectedMoveUci = this.previewCandidate()?.moveUci;
+    return this.response()?.candidates.filter((candidate) => candidate.moveUci !== selectedMoveUci) ?? [];
+  });
 
   protected isResponseSelected(moveUci: string): boolean {
     return this.selectedResponseUcis().includes(moveUci);
@@ -100,6 +115,11 @@ export class RepertoireBuilderWorkbenchComponent {
   protected handleBoardMove(moveUci: string): void {
     this.boardEntryMode.set(false);
     this.boardMove.emit(moveUci);
+  }
+
+  protected handleExplanationComparisonChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.candidateExplanationComparisonChanged.emit(value || null);
   }
 
   protected pathLabel(path: readonly string[]): string {

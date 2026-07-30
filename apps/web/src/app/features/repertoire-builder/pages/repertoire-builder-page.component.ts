@@ -3,16 +3,19 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import type { CandidateDecisionRequest } from '@chess-trainer/contracts/candidate-decision';
 import {
   PageHeaderComponent,
   type PageHeaderAction,
   type PageHeaderStat,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { RepertoireBuilderAiApiService } from '../data-access/repertoire-builder-ai-api.service';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
 import { RepertoireBuilderCourseDialogComponent } from '../components/repertoire-builder-course-dialog.component';
 import { RepertoireBuilderSetupDialogComponent } from '../components/repertoire-builder-setup-dialog.component';
@@ -25,8 +28,12 @@ import {
   parseRepertoireBuilderLaunch,
   type RepertoireBuilderCourseFindingLaunch,
 } from '../helpers/repertoire-builder-launch';
+import { RepertoireBuilderCandidateExplanationStore } from '../state/repertoire-builder-candidate-explanation.store';
 import { RepertoireBuilderCourseStore } from '../state/repertoire-builder-course.store';
-import type { RepertoireBuilderSetup } from '../state/repertoire-builder.models';
+import {
+  REPERTOIRE_BUILDER_CANDIDATE_LIMIT,
+  type RepertoireBuilderSetup,
+} from '../state/repertoire-builder.models';
 import { RepertoireBuilderStore } from '../state/repertoire-builder.store';
 
 @Component({
@@ -39,7 +46,13 @@ import { RepertoireBuilderStore } from '../state/repertoire-builder.store';
     RepertoireBuilderWorkbenchComponent,
     RepertoireBuilderCourseDialogComponent,
   ],
-  providers: [RepertoireBuilderApiService, RepertoireBuilderStore, RepertoireBuilderCourseStore],
+  providers: [
+    RepertoireBuilderApiService,
+    RepertoireBuilderAiApiService,
+    RepertoireBuilderStore,
+    RepertoireBuilderCandidateExplanationStore,
+    RepertoireBuilderCourseStore,
+  ],
   templateUrl: './repertoire-builder-page.component.html',
   styleUrl: './repertoire-builder-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,9 +61,16 @@ export class RepertoireBuilderPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly store = inject(RepertoireBuilderStore);
+  protected readonly candidateExplanationStore = inject(RepertoireBuilderCandidateExplanationStore);
   protected readonly courseStore = inject(RepertoireBuilderCourseStore);
   protected readonly launchContext = signal<RepertoireBuilderCourseFindingLaunch | null>(null);
   protected readonly launchError = signal<string | null>(null);
+  private readonly synchronizeCandidateExplanation = effect(() => {
+    this.candidateExplanationStore.sync(
+      this.store.candidateResponse(),
+      this.store.previewCandidate()?.moveUci ?? null,
+    );
+  });
 
   protected readonly initialSetup = computed<RepertoireBuilderSetup>(() => {
     const setup = this.store.setup();
@@ -105,6 +125,7 @@ export class RepertoireBuilderPageComponent implements OnInit {
     const parsed = parseRepertoireBuilderLaunch(this.route.snapshot.queryParamMap);
     this.launchContext.set(parsed.context);
     this.launchError.set(parsed.error);
+    void this.candidateExplanationStore.initialize();
   }
 
   protected sourceTitle(launch: RepertoireBuilderCourseFindingLaunch): string {
@@ -154,6 +175,22 @@ export class RepertoireBuilderPageComponent implements OnInit {
     void this.router.navigate(['/builder'], { replaceUrl: true });
   }
 
+  protected requestCandidateExplanation(): void {
+    const request = this.currentCandidateDecisionRequest();
+    const response = this.store.candidateResponse();
+    const selected = this.store.previewCandidate();
+    if (!request || !response || !selected) return;
+    void this.candidateExplanationStore.request(request, response, selected.moveUci);
+  }
+
+  protected setCandidateExplanationComparison(moveUci: string | null): void {
+    this.candidateExplanationStore.setComparison(
+      moveUci,
+      this.store.candidateResponse(),
+      this.store.previewCandidate()?.moveUci ?? null,
+    );
+  }
+
   protected async backToSource(): Promise<void> {
     const launch = this.launchContext();
     if (!launch) return;
@@ -164,5 +201,17 @@ export class RepertoireBuilderPageComponent implements OnInit {
     const session = this.store.session();
     if (!session || session.lifecycle !== 'COMPLETED') return;
     await this.courseStore.openFor(session, this.launchContext());
+  }
+
+  private currentCandidateDecisionRequest(): CandidateDecisionRequest | null {
+    const session = this.store.session();
+    const branch = this.store.activeBranch();
+    if (!session || !branch || session.lifecycle !== 'ACTIVE') return null;
+    return {
+      fen: branch.fen,
+      decisionRole: branch.role,
+      target: session.targetSnapshot.value,
+      candidateLimit: REPERTOIRE_BUILDER_CANDIDATE_LIMIT,
+    };
   }
 }

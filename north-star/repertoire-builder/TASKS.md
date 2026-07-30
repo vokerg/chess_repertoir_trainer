@@ -25,7 +25,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | DONE | Decide whether an LLM has a justified role | Research | Squash-merged through PR #216 as `9a4e616`; RB-019/#218 and RB-020/#219 created |
-| 152 | RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) | P3 | PROPOSED | Prototype advisory candidate explanation in Builder | North-star prototype | Stretch goal after completed RB-015; integrated RB-006/RB-007/RB-010 |
+| 152 | RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) | P3 | REVIEW | Prototype advisory candidate explanation in Builder | North-star prototype | PR #223; implementation CI #1630 passed; live provider/browser and human usefulness review pending |
 | 154 | RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) | P3 | PROPOSED | Prototype post-apply Builder course summary | North-star prototype | Stretch goal after completed RB-015; integrated RB-009/RB-011/RB-012 |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
@@ -206,6 +206,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
+### RB-019 / #218
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/222
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/223
+- Implementation branch: `rb-019/issue-218-candidate-explanation`
+- Tested implementation head: `bd9a1c70f4fc61e6b63fa64ed5b624305d4ed903`
+- Implementation CI: run `30559039592` / #1630 — success
+- Report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`
+- Adds a separately gated, explicit and transient generated interpretation beside deterministic Focused evidence.
+- Rebuilds authoritative context through `CandidateDecisionService`, sends only bounded fact records, and rejects unsupported references, recommendations, causal claims and stale identity.
+- Keeps page-scoped AI state outside `RepertoireBuilderStore` and adds no ranking, session, queue, coverage, course or persistence mutation.
+- Live configured-provider review, authenticated browser walkthrough and human usefulness comparison remain required before acceptance.
+
 ## Active claim
 
 ### RB-017 / #114
@@ -216,19 +229,13 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 ## Stretch goals
 
-### RB-019 / #218
-
-- Candidate explanation appears only after deterministic candidate selection beside the existing Focused evidence panel.
-- It is on demand, transient, separately feature toggled, and implemented through AI-specific page state outside `RepertoireBuilderStore`.
-- It cannot rank, select, accept, defer, reorder, cover, or write moves.
-
 ### RB-020 / #219
 
 - Completion summary appears only after RB-011 apply succeeds and the authoritative result exists.
 - It is on demand, transient, separately feature toggled, and implemented through AI-specific dialog state outside `RepertoireBuilderCourseStore`.
 - It cannot choose destinations, review targets, approve conflicts, apply, or mutate courses.
 
-Both remain `PROPOSED` after RB-015 completion. They are not critical-path work.
+RB-020 remains `PROPOSED` after RB-015 completion. It is not critical-path work.
 
 ## Accepted visual direction
 
@@ -282,6 +289,7 @@ RB-014, RB-015, RB-017, RB-019 and RB-020 remain outside the critical path.
 - RB-013 remains blocked on RB-004/RB-005 acceptance and integration.
 - RB-014 is `DONE`; RB-017 remains an approved claimed traps pilot.
 - RB-015 is `DONE` through squash-merged PR #216; issue #103 closes with closure reconciliation.
-- RB-019 and RB-020 remain separate P3 `PROPOSED` stretch goals with issues #218 and #219.
+- RB-019 is `REVIEW` through PR #223 after implementation CI #1630.
+- RB-020 remains a separate P3 `PROPOSED` stretch goal with issue #219.
 - RB-016 remains blocked on real builder/course usage.
 - No critical-path priority or roadmap resequencing is required.

@@ -1,6 +1,6 @@
 # RB-019 — Prototype advisory candidate explanation in Builder
 
-Status: PROPOSED
+Status: REVIEW
 
 Priority: P3
 
@@ -10,17 +10,21 @@ Queue class: Stretch goal
 
 Delivery class: North-star prototype
 
-Planning maturity: Architecturally bounded
+Planning maturity: Implemented and validation-ready
 
 GitHub issue: `#218`
 
-Claimed by: unclaimed
+Claimed by: `vokerg` / ChatGPT agent session
 
-Claim branch: none
+Claim PR: `#222`
 
-Claimed at: none
+Implementation branch: `rb-019/issue-218-candidate-explanation`
 
-Claim scope: none
+Implementation PR: `#223`
+
+Claimed at: 2026-07-30
+
+Claim scope: Implement the bounded, disabled-by-default candidate-explanation slice: shared AI contracts, authoritative server-side context reconstruction through the existing candidate-decision service, capability gating, transient page-scoped Angular state, optional workbench composition, validation, and program reporting. Excludes ranking/session/course mutations, persistence, background generation, profile narrative, and completion summaries.
 
 ## Outcome
 
@@ -43,7 +47,7 @@ The page composition owns capability and request state. The workbench may render
 ### Capability and trigger
 
 - require `AI_WIDGETS_ENABLED=true`;
-- require a separate use-case flag such as `AI_BUILDER_CANDIDATE_EXPLANATION_ENABLED=true`;
+- require `AI_BUILDER_CANDIDATE_EXPLANATION_ENABLED=true`;
 - expose `builderCandidateExplanation` through `/api/ai/capabilities`;
 - render no control when disabled or provider configuration is incomplete;
 - make generation explicit and on demand; never call the provider automatically when a candidate is selected.
@@ -56,7 +60,7 @@ The page composition owns capability and request state. The workbench may render
 - call the candidate-decision application service directly rather than trusting client-supplied rankings, evaluations, reasons, or evidence;
 - build context from the resulting RB-007 response and selected identifiers;
 - validate generated output with a dedicated `@chess-trainer/contracts/ai` schema;
-- reconcile every returned reason, warning, fit, source, and move reference against the authoritative response;
+- reconcile returned evidence and move references against the authoritative response;
 - reject invented candidates, changed ordering, unsupported evaluations, new chess claims, causal claims, or concealed unavailable evidence.
 
 ### Angular boundary
@@ -74,29 +78,32 @@ The page composition owns capability and request state. The workbench may render
 - no Prisma model, migration, browser storage, hidden history, background generation, or automatic regeneration;
 - clearing or removing the feature must not alter the builder session.
 
-## Suggested output shape
+## Implemented output shape
 
-A bounded response may contain:
+The response contains:
 
 - one concise summary;
 - up to three explicit trade-offs;
-- up to three evidence-reference IDs drawn from the supplied response;
-- one missing-evidence warning when applicable;
-- an explicit disclaimer that ranking and move choice remain deterministic/user controlled.
+- one to three evidence references for the summary;
+- one to three evidence references for each trade-off;
+- one optional missing-evidence reference;
+- authoritative selected/comparison move identity and rank;
+- referenced deterministic facts;
+- a fixed disclaimer that ranking and move choice remain deterministic/user controlled.
 
-The model must not return a recommended move or a replacement ranking.
+The model does not return a recommended move or replacement ranking.
 
-## Acceptance criteria
+## Acceptance status
 
 - AI disabled leaves Builder behavior and decision controls unchanged.
 - AI enabled exposes one explicit request next to the current candidate evidence.
-- No provider call occurs on route load, candidate load, candidate preview, or selection.
+- No provider call occurs on route load, candidate load, candidate preview, selection, or comparison selection.
 - Generated output cannot change candidate order, selected move, selected opponent responses, session revision, branch state, queue order, target, or course destination.
 - Server context is rebuilt from the candidate-decision service rather than accepting client assertions as authoritative.
-- Unsupported move/evidence references and ranking/evaluation claims fail validation.
-- Stale responses do not render after position, target, role, policy, response, or candidate changes.
+- Unsupported move/evidence references, causal claims, recommendation language and unreferenced evidence claims fail validation.
+- Stale responses do not render after position, target, role, policy, response, selected-candidate or comparison changes.
 - Provider failure leaves deterministic evidence and all builder commands usable.
-- Tests demonstrate unchanged `RepertoireBuilderStore` state before and after explanation requests.
+- Focused tests assert deterministic candidate state remains unchanged and the explanation store has no Builder command dependency.
 - Removing the use-case adapter, flags, contracts, store, and optional component composition requires no core builder/ranking migration.
 
 ## Explicit exclusions
@@ -109,27 +116,31 @@ The model must not return a recommended move or a replacement ranking.
 - course preview/apply changes;
 - profile narrative and post-apply summaries.
 
-## Required validation
+## Validation
 
-- capability disabled/unconfigured cases;
-- no automatic request cases;
-- authoritative context reconstruction;
-- selected and bounded comparison candidates;
-- hallucinated move/reason/source/evaluation rejection;
-- missing/stale/insufficient evidence visibility;
-- timeout, rate-limit, invalid JSON, invalid schema, and provider failure;
-- stale-response suppression;
-- desktop/mobile/keyboard presentation;
-- direct assertion that builder decision and session state are unchanged.
+Implementation head `bd9a1c70f4fc61e6b63fa64ed5b624305d4ed903` passed complete repository CI run `30559039592` / #1630 on 2026-07-30:
+
+- lint;
+- build;
+- both opening-classification audits;
+- architecture guardrails;
+- database migrations;
+- complete repository tests.
+
+Focused tests cover disabled/unconfigured capability behavior, no automatic provider calls, authoritative context reconstruction, selected and bounded comparison candidates, unsupported references and causal claims, stale identity and stale response suppression, provider timeout, transient lifetime, and unchanged deterministic candidate state.
+
+Live provider requests, authenticated browser walkthrough and human usefulness comparison remain review activities and are not claimed as completed validation.
 
 ## Dependency and queue decision
 
-RB-019 is a stretch goal downstream of RB-015. It should not delay the deterministic builder roadmap or RB-016 outcome measurement.
+RB-019 remains a P3 stretch goal downstream of RB-015. It does not delay the deterministic builder roadmap, RB-017, RB-013 or RB-016.
 
-It becomes `READY` only after RB-015 is accepted with this prototype boundary and no higher-priority review/closure work needs the same files.
+RB-020 remains independently proposed. No order or priority change is recommended.
 
 ## Completion
 
-Report: none
+Report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`
 
-Completed at: none
+Review PR: `#223`
+
+Moved to review: 2026-07-30

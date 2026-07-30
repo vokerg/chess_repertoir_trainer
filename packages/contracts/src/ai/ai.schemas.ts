@@ -1,9 +1,73 @@
 import { z } from 'zod';
+import {
+  candidateDecisionRequestSchema,
+  candidateDecisionRoleSchema,
+  candidateMoveUciSchema,
+  candidateRankingPolicyVersionSchema,
+} from '../candidate-decision';
 
 export const aiCapabilitiesResponseSchema = z.object({
   widgets: z.object({
     gameReview: z.boolean(),
+    builderCandidateExplanation: z.boolean(),
   }),
+});
+
+export const aiBuilderCandidateExplanationFactIdSchema = z.string()
+  .min(1)
+  .max(120)
+  .regex(/^(selected|comparison|source)\.[a-z0-9_.-]+$/);
+
+export const aiBuilderCandidateExplanationIdentitySchema = z.object({
+  targetId: z.uuid(),
+  normalizedFen: z.string().min(1),
+  decisionRole: candidateDecisionRoleSchema,
+  rankingPolicyVersion: candidateRankingPolicyVersionSchema,
+  responseGeneratedAt: z.iso.datetime({ offset: true }),
+  selectedMoveUci: candidateMoveUciSchema,
+  comparisonMoveUci: candidateMoveUciSchema.nullable(),
+});
+
+export const aiBuilderCandidateExplanationRequestSchema = z.object({
+  decisionRequest: candidateDecisionRequestSchema,
+  identity: aiBuilderCandidateExplanationIdentitySchema,
+});
+
+export const aiBuilderCandidateExplanationTradeoffSchema = z.object({
+  text: z.string().min(1).max(500),
+  evidenceReferenceIds: z.array(aiBuilderCandidateExplanationFactIdSchema).min(1).max(3),
+});
+
+export const aiBuilderCandidateExplanationContentSchema = z.object({
+  summary: z.string().min(1).max(900),
+  tradeoffs: z.array(aiBuilderCandidateExplanationTradeoffSchema).max(3),
+  evidenceReferenceIds: z.array(aiBuilderCandidateExplanationFactIdSchema).min(1).max(3),
+  missingEvidenceReferenceId: aiBuilderCandidateExplanationFactIdSchema.nullable(),
+});
+
+export const aiBuilderCandidateExplanationFactSchema = z.object({
+  id: aiBuilderCandidateExplanationFactIdSchema,
+  label: z.string().min(1).max(160),
+  value: z.string().min(1).max(500),
+  missing: z.boolean(),
+});
+
+export const aiBuilderCandidateExplanationCandidateSchema = z.object({
+  moveUci: candidateMoveUciSchema,
+  moveSan: z.string().min(1),
+  rank: z.number().int().positive(),
+});
+
+export const aiBuilderCandidateExplanationResponseSchema = z.object({
+  kind: z.literal('BUILDER_CANDIDATE_EXPLANATION'),
+  schemaVersion: z.literal(1),
+  generatedAt: z.iso.datetime({ offset: true }),
+  identity: aiBuilderCandidateExplanationIdentitySchema,
+  selectedCandidate: aiBuilderCandidateExplanationCandidateSchema,
+  comparisonCandidate: aiBuilderCandidateExplanationCandidateSchema.nullable(),
+  explanation: aiBuilderCandidateExplanationContentSchema,
+  referencedFacts: z.array(aiBuilderCandidateExplanationFactSchema).max(16),
+  disclaimer: z.literal('Candidate ranking remains deterministic and move choice remains yours.'),
 });
 
 export const aiGameReviewWarningSchema = z.enum([
@@ -50,6 +114,11 @@ export const aiErrorResponseSchema = z.object({
 });
 
 export type AiCapabilitiesResponse = z.output<typeof aiCapabilitiesResponseSchema>;
+export type AiBuilderCandidateExplanationIdentity = z.output<typeof aiBuilderCandidateExplanationIdentitySchema>;
+export type AiBuilderCandidateExplanationRequest = z.output<typeof aiBuilderCandidateExplanationRequestSchema>;
+export type AiBuilderCandidateExplanationContent = z.output<typeof aiBuilderCandidateExplanationContentSchema>;
+export type AiBuilderCandidateExplanationFact = z.output<typeof aiBuilderCandidateExplanationFactSchema>;
+export type AiBuilderCandidateExplanationResponse = z.output<typeof aiBuilderCandidateExplanationResponseSchema>;
 export type AiGameReviewResponse = z.output<typeof aiGameReviewResponseSchema>;
 export type AiGameReviewStateResponse = z.output<typeof aiGameReviewStateResponseSchema>;
 export type AiGameReviewTurningPoint = z.output<typeof aiGameReviewTurningPointSchema>;

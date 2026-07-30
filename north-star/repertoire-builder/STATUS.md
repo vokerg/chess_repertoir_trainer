@@ -4,13 +4,13 @@ Last updated: 2026-07-30
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014, RB-015 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114. RB-019 and RB-020 are proposed P3 stretch prototypes.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014, RB-015 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114. RB-019 is in review through PR #223. RB-020 remains a proposed P3 stretch prototype.
 
 **Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, exact Course ending → Builder adaptation from PR #205, and exact Opponent gap → Builder adaptation from PR #208.
 
 **Integrated planning on `main`:** PR #216 defines the non-authoritative, removable AI prototype architecture and creates RB-019/#218 plus RB-020/#219. It adds no production AI endpoint, prompt, contract or Angular widget.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #223 adds the disabled-by-default transient RB-019 advisory candidate explanation prototype.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -234,6 +234,23 @@ Stacked PR #139 provides `/progress/profile`, recalculable context filters, sepa
 
 It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
 
+### RB-019 / #218 — Advisory candidate explanation prototype
+
+PR #223 provides:
+
+- separately gated `builderCandidateExplanation` capability;
+- versioned shared request/response contracts;
+- authenticated authoritative context reconstruction through `CandidateDecisionService`;
+- bounded deterministic fact projection into the existing OpenAI-compatible JSON client;
+- rejection of unsupported evidence/move references, recommendation language, causal claims and stale identity;
+- page-scoped transient Angular explanation state outside `RepertoireBuilderStore`;
+- one explicit optional generated-interpretation panel after Focused evidence;
+- no persistence, automatic generation, ranking, Builder reducer, queue, coverage or course mutation.
+
+Implementation head `bd9a1c70f4fc61e6b63fa64ed5b624305d4ed903` passed complete CI run `30559039592` / #1630. Review report: `reports/RB-019-2026-07-30-builder-candidate-explanation.md`.
+
+Live configured-provider review, authenticated browser walkthrough and human usefulness comparison remain review activities.
+
 ## Active independent pilot
 
 ### RB-017 / #114
@@ -250,15 +267,11 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 
 ## Proposed stretch prototypes
 
-### RB-019 / #218
-
-Candidate explanation is on demand beside Focused evidence, uses AI-specific page state outside `RepertoireBuilderStore`, and cannot rank, select or mutate Builder state.
-
 ### RB-020 / #219
 
 Completion summary is on demand only after an authoritative apply result, uses AI-specific dialog state outside `RepertoireBuilderCourseStore`, and cannot select, apply or mutate course state.
 
-Both remain `PROPOSED`, P3 and outside the critical path.
+RB-020 remains `PROPOSED`, P3 and outside the critical path.
 
 ## Repository and GitHub issue state
 
@@ -278,7 +291,7 @@ Both remain `PROPOSED`, P3 and outside the critical path.
 - RB-015 / #103: `DONE` through squash-merged PR #216; issue closes with reconciliation.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
-- RB-019 / #218: `PROPOSED` stretch prototype.
+- RB-019 / #218: `REVIEW` through PR #223.
 - RB-020 / #219: `PROPOSED` stretch prototype.
 
 ## Dependency impact
@@ -293,7 +306,8 @@ Both remain `PROPOSED`, P3 and outside the critical path.
 - RB-013 remains responsible for profile-derived personas/defaults beyond RB-010's transparent local presets.
 - RB-015 provides the locked non-authority, feature-toggle, transient-lifetime and purge boundaries for optional Builder interpretation.
 - RB-017 remains outside the critical path.
-- RB-019 and RB-020 are independent stretch prototypes and do not block deterministic delivery.
+- RB-019 implements the first optional interpretation prototype without becoming a dependency of deterministic Builder delivery.
+- RB-020 remains an independent stretch prototype.
 
 ## Validation
 
@@ -308,7 +322,8 @@ Both remain `PROPOSED`, P3 and outside the critical path.
 - RB-014 source/license verification and complete repository CI passed.
 - RB-015 final research CI #1617 passed the complete repository workflow; official DeepSeek API, JSON-output, pricing and privacy sources were reviewed on 2026-07-30.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
-- RB-019/RB-020 must add grounding, stale-response, disabled-feature, provider-failure, state-isolation and purge tests plus human usefulness review.
+- RB-019 implementation CI #1630 passed the complete repository workflow with grounding, stale-response, disabled-feature, provider-failure and state-isolation tests; live provider/browser and human usefulness review remain outstanding.
+- RB-020 must add grounding, stale-response, disabled-feature, provider-failure, state-isolation and purge tests plus human usefulness review.
 
 ## Residual risks
 
@@ -323,11 +338,11 @@ Both remain `PROPOSED`, P3 and outside the critical path.
 - My deviations, weak-choice and profile-driven adaptation require explicit future tasks if pursued; they are not incomplete RB-012 scope.
 - Four-field source FENs do not contain move counters; canonical session FENs use neutral `0 1` counters while exact position identity remains the normalized four fields.
 - Engine, personal, course and profile providers do not share one universal freshness timestamp model.
-- DeepSeek model names, pricing and terms are mutable; public privacy terms do not establish API-specific zero retention and describe data processing/storage in China. RB-019/RB-020 must minimize context and re-verify provider/regional requirements at implementation.
-- Generated interpretation can create undue authority even when technically isolated; prototype review must compare it with deterministic templates and no-feature controls.
+- DeepSeek model names, pricing and terms are mutable; public privacy terms do not establish API-specific zero retention and describe data processing/storage in China. Optional AI use cases must minimize context and re-verify provider/regional requirements before deployment.
+- Generated interpretation can create undue authority even when technically isolated; RB-019 review must compare it with deterministic templates and no-feature controls.
 
 ## Queue recommendation
 
 Keep task order and priorities unchanged.
 
-RB-013 remains blocked on RB-004/RB-005 acceptance and integration. RB-017 is already claimed. RB-019 and RB-020 are available only as optional P3 stretch prototypes after explicit claim. RB-016 remains blocked on real product use.
+RB-013 remains blocked on RB-004/RB-005 acceptance and integration. RB-017 is already claimed. RB-019 is in review through PR #223. RB-020 remains available only as an optional P3 stretch prototype after explicit claim. RB-016 remains blocked on real product use.
