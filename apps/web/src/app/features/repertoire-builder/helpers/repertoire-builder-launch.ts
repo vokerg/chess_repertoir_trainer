@@ -30,12 +30,7 @@ interface CourseFindingBuilderLaunchBaseInput {
   observedGameCount: number;
   sourceKey: string;
   sequence: string | null;
-  results: {
-    win: number;
-    draw: number;
-    loss: number;
-    unknown: number;
-  };
+  results: { win: number; draw: number; loss: number; unknown: number };
   filterSummary: string;
   sourceFilters: string;
 }
@@ -79,32 +74,15 @@ export interface RepertoireBuilderLaunchParseResult {
   error: string | null;
 }
 
-export function buildCourseEndingBuilderLaunchQueryParams(
-  input: CourseEndingBuilderLaunchInput,
-): Params {
-  return {
-    ...buildCommonQueryParams(input),
-    source: COURSE_ENDING_SOURCE,
-    intent: EXTEND_INTENT,
-    minGames: input.minGames,
-  };
+export function buildCourseEndingBuilderLaunchQueryParams(input: CourseEndingBuilderLaunchInput): Params {
+  return { ...buildCommonQueryParams(input), source: COURSE_ENDING_SOURCE, intent: EXTEND_INTENT, minGames: input.minGames };
 }
 
-export function buildOpponentGapBuilderLaunchQueryParams(
-  input: OpponentGapBuilderLaunchInput,
-): Params {
-  return {
-    ...buildCommonQueryParams(input),
-    source: OPPONENT_GAP_SOURCE,
-    intent: COVER_GAP_INTENT,
-    minCoveredPlies: input.minCoveredPlies,
-  };
+export function buildOpponentGapBuilderLaunchQueryParams(input: OpponentGapBuilderLaunchInput): Params {
+  return { ...buildCommonQueryParams(input), source: OPPONENT_GAP_SOURCE, intent: COVER_GAP_INTENT, minCoveredPlies: input.minCoveredPlies };
 }
 
-export function parseRepertoireBuilderLaunch(
-  params: ParamMap,
-  now = new Date(),
-): RepertoireBuilderLaunchParseResult {
+export function parseRepertoireBuilderLaunch(params: ParamMap, now = new Date()): RepertoireBuilderLaunchParseResult {
   const source = params.get('source');
   if (!source) return { context: null, error: null };
   if (source === 'player-profile') return parseRepertoireBuilderProfileLaunch(params, now);
@@ -137,91 +115,41 @@ export function parseRepertoireBuilderLaunch(
   const sourceFilters = boundedTextAllowEmpty(params.get('sourceFilters'), 8_000);
   const startingFen = fullFen(params.get('fen'));
   const rawSide = params.get('side');
-  const side: 'WHITE' | 'BLACK' | null = rawSide === 'WHITE' || rawSide === 'BLACK'
-    ? rawSide
-    : null;
+  const side: 'WHITE' | 'BLACK' | null = rawSide === 'WHITE' || rawSide === 'BLACK' ? rawSide : null;
   const observedMoveUci = params.get('moveUci')?.trim().toLowerCase() ?? '';
   const observedMoveSan = optionalBoundedText(params.get('moveSan'), 30);
 
   if (
-    courseId === null
-    || chapterId === null
-    || lineId === null
-    || anchorKind === null
-    || (anchorKind === 'NODE' && nodeId === null)
-    || observedGameCount === null
-    || results.win === null
-    || results.draw === null
-    || results.loss === null
-    || results.unknown === null
-    || !courseName
-    || !lineName
-    || !sourceKey
-    || !filterSummary
-    || sourceFilters === null
-    || !startingFen
-    || side === null
-    || !UCI_PATTERN.test(observedMoveUci)
-  ) {
-    return invalidLaunch(source);
-  }
+    courseId === null || chapterId === null || lineId === null || anchorKind === null
+    || (anchorKind === 'NODE' && nodeId === null) || observedGameCount === null
+    || results.win === null || results.draw === null || results.loss === null || results.unknown === null
+    || !courseName || !lineName || !sourceKey || !filterSummary || sourceFilters === null
+    || !startingFen || side === null || !UCI_PATTERN.test(observedMoveUci)
+  ) return invalidLaunch(source);
 
   const common = {
-    courseId,
-    courseName,
-    chapterId,
-    lineId,
-    lineName,
-    anchorKind,
-    nodeId,
-    startingFen,
-    side,
-    observedMoveUci,
-    observedMoveSan,
-    observedGameCount,
-    sourceKey,
-    sequence,
-    results: {
-      win: results.win,
-      draw: results.draw,
-      loss: results.loss,
-      unknown: results.unknown,
-    },
-    filterSummary,
-    sourceFilters,
+    courseId, courseName, chapterId, lineId, lineName, anchorKind, nodeId, startingFen, side,
+    observedMoveUci, observedMoveSan, observedGameCount, sourceKey, sequence,
+    results: { win: results.win, draw: results.draw, loss: results.loss, unknown: results.unknown },
+    filterSummary, sourceFilters,
   };
 
   if (source === COURSE_ENDING_SOURCE) {
     const minGames = boundedInteger(params.get('minGames'), 1, 1000);
     if (minGames === null || anchorKind !== 'NODE' || nodeId === null) return invalidLaunch(source);
     return {
-      context: {
-        ...common,
-        source: 'COURSE_ENDING',
-        intent: 'EXTEND_EXISTING_LINE',
-        anchorKind: 'NODE',
-        nodeId,
-        minGames,
-      },
+      context: { ...common, source: 'COURSE_ENDING', intent: 'EXTEND_EXISTING_LINE', anchorKind: 'NODE', nodeId, minGames },
       error: null,
     };
   }
 
   const minCoveredPlies = boundedInteger(params.get('minCoveredPlies'), 0, 20);
   if (minCoveredPlies === null) return invalidLaunch(source);
-  return {
-    context: {
-      ...common,
-      source: 'OPPONENT_GAP',
-      intent: 'COVER_OPPONENT_GAP',
-      minCoveredPlies,
-    },
-    error: null,
-  };
+  return { context: { ...common, source: 'OPPONENT_GAP', intent: 'COVER_OPPONENT_GAP', minCoveredPlies }, error: null };
 }
 
 export function builderLaunchStartingPoint(
-  context: RepertoireBuilderLaunchContext | null,
+  context: RepertoireBuilderLaunchContext | RepertoireBuilderCourseEndingLaunch | null,
 ): RepertoireTargetStartingPoint {
   return context && isRepertoireBuilderCourseFindingLaunch(context)
     ? { kind: 'COURSE_POSITION', courseId: context.courseId, lineId: context.lineId }
@@ -245,50 +173,28 @@ export function builderLaunchReturnUrl(context: RepertoireBuilderLaunchContext):
 export function isRepertoireBuilderCourseFindingLaunch(
   context: RepertoireBuilderLaunchContext | RepertoireBuilderCourseEndingLaunch | null,
 ): context is RepertoireBuilderCourseFindingLaunch {
-  return Boolean(
-    context
-    && !isRepertoireBuilderProfileLaunch(context)
-    && (context.source === 'COURSE_ENDING' || context.source === 'OPPONENT_GAP'),
-  );
+  return Boolean(context && !isRepertoireBuilderProfileLaunch(context)
+    && (context.source === 'COURSE_ENDING' || context.source === 'OPPONENT_GAP'));
 }
 
 function buildCommonQueryParams(input: CourseFindingBuilderLaunchBaseInput): Params {
   return {
-    courseId: input.courseId,
-    courseName: input.courseName,
-    chapterId: input.chapterId,
-    lineId: input.lineId,
-    lineName: input.lineName,
-    anchorKind: input.anchorKind,
-    nodeId: input.nodeId ?? undefined,
-    fen: input.startingFen,
-    side: input.side,
-    moveUci: input.observedMoveUci,
-    moveSan: input.observedMoveSan ?? undefined,
-    games: input.observedGameCount,
-    sourceKey: input.sourceKey,
-    sequence: input.sequence ?? undefined,
-    wins: input.results.win,
-    draws: input.results.draw,
-    losses: input.results.loss,
-    unknown: input.results.unknown,
-    filterSummary: input.filterSummary,
-    sourceFilters: input.sourceFilters,
+    courseId: input.courseId, courseName: input.courseName, chapterId: input.chapterId,
+    lineId: input.lineId, lineName: input.lineName, anchorKind: input.anchorKind,
+    nodeId: input.nodeId ?? undefined, fen: input.startingFen, side: input.side,
+    moveUci: input.observedMoveUci, moveSan: input.observedMoveSan ?? undefined,
+    games: input.observedGameCount, sourceKey: input.sourceKey, sequence: input.sequence ?? undefined,
+    wins: input.results.win, draws: input.results.draw, losses: input.results.loss,
+    unknown: input.results.unknown, filterSummary: input.filterSummary, sourceFilters: input.sourceFilters,
   };
 }
 
 function invalidLaunch(source: typeof COURSE_ENDING_SOURCE | typeof OPPONENT_GAP_SOURCE) {
   const label = source === COURSE_ENDING_SOURCE ? 'Course ending' : 'Opponent gap';
-  return {
-    context: null,
-    error: `This ${label} link is incomplete or no longer valid. Open it again from Course review.`,
-  };
+  return { context: null, error: `This ${label} link is incomplete or no longer valid. Open it again from Course review.` };
 }
 
-function launchAnchorKind(
-  value: string | null,
-  source: typeof COURSE_ENDING_SOURCE | typeof OPPONENT_GAP_SOURCE,
-): RepertoireBuilderLaunchAnchorKind | null {
+function launchAnchorKind(value: string | null, source: typeof COURSE_ENDING_SOURCE | typeof OPPONENT_GAP_SOURCE): RepertoireBuilderLaunchAnchorKind | null {
   if (value === 'LINE_START' || value === 'NODE') return value;
   return source === COURSE_ENDING_SOURCE ? 'NODE' : null;
 }
@@ -329,9 +235,5 @@ function fullFen(value: string | null): string | null {
   if (!trimmed || trimmed.length > 200) return null;
   const parts = trimmed.split(/\s+/);
   const candidate = parts.length === 4 ? `${trimmed} 0 1` : trimmed;
-  try {
-    return new Chess(candidate).fen();
-  } catch {
-    return null;
-  }
+  try { return new Chess(candidate).fen(); } catch { return null; }
 }
