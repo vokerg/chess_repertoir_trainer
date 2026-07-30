@@ -1,6 +1,6 @@
 # RB-012 — Enter builder from existing-course findings
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P2
 
@@ -8,9 +8,17 @@ Order: 130
 
 Delivery class: Dual-use
 
-Planning maturity: First slice integrated; next slice defined
+Planning maturity: Second slice implementation
 
 GitHub issue: `#100`
+
+Current implementation branch: `rb-012/issue-100-opponent-gaps-entry`
+
+Claimed by: OpenAI ChatGPT
+
+Claimed at: 2026-07-30
+
+Current implementation scope: Connect Course review → Opponent gaps to the integrated builder without changing recommendation or course-write foundations. The slice will expose exact reviewed line anchors for each grouped gap, preserve the pre-gap position, observed opponent move, game evidence, filters and minimum-overlap threshold, launch the existing RB-006/RB-007/RB-009/RB-010 workflow with an explicit coverage-extension consequence, and constrain RB-011 apply to the chosen source line and `LINE_START` or `NODE` anchor. It excludes My deviations, replacement/alternate-line semantics, persistence, new recommendation logic and new course-write behavior.
 
 First implementation branch: `rb-012/issue-100-course-ending-entry`
 
@@ -62,7 +70,7 @@ Implementation report: `../reports/RB-012-2026-07-29-course-ending-entry.md`
 
 Closure report: `../reports/RB-012-2026-07-29-course-ending-closure.md`
 
-## Validation
+## First-slice validation
 
 CI #1541 passed:
 
@@ -77,20 +85,23 @@ Focused coverage includes launch parsing, malformed context, four-field FEN norm
 
 Manual populated-browser review was not performed through the connector. Real-data checks of the complete loop, responsive readability and keyboard traversal remain useful post-merge validation rather than blockers for the integrated slice.
 
-## Next slice — Opponent gaps
+## Current slice — Opponent gaps
 
-Opponent gaps is the next recommended entry point because its primary consequence remains coverage extension.
+Opponent gaps is next because its primary consequence remains coverage extension.
 
-The next implementation should:
+The implementation must:
 
-- inspect the current Opponent gaps finding contract and exact in-line anchor evidence;
-- emit an explicit coverage-extension launch rather than a replacement intent;
-- reuse the existing validated launch payload where possible;
-- start the same builder at the exact finding position;
-- preserve observed opponent move, game evidence and source filters;
-- constrain course apply to the originating course line and reviewed anchor;
-- preserve current Course review actions and source report behavior;
-- add focused route, mapping, store, destination and stale-anchor tests;
+- derive exact source anchors from the current course graph at the pre-gap position;
+- preserve distinct line-specific choices when one position belongs to multiple lines;
+- support both `LINE_START` and `NODE` anchors already accepted by RB-011;
+- emit an explicit coverage-extension launch rather than replacement intent;
+- reuse and generalize the existing validated launch payload;
+- start the same builder before the observed opponent move;
+- include that observed move in the initial RB-007 candidate request;
+- preserve game evidence, filters and minimum course overlap;
+- constrain course apply to the selected source course, chapter, line and reviewed anchor;
+- preserve existing Course review actions and report behavior;
+- add focused API/domain mapping, route, store, destination and stale-anchor tests;
 - avoid persistence, automatic replacement and a second recommendation engine.
 
 ## Later slices
