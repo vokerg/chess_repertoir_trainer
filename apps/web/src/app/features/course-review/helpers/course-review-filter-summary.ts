@@ -23,8 +23,6 @@ function projectAppliedFilters(filters: CourseReviewResponse['filters']): GameFi
     openingName: filters.openingName ?? '',
     analysisStatus: singleValue(filters.analysisStatus) ?? '',
     plyIndexStatus: singleValue(filters.plyIndexStatus) ?? '',
-    tagFilter: filters.tagFilter ?? '',
-    tagCodes: filters.tagCodes ?? [],
     minAccuracy: numberInput(filters.minAccuracy),
     maxAccuracy: numberInput(filters.maxAccuracy),
     minOpponentRating: numberInput(filters.minOpponentRating),
