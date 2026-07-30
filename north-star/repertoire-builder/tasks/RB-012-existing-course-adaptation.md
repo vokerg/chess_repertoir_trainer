@@ -1,6 +1,6 @@
 # RB-012 — Enter builder from existing-course findings
 
-Status: READY
+Status: REVIEW
 
 Priority: P2
 
@@ -8,9 +8,19 @@ Order: 130
 
 Delivery class: Dual-use
 
-Planning maturity: First slice integrated; next slice defined
+Planning maturity: Two finding slices implemented; second slice in review
 
 GitHub issue: `#100`
+
+Current implementation branch: `rb-012/issue-100-opponent-gaps-entry`
+
+Current implementation PR: `#208`
+
+Final tested Opponent gaps implementation head before review-package documentation: `fafeeba20be64766ad0f269546e1dc89010de03d`
+
+Opponent gaps implementation CI: run `30516865329` / CI #1586 — success
+
+Review state entered at: 2026-07-30
 
 First implementation branch: `rb-012/issue-100-course-ending-entry`
 
@@ -62,9 +72,39 @@ Implementation report: `../reports/RB-012-2026-07-29-course-ending-entry.md`
 
 Closure report: `../reports/RB-012-2026-07-29-course-ending-closure.md`
 
-## Validation
+## Integrated first-slice validation
 
-CI #1541 passed:
+CI #1541 passed lint, all builds, both opening audits, architecture guardrails, migrations and complete repository tests.
+
+Focused coverage includes launch parsing, malformed context, four-field FEN normalization, filter restoration, course-position target construction, exact-FEN session start, observed-move inclusion, exact destination locking, rejection of alternative targets and safe stale-source behavior.
+
+## Implemented second slice — Opponent gaps
+
+PR #208 implements Course review → Opponent gaps → exact existing line anchor in Builder.
+
+The review implementation:
+
+- derives exact source anchors at the pre-gap position through the existing chess-domain reintegration planner;
+- supports both `LINE_START` and `NODE` anchors;
+- preserves distinct actions when a position maps to multiple lines or occurrences;
+- renders one **Cover this gap in builder** action per exact source anchor;
+- retains the displayed post-move board while launching the builder from the pre-gap FEN;
+- generalizes the bounded Course-finding launch payload with explicit `COVER_OPPONENT_GAP` intent;
+- records `COURSE_POSITION` and starts RB-009 before the observed opponent move;
+- includes that move in the initial RB-007 candidate request;
+- fixes source repertoire side while preserving editable speed, population, persona, theory and coverage;
+- keeps source evidence, minimum overlap and the coverage-extension consequence visible;
+- restores Opponent gaps mode, applied filters and overlap threshold on return;
+- locks RB-011 to the selected course, chapter, line and exact `LINE_START`/`NODE` anchor;
+- fails safely when preview no longer returns the source endpoint;
+- preserves My deviations without a builder action;
+- adds no Prisma model, migration, new API route, persistence layer, worker, course-writer change or second recommendation engine.
+
+Implementation report: `../reports/RB-012-2026-07-30-opponent-gaps-entry.md`
+
+## Second-slice validation
+
+CI #1586 passed:
 
 - lint;
 - domain, contracts, API, web and mobile builds;
@@ -73,25 +113,9 @@ CI #1541 passed:
 - database migrations;
 - complete repository tests.
 
-Focused coverage includes launch parsing, malformed context, four-field FEN normalization, filter restoration, course-position target construction, exact-FEN session start, observed-move inclusion, exact destination locking, rejection of alternative targets and safe stale-source behavior.
+Focused coverage includes deterministic line-start/node anchor projection, pre-gap finding mapping, route round-trips, malformed anchor rejection, source-specific return scope, overlap restoration, exact line-start destination locking and safe exact-target absence.
 
-Manual populated-browser review was not performed through the connector. Real-data checks of the complete loop, responsive readability and keyboard traversal remain useful post-merge validation rather than blockers for the integrated slice.
-
-## Next slice — Opponent gaps
-
-Opponent gaps is the next recommended entry point because its primary consequence remains coverage extension.
-
-The next implementation should:
-
-- inspect the current Opponent gaps finding contract and exact in-line anchor evidence;
-- emit an explicit coverage-extension launch rather than a replacement intent;
-- reuse the existing validated launch payload where possible;
-- start the same builder at the exact finding position;
-- preserve observed opponent move, game evidence and source filters;
-- constrain course apply to the originating course line and reviewed anchor;
-- preserve current Course review actions and source report behavior;
-- add focused route, mapping, store, destination and stale-anchor tests;
-- avoid persistence, automatic replacement and a second recommendation engine.
+Manual populated-browser review remains required for a real line-start gap, in-line gap, shared-position choices, initial observed-move inclusion, exact apply, stale anchors, responsive readability and keyboard traversal.
 
 ## Later slices
 
@@ -109,4 +133,4 @@ RB-012 remains the same immutable task and GitHub issue. Later finding types are
 
 Task order and priority remain unchanged.
 
-Course endings remains available as the inspectable source and recalculation surface. It should not be retired until multiple finding types demonstrate equivalent maintenance value through the builder.
+Course endings and Opponent gaps remain available as inspectable source/recalculation surfaces. They should not be retired until the integrated builder demonstrates equivalent maintenance value through accepted product use.

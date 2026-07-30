@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 This is the canonical ordered queue. IDs are immutable; `Order` and `Priority` may change through reviewed updates.
 
@@ -21,7 +21,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | DONE | Implement bounded interactive builder MVP | North-star | Squash-merged through PR #184; final tested-head CI #1417 passed |
 | 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | DONE | Preview and apply builder output to courses | Dual-use | Squash-merged through PR #189 as `01b36f9`; final review-package CI #1488 passed |
-| 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | READY | Enter builder from existing-course findings | Dual-use | Course endings merged through PR #205 as `c2266c9`; Opponent gaps is next |
+| 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | REVIEW | Enter builder from existing-course findings | Dual-use | Course endings merged through PR #205; Opponent gaps implemented through PR #208 and awaiting hands-on review |
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
 | 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
@@ -173,23 +173,20 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
-## Ready work
-
 ### RB-012 / #100
 
-- First implementation branch: `rb-012/issue-100-course-ending-entry`.
-- First implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/205
-- Squash commit: `c2266c9a8ffca00696da264abb3476f36ec82b50`
-- Final review-package head: `45851192b77327e23546eb691d3629c3a193144d`
-- Final CI: run `30485910525` / #1541 — success
-- Implementation report: `reports/RB-012-2026-07-29-course-ending-entry.md`
-- Closure report: `reports/RB-012-2026-07-29-course-ending-closure.md`
-- Integrated line-specific **Extend this line in builder** actions for Course ending findings.
-- Preserves exact source context, terminal position, observed continuation, evidence and filters in the existing builder.
-- Reuses RB-006 target, RB-007 candidate, RB-009 session, RB-010 workbench and RB-011 exact preview/apply boundaries.
-- Adds no API route, migration, persistence or second recommendation engine.
-- Issue #100 remains open because later finding types remain under the same immutable RB task.
-- Opponent gaps is the next bounded slice; My deviations requires explicit replace/alternate/keep-course consequence UX first.
+- Integrated Course endings branch: `rb-012/issue-100-course-ending-entry`.
+- Integrated Course endings PR: https://github.com/vokerg/chess_repertoir_trainer/pull/205
+- Course endings squash commit: `c2266c9a8ffca00696da264abb3476f36ec82b50`
+- Course endings report: `reports/RB-012-2026-07-29-course-ending-entry.md`
+- Current Opponent gaps branch: `rb-012/issue-100-opponent-gaps-entry`.
+- Current Opponent gaps PR: https://github.com/vokerg/chess_repertoir_trainer/pull/208
+- Opponent gaps implementation report: `reports/RB-012-2026-07-30-opponent-gaps-entry.md`
+- Opponent gaps derives exact `LINE_START`/`NODE` anchors, preserves pre-gap evidence and starts the existing builder before the observed move.
+- RB-011 preview/apply is constrained to the selected course, chapter, line and exact reviewed anchor.
+- CI #1586 passed lint, all builds, both opening audits, architecture guardrails, migrations and complete repository tests on the implementation head.
+- Hands-on line-start, in-line, shared-position, exact-apply, stale-anchor, responsive and keyboard review remains required.
+- My deviations remains out of scope until replace, alternate-line and keep-current-course consequences are explicit.
 
 ## Active claim
 
@@ -203,7 +200,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 
 PR #110 establishes the setup dialog, routed board-first workbench, one readable board, candidate switcher, focused evidence, opponent-response queue, explicit branch states and target/profile separation.
 
-Squash-merged PR #184 implements this direction. Squash-merged PR #189 adds mandatory reviewed course preview/apply. Squash-merged PR #205 connects the first exact existing-course finding to those integrated boundaries.
+Squash-merged PR #184 implements this direction. Squash-merged PR #189 adds mandatory reviewed course preview/apply. Squash-merged PR #205 connects Course endings to those integrated boundaries. PR #208 extends the same pattern to exact Opponent gap anchors.
 
 ## Critical path
 
@@ -230,7 +227,7 @@ RB-010 routed builder — DONE
         ↓
 RB-011 course preview/apply — DONE
         ↓
-RB-012 existing-course adaptation — READY (Opponent gaps next)
+RB-012 existing-course adaptation — REVIEW (Opponent gaps)
         ↓
 RB-016 feedback
 ```
@@ -247,6 +244,6 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
 - RB-010 is `DONE` through squash-merged PR #184 after final tested-head CI #1417.
 - RB-011 is `DONE` through squash-merged PR #189 after final review-package CI #1488.
-- RB-012 is `READY` after squash-merged PR #205; Opponent gaps is the recommended next slice.
+- RB-012 is `REVIEW` through PR #208 after implementation CI #1586; My deviations remains a later consequence-design slice.
 - RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
 - No priority or roadmap resequencing is required.

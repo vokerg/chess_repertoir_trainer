@@ -139,6 +139,10 @@
         [subtitle]="resultSubtitle()"
         [emptyMessage]="emptyMessage()"
         [findings]="store.activeFindings()"
+        [courseId]="store.course()?.id ?? null"
+        [courseName]="store.course()?.name ?? ''"
+        [reviewFilters]="review.filters"
+        [filterSummary]="store.filterSummary()"
       />
     } @else if (store.loading()) {
       <p class="status-note">Reviewing imported games...</p>

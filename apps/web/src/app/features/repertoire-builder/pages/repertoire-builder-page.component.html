@@ -12,8 +12,8 @@
 
   @if (launchContext(); as launch) {
     <app-panel
-      title="Course ending source"
-      subtitle="This builder draft extends one exact terminal course position. The source evidence remains visible while you adjust the target setup."
+      [title]="sourceTitle(launch)"
+      [subtitle]="sourceSubtitle(launch)"
     >
       <div class="launch-context">
         <div class="launch-facts">
@@ -23,25 +23,22 @@
           </div>
           <div>
             <span class="metric-label">Course path</span>
-            <strong>{{ launch.sequence || 'Terminal line position' }}</strong>
+            <strong>{{ pathFallback(launch) }}</strong>
           </div>
           <div>
-            <span class="metric-label">Observed continuation</span>
+            <span class="metric-label">Observed opponent move</span>
             <strong>{{ launch.observedMoveSan || launch.observedMoveUci }}</strong>
           </div>
           <div>
             <span class="metric-label">Evidence</span>
-            <strong>
-              {{ launch.observedGameCount }} games · minimum {{ launch.minGames }} ·
-              {{ launch.results.win }}W {{ launch.results.draw }}D {{ launch.results.loss }}L
-            </strong>
+            <strong>{{ evidenceLabel(launch) }}</strong>
           </div>
         </div>
         <p class="launch-filter-summary">{{ launch.filterSummary }}</p>
-        <p class="launch-boundary">
-          Consequence: extend this existing line only. Replacement, a separate line, and another destination are not treated as equivalent actions.
-        </p>
-        <button type="button" class="secondary" (click)="backToSource()">Back to course endings</button>
+        <p class="launch-boundary">{{ sourceBoundary(launch) }}</p>
+        <button type="button" class="secondary" (click)="backToSource()">
+          {{ backLabel(launch) }}
+        </button>
       </div>
     </app-panel>
   }
