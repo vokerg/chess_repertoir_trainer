@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 ## Program state
 
@@ -12,11 +12,11 @@ Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/ch
 
 Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197) as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`
 
-Current review: ONB-002 / [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) / [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
+Bounded import/backfill contract: ONB-002 completed through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
-Current branch: `onb-002/issue-149-bounded-import-backfill`
+Next ordered task: ONB-003 / [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
-Current report: `reports/ONB-002-2026-07-29-bounded-import-backfill.md`
+Latest report: `reports/ONB-002-2026-07-29-bounded-import-backfill.md`
 
 ## Completed contracts
 
@@ -32,7 +32,7 @@ Current report: `reports/ONB-002-2026-07-29-bounded-import-backfill.md`
 - legacy users adopted as complete;
 - exact progress without ETA.
 
-### ONB-002 review delivery
+### ONB-002
 
 - extend existing `ImportRun` rather than create a generic request/workflow platform;
 - add exact account-and-canonical-scope `AccountImportCoverage`;
@@ -99,8 +99,8 @@ ONB-002 documentation-only research:
 - report, decisions, open questions, queue, roadmap, task records, and issue mapping reconciled;
 - implementation issues #199–#203 created;
 - no production code, schema, migration, provider call, worker, Angular, or deployment behavior changed;
-- build/test/lint/browser/provider/load checks skipped because this slice changes documentation only.
+- build/test/lint/browser/provider/load checks intentionally skipped because this slice changes documentation only.
 
 ## Next deterministic action
 
-Review and accept ONB-002, then claim ONB-003 / #150 as the next ordered research task.
+Claim ONB-003 / #150 as the next ordered research task.
