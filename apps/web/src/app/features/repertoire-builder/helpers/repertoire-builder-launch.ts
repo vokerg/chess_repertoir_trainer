@@ -1,6 +1,11 @@
 import type { ParamMap, Params } from '@angular/router';
 import type { RepertoireTargetStartingPoint } from '@chess-trainer/contracts/repertoire-target';
 import { Chess } from 'chess.js';
+import {
+  isRepertoireBuilderProfileLaunch,
+  parseRepertoireBuilderProfileLaunch,
+  type RepertoireBuilderProfileLaunch,
+} from '../profile-launch';
 
 const COURSE_ENDING_SOURCE = 'course-ending' as const;
 const OPPONENT_GAP_SOURCE = 'opponent-gap' as const;
@@ -59,6 +64,10 @@ export type RepertoireBuilderCourseFindingLaunch =
   | RepertoireBuilderCourseEndingLaunchContext
   | RepertoireBuilderOpponentGapLaunch;
 
+export type RepertoireBuilderLaunchContext =
+  | RepertoireBuilderCourseFindingLaunch
+  | RepertoireBuilderProfileLaunch;
+
 // Compatibility name used only by the route-local builder store. Historical in-memory
 // Course-ending fixtures predate explicit anchorKind; parsed external links remain strict.
 export type RepertoireBuilderCourseEndingLaunch =
@@ -66,7 +75,7 @@ export type RepertoireBuilderCourseEndingLaunch =
   | (Omit<RepertoireBuilderCourseEndingLaunchContext, 'anchorKind'> & { anchorKind?: 'NODE' });
 
 export interface RepertoireBuilderLaunchParseResult {
-  context: RepertoireBuilderCourseFindingLaunch | null;
+  context: RepertoireBuilderLaunchContext | null;
   error: string | null;
 }
 
@@ -92,9 +101,13 @@ export function buildOpponentGapBuilderLaunchQueryParams(
   };
 }
 
-export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilderLaunchParseResult {
+export function parseRepertoireBuilderLaunch(
+  params: ParamMap,
+  now = new Date(),
+): RepertoireBuilderLaunchParseResult {
   const source = params.get('source');
   if (!source) return { context: null, error: null };
+  if (source === 'player-profile') return parseRepertoireBuilderProfileLaunch(params, now);
   if (source !== COURSE_ENDING_SOURCE && source !== OPPONENT_GAP_SOURCE) {
     return { context: null, error: 'This builder launch source is not supported.' };
   }
@@ -208,14 +221,15 @@ export function parseRepertoireBuilderLaunch(params: ParamMap): RepertoireBuilde
 }
 
 export function builderLaunchStartingPoint(
-  context: { courseId: number; lineId: number } | null,
+  context: RepertoireBuilderLaunchContext | null,
 ): RepertoireTargetStartingPoint {
-  return context
+  return context && isRepertoireBuilderCourseFindingLaunch(context)
     ? { kind: 'COURSE_POSITION', courseId: context.courseId, lineId: context.lineId }
     : { kind: 'INITIAL_POSITION' };
 }
 
-export function builderLaunchReturnUrl(context: RepertoireBuilderCourseFindingLaunch): string {
+export function builderLaunchReturnUrl(context: RepertoireBuilderLaunchContext): string {
+  if (isRepertoireBuilderProfileLaunch(context)) return '/progress/profile';
   const query = new URLSearchParams(context.sourceFilters);
   query.set('restore', '1');
   if (context.source === 'COURSE_ENDING') {
@@ -226,6 +240,16 @@ export function builderLaunchReturnUrl(context: RepertoireBuilderCourseFindingLa
     query.set('minCoveredPlies', String(context.minCoveredPlies));
   }
   return `/courses/${context.courseId}/review?${query.toString()}`;
+}
+
+export function isRepertoireBuilderCourseFindingLaunch(
+  context: RepertoireBuilderLaunchContext | RepertoireBuilderCourseEndingLaunch | null,
+): context is RepertoireBuilderCourseFindingLaunch {
+  return Boolean(
+    context
+    && !isRepertoireBuilderProfileLaunch(context)
+    && (context.source === 'COURSE_ENDING' || context.source === 'OPPONENT_GAP'),
+  );
 }
 
 function buildCommonQueryParams(input: CourseFindingBuilderLaunchBaseInput): Params {
