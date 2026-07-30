@@ -10,9 +10,9 @@ Branch: `visual-transformation/vt-301-courses-review`
 
 Target: `main`
 
-Pull request: draft PR #215
+Pull request: squash-merged PR #215
 
-Disposition: behavior-preserving implementation complete; repository CI and direct browser review pending
+Disposition: integrated; exact-head repository CI passed and direct browser review was explicitly deferred
 
 ## Objective
 
@@ -76,36 +76,28 @@ No second store, API owner, route source, filter model, finding mapper, Builder 
 - no store, API, route, query, filter, contract, schema, migration, database, or dependency change;
 - no Course Review calculation, finding mapping, anchor planning, or Builder launch change;
 - no chapter-line table, line editor, training, puzzle, scenario, analysis-workbench, Builder, or Lab change;
-- no new shared primitive;
-- no merge without explicit approval.
+- no new shared primitive.
 
-## Validation
+## Validation and integration
 
-No working local checkout is available in this session, so local build, lint, tests, architecture checks, and browser validation are not represented as passed.
+No working local checkout was available in the implementation session, so local build, lint, tests, architecture checks, and browser validation are not represented as passed.
 
-Final pre-PR branch comparison:
+Final branch disposition:
 
-- current base: `main` commit `aa63136ed28ec87f5da6047f5960695fee63bbbc`;
-- branch synchronized through PR #214 and is zero commits behind;
-- runtime files changed: 11 Course/Course Review TS, HTML, and CSS files;
-- no store, API, helper, route, contract, package, schema, migration, database, or backend file changed.
+- final implementation head: `ad2f5a0f9b75b06050fdb02d43ae763dcf7049d8`;
+- exact-head CI run #1606 completed successfully;
+- the user explicitly approved squash integration and deferred direct browser review;
+- PR #215 was squash-merged into `main` as `51e4967bc49b6ca1ad492456b13b1802acd5f45f`;
+- no comments, submitted reviews, or unresolved review threads blocked integration.
 
-Required:
+## Deferred browser review
 
-- repository CI including Angular template/type compilation, lint, architecture guardrails, migrations, and complete tests;
-- exact final documentation-head CI;
-- direct browser review or explicit recorded deferral.
-
-## Browser review required
-
-Review realistic desktop, 980px, 640px, and narrow-phone states for:
+The following checklist remains recorded for a later consolidated product-review pass rather than represented as observed validation:
 
 - Course list loading, error, empty, populated, creation, deletion, long names/descriptions, and action focus;
 - Course detail loading, error, empty/populated chapters, course/chapter rename, chapter creation/deletion, subline disclosure, header actions, and long labels;
 - all three Course Review modes, collapsed/expanded filters, thresholds, restored scope, mixed-side warning, loading/error/empty/populated findings, conflicts, shared positions, multiple exact line anchors, Builder actions, analysis/game/provider links, and long evidence labels;
-- keyboard traversal, focus visibility, destructive confirmations, reduced motion, and mobile-navigation clearance.
-
-Unavailable states must be recorded explicitly rather than represented as observed passes.
+- desktop, 980px, 640px, narrow-phone, keyboard traversal, focus visibility, destructive confirmations, reduced motion, and mobile-navigation clearance.
 
 ## Files inspected
 
