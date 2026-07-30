@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { defaultRepertoireBuilderSetup } from '../helpers/repertoire-builder-target';
-import type { RepertoireBuilderSetup } from '../state/repertoire-builder.models';
+import type {
+  RepertoireBuilderProfileDefaults,
+  RepertoireBuilderSetup,
+} from '../state/repertoire-builder.models';
 import { RepertoireBuilderSetupDialogComponent } from './repertoire-builder-setup-dialog.component';
 
 describe('RepertoireBuilderSetupDialogComponent', () => {
@@ -22,6 +25,8 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
     expect(root.textContent).toContain('Choose the target for this draft');
     expect(root.textContent).toContain('Refreshing the page starts a new draft');
     expect(root.querySelector('[aria-label="Opponent-response coverage percent"]')).not.toBeNull();
+    expect(root.textContent).toContain('playable minimum');
+    expect(root.textContent).toContain('coverage default');
   });
 
   it('makes replacement explicit when setup is reopened from an active draft', () => {
@@ -34,7 +39,7 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
     expect(root.querySelector('button[type="submit"]')?.textContent).toContain('Replace draft');
   });
 
-  it('emits one explicit target setup', () => {
+  it('emits one explicit standard target setup without hidden provenance', () => {
     const submissions: RepertoireBuilderSetup[] = [];
     fixture.componentInstance.submitted.subscribe((value) => submissions.push(value));
 
@@ -43,5 +48,66 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
     fixture.detectChanges();
 
     expect(submissions).toEqual([defaultRepertoireBuilderSetup()]);
+    expect(submissions[0].profileDefaults).toBeUndefined();
+  });
+
+  it('preserves immutable profile provenance while its side remains selected', () => {
+    const profileDefaults = createProfileDefaults();
+    fixture.componentRef.setInput('initialSetup', {
+      ...profileDefaults.setup,
+      profileDefaults,
+    });
+    fixture.componentRef.setInput('profileSuggestion', '16 profiled white games · Solid intent');
+    fixture.detectChanges();
+
+    const submissions: RepertoireBuilderSetup[] = [];
+    fixture.componentInstance.submitted.subscribe((value) => submissions.push(value));
+    (fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Suggested from Chess profile');
+    expect(submissions[0].profileDefaults).toEqual(profileDefaults);
+  });
+
+  it('drops profile provenance when the user deliberately changes side', () => {
+    const profileDefaults = createProfileDefaults();
+    fixture.componentRef.setInput('initialSetup', {
+      ...profileDefaults.setup,
+      profileDefaults,
+    });
+    fixture.componentRef.setInput('profileSuggestion', '16 profiled white games · Solid intent');
+    fixture.detectChanges();
+
+    const black = fixture.nativeElement.querySelector('input[value="BLACK"]') as HTMLInputElement;
+    black.click();
+    fixture.detectChanges();
+
+    const submissions: RepertoireBuilderSetup[] = [];
+    fixture.componentInstance.submitted.subscribe((value) => submissions.push(value));
+    (fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(submissions[0].side).toBe('BLACK');
+    expect(submissions[0].profileDefaults).toBeUndefined();
   });
 });
+
+function createProfileDefaults(): RepertoireBuilderProfileDefaults {
+  return {
+    source: {
+      kind: 'PLAYER_PROFILE',
+      profileContractVersion: '2026-07-v1',
+      profileGeneratedAt: '2026-07-30T18:00:00.000Z',
+      classificationVersion: '2026-07-rules-v2',
+    },
+    setup: {
+      side: 'WHITE',
+      speedPreset: 'BLITZ_AND_SLOWER',
+      ratingTarget: 'MY_PEERS',
+      ratingGroup: null,
+      persona: 'SOLID',
+      maximumTheoryBurden: 'LOW',
+      coveragePercent: 85,
+    },
+  };
+}
