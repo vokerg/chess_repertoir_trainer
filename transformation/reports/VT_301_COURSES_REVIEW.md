@@ -10,7 +10,7 @@ Branch: `visual-transformation/vt-301-courses-review`
 
 Target: `main`
 
-Pull request: pending
+Pull request: draft PR #215
 
 Disposition: behavior-preserving implementation complete; repository CI and direct browser review pending
 
