@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 This roadmap orders capability stages and decision gates. Detailed execution belongs in individual task files.
 
@@ -176,7 +176,7 @@ Gate: passed. A user can build one bounded repertoire slice, control opponent-re
 
 ## Stage 6 — course materialization and adaptation
 
-State: RB-011 is complete through squash-merged PR #189. The first RB-012 Course endings entry slice is integrated through squash-merged PR #205, and RB-012 is `READY` for Opponent gaps.
+State: RB-011 is complete through squash-merged PR #189. The first RB-012 Course endings entry slice is integrated through squash-merged PR #205. The second Opponent gaps entry slice is in `REVIEW` through PR #208.
 
 RB-011 delivered:
 
@@ -197,7 +197,7 @@ RB-011 delivered:
 
 PR #189 was squash-merged as `01b36f9503ccfbb3dced55d56589b89cfd163867`. Final review-package CI #1488 passed the complete repository workflow. Issue #99 is closed.
 
-RB-012 integrated first slice provides:
+RB-012 integrated Course endings slice provides:
 
 - a line-specific **Extend this line in builder** action for every exact Course ending line/node reference;
 - a bounded validated launch payload retaining source course context, terminal FEN, observed continuation, game evidence and applied filters;
@@ -213,16 +213,33 @@ RB-012 integrated first slice provides:
 
 PR #205 was squash-merged as `c2266c9a8ffca00696da264abb3476f36ec82b50` after final review-package head `45851192b77327e23546eb691d3629c3a193144d` passed CI #1541.
 
+RB-012 Opponent gaps review slice provides:
+
+- exact API-side `LINE_START` and `NODE` anchors at the pre-gap position through the existing reintegration planner;
+- one **Cover this gap in builder** action per exact line/anchor match;
+- a generalized bounded Course-finding launch payload with explicit coverage-extension intent;
+- a `COURSE_POSITION` target and RB-009 start before the observed opponent move;
+- observed-move inclusion in the initial RB-007 request;
+- fixed source course side with editable speed, population, persona, theory and coverage;
+- visible source evidence, applied-filter summary and minimum course overlap;
+- source-scope restoration when returning to Opponent gaps;
+- RB-011 preview/apply locked to the selected course/chapter/line and exact `LINE_START`/`NODE` anchor;
+- safe no-match behavior for stale or changed source endpoints;
+- preserved My deviations behavior without replacement/alternate-line ambiguity;
+- no new API route, persistence, migration, course-writer change or recommendation engine.
+
+Implementation CI #1586 passed the complete repository workflow. Hands-on review through PR #208 remains required.
+
 Remaining Stage 6 goals:
 
-- add Opponent gaps as the next explicit coverage-extension entry point;
+- review and integrate the Opponent gaps slice;
 - define explicit replace/alternate/keep-course consequences before integrating My deviations;
-- calibrate the complete Course ending loop against populated data, responsive layouts and keyboard traversal;
+- calibrate Course endings and Opponent gaps against populated data, responsive layouts and keyboard traversal;
 - consider retiring or consolidating source reports only after multiple finding types demonstrate equivalent builder maintenance value.
 
 Tasks: RB-011, RB-012.
 
-Gate: partially passed. Safe course materialization and the first exact finding-to-trainable-material loop are integrated. The broader multi-finding adaptation stage remains open under RB-012.
+Gate: partially passed. Safe course materialization and Course ending adaptation are integrated. Exact Opponent gap adaptation is implemented for review; the broader multi-consequence adaptation stage remains open under RB-012.
 
 ## Stage 7 — specialized personas and optional intelligence
 
@@ -261,8 +278,8 @@ Gate: the program can evaluate real opening outcomes rather than only course siz
 Safe parallel work:
 
 - review of the stacked RB-004/RB-005 profile implementation;
-- the next RB-012 Opponent gaps slice;
-- post-merge populated-browser calibration of the Course endings loop;
+- review of RB-012 Opponent gaps through PR #208;
+- post-merge populated-browser calibration of Course endings;
 - RB-017 bounded traps pilot.
 
 High-collision areas requiring coordination:
@@ -279,6 +296,6 @@ High-collision areas requiring coordination:
 - RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are `DONE`.
 - RB-004 is `REVIEW` through PR #136.
 - RB-005 is `REVIEW` through stacked PR #139 and remains dependent on RB-004 acceptance and stack reconciliation.
-- RB-012 is `READY` after squash-merged PR #205; Opponent gaps is the next bounded slice.
+- RB-012 is `REVIEW` through PR #208 for Opponent gaps; My deviations remains a later consequence-design slice.
 - RB-017 remains `CLAIMED` and isolated.
 - No priority change or roadmap resequencing is required.
