@@ -35,7 +35,10 @@
 
     @if (finding().lineReferences.length > 0) {
       <div class="line-reference-list">
-        @for (lineRef of finding().lineReferences; track lineRef.lineId + ':' + lineRef.nodeId) {
+        @for (
+          lineRef of finding().lineReferences;
+          track lineRef.lineId + ':' + lineRef.anchorKind + ':' + lineRef.nodeId
+        ) {
           <div class="line-reference-item">
             <a [routerLink]="['/chapters', lineRef.chapterId, 'lines']">{{ lineRef.lineName }}</a>
             @if (builderQueryParams(lineRef); as queryParams) {
@@ -44,7 +47,7 @@
                 [routerLink]="['/builder']"
                 [queryParams]="queryParams"
               >
-                Extend this line in builder
+                {{ builderActionLabel() }}
               </a>
             }
           </div>
