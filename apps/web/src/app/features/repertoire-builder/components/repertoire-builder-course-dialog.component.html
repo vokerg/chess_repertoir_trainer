@@ -172,6 +172,85 @@
           revision {{ applied.courseContentRevision }}
         </span>
       </section>
+
+      @if (completionSummaryAvailable()) {
+        <section class="completion-summary" aria-labelledby="builder-completion-summary-title">
+          <div class="completion-summary-heading">
+            <div>
+              <p class="course-kicker">Optional generated interpretation</p>
+              <h3 id="builder-completion-summary-title">Study this applied slice</h3>
+              <p>The verified result above remains authoritative. Generated text cannot change the course.</p>
+            </div>
+            <button
+              type="button"
+              class="secondary-button"
+              [disabled]="completionSummaryLoading()"
+              (click)="requestCompletionSummary()"
+            >
+              {{ completionSummaryLoading() ? 'Generating…' : (completionSummary() ? 'Regenerate summary' : 'Generate study summary') }}
+            </button>
+          </div>
+
+          @if (completionSummaryError()) {
+            <p class="completion-summary-error" role="alert">{{ completionSummaryError() }}</p>
+          }
+
+          @if (completionSummary(); as generated) {
+            <div class="completion-summary-result">
+              <div class="completion-summary-fact">
+                <span>Verified result</span>
+                <strong>{{ generated.authoritativeResult.factualSummary }}</strong>
+              </div>
+
+              <div class="completion-summary-copy">
+                <span>Generated interpretation</span>
+                <p>{{ generated.interpretation.interpretation }}</p>
+              </div>
+
+              @if (generated.interpretation.highlights.length > 0) {
+                <div>
+                  <h4>Highlights</h4>
+                  <ul>
+                    @for (highlight of generated.interpretation.highlights; track highlight.text) {
+                      <li>{{ highlight.text }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (generated.interpretation.studyChecklist.length > 0) {
+                <div>
+                  <h4>Generated study checklist</h4>
+                  <ol>
+                    @for (item of generated.interpretation.studyChecklist; track item.text) {
+                      <li>{{ item.text }}</li>
+                    }
+                  </ol>
+                </div>
+              }
+
+              @if (generated.interpretation.unresolvedWorkNote; as note) {
+                <p class="completion-summary-note">{{ note.text }}</p>
+              }
+              @if (generated.interpretation.warning; as warning) {
+                <p class="completion-summary-warning">{{ warning.text }}</p>
+              }
+
+              @if (generated.referencedFacts.length > 0) {
+                <details class="completion-summary-facts">
+                  <summary>Referenced deterministic facts</summary>
+                  <dl>
+                    @for (fact of generated.referencedFacts; track fact.id) {
+                      <div><dt>{{ fact.label }}</dt><dd>{{ fact.value }}</dd></div>
+                    }
+                  </dl>
+                </details>
+              }
+              <small>{{ generated.disclaimer }}</small>
+            </div>
+          }
+        </section>
+      }
     }
 
     <footer class="course-actions">

@@ -92,6 +92,7 @@ function capability(enabled: boolean): AiCapabilitiesResponse {
     widgets: {
       gameReview: false,
       builderCandidateExplanation: enabled,
+      builderCompletionSummary: false,
     },
   };
 }

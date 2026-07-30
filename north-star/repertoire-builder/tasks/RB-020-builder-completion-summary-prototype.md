@@ -1,6 +1,6 @@
 # RB-020 — Prototype post-apply Builder course summary
 
-Status: PROPOSED
+Status: REVIEW
 
 Priority: P3
 
@@ -10,23 +10,27 @@ Queue class: Stretch goal
 
 Delivery class: North-star prototype
 
-Planning maturity: Architecturally bounded
+Planning maturity: Implemented and validation-ready
 
 GitHub issue: `#219`
 
-Claimed by: unclaimed
+Claimed by: `vokerg` / ChatGPT agent session
 
-Claim branch: none
+Claim PR: `#227`
 
-Claimed at: none
+Implementation branch: `rb-020/issue-219-completion-summary`
 
-Claim scope: none
+Implementation PR: `#228`
+
+Claimed at: 2026-07-30
+
+Claim scope: Implement the disabled-by-default, explicit post-apply completion-summary slice: shared AI contracts, capability gating, authoritative completion-context reconciliation after RB-011 apply, transient dialog-scoped Angular state, optional result-panel composition, focused validation, and North Star reporting. Excludes all pre-apply behavior, destination/target selection, preview/apply services, course writes, persistence, background generation, candidate explanation, and profile narrative.
 
 ## Outcome
 
 Provide one disabled-by-default, on-demand generated summary after a Repertoire Builder draft has already been applied through the authoritative RB-011 course-write boundary.
 
-The prototype may explain what changed and suggest a study checklist. It is post-decision and post-write; it must remain removable without changing destination selection, preview, apply eligibility, course revisions, or stored course content.
+The prototype may explain what changed and suggest a study checklist. It is post-decision and post-write; it remains removable without changing destination selection, preview, apply eligibility, course revisions, or stored course content.
 
 ## Why this task exists
 
@@ -36,14 +40,14 @@ RB-011 already exposes authoritative created/reused/skipped/conflicting counts, 
 
 `RepertoireBuilderCourseDialogComponent` renders the authoritative `result()` status block only after `RepertoireBuilderCourseStore.applyCourseOutput()` succeeds.
 
-The prototype belongs immediately after that result block. The request control must not exist during course selection, chapter selection, preview review, target selection, or apply confirmation.
+The prototype is composed immediately after that result block. The request control does not exist during course selection, chapter selection, preview review, target selection, or apply confirmation.
 
 ## Required architecture
 
 ### Capability and trigger
 
 - require `AI_WIDGETS_ENABLED=true`;
-- require a separate use-case flag such as `AI_BUILDER_COMPLETION_SUMMARY_ENABLED=true`;
+- require `AI_BUILDER_COMPLETION_SUMMARY_ENABLED=true`;
 - expose `builderCompletionSummary` through `/api/ai/capabilities`;
 - render no control when disabled or provider configuration is incomplete;
 - generation is explicit and on demand after apply only;
@@ -54,17 +58,17 @@ The prototype belongs immediately after that result block. The request control m
 - implement under `apps/api/src/modules/ai/repertoire-builder/completion-summary/`;
 - reuse the existing OpenAI-compatible JSON client and AI error mapping;
 - accept a bounded structured completion payload containing the completed RB-009 session/draft identity, exact destination, excluded branches, selected target, and RB-011 apply response;
-- re-read or reconcile owned destination identifiers and current course revision where needed before generation;
+- re-read and reconcile owned destination identifiers, applied line, and current course revision before generation;
 - treat the RB-011 result as authoritative for line identity, created/reused counts, idempotence, and course revision;
 - validate generated output through a dedicated `@chess-trainer/contracts/ai` schema;
-- reject invented moves, branches, conflicts, destinations, counts, revisions, or statements that unapplied work was written;
-- separate factual result fields from optional interpretation/study suggestions in the response contract.
+- reject invented moves, branches, conflicts, destinations, counts, revisions, causal chess claims, or statements that unapplied work was written;
+- generate the factual result sentence server-side and keep it separate from optional interpretation/study suggestions.
 
 ### Angular boundary
 
-- add a page/dialog-scoped AI summary store/service separate from `RepertoireBuilderCourseStore`;
+- use a page/dialog-scoped AI summary store separate from `RepertoireBuilderCourseStore`;
 - pass only immutable completion inputs after `result()` exists;
-- do not expose methods that can select a destination, select a target, request preview, or request apply;
+- expose no methods that select a destination or target, request preview/apply, write a course, or navigate;
 - clear output when the dialog closes, a new draft starts, or a different apply result appears;
 - preserve the existing result block as the complete fallback;
 - label generated text as interpretation and keep authoritative counts/destination visible first.
@@ -75,29 +79,32 @@ The prototype belongs immediately after that result block. The request control m
 - no Prisma model, migration, browser storage, hidden history, background generation, or automatic regeneration;
 - output may disappear when the route/dialog is closed without affecting the applied course.
 
-## Suggested output shape
+## Implemented output shape
 
-A bounded response may contain:
+The response contains:
 
-- one factual summary sentence using reconciled identifiers/counts;
-- up to three coverage or branch highlights tied to supplied branch/path IDs;
-- up to three study-checklist items explicitly labelled as generated suggestions;
-- one unresolved/excluded-work note when applicable;
-- one warning when the result is idempotent or context is incomplete.
+- one server-generated factual result sentence using reconciled destination, line, counts, and revision;
+- one bounded generated interpretation tied to supplied fact IDs;
+- up to three highlights tied to supplied path/result IDs;
+- up to three explicitly generated study-checklist items tied to supplied applied paths;
+- one optional unresolved-work note tied only to excluded authoritative work;
+- one optional warning tied only to idempotence, excluded work, transpositions, or incomplete context;
+- the deterministic facts actually referenced;
+- a fixed disclaimer that course changes remain authoritative.
 
-The model must not claim that deferred, ignored, stale, conflicting, or omitted work was applied.
+The model cannot select, preview, apply, organize, or mutate course content.
 
-## Acceptance criteria
+## Acceptance status
 
 - AI disabled leaves course preview/apply and result rendering unchanged.
 - AI enabled exposes one explicit request only after an apply result exists.
 - No provider call occurs during destination selection, preview, target selection, or apply.
 - Generated output cannot alter preview token, selected target, apply eligibility, destination, line identity, course revision, result counts, course content, or navigation.
-- Unsupported branch/path/destination/count/revision references fail validation or are replaced by authoritative values.
-- Provider failure leaves the authoritative result and close/navigation controls usable.
-- Output clears on dialog close, new draft, or new result.
-- Tests demonstrate unchanged `RepertoireBuilderCourseStore` state and unchanged applied result before and after summary requests.
-- Removing the use-case adapter, flags, contracts, store, and optional component composition requires no course schema, migration, or writer change.
+- Unsupported fact, move, destination, count, line, revision, idempotence, causal, or excluded-work claims fail validation.
+- Provider failure leaves the authoritative result and all existing controls usable.
+- Output clears on dialog close, new draft, or new result/revision.
+- Focused tests assert unchanged completion inputs and the summary store has no course-store dependency.
+- Removing the use-case adapter, flags, contracts, store, and optional component composition requires no course schema, migration, preview/apply, or writer change.
 
 ## Explicit exclusions
 
@@ -109,26 +116,31 @@ The model must not claim that deferred, ignored, stale, conflicting, or omitted 
 - course mutations, candidate ranking, or profile calculation;
 - candidate trade-off and profile narrative prototypes.
 
-## Required validation
+## Validation
 
-- capability disabled/unconfigured cases;
-- post-apply-only visibility and no automatic request;
-- idempotent and non-idempotent apply results;
-- created/reused/excluded branch reconciliation;
-- invented move/branch/destination/count/revision rejection;
-- timeout, rate-limit, invalid JSON, invalid schema, and provider failure;
-- stale clearing on close/new draft/new result;
-- desktop/mobile/keyboard presentation;
-- direct assertion that course-store state and applied course data are unchanged.
+Implementation head `e68ad1aa251f66bded3912806af47778d0d787b0` passed complete repository CI run `30577892183` / #1649 on 2026-07-30:
+
+- lint;
+- build;
+- both opening-classification audits;
+- architecture guardrails;
+- database migrations;
+- complete repository tests.
+
+Focused tests cover disabled/unconfigured capability behavior, explicit post-apply-only requests, authoritative destination/count reconciliation, stale revision rejection, bounded provider context, unsupported references, excluded-work hallucination, timeout propagation, stale response suppression, dialog-close/new-result clearing, deterministic-result precedence, and unchanged completion input.
+
+Live provider requests, authenticated browser walkthrough, and human usefulness comparison remain review activities and are not claimed as completed validation.
 
 ## Dependency and queue decision
 
-RB-020 is a stretch goal downstream of RB-015. It should not delay the deterministic builder roadmap or RB-016 outcome measurement.
+RB-020 remains a P3 stretch goal downstream of RB-015. It does not delay the deterministic builder roadmap, RB-017, RB-013, or RB-016.
 
-It becomes `READY` only after RB-015 is accepted with this post-apply boundary and no higher-priority review/closure work needs the same files.
+No order or priority change is recommended. After RB-020, remaining North Star work is RB-004/RB-005 review and integration, the already-claimed RB-017 pilot, RB-013 after profile integration, and RB-016 after real product-use evidence exists.
 
 ## Completion
 
-Report: none
+Report: `reports/RB-020-2026-07-30-builder-completion-summary.md`
 
-Completed at: none
+Review PR: `#228`
+
+Moved to review: 2026-07-30

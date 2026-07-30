@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import type { AiBuilderCompletionSummaryRequest } from '@chess-trainer/contracts/ai';
 import type { CandidateDecisionRequest } from '@chess-trainer/contracts/candidate-decision';
 import {
   PageHeaderComponent,
@@ -29,6 +30,7 @@ import {
   type RepertoireBuilderCourseFindingLaunch,
 } from '../helpers/repertoire-builder-launch';
 import { RepertoireBuilderCandidateExplanationStore } from '../state/repertoire-builder-candidate-explanation.store';
+import { RepertoireBuilderCompletionSummaryStore } from '../state/repertoire-builder-completion-summary.store';
 import { RepertoireBuilderCourseStore } from '../state/repertoire-builder-course.store';
 import {
   REPERTOIRE_BUILDER_CANDIDATE_LIMIT,
@@ -51,6 +53,7 @@ import { RepertoireBuilderStore } from '../state/repertoire-builder.store';
     RepertoireBuilderAiApiService,
     RepertoireBuilderStore,
     RepertoireBuilderCandidateExplanationStore,
+    RepertoireBuilderCompletionSummaryStore,
     RepertoireBuilderCourseStore,
   ],
   templateUrl: './repertoire-builder-page.component.html',
@@ -62,6 +65,7 @@ export class RepertoireBuilderPageComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly store = inject(RepertoireBuilderStore);
   protected readonly candidateExplanationStore = inject(RepertoireBuilderCandidateExplanationStore);
+  protected readonly completionSummaryStore = inject(RepertoireBuilderCompletionSummaryStore);
   protected readonly courseStore = inject(RepertoireBuilderCourseStore);
   protected readonly launchContext = signal<RepertoireBuilderCourseFindingLaunch | null>(null);
   protected readonly launchError = signal<string | null>(null);
@@ -70,6 +74,9 @@ export class RepertoireBuilderPageComponent implements OnInit {
       this.store.candidateResponse(),
       this.store.previewCandidate()?.moveUci ?? null,
     );
+  });
+  private readonly synchronizeCompletionSummary = effect(() => {
+    this.completionSummaryStore.sync(this.currentCompletionSummaryRequest());
   });
 
   protected readonly initialSetup = computed<RepertoireBuilderSetup>(() => {
@@ -126,6 +133,7 @@ export class RepertoireBuilderPageComponent implements OnInit {
     this.launchContext.set(parsed.context);
     this.launchError.set(parsed.error);
     void this.candidateExplanationStore.initialize();
+    void this.completionSummaryStore.initialize();
   }
 
   protected sourceTitle(launch: RepertoireBuilderCourseFindingLaunch): string {
@@ -169,6 +177,8 @@ export class RepertoireBuilderPageComponent implements OnInit {
   }
 
   protected startNewDraft(): void {
+    this.courseStore.close();
+    this.completionSummaryStore.sync(null);
     this.launchContext.set(null);
     this.launchError.set(null);
     this.store.startNewDraft();
@@ -189,6 +199,10 @@ export class RepertoireBuilderPageComponent implements OnInit {
       this.store.candidateResponse(),
       this.store.previewCandidate()?.moveUci ?? null,
     );
+  }
+
+  protected requestCompletionSummary(): void {
+    void this.completionSummaryStore.request(this.currentCompletionSummaryRequest());
   }
 
   protected async backToSource(): Promise<void> {
@@ -212,6 +226,27 @@ export class RepertoireBuilderPageComponent implements OnInit {
       decisionRole: branch.role,
       target: session.targetSnapshot.value,
       candidateLimit: REPERTOIRE_BUILDER_CANDIDATE_LIMIT,
+    };
+  }
+
+  private currentCompletionSummaryRequest(): AiBuilderCompletionSummaryRequest | null {
+    if (!this.courseStore.open()) return null;
+    const draft = this.courseStore.draft();
+    const selectedTarget = this.courseStore.selectedTarget();
+    const applyResult = this.courseStore.result();
+    const course = this.courseStore.courses().find((item) => item.id === applyResult?.courseId);
+    const chapter = this.courseStore.chapters().find((item) => item.id === applyResult?.chapterId);
+    if (!draft || !selectedTarget || !applyResult || !course || !chapter) return null;
+    return {
+      draft,
+      selectedTarget,
+      applyResult,
+      destination: {
+        courseId: course.id,
+        courseName: course.name,
+        chapterId: chapter.id,
+        chapterName: chapter.name,
+      },
     };
   }
 }

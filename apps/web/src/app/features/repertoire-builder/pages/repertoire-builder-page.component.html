@@ -124,12 +124,17 @@
       [error]="courseStore.error()"
       [canPreview]="courseStore.canPreview()"
       [canApply]="courseStore.canApply()"
+      [completionSummaryAvailable]="completionSummaryStore.available()"
+      [completionSummaryLoading]="completionSummaryStore.loading()"
+      [completionSummaryError]="completionSummaryStore.error()"
+      [completionSummary]="completionSummaryStore.response()"
       (courseSelected)="courseStore.selectCourse($event)"
       (chapterSelected)="courseStore.selectChapter($event)"
       (newLineNameChanged)="courseStore.setNewLineName($event)"
       (previewRequested)="courseStore.previewCourseOutput()"
       (targetSelected)="courseStore.selectTarget($event)"
       (applyRequested)="courseStore.applyCourseOutput()"
+      (completionSummaryRequested)="requestCompletionSummary()"
       (closed)="courseStore.close()"
     />
   }

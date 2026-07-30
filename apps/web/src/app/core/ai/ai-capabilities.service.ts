@@ -11,6 +11,7 @@ export class AiCapabilitiesService {
       widgets: {
         gameReview: false,
         builderCandidateExplanation: false,
+        builderCompletionSummary: false,
       },
     })),
     shareReplay({ bufferSize: 1, refCount: false }),

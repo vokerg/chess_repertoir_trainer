@@ -36,6 +36,7 @@ describe('GameDetailPageComponent', () => {
       widgets: {
         gameReview: false,
         builderCandidateExplanation: false,
+        builderCompletionSummary: false,
       },
     });
 
@@ -102,6 +103,7 @@ describe('GameDetailPageComponent', () => {
       widgets: {
         gameReview: true,
         builderCandidateExplanation: false,
+        builderCompletionSummary: false,
       },
     });
 
