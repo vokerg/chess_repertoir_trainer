@@ -17,7 +17,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 ## Active rollout
 
 - VT-301 Batch 1 / draft PR #196 migrates `/progress` and `/progress/accounts/:accountId`; repository CI passed and browser review remains pending.
-- VT-301 Batch 3 migrates `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`, reuses `app-fact-grid` for account/connection evidence, and externalizes the Appearance template/styles while preserving account, OAuth, and sound-preference behavior.
+- VT-301 Batch 3 / draft PR #209 migrates `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`, reuses `app-fact-grid` for account/connection evidence, and externalizes the Appearance template/styles while preserving account, OAuth, and sound-preference behavior.
 
 ## Accepted feature debt
 
