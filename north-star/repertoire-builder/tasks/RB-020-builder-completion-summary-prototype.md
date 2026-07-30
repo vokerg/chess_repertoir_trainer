@@ -1,6 +1,6 @@
 # RB-020 — Prototype post-apply Builder course summary
 
-Status: REVIEW
+Status: DONE
 
 Priority: P3
 
@@ -10,7 +10,7 @@ Queue class: Stretch goal
 
 Delivery class: North-star prototype
 
-Planning maturity: Implemented and validation-ready
+Planning maturity: Accepted and integrated
 
 GitHub issue: `#219`
 
@@ -21,6 +21,8 @@ Claim PR: `#227`
 Implementation branch: `rb-020/issue-219-completion-summary`
 
 Implementation PR: `#228`
+
+Squash commit: `d79557246330cd68cf762ce54144d2e9bee4b158`
 
 Claimed at: 2026-07-30
 
@@ -118,7 +120,7 @@ The model cannot select, preview, apply, organize, or mutate course content.
 
 ## Validation
 
-Implementation head `e68ad1aa251f66bded3912806af47778d0d787b0` passed complete repository CI run `30577892183` / #1649 on 2026-07-30:
+Final review-package head `88209147d3989e53fb949343d0eadf9c25e028ef` passed complete repository CI run `30578456168` / #1652 on 2026-07-30:
 
 - lint;
 - build;
@@ -129,7 +131,7 @@ Implementation head `e68ad1aa251f66bded3912806af47778d0d787b0` passed complete r
 
 Focused tests cover disabled/unconfigured capability behavior, explicit post-apply-only requests, authoritative destination/count reconciliation, stale revision rejection, bounded provider context, unsupported references, excluded-work hallucination, timeout propagation, stale response suppression, dialog-close/new-result clearing, deterministic-result precedence, and unchanged completion input.
 
-Live provider requests, authenticated browser walkthrough, and human usefulness comparison remain review activities and are not claimed as completed validation.
+Live provider requests, authenticated browser walkthrough, and human usefulness comparison were not completed before integration. This residual risk is accepted because the prototype remains disabled by default, transient, non-authoritative, failure-isolated, and removable.
 
 ## Dependency and queue decision
 
@@ -139,8 +141,12 @@ No order or priority change is recommended. After RB-020, remaining North Star w
 
 ## Completion
 
-Report: `reports/RB-020-2026-07-30-builder-completion-summary.md`
+Implementation report: `reports/RB-020-2026-07-30-builder-completion-summary.md`
 
-Review PR: `#228`
+Closure report: `reports/RB-020-2026-07-30-closure.md`
 
-Moved to review: 2026-07-30
+Implementation PR: `#228`
+
+Squash commit: `d79557246330cd68cf762ce54144d2e9bee4b158`
+
+Completed at: 2026-07-30
