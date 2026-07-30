@@ -1,6 +1,12 @@
 # AI widgets
 
-AI widgets are optional, on-demand product features backed by a server-side OpenAI-compatible provider. Game review generates a persisted coaching overview for one imported game. The Repertoire Builder candidate-explanation prototype generates a transient interpretation of already-computed candidate evidence. Both remain isolated from Stockfish execution, tagging, imported-game processing, deterministic candidate ranking, Builder reducers, and course writes.
+AI widgets are optional, on-demand product features backed by a server-side OpenAI-compatible provider.
+
+- Imported-game review generates a persisted coaching overview for one imported game.
+- Repertoire Builder candidate explanation generates a transient interpretation of already-computed candidate evidence.
+- Repertoire Builder completion summary generates a transient interpretation and study checklist only after an authoritative course apply result exists.
+
+All three remain isolated from Stockfish execution, tagging, imported-game processing, deterministic candidate ranking, Builder reducers, preview/apply decisions, and course writes.
 
 ## Runtime boundaries
 
@@ -32,23 +38,46 @@ Angular Builder page
        -> transient response only
 ```
 
-`apps/api/src/modules/ai` owns provider configuration, request execution, prompts, output validation, persistence where the use case explicitly requires it, and AI-specific errors. Feature adapters under that module own subject-specific context and reconciliation. Game review reads existing imported-game and completed-analysis application services. Builder explanation calls the existing candidate-decision application service directly. Neither adapter calls REST internally or runs Stockfish.
+### Builder completion summary
 
-Angular owns capability visibility, loading/generation state, rendering, and interaction with existing feature composition. Provider keys, model names, prompts, raw provider payloads, and server-side context never reach the browser.
+```text
+Angular Builder course dialog
+  -> authoritative RB-011 apply succeeds
+  -> existing result block renders first
+  -> explicit user click only
+  -> POST /api/ai/repertoire-builder/completion-summary
+       -> validate completed draft/result algebra
+       -> re-read owned chapter, applied line, and current course revision
+       -> bounded result/path/excluded-work fact projection
+       -> OpenAI-compatible JSON client
+       -> evidence-reference and non-authority reconciliation
+       -> transient response only
+```
+
+`apps/api/src/modules/ai` owns provider configuration, request execution, prompts, output validation, persistence where a use case explicitly requires it, and AI-specific errors. Feature adapters under that module own subject-specific context and reconciliation.
+
+- Game review reads existing imported-game and completed-analysis application services.
+- Builder candidate explanation calls the existing candidate-decision application service directly.
+- Builder completion summary re-reads the current owned course destination after apply, but never calls preview/apply services or writes course data.
+
+No AI adapter calls REST internally or runs Stockfish.
+
+Angular owns capability visibility, loading/generation state, rendering, and composition with existing feature state. Provider keys, model names, prompts, raw provider payloads, and server-side context never reach the browser.
 
 ## Feature flags
 
-The global flag and the relevant use-case flag must both be enabled.
+The global flag and the relevant independent use-case flag must both be enabled.
 
 ```text
 AI_WIDGETS_ENABLED=true
 AI_GAME_REVIEW_ENABLED=true
 AI_BUILDER_CANDIDATE_EXPLANATION_ENABLED=true
+AI_BUILDER_COMPLETION_SUMMARY_ENABLED=true
 ```
 
 Every flag is disabled by default. If the global flag, the relevant use-case flag, or provider configuration is incomplete, `GET /api/ai/capabilities` returns that widget as unavailable and Angular renders no control. Direct calls to a disabled widget return a stable error.
 
-The two use-case flags are independent. Enabling Builder candidate explanation does not enable game review, and enabling game review does not expose Builder candidate explanation.
+The use-case flags are independent. Enabling one widget does not expose either of the others.
 
 ## Provider configuration
 
@@ -97,13 +126,39 @@ The browser sends the existing candidate-decision request plus an identity conta
 
 The browser does not send rankings, evaluations, reason labels, warnings, fits, or evidence as authoritative input. The API calls `CandidateDecisionService.get()` using the authenticated user and rebuilds the current response. A stale target, normalized position, role, policy, or missing candidate is rejected before provider work.
 
-The provider receives no FEN, complete candidate response, PV tree, Builder session, queue, course destination, user identity, or command state. It receives only:
+The provider receives no FEN, complete candidate response, PV tree, Builder session, queue, course destination, user identity, or command state. It receives only selected/comparison identities and bounded fact records derived from the authoritative response.
 
-- selected and optional comparison candidate identities;
-- bounded fact records derived from the authoritative response;
-- stable fact IDs for rank, eligibility, target/profile fit, source availability, reason and warning codes, bounded engine/corpus/personal metrics, opening/course state, and opponent coverage where present.
+The model must cite supplied fact IDs. The server rejects unknown evidence IDs, false missing-evidence references, unsupported move references, recommendation language, and unsupported causal claims. Generated text remains interpretation; deterministic evidence remains the complete fallback and the user retains move choice.
 
-The model must cite supplied fact IDs. The server rejects unknown evidence IDs, false missing-evidence references, unsupported UCI move references, and recommendation language. The response includes the authoritative selected/comparison rank and SAN, the referenced deterministic facts, and a fixed disclaimer. Generated text remains interpretation; deterministic evidence remains the complete fallback and the user retains move choice.
+## Builder completion-summary input
+
+The browser can form a request only while the course dialog is open and all of these immutable values exist:
+
+- completed Builder course draft;
+- selected target used by apply;
+- authoritative `BuilderCourseReintegrationApplyResponse`;
+- loaded course/chapter display identity.
+
+Before provider work, the API verifies:
+
+- the draft belongs to the authenticated user and has completed-session shape;
+- destination IDs and target kind match the apply result;
+- existing-line or new-line identity matches the applied line;
+- materialized, created, reused, skipped, conflict, and idempotence values are algebraically consistent;
+- the owned chapter and applied line still exist;
+- the line still belongs to the chapter/course;
+- current course content revision still equals the applied result revision.
+
+The provider does not receive the full draft, FEN, target object, preview token, destination request, course rows, or apply request. It receives:
+
+- one server-generated factual result sentence;
+- bounded fact records for destination, line, target kind, counts, revision, idempotence, session/target identity, decision/transposition counts;
+- up to six applied leaf paths;
+- up to six excluded branch records.
+
+The model must cite supplied fact IDs. The server rejects unsupported fact or move references, course-control language, unsupported chess/causal claims, unsupported count/revision claims, and any statement that excluded, deferred, ignored, stale, pending, or unresolved work was applied.
+
+The response keeps the server-generated factual result separate from generated interpretation, highlights, optional study checklist, unresolved-work note, warning, referenced facts, and a fixed non-authority disclaimer.
 
 ## Response lifetime
 
@@ -111,23 +166,27 @@ The model must cite supplied fact IDs. The server rejects unknown evidence IDs, 
 
 The wire response is versioned and validated by `@chess-trainer/contracts/ai`. Model-generated labels are called `themes`; they are not deterministic game tags.
 
-`ImportedGameAiReview` stores one current review per imported game. Regeneration uses an upsert and replaces that current artifact rather than accumulating hidden history. The row is owned by the authenticated user and imported game and records the analysis run, schema/prompt versions, provider/model identifiers, a SHA-256 input hash, validated JSON, and generation timestamp.
-
-Raw provider requests and raw provider responses are not stored. Deleting the imported game or user cascades to the review. Deleting the source analysis run leaves the review intact and clears its optional analysis-run reference.
+`ImportedGameAiReview` stores one current review per imported game. Regeneration uses an upsert and replaces that artifact rather than accumulating hidden history. Raw provider requests and responses are not stored.
 
 When a game page opens, Angular loads the persisted artifact. No provider request is made. Clicking **Regenerate AI overview** performs a new provider request and replaces the saved artifact only after validation and authoritative reconciliation succeed.
 
-### Builder explanation
+### Builder candidate explanation
 
 Builder candidate explanations are transient. There is no Prisma model, migration, browser storage, hidden history, background generation, automatic regeneration, or saved current artifact.
 
-The page-scoped `RepertoireBuilderCandidateExplanationStore` is separate from `RepertoireBuilderStore`. It keys state to the complete request identity and discards an in-flight or completed response when the position, target, role, policy, candidate response, selected move, or comparison move changes. Loading, failure, success, and clearing do not call any accept, defer, ignore, stop, reorder, coverage, completion, or course-output command.
+The page-scoped `RepertoireBuilderCandidateExplanationStore` is separate from `RepertoireBuilderStore`. It keys state to the complete request identity and discards stale responses without invoking Builder commands.
+
+### Builder completion summary
+
+Builder completion summaries are transient. There is no Prisma model, migration, browser storage, hidden history, background generation, automatic regeneration, or saved current artifact.
+
+`RepertoireBuilderCompletionSummaryStore` is separate from `RepertoireBuilderCourseStore`. It has no destination, target, preview, apply, course-write, or navigation methods. It keys state to session, target, course, chapter, line, and applied revision identity. The response clears when the dialog closes, a new draft starts, or another result/revision appears.
+
+The request control exists only under the already-rendered authoritative result block. Destination selection, preview review, target selection, apply confirmation, and apply execution never call the provider.
 
 ## Board navigation
 
-Each game-review turning point is a button backed by its authoritative `plyNumber`. The game tree uses the mainline ply number as the imported move node ID, so selecting a turning point delegates to `GameDetailStore.selectNode()` instead of creating a second board model. The page then scrolls the existing workbench into view. The selected turning point is visually marked while the board, move tree, engine, and keyboard navigation remain synchronized.
-
-Builder explanation does not add board navigation or move selection. Its comparison selector changes explanation identity only.
+Each game-review turning point delegates to the existing game tree selection. Builder candidate explanation does not add board navigation or move selection. Builder completion summary does not add board or course navigation.
 
 ## Failure semantics
 
@@ -141,36 +200,46 @@ Known shared failures use explicit codes:
 - `AI_PROVIDER_UNAVAILABLE` — 503;
 - `AI_PROVIDER_TIMEOUT` — 504.
 
-Game review additionally uses imported-game, PGN, analysis, and storage-specific codes documented by its route behavior.
+Builder interpretation use cases additionally use:
 
-Builder explanation additionally uses:
+- `AI_CONTEXT_INVALID` — 409 when deterministic input cannot be reconstructed or reconciled;
+- `AI_CONTEXT_STALE` — 409 when identity, destination, line, or revision no longer matches;
+- `AI_CONTEXT_NOT_FOUND` — 404 when the owned applied destination no longer exists.
 
-- `AI_CONTEXT_INVALID` — 409 when authoritative candidate evidence cannot be rebuilt;
-- `AI_CONTEXT_STALE` — 409 when identity or selected/comparison candidates no longer match current authoritative evidence.
+Network failures, timeouts, rate limits, provider 5xx responses, empty content, malformed JSON, and schema-invalid content may be retried up to `LLM_MAX_RETRIES`. Provider authentication and ordinary request 4xx responses are not retried.
 
-Network failures, timeouts, rate limits, provider 5xx responses, empty content, malformed JSON, and schema-invalid content may be retried up to `LLM_MAX_RETRIES`. Provider authentication and ordinary request 4xx responses are not retried. Provider or explanation failure leaves deterministic Builder evidence and all Builder commands usable.
+Provider failure leaves deterministic candidate evidence or the authoritative course result and all existing controls usable.
 
 ## Logging and privacy
 
-Normal operation does not log prompts, PGN, FEN, candidate fact payloads, raw model output, persisted review content, authorization headers, or API keys. Optional debug logging contains only the use case, duration, attempt number, status category, retry decision, and token usage.
+Normal operation does not log prompts, PGN, FEN, candidate/completion fact payloads, raw model output, persisted review content, authorization headers, or API keys. Optional debug logging contains only the use case, duration, attempt number, status category, retry decision, and token usage.
 
-Builder explanation intentionally excludes user identity and broader Builder/session state from provider context. The feature remains disabled until deployment owners have accepted the provider's current processing, storage, privacy, and regional terms.
+Builder interpretation intentionally excludes user identity and broader session/course state from provider context. The features remain disabled until deployment owners have accepted the provider's current processing, storage, privacy, and regional terms.
 
 ## Removal procedure
 
 ### Remove Builder candidate explanation only
 
-1. Remove the candidate-explanation service and prompt under `apps/api/src/modules/ai/repertoire-builder`.
+1. Remove the candidate-explanation service, context, and prompt.
 2. Remove its route, use-case flag, capability field, and AI contracts.
-3. Remove the feature-local Angular AI data-access service, page-scoped store, workbench inputs/events/panel, and explanation stylesheet.
-4. Remove its focused tests and documentation sections.
+3. Remove its Angular API method, page-scoped store, workbench composition, and stylesheet.
+4. Remove focused tests and documentation sections.
 
 No Builder core, ranking policy, reducer, session, course, or database migration is required.
+
+### Remove Builder completion summary only
+
+1. Remove the completion-summary service, context, and prompt.
+2. Remove its route, use-case flag, capability field, and AI contracts.
+3. Remove its Angular API method, dialog-scoped store, post-result composition, and stylesheet.
+4. Remove focused tests and documentation sections.
+
+No preview/apply service, course writer, course schema, Builder reducer, session domain, or database migration is required.
 
 ### Remove the complete AI subsystem
 
 1. Remove `apps/api/src/modules/ai` and its route registration.
 2. Remove `packages/contracts/src/ai` and the package export.
 3. Remove Angular AI capability and feature-specific data-access/store/component composition.
-4. Add a migration that drops `ImportedGameAiReview`, then remove the model and its relations from `schema.prisma`.
+4. Add a migration that drops `ImportedGameAiReview`, then remove the model and relations from `schema.prisma`.
 5. Remove the AI environment variables and this document.
