@@ -38,13 +38,13 @@
       </div>
 
       @if (store.loading()) {
-        <p class="status-note">Loading lines...</p>
+        <p class="status-note" aria-live="polite">Loading lines...</p>
       }
       @if (store.error(); as error) {
-        <p class="status-error">{{ error }}</p>
+        <p class="status-error" role="alert">{{ error }}</p>
       }
       @if (store.transferMessage(); as message) {
-        <p class="status-success">{{ message }}</p>
+        <p class="status-success" aria-live="polite">{{ message }}</p>
       }
       @if (!store.loading() && !store.error() && store.lines().length === 0) {
         <div class="empty-state">No lines yet. Add your first trainable branch below.</div>
@@ -178,11 +178,15 @@
             <option value="BLACK">Train Black</option>
           </select>
           <input [ngModel]="store.importStartingFen()" (ngModelChange)="store.setImportStartingFen($event)" name="importStartingFen" placeholder="startpos" aria-label="Starting position for imported line" />
-          <textarea rows="8" class="pgn-textarea" [ngModel]="store.importPgnText()" (ngModelChange)="store.setImportPgnText($event)" name="importPgnText" placeholder="Paste PGN here"></textarea>
+          <textarea rows="8" class="pgn-textarea" [ngModel]="store.importPgnText()" (ngModelChange)="store.setImportPgnText($event)" name="importPgnText" placeholder="Paste PGN here" aria-label="PGN text to import"></textarea>
           <button type="button" class="primary" (click)="store.importPgn()" [disabled]="store.importing() || !store.importName() || !store.importPgnText()">{{ store.importing() ? 'Importing...' : 'Import PGN' }}</button>
         </div>
-        @if (store.pgnMessage(); as message) { <p class="status-success">{{ message }}</p> }
-        @if (store.pgnError(); as pgnError) { <p class="status-error">{{ pgnError }}</p> }
+        @if (store.pgnMessage(); as message) {
+          <p class="status-success" aria-live="polite">{{ message }}</p>
+        }
+        @if (store.pgnError(); as pgnError) {
+          <p class="status-error" role="alert">{{ pgnError }}</p>
+        }
       </div>
     </details>
   </section>
