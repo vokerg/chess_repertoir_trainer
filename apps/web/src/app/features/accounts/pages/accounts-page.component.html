@@ -89,11 +89,12 @@
               </h4>
               <p class="accounts-muted account-username">&#64;{{ account.username }}</p>
 
-              <div class="account-meta-grid">
-                <div><span>Last sync</span><strong>{{ dateLabel(account.lastSyncAt) }}</strong></div>
-                <div><span>Import cursor</span><strong>{{ dateLabel(account.syncCursorTime) }}</strong></div>
-                <div><span>Created</span><strong>{{ dateLabel(account.createdAt) }}</strong></div>
-              </div>
+              <app-fact-grid
+                [items]="accountFacts(account)"
+                [ariaLabel]="'Account dates for ' + account.username"
+                [columns]="3"
+                [compactColumns]="1"
+              />
 
               @if (store.syncResults()[account.id]; as result) {
                 <div class="sync-result">
@@ -190,7 +191,7 @@
               </button>
               <button
                 type="button"
-                class="secondary"
+                class="secondary account-delete-button"
                 (click)="confirmDeleteAccount(account)"
                 [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
               >
