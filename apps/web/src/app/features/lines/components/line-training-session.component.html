@@ -1,6 +1,6 @@
 @if (sessionId()) {
   <div class="training-focus-layout">
-    <section class="training-board-panel">
+    <section class="training-board-panel" aria-label="Training board">
       <div class="training-board-inner">
         <app-chessground-board
           [fen]="currentFen()"
@@ -52,7 +52,14 @@
           <span>{{ progressTitle() }}</span>
           <span>{{ progressLabel() }}</span>
         </div>
-        <div class="training-progress-track">
+        <div
+          class="training-progress-track"
+          role="progressbar"
+          [attr.aria-label]="progressTitle()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="progressPercent()"
+        >
           <div class="training-progress-fill" [style.width.%]="progressPercent()"></div>
         </div>
         <div class="training-stats" aria-label="Training status">
@@ -86,11 +93,11 @@
             {{ passed() && mistakesCount() === 0 ? 'Clean run' : 'Needs review' }}
           </h3>
           <div class="training-result-meta">
-            <span>Accuracy: {{ accuracyLabel() }}</span>
-            <span>Mistakes: {{ mistakesCount() }}</span>
+            <span>Accuracy: <strong>{{ accuracyLabel() }}</strong></span>
+            <span>Mistakes: <strong>{{ mistakesCount() }}</strong></span>
           </div>
           @if (editActionLink(); as editActionLink) {
-            <div class="library-actions training-result-actions training-result-secondary-actions">
+            <div class="training-result-actions">
               <a class="library-button-link secondary" [routerLink]="editActionLink">
                 {{ editActionLabel() }}
               </a>
@@ -99,8 +106,8 @@
         </section>
 
         <section class="training-review-panel">
-          <h3 class="workbench-panel-title">Mistake review</h3>
-          <p class="workbench-panel-subtitle">{{ reviewSubtitle() }}</p>
+          <h3 class="training-review-title">Mistake review</h3>
+          <p class="training-review-subtitle">{{ reviewSubtitle() }}</p>
 
           @if (reviewLoading()) {
             <p class="status-note">Loading mistake review...</p>
