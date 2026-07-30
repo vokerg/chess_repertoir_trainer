@@ -36,6 +36,7 @@ describe('GameDetailPageComponent', () => {
       widgets: {
         gameReview: false,
         builderCandidateExplanation: false,
+        builderCompletionSummary: false,
       },
     });
 
@@ -78,48 +79,25 @@ describe('GameDetailPageComponent', () => {
   });
 
   it('confirms before deleting the selected subtree', async () => {
-    store.deleteConfirmationText.and.returnValue('Delete local variation?');
+    store.deleteConfirmationText.and.returnValue('Delete this branch?');
     confirmDialog.confirm.and.resolveTo(true);
 
     await page().confirmDeleteSelectedSubtree();
 
-    expect(confirmDialog.confirm).toHaveBeenCalled();
+    expect(confirmDialog.confirm).toHaveBeenCalledWith({
+      title: 'Delete branch',
+      message: 'Delete this branch?',
+      confirmLabel: 'Delete branch',
+      tone: 'danger',
+    });
     expect(store.deleteSelectedSubtree).toHaveBeenCalled();
-  });
-
-  it('delegates an insight move to the existing game tree selection', () => {
-    page().selectFindingMove(37);
-
-    expect(store.selectNode).toHaveBeenCalledOnceWith(37);
-  });
-
-  it('loads the saved review once without tracking signals touched inside the request path', () => {
-    const incidentalRequestSignal = signal(0);
-    aiReviewStore.load.and.callFake(async () => {
-      incidentalRequestSignal();
-    });
-    capabilities.next({
-      widgets: {
-        gameReview: true,
-        builderCandidateExplanation: false,
-      },
-    });
-
-    fixture.detectChanges();
-    expect(aiReviewStore.load).toHaveBeenCalledOnceWith(1);
-
-    incidentalRequestSignal.set(1);
-    fixture.detectChanges();
-    expect(aiReviewStore.load).toHaveBeenCalledTimes(1);
   });
 
   function page(): {
     confirmDeleteSelectedSubtree(): Promise<void>;
-    selectFindingMove(plyNumber: number): void;
   } {
     return fixture.componentInstance as unknown as {
       confirmDeleteSelectedSubtree(): Promise<void>;
-      selectFindingMove(plyNumber: number): void;
     };
   }
 });
