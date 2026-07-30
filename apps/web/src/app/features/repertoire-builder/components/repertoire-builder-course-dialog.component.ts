@@ -34,7 +34,10 @@ type BuilderCourseMergeCandidate = BuilderCourseReintegrationPreviewResponse['ca
   standalone: true,
   imports: [ReactiveFormsModule],
   templateUrl: './repertoire-builder-course-dialog.component.html',
-  styleUrl: './repertoire-builder-course-dialog.component.css',
+  styleUrls: [
+    './repertoire-builder-course-dialog.component.css',
+    './repertoire-builder-course-dialog-completion-summary.component.css',
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepertoireBuilderCourseDialogComponent {
