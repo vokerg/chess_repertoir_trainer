@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 Every material question has one owning task. Other tasks may contribute evidence but must not silently finalize it.
 
@@ -66,6 +66,13 @@ Resolved by ONB-001/002:
 - preparation selects eligible games from PostgreSQL rather than import response arrays;
 - import rows can become visible before provider-run completion.
 
+ONB-016 adds the following required UX outcomes without choosing the physical solution:
+
+- a first meaningful indexed reveal should be possible before full preparation;
+- a bounded first-analysis lane should unlock analysed value before the lower-priority analysis tail completes;
+- multiple-account expansion needs account-specific progress and an understandable aggregate;
+- background continuation must remain exact after core readiness.
+
 Still owned by ONB-003:
 
 - What exact Prisma model and lifecycle-status vocabulary implement `DataPreparationRun`?
@@ -73,6 +80,7 @@ Still owned by ONB-003:
 - How many queued waves may exist?
 - What exact source/priority values are used?
 - Does indexing pipeline after each committed import batch, after each complete provider window, or only after terminal import?
+- Which deterministic sample/order feeds the first-analysis lane: newest month, representative subset, account-balanced sample, or another policy?
 - How is multi-account expansion ordered?
 - How does parent pause/cancellation propagate and acknowledge active import and game work?
 - How are terminal child runs reconciled after dismissal/retention cleanup?
@@ -126,12 +134,13 @@ Still owned by ONB-003:
 - Lichess window duration and database write batch size.
 - Import-worker poll/heartbeat/stale thresholds and maximum backlog.
 - Engine startup overhead and potential reuse.
-- First-value target budget.
+- First-value target budgets: first imported game, first visible game, first indexed reveal, first analysed reveal, first personal tactic, core readiness, and recipe completion.
+- Whether measured durable-adapter performance supports Lichess-first speed language.
 - Default preparation wave size.
 - Minimum evidence for ETA.
 - Scaling trigger for separate import/game workers or replicas.
 - Database/provider safe load-test method.
-- Which stalled-work thresholds appear in admin diagnostics?
+- Which stalled-work thresholds appear in admin diagnostics and onboarding attention states?
 
 Consumed decisions:
 
@@ -139,15 +148,19 @@ Consumed decisions:
 - ETA and qualitative completion promises remain disabled;
 - visible preparation wave size is not the imported-game worker scheduling slice;
 - provider import starts with one global active claim and serial provider requests;
-- provider window and batch sizes remain tunable without changing the coverage model.
+- provider window and batch sizes remain tunable without changing the coverage model;
+- elapsed-time or weighted overall progress is prohibited.
 
 ## ONB-008 / #193 — Disposition and readiness implementation
 
 - Final physical split between user disposition and preparation aggregate after ONB-003.
 - Exact readiness contract enum names and evidence payload size.
+- Exact presentation-state and latest-milestone vocabulary consumed by ONB-010.
+- Whether bounded reveal items are embedded summaries or references to canonical feature reads.
 - Polling/cache policy for the read projection.
 - Migration mechanism that adopts existing users while new users begin pending.
 - How import scope/coverage facts are summarized without duplicating the import read model.
+- How `checked-empty`, partial, ready, and newly-ready states are versioned so return visits do not replay stale reveals.
 
 ## ONB-009 / #194 — Lifecycle commands
 
@@ -155,12 +168,29 @@ Consumed decisions:
 - Idempotency key and duplicate-command response policy across parent and import run creation.
 - Expansion command shape for older history, bullet, and additional accounts.
 - Whether explicit no-data “finish without games” is a completion or skip reason in persistence.
+- How server-allowed actions distinguish a quiet secondary destination from a current primary recovery action.
 
 ## ONB-010 / #195 — Functional Angular experience
 
+Resolved by ONB-016:
+
+- use a route-based resumable experience rather than a blocking modal train;
+- present one dominant action per focused surface;
+- do not use first-run tables or Settings-style action clusters;
+- reveal import-only, indexed, and analysed value progressively;
+- show at most three evidence-labelled insight cards at once;
+- use canonical Profile/opening/tactical evidence rather than Angular calculations;
+- offer additional accounts after first value;
+- treat personal tactics and Builder entry as optional continuations;
+- keep generated Sites/Figma code non-authoritative.
+
+Still owned by ONB-010:
+
 - Which then-current transformed shared primitives are the implementation base?
 - Whether Home hosts the complete pre-core experience or links to `/onboarding` at compact widths.
-- Product polling cadence after ONB-008/009 performance evidence exists.
+- Product polling/event cadence after ONB-008/009 performance evidence exists.
+- Exact Angular component/store decomposition across the functional slices.
+- Which prototype tool and accepted version are available to the implementation team at execution time?
 - Exact handoff of final responsive/accessibility polish to #133.
 
 ## ONB-011 / #199 — Import persistence and coverage
@@ -196,10 +226,32 @@ Consumed decisions:
 - Whether rating statistics refresh once per terminal run or through a coalesced window-level trigger.
 - Exact ONB-003 reconciliation trigger for progressively committed import rows.
 
+## ONB-016 / #224 — Lightweight experience blueprint
+
+Resolved by `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md` and `EXPERIENCE_BLUEPRINT.md`:
+
+- the durable experience is route-based, progressive, and non-blocking;
+- focused surfaces have one dominant action and progressively disclose advanced detail;
+- first-run onboarding does not reproduce the account-management dashboard;
+- the first run remains one selected account; additional accounts are expansion after first value;
+- activity uses persisted milestones rather than fabricated progress;
+- value reveals at import-only, indexed, and analysed evidence levels;
+- each reveal contains at most three evidence-labelled items;
+- insight calculations and thresholds remain feature-owned;
+- an eligible own-game tactic and Builder entry are optional continuations;
+- ChatGPT Sites/Figma/Codex prototypes use synthetic data and remain design references;
+- Angular and the server-owned lifecycle remain production authority;
+- ONB-003, ONB-007, ONB-008/009/010, VT-302, Profile, tactical training, and Builder retain their delegated decisions.
+
+No ONB-016-owned product/interaction question remains open. Tool availability, physical orchestration, evidence thresholds, and implementation details remain with their listed owners.
+
 ## Cross-program
 
 - Which Visual Transformation branch/PR becomes the base for ONB-010 Angular work?
 - Does #133 remain one final polish issue or receive an ONB integration subtask?
-- Which Player Chess Profile branch state is canonical when ONB-008 implements readiness?
-- Which Repertoire Builder entry point should be offered after approved evidence exists?
+- Which Player Chess Profile branch state is canonical when ONB-008 implements readiness and reveal summaries?
+- What canonical Profile/opening insight API and minimum evidence thresholds support a bounded onboarding reveal?
+- Which deterministic missed-shot selection policy supplies at most one onboarding scenario?
+- Which Repertoire Builder entry point and evidence-anchor contract should be offered after approved evidence exists?
+- How are same-game duplicates and different-person accounts handled before mixed-provider insights ship?
 - Native mobile onboarding is a later consumer of the server contract; when is that task allocated?
