@@ -22,6 +22,8 @@ Modernize `/courses`, `/courses/:courseId`, and `/courses/:courseId/review` with
 
 The Courses/Review family was initially deferred while active RB-012 PR #208 changed Course Review findings and exact Builder anchors. PR #208 is now squash-merged as `1583b153a2bc674c649b2500769be997a8f4474e`, so this batch was refreshed from the integrated implementation.
 
+North Star reconciliation advanced `main` during implementation. Temporary sync PR #214 merged that documentation-only commit into this branch before opening the rollout PR; no Course or Course Review runtime file overlapped.
+
 Chapter-line authoring and `/lines/:lineId/edit` remain a separate later slice.
 
 ## Verified architecture boundary
@@ -81,9 +83,10 @@ No second store, API owner, route source, filter model, finding mapper, Builder 
 
 No working local checkout is available in this session, so local build, lint, tests, architecture checks, and browser validation are not represented as passed.
 
-Pre-report branch comparison:
+Final pre-PR branch comparison:
 
-- base: `main` commit `4f223f38dd828ace97ad800eed4e9e189870e7fb`;
+- current base: `main` commit `aa63136ed28ec87f5da6047f5960695fee63bbbc`;
+- branch synchronized through PR #214 and is zero commits behind;
 - runtime files changed: 11 Course/Course Review TS, HTML, and CSS files;
 - no store, API, helper, route, contract, package, schema, migration, database, or backend file changed.
 
