@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   aiBuilderCandidateExplanationResponseSchema,
+  aiBuilderCompletionSummaryResponseSchema,
   aiCapabilitiesResponseSchema,
   aiGameReviewResponseSchema,
   aiGameReviewStateResponseSchema,
@@ -10,11 +11,13 @@ assert.deepEqual(aiCapabilitiesResponseSchema.parse({
   widgets: {
     gameReview: true,
     builderCandidateExplanation: false,
+    builderCompletionSummary: true,
   },
 }), {
   widgets: {
     gameReview: true,
     builderCandidateExplanation: false,
+    builderCompletionSummary: true,
   },
 });
 
@@ -68,6 +71,89 @@ assert.equal(
   }).success,
   false,
   'the non-authority disclaimer is fixed',
+);
+
+const completionSummary = {
+  kind: 'BUILDER_COMPLETION_SUMMARY',
+  schemaVersion: 1,
+  generatedAt: '2026-07-30T19:00:00.000Z',
+  identity: {
+    sessionId: 'session-rb020',
+    sessionRevision: 9,
+    targetId: 'target-rb020',
+    courseId: 11,
+    chapterId: 22,
+    lineId: 33,
+    courseContentRevision: 8,
+  },
+  authoritativeResult: {
+    courseId: 11,
+    courseName: 'White repertoire',
+    chapterId: 22,
+    chapterName: 'Open games',
+    lineId: 33,
+    lineName: 'Reviewed line',
+    targetKind: 'NEW_LINE',
+    createdMoves: 2,
+    reusedMoves: 0,
+    skippedBranches: 1,
+    totalDraftMoves: 2,
+    courseContentRevision: 8,
+    idempotent: false,
+    factualSummary: 'Reviewed line in White repertoire · Open games was updated with 2 created moves.',
+  },
+  interpretation: {
+    interpretation: 'The verified result contains one applied path and one excluded branch.',
+    interpretationReferenceIds: ['path.1', 'result.skipped_branches'],
+    highlights: [{
+      text: 'The applied path contains e2e4 e7e5.',
+      evidenceReferenceIds: ['path.1'],
+    }],
+    studyChecklist: [{
+      text: 'Review the supplied applied path.',
+      evidenceReferenceIds: ['path.1'],
+    }],
+    unresolvedWorkNote: {
+      text: 'One deferred branch remains excluded.',
+      evidenceReferenceIds: ['excluded.1'],
+    },
+    warning: null,
+  },
+  referencedFacts: [
+    { id: 'path.1', label: 'Applied path 1', value: 'e2e4 e7e5' },
+    { id: 'result.skipped_branches', label: 'Excluded branches', value: '1' },
+    { id: 'excluded.1', label: 'Excluded branch 1', value: 'branch-deferred · d2d4 · Deferred' },
+  ],
+  disclaimer: 'Course changes are authoritative; generated study suggestions are optional.',
+};
+
+assert.deepEqual(aiBuilderCompletionSummaryResponseSchema.parse(completionSummary), completionSummary);
+assert.equal(
+  aiBuilderCompletionSummaryResponseSchema.safeParse({
+    ...completionSummary,
+    referencedFacts: [{ id: 'candidate.rank', label: 'Unsupported', value: '#1' }],
+  }).success,
+  false,
+  'completion fact identifiers are limited to result, draft, path, or excluded namespaces',
+);
+assert.equal(
+  aiBuilderCompletionSummaryResponseSchema.safeParse({
+    ...completionSummary,
+    interpretation: {
+      ...completionSummary.interpretation,
+      studyChecklist: Array(4).fill(completionSummary.interpretation.studyChecklist[0]),
+    },
+  }).success,
+  false,
+  'generated study checklist remains bounded',
+);
+assert.equal(
+  aiBuilderCompletionSummaryResponseSchema.safeParse({
+    ...completionSummary,
+    disclaimer: 'The model changed the course.',
+  }).success,
+  false,
+  'completion summary non-authority disclaimer is fixed',
 );
 
 const review = {
