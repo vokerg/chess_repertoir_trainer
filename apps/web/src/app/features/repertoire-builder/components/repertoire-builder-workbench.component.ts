@@ -28,7 +28,10 @@ export interface RepertoireBuilderQueueMove {
   standalone: true,
   imports: [ChessgroundBoardComponent, PanelComponent],
   templateUrl: './repertoire-builder-workbench.component.html',
-  styleUrl: './repertoire-builder-workbench.component.css',
+  styleUrls: [
+    './repertoire-builder-workbench.component.css',
+    './repertoire-builder-workbench-explanation.component.css',
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepertoireBuilderWorkbenchComponent {
