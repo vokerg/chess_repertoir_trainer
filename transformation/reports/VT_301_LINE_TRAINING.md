@@ -10,7 +10,7 @@ Branch: `visual-transformation/vt-301-line-training`
 
 Target: `main`
 
-Pull request: pending
+Pull request: draft PR #211
 
 Disposition: behavior-preserving implementation complete; repository CI and direct browser review pending
 
@@ -101,7 +101,7 @@ No working local checkout is available in this session, so local build, lint, te
 Pre-documentation branch comparison:
 
 - base: current `main` commit `f1c3a1d5ddfb9e170639b1f1940f5c5f36e4d59e`;
-- branch: eight commits ahead and zero behind;
+- branch: eight runtime commits ahead and zero behind before the report commit;
 - runtime changes: the two training route page triplets and shared session template/style only;
 - no store, API, model, helper, route, package, schema, migration, or dependency file changed.
 
