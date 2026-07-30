@@ -123,6 +123,7 @@ export class RepertoireBuilderSetupDialogComponent {
     const value = this.form.getRawValue();
     const rating = this.ratingOptions.find((option) => option.value === value.ratingSelection);
     if (!rating) return;
+    const profileDefaults = this.initialSetup().profileDefaults;
     this.submitted.emit({
       side: value.side,
       speedPreset: value.speedPreset,
@@ -131,6 +132,7 @@ export class RepertoireBuilderSetupDialogComponent {
       persona: value.persona,
       maximumTheoryBurden: value.maximumTheoryBurden,
       coveragePercent: value.coveragePercent,
+      ...(profileDefaults?.setup.side === value.side ? { profileDefaults } : {}),
     });
   }
 
