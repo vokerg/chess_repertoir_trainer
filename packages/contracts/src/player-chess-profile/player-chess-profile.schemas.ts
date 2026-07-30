@@ -7,6 +7,8 @@ import {
   lichessGamesSpeedPresetSchema,
 } from '../opening-explorer';
 
+export const PLAYER_CHESS_PROFILE_CONTRACT_VERSION = '2026-07-v1' as const;
+
 function csvArray<T extends z.ZodType>(itemSchema: T) {
   return z.preprocess((value) => {
     if (typeof value !== 'string') return value;
