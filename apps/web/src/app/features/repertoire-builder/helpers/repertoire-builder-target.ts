@@ -74,7 +74,7 @@ export function buildRepertoireBuilderTarget(
   now: string,
   targetId = createId(),
   startingPoint: RepertoireTargetStartingPoint = { kind: 'INITIAL_POSITION' },
-  profileDefaults: RepertoireBuilderProfileDefaults | null = null,
+  profileDefaults: RepertoireBuilderProfileDefaults | null = setup.profileDefaults ?? null,
 ): RepertoireTarget {
   const populationRequest = toPopulationRequest(setup.ratingTarget, setup.ratingGroup);
   const population = resolveRepertoireTargetPopulation(populationRequest, peerResolution);
@@ -87,7 +87,6 @@ export function buildRepertoireBuilderTarget(
     maximumTheoryBurden: preset.defaultTheoryBurden,
     coveragePercent: preset.defaultCoveragePercent,
   };
-  const defaultPreset = requirePersonaPreset(defaultSetup.persona);
   const defaultObjective = objectiveForPersona(
     defaultSetup.persona,
     defaultSetup.maximumTheoryBurden,
