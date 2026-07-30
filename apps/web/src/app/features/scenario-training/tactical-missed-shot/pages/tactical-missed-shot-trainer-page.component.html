@@ -7,17 +7,15 @@
   />
 
   @if (store.error(); as error) {
-    <p class="scenario-error">{{ error }}</p>
+    <p class="scenario-error" role="alert">{{ error }}</p>
   }
 
   @if (store.loading()) {
-    <section class="trainer-panel scenario-loading" aria-live="polite" aria-busy="true">
-      <div class="scenario-loading-spinner" aria-hidden="true"></div>
-      <div>
-        <h3>{{ store.loadingMessage() }}</h3>
-        <p>Preparing the board and game context.</p>
+    <app-panel [title]="store.loadingMessage()" subtitle="Preparing the board and game context.">
+      <div class="scenario-loading" aria-live="polite" aria-busy="true">
+        <div class="scenario-loading-spinner" aria-hidden="true"></div>
       </div>
-    </section>
+    </app-panel>
   } @else if (store.session(); as session) {
     @if (store.mode() === 'analysis') {
       <app-analysis-workbench
@@ -44,8 +42,7 @@
         (analyze)="store.rerunPostPassAnalysis()"
       >
         @if (store.latestAttempt(); as attempt) {
-          <section analysisWorkbenchSideExtra class="trainer-panel solved-panel">
-            <h3>Passed</h3>
+          <app-panel analysisWorkbenchSideExtra class="solved-panel" title="Passed" subtitle="Compare the training move with the original game decision.">
             <dl class="attempt-stats">
               <div>
                 <dt>Training move</dt>
@@ -88,12 +85,10 @@
                   store.loading()
                 "
               >
-                {{
-                  store.disliking() ? store.config().excludingLabel : store.config().excludeLabel
-                }}
+                {{ store.disliking() ? store.config().excludingLabel : store.config().excludeLabel }}
               </button>
             </div>
-          </section>
+          </app-panel>
         }
       </app-analysis-workbench>
     } @else {
@@ -115,13 +110,11 @@
         (goChallenge)="store.goChallenge()"
         (contextPlySelected)="store.selectContextPly($event)"
       >
-        <section class="trainer-panel">
-          @if (store.mode() === 'intro') {
-            <h3>{{ store.config().introTitle }}</h3>
-            <p>{{ store.config().introHelpText }}</p>
-          } @else if (store.mode() === 'challenge') {
-            <h3>Your move</h3>
-            <p>
+        @if (store.mode() === 'intro') {
+          <app-panel [title]="store.config().introTitle" [subtitle]="store.config().introHelpText" />
+        } @else if (store.mode() === 'challenge') {
+          <app-panel title="Your move">
+            <p class="scenario-copy">
               @if (store.evaluating()) {
                 Evaluating with browser Stockfish...
               } @else if (store.baselineAnalysis()) {
@@ -140,9 +133,13 @@
                 {{ store.config().replayLabel }}
               </button>
             </div>
-          } @else if (store.mode() === 'result') {
-            @if (store.latestAttempt(); as attempt) {
-              <h3>{{ attempt.passed ? 'Passed' : 'Try again' }}</h3>
+          </app-panel>
+        } @else if (store.mode() === 'result') {
+          @if (store.latestAttempt(); as attempt) {
+            <app-panel
+              [title]="attempt.passed ? 'Passed' : 'Try again'"
+              subtitle="Review the evaluation change before retrying, finishing, or moving on."
+            >
               <dl class="attempt-stats">
                 <div>
                   <dt>Played</dt>
@@ -185,9 +182,7 @@
               @if (store.revealOriginalMove()) {
                 <p class="reveal-line">
                   {{ store.config().originalMoveRevealPrefix }}:
-                  <code>{{
-                    session.originalUserMoveSan || session.originalUserMoveUci || '-'
-                  }}</code>
+                  <code>{{ session.originalUserMoveSan || session.originalUserMoveUci || '-' }}</code>
                 </p>
               }
               <div class="result-actions">
@@ -214,40 +209,30 @@
                     store.loading()
                   "
                 >
-                  {{
-                    store.disliking() ? store.config().excludingLabel : store.config().excludeLabel
-                  }}
+                  {{ store.disliking() ? store.config().excludingLabel : store.config().excludeLabel }}
                 </button>
               </div>
-            }
-          } @else {
-            <h3>Context</h3>
-            <p>{{ store.config().contextHelpText }}</p>
+            </app-panel>
           }
-        </section>
+        } @else {
+          <app-panel title="Context" [subtitle]="store.config().contextHelpText" />
+        }
 
         @if (store.mode() === 'result' && session.attempts.length) {
-          <section class="trainer-panel">
-            <h3>Attempt history</h3>
+          <app-panel title="Attempt history" subtitle="Earlier decisions in this scenario session.">
             <div class="attempt-list">
               @for (attempt of session.attempts; track attempt.id) {
                 <article class="attempt-row">
-                  <strong
-                    >{{ attempt.attemptNumber }}.
-                    {{ attempt.playedMoveSan || attempt.playedMoveUci }}</strong
-                  >
-                  <span
-                    >{{ attempt.passed ? 'Passed' : 'Failed' }} ·
-                    {{ evalLabel(attempt.afterUserEvalCp) }} · depth {{ attempt.engineDepth }}</span
-                  >
+                  <strong>{{ attempt.attemptNumber }}. {{ attempt.playedMoveSan || attempt.playedMoveUci }}</strong>
+                  <span>{{ attempt.passed ? 'Passed' : 'Failed' }} · {{ evalLabel(attempt.afterUserEvalCp) }} · depth {{ attempt.engineDepth }}</span>
                 </article>
               }
             </div>
-          </section>
+          </app-panel>
         }
       </app-scenario-board-shell>
     }
   } @else {
-    <div class="trainer-panel">Loading scenario...</div>
+    <app-panel title="Loading scenario" subtitle="Preparing the next training position." />
   }
 </main>
