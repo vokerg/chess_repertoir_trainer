@@ -1,3 +1,25 @@
-.action-menu { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-.action-menu button { padding: 0.55rem 0.75rem; font-size: 0.82rem; }
-.action-menu button:hover:not(:disabled) { background: rgba(35, 27, 21, 0.12); }
+.action-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.action-menu button {
+  min-height: 34px;
+  padding: 0.48rem 0.68rem;
+  border-color: var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  font-size: 0.78rem;
+}
+
+.action-menu button:hover:not(:disabled) {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.action-menu button:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
