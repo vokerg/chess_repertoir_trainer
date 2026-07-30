@@ -59,10 +59,14 @@ export class LinesPageComponent implements OnInit {
         : []),
     ];
   });
-  protected readonly linePanelStats = computed<readonly PageHeaderStat[]>(() => [
-    { id: 'selected', label: 'Selected lines', value: this.store.selectedLineCount() },
-    { id: 'selected-sublines', label: 'Selected sublines', value: this.store.selectedActiveSublineCount() },
-  ]);
+  protected readonly linePanelStats = computed<readonly PageHeaderStat[]>(() => {
+    const selectedSublineCount = Object.values(this.store.selectedSublineHashesByLineId())
+      .reduce((total, hashes) => total + hashes.length, 0);
+    return [
+      { id: 'selected', label: 'Selected lines', value: this.store.selectedLineCount() },
+      { id: 'selected-sublines', label: 'Selected sublines', value: selectedSublineCount },
+    ];
+  });
 
   ngOnInit(): void {
     this.route.paramMap
