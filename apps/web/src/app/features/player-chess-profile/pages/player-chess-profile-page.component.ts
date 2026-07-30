@@ -51,11 +51,10 @@ export class PlayerChessProfilePageComponent implements OnInit {
   });
 
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => (
-    this.repertoireSuggestions().map((suggestion) => ({
-      id: `repertoire-start-${suggestion.side.toLowerCase()}`,
-      label: `Build ${suggestion.side === 'WHITE' ? 'White' : 'Black'} repertoire · ${personaLabel(suggestion)}`,
-      run: () => void this.launchBuilder(suggestion),
-    }))
+    buildPlayerChessProfileBuilderActions(
+      this.repertoireSuggestions(),
+      (suggestion) => void this.launchBuilder(suggestion),
+    )
   ));
 
   ngOnInit(): void {
@@ -67,6 +66,17 @@ export class PlayerChessProfilePageComponent implements OnInit {
       queryParams: buildRepertoireBuilderProfileLaunchQueryParams(suggestion),
     });
   }
+}
+
+export function buildPlayerChessProfileBuilderActions(
+  suggestions: readonly RepertoireBuilderProfileSuggestion[],
+  launch: (suggestion: RepertoireBuilderProfileSuggestion) => void,
+): readonly PageHeaderAction[] {
+  return suggestions.map((suggestion) => ({
+    id: `repertoire-start-${suggestion.side.toLowerCase()}`,
+    label: `Build ${suggestion.side === 'WHITE' ? 'White' : 'Black'} repertoire · ${personaLabel(suggestion)}`,
+    run: () => launch(suggestion),
+  }));
 }
 
 function personaLabel(suggestion: RepertoireBuilderProfileSuggestion): string {
