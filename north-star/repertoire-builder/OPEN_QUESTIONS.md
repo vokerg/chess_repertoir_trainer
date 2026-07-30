@@ -1,6 +1,6 @@
 # Repertoire Builder Open Questions
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 Open questions are not decisions. Resolve them in the assigned task and update this document and `DECISIONS.md` together when a product decision becomes locked, revised or rejected.
 
@@ -254,15 +254,37 @@ Owner: RB-012.
 
 Owner: RB-017. Execution issue: #114.
 
-## LLM
+## Optional generated interpretation
 
-- What user problem cannot be solved adequately with deterministic templates?
-- What context size and privacy boundaries apply?
-- What generated claims require source references?
-- Can the LLM be removed without breaking the workflow?
-- Is generated text stored, regenerated or transient?
+### Resolved architecture through RB-015
 
-Owner: RB-015.
+- Generated interpretation is optional, disabled by default, explicit and read only.
+- It consumes immutable deterministic snapshots and never returns a command.
+- It cannot alter chess facts, candidate ranking, selected moves/responses, builder reducers/queue, completion eligibility, preview/apply or course writes.
+- Candidate explanation and post-apply summary are separate use cases with independent flags, state, contracts, failure behavior, evaluation and purge paths.
+- Prototype output is transient by default and must be removable without migrations or deterministic-flow changes.
+- Provider model names, pricing, API behavior, privacy, retention and regional requirements must be re-verified at implementation.
+- Profile narrative and conversational target refinement remain deferred until accepted populated profile UX demonstrates a concrete deterministic-copy gap.
+
+### RB-019 candidate-explanation questions
+
+- Does generated synthesis materially outperform the existing Focused evidence panel and a deterministic comparison template?
+- Can every referenced reason, warning, fit, source and candidate identity be reconciled to authoritative RB-007 data?
+- Does the copy improve understanding without implying that the model selected or endorsed the move?
+- Are stale-response, disabled-provider and malformed/empty-output states understandable and harmless?
+- Is usefulness consistent across novice, club and stronger-player review?
+
+Owner: RB-019. Execution issue: #218.
+
+### RB-020 post-apply-summary questions
+
+- Does generated prose materially outperform the authoritative result block and a deterministic structured completion summary?
+- Can every move, branch, destination, count, revision and excluded-item reference be reconciled to the completed draft and RB-011 result?
+- Does a study checklist add value without implying that unapplied or excluded work reached the course?
+- Are transient lifetime and clearing on dialog/draft/result change sufficient?
+- Do current provider privacy, retention and regional terms permit the minimized context planned for the prototype?
+
+Owner: RB-020. Execution issue: #219.
 
 ## Outcome feedback
 
