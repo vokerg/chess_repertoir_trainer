@@ -2,9 +2,16 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
-import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../shared/ui/fact-grid/fact-grid.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+} from '../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellStat } from '../../../shared/ui/ui-shell.model';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
@@ -14,7 +21,14 @@ import { AccountsStore } from '../state/accounts.store';
 @Component({
   selector: 'app-accounts-page',
   standalone: true,
-  imports: [NgClass, FormsModule, RouterLink, PageHeaderComponent, PanelComponent],
+  imports: [
+    NgClass,
+    FormsModule,
+    RouterLink,
+    PageHeaderComponent,
+    PanelComponent,
+    FactGridComponent,
+  ],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',
   styleUrl: './accounts-page.component.css',
@@ -47,6 +61,14 @@ export class AccountsPageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.store.loadAccounts();
+  }
+
+  protected accountFacts(account: ExternalAccount): readonly UiFactItem[] {
+    return [
+      { id: 'last-sync', label: 'Last sync', value: dateLabel(account.lastSyncAt) },
+      { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
+      { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
+    ];
   }
 
   protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
@@ -164,5 +186,4 @@ export class AccountsPageComponent implements OnInit {
     const unindexedIds = new Set(this.store.workflowCandidates()[accountId]?.eligibleUnindexedGameIds ?? []);
     return (result.eligibleUnindexedGameIds ?? []).filter((id) => unindexedIds.has(id));
   }
-
 }
