@@ -1,6 +1,6 @@
 # ONB-002 — Design bounded recent-first import and historical backfill
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -100,4 +100,4 @@ Implementation tasks: ONB-011 through ONB-015 / issues #199 through #203
 
 Pull request: [#204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
-Completed at: pending review/merge
+Completed at: 2026-07-30
