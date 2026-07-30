@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseChapter } from '../data-access/course-detail.models';
@@ -13,7 +14,7 @@ import { SublinesListComponent } from '../components/sublines/sublines-list.comp
 @Component({
   selector: 'app-course-detail-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, PageHeaderComponent, SublinesListComponent],
+  imports: [FormsModule, RouterLink, PageHeaderComponent, PanelComponent, SublinesListComponent],
   providers: [CourseDetailApiService, CourseDetailStore],
   templateUrl: './course-detail-page.component.html',
   styleUrl: './course-detail-page.component.css',

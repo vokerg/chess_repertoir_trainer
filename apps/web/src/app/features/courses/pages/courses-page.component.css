@@ -1,3 +1,190 @@
-.field-stack { gap: 0.55rem; }
-.button-link { text-decoration: none; }
-.course-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.courses-page,
+.course-list-panel,
+.course-create-panel {
+  min-width: 0;
+}
+
+.course-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.course-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.course-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-muted);
+}
+
+.course-card-copy {
+  min-width: 0;
+}
+
+.course-card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.course-card-heading h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 1.1rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.course-card-copy p {
+  margin: 0.45rem 0 0;
+  color: var(--ui-text-muted);
+  line-height: 1.5;
+}
+
+.course-id {
+  flex: 0 0 auto;
+  color: var(--ui-text-subtle);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.course-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.course-action:hover {
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+}
+
+.course-action-primary {
+  border-color: var(--ui-action);
+  background: var(--ui-action);
+  color: var(--ui-action-ink);
+}
+
+.course-action-primary:hover {
+  border-color: var(--ui-action-hover);
+  background: var(--ui-action-hover);
+}
+
+.course-action-danger {
+  color: var(--ui-danger);
+}
+
+.course-action-danger:hover:not(:disabled) {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.course-action:focus-visible,
+.create-course-action:focus-visible,
+.field-group input:focus-visible,
+.field-group textarea:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.course-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.course-form,
+.field-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.course-form {
+  gap: var(--space-3);
+}
+
+.field-group label {
+  color: var(--ui-text);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.field-group input,
+.field-group textarea {
+  width: 100%;
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+}
+
+.create-course-action {
+  width: 100%;
+  min-height: 44px;
+}
+
+/* Keep in sync with the shared desktop-workspace breakpoint. */
+@media (max-width: 980px) {
+  .course-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Keep in sync with the shared compact breakpoint. */
+@media (max-width: 640px) {
+  .course-layout {
+    gap: var(--space-3);
+  }
+
+  .course-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .course-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
+  }
+
+  .course-action-danger {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .course-action {
+    transition: none;
+  }
+}
