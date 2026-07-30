@@ -34,7 +34,8 @@
 }
 
 .status-panel button:focus-visible,
-.status-panel input:focus-visible {
+.status-panel input:focus-visible,
+.status-panel a:focus-visible {
   outline: 3px solid var(--ui-focus-ring);
   outline-offset: 3px;
 }
@@ -76,10 +77,18 @@
   background: var(--ui-action-soft);
 }
 
-.move-text {
+.move-text,
+.numeric-cell {
   font-family: var(--ui-font-family-mono);
   font-variant-numeric: tabular-nums;
+}
+
+.move-text {
   overflow-wrap: anywhere;
+}
+
+.numeric-cell {
+  white-space: nowrap;
 }
 
 .status-chip {
