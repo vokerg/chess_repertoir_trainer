@@ -4,11 +4,11 @@ Last updated: 2026-07-30
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-012 has its first Course endings entry slice integrated through squash-merged PR #205 and its second Opponent gaps slice in review through PR #208. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
+**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
 
-**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, and exact Course ending → Builder adaptation from squash-merged PR #205.
+**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, exact Course ending → Builder adaptation from PR #205, and exact Opponent gap → Builder adaptation from PR #208.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation, PR #139 adds the stacked Angular profile experience, and PR #208 adds exact Opponent gap → Builder adaptation.
+**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
 
 **GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
 
@@ -160,30 +160,45 @@ Closure report: `reports/RB-011-2026-07-29-closure.md`.
 
 The accepted v1 writes to an existing owned course/chapter. Whole-course/new-chapter orchestration and persisted builder target/session metadata remain later concerns, not blockers for exact existing-course adaptation.
 
-### Course ending builder entry — RB-012 first slice
+### Existing-course adaptation — RB-012
 
-Squash-merged PR #205 provides:
+Squash-merged PR #205 provides the Course endings slice:
 
-- one line-specific **Extend this line in builder** action per Course ending line/node reference;
-- bounded route validation for exact source course, chapter, line, terminal node, FEN, observed continuation, evidence and filters;
-- canonical expansion of the four-field Course ending FEN before session start;
-- a `COURSE_POSITION` target and RB-009 session starting at the exact terminal position;
-- initial RB-007 candidate inclusion for the observed continuation;
-- fixed source repertoire side with editable speed, population, persona, theory and coverage;
-- a visible source-evidence panel and explicit extend-only consequence;
-- restoration of Course endings mode, filters and minimum-games threshold on return;
-- RB-011 destination preselection and locking to the exact source course/chapter/line/node;
-- safe no-match behavior when the source endpoint is stale or changed;
-- focused route, helper, target, builder-store, course-store and dialog tests;
-- no new API route, Prisma model, migration, persistence layer or recommendation engine.
+- one line-specific **Extend this line in builder** action per exact line/node reference;
+- bounded route validation for source course, chapter, line, terminal node, FEN, observed continuation, evidence and filters;
+- canonical expansion of the four-field source FEN before exact-position session start;
+- initial candidate inclusion for the observed continuation;
+- fixed source repertoire side with editable target controls;
+- visible source evidence and explicit extend-only consequence;
+- restored Course endings mode, filters and minimum-games threshold;
+- RB-011 locking to the exact source line/node;
+- safe stale-source behavior.
 
-Final review-package head `45851192b77327e23546eb691d3629c3a193144d` passed CI run `30485910525` / #1541. PR #205 was squash-merged as `c2266c9a8ffca00696da264abb3476f36ec82b50`.
+Course endings final review-package head `45851192b77327e23546eb691d3629c3a193144d` passed CI #1541. PR #205 was squash-merged as `c2266c9a8ffca00696da264abb3476f36ec82b50`.
 
-Implementation report: `reports/RB-012-2026-07-29-course-ending-entry.md`.
+Squash-merged PR #208 provides the Opponent gaps slice:
 
-Closure report: `reports/RB-012-2026-07-29-course-ending-closure.md`.
+- exact API-side `LINE_START` and `NODE` anchors at the pre-gap position;
+- one **Cover this gap in builder** action per exact source anchor;
+- explicit coverage-extension intent and pre-gap session start;
+- initial candidate inclusion for the observed opponent move;
+- fixed source side with editable speed, population, persona, theory and coverage;
+- source evidence, applied-filter summary and minimum-overlap provenance;
+- restored Opponent gaps mode, filters and overlap threshold;
+- RB-011 locking to the selected course, chapter, line and exact anchor;
+- safe stale-source behavior;
+- preserved My deviations behavior without an ambiguous builder action.
 
-Issue #100 remains open because RB-012 covers multiple finding types.
+Opponent gaps final review-package head `d542a9bf084d3738adfaddcfa5be5c95683591e2` passed CI run `30517656919` / #1597. PR #208 was squash-merged as `1583b153a2bc674c649b2500769be997a8f4474e`.
+
+Implementation reports:
+
+- `reports/RB-012-2026-07-29-course-ending-entry.md`;
+- `reports/RB-012-2026-07-30-opponent-gaps-entry.md`.
+
+Closure report: `reports/RB-012-2026-07-30-closure.md`.
+
+Issue #100 is closed. My deviations is not residual RB-012 work; any future replace/alternate/keep-course adaptation requires a new task and explicit consequence design.
 
 ## Review work
 
@@ -198,28 +213,6 @@ CI #1103 passed. User review and accepted integration remain required.
 Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
 
 It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
-
-### RB-012 / #100 — Opponent gap builder entry
-
-PR #208 provides the second bounded existing-course adaptation slice:
-
-- API-side exact anchor projection at the pre-gap position through the existing `findLineAnchors` planner;
-- deterministic `LINE_START` and `NODE` source anchors with chapter, line, node and move-sequence context;
-- one anchor-specific **Cover this gap in builder** action for every matching source endpoint;
-- a generalized bounded Course-finding launch contract with explicit `COVER_OPPONENT_GAP` intent;
-- exact pre-gap RB-009 start and initial RB-007 inclusion of the observed opponent move;
-- fixed source side with editable speed, population, persona, theory and coverage;
-- source evidence, applied-filter summary and minimum-overlap provenance retained in the builder;
-- source-specific return navigation restoring Opponent gaps filters and overlap threshold;
-- RB-011 preview/apply locked to the selected course, chapter, line and exact `LINE_START`/`NODE` anchor;
-- safe stale-source behavior and no new course-write path;
-- no Prisma model, migration, new API route, persistence layer, worker or second recommendation engine.
-
-Implementation report: `reports/RB-012-2026-07-30-opponent-gaps-entry.md`.
-
-Implementation CI #1586 passed lint, all builds, both opening audits, architecture guardrails, migrations and complete repository tests. Final review-package CI remains required after documentation reconciliation.
-
-Hands-on review must cover real line-start and in-line gaps, shared-position choices, initial observed-move inclusion, exact apply, stale anchors, responsive readability and keyboard traversal.
 
 ## Active independent pilot
 
@@ -248,7 +241,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-009 / #97: `DONE` through squash-merged PR #177.
 - RB-010 / #98: `DONE` through squash-merged PR #184.
 - RB-011 / #99: `DONE` through squash-merged PR #189; issue closed.
-- RB-012 / #100: `REVIEW` through PR #208 for Opponent gaps; issue remains open for later consequence types.
+- RB-012 / #100: `DONE` through squash-merged PRs #205 and #208; issue closed.
 - RB-014 / #102: `DONE` through PR #113.
 - RB-017 / #114: `CLAIMED` for the bounded pilot.
 - RB-018 / #116: `DONE` through PR #121.
@@ -261,7 +254,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-009 provides integrated session, decision-history, branch, queue, transposition, stale and preview semantics.
 - RB-010 provides the integrated production workbench and bounded structural preview.
 - RB-011 provides integrated course organization within an existing chapter, mandatory preview, transactional apply, conflicts, reuse and explicit results.
-- RB-012 now has Course endings integrated and Opponent gaps in review without changing the recommendation or course-write foundations.
+- RB-012 provides integrated Course endings and Opponent gaps adaptation without changing recommendation or course-write foundations.
 - RB-013 remains responsible for profile-derived personas/defaults beyond RB-010's transparent local presets.
 - RB-017 remains outside the critical path.
 
@@ -274,8 +267,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - RB-009 CI #1328 and #1360 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
 - RB-010 CI #1417 passed lint, builds, audits, architecture guardrails, migrations and complete tests, including restored existing navigation regression coverage.
 - RB-011 implementation-head CI #1479 and final review-package CI #1488 passed lint, builds, both opening audits, architecture guardrails, migrations and complete tests.
-- RB-012 Course endings final review-package CI #1541 passed the complete workflow.
-- RB-012 Opponent gaps implementation CI #1586 passed the complete workflow, including exact anchor, route, restoration, finding-mapping and destination-locking coverage.
+- RB-012 Course endings final review-package CI #1541 and Opponent gaps final review-package CI #1597 passed the complete repository workflow.
 - RB-014 source/license verification and complete repository CI passed.
 - RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
 
@@ -289,7 +281,7 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 - Source freshness remains consumer-driven; no background watcher marks evidence stale.
 - Transpositions are recognized within the loaded session snapshot and course preview, but persisted course lines remain separate trees rather than a shared graph.
 - RB-011 targets an existing owned chapter; whole-course/new-chapter organization and persisted target/session metadata are not implemented.
-- RB-012 supports Course endings and Opponent gaps with explicit coverage-extension semantics. My deviations still requires replace/alternate/keep-course consequence design.
+- My deviations, weak-choice and profile-driven adaptation require explicit future tasks if pursued; they are not incomplete RB-012 scope.
 - Four-field source FENs do not contain move counters; canonical session FENs use neutral `0 1` counters while exact position identity remains the normalized four fields.
 - Engine, personal, course and profile providers do not share one universal freshness timestamp model.
 
@@ -297,4 +289,4 @@ It excludes production persistence, public API, Angular UI, course writes and RB
 
 Keep task order and priorities unchanged.
 
-RB-012 is `REVIEW` through PR #208 for Opponent gaps. My deviations should follow only after replace, alternate-line and keep-current-course consequences are explicit. Do not retire Course endings or Opponent gaps source reports before equivalent builder maintenance value is demonstrated in product use.
+RB-013 remains blocked on RB-004/RB-005 acceptance and integration. RB-017 is already claimed. RB-016 remains blocked on real product use. RB-015 is the next unclaimed task whose dependency condition is satisfied and can proceed as bounded research.
