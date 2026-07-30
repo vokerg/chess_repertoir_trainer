@@ -60,8 +60,8 @@ export class LinesPageComponent implements OnInit {
     ];
   });
   protected readonly linePanelStats = computed<readonly PageHeaderStat[]>(() => [
-    { id: 'selected', label: 'Selected', value: this.store.selectedLineCount() },
-    { id: 'weak', label: 'Weak sublines', value: this.store.chapterStats()?.weakSublineCount ?? 0 },
+    { id: 'selected', label: 'Selected lines', value: this.store.selectedLineCount() },
+    { id: 'selected-sublines', label: 'Selected sublines', value: this.store.selectedActiveSublineCount() },
   ]);
 
   ngOnInit(): void {
