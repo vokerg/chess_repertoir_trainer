@@ -63,6 +63,7 @@ export class RepertoireBuilderSetupDialogComponent {
 
   readonly initialSetup = input.required<RepertoireBuilderSetup>();
   readonly fixedSide = input<'WHITE' | 'BLACK' | null>(null);
+  readonly profileSuggestion = input<string | null>(null);
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly cancelAllowed = input(false);
