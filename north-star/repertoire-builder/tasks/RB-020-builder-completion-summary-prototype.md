@@ -1,6 +1,6 @@
 # RB-020 — Prototype post-apply Builder course summary
 
-Status: PROPOSED
+Status: CLAIMED
 
 Priority: P3
 
@@ -10,17 +10,17 @@ Queue class: Stretch goal
 
 Delivery class: North-star prototype
 
-Planning maturity: Architecturally bounded
+Planning maturity: Claimed for bounded implementation
 
 GitHub issue: `#219`
 
-Claimed by: unclaimed
+Claimed by: `vokerg` / ChatGPT agent session
 
-Claim branch: none
+Claim branch: `rb-020/issue-219-completion-summary`
 
-Claimed at: none
+Claimed at: 2026-07-30
 
-Claim scope: none
+Claim scope: Implement the disabled-by-default, explicit post-apply completion-summary slice: shared AI contracts, capability gating, authoritative completion-context reconciliation after RB-011 apply, transient dialog-scoped Angular state, optional result-panel composition, focused validation, and North Star reporting. Excludes all pre-apply behavior, destination/target selection, preview/apply services, course writes, persistence, background generation, candidate explanation, and profile narrative.
 
 ## Outcome
 
@@ -125,7 +125,7 @@ The model must not claim that deferred, ignored, stale, conflicting, or omitted 
 
 RB-020 is a stretch goal downstream of RB-015. It should not delay the deterministic builder roadmap or RB-016 outcome measurement.
 
-It becomes `READY` only after RB-015 is accepted with this post-apply boundary and no higher-priority review/closure work needs the same files.
+RB-015 and RB-019 are integrated, RB-017 is already independently claimed, RB-004/RB-005 remain in review, and RB-013/RB-016 remain blocked. No open PR or branch claims RB-020, so its satisfied dependencies and isolated file surface justify conversion from `PROPOSED` to `READY` and immediate claim without queue reprioritization.
 
 ## Completion
 
