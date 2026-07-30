@@ -10,7 +10,7 @@ Branch: `visual-transformation/vt-301-settings`
 
 Target: `main`
 
-Pull request: pending
+Pull request: draft PR #209
 
 Disposition: behavior-preserving implementation complete; repository CI and direct browser review pending
 
