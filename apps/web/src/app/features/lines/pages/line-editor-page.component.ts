@@ -59,7 +59,7 @@ export class LineEditorPageComponent implements OnInit {
       {
         id: 'back',
         label: 'Back to lines',
-        link: this.store.breadcrumbLink(),
+        link: [...this.store.breadcrumbLink()],
       },
       {
         id: 'train',
