@@ -45,7 +45,7 @@ export interface OpponentGapBuilderLaunchInput extends CourseFindingBuilderLaunc
   minCoveredPlies: number;
 }
 
-export interface RepertoireBuilderCourseEndingLaunch extends CourseEndingBuilderLaunchInput {
+export interface RepertoireBuilderCourseEndingLaunchContext extends CourseEndingBuilderLaunchInput {
   source: 'COURSE_ENDING';
   intent: 'EXTEND_EXISTING_LINE';
 }
@@ -56,8 +56,12 @@ export interface RepertoireBuilderOpponentGapLaunch extends OpponentGapBuilderLa
 }
 
 export type RepertoireBuilderCourseFindingLaunch =
-  | RepertoireBuilderCourseEndingLaunch
+  | RepertoireBuilderCourseEndingLaunchContext
   | RepertoireBuilderOpponentGapLaunch;
+
+// Compatibility name used by the existing builder store. The launch boundary now supports
+// both integrated course-finding sources.
+export type RepertoireBuilderCourseEndingLaunch = RepertoireBuilderCourseFindingLaunch;
 
 export interface RepertoireBuilderLaunchParseResult {
   context: RepertoireBuilderCourseFindingLaunch | null;
