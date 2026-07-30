@@ -148,6 +148,76 @@
             </div>
           }
         </app-panel>
+
+        @if (candidateExplanationAvailable()) {
+          <app-panel
+            title="Generated interpretation"
+            subtitle="Optional, transient explanation of the deterministic evidence above."
+          >
+            <div class="candidate-explanation-controls">
+              <label>
+                <span>Compare with</span>
+                <select
+                  [value]="candidateExplanationComparisonMoveUci() ?? ''"
+                  [disabled]="candidateExplanationLoading()"
+                  (change)="handleExplanationComparisonChange($event)"
+                >
+                  <option value="">No comparison</option>
+                  @for (comparison of comparisonCandidates(); track comparison.moveUci) {
+                    <option [value]="comparison.moveUci">#{{ comparison.rank }} {{ comparison.moveSan }}</option>
+                  }
+                </select>
+              </label>
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="candidateExplanationLoading()"
+                (click)="candidateExplanationRequested.emit()"
+              >
+                {{ candidateExplanationLoading() ? 'Generating…' : 'Explain this evidence' }}
+              </button>
+            </div>
+
+            <p class="generated-boundary">
+              This text cannot change candidate rank, selection, coverage, Builder state, or course output.
+            </p>
+
+            @if (candidateExplanationError(); as explanationError) {
+              <p class="command-error" role="alert">{{ explanationError }}</p>
+            }
+
+            @if (candidateExplanation(); as generated) {
+              <div class="candidate-explanation-result" aria-live="polite">
+                <p class="candidate-explanation-summary">{{ generated.explanation.summary }}</p>
+
+                @if (generated.explanation.tradeoffs.length > 0) {
+                  <div class="candidate-explanation-tradeoffs">
+                    <h3>Trade-offs in the supplied evidence</h3>
+                    <ul>
+                      @for (tradeoff of generated.explanation.tradeoffs; track tradeoff.text) {
+                        <li>{{ tradeoff.text }}</li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                <div class="candidate-explanation-facts">
+                  <h3>Referenced deterministic facts</h3>
+                  <dl>
+                    @for (fact of generated.referencedFacts; track fact.id) {
+                      <div [class.missing-fact]="fact.missing">
+                        <dt>{{ fact.label }}</dt>
+                        <dd>{{ fact.value }}</dd>
+                      </div>
+                    }
+                  </dl>
+                </div>
+
+                <p class="generated-disclaimer">{{ generated.disclaimer }}</p>
+              </div>
+            }
+          </app-panel>
+        }
       }
     </main>
 
