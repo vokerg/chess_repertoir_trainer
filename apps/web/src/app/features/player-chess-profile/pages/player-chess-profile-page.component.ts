@@ -15,7 +15,7 @@ import {
   buildRepertoireBuilderProfileLaunchQueryParams,
   buildRepertoireBuilderProfileSuggestions,
   type RepertoireBuilderProfileSuggestion,
-} from '../../repertoire-builder/profile-launch';
+} from '../../repertoire-builder';
 import { PlayerChessProfileBreakdownComponent } from '../components/player-chess-profile-breakdown.component';
 import { PlayerChessProfileConclusionsComponent } from '../components/player-chess-profile-conclusions.component';
 import { PlayerChessProfileCoverageComponent } from '../components/player-chess-profile-coverage.component';
