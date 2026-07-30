@@ -24,7 +24,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | DONE | Enter builder from existing-course findings | Dual-use | Course endings merged through PR #205; Opponent gaps merged through PR #208 as `1583b15` |
 | 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
 | 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
-| 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
+| 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | CLAIMED | Decide whether an LLM has a justified role | Research | Draft PR #216 on `rb-015/issue-103-llm-role-discovery` |
 | 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
 
 ## GitHub Issues program
@@ -190,7 +190,14 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Corrected review-head CI and hands-on user review are required before integration.
 - Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
 
-## Active claim
+## Active claims
+
+### RB-015 / #103
+
+- Research branch: `rb-015/issue-103-llm-role-discovery`.
+- Draft PR: https://github.com/vokerg/chess_repertoir_trainer/pull/216
+- Scope: audit the existing optional AI game-review subsystem, compare bounded candidate explanation, builder/course summary and profile narrative roles against deterministic alternatives, and make a grounded proceed/defer/reject recommendation.
+- Exclusions: production endpoint, provider, prompt, Angular feature, schema, migration, persistence, move-selection, ranking, profile-calculation or course-write changes.
 
 ### RB-017 / #114
 
@@ -234,7 +241,7 @@ RB-012 existing-course adaptation — DONE
 RB-016 feedback
 ```
 
-RB-014 and RB-017 remain outside the critical path.
+RB-014, RB-015 and RB-017 remain outside the critical path.
 
 ## Queue impact
 
@@ -248,7 +255,7 @@ RB-014 and RB-017 remain outside the critical path.
 - RB-011 is `DONE` through squash-merged PR #189 after final review-package CI #1488.
 - RB-012 is `DONE` through squash-merged PRs #205 and #208; issue #100 is closed.
 - RB-013 remains blocked on RB-004/RB-005 acceptance and integration.
-- RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
-- RB-015 is the next unclaimed task whose dependency condition is satisfied.
+- RB-014 is `DONE`; RB-017 remains an approved claimed traps pilot.
+- RB-015 is `CLAIMED` through draft PR #216 as bounded research only.
 - RB-016 remains blocked on real builder/course usage.
 - No priority or roadmap resequencing is required.
