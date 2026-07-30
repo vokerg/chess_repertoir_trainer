@@ -1,11 +1,11 @@
-.move-notes-card {
-  display: grid;
-  gap: 1rem;
+:host {
+  display: block;
+  min-width: 0;
 }
 
 .move-notes-form {
   display: grid;
-  gap: 0.9rem;
+  gap: var(--space-3);
 }
 
 .form-field {
@@ -16,14 +16,30 @@
 .move-notes-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
+.move-notes-actions :is(button, input, textarea):focus-visible,
+.form-field :is(input, textarea):focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
 .save-state {
-  color: var(--muted);
+  display: inline-flex;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.save-state.success {
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
 }
 
 .save-state.error {
-  color: var(--danger);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
