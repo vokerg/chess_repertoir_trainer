@@ -10,6 +10,7 @@ import {
   buildOpponentGapBuilderLaunchQueryParams,
 } from '../../repertoire-builder/helpers/repertoire-builder-launch';
 import type { CourseReviewResponse } from '../data-access/course-review.models';
+import { summaryAppliedCourseReviewFilters } from '../helpers/course-review-filter-summary';
 import type {
   CourseReviewFindingExampleViewModel,
   CourseReviewFindingLineReferenceViewModel,
@@ -114,7 +115,7 @@ export class CourseReviewIssueCardComponent {
       sourceKey: builderContext.sourceKey,
       sequence: lineRef.moveSequenceSan,
       results: finding.results,
-      filterSummary: this.filterSummary(),
+      filterSummary: summaryAppliedCourseReviewFilters(filters),
       sourceFilters: serializeImportedGameSearchQuery({
         ...gameFilters,
         sort: 'endedAtDesc',
