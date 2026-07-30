@@ -4,8 +4,15 @@
 }
 
 .issue-card {
-  grid-template-columns: minmax(0, 1fr) 132px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 144px;
+  gap: var(--space-3);
   align-items: start;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-muted);
 }
 
 .issue-content,
@@ -17,6 +24,7 @@
 .issue-content {
   grid-column: 1;
   grid-row: 1;
+  gap: var(--space-3);
 }
 
 .issue-board {
@@ -26,11 +34,20 @@
 
 .issue-board-link {
   display: block;
-  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
 }
 
-.issue-board-link:focus-visible {
-  outline: 3px solid var(--accent);
+.issue-board-link:hover {
+  border-color: var(--ui-action-strong);
+  box-shadow: var(--ui-shadow-raised);
+}
+
+.issue-board-link:focus-visible,
+.issue-card a:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
   outline-offset: 3px;
 }
 
@@ -40,9 +57,16 @@
   gap: 0.45rem;
 }
 
+.move-sequence,
+.issue-summary,
+.example-row code {
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .move-sequence {
   overflow-wrap: anywhere;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: var(--ui-text);
 }
 
 .line-reference-list,
@@ -50,41 +74,67 @@
 .example-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .line-reference-list {
-  gap: 0.75rem;
+  gap: var(--space-2);
 }
 
 .line-reference-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
-  padding: 0.4rem 0.55rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+}
+
+.line-reference-item a {
+  color: var(--ui-text);
+  font-weight: 750;
 }
 
 .builder-link {
-  font-weight: 700;
+  color: var(--ui-action-strong) !important;
+  font-weight: 900 !important;
 }
 
-.issue-summary,
+.issue-summary {
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-block: 1px solid var(--ui-border);
+  color: var(--ui-text-muted);
+  font-size: 0.86rem;
+}
+
 .example-row {
   justify-content: space-between;
+  padding: var(--space-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
 }
 
-.example-row {
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
+.example-row .collection-actions {
+  justify-content: flex-end;
 }
 
-@media (max-width: 560px) {
+.example-row a,
+.collection-actions .subtle-link {
+  color: var(--ui-action-strong);
+  font-weight: 800;
+}
+
+/* Keep in sync with the compact finding-card threshold. */
+@media (max-width: 640px) {
   .issue-card {
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-columns: 104px minmax(0, 1fr);
+    padding: var(--space-2);
   }
 
   .issue-board {
@@ -94,5 +144,21 @@
   .issue-content {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  .issue-summary,
+  .example-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .example-row .collection-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue-board-link {
+    transition: none;
   }
 }
