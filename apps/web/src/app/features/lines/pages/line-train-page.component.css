@@ -1,4 +1,54 @@
 .line-train-page {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-3);
+}
+
+.line-train-header-shell {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.training-back-link {
+  width: fit-content;
+  color: var(--ui-action-strong);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+}
+
+.training-back-link:hover {
+  text-decoration: underline;
+}
+
+.training-back-link:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+  border-radius: var(--ui-radius-control);
+}
+
+.status-error {
+  margin: 0;
+  color: var(--ui-danger);
+  font-weight: 800;
+}
+
+.status-note {
+  color: var(--ui-text-muted);
+  font-weight: 700;
+}
+
+/* Keep in sync with COMPACT_BREAKPOINT_PX. */
+@media (max-width: 640px) {
+  .line-train-page {
+    gap: 0.65rem;
+  }
+
+  .line-train-header-shell {
+    gap: 0.45rem;
+  }
+
+  .training-back-link {
+    font-size: 0.8rem;
+  }
 }
