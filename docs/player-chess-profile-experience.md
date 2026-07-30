@@ -33,6 +33,32 @@ Both can be inspected by character, soundness, theoretical status, theory burden
 
 Deterministic conclusions show their sample and evidence strength. Selecting a conclusion or breakdown row reveals contributing openings, metrics, and bounded recent supporting games.
 
+## Repertoire Builder starting points
+
+When one side has at least five classified opening-group games, the page exposes a side-specific **Build White repertoire** or **Build Black repertoire** action.
+
+The action derives one transparent starting point from the current response:
+
+- speed comes from the applied profile filter;
+- the strongest side-specific classified opening character maps to the existing Balanced, Solid, Aggressive, or Surprise Builder preset;
+- theory burden uses the dominant classified burden for that side;
+- coverage uses the visible preset default;
+- rating population remains an independent factual **My peers** resolution in Builder.
+
+The route snapshot includes the profile contract version, generation time, classification version, selected side, suggested values, and classified-game count. It expires after 24 hours and rejects malformed or unsupported values.
+
+Inside Builder:
+
+- the profile source is shown before setup;
+- every target control remains editable;
+- profile-derived speed, objective, and coverage are recorded as `PLAYER_PROFILE` defaults;
+- manual changes become exact RB-006 `overriddenFields`;
+- changing side drops profile provenance;
+- **Use standard Builder defaults** removes the suggestion entirely;
+- neither action changes the factual profile, candidate ranking policy, session reducer, course preview/apply, or course content.
+
+The v1 is route-local. It does not persist a player persona or attach target intent to a course or line.
+
 ## Opening-related tags
 
 The first UI consumes the existing composite RB-004 metrics without changing the calculation contract:
@@ -77,12 +103,13 @@ The feature follows the repository Angular boundaries:
 - data access owns typed HTTP calls only;
 - presentational components receive feature-local display models and emit typed user intents rather than consuming backend DTOs directly;
 - pure helpers map the wire response into conclusion, breakdown, evidence, account, and coverage view models;
+- the profile-to-Builder route protocol is an explicit root-level Repertoire Builder boundary consumed by both route pages;
 - all components are standalone and OnPush and use built-in control flow with stable tracking;
 - route-level shells use `app-page-header` and `app-panel`;
 - responsive media queries use the shared 640, 760, and 980 pixel breakpoints with explicit synchronization comments.
 
 ## Deliberate boundaries
 
-The experience does not persist profile snapshots or user corrections, write courses, implement repertoire target setup, change RB-004 formulas, add an LLM dependency, or create a permanent player archetype.
+The experience does not persist profile snapshots or user corrections, write courses, change RB-004 formulas, add an LLM dependency, create a permanent player archetype, or make profile-derived defaults authoritative.
 
-`Use as repertoire starting point` remains a disabled planned affordance until the target workflow exists.
+Persisted course intent, reusable saved personas, automatic course duplication, and library presentation require separate evidence and explicit tasks rather than being implied by the route-local starting point.
