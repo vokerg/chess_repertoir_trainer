@@ -1,4 +1,4 @@
-import type { RepertoireBuilderProfileSuggestion } from '../../repertoire-builder/profile-launch';
+import type { RepertoireBuilderProfileSuggestion } from '../../repertoire-builder';
 import { buildPlayerChessProfileBuilderActions } from './player-chess-profile-page.component';
 
 const whiteSuggestion: RepertoireBuilderProfileSuggestion = {
