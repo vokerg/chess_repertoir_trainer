@@ -22,9 +22,10 @@
 
 .profile-field > span,
 .profile-field legend {
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
 }
 
 .profile-field.compact input,
@@ -42,25 +43,40 @@
 .profile-toggle-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem;
   padding: 0.22rem;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
 }
 
 .profile-toggle-group button {
-  border: 0;
-  border-radius: 9px;
-  padding: 0.62rem 0.75rem;
+  min-height: 40px;
+  padding: 0.58rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: calc(var(--ui-radius-control) - 2px);
   background: transparent;
-  color: var(--muted-strong);
-  font-weight: 700;
+  color: var(--ui-text-muted);
+  font-weight: 750;
+}
+
+.profile-toggle-group button:hover:not(.active) {
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text);
 }
 
 .profile-toggle-group button.active {
-  background: var(--surface-strong);
-  color: var(--accent-strong);
-  box-shadow: var(--shadow-soft);
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-action-strong);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.profile-toggle-group button:focus-visible,
+.profile-picker > summary:focus-visible,
+.profile-clear-rating:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
 }
 
 .profile-recalculate {
@@ -79,14 +95,28 @@
 }
 
 .profile-picker > summary {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
   cursor: pointer;
   list-style: none;
-  border: 1px solid var(--border);
+  padding: 0.58rem 0.9rem;
+  border: 1px solid var(--ui-border);
   border-radius: 999px;
-  padding: 0.62rem 0.9rem;
-  color: var(--muted-strong);
-  font-weight: 700;
-  background: var(--surface-muted);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  font-weight: 750;
+}
+
+.profile-picker > summary:hover,
+.profile-picker[open] > summary {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.profile-picker[open] > summary {
+  color: var(--ui-action-strong);
 }
 
 .profile-picker > summary::-webkit-details-marker {
@@ -101,10 +131,10 @@
   left: 0;
   min-width: min(360px, calc(100vw - 48px));
   padding: var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-strong);
-  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-overlay);
+  box-shadow: var(--ui-shadow-overlay);
 }
 
 .profile-picker-panel {
@@ -116,10 +146,12 @@
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
+  color: var(--ui-text);
 }
 
 .profile-picker-panel input {
   width: auto;
+  accent-color: var(--ui-action-strong);
 }
 
 .profile-rating-grid {
@@ -138,6 +170,8 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(150px, 240px));
   gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--ui-border);
 }
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */
@@ -163,12 +197,17 @@
     width: 100%;
   }
 
+  .profile-filter-secondary {
+    display: grid;
+  }
+
   .profile-picker {
     width: 100%;
   }
 
   .profile-picker > summary {
     width: 100%;
+    border-radius: var(--ui-radius-control);
   }
 
   .profile-picker-panel,

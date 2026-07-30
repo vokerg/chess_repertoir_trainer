@@ -14,22 +14,22 @@
   gap: 0.7rem;
   min-width: 0;
   padding: var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-muted);
 }
 
 .profile-conclusion.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--ui-action-strong);
+  box-shadow: 0 0 0 3px var(--ui-action-soft);
 }
 
 .profile-conclusion.positive {
-  background: linear-gradient(180deg, var(--success-soft), var(--surface-muted));
+  background: linear-gradient(180deg, var(--ui-success-soft), var(--ui-surface-muted) 62%);
 }
 
 .profile-conclusion.negative {
-  background: linear-gradient(180deg, var(--danger-soft), var(--surface-muted));
+  background: linear-gradient(180deg, var(--ui-danger-soft), var(--ui-surface-muted) 62%);
 }
 
 .profile-conclusion-meta {
@@ -37,13 +37,14 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: var(--space-2);
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 700;
+  color: var(--ui-text-subtle);
+  font-size: 0.78rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 
 .profile-conclusion-kind {
-  color: var(--accent-strong);
+  color: var(--ui-action-strong);
 }
 
 .profile-conclusion h3,
@@ -52,22 +53,35 @@
 }
 
 .profile-conclusion h3 {
+  color: var(--ui-text);
   font-size: 1rem;
   line-height: 1.45;
 }
 
 .profile-conclusion p {
-  color: var(--muted);
-  font-size: 0.88rem;
+  color: var(--ui-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .profile-evidence-button {
   justify-self: start;
+  padding: 0.2rem 0;
   border: 0;
-  padding: 0;
+  border-radius: 4px;
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--ui-action-strong);
   font-weight: 800;
+}
+
+.profile-evidence-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.profile-evidence-button:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
 }
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */

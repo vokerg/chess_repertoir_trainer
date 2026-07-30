@@ -28,6 +28,11 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Proven shared presentation primitives: `shared/ui/context-strip` serves Study and Opening Analysis derived context; `shared/ui/fact-grid` serves Games responsive evidence and Study line health. Both remain typed, OnPush, semantic, and feature-agnostic.
 - Mobile-primary navigation: `core/layout/main-navigation` derives Home, Study, Games, and Openings from the existing hierarchical model, uses More for complete grouped route/account access, delegates secondary active state to More, and coordinates safe-area/content/job-panel clearance without changing routes or feature ownership.
 
+## Active rollout
+
+- VT-301 Batch 1 / draft PR #196 migrates `/progress` and `/progress/accounts/:accountId` to the production token and shared fact-grid system; repository CI passed and browser review remains pending.
+- VT-301 Batch 2 / draft PR #206 migrates `/progress/profile` page, filter, conclusions, breakdown, evidence, and coverage presentation to production `--ui-*` roles while preserving the existing store/API/component architecture; repository CI and browser review remain pending.
+
 ## Accepted feature debt
 
 - `apps/web/src/styles.css` and feature styles still contain amber-era short tokens such as `--accent`. They are an explicit compatibility layer for routes awaiting their recorded visual-transformation task, not the source for new styling.
