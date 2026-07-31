@@ -4,29 +4,6 @@
 }
 
 .opening-page {
-  /* Feature-scoped bridge for existing shared analytical widgets that still consume compatibility names. */
-  --border: var(--ui-border);
-  --border-strong: var(--ui-border-strong);
-  --surface: var(--ui-surface);
-  --surface-strong: var(--ui-surface);
-  --surface-muted: var(--ui-surface-muted);
-  --surface-dark: var(--ui-chrome);
-  --text: var(--ui-text);
-  --muted: var(--ui-text-muted);
-  --muted-strong: var(--ui-text-muted);
-  --accent: var(--ui-action);
-  --accent-strong: var(--ui-action-strong);
-  --accent-soft: var(--ui-action-soft);
-  --shadow-soft: var(--ui-shadow-soft);
-  --radius-xl: var(--ui-radius-panel);
-  --radius-lg: var(--ui-radius-panel);
-  --radius-md: var(--ui-radius-control);
-  --success: var(--ui-success);
-  --success-soft: var(--ui-success-soft);
-  --warning: var(--ui-warning);
-  --warning-soft: var(--ui-warning-soft);
-  --danger: var(--ui-danger);
-  --danger-soft: var(--ui-danger-soft);
   gap: 1rem;
 }
 
@@ -53,8 +30,8 @@
   display: block;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-panel);
-  background: var(--ui-surface-muted);
   padding: 0.8rem;
+  background: var(--ui-surface-muted);
   box-shadow: var(--ui-shadow-soft);
 }
 

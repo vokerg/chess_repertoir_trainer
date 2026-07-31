@@ -13,9 +13,9 @@
   gap: 0.25rem;
   width: fit-content;
   padding: 0.2rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.65rem;
-  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
 }
 
 .insight-tabs button {
@@ -25,24 +25,30 @@
   gap: 0.4rem;
   min-height: 32px;
   padding: 0.35rem 0.65rem;
-  border: 0;
-  border-radius: 0.48rem;
+  border: 1px solid transparent;
+  border-radius: calc(var(--ui-radius-control) - 2px);
   background: transparent;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 800;
   cursor: pointer;
 }
 
+.insight-tabs button:hover:not(.active) {
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text);
+}
+
 .insight-tabs button.active {
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--text);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+  box-shadow: var(--ui-shadow-soft);
 }
 
 .insight-tabs button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--ui-focus-ring);
   outline-offset: 2px;
 }
 
@@ -50,12 +56,30 @@
   min-width: 1.25rem;
   padding: 0.08rem 0.3rem;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  font-size: 0.72rem;
+  background: var(--ui-surface-quiet);
+  color: currentColor;
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+.insight-tabs button.active span {
+  background: var(--ui-surface);
 }
 
 .insight-body {
   min-width: 0;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .insight-tabs {
+    width: 100%;
+  }
+
+  .insight-tabs button {
+    flex: 1 1 0;
+    justify-content: center;
+  }
 }

@@ -1,17 +1,47 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .move-tree-panel {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+  max-height: 34rem;
+  overflow: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  padding: 1rem;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
+  color: var(--ui-text);
+  scrollbar-gutter: stable;
 }
 
 .move-tree-panel-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: 0.75rem;
 }
 
 .move-tree-panel-copy {
   min-width: 0;
+}
+
+.workbench-panel-title {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.workbench-panel-subtitle {
+  margin: 0.3rem 0 0;
+  color: var(--ui-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 app-copy-button {
@@ -19,9 +49,18 @@ app-copy-button {
 }
 
 app-copy-button ::ng-deep button {
-  padding: 0.35rem 0.65rem;
   min-height: 0;
+  padding: 0.35rem 0.65rem;
   font-size: 0.78rem;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .move-tree-panel {
+    max-height: none;
+    border-radius: var(--ui-radius-control);
+    padding: 0.85rem;
+  }
 }
 
 @media (max-width: 520px) {

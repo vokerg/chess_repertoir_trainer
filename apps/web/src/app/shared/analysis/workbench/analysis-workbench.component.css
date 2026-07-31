@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .analysis-workbench,
 .workbench-main-stack,
 .workbench-side-stack {
@@ -6,19 +11,33 @@
 
 .analysis-workbench {
   display: grid;
-  gap: var(--space-3);
   grid-template-columns: minmax(0, 660px) minmax(300px, 1fr);
   align-items: start;
+  gap: 1rem;
 }
 
 .workbench-main-stack,
 .workbench-side-stack {
   display: grid;
-  gap: var(--space-3);
+  gap: 1rem;
 }
 
+.workbench-main-stack > app-panel {
+  min-width: 0;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx. */
 @media (max-width: 980px) {
   .analysis-workbench {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .analysis-workbench,
+  .workbench-main-stack,
+  .workbench-side-stack {
+    gap: 0.75rem;
   }
 }
