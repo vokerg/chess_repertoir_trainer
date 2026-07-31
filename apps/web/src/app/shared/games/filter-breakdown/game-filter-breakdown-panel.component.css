@@ -1,16 +1,123 @@
-.game-filter-breakdown-panel { display: grid; gap: 0.8rem; }
-.game-filter-breakdown-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.game-filter-breakdown-total { flex: 0 0 auto; border-radius: 999px; padding: 0.35rem 0.6rem; background: rgba(35,27,21,0.07); color: var(--muted-strong); font-size: 0.76rem; font-weight: 800; }
-.game-filter-breakdown-list { display: grid; gap: 0.45rem; }
-.game-filter-breakdown-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 0; background: transparent; padding: 0.7rem 0.8rem; color: inherit; text-align: left; cursor: pointer; transition: background 120ms ease; }
-.game-filter-breakdown-row:hover { background: var(--accent-soft); }
-.game-filter-breakdown-row.selected { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-.game-filter-breakdown-label { display: grid; gap: 0.15rem; min-width: 0; }
-.game-filter-breakdown-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.game-filter-breakdown-label small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.game-filter-breakdown-stats { flex: 0 0 auto; display: grid; justify-items: end; gap: 0.15rem; color: var(--muted-strong); font-size: 0.82rem; }
-.game-filter-breakdown-stats strong { font-weight: 800; }
-.game-filter-breakdown-stats small { color: var(--muted); font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
-.loading-row { cursor: default; opacity: 0.55; }
-.loading-row:hover { border-color: var(--border); background: rgba(255,255,255,0.62); transform: none; }
-@media (max-width: 560px) { .game-filter-breakdown-header { display: grid; } .game-filter-breakdown-row { align-items: flex-start; } }
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.game-filter-breakdown-panel {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.game-filter-breakdown-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.game-filter-breakdown-total {
+  flex: 0 0 auto;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.game-filter-breakdown-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.game-filter-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control);
+  padding: 0.7rem 0.8rem;
+  background: transparent;
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.game-filter-breakdown-row:hover {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-muted);
+}
+
+.game-filter-breakdown-row:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.game-filter-breakdown-row.selected {
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+  box-shadow: inset 3px 0 0 var(--ui-action-strong);
+}
+
+.game-filter-breakdown-label {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.game-filter-breakdown-label strong,
+.game-filter-breakdown-label small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-filter-breakdown-label small,
+.game-filter-breakdown-stats small {
+  color: var(--ui-text-muted);
+}
+
+.game-filter-breakdown-stats {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 0.15rem;
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.8rem;
+}
+
+.game-filter-breakdown-stats strong {
+  font-weight: 800;
+}
+
+.game-filter-breakdown-stats small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.loading-row {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.loading-row:hover {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-quiet);
+}
+
+@media (max-width: 560px) {
+  .game-filter-breakdown-header {
+    display: grid;
+  }
+
+  .game-filter-breakdown-row {
+    align-items: flex-start;
+  }
+}
