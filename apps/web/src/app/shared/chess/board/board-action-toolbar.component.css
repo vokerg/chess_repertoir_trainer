@@ -1,13 +1,13 @@
 .board-action-row {
   display: flex;
-  gap: 0.65rem;
   align-items: center;
   flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
 .keyboard-hint {
-  color: var(--muted);
-  font-size: 0.92rem;
+  color: var(--ui-text-muted);
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
