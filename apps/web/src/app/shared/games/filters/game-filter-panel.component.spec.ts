@@ -19,18 +19,32 @@ describe('GameFilterPanelComponent', () => {
     fixture.detectChanges();
   });
 
-  it('uses the shared select menu for every single-choice filter', () => {
+  it('keeps only essential single-choice filters in the main panel', () => {
+    const mainMenus = fixture.debugElement
+      .query(By.css('.essential-filters'))
+      .queryAll(By.directive(SelectMenuComponent));
+
+    expect(mainMenus.map((menu) => menu.componentInstance.ariaLabel())).toEqual([
+      'Account',
+      'Result',
+      'Colour',
+      'Period',
+    ]);
+  });
+
+  it('keeps every advanced single-choice filter in the shared sheet', () => {
     const menus = fixture.debugElement.queryAll(By.directive(SelectMenuComponent));
 
     expect(menus.map((menu) => menu.componentInstance.ariaLabel())).toEqual([
       'Account',
-      'Provider',
       'Result',
       'Colour',
+      'Period',
+      'Provider',
       'Control',
       'Rated',
       'Analysis',
-      'Period',
+      'Indexed',
     ]);
   });
 
@@ -44,8 +58,34 @@ describe('GameFilterPanelComponent', () => {
     selectMenu('Period').valueChange.emit('CUSTOM');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.advanced-filters')).not.toBeNull();
+    const dialog = fixture.nativeElement.querySelector('.more-filters-dialog') as HTMLDialogElement;
+    expect(dialog.open).toBeTrue();
+    expect(dialog.querySelector('input[type="date"]')).not.toBeNull();
     expect(changes).toEqual(['LICHESS']);
+  });
+
+  it('shows active advanced filters as removable chips', () => {
+    const filters = {
+      ...defaultGameFilters(),
+      rated: 'true' as const,
+      opponent: 'Carlsen',
+    };
+    fixture.componentRef.setInput('filters', filters);
+    const changes: string[] = [];
+    fixture.componentInstance.filtersChange.subscribe((next) => changes.push(next.opponent));
+    fixture.detectChanges();
+
+    const chips = Array.from(
+      fixture.nativeElement.querySelectorAll('.active-filter-chip'),
+    ) as HTMLButtonElement[];
+    expect(chips.map((chip) => chip.textContent?.trim())).toEqual([
+      'Blitz + rapid×',
+      'Rated×',
+      'Opponent: Carlsen×',
+    ]);
+
+    chips[2].click();
+    expect(changes).toEqual(['']);
   });
 
   function selectMenu(ariaLabel: string): SelectMenuComponent {
