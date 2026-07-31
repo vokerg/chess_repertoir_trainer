@@ -1,6 +1,6 @@
 # RB-013 — Support repertoire personas and profile overrides
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Dual-use
 
-Planning maturity: Implemented bounded profile-to-Builder composition
+Planning maturity: Accepted bounded profile-to-Builder composition
 
 GitHub issue: `#101`
 
@@ -21,6 +21,12 @@ Claim branch: `rb-013/issue-101-profile-persona-claim`
 Implementation branch: `rb-013/issue-101-profile-persona-launch`
 
 Implementation PR: `#232`
+
+Squash commit: `4d57e140e77c62a3cac67d02fa5085b5f55dc985`
+
+Final review-package head: `013bc016153b64b882b4cef9cef9940a3854c247`
+
+Final review-package CI: run `30584783419` / #1696 — success
 
 Claimed at: 2026-07-30
 
@@ -115,7 +121,7 @@ Repository and issue closure state for RB-004/RB-005 remains stale and must be r
 
 ## Validation
 
-Implementation head `bf37e06ca20f157d2e6af16d2ad294263fab6df8`, tested against current `main` through merge commit `64853bc48d20c1b954434ab21d4cd3ba2b4b2ea1`, passed complete repository CI run `30583815998` / #1690 on 2026-07-30:
+Final review-package head `013bc016153b64b882b4cef9cef9940a3854c247` passed complete repository CI run `30584783419` / #1696 on 2026-07-30:
 
 - lint;
 - repository build;
@@ -127,7 +133,9 @@ Implementation head `bf37e06ca20f157d2e6af16d2ad294263fab6df8`, tested against c
 
 Focused validation covers side-specific suggestion derivation, evidence eligibility, strict and expiring route state, safe malformed fallback, initial-position/return routing, accepted defaults, separate peer provenance, partial overrides, alternate personas, side-change provenance removal, standard setup isolation, profile action composition, setup-dialog rejection, and Course-ending/Opponent-gap compatibility.
 
-Hands-on authenticated review against populated personal data and desktop/mobile visual review remain review activities.
+The user accepted the implementation and requested squash merge on 2026-07-31. PR #232 was squash-merged to `main` as `4d57e140e77c62a3cac67d02fa5085b5f55dc985`.
+
+An authenticated populated-data walkthrough and deliberate desktop/mobile visual review were not completed before integration; that residual review risk was explicitly accepted by the merge request.
 
 ## Completion updates
 
@@ -137,8 +145,14 @@ No new retained-intent or library-presentation task is created. Such a task shou
 
 ## Completion
 
-Report: `reports/RB-013-2026-07-30-profile-persona-launch.md`
+Implementation report: `reports/RB-013-2026-07-30-profile-persona-launch.md`
 
-Review PR: `#232`
+Closure report: `reports/RB-013-2026-07-31-closure.md`
 
-Moved to review: 2026-07-30
+Implementation PR: `#232`
+
+Squash commit: `4d57e140e77c62a3cac67d02fa5085b5f55dc985`
+
+Final review-package CI: run `30584783419` / #1696 — success
+
+Accepted and closed: 2026-07-31

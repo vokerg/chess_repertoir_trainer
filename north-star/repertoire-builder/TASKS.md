@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 This is the canonical ordered queue. IDs are immutable; `Order` and `Priority` may change through reviewed updates.
 
@@ -16,7 +16,7 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | Runtime present on `main` through merged PR stack #136 → #135; acceptance/closure metadata pending |
 | 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Runtime present on `main` through merged PR stack #139 → #138 → #135; hands-on acceptance/closure metadata pending |
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | DONE | Define repertoire target contract | North-star | Squash-merged through PR #157 |
-| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | REVIEW | Support repertoire personas and profile overrides | Dual-use | PR #232; runtime profile contracts plus completed RB-006; implementation CI #1690 passed |
+| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | DONE | Support repertoire personas and profile overrides | Dual-use | Squash-merged through PR #232 as `4d57e14`; final review-package CI #1696 passed |
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
 | 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | DONE | Implement bounded interactive builder MVP | North-star | Squash-merged through PR #184; final tested-head CI #1417 passed |
@@ -171,6 +171,19 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - My deviations is not residual RB-012 work; any future replace/alternate/keep-course flow requires a new task with explicit consequence semantics.
 - Issue #100 is closed as completed.
 
+### RB-013 / #101
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/231
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/232
+- Squash commit: `4d57e140e77c62a3cac67d02fa5085b5f55dc985`
+- Final review-package head: `013bc016153b64b882b4cef9cef9940a3854c247`
+- Final review-package CI: run `30584783419` / #1696 — success
+- Implementation report: `reports/RB-013-2026-07-30-profile-persona-launch.md`
+- Closure report: `reports/RB-013-2026-07-31-closure.md`
+- Adds eligible side-specific Chess profile → Builder actions, bounded and expiring route provenance, editable/rejectable `PLAYER_PROFILE` target defaults, exact RB-006 overrides, side-change provenance removal, and transparent persona details.
+- Personas are route-local target presets only; no course metadata, persistence, ranking, reducer, preview/apply, writer, AI, or traps behavior is added.
+- Issue #101 closes after closure reconciliation.
+
 ### RB-015 / #103
 
 - Research PR: https://github.com/vokerg/chess_repertoir_trainer/pull/216
@@ -237,16 +250,6 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Uses a lazy composition page, page-scoped store with private writable signals, typed HTTP-only data access, feature-local UI view models and focused pure transformation helpers.
 - Runtime is present on `main`; hands-on acceptance and repository/issue closure reconciliation remain pending.
 
-### RB-013 / #101
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/231
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/232
-- Implementation report: `reports/RB-013-2026-07-30-profile-persona-launch.md`
-- Implementation head `bf37e06ca20f157d2e6af16d2ad294263fab6df8` passed complete CI #1690 against current `main`.
-- Adds eligible side-specific Chess profile → Builder actions, bounded and expiring route provenance, editable/rejectable `PLAYER_PROFILE` target defaults, exact RB-006 overrides, side-change provenance removal, and transparent persona details.
-- Personas are route-local target presets only; no course metadata, persistence, ranking, reducer, preview/apply, writer, AI, or traps behavior is added.
-- Await hands-on review against populated personal profile data and responsive presentation before accepted integration.
-
 ## Active claim
 
 ### RB-017 / #114
@@ -276,7 +279,7 @@ RB-005 experience — REVIEW (runtime on main; acceptance metadata pending)
         ↓
 RB-006 target contract — DONE
         +
-RB-013 profile-derived target defaults — REVIEW
+RB-013 profile-derived target defaults — DONE
         ↓
 RB-007 candidate evidence/ranking — DONE
         +
@@ -301,7 +304,7 @@ RB-014, RB-015, RB-017, RB-019 and RB-020 remain outside the critical path.
 - RB-004 is `REVIEW`; runtime is present on `main`, while acceptance and closure synchronization remain pending.
 - RB-005 is `REVIEW`; runtime is present on `main`, while hands-on acceptance and closure synchronization remain pending.
 - RB-006 is `DONE` through squash-merged PR #157.
-- RB-013 is `REVIEW` through PR #232 after complete implementation CI #1690.
+- RB-013 is `DONE` through squash-merged PR #232 as `4d57e14`; issue #101 closes with closure reconciliation.
 - RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
 - RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
 - RB-010 is `DONE` through squash-merged PR #184 after final tested-head CI #1417.

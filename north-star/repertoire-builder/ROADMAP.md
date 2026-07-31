@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 This roadmap orders capability stages and decision gates. Detailed execution belongs in individual task files.
 
@@ -76,9 +76,9 @@ Gate: runtime integration passed. Product acceptance remains pending against pop
 
 ## Stage 3 — target, personas and candidate decision model
 
-State: RB-006 and RB-007 are complete. RB-013 is implemented and in `REVIEW` through PR #232.
+State: complete through RB-006, RB-007 and squash-merged RB-013 PR #232.
 
-Integrated RB-006/RB-007 delivery provides:
+Integrated delivery provides:
 
 - one versioned repertoire target using fixed speed and population vocabulary;
 - factual peer evidence, descriptive player-profile advice and explicit target intent kept separate;
@@ -87,13 +87,10 @@ Integrated RB-006/RB-007 delivery provides:
 - separate `USER_MOVE` and `OPPONENT_RESPONSE` roles;
 - explicit missing, stale and insufficient evidence;
 - stable reasons, warnings and bounded preview/coverage data;
-- no opaque public aggregate score.
-
-RB-013 review delivery adds:
-
+- no opaque public aggregate score;
 - eligible side-specific Chess profile → Builder actions;
 - deterministic character-to-persona and theory derivation;
-- bounded 24-hour route provenance with safe malformed/stale fallback;
+- bounded 24-hour route provenance with safe malformed, future and stale fallback;
 - visible profile source and explicit rejection to standard Builder defaults;
 - editable `PLAYER_PROFILE` speed, objective and coverage defaults;
 - independent peer-population provenance;
@@ -103,7 +100,7 @@ RB-013 review delivery adds:
 
 Tasks: RB-006, RB-007, RB-013.
 
-Gate: deterministic target and candidate comparison passed. RB-013 still requires hands-on review against populated personal data and responsive presentation before accepted integration.
+Gate: passed. One position can produce a deterministic, explainable candidate comparison for an explicit target, and profile evidence can initialize optional editable defaults without constraining the user.
 
 ## Stage 4 — visual decision proof
 
@@ -188,7 +185,7 @@ Gate: passed for existing-chapter materialization and exact coverage-extension a
 
 State:
 
-- RB-013 is in `REVIEW` through PR #232;
+- RB-013 is complete through squash-merged PR #232;
 - RB-014 discovery is complete;
 - RB-017 is the approved isolated traps pilot and remains claimed;
 - RB-015, RB-019 and RB-020 are complete.
@@ -209,7 +206,7 @@ Accepted boundaries:
 
 Tasks: RB-013, RB-014, RB-015, RB-017, RB-019, RB-020.
 
-Gate: RB-015 decision gate passed. RB-013 requires hands-on acceptance. RB-017 must prove whether its trap model survives review. Live AI usefulness remains an enablement question rather than unfinished deterministic Builder work.
+Gate: RB-013 and RB-015 decision gates passed. RB-017 must prove whether its trap model survives review. Live AI usefulness and profile-persona calibration remain product-use questions rather than unfinished deterministic Builder work.
 
 ## Stage 8 — outcome feedback
 
@@ -260,7 +257,7 @@ Outcome claims require RB-016 evidence and are not implied by feature completion
 Safe parallel work:
 
 - hands-on acceptance and closure reconciliation for RB-004/RB-005;
-- review of RB-013 against populated profile data;
+- real-use calibration of RB-013 profile-derived defaults;
 - post-merge calibration of Course endings and Opponent gaps;
 - RB-017 bounded traps pilot;
 - evidence collection needed before RB-016 specification.
@@ -276,9 +273,8 @@ High-collision areas requiring coordination:
 
 ## Queue impact
 
-- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-014, RB-015, RB-018, RB-019 and RB-020 are `DONE`.
+- RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-012, RB-013, RB-014, RB-015, RB-018, RB-019 and RB-020 are `DONE`.
 - RB-004 and RB-005 are `REVIEW`; runtime is on `main`, but hands-on acceptance and closure synchronization remain pending.
-- RB-013 is `REVIEW` through PR #232 after complete implementation CI #1690.
 - RB-017 remains `CLAIMED` and isolated.
 - RB-016 remains `BLOCKED` on real product use.
 - No priority, order or roadmap resequencing is required.
