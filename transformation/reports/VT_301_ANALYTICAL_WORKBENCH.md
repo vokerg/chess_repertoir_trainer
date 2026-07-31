@@ -4,13 +4,21 @@ Date: 2026-07-31
 
 Issue: #132
 
-Pull request: #235
+Implementation pull request: #235
 
-Branch: `visual-transformation/vt-301-analytical-workbench`
+Implementation branch: `visual-transformation/vt-301-analytical-workbench`
 
 Target: `main`
 
-Disposition: implementation complete; repository CI and direct browser review pending
+Disposition: integrated into `main`; automated validation passed; direct browser review explicitly deferred
+
+## Integration record
+
+PR #235 was approved for squash merge by the user and integrated into `main` as commit `65ee1b56cc39f377d7066a1827e510e922b695fa`.
+
+The exact implementation head was `869a99fed591f6354bf38ed1d5f26ad9aa987076`. CI run #1714 passed on that head before merge. The workflow covered dependency installation, lint, full repository build and Angular template/type compilation, opening audits, architecture guardrails, database migrations, and the complete test suite.
+
+No review submissions or unresolved inline review threads existed at merge time. The pull request was mergeable and was squash-merged only after explicit user approval.
 
 ## Objective
 
@@ -18,7 +26,7 @@ Deliver the inventory-defined VT-301 analytical-workbench batch across the share
 
 ## Scope
 
-The slice migrates shared analytical presentation from the legacy short-token compatibility layer to the production `--ui-*` contract:
+The slice migrated shared analytical presentation from the legacy short-token compatibility layer to the production `--ui-*` contract:
 
 - analysis workbench layout and responsive spacing;
 - board navigation hints plus shared copyable FEN/text presentation;
@@ -30,19 +38,20 @@ The slice migrates shared analytical presentation from the legacy short-token co
 - position move, top-game, and performance evidence;
 - shared bot-challenge dialog presentation;
 - Game Review summary, insight tabs, tactical findings, AI review, and evaluation graph;
-- Opening Struggles criteria, result table, and repertoire-coverage popover.
+- Opening Struggles criteria, transformed game-filter presentation, result table, and repertoire-coverage popover.
 
-The complete shared consumer set used by Opening Analysis is now migrated, so the feature-scoped legacy-token bridge has been removed.
+The complete shared consumer set used by Opening Analysis was migrated, allowing removal of the feature-scoped legacy-token bridge.
 
 ## Presentation outcome
 
-- important analytical surfaces use white or muted production surfaces with restrained borders and elevation;
-- selected moves, filters, insight tabs, and evidence use the mint interaction roles rather than semantic status colours;
-- success, warning, danger, and information remain distinct for classifications, game results, coverage, and errors;
-- evaluations, move numbers, engine lines, FEN, WDL values, counts, and game metrics use the production monospaced stack where appropriate;
-- focus rings are explicit on move rows, evidence rows, copy controls, criteria modes, summaries, dialogs, and popovers;
-- dense side-panel content retains the established 980px workbench collapse and 640px compact treatment;
-- reduced motion disables the evaluation-bar transition.
+- Important analytical surfaces use white or muted production surfaces with restrained borders and elevation.
+- Selected moves, filters, insight tabs, and evidence use mint interaction roles rather than semantic status colours.
+- Success, warning, danger, and information remain distinct for classifications, game results, coverage, and errors.
+- Evaluations, move numbers, engine lines, FEN, WDL values, counts, and game metrics use the production monospaced stack where appropriate.
+- Focus rings are explicit on move rows, evidence rows, copy controls, criteria modes, summaries, dialogs, and popovers.
+- Dense side-panel content retains the established 980px workbench collapse and 640px compact treatment.
+- Reduced motion disables the evaluation-bar transition.
+- Opening Struggles reuses the existing `presentation="explorer"` game-filter contract rather than adding another filter implementation.
 
 ## Behavior preserved
 
@@ -58,30 +67,34 @@ The complete shared consumer set used by Opening Analysis is now migrated, so th
 
 No new shared primitive or dependency was introduced. The existing controlled, OnPush workbench and feature-owned widget contracts remain intact. Presentation was localized to the owning shared or feature component rather than redefining legacy tokens globally or restyling Builder and line-editor consumers through `workbench.css`.
 
-## Validation status
+## Validation disposition
 
-Local application checks were not run because the available container could not resolve `github.com`, so no repository checkout was available. Build, Angular template/type compilation, tests, lint, architecture checks, and browser validation are not represented as passed.
+Passed:
 
-Required before approval:
+- exact-head repository CI #1714;
+- lint;
+- full repository build and Angular template/type compilation;
+- architecture guardrails;
+- database migration validation;
+- opening classification audits;
+- complete repository test suite.
 
-- repository CI;
-- affected shared-analysis and Game Review specs;
-- full web test and production build;
-- lint and architecture checks;
-- authenticated browser review of `/analysis`, `/games/:gameId`, `/opening-analysis`, and `/opening-struggles` at desktop, 980px, 760px, and 640px;
-- keyboard review for board navigation, copying, move selection, deletion, insight tabs, evidence rows, criteria modes, filters, dialogs, and coverage popovers;
-- loading, error, empty, stale-cache, engine-hidden, AI-review, tactical-finding, and dense-data states;
-- explicit deferral for any state that cannot be reproduced.
+Not performed locally:
+
+- local checkout-based commands, because the available container could not resolve `github.com` during implementation;
+- authenticated direct browser review of `/analysis`, `/games/:gameId`, `/opening-analysis`, and `/opening-struggles` at desktop, 980px, 760px, and 640px;
+- direct browser permutations for keyboard, loading, error, empty, stale-cache, engine-hidden, AI-review, tactical-finding, dialog, and dense-data states.
+
+The user explicitly approved merge and task wrap-up without requiring those direct browser checks. They remain deferred evidence and are not represented as observed passes.
 
 ## Coordination
 
-The branch was created from `main` at `4d57e140e77c62a3cac67d02fa5085b5f55dc985`. While implementation was in progress, `main` advanced by onboarding-documentation commit `b485b9b2992e1152c1810c91d40cc5150d39284d`; it does not overlap this slice. Refresh the branch from current `main` before final approval if further concurrent changes land.
+The implementation branch was isolated from draft PR #196, which owns Progress account-dashboard files, and draft PR #209, which owns Settings files. Concurrent `main` changes during implementation were onboarding and North Star documentation changes and did not overlap the runtime slice.
 
-Open draft PR #196 owns Progress account-dashboard files and draft PR #209 owns Settings files. This slice does not touch either runtime boundary or their colliding migration/status documents.
+Issue #132 remains open because VT-301 contains additional active and remaining rollout batches. This report closes only the analytical-workbench batch represented by PR #235.
 
 ## Explicit exclusions
 
 - no global rewrite of `apps/web/src/workbench.css`;
 - no Builder, line-editor, Progress, Settings, onboarding, or Labs change;
-- no new component contract, state, API, schema, dependency, animation library, or visual framework;
-- no merge without explicit approval.
+- no new component contract, state, API, schema, dependency, animation library, or visual framework.
