@@ -4,6 +4,8 @@ Date: 2026-07-31
 
 Issue: #132
 
+Pull request: #235
+
 Branch: `visual-transformation/vt-301-analytical-workbench`
 
 Target: `main`
@@ -19,6 +21,7 @@ Deliver the inventory-defined VT-301 analytical-workbench batch across the share
 The slice migrates shared analytical presentation from the legacy short-token compatibility layer to the production `--ui-*` contract:
 
 - analysis workbench layout and responsive spacing;
+- board navigation hints plus shared copyable FEN/text presentation;
 - move-tree panel, move rows, classifications, deletion affordance, and copy-line header;
 - evaluation bar and engine line panel;
 - course-position suggestions;
@@ -35,8 +38,8 @@ The complete shared consumer set used by Opening Analysis is now migrated, so th
 - important analytical surfaces use white or muted production surfaces with restrained borders and elevation;
 - selected moves, filters, and evidence use the mint interaction roles rather than semantic status colours;
 - success, warning, danger, and information remain distinct for classifications, game results, coverage, and errors;
-- evaluations, move numbers, engine lines, WDL values, and counts use the production monospaced stack where appropriate;
-- focus rings are explicit on move rows, evidence rows, table controls, summaries, and popovers;
+- evaluations, move numbers, engine lines, FEN, WDL values, and counts use the production monospaced stack where appropriate;
+- focus rings are explicit on move rows, evidence rows, copy controls, criteria modes, summaries, and popovers;
 - dense side-panel content retains the established 980px workbench collapse and 640px compact treatment;
 - reduced motion disables the evaluation-bar transition.
 
@@ -65,7 +68,7 @@ Required before approval:
 - full web test and production build;
 - lint and architecture checks;
 - authenticated browser review of `/analysis`, `/games/:gameId`, `/opening-analysis`, and `/opening-struggles` at desktop, 980px, 760px, and 640px;
-- keyboard review for move selection, deletion, evidence rows, criteria modes, filters, and coverage popovers;
+- keyboard review for board navigation, copying, move selection, deletion, evidence rows, criteria modes, filters, and coverage popovers;
 - loading, error, empty, stale-cache, engine-hidden, and dense-data states;
 - explicit deferral for any state that cannot be reproduced.
 
