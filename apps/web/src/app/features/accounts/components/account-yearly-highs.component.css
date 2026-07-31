@@ -4,11 +4,11 @@
 
 .yearly-highs-status {
   margin: 0 0 0.85rem;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .yearly-highs-error {
-  color: var(--danger);
+  color: var(--ui-danger);
 }
 
 .yearly-highs {
@@ -26,20 +26,23 @@
   display: grid;
   place-items: center;
   margin: 0;
-  padding: 1rem;
-  color: var(--muted);
-  font-weight: 800;
+  padding: var(--space-3);
+  color: var(--ui-text-muted);
+  font-weight: 750;
   text-align: center;
 }
 
 .yearly-highs-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 252, 247, 0.72);
+  background: color-mix(in srgb, var(--ui-surface-overlay) 84%, transparent);
 }
 
 .yearly-highs-table-wrap {
   overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
 }
 
 .yearly-highs-table {
@@ -51,9 +54,13 @@
 .yearly-highs-table th,
 .yearly-highs-table td {
   padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--ui-border);
   text-align: right;
-  font-weight: 850;
+  font-weight: 750;
+}
+
+.yearly-highs-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .yearly-highs-table th:first-child,
@@ -62,8 +69,15 @@
 }
 
 .yearly-highs-table thead th {
-  color: var(--muted-strong);
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text-subtle);
   font-size: 0.74rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.yearly-highs-table tbody td:not(:first-child) {
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
 }

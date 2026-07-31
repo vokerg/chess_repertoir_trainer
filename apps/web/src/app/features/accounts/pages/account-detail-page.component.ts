@@ -1,8 +1,20 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { HttpErrorResponse } from '@angular/common/http';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../shared/ui/fact-grid/fact-grid.component';
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { AccountPerformanceStatsComponent } from '../components/account-performance-stats.component';
@@ -27,6 +39,7 @@ import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
   standalone: true,
   imports: [
     PageHeaderComponent,
+    FactGridComponent,
     PanelComponent,
     AccountRatingStatsComponent,
     AccountYearlyHighsComponent,
@@ -81,6 +94,33 @@ export class AccountDetailPageComponent implements OnInit {
         left.username.localeCompare(right.username),
     ),
   );
+  protected readonly accountFacts = computed<readonly UiFactItem[]>(() => {
+    const account = this.account();
+    if (!account) return [];
+
+    return [
+      {
+        id: 'provider',
+        label: 'Provider',
+        value: providerLabel(account.provider),
+      },
+      {
+        id: 'username',
+        label: 'Username',
+        value: `@${account.username}`,
+      },
+      {
+        id: 'status',
+        label: 'Status',
+        value: account.isActive ? 'Active' : 'Inactive',
+      },
+      {
+        id: 'progress',
+        label: 'Progress',
+        value: account.isDefaultProgressAccount ? 'Default' : 'Available',
+      },
+    ];
+  });
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'back-to-accounts',
