@@ -46,16 +46,25 @@ The original implementation branch was based on an earlier `main` and had diverg
 
 ## Self-review disposition
 
-A fresh diff review identified one responsive defect in the refreshed implementation: the persistent 240px desktop navigation rail could leave the new side-by-side metrics row substantially narrower than the viewport breakpoint implied, while Rating Stats still forced three fixed columns. Milestone rows could therefore overflow at tablet and small-desktop widths.
+A fresh diff review identified two issues in the refreshed implementation.
+
+### Responsive composition
+
+The persistent 240px desktop navigation rail could leave the new side-by-side metrics row substantially narrower than the viewport breakpoint implied, while Rating Stats still forced three fixed columns. Milestone rows could therefore overflow at tablet and small-desktop widths.
 
 The branch now:
 
 - stacks both the account overview and metrics composition at the established 980px workbench threshold;
 - uses width-aware `auto-fit` rating cards with a bounded 210px minimum instead of a viewport-only three-column assumption;
-- retains horizontal scrolling for the deliberately tabular yearly-highs evidence;
-- leaves route, data, filtering, and chart behavior unchanged.
+- retains horizontal scrolling for the deliberately tabular yearly-highs evidence.
 
-No additional blocking issue was found in the changed TypeScript, template bindings, shared-component contracts, token usage, loading/error/empty-state preservation, focus treatment, or chart semantics. Direct browser validation remains necessary because connector-based review cannot observe actual rendered dimensions, text wrapping, or pointer interaction.
+### Small-label contrast
+
+Several newly migrated labels used `--ui-text-subtle` on muted or quiet surfaces. That role is too restrained for small normal text in these contexts. The changed account-switcher label, performance headings, yearly-highs headers, and chart axis/date labels now use `--ui-text-muted` or `--ui-text` according to their surface.
+
+The existing shared `app-fact-grid` label treatment is unchanged because that contract predates this batch and belongs in the program-wide VT-302 accessibility review rather than a feature-local override.
+
+No additional blocking issue was found in the changed TypeScript, template bindings, shared-component contracts, loading/error/empty-state preservation, focus treatment, or chart semantics. Route, data, filtering, and chart behavior remain unchanged. Direct browser validation remains necessary because connector-based review cannot observe actual rendered dimensions, text wrapping, contrast under platform rendering, or pointer interaction.
 
 ## Validation
 
