@@ -3,7 +3,7 @@
     title="Chess profile"
     subtitle="Recalculate how your opening preferences and results differ across selected games."
     [stats]="store.headerStats()"
-    [actions]="headerActions"
+    [actions]="headerActions()"
   />
 
   <app-panel title="Profile context" subtitle="The profile is recalculated from the selected personal games.">
@@ -36,6 +36,13 @@
 
   @if (store.hasResponse()) {
     <p class="profile-context-summary">{{ store.contextLabel() }}</p>
+
+    @if (repertoireSuggestions().length > 0) {
+      <p class="profile-context-summary">
+        Builder actions use this calculated profile only as a side-specific starting point. Persona, theory,
+        population, coverage, and side remain explicit choices; the factual profile is not changed.
+      </p>
+    }
 
     @if (store.hasNoData()) {
       <app-panel

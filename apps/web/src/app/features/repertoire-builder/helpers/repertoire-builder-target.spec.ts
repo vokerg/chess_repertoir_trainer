@@ -5,6 +5,7 @@ import {
   defaultRepertoireBuilderSetup,
   targetPopulationLabel,
 } from './repertoire-builder-target';
+import type { RepertoireBuilderProfileDefaults } from '../state/repertoire-builder.models';
 
 const NOW = '2026-07-29T08:00:00.000Z';
 const TARGET_ID = '00000000-0000-4000-8000-000000000010';
@@ -25,6 +26,24 @@ const peerResolution: LichessGamesPeerResolution = {
     version: '2026-07-lichess-bands-v1',
   },
   resolverPolicyVersion: 'dominant-contiguous-window-v1',
+};
+
+const profileDefaults: RepertoireBuilderProfileDefaults = {
+  source: {
+    kind: 'PLAYER_PROFILE',
+    profileContractVersion: '2026-07-v1',
+    profileGeneratedAt: '2026-07-29T07:30:00.000Z',
+    classificationVersion: '2026-07-rules-v2',
+  },
+  setup: {
+    side: 'WHITE',
+    speedPreset: 'BLITZ_AND_SLOWER',
+    ratingTarget: 'MY_PEERS',
+    ratingGroup: null,
+    persona: 'SOLID',
+    maximumTheoryBurden: 'LOW',
+    coveragePercent: 85,
+  },
 };
 
 describe('repertoire builder target factory', () => {
@@ -68,6 +87,56 @@ describe('repertoire builder target factory', () => {
     }));
     expect(target.overriddenFields).not.toContain('population');
     expect(targetPopulationLabel(target)).toContain('My peers and one group higher');
+  });
+
+  it('accepts profile defaults without converting the player profile into a constraint', () => {
+    const target = buildRepertoireBuilderTarget({
+      ...profileDefaults.setup,
+      profileDefaults,
+    }, peerResolution, NOW, TARGET_ID);
+
+    expect(repertoireTargetSchema.safeParse(target).success).toBeTrue();
+    expect(target.overriddenFields).toEqual([]);
+    expect(target.defaults.filter((entry) => entry.field !== 'population')).toEqual([
+      jasmine.objectContaining({ field: 'speedPreset', source: profileDefaults.source }),
+      jasmine.objectContaining({ field: 'objective', source: profileDefaults.source }),
+      jasmine.objectContaining({ field: 'coverage', source: profileDefaults.source }),
+    ]);
+    expect(target.population.requested.kind).toBe('MY_PEERS');
+    expect(target.defaults).toContain(jasmine.objectContaining({
+      field: 'population',
+      source: { kind: 'PEER_RESOLUTION' },
+    }));
+  });
+
+  it('records partial and alternate-persona overrides against immutable profile defaults', () => {
+    const target = buildRepertoireBuilderTarget({
+      ...profileDefaults.setup,
+      profileDefaults,
+      persona: 'SURPRISE',
+      maximumTheoryBurden: 'LOW',
+      coveragePercent: 70,
+    }, peerResolution, NOW, TARGET_ID);
+
+    expect(target.objective.persona).toBe('SURPRISE');
+    expect(target.objective.preferredCharacters).toEqual(['SURPRISE', 'TACTICAL']);
+    expect(target.overriddenFields).toEqual(['objective', 'coverage']);
+    expect(target.defaults.find((entry) => entry.field === 'objective')?.source)
+      .toEqual(profileDefaults.source);
+  });
+
+  it('drops profile provenance safely when the selected side no longer matches', () => {
+    const target = buildRepertoireBuilderTarget({
+      ...profileDefaults.setup,
+      side: 'BLACK',
+      profileDefaults,
+    }, peerResolution, NOW, TARGET_ID);
+
+    expect(target.defaults.some((entry) => entry.source.kind === 'PLAYER_PROFILE')).toBeFalse();
+    expect(target.defaults).toContain(jasmine.objectContaining({
+      field: 'objective',
+      source: jasmine.objectContaining({ kind: 'PERSONA_PRESET' }),
+    }));
   });
 
   it('records an exact existing-course starting point', () => {

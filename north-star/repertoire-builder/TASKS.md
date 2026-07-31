@@ -13,10 +13,10 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 | 30 | RB-003 | [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91) | P0 | DONE | Establish named opening classification foundation | Dual-use | Delivered through PR #111 |
 | 35 | RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) | P1 | DONE | Complete opening classification coverage | Dual-use | Delivered through PR #121; RB-003 method preserved |
 | 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | DONE | Prototype visual candidate and coverage choices | North-star | Accepted through PR #110: setup dialog to routed board-first workbench |
-| 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | PR #136; final-head CI #1103 passed; awaiting review and integration |
-| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004; corrected navigation/architecture review awaiting final CI and hands-on acceptance |
+| 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | Runtime present on `main` through merged PR stack #136 → #135; acceptance/closure metadata pending |
+| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Runtime present on `main` through merged PR stack #139 → #138 → #135; hands-on acceptance/closure metadata pending |
 | 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | DONE | Define repertoire target contract | North-star | Squash-merged through PR #157 |
-| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, completed RB-006 contract |
+| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | REVIEW | Support repertoire personas and profile overrides | Dual-use | PR #232; runtime profile contracts plus completed RB-006; implementation CI #1690 passed |
 | 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
 | 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
 | 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | DONE | Implement bounded interactive builder MVP | North-star | Squash-merged through PR #184; final tested-head CI #1417 passed |
@@ -213,28 +213,39 @@ Normal claim metadata lives in the individual task file to reduce conflicts betw
 - Reconciles the owned destination, applied line, course revision and result counts before provider work and keeps the factual result server-generated.
 - Keeps dialog-scoped AI state outside `RepertoireBuilderCourseStore` and adds no preview/apply, course, persistence or navigation mutation.
 - Accepted with live provider/browser/usefulness quality still unproven because the prototype remains disabled by default, non-authoritative and removable.
-- Issue #219 closes after closure reconciliation.
+- Issue #219 is closed as completed.
 
 ## Review work
 
 ### RB-004 / #92
 
 - Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/136
+- Integration path: PR #136 merged into claim PR #135, which merged to `main`.
 - Report: `reports/RB-004-2026-07-27-player-chess-profile-calculation.md`
 - Provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance sections, selected-game baselines, evidence grades, explicit classification/analysis coverage and bounded supporting evidence.
 - Final implementation-head CI #1103 passed lint, build, audits, architecture guardrails, migrations, complete tests, multi-account coverage and the 1,200-game bounded performance regression.
-- Await user review and accepted integration before closing #92.
+- Runtime is present on `main`; hands-on acceptance and repository/issue closure reconciliation remain pending.
 
 ### RB-005 / #93
 
 - Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/138
 - Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/139
+- Integration path: PR #139 merged through #138 into the RB-004 stack, then through #135 to `main`.
 - Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`
 - Preserves `/progress` as the default-account dashboard entry, adds `/progress/profile`, and exposes `Account performance` plus `Chess profile` under the existing Progress submenu.
 - Provides recalculable context filters, separate preference/performance views, conclusion and row evidence, supporting openings/games, peer and coverage context, responsive states and focused Angular tests.
 - Uses a lazy composition page, page-scoped store with private writable signals, typed HTTP-only data access, feature-local UI view models and focused pure transformation helpers.
-- Corrected review-head CI and hands-on user review are required before integration.
-- Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
+- Runtime is present on `main`; hands-on acceptance and repository/issue closure reconciliation remain pending.
+
+### RB-013 / #101
+
+- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/231
+- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/232
+- Implementation report: `reports/RB-013-2026-07-30-profile-persona-launch.md`
+- Implementation head `bf37e06ca20f157d2e6af16d2ad294263fab6df8` passed complete CI #1690 against current `main`.
+- Adds eligible side-specific Chess profile → Builder actions, bounded and expiring route provenance, editable/rejectable `PLAYER_PROFILE` target defaults, exact RB-006 overrides, side-change provenance removal, and transparent persona details.
+- Personas are route-local target presets only; no course metadata, persistence, ranking, reducer, preview/apply, writer, AI, or traps behavior is added.
+- Await hands-on review against populated personal profile data and responsive presentation before accepted integration.
 
 ## Active claim
 
@@ -259,11 +270,13 @@ RB-003 opening-classification foundation — DONE
         +
 RB-018 coverage expansion — DONE
         ↓
-RB-004 calculation — REVIEW
+RB-004 calculation — REVIEW (runtime on main; acceptance metadata pending)
         +
-RB-005 experience — REVIEW (stacked)
+RB-005 experience — REVIEW (runtime on main; acceptance metadata pending)
         ↓
 RB-006 target contract — DONE
+        +
+RB-013 profile-derived target defaults — REVIEW
         ↓
 RB-007 candidate evidence/ranking — DONE
         +
@@ -285,18 +298,18 @@ RB-014, RB-015, RB-017, RB-019 and RB-020 remain outside the critical path.
 ## Queue impact
 
 - RB-003 and RB-018 are `DONE`; opening classification foundation and pinned-book coverage are delivered.
-- RB-004 is `REVIEW` through PR #136.
-- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance and stack reconciliation.
+- RB-004 is `REVIEW`; runtime is present on `main`, while acceptance and closure synchronization remain pending.
+- RB-005 is `REVIEW`; runtime is present on `main`, while hands-on acceptance and closure synchronization remain pending.
 - RB-006 is `DONE` through squash-merged PR #157.
+- RB-013 is `REVIEW` through PR #232 after complete implementation CI #1690.
 - RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
 - RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
 - RB-010 is `DONE` through squash-merged PR #184 after final tested-head CI #1417.
 - RB-011 is `DONE` through squash-merged PR #189 after final review-package CI #1488.
 - RB-012 is `DONE` through squash-merged PRs #205 and #208; issue #100 is closed.
-- RB-013 remains blocked on RB-004/RB-005 acceptance and integration.
 - RB-014 is `DONE`; RB-017 remains an approved claimed traps pilot.
-- RB-015 is `DONE` through squash-merged PR #216; issue #103 closes with closure reconciliation.
+- RB-015 is `DONE` through squash-merged PR #216.
 - RB-019 is `DONE` through squash-merged PR #223 as `ee389cb`; issue #218 is closed.
-- RB-020 is `DONE` through squash-merged PR #228 as `d795572`; issue #219 closes with closure reconciliation.
+- RB-020 is `DONE` through squash-merged PR #228 as `d795572`; issue #219 is closed.
 - RB-016 remains blocked on real builder/course usage.
-- No critical-path priority or roadmap resequencing is required.
+- No priority, order or roadmap resequencing is recommended.

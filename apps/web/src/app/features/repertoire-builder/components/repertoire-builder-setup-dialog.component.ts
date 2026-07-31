@@ -63,6 +63,7 @@ export class RepertoireBuilderSetupDialogComponent {
 
   readonly initialSetup = input.required<RepertoireBuilderSetup>();
   readonly fixedSide = input<'WHITE' | 'BLACK' | null>(null);
+  readonly profileSuggestion = input<string | null>(null);
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly cancelAllowed = input(false);
@@ -122,6 +123,7 @@ export class RepertoireBuilderSetupDialogComponent {
     const value = this.form.getRawValue();
     const rating = this.ratingOptions.find((option) => option.value === value.ratingSelection);
     if (!rating) return;
+    const profileDefaults = this.initialSetup().profileDefaults;
     this.submitted.emit({
       side: value.side,
       speedPreset: value.speedPreset,
@@ -130,6 +132,7 @@ export class RepertoireBuilderSetupDialogComponent {
       persona: value.persona,
       maximumTheoryBurden: value.maximumTheoryBurden,
       coveragePercent: value.coveragePercent,
+      ...(profileDefaults?.setup.side === value.side ? { profileDefaults } : {}),
     });
   }
 
