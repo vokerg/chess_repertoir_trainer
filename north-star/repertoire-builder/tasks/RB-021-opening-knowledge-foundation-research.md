@@ -1,6 +1,6 @@
 # RB-021 — Research side-aware opening knowledge foundation
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -8,9 +8,11 @@ Order: 165
 
 Delivery class: Research
 
-Planning maturity: Claimed discovery
+Planning maturity: Review package complete; decision pending
 
 GitHub issue: #240
+
+Review PR: #244
 
 Claimed by: ChatGPT agent session
 
@@ -52,20 +54,35 @@ The design must reuse the existing family/subfamily/override model without requi
 7. Which validators and audits are required before production use?
 8. How should downstream Builder and AI review consumers receive knowledge without changing their authority boundaries?
 
+## Accepted research recommendation for review
+
+Proceed with a separate, independently versioned `OpeningKnowledgeService` beside opening lookup/classification.
+
+- consume the resolved opening entry and existing classification result;
+- primarily select knowledge through stable classification rule IDs;
+- allow a narrow name/ECO/UCI selector for strategic distinctions that do not belong in classification;
+- apply broad family knowledge before subfamily and line rules;
+- keep stable plan IDs with explicit merge, removal and full-replacement semantics;
+- preserve separate White and Black summaries/plans, conditions, caveats, confidence, lifecycle and provenance;
+- include only reviewed project-original prose in runtime results;
+- require no database, runtime LLM or runtime web lookup.
+
+Descriptions and plans should not be added directly to `OpeningSideClassification` because they have different coverage, editorial, licensing, version and consumer semantics.
+
 ## Required pilot
 
-Test the proposed model against at least twelve materially different cases, including:
+The report tests the model against materially different cases including:
 
-- a broad family with many branches;
-- a system opening;
-- a sharp principal line;
-- a side-asymmetric gambit;
-- a positional defence;
-- a hypermodern defence;
-- a line whose plans change materially in a subvariation;
-- a transpositional naming case.
-
-Candidate families include the Sicilian/Najdorf, London, French, Caro-Kann, Queen's Gambit, King's Indian, Grünfeld, English/Réti, Evans Gambit and Benko Gambit.
+- Sicilian and Najdorf branches;
+- French and French Exchange replacement;
+- Caro-Kann;
+- London;
+- Queen's Gambit, QGD and QGA;
+- King's Indian;
+- Grünfeld;
+- English/Réti transpositions;
+- Evans Gambit Accepted;
+- Benko Accepted and Declined.
 
 ## Deliverables
 
@@ -76,20 +93,22 @@ Candidate families include the Sicilian/Najdorf, London, French, Caro-Kann, Quee
 - validator and coverage-audit design;
 - consumer contract sketches for Repertoire Builder and AI game review;
 - explicit proceed/revise/defer recommendation for RB-022, RB-023 and RB-024;
-- synchronized task queue, status, roadmap, decisions, open questions and GitHub issue metadata.
+- synchronized task queue, status, roadmap, feature catalog and GitHub issue metadata.
 
-## Acceptance criteria
+`DECISIONS.md` remains intentionally unchanged until the review recommendation is accepted, revised or rejected. The accepted disposition must be synchronized during review completion.
 
-- side-specific plans are mandatory and independently reviewable;
-- the design requires neither a database nor one record per generated opening row;
-- runtime product behavior requires no external AI or web lookup;
-- original text, factual provenance and licensing boundaries are explicit;
-- broad inheritance and narrow overrides are demonstrated with real opening examples;
-- missing knowledge stays explicit rather than being generated optimistically;
-- Builder knowledge remains explanatory and cannot affect deterministic ranking in this task;
-- AI game review remains a downstream stretch consumer;
-- implementation tasks have clear dependencies and non-goals;
-- validation performed and skipped is recorded honestly.
+## Acceptance assessment
+
+- side-specific plans are mandatory and independently reviewable: met in the proposed contract and pilot;
+- no database or one record per generated row: met;
+- no runtime AI/web dependency: met;
+- original text, provenance and licensing boundaries: defined;
+- broad inheritance and narrow overrides: demonstrated with family/subfamily/line and knowledge-only selectors;
+- explicit missing/partial knowledge: defined;
+- Builder knowledge remains explanatory and outside ranking: preserved;
+- AI game review remains a downstream stretch consumer: preserved;
+- implementation tasks have clear dependencies and non-goals: RB-022 through RB-024 created;
+- validation performed and skipped is recorded: met in the report and PR.
 
 ## Dependencies
 
@@ -102,7 +121,7 @@ Candidate families include the Sicilian/Najdorf, London, French, Caro-Kann, Quee
 - RB-023 / #242 — Repertoire Builder presentation.
 - RB-024 / #243 — AI game review grounding.
 
-## Explicit exclusions
+## Explicit exclusions preserved
 
 - production opening-knowledge code or corpus;
 - database schema or persistence;
@@ -111,4 +130,38 @@ Candidate families include the Sicilian/Najdorf, London, French, Caro-Kann, Quee
 - ranking-policy changes;
 - course generation or writes;
 - runtime LLM or runtime source lookup;
-- automatic copying or paraphrasing from unlicensed sources.
+- automatic copying or close paraphrasing from unlicensed sources.
+
+## Validation
+
+Completed:
+
+- direct current-repository inspection;
+- architecture option comparison;
+- representative rule/plan merge pilot;
+- external source/license policy research;
+- canonical task/issue/dependency synchronization;
+- branch comparison against current `main` with no runtime files changed.
+
+Skipped:
+
+- compiler and tests because this is documentation-only research;
+- generated knowledge audit because no corpus exists;
+- browser, provider and engine validation;
+- local checkout validation because the environment could not resolve `github.com`; connected GitHub API operations succeeded.
+
+## Review decision
+
+Review PR #244 should choose one disposition:
+
+1. accept and unblock RB-022;
+2. revise architecture, schema, merge semantics, source policy or task split;
+3. defer and close follow-ons as not planned.
+
+No merge or issue closure should occur without explicit approval.
+
+## Completion evidence
+
+Research report: `reports/RB-021-2026-07-31-opening-knowledge-foundation.md`
+
+Review PR: #244
