@@ -80,14 +80,8 @@
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */
 @media (max-width: 980px) {
+  .account-overview-content,
   .account-metrics-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
-@media (max-width: 640px) {
-  .account-overview-content {
     grid-template-columns: 1fr;
   }
 }
