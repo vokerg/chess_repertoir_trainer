@@ -40,7 +40,7 @@
 
 .rating-stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
   gap: var(--space-3);
 }
 
@@ -158,10 +158,4 @@
 
 .milestones p {
   margin: 0;
-}
-
-@media (max-width: 900px) {
-  .rating-stat-grid {
-    grid-template-columns: 1fr;
-  }
 }
