@@ -28,7 +28,8 @@ The slice migrates shared analytical presentation from the legacy short-token co
 - Masters and Lichess peer explorer evidence;
 - opening filter breakdowns;
 - position move, top-game, and performance evidence;
-- Game Review evaluation graph;
+- shared bot-challenge dialog presentation;
+- Game Review summary, insight tabs, tactical findings, AI review, and evaluation graph;
 - Opening Struggles criteria, result table, and repertoire-coverage popover.
 
 The complete shared consumer set used by Opening Analysis is now migrated, so the feature-scoped legacy-token bridge has been removed.
@@ -36,10 +37,10 @@ The complete shared consumer set used by Opening Analysis is now migrated, so th
 ## Presentation outcome
 
 - important analytical surfaces use white or muted production surfaces with restrained borders and elevation;
-- selected moves, filters, and evidence use the mint interaction roles rather than semantic status colours;
+- selected moves, filters, insight tabs, and evidence use the mint interaction roles rather than semantic status colours;
 - success, warning, danger, and information remain distinct for classifications, game results, coverage, and errors;
-- evaluations, move numbers, engine lines, FEN, WDL values, and counts use the production monospaced stack where appropriate;
-- focus rings are explicit on move rows, evidence rows, copy controls, criteria modes, summaries, and popovers;
+- evaluations, move numbers, engine lines, FEN, WDL values, counts, and game metrics use the production monospaced stack where appropriate;
+- focus rings are explicit on move rows, evidence rows, copy controls, criteria modes, summaries, dialogs, and popovers;
 - dense side-panel content retains the established 980px workbench collapse and 640px compact treatment;
 - reduced motion disables the evaluation-bar transition.
 
@@ -68,8 +69,8 @@ Required before approval:
 - full web test and production build;
 - lint and architecture checks;
 - authenticated browser review of `/analysis`, `/games/:gameId`, `/opening-analysis`, and `/opening-struggles` at desktop, 980px, 760px, and 640px;
-- keyboard review for board navigation, copying, move selection, deletion, evidence rows, criteria modes, filters, and coverage popovers;
-- loading, error, empty, stale-cache, engine-hidden, and dense-data states;
+- keyboard review for board navigation, copying, move selection, deletion, insight tabs, evidence rows, criteria modes, filters, dialogs, and coverage popovers;
+- loading, error, empty, stale-cache, engine-hidden, AI-review, tactical-finding, and dense-data states;
 - explicit deferral for any state that cannot be reproduced.
 
 ## Coordination
