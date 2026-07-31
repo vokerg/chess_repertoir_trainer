@@ -1,6 +1,6 @@
 # RB-004 — Implement Player Chess Profile calculation
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -8,134 +8,32 @@ Order: 50
 
 Delivery class: Dual-use
 
-Planning maturity: Implemented
+Planning maturity: Accepted and integrated
 
-GitHub issue: `#92`
+GitHub issue: #92
 
-Claimed by: ChatGPT session
+Implementation PR: #136
 
-Claim branch: `rb-004/issue-92-player-chess-profile-engine`
+Integration PR: #135
 
-Claimed at: 2026-07-27
+Integration commit: `07299fd3d29f49b245de31a40de8492d13c4ef0b`
 
-Claim scope: implement the deterministic Player Chess Profile calculation using the existing imported-game filter and database-aggregation patterns, completed factual player-level evidence, and the side-aware opening-classification contract. The work covers metric and confidence definitions, a shared wire contract, a thin authenticated API endpoint, bounded supporting opening/game evidence, explicit unknown and insufficient-data outcomes, and focused tests and documentation. It excludes polished UI, profile persistence, player-level recalculation, opening-classification changes, LLM conclusions, candidate ranking, course mutation, and unsupported causal claims.
+Final implementation CI: run `30287398030` / #1103 — success
 
-Implementation PR: `#136`
+## Delivered
 
-Final implementation-head CI: run `30287398030` / CI #1103 — success
+Deterministic authenticated Player Chess Profile calculation with shared contracts, ownership-aware filters, separate preference/performance evidence, selected-game baselines, evidence grades, opening-classification provenance, peer context, explicit coverage and bounded database aggregation/supporting games.
 
-## Outcome
+No profile persistence, permanent player label, ranking change, course write or LLM authority was added.
 
-Create a deterministic, filterable Player Chess Profile calculation that describes:
+## Accepted residual risk
 
-- what opening characters the player chooses;
-- which opening characters produce good opening positions;
-- which produce good results relative to appropriate baselines;
-- where early mistakes or trouble cluster;
-- how conclusions differ by speed preset, color, period, account, and rating context;
-- confidence and evidence behind every conclusion.
-
-The calculation should have standalone value and later advise repertoire targets.
-
-## Why this task exists
-
-The repository stores imported games, ratings, opening names/ECO, indexed plies, analyses, and opening-related tags. A profile can turn those facts into a coherent player-facing capability after opening classification is available or an approved limited fallback is defined.
-
-The factual multi-account player-level context is already available from the completed RB-001/RB-002 normalized peer resolver.
-
-## Current repo anchors to inspect
-
-- imported-game schema, shared filters, `buildImportedGameWhere`, and aggregate repositories;
-- game-tag definitions and tagging thresholds;
-- opening assignment and opening book;
-- account performance/rating projections;
-- performance-by-rating lab;
-- course coverage and deviation calculations if course adherence is included;
-- shared contracts and OpenAPI patterns;
-- completed RB-001/RB-002 factual player-level contracts;
-- RB-003 opening-classification outcome or approved fallback.
-
-## Dependencies
-
-Completed:
-
-- RB-001/RB-002 factual population and player-level evidence;
-- RB-003 opening-classification method;
-- RB-018 opening-classification coverage expansion.
-
-RB-004 consumes those boundaries without reopening or duplicating them.
-
-## In scope
-
-- define profile query filters: accounts, dates, RB-001 speed presets, colors, rated status, and rating/opponent context;
-- consume the completed factual peer interval/distribution rather than recalculating or persisting a second level model;
-- extract or rename the existing resolver contract only if that is the minimal clean boundary for a second consumer;
-- define overall and contextual baselines;
-- calculate preference exposure separately from performance;
-- calculate opening-position outcomes from analysis/tags with no double counting;
-- include game score, early mistake/blunder rates, opening success/trouble rates, and other approved metrics;
-- compare against personal baseline and, when available, peer/population baseline;
-- define confidence or evidence-strength semantics for profile conclusions, separate from factual rating normalization;
-- preserve total, indexed, and analysed game counts;
-- return supporting opening groups and bounded example games;
-- support insufficient-data outcomes;
-- use database aggregation for counts and summaries rather than unbounded Node reduction;
-- provide a shared response contract and thin authenticated endpoint;
-- add deterministic unit/integration tests.
-
-## Out of scope
-
-- recalculating or mutating the completed factual player level;
-- changing the established correlation matrix or resolver policy without a separately versioned defect decision;
-- arbitrary target speed weights;
-- polished profile UI;
-- storing a permanent personality label;
-- automatically changing courses;
-- LLM-authored conclusions;
-- candidate ranking;
-- opening-classification implementation itself;
-- unsupported causal claims such as proving a style caused rating improvement.
-
-## Statistical questions resolved in the implementation proposal
-
-- the baseline is the complete selected game set after filters;
-- result performance and analysis-derived opening outcomes remain independent metrics;
-- evidence strength uses deterministic sample bands, while analysis evidence is unavailable below five analysed games or 50% coverage;
-- small samples are qualified rather than shrunk into a hidden estimate;
-- multiple accounts remain separate owned evidence rows and use the completed factual peer resolver for level context;
-- cross-provider duplicate copies are reported as a residual risk because no stable cross-provider identity exists;
-- conclusions use correlational wording and never claim causation;
-- period comparison, correction feedback, and final user-facing wording remain RB-005 responsibilities.
-
-## Acceptance criteria
-
-- Preference and performance are separate response sections.
-- Every conclusion includes sample size, filters/context, baseline, metric delta where applicable, and confidence/evidence strength.
-- Results can differ by speed preset and color.
-- Multiple accounts consume the completed normalized factual level rather than arbitrary raw-rating averaging.
-- Opening categories come from RB-003 or an explicitly named fallback.
-- Opening-related tags may contribute but are not the sole unexplained source.
-- Insufficient analysis coverage produces qualified or unavailable conclusions.
-- Supporting openings and bounded games can be retrieved.
-- Endpoint work follows contracts, route-schema OpenAPI, authentication, ownership, and repository aggregation conventions.
-- Tests cover filters, baselines, small samples, mixed analysis coverage, multiple accounts, positive and negative conclusions, and no data.
-
-## Required validation
-
-Completed on CI #1103:
-
-- contracts build/tests;
-- API build and focused profile tests;
-- database query review and boundedness checks;
-- architecture checks;
-- database-backed 1,200-game bounded performance regression.
-
-## Completion updates
-
-The report documents formulas, wording constraints, profile open-question resolution, RB-005 readiness, residual risks, and queue impact.
+Production latency on populated data was not observed; evidence bands are descriptive rather than significance tests; cross-provider duplicates may remain; and the 100-group cap intentionally truncates the long tail. These limits are explicit.
 
 ## Completion
 
-Report: `../reports/RB-004-2026-07-27-player-chess-profile-calculation.md`
+Implementation report: `reports/RB-004-2026-07-27-player-chess-profile-calculation.md`
 
-Completed at: pending user review, accepted merge, and final closure reconciliation
+Closure report: `reports/RB-004-2026-07-31-closure.md`
+
+Completed: 2026-07-31
