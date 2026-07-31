@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -28,6 +28,7 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) |
 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) |
 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) |
+| ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -41,7 +42,7 @@ Material collisions or dependencies must be recorded in both affected issue thre
 
 ## Sources of truth
 
-- `FOUNDATION.md`, `MASTER_PLAN.md`, and `DECISIONS.md`: product and architecture direction.
+- `FOUNDATION.md`, `MASTER_PLAN.md`, `EXPERIENCE_BLUEPRINT.md`, and `DECISIONS.md`: product, interaction, and architecture direction.
 - `ROADMAP.md`, `TASKS.md`, and task files: order, dependencies, scope, and acceptance.
 - GitHub Issues: claim, assignee, branch, PR, blocker, and execution status.
 - `reports/`: append-only evidence and completion record.
@@ -63,7 +64,7 @@ When repository metadata and issue state disagree, stop and reconcile before sub
 
 1. Read root and program AGENTS guidance.
 2. Re-inspect current code and relevant branches/PRs.
-3. Confirm task is READY and dependencies are satisfied.
+3. Confirm task is READY or explicitly authorized by the user and dependencies are sufficient for its bounded scope.
 4. Check active branches/issues for file and decision collisions.
 5. Create a branch containing ONB ID and issue number.
 6. Update task claim metadata.
@@ -96,6 +97,8 @@ ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular
 
 ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks.
 
+ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without promoting blocked implementation work or taking ownership from ONB-003, ONB-007, VT-302, Player Chess Profile, tactical training, or Repertoire Builder.
+
 All allocated implementation issues remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation is planning allocation, not permission to claim or implement them early.
 
 ## Completion
@@ -107,6 +110,6 @@ Before closing:
 - report exists at `reports/ONB-###-YYYY-MM-DD-<slug>.md`;
 - validation performed/skipped is recorded;
 - ROADMAP, TASKS, STATUS, DECISIONS, and OPEN_QUESTIONS are reassessed;
-- follow-up tasks have IDs and issues;
+- follow-up tasks have IDs/issues or are explicitly mapped to existing owners;
 - PR/branch/final commit are linked;
 - residual risks and queue impact are stated.

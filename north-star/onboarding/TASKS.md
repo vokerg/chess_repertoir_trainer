@@ -14,9 +14,10 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000/001; consumes ONB-002 sizing handoff |
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; mutation contract waits for ONB-004 |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; coordinates ONB-004/005 |
-| 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001; blocked on ONB-003 physical preparation decisions |
-| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/003/007; ONB-008 |
-| 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-008/009; durable import/preparation; Visual Transformation coordination |
+| 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | REVIEW | Define lightweight onboarding product and experience blueprint | Research/product design | ONB-001/002; explicitly authorized parallel work; informs ONB-008/009/010 and VT-302 |
+| 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001; blocked on ONB-003 physical preparation decisions; consumes ONB-016 presentation requirements |
+| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/003/007; ONB-008; consumes ONB-016 expansion/action requirements |
+| 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
 | 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | PROPOSED | Persist durable account-import runs and scope coverage | Implementation | ONB-002; coordinates ONB-004 |
 | 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | PROPOSED | Build durable account-import worker and API lifecycle | Implementation | ONB-011; consumes ONB-007 defaults |
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-011/012; ONB-007 sizing |
@@ -30,6 +31,8 @@ ONB-000 established the program through squash-merged PR #156.
 ONB-001 established the lifecycle/default recipe through squash-merged PR #197 and allocated ONB-008 through ONB-010.
 
 ONB-002 established bounded import/backfill contracts through squash-merged PR #204 and allocated ONB-011 through ONB-015.
+
+ONB-016 has completed its research deliverables on draft PR #225 and is awaiting review/acceptance. It adds the canonical `EXPERIENCE_BLUEPRINT.md`, refines ONB-010, and maps implementation implications to existing owners rather than creating premature runtime tasks.
 
 ## ONB-002 completed delivery
 
@@ -48,11 +51,27 @@ ONB-002 defines:
 - report `reports/ONB-002-2026-07-29-bounded-import-backfill.md`;
 - implementation tasks ONB-011 through ONB-015.
 
+## ONB-016 review delivery
+
+ONB-016 defines:
+
+- one dominant action per focused onboarding surface;
+- a route-based resumable flow instead of a blocking modal train;
+- no first-run tables or account-settings action clusters;
+- one-account first value followed by optional multi-account expansion;
+- persisted milestones instead of fabricated progress;
+- import-only, indexed, and analysed reveal stages;
+- bounded evidence-labelled insight cards using canonical calculations;
+- optional personal tactical and Repertoire Builder continuations;
+- a synthetic-data ChatGPT Sites/Codex/Figma prototype-to-Angular workflow;
+- report `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`;
+- draft PR #225.
+
 ## Deterministic next task
 
-ONB-003 / #150 is the lowest-order READY task after ONB-002 completion.
+ONB-003 / #150 remains the lowest-order READY task after ONB-002 completion.
 
-It owns the preparation parent, bounded index/analysis waves, import-progress reconciliation, and the choice of batch-versus-window pipelining.
+It owns the preparation parent, bounded index/analysis waves, import-progress reconciliation, first-analysis lane, and the choice of batch-versus-window pipelining.
 
 Parallel research remains allowed after explicit collision review:
 
@@ -60,6 +79,8 @@ Parallel research remains allowed after explicit collision review:
 - ONB-007;
 - ONB-005;
 - ONB-006.
+
+ONB-016 is already in review and does not replace the deterministic next task.
 
 ## Implementation backlog rule
 

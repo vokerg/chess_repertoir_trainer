@@ -14,9 +14,11 @@ Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/v
 
 Bounded import/backfill contract: ONB-002 completed through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
+Lightweight experience blueprint: ONB-016 in `REVIEW` through draft [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
+
 Next ordered task: ONB-003 / [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
-Latest report: `reports/ONB-002-2026-07-29-bounded-import-backfill.md`
+Latest report: `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`
 
 ## Completed contracts
 
@@ -48,11 +50,29 @@ Latest report: `reports/ONB-002-2026-07-29-bounded-import-backfill.md`
 - conservatively migrate legacy cursors and replace raw cursor reset with explicit backfill;
 - assign one owner for account rating-stat refresh.
 
+## Review contract
+
+### ONB-016
+
+- canonical `EXPERIENCE_BLUEPRINT.md` for the lightweight onboarding journey;
+- one dominant action per focused route surface;
+- progressive disclosure rather than a first-run account-management dashboard;
+- one selected account for first value, with additional accounts as expansion;
+- real persisted milestones rather than fabricated or elapsed-time progress;
+- import-only, indexed, and analysed evidence levels;
+- at most three evidence-labelled cards in one reveal;
+- Player Chess Profile and tactical-training reuse rather than duplicate frontend calculations;
+- optional own-game tactical scenario and evidence-anchored Builder continuation;
+- ChatGPT Sites/Codex/Figma used only as private synthetic-data prototype/design handoff;
+- refined ONB-010 functional Angular scope and validation matrix;
+- no runtime implementation, schema, worker, provider, or deployment changes;
+- draft PR #225 awaiting user review and explicit merge instruction.
+
 ## Allocated implementation backlog
 
-- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`.
-- ONB-009 / #194 — lifecycle commands — `PROPOSED`.
-- ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`.
+- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-016 presentation/readiness/reveal requirements.
+- ONB-009 / #194 — lifecycle commands — `PROPOSED`; consumes ONB-016 action and expansion requirements.
+- ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-016 experience blueprint.
 - ONB-011 / #199 — import persistence/coverage — `PROPOSED`.
 - ONB-012 / #200 — import worker/API lifecycle — `PROPOSED`.
 - ONB-013 / #201 — bounded Lichess adapter — `PROPOSED`.
@@ -69,6 +89,8 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 4. ONB-005 / #152 — administrator architecture.
 5. ONB-006 / #153 — orphan cleanup.
 
+ONB-016 is in review and does not change this deterministic order.
+
 ## Critical findings
 
 - current provider sync is synchronous and unbounded on first run;
@@ -79,28 +101,41 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - imported-game `JobTask` cannot represent account-level provider fetches;
 - Lichess supports bounded streamed ranges and speed filtering;
 - Chess.com supports serial monthly archives and explicit no-game months;
-- exact coverage and replayable windows remove the need for full-history cursor resets.
+- exact coverage and replayable windows remove the need for full-history cursor resets;
+- the current account page is a dense advanced management surface, not a suitable first-run flow;
+- Home already demonstrates useful action prioritization but must stop independently inferring onboarding lifecycle;
+- Player Chess Profile already supplies evidence-labelled conclusions and coverage concepts suitable for reuse;
+- missed-shot tactical detections can already create personal scenario-training sessions;
+- first value should target a meaningful indexed reveal rather than full Stockfish completion.
 
 ## Blockers to production implementation
 
-- ONB-003 has not approved preparation-run physical orchestration or import pipelining cadence;
+- ONB-003 has not approved preparation-run physical orchestration, first-analysis lane, or import pipelining cadence;
 - ONB-004 has not approved active-work acknowledgement for account/user deletion or destructive coverage reset;
-- ONB-007 has not measured import window/batch/worker timing or scaling thresholds;
+- ONB-007 has not measured import window/batch/worker timing, first-value budgets, provider speed comparison, or scaling thresholds;
 - ONB-008/009/010 remain blocked by durable import/preparation implementation;
-- Visual Transformation coordination for final Angular onboarding remains unresolved.
+- Player Chess Profile insight-summary/evidence threshold integration remains to be accepted;
+- multi-provider duplicate and account-identity semantics remain unresolved before combined insights;
+- exact Repertoire Builder evidence-anchor destination remains unresolved;
+- Visual Transformation coordination for final Angular onboarding remains unresolved;
+- ChatGPT Sites availability remains region/workspace dependent, so Figma/Codex or local fixture-prototype fallback is required.
 
 ## Validation
 
-ONB-002 documentation-only research:
+ONB-016 documentation-only research:
 
-- current repository provider, route, schema, worker, tests, account UI, and planning files inspected directly through GitHub;
-- official Lichess, Chess.com, and Prisma contracts verified;
-- initial/forward/backfill, no-data, partial write, individual failure, provider outage, restart, duplicate replay, pause, cancel, inactive-account, deletion, migration, and expansion scenarios walked through;
-- report, decisions, open questions, queue, roadmap, task records, and issue mapping reconciled;
-- implementation issues #199–#203 created;
-- no production code, schema, migration, provider call, worker, Angular, or deployment behavior changed;
-- build/test/lint/browser/provider/load checks intentionally skipped because this slice changes documentation only.
+- current repository governance, lifecycle/import contracts, provider services, account UI, job system, Home, Player Chess Profile, tactical detections/scenario training, Builder, and Visual Transformation boundaries inspected;
+- current GitHub tasks, issues, branches, and pull requests inspected for collision;
+- current official OpenAI Sites and Codex/Figma material reviewed;
+- direct and adjacent opening-repertoire competitor material reviewed;
+- all requested ideas classified and reconciled with locked decisions;
+- first-run, partial, failure, return, expansion, insight, puzzle, Builder, privacy, accessibility, and performance scenarios modelled;
+- blueprint, report, decisions, open questions, task queue, issue mapping, ONB-010, and draft PR reconciled;
+- no production code, schema, migration, provider call, worker, Angular, package, or deployment behavior changed;
+- build/test/lint/architecture/browser/provider/load checks intentionally skipped because this slice changes documentation only.
 
 ## Next deterministic action
 
 Claim ONB-003 / #150 as the next ordered research task.
+
+Review ONB-016 / draft PR #225 separately; squash merge only after explicit user instruction.
