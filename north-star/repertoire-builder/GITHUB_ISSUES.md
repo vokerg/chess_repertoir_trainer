@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -119,7 +119,3 @@ Before closing an issue as completed:
 - queue reprioritization was explicitly considered.
 
 The final issue update should link or name the report and state residual risks, new tasks, and queue impact.
-
-## Migration note
-
-Jira epic `CRT-2` and tasks `CRT-3` through `CRT-18` were replaced by GitHub issues on 2026-07-26. Historical reports may retain Jira references as records of work performed before the migration; active coordination must use GitHub Issues.
