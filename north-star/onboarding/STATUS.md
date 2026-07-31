@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Program state
 
@@ -14,11 +14,11 @@ Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/v
 
 Bounded import/backfill contract: ONB-002 completed through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
-Lightweight experience blueprint: ONB-016 in `REVIEW` through draft [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
+Lightweight experience blueprint: ONB-016 completed through squash-merged [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225) as `b485b9b2992e1152c1810c91d40cc5150d39284d`
 
 Next ordered task: ONB-003 / [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
-Latest report: `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`
+Latest report: `reports/ONB-016-2026-07-31-closure.md`
 
 ## Completed contracts
 
@@ -50,8 +50,6 @@ Latest report: `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blu
 - conservatively migrate legacy cursors and replace raw cursor reset with explicit backfill;
 - assign one owner for account rating-stat refresh.
 
-## Review contract
-
 ### ONB-016
 
 - canonical `EXPERIENCE_BLUEPRINT.md` for the lightweight onboarding journey;
@@ -64,9 +62,10 @@ Latest report: `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blu
 - Player Chess Profile and tactical-training reuse rather than duplicate frontend calculations;
 - optional own-game tactical scenario and evidence-anchored Builder continuation;
 - ChatGPT Sites/Codex/Figma used only as private synthetic-data prototype/design handoff;
+- ChessAtlas accepted as the closest documented real-game-to-exact-repertoire-deviation-to-retraining competitor;
 - refined ONB-010 functional Angular scope and validation matrix;
 - no runtime implementation, schema, worker, provider, or deployment changes;
-- draft PR #225 awaiting user review and explicit merge instruction.
+- final CI run `30576472581` / #1644 passed on head `7e9b00d41e91bc49031386681b1d34772469d230`.
 
 ## Allocated implementation backlog
 
@@ -89,7 +88,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 4. ONB-005 / #152 — administrator architecture.
 5. ONB-006 / #153 — orphan cleanup.
 
-ONB-016 is in review and does not change this deterministic order.
+ONB-016 is complete and does not change this deterministic order.
 
 ## Critical findings
 
@@ -106,7 +105,8 @@ ONB-016 is in review and does not change this deterministic order.
 - Home already demonstrates useful action prioritization but must stop independently inferring onboarding lifecycle;
 - Player Chess Profile already supplies evidence-labelled conclusions and coverage concepts suitable for reuse;
 - missed-shot tactical detections can already create personal scenario-training sessions;
-- first value should target a meaningful indexed reveal rather than full Stockfish completion.
+- first value should target a meaningful indexed reveal rather than full Stockfish completion;
+- an exact course/repertoire deviation can become a strong later action, but repertoire creation must not block initial value.
 
 ## Blockers to production implementation
 
@@ -127,15 +127,13 @@ ONB-016 documentation-only research:
 - current repository governance, lifecycle/import contracts, provider services, account UI, job system, Home, Player Chess Profile, tactical detections/scenario training, Builder, and Visual Transformation boundaries inspected;
 - current GitHub tasks, issues, branches, and pull requests inspected for collision;
 - current official OpenAI Sites and Codex/Figma material reviewed;
-- direct and adjacent opening-repertoire competitor material reviewed;
+- direct and adjacent opening-repertoire competitor material, including ChessAtlas, reviewed;
 - all requested ideas classified and reconciled with locked decisions;
 - first-run, partial, failure, return, expansion, insight, puzzle, Builder, privacy, accessibility, and performance scenarios modelled;
-- blueprint, report, decisions, open questions, task queue, issue mapping, ONB-010, and draft PR reconciled;
-- no production code, schema, migration, provider call, worker, Angular, package, or deployment behavior changed;
-- build/test/lint/architecture/browser/provider/load checks intentionally skipped because this slice changes documentation only.
+- blueprint, reports, decisions, open questions, task queue, issue mapping, ONB-010, and PR reconciled;
+- no production code, schema, migration, provider call, worker, Angular, package, workflow, or deployment behavior changed;
+- repository CI #1644 passed before squash merge.
 
 ## Next deterministic action
 
 Claim ONB-003 / #150 as the next ordered research task.
-
-Review ONB-016 / draft PR #225 separately; squash merge only after explicit user instruction.
