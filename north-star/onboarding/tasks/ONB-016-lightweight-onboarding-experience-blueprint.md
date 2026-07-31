@@ -1,6 +1,6 @@
 # ONB-016 — Define lightweight onboarding product and experience blueprint
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 75
 
 Delivery class: Research/product design
 
-Planning maturity: Research complete; awaiting user review and explicit merge instruction
+Planning maturity: Accepted and integrated through squash-merged PR #225
 
 GitHub issue: [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224)
 
@@ -68,7 +68,7 @@ The current account-management page exposes provider, account, sync, indexing, a
 - Player Chess Profile reuse.
 - Personal-game tactical scenario handoff.
 - Optional Repertoire Builder handoff.
-- Competitor review focused on opening-repertoire products.
+- Competitor review focused on opening-repertoire products, including the ChessAtlas addendum.
 - Safe ChatGPT Sites/Codex/Figma prototype-to-Angular workflow.
 - State, failure, recovery, privacy, performance, analytics, and accessibility implications.
 - ONB-010 refinement and bounded follow-up recommendations mapped to existing owners.
@@ -94,6 +94,7 @@ The current account-management page exposes provider, account, sync, indexing, a
 - Player Chess Profile and tactical training remain canonical reusable modules.
 - Repertoire Builder receives only an optional evidence anchor and retains human decision authority.
 - ChatGPT Sites and Codex/Figma are private synthetic-data prototype/handoff tools; Angular remains production.
+- ChessAtlas is the closest documented real-game-to-exact-repertoire-deviation-to-retraining competitor, while this product differentiates by creating value before a repertoire exists.
 
 ## Acceptance criteria assessment
 
@@ -115,14 +116,19 @@ The current account-management page exposes provider, account, sync, indexing, a
 - Verified current ChatGPT Sites and Codex/Figma behavior through official OpenAI documentation.
 - Verified competitor claims through current first-party or store sources.
 - Modelled first-run, no-account, invalid-account, no-games, slow-provider, partial import, partial index, all-index-failed, first-insight, first-analysis, multi-account expansion, skip, leave/return, personal tactic, Builder, and recovery scenarios.
-- Reconciled task queue, decisions, open questions, issue mapping, ONB-010, program index, report, and draft PR.
-- Build, tests, lint, architecture checks, browser automation, provider calls, migrations, and benchmarks intentionally skipped because the branch changes documentation only.
+- Reconciled task queue, decisions, open questions, issue mapping, ONB-010, program index, report, and PR.
+- Final repository CI run `30576472581` / #1644 passed on head `7e9b00d41e91bc49031386681b1d34772469d230`.
+- No production code, schema, migration, provider, worker, Angular, package, workflow, or deployment behavior changed.
 
 ## Completion updates
 
 - Blueprint: `north-star/onboarding/EXPERIENCE_BLUEPRINT.md`
-- Report: `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`
-- Pull request: [#225](https://github.com/vokerg/chess_repertoir_trainer/pull/225) — draft
-- Validation: documentation/research validation recorded in the report
+- Main report: `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`
+- ChessAtlas addendum: `reports/ONB-016-2026-07-30-chessatlas-competitor-addendum.md`
+- Closure report: `reports/ONB-016-2026-07-31-closure.md`
+- Delivery PR: [#225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
+- Squash commit: `b485b9b2992e1152c1810c91d40cc5150d39284d`
+- Final review head: `7e9b00d41e91bc49031386681b1d34772469d230`
+- Final CI: run `30576472581` / #1644 — success
 - Queue impact: ONB-003 remains the deterministic next critical-path task
-- Completed at: pending user acceptance and squash merge
+- Completed at: 2026-07-31

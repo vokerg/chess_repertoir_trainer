@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -31,14 +31,14 @@ ONB-009 lifecycle commands
         ↓
 ONB-010 functional onboarding and Home re-entry
         +
-ONB-016 lightweight experience blueprint — REVIEW
+ONB-016 lightweight experience blueprint — DONE
         ↓
 Visual/accessibility integration with #133
         ↓
 Production onboarding release
 ```
 
-ONB-016 is a parallel product/experience contract, not a new runtime critical-path predecessor. ONB-010 consumes it when the existing backend dependencies are ready.
+ONB-016 is an accepted parallel product/experience contract, not a new runtime critical-path predecessor. ONB-010 consumes it when the existing backend dependencies are ready.
 
 Supporting lifecycle path:
 
@@ -83,7 +83,7 @@ Delivered:
 
 - ONB-005 / #152 — admin architecture — `READY`.
 - ONB-006 / #153 — orphan cleanup — `READY`.
-- ONB-016 / #224 — lightweight onboarding product and experience blueprint — `REVIEW` through draft PR #225.
+- ONB-016 / #224 — lightweight onboarding product and experience blueprint — `DONE` through squash-merged PR #225 as `b485b9b`.
 
 ### Contracts available to consumers
 
@@ -113,7 +113,7 @@ ONB-002:
 - database-based preparation handoff;
 - conservative legacy-cursor migration and explicit backfill.
 
-ONB-016 review contract:
+ONB-016 accepted contract:
 
 - route-based resumable lightweight experience;
 - one dominant action per focused surface;
@@ -124,6 +124,7 @@ ONB-016 review contract:
 - no more than three evidence-labelled reveal cards;
 - canonical Player Chess Profile/opening/tactical calculations reused;
 - optional personal tactic and Builder handoff;
+- ChessAtlas exact-deviation loop recorded as a later evidence-anchored action reference;
 - synthetic-data Sites/Codex/Figma prototype workflow with Angular retained as production authority;
 - refined ONB-010 functional slices and state validation matrix.
 
@@ -271,7 +272,7 @@ Exit:
 
 Primary task: ONB-010 / #195.
 
-Product contract: ONB-016 / #224 and `EXPERIENCE_BLUEPRINT.md`.
+Product contract: completed ONB-016 / #224 and `EXPERIENCE_BLUEPRINT.md`.
 
 Expected slices:
 

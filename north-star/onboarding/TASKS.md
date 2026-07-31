@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -14,7 +14,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000/001; consumes ONB-002 sizing handoff |
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; mutation contract waits for ONB-004 |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; coordinates ONB-004/005 |
-| 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | REVIEW | Define lightweight onboarding product and experience blueprint | Research/product design | ONB-001/002; explicitly authorized parallel work; informs ONB-008/009/010 and VT-302 |
+| 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001; blocked on ONB-003 physical preparation decisions; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/003/007; ONB-008; consumes ONB-016 expansion/action requirements |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
@@ -32,7 +32,7 @@ ONB-001 established the lifecycle/default recipe through squash-merged PR #197 a
 
 ONB-002 established bounded import/backfill contracts through squash-merged PR #204 and allocated ONB-011 through ONB-015.
 
-ONB-016 has completed its research deliverables on draft PR #225 and is awaiting review/acceptance. It adds the canonical `EXPERIENCE_BLUEPRINT.md`, refines ONB-010, and maps implementation implications to existing owners rather than creating premature runtime tasks.
+ONB-016 established the canonical lightweight experience blueprint through squash-merged PR #225 as `b485b9b2992e1152c1810c91d40cc5150d39284d`. It refines ONB-010 and maps implementation implications to existing owners rather than creating premature runtime tasks.
 
 ## ONB-002 completed delivery
 
@@ -51,7 +51,7 @@ ONB-002 defines:
 - report `reports/ONB-002-2026-07-29-bounded-import-backfill.md`;
 - implementation tasks ONB-011 through ONB-015.
 
-## ONB-016 review delivery
+## ONB-016 completed delivery
 
 ONB-016 defines:
 
@@ -64,12 +64,15 @@ ONB-016 defines:
 - bounded evidence-labelled insight cards using canonical calculations;
 - optional personal tactical and Repertoire Builder continuations;
 - a synthetic-data ChatGPT Sites/Codex/Figma prototype-to-Angular workflow;
-- report `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`;
-- draft PR #225.
+- ChessAtlas competitor positioning and exact-deviation lessons;
+- main report `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-blueprint.md`;
+- addendum `reports/ONB-016-2026-07-30-chessatlas-competitor-addendum.md`;
+- closure report `reports/ONB-016-2026-07-31-closure.md`;
+- squash-merged PR #225 with successful CI #1644.
 
 ## Deterministic next task
 
-ONB-003 / #150 remains the lowest-order READY task after ONB-002 completion.
+ONB-003 / #150 remains the lowest-order READY task after ONB-002 and ONB-016 completion.
 
 It owns the preparation parent, bounded index/analysis waves, import-progress reconciliation, first-analysis lane, and the choice of batch-versus-window pipelining.
 
@@ -80,7 +83,7 @@ Parallel research remains allowed after explicit collision review:
 - ONB-005;
 - ONB-006.
 
-ONB-016 is already in review and does not replace the deterministic next task.
+ONB-016 is complete and does not replace the deterministic next task.
 
 ## Implementation backlog rule
 
