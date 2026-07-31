@@ -1,6 +1,6 @@
 # Visual Transformation Status
 
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Current state
 
@@ -62,6 +62,9 @@ All transformation work uses short-lived branches, pull requests to `main`, expl
 - [x] PR #215 — VT-301 Batch 4b Courses and Course Review, squash commit `51e4967bc49b6ca1ad492456b13b1802acd5f45f`.
 - [x] PR #217 — VT-301 Batch 4b reconciliation, squash commit `e585c662988ff6419de56905b268c9f559aeaf0a`.
 - [x] PR #221 — VT-301 Batches 4c/4d repertoire authoring and remaining training, squash commit `fed4fed47d17a7cb7b0351c0bfd99bd80dc453da`.
+- [x] PR #229 — VT-301 Batches 4c/4d reconciliation, squash commit `0f9409ef68791123575a659e1361b056f8680038`.
+- [x] Direct commit `a30303ffb9e59de4f4a99e1be936e4624ba13b63` — VT-301 Batch 5 shared filter select menu.
+- [x] PR #235 — VT-301 Batch 6 analytical workbench and openings evidence, squash commit `65ee1b56cc39f377d7066a1827e510e922b695fa`.
 
 ## Phase 1 completion
 
@@ -91,7 +94,7 @@ Issue #131 is complete through PR #191 and reconciliation PR #192. The final mob
 
 ## Deferred browser feedback
 
-The user explicitly approved VT-202, VT-203, VT-204, VT-205, VT-301 Batch 2, VT-301 Batch 4a, VT-301 Batch 4b, and VT-301 Batches 4c/4d without direct browser review.
+The user explicitly approved VT-202, VT-203, VT-204, VT-205, VT-301 Batch 2, VT-301 Batch 4a, VT-301 Batch 4b, VT-301 Batches 4c/4d, and VT-301 Batch 6 without direct browser review.
 
 Their recorded checklists remain useful for a later consolidated product-review pass. Deferred evidence is not represented as an observed validation pass.
 
@@ -99,7 +102,7 @@ Their recorded checklists remain useful for a later consolidated product-review 
 
 Issues #123–#131 are complete.
 
-Issue #132 / VT-301 remains `IN_PROGRESS`. Batches 2, 4a, 4b, 4c, and 4d are integrated. Draft PR #196 owns Batch 1 Progress and draft PR #209 owns Batch 3 Settings. Further inventory families, including shared analytical consumers and Labs, remain to be completed or explicitly dispositioned before issue #132 can close.
+Issue #132 / VT-301 remains `IN_PROGRESS`. Batches 2, 4a, 4b, 4c, 4d, 5, and 6 are integrated. Draft PR #196 owns Batch 1 Progress and draft PR #209 owns Batch 3 Settings. Remaining inventory families, particularly Labs and any explicitly unassigned authenticated routes, must still be completed or dispositioned before issue #132 can close.
 
 Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
 
@@ -115,16 +118,18 @@ Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and re
 - VT-301 Batch 4a CI #1594 passed; browser review was explicitly deferred before integration.
 - VT-301 Batch 4b CI #1606 passed; browser review was explicitly deferred before integration.
 - VT-301 Batches 4c/4d initial CI #1620 passed on the pre-audit head.
-- VT-301 Batches 4c/4d exact audited-head CI #1623 passed before squash integration through PR #221.
+- VT-301 Batches 4c/4d exact audited-head CI #1623 and reconciliation CI #1650 passed.
+- VT-301 Batch 5 automated validation was recorded complete; direct browser review remains pending.
+- VT-301 Batch 6 exact-head CI #1714 passed before squash integration through PR #235; direct browser review was explicitly deferred.
 
 The workflows cover dependency installation, lint, full repository build and Angular template/type compilation, opening audits, architecture guardrails, database migrations, and the complete test suite.
 
 ## Open design and product decisions
 
-- #132 — remaining-page and Labs rollout using the production token, shell, final mobile navigation, context, fact, and feature-owned patterns;
+- #132 — remaining-page and Labs rollout using the production token, shell, final mobile navigation, context, fact, select-menu, and feature-owned patterns;
 - #133 — onboarding, empty-state, accessibility, and responsive polish after rollout.
 
-D-314 locks the final mobile-primary model. D-026 continues to lock the evidence-based shared presentation boundary.
+D-314 locks the final mobile-primary model. D-026 continues to lock the evidence-based shared presentation boundary. D-027 locks the shared single-choice select-menu boundary.
 
 ## Program phase state
 
@@ -146,6 +151,16 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 
 ## Session log
 
+### 2026-07-31 — VT-301 analytical workbench integration
+
+- Claimed the inventory-defined analytical-workbench batch after collision review against active Progress and Settings pull requests.
+- Migrated the shared workbench, board controls, move tree, engine presentation, course suggestions, Masters and peer evidence, position evidence, Game Review summary and insight surfaces, Opening Analysis shared consumers, and Opening Struggles to production `--ui-*` roles.
+- Reused the existing Games explorer filter presentation in Opening Struggles and removed the now-obsolete Opening Analysis compatibility bridge.
+- Preserved routes, stores, APIs, filters, board and engine behavior, persistence, and backend ownership.
+- Exact implementation-head CI #1714 passed the complete repository workflow.
+- The user explicitly approved squash merge and wrap-up while deferring direct browser review.
+- PR #235 was squash-merged into `main` as `65ee1b56cc39f377d7066a1827e510e922b695fa`.
+
 ### 2026-07-30 — VT-301 authoring and remaining-training integration
 
 - Combined two recorded rollout slices in PR #221 to reduce repeated full-repository CI executions.
@@ -163,4 +178,4 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, #192, #206, #211, #212, #215, #217, and #221 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, #192, #206, #211, #212, #215, #217, #221, #229, and #235 are integrated into `main`.
