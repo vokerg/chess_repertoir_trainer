@@ -44,12 +44,26 @@ No new dependency, service, store, API, schema, route, chart library, or global 
 
 The original implementation branch was based on an earlier `main` and had diverged after unrelated rollout work landed. The implementation has been rebuilt from current `main` using the previously validated runtime blobs. Stale edits to the global Angular migration ledger were deliberately dropped; live rollout state remains owned by issue #132 and `transformation/STATUS.md`.
 
+## Self-review disposition
+
+A fresh diff review identified one responsive defect in the refreshed implementation: the persistent 240px desktop navigation rail could leave the new side-by-side metrics row substantially narrower than the viewport breakpoint implied, while Rating Stats still forced three fixed columns. Milestone rows could therefore overflow at tablet and small-desktop widths.
+
+The branch now:
+
+- stacks both the account overview and metrics composition at the established 980px workbench threshold;
+- uses width-aware `auto-fit` rating cards with a bounded 210px minimum instead of a viewport-only three-column assumption;
+- retains horizontal scrolling for the deliberately tabular yearly-highs evidence;
+- leaves route, data, filtering, and chart behavior unchanged.
+
+No additional blocking issue was found in the changed TypeScript, template bindings, shared-component contracts, token usage, loading/error/empty-state preservation, focus treatment, or chart semantics. Direct browser validation remains necessary because connector-based review cannot observe actual rendered dimensions, text wrapping, or pointer interaction.
+
 ## Validation
 
 - original implementation head CI #1480 passed the complete repository workflow;
-- refreshed exact-head repository CI is required before approval;
+- refreshed pre-review head CI #1733 passed lint, production build and Angular compilation, audits, architecture guardrails, migrations, and the full test suite;
+- exact-head repository CI after the self-review fixes is required before approval;
 - direct browser review remains required unless the user explicitly records a deferral;
-- browser coverage should include account unavailable, populated and empty statistics, multiple accounts, rating range/speed changes, loading/error overlays, keyboard focus, 980px and 640px layouts, and mobile-navigation clearance.
+- browser coverage should include account unavailable, populated and empty statistics, multiple accounts, rating range/speed changes, loading/error overlays, keyboard focus, widths immediately above and below 980px, 760px and 640px layouts, and mobile-navigation clearance.
 
 ## Explicit exclusions
 
