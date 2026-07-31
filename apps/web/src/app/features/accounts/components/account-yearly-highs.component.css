@@ -70,7 +70,7 @@
 
 .yearly-highs-table thead th {
   background: var(--ui-surface-quiet);
-  color: var(--ui-text-subtle);
+  color: var(--ui-text);
   font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
