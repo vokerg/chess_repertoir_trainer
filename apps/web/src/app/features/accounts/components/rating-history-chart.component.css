@@ -139,7 +139,7 @@
 
 .grid text,
 .date-label {
-  fill: var(--ui-text-subtle);
+  fill: var(--ui-text-muted);
   font-family: var(--ui-font-family-mono);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
