@@ -13,18 +13,23 @@
 .ai-review-detail,
 .ai-review-move-heading span,
 .ai-review-warnings {
-  color: var(--muted);
+  color: var(--ui-text-muted);
 }
 
 .ai-review-content,
 .ai-review-section,
-.ai-review-turning-points {
+.ai-review-turning-points,
+.ai-review-lead,
+.ai-review-warnings {
   display: grid;
+}
+
+.ai-review-content,
+.ai-review-section {
   gap: 0.45rem;
 }
 
 .ai-review-lead {
-  display: grid;
   gap: 0.2rem;
 }
 
@@ -34,12 +39,14 @@
 }
 
 .ai-review-lead h4 {
+  color: var(--ui-text);
   font-size: 0.98rem;
 }
 
 .ai-review-section h5 {
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  color: var(--ui-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -53,29 +60,31 @@
   display: grid;
   width: 100%;
   gap: 0.2rem;
-  padding: 0.5rem 0.55rem;
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
-  border-radius: 0.35rem;
-  background: transparent;
-  color: inherit;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease, box-shadow 120ms ease;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .ai-review-turning-point:hover {
-  background: color-mix(in srgb, var(--accent, #d97706) 7%, transparent);
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-muted);
 }
 
 .ai-review-turning-point:focus-visible {
-  outline: 2px solid var(--accent, #d97706);
+  outline: 3px solid var(--ui-focus-ring);
   outline-offset: 2px;
 }
 
 .ai-review-turning-point.active {
-  background: color-mix(in srgb, var(--accent, #d97706) 10%, transparent);
-  box-shadow: inset 3px 0 0 var(--accent, #d97706);
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+  box-shadow: inset 3px 0 0 var(--ui-action-strong);
 }
 
 .ai-review-move-heading {
@@ -85,9 +94,14 @@
   gap: 0.75rem;
 }
 
+.ai-review-move-heading strong {
+  font-family: var(--ui-font-family-mono);
+}
+
 .ai-review-explanation {
-  line-height: 1.35;
+  color: var(--ui-text);
   font-size: 0.84rem;
+  line-height: 1.35;
 }
 
 .ai-review-move-heading span,
@@ -98,8 +112,8 @@
 
 .ai-review-columns {
   display: grid;
-  gap: 0.75rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .ai-review-section ul {
@@ -107,6 +121,7 @@
   gap: 0.2rem;
   margin: 0;
   padding-left: 1.1rem;
+  color: var(--ui-text);
   font-size: 0.84rem;
   line-height: 1.35;
 }
@@ -119,16 +134,18 @@
 
 .ai-review-themes span {
   padding: 0.12rem 0.4rem;
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--ui-border);
   border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
   font-size: 0.75rem;
 }
 
 .ai-review-warnings {
-  display: grid;
   gap: 0.2rem;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.mobilePrimaryMaxPx. */
 @media (max-width: 760px) {
   .ai-review-columns {
     grid-template-columns: 1fr;
