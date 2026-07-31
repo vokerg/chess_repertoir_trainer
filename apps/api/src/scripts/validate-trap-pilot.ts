@@ -1,19 +1,25 @@
 import { writeFileSync } from 'node:fs';
-import { TRAP_PILOT_DATASET } from '../modules/trap-pilot/trap-pilot.data';
 import { TRAP_PILOT_EVIDENCE_BUNDLE } from '../modules/trap-pilot/trap-pilot.evidence.generated';
-import { validateTrapPilotEvidenceBundle } from '../modules/trap-pilot/trap-pilot.evidence.validator';
 import {
   buildTrapPilotReviewReport,
   formatTrapPilotReviewReport,
 } from '../modules/trap-pilot/trap-pilot.review';
+import { TRAP_PILOT_REVIEWED_DATASET } from '../modules/trap-pilot/trap-pilot.reviewed';
+import { validateTrapPilotEvidenceBundle } from '../modules/trap-pilot/trap-pilot.evidence.validator';
 import {
   formatTrapPilotValidationReport,
   validateTrapPilotDataset,
 } from '../modules/trap-pilot/trap-pilot.validator';
 
-const report = validateTrapPilotDataset(TRAP_PILOT_DATASET);
-const evidenceReport = validateTrapPilotEvidenceBundle(TRAP_PILOT_DATASET, TRAP_PILOT_EVIDENCE_BUNDLE);
-const reviewReport = buildTrapPilotReviewReport(TRAP_PILOT_DATASET, TRAP_PILOT_EVIDENCE_BUNDLE);
+const report = validateTrapPilotDataset(TRAP_PILOT_REVIEWED_DATASET);
+const evidenceReport = validateTrapPilotEvidenceBundle(
+  TRAP_PILOT_REVIEWED_DATASET,
+  TRAP_PILOT_EVIDENCE_BUNDLE,
+);
+const reviewReport = buildTrapPilotReviewReport(
+  TRAP_PILOT_REVIEWED_DATASET,
+  TRAP_PILOT_EVIDENCE_BUNDLE,
+);
 
 const evidenceLines = [
   '# Trap pilot evidence bundle',
