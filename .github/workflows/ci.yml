@@ -75,4 +75,14 @@ jobs:
           path: imported-game-opening-classification-audit.json
 
       - name: Test
+        env:
+          TRAP_PILOT_REPORT_PATH: trap-pilot-validation.txt
         run: npm test
+
+      - name: Upload trap validation report
+        if: always() && hashFiles('apps/api/trap-pilot-validation.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trap-pilot-validation
+          path: apps/api/trap-pilot-validation.txt
+          if-no-files-found: error
