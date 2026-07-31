@@ -3,14 +3,35 @@ import { TRAP_PILOT_DATASET } from '../../dist/modules/trap-pilot/trap-pilot.dat
 import { TRAP_PILOT_EVIDENCE_BUNDLE } from '../../dist/modules/trap-pilot/trap-pilot.evidence.generated.js';
 import { withEngineEvidenceHash } from '../../dist/modules/trap-pilot/trap-pilot.evidence.js';
 import { buildTrapPilotReviewReport } from '../../dist/modules/trap-pilot/trap-pilot.review.js';
+import { TRAP_PILOT_REVIEWED_DATASET } from '../../dist/modules/trap-pilot/trap-pilot.reviewed.js';
 import { deriveTrapOccurrenceIdentity } from '../../dist/modules/trap-pilot/trap-pilot.validator.js';
 
 {
-  const report = buildTrapPilotReviewReport(TRAP_PILOT_DATASET, TRAP_PILOT_EVIDENCE_BUNDLE);
+  const report = buildTrapPilotReviewReport(
+    TRAP_PILOT_REVIEWED_DATASET,
+    TRAP_PILOT_EVIDENCE_BUNDLE,
+  );
   assert.equal(report.recordCount, 50);
-  assert.equal(report.counts.NEEDS_EVIDENCE, 50);
+  assert.equal(report.datasetErrors, 0);
+  assert.equal(report.evidenceBundleErrors, 0);
   assert.equal(report.counts.BLOCKED, 0);
-  assert.equal(report.counts.APPROVED, 0);
+  assert.equal(report.counts.NEEDS_EVIDENCE, 0);
+  assert.equal(report.counts.EVIDENCE_READY_FOR_REVIEW, 0);
+  assert.equal(report.counts.READY_FOR_EDITORIAL_REVIEW, 47);
+  assert.equal(report.counts.APPROVED, 1);
+  assert.equal(report.counts.DOWNGRADED, 1);
+  assert.equal(report.counts.REJECTED, 1);
+
+  const blackburne = report.records.find(
+    (record) => record.recordId === 'blackburne-shilling-main-bait-v1',
+  );
+  const friedLiver = report.records.find(
+    (record) => record.recordId === 'fried-liver-kxf7-v1',
+  );
+  assert.equal(blackburne?.disposition, 'DOWNGRADED');
+  assert.match(blackburne?.reasons[0] ?? '', /\+1\.0/);
+  assert.equal(friedLiver?.disposition, 'REJECTED');
+  assert.match(friedLiver?.reasons[0] ?? '', /\+5\.6/);
 }
 
 {
