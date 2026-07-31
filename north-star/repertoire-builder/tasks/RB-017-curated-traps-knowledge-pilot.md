@@ -1,6 +1,6 @@
 # RB-017 — Validate curated traps knowledge pilot
 
-Status: REVIEW
+Status: DONE
 
 Priority: P2
 
@@ -8,45 +8,34 @@ Order: 145
 
 Delivery class: Dual-use pilot
 
-Planning maturity: Completed bounded pilot; production deferred
+Planning maturity: Accepted bounded pilot; production deferred
 
 GitHub issue: #114
 
-Implementation branch: `rb-017/issue-114-curated-traps-pilot`
-
 Implementation PR: #117
 
-## Outcome
+Squash commit: `38bf745ddd0d70d08228a95df3f0f85fb452ce40`
 
-Prove whether curated opening motifs can be represented, validated, evidenced and reviewed reproducibly without creating a production capability.
+Final implementation head: `7cfe22d498560e1256259a912b21c0e52ffd1d78`
+
+Final CI: run `30617679841` / #1725 — success
 
 ## Delivered
 
-- dataset `2026-07-pilot-v2` with 50 source occurrences;
-- 50 Stockfish and 50 bounded Lichess Explorer snapshots;
-- legality, identity, duplicate, provenance, lifecycle and evidence-hash validation;
-- explicit opt-in refresh and deterministic offline CI;
-- separate source, generated-evidence and reviewed layers;
-- no persistence, public contract, UI, course write or Builder ranking change.
+Repository-local `2026-07-pilot-v2` corpus with 50 source occurrences, 50 Stockfish snapshots, 50 bounded Lichess Explorer snapshots, stable hashes, deterministic validation and separate source, generated-evidence and reviewed-disposition layers.
 
-## Review result
+Review result: one approved, one downgraded, one rejected and 47 evidence-bound unresolved records. No record is blocked or missing generated evidence.
 
-- approved: 1;
-- downgraded: 1;
-- rejected: 1;
-- evidence-bound and unresolved: 47;
-- blocked or missing evidence: 0.
+## Accepted decision
 
-Blackburne–Shilling is downgraded because accurate play leaves White about +1.0 at the trigger. The current Fried Liver record is rejected because its declared safe defence still leaves White about +5.6.
+Revise before production. The pilot is research evidence and a deterministic fixture, not a production traps database, public contract, UI, course source or Builder ranking input.
 
-## Recommendation
-
-Revise before production. Retain the pilot as research evidence and a deterministic fixture. Production use requires record-by-record review, corrected records, explicit thresholds, product ownership and licensing review.
+A production capability requires a new task with record-by-record editorial completion, corrected records, explicit thresholds, product ownership and licensing review.
 
 ## Completion
 
-Report: `reports/RB-017-2026-07-31-curated-traps-pilot.md`
+Implementation report: `reports/RB-017-2026-07-31-curated-traps-pilot.md`
 
-Final review-head CI: pending
+Closure report: `reports/RB-017-2026-07-31-closure.md`
 
-Completed at: pending acceptance and squash integration
+Completed: 2026-07-31
