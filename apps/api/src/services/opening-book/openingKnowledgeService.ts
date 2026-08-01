@@ -10,6 +10,7 @@ import {
   type OpeningKnowledgeRule,
   type OpeningKnowledgeSelector,
   type OpeningKnowledgeSource,
+  type OpeningKnowledgeSourceType,
   type OpeningKnowledgeStatement,
   type OpeningSideKnowledge,
   type OpeningSideKnowledgePatch,
@@ -40,9 +41,15 @@ const SUPPORTED_LICENSES = new Set<OpeningKnowledgeLicense>([
   'CC-BY-SA-4.0',
   'REFERENCE_ONLY',
 ]);
+const SUPPORTED_SOURCE_TYPES = new Set<OpeningKnowledgeSourceType>([
+  'DATASET',
+  'REFERENCE',
+  'PROJECT_RESEARCH',
+]);
 const SUPPORTED_LIFECYCLES = new Set(['DRAFT', 'REVIEWED', 'DEPRECATED']);
 const SUPPORTED_CONFIDENCE = new Set(['HIGH', 'MEDIUM', 'LOW']);
 const UCI_MOVE = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function nonEmpty(value: string, message: string): void {
   if (!value.trim()) throw new Error(message);
@@ -59,6 +66,17 @@ function uniqueStrings(values: readonly string[], message: string): void {
 
 function validateRegex(pattern: RegExp | undefined, message: string): void {
   if (pattern?.global || pattern?.sticky) throw new Error(message);
+}
+
+function normalizeUciSequence(value: string): string {
+  return value.trim().split(/\s+/).filter(Boolean).join(' ');
+}
+
+function isValidIsoDate(value: string): boolean {
+  if (!ISO_DATE.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime())
+    && parsed.toISOString().slice(0, 10) === value;
 }
 
 function validateSourceIds(
@@ -119,12 +137,17 @@ function validateSidePatch(
   requireProjectOriginal: boolean,
 ): void {
   if (!patch) return;
-  if (!patch.strategicSummary && !patch.planMode && !patch.removePlanIds?.length && !patch.plans?.length) {
-    throw new Error(`${context} must change a summary or plans`);
-  }
   if (patch.planMode && patch.planMode !== 'MERGE' && patch.planMode !== 'REPLACE') {
     throw new Error(`${context} has unsupported plan mode: ${patch.planMode}`);
   }
+
+  const changesPlans = patch.planMode === 'REPLACE'
+    || Boolean(patch.removePlanIds?.length)
+    || Boolean(patch.plans?.length);
+  if (!patch.strategicSummary && !changesPlans) {
+    throw new Error(`${context} must change a summary or plans`);
+  }
+
   if (patch.strategicSummary) {
     validateStatement(patch.strategicSummary, sourceMap, `${context} strategic summary`, requireProjectOriginal);
   }
@@ -169,9 +192,9 @@ function validateSelector(
   validateRegex(selector.ecoPattern, `${context} ECO regex must not use global or sticky flags`);
 
   if (selector.uciPrefix !== undefined) {
-    const normalized = selector.uciPrefix.trim();
+    const normalized = normalizeUciSequence(selector.uciPrefix);
     if (!normalized) throw new Error(`${context} UCI prefix must not be empty`);
-    const moves = normalized.split(/\s+/);
+    const moves = normalized.split(' ');
     if (moves.some((move) => !UCI_MOVE.test(move))) {
       throw new Error(`${context} has malformed UCI prefix: ${selector.uciPrefix}`);
     }
@@ -192,11 +215,13 @@ export function validateOpeningKnowledgeRegistry(
     sourceIds.add(source.id);
     nonEmpty(source.title, `Opening knowledge source ${source.id} title must not be empty`);
     nonEmpty(source.sourceRef, `Opening knowledge source ${source.id} reference must not be empty`);
+    if (!SUPPORTED_SOURCE_TYPES.has(source.sourceType)) {
+      throw new Error(`Opening knowledge source ${source.id} has unsupported source type: ${source.sourceType}`);
+    }
     if (!SUPPORTED_LICENSES.has(source.license)) {
       throw new Error(`Opening knowledge source ${source.id} has unsupported license: ${source.license}`);
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(source.retrievedAt)
-      || Number.isNaN(Date.parse(`${source.retrievedAt}T00:00:00Z`))) {
+    if (!isValidIsoDate(source.retrievedAt)) {
       throw new Error(`Opening knowledge source ${source.id} has invalid retrieval date`);
     }
   }
@@ -249,8 +274,9 @@ function selectorMatches(
   if (selector.namePattern && !regexMatches(selector.namePattern, entry.name)) return false;
   if (selector.ecoPattern && !regexMatches(selector.ecoPattern, entry.eco)) return false;
   if (selector.uciPrefix) {
-    const prefix = selector.uciPrefix.trim();
-    if (entry.uci !== prefix && !entry.uci.startsWith(`${prefix} `)) return false;
+    const prefix = normalizeUciSequence(selector.uciPrefix);
+    const entryUci = normalizeUciSequence(entry.uci);
+    if (entryUci !== prefix && !entryUci.startsWith(`${prefix} `)) return false;
   }
   return true;
 }
