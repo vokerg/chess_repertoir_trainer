@@ -97,6 +97,6 @@ Numeric wave sizes, polling budgets, admission limits, and stalled thresholds ar
 
 Report: `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`
 
-Pull request: pending
+Pull request: [#256](https://github.com/vokerg/chess_repertoir_trainer/pull/256)
 
 Completed at: review pending
