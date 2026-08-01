@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 This roadmap records capability stages and decision gates. Detailed implementation history lives in task and report files.
 
@@ -57,16 +57,14 @@ Required future evidence includes adoption, recall, opening-position quality, re
 
 ## Stage 9 — opening knowledge enrichment
 
-Research review is active through RB-021 / #240.
+The architecture gate is passed through accepted RB-021 / #240.
 
-Recommended capability sequence:
+Accepted capability sequence:
 
-1. **RB-021 — research and architecture:** separate static side-aware opening knowledge from classification while reusing stable classification rule provenance.
-2. **RB-022 — deterministic foundation:** implement reviewed descriptions, White/Black plans, conditions/caveats, source provenance, validation and bounded coverage audits.
-3. **RB-023 — Builder consumer:** project compact target-side knowledge through existing candidate opening evidence without changing ranking or session authority.
-4. **RB-024 — AI game-review stretch:** optionally ground the existing on-demand review in reviewed plans after the deterministic corpus proves useful.
-
-Gate for RB-022: explicit acceptance of the RB-021 hybrid selector, merge semantics and source/editorial policy.
+1. **RB-021 — research and architecture:** complete. Static side-aware opening knowledge is separate from classification while reusing stable classification rule provenance.
+2. **RB-022 — deterministic foundation:** ready. Implement reviewed descriptions, White/Black plans, conditions/caveats, source provenance, validation and bounded coverage audits.
+3. **RB-023 — Builder consumer:** blocked. Project compact target-side knowledge through existing candidate opening evidence without changing ranking or session authority.
+4. **RB-024 — AI game-review stretch:** blocked. Optionally ground the existing on-demand review in reviewed plans after the deterministic corpus proves useful.
 
 Gate for RB-023: reviewed RB-022 service, corpus and contract projection decision.
 
@@ -78,12 +76,11 @@ This stage is independent of the blocked RB-016 outcome gate. Opening knowledge 
 
 The deterministic Builder foundation remains complete: evidence is inspectable, target intent and overrides are explicit, decisions and session transitions are bounded, course writes require preview/apply, exact existing-course launches preserve identity, and optional generated text can be disabled without changing workflow authority.
 
-Opening knowledge is not part of the current release condition until RB-021 is accepted and follow-on implementation is delivered. Outcome claims remain excluded until RB-016 evidence exists.
+Opening knowledge is not part of the current runtime release condition until RB-022 and a consumer task are delivered. Outcome claims remain excluded until RB-016 evidence exists.
 
 ## Queue impact
 
-- RB-001 through RB-015, RB-017 through RB-020 are `DONE` according to their canonical task rows.
+- RB-001 through RB-015 and RB-017 through RB-021 are `DONE` according to their canonical task rows.
 - RB-016 remains `BLOCKED` on real use.
-- RB-021 is `REVIEW`.
-- RB-022, RB-023 and RB-024 are `BLOCKED` on their explicit dependencies.
-- If RB-021 is accepted, RB-022 becomes the next dependency-satisfied P1 task; no other priority change is recommended.
+- RB-022 is `READY` and is the next dependency-satisfied P1 task.
+- RB-023 and RB-024 remain `BLOCKED` on RB-022.
