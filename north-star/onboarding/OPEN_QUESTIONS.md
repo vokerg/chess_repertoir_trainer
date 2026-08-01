@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-07-30
+Last updated: 2026-08-01
 
 Every material question has one owning task. Other tasks may contribute evidence but must not silently finalize it.
 
@@ -54,39 +54,33 @@ Implementation tuning delegated to ONB-007:
 
 ## ONB-003 / #150 — Preparation orchestration
 
-Resolved by ONB-001/002:
+Resolved by `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`:
 
-- the aggregate is a repeatable user-owned `DataPreparationRun`;
-- at most one non-terminal preparation run exists per user;
-- index and analysis are separate stages;
-- analysis is not a core onboarding-completion gate;
-- skip is separate from pause/cancel;
-- Home/job-panel ownership boundaries are fixed;
-- provider import exposes persisted progress and exact scope/range;
-- preparation selects eligible games from PostgreSQL rather than import response arrays;
-- import rows can become visible before provider-run completion.
+- use `DataPreparationRun` plus ordered account targets and retained `DataPreparationBatch` child-job links;
+- lifecycle status is separate from `coreReadyAt` and feature readiness;
+- create a separate immutable `INDEX_GAMES` or `ANALYSE_GAMES` `JobRun` per bounded batch;
+- keep provider import physically separate and link each target to its current import attempt chain;
+- enforce one non-terminal preparation run per user;
+- enforce at most one non-terminal index batch and one non-terminal analysis batch per run;
+- enforce configurable global onboarding batch/task admission limits;
+- use the existing `ONBOARDING` source;
+- use preparation lane priorities `200`, `190`, `180`, and `100`, all below direct-user work;
+- select candidates in PostgreSQL under a locked parent and create batch/job/tasks atomically;
+- start indexing after committed imported rows without waiting for a complete provider window or terminal import;
+- withhold core readiness until exact import coverage is terminal and indexing outcomes are terminal;
+- start a bounded first-analysis lane from current successfully indexed evidence;
+- select newest-first within an account and account-round-robin across expansion targets;
+- treat task status as execution evidence, not readiness authority;
+- model pause as quiescence and cancellation as acknowledged child/import shutdown;
+- retry failed/unprepared evidence explicitly without resetting historical child jobs;
+- restart terminal work as a linked recovery run and expansion as a new immutable run;
+- retain terminal batch snapshots so child dismissal/retention cleanup cannot corrupt the parent;
+- keep the Angular onboarding projection/store separate from the technical global job store;
+- allocate ONB-017 / #253 and ONB-018 / #254.
 
-ONB-016 adds the following required UX outcomes without choosing the physical solution:
+No ONB-003-owned architecture question remains open.
 
-- a first meaningful indexed reveal should be possible before full preparation;
-- a bounded first-analysis lane should unlock analysed value before the lower-priority analysis tail completes;
-- multiple-account expansion needs account-specific progress and an understandable aggregate;
-- background continuation must remain exact after core readiness.
-
-Still owned by ONB-003:
-
-- What exact Prisma model and lifecycle-status vocabulary implement `DataPreparationRun`?
-- Separate JobRuns per wave or one JobRun with checkpoints?
-- How many queued waves may exist?
-- What exact source/priority values are used?
-- Does indexing pipeline after each committed import batch, after each complete provider window, or only after terminal import?
-- Which deterministic sample/order feeds the first-analysis lane: newest month, representative subset, account-balanced sample, or another policy?
-- How is multi-account expansion ordered?
-- How does parent pause/cancellation propagate and acknowledge active import and game work?
-- How are terminal child runs reconciled after dismissal/retention cleanup?
-- How are failed games retried without duplicating completed work?
-- How does the preparation projection consume settled-game/import progress without duplicating state?
-- How is the one-active-run invariant enforced under concurrency?
+Implementation-local naming is delegated to ONB-017/018. Numeric wave sizes, admission limits, polling cadence, and stalled thresholds are delegated to ONB-007.
 
 ## ONB-004 / #151 — Destructive lifecycle
 
@@ -96,7 +90,7 @@ Still owned by ONB-003:
 - What happens to tactical feedback and scenario sessions after un-analysis?
 - What happens to AI reviews?
 - Is provider opening provenance required before index reset?
-- How is active import/game work cancellation acknowledged before deletion?
+- How is active import/game/preparation work cancellation acknowledged before deletion?
 - Are large deletes one transaction or bounded action steps?
 - How are import/job/preparation histories retained for audit?
 - What user-facing self-service subset is safe?
@@ -136,9 +130,13 @@ Still owned by ONB-003:
 - Engine startup overhead and potential reuse.
 - First-value target budgets: first imported game, first visible game, first indexed reveal, first analysed reveal, first personal tactic, core readiness, and recipe completion.
 - Whether measured durable-adapter performance supports Lichess-first speed language.
-- Default preparation wave size.
+- Default `PREPARATION_INDEX_WAVE_SIZE`.
+- Default `PREPARATION_FIRST_ANALYSIS_SIZE` and `PREPARATION_FIRST_ANALYSIS_MIN_INDEXED`.
+- Default `PREPARATION_ANALYSIS_TAIL_WAVE_SIZE`.
+- Global `PREPARATION_MAX_NON_TERMINAL_BATCHES` and `PREPARATION_MAX_QUEUED_TASKS`.
+- Preparation reconcile polling/wake budget.
 - Minimum evidence for ETA.
-- Scaling trigger for separate import/game workers or replicas.
+- Scaling trigger for separate import/game/preparation workers or replicas.
 - Database/provider safe load-test method.
 - Which stalled-work thresholds appear in admin diagnostics and onboarding attention states?
 
@@ -149,11 +147,22 @@ Consumed decisions:
 - visible preparation wave size is not the imported-game worker scheduling slice;
 - provider import starts with one global active claim and serial provider requests;
 - provider window and batch sizes remain tunable without changing the coverage model;
+- preparation priorities must preserve `FIRST_INDEX > FIRST_ANALYSIS > INDEX_CONTINUATION > ANALYSIS_TAIL`, with every lane below direct-user priority 250;
+- per-run queue bounds are one index plus one analysis batch, independent of numeric wave size;
 - elapsed-time or weighted overall progress is prohibited.
 
 ## ONB-008 / #193 — Disposition and readiness implementation
 
-- Final physical split between user disposition and preparation aggregate after ONB-003.
+Resolved by ONB-003:
+
+- ONB-017/018 own the physical preparation aggregate, targets, batches, and reconciliation;
+- ONB-008 owns user disposition, legacy adoption, readiness/presentation projection, warnings, allowed actions, and bounded reveal payloads;
+- `coreReadyAt` may complete user disposition while the preparation run continues analysis;
+- child job/task totals are not the readiness source of truth;
+- percentages require terminal exact import and a fixed eligible denominator.
+
+Still owned by ONB-008:
+
 - Exact readiness contract enum names and evidence payload size.
 - Exact presentation-state and latest-milestone vocabulary consumed by ONB-010.
 - Whether bounded reveal items are embedded summaries or references to canonical feature reads.
@@ -161,14 +170,27 @@ Consumed decisions:
 - Migration mechanism that adopts existing users while new users begin pending.
 - How import scope/coverage facts are summarized without duplicating the import read model.
 - How `checked-empty`, partial, ready, and newly-ready states are versioned so return visits do not replay stale reveals.
+- Exact attention-code-to-server-allowed-action mapping.
 
 ## ONB-009 / #194 — Lifecycle commands
+
+Resolved by ONB-003:
+
+- pause requests quiescence rather than adding a paused state to child `JobRun`;
+- cancel is terminal only after import and child work are acknowledged;
+- retry is explicit failed/unprepared-evidence selection within a non-terminal attention run;
+- restart creates a linked recovery run;
+- expansion creates a new immutable run;
+- route handlers remain thin over ONB-017/018 services.
+
+Still owned by ONB-009:
 
 - Exact route grouping after import/preparation implementation endpoints exist.
 - Idempotency key and duplicate-command response policy across parent and import run creation.
 - Expansion command shape for older history, bullet, and additional accounts.
 - Whether explicit no-data “finish without games” is a completion or skip reason in persistence.
 - How server-allowed actions distinguish a quiet secondary destination from a current primary recovery action.
+- Exact accepted/acknowledged response vocabulary for pause and cancel.
 
 ## ONB-010 / #195 — Functional Angular experience
 
@@ -183,6 +205,12 @@ Resolved by ONB-016:
 - offer additional accounts after first value;
 - treat personal tactics and Builder entry as optional continuations;
 - keep generated Sites/Figma code non-authoritative.
+
+Resolved by ONB-003:
+
+- use a dedicated onboarding/readiness store and projection;
+- keep the root imported-game job store as a technical child-job surface;
+- browser settled-job signals may trigger refresh but never advance workflow authority.
 
 Still owned by ONB-010:
 
@@ -199,6 +227,7 @@ Still owned by ONB-010:
 - Exact SQL check constraints and active-status partial unique index.
 - Whether `lastSyncRunId` becomes a real relation during migration.
 - Final canonical scope-hash serialization format.
+- Exact target-to-current-import relation shape coordinated with ONB-017.
 
 ## ONB-012 / #200 — Import worker and API lifecycle
 
@@ -221,10 +250,19 @@ Still owned by ONB-010:
 
 ## ONB-015 / #203 — Account-sync cutover and handoff
 
+Resolved by ONB-003:
+
+- progressively committed imported rows are sufficient for preparation selection;
+- no provider-window-completion event is required for correctness;
+- periodic persisted-state reconciliation is authoritative;
+- exact import termination/coverage remains the core-completion gate.
+
+Still owned by ONB-015:
+
 - Exact compatibility window for `POST /api/me/accounts/:id/sync`.
 - When `/reset-cursor` is removed after explicit backfill/reset exists.
 - Whether rating statistics refresh once per terminal run or through a coalesced window-level trigger.
-- Exact ONB-003 reconciliation trigger for progressively committed import rows.
+- Exact write/wake hint used to reduce reconcile latency without becoming an event dependency.
 
 ## ONB-016 / #224 — Lightweight experience blueprint
 
@@ -243,7 +281,27 @@ Resolved by `reports/ONB-016-2026-07-30-lightweight-onboarding-experience-bluepr
 - Angular and the server-owned lifecycle remain production authority;
 - ONB-003, ONB-007, ONB-008/009/010, VT-302, Profile, tactical training, and Builder retain their delegated decisions.
 
-No ONB-016-owned product/interaction question remains open. Tool availability, physical orchestration, evidence thresholds, and implementation details remain with their listed owners.
+No ONB-016-owned product/interaction question remains open. Tool availability, evidence thresholds, and implementation details remain with their listed owners.
+
+## ONB-017 / #253 — Preparation execution persistence and batches
+
+- Exact Prisma field/model names for run, target, and batch.
+- Whether terminal batch counts are scalar columns or one constrained JSON snapshot.
+- Exact partial unique index definitions for one active run and one active stage batch.
+- Exact database query/index shape for bounded candidate selection.
+- Exact nullable relation shape to current `ImportRun` and retained/deleted `JobRun`.
+- Exact internal repository/service names and transaction split.
+- Whether `reconcileAfter` belongs on the run in the initial migration or is added with ONB-018.
+
+## ONB-018 / #254 — Preparation reconciliation and control
+
+- Exact worker supervisor/module shape for concurrent game/import/preparation loops.
+- Exact reconcile poll interval and wake-hint implementation after ONB-007.
+- Exact attention/invariant error persistence detail.
+- Exact retry-generation command-to-reconciler handshake.
+- Exact global admission query/locking implementation.
+- Exact account-round-robin tie-break SQL.
+- Exact worker shutdown ordering when import, game, and preparation loops are active.
 
 ## Cross-program
 
