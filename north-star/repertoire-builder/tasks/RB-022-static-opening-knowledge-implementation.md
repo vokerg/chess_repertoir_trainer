@@ -1,6 +1,6 @@
 # RB-022 — Implement static side-aware opening knowledge
 
-Status: BLOCKED
+Status: READY
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 170
 
 Delivery class: Implementation foundation
 
-Planning maturity: Research-defined; awaiting RB-021 acceptance
+Planning maturity: Accepted architecture; ready to claim
 
 GitHub issue: #241
 
@@ -27,13 +27,13 @@ For a resolved named opening, the application must be able to retrieve:
 
 ## Dependency
 
-Blocked by RB-021 / #240. Do not claim or implement this task until the RB-021 report is accepted and its architecture decisions are synchronized as locked or revised.
+RB-021 / #240 is complete and accepted. The implementation must follow locked decision RB-D046 and the RB-021 reports unless a new explicit architecture revision is approved.
 
 ## Expected architecture
 
 Place the transport-independent capability beside the existing opening lookup and classification services under `apps/api/src/services/opening-book/`.
 
-The accepted research direction is:
+The accepted direction is:
 
 - a separate `OpeningKnowledgeService` and independently versioned registry;
 - primary selection through existing classification rule IDs;
@@ -42,7 +42,7 @@ The accepted research direction is:
 - stable plan IDs with deterministic merge, removal and replacement semantics;
 - reviewed project-original prose only in runtime results.
 
-Any implementation deviation requires explicit rationale and must preserve the research acceptance criteria.
+Any implementation deviation requires explicit rationale and must preserve the accepted research criteria.
 
 ## Required capability
 
