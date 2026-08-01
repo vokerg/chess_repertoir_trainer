@@ -1,6 +1,6 @@
 # Repertoire Builder Feature Catalog
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 Planning maturity values:
 
@@ -24,7 +24,7 @@ Delivery classes:
 | Factual peer-band resolver | Dual-use | Implemented and merged | Enables My peers immediately | Supplies automatic population target defaults |
 | Durable multi-account player level | Dual-use | Implemented through the shared resolver | One inspectable level across accounts | Reuses factual peer evidence without a second formula |
 | Named opening classification | Dual-use | Implemented and merged | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
-| Side-aware opening knowledge | Research / future dual-use | RB-021 review | Potential reusable opening explanations and plans | Explains candidate strategic direction without changing ranking |
+| Side-aware opening knowledge | Future dual-use | Architecture accepted; RB-022 ready | Reusable opening explanations and plans | Explains candidate strategic direction without changing ranking |
 | Player Chess Profile calculation | Dual-use | Implemented for review | Standalone identity and performance insight | Advises repertoire target and candidate fit |
 | Player Chess Profile experience | Standalone | Implemented for review | Recalculable profile page with evidence | Entry point into builder |
 | Repertoire target contract | North-star | Implemented and merged | Limited direct value | Captures preset population, persona, risk and coverage intent |
@@ -54,9 +54,9 @@ RB-002 is delivered through the same factual multi-account resolver. Opening cla
 
 Opening classification remains the compact deterministic intrinsic taxonomy delivered by RB-003/RB-018: soundness, character, theoretical status, theory burden, roles, confidence and matched rule IDs.
 
-RB-021 recommends a separate source-controlled opening knowledge layer for descriptions and White/Black strategic plans. The proposed service primarily reuses stable classification rule IDs, permits narrow knowledge-only selectors, and keeps explicit conditions, caveats, provenance and review lifecycle.
+RB-021 establishes a separate source-controlled opening knowledge layer for descriptions and White/Black strategic plans. The accepted service primarily reuses stable classification rule IDs, permits narrow knowledge-only selectors, and keeps explicit conditions, caveats, provenance and review lifecycle.
 
-The recommendation is in review. No runtime opening knowledge capability exists until RB-022 is accepted and implemented. Knowledge coverage must remain separate from complete classification rule-match coverage.
+RB-022 is ready to implement that foundation. Knowledge availability remains separate from complete classification rule-match coverage.
 
 ### Chess Profile
 
@@ -110,4 +110,4 @@ The critical-path MVP does not depend on traps. RB-017 remains research evidence
 
 No core stage depends on an LLM. Existing prototypes remain optional, disabled by default and non-authoritative.
 
-RB-024 is a proposed stretch consumer after reviewed opening knowledge exists. It may ground the existing on-demand game review in supplied user-side plans, but may not research openings at runtime, invent plans or alter deterministic analysis.
+RB-024 is a stretch consumer after reviewed opening knowledge exists. It may ground the existing on-demand game review in supplied user-side plans, but may not research openings at runtime, invent plans or alter deterministic analysis.
