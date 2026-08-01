@@ -89,9 +89,13 @@ Production defaults remain blocked on ONB-007 measurements.
 - no runtime implementation, schema, worker, provider, or deployment changes;
 - final CI run `30576472581` / #1644 passed on head `7e9b00d41e91bc49031386681b1d34772469d230`.
 
+## Ready implementation work
+
+- ONB-017 / #253 — preparation execution persistence, globally serialized admission, and bounded child-job creation — `READY`.
+- Before claiming ONB-017, inspect ONB-011 activity and coordinate all Prisma/schema/migration edits.
+
 ## Allocated implementation backlog
 
-- ONB-017 / #253 — preparation execution persistence, globally serialized admission, and bounded child-job creation — `PROPOSED`.
 - ONB-018 / #254 — progressive preparation reconciliation, stage-specific account fairness, and control — `PROPOSED`.
 - ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-017/018 and ONB-016 presentation/readiness/reveal requirements.
 - ONB-009 / #194 — lifecycle commands — `PROPOSED`; exposes thin authenticated commands over ONB-017/018.
@@ -180,4 +184,4 @@ ONB-003 and ONB-016 are complete.
 
 ## Next deterministic action
 
-Claim ONB-004 / #151. ONB-007 remains available in parallel after collision review.
+Claim ONB-004 / #151. ONB-007 and ONB-017 remain available after collision review.
