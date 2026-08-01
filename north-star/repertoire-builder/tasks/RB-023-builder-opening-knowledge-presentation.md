@@ -1,6 +1,6 @@
 # RB-023 — Surface opening knowledge in Repertoire Builder
 
-Status: BLOCKED
+Status: READY
 
 Priority: P2
 
@@ -8,7 +8,7 @@ Order: 175
 
 Delivery class: Consumer integration
 
-Planning maturity: Research-defined; awaiting RB-022
+Planning maturity: Research-defined; RB-022 dependency delivered
 
 GitHub issue: #242
 
@@ -20,10 +20,10 @@ When a candidate enters or identifies an opening, the focused evidence experienc
 
 ## Dependencies
 
-- RB-021 / #240 must be accepted.
-- RB-022 / #241 must deliver a reviewed knowledge service and initial corpus.
+- RB-021 / #240 is accepted and complete.
+- RB-022 / #241 delivered the reviewed `OpeningKnowledgeService`, initial corpus and stable knowledge identity through PR #255.
 
-Do not claim this task while either dependency remains blocked or in research review.
+The task is dependency-satisfied and available to claim.
 
 ## Verified insertion point
 

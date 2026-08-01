@@ -1,6 +1,6 @@
 # RB-022 — Implement static side-aware opening knowledge
 
-Status: READY
+Status: DONE
 
 Priority: P1
 
@@ -8,15 +8,25 @@ Order: 170
 
 Delivery class: Implementation foundation
 
-Planning maturity: Accepted architecture; ready to claim
+Planning maturity: Implemented, self-reviewed and validated
 
 GitHub issue: #241
+
+Review PR: #255
+
+Claimed by: ChatGPT agent session
+
+Claim branch: `rb-022/issue-241-static-opening-knowledge`
+
+Claimed at: 2026-08-01
+
+Completed at: 2026-08-01
 
 ## Objective
 
 Implement the architecture accepted from RB-021 as a deterministic, source-controlled opening knowledge foundation.
 
-For a resolved named opening, the application must be able to retrieve:
+For a resolved named opening, the application can retrieve:
 
 - a concise description;
 - a longer description;
@@ -27,69 +37,56 @@ For a resolved named opening, the application must be able to retrieve:
 
 ## Dependency
 
-RB-021 / #240 is complete and accepted. The implementation must follow locked decision RB-D046 and the RB-021 reports unless a new explicit architecture revision is approved.
+RB-021 / #240 is complete and accepted. The implementation follows locked decision RB-D046 and the RB-021 reports.
 
-## Expected architecture
+## Implemented architecture
 
-Place the transport-independent capability beside the existing opening lookup and classification services under `apps/api/src/services/opening-book/`.
+The transport-independent capability is placed beside the existing opening lookup and classification services under `apps/api/src/services/opening-book/`.
 
-The accepted direction is:
+The implementation provides:
 
-- a separate `OpeningKnowledgeService` and independently versioned registry;
+- a separate `OpeningKnowledgeService` and `2026-08-knowledge-v1` registry;
 - primary selection through existing classification rule IDs;
-- optional narrow name/ECO/UCI selectors for knowledge-only strategic distinctions;
+- narrow name/ECO/UCI selectors for knowledge-only strategic distinctions;
 - ordered family inheritance followed by subfamily and line overrides;
 - stable plan IDs with deterministic merge, removal and replacement semantics;
-- reviewed project-original prose only in runtime results.
-
-Any implementation deviation requires explicit rationale and must preserve the accepted research criteria.
-
-## Required capability
-
-- versioned TypeScript knowledge and source schemas;
-- deterministic registry validation;
-- broad-family inheritance and narrow overrides;
-- independent White and Black plans;
-- explicit `AVAILABLE`, `PARTIAL` and `UNAVAILABLE` states;
-- stable knowledge rule and plan IDs;
-- source/license/retrieval provenance;
-- reviewed lifecycle separate from draft/deprecated records;
-- initial bounded corpus selected by actual-game relevance and strategic diversity;
-- generated-book and imported-game-weighted knowledge audits;
-- regression tests over representative generated entries and all generated rows.
+- reviewed project-original prose only in runtime results;
+- source/license/retrieval provenance and strict registry validation;
+- generated-book and imported-game-weighted coverage audits.
 
 ## Initial corpus
 
-Use the RB-021 pilot matrix and expand to approximately 25–50 reviewed rules, subject to implementation evidence. Cover materially different structures and side asymmetries rather than chasing one record per generated name.
+The delivered corpus contains 25 reviewed rules covering:
 
-Required pilot areas include:
-
-- Sicilian and Najdorf, including a narrow branch exception;
+- English and Réti transpositions;
+- Sicilian, Najdorf, English Attack and Poisoned Pawn;
 - French and French Exchange replacement semantics;
 - Caro-Kann;
 - London;
-- Queen's Gambit with accepted/declined divergence;
+- Queen's Gambit, QGD and QGA;
 - King's Indian;
 - Grünfeld;
-- English/Réti transpositional treatment;
-- Evans Gambit Accepted;
-- Benko Accepted and Declined.
+- Evans Gambit and Evans Gambit Accepted;
+- Benko family, Accepted and Declined;
+- Catalan, Slav, Nimzo-Indian and Queen's Indian.
 
-## Acceptance criteria
+## Acceptance assessment
 
-- one service call returns side-aware reviewed knowledge for an `OpeningBookEntry` plus its classification result;
-- broad knowledge can be inherited, refined, removed or replaced deterministically;
-- every plan has stable identity, side, confidence and source references;
-- conditions and caveats prevent generic plans from being presented as forced theory;
-- invalid rule references, duplicate IDs, empty content, malformed selectors, unsupported licenses and missing sources fail validation;
-- draft/deprecated content cannot leak into normal runtime results;
-- tests cover inheritance, same-ID replacement, explicit removal, full replacement, side asymmetry, transposition/name variants, knowledge-only selectors and unknown fallback;
-- audits report knowledge availability separately from classification match coverage;
-- no Prisma model, migration, runtime LLM/web call, background job, public API, Angular/mobile UI, ranking change or course write is added;
-- `docs/opening-book.md` and North Star planning/reporting are updated;
-- complete repository CI passes.
+- one service call returns side-aware reviewed knowledge for an `OpeningBookEntry` plus classification: met;
+- broad inheritance, same-ID replacement, explicit removal and full replacement: met and tested;
+- stable plan identity, side, confidence and source references: met;
+- conditions and caveats: met;
+- invalid references, duplicate IDs, empty content, malformed selectors, unsupported source types/licenses and missing sources fail validation: met and tested;
+- invalid calendar dates, no-op merge patches and non-canonical UCI whitespace are handled deterministically: met and tested;
+- draft/deprecated content cannot leak: met and tested;
+- representative and all-generated-row regression coverage: met;
+- generated-book and game-weighted audits remain separate from classification coverage: met and wired into CI;
+- audit artifacts are valid JSON: met;
+- no Prisma model, migration, runtime LLM/web call, background job, public API, Angular/mobile UI, ranking change or course write: preserved;
+- `docs/opening-book.md` and North Star reporting: updated;
+- complete repository CI: passed before squash merge.
 
-## Explicit exclusions
+## Explicit exclusions preserved
 
 - public HTTP or shared wire contract;
 - Repertoire Builder presentation;
@@ -99,7 +96,14 @@ Required pilot areas include:
 - database persistence or editorial CMS;
 - runtime source retrieval or generation.
 
-## Blocks
+## Completion evidence
 
-- RB-023 / #242.
-- RB-024 / #243.
+- Implementation report: `north-star/repertoire-builder/reports/RB-022-2026-08-01-static-opening-knowledge.md`
+- Pull request: #255
+- Generated-book audit: 3,733 entries, 25 exercised rules and 10 exercised runtime provenance sources
+- Review hardening: exact calendar-date validation, source-type validation, no-op patch rejection, normalized UCI matching, valid JSON CI artifacts and removal of one unused runtime source entry
+
+## Queue impact
+
+- RB-023 / #242 is unblocked and becomes `READY`.
+- RB-024 / #243 is unblocked by stable knowledge identity but remains a lower-priority P3 stretch consumer.
