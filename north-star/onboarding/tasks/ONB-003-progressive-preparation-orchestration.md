@@ -8,7 +8,7 @@ Order: 30
 
 Delivery class: Research
 
-Planning maturity: Accepted; squash merge authorized
+Planning maturity: Completed through squash-merged PR #256
 
 GitHub issue: [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
@@ -86,7 +86,7 @@ Numeric wave sizes, polling budgets, admission limits, and stalled thresholds ar
 - ONB-007 numeric inputs remain explicit pending assumptions.
 - Concurrency and integration tests are specified in ONB-017/018.
 - Self-review found and corrected cross-parent global-admission serialization and stage-specific multi-account fairness gaps.
-- PR CI run `30711672997` passed lint, build, architecture guardrails, migrations, audits, and tests on the pre-correction documentation head; the final documentation head must also pass before merge.
+- Final PR CI run `30714419045` passed lint, build, architecture guardrails, migrations, audits, and the full test suite.
 
 ## Completion updates
 
@@ -104,5 +104,7 @@ Self-review addendum: `reports/ONB-003-2026-08-01-self-review-addendum.md`
 Implementation tasks: ONB-017 / #253 and ONB-018 / #254
 
 Pull request: [#256](https://github.com/vokerg/chess_repertoir_trainer/pull/256)
+
+Squash commit: `d41f75c080cd19ad106b2143acecd3b0606adacb`
 
 Completed at: 2026-08-01
