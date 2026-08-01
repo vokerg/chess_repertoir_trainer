@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-07-30
+Last updated: 2026-08-01
 
 Statuses:
 
@@ -225,7 +225,7 @@ A provider parse, normalization, or persistence failure makes the current window
 
 Status: `LOCKED`
 
-Replace per-game existence N+1 with duplicate-safe bulk insert and bounded reads. Do not return all imported or eligible IDs. ONB-003 selects eligible unindexed games from PostgreSQL by account, immutable scope/range, state, newest-first ordering, and wave limit.
+Replace per-game existence N+1 with duplicate-safe bulk insert and bounded reads. Do not return all imported or eligible IDs. Preparation selects eligible games from PostgreSQL by account, immutable scope/range, state, newest-first ordering, and configured wave limit.
 
 ### D-037 — Legacy cursors are migration hints, not coverage proof
 
@@ -299,13 +299,73 @@ Status: `LOCKED`
 
 ONB-010 implements semantic, keyboard, focus, reduced-motion, zoom, progress, and state behavior as part of the functional experience. VT-302 / #133 owns final product-wide visual, responsive, empty-state, motion, and accessibility acceptance.
 
+### D-053 — First-analysis lane is deterministic and bounded
+
+Status: `LOCKED`
+
+Unlock one bounded first-analysis batch from current successfully indexed, unanalysed games before the lower-priority analysis tail. Select newest-first within the target. Start when the configured minimum indexed evidence exists, with a small-account fallback when no more normal index candidates exist. ONB-007 sets sizes/budgets; do not hardcode a calendar month or random sample.
+
+### D-055 — Preparation uses targets and retained child-job batches
+
+Status: `LOCKED`
+
+Persist one `DataPreparationRun` with ordered account targets and durable `DataPreparationBatch` rows. A batch links to one child `JobRun` and retains terminal counts after child dismissal or retention deletion. Do not use child job history as the only parent state.
+
+### D-056 — Every preparation batch has an immutable child job
+
+Status: `LOCKED`
+
+Create a separate immutable `INDEX_GAMES` or `ANALYSE_GAMES` `JobRun` for each bounded batch. Do not append tasks to an active run or combine index and analysis into `PROCESS_GAMES` for onboarding.
+
+### D-057 — Preparation admission is bounded per run and globally
+
+Status: `LOCKED`
+
+Permit at most one non-terminal index batch and one non-terminal analysis batch per preparation run. Also enforce configurable global limits on non-terminal onboarding batches and queued onboarding tasks. ONB-007 sets numeric defaults.
+
+### D-058 — Preparation scheduling remains below direct-user work
+
+Status: `LOCKED`
+
+Use existing `JobRun.source = ONBOARDING`. Initial lane priorities are `FIRST_INDEX = 200`, `FIRST_ANALYSIS = 190`, `INDEX_CONTINUATION = 180`, and `ANALYSIS_TAIL = 100`; retries retain their lane priority. Every preparation lane remains below the current lowest direct-user priority of 250. ONB-007 may tune numbers only while preserving this ordering and floor.
+
+### D-059 — Indexing pipelines from committed import rows
+
+Status: `LOCKED`
+
+Preparation may select and index valid committed `ImportedGame` rows before the provider window or import run is terminal. Core readiness still waits for terminal exact import coverage and terminal indexing outcomes. Persisted-state reconciliation is authoritative; no delivery event is required for correctness.
+
+### D-060 — Current game evidence is readiness authority
+
+Status: `LOCKED`
+
+Use current index/opening/analysis evidence plus active child work to derive readiness. `JobTask.COMPLETED` or `SKIPPED` is execution history, not sufficient readiness proof. Historical batch totals are audit/progress evidence and must not be summed as the current eligible result set.
+
+### D-061 — Preparation control is acknowledged and restart-safe
+
+Status: `LOCKED`
+
+Pause stops new admission and becomes `PAUSED` only after current import/child work is quiescent. Cancel becomes terminal only after import and child claims are acknowledged. Retry creates new child batches for failed/unprepared evidence without resetting historical jobs. Restart creates a linked recovery run; expansion creates a new immutable run.
+
+### D-062 — Preparation reconciliation is a separate short worker loop
+
+Status: `LOCKED`
+
+Run a bounded PostgreSQL reconcile loop in the existing worker deployment. It may claim/lock a parent only for short idempotent state transitions and child creation. Never hold a reconcile transaction across provider I/O, PGN processing, or Stockfish execution.
+
+### D-063 — Expansion is account-round-robin
+
+Status: `LOCKED`
+
+The first run remains one account. Multi-account expansion selects newest-first within each target and admits batches account-round-robin using immutable target order as the tie-break. The run still has only one active index and one active analysis batch.
+
 ## Provisional
 
-### D-040 — Visible wave target
+### D-040 — Preparation wave sizes are measured configuration
 
 Status: `PROVISIONAL`
 
-Start research with approximately 50 games per preparation wave. ONB-003/007 decide final policy/configuration.
+Use approximately 50 games only as a research fixture/default candidate. ONB-007 finalizes index, first-analysis, and analysis-tail sizes, first-analysis minimum evidence, reconcile cadence, and global admission limits. The visible wave size remains independent from `JOB_WORKER_SLICE_SIZE`.
 
 ### D-042 — Admin identity
 
@@ -324,12 +384,6 @@ Use a lazy route in the existing web app, hidden and server-authorized, rather t
 Status: `PROVISIONAL`
 
 Use deterministic provider windows, bounded database batches, one global import claim, and exact counters initially. ONB-007 finalizes Lichess window duration, batch size, worker timing, backlog, scaling triggers, and any percentage/ETA policy.
-
-### D-053 — First-analysis lane
-
-Status: `PROVISIONAL`
-
-The experience should unlock a bounded first analysed sample before the entire requested analysis tail completes. ONB-003 decides deterministic selection, ordering, dependencies, and priority; ONB-007 validates capacity and first-value budgets. Do not hardcode “one month” until those tasks approve it.
 
 ### D-054 — Lichess-first speed language
 
@@ -464,6 +518,36 @@ Do not derive progress from elapsed time or combine import, indexing, and analys
 Status: `REJECTED`
 
 Do not bypass Angular, typed contracts, server-owned state, authentication, feature stores, design tokens, or repository guardrails because a generated prototype appears polished.
+
+### D-121 — One mutable or unbounded preparation job
+
+Status: `REJECTED`
+
+Do not create one account-sized `JobRun`, append tasks to an active run, or change its denominator as import progresses. Use bounded immutable child jobs.
+
+### D-122 — Generic DAG or per-game preparation mirror
+
+Status: `REJECTED`
+
+Do not introduce a generic workflow graph or a duplicate per-game preparation-state table without a later demonstrated recipe that cannot be represented by targets, current game evidence, and child jobs.
+
+### D-123 — Task status equals readiness
+
+Status: `REJECTED`
+
+Do not treat `JobTask.COMPLETED` as proof of current readiness or `SKIPPED` as failure. Reconcile canonical game evidence.
+
+### D-124 — Wait for terminal import before any indexing
+
+Status: `REJECTED`
+
+Do not withhold all index work until provider completion. Valid committed imported rows may provide first value while exact coverage continues.
+
+### D-125 — Preparation retry outranks direct user work
+
+Status: `REJECTED`
+
+Do not boost onboarding retry above direct user actions. Retry remains bounded and uses the normal preparation lane priority.
 
 ## Open
 
