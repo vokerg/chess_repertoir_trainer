@@ -15,7 +15,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; mutation contract waits for ONB-004 |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; coordinates ONB-004/005 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
-| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | PROPOSED | Persist preparation execution boundary and bounded child-job batches | Implementation | ONB-003; coordinates ONB-011; consumed by ONB-018/008 |
+| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | READY | Persist preparation execution boundary and bounded child-job batches | Implementation | ONB-003 complete; coordinate Prisma/schema edits with ONB-011 before implementation |
 | 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | PROPOSED | Implement progressive preparation reconciliation and control | Implementation | ONB-003/017; ONB-011/012/015; consumes ONB-007 defaults |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; consumes ONB-016 expansion/action requirements |
@@ -97,17 +97,18 @@ ONB-016 defines:
 
 The next claimable task by canonical order is ONB-004 / #151.
 
-Parallel research remains allowed after explicit collision review:
+Additional READY work after collision review:
 
 - ONB-007;
 - ONB-005;
-- ONB-006.
+- ONB-006;
+- ONB-017, with explicit ONB-011 Prisma/schema coordination before implementation.
 
-ONB-017/018 and the existing implementation backlog remain `PROPOSED` until their listed research and implementation dependencies are accepted.
+ONB-018 and the remaining implementation backlog stay `PROPOSED` until their listed dependencies are accepted.
 
 ## Implementation backlog rule
 
-ONB-008 through ONB-015 plus ONB-017/018 are allocated but remain `PROPOSED` until their listed dependencies are sufficiently resolved and accepted. Do not claim them early or fold them into research branches.
+ONB-008 through ONB-015 plus ONB-018 remain `PROPOSED` until their listed dependencies are sufficiently resolved and accepted. ONB-017 is `READY` but must not begin without first checking collision with ONB-011. Do not fold implementation work into unrelated research branches.
 
 Each remaining research completion must:
 
