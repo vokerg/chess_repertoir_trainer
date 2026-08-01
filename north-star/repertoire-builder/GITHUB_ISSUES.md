@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -37,6 +37,8 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 | RB-023 | [#242](https://github.com/vokerg/chess_repertoir_trainer/issues/242) |
 | RB-024 | [#243](https://github.com/vokerg/chess_repertoir_trainer/issues/243) |
 
+RB-021 architecture was accepted on 2026-08-01 through PR #244. RB-022 is the next ready task; RB-023 and RB-024 remain blocked on it.
+
 Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same change or coordination session.
 
 ## Sources of truth
@@ -70,7 +72,7 @@ Before work:
 3. Record the claimant and exact scope in the repository task file.
 4. Assign the issue when appropriate; otherwise add a comment naming the agent/session.
 5. Record the branch in the issue.
-6. Prefer a branch name containing both identifiers, for example `rb-008/issue-96-visual-candidate-prototype`.
+6. Prefer a branch name containing the RB ID and issue number, for example `rb-008/issue-96-visual-candidate-prototype`.
 7. Make the claim visible before substantive implementation or research.
 
 ## Pull-request protocol
@@ -80,9 +82,8 @@ Every implementation or review pull request must be visible from its GitHub issu
 - Include the RB ID and issue reference in the pull-request title or body.
 - Recommended title pattern: `RB-008: prototype visual candidate choices (#96)`.
 - Use `Closes #<issue>` only when merging the pull request should complete the task; otherwise use `Refs #<issue>`.
-- Immediately after opening or replacing a pull request, ensure the issue or pull-request body records scope, validation performed, validation pending, and review readiness.
-- Keep the issue open through review and close it only after accepted completion and required synchronization.
-- Do not close an issue merely because a pull request exists or CI passes.
+- Immediately after opening a pull request, ensure the issue or pull-request body records scope, validation performed, validation pending, and review readiness.
+- Do not close an issue merely because a pull request was opened or CI passed.
 
 ## Work-session updates
 
