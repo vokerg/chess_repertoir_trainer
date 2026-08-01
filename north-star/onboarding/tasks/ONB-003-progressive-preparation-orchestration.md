@@ -1,6 +1,6 @@
 # ONB-003 — Design progressive indexing and analysis orchestration
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 30
 
 Delivery class: Research
 
-Planning maturity: Research in progress
+Planning maturity: Research complete; review and merge pending
 
 GitHub issue: [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
@@ -64,7 +64,9 @@ The existing worker is strong per game but does not represent an onboarding reci
 
 ## Questions owned
 
-See `OPEN_QUESTIONS.md` under ONB-003.
+Resolved in `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`.
+
+Numeric wave sizes, polling budgets, admission limits, and stalled thresholds are delegated to ONB-007.
 
 ## Acceptance criteria
 
@@ -86,10 +88,15 @@ See `OPEN_QUESTIONS.md` under ONB-003.
 
 ## Completion updates
 
-- Report, decisions, open questions, queue, issue #150, and implementation tasks.
+- Main report added.
+- ONB-017 / #253 and ONB-018 / #254 allocated.
+- Queue, status, roadmap, decisions, open questions, issue mapping, and dependent task boundaries reconciled.
+- Production code, schema, worker, provider, and Angular behavior unchanged.
 
 ## Completion
 
-Report: none
+Report: `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`
 
-Completed at: none
+Pull request: pending
+
+Completed at: review pending
