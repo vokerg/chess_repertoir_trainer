@@ -14,7 +14,7 @@ Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/v
 
 Bounded import/backfill contract: ONB-002 completed through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
-Preparation orchestration: ONB-003 completed through accepted [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256); final squash merge authorized.
+Preparation orchestration: ONB-003 completed through squash-merged [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`.
 
 Lightweight experience blueprint: ONB-016 completed through squash-merged [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225) as `b485b9b2992e1152c1810c91d40cc5150d39284d`
 
@@ -41,8 +41,8 @@ Latest report: `reports/ONB-003-2026-08-01-self-review-addendum.md`
 - extend existing `ImportRun` rather than create a generic request/workflow platform;
 - add exact account-and-canonical-scope `AccountImportCoverage`;
 - use half-open UTC ranges and distinct `BOUNDED_INITIAL`, `INCREMENTAL_FORWARD`, and `HISTORICAL_BACKFILL` modes;
-- enforce one non-terminal import run per account;
-- execute provider work through a separate PostgreSQL claim/heartbeat/fencing loop in the existing worker deployment;
+- enforce one non-terminal import per account;
+- execute provider import through a separate PostgreSQL claim/heartbeat/fencing loop in the existing worker deployment;
 - use deterministic replayable provider windows;
 - advance coverage only after a complete or empty window;
 - fail/replay any window containing parse, normalization, or persistence gaps;
@@ -167,8 +167,8 @@ ONB-003 and ONB-016 are complete.
 - self-review identified and corrected the cross-parent global-admission race and cross-stage fairness ambiguity;
 - ONB-017 / #253 and ONB-018 / #254 allocated and corrected;
 - no production code, schema, migration, provider call, worker, Angular, package, workflow, or deployment behavior changed;
-- PR CI run `30711672997` passed lint, build, architecture guardrails, migrations, audits, and tests on the pre-correction documentation head;
-- the final correction head requires successful PR CI before squash merge.
+- final PR CI run `30714419045` passed lint, build, opening audits, architecture guardrails, database migrations, and the full test suite;
+- PR #256 was squash-merged to `main` as `d41f75c080cd19ad106b2143acecd3b0606adacb`.
 
 ### ONB-016 accepted research
 
