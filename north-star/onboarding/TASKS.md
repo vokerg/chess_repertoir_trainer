@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -9,20 +9,22 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 0 | ONB-000 | [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147) | P0 | DONE | Establish program foundation and master plan | Research/planning | Squash-merged through PR #156 |
 | 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | DONE | Define onboarding lifecycle and default preparation recipe | Research | Squash-merged through PR #197 |
 | 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | DONE | Design bounded recent-first import and historical backfill | Research | Squash-merged through PR #204 |
-| 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | READY | Design progressive indexing and analysis orchestration | Research | ONB-000/001; consumes ONB-002 handoff; coordinates ONB-007 |
-| 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | READY | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | ONB-000/001; consumes ONB-002 active-import boundary |
-| 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000/001; consumes ONB-002 sizing handoff |
+| 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | REVIEW | Design progressive indexing and analysis orchestration | Research | Report complete on `onb-003/issue-150-progressive-preparation-orchestration`; review/merge pending |
+| 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | READY | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | ONB-000/001; consumes ONB-002 active-import and ONB-003 cancellation boundaries |
+| 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000/001; consumes ONB-002 sizing and ONB-003 policy handoffs |
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; mutation contract waits for ONB-004 |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; coordinates ONB-004/005 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
-| 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001; blocked on ONB-003 physical preparation decisions; consumes ONB-016 presentation requirements |
-| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/003/007; ONB-008; consumes ONB-016 expansion/action requirements |
+| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | PROPOSED | Persist preparation execution boundary and bounded child-job batches | Implementation | ONB-003 acceptance; coordinates ONB-011; consumed by ONB-018/008 |
+| 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | PROPOSED | Implement progressive preparation reconciliation and control | Implementation | ONB-003/017; ONB-011/012/015; consumes ONB-007 defaults |
+| 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
+| 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; consumes ONB-016 expansion/action requirements |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
-| 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | PROPOSED | Persist durable account-import runs and scope coverage | Implementation | ONB-002; coordinates ONB-004 |
+| 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | PROPOSED | Persist durable account-import runs and scope coverage | Implementation | ONB-002; coordinates ONB-004 and ONB-017 target link |
 | 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | PROPOSED | Build durable account-import worker and API lifecycle | Implementation | ONB-011; consumes ONB-007 defaults |
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-011/012; ONB-007 sizing |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-011/012; ONB-007 sizing |
-| 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004; coordinates ONB-009/010 |
+| 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/017/018; coordinates ONB-009/010 |
 
 ## Completed planning
 
@@ -33,6 +35,8 @@ ONB-001 established the lifecycle/default recipe through squash-merged PR #197 a
 ONB-002 established bounded import/backfill contracts through squash-merged PR #204 and allocated ONB-011 through ONB-015.
 
 ONB-016 established the canonical lightweight experience blueprint through squash-merged PR #225 as `b485b9b2992e1152c1810c91d40cc5150d39284d`. It refines ONB-010 and maps implementation implications to existing owners rather than creating premature runtime tasks.
+
+ONB-003 completed its research report on the review branch and allocated ONB-017/018. Acceptance and merge remain pending.
 
 ## ONB-002 completed delivery
 
@@ -50,6 +54,24 @@ ONB-002 defines:
 - conservative legacy-cursor migration and explicit backfill;
 - report `reports/ONB-002-2026-07-29-bounded-import-backfill.md`;
 - implementation tasks ONB-011 through ONB-015.
+
+## ONB-003 review delivery
+
+ONB-003 defines:
+
+- `DataPreparationRun` plus ordered account targets and retained child-job batches;
+- separate bounded `INDEX_GAMES` and `ANALYSE_GAMES` child runs;
+- PostgreSQL server-side candidate selection and atomic batch/job creation;
+- one active index batch and one active analysis batch per preparation run;
+- a configurable global onboarding admission bound;
+- indexing after committed import rows while core readiness waits for terminal exact coverage;
+- a deterministic newest-first first-analysis lane;
+- account-round-robin expansion ordering;
+- preparation priorities below all direct-user work;
+- quiescent pause, acknowledged cancellation, explicit failed-evidence retry, linked restart, and immutable expansion;
+- parent correctness after child dismissal/retention cleanup;
+- report `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`;
+- implementation tasks ONB-017 / #253 and ONB-018 / #254.
 
 ## ONB-016 completed delivery
 
@@ -72,22 +94,19 @@ ONB-016 defines:
 
 ## Deterministic next task
 
-ONB-003 / #150 remains the lowest-order READY task after ONB-002 and ONB-016 completion.
-
-It owns the preparation parent, bounded index/analysis waves, import-progress reconciliation, first-analysis lane, and the choice of batch-versus-window pipelining.
+ONB-003 / #150 is in review. The next claimable task by canonical order is ONB-004 / #151.
 
 Parallel research remains allowed after explicit collision review:
 
-- ONB-004;
 - ONB-007;
 - ONB-005;
 - ONB-006.
 
-ONB-016 is complete and does not replace the deterministic next task.
+ONB-017/018 and the existing implementation backlog remain `PROPOSED` until their listed research and implementation dependencies are accepted.
 
 ## Implementation backlog rule
 
-ONB-008 through ONB-015 are allocated but remain `PROPOSED` until their listed dependencies are sufficiently resolved and accepted. Do not claim them early or fold them into research branches.
+ONB-008 through ONB-015 plus ONB-017/018 are allocated but remain `PROPOSED` until their listed dependencies are sufficiently resolved and accepted. Do not claim them early or fold them into research branches.
 
 Each remaining research completion must:
 
