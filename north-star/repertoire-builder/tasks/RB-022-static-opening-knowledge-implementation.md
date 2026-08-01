@@ -1,6 +1,6 @@
 # RB-022 — Implement static side-aware opening knowledge
 
-Status: IN_PROGRESS
+Status: DONE
 
 Priority: P1
 
@@ -8,9 +8,11 @@ Order: 170
 
 Delivery class: Implementation foundation
 
-Planning maturity: Review package implemented; CI and review pending
+Planning maturity: Implemented, self-reviewed and validated
 
 GitHub issue: #241
+
+Review PR: #255
 
 Claimed by: ChatGPT agent session
 
@@ -18,11 +20,13 @@ Claim branch: `rb-022/issue-241-static-opening-knowledge`
 
 Claimed at: 2026-08-01
 
+Completed at: 2026-08-01
+
 ## Objective
 
 Implement the architecture accepted from RB-021 as a deterministic, source-controlled opening knowledge foundation.
 
-For a resolved named opening, the application must be able to retrieve:
+For a resolved named opening, the application can retrieve:
 
 - a concise description;
 - a longer description;
@@ -52,7 +56,7 @@ The implementation provides:
 
 ## Initial corpus
 
-The review package contains 25 reviewed rules covering:
+The delivered corpus contains 25 reviewed rules covering:
 
 - English and Réti transpositions;
 - Sicilian, Najdorf, English Attack and Poisoned Pawn;
@@ -66,18 +70,21 @@ The review package contains 25 reviewed rules covering:
 - Benko family, Accepted and Declined;
 - Catalan, Slav, Nimzo-Indian and Queen's Indian.
 
-## Acceptance criteria status
+## Acceptance assessment
 
-- one service call returns side-aware reviewed knowledge for an `OpeningBookEntry` plus classification: implemented;
-- broad inheritance, same-ID replacement, explicit removal and full replacement: implemented and tested;
-- stable plan identity, side, confidence and source references: implemented;
-- conditions and caveats: implemented;
-- invalid references, duplicate IDs, empty content, malformed selectors, unsupported licenses and missing sources fail validation: implemented and tested;
-- draft/deprecated content cannot leak: implemented and tested;
-- representative and all-generated-row regression coverage: implemented;
-- generated-book and game-weighted audits remain separate from classification coverage: implemented and wired into CI;
+- one service call returns side-aware reviewed knowledge for an `OpeningBookEntry` plus classification: met;
+- broad inheritance, same-ID replacement, explicit removal and full replacement: met and tested;
+- stable plan identity, side, confidence and source references: met;
+- conditions and caveats: met;
+- invalid references, duplicate IDs, empty content, malformed selectors, unsupported source types/licenses and missing sources fail validation: met and tested;
+- invalid calendar dates, no-op merge patches and non-canonical UCI whitespace are handled deterministically: met and tested;
+- draft/deprecated content cannot leak: met and tested;
+- representative and all-generated-row regression coverage: met;
+- generated-book and game-weighted audits remain separate from classification coverage: met and wired into CI;
+- audit artifacts are valid JSON: met;
 - no Prisma model, migration, runtime LLM/web call, background job, public API, Angular/mobile UI, ranking change or course write: preserved;
-- `docs/opening-book.md` and North Star reporting: updated.
+- `docs/opening-book.md` and North Star reporting: updated;
+- complete repository CI: passed before squash merge.
 
 ## Explicit exclusions preserved
 
@@ -89,11 +96,14 @@ The review package contains 25 reviewed rules covering:
 - database persistence or editorial CMS;
 - runtime source retrieval or generation.
 
-## Validation pending
+## Completion evidence
 
-The branch contains TypeScript build validation, registry startup validation, focused Node regression tests, all-row generated-book processing, and CI audit artifact steps. Exact CI evidence will be recorded after the pull-request run completes.
+- Implementation report: `north-star/repertoire-builder/reports/RB-022-2026-08-01-static-opening-knowledge.md`
+- Pull request: #255
+- Generated-book audit: 3,733 entries, 25 exercised rules and 10 exercised runtime provenance sources
+- Review hardening: exact calendar-date validation, source-type validation, no-op patch rejection, normalized UCI matching, valid JSON CI artifacts and removal of one unused runtime source entry
 
-## Blocks
+## Queue impact
 
-- RB-023 / #242.
-- RB-024 / #243.
+- RB-023 / #242 is unblocked and becomes `READY`.
+- RB-024 / #243 is unblocked by stable knowledge identity but remains a lower-priority P3 stretch consumer.
