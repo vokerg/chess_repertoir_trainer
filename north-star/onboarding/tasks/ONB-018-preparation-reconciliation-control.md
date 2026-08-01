@@ -30,8 +30,8 @@ The durable parent and batch boundary alone does not advance work. A restart-saf
 
 ## Dependencies
 
-- ONB-003 / #150 accepted orchestration contract.
-- ONB-017 / #253 preparation persistence and child-job creation.
+- ONB-003 / #150 accepted orchestration contract and self-review addendum.
+- ONB-017 / #253 preparation persistence, globally serialized admission, and child-job creation.
 - ONB-011/012 durable import lifecycle and ONB-015 preparation handoff for complete import pipelining.
 - ONB-007 / #154 supplies production wave sizes, polling budgets, and stalled-work thresholds.
 - Consumed by ONB-008 / #193 and ONB-009 / #194.
@@ -46,7 +46,9 @@ The durable parent and batch boundary alone does not advance work. A restart-saf
 - First-index, first-analysis, index-continuation, analysis-tail, and explicit-retry lane behavior.
 - Analysis restricted to successfully indexed games.
 - Newest-first ordering within one account.
-- Deterministic account-round-robin batch ordering for multi-account expansion.
+- Deterministic stage-specific account-round-robin ordering for multi-account expansion.
+- Index admission compares prior normal `INDEX` batches per target; analysis admission compares prior normal `ANALYSIS` batches per target; immutable target ordinal breaks ties.
+- Retry batches do not distort the normal stage fairness cursor unless they explicitly replace the failed normal slot.
 - Exact milestone persistence and terminal batch reconciliation.
 - Pause as quiescence: stop new waves, allow active child/import work to settle, then mark paused.
 - Cancel propagation and acknowledgement across current import and child jobs.
@@ -68,7 +70,8 @@ The durable parent and batch boundary alone does not advance work. A restart-saf
 - Useful indexed evidence can appear before all selected games are imported or indexed.
 - A bounded first-analysis lane can complete before the lower-priority analysis tail.
 - Direct user jobs always remain schedulable ahead of preparation work.
-- Queue backlog is bounded independently of account size.
+- Queue backlog is bounded independently of account size and concurrent parent count.
+- Multi-account fairness is deterministic and independent for index and analysis stages.
 - Browser presence is not required to advance work.
 - Pause/cancel/retry are restart-safe and do not duplicate completed work.
 - Parent state remains correct after child dismissal or retention cleanup.
@@ -77,9 +80,12 @@ The durable parent and batch boundary alone does not advance work. A restart-saf
 
 ## Required validation
 
-- Two-reconciler concurrency test.
+- Two-reconciler parent-claim test.
+- Cross-parent admission-cap test through the ONB-017 serialized admission boundary.
 - Progressive import-commit-to-index test.
 - Index-success-to-first-analysis dependency test.
+- Stage-specific multi-account round-robin test with asymmetric index and analysis histories.
+- Retry fairness-cursor test.
 - Direct-user preemption and same-game race test.
 - Pause quiescence test.
 - Cancellation acknowledgement test with retained child work keys.
