@@ -104,6 +104,30 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
 }
 
 {
+  const opening = entry('UCI selector normalization', {
+    uci: 'e2e4 c7c5 g1f3',
+  });
+  const classification = OpeningClassificationService.classify(opening);
+  const rules = [{
+    id: 'test-uci-normalization',
+    revision: 1,
+    lifecycle: 'REVIEWED',
+    selector: { uciPrefix: '  e2e4   c7c5  ' },
+    shortDescription: projectStatement('normalized UCI selector'),
+    rationale: 'test canonical matching of validated UCI sequences',
+  }];
+
+  validateOpeningKnowledgeRegistry(rules, OpeningKnowledgeService.sources());
+  const result = OpeningKnowledgeService.resolve(
+    opening,
+    classification,
+    rules,
+    OpeningKnowledgeService.sources(),
+  );
+  assert.deepEqual(result.matchedKnowledgeRuleIds, ['test-uci-normalization']);
+}
+
+{
   const opening = entry('Sicilian Defense: Test Override');
   const classification = OpeningClassificationService.classify(opening);
   const rules = [
@@ -158,6 +182,9 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
     rationale: 'validation test',
   };
   const sources = OpeningKnowledgeService.sources();
+  const replaceEditorialSource = (patch) => sources.map((source) => (
+    source.id === 'project-editorial-rb-022' ? { ...source, ...patch } : source
+  ));
 
   assert.throws(
     () => validateOpeningKnowledgeRegistry([baseRule, baseRule], sources),
@@ -178,6 +205,13 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
   assert.throws(
     () => validateOpeningKnowledgeRegistry([{ ...baseRule, shortDescription: projectStatement('') }], sources),
     /text must not be empty/,
+  );
+  assert.throws(
+    () => validateOpeningKnowledgeRegistry([{
+      ...baseRule,
+      white: { planMode: 'MERGE' },
+    }], sources),
+    /must change a summary or plans/,
   );
   assert.throws(
     () => validateOpeningKnowledgeRegistry([{
@@ -208,12 +242,25 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
     /Duplicate opening knowledge source ID/,
   );
   assert.throws(
-    () => validateOpeningKnowledgeRegistry([baseRule], [{
-      ...sources[0],
-      id: 'bad-license',
-      license: 'UNSUPPORTED',
-    }]),
+    () => validateOpeningKnowledgeRegistry(
+      [baseRule],
+      replaceEditorialSource({ sourceType: 'UNSUPPORTED' }),
+    ),
+    /unsupported source type/,
+  );
+  assert.throws(
+    () => validateOpeningKnowledgeRegistry(
+      [baseRule],
+      replaceEditorialSource({ license: 'UNSUPPORTED' }),
+    ),
     /unsupported license/,
+  );
+  assert.throws(
+    () => validateOpeningKnowledgeRegistry(
+      [baseRule],
+      replaceEditorialSource({ retrievedAt: '2026-02-31' }),
+    ),
+    /invalid retrieval date/,
   );
 }
 
