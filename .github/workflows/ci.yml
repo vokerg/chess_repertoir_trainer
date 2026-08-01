@@ -51,7 +51,7 @@ jobs:
         run: npm run build
 
       - name: Opening classification audit
-        run: npm run opening-book:classification-audit --workspace=apps/api > opening-classification-audit.json
+        run: npm --silent run opening-book:classification-audit --workspace=apps/api > opening-classification-audit.json
 
       - name: Upload opening classification audit
         uses: actions/upload-artifact@v4
@@ -60,7 +60,7 @@ jobs:
           path: opening-classification-audit.json
 
       - name: Opening knowledge audit
-        run: npm run opening-book:knowledge-audit --workspace=apps/api > opening-knowledge-audit.json
+        run: npm --silent run opening-book:knowledge-audit --workspace=apps/api > opening-knowledge-audit.json
 
       - name: Upload opening knowledge audit
         uses: actions/upload-artifact@v4
@@ -75,7 +75,7 @@ jobs:
         run: npm run db:migrate --workspace=apps/api
 
       - name: Imported-game opening classification audit
-        run: npm run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
+        run: npm --silent run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
 
       - name: Upload imported-game opening classification audit
         uses: actions/upload-artifact@v4
@@ -84,7 +84,7 @@ jobs:
           path: imported-game-opening-classification-audit.json
 
       - name: Imported-game opening knowledge audit
-        run: npm run opening-book:knowledge-game-audit --workspace=apps/api > imported-game-opening-knowledge-audit.json
+        run: npm --silent run opening-book:knowledge-game-audit --workspace=apps/api > imported-game-opening-knowledge-audit.json
 
       - name: Upload imported-game opening knowledge audit
         uses: actions/upload-artifact@v4
