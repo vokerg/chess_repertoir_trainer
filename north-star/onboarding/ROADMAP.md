@@ -11,7 +11,7 @@ ONB-001 lifecycle/default recipe — DONE
         +
 ONB-002 durable bounded import/backfill — DONE
         +
-ONB-003 progressive preparation orchestration — REVIEW
+ONB-003 progressive preparation orchestration — DONE
         +
 ONB-007 throughput/progress evidence
         ↓
@@ -79,7 +79,7 @@ Delivered:
 
 - ONB-001 / #148 — lifecycle/default recipe — `DONE` through PR #197.
 - ONB-002 / #149 — bounded import/backfill — `DONE` through PR #204.
-- ONB-003 / #150 — preparation orchestration — `REVIEW` on `onb-003/issue-150-progressive-preparation-orchestration`.
+- ONB-003 / #150 — preparation orchestration — `DONE` through accepted PR #256.
 - ONB-004 / #151 — destructive lifecycle — `READY`.
 - ONB-007 / #154 — throughput/progress — `READY`.
 
@@ -117,20 +117,21 @@ ONB-002:
 - database-based preparation handoff;
 - conservative legacy-cursor migration and explicit backfill.
 
-ONB-003 review contract:
+ONB-003 accepted contract:
 
 - `DataPreparationRun` plus ordered account targets and retained child-job batches;
 - separate immutable index and analysis `JobRun` children;
 - bounded PostgreSQL candidate selection with no browser-supplied IDs;
 - one active index batch and one active analysis batch per run;
-- configurable global onboarding batch/task admission limits;
+- globally serialized onboarding admission with configurable batch/task caps;
 - indexing after committed import rows while core readiness waits for terminal exact coverage;
 - first-index, first-analysis, index-continuation, and analysis-tail lanes;
 - preparation priorities below all direct-user jobs;
-- newest-first selection and account-round-robin expansion ordering;
+- newest-first selection and stage-specific account-round-robin expansion ordering;
 - quiescent pause, acknowledged cancellation, explicit retry, linked recovery restart, and immutable expansion;
 - current evidence rather than task history as readiness authority;
-- ONB-017/018 implementation allocation.
+- ONB-017/018 implementation allocation;
+- self-review corrections in `reports/ONB-003-2026-08-01-self-review-addendum.md`.
 
 ONB-016 accepted contract:
 
@@ -245,7 +246,7 @@ Exit:
 
 ## Phase 5 — Progressive preparation core
 
-Research owner: ONB-003 / #150.
+Research owner: ONB-003 / #150 — complete.
 
 Implementation tasks:
 
@@ -259,9 +260,10 @@ Implementation tasks:
 - current import and nullable child-job links;
 - terminal batch snapshots surviving child retention;
 - database-side eligible selection by target/scope/range/evidence;
-- atomic batch, `JobRun`, and `JobTask` creation;
+- globally serialized admission using a singleton row lock or transaction-scoped advisory lock;
+- atomic capacity re-count plus batch, `JobRun`, and `JobTask` creation;
 - existing `ONBOARDING` source and lane-priority policy;
-- migration, ownership, concurrency, and bounded-query tests.
+- migration, ownership, same-parent/cross-parent concurrency, and bounded-query tests.
 
 ### ONB-018 expected deliveries
 
@@ -270,10 +272,10 @@ Implementation tasks:
 - terminal exact import gate for core readiness;
 - first-index, first-analysis, index-continuation, and analysis-tail admission;
 - analysis restricted to successfully indexed evidence;
-- account-round-robin expansion;
-- global onboarding admission limits;
+- stage-specific account-round-robin expansion;
+- globally bounded onboarding admission through ONB-017;
 - quiescent pause, acknowledged cancel, explicit retry, restart-safe reconciliation;
-- large-account, preemption, failure, cleanup, and process-restart tests.
+- large-account, preemption, fairness, failure, cleanup, and process-restart tests.
 
 Experience constraints consumed from ONB-016:
 
@@ -285,7 +287,7 @@ Experience constraints consumed from ONB-016:
 Exit:
 
 - no browser controls preparation continuation;
-- child queue backlog is bounded;
+- child queue backlog is bounded under concurrent parents;
 - direct-user jobs remain responsive;
 - parent state survives restart and child cleanup;
 - core readiness does not wait for full analysis.
