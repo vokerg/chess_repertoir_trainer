@@ -82,7 +82,9 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
 {
   const result = OpeningKnowledgeService.resolve(entry('Italian Game: Evans Gambit Accepted'));
 
-  assert.equal(result.status, 'AVAILABLE');
+  assert.equal(result.status, 'PARTIAL');
+  assert.ok(result.shortDescription);
+  assert.equal(result.description, null);
   assert.ok(result.white.plans.some((plan) => plan.id === 'evans-white-open-centre-for-development'));
   assert.ok(result.white.plans.some((plan) => plan.id === 'evans-accepted-white-use-tempi-on-bishop'));
   assert.ok(result.black.plans.some((plan) => plan.id === 'evans-accepted-black-return-pawn-if-needed'));
