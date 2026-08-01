@@ -23,6 +23,8 @@
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "opening-book:classification-audit": "ts-node --transpile-only src/scripts/audit-opening-classification.ts",
     "opening-book:classification-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-classification.ts",
+    "opening-book:knowledge-audit": "ts-node --transpile-only src/scripts/audit-opening-knowledge.ts",
+    "opening-book:knowledge-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-knowledge.ts",
     "tags:refresh-analysed": "ts-node --transpile-only src/scripts/refresh-analysed-game-tags.ts",
     "traps:validate": "ts-node --transpile-only src/scripts/validate-trap-pilot.ts",
     "traps:refresh-engine": "ts-node --transpile-only src/scripts/refresh-trap-pilot-engine-evidence.ts",
