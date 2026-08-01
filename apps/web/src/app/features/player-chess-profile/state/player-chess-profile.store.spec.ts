@@ -209,7 +209,7 @@ describe('PlayerChessProfileStore', () => {
     api.getProfile.and.returnValue(pending.asObservable());
 
     const pendingLoad = store.load();
-    store.setDate('from', '2026-08-01');
+    store.setDate('from', '9999-12-31');
     await store.load();
     pending.next(profileFixture(12, 'Should stay stale'));
     pending.complete();

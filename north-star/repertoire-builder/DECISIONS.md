@@ -1,6 +1,6 @@
 # Repertoire Builder Decisions
 
-Last updated: 2026-07-30
+Last updated: 2026-08-01
 
 States:
 
@@ -123,6 +123,22 @@ RB-018 completes the pinned generated-book coverage track with `2026-07-rules-v2
 This metric means every pinned name has extractable characteristics and matched-rule provenance. It does not require every dimension to be asserted with high confidence. Rare heterogeneous families may retain low confidence or explicit `UNKNOWN` soundness while exposing only safely inferable traits, roles and theory burden. Runtime names outside the pinned source retain the complete unknown fallback.
 
 Generated-book breadth and actual-game distribution are separate measurements. The generated audit guards upstream naming changes; the database-backed game audit weights classifications by existing imported-game opening metadata. Neither requires classification persistence, a background job, an API, or one row per generated opening.
+
+### RB-D046 — Static opening knowledge is separate, deterministic and side-aware
+
+State: **LOCKED**
+
+Opening descriptions and strategic plans are owned by a separate, independently versioned `OpeningKnowledgeService` beside opening lookup and classification. They are not fields of `OpeningSideClassification`.
+
+The service consumes the resolved opening entry and current classification result. Knowledge rules primarily reference stable classification rule IDs and may use narrow opening-name, ECO or UCI selectors when a strategic distinction does not belong in the classification taxonomy.
+
+Rules apply in explicit broad-family, subfamily and line order. Descriptions and side summaries use later-value replacement. White and Black plans use stable plan IDs with deterministic merge, explicit removal and full side replacement. Plans retain conditions and caveats so typical ideas are not presented as forced moves or universally valid across transpositions.
+
+Only reviewed project-original prose appears in normal runtime results. Draft and deprecated records remain editorial/audit data. Knowledge exposes independent version, matched rule IDs, sources, confidence, lifecycle and explicit available, partial or unavailable status.
+
+The foundation requires no database, background job, runtime LLM or runtime web lookup. Knowledge availability is measured separately from complete classification rule-match coverage and may remain intentionally partial.
+
+Builder consumption is explanatory only and cannot change deterministic ranking, eligibility, fit, coverage, session state or course writes. AI game-review grounding remains an optional, on-demand and non-authoritative downstream use.
 
 ### RB-D014 — Chess Profile is standalone
 

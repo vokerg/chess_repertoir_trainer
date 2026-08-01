@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
@@ -26,13 +26,18 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 152 | RB-019 | #218 | P3 | DONE | Builder candidate explanation prototype | PR #223; `ee389cb`; CI #1634 |
 | 154 | RB-020 | #219 | P3 | DONE | Post-apply Builder summary prototype | PR #228; `d795572`; CI #1652 |
 | 160 | RB-016 | #104 | P2 | BLOCKED | Adoption and real-game outcomes | Requires sufficient real Builder/course use |
+| 165 | RB-021 | #240 | P1 | DONE | Side-aware opening knowledge foundation research | PR #244; `reports/RB-021-2026-08-01-closure.md`; CI #1736 |
+| 170 | RB-022 | #241 | P1 | READY | Static side-aware opening knowledge implementation | RB-021 architecture accepted |
+| 175 | RB-023 | #242 | P2 | BLOCKED | Opening knowledge in Repertoire Builder | Requires RB-022 reviewed knowledge service |
+| 180 | RB-024 | #243 | P3 | BLOCKED | AI game review grounding with opening plans | Requires RB-022 reviewed knowledge service |
 
 ## Current execution state
 
-- All dependency-satisfied implementation and research tasks are complete.
-- RB-016 is the only unfinished task and remains honestly blocked on real usage and follow-up-game evidence.
-- There is no unclaimed executable North Star task and no active North Star implementation branch after closure reconciliation.
-- Task order and priorities are unchanged.
+- The deterministic Builder capability chain and prior optional prototypes remain complete.
+- RB-016 remains blocked on real usage and follow-up-game evidence.
+- RB-021 is complete: the separate deterministic opening-knowledge architecture, hybrid selector, merge semantics and source/editorial policy were accepted on 2026-08-01.
+- RB-022 is the next dependency-satisfied P1 task.
+- RB-023 and RB-024 remain blocked until RB-022 provides the reviewed service, corpus and stable knowledge identity.
 
 ## Recent closure evidence
 
@@ -42,5 +47,6 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 - RB-017: `reports/RB-017-2026-07-31-closure.md`.
 - RB-019: `reports/RB-019-2026-07-30-closure.md`.
 - RB-020: `reports/RB-020-2026-07-30-closure.md`.
+- RB-021: `reports/RB-021-2026-08-01-closure.md`.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.

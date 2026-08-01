@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 This roadmap records capability stages and decision gates. Detailed implementation history lives in task and report files.
 
@@ -47,7 +47,7 @@ Complete through RB-014, RB-017, RB-015, RB-019 and RB-020.
 - The traps pilot proves deterministic evidence/review architecture but recommends revision before production.
 - Generated interpretation remains independently gated, explicit, transient, non-authoritative and removable.
 
-Gate: research complete; any production traps or AI enablement work requires a new evidence-backed task.
+Gate: prior research complete; any production traps or AI enablement work requires a new evidence-backed task.
 
 ## Stage 8 — outcome feedback
 
@@ -55,14 +55,32 @@ Blocked through RB-016 until sufficient Builder-created/course-applied material 
 
 Required future evidence includes adoption, recall, opening-position quality, results and regression/coverage signals. No honest implementation specification exists before that usage gate.
 
+## Stage 9 — opening knowledge enrichment
+
+The architecture gate is passed through accepted RB-021 / #240.
+
+Accepted capability sequence:
+
+1. **RB-021 — research and architecture:** complete. Static side-aware opening knowledge is separate from classification while reusing stable classification rule provenance.
+2. **RB-022 — deterministic foundation:** ready. Implement reviewed descriptions, White/Black plans, conditions/caveats, source provenance, validation and bounded coverage audits.
+3. **RB-023 — Builder consumer:** blocked. Project compact target-side knowledge through existing candidate opening evidence without changing ranking or session authority.
+4. **RB-024 — AI game-review stretch:** blocked. Optionally ground the existing on-demand review in reviewed plans after the deterministic corpus proves useful.
+
+Gate for RB-023: reviewed RB-022 service, corpus and contract projection decision.
+
+Gate for RB-024: reviewed RB-022 knowledge identity plus evidence that plan grounding improves game-review usefulness without encouraging unsupported claims.
+
+This stage is independent of the blocked RB-016 outcome gate. Opening knowledge may deliver standalone educational value without representing outcome evidence.
+
 ## Release condition
 
-The deterministic Builder foundation is complete: evidence is inspectable, target intent and overrides are explicit, decisions and session transitions are bounded, course writes require preview/apply, exact existing-course launches preserve identity, and optional generated text can be disabled without changing workflow authority.
+The deterministic Builder foundation remains complete: evidence is inspectable, target intent and overrides are explicit, decisions and session transitions are bounded, course writes require preview/apply, exact existing-course launches preserve identity, and optional generated text can be disabled without changing workflow authority.
 
-Outcome claims remain excluded until RB-016 evidence exists.
+Opening knowledge is not part of the current runtime release condition until RB-022 and a consumer task are delivered. Outcome claims remain excluded until RB-016 evidence exists.
 
 ## Queue impact
 
-- RB-001 through RB-015, RB-017 through RB-020 are `DONE` according to their canonical task rows.
-- RB-016 alone remains `BLOCKED`.
-- There is no dependency-satisfied unclaimed task and no priority or order change is required.
+- RB-001 through RB-015 and RB-017 through RB-021 are `DONE` according to their canonical task rows.
+- RB-016 remains `BLOCKED` on real use.
+- RB-022 is `READY` and is the next dependency-satisfied P1 task.
+- RB-023 and RB-024 remain `BLOCKED` on RB-022.
