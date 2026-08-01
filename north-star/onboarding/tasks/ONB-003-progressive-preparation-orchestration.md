@@ -1,6 +1,6 @@
 # ONB-003 — Design progressive indexing and analysis orchestration
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 30
 
 Delivery class: Research
 
-Planning maturity: Outlined
+Planning maturity: Research in progress
 
 GitHub issue: [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT/Codex research session for `vokerg`
 
-Claim branch: none
+Claim branch: `onb-003/issue-150-progressive-preparation-orchestration`
 
-Claimed at: none
+Claimed at: 2026-08-01
 
-Claim scope: none
+Claim scope: orchestration research, decisions, reports, queue reconciliation, and bounded implementation-task allocation only
 
 ## Outcome
 
