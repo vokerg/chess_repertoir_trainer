@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 ## Program state
 
@@ -16,9 +16,11 @@ Bounded import/backfill contract: ONB-002 completed through [PR #204](https://gi
 
 Lightweight experience blueprint: ONB-016 completed through squash-merged [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225) as `b485b9b2992e1152c1810c91d40cc5150d39284d`
 
-Next ordered task: ONB-003 / [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
+Preparation orchestration: ONB-003 research complete on `onb-003/issue-150-progressive-preparation-orchestration`; review/merge pending.
 
-Latest report: `reports/ONB-016-2026-07-31-closure.md`
+Next claimable ordered task: ONB-004 / [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
+
+Latest report: `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`
 
 ## Completed contracts
 
@@ -67,10 +69,33 @@ Latest report: `reports/ONB-016-2026-07-31-closure.md`
 - no runtime implementation, schema, worker, provider, or deployment changes;
 - final CI run `30576472581` / #1644 passed on head `7e9b00d41e91bc49031386681b1d34772469d230`.
 
+## ONB-003 review contract
+
+ONB-003 now defines:
+
+- `DataPreparationRun` plus ordered account targets and retained `DataPreparationBatch` child-job links;
+- one non-terminal preparation run per user;
+- separate immutable `INDEX_GAMES` and `ANALYSE_GAMES` child runs;
+- PostgreSQL candidate selection under a locked parent with no browser/import ID arrays;
+- at most one active index batch and one active analysis batch per run;
+- configurable global onboarding batch/task admission bounds;
+- indexing after committed import rows while core readiness waits for terminal exact coverage;
+- first-index, first-analysis, index-continuation, and analysis-tail lanes;
+- direct-user priorities above all preparation work;
+- deterministic newest-first selection and account-round-robin expansion;
+- quiescent pause, acknowledged cancellation, explicit failed-evidence retry, linked recovery restart, and immutable expansion;
+- exact readiness from current import/game evidence rather than child task history;
+- parent correctness after child dismissal or retention cleanup;
+- technical Angular job-store separation from the onboarding/readiness projection.
+
+Review acceptance is pending; production defaults remain blocked on ONB-007 measurements.
+
 ## Allocated implementation backlog
 
-- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-016 presentation/readiness/reveal requirements.
-- ONB-009 / #194 — lifecycle commands — `PROPOSED`; consumes ONB-016 action and expansion requirements.
+- ONB-017 / #253 — preparation execution persistence and bounded child-job creation — `PROPOSED`.
+- ONB-018 / #254 — progressive preparation reconciliation and control — `PROPOSED`.
+- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-017/018 and ONB-016 presentation/readiness/reveal requirements.
+- ONB-009 / #194 — lifecycle commands — `PROPOSED`; exposes thin authenticated commands over ONB-017/018.
 - ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-016 experience blueprint.
 - ONB-011 / #199 — import persistence/coverage — `PROPOSED`.
 - ONB-012 / #200 — import worker/API lifecycle — `PROPOSED`.
@@ -82,13 +107,12 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Ready research queue
 
-1. ONB-003 / #150 — progressive preparation orchestration.
-2. ONB-004 / #151 — destructive lifecycle invariants.
-3. ONB-007 / #154 — throughput/progress.
-4. ONB-005 / #152 — administrator architecture.
-5. ONB-006 / #153 — orphan cleanup.
+1. ONB-004 / #151 — destructive lifecycle invariants.
+2. ONB-007 / #154 — throughput/progress.
+3. ONB-005 / #152 — administrator architecture.
+4. ONB-006 / #153 — orphan cleanup.
 
-ONB-016 is complete and does not change this deterministic order.
+ONB-003 is in review and ONB-016 is complete.
 
 ## Critical findings
 
@@ -98,21 +122,27 @@ ONB-016 is complete and does not change this deterministic order.
 - current provider persistence is per-game N+1 and returns unbounded ID arrays;
 - account rating stats are currently recomputed twice per sync path;
 - imported-game `JobTask` cannot represent account-level provider fetches;
-- Lichess supports bounded streamed ranges and speed filtering;
-- Chess.com supports serial monthly archives and explicit no-game months;
-- exact coverage and replayable windows remove the need for full-history cursor resets;
+- current account workflow candidate selection loads ID arrays into Angular and cannot be the onboarding handoff;
+- the existing worker already provides run priority, 25-task slices, higher-priority preemption, same-game fencing, stale recovery, cancellation acknowledgement, and idempotent executors;
+- terminal child jobs may be dismissed and later deleted, so they cannot be the only preparation parent state;
+- `JobRun.source = ONBOARDING` already exists;
+- a separate bounded job per index/analysis wave fits the current worker better than one mutable/unbounded run;
+- first analysis can safely begin from current indexed evidence before import/index tails finish;
+- core readiness must still wait for terminal exact import coverage;
+- global admission limits are required in addition to per-run wave bounds;
 - the current account page is a dense advanced management surface, not a suitable first-run flow;
 - Home already demonstrates useful action prioritization but must stop independently inferring onboarding lifecycle;
 - Player Chess Profile already supplies evidence-labelled conclusions and coverage concepts suitable for reuse;
 - missed-shot tactical detections can already create personal scenario-training sessions;
-- first value should target a meaningful indexed reveal rather than full Stockfish completion;
 - an exact course/repertoire deviation can become a strong later action, but repertoire creation must not block initial value.
 
 ## Blockers to production implementation
 
-- ONB-003 has not approved preparation-run physical orchestration, first-analysis lane, or import pipelining cadence;
+- ONB-003 requires review acceptance and merge;
 - ONB-004 has not approved active-work acknowledgement for account/user deletion or destructive coverage reset;
-- ONB-007 has not measured import window/batch/worker timing, first-value budgets, provider speed comparison, or scaling thresholds;
+- ONB-007 has not measured import window/batch/worker timing, preparation wave sizes, first-analysis thresholds, admission limits, first-value budgets, provider speed comparison, or scaling thresholds;
+- ONB-011/012/013/014/015 have not delivered the durable provider import and preparation handoff;
+- ONB-017/018 have not delivered the preparation execution boundary and reconciler;
 - ONB-008/009/010 remain blocked by durable import/preparation implementation;
 - Player Chess Profile insight-summary/evidence threshold integration remains to be accepted;
 - multi-provider duplicate and account-identity semantics remain unresolved before combined insights;
@@ -122,7 +152,20 @@ ONB-016 is complete and does not change this deterministic order.
 
 ## Validation
 
-ONB-016 documentation-only research:
+### ONB-003 documentation-only research
+
+- canonical queue, task, issue, branch, and PR state inspected for collision;
+- current Prisma job/import/game models inspected;
+- job contracts, routes, repositories, scheduling, claims, priority, active-game fencing, stale recovery, cancellation, retry, and retention inspected;
+- index/opening and analysis execution/idempotency inspected;
+- Angular technical job polling and account workflow candidate submission inspected;
+- ONB-001/002/016 decisions and ONB-007/008/009 boundaries reconciled;
+- large-account, multi-user admission, direct-user preemption, progressive import, first-analysis, multi-account expansion, failure, child cleanup, pause, cancel, retry, restart, and process-restart scenarios modelled;
+- ONB-017 / #253 and ONB-018 / #254 allocated;
+- no production code, schema, migration, provider call, worker, Angular, package, workflow, or deployment behavior changed;
+- local clone/build/tests were not possible because the runtime could not resolve `github.com`; pull-request CI is the available repository-level validation.
+
+### ONB-016 accepted research
 
 - current repository governance, lifecycle/import contracts, provider services, account UI, job system, Home, Player Chess Profile, tactical detections/scenario training, Builder, and Visual Transformation boundaries inspected;
 - current GitHub tasks, issues, branches, and pull requests inspected for collision;
@@ -136,4 +179,4 @@ ONB-016 documentation-only research:
 
 ## Next deterministic action
 
-Claim ONB-003 / #150 as the next ordered research task.
+Review and merge ONB-003 / #150. The next claimable research task is ONB-004 / #151.
