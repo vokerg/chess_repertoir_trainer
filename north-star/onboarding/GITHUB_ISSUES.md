@@ -101,14 +101,14 @@ ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker,
 
 ONB-003 allocated:
 
-- ONB-017 / #253 — preparation run/target/batch persistence, bounded database selection, and atomic child-job creation;
-- ONB-018 / #254 — progressive preparation reconciliation, import pipelining, first-analysis lane, and acknowledged controls.
+- ONB-017 / #253 — preparation run/target/batch persistence, bounded database selection, globally serialized admission, and atomic child-job creation;
+- ONB-018 / #254 — progressive preparation reconciliation, import pipelining, first-analysis lane, stage-specific account fairness, and acknowledged controls.
 
 ONB-003 also narrows ONB-008 to disposition/readiness projection and keeps ONB-009 as the authenticated command owner.
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without promoting blocked implementation work or taking ownership from ONB-003, ONB-007, VT-302, Player Chess Profile, tactical training, or Repertoire Builder.
 
-All allocated implementation issues remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation is planning allocation, not permission to claim or implement them early.
+ONB-017 is `READY` after ONB-003 acceptance, but its claimant must inspect ONB-011 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and the remaining implementation issues stay `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation alone is not permission to claim blocked work.
 
 ## Completion
 
