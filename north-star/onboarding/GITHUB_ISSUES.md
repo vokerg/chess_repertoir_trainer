@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-07-30
+Last updated: 2026-08-01
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -29,6 +29,8 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) |
 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) |
 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) |
+| ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) |
+| ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -96,6 +98,13 @@ Comment only on meaningful changes:
 ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular implementation tasks.
 
 ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks.
+
+ONB-003 allocated:
+
+- ONB-017 / #253 — preparation run/target/batch persistence, bounded database selection, and atomic child-job creation;
+- ONB-018 / #254 — progressive preparation reconciliation, import pipelining, first-analysis lane, and acknowledged controls.
+
+ONB-003 also narrows ONB-008 to disposition/readiness projection and keeps ONB-009 as the authenticated command owner.
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without promoting blocked implementation work or taking ownership from ONB-003, ONB-007, VT-302, Player Chess Profile, tactical training, or Repertoire Builder.
 
