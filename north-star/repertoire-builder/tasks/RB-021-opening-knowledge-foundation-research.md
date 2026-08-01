@@ -14,6 +14,8 @@ GitHub issue: #240
 
 Review PR: #244
 
+Merge commit: `8e4e0ad20700d0d2379ced685e89176b3c5cbdaf`
+
 Claimed by: ChatGPT agent session
 
 Claim branch: `rb-021/issue-240-opening-knowledge-research`
@@ -92,7 +94,9 @@ The research model was tested against:
 
 ## Validation
 
-GitHub Actions CI run #1736 passed on review head `710b18b110034a0b322b91e919425328a0fff553`, including lint, build, both opening-classification audits, architecture guardrails, migrations and the full test suite.
+GitHub Actions CI run #1757 passed on final PR head `b34e517dd36ed6a4e655f685c2de8aa1f2e15ada`, including lint, build, both opening-classification audits, architecture guardrails, migrations and the full test suite.
+
+The final PR included one test-only stabilization: the previously fixed `2026-08-01` invalid-date fixture was changed to `9999-12-31` after its assumption expired on the current date. No production code changed.
 
 ## Completion evidence
 
@@ -100,6 +104,7 @@ GitHub Actions CI run #1736 passed on review head `710b18b110034a0b322b91e919425
 - Source appendix: `reports/RB-021-2026-07-31-opening-knowledge-sources.md`
 - Closure report: `reports/RB-021-2026-08-01-closure.md`
 - Pull request: #244
+- Merge commit: `8e4e0ad20700d0d2379ced685e89176b3c5cbdaf`
 
 ## Queue impact
 
