@@ -1,6 +1,6 @@
 # ONB-017 — Persist preparation execution boundary and bounded child-job batches
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 77
 
 Delivery class: Implementation
 
-Planning maturity: Allocated by ONB-003; blocked on ONB-003 acceptance
+Planning maturity: Decisioned by ONB-003; ready with explicit ONB-011 schema coordination
 
 GitHub issue: [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253)
 
@@ -30,8 +30,8 @@ ONB-008 owns user disposition and the public readiness projection, while ONB-009
 
 ## Dependencies
 
-- ONB-003 / #150 accepted orchestration contract and self-review addendum.
-- Coordinate the current/latest import-run link with ONB-011 / #199.
+- ONB-003 / #150 complete, including the self-review addendum.
+- Coordinate the current/latest import-run link and Prisma/schema edits with ONB-011 / #199 before implementation begins.
 - Consumed by ONB-018 / #254 and ONB-008 / #193.
 - ONB-007 / #154 may tune numeric defaults without changing the model.
 
