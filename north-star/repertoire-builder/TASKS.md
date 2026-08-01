@@ -26,7 +26,7 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 152 | RB-019 | #218 | P3 | DONE | Builder candidate explanation prototype | PR #223; `ee389cb`; CI #1634 |
 | 154 | RB-020 | #219 | P3 | DONE | Post-apply Builder summary prototype | PR #228; `d795572`; CI #1652 |
 | 160 | RB-016 | #104 | P2 | BLOCKED | Adoption and real-game outcomes | Requires sufficient real Builder/course use |
-| 165 | RB-021 | #240 | P1 | DONE | Side-aware opening knowledge foundation research | PR #244; `reports/RB-021-2026-08-01-closure.md`; CI #1736 |
+| 165 | RB-021 | #240 | P1 | DONE | Side-aware opening knowledge foundation research | PR #244; `8e4e0ad`; CI #1757 |
 | 170 | RB-022 | #241 | P1 | READY | Static side-aware opening knowledge implementation | RB-021 architecture accepted |
 | 175 | RB-023 | #242 | P2 | BLOCKED | Opening knowledge in Repertoire Builder | Requires RB-022 reviewed knowledge service |
 | 180 | RB-024 | #243 | P3 | BLOCKED | AI game review grounding with opening plans | Requires RB-022 reviewed knowledge service |
