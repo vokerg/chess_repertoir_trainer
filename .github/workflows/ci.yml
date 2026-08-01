@@ -59,6 +59,15 @@ jobs:
           name: opening-classification-audit
           path: opening-classification-audit.json
 
+      - name: Opening knowledge audit
+        run: npm run opening-book:knowledge-audit --workspace=apps/api > opening-knowledge-audit.json
+
+      - name: Upload opening knowledge audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: opening-knowledge-audit
+          path: opening-knowledge-audit.json
+
       - name: Architecture guardrails
         run: npm run check:architecture
 
@@ -73,6 +82,15 @@ jobs:
         with:
           name: imported-game-opening-classification-audit
           path: imported-game-opening-classification-audit.json
+
+      - name: Imported-game opening knowledge audit
+        run: npm run opening-book:knowledge-game-audit --workspace=apps/api > imported-game-opening-knowledge-audit.json
+
+      - name: Upload imported-game opening knowledge audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: imported-game-opening-knowledge-audit
+          path: imported-game-opening-knowledge-audit.json
 
       - name: Test
         env:
