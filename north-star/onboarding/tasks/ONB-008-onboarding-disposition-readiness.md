@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001; blocked on ONB-002 and ONB-003 persistence boundaries
+Planning maturity: Decisioned by ONB-001/003/016; blocked on ONB-017/018 execution state and durable import delivery
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
@@ -22,35 +22,45 @@ Claim scope: none
 
 ## Outcome
 
-Persist the minimal user onboarding disposition and preparation/readiness projection approved by ONB-001 so API and clients consume one deterministic server-owned lifecycle contract.
+Persist the minimal user onboarding disposition and expose the bounded readiness projection approved by ONB-001/003/016 so API and clients consume one deterministic server-owned lifecycle contract.
 
 ## Why this task exists
 
 Authentication, accounts, imports, imported-game jobs, Home, and feature pages currently infer partial setup facts independently. A durable disposition and bounded read model are required before lifecycle commands or Angular onboarding can be correct across sessions and devices.
 
+ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler implementation. This task consumes that execution state rather than duplicating it.
+
 ## Dependencies
 
 - ONB-001 / #148 lifecycle and product contract.
-- ONB-002 / #149 import persistence/status decisions.
-- ONB-003 / #150 preparation aggregate and reconciliation decisions.
+- ONB-002 / #149 import persistence/status decisions and durable import implementation.
+- ONB-003 / #150 preparation orchestration contract.
+- ONB-017 / #253 preparation execution persistence.
+- ONB-018 / #254 progressive reconciliation and control state.
+- ONB-016 / #224 presentation/readiness/reveal requirements.
 - Coordinate destructive reset semantics with ONB-004 / #151.
 
 ## In scope
 
 - Shared onboarding/readiness HTTP contracts.
 - Minimal user-level disposition persistence.
-- Repeatable preparation-run persistence boundary approved by ONB-003.
-- At most one active preparation run per user.
 - Legacy-user adoption migration.
 - Authenticated onboarding status/read endpoint.
-- Server-derived stage, milestone, exact-count, warning, and feature-readiness projection.
+- Server-derived presentation state from disposition plus `DataPreparationRun` lifecycle/milestones.
+- Exact import/index/analysis counts from bounded database aggregates.
+- Fixed-denominator percentages only after exact target import is terminal.
+- Account-specific target progress and bounded aggregate progress.
+- Attention/warning codes and deterministic server-allowed actions/destinations.
+- Feature-specific locked, partial, ready, and checked-empty readiness.
+- Latest real milestone and bounded canonical reveal summaries/references.
 - Ownership, migration, repository/service, route, and focused integration tests.
 
 ## Out of scope
 
+- `DataPreparationRun`, target, or batch schema owned by ONB-017.
 - Provider import worker implementation.
-- Indexing/analysis wave execution.
-- Start, pause, resume, cancel, retry, or expansion commands.
+- Indexing/analysis wave execution and reconciliation owned by ONB-018.
+- Start, pause, resume, cancel, retry, restart, or expansion command routes owned by ONB-009.
 - Angular onboarding UI.
 - Final visual/accessibility polish.
 - Automated repertoire or course generation.
@@ -60,18 +70,23 @@ Authentication, accounts, imports, imported-game jobs, Home, and feature pages c
 - Every returned lifecycle/readiness state has one deterministic server-derived meaning.
 - Existing users are not forced through first-run onboarding after rollout.
 - State survives session, browser, device, API restart, and child-job history cleanup.
-- At most one non-terminal preparation run exists per user under concurrency.
 - Queries are ownership-scoped and use bounded database aggregates.
+- Product readiness is derived from current import/game evidence, not historical child task totals.
 - Percentages appear only with fixed denominators; no ETA is emitted.
+- Parent `coreReadyAt` may complete user disposition while analysis continues.
+- No-data, all-index-failed, partial, paused, cancelled, and needs-attention states expose deterministic actions.
 - Migration and API behavior have focused tests.
 
 ## Required validation
 
-- Prisma migration and generated-client validation.
+- Prisma migration and generated-client validation for user disposition/adoption only.
 - Focused API contract/service/repository tests.
 - Legacy/new-user migration scenarios.
-- Concurrent active-run invariant test.
 - Readiness threshold and ownership-isolation tests.
+- Moving-to-fixed denominator transition tests.
+- Child dismissal/retention cleanup projection tests.
+- Multi-account target aggregation tests.
+- Bounded reveal payload tests.
 
 ## Completion
 
