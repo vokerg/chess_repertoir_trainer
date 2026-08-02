@@ -1,6 +1,6 @@
 # RB-023 — Surface opening knowledge in Repertoire Builder
 
-Status: IN_PROGRESS
+Status: COMPLETE
 
 Priority: P2
 
@@ -8,7 +8,7 @@ Order: 175
 
 Delivery class: Consumer integration
 
-Planning maturity: Implementation review package; CI and review pending
+Planning maturity: Implemented and validated through PR #262
 
 GitHub issue: #242
 
@@ -31,7 +31,7 @@ When a candidate enters or identifies an opening, the focused evidence experienc
 
 ## Implemented insertion point
 
-`CandidateDecisionService` already resolves and classifies the opening reached by each candidate and exposes `CandidateOpeningEvidence`. The implementation projects opening knowledge through that same authoritative server-side path rather than fetching it independently from Angular.
+`CandidateDecisionService` resolves and classifies the opening reached by each candidate and exposes `CandidateOpeningEvidence`. Opening knowledge is projected through that same authoritative server-side path rather than fetched independently from Angular.
 
 ## Implemented behavior
 
@@ -67,8 +67,12 @@ Opening knowledge is explanatory evidence only. It does not change:
 - compact focused UI: implemented in the existing evidence grid;
 - White/Black, partial/unavailable, bounded plans and unchanged ranking/session state: covered by focused tests;
 - AI-specific state or generation: not introduced;
-- complete repository CI: pending exact-head pull-request validation;
-- authenticated live-browser validation: pending review environment availability.
+- exact-head repository CI: mandatory merge gate and recorded on PR #262;
+- authenticated live-browser validation: unavailable in the execution environment; Angular store/view-model behavior and complete web build/test coverage passed instead.
+
+## Self-review corrections
+
+The final review tightened knowledge payload invariants, made evidence-version snapshots independent of candidate ordering, and added explicit visual treatment for `PARTIAL` knowledge.
 
 ## Explicit exclusions preserved
 
