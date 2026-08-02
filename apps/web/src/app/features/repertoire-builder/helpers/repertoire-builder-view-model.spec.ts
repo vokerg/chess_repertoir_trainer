@@ -24,9 +24,29 @@ describe('repertoire builder opening knowledge view model', () => {
     expect(items.find((item) => item.id === 'opening-plan-french-black-break')?.detail).toContain('Caveat: Exchange structures need a different plan.');
   });
 
-  it('snapshots the knowledge version separately from classification', () => {
-    const reference = buildRepertoireBuilderEvidenceReference(response);
+  it('snapshots available evidence versions even when the first candidate lacks them', () => {
+    const unavailableFirst = {
+      ...candidate,
+      moveUci: 'd7d6',
+      evidence: {
+        ...candidate.evidence,
+        masters: { ...candidate.evidence.masters, datasetVersion: null },
+        population: { ...candidate.evidence.population, datasetVersion: null },
+        opening: {
+          ...candidate.evidence.opening,
+          classificationVersion: null,
+          knowledge: { ...candidate.evidence.opening.knowledge, version: null },
+        },
+        playerProfile: { ...candidate.evidence.playerProfile, generatedAt: null },
+      },
+    } as CandidateDecisionCandidate;
+    const reference = buildRepertoireBuilderEvidenceReference({
+      ...response,
+      candidates: [unavailableFirst, candidate],
+    });
 
+    expect(reference.sourceVersions['mastersDataset']).toBe('test-v1');
+    expect(reference.sourceVersions['populationDataset']).toBe('test-v1');
     expect(reference.sourceVersions['openingClassification']).toBe('2026-07-rules-v2');
     expect(reference.sourceVersions['openingKnowledge']).toBe('2026-08-knowledge-v1');
     expect(reference.candidateContractVersion).toBe('2026-08-v2');
