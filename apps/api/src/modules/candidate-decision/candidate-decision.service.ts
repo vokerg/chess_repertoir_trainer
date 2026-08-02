@@ -19,6 +19,7 @@ import {
   type CandidateEvidenceStatus,
   type CandidateFit,
   type CandidateOpeningEvidence,
+  type CandidateOpeningKnowledgeEvidence,
   type CandidatePersonalEvidence,
   type CandidatePlayerProfileEvidence,
   type CandidateProfileMatch,
@@ -51,6 +52,7 @@ import { PlayerChessProfileService } from '../player-chess-profile/player-chess-
 import { OpeningLookupService } from '../../services/opening-book/openingLookupService';
 import type { OpeningBookEntry } from '../../services/opening-book/openingBook.types';
 import { OpeningClassificationService } from '../../services/opening-book/openingClassificationService';
+import { OpeningKnowledgeService } from '../../services/opening-book/openingKnowledgeService';
 
 const ENGINE_LINE_LIMIT = 3;
 const POPULATION_SEED_LIMIT = 8;
@@ -60,6 +62,9 @@ const COURSE_SEED_LIMIT = 8;
 const PREVIEW_MOVE_LIMIT = 8;
 const COURSE_REFERENCE_LIMIT = 3;
 const PROFILE_MATCH_LIMIT = 5;
+const OPENING_KNOWLEDGE_PLAN_LIMIT = 3;
+const OPENING_KNOWLEDGE_REFERENCE_LIMIT = 12;
+const OPENING_KNOWLEDGE_CONDITION_LIMIT = 4;
 const MIN_ENGINE_DEPTH = 12;
 const MIN_MASTERS_GAMES = 10;
 const MIN_PERSONAL_GAMES = 3;
@@ -105,7 +110,7 @@ interface CandidateDecisionDependencies {
   playerProfile?: {
     get(userId: number, target: RepertoireTarget): Promise<PlayerChessProfileResponse>;
   };
-  classifyOpening?: typeof defaultClassifyOpening;
+  classifyOpening?: typeof resolveCandidateOpeningEvidence;
   clock?: () => Date;
 }
 
@@ -203,7 +208,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
   const personalProvider = dependencies.personal ?? defaultPersonalProvider;
   const coursesProvider = dependencies.courses ?? defaultCoursesProvider;
   const playerProfileProvider = dependencies.playerProfile ?? defaultPlayerProfileProvider;
-  const classifyOpening = dependencies.classifyOpening ?? defaultClassifyOpening;
+  const classifyOpening = dependencies.classifyOpening ?? resolveCandidateOpeningEvidence;
   const clock = dependencies.clock ?? (() => new Date());
 
   return {
@@ -605,7 +610,7 @@ function personalEvidence(
   };
 }
 
-function defaultClassifyOpening(
+export function resolveCandidateOpeningEvidence(
   resultingFen: string,
   hint: OpeningExplorerMove['opening'],
   side: UserColor,
@@ -623,6 +628,8 @@ function defaultClassifyOpening(
   const classification = OpeningClassificationService.classify(entry);
   if (!classification.matchedRuleIds.length) return unavailableOpeningEvidence(side);
   const selected = side === 'WHITE' ? classification.white : classification.black;
+  const knowledge = OpeningKnowledgeService.resolve(entry, classification);
+  const selectedKnowledge = side === 'WHITE' ? knowledge.white : knowledge.black;
   return {
     status: 'AVAILABLE',
     opening: { eco: entry.eco || null, name: entry.name },
@@ -635,6 +642,42 @@ function defaultClassifyOpening(
     roles: [...selected.roles],
     confidence: selected.confidence,
     matchedRuleIds: [...classification.matchedRuleIds],
+    knowledge: {
+      status: knowledge.status,
+      version: knowledge.knowledgeVersion,
+      shortDescription: knowledge.shortDescription ? {
+        text: knowledge.shortDescription.text,
+        confidence: knowledge.shortDescription.confidence,
+      } : null,
+      strategicSummary: selectedKnowledge.strategicSummary ? {
+        text: selectedKnowledge.strategicSummary.text,
+        confidence: selectedKnowledge.strategicSummary.confidence,
+      } : null,
+      plans: selectedKnowledge.plans.slice(0, OPENING_KNOWLEDGE_PLAN_LIMIT).map((plan) => ({
+        id: plan.id,
+        title: plan.title,
+        summary: plan.summary,
+        conditions: [...(plan.conditions ?? [])].slice(0, OPENING_KNOWLEDGE_CONDITION_LIMIT),
+        caveats: [...(plan.caveats ?? [])].slice(0, OPENING_KNOWLEDGE_CONDITION_LIMIT),
+        confidence: plan.confidence,
+      })),
+      matchedRuleIds: [...knowledge.matchedKnowledgeRuleIds].slice(0, OPENING_KNOWLEDGE_REFERENCE_LIMIT),
+      sourceIds: knowledge.sources
+        .map((source) => source.id)
+        .slice(0, OPENING_KNOWLEDGE_REFERENCE_LIMIT),
+    },
+  };
+}
+
+function unavailableOpeningKnowledge(): CandidateOpeningKnowledgeEvidence {
+  return {
+    status: 'UNAVAILABLE',
+    version: null,
+    shortDescription: null,
+    strategicSummary: null,
+    plans: [],
+    matchedRuleIds: [],
+    sourceIds: [],
   };
 }
 
@@ -651,6 +694,7 @@ function unavailableOpeningEvidence(side: UserColor): CandidateOpeningEvidence {
     roles: [],
     confidence: null,
     matchedRuleIds: [],
+    knowledge: unavailableOpeningKnowledge(),
   };
 }
 
