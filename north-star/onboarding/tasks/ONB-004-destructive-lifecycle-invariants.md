@@ -1,6 +1,6 @@
 # ONB-004 — Define safe purge, un-index, un-analyse, and user deletion invariants
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 40
 
 Delivery class: Research
 
-Planning maturity: Outlined
+Planning maturity: Active repository and lifecycle research
 
 GitHub issue: [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT/Codex research session for `vokerg`
 
-Claim branch: none
+Claim branch: `onb-004/issue-151-destructive-lifecycle-invariants`
 
-Claimed at: none
+Claimed at: 2026-08-02
 
-Claim scope: none
+Claim scope: re-inspect current Prisma relations, destructive account/user paths, imported-game derived writes, durable jobs/import/preparation control, mobile synchronization, and ownership/cascade tests; produce the exact lifecycle matrix and active-worker protocol; reconcile decisions/open questions/queue and allocate bounded implementation tasks; no production destructive endpoint, UI, or data deletion
 
 ## Outcome
 
@@ -41,7 +41,7 @@ Full account cascade is partly available, but partial reset spans raw games, pli
 
 - ONB-000.
 - Coordinate action shape with ONB-005 and cleanup boundary with ONB-006.
-- Provide constraints to ONB-002/003.
+- Consume ONB-002 active-import and ONB-003 acknowledged preparation-cancellation boundaries.
 
 ## In scope
 
@@ -88,5 +88,7 @@ See `OPEN_QUESTIONS.md` under ONB-004.
 ## Completion
 
 Report: none
+
+Pull request: none
 
 Completed at: none
