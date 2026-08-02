@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 ## Program state
 
@@ -10,178 +10,161 @@ Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues
 
 Foundation: ONB-000 squash-merged through [PR #156](https://github.com/vokerg/chess_repertoir_trainer/pull/156)
 
-Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197) as `e0a56d7399c20f375ff9c3a7095002120d7d1cd5`
+Lifecycle contract: ONB-001 squash-merged through [PR #197](https://github.com/vokerg/chess_repertoir_trainer/pull/197)
 
-Bounded import/backfill contract: ONB-002 completed through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
+Bounded import/backfill contract: ONB-002 squash-merged through [PR #204](https://github.com/vokerg/chess_repertoir_trainer/pull/204)
 
-Preparation orchestration: ONB-003 completed through squash-merged [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`.
+Preparation orchestration: ONB-003 squash-merged through [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`
 
-Lightweight experience blueprint: ONB-016 completed through squash-merged [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225) as `b485b9b2992e1152c1810c91d40cc5150d39284d`
+Destructive lifecycle: ONB-004 research complete on `onb-004/issue-151-destructive-lifecycle-invariants`; review/merge pending.
 
-Next claimable ordered task: ONB-004 / [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
+Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Latest report: `reports/ONB-003-2026-08-01-self-review-addendum.md`
+Next claimable ordered task: ONB-007 / [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154)
+
+Latest report: `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`
 
 ## Completed contracts
 
 ### ONB-001
 
 - persisted user disposition and repeatable preparation runs;
-- fixed one-account three-calendar-month standard blitz/rapid recipe including rated and unrated games;
+- fixed one-account three-calendar-month standard blitz/rapid initial recipe;
 - import/index core-completion gate;
 - analysis continues progressively;
 - feature-specific readiness;
 - `/home` plus resumable `/onboarding`;
 - skip distinct from cancellation;
-- legacy users adopted as complete;
+- legacy-user adoption;
 - exact progress without ETA.
 
 ### ONB-002
 
-- extend existing `ImportRun` rather than create a generic request/workflow platform;
-- add exact account-and-canonical-scope `AccountImportCoverage`;
-- use half-open UTC ranges and distinct `BOUNDED_INITIAL`, `INCREMENTAL_FORWARD`, and `HISTORICAL_BACKFILL` modes;
-- enforce one non-terminal import per account;
-- execute provider import through a separate PostgreSQL claim/heartbeat/fencing loop in the existing worker deployment;
-- use deterministic replayable provider windows;
-- advance coverage only after a complete or empty window;
-- fail/replay any window containing parse, normalization, or persistence gaps;
-- use Lichess bounded `since`/`until` streaming and Chess.com serial monthly archives;
-- replace per-game existence N+1 with bounded duplicate-safe bulk persistence;
-- hand preparation a database query boundary rather than ID arrays;
-- conservatively migrate legacy cursors and replace raw cursor reset with explicit backfill;
-- assign one owner for account rating-stat refresh.
+- extended durable `ImportRun` plus exact account/scope coverage;
+- half-open UTC ranges and distinct initial/forward/backfill modes;
+- one non-terminal import per account;
+- replayable provider windows and conservative coverage advancement;
+- bounded duplicate-safe persistence;
+- database-based preparation handoff;
+- explicit backfill rather than raw cursor reset.
 
 ### ONB-003
 
-- `DataPreparationRun` plus ordered account targets and retained `DataPreparationBatch` child-job links;
-- one non-terminal preparation run per user;
-- separate immutable `INDEX_GAMES` and `ANALYSE_GAMES` child runs;
-- PostgreSQL candidate selection under a locked parent with no browser/import ID arrays;
-- at most one active index batch and one active analysis batch per run;
-- globally serialized admission with configurable non-terminal-batch and queued-task caps;
-- indexing after committed import rows while core readiness waits for terminal exact coverage;
-- first-index, first-analysis, index-continuation, and analysis-tail lanes;
-- direct-user priorities above all preparation work;
-- deterministic newest-first selection and stage-specific account-round-robin expansion;
-- quiescent pause, acknowledged cancellation, explicit failed-evidence retry, linked recovery restart, and immutable expansion;
-- exact readiness from current import/game evidence rather than child task history;
-- parent correctness after child dismissal or retention cleanup;
-- technical Angular job-store separation from the onboarding/readiness projection;
-- self-review corrections recorded in `reports/ONB-003-2026-08-01-self-review-addendum.md`.
+- durable preparation run/target/batch boundary;
+- separate bounded index and analysis child jobs;
+- server-side candidate selection and atomic child creation;
+- per-run and global admission bounds;
+- committed-import pipelining;
+- first-analysis lane and stage-specific multi-account fairness;
+- direct-user preemption;
+- acknowledged controls and evidence-based readiness.
 
-Production defaults remain blocked on ONB-007 measurements.
+### ONB-004 review contract
+
+- five distinct actions: un-analyse, un-index, purge account data, delete external account, and delete app user;
+- un-index always includes un-analysis;
+- every action is a durable previewed, idempotent, audited operation;
+- persisted user/account/game write fences block new work;
+- destructive execution waits for preparation/import cancellation acknowledgement and zero target `JobTask.workKey` claims;
+- large actions use forward-only bounded checkpoints, not one account/user transaction;
+- shared `Position`, `PositionAnalysis`, and caches survive; ONB-006 owns cleanup;
+- un-analysis removes per-game runs/snapshots, AI review, ply classifications, all tactical versions/processed markers, and recomputes tags;
+- tactical feedback and scenario snapshots survive un-analysis/un-index, while account purge removes copied scenario data;
+- opening provenance distinguishes provider, local-book, and legacy/unknown values;
+- account purge retains the account and independent OAuth connection;
+- account delete retains independent OAuth unless separately disconnected;
+- whole-user deletion explicitly removes OAuth state/tokens, blocks silent auth recreation through an HMAC tombstone, and requires a mobile local-purge receipt/handshake;
+- operation/audit history survives target deletion without raw personal payloads;
+- implementation allocation: ONB-019/#259, ONB-020/#260, ONB-021/#261.
+
+Review acceptance is pending.
 
 ### ONB-016
 
-- canonical `EXPERIENCE_BLUEPRINT.md` for the lightweight onboarding journey;
-- one dominant action per focused route surface;
-- progressive disclosure rather than a first-run account-management dashboard;
-- one selected account for first value, with additional accounts as expansion;
-- real persisted milestones rather than fabricated or elapsed-time progress;
-- import-only, indexed, and analysed evidence levels;
-- at most three evidence-labelled cards in one reveal;
-- Player Chess Profile and tactical-training reuse rather than duplicate frontend calculations;
-- optional own-game tactical scenario and evidence-anchored Builder continuation;
-- ChatGPT Sites/Codex/Figma used only as private synthetic-data prototype/design handoff;
-- ChessAtlas accepted as the closest documented real-game-to-exact-repertoire-deviation-to-retraining competitor;
-- refined ONB-010 functional Angular scope and validation matrix;
-- no runtime implementation, schema, worker, provider, or deployment changes;
-- final CI run `30576472581` / #1644 passed on head `7e9b00d41e91bc49031386681b1d34772469d230`.
+- focused route-based progressive disclosure;
+- one-account first value then optional expansion;
+- persisted milestones and evidence-labelled bounded reveals;
+- optional tactical and Builder continuations;
+- functional Angular ownership with VT coordination.
 
-## Ready implementation work
+## Ready work
 
-- ONB-017 / #253 — preparation execution persistence, globally serialized admission, and bounded child-job creation — `READY`.
-- Before claiming ONB-017, inspect ONB-011 activity and coordinate all Prisma/schema/migration edits.
+### Research
+
+1. ONB-007 / #154 — throughput and truthful progress.
+2. ONB-005 / #152 — administrator authorization, diagnostics, and action model; consumes ONB-004.
+3. ONB-006 / #153 — orphan shared-position cleanup; consumes ONB-004 retention boundary.
+
+### Implementation
+
+- ONB-017 / #253 — preparation execution persistence — `READY`.
+- Before claiming ONB-017, inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits.
 
 ## Allocated implementation backlog
 
-- ONB-018 / #254 — progressive preparation reconciliation, stage-specific account fairness, and control — `PROPOSED`.
-- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-017/018 and ONB-016 presentation/readiness/reveal requirements.
-- ONB-009 / #194 — lifecycle commands — `PROPOSED`; exposes thin authenticated commands over ONB-017/018.
-- ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-016 experience blueprint.
-- ONB-011 / #199 — import persistence/coverage — `PROPOSED`.
-- ONB-012 / #200 — import worker/API lifecycle — `PROPOSED`.
-- ONB-013 / #201 — bounded Lichess adapter — `PROPOSED`.
-- ONB-014 / #202 — bounded Chess.com adapter — `PROPOSED`.
-- ONB-015 / #203 — account-sync cutover/preparation handoff — `PROPOSED`.
+- ONB-018 / #254 — preparation reconciliation/control — `PROPOSED`.
+- ONB-008 / #193 — disposition/readiness projection — `PROPOSED`.
+- ONB-009 / #194 — onboarding lifecycle commands — `PROPOSED`; destructive commands remain ONB-019/020/021-owned.
+- ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`.
+- ONB-011 / #199 — import persistence/coverage — `PROPOSED`; coordinates with ONB-017/019.
+- ONB-012 / #200 — durable import worker/API — `PROPOSED`; must expose fence/drain semantics.
+- ONB-013 / #201 — Lichess adapter — `PROPOSED`.
+- ONB-014 / #202 — Chess.com adapter — `PROPOSED`.
+- ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
+- ONB-019 / #259 — destructive lifecycle operation/fence/audit/provenance foundation — `PROPOSED`.
+- ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`.
+- ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`.
 
 These tasks must not be claimed until their task-file dependencies are resolved and accepted.
 
-## Ready research queue
-
-1. ONB-004 / #151 — destructive lifecycle invariants.
-2. ONB-007 / #154 — throughput/progress.
-3. ONB-005 / #152 — administrator architecture.
-4. ONB-006 / #153 — orphan cleanup.
-
-ONB-003 and ONB-016 are complete.
-
 ## Critical findings
 
-- current provider sync is synchronous and unbounded on first run;
-- current `syncCursorTime` is latest-observed-game time, not exact provider coverage;
-- both provider services can continue past per-game failures and advance the cursor, creating silent gaps;
-- current provider persistence is per-game N+1 and returns unbounded ID arrays;
-- account rating stats are currently recomputed twice per sync path;
-- imported-game `JobTask` cannot represent account-level provider fetches;
-- current account workflow candidate selection loads ID arrays into Angular and cannot be the onboarding handoff;
-- the existing worker already provides run priority, 25-task slices, higher-priority preemption, same-game fencing, stale recovery, cancellation acknowledgement, and idempotent executors;
-- terminal child jobs may be dismissed and later deleted, so they cannot be the only preparation parent state;
-- `JobRun.source = ONBOARDING` already exists;
-- a separate bounded job per index/analysis wave fits the current worker better than one mutable/unbounded run;
-- first analysis can safely begin from current indexed evidence before import/index tails finish;
-- core readiness must still wait for terminal exact import coverage;
-- global admission limits require cross-parent serialization, not only per-parent locks;
-- multi-account fairness must be stage-specific so analysis history cannot distort index admission;
-- the current account page is a dense advanced management surface, not a suitable first-run flow;
-- Home already demonstrates useful action prioritization but must stop independently inferring onboarding lifecycle;
-- Player Chess Profile already supplies evidence-labelled conclusions and coverage concepts suitable for reuse;
-- missed-shot tactical detections can already create personal scenario-training sessions;
-- an exact course/repertoire deviation can become a strong later action, but repertoire creation must not block initial value.
+- current first provider sync remains synchronous and unbounded;
+- current cursor is not exact coverage;
+- provider persistence can currently advance past record failures;
+- current account workflow still moves candidate ID arrays through Angular;
+- the imported-game worker already supplies priority, fencing, cancellation, stale recovery, and idempotent executors;
+- current account deletion is one immediate unfenced cascade;
+- terminal job status is not drain proof because a cancelled running task deliberately retains `workKey` until executor acknowledgement;
+- current synchronous provider sync has no persisted claim that deletion can drain;
+- current `clearPlyRowsForGame` is not a complete un-index operation;
+- analysis evidence spans game runs, snapshots, ply fields, AI review, tags, tactical rows, and shared PositionAnalysis;
+- tags are a mixed projection and must be recomputed after reset;
+- scenario sessions copy personal game context and survive imported-game cascade through `SetNull`;
+- opening provenance is absent;
+- `OAuthLoginState` has no AppUser foreign key;
+- ordinary external-user upsert can recreate a deleted AppUser unless identity deletion is fenced/tombstoned;
+- mobile sign-out locks offline data rather than deleting it;
+- shared Position cleanup must remain separate from account/user purge.
 
 ## Blockers to production implementation
 
-- ONB-004 has not approved active-work acknowledgement for account/user deletion or destructive coverage reset;
-- ONB-007 has not measured import window/batch/worker timing, preparation wave sizes, first-analysis thresholds, admission limits, first-value budgets, provider speed comparison, or scaling thresholds;
-- ONB-011/012/013/014/015 have not delivered the durable provider import and preparation handoff;
-- ONB-017/018 have not delivered the preparation execution boundary and reconciler;
-- ONB-008/009/010 remain blocked by durable import/preparation implementation;
-- Player Chess Profile insight-summary/evidence threshold integration remains to be accepted;
-- multi-provider duplicate and account-identity semantics remain unresolved before combined insights;
-- exact Repertoire Builder evidence-anchor destination remains unresolved;
-- Visual Transformation coordination for final Angular onboarding remains unresolved;
-- ChatGPT Sites availability remains region/workspace dependent, so Figma/Codex or local fixture-prototype fallback is required.
+- ONB-004 requires review acceptance and merge;
+- ONB-005 has not finalized administrator identity/recent-auth/audit-retention policy;
+- ONB-007 has not measured operational sizing and batch thresholds;
+- ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
+- ONB-017/018 have not delivered preparation execution/control;
+- ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
+- onboarding projection/UI tasks remain blocked by durable foundations;
+- shared-position cleanup remains owned by ONB-006;
+- Visual Transformation coordination remains required for final UI.
 
 ## Validation
 
-### ONB-003 documentation-only research
+### ONB-004 documentation-only research
 
-- canonical queue, task, issue, branch, and PR state inspected for collision;
-- current Prisma job/import/game models inspected;
-- job contracts, routes, repositories, scheduling, claims, priority, active-game fencing, stale recovery, cancellation, retry, and retention inspected;
-- index/opening and analysis execution/idempotency inspected;
-- Angular technical job polling and account workflow candidate submission inspected;
-- ONB-001/002/016 decisions and ONB-007/008/009 boundaries reconciled;
-- large-account, multi-user admission, direct-user preemption, progressive import, first-analysis, multi-account expansion, failure, child cleanup, pause, cancel, retry, restart, and process-restart scenarios modelled;
-- self-review identified and corrected the cross-parent global-admission race and cross-stage fairness ambiguity;
-- ONB-017 / #253 and ONB-018 / #254 allocated and corrected;
-- no production code, schema, migration, provider call, worker, Angular, package, workflow, or deployment behavior changed;
-- final PR CI run `30714419045` passed lint, build, opening audits, architecture guardrails, database migrations, and the full test suite;
-- PR #256 was squash-merged to `main` as `d41f75c080cd19ad106b2143acecd3b0606adacb`.
-
-### ONB-016 accepted research
-
-- current repository governance, lifecycle/import contracts, provider services, account UI, job system, Home, Player Chess Profile, tactical detections/scenario training, Builder, and Visual Transformation boundaries inspected;
-- current GitHub tasks, issues, branches, and pull requests inspected for collision;
-- current official OpenAI Sites and Codex/Figma material reviewed;
-- direct and adjacent opening-repertoire competitor material, including ChessAtlas, reviewed;
-- all requested ideas classified and reconciled with locked decisions;
-- first-run, partial, failure, return, expansion, insight, puzzle, Builder, privacy, accessibility, and performance scenarios modelled;
-- blueprint, reports, decisions, open questions, task queue, issue mapping, ONB-010, and PR reconciled;
-- no production code, schema, migration, provider call, worker, Angular, package, workflow, or deployment behavior changed;
-- repository CI #1644 passed before squash merge.
+- queue, issue, branch, and PR collision state verified;
+- current Prisma relations and relevant migrations inspected;
+- account delete, sync cursor reset, OAuth connection, and user resolver inspected;
+- job claim/cancel/work-key/stale recovery behavior inspected;
+- index, analysis, tag, tactical, AI review, and scenario writes traced;
+- course/training ownership cascades inspected;
+- mobile local-user/offline/outbox cascade and sign-out behavior inspected;
+- running writer, partial reset, account purge/delete, whole-user deletion, auth recreation, mobile offline device, restart, and large-data scenarios modelled;
+- ONB-019/#259, ONB-020/#260, and ONB-021/#261 allocated;
+- no production code, schema, migration, route, worker, provider, Angular, mobile, dependency, workflow, or deployment behavior changed;
+- local clone/build/tests were unavailable because this runtime cannot resolve `github.com`; PR CI is the available repository-level validation.
 
 ## Next deterministic action
 
-Claim ONB-004 / #151. ONB-007 and ONB-017 remain available after collision review.
+Review and merge ONB-004 / #151. The next claimable research task is ONB-007 / #154.
