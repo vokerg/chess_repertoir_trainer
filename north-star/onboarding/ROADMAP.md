@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -40,25 +40,31 @@ Visual/accessibility integration with #133
 Production onboarding release
 ```
 
-ONB-017 may begin after ONB-003 acceptance while coordinating its `ImportRun` relation with ONB-011. Full ONB-018 delivery requires the durable import lifecycle and ONB-015 handoff.
+ONB-017 may begin after collision review with ONB-011 and ONB-019. Full ONB-018 delivery requires durable import and preparation handoff.
 
-ONB-016 is an accepted parallel product/experience contract, not a new runtime critical-path predecessor. ONB-010 consumes it when the existing backend dependencies are ready.
-
-Supporting lifecycle path:
+Supporting data-lifecycle path:
 
 ```text
-ONB-004 destructive invariants
+ONB-004 destructive invariants — REVIEW
         +
 ONB-005 admin authorization/read model
+        +
+ONB-019 operation/fence/audit/provenance foundation
+        ↓
+ONB-020 account/game destructive coordinator
+        ↓
+ONB-021 whole-user deletion/mobile purge
         +
 ONB-006 shared-position cleanup
         ↓
 Read-only admin
         ↓
-Audited purge/reset/delete actions
+Audited self-service/admin lifecycle actions
         ↓
-Bounded cleanup
+Bounded orphan cleanup
 ```
+
+ONB-006 remains separate from account/user lifecycle execution: all destructive actions retain shared Position/PositionAnalysis/cache rows, and cleanup later proves orphanhood without touching course MoveNode evidence.
 
 ## Phase 0 — Program foundation
 
@@ -79,15 +85,15 @@ Delivered:
 
 - ONB-001 / #148 — lifecycle/default recipe — `DONE` through PR #197.
 - ONB-002 / #149 — bounded import/backfill — `DONE` through PR #204.
-- ONB-003 / #150 — preparation orchestration — `DONE` through accepted PR #256.
-- ONB-004 / #151 — destructive lifecycle — `READY`.
+- ONB-003 / #150 — preparation orchestration — `DONE` through PR #256.
+- ONB-004 / #151 — destructive lifecycle — `REVIEW` on `onb-004/issue-151-destructive-lifecycle-invariants`.
 - ONB-007 / #154 — throughput/progress — `READY`.
 
 ### P1 supporting
 
-- ONB-005 / #152 — admin architecture — `READY`.
-- ONB-006 / #153 — orphan cleanup — `READY`.
-- ONB-016 / #224 — lightweight onboarding product and experience blueprint — `DONE` through squash-merged PR #225 as `b485b9b`.
+- ONB-005 / #152 — admin architecture — `READY`; consumes ONB-004.
+- ONB-006 / #153 — orphan cleanup — `READY`; consumes ONB-004 retained-data boundary.
+- ONB-016 / #224 — lightweight product/experience blueprint — `DONE` through PR #225.
 
 ### Contracts available to consumers
 
@@ -95,82 +101,76 @@ ONB-001:
 
 - user disposition plus repeatable preparation runs;
 - one selected-account first run;
-- fixed three-calendar-month standard blitz/rapid recipe including rated/unrated;
+- fixed recent standard blitz/rapid recipe;
 - import/index core-completion gate;
-- analysis continues progressively;
-- feature-specific readiness;
-- Home plus resumable `/onboarding`;
-- skip distinct from pause/cancel;
-- legacy users adopted complete;
+- progressive analysis and feature-specific readiness;
+- Home plus resumable onboarding;
 - exact progress without ETA.
 
 ONB-002:
 
-- extended `ImportRun` plus exact account/scope coverage;
-- half-open UTC ranges;
-- separate initial/forward/backfill modes;
+- durable account/scope import coverage;
+- half-open UTC ranges and distinct initial/forward/backfill modes;
 - one non-terminal import per account;
-- separate import worker loop in the existing worker deployment;
-- replayable provider windows and conservative coverage advancement;
-- Lichess bounded streaming and Chess.com serial monthly adapters;
-- bounded duplicate-safe writes;
-- database-based preparation handoff;
-- conservative legacy-cursor migration and explicit backfill.
+- replayable provider windows;
+- bounded duplicate-safe persistence;
+- database preparation handoff;
+- explicit backfill rather than raw cursor reset.
 
-ONB-003 accepted contract:
+ONB-003:
 
-- `DataPreparationRun` plus ordered account targets and retained child-job batches;
-- separate immutable index and analysis `JobRun` children;
-- bounded PostgreSQL candidate selection with no browser-supplied IDs;
-- one active index batch and one active analysis batch per run;
-- globally serialized onboarding admission with configurable batch/task caps;
-- indexing after committed import rows while core readiness waits for terminal exact coverage;
-- first-index, first-analysis, index-continuation, and analysis-tail lanes;
-- preparation priorities below all direct-user jobs;
-- newest-first selection and stage-specific account-round-robin expansion ordering;
-- quiescent pause, acknowledged cancellation, explicit retry, linked recovery restart, and immutable expansion;
-- current evidence rather than task history as readiness authority;
-- ONB-017/018 implementation allocation;
-- self-review corrections in `reports/ONB-003-2026-08-01-self-review-addendum.md`.
+- preparation run/target/batch persistence;
+- bounded index/analysis child jobs;
+- server-side candidate selection and atomic admission;
+- committed-import pipelining;
+- first-analysis and stage fairness;
+- acknowledged controls and evidence-based readiness.
 
-ONB-016 accepted contract:
+ONB-004 review contract:
 
-- route-based resumable lightweight experience;
-- one dominant action per focused surface;
-- progressive disclosure and no first-run tables/settings action clusters;
-- one-account first value, then optional multi-account expansion;
-- real persisted milestones and fixed-denominator percentages only;
-- import-only, indexed, and analysed evidence reveals;
-- no more than three evidence-labelled reveal cards;
-- canonical Player Chess Profile/opening/tactical calculations reused;
-- optional personal tactic and Builder handoff;
-- ChessAtlas exact-deviation loop recorded as a later evidence-anchored action reference;
-- synthetic-data Sites/Codex/Figma prototype workflow with Angular retained as production authority;
-- refined ONB-010 functional slices and state validation matrix.
+- five distinct destructive actions;
+- durable preview/idempotency/audit operations and persisted write fences;
+- acknowledged preparation/import/job drain including zero active task work keys;
+- forward-only bounded phases;
+- un-index implies un-analysis;
+- shared Position/PositionAnalysis/cache retention;
+- tag recomputation and exact AI/tactical/scenario rules;
+- opening provenance;
+- account purge/delete and independent OAuth boundary;
+- whole-user OAuth-state/token cleanup, identity tombstone, and mobile purge receipt;
+- ONB-019/020/021 allocation.
+
+ONB-016:
+
+- protected resumable focused onboarding;
+- one-account first value then expansion;
+- persisted milestones and bounded evidence reveals;
+- optional personal tactic/Builder continuation;
+- Angular as production authority with VT coordination.
 
 Phase exit:
 
-- lifecycle state machine approved;
-- import modes/coverage/cursor invariants approved;
-- lightweight functional experience accepted;
-- preparation parent/batch/first-analysis model approved;
-- performance budgets and operational sizing measured;
-- destructive model matrix approved;
+- lifecycle/default recipe approved;
+- import modes/coverage approved;
+- preparation orchestration approved;
+- destructive matrix and drain protocol approved;
+- performance budgets measured;
 - admin authorization/audit direction approved;
-- cleanup query/concurrency direction approved;
-- implementation tasks moved from `PROPOSED` only when dependencies are satisfied.
+- orphan cleanup query/concurrency direction approved;
+- implementation tasks promoted only when dependencies are satisfied.
 
 ## Phase 2 — Durable account-import foundation
 
 Implementation tasks:
 
-1. ONB-011 / [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) — persistence/contracts/coverage.
-2. ONB-012 / [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) — API and worker lifecycle.
+1. ONB-011 / #199 — persistence/contracts/coverage.
+2. ONB-012 / #200 — API and worker lifecycle.
 
 Blocked on:
 
-- ONB-004 for final destructive cutover;
-- ONB-007 for production operational defaults.
+- ONB-004 for destructive/fence interaction;
+- ONB-007 for operational defaults;
+- schema coordination with ONB-017/019.
 
 Expected deliveries:
 
@@ -179,162 +179,206 @@ Expected deliveries:
 - one-active-import constraint;
 - claim/heartbeat/fencing/stale recovery;
 - pause/cancel/retry/shutdown;
+- destructive resource-fence admission rejection;
 - `202 Accepted` command/status API;
 - conservative legacy migration;
-- current/latest import relation consumable by ONB-017 targets;
+- target/current-import relation for preparation;
 - migration, ownership, restart, and concurrency tests.
 
 Exit:
 
-- provider work can be durably accepted without an HTTP-held import;
-- exact coverage can include no-game periods;
-- stale workers cannot advance or settle runs;
-- forward and historical frontiers cannot corrupt each other.
+- provider work is durable and drainable;
+- exact coverage includes empty periods;
+- stale workers cannot advance runs;
+- destructive operations can prove no import claim remains.
 
 ## Phase 3 — Provider adapters
 
 Implementation tasks:
 
-- ONB-013 / [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) — Lichess.
-- ONB-014 / [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) — Chess.com.
-
-These tasks may run in parallel after ONB-011/012 establish shared boundaries.
+- ONB-013 / #201 — Lichess.
+- ONB-014 / #202 — Chess.com.
 
 Expected deliveries:
 
-- deterministic provider-window planning;
+- deterministic provider windows;
 - bounded streamed/batched persistence;
 - exact empty-window coverage;
 - duplicate-safe replay;
-- provider retry/cancel behavior;
+- retry/cancel/fence behavior;
 - no per-game existence N+1;
 - fixture coverage for failures, restart, duplicates, and boundaries.
 
-Exit:
-
-- fixed three-month imports never scan older history;
-- provider interruption cannot create silent coverage gaps;
-- imported rows become progressively visible;
-- provider differences remain adapter-local.
-
 ## Phase 4 — Sync cutover and preparation handoff
 
-Primary task: ONB-015 / [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203).
+Primary task: ONB-015 / #203.
 
 Blocked on:
 
 - ONB-013/014;
-- ONB-003 accepted preparation handoff contract;
-- ONB-004 reset/delete contract;
-- coordination with ONB-017/018/009/010.
+- ONB-004 account reset/delete contract;
+- coordination with ONB-017/018/009/010/020.
 
 Expected deliveries:
 
-- legacy sync URL backed by durable forward import;
+- legacy sync URL backed by durable import;
 - account UI background progress/recovery;
 - raw cursor-reset deprecation;
 - one rating-stat refresh owner;
-- persisted preparation target/current-import handoff;
+- preparation target/current-import handoff;
 - no imported/eligible ID arrays;
 - compatibility and browser tests.
 
 Exit:
 
-- account sync survives navigation/restart;
-- forward sync, historical backfill, and destructive reset are distinct;
-- preparation consumes import progress without browser coordination.
+- sync survives navigation/restart;
+- forward sync, backfill, purge, and account delete are distinct;
+- preparation consumes import progress without browser coordination;
+- ONB-020 can replace immediate unfenced account deletion.
 
 ## Phase 5 — Progressive preparation core
 
-Research owner: ONB-003 / #150 — complete.
-
 Implementation tasks:
 
-1. ONB-017 / [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) — persist preparation execution boundary and bounded child-job batches.
-2. ONB-018 / [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) — implement progressive preparation reconciliation and control.
+1. ONB-017 / #253 — persist preparation execution boundary and bounded child jobs.
+2. ONB-018 / #254 — implement progressive preparation reconciliation/control.
 
-### ONB-017 expected deliveries
+ONB-017 expected deliveries:
 
-- `DataPreparationRun`, ordered account target, and `DataPreparationBatch` schema/contracts;
-- one-active-run and one-active-stage-batch PostgreSQL constraints;
-- current import and nullable child-job links;
-- terminal batch snapshots surviving child retention;
-- database-side eligible selection by target/scope/range/evidence;
-- globally serialized admission using a singleton row lock or transaction-scoped advisory lock;
-- atomic capacity re-count plus batch, `JobRun`, and `JobTask` creation;
-- existing `ONBOARDING` source and lane-priority policy;
-- migration, ownership, same-parent/cross-parent concurrency, and bounded-query tests.
+- run/target/batch models and constraints;
+- import and child-job links;
+- retained terminal snapshots;
+- bounded database candidate selection;
+- globally serialized admission;
+- destructive fence admission checks coordinated with ONB-019;
+- migration/ownership/concurrency tests.
 
-### ONB-018 expected deliveries
+ONB-018 expected deliveries:
 
-- short PostgreSQL reconcile loop in the existing worker deployment;
-- progressive committed-import-to-index pipelining;
-- terminal exact import gate for core readiness;
-- first-index, first-analysis, index-continuation, and analysis-tail admission;
-- analysis restricted to successfully indexed evidence;
-- stage-specific account-round-robin expansion;
-- globally bounded onboarding admission through ONB-017;
-- quiescent pause, acknowledged cancel, explicit retry, restart-safe reconciliation;
-- large-account, preemption, fairness, failure, cleanup, and process-restart tests.
-
-Experience constraints consumed from ONB-016:
-
-- a meaningful indexed reveal can occur before full preparation;
-- analysed readiness can appear before the entire analysis tail settles;
-- progress remains exact at every stage;
-- multi-account expansion needs account-specific progress without changing the first-run one-account contract.
+- short reconciliation loop;
+- progressive import-to-index and first-analysis lanes;
+- exact core-ready gate;
+- stage-specific multi-account fairness;
+- acknowledged pause/cancel/retry;
+- destructive cancellation/drain integration;
+- restart and large-account tests.
 
 Exit:
 
-- no browser controls preparation continuation;
-- child queue backlog is bounded under concurrent parents;
-- direct-user jobs remain responsive;
-- parent state survives restart and child cleanup;
-- core readiness does not wait for full analysis.
+- browser does not coordinate continuation;
+- queue is bounded;
+- direct-user work remains responsive;
+- parent state survives restart/cleanup;
+- destructive operations can cancel and drain preparation.
 
 ## Phase 6 — Lifecycle projection and commands
 
 Implementation tasks:
 
 - ONB-008 / #193 — disposition/readiness projection.
-- ONB-009 / #194 — lifecycle commands.
+- ONB-009 / #194 — onboarding lifecycle commands.
 
 Expected deliveries:
 
-- authoritative user disposition and derived presentation state over ONB-017/018 execution state;
-- stage summaries, exact counters, feature readiness, latest milestone, and bounded reveal summaries/references;
-- deterministic server-allowed primary/secondary actions and destinations;
-- idempotent start, skip, pause, resume, cancel, retry, restart, no-data, and expansion commands;
-- existing-user adoption and ownership/concurrency tests.
-
-Exit:
-
-- Angular does not infer lifecycle from accounts/jobs;
-- every partial/failure state has deterministic actions;
-- the projection can drive both `/home` and `/onboarding` without unbounded payloads;
-- public routes remain thin over durable execution services.
+- authoritative disposition/readiness over durable preparation;
+- exact stage summaries and server-allowed actions;
+- idempotent onboarding start/skip/pause/resume/cancel/retry/restart/expansion;
+- no duplicate destructive commands: purge/un-index/un-analyse/delete remain ONB-019/020/021-owned.
 
 ## Phase 7 — Lightweight functional onboarding
 
 Primary task: ONB-010 / #195.
 
-Product contract: completed ONB-016 / #224 and `EXPERIENCE_BLUEPRINT.md`.
-
 Expected slices:
 
-1. calm functional skeleton: account, recipe, durable start, exact progress, leave/return, recovery, Home integration;
-2. first indexed reveal using canonical evidence;
-3. analysed reveal and optional own-game tactical scenario;
+1. account/recipe/durable start/progress/recovery;
+2. first indexed reveal;
+3. analysed reveal and optional tactic;
 4. additional-account expansion;
-5. optional evidence-anchored Repertoire Builder bridge;
-6. accepted fixture-driven prototype and VT-302 final craft.
+5. optional Builder bridge;
+6. accepted fixture-driven prototype and final VT craft.
+
+## Phase 8 — Destructive lifecycle foundation
+
+Primary task: ONB-019 / [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259).
+
+Blocked on:
+
+- ONB-004 acceptance;
+- Prisma/schema/migration collision review with ONB-011/017;
+- ONB-005 before admin mutation exposure.
+
+Expected deliveries:
+
+- typed operation/action/status/resource contracts;
+- durable preview/execution/idempotency/checkpoint persistence;
+- user/account/game resource fences and conflict constraints;
+- import/job/preparation/direct-writer admission checks;
+- append-only pseudonymous audit;
+- opening provenance;
+- deleted-auth-identity HMAC tombstone;
+- ownership, migration, auth, retention, and race tests.
 
 Exit:
 
-- one dominant action per focused surface;
-- no first-run table or settings-style action cluster;
-- user sees useful evidence before full analysis completion;
-- skipped/partial/failure/returning states remain understandable;
-- Home communicates background continuation without duplicating technical jobs;
-- responsive, keyboard, reduced-motion, zoom, and screen-reader behavior is validated;
-- final visual/accessibility acceptance is coordinated with #133.
+- destructive work has one durable execution/audit boundary;
+- overlapping scopes cannot execute;
+- normal writers cannot enter fenced resources;
+- deleted identities cannot be silently reprovisioned.
+
+## Phase 9 — Account and game lifecycle execution
+
+Primary task: ONB-020 / [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260).
+
+Blocked on:
+
+- ONB-019;
+- ONB-011/012/015 durable import/cutover;
+- ONB-017/018 preparation controls;
+- ONB-005 before admin exposure.
+
+Expected deliveries:
+
+- un-analysis and un-index execution;
+- account-data purge and account deletion;
+- preparation/import/job cancellation and drain proof;
+- deterministic bounded phases and resumable checkpoints;
+- tag recomputation, tactical/AI/scenario/opening rules;
+- authenticated preview/execute/status routes;
+- immediate account-delete/raw-cursor-reset cutover;
+- large-fixture, race, restart, and idempotency tests.
+
+Exit:
+
+- account/game actions cannot race active writers;
+- shared engine evidence remains reusable;
+- account purge leaves a clean reusable account;
+- deletion no longer relies on one populated-parent cascade.
+
+## Phase 10 — Whole-user deletion and device purge
+
+Primary task: ONB-021 / [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261).
+
+Blocked on:
+
+- ONB-019/020;
+- ONB-005;
+- mobile offline sync contracts.
+
+Expected deliveries:
+
+- whole-user fence/drain and bounded deletion phases;
+- OAuth-state and encrypted-token deletion;
+- best-effort upstream token revocation;
+- final AppUser deletion and auth tombstone;
+- initiating-client deletion receipt;
+- mobile `local_user` cascade purge including pending outbox;
+- next-contact purge for other offline devices;
+- auth/mobile/concurrency/large-user tests.
+
+Exit:
+
+- no user-owned server data survives outside the documented shared/audit set;
+- valid old auth cannot silently recreate the user;
+- stale offline attempts cannot upload after deletion;
+- shared Position cleanup remains separately auditable.
