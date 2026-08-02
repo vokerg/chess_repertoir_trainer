@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -31,6 +31,9 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) |
 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) |
 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) |
+| ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) |
+| ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) |
+| ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -77,7 +80,7 @@ When repository metadata and issue state disagree, stop and reconcile before sub
 Recommended branch:
 
 ```text
-onb-003/issue-150-progressive-preparation-orchestration
+onb-004/issue-151-destructive-lifecycle-invariants
 ```
 
 ## Work updates
@@ -104,11 +107,17 @@ ONB-003 allocated:
 - ONB-017 / #253 — preparation run/target/batch persistence, bounded database selection, globally serialized admission, and atomic child-job creation;
 - ONB-018 / #254 — progressive preparation reconciliation, import pipelining, first-analysis lane, stage-specific account fairness, and acknowledged controls.
 
-ONB-003 also narrows ONB-008 to disposition/readiness projection and keeps ONB-009 as the authenticated command owner.
+ONB-004 allocated:
 
-ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without promoting blocked implementation work or taking ownership from ONB-003, ONB-007, VT-302, Player Chess Profile, tactical training, or Repertoire Builder.
+- ONB-019 / #259 — durable destructive operation, preview/idempotency, resource fences, audit, opening provenance, and deleted-identity tombstone;
+- ONB-020 / #260 — bounded account/game un-analysis, un-index, purge, account-delete coordinator and legacy-route cutover;
+- ONB-021 / #261 — whole-user deletion, OAuth/auth recreation safety, and mobile local-purge handshake.
 
-ONB-017 is `READY` after ONB-003 acceptance, but its claimant must inspect ONB-011 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and the remaining implementation issues stay `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation alone is not permission to claim blocked work.
+ONB-004 also defines the administrator mutation boundary consumed by ONB-005, the retained shared-position boundary consumed by ONB-006, and the acknowledged import/preparation drain required from ONB-011/012/015/017/018.
+
+ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
+
+ONB-017 is `READY`, but its claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation alone is not permission to claim blocked work.
 
 ## Completion
 
