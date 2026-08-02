@@ -1,16 +1,16 @@
 # Repertoire Builder Program Status
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 ## Current state
 
-**Program state:** the deterministic Repertoire Builder capability chain and the static opening-knowledge foundation are complete. RB-023 is the next dependency-satisfied task. RB-016 remains independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
+**Program state:** the deterministic Repertoire Builder capability chain and static opening-knowledge foundation are complete. RB-023 is the active dependency-satisfied consumer task. RB-016 remains independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
 
 **Runtime on `main`:** peer population/level resolution, deterministic opening classification, Player Chess Profile calculation and `/progress/profile`, versioned repertoire targets, profile-derived editable defaults, deterministic candidate evidence/ranking, bounded session/queue semantics, the authenticated Builder workbench, mandatory course preview/apply, exact existing-course entry points, static side-aware opening knowledge, and the two optional disabled-by-default generated interpretation prototypes are integrated.
 
-**Opening knowledge foundation:** RB-022 adds a separate versioned `OpeningKnowledgeService`, strict source/rule validation, a 25-rule reviewed side-aware corpus, deterministic plan inheritance/override semantics, generated and game-weighted audits, regression tests and documentation. It adds no database, public API, UI, runtime AI/web lookup, ranking or course-write change.
+**RB-023 review package:** branch `rb-023/issue-242-builder-opening-knowledge` versions candidate evidence, projects the authoritative target-side knowledge through `CandidateDecisionService`, adds compact focused opening summaries/plans, snapshots the independent knowledge version and adds contract/API/Angular regressions. Ranking, eligibility, fit, coverage, Builder state and course writes remain unchanged.
 
-**Execution ownership:** RB-021 / #240 is complete through PR #244. RB-022 / #241 is complete through PR #255. RB-023 / #242 is open and ready to claim. RB-024 / #243 is unblocked but remains a lower-priority P3 stretch consumer. Program tracker: #105.
+**Execution ownership:** RB-021 / #240 is complete through PR #244. RB-022 / #241 is complete through PR #255. RB-023 / #242 is claimed by the current ChatGPT agent session and pending CI/review. RB-024 / #243 is dependency-satisfied but remains a lower-priority P3 stretch consumer. Program tracker: #105.
 
 ## Completed capability chain
 
@@ -24,7 +24,7 @@ Last updated: 2026-08-01
 
 ## Active and blocked work
 
-- **RB-023:** ready to project reviewed opening knowledge through authoritative candidate evidence and the existing Builder experience.
+- **RB-023:** active; implementation review package projects reviewed opening knowledge through existing candidate evidence and focused Builder UI.
 - **RB-024:** dependency-satisfied but remains a P3 stretch consumer for optional game-review grounding.
 - **RB-016:** independently blocked on real adoption and outcome evidence.
 
@@ -40,9 +40,9 @@ Last updated: 2026-08-01
 
 - Strategic opening prose can overgeneralize and requires source/revision governance.
 - Initial knowledge coverage is intentionally incomplete and must remain weighted by actual games separately from generated-name count.
-- Builder presentation must preserve explicit partial/unavailable states and avoid generic prose in every candidate row.
+- The RB-023 review package needs exact-head CI and authenticated visual validation before integration.
 - RB-016 outcome claims remain unavailable until real usage evidence exists.
 
 ## Queue recommendation
 
-Run RB-023 next as the deterministic Builder consumer. Keep RB-024 as an independent P3 stretch consumer and do not start RB-016 before its usage gate is genuinely satisfied.
+Complete review and integration of RB-023. Keep RB-024 as an independent P3 stretch consumer and do not start RB-016 before its usage gate is genuinely satisfied.
