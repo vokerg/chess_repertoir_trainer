@@ -61,6 +61,7 @@ export function buildRepertoireBuilderSourceItems(
   candidate: CandidateDecisionCandidate | null,
 ): readonly RepertoireBuilderSourceItem[] {
   if (!candidate) return [];
+  const knowledge = candidate.evidence.opening.knowledge;
   return [
     {
       id: 'engine',
@@ -95,6 +96,14 @@ export function buildRepertoireBuilderSourceItems(
       label: 'Opening profile',
       status: candidate.evidence.opening.status,
       detail: candidate.evidence.opening.opening?.name ?? null,
+    },
+    {
+      id: 'opening-knowledge',
+      label: 'Opening knowledge',
+      status: knowledge.status,
+      detail: knowledge.plans.length > 0
+        ? `${knowledge.plans.length} reviewed ${knowledge.plans.length === 1 ? 'plan' : 'plans'} for ${candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black'}`
+        : knowledge.shortDescription?.text ?? null,
     },
     {
       id: 'profile',
@@ -140,6 +149,9 @@ export function buildRepertoireBuilderEvidenceReference(
   }
   if (first?.evidence.opening.classificationVersion) {
     sourceVersions['openingClassification'] = first.evidence.opening.classificationVersion;
+  }
+  if (first?.evidence.opening.knowledge.version) {
+    sourceVersions['openingKnowledge'] = first.evidence.opening.knowledge.version;
   }
   if (first?.evidence.playerProfile.generatedAt) {
     sourceVersions['playerProfileGeneratedAt'] = first.evidence.playerProfile.generatedAt;
