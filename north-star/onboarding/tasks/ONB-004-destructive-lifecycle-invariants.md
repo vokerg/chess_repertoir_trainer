@@ -1,6 +1,6 @@
 # ONB-004 — Define safe purge, un-index, un-analyse, and user deletion invariants
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 40
 
 Delivery class: Research
 
-Planning maturity: Research complete; twice self-reviewed; final CI and merge pending
+Planning maturity: Completed through squash-merged PR #263
 
 GitHub issue: [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
 
@@ -94,7 +94,8 @@ The addenda are normative where they correct the parent report. Implementation-l
 - Relevant migration and ownership/cascade contracts inspected.
 - First self-review corrected synchronous commit fencing and account-purge terminal import-history semantics.
 - Second self-review corrected scenario source-preservation order, cancellation/failure fence retention, auth-resolution behavior, tombstone ordering, and post-delete receipt retrieval.
-- Local build/tests were unavailable because this runtime could not resolve `github.com`; pull-request CI remains the repository-level validation.
+- GitHub Actions CI run `30748024881` / #1804 passed lint, build, audits, architecture guardrails, migrations, and the full test suite on final head `16947156e40f292e4aa5e6597c814ad4c9f36bb8`.
+- Local build/tests were unavailable because this runtime could not resolve `github.com`.
 
 ## Completion updates
 
@@ -115,4 +116,6 @@ Implementation tasks: ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261
 
 Pull request: [#263](https://github.com/vokerg/chess_repertoir_trainer/pull/263)
 
-Completed at: review pending
+Squash commit: `32db655a100ef1a55264b4d3739e2b7c38e72ee4`
+
+Completed at: 2026-08-02

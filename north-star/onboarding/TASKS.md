@@ -10,7 +10,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 10 | ONB-001 | [#148](https://github.com/vokerg/chess_repertoir_trainer/issues/148) | P0 | DONE | Define onboarding lifecycle and default preparation recipe | Research | Squash-merged through PR #197 |
 | 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | DONE | Design bounded recent-first import and historical backfill | Research | Squash-merged through PR #204 |
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | DONE | Design progressive indexing and analysis orchestration | Research | Squash-merged through PR #256 as `d41f75c` |
-| 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | REVIEW | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | Report complete on `onb-004/issue-151-destructive-lifecycle-invariants`; review/merge pending |
+| 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | DONE | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | Squash-merged through PR #263 as `32db655` |
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | READY | Benchmark preparation throughput and define truthful progress semantics | Research | ONB-000/001; consumes ONB-002 sizing and ONB-003 policy handoffs |
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; consumes ONB-004 mutation/audit contract |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; consumes ONB-004 shared-retention boundary; coordinates ONB-005 |
@@ -25,7 +25,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-011/012; ONB-007 sizing |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-011/012; ONB-007 sizing |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/017/018; coordinates ONB-009/010/020 |
-| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 acceptance; coordinates schema with ONB-011/017 and audit policy with ONB-005 |
+| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit policy with ONB-005 |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/019; ONB-011/012/015/017/018; ONB-005 before admin exposure |
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/019/020; ONB-005; mobile offline sync contracts |
 
@@ -41,7 +41,7 @@ ONB-003 established progressive preparation orchestration through squash-merged 
 
 ONB-016 established the canonical lightweight experience blueprint through squash-merged PR #225 as `b485b9b2992e1152c1810c91d40cc5150d39284d`.
 
-ONB-004 completed its destructive lifecycle report on the review branch and allocated ONB-019/020/021. Acceptance and merge remain pending.
+ONB-004 established destructive lifecycle invariants through squash-merged PR #263 as `32db655a100ef1a55264b4d3739e2b7c38e72ee4` and allocated ONB-019/020/021.
 
 ## ONB-002 completed delivery
 
@@ -74,7 +74,7 @@ ONB-003 defines:
 - reports `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md` and `reports/ONB-003-2026-08-01-self-review-addendum.md`;
 - implementation tasks ONB-017/018.
 
-## ONB-004 review delivery
+## ONB-004 completed delivery
 
 ONB-004 defines:
 
@@ -82,13 +82,16 @@ ONB-004 defines:
 - un-index always includes un-analysis;
 - persisted destructive operations, preview/idempotency/audit, and user/account/game write fences;
 - acknowledged preparation/import/job drain, including zero active task work keys before destructive writes;
+- commit-side guards for synchronous writers and auth resolution;
+- pre-mutation-only terminal cancellation and durable fence retention after partial execution;
 - bounded forward-only phases rather than one large transaction;
 - shared Position/PositionAnalysis/cache retention and separate ONB-006 cleanup;
 - tag recomputation, AI-review removal, all-version tactical reset, feedback/scenario retention rules;
+- source-preserving deletion of copied scenario data before SetNull cascades;
 - provider/local/legacy opening provenance;
 - account purge/delete and OAuth-connection boundaries;
-- whole-user OAuth-state/token cleanup, identity tombstone, and mobile local-purge handshake;
-- report `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`;
+- whole-user OAuth-state/token cleanup, tombstone ordering, post-delete receipt lookup, and mobile local-purge handshake;
+- reports `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`, `reports/ONB-004-2026-08-02-self-review-addendum.md`, and `reports/ONB-004-2026-08-02-second-self-review-addendum.md`;
 - implementation tasks ONB-019/#259, ONB-020/#260, and ONB-021/#261.
 
 ## ONB-016 completed delivery
@@ -97,7 +100,7 @@ ONB-016 defines the route-based lightweight first-value experience, progressive 
 
 ## Deterministic next task
 
-ONB-004 / #151 is in review. The next claimable task by canonical order is ONB-007 / #154.
+The next claimable task by canonical order is ONB-007 / #154.
 
 Additional READY work after explicit collision review:
 

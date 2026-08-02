@@ -16,13 +16,13 @@ Bounded import/backfill contract: ONB-002 squash-merged through [PR #204](https:
 
 Preparation orchestration: ONB-003 squash-merged through [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`
 
-Destructive lifecycle: ONB-004 research complete and self-reviewed on `onb-004/issue-151-destructive-lifecycle-invariants`; review/merge pending.
+Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
 Next claimable ordered task: ONB-007 / [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154)
 
-Latest report: `reports/ONB-004-2026-08-02-self-review-addendum.md`
+Latest report: `reports/ONB-004-2026-08-02-second-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -59,7 +59,7 @@ Latest report: `reports/ONB-004-2026-08-02-self-review-addendum.md`
 - direct-user preemption;
 - acknowledged controls and evidence-based readiness.
 
-### ONB-004 review contract
+### ONB-004
 
 - five distinct actions: un-analyse, un-index, purge account data, delete external account, and delete app user;
 - un-index always includes un-analysis;
@@ -68,18 +68,19 @@ Latest report: `reports/ONB-004-2026-08-02-self-review-addendum.md`
 - cross-resource fence creation is serialized per user;
 - destructive execution waits for preparation/import cancellation acknowledgement and zero target `JobTask.workKey` claims;
 - synchronous AI/tag/tactical/scenario/provider writers use a short commit-side lifecycle guard so a request started before fence creation cannot persist afterward;
+- terminal cancellation is permitted only before the first destructive commit; later stop/failure retains the resource fence and resumable checkpoint;
 - large actions use forward-only bounded checkpoints, not one account/user transaction;
 - shared `Position`, `PositionAnalysis`, and caches survive; ONB-006 owns cleanup;
 - un-analysis removes per-game runs/snapshots, AI review, ply classifications, all tactical versions/processed markers, and recomputes tags;
-- tactical feedback and scenario snapshots survive un-analysis/un-index, while account purge removes copied scenario data;
+- tactical feedback and scenario snapshots survive un-analysis/un-index;
+- account purge removes copied scenario data before game/detection cascades can null source links and verifies no target-game personal snapshot remains;
 - opening provenance distinguishes provider, local-book, and legacy/unknown values;
 - account purge retains the account, terminal import-run history, and independent OAuth connection while clearing authoritative coverage/current pointers/frontiers;
 - account delete removes the account and account-owned import history after lifecycle audit snapshot;
-- whole-user deletion explicitly removes OAuth state/tokens, blocks silent auth recreation through an HMAC tombstone, and requires a mobile local-purge receipt/handshake;
+- whole-user deletion blocks ordinary auth-resolution writes, removes OAuth state/tokens, creates the HMAC tombstone before or with final AppUser deletion, and exposes post-delete receipt/status without ordinary AppUser upsert;
+- mobile local purge is explicit, and stale devices receive typed deleted state before upload/provisioning;
 - operation/audit history survives target deletion without raw personal payloads;
 - implementation allocation: ONB-019/#259, ONB-020/#260, ONB-021/#261.
-
-Review acceptance is pending.
 
 ### ONB-016
 
@@ -113,7 +114,7 @@ Review acceptance is pending.
 - ONB-013 / #201 — Lichess adapter — `PROPOSED`.
 - ONB-014 / #202 — Chess.com adapter — `PROPOSED`.
 - ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
-- ONB-019 / #259 — destructive lifecycle operation/fence/guard/audit/provenance foundation — `PROPOSED`.
+- ONB-019 / #259 — destructive lifecycle operation/fence/guard/failure-state/audit/provenance/receipt foundation — `PROPOSED`.
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`.
 - ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`.
 
@@ -133,17 +134,18 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - current `clearPlyRowsForGame` is not a complete un-index operation;
 - analysis evidence spans game runs, snapshots, ply fields, AI review, tags, tactical rows, and shared PositionAnalysis;
 - tags are a mixed projection and must be recomputed after reset;
-- scenario sessions copy personal game context and survive imported-game cascade through `SetNull`;
+- scenario sessions copy personal game context and survive imported-game cascade through `SetNull`, so purge must delete them before those source links are nulled;
 - opening provenance is absent;
 - `OAuthLoginState` has no AppUser foreign key;
-- ordinary external-user upsert can recreate a deleted AppUser unless identity deletion is fenced/tombstoned;
+- ordinary external-user upsert can recreate a deleted AppUser unless active deletion and tombstones are checked before provisioning;
 - mobile sign-out locks offline data rather than deleting it;
 - account purge can retain terminal import history while clearing current coverage/frontiers;
+- partial destructive failure must retain its durable resource fence;
+- post-delete status retrieval cannot depend on recreating the user;
 - shared Position cleanup must remain separate from account/user purge.
 
 ## Blockers to production implementation
 
-- ONB-004 requires review acceptance and merge;
 - ONB-005 has not finalized administrator identity/recent-auth/audit-retention policy;
 - ONB-007 has not measured operational sizing and batch thresholds;
 - ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
@@ -157,19 +159,22 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ### ONB-004 documentation-only research
 
-- queue, issue, branch, and PR collision state verified;
+- queue, issue, branch, PR, review-thread, and collision state verified;
 - current Prisma relations and relevant migrations inspected;
 - account delete, sync cursor reset, OAuth connection, and user resolver inspected;
 - job claim/cancel/work-key/stale recovery behavior inspected;
 - index, analysis, tag, tactical, AI review, and scenario writes traced;
 - course/training ownership cascades inspected;
 - mobile local-user/offline/outbox cascade and sign-out behavior inspected;
-- running durable and synchronous writer, partial reset, account purge/delete, whole-user deletion, auth recreation, mobile offline device, restart, and large-data scenarios modelled;
-- self-review corrected commit-side synchronous writer fencing and terminal import-history retention during account purge;
-- ONB-019/#259, ONB-020/#260, and ONB-021/#261 allocated and corrected;
+- running durable and synchronous writers, partial reset/failure, account purge/delete, whole-user deletion, auth recreation, post-delete polling, mobile offline devices, restart, and large-data scenarios modelled;
+- first self-review corrected commit-side synchronous writer fencing and terminal import-history retention during account purge;
+- second self-review corrected scenario source-preservation order, post-mutation cancellation/failure fence retention, active-fence auth behavior, tombstone ordering, and post-delete receipt lookup;
+- ONB-019/#259, ONB-020/#260, and ONB-021/#261 allocated and hardened;
+- final GitHub Actions CI run `30748024881` / #1804 passed lint, build, audits, architecture guardrails, migrations, and the full test suite on head `16947156e40f292e4aa5e6597c814ad4c9f36bb8`;
+- PR #263 squash-merged as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`;
 - no production code, schema, migration, route, worker, provider, Angular, mobile, dependency, workflow, or deployment behavior changed;
-- local clone/build/tests were unavailable because this runtime cannot resolve `github.com`; PR CI is the available repository-level validation.
+- local clone/build/tests were unavailable because this runtime cannot resolve `github.com`.
 
 ## Next deterministic action
 
-Review and merge ONB-004 / #151. The next claimable research task is ONB-007 / #154.
+Claim ONB-007 / #154. Additional READY work is ONB-005, ONB-006, and ONB-017 after required collision review.
