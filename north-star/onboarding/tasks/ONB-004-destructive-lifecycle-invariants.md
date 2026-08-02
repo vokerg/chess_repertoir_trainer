@@ -8,7 +8,7 @@ Order: 40
 
 Delivery class: Research
 
-Planning maturity: Research complete; review and merge pending
+Planning maturity: Research complete; self-reviewed; review and merge pending
 
 GitHub issue: [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
 
@@ -52,6 +52,7 @@ Full account cascade is partly available, but partial reset spans raw games, pli
 - Delete/retain/clear/recompute/block matrix for every affected model/field.
 - Definitions for purge, delete account, un-index, un-analyse, delete user.
 - Active job/import/preparation fencing and cancellation acknowledgement.
+- Commit-side fence behavior for synchronous writers.
 - Opening provenance requirement.
 - Preview, typed confirmation, idempotency, audit, batching, retry, and failure policy.
 - User-facing versus admin-only boundaries.
@@ -66,38 +67,44 @@ Full account cascade is partly available, but partial reset spans raw games, pli
 
 ## Questions owned
 
-Resolved in `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`.
+Resolved in:
+
+- `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`;
+- `reports/ONB-004-2026-08-02-self-review-addendum.md`.
 
 Implementation-local naming and tuning are delegated to ONB-019/020/021. Administrator authorization/retention policy remains with ONB-005; shared Position cleanup remains with ONB-006.
 
 ## Acceptance criteria result
 
 - Each action has an unambiguous model/field outcome: satisfied by the five-action contract and lifecycle matrix.
-- Active executors cannot mutate target data after success: satisfied by persisted fences plus acknowledged preparation/import/job drain and zero active task work keys.
+- Active executors cannot mutate target data after success: satisfied by persisted fences, acknowledged durable claims, zero target work keys, and guarded synchronous commits.
 - Shared Position retention is explicit: satisfied; Position/PositionAnalysis/cache are retained and ONB-006 owns cleanup.
 - User deletion is visibly broader than account purge: satisfied, including courses/training, puzzle state, OAuth state/token cleanup, identity tombstone, and mobile purge.
 - Partial failure and retry are defined: satisfied by forward-only checkpointed operations.
 - Large-data transaction strategy is reviewed: satisfied by deterministic bounded phases and final parent cleanup.
-- Required cascade/race/idempotency tests are enumerated: satisfied in the report and ONB-019/020/021 task files.
+- Required cascade/race/idempotency tests are enumerated: satisfied in the reports and ONB-019/020/021 task files.
 
 ## Required validation result
 
 - Full current Prisma relation audit performed.
 - Derived analysis/tag/tactical/AI/scenario writes traced.
-- Running job, durable import/preparation, auth recreation, and mobile offline scenarios modelled.
+- Running job, durable import/preparation, synchronous writer, auth recreation, and mobile offline scenarios modelled.
 - Relevant migration and ownership/cascade contracts inspected.
+- Self-review corrected synchronous commit fencing and account-purge terminal import-history semantics.
 - Local build/tests were unavailable because this runtime could not resolve `github.com`; pull-request CI remains the repository-level validation.
 
 ## Completion updates
 
-- Main report added.
-- ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261 allocated.
+- Main report and self-review addendum added.
+- ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261 allocated and corrected.
 - Queue, status, roadmap, decisions, open questions, issue mapping, and dependent task boundaries reconciled.
 - Production code, schema, migration, route, worker, provider, Angular, and mobile behavior unchanged.
 
 ## Completion
 
 Report: `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`
+
+Self-review addendum: `reports/ONB-004-2026-08-02-self-review-addendum.md`
 
 Implementation tasks: ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261
 
