@@ -11,7 +11,7 @@ import {
 } from '../player-chess-profile';
 import { repertoireTargetSchema } from '../repertoire-target';
 
-export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-07-v1' as const;
+export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-08-v2' as const;
 export const CANDIDATE_RANKING_POLICY_VERSION = '2026-07-deterministic-v1' as const;
 
 export const candidateDecisionContractVersionSchema = z.literal(CANDIDATE_DECISION_CONTRACT_VERSION);
@@ -115,6 +115,40 @@ export const candidatePersonalEvidenceSchema = z.object({
 });
 export type CandidatePersonalEvidence = z.infer<typeof candidatePersonalEvidenceSchema>;
 
+export const candidateOpeningKnowledgeStatusSchema = z.enum([
+  'AVAILABLE',
+  'PARTIAL',
+  'UNAVAILABLE',
+]);
+export type CandidateOpeningKnowledgeStatus = z.infer<typeof candidateOpeningKnowledgeStatusSchema>;
+
+export const candidateOpeningKnowledgeStatementSchema = z.object({
+  text: z.string().trim().min(1),
+  confidence: playerChessProfileOpeningConfidenceSchema,
+});
+export type CandidateOpeningKnowledgeStatement = z.infer<typeof candidateOpeningKnowledgeStatementSchema>;
+
+export const candidateOpeningKnowledgePlanSchema = z.object({
+  id: z.string().trim().min(1),
+  title: z.string().trim().min(1),
+  summary: z.string().trim().min(1),
+  conditions: z.array(z.string().trim().min(1)).max(4),
+  caveats: z.array(z.string().trim().min(1)).max(4),
+  confidence: playerChessProfileOpeningConfidenceSchema,
+});
+export type CandidateOpeningKnowledgePlan = z.infer<typeof candidateOpeningKnowledgePlanSchema>;
+
+export const candidateOpeningKnowledgeEvidenceSchema = z.object({
+  status: candidateOpeningKnowledgeStatusSchema,
+  version: z.string().trim().min(1).nullable(),
+  shortDescription: candidateOpeningKnowledgeStatementSchema.nullable(),
+  strategicSummary: candidateOpeningKnowledgeStatementSchema.nullable(),
+  plans: z.array(candidateOpeningKnowledgePlanSchema).max(3),
+  matchedRuleIds: z.array(z.string().trim().min(1)).max(12),
+  sourceIds: z.array(z.string().trim().min(1)).max(12),
+});
+export type CandidateOpeningKnowledgeEvidence = z.infer<typeof candidateOpeningKnowledgeEvidenceSchema>;
+
 export const candidateOpeningEvidenceSchema = z.object({
   status: candidateEvidenceStatusSchema,
   opening: z.object({
@@ -130,6 +164,7 @@ export const candidateOpeningEvidenceSchema = z.object({
   roles: z.array(playerChessProfileOpeningRoleSchema),
   confidence: playerChessProfileOpeningConfidenceSchema.nullable(),
   matchedRuleIds: z.array(z.string().min(1)),
+  knowledge: candidateOpeningKnowledgeEvidenceSchema,
 });
 export type CandidateOpeningEvidence = z.infer<typeof candidateOpeningEvidenceSchema>;
 
