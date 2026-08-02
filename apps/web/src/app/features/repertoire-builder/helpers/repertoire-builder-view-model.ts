@@ -145,22 +145,28 @@ export function buildRepertoireBuilderEvidenceReference(
     courses: response.sourceSummary.courses,
     playerProfile: response.sourceSummary.playerProfile,
   };
-  const first = response.candidates[0];
-  if (first?.evidence.masters.datasetVersion) {
-    sourceVersions['mastersDataset'] = first.evidence.masters.datasetVersion;
-  }
-  if (first?.evidence.population.datasetVersion) {
-    sourceVersions['populationDataset'] = first.evidence.population.datasetVersion;
-  }
-  if (first?.evidence.opening.classificationVersion) {
-    sourceVersions['openingClassification'] = first.evidence.opening.classificationVersion;
-  }
-  if (first?.evidence.opening.knowledge.version) {
-    sourceVersions['openingKnowledge'] = first.evidence.opening.knowledge.version;
-  }
-  if (first?.evidence.playerProfile.generatedAt) {
-    sourceVersions['playerProfileGeneratedAt'] = first.evidence.playerProfile.generatedAt;
-  }
+  const mastersDatasetVersion = response.candidates.find(
+    (candidate) => candidate.evidence.masters.datasetVersion !== null,
+  )?.evidence.masters.datasetVersion;
+  const populationDatasetVersion = response.candidates.find(
+    (candidate) => candidate.evidence.population.datasetVersion !== null,
+  )?.evidence.population.datasetVersion;
+  const openingClassificationVersion = response.candidates.find(
+    (candidate) => candidate.evidence.opening.classificationVersion !== null,
+  )?.evidence.opening.classificationVersion;
+  const openingKnowledgeVersion = response.candidates.find(
+    (candidate) => candidate.evidence.opening.knowledge.version !== null,
+  )?.evidence.opening.knowledge.version;
+  const playerProfileGeneratedAt = response.candidates.find(
+    (candidate) => candidate.evidence.playerProfile.generatedAt !== null,
+  )?.evidence.playerProfile.generatedAt;
+
+  if (mastersDatasetVersion) sourceVersions['mastersDataset'] = mastersDatasetVersion;
+  if (populationDatasetVersion) sourceVersions['populationDataset'] = populationDatasetVersion;
+  if (openingClassificationVersion) sourceVersions['openingClassification'] = openingClassificationVersion;
+  if (openingKnowledgeVersion) sourceVersions['openingKnowledge'] = openingKnowledgeVersion;
+  if (playerProfileGeneratedAt) sourceVersions['playerProfileGeneratedAt'] = playerProfileGeneratedAt;
+
   return {
     candidateContractVersion: response.contractVersion,
     rankingPolicyVersion: response.rankingPolicyVersion,
