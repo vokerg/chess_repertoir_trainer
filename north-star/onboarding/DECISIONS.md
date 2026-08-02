@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 Statuses:
 
@@ -359,6 +359,84 @@ Status: `LOCKED`
 
 The first run remains one account. Multi-account expansion selects newest-first within each target and admits batches account-round-robin using immutable target order as the tie-break. The run still has only one active index and one active analysis batch.
 
+### D-064 — Destructive actions have five separate meanings
+
+Status: `LOCKED`
+
+Use distinct actions for un-analysis, un-index, account-data purge, external-account deletion, and whole-app-user deletion. Do not expose one ambiguous reset/delete command whose retained data depends on hidden implementation details.
+
+### D-065 — Destructive execution is durable, previewed, fenced, and idempotent
+
+Status: `LOCKED`
+
+Persist the preview/execution/checkpoint/audit boundary and user/account/game resource fences. Clients submit bounded server-resolved scope, a valid preview, confirmation, and an idempotency key; the browser never coordinates deletion phases.
+
+### D-066 — Drain proof requires claim acknowledgement
+
+Status: `LOCKED`
+
+Install the resource fence before cancellation, reject new work, request preparation/import/job cancellation, and wait for every provider/import claim plus relevant `JobTask.workKey` to clear. Terminal run/task status alone is not sufficient proof that an executor can no longer write.
+
+### D-067 — Un-index always includes un-analysis; shared engine evidence survives
+
+Status: `LOCKED`
+
+Un-index first clears all per-game analysis evidence and then removes plies/index state. Un-analysis, un-index, account purge/delete, and user deletion retain shared `Position`, `PositionAnalysis`, and `MastersExplorerCache`; ONB-006 owns separately proved orphan cleanup.
+
+### D-068 — Derived analysis state is cleared by canonical source, then tags are recomputed
+
+Status: `LOCKED`
+
+Un-analysis deletes game analysis runs and AI reviews, clears latest-analysis and ply classification fields, removes every tactical detection/processed version, and recomputes the complete tag set. Retain tactical feedback and self-contained scenario history for un-analysis/un-index; purge/delete removes target-game scenario copies.
+
+### D-069 — Account purge and account deletion retain independent OAuth by default
+
+Status: `LOCKED`
+
+Account purge removes games, import/coverage state, copied scenario data, rating statistics, and sync frontiers while retaining the account. Account deletion performs purge and removes the account/default reference. A separately managed `LichessConnection` remains unless the user explicitly disconnects it or deletes the whole app user.
+
+### D-070 — Opening provenance is required
+
+Status: `LOCKED`
+
+Persist provider, local-book, legacy/unknown, and none provenance. Un-index clears only locally assigned opening values. Existing non-null values without provable source migrate conservatively to unknown and are retained.
+
+### D-071 — Large destructive actions are bounded and forward-only
+
+Status: `LOCKED`
+
+Use deterministic short transactions with persisted phase/checkpoint progress. After deletion begins, retry resumes forward and does not promise rollback. Parent cascades are final cleanup/safety, not the only large-data execution plan.
+
+### D-072 — Destructive audit survives deletion without becoming a shadow data store
+
+Status: `LOCKED`
+
+Retain action/status/timestamps/pseudonymous actor-target keys/aggregate counts/error codes and result linkage outside target cascades. Do not retain PGN, tokens, email, usernames, FEN history, AI content, scenario JSON, provider URLs, or raw auth subjects.
+
+### D-073 — Whole-user deletion removes OAuth state and blocks silent identity recreation
+
+Status: `LOCKED`
+
+Delete local encrypted provider connections and OAuth login-state rows explicitly, attempt bounded upstream token revocation, remove all AppUser-owned rows in bounded phases, then delete `AppUser`. Persist a versioned HMAC identity tombstone checked before normal external-user upsert; starting fresh must be a deliberate later policy.
+
+### D-074 — Mobile deletion requires a local-purge handshake
+
+Status: `LOCKED`
+
+Server deletion cannot erase offline SQLite data. The initiating client receives a terminal receipt and deletes its `local_user` row, cascading downloads, local training, and outbox rows before sign-out. Other offline devices purge on next contact and cannot upload stale attempts.
+
+### D-075 — Account/game lifecycle actions rederive readiness, not disposition
+
+Status: `LOCKED`
+
+Un-analysis/un-index/purge/delete change feature readiness and active preparation evidence. They do not silently reset user onboarding disposition. Whole-user deletion removes disposition entirely; explicit preparation restart/recovery remains a separate command.
+
+### D-076 — User and administrator actions share one lifecycle service
+
+Status: `LOCKED`
+
+ONB-005 may authorize administrator actors and UI, but it must call the same preview/fence/drain/execution/audit application service. Do not create administrator-only raw delete SQL or a second destructive state machine.
+
 ## Provisional
 
 ### D-040 — Preparation wave sizes are measured configuration
@@ -548,6 +626,60 @@ Do not withhold all index work until provider completion. Valid committed import
 Status: `REJECTED`
 
 Do not boost onboarding retry above direct user actions. Retry remains bounded and uses the normal preparation lane priority.
+
+### D-126 — Immediate cascade while writers are active
+
+Status: `REJECTED`
+
+Do not delete an account/user or clear game evidence before persisted fences are installed and active preparation/import/job claims are acknowledged.
+
+### D-127 — Terminal status proves destructive quiescence
+
+Status: `REJECTED`
+
+A cancelled running task may retain `workKey` while its executor stops. Never treat terminal run/task status alone as drain proof.
+
+### D-128 — Existing ply-clear primitive is public un-index
+
+Status: `REJECTED`
+
+Deleting plies and index timestamps alone leaves analysis, AI, tactical, tag, and opening state. Use the complete lifecycle operation.
+
+### D-129 — Delete shared engine analysis during user/account reset
+
+Status: `REJECTED`
+
+Do not delete shared Position/PositionAnalysis/cache as part of lifecycle actions. ONB-006 handles separately proved orphan cleanup.
+
+### D-130 — Clear tags or opening values blindly
+
+Status: `REJECTED`
+
+Recompute tags from remaining evidence and clear opening data only when provenance proves local assignment.
+
+### D-131 — One giant destructive transaction
+
+Status: `REJECTED`
+
+Do not place an account/user-sized cascade and external token call in one transaction. Use bounded forward-only phases and short transactions.
+
+### D-132 — Delete AppUser without OAuth/mobile/auth-recreation handling
+
+Status: `REJECTED`
+
+Do not claim whole-user deletion after only cascading `AppUser`. OAuth state, tokens, external identity recreation, initiating-device local data, and other offline devices require explicit handling.
+
+### D-133 — Preserve copied scenario personal data after account purge
+
+Status: `REJECTED`
+
+Scenario snapshots may survive un-analysis/un-index as user training history, but account purge/delete must remove snapshots sourced from target games.
+
+### D-134 — Separate administrator deletion implementation
+
+Status: `REJECTED`
+
+Administrator authorization may differ, but execution must reuse the canonical lifecycle operation and audit path.
 
 ## Open
 
