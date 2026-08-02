@@ -16,13 +16,13 @@ Bounded import/backfill contract: ONB-002 squash-merged through [PR #204](https:
 
 Preparation orchestration: ONB-003 squash-merged through [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`
 
-Destructive lifecycle: ONB-004 research complete on `onb-004/issue-151-destructive-lifecycle-invariants`; review/merge pending.
+Destructive lifecycle: ONB-004 research complete and self-reviewed on `onb-004/issue-151-destructive-lifecycle-invariants`; review/merge pending.
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
 Next claimable ordered task: ONB-007 / [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154)
 
-Latest report: `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`
+Latest report: `reports/ONB-004-2026-08-02-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -65,14 +65,16 @@ Latest report: `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`
 - un-index always includes un-analysis;
 - every action is a durable previewed, idempotent, audited operation;
 - persisted user/account/game write fences block new work;
+- cross-resource fence creation is serialized per user;
 - destructive execution waits for preparation/import cancellation acknowledgement and zero target `JobTask.workKey` claims;
+- synchronous AI/tag/tactical/scenario/provider writers use a short commit-side lifecycle guard so a request started before fence creation cannot persist afterward;
 - large actions use forward-only bounded checkpoints, not one account/user transaction;
 - shared `Position`, `PositionAnalysis`, and caches survive; ONB-006 owns cleanup;
 - un-analysis removes per-game runs/snapshots, AI review, ply classifications, all tactical versions/processed markers, and recomputes tags;
 - tactical feedback and scenario snapshots survive un-analysis/un-index, while account purge removes copied scenario data;
 - opening provenance distinguishes provider, local-book, and legacy/unknown values;
-- account purge retains the account and independent OAuth connection;
-- account delete retains independent OAuth unless separately disconnected;
+- account purge retains the account, terminal import-run history, and independent OAuth connection while clearing authoritative coverage/current pointers/frontiers;
+- account delete removes the account and account-owned import history after lifecycle audit snapshot;
 - whole-user deletion explicitly removes OAuth state/tokens, blocks silent auth recreation through an HMAC tombstone, and requires a mobile local-purge receipt/handshake;
 - operation/audit history survives target deletion without raw personal payloads;
 - implementation allocation: ONB-019/#259, ONB-020/#260, ONB-021/#261.
@@ -111,7 +113,7 @@ Review acceptance is pending.
 - ONB-013 / #201 — Lichess adapter — `PROPOSED`.
 - ONB-014 / #202 — Chess.com adapter — `PROPOSED`.
 - ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
-- ONB-019 / #259 — destructive lifecycle operation/fence/audit/provenance foundation — `PROPOSED`.
+- ONB-019 / #259 — destructive lifecycle operation/fence/guard/audit/provenance foundation — `PROPOSED`.
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`.
 - ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`.
 
@@ -127,6 +129,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - current account deletion is one immediate unfenced cascade;
 - terminal job status is not drain proof because a cancelled running task deliberately retains `workKey` until executor acknowledgement;
 - current synchronous provider sync has no persisted claim that deletion can drain;
+- direct synchronous writers need commit-side fence serialization, not only route admission checks;
 - current `clearPlyRowsForGame` is not a complete un-index operation;
 - analysis evidence spans game runs, snapshots, ply fields, AI review, tags, tactical rows, and shared PositionAnalysis;
 - tags are a mixed projection and must be recomputed after reset;
@@ -135,6 +138,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - `OAuthLoginState` has no AppUser foreign key;
 - ordinary external-user upsert can recreate a deleted AppUser unless identity deletion is fenced/tombstoned;
 - mobile sign-out locks offline data rather than deleting it;
+- account purge can retain terminal import history while clearing current coverage/frontiers;
 - shared Position cleanup must remain separate from account/user purge.
 
 ## Blockers to production implementation
@@ -160,8 +164,9 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - index, analysis, tag, tactical, AI review, and scenario writes traced;
 - course/training ownership cascades inspected;
 - mobile local-user/offline/outbox cascade and sign-out behavior inspected;
-- running writer, partial reset, account purge/delete, whole-user deletion, auth recreation, mobile offline device, restart, and large-data scenarios modelled;
-- ONB-019/#259, ONB-020/#260, and ONB-021/#261 allocated;
+- running durable and synchronous writer, partial reset, account purge/delete, whole-user deletion, auth recreation, mobile offline device, restart, and large-data scenarios modelled;
+- self-review corrected commit-side synchronous writer fencing and terminal import-history retention during account purge;
+- ONB-019/#259, ONB-020/#260, and ONB-021/#261 allocated and corrected;
 - no production code, schema, migration, route, worker, provider, Angular, mobile, dependency, workflow, or deployment behavior changed;
 - local clone/build/tests were unavailable because this runtime cannot resolve `github.com`; PR CI is the available repository-level validation.
 
