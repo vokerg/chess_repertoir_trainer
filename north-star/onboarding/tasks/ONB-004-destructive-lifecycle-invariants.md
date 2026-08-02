@@ -108,6 +108,6 @@ Self-review addendum: `reports/ONB-004-2026-08-02-self-review-addendum.md`
 
 Implementation tasks: ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261
 
-Pull request: pending
+Pull request: [#263](https://github.com/vokerg/chess_repertoir_trainer/pull/263)
 
 Completed at: review pending
