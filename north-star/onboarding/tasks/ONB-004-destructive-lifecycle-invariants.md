@@ -1,6 +1,6 @@
 # ONB-004 — Define safe purge, un-index, un-analyse, and user deletion invariants
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 40
 
 Delivery class: Research
 
-Planning maturity: Active repository and lifecycle research
+Planning maturity: Research complete; review and merge pending
 
 GitHub issue: [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151)
 
@@ -28,20 +28,24 @@ Produce an exact model-by-model lifecycle contract and active-worker protocol fo
 
 Full account cascade is partly available, but partial reset spans raw games, plies, analysis snapshots, tags, tactical data, AI reviews, training references, opening provenance, job history, and shared Position data.
 
-## Current repository anchors to inspect
+## Current repository anchors inspected
 
 - `apps/api/prisma/schema.prisma`
-- all migrations affecting imported games, analysis, tactical/scenario, courses, jobs, AI review, and mobile sync
+- relevant migrations for imported games, courses/training, tactical/scenario, jobs, AI review, and mobile sync
+- `apps/api/src/routes/externalAccounts.ts`
 - `apps/api/src/services/externalAccountService.ts`
+- `apps/api/src/services/lichessConnectionService.ts`
+- `apps/api/src/auth/current-app-user.service.ts`
 - `apps/api/src/modules/jobs/`
-- imported-game indexing, analysis, tagging, tactical detection, and AI review services
+- imported-game indexing, analysis, tagging, tactical detection, AI review, and scenario-training services
+- mobile local-user/offline/outbox persistence
 - ownership/cascade tests
 
 ## Dependencies
 
 - ONB-000.
-- Coordinate action shape with ONB-005 and cleanup boundary with ONB-006.
-- Consume ONB-002 active-import and ONB-003 acknowledged preparation-cancellation boundaries.
+- Coordinated action/audit shape with ONB-005 and cleanup boundary with ONB-006.
+- Consumed ONB-002 active-import and ONB-003 acknowledged preparation-cancellation boundaries.
 
 ## In scope
 
@@ -51,7 +55,7 @@ Full account cascade is partly available, but partial reset spans raw games, pli
 - Opening provenance requirement.
 - Preview, typed confirmation, idempotency, audit, batching, retry, and failure policy.
 - User-facing versus admin-only boundaries.
-- Implementation task proposal.
+- Implementation task allocation.
 
 ## Out of scope
 
@@ -62,33 +66,41 @@ Full account cascade is partly available, but partial reset spans raw games, pli
 
 ## Questions owned
 
-See `OPEN_QUESTIONS.md` under ONB-004.
+Resolved in `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`.
 
-## Acceptance criteria
+Implementation-local naming and tuning are delegated to ONB-019/020/021. Administrator authorization/retention policy remains with ONB-005; shared Position cleanup remains with ONB-006.
 
-- Each action has an unambiguous model/field outcome.
-- Active executors cannot mutate target data after success.
-- Shared Position retention is explicit.
-- User deletion is visibly broader than account purge.
-- Partial failure and retry are defined.
-- Large-data transaction strategy is reviewed.
-- Required cascade/race/idempotency tests are enumerated.
+## Acceptance criteria result
 
-## Required validation
+- Each action has an unambiguous model/field outcome: satisfied by the five-action contract and lifecycle matrix.
+- Active executors cannot mutate target data after success: satisfied by persisted fences plus acknowledged preparation/import/job drain and zero active task work keys.
+- Shared Position retention is explicit: satisfied; Position/PositionAnalysis/cache are retained and ONB-006 owns cleanup.
+- User deletion is visibly broader than account purge: satisfied, including courses/training, puzzle state, OAuth state/token cleanup, identity tombstone, and mobile purge.
+- Partial failure and retry are defined: satisfied by forward-only checkpointed operations.
+- Large-data transaction strategy is reviewed: satisfied by deterministic bounded phases and final parent cleanup.
+- Required cascade/race/idempotency tests are enumerated: satisfied in the report and ONB-019/020/021 task files.
 
-- Full Prisma relation audit.
-- Trace derived analysis/tag/tactical/AI/training writes.
-- Adversarial running-worker scenarios.
-- Integration-test design for cascades and races.
+## Required validation result
+
+- Full current Prisma relation audit performed.
+- Derived analysis/tag/tactical/AI/scenario writes traced.
+- Running job, durable import/preparation, auth recreation, and mobile offline scenarios modelled.
+- Relevant migration and ownership/cascade contracts inspected.
+- Local build/tests were unavailable because this runtime could not resolve `github.com`; pull-request CI remains the repository-level validation.
 
 ## Completion updates
 
-- Report, lifecycle matrix, decisions, open questions, queue, issue #151, and implementation tasks.
+- Main report added.
+- ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261 allocated.
+- Queue, status, roadmap, decisions, open questions, issue mapping, and dependent task boundaries reconciled.
+- Production code, schema, migration, route, worker, provider, Angular, and mobile behavior unchanged.
 
 ## Completion
 
-Report: none
+Report: `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`
 
-Pull request: none
+Implementation tasks: ONB-019 / #259, ONB-020 / #260, and ONB-021 / #261
 
-Completed at: none
+Pull request: pending
+
+Completed at: review pending
