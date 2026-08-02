@@ -1,6 +1,7 @@
 import type {
   CandidateDecisionCandidate,
   CandidateDecisionResponse,
+  CandidateOpeningKnowledgePlan,
 } from '@chess-trainer/contracts/candidate-decision';
 import type {
   BuilderEvidenceReference,
@@ -62,6 +63,17 @@ export function buildRepertoireBuilderSourceItems(
 ): readonly RepertoireBuilderSourceItem[] {
   if (!candidate) return [];
   const knowledge = candidate.evidence.opening.knowledge;
+  const targetSide = candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black';
+  const knowledgeItems: RepertoireBuilderSourceItem[] = [{
+    id: 'opening-knowledge',
+    label: `Opening knowledge · ${targetSide}`,
+    status: knowledge.status,
+    detail: knowledge.strategicSummary?.text
+      ?? knowledge.shortDescription?.text
+      ?? 'No reviewed strategic knowledge is available for this opening and side.',
+  }];
+  knowledgeItems.push(...knowledge.plans.map((plan) => openingPlanSourceItem(plan)));
+
   return [
     {
       id: 'engine',
@@ -97,14 +109,7 @@ export function buildRepertoireBuilderSourceItems(
       status: candidate.evidence.opening.status,
       detail: candidate.evidence.opening.opening?.name ?? null,
     },
-    {
-      id: 'opening-knowledge',
-      label: 'Opening knowledge',
-      status: knowledge.status,
-      detail: knowledge.plans.length > 0
-        ? `${knowledge.plans.length} reviewed ${knowledge.plans.length === 1 ? 'plan' : 'plans'} for ${candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black'}`
-        : knowledge.shortDescription?.text ?? null,
-    },
+    ...knowledgeItems,
     {
       id: 'profile',
       label: 'Chess profile',
@@ -172,6 +177,19 @@ export function buildRepertoireBuilderPreviewRows(
   const rows: RepertoireBuilderPreviewRow[] = [];
   visitPreview(preview.tree, rows, 0);
   return rows;
+}
+
+function openingPlanSourceItem(plan: CandidateOpeningKnowledgePlan): RepertoireBuilderSourceItem {
+  const qualifiers = [
+    ...plan.conditions.map((value) => `When: ${value}`),
+    ...plan.caveats.map((value) => `Caveat: ${value}`),
+  ];
+  return {
+    id: `opening-plan-${plan.id}`,
+    label: plan.title,
+    status: `${plan.confidence} confidence`,
+    detail: [plan.summary, ...qualifiers].join(' · '),
+  };
 }
 
 function visitPreview(
