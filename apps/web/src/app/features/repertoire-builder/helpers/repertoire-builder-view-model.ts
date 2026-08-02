@@ -1,6 +1,7 @@
 import type {
   CandidateDecisionCandidate,
   CandidateDecisionResponse,
+  CandidateOpeningKnowledgePlan,
 } from '@chess-trainer/contracts/candidate-decision';
 import type {
   BuilderEvidenceReference,
@@ -61,6 +62,18 @@ export function buildRepertoireBuilderSourceItems(
   candidate: CandidateDecisionCandidate | null,
 ): readonly RepertoireBuilderSourceItem[] {
   if (!candidate) return [];
+  const knowledge = candidate.evidence.opening.knowledge;
+  const targetSide = candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black';
+  const knowledgeItems: RepertoireBuilderSourceItem[] = [{
+    id: 'opening-knowledge',
+    label: `Opening knowledge · ${targetSide}`,
+    status: knowledge.status,
+    detail: knowledge.strategicSummary?.text
+      ?? knowledge.shortDescription?.text
+      ?? 'No reviewed strategic knowledge is available for this opening and side.',
+  }];
+  knowledgeItems.push(...knowledge.plans.map((plan) => openingPlanSourceItem(plan)));
+
   return [
     {
       id: 'engine',
@@ -96,6 +109,7 @@ export function buildRepertoireBuilderSourceItems(
       status: candidate.evidence.opening.status,
       detail: candidate.evidence.opening.opening?.name ?? null,
     },
+    ...knowledgeItems,
     {
       id: 'profile',
       label: 'Chess profile',
@@ -131,19 +145,28 @@ export function buildRepertoireBuilderEvidenceReference(
     courses: response.sourceSummary.courses,
     playerProfile: response.sourceSummary.playerProfile,
   };
-  const first = response.candidates[0];
-  if (first?.evidence.masters.datasetVersion) {
-    sourceVersions['mastersDataset'] = first.evidence.masters.datasetVersion;
-  }
-  if (first?.evidence.population.datasetVersion) {
-    sourceVersions['populationDataset'] = first.evidence.population.datasetVersion;
-  }
-  if (first?.evidence.opening.classificationVersion) {
-    sourceVersions['openingClassification'] = first.evidence.opening.classificationVersion;
-  }
-  if (first?.evidence.playerProfile.generatedAt) {
-    sourceVersions['playerProfileGeneratedAt'] = first.evidence.playerProfile.generatedAt;
-  }
+  const mastersDatasetVersion = response.candidates.find(
+    (candidate) => candidate.evidence.masters.datasetVersion !== null,
+  )?.evidence.masters.datasetVersion;
+  const populationDatasetVersion = response.candidates.find(
+    (candidate) => candidate.evidence.population.datasetVersion !== null,
+  )?.evidence.population.datasetVersion;
+  const openingClassificationVersion = response.candidates.find(
+    (candidate) => candidate.evidence.opening.classificationVersion !== null,
+  )?.evidence.opening.classificationVersion;
+  const openingKnowledgeVersion = response.candidates.find(
+    (candidate) => candidate.evidence.opening.knowledge.version !== null,
+  )?.evidence.opening.knowledge.version;
+  const playerProfileGeneratedAt = response.candidates.find(
+    (candidate) => candidate.evidence.playerProfile.generatedAt !== null,
+  )?.evidence.playerProfile.generatedAt;
+
+  if (mastersDatasetVersion) sourceVersions['mastersDataset'] = mastersDatasetVersion;
+  if (populationDatasetVersion) sourceVersions['populationDataset'] = populationDatasetVersion;
+  if (openingClassificationVersion) sourceVersions['openingClassification'] = openingClassificationVersion;
+  if (openingKnowledgeVersion) sourceVersions['openingKnowledge'] = openingKnowledgeVersion;
+  if (playerProfileGeneratedAt) sourceVersions['playerProfileGeneratedAt'] = playerProfileGeneratedAt;
+
   return {
     candidateContractVersion: response.contractVersion,
     rankingPolicyVersion: response.rankingPolicyVersion,
@@ -160,6 +183,19 @@ export function buildRepertoireBuilderPreviewRows(
   const rows: RepertoireBuilderPreviewRow[] = [];
   visitPreview(preview.tree, rows, 0);
   return rows;
+}
+
+function openingPlanSourceItem(plan: CandidateOpeningKnowledgePlan): RepertoireBuilderSourceItem {
+  const qualifiers = [
+    ...plan.conditions.map((value) => `When: ${value}`),
+    ...plan.caveats.map((value) => `Caveat: ${value}`),
+  ];
+  return {
+    id: `opening-plan-${plan.id}`,
+    label: plan.title,
+    status: `${plan.confidence} confidence`,
+    detail: [plan.summary, ...qualifiers].join(' · '),
+  };
 }
 
 function visitPreview(

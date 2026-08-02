@@ -1,6 +1,6 @@
 # Repertoire Builder Feature Catalog
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 Planning maturity values:
 
@@ -24,7 +24,7 @@ Delivery classes:
 | Factual peer-band resolver | Dual-use | Implemented and merged | Enables My peers immediately | Supplies automatic population target defaults |
 | Durable multi-account player level | Dual-use | Implemented through the shared resolver | One inspectable level across accounts | Reuses factual peer evidence without a second formula |
 | Named opening classification | Dual-use | Implemented and merged | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
-| Side-aware opening knowledge | Future dual-use | Architecture accepted; RB-022 ready | Reusable opening explanations and plans | Explains candidate strategic direction without changing ranking |
+| Side-aware opening knowledge | Dual-use | Foundation and Builder consumer complete | Reusable opening explanations and plans | Explains focused candidate strategy without changing ranking |
 | Player Chess Profile calculation | Dual-use | Implemented for review | Standalone identity and performance insight | Advises repertoire target and candidate fit |
 | Player Chess Profile experience | Standalone | Implemented for review | Recalculable profile page with evidence | Entry point into builder |
 | Repertoire target contract | North-star | Implemented and merged | Limited direct value | Captures preset population, persona, risk and coverage intent |
@@ -54,9 +54,9 @@ RB-002 is delivered through the same factual multi-account resolver. Opening cla
 
 Opening classification remains the compact deterministic intrinsic taxonomy delivered by RB-003/RB-018: soundness, character, theoretical status, theory burden, roles, confidence and matched rule IDs.
 
-RB-021 establishes a separate source-controlled opening knowledge layer for descriptions and White/Black strategic plans. The accepted service primarily reuses stable classification rule IDs, permits narrow knowledge-only selectors, and keeps explicit conditions, caveats, provenance and review lifecycle.
+RB-021 established the separate source-controlled opening knowledge architecture. RB-022 delivered the reviewed service and corpus with explicit conditions, caveats, provenance, lifecycle and partial/unavailable states.
 
-RB-022 is ready to implement that foundation. Knowledge availability remains separate from complete classification rule-match coverage.
+RB-023 projects that knowledge through the authoritative candidate-decision path. The Builder receives only the target side's bounded summary and plans and renders them in the focused evidence experience. Knowledge remains separate from complete classification coverage and does not become a ranking input.
 
 ### Chess Profile
 
@@ -64,7 +64,7 @@ The profile consumes opening classification and factual player-level context for
 
 The integrated builder displays RB-007 profile fit as advisory evidence. It does not prevent a user from choosing against profile evidence.
 
-Opening knowledge is not a new statistical profile dimension. A later consumer may display it, but should not aggregate narrative plan IDs into player conclusions without a separate reviewed model.
+Opening knowledge is not a statistical profile dimension. Plan IDs are not aggregated into player conclusions.
 
 ### Repertoire target
 
@@ -78,25 +78,25 @@ Evidence aggregation and ranking remain separate. Aggregation gathers comparable
 
 The builder consumes the existing authenticated candidate endpoint rather than adding a UI-specific recommendation engine. Manual board moves use `includeMoveUci` and remain subject to the same evidence/eligibility response.
 
-RB-023 may later project reviewed opening knowledge through the existing candidate opening evidence. Descriptions and plans remain explanatory and cannot change ranking, eligibility, fit, coverage or session state in that task.
+RB-023 nests reviewed knowledge inside candidate opening evidence. Descriptions and plans remain explanatory and cannot change ranking, eligibility, fit, coverage or session state.
 
 ### Visual choice
 
 The accepted production direction is a routed, board-first workbench launched from a focused setup dialog. Candidate switching updates one readable board and focused evidence; opponent responses use a queue rather than a dense matrix.
 
-Squash-merged PR #184 implements that direction with one primary board, explicit target/profile separation, opponent-response selection, queue controls and bounded structural preview.
+Squash-merged PR #184 implements that direction with one primary board, explicit target/profile separation, opponent-response selection, queue controls and bounded structural preview. RB-023 reuses the focused evidence grid rather than adding a second presentation surface.
 
 ### Builder state
 
 RB-009 implements the queue, accepted choices, deferred and ignored responses, staleness, transposition references, decision history and bounded preview as a pure serializable `chess-domain` snapshot.
 
-RB-010 composes that snapshot through a page-scoped Angular store. It adds no second reducer or global builder state. The accepted first MVP is route-local: refresh starts over, and reopening setup explicitly replaces the current draft. Durable resume requires a separate demonstrated need.
+RB-010 composes that snapshot through a page-scoped Angular store. RB-023 adds no new store: knowledge follows the selected candidate response and its independent version is captured in the existing evidence reference.
 
 ### Existing courses
 
 Course review, endings, gaps and performance findings enter the same builder decision loop rather than create separate recommendation engines.
 
-Opening knowledge may eventually explain accepted choices but does not become course content or a course-write command through RB-021/RB-023.
+Opening knowledge explains focused choices but does not become course content or a course-write command.
 
 ### Repertoire personas
 
@@ -110,4 +110,4 @@ The critical-path MVP does not depend on traps. RB-017 remains research evidence
 
 No core stage depends on an LLM. Existing prototypes remain optional, disabled by default and non-authoritative.
 
-RB-024 is a stretch consumer after reviewed opening knowledge exists. It may ground the existing on-demand game review in supplied user-side plans, but may not research openings at runtime, invent plans or alter deterministic analysis.
+RB-023 does not add opening knowledge to generated interpretation. RB-024 remains a separate P3 stretch consumer that may ground game review in supplied user-side plans without runtime research or deterministic-analysis mutation.

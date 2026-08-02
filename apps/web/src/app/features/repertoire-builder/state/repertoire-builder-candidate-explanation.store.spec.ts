@@ -100,7 +100,7 @@ function capability(enabled: boolean): AiCapabilitiesResponse {
 const normalizedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 const targetId = 'fa8d7aae-f46e-4dce-b2a7-6644b9eca199';
 const candidateResponse = {
-  contractVersion: '2026-07-v1',
+  contractVersion: '2026-08-v2',
   rankingPolicyVersion: '2026-07-deterministic-v1',
   generatedAt: '2026-07-30T15:00:00.000Z',
   targetId,
