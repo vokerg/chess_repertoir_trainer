@@ -35,7 +35,15 @@ describe('repertoire builder opening knowledge view model', () => {
         opening: {
           ...candidate.evidence.opening,
           classificationVersion: null,
-          knowledge: { ...candidate.evidence.opening.knowledge, version: null },
+          knowledge: {
+            status: 'UNAVAILABLE',
+            version: null,
+            shortDescription: null,
+            strategicSummary: null,
+            plans: [],
+            matchedRuleIds: [],
+            sourceIds: [],
+          },
         },
         playerProfile: { ...candidate.evidence.playerProfile, generatedAt: null },
       },
