@@ -146,6 +146,51 @@ export const candidateOpeningKnowledgeEvidenceSchema = z.object({
   plans: z.array(candidateOpeningKnowledgePlanSchema).max(3),
   matchedRuleIds: z.array(z.string().trim().min(1)).max(12),
   sourceIds: z.array(z.string().trim().min(1)).max(12),
+}).superRefine((knowledge, context) => {
+  const hasContent = Boolean(
+    knowledge.shortDescription
+    || knowledge.strategicSummary
+    || knowledge.plans.length,
+  );
+
+  if (knowledge.status === 'UNAVAILABLE') {
+    if (hasContent || knowledge.matchedRuleIds.length || knowledge.sourceIds.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Unavailable opening knowledge must not contain reviewed content or provenance.',
+      });
+    }
+    return;
+  }
+
+  if (!knowledge.version) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['version'],
+      message: 'Available or partial opening knowledge requires a version.',
+    });
+  }
+  if (!hasContent) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['status'],
+      message: 'Available or partial opening knowledge requires reviewed content.',
+    });
+  }
+  if (!knowledge.matchedRuleIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['matchedRuleIds'],
+      message: 'Available or partial opening knowledge requires a matched rule.',
+    });
+  }
+  if (!knowledge.sourceIds.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['sourceIds'],
+      message: 'Available or partial opening knowledge requires provenance.',
+    });
+  }
 });
 export type CandidateOpeningKnowledgeEvidence = z.infer<typeof candidateOpeningKnowledgeEvidenceSchema>;
 
