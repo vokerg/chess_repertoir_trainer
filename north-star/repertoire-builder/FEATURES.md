@@ -24,7 +24,7 @@ Delivery classes:
 | Factual peer-band resolver | Dual-use | Implemented and merged | Enables My peers immediately | Supplies automatic population target defaults |
 | Durable multi-account player level | Dual-use | Implemented through the shared resolver | One inspectable level across accounts | Reuses factual peer evidence without a second formula |
 | Named opening classification | Dual-use | Implemented and merged | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
-| Side-aware opening knowledge | Dual-use | Foundation merged; Builder consumer in review | Reusable opening explanations and plans | Explains focused candidate strategy without changing ranking |
+| Side-aware opening knowledge | Dual-use | Foundation and Builder consumer complete | Reusable opening explanations and plans | Explains focused candidate strategy without changing ranking |
 | Player Chess Profile calculation | Dual-use | Implemented for review | Standalone identity and performance insight | Advises repertoire target and candidate fit |
 | Player Chess Profile experience | Standalone | Implemented for review | Recalculable profile page with evidence | Entry point into builder |
 | Repertoire target contract | North-star | Implemented and merged | Limited direct value | Captures preset population, persona, risk and coverage intent |
