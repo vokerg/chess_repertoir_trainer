@@ -1,32 +1,49 @@
-<section class="lab-page stack">
-  <app-page-header title="Lab" subtitle="Run focused reports from imported games." />
+<section class="lab-page">
+  <app-page-header
+    title="Lab"
+    subtitle="Explore focused reports built from imported games and training activity."
+  />
 
-  <section class="section-card lab-menu" aria-label="Lab experiments">
-    <div class="lab-menu-copy">
-      <h3 class="collection-title">Experiments</h3>
-      <p class="status-note">Choose a focused report to open it on its own page.</p>
-    </div>
-    <div class="lab-menu-grid">
+  <app-panel
+    title="Experiments"
+    subtitle="These tools remain experimental. Open one report at a time without changing your core workflows."
+  >
+    <nav class="lab-menu-grid" aria-label="Lab experiments">
       <a class="lab-menu-item" [routerLink]="['/lab/top-opponents']">
-        <span><strong>Top opponents</strong><small>Grouped by opponent name</small></span>
-        <span class="pill">List</span>
+        <span class="lab-menu-copy">
+          <strong>Top opponents</strong>
+          <small>See which opponents appear most often in imported games.</small>
+        </span>
+        <span class="lab-menu-type">List</span>
       </a>
       <a class="lab-menu-item" [routerLink]="['/lab/monthly-games']">
-        <span><strong>Monthly games</strong><small>Year/month WDL and rating snapshots</small></span>
-        <span class="pill">Table</span>
+        <span class="lab-menu-copy">
+          <strong>Monthly games</strong>
+          <small>Compare monthly volume, results, and rating snapshots.</small>
+        </span>
+        <span class="lab-menu-type">Table</span>
       </a>
       <a class="lab-menu-item" [routerLink]="['/lab/performance-by-rating']">
-        <span><strong>Performance by rating</strong><small>Provider and speed results by opponent strength</small></span>
-        <span class="pill">Report</span>
+        <span class="lab-menu-copy">
+          <strong>Performance by rating</strong>
+          <small>Break down provider and speed results by opponent strength.</small>
+        </span>
+        <span class="lab-menu-type">Report</span>
       </a>
       <a class="lab-menu-item" [routerLink]="['/lab/tactical-detections']">
-        <span><strong>Tactical detections</strong><small>Missed shots and my blunders from analysed games</small></span>
-        <span class="pill">Table</span>
+        <span class="lab-menu-copy">
+          <strong>Tactical detections</strong>
+          <small>Review missed shots and blunders found in analysed games.</small>
+        </span>
+        <span class="lab-menu-type">Table</span>
       </a>
       <a class="lab-menu-item" [routerLink]="['/lab/training-log']">
-        <span><strong>Training log</strong><small>Course/chapter/line sequence attempts</small></span>
-        <span class="pill">Table</span>
+        <span class="lab-menu-copy">
+          <strong>Training log</strong>
+          <small>Inspect course, chapter, and line training attempts.</small>
+        </span>
+        <span class="lab-menu-type">Table</span>
       </a>
-    </div>
-  </section>
+    </nav>
+  </app-panel>
 </section>
