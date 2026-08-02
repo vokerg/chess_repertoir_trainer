@@ -123,6 +123,22 @@ const service = createCandidateDecisionService({
       roles: ['INITIATOR'],
       confidence: 'HIGH',
       matchedRuleIds: ['sharp-test'],
+      knowledge: {
+        status: 'AVAILABLE',
+        version: '2026-08-knowledge-v1',
+        shortDescription: { text: 'A sharp reviewed opening.', confidence: 'HIGH' },
+        strategicSummary: { text: 'Create active play without changing the ranking policy.', confidence: 'HIGH' },
+        plans: [{
+          id: 'sharp-test-plan',
+          title: 'Create active play',
+          summary: 'Use development and open lines to maintain the initiative.',
+          conditions: [],
+          caveats: [],
+          confidence: 'HIGH',
+        }],
+        matchedRuleIds: ['knowledge-sharp-test'],
+        sourceIds: ['project-editorial-rb-022'],
+      },
     };
   },
   clock: () => new Date('2026-07-29T09:00:00.000Z'),
@@ -143,5 +159,6 @@ assert.equal(e4.profileFit.status, 'CONFLICT');
 assert.equal(e4.profileFit.reasonCodes.includes('PROFILE_PERFORMANCE_WARNING'), true);
 assert.equal(e4.evidence.course.conflict, true);
 assert.equal(e4.evidence.course.transposesToCoveredPosition, true);
+assert.equal(e4.evidence.opening.knowledge.plans[0].id, 'sharp-test-plan');
 assert.equal(e4.reasonCodes.includes('TRANSPOSES_TO_COVERAGE'), true);
 assert.equal(e4.warningCodes.includes('COURSE_CONFLICT'), true);
