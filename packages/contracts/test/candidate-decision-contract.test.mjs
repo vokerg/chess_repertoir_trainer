@@ -187,3 +187,35 @@ assert.equal(candidateDecisionResponseSchema.safeParse({
     },
   }],
 }).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      opening: {
+        ...response.candidates[0].evidence.opening,
+        knowledge: {
+          ...response.candidates[0].evidence.opening.knowledge,
+          status: 'UNAVAILABLE',
+        },
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      opening: {
+        ...response.candidates[0].evidence.opening,
+        knowledge: {
+          ...response.candidates[0].evidence.opening.knowledge,
+          version: null,
+        },
+      },
+    },
+  }],
+}).success, false);
