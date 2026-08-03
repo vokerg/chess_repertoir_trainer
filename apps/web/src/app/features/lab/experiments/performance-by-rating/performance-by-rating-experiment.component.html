@@ -1,47 +1,48 @@
-<section class="section-card lab-panel performance-report stack">
-  <div class="lab-panel-header">
-    <div>
-      <span class="eyebrow">Opponent strength</span>
-      <h3 class="collection-title">Performance by opponent rating</h3>
-    </div>
-    <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading()">
-      {{ store.loading() ? 'Loading...' : 'Refresh' }}
-    </button>
-  </div>
-
-  <section class="criteria-panel stack" aria-label="Performance report filters">
-    <div class="report-filter-row">
-      <div class="lab-controls date-controls">
-        <label>
-          <span>From</span>
-          <input type="date" [value]="store.from()" (input)="store.setFrom(textValue($event))" />
-        </label>
-        <label>
-          <span>To</span>
-          <input type="date" [value]="store.to()" (input)="store.setTo(textValue($event))" />
-        </label>
-        <label>
-          <span>Minimum opponent rating</span>
-          <input
-            type="number"
-            min="0"
-            max="5000"
-            step="100"
-            [value]="store.minRating()"
-            (input)="store.setMinRating(textValue($event))"
-          />
-        </label>
-        <button type="button" class="compact-action" (click)="store.load()" [disabled]="store.loading()">Apply filters</button>
+<app-panel
+  title="Performance by opponent rating"
+  subtitle="Scored results and analysed-game stories grouped by provider, speed, and opponent rating."
+  [actions]="actions()"
+>
+  <section class="criteria-panel" aria-labelledby="performance-report-filters-heading">
+    <div class="criteria-heading">
+      <div class="criteria-copy">
+        <h4 id="performance-report-filters-heading">Report filters</h4>
+        <p>Choose the time window and rating floor, then apply the report query.</p>
       </div>
 
       <details class="column-picker">
-        <summary class="compact-action secondary">Columns · {{ store.visibleColumnCount() }}</summary>
-        <div class="column-picker-panel" role="group" aria-label="Visible report columns">
-          <div class="column-presets" aria-label="Column presets">
-            <button type="button" [class.active]="store.selectedPreset() === 'core'" (click)="store.setPreset('core')">Core</button>
-            <button type="button" [class.active]="store.selectedPreset() === 'stories'" (click)="store.setPreset('stories')">Stories</button>
-            <button type="button" [class.active]="store.selectedPreset() === 'all'" (click)="store.setPreset('all')">All</button>
+        <summary class="column-trigger">
+          <span>Columns</span>
+          <strong>{{ store.visibleColumnCount() }}</strong>
+        </summary>
+        <div class="column-picker-panel" aria-label="Visible report columns">
+          <div class="column-presets" role="group" aria-label="Column presets">
+            <button
+              type="button"
+              [class.active]="store.selectedPreset() === 'core'"
+              [attr.aria-pressed]="store.selectedPreset() === 'core'"
+              (click)="store.setPreset('core')"
+            >
+              Core
+            </button>
+            <button
+              type="button"
+              [class.active]="store.selectedPreset() === 'stories'"
+              [attr.aria-pressed]="store.selectedPreset() === 'stories'"
+              (click)="store.setPreset('stories')"
+            >
+              Stories
+            </button>
+            <button
+              type="button"
+              [class.active]="store.selectedPreset() === 'all'"
+              [attr.aria-pressed]="store.selectedPreset() === 'all'"
+              (click)="store.setPreset('all')"
+            >
+              All
+            </button>
           </div>
+
           @for (group of columnGroups; track group.id) {
             <fieldset>
               <legend>{{ group.label }}</legend>
@@ -61,23 +62,70 @@
       </details>
     </div>
 
-    <div class="type-filters" aria-label="Report types">
-      @for (type of reportTypes; track type) {
-        <button
-          type="button"
-          class="type-toggle"
-          [class.active]="store.isTypeEnabled(type)"
-          [attr.aria-pressed]="store.isTypeEnabled(type)"
-          (click)="store.toggleType(type)"
-        >
-          {{ typeLabel(type) }}
-        </button>
-      }
+    <div class="filter-grid">
+      <label class="filter-control" for="performance-from">
+        <span>From</span>
+        <input
+          id="performance-from"
+          type="date"
+          [value]="store.from()"
+          (input)="store.setFrom(textValue($event))"
+        />
+      </label>
+
+      <label class="filter-control" for="performance-to">
+        <span>To</span>
+        <input
+          id="performance-to"
+          type="date"
+          [value]="store.to()"
+          (input)="store.setTo(textValue($event))"
+        />
+      </label>
+
+      <label class="filter-control" for="performance-min-rating">
+        <span>Minimum opponent rating</span>
+        <input
+          id="performance-min-rating"
+          type="number"
+          min="0"
+          max="5000"
+          step="100"
+          [value]="store.minRating()"
+          (input)="store.setMinRating(textValue($event))"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="apply-action"
+        (click)="store.load()"
+        [disabled]="store.loading()"
+      >
+        Apply filters
+      </button>
     </div>
+
+    <fieldset class="type-filter-group">
+      <legend>Report types</legend>
+      <div class="type-filters">
+        @for (type of reportTypes; track type) {
+          <button
+            type="button"
+            class="type-toggle"
+            [class.active]="store.isTypeEnabled(type)"
+            [attr.aria-pressed]="store.isTypeEnabled(type)"
+            (click)="store.toggleType(type)"
+          >
+            {{ typeLabel(type) }}
+          </button>
+        }
+      </div>
+    </fieldset>
   </section>
 
   <details class="normalization-reference">
-    <summary>
+    <summary class="disclosure-summary">
       <span>Rating grade reference</span>
       @if (store.normalizationProfile(); as profile) {
         <small>{{ profile.version }}</small>
@@ -85,21 +133,29 @@
     </summary>
 
     @if (store.normalizationLoading()) {
-      <p class="status-note">Loading rating grade reference...</p>
+      <p class="reference-state" aria-live="polite">Loading rating grade reference…</p>
     } @else if (store.normalizationError(); as error) {
-      <p class="status-note danger-copy">{{ error }}</p>
+      <p class="reference-state reference-state--error" role="alert">{{ error }}</p>
     } @else if (store.normalizationProfile(); as profile) {
       <div class="normalization-copy">
         <p>{{ profile.description }}</p>
-        <p>FIDE Standard is an OTB reference only and is not used as an imported-game report type. “Not calibrated” means the source does not support a reliable lower-range mapping.</p>
+        <p>
+          FIDE Standard is an OTB reference only and is not used as an imported-game report type.
+          “Not calibrated” means the source does not support a reliable lower-range mapping.
+        </p>
       </div>
-      <div class="normalization-table-wrap">
-        <table class="normalization-table">
+      <div
+        class="normalization-table-wrap"
+        role="region"
+        aria-label="Scrollable rating grade reference"
+        tabindex="0"
+      >
+        <table class="normalization-table" aria-label="Rating grade ranges by rating pool">
           <thead>
             <tr>
-              <th>Grade</th>
+              <th scope="col">Grade</th>
               @for (pool of normalizationPools; track pool) {
-                <th>
+                <th scope="col">
                   {{ profile.pools[pool].label }}
                   @if (profile.pools[pool].referenceOnly) {
                     <span class="reference-badge">Reference</span>
@@ -111,7 +167,7 @@
           <tbody>
             @for (grade of profile.grades; track grade.id) {
               <tr>
-                <th>{{ grade.label }}</th>
+                <th scope="row">{{ grade.label }}</th>
                 @for (pool of normalizationPools; track pool) {
                   <td [class.not-calibrated]="grade.ranges[pool] === null">
                     {{ ratingRangeLabel(grade.ranges[pool]) }}
@@ -126,27 +182,32 @@
   </details>
 
   @if (store.loading()) {
-    <p class="status-note">Aggregating imported games...</p>
+    <p class="lab-state" aria-live="polite">Aggregating imported games…</p>
   }
   @if (store.error(); as error) {
-    <p class="status-note danger-copy">{{ error }}</p>
+    <p class="lab-state lab-state--error" role="alert">{{ error }}</p>
   }
   @if (store.loaded() && !store.loading() && !store.error()) {
-    <p class="status-note">
+    <p class="report-summary">
       {{ store.filteredItems().length }} rating bands shown. Story percentages use analysed games as their denominator.
     </p>
   }
 
   @if (!store.loading() && store.filteredItems().length > 0) {
-    <div class="performance-table-wrap">
-      <table class="performance-table">
+    <div
+      class="performance-table-wrap"
+      role="region"
+      aria-label="Scrollable performance by opponent rating report"
+      tabindex="0"
+    >
+      <table class="performance-table" aria-label="Performance by opponent rating">
         <thead>
           <tr class="group-row">
-            <th class="type-column" rowspan="2">Type</th>
-            <th class="rating-column" rowspan="2">Opponent rating</th>
+            <th class="type-column" scope="col" rowspan="2">Type</th>
+            <th class="rating-column" scope="col" rowspan="2">Opponent rating</th>
             @for (group of columnGroups; track group.id) {
               @if (visibleCount(group) > 0) {
-                <th [attr.colspan]="visibleCount(group)">{{ group.label }}</th>
+                <th scope="colgroup" [attr.colspan]="visibleCount(group)">{{ group.label }}</th>
               }
             }
           </tr>
@@ -154,7 +215,7 @@
             @for (group of columnGroups; track group.id) {
               @for (column of group.columns; track column.id) {
                 @if (store.isColumnVisible(column.id)) {
-                  <th [attr.title]="column.description">{{ column.shortLabel }}</th>
+                  <th scope="col" [attr.title]="column.description">{{ column.shortLabel }}</th>
                 }
               }
             }
@@ -166,7 +227,9 @@
               <td class="type-cell">{{ typeLabel(row.type) }}</td>
               <td class="rating-cell">
                 {{ ratingLabel(row) }}
-                @if (row.games < 5) { <span class="sample-warning" title="Fewer than five games">low n</span> }
+                @if (row.games < 5) {
+                  <span class="sample-warning" title="Fewer than five games">Low n</span>
+                }
               </td>
               @if (store.isColumnVisible('games')) { <td>{{ row.games }}</td> }
               @if (store.isColumnVisible('wdl')) { <td>{{ wdlLabel(row.wdl) }}</td> }
@@ -189,6 +252,6 @@
       </table>
     </div>
   } @else if (store.loaded() && !store.loading() && !store.error()) {
-    <div class="empty-state">No scored games with opponent ratings match the selected dates and report types.</div>
+    <div class="lab-empty">No scored games with opponent ratings match the selected dates and report types.</div>
   }
-</section>
+</app-panel>
