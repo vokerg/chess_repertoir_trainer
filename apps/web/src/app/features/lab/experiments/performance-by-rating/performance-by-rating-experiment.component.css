@@ -1,6 +1,7 @@
 :host {
   --performance-type-column-width: 10.25rem;
   --performance-rating-column-width: 9.6rem;
+  --performance-group-header-height: 2.1rem;
 
   display: block;
   min-width: 0;
@@ -401,6 +402,7 @@
 
 .normalization-table tbody tr:last-child th,
 .normalization-table tbody tr:last-child td,
+.performance-table tbody tr:last-child th,
 .performance-table tbody tr:last-child td {
   border-bottom: 0;
 }
@@ -461,12 +463,13 @@
 
 .performance-table .group-row th {
   top: 0;
-  height: 2.1rem;
+  height: var(--performance-group-header-height);
+  padding-block: 0;
   text-align: center;
 }
 
 .performance-table .metric-row th {
-  top: 2.1rem;
+  top: calc(var(--performance-group-header-height) + 1px);
 }
 
 .performance-table .type-column,
