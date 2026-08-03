@@ -215,7 +215,13 @@
             @for (group of columnGroups; track group.id) {
               @for (column of group.columns; track column.id) {
                 @if (store.isColumnVisible(column.id)) {
-                  <th scope="col" [attr.title]="column.description">{{ column.shortLabel }}</th>
+                  <th
+                    scope="col"
+                    [attr.aria-label]="column.label"
+                    [attr.title]="column.description"
+                  >
+                    {{ column.shortLabel }}
+                  </th>
                 }
               }
             }
