@@ -22,6 +22,7 @@ import {
   resultLabel,
   timeClassLabel,
 } from '../helpers/games-table-display';
+import { isStandardImportedGameSpeed } from '../../../shared/games/imported-game-workflow-eligibility';
 
 @Component({
   selector: 'app-games-table',
@@ -69,7 +70,7 @@ export class GamesTableComponent {
   }
 
   protected canAnalyse(game: ImportedGameSearchItem): boolean {
-    return game.analysis?.status !== 'COMPLETED';
+    return isStandardImportedGameSpeed(game.speedCategory) && game.analysis?.status !== 'COMPLETED';
   }
 
   protected isAnalysing(game: ImportedGameSearchItem): boolean {
