@@ -167,7 +167,9 @@ describe('PerformanceByRatingExperimentComponent', () => {
 
   it('delegates a rendered report-type toggle with pressed-state semantics', () => {
     const bulletToggle = findButton('Lichess Bullet');
+    const blitzToggle = findButton('Lichess Blitz');
     expect(bulletToggle.getAttribute('aria-pressed')).toBe('false');
+    expect(blitzToggle.getAttribute('aria-pressed')).toBe('true');
 
     bulletToggle.click();
 
@@ -182,11 +184,19 @@ describe('PerformanceByRatingExperimentComponent', () => {
     fixture.detectChanges();
     expect(columnPicker.open).toBeTrue();
 
-    findButton('Stories').click();
+    const allPreset = findButton('All');
+    const storiesPreset = findButton('Stories');
+    expect(allPreset.getAttribute('aria-pressed')).toBe('true');
+    expect(storiesPreset.getAttribute('aria-pressed')).toBe('false');
+
+    storiesPreset.click();
 
     const firstColumn = columnPicker.querySelector(
       'input[type="checkbox"]',
     ) as HTMLInputElement;
+    expect(firstColumn.getAttribute('aria-label')).toContain(
+      'Scored games in this provider, speed and opponent-rating band.',
+    );
     firstColumn.click();
 
     expect(store.setPreset).toHaveBeenCalledOnceWith('stories');
@@ -206,18 +216,52 @@ describe('PerformanceByRatingExperimentComponent', () => {
     const openingSuccessHeader = table.querySelector(
       'thead th[aria-label="Opening success"]',
     ) as HTMLTableCellElement;
+    const rowHeaders = row.querySelectorAll('th[scope="row"]');
+    const sampleWarning = row.querySelector('.sample-warning') as HTMLElement;
 
     expect(region.getAttribute('role')).toBe('region');
     expect(region.tabIndex).toBe(0);
     expect(table.getAttribute('aria-label')).toBe('Performance by opponent rating');
     expect(table.querySelectorAll('thead th[scope="colgroup"]').length).toBe(6);
     expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(17);
+    expect(rowHeaders.length).toBe(2);
+    expect(rowHeaders[0].textContent?.trim()).toBe('Lichess Blitz');
+    expect(rowHeaders[1].textContent).toContain('1200–1299');
     expect(openingSuccessHeader.textContent?.trim()).toBe('Opening +');
-    expect(row.textContent).toContain('Lichess Blitz');
-    expect(row.textContent).toContain('1200–1299');
     expect(row.textContent).toContain('2–1–1');
     expect(row.textContent).toContain('62.5%');
-    expect(row.querySelector('.sample-warning')?.textContent?.trim()).toBe('Low n');
+    expect(sampleWarning.textContent?.trim()).toBe('Low n');
+    expect(sampleWarning.getAttribute('aria-label')).toBe('Low sample: fewer than five games');
+  });
+
+  it('keeps the sticky metric headers below the sticky group headers', async () => {
+    loaded.set(true);
+    filteredItems.set(
+      Array.from({ length: 20 }, (_, index) => ({
+        ...sampleRow,
+        ratingFrom: 600 + index * 100,
+        ratingTo: 699 + index * 100,
+      })),
+    );
+    fixture.detectChanges();
+
+    const region = fixture.nativeElement.querySelector(
+      '.performance-table-wrap',
+    ) as HTMLElement;
+    const groupHeader = region.querySelector(
+      '.group-row th[scope="colgroup"]',
+    ) as HTMLTableCellElement;
+    const metricHeader = region.querySelector(
+      '.metric-row th[scope="col"]',
+    ) as HTMLTableCellElement;
+
+    expect(region.scrollHeight).toBeGreaterThan(region.clientHeight);
+    region.scrollTop = 120;
+    await nextAnimationFrame();
+
+    expect(metricHeader.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      groupHeader.getBoundingClientRect().bottom - 0.5,
+    );
   });
 
   it('renders normalization loading, error, and populated table states', () => {
@@ -288,5 +332,9 @@ describe('PerformanceByRatingExperimentComponent', () => {
 
   function openRange() {
     return { minInclusive: 0, maxExclusive: null };
+  }
+
+  function nextAnimationFrame(): Promise<void> {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
   }
 });
