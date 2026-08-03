@@ -6,15 +6,7 @@
     [actions]="headerActions()"
   />
 
-  <section class="games-filter-workspace" aria-labelledby="games-filter-title">
-    <header class="games-section-heading">
-      <p class="games-section-kicker">Evidence set</p>
-      <div>
-        <h3 id="games-filter-title">Choose the games that matter now.</h3>
-        <p>Use the common filters first. Dates, ratings, openings, and processing details stay available under More filters.</p>
-      </div>
-    </header>
-
+  <section class="games-filter-workspace" aria-label="Game filters">
     <app-game-filter-panel
       presentation="explorer"
       [filters]="store.filters()"
@@ -42,7 +34,5 @@
     (refresh)="store.refresh()"
     (loadMore)="store.loadMore()"
     (analyse)="store.analyse($event)"
-    (forceReanalyse)="store.forceReanalyse($event)"
-    (indexPlies)="store.indexPlies($event)"
   />
 </section>

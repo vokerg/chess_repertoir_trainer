@@ -81,6 +81,14 @@ describe('GamesExplorerPageComponent', () => {
     expect(store.filters().speedCategory).toBe('blitz,rapid');
   });
 
+  it('renders the filter workspace without an introductory heading', () => {
+    const workspace = fixture.nativeElement.querySelector('.games-filter-workspace') as HTMLElement;
+
+    expect(workspace.getAttribute('aria-label')).toBe('Game filters');
+    expect(workspace.querySelector('.games-section-heading')).toBeNull();
+    expect(workspace.textContent).not.toContain('Choose the games that matter now.');
+  });
+
   it('Apply updates the URL without loading until the route emits', () => {
     const filters = store.filters();
     store.setFilters({ ...filters, opponent: 'Carlsen' });

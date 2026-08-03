@@ -98,29 +98,29 @@
                 </p>
               </td>
               <td data-label="Accuracy">
-                <p class="game-main games-metric">{{ accuracyLabel(game.analysis?.userAccuracy) }}</p>
+                <p class="game-main games-metric">
+                  {{ accuracyLabel(game.analysis?.userAccuracy) }}
+                </p>
                 <p class="games-muted">
                   W {{ accuracyLabel(game.analysis?.whiteAccuracy) }} &middot; B
                   {{ accuracyLabel(game.analysis?.blackAccuracy) }}
                 </p>
               </td>
               <td data-label="Status">
-                <p class="game-main games-status-primary">{{ analysisStatusLabel(game) }}</p>
-                <p class="games-muted games-status-secondary">{{ plyIndexStatusLabel(game) }}</p>
+                <p class="game-main games-status-primary">{{ gameStatusLabel(game) }}</p>
               </td>
               <td data-label="Actions">
                 <div class="games-row-actions">
-                  <app-game-action-menu
-                    [game]="game"
-                    [open]="activeActionMenuGameId() === game.id"
-                    [analysing]="isAnalysing(game)"
-                    [indexing]="isIndexing(game)"
-                    (toggle)="toggleActionMenu(game.id, $event)"
-                    (close)="closeActionMenu()"
-                    (analyse)="analyseGame(game)"
-                    (forceReanalyse)="forceReanalyseGame(game)"
-                    (indexPlies)="indexGamePlies(game)"
-                  />
+                  @if (canAnalyse(game)) {
+                    <a
+                      class="games-row-action-link"
+                      href="#"
+                      role="button"
+                      [attr.aria-disabled]="isAnalysing(game)"
+                      (click)="$event.preventDefault(); analyseGame(game)"
+                      >{{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}</a
+                    >
+                  }
                 </div>
               </td>
             </tr>
@@ -143,18 +143,16 @@
             </div>
 
             <div class="games-mobile-actions">
-              <app-game-action-menu
-                class="games-action-menu"
-                [game]="game"
-                [open]="activeActionMenuGameId() === game.id"
-                [analysing]="isAnalysing(game)"
-                [indexing]="isIndexing(game)"
-                (toggle)="toggleActionMenu(game.id, $event)"
-                (close)="closeActionMenu()"
-                (analyse)="analyseGame(game)"
-                (forceReanalyse)="forceReanalyseGame(game)"
-                (indexPlies)="indexGamePlies(game)"
-              />
+              @if (canAnalyse(game)) {
+                <a
+                  class="games-row-action-link"
+                  href="#"
+                  role="button"
+                  [attr.aria-disabled]="isAnalysing(game)"
+                  (click)="$event.preventDefault(); analyseGame(game)"
+                  >{{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}</a
+                >
+              }
             </div>
           </div>
 

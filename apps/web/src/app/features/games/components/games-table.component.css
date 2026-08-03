@@ -175,13 +175,8 @@
   max-width: 170px;
 }
 
-.games-status-secondary {
-  max-width: 170px;
-  margin-top: 0.12rem;
-}
-
 .games-actions-heading {
-  width: 58px;
+  width: 76px;
   text-align: right !important;
 }
 
@@ -189,6 +184,26 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+.games-row-action-link {
+  color: var(--ui-action-strong);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.games-row-action-link:hover,
+.games-row-action-link:focus-visible {
+  color: var(--ui-chrome);
+}
+
+.games-row-action-link[aria-disabled='true'] {
+  color: var(--ui-text-subtle);
+  cursor: wait;
+  pointer-events: none;
 }
 
 .games-pagination {

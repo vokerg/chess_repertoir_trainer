@@ -60,7 +60,7 @@ export class GamesExplorerStore {
     this.filteredGames().filter(
       (game) =>
         isStandardImportedGameSpeed(game.speedCategory) &&
-        game.plyIndex?.status === 'INDEXED' &&
+        game.analysis?.status !== 'COMPLETED' &&
         !this.jobs.isGameActive(game.id),
     ),
   );
@@ -69,13 +69,8 @@ export class GamesExplorerStore {
       ? 'Starting...'
       : String(this.bulkIndexableGames().length),
   );
-  readonly bulkRefreshTagsProgressLabel = computed(() =>
-    this.submittingKind() === 'REFRESH_TAGS'
-      ? 'Starting...'
-      : String(this.filteredGames().filter((game) => !this.jobs.isGameActive(game.id)).length),
-  );
-  readonly batchAnalysisProgressLabel = computed(() =>
-    this.submittingKind() === 'ANALYSE_GAMES'
+  readonly analysisProgressLabel = computed(() =>
+    this.submittingKind() === 'PROCESS_GAMES'
       ? 'Starting...'
       : String(this.bulkAnalyzableGames().length),
   );
@@ -154,16 +149,7 @@ export class GamesExplorerStore {
   }
 
   analyse(game: ImportedGameSearchItem): void {
-    if (this.canAnalyse(game)) void this.submitJob('ANALYSE_GAMES', [game.id]);
-  }
-
-  forceReanalyse(game: ImportedGameSearchItem): void {
-    if (this.canAnalyse(game)) void this.submitJob('ANALYSE_GAMES', [game.id], true);
-  }
-
-  indexPlies(game: ImportedGameSearchItem): void {
-    if (game.plyIndex?.status === 'INDEXED' || this.jobs.isGameActive(game.id)) return;
-    void this.submitJob('INDEX_GAMES', [game.id], game.plyIndex?.status === 'FAILED');
+    if (this.canAnalyse(game)) void this.submitJob('PROCESS_GAMES', [game.id]);
   }
 
   indexAllVisibleGames(): void {
@@ -173,24 +159,11 @@ export class GamesExplorerStore {
     );
   }
 
-  batchAnalyzeVisibleGames(): void {
+  analyseVisibleGames(): void {
     void this.submitJob(
-      'ANALYSE_GAMES',
+      'PROCESS_GAMES',
       this.bulkAnalyzableGames().map((game) => game.id),
     );
-  }
-
-  refreshTagsForVisibleGames(): void {
-    void this.submitJob(
-      'REFRESH_TAGS',
-      this.filteredGames()
-        .filter((game) => !this.jobs.isGameActive(game.id))
-        .map((game) => game.id),
-    );
-  }
-
-  isSubmitting(kind: JobRunKind): boolean {
-    return this.submittingKind() === kind;
   }
 
   private canAnalyse(game: ImportedGameSearchItem): boolean {
@@ -199,8 +172,8 @@ export class GamesExplorerStore {
       this.error.set('Only blitz and rapid games are eligible for saved analysis.');
       return false;
     }
-    if (game.plyIndex?.status !== 'INDEXED') {
-      this.error.set('Index game plies before starting analysis.');
+    if (game.analysis?.status === 'COMPLETED') {
+      this.error.set('This game has already been analysed.');
       return false;
     }
     return true;
