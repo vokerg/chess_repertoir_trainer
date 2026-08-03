@@ -21,38 +21,51 @@ describe('MonthlyGamesExperimentComponent', () => {
         error: signal<string | null>(null),
       },
     );
+    store.load.and.returnValue(Promise.resolve());
 
     await TestBed.configureTestingModule({
       imports: [MonthlyGamesExperimentComponent],
     })
       .overrideComponent(MonthlyGamesExperimentComponent, {
         set: {
-          template: '',
           providers: [{ provide: MonthlyGamesStore, useValue: store }],
         },
       })
       .compileComponents();
 
     fixture = TestBed.createComponent(MonthlyGamesExperimentComponent);
+    fixture.detectChanges();
   });
 
-  it('runs refresh through the existing store workflow', () => {
-    component().actions()[0].run?.();
+  it('loads on init and refreshes through the rendered panel action', () => {
+    expect(store.load).toHaveBeenCalledTimes(1);
+    store.load.calls.reset();
+
+    refreshButton().click();
 
     expect(store.load).toHaveBeenCalledTimes(1);
   });
 
-  it('disables and relabels refresh while loading', () => {
+  it('disables and relabels the rendered refresh action while loading', () => {
     loading.set(true);
+    fixture.detectChanges();
 
-    expect(component().actions()[0]).toEqual(
-      jasmine.objectContaining({ label: 'Loading…', disabled: true }),
-    );
+    const button = refreshButton();
+    expect(button.disabled).toBeTrue();
+    expect(button.textContent?.trim()).toBe('Loading…');
   });
 
-  function component(): { actions(): readonly { label: string; disabled?: boolean; run?: () => void }[] } {
-    return fixture.componentInstance as unknown as {
-      actions(): readonly { label: string; disabled?: boolean; run?: () => void }[];
-    };
+  it('keeps the bullet exclusion control wired to the store', () => {
+    const checkbox = fixture.nativeElement.querySelector(
+      'input[type="checkbox"]',
+    ) as HTMLInputElement;
+
+    checkbox.click();
+
+    expect(store.setExcludeBullet).toHaveBeenCalledOnceWith(true);
+  });
+
+  function refreshButton(): HTMLButtonElement {
+    return fixture.nativeElement.querySelector('button.ui-shell-action') as HTMLButtonElement;
   }
 });
