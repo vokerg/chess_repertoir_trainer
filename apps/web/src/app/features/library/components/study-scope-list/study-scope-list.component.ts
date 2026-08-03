@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 export interface StudyScopeItem {
   id: number;
@@ -15,10 +15,8 @@ export interface StudyScopeItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StudyScopeListComponent {
-  readonly stepLabel = input.required<string>();
   readonly title = input.required<string>();
-  readonly subtitle = input.required<string>();
-  readonly items = input.required<StudyScopeItem[]>();
+  readonly items = input.required<readonly StudyScopeItem[]>();
   readonly selectedId = input<number | null>(null);
   readonly loading = input(false);
   readonly error = input<string | null>(null);

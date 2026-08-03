@@ -1,122 +1,71 @@
 <section class="study-page stack">
   <app-page-header
-    class="desktop-only"
     title="Study"
-    subtitle="Choose a repertoire, narrow the scope, and launch the training session that matters now."
-    [stats]="headerStats()"
-    [actions]="headerActions()"
+    subtitle="Choose the material, set the focus, and start one clear training session."
   />
 
-  <header class="study-mobile-intro mobile-only">
-    <span class="study-mobile-step">1</span>
-    <div>
-      <h2>Choose a repertoire</h2>
-      <p>Select one to open the mobile training planner.</p>
-    </div>
-  </header>
-
-  <section class="study-browser" aria-label="Study training planner">
-    <header class="study-toolbar desktop-only">
-      <label class="study-search-field">
-        <span>Search study library</span>
-        <input
-          class="study-search"
-          [ngModel]="store.searchText()"
-          (ngModelChange)="store.searchText.set($event)"
-          placeholder="Repertoires, sections, lines..."
-        />
-      </label>
-
-      <app-context-strip
-        class="study-selection-context"
-        presentation="cards"
-        ariaLabel="Current study selection"
-        [items]="selectionContextItems()"
-      />
-    </header>
-
-    <div class="study-columns">
-      <aside class="study-column study-scope-column">
+  <section class="study-workspace" aria-label="Study session builder">
+    <aside class="study-material-column">
+      <app-panel
+        class="study-material-panel"
+        title="Choose material"
+        subtitle="Pick a repertoire, then narrow it to a section."
+      >
         <app-study-scope-list
-          stepLabel="1"
           title="Repertoires"
-          subtitle="Choose the repertoire you want to train."
           [items]="courseItems()"
           [selectedId]="store.selectedCourseId()"
           [loading]="store.courseLoading()"
           [error]="store.courseError()"
-          emptyText="No repertoires match this search."
-          (selectItem)="selectCourse($event)"
+          emptyText="No repertoires are available."
+          (selectItem)="store.selectCourse($event)"
         />
-      </aside>
 
-      <aside class="study-column desktop-only">
+        <div class="material-divider" aria-hidden="true"></div>
+
         <app-study-scope-list
-          stepLabel="2"
           title="Sections"
-          subtitle="Narrow the current repertoire."
           [items]="chapterItems()"
           [selectedId]="store.selectedChapterId()"
           [loading]="store.chapterLoading()"
           [error]="store.chapterError()"
-          emptyText="Select a repertoire to see sections."
+          emptyText="Choose a repertoire to see its sections."
           (selectItem)="store.selectChapter($event)"
         />
-      </aside>
+      </app-panel>
+    </aside>
 
-      <main class="study-column study-lines-column desktop-only">
-        <app-study-line-list
-          stepLabel="3"
-          title="Lines"
-          subtitle="Review health, select lines, or train directly."
-          [lines]="store.filteredLines()"
-          [selectedLineId]="store.selectedLineId()"
-          [selectedLineIds]="store.selectedLineIds()"
-          [loading]="store.lineLoading()"
-          [error]="store.lineError()"
-          (selectLine)="store.selectLine($event)"
-          (toggleLine)="store.toggleLineSelection($event)"
-        />
-      </main>
-
-      <app-training-basket-panel
-        class="study-column study-basket-column desktop-only"
-        stepLabel="4"
-        [lineCountLabel]="store.basketLineCountLabel()"
-        [lineCount]="store.basketLineCount()"
-        [activeSublineCount]="store.basketActiveSublineCount()"
-        [recentAttempts]="store.basketRecentAttempts()"
-        [weakSublineCount]="store.basketWeakSublineCount()"
-        [untrainedSublineCount]="store.basketUntrainedSublineCount()"
-        [coverageLabel]="store.basketCoverageLabel()"
-        [masteryLabel]="store.basketMasteryLabel()"
-        [sourceLabel]="store.basketCoverageSourceLabel()"
-        [scope]="store.trainingScope()"
-        [canUseCourseScope]="store.canUseCourseScope()"
-        [canUseChapterScope]="store.canUseChapterScope()"
-        [canUseSelectedLinesScope]="store.canUseSelectedLinesScope()"
-        [canStart]="store.canStartBasket()"
-        (scopeChange)="store.setTrainingScope($event)"
-        (startMode)="store.startSelectedMarathon($event.mode, $event.scope)"
+    <main class="study-lines-column">
+      <app-study-line-list
+        [title]="selectedChapterTitle()"
+        [subtitle]="selectedChapterSubtitle()"
+        [lines]="store.filteredLines()"
+        [selectedLineIds]="store.selectedLineIds()"
+        [searchText]="store.searchText()"
+        [loading]="store.lineLoading()"
+        [error]="store.lineError()"
+        (searchTextChange)="store.searchText.set($event)"
+        (toggleLine)="store.toggleLineSelection($event)"
+        (selectAllVisible)="store.selectAllVisibleLines()"
+        (clearSelection)="store.clearLineSelection()"
       />
-    </div>
+    </main>
+
+    <app-training-basket-panel
+      class="study-session-column"
+      [activeSublineCount]="store.basketActiveSublineCount()"
+      [weakSublineCount]="store.basketWeakSublineCount()"
+      [untrainedSublineCount]="store.basketUntrainedSublineCount()"
+      [sourceLabel]="store.basketSourceLabel()"
+      [scope]="store.trainingScope()"
+      [mode]="store.marathonMode()"
+      [canUseCourseScope]="store.canUseCourseScope()"
+      [canUseChapterScope]="store.canUseChapterScope()"
+      [canUseSelectedLinesScope]="store.canUseSelectedLinesScope()"
+      [canStart]="store.canStartBasket()"
+      (scopeChange)="store.setTrainingScope($event)"
+      (modeChange)="store.setMarathonMode($event)"
+      (startMode)="store.startSelectedMarathon($event.mode, $event.scope)"
+    />
   </section>
 </section>
-
-@if (mobileLauncherOpen()) {
-  <app-study-mobile-launcher
-    class="mobile-only"
-    [selectedCourse]="store.selectedCourse()"
-    [selectedChapter]="store.selectedChapter()"
-    [visibleChapters]="store.filteredChapters()"
-    [visibleLines]="store.filteredLines()"
-    [selectedLineId]="store.selectedLineId()"
-    [courseSummary]="courseSummary()"
-    [chapterSummary]="chapterSummary()"
-    [lineSummary]="lineSummary()"
-    (selectChapter)="store.selectChapter($event)"
-    (selectLine)="store.selectLine($event)"
-    (startTraining)="startTraining($event)"
-    (close)="closeMobileLauncher()"
-  />
-}

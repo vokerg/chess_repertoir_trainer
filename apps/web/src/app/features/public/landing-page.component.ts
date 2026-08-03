@@ -137,7 +137,17 @@ import { setupLandingScrollReveal } from './landing-scroll-reveal';
         </article>
         <article class="capability">
           <div class="capability-copy" data-scroll-reveal><span class="capability-number">03</span><p class="eyebrow">TRAIN WHAT MATTERS</p><h3>Turn weaknesses into small, deliberate sessions.</h3><p>Build training from weak lines, missed tactical shots and recent repertoire changes instead of reviewing everything equally.</p></div>
-          <div class="capability-demo training-demo" data-scroll-reveal data-reveal-delay="90"><small>Focused session</small><h3>Weak Sicilian lines</h3><div class="session-progress"><span></span></div><div class="session-stats"><div><strong>5 / 8</strong><small>positions</small></div><div><strong>84%</strong><small>accuracy</small></div><div><strong>6m</strong><small>elapsed</small></div></div><a class="button button-primary full-width" routerLink="/signup">Start a session</a></div>
+          <figure class="capability-demo training-artwork" data-scroll-reveal data-reveal-delay="90">
+            <img
+              src="assets/marketing/study-without-clutter.webp"
+              width="1400"
+              height="786"
+              loading="lazy"
+              decoding="async"
+              alt="Course, section and line choices converging into one focused chess training plan."
+            />
+            <figcaption>Choose the material. Set the focus. Start training.</figcaption>
+          </figure>
         </article>
       </section>
 
