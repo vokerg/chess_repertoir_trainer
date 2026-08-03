@@ -51,6 +51,7 @@
                   <input
                     type="checkbox"
                     [checked]="store.isColumnVisible(column.id)"
+                    [attr.aria-label]="column.label + '. ' + column.description"
                     (change)="store.toggleColumn(column.id)"
                   />
                   <span>{{ column.label }}</span>
@@ -230,13 +231,17 @@
         <tbody>
           @for (row of store.filteredItems(); track row.type + ':' + row.ratingFrom) {
             <tr [class.small-sample]="row.games < 5">
-              <td class="type-cell">{{ typeLabel(row.type) }}</td>
-              <td class="rating-cell">
+              <th scope="row" class="type-cell">{{ typeLabel(row.type) }}</th>
+              <th scope="row" class="rating-cell">
                 {{ ratingLabel(row) }}
                 @if (row.games < 5) {
-                  <span class="sample-warning" title="Fewer than five games">Low n</span>
+                  <span
+                    class="sample-warning"
+                    title="Fewer than five games"
+                    aria-label="Low sample: fewer than five games"
+                  >Low n</span>
                 }
-              </td>
+              </th>
               @if (store.isColumnVisible('games')) { <td>{{ row.games }}</td> }
               @if (store.isColumnVisible('wdl')) { <td>{{ wdlLabel(row.wdl) }}</td> }
               @if (store.isColumnVisible('score')) { <td>{{ percentLabel(row.scorePercent) }}</td> }
