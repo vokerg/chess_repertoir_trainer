@@ -28,10 +28,6 @@ export function masteryLabel(passRate: number | null | undefined): string {
   return passRate == null ? 'No attempts' : `${Math.round(passRate * 100)}%`;
 }
 
-export function coverageLabel(trained: number, active: number): string {
-  return active > 0 ? `${trained}/${active}` : '0/0';
-}
-
 function statusFromPassRate(recentAttempts: number, passRate: number): LibraryLineStatus {
   if (recentAttempts === 0) return 'NEW';
   if (passRate < 0.4) return 'WEAK';

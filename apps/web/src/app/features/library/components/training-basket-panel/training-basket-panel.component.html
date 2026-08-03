@@ -1,70 +1,71 @@
-<app-panel title="Training plan" [subtitle]="sourceLabel()">
-  <div class="basket-step">
-    <span>{{ stepLabel() }}</span>
-    <div>
-      <strong>Choose the session</strong>
-      <small>{{ basketHealth() }}</small>
-    </div>
-  </div>
-
-  <dl class="basket-stats" aria-label="Training scope summary">
-    @for (stat of basketStats(); track stat.id) {
-      <div class="basket-stat-row">
-        <dt>{{ stat.label }}</dt>
-        <dd>{{ stat.value }}</dd>
-      </div>
-    }
-  </dl>
-
-  <div class="basket-train">
-    <div class="basket-control-group">
-      <p class="basket-train-label">Training scope</p>
-      <div class="basket-scope-actions" aria-label="Training scope">
+<app-panel title="Set your focus" [subtitle]="sourceLabel()">
+  <div class="session-controls">
+    <section class="session-control-group" aria-labelledby="training-scope-title">
+      <h4 id="training-scope-title">Train</h4>
+      <div class="scope-options">
         @for (option of scopeOptions(); track option.id) {
           <button
             type="button"
-            class="secondary"
+            class="scope-option"
             [class.active]="scope() === option.id"
             [attr.aria-pressed]="scope() === option.id"
             [disabled]="option.disabled"
             (click)="selectScope(option.id)"
           >
+            <span class="scope-radio" aria-hidden="true"></span>
+            <span><strong>{{ option.label }}</strong><small>{{ option.caption }}</small></span>
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="session-control-group" aria-labelledby="training-mode-title">
+      <h4 id="training-mode-title">Prioritise</h4>
+      <div class="mode-options" aria-label="Training priority">
+        @for (option of modeOptions(); track option.id) {
+          <button
+            type="button"
+            [class.active]="mode() === option.id"
+            [attr.aria-pressed]="mode() === option.id"
+            [disabled]="option.disabled"
+            (click)="selectMode(option.id)"
+          >
             {{ option.label }}
           </button>
         }
       </div>
-    </div>
-
-    <div class="basket-control-group">
-      <p class="basket-train-label">Start training</p>
-      <div class="basket-train-actions" aria-label="Start marathon">
-        <button
-          type="button"
-          class="primary"
-          [disabled]="!canStartAll()"
-          (click)="startMarathon('ALL')"
-        >
-          Train all
-        </button>
-
-        <button
-          type="button"
-          class="secondary"
-          [disabled]="!canStartWeak()"
-          (click)="startMarathon('WEAK_SUBLINES')"
-        >
-          Train weak
-        </button>
-
-        <button
-          type="button"
-          class="secondary"
-          [disabled]="!canStartUntrained()"
-          (click)="startMarathon('UNTRAINED_SUBLINES')"
-        >
-          Train untrained
-        </button>
-      </div>
-    </div>
+      <p class="mode-caption">
+        @switch (mode()) {
+          @case ('WEAK_SUBLINES') { Only sublines that need reinforcement right now. }
+          @case ('UNTRAINED_SUBLINES') { Only material you have not attempted yet. }
+          @default { A complete pass through the current scope. }
+        }
+      </p>
+    </section>
   </div>
+
+  <dl class="session-recap" aria-label="Selected training summary">
+    <div>
+      <dt>Scope</dt>
+      <dd>{{ selectedScopeLabel() }}</dd>
+    </div>
+    <div>
+      <dt>Focus</dt>
+      <dd>{{ selectedModeLabel() }}</dd>
+    </div>
+    <div>
+      <dt>Material</dt>
+      <dd>{{ materialLabel() }}</dd>
+    </div>
+  </dl>
+
+  <button
+    type="button"
+    class="start-session"
+    [disabled]="!canStartMode()"
+    (click)="startTraining()"
+  >
+    <span aria-hidden="true">▶</span>
+    {{ startLabel() }}
+  </button>
 </app-panel>
