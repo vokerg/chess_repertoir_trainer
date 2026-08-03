@@ -1,4 +1,7 @@
 :host {
+  --performance-type-column-width: 10.25rem;
+  --performance-rating-column-width: 9.6rem;
+
   display: block;
   min-width: 0;
 }
@@ -74,11 +77,15 @@
 .column-trigger:focus-visible,
 .column-presets button:focus-visible,
 .column-picker input:focus-visible,
-.disclosure-summary:focus-visible,
-.normalization-table-wrap:focus-visible,
 .performance-table-wrap:focus-visible {
   outline: 3px solid var(--ui-focus-ring);
   outline-offset: 2px;
+}
+
+.disclosure-summary:focus-visible,
+.normalization-table-wrap:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: -3px;
 }
 
 .apply-action,
@@ -466,19 +473,19 @@
 .performance-table .type-cell {
   position: sticky;
   left: 0;
-  width: 10.25rem;
-  min-width: 10.25rem;
-  max-width: 10.25rem;
+  width: var(--performance-type-column-width);
+  min-width: var(--performance-type-column-width);
+  max-width: var(--performance-type-column-width);
   text-align: left;
 }
 
 .performance-table .rating-column,
 .performance-table .rating-cell {
   position: sticky;
-  left: 10.25rem;
-  width: 9.6rem;
-  min-width: 9.6rem;
-  max-width: 9.6rem;
+  left: var(--performance-type-column-width);
+  width: var(--performance-rating-column-width);
+  min-width: var(--performance-rating-column-width);
+  max-width: var(--performance-rating-column-width);
   text-align: left;
 }
 
@@ -517,7 +524,7 @@
   text-transform: uppercase;
 }
 
-/* Keep in sync with the desktop-to-tablet composition boundary used by dense reports. */
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx. */
 @media (max-width: 980px) {
   .filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -530,6 +537,11 @@
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.mobileMaxPx. */
 @media (max-width: 760px) {
+  :host {
+    --performance-type-column-width: 8.9rem;
+    --performance-rating-column-width: 8.6rem;
+  }
+
   .criteria-heading {
     align-items: stretch;
     flex-direction: column;
@@ -568,21 +580,6 @@
   .disclosure-summary {
     align-items: flex-start;
     flex-wrap: wrap;
-  }
-
-  .performance-table .type-column,
-  .performance-table .type-cell {
-    width: 8.9rem;
-    min-width: 8.9rem;
-    max-width: 8.9rem;
-  }
-
-  .performance-table .rating-column,
-  .performance-table .rating-cell {
-    left: 8.9rem;
-    width: 8.6rem;
-    min-width: 8.6rem;
-    max-width: 8.6rem;
   }
 }
 
