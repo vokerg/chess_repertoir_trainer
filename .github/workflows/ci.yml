@@ -74,18 +74,6 @@ jobs:
       - name: Apply database migrations
         run: npm run db:migrate --workspace=apps/api
 
-      - name: ONB-007 self-review benchmark command
-        env:
-          ONBOARDING_BENCHMARK_REPORT_PATH: onboarding-throughput-self-review.json
-        run: npm run benchmark:onboarding --workspace=apps/api
-
-      - name: Upload ONB-007 self-review benchmark
-        uses: actions/upload-artifact@v4
-        with:
-          name: onb-007-self-review-benchmark
-          path: apps/api/onboarding-throughput-self-review.json
-          if-no-files-found: error
-
       - name: Imported-game opening classification audit
         run: npm --silent run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
 
