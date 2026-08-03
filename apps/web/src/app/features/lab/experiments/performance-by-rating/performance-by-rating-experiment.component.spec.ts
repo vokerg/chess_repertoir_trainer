@@ -36,7 +36,7 @@ describe('PerformanceByRatingExperimentComponent', () => {
         loading,
         loaded: signal(false),
         error: signal<string | null>(null),
-        filteredItems: signal<readonly PerformanceByRatingRow[]>([]),
+        filteredItems: signal<PerformanceByRatingRow[]>([]),
         visibleColumnCount: signal(10),
         selectedPreset: signal<PerformanceColumnPreset>('core'),
         normalizationProfile: signal<RatingNormalizationProfile | null>(null),
