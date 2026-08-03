@@ -25,6 +25,8 @@ import {
 
 const GAME_REVIEW_SCHEMA_VERSION = 1;
 const GAME_REVIEW_PROMPT_VERSION = 2;
+const GAME_REVIEW_GROUNDING_VERSION = 2;
+const MAX_OPENING_ASSESSMENT_LENGTH = 800;
 const MISSED_OPPORTUNITY_CLASSIFICATIONS = new Set([
   'INACCURACY',
   'MISTAKE',
@@ -54,6 +56,8 @@ const modelGameReviewSchema = z.object({
 });
 
 type GameDetail = NonNullable<Awaited<ReturnType<typeof ImportedGamesService.get>>>;
+type OpeningKnowledgeStatus = 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+type OpeningPlanClaim = z.infer<typeof modelOpeningPlanReferenceSchema>;
 
 interface StoredGameReview {
   analysisRunId: number | null;
@@ -62,6 +66,27 @@ interface StoredGameReview {
   promptVersion: number;
   model: string;
   content: unknown;
+}
+
+interface OpeningKnowledgePlanContext {
+  id: string;
+  title: string;
+  summary: string;
+}
+
+interface OpeningKnowledgeContext {
+  status: OpeningKnowledgeStatus;
+  opening: { name: string } | null;
+  side: 'WHITE' | 'BLACK' | null;
+  shortDescription: { text: string } | null;
+  strategicSummary: { text: string } | null;
+  plans: OpeningKnowledgePlanContext[];
+}
+
+interface ValidatedOpeningPlanReference {
+  reference: OpeningPlanClaim;
+  plan: OpeningKnowledgePlanContext;
+  move: AuthoritativeReviewMove;
 }
 
 interface ReviewLogger {
@@ -206,7 +231,10 @@ export function createGameReviewService(
         outputSchema: modelGameReviewSchema,
         maxOutputTokens: 1800,
       });
-      validateOpeningPlanReferences(generated.value.openingPlanReferences, built);
+      const openingPlanReferences = validateOpeningPlanReferences(
+        generated.value.openingPlanReferences,
+        built,
+      );
 
       const turningPoints = generated.value.turningPoints.map((turningPoint) => {
         const move = built.authoritativeMoves.get(turningPoint.plyNumber);
@@ -227,7 +255,7 @@ export function createGameReviewService(
         review: {
           headline: generated.value.headline,
           overview: generated.value.overview,
-          openingAssessment: generated.value.openingAssessment,
+          openingAssessment: buildOpeningAssessment(built, openingPlanReferences),
           turningPoints,
           strengths: generated.value.strengths,
           improvements: generated.value.improvements,
@@ -267,19 +295,23 @@ export function createGameReviewService(
 }
 
 function validateOpeningPlanReferences(
-  references: readonly z.infer<typeof modelOpeningPlanReferenceSchema>[],
+  references: readonly OpeningPlanClaim[],
   built: GameReviewContextResult,
-): void {
-  const targetSide = openingKnowledgeSide(built);
+): ValidatedOpeningPlanReference[] {
+  const knowledge = openingKnowledgeContext(built);
+  const plansById = new Map(knowledge?.plans.map((plan) => [plan.id, plan]) ?? []);
+  const validated: ValidatedOpeningPlanReference[] = [];
+
   for (const reference of references) {
-    if (!built.openingKnowledgePlanIds.has(reference.planId)) {
+    const plan = plansById.get(reference.planId);
+    if (!plan || !built.openingKnowledgePlanIds.has(reference.planId)) {
       throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI review referenced an unsupported opening plan.');
     }
     const move = built.authoritativeMoves.get(reference.plyNumber);
     if (!move) {
       throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI review referenced an unknown game move.');
     }
-    if (!targetSide || move.side !== targetSide) {
+    if (!knowledge?.side || move.side !== knowledge.side) {
       throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI review attached a user-side opening plan to an opponent move.');
     }
     if (reference.claim === 'MISSED_OPPORTUNITY' && !supportsMissedOpportunity(move)) {
@@ -289,19 +321,109 @@ function validateOpeningPlanReferences(
         'AI review claimed a missed opening-plan opportunity without supporting move analysis.',
       );
     }
+    validated.push({ reference, plan, move });
   }
+
+  return validated;
 }
 
-function openingKnowledgeSide(built: GameReviewContextResult): 'WHITE' | 'BLACK' | null {
-  const openingKnowledge = built.context['openingKnowledge'];
-  if (!openingKnowledge || typeof openingKnowledge !== 'object') return null;
-  const side = (openingKnowledge as { side?: unknown }).side;
-  return side === 'WHITE' || side === 'BLACK' ? side : null;
+function buildOpeningAssessment(
+  built: GameReviewContextResult,
+  references: readonly ValidatedOpeningPlanReference[],
+): string {
+  const knowledge = openingKnowledgeContext(built);
+  if (!knowledge || knowledge.status === 'UNAVAILABLE') {
+    return knowledge?.opening?.name
+      ? `No reviewed strategic opening guidance was available for ${knowledge.opening.name}.`
+      : 'No reviewed strategic opening guidance was available for this game.';
+  }
+
+  const sentences: string[] = [];
+  const strategicText = knowledge.strategicSummary?.text ?? knowledge.shortDescription?.text;
+  if (strategicText) sentences.push(asSentence(strategicText));
+
+  for (const { reference, plan, move } of references) {
+    const moveLabel = formatMoveLabel(move);
+    sentences.push(reference.claim === 'MISSED_OPPORTUNITY'
+      ? `At ${moveLabel}, the move analysis supports a possible missed opportunity related to the reviewed plan “${plan.title}”: ${asSentence(plan.summary)}`
+      : `At ${moveLabel}, the generated review associated your play with the reviewed plan “${plan.title}”: ${asSentence(plan.summary)}`);
+  }
+
+  if (sentences.length === 0) {
+    return knowledge.opening?.name
+      ? `Reviewed opening knowledge was available for ${knowledge.opening.name}, but no concrete plan claim was identified in this game.`
+      : 'Reviewed opening knowledge was available, but no concrete plan claim was identified in this game.';
+  }
+  return joinBoundedSentences(sentences, MAX_OPENING_ASSESSMENT_LENGTH);
+}
+
+function openingKnowledgeContext(built: GameReviewContextResult): OpeningKnowledgeContext | null {
+  const value = built.context['openingKnowledge'];
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<OpeningKnowledgeContext>;
+  if (!isOpeningKnowledgeStatus(candidate.status)) return null;
+  const side = candidate.side === 'WHITE' || candidate.side === 'BLACK' ? candidate.side : null;
+  const plans = Array.isArray(candidate.plans)
+    ? candidate.plans.filter(isOpeningKnowledgePlan)
+    : [];
+  return {
+    status: candidate.status,
+    opening: candidate.opening && typeof candidate.opening.name === 'string'
+      ? { name: candidate.opening.name }
+      : null,
+    side,
+    shortDescription: statement(candidate.shortDescription),
+    strategicSummary: statement(candidate.strategicSummary),
+    plans,
+  };
+}
+
+function isOpeningKnowledgeStatus(value: unknown): value is OpeningKnowledgeStatus {
+  return value === 'AVAILABLE' || value === 'PARTIAL' || value === 'UNAVAILABLE';
+}
+
+function isOpeningKnowledgePlan(value: unknown): value is OpeningKnowledgePlanContext {
+  if (!value || typeof value !== 'object') return false;
+  const plan = value as Partial<OpeningKnowledgePlanContext>;
+  return typeof plan.id === 'string'
+    && typeof plan.title === 'string'
+    && typeof plan.summary === 'string';
+}
+
+function statement(value: unknown): { text: string } | null {
+  if (!value || typeof value !== 'object') return null;
+  const text = (value as { text?: unknown }).text;
+  return typeof text === 'string' && text.trim() ? { text: text.trim() } : null;
 }
 
 function supportsMissedOpportunity(move: AuthoritativeReviewMove): boolean {
   if ((move.scoreLossCp ?? 0) >= 30) return true;
   return MISSED_OPPORTUNITY_CLASSIFICATIONS.has((move.classification ?? '').toUpperCase());
+}
+
+function formatMoveLabel(move: AuthoritativeReviewMove): string {
+  const prefix = `${move.moveNumber}${move.side === 'BLACK' ? '...' : '.'}`;
+  return move.playedMoveSan ? `${prefix} ${move.playedMoveSan}` : `${prefix} the played move`;
+}
+
+function asSentence(value: string): string {
+  const text = value.trim();
+  if (!text) return '';
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function joinBoundedSentences(sentences: readonly string[], maxLength: number): string {
+  let result = '';
+  for (const sentence of sentences.map((value) => value.trim()).filter(Boolean)) {
+    const candidate = result ? `${result} ${sentence}` : sentence;
+    if (candidate.length <= maxLength) {
+      result = candidate;
+      continue;
+    }
+    if (!result) return `${sentence.slice(0, maxLength - 1).trimEnd()}…`;
+    break;
+  }
+  return result;
 }
 
 function emptyStoredReview(): AiGameReviewStateResponse {
@@ -325,6 +447,7 @@ function reviewInputHash(input: {
   return createHash('sha256').update(JSON.stringify({
     schemaVersion: GAME_REVIEW_SCHEMA_VERSION,
     promptVersion: GAME_REVIEW_PROMPT_VERSION,
+    groundingVersion: GAME_REVIEW_GROUNDING_VERSION,
     ...input,
   })).digest('hex');
 }
