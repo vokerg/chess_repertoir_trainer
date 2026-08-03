@@ -164,12 +164,16 @@ describe('PerformanceByRatingExperimentComponent', () => {
     ) as HTMLElement;
     const table = region.querySelector('table') as HTMLTableElement;
     const row = table.querySelector('tbody tr') as HTMLTableRowElement;
+    const openingSuccessHeader = table.querySelector(
+      'thead th[aria-label="Opening success"]',
+    ) as HTMLTableCellElement;
 
     expect(region.getAttribute('role')).toBe('region');
     expect(region.tabIndex).toBe(0);
     expect(table.getAttribute('aria-label')).toBe('Performance by opponent rating');
     expect(table.querySelectorAll('thead th[scope="colgroup"]').length).toBe(6);
     expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(17);
+    expect(openingSuccessHeader.textContent?.trim()).toBe('Opening +');
     expect(row.textContent).toContain('Lichess Blitz');
     expect(row.textContent).toContain('1200–1299');
     expect(row.textContent).toContain('2–1–1');
