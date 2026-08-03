@@ -1,5 +1,11 @@
 import { ImportedGameSearchItem } from '../data-access/games.models';
-import { displayTimeControl, gameDateLabel, playerLabel, profileUrl } from './games-table-display';
+import {
+  displayTimeControl,
+  gameDateLabel,
+  gameStatusLabel,
+  playerLabel,
+  profileUrl,
+} from './games-table-display';
 
 describe('games table display helpers', () => {
   it('formats structured and raw time controls consistently', () => {
@@ -23,6 +29,19 @@ describe('games table display helpers', () => {
     expect(playerLabel({ username: 'player', rating: 1800 })).toBe('player (1800)');
     expect(playerLabel({ username: 'player', rating: null })).toBe('player');
     expect(playerLabel(null)).toBe('Unknown');
+  });
+
+  it('summarizes processing progress as one durable status', () => {
+    const notIndexed = game({});
+    const indexed = { ...notIndexed, plyIndex: { status: 'INDEXED' as const } };
+    const analysed = {
+      ...indexed,
+      analysis: { ...indexed.analysis, status: 'COMPLETED' as const },
+    };
+
+    expect(gameStatusLabel(notIndexed)).toBe('Not indexed');
+    expect(gameStatusLabel(indexed)).toBe('Indexed');
+    expect(gameStatusLabel(analysed)).toBe('Analysed');
   });
 });
 

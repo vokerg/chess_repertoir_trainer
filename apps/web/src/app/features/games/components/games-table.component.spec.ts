@@ -39,7 +39,13 @@ describe('GamesTableComponent', () => {
     expect(text).toContain('Rapid · 10+5');
     expect(text).toContain('87%');
     expect(text).toContain('Analysed');
-    expect(text).toContain('Indexed');
+  });
+
+  it('shows one mutually exclusive processing status per game', () => {
+    const statusCell = fixture.nativeElement.querySelector('td[data-label="Status"]') as HTMLElement;
+
+    expect(statusCell.textContent?.trim()).toBe('Analysed');
+    expect(statusCell.querySelectorAll('p').length).toBe(1);
   });
 
   it('shows loaded-result context when no further page is available', () => {

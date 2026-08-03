@@ -22,6 +22,7 @@ import {
   colorLabel,
   displayTimeControl,
   gameDateLabel,
+  gameStatusLabel,
   playerLabel,
   profileUrl,
   providerClass,
@@ -59,6 +60,7 @@ export class GamesTableComponent {
   protected readonly colorLabel = colorLabel;
   protected readonly displayTimeControl = displayTimeControl;
   protected readonly gameDateLabel = gameDateLabel;
+  protected readonly gameStatusLabel = gameStatusLabel;
   protected readonly playerLabel = playerLabel;
   protected readonly profileUrl = profileUrl;
   protected readonly providerClass = providerClass;
@@ -119,27 +121,6 @@ export class GamesTableComponent {
     return this.jobs.isGameActive(game.id, ['INDEX_GAMES', 'PROCESS_GAMES']);
   }
 
-  protected analysisStatusLabel(game: ImportedGameSearchItem): string {
-    const active = this.jobs.activeRunForGame(game.id, ['ANALYSE_GAMES', 'PROCESS_GAMES']);
-    if (active?.kind === 'PROCESS_GAMES') {
-      return active.status === 'QUEUED' ? 'Processing queued' : 'Processing...';
-    }
-    if (active) return active.status === 'QUEUED' ? 'Analysis queued' : 'Analysing...';
-    if (game.analysis?.status === 'RUNNING') return 'Analysing...';
-    if (game.analysis?.status === 'COMPLETED') return 'Analysed';
-    if (game.analysis?.status === 'FAILED') return 'Analysis failed';
-    return 'Not analysed';
-  }
-
-  protected plyIndexStatusLabel(game: ImportedGameSearchItem): string {
-    const active = this.jobs.activeRunForGame(game.id, ['INDEX_GAMES', 'PROCESS_GAMES']);
-    if (active?.kind === 'PROCESS_GAMES') return 'Included in full processing';
-    if (active) return active.status === 'QUEUED' ? 'Index queued' : 'Indexing...';
-    if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
-    if (game.plyIndex?.status === 'FAILED') return 'Index failed';
-    return 'Not indexed';
-  }
-
   protected mobileFacts(game: ImportedGameSearchItem): readonly UiFactItem[] {
     return [
       {
@@ -154,14 +135,9 @@ export class GamesTableComponent {
         mono: true,
       },
       {
-        id: 'analysis',
-        label: 'Analysis',
-        value: this.analysisStatusLabel(game),
-      },
-      {
-        id: 'index',
-        label: 'Index',
-        value: this.plyIndexStatusLabel(game),
+        id: 'status',
+        label: 'Status',
+        value: this.gameStatusLabel(game),
       },
     ];
   }
