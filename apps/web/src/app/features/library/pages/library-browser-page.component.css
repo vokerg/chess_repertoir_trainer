@@ -4,144 +4,49 @@
 }
 
 .study-page {
-  width: min(100%, 1760px);
+  width: min(100%, 1640px);
   margin-inline: auto;
   gap: clamp(1rem, 1.8vw, 1.35rem);
 }
 
-.study-mobile-intro {
-  gap: 0.75rem;
-  align-items: center;
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-panel);
-  padding: 0.85rem;
-  background: var(--ui-surface);
-}
-
-.study-mobile-step {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: 1.8rem;
-  height: 1.8rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--ui-action-soft);
-  color: var(--ui-action-strong);
-  font-family: var(--ui-font-family-mono);
-  font-size: 0.72rem;
-  font-weight: 850;
-}
-
-.study-mobile-intro h2,
-.study-mobile-intro p {
-  margin: 0;
-}
-
-.study-mobile-intro h2 {
-  color: var(--ui-text);
-  font-size: 1rem;
-}
-
-.study-mobile-intro p {
-  margin-top: 0.15rem;
-  color: var(--ui-text-muted);
-  font-size: 0.8rem;
-}
-
-.study-browser {
+.study-workspace {
   display: grid;
-  min-height: 620px;
-  overflow: hidden;
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-large);
-  background: var(--ui-surface);
-  box-shadow: var(--ui-shadow-soft);
+  grid-template-columns: minmax(240px, 0.76fr) minmax(460px, 1.55fr) minmax(290px, 0.9fr);
+  gap: clamp(0.8rem, 1.25vw, 1.1rem);
+  align-items: start;
 }
 
-.study-toolbar {
-  grid-template-columns: minmax(240px, 0.65fr) minmax(0, 1.35fr);
-  gap: clamp(0.8rem, 1.5vw, 1.25rem);
-  align-items: end;
-  border-bottom: 1px solid var(--ui-border);
-  padding: clamp(0.85rem, 1.5vw, 1.1rem);
-  background: var(--ui-surface-quiet);
-}
-
-.study-search-field {
-  display: grid;
-  gap: 0.35rem;
-  color: var(--ui-text-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-}
-
-.study-search {
-  width: 100%;
-  min-height: 42px;
-  border-color: var(--ui-border);
-  border-radius: var(--ui-radius-control);
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  font-size: 0.84rem;
-  font-weight: 650;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.study-selection-context {
+.study-material-column,
+.study-lines-column,
+.study-session-column {
   min-width: 0;
 }
 
-.study-columns {
-  display: grid;
-  grid-template-columns:
-    minmax(190px, 0.72fr)
-    minmax(200px, 0.78fr)
-    minmax(390px, 1.4fr)
-    minmax(290px, 0.95fr);
-  min-height: 560px;
+.study-material-panel,
+.study-session-column {
+  --panel-padding: clamp(0.9rem, 1.3vw, 1.1rem);
+  --panel-gap: 1rem;
 }
 
-.study-column {
-  min-width: 0;
-  border-right: 1px solid var(--ui-border);
-  padding: clamp(0.8rem, 1.25vw, 1rem);
-  background: var(--ui-surface-muted);
+.material-divider {
+  height: 1px;
+  background: var(--ui-border);
 }
 
-.study-column:last-child {
-  border-right: 0;
+.study-session-column {
+  position: sticky;
+  top: 1rem;
 }
 
-.study-scope-column {
-  background: var(--ui-surface-quiet);
-}
-
-.study-lines-column {
-  background: var(--ui-surface);
-}
-
-.study-basket-column {
-  background: var(--ui-surface-muted);
-}
-
-/* Keep in sync with LIBRARY_BREAKPOINTS.studyBasketWrapMaxPx. */
+/* Study uses a feature-local two-column wrap before the shared mobile breakpoint. */
 @media (max-width: 1100px) {
-  .study-toolbar {
-    grid-template-columns: 1fr;
+  .study-workspace {
+    grid-template-columns: minmax(230px, 0.78fr) minmax(430px, 1.35fr);
   }
 
-  .study-columns {
-    grid-template-columns: minmax(210px, 0.9fr) minmax(230px, 1fr) minmax(320px, 1.25fr);
-  }
-
-  .study-basket-column {
+  .study-session-column {
+    position: static;
     grid-column: 1 / -1;
-    border-top: 1px solid var(--ui-border);
-    border-right: 0;
   }
 }
 
@@ -151,21 +56,11 @@
     gap: 0.75rem;
   }
 
-  .study-browser {
-    min-height: unset;
-    overflow: visible;
-    border-radius: var(--ui-radius-panel);
-    box-shadow: none;
+  .study-workspace {
+    grid-template-columns: 1fr;
   }
 
-  .study-columns {
-    display: block;
-    min-height: unset;
-  }
-
-  .study-column {
-    border-right: 0;
-    border-bottom: 0;
-    padding: 0.75rem;
+  .study-session-column {
+    grid-column: auto;
   }
 }

@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import type {
   PerformanceByRatingRow,
   PerformanceReportType,
   PerformanceWdl,
 } from '@chess-trainer/contracts/lab';
 import type { RatingPool, RatingRange } from '@chess-trainer/contracts/rating-normalization';
+import { PanelComponent } from '../../../../shared/ui/panel/panel.component';
+import { type UiShellAction } from '../../../../shared/ui/ui-shell.model';
 import { PerformanceByRatingApiService } from './data-access/performance-by-rating-api.service';
 import {
   PerformanceByRatingStore,
@@ -28,6 +30,7 @@ interface ColumnGroup {
 @Component({
   selector: 'app-lab-performance-by-rating',
   standalone: true,
+  imports: [PanelComponent],
   providers: [PerformanceByRatingApiService, PerformanceByRatingStore],
   templateUrl: './performance-by-rating-experiment.component.html',
   styleUrl: './performance-by-rating-experiment.component.css',
@@ -98,6 +101,15 @@ export class PerformanceByRatingExperimentComponent implements OnInit {
       ],
     },
   ];
+
+  protected readonly actions = computed<readonly UiShellAction[]>(() => [
+    {
+      id: 'refresh-performance-by-rating',
+      label: this.store.loading() ? 'Loading…' : 'Refresh',
+      disabled: this.store.loading(),
+      run: () => void this.store.load(),
+    },
+  ]);
 
   ngOnInit(): void {
     void this.store.initialize();

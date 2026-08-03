@@ -1,73 +1,118 @@
-<header class="study-column-header">
-  <span class="study-step">{{ stepLabel() }}</span>
-  <div class="study-column-heading-copy">
-    <h3>{{ title() }}</h3>
-    <p>{{ subtitle() }}</p>
-  </div>
-  @if (selectedLineIds().length > 0) {
-    <span class="study-selection-count">{{ selectedLineIds().length }} selected</span>
-  }
-</header>
+<app-panel [title]="title()" [subtitle]="subtitle()">
+  <div class="line-toolbar">
+    <label class="line-search">
+      <span class="visually-hidden">Find a line</span>
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        [value]="searchText()"
+        (input)="updateSearch($event)"
+        placeholder="Find a line..."
+      />
+    </label>
 
-@if (loading()) {
-  <div class="study-state" aria-live="polite">Loading lines...</div>
-} @else if (error()) {
-  <div class="study-state study-state-error" role="alert">{{ error() }}</div>
-} @else if (lines().length === 0) {
-  <div class="study-state study-state-empty">No lines match this search or filter.</div>
-} @else {
-  <div class="study-list">
-    @for (line of lines(); track line.id) {
-      <article class="study-line-row" [class.active]="line.id === selectedLineId()">
-        <label class="line-check">
-          <input
-            type="checkbox"
-            [checked]="isChecked(line.id)"
-            (change)="toggleLine.emit(line.id)"
-          />
-          <span class="visually-hidden">Select {{ line.name }} for marathon</span>
-        </label>
-
+    <div class="selection-actions" aria-label="Line selection actions">
+      @if (selectedCount() > 0) {
+        <span>{{ selectedCount() }} selected</span>
+        <button type="button" class="secondary" (click)="clearSelection.emit()">Clear</button>
+      } @else {
         <button
           type="button"
-          class="line-select-button"
-          [attr.aria-pressed]="line.id === selectedLineId()"
-          (click)="selectLine.emit(line.id)"
+          class="secondary"
+          [disabled]="lines().length === 0"
+          (click)="selectAllVisible.emit()"
         >
-          <span class="line-title-row">
-            <strong>{{ line.name }}</strong>
-            <span
-              class="status-pill"
-              [class.new]="lineStatus(line) === 'NEW'"
-              [class.weak]="lineStatus(line) === 'WEAK'"
-              [class.review]="lineStatus(line) === 'REVIEW'"
-              [class.stable]="lineStatus(line) === 'STABLE'"
-              [class.strong]="lineStatus(line) === 'STRONG'"
-            >
-              {{ statusLabel(lineStatus(line)) }}
-            </span>
-          </span>
-
-          <span class="line-summary">
-            Train as {{ sideLabel(line.sideToTrain) }} ·
-            {{ line.trainingStats.activeSublineCount }} active sublines
-          </span>
-
-          <app-fact-grid
-            class="line-facts"
-            ariaLabel="Line training health"
-            [items]="lineFacts(line)"
-            [columns]="4"
-            [compactColumns]="2"
-            [highlighted]="line.id === selectedLineId()"
-          />
+          Select visible
         </button>
-
-        <div class="line-actions">
-          <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'train']">Train</a>
-          <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
-        </div>
-      </article>
-    }
+      }
+    </div>
   </div>
-}
+
+  @if (loading()) {
+    <div class="study-state" aria-live="polite">Loading lines...</div>
+  } @else if (error()) {
+    <div class="study-state study-state-error" role="alert">{{ error() }}</div>
+  } @else if (lines().length === 0) {
+    <div class="study-state study-state-empty">No lines match this search.</div>
+  } @else {
+    <section class="section-health" aria-label="Section training health">
+      <div class="section-health-label">
+        <span>Section mastery</span>
+        <strong>{{ sectionHealth().mastery }}%</strong>
+      </div>
+      <div
+        class="health-track"
+        role="progressbar"
+        aria-label="Section mastery"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-valuenow]="sectionHealth().mastery"
+      >
+        <span [style.width.%]="sectionHealth().mastery"></span>
+      </div>
+      <p>
+        <strong>{{ sectionHealth().weak }}</strong> weak
+        <span aria-hidden="true">·</span>
+        <strong>{{ sectionHealth().untrained }}</strong> untrained
+      </p>
+    </section>
+
+    <div class="study-list">
+      @for (line of lines(); track line.id) {
+        <article class="study-line-row" [class.selected]="isChecked(line.id)">
+          <label class="line-check">
+            <input
+              type="checkbox"
+              [checked]="isChecked(line.id)"
+              (change)="toggleLine.emit(line.id)"
+            />
+            <span class="visually-hidden">Select {{ line.name }} for training</span>
+          </label>
+
+          <button
+            type="button"
+            class="line-select-button"
+            [attr.aria-pressed]="isChecked(line.id)"
+            (click)="toggleLine.emit(line.id)"
+          >
+            <span class="line-main">
+              <span class="line-title-row">
+                <strong>{{ line.name }}</strong>
+                <span
+                  class="status-pill"
+                  [class.new]="lineStatus(line) === 'NEW'"
+                  [class.weak]="lineStatus(line) === 'WEAK'"
+                  [class.review]="lineStatus(line) === 'REVIEW'"
+                  [class.stable]="lineStatus(line) === 'STABLE'"
+                  [class.strong]="lineStatus(line) === 'STRONG'"
+                >
+                  {{ statusLabel(lineStatus(line)) }}
+                </span>
+              </span>
+              <span class="line-summary">
+                Train as {{ sideLabel(line.sideToTrain) }} ·
+                {{ line.trainingStats.activeSublineCount }} active sublines
+              </span>
+            </span>
+
+            <span class="mastery-cell">
+              <span>Mastery</span>
+              <strong>{{ lineMasteryLabel(line) }}</strong>
+            </span>
+
+            <span
+              class="mini-track"
+              role="progressbar"
+              [attr.aria-label]="line.name + ' mastery'"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="masteryPercent(line)"
+            >
+              <span [style.width.%]="masteryPercent(line)"></span>
+            </span>
+          </button>
+        </article>
+      }
+    </div>
+  }
+</app-panel>

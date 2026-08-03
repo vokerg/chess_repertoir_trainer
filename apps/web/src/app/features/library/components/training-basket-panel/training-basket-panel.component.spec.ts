@@ -10,17 +10,12 @@ describe('TrainingBasketPanelComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TrainingBasketPanelComponent);
-    fixture.componentRef.setInput('stepLabel', '4');
-    fixture.componentRef.setInput('lineCountLabel', 'Lines');
-    fixture.componentRef.setInput('lineCount', 3);
     fixture.componentRef.setInput('activeSublineCount', 12);
-    fixture.componentRef.setInput('recentAttempts', 20);
     fixture.componentRef.setInput('weakSublineCount', 2);
     fixture.componentRef.setInput('untrainedSublineCount', 0);
-    fixture.componentRef.setInput('coverageLabel', '9/12');
-    fixture.componentRef.setInput('masteryLabel', '73%');
     fixture.componentRef.setInput('sourceLabel', '3 selected lines');
     fixture.componentRef.setInput('scope', 'SELECTED_LINES');
+    fixture.componentRef.setInput('mode', 'WEAK_SUBLINES');
     fixture.componentRef.setInput('canUseCourseScope', true);
     fixture.componentRef.setInput('canUseChapterScope', true);
     fixture.componentRef.setInput('canUseSelectedLinesScope', true);
@@ -28,47 +23,57 @@ describe('TrainingBasketPanelComponent', () => {
     fixture.detectChanges();
   });
 
-  it('shows the selected scope, health, and mode availability', () => {
+  it('uses a plain-language recap and one prototype-style start action', () => {
     const text = fixture.nativeElement.textContent?.replace(/\s+/g, ' ').trim();
     const buttons = Array.from(
       fixture.nativeElement.querySelectorAll('button'),
     ) as HTMLButtonElement[];
-    const statElements = fixture.nativeElement.querySelectorAll(
-      '.basket-stat-row',
-    ) as NodeListOf<HTMLElement>;
-    const stats = Array.from(statElements).map((stat) => ({
-      label: stat.querySelector('dt')?.textContent?.trim(),
-      value: stat.querySelector('dd')?.textContent?.trim(),
-    }));
-    const selectedScope = buttons.find((button) => button.textContent?.trim() === 'Selected');
-    const weakButton = buttons.find((button) => button.textContent?.trim() === 'Train weak');
-    const untrainedButton = buttons.find(
-      (button) => button.textContent?.trim() === 'Train untrained',
+    const selectedScope = buttons.find((button) =>
+      button.textContent?.includes('Selected lines'),
     );
+    const selectedMode = buttons.find((button) => button.textContent?.trim() === 'Weak');
+    const startButton = buttons.find((button) =>
+      button.textContent?.includes('Start 2 sublines'),
+    );
+    const recap = Array.from(
+      fixture.nativeElement.querySelectorAll('.session-recap div') as NodeListOf<HTMLElement>,
+    ).map((item) => ({
+      label: item.querySelector('dt')?.textContent?.trim(),
+      value: item.querySelector('dd')?.textContent?.trim(),
+    }));
 
-    expect(text).toContain('Training plan');
+    expect(text).toContain('Set your focus');
     expect(text).toContain('3 selected lines');
-    expect(text).toContain('Coverage 9/12 · Mastery 73%');
-    expect(stats).toContain({ label: 'Lines', value: '3' });
-    expect(stats).toContain({ label: 'Sublines', value: '12' });
+    expect(recap).toEqual([
+      { label: 'Scope', value: 'Selected lines' },
+      { label: 'Focus', value: 'Weak' },
+      { label: 'Material', value: '2 sublines' },
+    ]);
+    expect(text).not.toContain('Coverage');
     expect(selectedScope?.getAttribute('aria-pressed')).toBe('true');
-    expect(weakButton?.disabled).toBeFalse();
-    expect(untrainedButton?.disabled).toBeTrue();
+    expect(selectedMode?.getAttribute('aria-pressed')).toBe('true');
+    expect(startButton?.textContent).toContain('▶');
+    expect(startButton?.disabled).toBeFalse();
+    expect(buttons.filter((button) => button.classList.contains('start-session')).length).toBe(1);
   });
 
-  it('emits scope and start commands without owning navigation', () => {
+  it('emits scope, mode, and start intents without owning navigation', () => {
     const scopes: string[] = [];
+    const modes: string[] = [];
     const starts: Array<{ mode: string; scope: string }> = [];
     fixture.componentInstance.scopeChange.subscribe((scope) => scopes.push(scope));
+    fixture.componentInstance.modeChange.subscribe((mode) => modes.push(mode));
     fixture.componentInstance.startMode.subscribe((start) => starts.push(start));
 
     const buttons = Array.from(
       fixture.nativeElement.querySelectorAll('button'),
     ) as HTMLButtonElement[];
-    buttons.find((button) => button.textContent?.trim() === 'Section')?.click();
-    buttons.find((button) => button.textContent?.trim() === 'Train weak')?.click();
+    buttons.find((button) => button.textContent?.includes('This section'))?.click();
+    buttons.find((button) => button.textContent?.trim() === 'All')?.click();
+    buttons.find((button) => button.textContent?.includes('Start 2 sublines'))?.click();
 
     expect(scopes).toEqual(['CHAPTER']);
+    expect(modes).toEqual(['ALL']);
     expect(starts).toEqual([{ mode: 'WEAK_SUBLINES', scope: 'SELECTED_LINES' }]);
   });
 });

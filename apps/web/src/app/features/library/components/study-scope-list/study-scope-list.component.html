@@ -1,31 +1,35 @@
-<header class="study-column-header">
-  <span class="study-step">{{ stepLabel() }}</span>
-  <div>
+﻿<section class="scope-group" [attr.aria-label]="title()">
+  <header class="scope-header">
     <h3>{{ title() }}</h3>
-    <p>{{ subtitle() }}</p>
-  </div>
-</header>
-
-@if (loading()) {
-  <div class="study-state" aria-live="polite">Loading {{ title().toLowerCase() }}...</div>
-} @else if (error()) {
-  <div class="study-state study-state-error" role="alert">{{ error() }}</div>
-} @else if (items().length === 0) {
-  <div class="study-state study-state-empty">{{ emptyText() }}</div>
-} @else {
-  <div class="study-list">
-    @for (item of items(); track item.id) {
-      <button
-        type="button"
-        class="study-row"
-        [class.study-row-active]="item.id === selectedId()"
-        [attr.aria-pressed]="item.id === selectedId()"
-        (click)="selectItem.emit(item.id)"
-      >
-        <span class="study-row-title">{{ item.title }}</span>
-        <span class="study-row-description">{{ item.description }}</span>
-        <span class="study-row-meta">{{ item.meta }}</span>
-      </button>
+    @if (!loading() && !error()) {
+      <span>{{ items().length }}</span>
     }
-  </div>
-}
+  </header>
+
+  @if (loading()) {
+    <div class="study-state" aria-live="polite">Loading {{ title().toLowerCase() }}...</div>
+  } @else if (error()) {
+    <div class="study-state study-state-error" role="alert">{{ error() }}</div>
+  } @else if (items().length === 0) {
+    <div class="study-state study-state-empty">{{ emptyText() }}</div>
+  } @else {
+    <div class="study-list">
+      @for (item of items(); track item.id) {
+        <button
+          type="button"
+          class="study-row"
+          [class.study-row-active]="item.id === selectedId()"
+          [attr.aria-pressed]="item.id === selectedId()"
+          (click)="selectItem.emit(item.id)"
+        >
+          <span class="scope-marker" aria-hidden="true"></span>
+          <span class="scope-copy">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.description }}</small>
+            <span>{{ item.meta }}</span>
+          </span>
+        </button>
+      }
+    </div>
+  }
+</section>
