@@ -6,7 +6,7 @@ Issue: #132
 
 Branch: `visual-transformation/vt-301-performance-by-rating`
 
-Pull request: pending
+Pull request: #269
 
 ## Scope
 
@@ -26,6 +26,14 @@ Settings remains owned by draft PR #209. Tactical Detections and residual authen
 - Added semantic fieldsets and legends for report types and column groups, pressed-state semantics for presets and report-type toggles, scoped table headings, accessible table labels, and keyboard-focusable scroll regions.
 - Added visible focus treatment for controls, disclosures, menu inputs, and both horizontal-scroll regions.
 - Added rendered-template component tests covering initialization, the shared panel refresh action, loading-disabled state, filter delegation, report-type toggling, column preset selection, and individual column toggling.
+
+## Self-review correction
+
+A reviewer-style pass re-read the complete feature diff against the Batch 7a accessibility findings and identified one concrete issue before opening the pull request: the column-picker panel had an accessible label on a generic container without a semantic role.
+
+The panel now uses `role="group"` with its existing label. The nested preset controls retain their own labelled group and every metric family remains a semantic fieldset.
+
+No additional behavior, calculation, state, or shared-system issue was found in that pass.
 
 ## Behavior preserved
 
@@ -59,7 +67,7 @@ No open branch or pull request was found touching the Performance by Rating file
 
 ### Automated validation
 
-Pending repository CI on the draft pull request.
+Pending repository CI on draft PR #269.
 
 Required gates:
 
