@@ -511,6 +511,11 @@
   font-weight: 800;
 }
 
+.rating-cell {
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .sample-warning {
   display: inline-flex;
   margin-left: 0.35rem;
@@ -518,6 +523,7 @@
   padding: 0.1rem 0.35rem;
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
+  font-family: var(--ui-font-family);
   font-size: 0.62rem;
   font-weight: 850;
   letter-spacing: 0.04em;
