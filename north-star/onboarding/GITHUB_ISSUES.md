@@ -37,6 +37,14 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
+## Coordination umbrellas
+
+- [#257 — Durable Account Import and Background Refresh](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups ONB-011 through ONB-015 into the planned delivery sequence `#199 → #200 → (#201 + #202) → #203`.
+
+A coordination umbrella may summarize an existing multi-task delivery track and record cross-track dependencies. It does not receive an ONB ID, replace any task issue, own runtime scope, alter task priority/status/order, or authorize claims. `TASKS.md` and the individual task files remain authoritative.
+
+For #257, material coordination includes preparation #253/#254, lifecycle persistence/execution #259/#260, throughput #154, and Activity Feed import reconciliation #248. ONB-007 supplies initial operational defaults and validation gates without changing the umbrella's delivery ownership.
+
 ## Related programs
 
 - [#122 — Visual Transformation Program](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
@@ -100,7 +108,7 @@ Comment only on meaningful changes:
 
 ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular implementation tasks.
 
-ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks.
+ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks. Coordination umbrella #257 packages those existing tasks without changing their canonical states and records preparation, lifecycle, operations, Activity Feed, and throughput handoffs.
 
 ONB-003 allocated:
 
@@ -129,7 +137,7 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `REVIEW` on PR #266. The next deterministic READY research task is ONB-005 / #152. ONB-006 and ONB-017 are additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `REVIEW` on PR #266. The next deterministic READY research task is ONB-005 / #152. ONB-006 and ONB-017 are additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 
