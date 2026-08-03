@@ -1,5 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { PanelComponent } from '../../../../shared/ui/panel/panel.component';
+import { type UiShellAction } from '../../../../shared/ui/ui-shell.model';
 import { TrainingLogApiService } from './data-access/training-log-api.service';
 import { TrainingLogItem, TrainingLogResult } from './data-access/training-log.models';
 import { TrainingLogStore } from './state/training-log.store';
@@ -7,7 +9,7 @@ import { TrainingLogStore } from './state/training-log.store';
 @Component({
   selector: 'app-lab-training-log',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, PanelComponent],
   providers: [TrainingLogApiService, TrainingLogStore],
   templateUrl: './training-log-experiment.component.html',
   styleUrl: './training-log-experiment.component.css',
@@ -15,6 +17,15 @@ import { TrainingLogStore } from './state/training-log.store';
 })
 export class TrainingLogExperimentComponent implements OnInit {
   protected readonly store = inject(TrainingLogStore);
+
+  protected readonly actions = computed<readonly UiShellAction[]>(() => [
+    {
+      id: 'refresh-training-log',
+      label: this.store.loading() ? 'Loading…' : 'Refresh',
+      disabled: this.store.loading(),
+      run: () => void this.store.load(),
+    },
+  ]);
 
   ngOnInit(): void {
     void this.store.load();
