@@ -8,7 +8,7 @@ Order: 80
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-001/003/016; blocked on ONB-017/018 execution state and durable import delivery
+Planning maturity: Decisioned by ONB-001/003/007/016; blocked on ONB-017/018 execution state and durable import delivery
 
 GitHub issue: [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193)
 
@@ -22,7 +22,7 @@ Claim scope: none
 
 ## Outcome
 
-Persist the minimal user onboarding disposition and expose the bounded readiness projection approved by ONB-001/003/016 so API and clients consume one deterministic server-owned lifecycle contract.
+Persist the minimal user onboarding disposition and expose the bounded readiness projection approved by ONB-001/003/007/016 so API and clients consume one deterministic server-owned lifecycle contract.
 
 ## Why this task exists
 
@@ -35,6 +35,7 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 - ONB-001 / #148 lifecycle and product contract.
 - ONB-002 / #149 import persistence/status decisions and durable import implementation.
 - ONB-003 / #150 preparation orchestration contract.
+- ONB-007 / #154 exact-progress, denominator, ETA, milestone, and stall policy.
 - ONB-017 / #253 preparation execution persistence.
 - ONB-018 / #254 progressive reconciliation and control state.
 - ONB-016 / #224 presentation/readiness/reveal requirements.
@@ -47,10 +48,14 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 - Legacy-user adoption migration.
 - Authenticated onboarding status/read endpoint.
 - Server-derived presentation state from disposition plus `DataPreparationRun` lifecycle/milestones.
-- Exact import/index/analysis counts from bounded database aggregates.
-- Fixed-denominator percentages only after exact target import is terminal.
+- Exact provider-window, committed-game, selected, indexed, analysed, queued, running, failed, skipped, and remaining counts from bounded database aggregates.
+- Fixed-denominator percentages only for immutable child batches, fixed provider-window plans, or terminal import scopes.
+- No weighted overall preparation percentage while import can still discover games.
+- No public ETA in the initial release.
 - Account-specific target progress and bounded aggregate progress.
-- Attention/warning codes and deterministic server-allowed actions/destinations.
+- First-imported, first-indexed, first-analysed, core-ready, and analysis-complete milestones.
+- Attention/warning codes for rate limiting, reconcile lag, stalled child work, pause/cancel, no data, and all-index-failed outcomes.
+- Deterministic server-allowed actions/destinations.
 - Feature-specific locked, partial, ready, and checked-empty readiness.
 - Latest real milestone and bounded canonical reveal summaries/references.
 - Ownership, migration, repository/service, route, and focused integration tests.
@@ -62,6 +67,7 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 - Indexing/analysis wave execution and reconciliation owned by ONB-018.
 - Start, pause, resume, cancel, retry, restart, or expansion command routes owned by ONB-009.
 - Angular onboarding UI.
+- Public ETA, countdown, or elapsed-time-smoothed progress.
 - Final visual/accessibility polish.
 - Automated repertoire or course generation.
 
@@ -72,9 +78,11 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 - State survives session, browser, device, API restart, and child-job history cleanup.
 - Queries are ownership-scoped and use bounded database aggregates.
 - Product readiness is derived from current import/game evidence, not historical child task totals.
-- Percentages appear only with fixed denominators; no ETA is emitted.
+- Percentages appear only with fixed denominators; no weighted overall percentage or ETA is emitted.
+- Before import is terminal, the projection exposes milestones and exact counts rather than an overall percent.
 - Parent `coreReadyAt` may complete user disposition while analysis continues.
-- No-data, all-index-failed, partial, paused, cancelled, and needs-attention states expose deterministic actions.
+- No-data, checked-empty, all-index-failed, partial, paused, cancelled, rate-limited, stalled, and needs-attention states expose deterministic actions.
+- Technical child-job counts remain distinguishable from product readiness and core completion.
 - Migration and API behavior have focused tests.
 
 ## Required validation
@@ -83,9 +91,12 @@ ONB-017/018 own the physical `DataPreparationRun`, target, batch, and reconciler
 - Focused API contract/service/repository tests.
 - Legacy/new-user migration scenarios.
 - Readiness threshold and ownership-isolation tests.
-- Moving-to-fixed denominator transition tests.
+- Unknown-to-fixed denominator transition tests.
+- Immutable batch percentage and terminal-scope percentage tests.
+- No-overall-percent/no-ETA contract tests.
 - Child dismissal/retention cleanup projection tests.
 - Multi-account target aggregation tests.
+- Rate-limit/stall/checked-empty action mapping tests.
 - Bounded reveal payload tests.
 
 ## Completion
