@@ -23,9 +23,9 @@ Settings remains owned by draft PR #209. Tactical Detections and residual authen
 - Kept date range, minimum opponent rating, report-type selection, column presets, individual column visibility, and rating-reference disclosure feature-owned.
 - Migrated the filter surface, column menu, status messages, normalization reference, dense report table, small-sample marker, and compact-width layout from legacy short tokens and hard-coded amber backgrounds to production `--ui-*` roles.
 - Preserved sticky report headers and the two sticky identity columns while applying production table surfaces and analytical numeric typography.
-- Added semantic fieldsets and legends for report types and column groups, pressed-state semantics for presets and report-type toggles, scoped table headings, accessible table labels, full accessible names for abbreviated metric headings, and keyboard-focusable scroll regions.
+- Added semantic fieldsets and legends for report types and column groups, pressed-state semantics for presets and report-type toggles, scoped table headings and row headers, accessible table labels, full accessible names for abbreviated metric headings, and keyboard-focusable scroll regions.
 - Added visible focus treatment for controls, disclosures, menu inputs, and both horizontal-scroll regions, including inward focus rings inside clipped normalization-reference surfaces.
-- Added rendered-template component tests covering initialization, the shared panel refresh action, loading-disabled query actions, filter delegation, report-type pressed state and toggling, the actual column-disclosure workflow, preset and checkbox delegation, populated analytical-table rendering, report and normalization loading/error/empty/populated states, scroll-region and table-heading semantics, full accessible metric names, and error announcement.
+- Added rendered-template component tests covering initialization, the shared panel refresh action, loading-disabled query actions, filter delegation, report-type pressed state and toggling, the actual column-disclosure workflow, preset and checkbox delegation, populated analytical-table rendering, report and normalization loading/error/empty/populated states, scroll-region and table-heading semantics, row-header semantics, full accessible metric and column-control names, small-sample explanation, sticky-header separation, and error announcement.
 
 ## Self-review corrections
 
@@ -44,6 +44,15 @@ A second independent quality pass then identified and fixed:
 - a test fixture that rendered all 15 metrics while claiming the Core 10-column preset; the fixture now consistently represents the All preset;
 - opponent rating ranges using the normal UI font despite the production typography contract classifying ratings as analytical numerics; rating cells now use the mono stack with tabular numerics while the Low-n badge retains the UI font;
 - abbreviated metric headings relying on `title` for their expanded meaning; each heading now exposes its full label through `aria-label`, with a rendered test protecting that contract.
+
+A third independent review before merge identified and fixed:
+
+- the sticky metric-header row used a `2.1rem` top offset while the sticky group-header row still included `0.7rem` vertical padding on both sides; a Chromium layout probe reproduced roughly 23 px of header overlap during vertical scrolling;
+- the group-header tier now owns an explicit feature-local height with zero block padding, and the metric tier is positioned immediately below its rendered border;
+- the two sticky identity cells in each report row were ordinary data cells, so assistive-technology table navigation lacked explicit row-header context; both are now scoped row headers;
+- column descriptions were available only through pointer-hover `title` text; each checkbox now receives an accessible name containing its full label and explanation;
+- the compact `Low n` badge now exposes the full meaning “Low sample: fewer than five games” to assistive technology;
+- the component suite now includes a real Chrome layout assertion that scrolls the report region and verifies that the two sticky header tiers do not overlap.
 
 No correction changed report calculations, query semantics, routes, APIs, stores, or persisted data.
 
@@ -75,21 +84,25 @@ No new dependency, shared primitive, generic table abstraction, or global stylin
 
 Inspected current `main`, the VT-301 queue, open pull requests, route composition, the complete Performance by Rating component/template/styles/store/store-test implementation, contract schemas, Batch 7a Lab conventions, shared panel and action implementation, responsive breakpoint constants, Angular frontend rules, production design-token and typography guidance, transformation decisions and working rules, and the complete PR diff.
 
-No open branch or pull request was found touching the Performance by Rating files. Settings remains isolated in PR #209, and the branch refresh through PR #270 incorporated an unrelated Games-table action change without overlap.
+No open branch or pull request was found touching the Performance by Rating files. Settings remains isolated in PR #209. Its documentation changes include `transformation/STATUS.md` and `docs/frontend/angular-migration.md`, so this batch deliberately avoids creating a documentation collision in those files; live batch state remains recorded in issue #132.
 
-The feature branch was zero commits behind current `main` commit `892ea8dc5daa6f89c090d3a3e6f8b4cfcdfa55b8` at the time of the second review.
+The feature branch was zero commits behind current `main` commit `892ea8dc5daa6f89c090d3a3e6f8b4cfcdfa55b8` at the start of the third review.
 
 ### Automated validation
 
 - CI #1856 passed dependency installation, lint, all builds, opening audits, architecture guardrails, and all 52 migrations, then failed while compiling the new component spec because of the test-double signal mismatch described above.
 - Corrected head `87f9a5b5cad59c4310acd47981ced2c88902e41b` passed CI #1857 completely, including `355/355` Angular web tests.
-- After refreshing from current `main`, exact-head CI #1861 passed dependency installation, lint, all domain/contracts/API/web/mobile builds, opening audits, architecture guardrails, all 52 migrations, the complete test suite, and artifact uploads.
-- CI #1861 passed `356/356` Angular web tests; the API runner passed 85 test files; domain tests passed 33; mobile tests passed 22.
-- The final exact-head workflow after the second-review corrections is tracked on PR #269 and issue #132. Its result and final test totals must be recorded there before review disposition.
+- After refreshing from current `main`, exact-head CI #1861 passed the complete repository workflow with `356/356` Angular web tests.
+- Exact-head CI #1871 after the second independent review passed dependency installation, lint, all domain/contracts/API/web/mobile builds, opening audits, architecture guardrails, all 52 migrations, the complete test suite, and artifact uploads.
+- CI #1871 passed `359/359` Angular web tests; the API runner passed 85 test files; domain tests passed 33; mobile tests passed 22.
+- A local isolated Chromium layout probe reproduced the third-review sticky-header overlap before the correction and confirmed the metric tier aligns below the group tier after the correction.
+- The final exact-head workflow after the third-review corrections is maintained on PR #269 and issue #132. This report intentionally does not embed that moving-head result because changing the report would itself create a new exact head requiring another workflow.
 
 ### Browser review disposition
 
-Direct authenticated browser review is not represented as completed. Review or explicit deferral is required for:
+Direct authenticated application browser review is not represented as completed. The user explicitly authorized squash merge after a clean additional self-review, so the authenticated browser matrix is deferred rather than represented as observed.
+
+The deferred matrix remains:
 
 - populated, loading, error, empty, and normalization-reference states;
 - Core, Stories, All, and custom column configurations;
