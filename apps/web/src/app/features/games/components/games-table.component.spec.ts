@@ -42,7 +42,9 @@ describe('GamesTableComponent', () => {
   });
 
   it('shows one mutually exclusive processing status per game', () => {
-    const statusCell = fixture.nativeElement.querySelector('td[data-label="Status"]') as HTMLElement;
+    const statusCell = fixture.nativeElement.querySelector(
+      'td[data-label="Status"]',
+    ) as HTMLElement;
 
     expect(statusCell.textContent?.trim()).toBe('Analysed');
     expect(statusCell.querySelectorAll('p').length).toBe(1);
@@ -52,6 +54,32 @@ describe('GamesTableComponent', () => {
     const pagination = fixture.nativeElement.querySelector('.games-pagination') as HTMLElement;
     expect(pagination.textContent).toContain('1 loaded');
     expect(pagination.textContent).toContain('All matching games loaded');
+  });
+
+  it('uses a single Analyse link for an unanalysed game', () => {
+    const unanalysedGame = {
+      ...game(),
+      analysis: {
+        status: 'NOT_ANALYZED' as const,
+        whiteAccuracy: null,
+        blackAccuracy: null,
+        userAccuracy: null,
+      },
+    };
+    let analysedGame: ImportedGameSearchItem | undefined;
+    fixture.componentInstance.analyse.subscribe((candidate) => (analysedGame = candidate));
+    fixture.componentRef.setInput('games', [unanalysedGame]);
+    fixture.detectChanges();
+
+    const analyseLink = fixture.nativeElement.querySelector(
+      '.games-row-action-link',
+    ) as HTMLAnchorElement;
+    analyseLink.click();
+
+    expect(analyseLink.textContent?.trim()).toBe('Analyse');
+    expect(analysedGame).toBe(unanalysedGame);
+    expect(fixture.nativeElement.querySelector('app-game-action-menu')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Open on Lichess');
   });
 });
 

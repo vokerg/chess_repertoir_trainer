@@ -140,7 +140,7 @@ The store:
 
 The panel shows job kind, status, task totals, settled progress, running count, failures, and cancellations. Active jobs expose **Cancel**. Terminal jobs containing failed or cancelled tasks expose **Retry failed**, and all terminal jobs expose **Dismiss**. A dismissed run remains hidden across browsers and sessions for that user.
 
-Games Explorer preserves per-game **Index** and **Analyse** actions and submits one durable job for a single game or the currently visible games. Visible-game tag refresh submits one `REFRESH_TAGS` job.
+Games Explorer keeps bulk **Index all** for games that still need ply indexing. Its per-game and visible-game **Analyse** actions submit `PROCESS_GAMES` for standard-speed games without completed analysis, so each job indexes, assigns an opening, analyses, and refreshes analysis-derived tags together. The per-game control is a compact link, not an action menu.
 
 Account workflow actions submit one durable job for the confirmed account batch instead of calling one processing endpoint per game from the browser.
 
