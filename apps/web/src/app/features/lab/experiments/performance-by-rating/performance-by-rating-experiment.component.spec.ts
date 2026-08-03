@@ -15,6 +15,9 @@ describe('PerformanceByRatingExperimentComponent', () => {
   const loaded = signal(false);
   const error = signal<string | null>(null);
   const filteredItems = signal<PerformanceByRatingRow[]>([]);
+  const normalizationProfile = signal<RatingNormalizationProfile | null>(null);
+  const normalizationLoading = signal(false);
+  const normalizationError = signal<string | null>(null);
 
   const sampleRow: PerformanceByRatingRow = {
     provider: 'LICHESS',
@@ -40,11 +43,47 @@ describe('PerformanceByRatingExperimentComponent', () => {
     averageAccuracy: 87.25,
   };
 
+  const sampleNormalizationProfile: RatingNormalizationProfile = {
+    id: 'rating-reference',
+    version: '2026-08',
+    description: 'Test rating normalization reference.',
+    baseline: 'LICHESS_BLITZ',
+    pools: {
+      CHESS_COM_BLITZ: poolMetadata('Chess.com Blitz'),
+      CHESS_COM_BULLET: poolMetadata('Chess.com Bullet'),
+      CHESS_COM_RAPID: poolMetadata('Chess.com Rapid'),
+      LICHESS_BLITZ: poolMetadata('Lichess Blitz'),
+      LICHESS_BULLET: poolMetadata('Lichess Bullet'),
+      LICHESS_RAPID: poolMetadata('Lichess Rapid'),
+      FIDE_STANDARD: poolMetadata('FIDE Standard', true),
+    },
+    sources: [{ id: 'test-source', label: 'Test source', role: 'EMPIRICAL' }],
+    grades: [
+      {
+        id: 'all',
+        label: 'All ratings',
+        order: 0,
+        ranges: {
+          CHESS_COM_BLITZ: openRange(),
+          CHESS_COM_BULLET: openRange(),
+          CHESS_COM_RAPID: openRange(),
+          LICHESS_BLITZ: openRange(),
+          LICHESS_BULLET: openRange(),
+          LICHESS_RAPID: openRange(),
+          FIDE_STANDARD: openRange(),
+        },
+      },
+    ],
+  };
+
   beforeEach(async () => {
     loading.set(false);
     loaded.set(false);
     error.set(null);
     filteredItems.set([]);
+    normalizationProfile.set(null);
+    normalizationLoading.set(false);
+    normalizationError.set(null);
     store = jasmine.createSpyObj<PerformanceByRatingStore>(
       'PerformanceByRatingStore',
       [
@@ -69,9 +108,9 @@ describe('PerformanceByRatingExperimentComponent', () => {
         filteredItems,
         visibleColumnCount: signal(15),
         selectedPreset: signal<PerformanceColumnPreset>('all'),
-        normalizationProfile: signal<RatingNormalizationProfile | null>(null),
-        normalizationLoading: signal(false),
-        normalizationError: signal<string | null>(null),
+        normalizationProfile,
+        normalizationLoading,
+        normalizationError,
       },
     );
     store.initialize.and.returnValue(Promise.resolve());
@@ -181,6 +220,36 @@ describe('PerformanceByRatingExperimentComponent', () => {
     expect(row.querySelector('.sample-warning')?.textContent?.trim()).toBe('Low n');
   });
 
+  it('renders normalization loading, error, and populated table states', () => {
+    const reference = fixture.nativeElement.querySelector(
+      '.normalization-reference',
+    ) as HTMLDetailsElement;
+    (reference.querySelector('summary') as HTMLElement).click();
+
+    normalizationLoading.set(true);
+    fixture.detectChanges();
+    expect(reference.querySelector('.reference-state')?.textContent).toContain('Loading');
+
+    normalizationLoading.set(false);
+    normalizationError.set('Could not load the rating grade reference.');
+    fixture.detectChanges();
+    expect(reference.querySelector('[role="alert"]')?.textContent?.trim()).toBe(
+      'Could not load the rating grade reference.',
+    );
+
+    normalizationError.set(null);
+    normalizationProfile.set(sampleNormalizationProfile);
+    fixture.detectChanges();
+
+    const region = reference.querySelector('.normalization-table-wrap') as HTMLElement;
+    const table = region.querySelector('table') as HTMLTableElement;
+    expect(region.getAttribute('role')).toBe('region');
+    expect(region.tabIndex).toBe(0);
+    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(8);
+    expect(table.querySelector('tbody th[scope="row"]')?.textContent?.trim()).toBe('All ratings');
+    expect(table.textContent).toContain('Reference');
+  });
+
   it('announces report errors and renders the empty state after recovery', () => {
     error.set('Could not load performance by rating.');
     fixture.detectChanges();
@@ -211,5 +280,13 @@ describe('PerformanceByRatingExperimentComponent', () => {
     const button = buttons.find((candidate) => candidate.textContent?.trim() === label);
     expect(button).withContext(`Expected rendered button "${label}"`).toBeDefined();
     return button as HTMLButtonElement;
+  }
+
+  function poolMetadata(label: string, referenceOnly = false) {
+    return { label, referenceOnly, confidence: 'HIGH' as const, softPadding: 0 };
+  }
+
+  function openRange() {
+    return { minInclusive: 0, maxExclusive: null };
   }
 });
