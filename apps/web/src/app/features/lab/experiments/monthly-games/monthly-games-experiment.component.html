@@ -1,20 +1,62 @@
-<section class="section-card lab-panel stack">
-  <div class="lab-panel-header">
-    <div><span class="eyebrow">Calendar aggregate</span><h3 class="collection-title">Games by year and month</h3></div>
-    <div class="lab-actions">
-      <label class="lab-toggle"><input type="checkbox" [checked]="store.excludeBullet()" (change)="store.setExcludeBullet($any($event.target).checked)" /><span>Exclude bullet</span></label>
-      <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading()">{{ store.loading() ? 'Loading...' : 'Refresh' }}</button>
-    </div>
+<app-panel
+  title="Games by year and month"
+  subtitle="Monthly volume, result, and opponent-rating snapshots from imported games."
+  [actions]="actions()"
+>
+  <div class="lab-controls" role="group" aria-label="Monthly games options">
+    <label class="lab-toggle">
+      <input
+        type="checkbox"
+        [checked]="store.excludeBullet()"
+        (change)="store.setExcludeBullet($any($event.target).checked)"
+      />
+      <span>Exclude bullet games</span>
+    </label>
   </div>
-  @if (store.loading()) { <p class="status-note">Loading monthly table...</p> }
-  @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
-  @if (!store.loading() && store.items().length > 0) {
-    <div class="table-wrap"><table class="lab-table"><thead><tr><th>Month</th><th>Games</th><th>WDL</th><th>Score</th><th>Avg opp. Lichess</th><th>Avg opp. Chess.com</th><th>Highest Lichess</th><th>Highest Chess.com</th></tr></thead><tbody>
-      @for (row of store.items(); track row.monthStart) {
-        <tr><td class="primary-cell">{{ monthLabel(row) }}</td><td>{{ row.games }}</td><td>{{ wdlLabel(row) }}</td><td>{{ percentLabel(row.scorePct) }}</td><td>{{ ratingLabel(row.avgOpponentRatingLichess) }}</td><td>{{ ratingLabel(row.avgOpponentRatingChessCom) }}</td><td>{{ ratingLabel(row.highestRatedLichess) }}</td><td>{{ ratingLabel(row.highestRatedChessCom) }}</td></tr>
-      }
-    </tbody></table></div>
-  } @else if (store.loaded() && !store.loading() && !store.error()) {
-    <div class="empty-state">No imported games found for the selected options.</div>
+
+  @if (store.loading()) {
+    <p class="lab-state" aria-live="polite">Loading monthly table…</p>
   }
-</section>
+  @if (store.error(); as error) {
+    <p class="lab-state lab-state--error" role="alert">{{ error }}</p>
+  }
+  @if (!store.loading() && store.items().length > 0) {
+    <div
+      class="table-wrap"
+      role="region"
+      aria-label="Scrollable monthly games table"
+      tabindex="0"
+    >
+      <table class="lab-table" aria-label="Imported games by month">
+        <thead>
+          <tr>
+            <th scope="col">Month</th>
+            <th scope="col" class="numeric-column">Games</th>
+            <th scope="col" class="numeric-column">WDL</th>
+            <th scope="col" class="numeric-column">Score</th>
+            <th scope="col" class="numeric-column">Avg opp. Lichess</th>
+            <th scope="col" class="numeric-column">Avg opp. Chess.com</th>
+            <th scope="col" class="numeric-column">Highest Lichess</th>
+            <th scope="col" class="numeric-column">Highest Chess.com</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of store.items(); track row.monthStart) {
+            <tr>
+              <td class="primary-cell">{{ monthLabel(row) }}</td>
+              <td class="numeric-cell">{{ row.games }}</td>
+              <td class="numeric-cell">{{ wdlLabel(row) }}</td>
+              <td class="numeric-cell">{{ percentLabel(row.scorePct) }}</td>
+              <td class="numeric-cell">{{ ratingLabel(row.avgOpponentRatingLichess) }}</td>
+              <td class="numeric-cell">{{ ratingLabel(row.avgOpponentRatingChessCom) }}</td>
+              <td class="numeric-cell">{{ ratingLabel(row.highestRatedLichess) }}</td>
+              <td class="numeric-cell">{{ ratingLabel(row.highestRatedChessCom) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (store.loaded() && !store.loading() && !store.error()) {
+    <div class="lab-empty">No imported games found for the selected options.</div>
+  }
+</app-panel>
