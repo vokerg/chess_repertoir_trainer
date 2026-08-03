@@ -25,7 +25,7 @@ Settings remains owned by draft PR #209. Tactical Detections and residual authen
 - Preserved sticky report headers and the two sticky identity columns while applying production table surfaces and analytical numeric typography.
 - Added semantic fieldsets and legends for report types and column groups, pressed-state semantics for presets and report-type toggles, scoped table headings, accessible table labels, full accessible names for abbreviated metric headings, and keyboard-focusable scroll regions.
 - Added visible focus treatment for controls, disclosures, menu inputs, and both horizontal-scroll regions, including inward focus rings inside clipped normalization-reference surfaces.
-- Added rendered-template component tests covering initialization, the shared panel refresh action, loading-disabled query actions, filter delegation, report-type pressed state and toggling, the actual column-disclosure workflow, preset and checkbox delegation, populated analytical-table rendering, scroll-region and table-heading semantics, full accessible metric names, error announcement, and empty-state recovery.
+- Added rendered-template component tests covering initialization, the shared panel refresh action, loading-disabled query actions, filter delegation, report-type pressed state and toggling, the actual column-disclosure workflow, preset and checkbox delegation, populated analytical-table rendering, report and normalization loading/error/empty/populated states, scroll-region and table-heading semantics, full accessible metric names, and error announcement.
 
 ## Self-review corrections
 
@@ -37,7 +37,7 @@ The initial reviewer-style pass identified and fixed:
 A second independent quality pass then identified and fixed:
 
 - a column-control test that clicked descendants while their parent `<details>` element was still closed; the test now opens and verifies the disclosure before interacting;
-- insufficient rendered evidence for populated, loading, error, empty, table-semantic, scroll-region, and pressed-state behavior;
+- insufficient rendered evidence for report and normalization populated/loading/error/empty states, table semantics, scroll regions, and pressed-state behavior;
 - a stale report statement that still described exact-head CI #1861 as pending after it had passed;
 - focus rings on the normalization disclosure and reference table that could be clipped by the parent `overflow: hidden`; these rings now render inward;
 - duplicated sticky-column widths and offsets that could drift between desktop and mobile rules; feature-local CSS variables now own both widths and the dependent offset;
@@ -73,7 +73,7 @@ No new dependency, shared primitive, generic table abstraction, or global stylin
 
 ### Repository inspection
 
-Inspected current `main`, the VT-301 queue, open pull requests, route composition, the complete Performance by Rating component/template/styles/store/store-test implementation, contract schema, Batch 7a Lab conventions, shared panel and action implementation, responsive breakpoint constants, Angular frontend rules, production design-token and typography guidance, transformation decisions and working rules, and the complete PR diff.
+Inspected current `main`, the VT-301 queue, open pull requests, route composition, the complete Performance by Rating component/template/styles/store/store-test implementation, contract schemas, Batch 7a Lab conventions, shared panel and action implementation, responsive breakpoint constants, Angular frontend rules, production design-token and typography guidance, transformation decisions and working rules, and the complete PR diff.
 
 No open branch or pull request was found touching the Performance by Rating files. Settings remains isolated in PR #209, and the branch refresh through PR #270 incorporated an unrelated Games-table action change without overlap.
 
