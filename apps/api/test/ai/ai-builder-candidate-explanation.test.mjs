@@ -6,7 +6,7 @@ import { createCandidateExplanationService } from '../../dist/modules/ai/reperto
 const normalizedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 const target = newCourseRepertoireTargetExample;
 const response = {
-  contractVersion: '2026-07-v1',
+  contractVersion: '2026-08-v2',
   rankingPolicyVersion: '2026-07-deterministic-v1',
   generatedAt: '2026-07-30T14:55:00.000Z',
   targetId: target.targetId,
@@ -119,6 +119,7 @@ const enabledConfig = {
   assert.equal(authoritativeRequest.includeMoveUci, 'e2e4');
   assert.equal(providerInput.normalizedFen, undefined, 'FEN is not sent to the provider');
   assert.equal(providerInput.facts.some((fact) => fact.id === 'selected.rank'), true);
+  assert.equal(providerInput.facts.some((fact) => fact.id.includes('opening_knowledge')), false);
   assert.equal(generated.selectedCandidate.rank, 1);
   assert.equal(generated.comparisonCandidate.rank, 2);
   assert.equal(generated.generatedAt, '2026-07-30T15:00:00.000Z');
@@ -272,6 +273,22 @@ function candidate(rank, moveUci, moveSan, engineScore, populationFrequency, rea
         roles: ['INITIATOR'],
         confidence: 'HIGH',
         matchedRuleIds: ['test-rule'],
+        knowledge: {
+          status: 'AVAILABLE',
+          version: '2026-08-knowledge-v1',
+          shortDescription: { text: 'A reviewed opening description.', confidence: 'HIGH' },
+          strategicSummary: { text: 'A reviewed target-side summary.', confidence: 'HIGH' },
+          plans: [{
+            id: `${moveUci}-plan`,
+            title: 'Reviewed plan',
+            summary: 'This remains deterministic explanatory evidence.',
+            conditions: [],
+            caveats: [],
+            confidence: 'HIGH',
+          }],
+          matchedRuleIds: ['knowledge-test-rule'],
+          sourceIds: ['project-editorial-rb-022'],
+        },
       },
       course: {
         status: 'AVAILABLE',

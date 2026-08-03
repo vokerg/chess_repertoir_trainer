@@ -3,6 +3,7 @@ import { newCourseRepertoireTargetExample } from '@chess-trainer/contracts/reper
 import {
   CandidateDecisionRoleMismatchError,
   createCandidateDecisionService,
+  resolveCandidateOpeningEvidence,
 } from '../../dist/modules/candidate-decision/candidate-decision.service.js';
 
 const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -81,6 +82,22 @@ const openingEvidence = {
   roles: ['INITIATOR'],
   confidence: 'HIGH',
   matchedRuleIds: ['test-rule'],
+  knowledge: {
+    status: 'AVAILABLE',
+    version: '2026-08-knowledge-v1',
+    shortDescription: { text: 'A reviewed test opening.', confidence: 'HIGH' },
+    strategicSummary: { text: 'Use the reviewed plan for the target side.', confidence: 'HIGH' },
+    plans: [{
+      id: 'test-plan',
+      title: 'Test plan',
+      summary: 'Keep the knowledge projection separate from deterministic ranking.',
+      conditions: [],
+      caveats: [],
+      confidence: 'HIGH',
+    }],
+    matchedRuleIds: ['knowledge-test-rule'],
+    sourceIds: ['project-editorial-rb-022'],
+  },
 };
 
 const service = createCandidateDecisionService({
@@ -179,7 +196,7 @@ const service = createCandidateDecisionService({
     includeMoveUci: 'g2g4',
   });
 
-  assert.equal(response.contractVersion, '2026-07-v1');
+  assert.equal(response.contractVersion, '2026-08-v2');
   assert.equal(response.rankingPolicyVersion, '2026-07-deterministic-v1');
   assert.equal(response.candidates.length, 2);
   assert.equal(response.requestedMoveIncluded, true);
@@ -194,6 +211,16 @@ const service = createCandidateDecisionService({
   assert.equal(manual.eligibility.status, 'EXCLUDED');
   assert.equal(manual.reasonCodes.includes('MANUAL_CANDIDATE'), true);
   assert.equal(manual.warningCodes.includes('OBJECTIVE_LOSS'), true);
+  assert.equal(manual.evidence.opening.knowledge.plans[0].id, 'test-plan');
+  assert.deepEqual(Object.keys(manual.components).sort(), [
+    'course',
+    'masters',
+    'objective',
+    'personal',
+    'population',
+    'profileFit',
+    'targetFit',
+  ]);
 
   const covered = response.candidates.find((candidate) => candidate.moveUci === 'e2e4');
   if (covered) {
@@ -202,6 +229,47 @@ const service = createCandidateDecisionService({
     assert.equal(covered.targetFit.status, 'ALIGNED');
     assert.equal(covered.profileFit.status, 'ALIGNED');
   }
+}
+
+{
+  const nonBookFen = '8/8/8/8/8/4k3/8/4K3 w - - 0 1';
+  const white = resolveCandidateOpeningEvidence(
+    nonBookFen,
+    { eco: 'C00', name: 'French Defense' },
+    'WHITE',
+  );
+  const black = resolveCandidateOpeningEvidence(
+    nonBookFen,
+    { eco: 'C00', name: 'French Defense' },
+    'BLACK',
+  );
+
+  assert.equal(white.status, 'AVAILABLE');
+  assert.equal(white.knowledge.status, 'AVAILABLE');
+  assert.equal(white.knowledge.version, '2026-08-knowledge-v1');
+  assert.ok(white.knowledge.plans.some((plan) => plan.id === 'french-white-use-space-and-pawn-chain'));
+  assert.ok(black.knowledge.plans.some((plan) => plan.id === 'french-black-undermine-centre'));
+  assert.notEqual(white.knowledge.strategicSummary.text, black.knowledge.strategicSummary.text);
+  assert.ok(white.knowledge.plans.length <= 3);
+}
+
+{
+  const insufficient = resolveCandidateOpeningEvidence(
+    '8/8/8/8/8/4k3/8/4K3 w - - 0 1',
+    null,
+    'WHITE',
+  );
+
+  assert.equal(insufficient.status, 'INSUFFICIENT');
+  assert.deepEqual(insufficient.knowledge, {
+    status: 'UNAVAILABLE',
+    version: null,
+    shortDescription: null,
+    strategicSummary: null,
+    plans: [],
+    matchedRuleIds: [],
+    sourceIds: [],
+  });
 }
 
 await assert.rejects(
