@@ -27,13 +27,13 @@ Settings remains owned by draft PR #209. Tactical Detections and residual authen
 - Added visible focus treatment for controls, disclosures, menu inputs, and both horizontal-scroll regions.
 - Added rendered-template component tests covering initialization, the shared panel refresh action, loading-disabled state, filter delegation, report-type toggling, column preset selection, and individual column toggling.
 
-## Self-review correction
+## Self-review corrections
 
 A reviewer-style pass re-read the complete feature diff against the Batch 7a accessibility findings and identified one concrete issue before opening the pull request: the column-picker panel had an accessible label on a generic container without a semantic role.
 
 The panel now uses `role="group"` with its existing label. The nested preset controls retain their own labelled group and every metric family remains a semantic fieldset.
 
-No additional behavior, calculation, state, or shared-system issue was found in that pass.
+The first CI run then found a test-double type mismatch: the rendered component spec supplied a readonly array signal where the real store exposes a mutable-array computed signal. Production lint, build, audits, guardrails, and migrations had already passed. The test double was corrected to match the actual store contract; no production code or behavior changed.
 
 ## Behavior preserved
 
@@ -65,16 +65,16 @@ Inspected current `main`, the VT-301 queue, open pull requests, route compositio
 
 No open branch or pull request was found touching the Performance by Rating files. Open PRs #209, #266, and #268 do not overlap this feature or the shared panel implementation used by this batch.
 
+After CI #1857 passed, `main` advanced by one unrelated Games-table refactor commit. The feature branch is being refreshed from that commit before final review; exact-head status remains tracked on PR #269.
+
 ### Automated validation
 
-Pending repository CI on draft PR #269.
-
-Required gates:
-
-- Angular compilation and tests, including the rendered component regressions;
-- full repository lint and build;
-- architecture guardrails;
-- migrations and complete repository tests.
+- CI #1856 passed dependency installation, lint, all builds, opening audits, architecture guardrails, and all 52 migrations, then failed while compiling the new component spec because of the test-double signal type mismatch described above.
+- Corrected head `87f9a5b5cad59c4310acd47981ced2c88902e41b` passed CI #1857 completely.
+- CI #1857 passed the complete domain, contracts, API, web, and mobile test suites and all artifact uploads.
+- Angular web tests passed `355/355`.
+- The API runner passed 85 test files; domain tests passed 33; mobile tests passed 22.
+- Final exact-head CI after refreshing from current `main` is required and tracked in PR #269.
 
 ### Browser review disposition
 
