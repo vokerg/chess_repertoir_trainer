@@ -10,11 +10,17 @@
   margin: 0 auto;
 }
 
+.puzzle-message-slot {
+  min-height: 3.75rem;
+}
+
 .puzzle-message {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  box-sizing: border-box;
+  min-height: 3.75rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-control);
@@ -32,6 +38,10 @@
   border-color: color-mix(in srgb, var(--ui-danger) 45%, var(--ui-border));
   background: var(--ui-danger-soft);
   color: var(--ui-danger);
+}
+
+.puzzle-message-placeholder {
+  visibility: hidden;
 }
 
 .puzzle-settings {
@@ -138,6 +148,11 @@
   .puzzle-settings > button {
     grid-column: auto;
     width: 100%;
+  }
+
+  .puzzle-message-slot,
+  .puzzle-message {
+    min-height: 5.5rem;
   }
 
   .puzzle-message {
