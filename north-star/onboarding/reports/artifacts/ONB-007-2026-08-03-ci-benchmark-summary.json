@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-03T05:09:32.418Z",
+  "source": {
+    "workflowRunId": 30786132287,
+    "workflowRunNumber": 1840,
+    "headSha": "e4dd65eddb93340327a6b21adb0fe9d15ab8035d",
+    "pullRequestMergeRefSha": "01e94dd0ee3c6d29fa7a9ca99c1ed00f5826c0d4",
+    "artifactId": 8845391679,
+    "artifactDigest": "sha256:f500fc43fb39773c67fec351e7b7aacc5187911567b82682028a8fd8a7f94f16",
+    "harness": "apps/api/benchmarks/onboarding-throughput-safe.mjs"
+  },
+  "environment": {
+    "node": "v22.23.1",
+    "platform": "linux",
+    "architecture": "x64",
+    "cpuModel": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpuCount": 4,
+    "totalMemoryBytes": 16770756608,
+    "database": "fresh local disposable PostgreSQL 16 service on the GitHub Actions runner",
+    "engine": "stockfish npm WASM worker",
+    "analysisDepth": 12,
+    "analysisMultipv": 1
+  },
+  "keyMeasurements": {
+    "syntheticProviderPersistence": {
+      "lichess50": {
+        "samples": 5,
+        "totalP50Ms": 104.255,
+        "totalP90Ms": 127.956,
+        "firstCommittedGameP50Ms": 6.746,
+        "firstCommittedGameP90Ms": 7.919
+      },
+      "lichess200": {
+        "samples": 5,
+        "totalP50Ms": 363.301,
+        "totalP90Ms": 417.539,
+        "firstCommittedGameP50Ms": 7.167,
+        "firstCommittedGameP90Ms": 7.765
+      },
+      "chessCom50": {
+        "samples": 5,
+        "totalP50Ms": 98.672,
+        "totalP90Ms": 109.109,
+        "firstCommittedGameP50Ms": 6.842,
+        "firstCommittedGameP90Ms": 8.689
+      },
+      "chessCom200": {
+        "samples": 5,
+        "totalP50Ms": 353.485,
+        "totalP90Ms": 421.944,
+        "firstCommittedGameP50Ms": 7.111,
+        "firstCommittedGameP90Ms": 9.629
+      }
+    },
+    "jobAdmission": {
+      "10TasksP50Ms": 3.729,
+      "10TasksP90Ms": 7.181,
+      "50TasksP50Ms": 6.021,
+      "50TasksP90Ms": 6.817,
+      "200TasksP50Ms": 12.963,
+      "200TasksP90Ms": 15.336
+    },
+    "directIndexing": {
+      "short16PlyP50MsPerGame": 16.36,
+      "short16PlyP90MsPerGame": 17.701,
+      "medium40PlyP50MsPerGame": 24.834,
+      "medium40PlyP90MsPerGame": 26.172,
+      "long80PlyP50MsPerGame": 38.136,
+      "long80PlyP90MsPerGame": 68.314,
+      "tagRefreshP90MsPerGameRange": [5.775, 6.392]
+    },
+    "depth12Analysis": {
+      "freshEngineFirstPositionP50MsRange": [282.567, 288.407],
+      "freshEngineFirstPositionP90MsRange": [283.215, 294.205],
+      "short16PlyP50MsPerGame": 1049.866,
+      "short16PlyP90MsPerGame": 1188.208,
+      "medium40PlyP50MsPerGame": 1319.19,
+      "medium40PlyP90MsPerGame": 1667.612,
+      "medium40PlyProcessP50MsPerGame": 1631.045,
+      "medium40PlyProcessP90MsPerGame": 2604.511
+    },
+    "actualWorkerWaves": {
+      "index50MediumGames": {
+        "samples": 3,
+        "firstSettledP50Ms": 40.789,
+        "firstSettledP90Ms": 42.936,
+        "waveTotalP50Ms": 1720.771,
+        "waveTotalP90Ms": 1781.319
+      },
+      "analyse3ShortGamesDepth12": {
+        "samples": 3,
+        "firstSettledP50Ms": 1256.211,
+        "firstSettledP90Ms": 1733.345,
+        "waveTotalP50Ms": 2964.223,
+        "waveTotalP90Ms": 3491.961
+      }
+    }
+  },
+  "limitations": [
+    "Provider responses were synthetic and removed network latency, rate limits, retries, and archive/window variability.",
+    "PostgreSQL was local to the CI runner rather than Neon.",
+    "The engine was WASM rather than the documented local-binary Render worker.",
+    "The preparation parent and reconciler are not implemented, so complete onboarding timing was modelled from component and worker measurements.",
+    "CPU and RSS observations in the full artifact are process-level readings on a shared hosted runner, not isolated production resource accounting."
+  ]
+}
