@@ -1,6 +1,6 @@
 # VT-301 Lab discovery and tabular reports
 
-Date: 2026-08-02
+Date: 2026-08-03
 
 Issue: #132
 
@@ -32,13 +32,29 @@ Performance by rating and tactical detections remain outside this batch so their
 
 ## Self-review corrections
 
+### First reviewer pass
+
 The first implementation head passed repository CI, but a separate reviewer-style pass identified and corrected three presentation-quality gaps:
 
-- wide table regions are now keyboard-focusable and visibly focused so horizontal scrolling is not pointer-only;
+- wide table regions are keyboard-focusable and visibly focused so horizontal scrolling is not pointer-only;
 - non-interactive rows no longer gain hover treatment that could imply a click action;
 - analytical number columns are right-aligned while dates and move sequences retain readable monospaced alignment.
 
-Focused component tests now verify that all three migrated refresh commands continue to invoke their existing stores and become disabled/relabelled while a load is active.
+The first pass also added component tests for the refresh action contract.
+
+### Second reviewer pass
+
+A second review re-read the complete diff, current shared panel/action implementation, design-token contract, Angular frontend rules, stores, current `main`, PR discussions, and CI history. It identified two additional quality gaps:
+
+- the component specs replaced each real template with an empty template, so they proved only the computed action array and did not exercise the rendered shared panel controls;
+- the Monthly Games options wrapper had an `aria-label` on a generic element without a corresponding semantic role.
+
+Corrections:
+
+- all three component specs now render their production templates, verify initial loading, click the actual shared panel refresh button, and assert the rendered disabled/`Loading…` state;
+- the Monthly Games spec also clicks the actual checkbox and verifies delegation to the existing store;
+- the Monthly Games options wrapper now uses `role="group"` with its accessible label;
+- the branch was refreshed from current `main` through sync PR #265 before final validation. The intervening commits did not overlap Lab or shared-panel files.
 
 ## Behavior preserved
 
@@ -60,35 +76,37 @@ This batch reuses the proven `app-panel` and production token contract. It intro
 
 ### Repository inspection
 
-- Inspected the current route registration, selected Lab pages and stores, shared panel/action contracts, production token contract, transformation coordination, and open pull requests.
-- Compared the implementation against the latest `main` before final review.
-- The branch was refreshed onto current `main`; intervening commits touched API/opening-knowledge and planning files only, with no Lab or shared-panel collision.
+- Inspected the current route registration, selected Lab pages and stores, shared panel/action contracts, production token contract, Angular frontend patterns, transformation coordination, current `main`, open pull requests, reviews, and review threads.
+- Re-read the complete PR diff after both self-review passes.
+- Verified that the three commits added to `main` after the previous review touched candidate-decision, repertoire-builder, and planning/documentation files only, with no Lab or shared-panel collision.
+- Refreshed the feature branch from `main` commit `7168707389d34eb33f773a5e0cec6b61e440dd8d` through PR #265; the branch is zero commits behind `main` before final validation.
 
 ### Automated validation
 
-Initial implementation head `e15bf9936bc3a59773b483f61d82645c15ae8f76` passed the complete repository workflow in CI #1762:
+- Initial implementation head `e15bf9936bc3a59773b483f61d82645c15ae8f76` passed CI #1762.
+- First self-review head `c67527bbaa01e1ec3c1c067a4eeda660498288fd` passed CI #1794, including lint, full builds, opening audits, architecture checks, migrations, the complete test suite, and `343/343` Angular web tests.
+- Final exact-head CI after the second self-review and `main` refresh is tracked on PR #252 and issue #132. Merge is permitted only if that run passes and the PR remains mergeable with no unresolved review threads.
 
-- lint;
-- full workspace build and Angular template/type compilation;
-- opening audits;
-- architecture guardrails;
-- database migrations;
-- all tests, including 337 Angular web tests.
+### Local validation limitation
 
-The refreshed self-review head adds accessibility corrections and focused tests, so its exact-head CI result is tracked on PR #252 and issue #132.
+A local clone was retried on 2026-08-03 and failed with:
 
-### Browser review still required
+```text
+Could not resolve host: github.com
+```
 
-Review authenticated populated, loading, error, and empty states for all four routes at representative desktop, compact, and narrow-phone widths. Confirm:
+No local build, test run, or authenticated browser session is represented as completed.
 
-- Lab links have visible hover and keyboard-focus states;
-- panel actions disable and relabel while loading;
-- the Monthly Games checkbox remains operable by keyboard and updates the report as before;
-- wide tables scroll without escaping the application canvas or mobile navigation clearance;
-- table headers, values, and long training sequences remain readable;
-- loading and error announcements are understandable to assistive technology.
+### Browser review disposition
 
-No direct browser state is represented as observed in this report.
+Direct authenticated browser review remains unavailable in this execution environment. The following review is explicitly deferred rather than represented as observed:
+
+- populated, loading, error, and empty states for all four routes;
+- desktop, compact, and narrow-phone widths;
+- keyboard operation of Lab links, panel actions, the Monthly Games checkbox, and horizontally scrollable table regions;
+- containment of wide tables within the application canvas and mobile navigation clearance;
+- readability of table headers, numeric values, dates, and long training sequences;
+- assistive-technology announcements for loading and error states.
 
 ## Residual scope
 
