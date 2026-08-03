@@ -22,12 +22,14 @@ Claim scope: none
 
 ## Outcome
 
-Accept, claim, execute, observe, pause, cancel, retry, recover, and shut down account-import runs without holding HTTP requests or reusing imported-game task rows.
+Accept, claim, execute, observe, pause, cancel, retry, recover, drain, and shut down account-import runs without holding HTTP requests or reusing imported-game task rows.
 
 ## Dependencies
 
 - ONB-011.
 - ONB-007 throughput/progress report for poll, heartbeat, stale, backlog, telemetry, and scaling defaults.
+- Consume accepted ONB-004 fence/drain semantics.
+- Coordinate one stable lifecycle-fence admission and exact active-claim/drain seam with ONB-019 and ONB-020.
 
 ## In scope
 
@@ -38,33 +40,41 @@ Accept, claim, execute, observe, pause, cancel, retry, recover, and shut down ac
 - Initial timing defaults: 1-second poll, 15-second heartbeat, 2-minute stale threshold, 30-second recovery scan.
 - Work-key fencing and `AbortSignal`.
 - Explicit provider rate-limited/retry-at state distinct from worker staleness.
-- Pause/cancel acknowledgement only after provider claim release.
+- Pause/resume and cancellation acknowledgement only after safe quiescence and provider claim release.
 - Retry as a new linked run.
+- Exact repository/service projection proving whether an account import still owns an active claim/work key.
+- One provider-neutral lifecycle-fence admission seam that ONB-019 can implement without provider-specific duplication.
 - Graceful shutdown and terminal history.
 - Aggregate queue-wait, provider, parse, write, checkpoint, retry-at, heartbeat, and cancellation timing without personal payloads.
 - Backlog alerting at more than 20 queued runs for five minutes or oldest queue age above five minutes.
-- Ownership/restart/concurrency/telemetry tests.
+- Ownership/restart/concurrency/fence-admission/drain/telemetry tests.
+
+ONB-012 may land before ONB-019 if the fence seam is explicit and its temporary allow-all implementation does not claim destructive safety. ONB-019 later supplies persisted fence enforcement through that seam; ONB-020 consumes exact cancellation acknowledgement and drain proof.
 
 ## Out of scope
 
-- Provider adapter request/window behavior.
+- Provider adapter behavior.
 - Angular UI.
 - Imported-game wave orchestration.
+- Lifecycle-operation/fence persistence and audit owned by ONB-019.
+- Destructive phase execution owned by ONB-020.
 - External broker or new deployment.
 - Parallel provider execution in the first release.
 - Public ETA.
-- Final destructive deletion workflow.
 
 ## Acceptance criteria
 
 - Accepted work survives API/worker restart.
-- Provider I/O occurs outside transactions.
+- Provider I/O occurs outside transactions and lifecycle guards.
 - Exactly one provider execution is active initially.
 - Heartbeats continue independently of provider parsing and persistence batches.
 - Stale workers cannot checkpoint or settle.
 - HTTP 429/retry-at is visible and does not become false stale recovery.
-- Pause/cancel become terminal only after acknowledgement and claim release.
+- Pause/cancel become acknowledged only after safe quiescence or stale-claim recovery and claim release.
 - Retry preserves history and resumes from proved coverage.
+- Terminal or cancellation-requested status alone is not treated as drain proof.
+- ONB-020 can verify that no target account-import claim/work key remains before destructive success.
+- Exactly one lifecycle-fence admission seam exists for ONB-019 integration.
 - Metrics expose queue age and stage timings without PGN, username, provider URL, or token material.
 - Shared-worker operation meets reconcile/claim timing; provider deployment split is triggered only by sustained queue age or heartbeat interference.
 - `JobRun`/`JobTask` behavior is unchanged.
@@ -72,10 +82,11 @@ Accept, claim, execute, observe, pause, cancel, retry, recover, and shut down ac
 ## Required validation
 
 - API contract and ownership tests.
-- Claim concurrency/fencing tests.
+- Claim concurrency/work-key fencing tests.
 - 15-second heartbeat / 2-minute stale recovery tests using controlled clocks.
 - Rate-limit retry-at versus stale-worker tests.
-- Pause/cancel/retry and claim-release tests.
+- Pause/resume/cancel/retry and claim-release tests.
+- Fence-admission interface and exact-drain tests.
 - Worker shutdown tests.
 - Queue-age/backlog telemetry tests.
 - Full API and architecture gates.
