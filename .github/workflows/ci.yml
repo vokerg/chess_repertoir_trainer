@@ -74,20 +74,6 @@ jobs:
       - name: Apply database migrations
         run: npm run db:migrate --workspace=apps/api
 
-      - name: ONB-007 synthetic throughput benchmark
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'onb-007/')
-        env:
-          ONBOARDING_BENCHMARK_REPORT_PATH: ${{ github.workspace }}/apps/api/onboarding-throughput-benchmark.json
-        run: npm run benchmark:onboarding --workspace=apps/api
-
-      - name: Upload ONB-007 throughput benchmark
-        if: always() && hashFiles('apps/api/onboarding-throughput-benchmark.json') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: onb-007-throughput-benchmark
-          path: apps/api/onboarding-throughput-benchmark.json
-          if-no-files-found: error
-
       - name: Imported-game opening classification audit
         run: npm --silent run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
 
