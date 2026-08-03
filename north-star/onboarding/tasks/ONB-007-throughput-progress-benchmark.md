@@ -1,6 +1,6 @@
 # ONB-007 — Benchmark preparation throughput and define truthful progress semantics
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 50
 
 Delivery class: Research
 
-Planning maturity: Outlined
+Planning maturity: Claimed; current implementation inspection and benchmark design in progress
 
 GitHub issue: [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT/Codex research session for `vokerg`
 
-Claim branch: none
+Claim branch: `onb-007/issue-154-throughput-progress-benchmark`
 
-Claimed at: none
+Claimed at: 2026-08-03
 
-Claim scope: none
+Claim scope: inspect current import, job, indexing, analysis, tagging/tactical, worker, deployment, fixture, and progress-reporting paths; define and run safe reproducible local/CI benchmark harnesses where possible; separate deterministic processing from provider-network observations; produce measured defaults, truthful progress/ETA policy, operational budgets, task handoffs, and canonical documentation; no production scaling, provider load test, queue replacement, or speculative optimization
 
 ## Outcome
 
@@ -44,6 +44,7 @@ The proposed recent-first flow depends on a single background worker and expensi
 - ONB-000.
 - Feed evidence into ONB-002 and ONB-003.
 - Coordinate progress wording with ONB-001 and cleanup budgets with ONB-006.
+- Consume ONB-016 first-value milestones and ONB-003 lane-order handoff.
 
 ## In scope
 
@@ -93,5 +94,7 @@ See `OPEN_QUESTIONS.md` under ONB-007.
 ## Completion
 
 Report: none
+
+Pull request: none
 
 Completed at: none
