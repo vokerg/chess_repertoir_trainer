@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -80,7 +80,7 @@ When repository metadata and issue state disagree, stop and reconcile before sub
 Recommended branch:
 
 ```text
-onb-004/issue-151-destructive-lifecycle-invariants
+onb-007/issue-154-throughput-progress-benchmark
 ```
 
 ## Work updates
@@ -96,7 +96,7 @@ Comment only on meaningful changes:
 - review readiness;
 - completion or supersession.
 
-## Allocation notes
+## Allocation and handoff notes
 
 ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular implementation tasks.
 
@@ -115,9 +115,21 @@ ONB-004 allocated:
 
 ONB-004 also defines the administrator mutation boundary consumed by ONB-005, the retained shared-position boundary consumed by ONB-006, and the acknowledged import/preparation drain required from ONB-011/012/015/017/018.
 
+ONB-007 supplies operational defaults and validation gates to existing owners rather than allocating a new implementation task:
+
+- ONB-008 / #193 and ONB-010 / #195 — exact counts, fixed-denominator percentages, milestones, checked-empty/rate-limit/stall states, and no public ETA;
+- ONB-011 / #199 — import counters/checkpoints and bounded-write/telemetry-compatible persistence;
+- ONB-012 / #200 — one executor and initial 1-second poll, 15-second heartbeat, 2-minute stale, and 30-second recovery defaults;
+- ONB-013 / #201 — serial 14-day Lichess windows, 100-row writes, one-minute 429 cooldown, and a low-volume canary;
+- ONB-014 / #202 — serial calendar-month Chess.com access, cache validators, 100-row writes, and a low-volume canary;
+- ONB-017 / #253 — 50/3/10 preparation waves and four-batch/200-task/40-analysis global caps;
+- ONB-018 / #254 — one-second active/five-second idle reconciliation, three-indexed first-analysis threshold, one-game fallback, and stall codes;
+- ONB-005 / #152 — queue age, heartbeat, reconcile lag, rate-limit, and stage-duration diagnostics;
+- ONB-006 / #153, ONB-020 / #260, and ONB-021 / #261 — operation-specific transaction/lock budgets beginning at no more than 500 Position candidates or 100 game IDs per transaction.
+
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-017 is `READY`, but its claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation alone is not permission to claim blocked work.
+ONB-007 is `REVIEW` on PR #266. The next deterministic READY research task is ONB-005 / #152. ONB-006 and ONB-017 are additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 
