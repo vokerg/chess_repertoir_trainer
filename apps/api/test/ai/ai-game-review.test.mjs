@@ -106,7 +106,7 @@ const game = {
   result: '1-0',
   resultForUser: 'WIN',
   status: 'finished',
-  opening: { eco: 'C50', name: 'Italian Game' },
+  opening: { eco: 'C11', name: 'French Defense: Classical Variation' },
   tagCodes: [1],
   tags: [{ code: 1, name: 'Tactical game' }],
   plyIndex: { status: 'INDEXED', indexedAt: null, error: null },
@@ -114,7 +114,7 @@ const game = {
     status: 'COMPLETED', runId: 1, depth: null, completedAt: null, createdAt: null,
     whiteAccuracy: 88, blackAccuracy: 79, userAccuracy: 88, summary: null, criticalMoveCount: 1,
   },
-  pgn: '[Result "1-0"]\n\n1. e4 e5 2. Nf3 Nc6 1-0',
+  pgn: '[Result "1-0"]\n\n1. e4 e6 2. d4 d5 3. Nc3 Nf6 1-0',
   plies: [],
   createdAt: '2026-07-19T10:00:00.000Z',
   updatedAt: '2026-07-19T10:00:00.000Z',
@@ -131,17 +131,76 @@ const run = {
   summary: { criticalPlyNumbers: [3] },
   moves: [
     move(1, 'WHITE', 'e2e4', 'BEST', 0, 'e2e4'),
-    move(2, 'BLACK', 'e7e5', 'GOOD', 8, 'e7e5'),
-    move(3, 'WHITE', 'g1f3', 'MISTAKE', 95, 'f1c4'),
-    move(4, 'BLACK', 'b8c6', 'BEST', 0, 'b8c6'),
+    move(2, 'BLACK', 'e7e6', 'GOOD', 8, 'e7e6'),
+    move(3, 'WHITE', 'd2d4', 'MISTAKE', 95, 'g1f3'),
+    move(4, 'BLACK', 'd7d5', 'BEST', 0, 'd7d5'),
+    move(5, 'WHITE', 'b1c3', 'GOOD', 5, 'b1c3'),
+    move(6, 'BLACK', 'g8f6', 'BEST', 0, 'g8f6'),
   ],
 };
 
 {
   const built = buildGameReviewContext(game, run);
-  assert.equal(built.authoritativeMoves.get(3).playedMoveSan, 'Nf3');
-  assert.equal(built.authoritativeMoves.get(3).bestMoveSan, 'Bc4');
+  assert.equal(built.authoritativeMoves.get(3).playedMoveSan, 'd4');
+  assert.equal(built.authoritativeMoves.get(3).bestMoveSan, 'Nf3');
   assert.equal(built.context.moves[0].before, undefined, 'FEN is not included in provider context');
+  assert.equal(built.context.openingKnowledge.side, 'WHITE');
+  assert.equal(built.context.openingKnowledge.version, '2026-08-knowledge-v1');
+  assert.ok(built.context.openingKnowledge.plans.some(
+    (plan) => plan.id === 'french-white-use-space-and-pawn-chain',
+  ));
+  assert.ok(!built.context.openingKnowledge.plans.some(
+    (plan) => plan.id === 'french-black-undermine-centre',
+  ));
+}
+
+{
+  const built = buildGameReviewContext({ ...game, userColor: 'BLACK' }, run);
+  assert.equal(built.context.openingKnowledge.side, 'BLACK');
+  assert.ok(built.context.openingKnowledge.plans.some(
+    (plan) => plan.id === 'french-black-undermine-centre',
+  ));
+  assert.ok(!built.context.openingKnowledge.plans.some(
+    (plan) => plan.id === 'french-white-use-space-and-pawn-chain',
+  ));
+}
+
+{
+  const pgnIdentified = {
+    ...game,
+    opening: { eco: null, name: null },
+    pgn: '[Result "*"]\n\n1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 *',
+  };
+  const built = buildGameReviewContext(pgnIdentified, { ...run, moves: [] });
+  assert.equal(built.context.openingKnowledge.opening.source, 'MOVES');
+  assert.ok(built.context.openingKnowledge.matchedRuleIds.includes(
+    'knowledge-line-najdorf-english-attack',
+  ));
+  assert.ok(built.context.openingKnowledge.plans.some(
+    (plan) => plan.id === 'najdorf-english-white-opposite-wing-attack',
+  ));
+}
+
+{
+  const missingKnowledge = buildGameReviewContext({
+    ...game,
+    opening: { eco: 'A00', name: 'Invented Opening: Quiet Example' },
+    pgn: '[Result "1/2-1/2"]\n\n1/2-1/2',
+  }, { ...run, moves: [] });
+  assert.equal(missingKnowledge.context.openingKnowledge.status, 'UNAVAILABLE');
+  assert.deepEqual(missingKnowledge.context.openingKnowledge.plans, []);
+  assert.deepEqual(missingKnowledge.context.openingKnowledge.matchedRuleIds, []);
+}
+
+{
+  const missingOpening = buildGameReviewContext({
+    ...game,
+    opening: { eco: null, name: null },
+    pgn: '[Result "1/2-1/2"]\n\n1/2-1/2',
+  }, { ...run, moves: [] });
+  assert.equal(missingOpening.context.openingKnowledge.status, 'UNAVAILABLE');
+  assert.equal(missingOpening.context.openingKnowledge.opening, null);
+  assert.ok(missingOpening.warnings.includes('OPENING_NOT_IDENTIFIED'));
 }
 
 let savedReviewInput = null;
@@ -156,19 +215,28 @@ let generatedResponse;
       savedReviewInput = input;
     },
     createClient: () => ({
-      generateJson: async () => ({
-        value: {
-          headline: 'A stable win with one avoidable mistake',
-          overview: 'You converted the game after a generally controlled opening.',
-          openingAssessment: 'The Italian Game position was handled sensibly.',
-          turningPoints: [{ plyNumber: 3, explanation: 'This move lost time compared with the engine choice.' }],
-          strengths: ['Kept the position under control'],
-          improvements: ['Compare candidate developing moves'],
-          practicePriorities: ['Opening move-order review'],
-          themes: ['development'],
-        },
-        usage: { promptTokens: 1, completionTokens: 1 },
-      }),
+      generateJson: async ({ input }) => {
+        assert.equal(input.openingKnowledge.side, 'WHITE');
+        assert.ok(input.openingKnowledge.matchedRuleIds.includes('knowledge-family-french-defense'));
+        return {
+          value: {
+            headline: 'A stable win with one avoidable mistake',
+            overview: 'You converted the game after a generally controlled opening.',
+            openingAssessment: 'The game followed the reviewed French space plan before one missed developing opportunity.',
+            openingPlanReferences: [{
+              planId: 'french-white-use-space-and-pawn-chain',
+              plyNumber: 3,
+              claim: 'MISSED_OPPORTUNITY',
+            }],
+            turningPoints: [{ plyNumber: 3, explanation: 'This move lost time compared with the engine choice.' }],
+            strengths: ['Kept the position under control'],
+            improvements: ['Compare candidate developing moves'],
+            practicePriorities: ['Opening move-order review'],
+            themes: ['development'],
+          },
+          usage: { promptTokens: 1, completionTokens: 1 },
+        };
+      },
     }),
     now: () => new Date('2026-07-19T14:00:00.000Z'),
   });
@@ -176,20 +244,28 @@ let generatedResponse;
   generatedResponse = await service.generate(1, 7);
   assert.equal(generatedResponse.review.turningPoints[0].classification, 'MISTAKE');
   assert.equal(generatedResponse.review.turningPoints[0].scoreLossCp, 95);
-  assert.equal(generatedResponse.review.turningPoints[0].bestMoveSan, 'Bc4');
+  assert.equal(generatedResponse.review.turningPoints[0].bestMoveSan, 'Nf3');
   assert.equal(generatedResponse.generatedAt, '2026-07-19T14:00:00.000Z');
   assert.equal(savedReviewInput.analysisRunId, 19);
   assert.equal(savedReviewInput.content, generatedResponse);
   assert.equal(savedReviewInput.inputHash.length, 64);
   assert.equal(savedReviewInput.schemaVersion, 1);
-  assert.equal(savedReviewInput.promptVersion, 1);
+  assert.equal(savedReviewInput.promptVersion, 2);
 }
 
 {
   const service = createGameReviewService({
     loadConfig: () => config,
     getGame: async () => game,
-    getStoredReview: async () => ({ content: generatedResponse }),
+    getAnalysis: async () => ({ run }),
+    getStoredReview: async () => ({
+      analysisRunId: savedReviewInput.analysisRunId,
+      inputHash: savedReviewInput.inputHash,
+      schemaVersion: savedReviewInput.schemaVersion,
+      promptVersion: savedReviewInput.promptVersion,
+      model: savedReviewInput.model,
+      content: generatedResponse,
+    }),
   });
   assert.deepEqual(await service.getStored(1, 7), { review: generatedResponse });
 }
@@ -197,10 +273,93 @@ let generatedResponse;
 {
   const service = createGameReviewService({
     loadConfig: () => config,
+    getGame: async () => ({ ...game, userColor: 'BLACK' }),
+    getAnalysis: async () => ({ run }),
+    getStoredReview: async () => ({
+      analysisRunId: savedReviewInput.analysisRunId,
+      inputHash: savedReviewInput.inputHash,
+      schemaVersion: savedReviewInput.schemaVersion,
+      promptVersion: savedReviewInput.promptVersion,
+      model: savedReviewInput.model,
+      content: generatedResponse,
+    }),
+  });
+  assert.deepEqual(
+    await service.getStored(1, 7),
+    { review: null },
+    'changing the applicable side-specific knowledge invalidates the saved review',
+  );
+}
+
+{
+  const service = createGameReviewService({
+    loadConfig: () => config,
     getGame: async () => game,
+    getAnalysis: async () => ({ run }),
+    getStoredReview: async () => null,
+    saveStoredReview: async () => {},
+    createClient: () => ({
+      generateJson: async () => ({
+        value: generatedValue({
+          openingPlanReferences: [{ planId: 'invented-plan', plyNumber: 3, claim: 'ALIGNED' }],
+        }),
+      }),
+    }),
+  });
+  await assert.rejects(
+    () => service.generate(1, 7),
+    (error) => error.code === 'AI_INVALID_RESPONSE',
+  );
+}
+
+{
+  const service = createGameReviewService({
+    loadConfig: () => config,
+    getGame: async () => game,
+    getAnalysis: async () => ({ run }),
+    getStoredReview: async () => null,
+    saveStoredReview: async () => {},
+    createClient: () => ({
+      generateJson: async () => ({
+        value: generatedValue({
+          openingPlanReferences: [{
+            planId: 'french-white-use-space-and-pawn-chain',
+            plyNumber: 1,
+            claim: 'MISSED_OPPORTUNITY',
+          }],
+        }),
+      }),
+    }),
+  });
+  await assert.rejects(
+    () => service.generate(1, 7),
+    (error) => error.code === 'AI_INVALID_RESPONSE',
+  );
+}
+
+{
+  const service = createGameReviewService({
+    loadConfig: () => config,
+    getGame: async () => game,
+    getAnalysis: async () => ({ run }),
     getStoredReview: async () => null,
   });
   assert.deepEqual(await service.getStored(1, 7), { review: null });
+}
+
+function generatedValue(overrides = {}) {
+  return {
+    headline: 'Grounded review',
+    overview: 'Overview',
+    openingAssessment: 'Opening assessment',
+    openingPlanReferences: [],
+    turningPoints: [],
+    strengths: [],
+    improvements: [],
+    practicePriorities: [],
+    themes: [],
+    ...overrides,
+  };
 }
 
 function move(plyNumber, side, playedMoveUci, classification, scoreLossCp, bestMoveUci) {

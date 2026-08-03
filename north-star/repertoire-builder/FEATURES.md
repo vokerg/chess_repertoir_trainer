@@ -1,6 +1,6 @@
 # Repertoire Builder Feature Catalog
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 Planning maturity values:
 
@@ -37,7 +37,7 @@ Delivery classes:
 | Existing-course adaptation | Dual-use | Implemented and merged | Improves current course review | Reuses builder for gaps and endings |
 | Repertoire personas and profile override | Dual-use | Implemented and merged | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
 | Traps knowledge foundation | Research | Discovery and bounded pilot complete | Possible future opening resource | Enables evidence-backed traps persona |
-| LLM explanation/orchestration | Research | Bounded prototypes complete | Optional generated narrative value | Read-only interpretation over deterministic evidence |
+| LLM explanation/orchestration | Research | Bounded prototypes complete; opening-grounded game review in PR #268 | Optional generated narrative value | Read-only interpretation over deterministic evidence |
 | Outcome feedback and builder evaluation | Dual-use | Blocked | Better improvement measurement | Validates whether recommendations work later |
 
 ## Feature relationships
@@ -57,6 +57,8 @@ Opening classification remains the compact deterministic intrinsic taxonomy deli
 RB-021 established the separate source-controlled opening knowledge architecture. RB-022 delivered the reviewed service and corpus with explicit conditions, caveats, provenance, lifecycle and partial/unavailable states.
 
 RB-023 projects that knowledge through the authoritative candidate-decision path. The Builder receives only the target side's bounded summary and plans and renders them in the focused evidence experience. Knowledge remains separate from complete classification coverage and does not become a ranking input.
+
+RB-024 reuses the same reviewed service for the existing explicit game-review AI context. It supplies only bounded user-side knowledge, validates generated plan references against authoritative game plies, and does not turn narrative plans into deterministic analysis.
 
 ### Chess Profile
 
@@ -110,4 +112,4 @@ The critical-path MVP does not depend on traps. RB-017 remains research evidence
 
 No core stage depends on an LLM. Existing prototypes remain optional, disabled by default and non-authoritative.
 
-RB-023 does not add opening knowledge to generated interpretation. RB-024 remains a separate P3 stretch consumer that may ground game review in supplied user-side plans without runtime research or deterministic-analysis mutation.
+RB-024 grounds the existing on-demand game review in supplied reviewed user-side plans. It adds structured claim reconciliation and stale-artifact invalidation without runtime research, automatic provider calls or deterministic-analysis mutation.

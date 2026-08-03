@@ -48,14 +48,20 @@ try {
     analysisRunId: run.id,
     inputHash: 'a'.repeat(64),
     schemaVersion: 1,
-    promptVersion: 1,
+    promptVersion: 2,
     provider: 'openai-compatible',
     model: 'deepseek-v4-flash',
     content: first,
     generatedAt: new Date(first.generatedAt),
   });
 
-  assert.deepEqual((await findStoredGameReview(userA.id, game.id))?.content, first);
+  const storedFirst = await findStoredGameReview(userA.id, game.id);
+  assert.deepEqual(storedFirst?.content, first);
+  assert.equal(storedFirst?.analysisRunId, run.id);
+  assert.equal(storedFirst?.inputHash, 'a'.repeat(64));
+  assert.equal(storedFirst?.schemaVersion, 1);
+  assert.equal(storedFirst?.promptVersion, 2);
+  assert.equal(storedFirst?.model, 'deepseek-v4-flash');
   assert.equal(await findStoredGameReview(userB.id, game.id), null, 'another user cannot read the review');
 
   const second = review('Replacement review', '2026-07-19T14:02:00.000Z');
@@ -65,14 +71,16 @@ try {
     analysisRunId: run.id,
     inputHash: 'b'.repeat(64),
     schemaVersion: 1,
-    promptVersion: 1,
+    promptVersion: 2,
     provider: 'openai-compatible',
     model: 'deepseek-v4-flash',
     content: second,
     generatedAt: new Date(second.generatedAt),
   });
 
-  assert.deepEqual((await findStoredGameReview(userA.id, game.id))?.content, second);
+  const storedSecond = await findStoredGameReview(userA.id, game.id);
+  assert.deepEqual(storedSecond?.content, second);
+  assert.equal(storedSecond?.inputHash, 'b'.repeat(64));
   assert.equal(
     await prisma.importedGameAiReview.count({ where: { importedGameId: game.id } }),
     1,

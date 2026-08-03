@@ -13,7 +13,9 @@ import { AiFeatureError } from '../ai.errors';
 import { OpenAiCompatibleLlmClient } from '../openai-compatible-llm.client';
 import {
   buildGameReviewContext,
+  type AuthoritativeReviewMove,
   type GameReviewAnalysisRun,
+  type GameReviewContextResult,
 } from './game-review-context';
 import { GAME_REVIEW_SYSTEM_PROMPT } from './game-review.prompt';
 import {
@@ -22,12 +24,25 @@ import {
 } from './game-review.repository.prisma';
 
 const GAME_REVIEW_SCHEMA_VERSION = 1;
-const GAME_REVIEW_PROMPT_VERSION = 1;
+const GAME_REVIEW_PROMPT_VERSION = 2;
+const MISSED_OPPORTUNITY_CLASSIFICATIONS = new Set([
+  'INACCURACY',
+  'MISTAKE',
+  'BLUNDER',
+  'MISS',
+]);
+
+const modelOpeningPlanReferenceSchema = z.object({
+  planId: z.string().trim().min(1).max(160),
+  plyNumber: z.number().int().positive(),
+  claim: z.enum(['ALIGNED', 'MISSED_OPPORTUNITY']),
+});
 
 const modelGameReviewSchema = z.object({
   headline: z.string().min(1).max(160),
   overview: z.string().min(1).max(1500),
   openingAssessment: z.string().min(1).max(800),
+  openingPlanReferences: z.array(modelOpeningPlanReferenceSchema).max(3),
   turningPoints: z.array(z.object({
     plyNumber: z.number().int().positive(),
     explanation: z.string().min(1).max(700),
@@ -40,6 +55,15 @@ const modelGameReviewSchema = z.object({
 
 type GameDetail = NonNullable<Awaited<ReturnType<typeof ImportedGamesService.get>>>;
 
+interface StoredGameReview {
+  analysisRunId: number | null;
+  inputHash: string;
+  schemaVersion: number;
+  promptVersion: number;
+  model: string;
+  content: unknown;
+}
+
 interface ReviewLogger {
   info(fields: Record<string, unknown>, message: string): void;
   warn(fields: Record<string, unknown>, message: string): void;
@@ -48,7 +72,7 @@ interface ReviewLogger {
 export interface GameReviewDependencies {
   getGame(userId: number, gameId: number): Promise<GameDetail | null>;
   getAnalysis(userId: number, gameId: number): Promise<{ run: GameReviewAnalysisRun }>;
-  getStoredReview(userId: number, gameId: number): Promise<{ content: unknown } | null>;
+  getStoredReview(userId: number, gameId: number): Promise<StoredGameReview | null>;
   saveStoredReview(input: {
     userId: number;
     importedGameId: number;
@@ -91,13 +115,43 @@ export function createGameReviewService(
         throw new AiFeatureError(404, 'IMPORTED_GAME_NOT_FOUND', 'Imported game not found.');
       }
 
-      let stored: { content: unknown } | null;
+      let stored: StoredGameReview | null;
       try {
         stored = await deps.getStoredReview(userId, gameId);
       } catch {
         throw new AiFeatureError(500, 'AI_REVIEW_STORAGE_ERROR', 'Could not load the saved AI game review.');
       }
-      if (!stored) return aiGameReviewStateResponseSchema.parse({ review: null });
+      if (!stored) return emptyStoredReview();
+      if (
+        stored.schemaVersion !== GAME_REVIEW_SCHEMA_VERSION
+        || stored.promptVersion !== GAME_REVIEW_PROMPT_VERSION
+        || stored.model !== config.model
+        || !game.pgn
+      ) {
+        return emptyStoredReview();
+      }
+
+      let analysis: { run: GameReviewAnalysisRun };
+      let built: GameReviewContextResult;
+      try {
+        analysis = await deps.getAnalysis(userId, gameId);
+        if (analysis.run.status !== 'COMPLETED') return emptyStoredReview();
+        built = buildGameReviewContext(game, analysis.run);
+      } catch {
+        return emptyStoredReview();
+      }
+
+      const currentInputHash = reviewInputHash({
+        gameUpdatedAt: game.updatedAt,
+        analysisRunId: analysis.run.id,
+        analysisCompletedAt: analysis.run.completedAt,
+        provider: config.provider,
+        model: config.model,
+        context: built.context,
+      });
+      if (stored.analysisRunId !== analysis.run.id || stored.inputHash !== currentInputHash) {
+        return emptyStoredReview();
+      }
 
       const parsed = aiGameReviewResponseSchema.safeParse(stored.content);
       if (!parsed.success) {
@@ -138,7 +192,7 @@ export function createGameReviewService(
         throw new AiFeatureError(409, 'GAME_ANALYSIS_REQUIRED', 'Completed game analysis is required for AI review.');
       }
 
-      let built;
+      let built: GameReviewContextResult;
       try {
         built = buildGameReviewContext(game, analysis.run);
       } catch {
@@ -152,6 +206,7 @@ export function createGameReviewService(
         outputSchema: modelGameReviewSchema,
         maxOutputTokens: 1800,
       });
+      validateOpeningPlanReferences(generated.value.openingPlanReferences, built);
 
       const turningPoints = generated.value.turningPoints.map((turningPoint) => {
         const move = built.authoritativeMoves.get(turningPoint.plyNumber);
@@ -191,6 +246,7 @@ export function createGameReviewService(
             gameUpdatedAt: game.updatedAt,
             analysisRunId: analysis.run.id,
             analysisCompletedAt: analysis.run.completedAt,
+            provider: config.provider,
             model: config.model,
             context: built.context,
           }),
@@ -210,6 +266,48 @@ export function createGameReviewService(
   };
 }
 
+function validateOpeningPlanReferences(
+  references: readonly z.infer<typeof modelOpeningPlanReferenceSchema>[],
+  built: GameReviewContextResult,
+): void {
+  const targetSide = openingKnowledgeSide(built);
+  for (const reference of references) {
+    if (!built.openingKnowledgePlanIds.has(reference.planId)) {
+      throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI review referenced an unsupported opening plan.');
+    }
+    const move = built.authoritativeMoves.get(reference.plyNumber);
+    if (!move) {
+      throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI review referenced an unknown game move.');
+    }
+    if (!targetSide || move.side !== targetSide) {
+      throw new AiFeatureError(502, 'AI_INVALID_RESPONSE', 'AI review attached a user-side opening plan to an opponent move.');
+    }
+    if (reference.claim === 'MISSED_OPPORTUNITY' && !supportsMissedOpportunity(move)) {
+      throw new AiFeatureError(
+        502,
+        'AI_INVALID_RESPONSE',
+        'AI review claimed a missed opening-plan opportunity without supporting move analysis.',
+      );
+    }
+  }
+}
+
+function openingKnowledgeSide(built: GameReviewContextResult): 'WHITE' | 'BLACK' | null {
+  const openingKnowledge = built.context['openingKnowledge'];
+  if (!openingKnowledge || typeof openingKnowledge !== 'object') return null;
+  const side = (openingKnowledge as { side?: unknown }).side;
+  return side === 'WHITE' || side === 'BLACK' ? side : null;
+}
+
+function supportsMissedOpportunity(move: AuthoritativeReviewMove): boolean {
+  if ((move.scoreLossCp ?? 0) >= 30) return true;
+  return MISSED_OPPORTUNITY_CLASSIFICATIONS.has((move.classification ?? '').toUpperCase());
+}
+
+function emptyStoredReview(): AiGameReviewStateResponse {
+  return aiGameReviewStateResponseSchema.parse({ review: null });
+}
+
 function ensureFeatureEnabled(config: AiConfig): void {
   if (!config.enabled || !config.gameReviewEnabled) {
     throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'AI game review is disabled.');
@@ -220,6 +318,7 @@ function reviewInputHash(input: {
   gameUpdatedAt: string;
   analysisRunId: number;
   analysisCompletedAt: string | null;
+  provider: string;
   model: string;
   context: Record<string, unknown>;
 }): string {
