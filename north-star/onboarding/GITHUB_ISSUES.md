@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -36,6 +36,14 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
+
+## Coordination umbrellas
+
+- [#257 — Durable Account Import and Background Refresh](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups ONB-011 through ONB-015 into the planned delivery sequence `#199 → #200 → (#201 + #202) → #203`.
+
+A coordination umbrella may summarize an existing multi-task delivery track and record cross-track dependencies. It does not receive an ONB ID, replace any task issue, own runtime scope, alter task priority/status/order, or authorize claims. `TASKS.md` and the individual task files remain authoritative.
+
+For #257, material coordination includes preparation #253/#254, lifecycle persistence/execution #259/#260, throughput #154, and Activity Feed import reconciliation #248.
 
 ## Related programs
 
@@ -100,7 +108,7 @@ Comment only on meaningful changes:
 
 ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular implementation tasks.
 
-ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks.
+ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks. Coordination umbrella #257 packages those existing tasks without changing their canonical states and records preparation, lifecycle, operations, and Activity Feed handoffs.
 
 ONB-003 allocated:
 
