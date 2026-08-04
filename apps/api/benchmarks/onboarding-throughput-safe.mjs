@@ -261,7 +261,12 @@ function startTimed(operation) {
   const cpuBefore = process.cpuUsage();
   const rssBefore = process.memoryUsage().rss;
   const startedAt = performance.now();
-  const promise = Promise.resolve().then(operation);
+  let promise;
+  try {
+    promise = Promise.resolve(operation());
+  } catch (error) {
+    promise = Promise.reject(error);
+  }
 
   return {
     startedAt,
