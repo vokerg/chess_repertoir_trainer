@@ -21,6 +21,13 @@ const reportPath = process.env.ONBOARDING_BENCHMARK_REPORT_PATH
   ?? path.resolve(process.cwd(), 'onboarding-throughput-benchmark.json');
 const originalFetch = globalThis.fetch;
 const createdUserIds = new Set();
+const FIRST_IMPORT_OBSERVER_POLL_MS = 2;
+const WORKER_OBSERVER_POLL_MS = 5;
+const BENCHMARK_WORKER_POLL_MS = 5;
+
+const blockedFetch = async (input) => {
+  throw new Error(`Unexpected network request during ONB-007 benchmark: ${String(input)}`);
+};
 
 function assertDisposableDatabase() {
   const raw = process.env.DATABASE_URL;
@@ -28,10 +35,10 @@ function assertDisposableDatabase() {
   const url = new URL(raw);
   const databaseName = url.pathname.replace(/^\//, '');
   const localHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-  const disposableName = /(ci|test|benchmark)/i.test(databaseName);
+  const disposableName = /(^|[_-])(ci|test|benchmark)([_-]|$)/i.test(databaseName);
   if (!localHost || !disposableName) {
     throw new Error(
-      `ONB-007 benchmark requires a local disposable database whose name contains ci, test, or benchmark; received ${url.hostname}/${databaseName}.`,
+      `ONB-007 benchmark requires a local disposable database with a ci, test, or benchmark name token; received ${url.hostname}/${databaseName}.`,
     );
   }
 }
@@ -232,16 +239,46 @@ function buildChessComGames(count, pgn) {
   }));
 }
 
-async function waitForFirstImportedGame(accountId, syncPromise) {
-  const startedAt = performance.now();
+async function waitForFirstImportedGame(accountId, syncPromise, startedAt) {
   let settled = false;
-  void syncPromise.finally(() => { settled = true; });
-  while (!settled) {
-    const exists = await prisma.importedGame.findFirst({ where: { accountId }, select: { id: true } });
+  void syncPromise.then(
+    () => { settled = true; },
+    () => { settled = true; },
+  );
+
+  while (true) {
+    const exists = await prisma.importedGame.findFirst({
+      where: { accountId },
+      select: { id: true },
+    });
     if (exists) return performance.now() - startedAt;
-    await new Promise((resolve) => setTimeout(resolve, 2));
+    if (settled) return null;
+    await new Promise((resolve) => setTimeout(resolve, FIRST_IMPORT_OBSERVER_POLL_MS));
   }
-  return null;
+}
+
+function startTimed(operation) {
+  const cpuBefore = process.cpuUsage();
+  const rssBefore = process.memoryUsage().rss;
+  const startedAt = performance.now();
+  const promise = Promise.resolve().then(operation);
+
+  return {
+    startedAt,
+    promise,
+    async finish() {
+      const result = await promise;
+      const durationMs = performance.now() - startedAt;
+      const cpu = process.cpuUsage(cpuBefore);
+      return {
+        result,
+        durationMs,
+        cpuUserMs: cpu.user / 1000,
+        cpuSystemMs: cpu.system / 1000,
+        rssDeltaBytes: process.memoryUsage().rss - rssBefore,
+      };
+    },
+  };
 }
 
 async function benchmarkProviderImport(provider, count, samples, pgn) {
@@ -275,11 +312,15 @@ async function benchmarkProviderImport(provider, count, samples, pgn) {
       };
     }
 
-    const promise = provider === 'LICHESS'
+    const timedImport = startTimed(() => (provider === 'LICHESS'
       ? LichessImportService.syncAccount(user.id, account.id)
-      : ChessComImportService.syncAccount(user.id, account.id);
-    const firstPromise = waitForFirstImportedGame(account.id, promise);
-    const measured = await timed(() => promise);
+      : ChessComImportService.syncAccount(user.id, account.id)));
+    const firstPromise = waitForFirstImportedGame(
+      account.id,
+      timedImport.promise,
+      timedImport.startedAt,
+    );
+    const measured = await timedImport.finish();
     const firstMs = await firstPromise;
     if (measured.result.gamesImported !== count) {
       throw new Error(`Expected ${count} ${provider} imports, got ${measured.result.gamesImported}.`);
@@ -290,6 +331,7 @@ async function benchmarkProviderImport(provider, count, samples, pgn) {
     cpuSystem.push(measured.cpuSystemMs);
     rss.push(measured.rssDeltaBytes);
     if (firstMs !== null) firstCommitted.push(firstMs);
+    globalThis.fetch = blockedFetch;
     await cleanupUsersAndPositions();
   }
 
@@ -485,7 +527,7 @@ async function runWorkerUntilTerminal(userId, jobRunId) {
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
     config: {
-      pollIntervalMs: 5,
+      pollIntervalMs: BENCHMARK_WORKER_POLL_MS,
       heartbeatIntervalMs: 1_000,
       staleAfterMs: 10_000,
       staleRecoveryIntervalMs: 5_000,
@@ -507,7 +549,7 @@ async function runWorkerUntilTerminal(userId, jobRunId) {
       if (isTerminal(run.status)) {
         return { run, firstSettledMs, totalMs: performance.now() - startedAt };
       }
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, WORKER_OBSERVER_POLL_MS));
     }
   } finally {
     worker.requestStop('ONB-007 benchmark complete.');
@@ -518,6 +560,10 @@ async function runWorkerUntilTerminal(userId, jobRunId) {
 async function benchmarkWorkerWave(input) {
   const firstSettled = [];
   const totals = [];
+  if (input.kind === 'ANALYSE_GAMES') {
+    process.env.STOCKFISH_ANALYSIS_DEPTH = String(input.depth ?? 12);
+  }
+
   for (let sample = 0; sample < input.samples; sample += 1) {
     const { user, account } = await createUserAndAccount('LICHESS', `${input.kind}-${input.games}-${sample}`);
     const gameIds = await createGames(user.id, account.id, {
@@ -551,6 +597,9 @@ async function benchmarkWorkerWave(input) {
     depth: input.depth ?? null,
     firstSettled: summarize(firstSettled, 'ms'),
     waveTotal: summarize(totals, 'ms'),
+    workerPollIntervalMs: BENCHMARK_WORKER_POLL_MS,
+    observerPollIntervalMs: WORKER_OBSERVER_POLL_MS,
+    jobQueuedBeforeWorkerStart: true,
   };
 }
 
@@ -561,6 +610,7 @@ async function cleanup() {
 
 assertDisposableDatabase();
 await assertEmptyDatabase();
+globalThis.fetch = blockedFetch;
 process.env.LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED = 'true';
 process.env.STOCKFISH_ENGINE = 'wasm';
 process.env.STOCKFISH_ANALYSIS_DEPTH = '12';
@@ -581,6 +631,9 @@ const report = {
     database: 'Fresh local disposable PostgreSQL; credentials omitted',
     engine: 'stockfish npm WASM worker',
     analysisMultipv: 1,
+    firstImportObserverPollMs: FIRST_IMPORT_OBSERVER_POLL_MS,
+    benchmarkWorkerPollMs: BENCHMARK_WORKER_POLL_MS,
+    workerObserverPollMs: WORKER_OBSERVER_POLL_MS,
   },
   limitations: [
     'Synthetic provider responses remove internet latency, rate limits, retries, and archive/window variability.',
@@ -588,6 +641,8 @@ const report = {
     'WASM depth-12 is not the documented local-binary Render worker and must not be converted directly into a public production ETA.',
     'The preparation parent/reconciler is not implemented yet; end-to-end onboarding is modelled from provider, admission, worker, and service measurements.',
     'CPU and RSS deltas are process-level observations on a shared hosted runner, not isolated resource accounting.',
+    'First-import timing is observed by a 2 ms database poll that adds observer latency and some local database load.',
+    'Worker-wave timing starts after the job is queued and immediately starts an in-process worker, so arbitrary idle poll, deployment wake, and external queue delay are excluded.',
   ],
   results: {},
 };
