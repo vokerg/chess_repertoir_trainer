@@ -30,13 +30,15 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - do not add a shared secret, email allowlist, `AppUser.isAdmin`, client role, separate login, or Clerk Organizations solely for global operators;
 - retain a minimal verified session context for `sid`, token version, issued-at/JWT id, `fva`, optional `reverification_id`, and a future small global admin claim;
 - ship migration-free read-only API diagnostics before Angular and before mutation adapters;
+- use internal numeric user id only in the initial identity projection;
 - expose a lazy direct-link `/admin` feature with no required normal-navigation item;
 - require signed recent factor age plus one-use reverification id for destructive administrator execution;
 - keep execution disabled until that flow is proven with the pinned Clerk JS integration;
 - route every mutation through ONB-019/020/021 lifecycle services;
 - retain read-access security logs for a configurable 30-day default and lifecycle mutation audit for a configurable 365-day default;
 - use exact row counts rather than untrustworthy per-user byte estimates;
-- allocate ONB-022, ONB-023, and ONB-024.
+- require request-budget enforcement to match verified API replica topology;
+- allocate ONB-022, ONB-023, and ONB-024 at orders 190/200/210 so supporting administration work does not pre-empt the existing product critical path.
 
 ## Dependencies consumed
 
@@ -44,6 +46,7 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - ONB-004 destructive lifecycle, fence, drain, preview, idempotency, audit, and shared-service boundary;
 - ONB-007 queue/heartbeat/reconcile/rate-limit/stage-duration warning semantics and operation budget envelope;
 - current Clerk/dev-single-user authentication and current Angular auth/navigation patterns;
+- current Render/Neon/Vercel deployment documentation;
 - ONB-006 cleanup exposure boundary;
 - ONB-019/020/021 for persisted mutation execution.
 
@@ -51,6 +54,7 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 
 - `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md`;
 - `reports/ONB-005-2026-08-04-self-review-addendum.md`;
+- `reports/ONB-005-2026-08-04-second-self-review-addendum.md`;
 - `tasks/ONB-022-admin-authorization-diagnostics-foundation.md`;
 - `tasks/ONB-023-admin-diagnostics-angular.md`;
 - `tasks/ONB-024-admin-lifecycle-controls.md`;
@@ -73,7 +77,7 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - recent-auth/reverification contract;
 - self-service versus administrator action boundary;
 - Angular lazy-route/store/navigation boundary;
-- implementation issue decomposition and exclusions.
+- implementation issue decomposition, ordering, and exclusions.
 
 ## Out of scope preserved
 
@@ -84,7 +88,7 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - Clerk Organizations rollout;
 - global authentication SDK rewrite;
 - support impersonation;
-- email/username search;
+- display name/email/username search;
 - full PGN/course/position/AI browsing;
 - arbitrary exports or SQL;
 - new queue, Redis, broker, or deployment.
@@ -100,15 +104,17 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - ONB-004/006/007 and Clerk dependencies are explicit: satisfied;
 - recent auth is backed by signed claims and non-replay: satisfied by `fva` plus one-use `reverification_id` contract;
 - first-release metadata and footprint scope are bounded: satisfied;
-- rate/abuse controls do not overclaim deployment guarantees: satisfied.
+- rate/abuse controls do not overclaim deployment guarantees: satisfied;
+- new implementation tasks do not silently reorder existing P0 work: satisfied after second self-review correction.
 
 ## Validation
 
 - current queue/branch/issue/PR state reconciled after ONB-007 merge;
 - current API auth, app factory, route registration, module, schema, contracts, jobs, and tests inspected;
 - current Angular route, navigation, auth, interceptor, API, data-access, and signal-store patterns inspected;
+- current hosted deployment guide inspected;
 - official Clerk session, authorized-party, reverification, custom-claim, and Organization authorization docs reviewed;
-- first-pass assumptions independently challenged and corrected in the self-review addendum;
+- first-pass assumptions independently challenged and corrected in two self-review addenda;
 - no production code, schema, migration, dependency, workflow, worker, authentication, deployment, or UI behavior changed.
 
 ## Remaining review gate
