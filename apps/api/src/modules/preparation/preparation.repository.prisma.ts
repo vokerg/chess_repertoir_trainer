@@ -204,7 +204,7 @@ export function createPreparationRepository(
       const kind: JobRunKind = input.stage === 'INDEX' ? 'INDEX_GAMES' : 'ANALYSE_GAMES';
 
       return database.$transaction(async (transaction) => {
-        await transaction.$queryRaw(Prisma.sql`
+        await transaction.$executeRaw(Prisma.sql`
           SELECT pg_advisory_xact_lock(${PREPARATION_ADMISSION_LOCK_KEY})
         `);
 
@@ -572,6 +572,8 @@ function toStoredTarget(row: TargetRow): StoredPreparationTarget {
   return { ...row };
 }
 
-function blocked(reason: Exclude<PreparationBatchAdmission, { outcome: 'CREATED' }>['reason']): PreparationBatchAdmission {
+function blocked(
+  reason: Exclude<PreparationBatchAdmission, { outcome: 'CREATED' }>['reason'],
+): PreparationBatchAdmission {
   return { outcome: 'BLOCKED', reason };
 }
