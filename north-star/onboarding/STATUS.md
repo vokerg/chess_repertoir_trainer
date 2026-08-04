@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 ## Program state
 
@@ -18,13 +18,13 @@ Preparation orchestration: ONB-003 squash-merged through [PR #256](https://githu
 
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
-Throughput/progress: ONB-007 research and reproducible CI benchmark complete on [PR #266](https://github.com/vokerg/chess_repertoir_trainer/pull/266); review/merge pending.
+Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/vokerg/chess_repertoir_trainer/pull/266) as `d6313823bd7da36991972a804f59d47d77578bdf` after corrected benchmark evidence and three self-review rounds.
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
 Next claimable ordered task: ONB-005 / [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152)
 
-Latest report: `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`
+Latest report: `reports/ONB-007-2026-08-04-third-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -84,13 +84,13 @@ Latest report: `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`
 - operation/audit history survives target deletion without raw personal payloads;
 - implementation allocation: ONB-019/#259, ONB-020/#260, ONB-021/#261.
 
-### ONB-007 review contract
+### ONB-007
 
 - safe reusable benchmark harness restricted to a fresh local disposable PostgreSQL database;
-- representative 10/50/200-game provider/admission and 16/40/80-ply index/analysis fixtures;
+- synthetic 10/50/200-game scale fixtures and deterministic legal 16/40/80-ply length fixtures;
 - depth-12 WASM analysis and actual child-worker wave evidence;
-- measured 50-game medium index worker wave p90 below 1.8 seconds in CI;
-- measured three-game short depth-12 analysis wave first result p90 below 1.8 seconds and total p90 below 3.5 seconds in CI;
+- measured 50-game medium index worker wave observed maximum below 1.8 seconds in corrected CI;
+- measured three-game short depth-12 analysis wave first-result observed maximum below 1.8 seconds and total observed maximum about 3.61 seconds in corrected CI;
 - index, first-analysis, and analysis-tail defaults of 50, 3, and 10 games;
 - global preparation caps of four non-terminal batches, 200 queued tasks, and 40 queued analysis tasks;
 - existing scheduling slice retained at 25 as a fairness/preemption boundary, not a visible wave;
@@ -102,7 +102,7 @@ Latest report: `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`
 - internal first-value, stall, direct-user protection, scaling, and lifecycle/cleanup transaction budgets;
 - implementation handoffs applied to ONB-008, ONB-010 through ONB-014, ONB-017/018, and diagnostic/lifecycle owners.
 
-Review acceptance is pending on PR #266.
+Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
 
 ### ONB-016
 
@@ -173,7 +173,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 ## Blockers to production implementation
 
 - ONB-005 has not finalized administrator identity/recent-auth/audit-retention policy;
-- ONB-007 awaits review acceptance/merge, although its initial defaults are documented on PR #266;
+- ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
 - ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
 - ONB-017/018 have not delivered preparation execution/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
@@ -191,7 +191,9 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - added `apps/api/benchmarks/onboarding-throughput-safe.mjs`, which refuses remote, non-disposable, or non-empty databases and makes no provider calls;
 - measured synthetic provider persistence, job admission, direct index/tag, depth-1/depth-12 analysis, combined process, and actual worker waves;
 - committed environment, p50/p90, source-run, artifact-ID, digest, and limitation evidence;
-- CI run `30786132287` / #1840 passed lint, build, all opening audits, architecture guardrails, migrations, the hardened benchmark, and the full test suite on benchmark head `e4dd65eddb93340327a6b21adb0fe9d15ab8035d`;
+- CI run `30786132287` / #1840 passed the original benchmark and repository gates;
+- corrected benchmark CI `30877363202` / #1905 passed lint, build, all opening audits, architecture guardrails, migrations, corrected benchmark artifact upload, and the full test suite;
+- final standard CI `30878078284` / #1912 passed lint, build, all opening audits, architecture guardrails, migrations, and the full test suite on head `ee765cac67d12bbd5e41926d6eed9fa1b50fa4bb`;
 - separated provider-network, Neon, Render local-binary, multi-worker, end-to-end preparation, and lifecycle/cleanup performance from measured claims;
 - no production runtime behavior, schema, migration, dependency, provider load, worker count, deployment, or user-facing ETA changed;
 - local clone remained unavailable because this runtime could not resolve `github.com`.
@@ -216,4 +218,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-Review ONB-007 / #154 on PR #266. The next claimable research task is ONB-005 / #152; ONB-006 and ONB-017 remain additional READY work after required collision review.
+Claim ONB-005 / #152 next by canonical order. ONB-006 and ONB-017 remain additional READY work after required collision review.

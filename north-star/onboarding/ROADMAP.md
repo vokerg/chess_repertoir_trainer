@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -13,7 +13,7 @@ ONB-002 durable bounded import/backfill — DONE
         +
 ONB-003 progressive preparation orchestration — DONE
         +
-ONB-007 throughput/progress evidence — REVIEW
+ONB-007 throughput/progress evidence — DONE
         ↓
 ONB-011 import persistence/coverage
         +
@@ -87,7 +87,7 @@ Delivered:
 - ONB-002 / #149 — bounded import/backfill — `DONE` through PR #204.
 - ONB-003 / #150 — preparation orchestration — `DONE` through PR #256.
 - ONB-004 / #151 — destructive lifecycle — `DONE` through PR #263.
-- ONB-007 / #154 — throughput/progress — `REVIEW` on PR #266.
+- ONB-007 / #154 — throughput/progress — `DONE` through squash-merged PR #266 as `d631382`.
 
 ### P1 supporting
 
@@ -140,7 +140,7 @@ ONB-004:
 - whole-user OAuth-state/token cleanup, identity tombstone, post-delete receipt, and mobile purge receipt;
 - ONB-019/020/021 allocation.
 
-ONB-007 review contract:
+ONB-007:
 
 - safe disposable-database benchmark harness and committed p50/p90 evidence;
 - 50-game index waves, three-game first analysis, one-game small-account fallback, and 10-game analysis tail;
