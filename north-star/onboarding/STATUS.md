@@ -4,7 +4,7 @@ Last updated: 2026-08-04
 
 ## Program state
 
-`RESEARCH_IN_PROGRESS`
+`IMPLEMENTATION_IN_PROGRESS`
 
 Program tracker: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -22,11 +22,13 @@ Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/
 
 Administrator architecture: ONB-005 completed through [PR #275](https://github.com/vokerg/chess_repertoir_trainer/pull/275) after three self-review rounds.
 
+Shared-position cleanup research: ONB-006 completed through [PR #281](https://github.com/vokerg/chess_repertoir_trainer/pull/281) after two self-review rounds.
+
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next claimable ordered task: ONB-006 / [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153)
+Next unclaimed `READY` task: ONB-022 / [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272)
 
-Latest report: `reports/ONB-005-2026-08-04-third-self-review-addendum.md`
+Latest report: `reports/ONB-006-2026-08-04-second-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -105,6 +107,21 @@ Latest report: `reports/ONB-005-2026-08-04-third-self-review-addendum.md`
 
 Completed through PR #275 after three adversarial self-review rounds and final canonical reconciliation.
 
+### ONB-006
+
+- exact zero-`ImportedGamePly` orphan predicate;
+- course `MoveNode` explicitly excluded;
+- `PositionAnalysis` and `MastersExplorerCache` treated as dependent cascades;
+- durable first-observed candidate and initial 30-day grace;
+- same-transaction PostgreSQL statement-trigger grace reset for every ply-reference insert/update;
+- bounded input-page traversal and checkpoints to the last row inspected;
+- fixed plies-first maintenance lock order plus final predicate/FK backstops;
+- observational bounded dry-run with exact execution counters and no ETA/byte claim;
+- manual server-side command over the canonical service, disabled by default and unscheduled;
+- implementation allocation ONB-026/#280.
+
+Completed through squash-merged PR #281 after two adversarial self-review rounds and final current-main reconciliation.
+
 ### ONB-007
 
 - safe reusable benchmark harness restricted to a fresh local disposable PostgreSQL database;
@@ -133,19 +150,16 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 - optional tactical and Builder continuations;
 - functional Angular ownership with VT coordination.
 
-## Ready work
+## Active and ready work
 
-### Research
+### Active implementation
 
-1. ONB-006 / #153 — orphan shared-position cleanup; consumes ONB-004 retention and ONB-007 transaction-budget boundaries.
+- ONB-017 / #253 — preparation execution boundary — `IN_PROGRESS`; PR #282 merged the execution-boundary slice, while issue #253 and task completion records remain open.
 
-### Implementation
+### Ready implementation
 
-- ONB-017 / #253 — preparation execution persistence — `READY` with ONB-007 numeric defaults.
 - ONB-022 / #272 — administrator authorization and read-only diagnostics — `READY` after ONB-005 acceptance.
-- Before claiming ONB-017, inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits.
 - Before claiming ONB-022, re-inspect current authentication, deployment topology, and ONB-019 actor-key activity.
-
 ## Allocated implementation backlog
 
 - ONB-018 / #254 — preparation reconciliation/control — `PROPOSED`; consumes ONB-007 reconcile/first-analysis/stall defaults.
@@ -161,7 +175,10 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; starts with at most 100 games per transaction and operation-specific validation.
 - ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`; consumes the same transaction/lock budgets.
 - ONB-023 / #273 — Angular administrator diagnostics — `PROPOSED`; depends on ONB-022 and Visual Transformation coordination.
-- ONB-024 / #274 — administrator lifecycle adapters — `PROPOSED`; depends on ONB-022/023 and applicable ONB-019/020/021/006 services plus proven reverification.
+- ONB-024 / #274 — administrator lifecycle adapters — `PROPOSED`; depends on ONB-022/023 and applicable ONB-019/020/021/026 services plus proven reverification.
+- ONB-026 / #280 — bounded orphan shared-position cleanup — `PROPOSED`; consumes ONB-006/007 and remains behind trigger/version/schema/audit coordination gates.
+
+ONB-025 / #276 remains reserved by open PR #279.
 
 These tasks must not be claimed until their task-file dependencies are resolved and accepted.
 
@@ -208,10 +225,21 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - ONB-024 remains blocked by canonical lifecycle services and a proven signed reverification flow;
 - onboarding projection/UI tasks remain blocked by durable foundations;
 - production-like Neon/provider/local-binary telemetry does not exist yet, so public ETA and capacity expansion remain disabled;
-- shared-position cleanup remains owned by ONB-006;
+- ONB-026 shared-position cleanup implementation has not been delivered;
 - Visual Transformation coordination remains required for final UI.
 
 ## Validation
+
+### ONB-006 documentation-only research
+
+- inspected current Position relations, migration delete rules, indexing, analysis, opening-explorer, worker, and maintenance-script patterns;
+- verified official PostgreSQL lock conflicts, command snapshots, transition relations, trigger transaction behavior, and local lock timeout semantics;
+- compared predicate-only, application/advisory coordination, and explicit database-lock approaches;
+- first self-review corrected the maintenance lock order to plies-first;
+- second self-review corrected application-only grace reset, match-limited scans, point-snapshot dry-run wording, missing manual invocation, and incomplete canonical reconciliation;
+- allocated and synchronized ONB-026/#280;
+- reconciled over merged ONB-005 records and current main without changing runtime code, schema, migration, dependency, worker, deployment, or production deletion behavior;
+- local clone/build remained unavailable because this runtime could not resolve `github.com`; GitHub status and diff validation are authoritative for this documentation-only change.
 
 ### ONB-005 documentation-only research
 
@@ -262,4 +290,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-Claim ONB-006 / #153 next by canonical order. ONB-017 and ONB-022 remain additional READY implementation work after their required collision reviews.
+Claim ONB-022 / #272 next after its required authentication, topology, and actor-key collision review. ONB-017 / #253 remains active; ONB-026 / #280 remains dependency-gated and `PROPOSED`.

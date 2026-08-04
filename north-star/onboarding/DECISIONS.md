@@ -535,6 +535,24 @@ Status: `REJECTED`
 
 Do not label Lichess or Chess.com as the quicker first look from synthetic/local benchmarks. Provider choice remains user-controlled. Reopen only with comparable production-like provider telemetry and reviewed copy.
 
+### D-145 — Orphan cleanup uses observed grace and database-enforced reference reset
+
+Status: `LOCKED`
+
+A shared `Position` is orphaned only when no `ImportedGamePly` references it. Persist a dedicated first-observed candidate with an initial 30-day grace. Every insert or update that creates a ply reference deletes the candidate in the same PostgreSQL transaction through statement triggers with transition relations. `PositionAnalysis` and `MastersExplorerCache` remain dependent cascades; course `MoveNode` rows never participate.
+
+### D-146 — Cleanup phases bound input rows and dry-run remains observational
+
+Status: `LOCKED`
+
+Every reconcile, observe, dry-run, and execute transaction limits its input Position/candidate page before applying orphan or grace filters. Begin with at most 500 input rows inspected per transaction, checkpoint the last input row inspected, and snapshot a phase upper bound. A durable multi-transaction dry-run reports exact eligibility observed during its traversal with start/completion timestamps; it does not claim one database snapshot or promise the same execution set.
+
+### D-147 — Cleanup uses plies-first locks and manual canonical invocation
+
+Status: `LOCKED`
+
+Execute batches acquire short `SHARE ROW EXCLUSIVE` locks in the fixed order `ImportedGamePly` → `ImportedGamePosition` → `PositionAnalysis` → `MastersExplorerCache`, then recheck `NOT EXISTS` and preserve the existing FK restriction. The first release is disabled by default, manually initiated through a server-side command over the canonical service, defaults to dry-run, requires explicit apply/confirmation for execute, and has no schedule, ETA, or reclaimed-byte promise.
+
 ## Rejected
 
 ### D-100 — Synchronous full import and analysis
@@ -806,6 +824,18 @@ Do not use a reusable administrator secret, browser password prompt, or client-o
 Status: `REJECTED`
 
 Do not expose free-text identity search, arbitrary sorting/field selection, bulk export, raw chess/auth payload browsing, impersonation, or SQL-like access in the initial administrator feature.
+
+### D-148 — Application-only orphan-grace reset
+
+Status: `REJECTED`
+
+Do not rely solely on the current indexing repository or periodic reconciliation to reset `PositionCleanupCandidate`. A reference can be written by direct SQL, migrations, or future paths and can disappear before reconciliation. The reset must be enforced in the same database transaction as every reference insert/update.
+
+### D-149 — Match-limited scans and point-snapshot dry-run claims
+
+Status: `REJECTED`
+
+Do not scan/filter an unbounded table to find a limited number of orphan matches, and do not describe a bounded multi-transaction dry-run as one point-in-time database snapshot. Limit input pages before filtering and label dry-run results as traversal observations.
 
 ## Open
 

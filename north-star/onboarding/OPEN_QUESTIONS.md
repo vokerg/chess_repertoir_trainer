@@ -77,7 +77,7 @@ Resolved by `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md` and
 
 No ONB-004-owned lifecycle-semantics question remains open.
 
-Implementation-local naming is delegated to ONB-019/020/021. Administrator identity, recent-auth, diagnostics, and audit-policy direction is resolved by ONB-005 and delegated to ONB-022/023/024. Shared-position cleanup remains with ONB-006. Operation-specific transaction sizing remains with ONB-006/020/021 under the ONB-007 budget envelope.
+Implementation-local naming is delegated to ONB-019/020/021. Administrator identity, recent-auth, diagnostics, and audit-policy direction is resolved by ONB-005 and delegated to ONB-022/023/024. Shared-position cleanup research is resolved by ONB-006 and implementation is delegated to ONB-026. Operation-specific transaction sizing remains with ONB-026/020/021 under the ONB-007 budget envelope.
 
 ## ONB-005 / #152 — Administration
 
@@ -104,25 +104,41 @@ No ONB-005-owned architecture or policy question remains open. Implementation-lo
 
 ## ONB-006 / #153 — Shared-position cleanup
 
-Consumed from ONB-004 and ONB-007:
+Resolved by:
 
-- account/game/user lifecycle actions retain `Position`, `PositionAnalysis`, and `MastersExplorerCache`;
-- cleanup is a separate auditable operation and must never delete course `MoveNode` evidence;
-- lifecycle audit does not imply permission to remove shared positions;
-- begin implementation calibration at no more than 500 candidate Position rows per transaction, with transaction p90 below one second and lock-wait p90 below 250 ms in its representative disposable fixture.
+- `reports/ONB-006-2026-08-04-orphan-shared-position-cleanup.md`;
+- `reports/ONB-006-2026-08-04-self-review-addendum.md`;
+- `reports/ONB-006-2026-08-04-second-self-review-addendum.md`.
 
-Still owned by ONB-006:
+Final research decisions:
 
-- Exact orphan predicate and all dependent Position relations.
-- Grace period length.
-- Final batch size and ordering after operation-specific evidence.
-- Lock/transaction pattern under concurrent indexing/analysis.
-- Manual-only or eventually scheduled.
-- How reclaimed storage is estimated.
-- Whether cleanup can run while analysis reads Position rows.
-- Progress/cancel model.
-- Tests proving no referenced Position is removed.
+- an orphan is exactly a `Position` with zero `ImportedGamePly` references;
+- `PositionAnalysis` and `MastersExplorerCache` are dependent rows deleted by existing cascades;
+- course `MoveNode` rows are unrelated and excluded;
+- a dedicated candidate ledger records first-observed orphan state;
+- the initial grace is 30 days and every new or updated ply reference resets it in the same transaction through PostgreSQL statement triggers;
+- reconciliation remains a bounded legacy/rollout repair and diagnostic path;
+- every phase limits input Position/candidate rows before filtering, with at most 500 input rows inspected per transaction initially;
+- checkpoints advance to the last input row inspected;
+- delete batches lock `ImportedGamePly` → `ImportedGamePosition` → `PositionAnalysis` → `MastersExplorerCache`, then recheck `NOT EXISTS`;
+- dry-run is an exact bounded traversal observation with start/completion timestamps, not one point-in-time snapshot or execution promise;
+- progress is exact phase/upper-bound/checkpoint/inspected/matched/deleted state with no ETA or byte claim;
+- cancellation is acknowledged between atomic batches;
+- the first release is manual, disabled by default, and unscheduled;
+- a server-side command defaults to dry-run and requires explicit apply/confirmation while reusing the canonical service/state machine;
+- implementation is allocated to ONB-026 / #280.
 
+No ONB-006-owned architecture or policy question remains open.
+
+Implementation-local validation remains with ONB-026:
+
+- exact Prisma/SQL names and constraints;
+- deployed PostgreSQL transition-relation compatibility;
+- final measured scan/delete page sizes at or below the accepted ceiling;
+- query plans and required candidate indexes;
+- trigger, lock-order, concurrency, cancellation, stale-claim, and command implementation details;
+- production lock/cascade/cache-churn telemetry before any scheduling decision;
+- schema/migration coordination with ONB-011, ONB-017, and ONB-019.
 ## ONB-007 / #154 — Capacity and progress
 
 Resolved by `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md` and `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`:
@@ -141,7 +157,7 @@ Resolved by `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md` and `
 - public ETA disabled initially and future stage-ETA eligibility gates defined;
 - queue/stall/direct-user-protection thresholds and worker/deployment/engine scaling triggers;
 - disposable-database-only benchmark safety;
-- initial operation budget envelopes of at most 100 game IDs or 500 Position candidates per transaction, with implementation-specific measurement before increase.
+- initial operation budget envelopes of at most 100 game IDs or 500 input Position/candidate rows inspected per transaction, with implementation-specific measurement before increase.
 
 No ONB-007-owned architecture or numeric-policy question remains open.
 

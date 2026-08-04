@@ -56,14 +56,16 @@ ONB-005 administrator architecture — DONE
                                ↓
                     ONB-020 account/game coordinator
                                ↓
-                    ONB-021 whole-user/mobile purge
-                               +
-                    ONB-006 shared-position cleanup
-                               ↓
-                    ONB-024 administrator lifecycle adapters
+                                        ONB-021 whole-user/mobile purge
+                     +
+          ONB-006 cleanup research — DONE
+                     ↓
+          ONB-026 bounded orphan cleanup implementation
+                     ↓
+          ONB-024 administrator lifecycle adapters
 ```
 
-ONB-022/023 provide read-only administration independently of destructive execution. ONB-024 waits for the applicable canonical lifecycle service and never creates a parallel destructive state machine. ONB-006 remains separate from account/user lifecycle execution: all destructive actions retain shared Position/PositionAnalysis/cache rows, and cleanup later proves orphanhood without touching course MoveNode evidence. ONB-007 supplies only transaction/lock budget envelopes; ONB-006/020/021 still prove their operation-specific batch sizes.
+ONB-022/023 provide read-only administration independently of destructive execution. ONB-024 waits for the applicable canonical lifecycle or cleanup service and never creates a parallel destructive state machine. ONB-006 completed the separate shared-position cleanup research; ONB-026 owns implementation and deletes only database-proved orphans without touching course `MoveNode` evidence. ONB-007 supplies transaction/lock budget envelopes; ONB-026/020/021 still prove their operation-specific batch sizes.
 
 ## Phase 0 — Program foundation
 
@@ -91,7 +93,7 @@ Delivered:
 ### P1 supporting
 
 - ONB-005 / #152 — administrator architecture — `DONE` through PR #275 after three self-review rounds.
-- ONB-006 / #153 — orphan cleanup — `READY`; consumes ONB-004 retained-data and ONB-007 budget boundaries.
+- ONB-006 / #153 — orphan cleanup — `DONE` through PR #281 after two adversarial self-review rounds; allocated ONB-026 / #280.
 - ONB-016 / #224 — lightweight product/experience blueprint — `DONE` through PR #225.
 
 ### Contracts available to consumers
@@ -152,6 +154,18 @@ ONB-005:
 - read-access and mutation-audit initial retention defaults are configurable 30/365 days with explicit production confirmation and versioned domain-separated HMAC keys;
 - request budgets must match verified API replica topology;
 - ONB-022/023/024 allocation at orders 190/200/210.
+
+ONB-006:
+
+- zero `ImportedGamePly` references as the exact orphan predicate;
+- dependent `PositionAnalysis` and `MastersExplorerCache` cascades, with course `MoveNode` explicitly excluded;
+- a dedicated first-observed candidate ledger and initial 30-day grace;
+- same-transaction PostgreSQL statement-trigger reset on every ply-reference insert/update;
+- input-page-bounded reconcile, observe, dry-run, and execute traversal with at most 500 rows inspected per transaction initially;
+- plies-first fixed maintenance locks followed by final `NOT EXISTS` recheck and FK backstop;
+- observational bounded dry-run semantics, exact execution counters, no ETA or reclaimed-byte claim;
+- manual server-side command over one canonical service, disabled by default and unscheduled;
+- ONB-026/#280 implementation allocation.
 
 ONB-007:
 
@@ -477,7 +491,40 @@ Exit:
 - stale offline attempts cannot upload after deletion;
 - shared Position cleanup remains separately auditable.
 
-## Phase 11 — Administrator authorization and read-only diagnostics
+## Phase 11 — Orphan shared-position cleanup
+
+Research owner: ONB-006 / #153 — `DONE` through PR #281.
+
+Implementation: ONB-026 / #280 — `PROPOSED`.
+
+Promotion gates:
+
+- deployed PostgreSQL transition-relation support confirmed;
+- Prisma/schema/migration ownership reconciled with ONB-011, ONB-017, and ONB-019;
+- ONB-019 actor/audit/claim conventions available or a reviewed compatible seam exists;
+- canonical task/issue/program records synchronized.
+
+Expected deliveries:
+
+- candidate and run persistence;
+- statement-trigger reference reset;
+- input-page-bounded reconciliation, observation, dry-run, and execute traversal;
+- plies-first maintenance locks and final eligibility recheck;
+- exact counters and observational dry-run timestamps;
+- work-key fencing, cancellation, stale recovery, restart, and shutdown;
+- manual dry-run/execute command over the canonical service;
+- no recurring schedule, VACUUM automation, or storage-byte promise;
+- migration, trigger, query-plan, concurrency, command, and performance evidence.
+
+Exit:
+
+- referenced positions cannot be deleted;
+- transient references reset grace without relying on reconciliation;
+- course trees remain untouched;
+- manual cleanup is durable and auditable;
+- any future scheduling requires a separate evidence-backed decision.
+
+## Phase 12 — Administrator authorization and read-only diagnostics
 
 Primary task: ONB-022 / [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272).
 
@@ -502,7 +549,7 @@ Exit:
 - diagnostics remain bounded and contain no raw personal/chess/auth payloads;
 - no mutation capability exists.
 
-## Phase 12 — Administrator diagnostics Angular feature
+## Phase 13 — Administrator diagnostics Angular feature
 
 Primary task: ONB-023 / [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273).
 
@@ -521,7 +568,7 @@ Expected deliveries:
 - responsive, keyboard, focus, zoom, and screen-reader validation;
 - no destructive controls or client authorization authority.
 
-## Phase 13 — Administrator lifecycle adapters
+## Phase 14 — Administrator lifecycle adapters
 
 Primary task: ONB-024 / [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274).
 
@@ -529,7 +576,7 @@ Blocked on:
 
 - ONB-022/023;
 - ONB-019 and the applicable ONB-020/021 operation;
-- ONB-006 implementation for cleanup exposure;
+- ONB-026 implementation for cleanup exposure;
 - proven pinned-Clerk reverification flow.
 
 Expected deliveries:
