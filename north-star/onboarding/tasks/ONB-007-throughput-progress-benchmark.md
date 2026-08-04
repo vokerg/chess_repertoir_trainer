@@ -8,7 +8,7 @@ Order: 50
 
 Delivery class: Research
 
-Planning maturity: Research, reproducible benchmark, and self-review complete; review and merge pending
+Planning maturity: Research, corrected reproducible benchmark, and three self-review rounds complete; user-authorized squash merge pending final standard CI
 
 GitHub issue: [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154)
 
@@ -60,6 +60,7 @@ The recent-first flow depends on one background worker and expensive per-game St
 - Exact progress and later ETA eligibility policy: complete.
 - Implementation acceptance budgets and handoffs: complete.
 - Self-review separation of directly measured observations from implementation-start defaults: complete.
+- Provider timing boundary, observer failure handling, global network isolation, worker-wave metadata, depth configuration, and database-name guard corrections: complete.
 
 ## Out of scope result
 
@@ -70,35 +71,42 @@ No production scaling, worker replica, provider load test, queue infrastructure,
 Resolved in:
 
 - `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`;
-- `reports/ONB-007-2026-08-03-self-review-addendum.md`.
+- `reports/ONB-007-2026-08-03-self-review-addendum.md`;
+- `reports/ONB-007-2026-08-04-third-self-review-addendum.md`.
 
-Production/provider validation remains an implementation telemetry gate rather than an unresolved architecture question.
+The 2026-08-04 corrected evidence supersedes provider total/first-commit timings in the 2026-08-03 artifact. Production/provider validation remains an implementation telemetry gate rather than an unresolved architecture question.
 
 ## Acceptance criteria result
 
-- Reproducible metadata: satisfied by `apps/api/benchmarks/onboarding-throughput-safe.mjs` and the committed evidence summary; the package command now builds the API before execution.
+- Reproducible metadata: satisfied by `apps/api/benchmarks/onboarding-throughput-safe.mjs` and the committed evidence summaries; the package command builds the API before execution.
 - Exact progress without ETA: satisfied; public ETA remains disabled.
 - Wave-size recommendation tied to evidence: satisfied as conservative initial configuration with 50-game index, three-game first analysis, and 10-game analysis tail.
 - Scaling/stall thresholds: satisfied as operational policy and telemetry gates, not production measurements.
 - Length/account-size coverage: satisfied by synthetic 16/40/80-ply and 10/50/200-game scale profiles; actual production position complexity and account distributions remain unmeasured.
 - Bounded implementation budgets: satisfied through explicit handoffs and implementation validation requirements.
+- Provider timing validity: satisfied after moving the baseline before synchronous service invocation and rerunning the benchmark.
+- Failure-safe observation: satisfied by explicit fulfillment/rejection handling and a final database observation after sync settlement.
+- Network isolation: satisfied by rejecting all fetches outside explicit synthetic provider stubs.
 
 ## Required validation result
 
 - Current worker/import/index/analysis paths reinspected.
 - Synthetic provider responses used; no third-party load generated.
-- Benchmark required a local disposable PostgreSQL database with no existing user/game/position/job rows.
+- Benchmark required a local disposable PostgreSQL database with no existing user/game/position/job rows and a `ci`, `test`, or `benchmark` database-name token.
 - CI #1840 passed lint, build, audits, architecture guardrails, migrations, benchmark, and the full test suite.
+- CI #1883 passed the clean-build benchmark package command, artifact upload, and all repository gates.
+- CI #1905 passed lint, build, all opening audits, architecture guardrails, migrations, the corrected benchmark, corrected artifact upload, and the full repository test suite.
 - Results record observed sample p50/p90 values and explicit environment/limitations; three-sample p90 values are nearest-rank maxima rather than stable production percentiles.
-- Self-review verified that worker analysis configuration is loaded at task execution, so the recorded analysis wave used WASM depth 12.
+- Self-review verified that worker analysis configuration is loaded at task execution; the harness now also drives that configuration from the analysis-wave input.
+- Worker-wave output records the 5 ms benchmark poll/observer intervals and that jobs are queued before immediate in-process worker startup.
 - Local clone remained unavailable because this runtime could not resolve `github.com`; GitHub Actions supplied execution validation.
 
 ## Completion updates
 
 - Added safe benchmark harness and clean-build package command.
-- Added committed benchmark evidence summary.
-- Added research report with numeric defaults and progress/ETA policy.
-- Added a self-review addendum correcting reproducibility, evidence taxonomy, percentile, fixture-representativeness, and safety wording.
+- Added original and corrected committed benchmark evidence summaries.
+- Added research report and two self-review addenda with numeric defaults, progress/ETA policy, evidence corrections, and remaining limitations.
+- Corrected provider timer boundaries, observer rejection/final-observation behavior, network isolation, depth configuration, worker-wave metadata, and disposable-name matching.
 - Refined dependent task acceptance/budgets and canonical program documents.
 - No production runtime behavior, schema, migration, dependency, deployment, or user-facing estimate changed.
 
@@ -106,12 +114,16 @@ Production/provider validation remains an implementation telemetry gate rather t
 
 Report: `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`
 
-Self-review addendum: `reports/ONB-007-2026-08-03-self-review-addendum.md`
+First self-review addendum: `reports/ONB-007-2026-08-03-self-review-addendum.md`
 
-Benchmark evidence: `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`
+Third self-review addendum: `reports/ONB-007-2026-08-04-third-self-review-addendum.md`
+
+Original benchmark evidence: `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`
+
+Corrected benchmark evidence: `reports/artifacts/ONB-007-2026-08-04-ci-benchmark-summary.json`
 
 Benchmark harness: `apps/api/benchmarks/onboarding-throughput-safe.mjs`
 
 Pull request: [#266](https://github.com/vokerg/chess_repertoir_trainer/pull/266)
 
-Completed at: review pending
+Completed at: review accepted; squash merge and post-merge DONE reconciliation pending
