@@ -12,11 +12,13 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | DONE | Design progressive indexing and analysis orchestration | Research | Squash-merged through PR #256 as `d41f75c` |
 | 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | DONE | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | Squash-merged through PR #263 as `32db655` |
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | DONE | Benchmark preparation throughput and define truthful progress semantics | Research | Squash-merged through PR #266 as `d631382` after corrected benchmark evidence and three self-review rounds |
-| 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; consumes ONB-004 mutation/audit and ONB-007 diagnostics contracts |
+| 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | REVIEW | Design administrator authentication, diagnostics, and action model | Research | PR #275; consumes ONB-004 mutation/audit and ONB-007 diagnostics contracts |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; consumes ONB-004 shared-retention and ONB-007 operation-budget boundaries; coordinates ONB-005 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
+| 76 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | PROPOSED | Build administrator authorization and read-only diagnostics foundation | Implementation | ONB-005; consumes ONB-007 warnings; coordinates actor-key boundary with ONB-019 |
 | 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | READY | Persist preparation execution boundary and bounded child-job batches | Implementation | ONB-003 complete; consumes ONB-007 defaults; coordinate Prisma/schema edits with ONB-011 and ONB-019 before implementation |
 | 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | PROPOSED | Implement progressive preparation reconciliation and control | Implementation | ONB-003/007/017; ONB-011/012/015 |
+| 79 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | PROPOSED | Build administrator diagnostics Angular feature | Implementation | ONB-005/022; Visual Transformation coordination |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001/007; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
@@ -25,9 +27,10 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
-| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit policy with ONB-005 |
+| 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit/actor policy with ONB-005/022 |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; ONB-005 before admin exposure |
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; ONB-005; mobile offline sync contracts |
+| 185 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-005/022/023; ONB-019 plus applicable ONB-020/021; ONB-006 for cleanup exposure |
 
 ## Completed planning
 
@@ -44,6 +47,25 @@ ONB-016 established the canonical lightweight experience blueprint through squas
 ONB-004 established destructive lifecycle invariants through squash-merged PR #263 as `32db655a100ef1a55264b4d3739e2b7c38e72ee4` and allocated ONB-019/020/021.
 
 ONB-007 established throughput evidence, conservative preparation/import defaults, truthful progress semantics, and implementation validation gates through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
+
+## ONB-005 review delivery
+
+ONB-005 defines:
+
+- normal Clerk authentication as the sole production login boundary;
+- a disabled-by-default server-only administrator authorization policy;
+- exact Clerk-subject allowlist bootstrap behind a replaceable capability interface;
+- no shared secret, email allowlist, `AppUser.isAdmin`, client role, separate login, impersonation, or Clerk Organizations solely for global operators;
+- a minimal verified session context that retains signed session/factor/reverification evidence without exposing raw claims to features;
+- migration-free cursor-paginated aggregate diagnostics with strict sensitive-field exclusions;
+- exact row-count footprint rather than untrustworthy per-user byte estimates;
+- a lazy direct-link Angular route with no required normal-navigation item;
+- signed `fva` plus one-use `reverification_id` for destructive administrator execution, with execution disabled until proven;
+- configurable 30-day read-access log and 365-day mutation-audit defaults plus HMAC key-version retention;
+- implementation tasks ONB-022/#272, ONB-023/#273, and ONB-024/#274;
+- report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and self-review addendum.
+
+ONB-005 remains REVIEW until PR #275 validation and acceptance. Its implementation tasks remain PROPOSED.
 
 ## ONB-002 completed delivery
 
@@ -105,8 +127,8 @@ ONB-007 defines and validates:
 - depth-12 WASM first-position, per-game, combined-process, and actual worker-wave measurements;
 - index/first-analysis/tail defaults of 50/3/10 games;
 - global preparation limits of four non-terminal batches, 200 queued tasks, and 40 queued analysis tasks;
-- one-second active/five-second idle preparation reconciliation with immediate persisted wake hints;
-- serial provider access, initial 14-day Lichess windows, Chess.com calendar-month units, and 100-row import writes;
+- one-second active/five-second idle preparation reconciliation with persisted immediate wake hints;
+- serial provider access, initial 14-day Lichess windows, Chess.com calendar-month units, and 100-row database writes;
 - one active import executor with 1-second poll, 15-second heartbeat, 2-minute stale, and 30-second recovery defaults;
 - exact-count/fixed-denominator progress and no public ETA in the initial release;
 - future ETA telemetry eligibility gates, internal first-value budgets, stall thresholds, scaling triggers, and operation transaction budgets;
@@ -124,14 +146,14 @@ ONB-016 defines the route-based lightweight first-value experience, progressive 
 
 ## Deterministic next task
 
-ONB-007 / #154 is complete. The next claimable task by canonical order is ONB-005 / #152.
+ONB-005 / #152 is in REVIEW through PR #275 and remains the active deterministic task until accepted or revised.
 
 Additional READY work after explicit collision review:
 
 - ONB-006;
 - ONB-017, with ONB-011 and ONB-019 Prisma/schema coordination before implementation.
 
-ONB-018, ONB-008 through ONB-015, and ONB-019 through ONB-021 remain `PROPOSED` until their listed dependencies are accepted.
+ONB-022/023/024 remain PROPOSED until their listed dependencies are accepted. ONB-018, ONB-008 through ONB-015, and ONB-019 through ONB-021 remain `PROPOSED` until their listed dependencies are accepted.
 
 ## Implementation backlog rule
 
