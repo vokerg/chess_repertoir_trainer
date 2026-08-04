@@ -1,4 +1,5 @@
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import {
   adminErrorResponseSchema,
   adminMeResponseSchema,
@@ -34,7 +35,7 @@ function requestBudgetExceeded() {
   return { message: 'Administrator request budget exceeded', code: 'ADMIN_REQUEST_BUDGET_EXCEEDED' as const };
 }
 
-const adminModule: FastifyPluginAsync<AdminModuleOptions> = async (app, options) => {
+const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, options) => {
   const service = options.diagnosticsService ?? createAdminDiagnosticsService();
 
   async function requirePrincipal(
@@ -157,7 +158,7 @@ const adminModule: FastifyPluginAsync<AdminModuleOptions> = async (app, options)
       const principal = await requirePrincipal(request, reply, 'listAdminUsers');
       if (!principal) return;
       try {
-        const response = await service.listUsers(adminUserListQuerySchema.parse(request.query));
+        const response = await service.listUsers(request.query);
         logRead(request, principal, 'listAdminUsers', startedAt, 'SUCCESS');
         return response;
       } catch (error) {
@@ -192,14 +193,13 @@ const adminModule: FastifyPluginAsync<AdminModuleOptions> = async (app, options)
       const startedAt = Date.now();
       const principal = await requirePrincipal(request, reply, 'getAdminUserDetail');
       if (!principal) return;
-      const params = adminUserParamsSchema.parse(request.params);
       try {
-        const response = await service.getUserDetail(params.userId);
-        logRead(request, principal, 'getAdminUserDetail', startedAt, 'SUCCESS', params.userId);
+        const response = await service.getUserDetail(request.params.userId);
+        logRead(request, principal, 'getAdminUserDetail', startedAt, 'SUCCESS', request.params.userId);
         return response;
       } catch (error) {
         if (error instanceof AdminUserNotFoundError) {
-          logRead(request, principal, 'getAdminUserDetail', startedAt, 'NOT_FOUND', params.userId);
+          logRead(request, principal, 'getAdminUserDetail', startedAt, 'NOT_FOUND', request.params.userId);
           reply.code(404);
           return { message: error.message, code: error.code };
         }
@@ -230,15 +230,13 @@ const adminModule: FastifyPluginAsync<AdminModuleOptions> = async (app, options)
       const startedAt = Date.now();
       const principal = await requirePrincipal(request, reply, 'getAdminUserWork');
       if (!principal) return;
-      const params = adminUserParamsSchema.parse(request.params);
-      const query = adminWorkQuerySchema.parse(request.query);
       try {
-        const response = await service.getUserWork(params.userId, query.limit);
-        logRead(request, principal, 'getAdminUserWork', startedAt, 'SUCCESS', params.userId);
+        const response = await service.getUserWork(request.params.userId, request.query.limit);
+        logRead(request, principal, 'getAdminUserWork', startedAt, 'SUCCESS', request.params.userId);
         return response;
       } catch (error) {
         if (error instanceof AdminUserNotFoundError) {
-          logRead(request, principal, 'getAdminUserWork', startedAt, 'NOT_FOUND', params.userId);
+          logRead(request, principal, 'getAdminUserWork', startedAt, 'NOT_FOUND', request.params.userId);
           reply.code(404);
           return { message: error.message, code: error.code };
         }
