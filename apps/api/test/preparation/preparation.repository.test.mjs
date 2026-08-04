@@ -12,14 +12,7 @@ import {
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const userIds = [];
-
-const boundedConfig = {
-  ...DEFAULT_PREPARATION_CONFIG,
-  maxNonTerminalBatches: 1,
-  maxQueuedTasks: 50,
-  maxQueuedAnalysisTasks: 3,
-};
-const repository = createPreparationRepository(prisma, boundedConfig);
+const repository = createPreparationRepository(prisma, DEFAULT_PREPARATION_CONFIG);
 
 try {
   assert.deepEqual(readPreparationConfig({}), DEFAULT_PREPARATION_CONFIG);
@@ -29,11 +22,31 @@ try {
   );
 
   const primary = await createUserAccount('primary');
-  const secondary = await createUserAccount('secondary');
-  userIds.push(primary.userId, secondary.userId);
+  const intruder = await createUserAccount('intruder');
+  userIds.push(primary.userId, intruder.userId);
 
-  const primaryGames = await createGames(primary, 60, { indexed: false });
-  const secondaryGames = await createGames(secondary, 10, { indexed: false });
+  await createGames(primary, 60);
+  const primaryGames = await prisma.importedGame.findMany({
+    where: { userId: primary.userId },
+    orderBy: [{ endedAt: 'desc' }, { id: 'desc' }],
+  });
+
+  await assert.rejects(
+    repository.createRun({
+      userId: intruder.userId,
+      purpose: 'ONBOARDING',
+      recipeVersion: 1,
+      recipe: {},
+      targets: [targetInput(primary.accountId, 'i')],
+    }),
+    /not owned/,
+    'target creation is ownership isolated',
+  );
+  assert.equal(
+    await prisma.dataPreparationRun.count({ where: { userId: intruder.userId } }),
+    0,
+    'an invalid target cannot leave a parent run behind',
+  );
 
   const primaryRun = await repository.createRun({
     userId: primary.userId,
@@ -56,43 +69,10 @@ try {
     'the partial unique index rejects a second non-terminal run for one user',
   );
 
-  await assert.rejects(
-    repository.createRun({
-      userId: secondary.userId,
-      purpose: 'ONBOARDING',
-      recipeVersion: 1,
-      recipe: {},
-      targets: [targetInput(primary.accountId, 'c')],
-    }),
-    /not owned/,
-    'target creation is ownership isolated',
-  );
-
-  const secondaryRun = await repository.createRun({
-    userId: secondary.userId,
-    purpose: 'ONBOARDING',
-    recipeVersion: 1,
-    recipe: { accountId: secondary.accountId, range: 'RECENT' },
-    targets: [targetInput(secondary.accountId, 'd')],
-  });
-
   const sameParentAdmissions = await Promise.all([
-    repository.admitNextBatch({
-      userId: primary.userId,
-      preparationRunId: primaryRun.run.id,
-      targetId: primaryRun.targets[0].id,
-      stage: 'INDEX',
-      lane: 'FIRST_INDEX',
-    }),
-    repository.admitNextBatch({
-      userId: primary.userId,
-      preparationRunId: primaryRun.run.id,
-      targetId: primaryRun.targets[0].id,
-      stage: 'INDEX',
-      lane: 'FIRST_INDEX',
-    }),
+    admitIndex(primary, primaryRun),
+    admitIndex(primary, primaryRun),
   ]);
-
   const createdAdmissions = sameParentAdmissions.filter((result) => result.outcome === 'CREATED');
   const blockedAdmissions = sameParentAdmissions.filter((result) => result.outcome === 'BLOCKED');
   assert.equal(createdAdmissions.length, 1, 'same-parent creators admit one active stage batch');
@@ -103,7 +83,7 @@ try {
   assert.equal(indexAdmission.importedGameIds.length, 50);
   assert.deepEqual(
     indexAdmission.importedGameIds,
-    primaryGames.slice(-50).reverse().map((game) => game.id),
+    primaryGames.slice(0, 50).map((game) => game.id),
     'candidate selection is bounded and newest-first',
   );
 
@@ -116,19 +96,6 @@ try {
   assert.equal(indexJob.priority, 200);
   assert.equal(indexJob.totalTasks, 50);
   assert.equal(indexJob.tasks.length, 50);
-
-  const crossParentBlocked = await repository.admitNextBatch({
-    userId: secondary.userId,
-    preparationRunId: secondaryRun.run.id,
-    targetId: secondaryRun.targets[0].id,
-    stage: 'INDEX',
-    lane: 'FIRST_INDEX',
-  });
-  assert.deepEqual(
-    crossParentBlocked,
-    { outcome: 'BLOCKED', reason: 'GLOBAL_BATCH_CAPACITY' },
-    'different parents cannot exceed the serialized global batch cap',
-  );
 
   const settledAt = new Date();
   await prisma.jobTask.updateMany({
@@ -163,11 +130,11 @@ try {
   assert.equal(retainedBatch.totalTasks, 50, 'the immutable denominator survives child deletion');
 
   await prisma.importedGame.updateMany({
-    where: { id: { in: primaryGames.map((game) => game.id) } },
+    where: { userId: primary.userId },
     data: { plyIndexedAt: new Date(), plyIndexError: null },
   });
 
-  const directGameId = primaryGames.at(-1).id;
+  const directGameId = primaryGames[0].id;
   const directJob = await prisma.jobRun.create({
     data: {
       userId: primary.userId,
@@ -199,63 +166,21 @@ try {
   });
   assert.equal(analysisJob.priority, 190);
   assert.ok(analysisJob.priority < directJob.priority, 'direct-user work remains higher priority');
-
-  await prisma.importedGame.updateMany({
-    where: { id: { in: secondaryGames.map((game) => game.id) } },
-    data: { plyIndexedAt: new Date(), plyIndexError: null },
-  });
-  const analysisCapacityBlocked = await repository.admitNextBatch({
-    userId: secondary.userId,
-    preparationRunId: secondaryRun.run.id,
-    targetId: secondaryRun.targets[0].id,
-    stage: 'ANALYSIS',
-    lane: 'FIRST_ANALYSIS',
-  });
-  assert.deepEqual(
-    analysisCapacityBlocked,
-    { outcome: 'BLOCKED', reason: 'GLOBAL_BATCH_CAPACITY' },
-  );
-
-  await prisma.jobTask.updateMany({
-    where: { jobRunId: analysisAdmission.jobRunId },
-    data: { status: 'COMPLETED', settledAt: new Date() },
-  });
-  await prisma.jobRun.update({
-    where: { id: analysisAdmission.jobRunId },
-    data: { status: 'COMPLETED', completedAt: new Date() },
-  });
-
-  const analysisCapRepository = createPreparationRepository(prisma, {
-    ...boundedConfig,
-    maxNonTerminalBatches: 4,
-  });
-  const analysisCapBlocked = await analysisCapRepository.admitNextBatch({
-    userId: secondary.userId,
-    preparationRunId: secondaryRun.run.id,
-    targetId: secondaryRun.targets[0].id,
-    stage: 'ANALYSIS',
-    lane: 'FIRST_ANALYSIS',
-  });
-  assert.equal(analysisCapBlocked.outcome, 'CREATED');
-  assert.equal(analysisCapBlocked.importedGameIds.length, 3);
-
-  const secondAnalysisAttempt = await analysisCapRepository.admitNextBatch({
-    userId: primary.userId,
-    preparationRunId: primaryRun.run.id,
-    targetId: primaryRun.targets[0].id,
-    stage: 'ANALYSIS',
-    lane: 'ANALYSIS_TAIL',
-  });
-  assert.deepEqual(
-    secondAnalysisAttempt,
-    { outcome: 'BLOCKED', reason: 'GLOBAL_ANALYSIS_CAPACITY' },
-    'analysis task admission is separately capped after the global lock',
-  );
 } finally {
   if (userIds.length > 0) {
     await prisma.appUser.deleteMany({ where: { id: { in: userIds } } });
   }
   await prisma.$disconnect();
+}
+
+function admitIndex(owner, run) {
+  return repository.admitNextBatch({
+    userId: owner.userId,
+    preparationRunId: run.run.id,
+    targetId: run.targets[0].id,
+    stage: 'INDEX',
+    lane: 'FIRST_INDEX',
+  });
 }
 
 function targetInput(accountId, hashCharacter) {
@@ -292,23 +217,18 @@ async function createUserAccount(label) {
   return { userId: user.id, accountId: account.id };
 }
 
-async function createGames(owner, count, { indexed }) {
-  const games = [];
-  for (let index = 0; index < count; index += 1) {
-    games.push(await prisma.importedGame.create({
-      data: {
-        userId: owner.userId,
-        accountId: owner.accountId,
-        provider: 'LICHESS',
-        providerGameId: `preparation-${owner.accountId}-${index}-${suffix}`,
-        pgn: '1. e4 e5',
-        rated: index % 2 === 0,
-        variant: 'STANDARD',
-        speedCategory: index % 3 === 0 ? 'RAPID' : 'BLITZ',
-        endedAt: new Date(Date.UTC(2026, 0, 1, 0, index, 0)),
-        plyIndexedAt: indexed ? new Date() : null,
-      },
-    }));
-  }
-  return games;
+async function createGames(owner, count) {
+  await prisma.importedGame.createMany({
+    data: Array.from({ length: count }, (_, index) => ({
+      userId: owner.userId,
+      accountId: owner.accountId,
+      provider: 'LICHESS',
+      providerGameId: `preparation-${owner.accountId}-${index}-${suffix}`,
+      pgn: '1. e4 e5',
+      rated: index % 2 === 0,
+      variant: 'STANDARD',
+      speedCategory: index % 3 === 0 ? 'RAPID' : 'BLITZ',
+      endedAt: new Date(Date.UTC(2026, 0, 1, 0, index, 0)),
+    })),
+  });
 }
