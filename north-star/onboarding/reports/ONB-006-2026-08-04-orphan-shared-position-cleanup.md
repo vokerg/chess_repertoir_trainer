@@ -402,5 +402,5 @@ It excludes administrator UI, recurring scheduling, VACUUM, course cleanup, and 
 - `north-star/onboarding/STATUS.md`
 - `north-star/onboarding/DECISIONS.md`
 - ONB-004 and ONB-007 reports
-- active PRs #275 and #279
+- merged PR #275 and active PR #279
 - issues #153, #259, #274, and #280

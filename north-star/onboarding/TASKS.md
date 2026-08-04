@@ -31,8 +31,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | PROPOSED | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007; trigger/schema coordination with ONB-011/017/019; canonical service may later be exposed by ONB-024 |
 | 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | READY | Build administrator authorization and read-only diagnostics foundation | Implementation | ONB-005 complete; consumes ONB-007 warnings; coordinates actor-key boundary with ONB-019 |
 | 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | PROPOSED | Build administrator diagnostics Angular feature | Implementation | ONB-022; Visual Transformation coordination |
-| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-022/023; ONB-019 plus applicable ONB-020/021; ONB-006 for cleanup exposure |
-
+| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-022/023; ONB-019 plus applicable ONB-020/021; ONB-026 for cleanup exposure |
 
 ONB-025 / #276 remains reserved by open PR #279. ONB-026 is the next free immutable identifier and does not supersede that active allocation.
 
@@ -178,6 +177,7 @@ Active work:
 - ONB-017 / #253 remains `IN_PROGRESS`; PR #282 merged the execution-boundary slice, while issue #253 and task completion records remain open.
 
 ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-025 / #276 remains reserved by open PR #279. ONB-023/024, ONB-018, ONB-008 through ONB-015, and ONB-019 through ONB-021 remain governed by their listed dependencies.
+
 ## Implementation backlog rule
 
 Only `READY` implementation tasks may be claimed. All Prisma/schema/migration tasks must check current activity for ONB-011, ONB-017, and ONB-019 before branching. Do not fold destructive implementation into research branches or duplicate lifecycle logic in administration routes.

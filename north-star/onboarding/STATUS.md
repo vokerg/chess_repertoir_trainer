@@ -160,6 +160,7 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 
 - ONB-022 / #272 — administrator authorization and read-only diagnostics — `READY` after ONB-005 acceptance.
 - Before claiming ONB-022, re-inspect current authentication, deployment topology, and ONB-019 actor-key activity.
+
 ## Allocated implementation backlog
 
 - ONB-018 / #254 — preparation reconciliation/control — `PROPOSED`; consumes ONB-007 reconcile/first-analysis/stall defaults.

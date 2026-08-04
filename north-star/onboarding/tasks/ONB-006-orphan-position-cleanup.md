@@ -39,7 +39,7 @@ Account/game deletion intentionally leaves reusable shared positions and analysi
 - worker claim/heartbeat/stale/shutdown patterns
 - ONB-004 retention/lifecycle handoff
 - ONB-007 operation-budget handoff
-- ONB-005 administrator action/audit draft in PR #275
+- accepted ONB-005 administrator action/audit contract from PR #275
 - PostgreSQL explicit-locking, transaction-isolation, trigger-transition-relation, foreign-key, and lock-timeout contracts
 
 ## Dependencies
@@ -112,7 +112,7 @@ Account/game deletion intentionally leaves reusable shared positions and analysi
 - Performed a first adversarial lock-order review and corrected parent-before-ply ordering.
 - Performed a second adversarial review and corrected application-only grace reset, match-limited scans, point-snapshot dry-run wording, missing manual invocation, and incomplete program-record reconciliation.
 - Defined deterministic concurrency, trigger, sparse-scan, grace, recovery, command, and representative-fixture validation for implementation.
-- Reconciled task numbering against active PR #275 (ONB-022–024) and PR #279 (ONB-025); allocated ONB-026.
+- Reconciled task numbering against merged PR #275 (ONB-022–024) and active PR #279 (ONB-025); allocated ONB-026.
 
 ## Completion updates
 
