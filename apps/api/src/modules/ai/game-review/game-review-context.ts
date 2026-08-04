@@ -1,8 +1,18 @@
 import { Chess } from 'chess.js';
 import type { AiGameReviewWarning } from '@chess-trainer/contracts/ai';
 import type { ImportedGameDetail } from '@chess-trainer/contracts/imported-games';
+import { OpeningLookupService } from '../../../services/opening-book/openingLookupService';
+import type { OpeningBookEntry } from '../../../services/opening-book/openingBook.types';
+import { OpeningClassificationService } from '../../../services/opening-book/openingClassificationService';
+import {
+  OPENING_KNOWLEDGE_VERSION,
+  OpeningKnowledgeService,
+} from '../../../services/opening-book/openingKnowledgeService';
 
 const MAX_CONTEXT_PLIES = 300;
+const OPENING_PLAN_LIMIT = 3;
+const OPENING_QUALIFIER_LIMIT = 4;
+const OPENING_RULE_REFERENCE_LIMIT = 12;
 
 export interface GameReviewAnalysisMove {
   plyNumber: number;
@@ -40,9 +50,36 @@ export interface AuthoritativeReviewMove {
   scoreLossCp: number | null;
 }
 
+export interface GameReviewOpeningKnowledgeStatement {
+  text: string;
+  confidence: string;
+}
+
+export interface GameReviewOpeningKnowledgePlan {
+  id: string;
+  title: string;
+  summary: string;
+  conditions: string[];
+  caveats: string[];
+  confidence: string;
+}
+
+export interface GameReviewOpeningKnowledgeContext {
+  status: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+  version: string;
+  opening: { eco: string | null; name: string; source: string } | null;
+  side: 'WHITE' | 'BLACK' | null;
+  shortDescription: GameReviewOpeningKnowledgeStatement | null;
+  strategicSummary: GameReviewOpeningKnowledgeStatement | null;
+  plans: GameReviewOpeningKnowledgePlan[];
+  matchedRuleIds: string[];
+}
+
 export interface GameReviewContextResult {
   context: Record<string, unknown>;
   authoritativeMoves: Map<number, AuthoritativeReviewMove>;
+  openingKnowledge: GameReviewOpeningKnowledgeContext;
+  openingKnowledgePlanIds: ReadonlySet<string>;
   warnings: AiGameReviewWarning[];
 }
 
@@ -66,9 +103,11 @@ export function buildGameReviewContext(
     to: string;
     promotion?: string;
   }>;
+  const uciMoves = history.map((move) => `${move.from}${move.to}${move.promotion ?? ''}`);
+  const openingKnowledge = resolveOpeningKnowledge(game, uciMoves);
   const analysisByPly = new Map(run.moves.map((move) => [move.plyNumber, move]));
   const warnings = new Set<AiGameReviewWarning>();
-  if (!game.opening.eco && !game.opening.name) warnings.add('OPENING_NOT_IDENTIFIED');
+  if (!openingKnowledge.identifiedOpening) warnings.add('OPENING_NOT_IDENTIFIED');
   if (history.length > MAX_CONTEXT_PLIES) warnings.add('INCOMPLETE_MOVE_DATA');
   if (run.moves.length < history.length) warnings.add('LIMITED_ENGINE_DATA');
 
@@ -92,7 +131,7 @@ export function buildGameReviewContext(
 
     return {
       ...authoritative,
-      playedMoveUci: `${move.from}${move.to}${move.promotion ?? ''}`,
+      playedMoveUci: uciMoves[index],
       bestMoveUci: analysis?.bestMoveUci ?? null,
       bestScoreCpWhite: analysis?.bestScoreCpWhite ?? null,
       playedScoreCpWhite: analysis?.playedScoreCpWhite ?? null,
@@ -116,6 +155,7 @@ export function buildGameReviewContext(
         opponentUsername: game.opponentUsername,
         deterministicTags: game.tags.map((tag) => tag.name),
       },
+      openingKnowledge: openingKnowledge.context,
       analysis: {
         userAccuracy,
         whiteAccuracy: run.whiteAccuracy,
@@ -127,7 +167,113 @@ export function buildGameReviewContext(
       moves,
     },
     authoritativeMoves,
+    openingKnowledge: openingKnowledge.context,
+    openingKnowledgePlanIds: openingKnowledge.planIds,
     warnings: [...warnings],
+  };
+}
+
+function resolveOpeningKnowledge(
+  game: ImportedGameDetail,
+  uciMoves: readonly string[],
+): {
+  context: GameReviewOpeningKnowledgeContext;
+  identifiedOpening: boolean;
+  planIds: ReadonlySet<string>;
+} {
+  const moveMatch = uciMoves.length ? OpeningLookupService.lookupByMoves([...uciMoves]) : null;
+  const storedEntry = storedOpeningEntry(game, uciMoves);
+  const entry = moveMatch ?? storedEntry;
+  if (!entry) {
+    return {
+      context: unavailableOpeningKnowledge(game.userColor, null),
+      identifiedOpening: false,
+      planIds: new Set(),
+    };
+  }
+
+  const classification = OpeningClassificationService.classify(entry);
+  const knowledge = OpeningKnowledgeService.resolve(entry, classification);
+  const selected = game.userColor === 'WHITE'
+    ? knowledge.white
+    : game.userColor === 'BLACK'
+      ? knowledge.black
+      : null;
+  const plans = (selected?.plans ?? []).slice(0, OPENING_PLAN_LIMIT).map((plan) => ({
+    id: plan.id,
+    title: plan.title,
+    summary: plan.summary,
+    conditions: [...(plan.conditions ?? [])].slice(0, OPENING_QUALIFIER_LIMIT),
+    caveats: [...(plan.caveats ?? [])].slice(0, OPENING_QUALIFIER_LIMIT),
+    confidence: plan.confidence,
+  }));
+  const shortDescription = knowledge.shortDescription ? {
+    text: knowledge.shortDescription.text,
+    confidence: knowledge.shortDescription.confidence,
+  } : null;
+  const strategicSummary = selected?.strategicSummary ? {
+    text: selected.strategicSummary.text,
+    confidence: selected.strategicSummary.confidence,
+  } : null;
+  const hasApplicableKnowledge = Boolean(
+    game.userColor
+    && knowledge.matchedKnowledgeRuleIds.length
+    && (shortDescription || strategicSummary || plans.length),
+  );
+  const status = hasApplicableKnowledge ? knowledge.status : 'UNAVAILABLE';
+
+  return {
+    context: {
+      status,
+      version: knowledge.knowledgeVersion,
+      opening: {
+        eco: entry.eco || null,
+        name: entry.name,
+        source: moveMatch?.source ?? 'STORED_GAME',
+      },
+      side: game.userColor,
+      shortDescription: hasApplicableKnowledge ? shortDescription : null,
+      strategicSummary: hasApplicableKnowledge ? strategicSummary : null,
+      plans: hasApplicableKnowledge ? plans : [],
+      matchedRuleIds: hasApplicableKnowledge
+        ? [...knowledge.matchedKnowledgeRuleIds].slice(0, OPENING_RULE_REFERENCE_LIMIT)
+        : [],
+    },
+    identifiedOpening: true,
+    planIds: new Set(hasApplicableKnowledge ? plans.map((plan) => plan.id) : []),
+  };
+}
+
+function storedOpeningEntry(
+  game: ImportedGameDetail,
+  uciMoves: readonly string[],
+): OpeningBookEntry | null {
+  if (!game.opening.eco && !game.opening.name) return null;
+  const ecoMatch = game.opening.eco ? OpeningLookupService.lookupByEco(game.opening.eco) : null;
+  if (ecoMatch && (!game.opening.name || ecoMatch.name === game.opening.name)) return ecoMatch;
+  return {
+    eco: game.opening.eco ?? '',
+    name: game.opening.name ?? ecoMatch?.name ?? game.opening.eco ?? 'Unknown opening',
+    pgn: '',
+    uci: uciMoves.join(' '),
+    epd: '',
+    ply: uciMoves.length,
+  };
+}
+
+function unavailableOpeningKnowledge(
+  side: 'WHITE' | 'BLACK' | null,
+  opening: { eco: string | null; name: string; source: string } | null,
+): GameReviewOpeningKnowledgeContext {
+  return {
+    status: 'UNAVAILABLE',
+    version: OPENING_KNOWLEDGE_VERSION,
+    opening,
+    side,
+    shortDescription: null,
+    strategicSummary: null,
+    plans: [],
+    matchedRuleIds: [],
   };
 }
 

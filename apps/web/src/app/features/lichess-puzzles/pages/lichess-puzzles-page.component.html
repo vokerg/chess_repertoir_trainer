@@ -4,18 +4,20 @@
     subtitle="Solve fresh Lichess puzzles here without leaving your training workspace."
   />
 
-  @if (store.error(); as error) {
-    <div class="puzzle-message puzzle-error" role="alert">
-      <span>{{ error }}</span>
-      @if (store.requiresReconnect()) {
-        <a routerLink="/settings/lichess">Reconnect Lichess</a>
-      }
-    </div>
-  }
-
-  @if (store.notice(); as notice) {
-    <div class="puzzle-message" aria-live="polite">{{ notice }}</div>
-  }
+  <div class="puzzle-message-slot">
+    @if (store.error(); as error) {
+      <div class="puzzle-message puzzle-error" role="alert">
+        <span>{{ error }}</span>
+        @if (store.requiresReconnect()) {
+          <a routerLink="/settings/lichess">Reconnect Lichess</a>
+        }
+      </div>
+    } @else if (store.notice(); as notice) {
+      <div class="puzzle-message" aria-live="polite">{{ notice }}</div>
+    } @else {
+      <div class="puzzle-message puzzle-message-placeholder" aria-hidden="true"></div>
+    }
+  </div>
 
   @if (!store.round()) {
     <app-panel

@@ -10,6 +10,11 @@ export async function findStoredGameReview(userId: number, importedGameId: numbe
       importedGame: { userId },
     },
     select: {
+      analysisRunId: true,
+      inputHash: true,
+      schemaVersion: true,
+      promptVersion: true,
+      model: true,
       content: true,
     },
   });
