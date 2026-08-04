@@ -12,7 +12,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | DONE | Design progressive indexing and analysis orchestration | Research | Squash-merged through PR #256 as `d41f75c` |
 | 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | DONE | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | Squash-merged through PR #263 as `32db655` |
 | 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | DONE | Benchmark preparation throughput and define truthful progress semantics | Research | Squash-merged through PR #266 as `d631382` after corrected benchmark evidence and three self-review rounds |
-| 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | REVIEW | Design administrator authentication, diagnostics, and action model | Research | PR #275; consumes ONB-004 mutation/audit and ONB-007 diagnostics contracts |
+| 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | DONE | Design administrator authentication, diagnostics, and action model | Research | Squash-merged through PR #275 after three self-review rounds |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; consumes ONB-004 shared-retention and ONB-007 operation-budget boundaries; coordinates ONB-005 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
 | 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | READY | Persist preparation execution boundary and bounded child-job batches | Implementation | ONB-003 complete; consumes ONB-007 defaults; coordinate Prisma/schema edits with ONB-011 and ONB-019 before implementation |
@@ -26,11 +26,11 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
 | 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit/actor policy with ONB-005/022 |
-| 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; ONB-005 before admin exposure |
-| 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; ONB-005; mobile offline sync contracts |
-| 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | PROPOSED | Build administrator authorization and read-only diagnostics foundation | Implementation | ONB-005; consumes ONB-007 warnings; coordinates actor-key boundary with ONB-019 |
-| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | PROPOSED | Build administrator diagnostics Angular feature | Implementation | ONB-005/022; Visual Transformation coordination |
-| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-005/022/023; ONB-019 plus applicable ONB-020/021; ONB-006 for cleanup exposure |
+| 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; admin exposure remains ONB-024-owned |
+| 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; mobile offline sync contracts; admin execution deferred by ONB-005 |
+| 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | READY | Build administrator authorization and read-only diagnostics foundation | Implementation | ONB-005 complete; consumes ONB-007 warnings; coordinates actor-key boundary with ONB-019 |
+| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | PROPOSED | Build administrator diagnostics Angular feature | Implementation | ONB-022; Visual Transformation coordination |
+| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-022/023; ONB-019 plus applicable ONB-020/021; ONB-006 for cleanup exposure |
 
 ## Completed planning
 
@@ -48,7 +48,7 @@ ONB-004 established destructive lifecycle invariants through squash-merged PR #2
 
 ONB-007 established throughput evidence, conservative preparation/import defaults, truthful progress semantics, and implementation validation gates through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
 
-## ONB-005 review delivery
+## ONB-005 completed delivery
 
 ONB-005 defines:
 
@@ -60,12 +60,14 @@ ONB-005 defines:
 - migration-free cursor-paginated aggregate diagnostics with strict sensitive-field exclusions;
 - exact row-count footprint rather than untrustworthy per-user byte estimates;
 - a lazy direct-link Angular route with no required normal-navigation item;
-- signed `fva` plus one-use `reverification_id` for destructive administrator execution, with execution disabled until proven;
-- configurable 30-day read-access log and 365-day mutation-audit defaults plus HMAC key-version retention;
+- signed `fva` plus one-use request-bound `reverification_id` for destructive administrator execution, with execution disabled until the pinned Clerk flow is proven;
+- configurable 30-day read-access log and 365-day mutation-audit operational defaults plus domain-separated HMAC key-version retention;
+- administrator whole-user deletion deferred pending a separate support/recovery policy decision;
+- topology-aware request-budget enforcement that does not overclaim an in-process limiter as distributed protection;
 - implementation tasks ONB-022/#272, ONB-023/#273, and ONB-024/#274 appended after the existing planned backlog so administration support work does not pre-empt the product critical path;
-- report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and self-review addenda.
+- report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and three self-review addenda.
 
-ONB-005 remains REVIEW until PR #275 validation and acceptance. Its implementation tasks remain PROPOSED.
+Completed through squash-merged PR #275 after final canonical reconciliation and three adversarial self-review rounds. ONB-022 is promoted to `READY`; ONB-023/024 remain `PROPOSED` behind their dependencies.
 
 ## ONB-002 completed delivery
 
@@ -146,14 +148,14 @@ ONB-016 defines the route-based lightweight first-value experience, progressive 
 
 ## Deterministic next task
 
-ONB-005 / #152 is in REVIEW through PR #275 and remains the active deterministic task until accepted or revised.
+ONB-006 / #153 is the next claimable task by canonical order.
 
 Additional READY work after explicit collision review:
 
-- ONB-006;
-- ONB-017, with ONB-011 and ONB-019 Prisma/schema coordination before implementation.
+- ONB-017, with ONB-011 and ONB-019 Prisma/schema coordination before implementation;
+- ONB-022, with current auth/deployment and ONB-019 actor-key collision review before implementation.
 
-ONB-022/023/024 remain PROPOSED until their listed dependencies are accepted. ONB-018, ONB-008 through ONB-015, and ONB-019 through ONB-021 remain `PROPOSED` until their listed dependencies are accepted.
+ONB-023/024 remain `PROPOSED` until their listed dependencies are accepted. ONB-018, ONB-008 through ONB-015, and ONB-019 through ONB-021 remain `PROPOSED` until their listed dependencies are accepted.
 
 ## Implementation backlog rule
 
