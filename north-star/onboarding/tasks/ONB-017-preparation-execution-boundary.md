@@ -1,6 +1,6 @@
 # ONB-017 — Persist preparation execution boundary and bounded child-job batches
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 77
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-003; numeric admission defaults supplied by ONB-007; ready with explicit ONB-011/019 schema coordination
+Planning maturity: Decisioned by ONB-003; numeric admission defaults supplied by ONB-007; implementation in progress after ONB-011/019 collision review
 
 GitHub issue: [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `onb-017/issue-253-preparation-execution-boundary`
 
-Claimed at: none
+Claimed at: 2026-08-04
 
-Claim scope: none
+Claim scope: preparation schema/migration, internal configuration and types, bounded PostgreSQL candidate selection, globally serialized child-job admission, focused tests, and architecture documentation; no public routes, reconciler loop, provider execution, Angular changes, or ONB-011/019-owned persistence
 
 ## Outcome
 
@@ -34,6 +34,13 @@ ONB-008 owns user disposition and the public readiness projection, while ONB-009
 - ONB-007 / #154 report for 50/3/10 wave defaults, four-batch/200-task/40-analysis global caps, progress denominators, and performance budgets.
 - Coordinate current/latest import links and Prisma/schema edits with ONB-011 / #199 and ONB-019 / #259 before implementation begins.
 - Consumed by ONB-018 / #254 and ONB-008 / #193.
+
+## Schema coordination recorded at claim
+
+- ONB-017 owns `DataPreparationRun`, `DataPreparationTarget`, and `DataPreparationBatch`, their constraints/indexes, and nullable relations to current `ImportRun` and child `JobRun` rows.
+- ONB-011 remains owner of durable import-run/coverage expansion and must preserve the nullable target relation introduced here.
+- ONB-019 remains owner of destructive lifecycle operation, fence, and audit tables. ONB-017 exposes an admission-guard seam without inventing those tables.
+- No active ONB-011 or ONB-019 branch or pull request existed at claim time. The additive migration order is ONB-017 first, followed by coordinated ONB-011 and ONB-019 migrations.
 
 ## Initial configuration
 
