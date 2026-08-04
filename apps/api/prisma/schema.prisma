@@ -246,7 +246,7 @@ model ImportedGame {
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
-  @@index([accountId, endedAt, id])
+  @@index([accountId, endedAt(sort: Desc), id(sort: Desc)])
   @@index([userId, latestAnalysisStatus, endedAt])
 }
 
@@ -391,24 +391,24 @@ model ImportedGamePly {
 }
 
 model ImportRun {
-  id                     Int                     @id @default(autoincrement())
-  userId                 Int
-  user                   AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId              Int
-  account                ExternalAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  provider               String
-  status                 String
-  syncSince               DateTime?
-  syncUntil               DateTime?
-  gamesSeen               Int                     @default(0)
-  gamesImported           Int                     @default(0)
-  gamesUpdated            Int                     @default(0)
-  gamesSkipped            Int                     @default(0)
-  gamesFailed             Int                     @default(0)
-  error                   String?
-  startedAt               DateTime                @default(now())
-  completedAt             DateTime?
-  dataPreparationTargets  DataPreparationTarget[]
+  id                    Int                     @id @default(autoincrement())
+  userId                Int
+  user                  AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             Int
+  account               ExternalAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider              String
+  status                String
+  syncSince             DateTime?
+  syncUntil             DateTime?
+  gamesSeen             Int                     @default(0)
+  gamesImported         Int                     @default(0)
+  gamesUpdated          Int                     @default(0)
+  gamesSkipped          Int                     @default(0)
+  gamesFailed           Int                     @default(0)
+  error                 String?
+  startedAt             DateTime                @default(now())
+  completedAt           DateTime?
+  dataPreparationTargets DataPreparationTarget[]
 
   @@index([accountId, startedAt])
   @@index([userId, startedAt])
@@ -446,59 +446,60 @@ model DataPreparationRun {
 }
 
 model DataPreparationTarget {
-  id                  Int                 @id @default(autoincrement())
+  id                  Int                    @id @default(autoincrement())
   preparationRunId    Int
-  preparationRun      DataPreparationRun  @relation(fields: [preparationRunId], references: [id], onDelete: Cascade)
+  preparationRun      DataPreparationRun     @relation(fields: [preparationRunId], references: [id], onDelete: Cascade)
   accountId           Int?
-  account             ExternalAccount?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  account             ExternalAccount?       @relation(fields: [accountId], references: [id], onDelete: SetNull)
   accountProvider     String
   accountUsername     String
   ordinal             Int
   scopeVersion        Int
-  scopeHash           String              @db.VarChar(64)
+  scopeHash           String                 @db.VarChar(64)
   scopeJson           Json
   requestedFrom       DateTime
   requestedTo         DateTime
   currentImportRunId  Int?
-  currentImportRun    ImportRun?           @relation(fields: [currentImportRunId], references: [id], onDelete: SetNull)
+  currentImportRun    ImportRun?              @relation(fields: [currentImportRunId], references: [id], onDelete: SetNull)
   firstImportedAt     DateTime?
   firstIndexedAt      DateTime?
   firstAnalysedAt     DateTime?
   coreReadyAt         DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
   batches             DataPreparationBatch[]
 
-  @@unique([preparationRunId, accountId])
+  // PostgreSQL enforces unique(preparationRunId, accountId); Prisma cannot model
+  // a compound unique constraint containing nullable accountId.
   @@unique([preparationRunId, ordinal])
   @@index([accountId])
   @@index([currentImportRunId])
 }
 
 model DataPreparationBatch {
-  id                 Int                    @id @default(autoincrement())
+  id                 Int                   @id @default(autoincrement())
   preparationRunId   Int
-  preparationRun     DataPreparationRun     @relation(fields: [preparationRunId], references: [id], onDelete: Cascade)
+  preparationRun     DataPreparationRun    @relation(fields: [preparationRunId], references: [id], onDelete: Cascade)
   targetId           Int
-  target             DataPreparationTarget  @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  target             DataPreparationTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
   stage              String
   lane               String
   ordinal            Int
   status             String
   plannedLimit       Int
-  jobRunId           Int?                   @unique
-  jobRun             JobRun?                @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+  jobRunId           Int?                  @unique
+  jobRun             JobRun?               @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
   totalTasks         Int
-  completedTasks     Int                    @default(0)
-  skippedTasks       Int                    @default(0)
-  failedTasks        Int                    @default(0)
-  cancelledTasks     Int                    @default(0)
+  completedTasks     Int                   @default(0)
+  skippedTasks       Int                   @default(0)
+  failedTasks        Int                   @default(0)
+  cancelledTasks     Int                   @default(0)
   startedAt          DateTime?
   firstSettledAt     DateTime?
   settledAt          DateTime?
   error              String?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 
   // The one-non-terminal-batch-per-stage invariant is a PostgreSQL partial unique index.
   @@unique([preparationRunId, ordinal])
