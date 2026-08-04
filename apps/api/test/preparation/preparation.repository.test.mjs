@@ -65,7 +65,7 @@ try {
       recipe: {},
       targets: [targetInput(primary.accountId, 'b')],
     }),
-    (error) => error?.meta?.code === '23505',
+    isUniqueConstraintViolation,
     'the partial unique index rejects a second non-terminal run for one user',
   );
 
@@ -85,6 +85,23 @@ try {
     indexAdmission.importedGameIds,
     primaryGames.slice(0, 50).map((game) => game.id),
     'candidate selection is bounded and newest-first',
+  );
+
+  await assert.rejects(
+    prisma.dataPreparationBatch.create({
+      data: {
+        preparationRunId: primaryRun.run.id,
+        targetId: primaryRun.targets[0].id,
+        stage: 'INDEX',
+        lane: 'INDEX_CONTINUATION',
+        ordinal: 99,
+        status: 'QUEUED',
+        plannedLimit: 1,
+        totalTasks: 0,
+      },
+    }),
+    isUniqueConstraintViolation,
+    'the partial unique index independently rejects a second active stage batch',
   );
 
   const indexJob = await prisma.jobRun.findUniqueOrThrow({
@@ -226,9 +243,14 @@ async function createGames(owner, count) {
       providerGameId: `preparation-${owner.accountId}-${index}-${suffix}`,
       pgn: '1. e4 e5',
       rated: index % 2 === 0,
-      variant: 'STANDARD',
-      speedCategory: index % 3 === 0 ? 'RAPID' : 'BLITZ',
+      variant: 'standard',
+      speedCategory: index % 3 === 0 ? 'rapid' : 'blitz',
       endedAt: new Date(Date.UTC(2026, 0, 1, 0, index, 0)),
     })),
   });
+}
+
+function isUniqueConstraintViolation(error) {
+  return error?.code === 'P2002'
+    || (error?.code === 'P2010' && error?.meta?.code === '23505');
 }
