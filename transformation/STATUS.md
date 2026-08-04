@@ -1,6 +1,6 @@
 # Visual Transformation Status
 
-Last updated: 2026-07-31
+Last updated: 2026-08-04
 
 ## Current state
 
@@ -13,12 +13,14 @@ Last updated: 2026-07-31
 **Active checkpoint branches:**
 
 - `visual-transformation/vt-301-remaining-page-rollout` — Batch 1, Progress account dashboard;
-- `visual-transformation/vt-301-settings` — Batch 3, Settings.
+- `visual-transformation/vt-301-settings` — Batch 3, Settings;
+- `visual-transformation/vt-301-tactical-detections` — Batch 7c, Tactical Detections.
 
 **Active pull requests:**
 
 - draft PR #196 — Progress account dashboard; repository CI #1480 passed, browser review pending;
-- draft PR #209 — Settings; exact-head CI #1573 passed, browser review pending.
+- draft PR #209 — Settings; exact-head CI #1573 passed, browser review pending;
+- draft PR #277 — Tactical Detections; corrected shared-panel implementation and rendered regression coverage under CI review.
 
 **Live execution queue:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122)
 
@@ -65,6 +67,8 @@ All transformation work uses short-lived branches, pull requests to `main`, expl
 - [x] PR #229 — VT-301 Batches 4c/4d reconciliation, squash commit `0f9409ef68791123575a659e1361b056f8680038`.
 - [x] Direct commit `a30303ffb9e59de4f4a99e1be936e4624ba13b63` — VT-301 Batch 5 shared filter select menu.
 - [x] PR #235 — VT-301 Batch 6 analytical workbench and openings evidence, squash commit `65ee1b56cc39f377d7066a1827e510e922b695fa`.
+- [x] PR #252 — VT-301 Batch 7a Lab discovery and tabular reports, squash commit `6335c9b940f8eaa4681a29d6e391513b33214e91`.
+- [x] PR #269 — VT-301 Batch 7b Performance by Rating, squash commit `5ad2768ab47e3dfe718bae233c52ab1fca61a6fb`.
 
 ## Phase 1 completion
 
@@ -94,7 +98,7 @@ Issue #131 is complete through PR #191 and reconciliation PR #192. The final mob
 
 ## Deferred browser feedback
 
-The user explicitly approved VT-202, VT-203, VT-204, VT-205, VT-301 Batch 2, VT-301 Batch 4a, VT-301 Batch 4b, VT-301 Batches 4c/4d, and VT-301 Batch 6 without direct browser review.
+The user explicitly approved VT-202, VT-203, VT-204, VT-205, VT-301 Batch 2, VT-301 Batch 4a, VT-301 Batch 4b, VT-301 Batches 4c/4d, VT-301 Batch 6, VT-301 Batch 7a, and VT-301 Batch 7b without direct browser review.
 
 Their recorded checklists remain useful for a later consolidated product-review pass. Deferred evidence is not represented as an observed validation pass.
 
@@ -102,7 +106,7 @@ Their recorded checklists remain useful for a later consolidated product-review 
 
 Issues #123–#131 are complete.
 
-Issue #132 / VT-301 remains `IN_PROGRESS`. Batches 2, 4a, 4b, 4c, 4d, 5, and 6 are integrated. Draft PR #196 owns Batch 1 Progress and draft PR #209 owns Batch 3 Settings. Remaining inventory families, particularly Labs and any explicitly unassigned authenticated routes, must still be completed or dispositioned before issue #132 can close.
+Issue #132 / VT-301 remains `IN_PROGRESS`. Batches 2, 4a, 4b, 4c, 4d, 5, 6, 7a, and 7b are integrated. Draft PR #196 owns Batch 1 Progress, draft PR #209 owns Batch 3 Settings, and draft PR #277 owns Batch 7c Tactical Detections. Remaining authenticated routes must still be explicitly dispositioned before issue #132 can close.
 
 Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and reconciled.
 
@@ -121,6 +125,9 @@ Issue #133 / VT-302 remains blocked until all VT-301 batches are complete and re
 - VT-301 Batches 4c/4d exact audited-head CI #1623 and reconciliation CI #1650 passed.
 - VT-301 Batch 5 automated validation was recorded complete; direct browser review remains pending.
 - VT-301 Batch 6 exact-head CI #1714 passed before squash integration through PR #235; direct browser review was explicitly deferred.
+- VT-301 Batch 7a exact-head CI #1825 passed, including 347 Angular web tests; direct authenticated browser review was explicitly deferred.
+- VT-301 Batch 7b exact-head CI #1876 passed, including 360 Angular web tests and the complete repository workflow; direct authenticated browser review was explicitly deferred.
+- VT-301 Batch 7c PR #277 CI is pending on the corrected shared-panel implementation head.
 
 The workflows cover dependency installation, lint, full repository build and Angular template/type compilation, opening audits, architecture guardrails, database migrations, and the complete test suite.
 
@@ -151,6 +158,14 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 
 ## Session log
 
+### 2026-08-04 — VT-301 Tactical Detections correction
+
+- Claimed the sole remaining Lab family after confirming issue #132 coordination and the integrated Batch 7a/7b patterns.
+- Rejected the initial hand-built workspace-shell approach during self-review because the route already owns `app-page-header` and transformed Labs use `app-panel` plus typed shell actions.
+- Rebuilt the slice with `app-panel`, `UiShellAction`, `UiShellStat`, `app-select-menu`, production tokens, explicit result/run control meaning, accessible table semantics, and rendered component regression tests.
+- Preserved store, API, detection, filter, route, query-parameter, and scenario-training behavior.
+- CI and authenticated browser evidence remain pending; no merge is authorized.
+
 ### 2026-07-31 — VT-301 analytical workbench integration
 
 - Claimed the inventory-defined analytical-workbench batch after collision review against active Progress and Settings pull requests.
@@ -178,4 +193,4 @@ VT-301 remaining-page and Labs rollout is active. VT-302 onboarding, empty-state
 
 ### Earlier integrated checkpoints
 
-PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, #192, #206, #211, #212, #215, #217, #221, #229, and #235 are integrated into `main`.
+PRs #78, #79, #85, #86, #87, #88, #108, #112, #118, #120, #134, #137, #141–#144, #155, #158, #161, #162, #165, #167, #176, #178, #180, #183, #185, #188, #190, #191, #192, #206, #211, #212, #215, #217, #221, #229, #235, #252, and #269 are integrated into `main`.
