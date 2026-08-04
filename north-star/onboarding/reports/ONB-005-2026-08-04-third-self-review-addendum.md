@@ -12,7 +12,9 @@ A third adversarial review found one material completion defect: the branch defi
 
 The omitted files still described ONB-005 as `READY` or provisional, left all ONB-005 research questions open, omitted the implementation phases, and identified ONB-005 as the next task. Merging in that state would have left `main` internally contradictory even though the primary report was substantially correct.
 
-The defect is corrected. The review then rechecked task ordering, issue ownership, changed-file scope, current repository state, official Clerk assumptions, PR discussion state, and final validation requirements.
+The defect is corrected. A subsequent implementation-feasibility pass found two narrower handoff conflicts: the proposed `(createdAt, id)` user cursor assumed an `AppUser.createdAt` index that does not exist, and a required multi-instance PostgreSQL request budget would contradict ONB-022's migration-free scope if no shared mechanism already exists. Both contracts are corrected below.
+
+The review then rechecked task ordering, issue ownership, changed-file scope, current repository state, official Clerk assumptions, PR discussion state, and final validation requirements.
 
 ## Material defect found
 
@@ -84,6 +86,29 @@ It explicitly rejects:
 
 The final queue marks ONB-005 `DONE`, promotes ONB-022 to `READY`, retains ONB-023/024 as `PROPOSED`, and keeps orders 190/200/210 so administration support work does not pre-empt the existing product critical path.
 
+### Migration-free user cursor
+
+The primary report proposed a cursor over `(createdAt, id)`. The current `AppUser` model has a primary-key index on `id` but no index on `createdAt`. Requiring that cursor while also declaring ONB-022 migration-free would either produce an avoidable sort/scan path or force an undeclared migration.
+
+Normative correction:
+
+- initial user pagination uses deterministic `id DESC` keyset ordering;
+- the opaque versioned cursor contains the last returned user id;
+- created/updated timestamps remain response fields but are not the initial sort key;
+- any later created-time sort or index requires measured evidence and a separately coordinated migration.
+
+### Migration-free request-budget boundary
+
+The primary report allowed a PostgreSQL-backed shared budget for multiple API replicas while ONB-022 explicitly prohibited schema changes. A real time-window rate budget generally requires shared state; the current repository has no existing administrator budget table or shared limiter.
+
+Normative correction:
+
+- strict page/filter/query/concurrency bounds and security telemetry are unconditional;
+- a verified single API instance may use an explicitly best-effort in-process budget;
+- a multi-instance deployment may use already-existing shared infrastructure if it supplies a real budget without new persistence;
+- if no shared mechanism exists, ONB-022 does not emit `429` or claim distributed request-rate enforcement;
+- any new PostgreSQL persistence or infrastructure for shared rate limiting is a separate reviewed task, preserving ONB-022's migration-free scope.
+
 ### Historical report metadata
 
 The primary report retains `Status: review candidate` as its creation-stage metadata. Completion authority is carried by the ONB-005 task record, `TASKS.md`, `STATUS.md`, this final addendum, the merged PR, and the closed completed issue. The retained historical header is not a live queue or policy state.
@@ -106,12 +131,14 @@ The review checked for:
 - ONB-005-owned questions left unresolved;
 - ONB-022 still blocked solely by completed ONB-005;
 - administrator tasks reordering P0 product work;
+- pagination contracts that require undeclared indexes;
+- shared-budget requirements that violate migration-free scope;
 - runtime, schema, migration, dependency, deployment, or workflow changes;
 - unresolved PR review threads or submitted change requests;
 - branch divergence from current `main`;
 - unverified claims about API replica count, recent authentication, Clerk Organizations, sensitive-field safety, or distributed rate limiting.
 
-No further material architecture defect was found after the canonical reconciliation.
+No further material architecture defect was found after the canonical and feasibility corrections.
 
 ## Validation gate
 
@@ -128,6 +155,7 @@ Do not merge unless:
 ## Files inspected in this review
 
 - all PR #275 changed files and patches;
+- `apps/api/prisma/schema.prisma`, especially the `AppUser` indexes;
 - `north-star/onboarding/DECISIONS.md`;
 - `north-star/onboarding/OPEN_QUESTIONS.md`;
 - `north-star/onboarding/ROADMAP.md`;
