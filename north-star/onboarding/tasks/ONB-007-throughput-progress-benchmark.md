@@ -1,6 +1,6 @@
 # ONB-007 — Benchmark preparation throughput and define truthful progress semantics
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -8,7 +8,7 @@ Order: 50
 
 Delivery class: Research
 
-Planning maturity: Research, corrected reproducible benchmark, and three self-review rounds complete; user-authorized squash merge pending final standard CI
+Planning maturity: Completed through squash-merged PR #266 after corrected benchmark evidence and three self-review rounds
 
 GitHub issue: [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154)
 
@@ -96,6 +96,7 @@ The 2026-08-04 corrected evidence supersedes provider total/first-commit timings
 - CI #1840 passed lint, build, audits, architecture guardrails, migrations, benchmark, and the full test suite.
 - CI #1883 passed the clean-build benchmark package command, artifact upload, and all repository gates.
 - CI #1905 passed lint, build, all opening audits, architecture guardrails, migrations, the corrected benchmark, corrected artifact upload, and the full repository test suite.
+- Final standard CI #1912 passed lint, build, all opening audits, architecture guardrails, migrations, and the full repository test suite on head `ee765cac67d12bbd5e41926d6eed9fa1b50fa4bb`.
 - Results record observed sample p50/p90 values and explicit environment/limitations; three-sample p90 values are nearest-rank maxima rather than stable production percentiles.
 - Self-review verified that worker analysis configuration is loaded at task execution; the harness now also drives that configuration from the analysis-wave input.
 - Worker-wave output records the 5 ms benchmark poll/observer intervals and that jobs are queued before immediate in-process worker startup.
@@ -126,4 +127,6 @@ Benchmark harness: `apps/api/benchmarks/onboarding-throughput-safe.mjs`
 
 Pull request: [#266](https://github.com/vokerg/chess_repertoir_trainer/pull/266)
 
-Completed at: review accepted; squash merge and post-merge DONE reconciliation pending
+Squash commit: `d6313823bd7da36991972a804f59d47d77578bdf`
+
+Completed at: 2026-08-04
