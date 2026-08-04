@@ -32,7 +32,7 @@ The database, rather than the reconciler, is the final concurrency authority for
 5. re-count global active preparation batches, queued onboarding tasks, and queued onboarding analysis tasks;
 6. calculate the remaining bounded capacity;
 7. select eligible games in PostgreSQL from the immutable target account/scope/range, newest first, with `FOR UPDATE ... SKIP LOCKED` and a hard limit;
-8. exclude games already present in queued or running child work;
+8. exclude games already present in queued or running child work, plus any cancelled task whose execution `workKey` has not yet been acknowledged;
 9. create the retained batch, `JobRun(source = ONBOARDING)`, and ordered `JobTask` rows atomically;
 10. link the child and mark a queued parent as running.
 
@@ -75,7 +75,13 @@ The repository currently understands these immutable `scopeJson` properties:
 }
 ```
 
-Missing or empty arrays mean no restriction for that property. Candidate selection always applies user ownership, target account, `[requestedFrom, requestedTo)`, stage evidence, retry/error policy, active-work exclusion, newest-first ordering, and the computed hard limit.
+Missing or empty arrays mean no restriction for that property. Speed and variant comparisons are case-insensitive so recipe vocabulary matches provider-shaped imported values. A standard variant includes the repository's established `null`, `chess`, and `standard` representations. Candidate selection always applies user ownership, target account, `[requestedFrom, requestedTo)`, stage evidence, retry/error policy, active-work exclusion, newest-first ordering, and the computed hard limit.
+
+Normal index admission selects clean unindexed games; index retry selects only unindexed games with a prior index error. Normal analysis admission selects indexed games without an analysis attempt; analysis retry selects only indexed games whose latest analysis status is `FAILED`. `force` remains an explicit analysis override rather than changing retry into general backlog processing.
+
+## Direct-user races
+
+A direct job that commits before preparation candidate selection is excluded from the preparation batch. When preparation commits first and a direct action is accepted immediately afterward, one duplicate may remain queued. This is safe by the existing worker contract: the direct job has higher priority, the active-game `workKey` fence prevents overlapping execution, and the idempotent executor later skips already-current preparation work.
 
 ## Integration points
 
