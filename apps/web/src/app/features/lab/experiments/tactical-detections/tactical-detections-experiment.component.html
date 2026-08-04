@@ -1,69 +1,200 @@
-<section class="section-card lab-panel stack">
-  <div class="lab-panel-header">
-    <div><span class="eyebrow">Analysed games</span><h3 class="collection-title">Tactical findings</h3></div>
-    <div class="header-actions">
-      <button type="button" class="compact-action secondary" (click)="store.load()" [disabled]="store.loading() || store.running()">
-        {{ store.loading() ? 'Loading...' : 'Apply filters' }}
-      </button>
-      <button type="button" class="compact-action" (click)="store.runDetection()" [disabled]="store.running() || store.loading()">
-        {{ store.running() ? 'Running...' : 'Run detection' }}
-      </button>
+<app-panel
+  title="Detection results"
+  subtitle="Filter persisted tactical swings and launch focused training from the evidence."
+  [stats]="stats()"
+  [actions]="actions()"
+>
+  <section class="criteria-panel" aria-labelledby="tactical-result-filters-heading">
+    <div class="section-copy">
+      <h4 id="tactical-result-filters-heading">Result filters</h4>
+      <p>Finding type, maximum rows, and the game filters below shape the persisted findings shown in this table.</p>
     </div>
-  </div>
 
-  <section class="criteria-panel stack" aria-label="Tactical finding filters">
-    <div class="lab-controls">
-      <label><span>Kind</span><select [value]="store.kindFilter()" (change)="store.setKindFilter(filterValue($event))"><option value="ALL">All</option><option value="MISSED_SHOT">Missed shots</option><option value="PUNISHED_OPPONENT_BLUNDER">Punished blunders</option><option value="USER_BLUNDER">My blunders</option></select></label>
-      <label><span>Rows</span><input type="number" min="1" max="500" [value]="store.limit()" (input)="store.limit.set(numberValue($event))" /></label>
-      <label class="checkbox-label"><input type="checkbox" [checked]="store.force()" (change)="store.setForce(checkedValue($event))" /><span>Force recheck when running detection</span></label>
+    <div class="criteria-grid">
+      <div class="control-field">
+        <span class="control-label">Finding type</span>
+        <app-select-menu
+          [value]="store.kindFilter()"
+          [options]="kindOptions"
+          ariaLabel="Tactical finding type"
+          [disabled]="controlsDisabled()"
+          (valueChange)="changeKindFilter($event)"
+        />
+      </div>
+
+      <label class="control-field" for="tactical-result-limit">
+        <span class="control-label">Maximum rows</span>
+        <input
+          id="tactical-result-limit"
+          type="number"
+          [min]="resultLimitMin"
+          [max]="resultLimitMax"
+          step="1"
+          inputmode="numeric"
+          [value]="store.limit()"
+          [disabled]="controlsDisabled()"
+          (change)="changeLimit($event)"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="apply-action"
+        (click)="store.load()"
+        [disabled]="controlsDisabled()"
+      >
+        {{ store.loading() ? 'Loading…' : 'Apply result filters' }}
+      </button>
     </div>
   </section>
 
-  <section class="section-card" aria-label="Game filters">
-    <button type="button" class="extension-filter-toggle secondary" (click)="store.toggleFilters()" [attr.aria-expanded]="!store.filtersCollapsed()">
-      <span>Game filters</span><small>{{ store.filterSummary() }}</small><strong>{{ store.filtersCollapsed() ? 'Show' : 'Hide' }}</strong>
-    </button>
-    @if (!store.filtersCollapsed()) {
-      <app-game-filter-panel
-        [filters]="store.gameFilters()"
-        [facets]="store.facets()"
-        [loading]="store.loading() || store.running()"
-        applyLabel="Apply filters"
-        (filtersChange)="store.setGameFilters($event)"
-        (apply)="store.load()"
-        (reset)="store.resetGameFilters()"
+  <section class="detection-options" aria-labelledby="tactical-detection-options-heading">
+    <div class="section-copy">
+      <h4 id="tactical-detection-options-heading">Detection run options</h4>
+      <p>Only the selected date range scopes a new detection run. The remaining game filters affect displayed findings only.</p>
+      <p class="run-scope">
+        <strong>Current run scope:</strong> {{ detectionRangeLabel() }}
+      </p>
+    </div>
+
+    <label class="force-control" [class.disabled]="controlsDisabled()">
+      <input
+        type="checkbox"
+        [checked]="store.force()"
+        [disabled]="controlsDisabled()"
+        (change)="store.setForce(checkedValue($event))"
       />
+      <span>
+        <strong>Force recheck</strong>
+        <small>Include games already processed by an earlier detection run.</small>
+      </span>
+    </label>
+  </section>
+
+  <section class="game-filter-section" aria-label="Finding game filters">
+    <button
+      type="button"
+      class="filter-disclosure"
+      aria-controls="tactical-game-filter-panel"
+      (click)="store.toggleFilters()"
+      [attr.aria-expanded]="!store.filtersCollapsed()"
+    >
+      <span class="filter-disclosure-copy">
+        <strong>Finding game filters</strong>
+        <small>{{ store.filterSummary() }}</small>
+      </span>
+      <span class="filter-disclosure-state">
+        {{ store.filtersCollapsed() ? 'Show' : 'Hide' }}
+      </span>
+    </button>
+
+    @if (!store.filtersCollapsed()) {
+      <div id="tactical-game-filter-panel" class="game-filter-body">
+        <app-game-filter-panel
+          [filters]="store.gameFilters()"
+          [facets]="store.facets()"
+          [loading]="controlsDisabled()"
+          applyLabel="Apply game filters"
+          (filtersChange)="store.setGameFilters($event)"
+          (apply)="store.load()"
+          (reset)="store.resetGameFilters()"
+        />
+      </div>
     }
   </section>
 
-  @if (store.runSummary(); as summary) {
-    <p class="status-note">Run {{ summary.runId }} scanned {{ summary.scannedGames }} games, skipped {{ summary.skippedAlreadyProcessedGames }}, inserted {{ summary.detectionsInserted }} detections.</p>
-  }
-  @if (store.loading()) { <p class="status-note">Loading persisted findings...</p> }
-  @if (store.running()) { <p class="status-note">Scanning analysed games for tactical swings...</p> }
-  @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
-  @if (store.loaded() && !store.loading() && !store.error()) {
-    <p class="status-note">{{ store.items().length }} findings shown: {{ store.missedShots() }} missed shots, {{ store.punishedOpponentBlunders() }} punished blunders, {{ store.userBlunders() }} my blunders.</p>
-  }
+  <div class="status-region" aria-live="polite">
+    @if (store.error(); as error) {
+      <p class="lab-state lab-state--error" role="alert">{{ error }}</p>
+    } @else if (store.running()) {
+      <p class="lab-state lab-state--active">Scanning analysed games for tactical swings…</p>
+    } @else if (store.loading()) {
+      <p class="lab-state">Loading persisted findings…</p>
+    }
+
+    @if (!store.running() && !store.loading() && !store.error()) {
+      @if (store.runSummary(); as summary) {
+        <p class="lab-state lab-state--success">
+          <strong>Detection run {{ summary.runId }} complete.</strong>
+          Scanned {{ summary.scannedGames }} games, skipped
+          {{ summary.skippedAlreadyProcessedGames }}, and inserted
+          {{ summary.detectionsInserted }} findings.
+        </p>
+      }
+    }
+  </div>
 
   @if (!store.loading() && store.items().length > 0) {
-    <div class="table-wrap">
+    <div
+      class="table-wrap"
+      role="region"
+      aria-label="Scrollable tactical findings table"
+      tabindex="0"
+    >
       <table class="lab-table">
-        <thead><tr><th>Kind</th><th>Game</th><th>Date</th><th>Move no.</th><th>Move</th><th>Best move</th><th>Swing</th><th>Eval</th><th>Actions</th></tr></thead>
+        <caption>
+          Tactical findings from analysed games. Evaluation values are centipawns from the user's perspective.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Finding</th>
+            <th scope="col">Game</th>
+            <th scope="col">Date</th>
+            <th scope="col" class="numeric-column">Move no.</th>
+            <th scope="col">Played</th>
+            <th scope="col">Best</th>
+            <th scope="col" class="numeric-column">Swing</th>
+            <th
+              scope="col"
+              class="numeric-column"
+              aria-label="Evaluation before the tactical move"
+              title="Evaluation before the tactical move"
+            >
+              Before
+            </th>
+            <th
+              scope="col"
+              class="numeric-column"
+              aria-label="Evaluation after the tactical move"
+              title="Evaluation after the tactical move"
+            >
+              After move
+            </th>
+            <th
+              scope="col"
+              class="numeric-column"
+              aria-label="Evaluation after the reply"
+              title="Evaluation after the reply"
+            >
+              After reply
+            </th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
         <tbody>
           @for (item of store.items(); track item.id) {
             <tr>
-              <td><span class="kind-pill" [class.kind-pill-punished]="item.kind === 'PUNISHED_OPPONENT_BLUNDER'" [class.kind-pill-blunder]="item.kind === 'USER_BLUNDER'">{{ kindLabel(item.kind) }}</span></td>
-              <td class="primary-cell"><a [routerLink]="['/games', item.importedGameId]" [queryParams]="gameQueryParams(item)">{{ gameLabel(item) }}</a></td>
-              <td>{{ dateLabel(item.endedAt) }}</td>
-              <td>{{ moveNumberLabel(item) }}</td>
-              <td>{{ item.moveUci }}</td>
-              <td>{{ item.bestMoveUci ?? '-' }}</td>
-              <td>{{ swingLabel(item.swingCp) }}</td>
-              <td class="eval-cell">{{ evalLabel(item.evalBeforeUserCp) }} / {{ evalLabel(item.evalAfterTriggerUserCp) }} / {{ evalLabel(item.evalAfterReplyUserCp) }}</td>
               <td>
-                <div class="collection-actions">
-                  <a [routerLink]="['/games', item.importedGameId]" [queryParams]="gameQueryParams(item)">Show in game</a>
+                <span [class]="kindClass(item.kind)">{{ kindLabel(item.kind) }}</span>
+              </td>
+              <th scope="row" class="game-cell">
+                <a [routerLink]="['/games', item.importedGameId]" [queryParams]="gameQueryParams(item)">
+                  {{ gameLabel(item) }}
+                </a>
+              </th>
+              <td>{{ dateLabel(item.endedAt) }}</td>
+              <td class="numeric-cell">{{ moveNumberLabel(item) }}</td>
+              <td class="move-cell">{{ item.moveUci }}</td>
+              <td class="move-cell">{{ item.bestMoveUci ?? '—' }}</td>
+              <td class="numeric-cell">{{ swingLabel(item.swingCp) }}</td>
+              <td class="numeric-cell">{{ evalLabel(item.evalBeforeUserCp) }}</td>
+              <td class="numeric-cell">{{ evalLabel(item.evalAfterTriggerUserCp) }}</td>
+              <td class="numeric-cell">{{ evalLabel(item.evalAfterReplyUserCp) }}</td>
+              <td>
+                <div class="row-actions">
+                  <a [routerLink]="['/games', item.importedGameId]" [queryParams]="gameQueryParams(item)">
+                    Show in game
+                  </a>
                   @if (trainingRoute(item); as route) {
                     <a [routerLink]="[route]" [queryParams]="{ detectionId: item.id }">Train this</a>
                   }
@@ -75,6 +206,9 @@
       </table>
     </div>
   } @else if (store.loaded() && !store.loading() && !store.error()) {
-    <div class="empty-state">No persisted tactical findings match these filters.</div>
+    <div class="lab-empty">
+      <strong>No tactical findings match this view.</strong>
+      <span>Adjust the result filters, or run detection to refresh the persisted evidence.</span>
+    </div>
   }
-</section>
+</app-panel>
