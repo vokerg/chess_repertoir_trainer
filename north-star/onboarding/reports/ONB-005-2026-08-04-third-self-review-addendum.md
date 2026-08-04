@@ -84,6 +84,10 @@ It explicitly rejects:
 
 The final queue marks ONB-005 `DONE`, promotes ONB-022 to `READY`, retains ONB-023/024 as `PROPOSED`, and keeps orders 190/200/210 so administration support work does not pre-empt the existing product critical path.
 
+### Historical report metadata
+
+The primary report retains `Status: review candidate` as its creation-stage metadata. Completion authority is carried by the ONB-005 task record, `TASKS.md`, `STATUS.md`, this final addendum, the merged PR, and the closed completed issue. The retained historical header is not a live queue or policy state.
+
 ## External revalidation
 
 Current official Clerk documentation was rechecked during this review:
@@ -98,7 +102,7 @@ No external finding changed the architecture.
 
 The review checked for:
 
-- stale `READY`, `REVIEW`, or provisional ONB-005 references;
+- stale live `READY`, `REVIEW`, or provisional ONB-005 state outside explicitly historical report metadata;
 - ONB-005-owned questions left unresolved;
 - ONB-022 still blocked solely by completed ONB-005;
 - administrator tasks reordering P0 product work;
