@@ -1,6 +1,6 @@
 # ONB-022 — Build administrator authorization and read-only diagnostics foundation
 
-Status: PROPOSED
+Status: READY
 
 Priority: P1
 
@@ -133,4 +133,4 @@ Aggregate in PostgreSQL:
 
 ## Claim rule
 
-Do not claim until ONB-005 is DONE and `TASKS.md` promotes ONB-022 to READY. Before branching, re-inspect current authentication and ONB-019 activity. Do not commit directly to `main`.
+ONB-022 is READY after ONB-005 acceptance. Before claiming, re-inspect current authentication, deployment topology, active ONB-019 actor-key work, and any parallel administrator branch. Record the branch and exact exclusions on #272. Do not commit directly to `main`.
