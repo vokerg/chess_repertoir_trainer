@@ -496,18 +496,26 @@ async function selectCandidates(
   const retryFailed = input.retryFailed ?? input.lane === 'RETRY';
   const force = input.force ?? false;
   const stagePredicate = input.stage === 'INDEX'
-    ? Prisma.sql`
-        game."plyIndexedAt" IS NULL
-        AND (${retryFailed} OR game."plyIndexError" IS NULL)
-      `
-    : Prisma.sql`
-        game."plyIndexedAt" IS NOT NULL
-        AND (
-          ${force}
-          OR game."latestAnalysisStatus" IS NULL
-          OR (${retryFailed} AND game."latestAnalysisStatus" = 'FAILED')
-        )
-      `;
+    ? retryFailed
+      ? Prisma.sql`
+          game."plyIndexedAt" IS NULL
+          AND game."plyIndexError" IS NOT NULL
+        `
+      : Prisma.sql`
+          game."plyIndexedAt" IS NULL
+          AND game."plyIndexError" IS NULL
+        `
+    : force
+      ? Prisma.sql`game."plyIndexedAt" IS NOT NULL`
+      : retryFailed
+        ? Prisma.sql`
+            game."plyIndexedAt" IS NOT NULL
+            AND game."latestAnalysisStatus" = 'FAILED'
+          `
+        : Prisma.sql`
+            game."plyIndexedAt" IS NOT NULL
+            AND game."latestAnalysisStatus" IS NULL
+          `;
 
   return transaction.$queryRaw<CandidateRow[]>(Prisma.sql`
     SELECT game."id"
@@ -521,9 +529,9 @@ async function selectCandidates(
       AND (${stagePredicate})
       AND (
         NOT (target."scopeJson" ? 'rated')
-        OR target."scopeJson"->>'rated' = 'ANY'
-        OR (target."scopeJson"->>'rated' = 'RATED' AND game."rated" IS TRUE)
-        OR (target."scopeJson"->>'rated' = 'UNRATED' AND game."rated" IS FALSE)
+        OR UPPER(target."scopeJson"->>'rated') = 'ANY'
+        OR (UPPER(target."scopeJson"->>'rated') = 'RATED' AND game."rated" IS TRUE)
+        OR (UPPER(target."scopeJson"->>'rated') = 'UNRATED' AND game."rated" IS FALSE)
       )
       AND (
         NOT (target."scopeJson" ? 'speedCategories')
@@ -531,7 +539,7 @@ async function selectCandidates(
         OR EXISTS (
           SELECT 1
           FROM jsonb_array_elements_text(target."scopeJson"->'speedCategories') AS speed(value)
-          WHERE speed.value = game."speedCategory"
+          WHERE LOWER(BTRIM(speed.value)) = LOWER(BTRIM(game."speedCategory"))
         )
       )
       AND (
@@ -540,7 +548,14 @@ async function selectCandidates(
         OR EXISTS (
           SELECT 1
           FROM jsonb_array_elements_text(target."scopeJson"->'variants') AS variant(value)
-          WHERE variant.value = game."variant"
+          WHERE (
+            LOWER(BTRIM(variant.value)) IN ('standard', 'chess')
+            AND COALESCE(NULLIF(LOWER(BTRIM(game."variant")), ''), 'standard') IN ('standard', 'chess')
+          ) OR (
+            LOWER(BTRIM(variant.value)) NOT IN ('standard', 'chess')
+            AND game."variant" IS NOT NULL
+            AND LOWER(BTRIM(variant.value)) = LOWER(BTRIM(game."variant"))
+          )
         )
       )
       AND NOT EXISTS (
@@ -548,8 +563,13 @@ async function selectCandidates(
         FROM "JobTask" AS active_task
         JOIN "JobRun" AS active_job ON active_job."id" = active_task."jobRunId"
         WHERE active_task."importedGameId" = game."id"
-          AND active_task."status" IN ('QUEUED', 'RUNNING')
-          AND active_job."status" IN ('QUEUED', 'RUNNING')
+          AND (
+            active_task."workKey" IS NOT NULL
+            OR (
+              active_task."status" IN ('QUEUED', 'RUNNING')
+              AND active_job."status" IN ('QUEUED', 'RUNNING')
+            )
+          )
       )
     ORDER BY game."endedAt" DESC NULLS LAST, game."id" DESC
     FOR UPDATE OF game SKIP LOCKED
@@ -563,6 +583,12 @@ function validateCreateRunInput(input: CreatePreparationRunInput): void {
   }
   if (!Number.isSafeInteger(input.recipeVersion) || input.recipeVersion <= 0) {
     throw new Error('Preparation recipeVersion must be a positive integer.');
+  }
+  if (
+    input.retryGeneration !== undefined
+    && (!Number.isSafeInteger(input.retryGeneration) || input.retryGeneration < 0)
+  ) {
+    throw new Error('Preparation retryGeneration must be a non-negative integer.');
   }
   if (input.targets.length === 0) {
     throw new Error('A preparation run requires at least one target.');
@@ -583,6 +609,7 @@ function validateCreateRunInput(input: CreatePreparationRunInput): void {
     if (target.scopeHash.length !== 64) {
       throw new Error('Preparation target scopeHash must contain 64 characters.');
     }
+    validateScopeSnapshot(target.scope);
     if (target.requestedFrom >= target.requestedTo) {
       throw new Error('Preparation target range must be a non-empty half-open interval.');
     }
@@ -594,6 +621,36 @@ function validateCreateRunInput(input: CreatePreparationRunInput): void {
     }
     accountIds.add(target.accountId);
     ordinals.add(target.ordinal);
+  }
+}
+
+function validateScopeSnapshot(scope: unknown): void {
+  if (!scope || typeof scope !== 'object' || Array.isArray(scope)) {
+    throw new Error('Preparation target scope must be an object.');
+  }
+
+  const candidate = scope as {
+    rated?: unknown;
+    speedCategories?: unknown;
+    variants?: unknown;
+  };
+  if (
+    candidate.rated !== undefined
+    && !['ANY', 'RATED', 'UNRATED'].includes(String(candidate.rated).toUpperCase())
+  ) {
+    throw new Error('Preparation target rated scope is invalid.');
+  }
+  validateStringArray(candidate.speedCategories, 'speedCategories');
+  validateStringArray(candidate.variants, 'variants');
+}
+
+function validateStringArray(value: unknown, field: string): void {
+  if (value === undefined) return;
+  if (
+    !Array.isArray(value)
+    || value.some((item) => typeof item !== 'string' || item.trim().length === 0)
+  ) {
+    throw new Error(`Preparation target ${field} must contain non-empty strings.`);
   }
 }
 
