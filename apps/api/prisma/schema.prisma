@@ -27,6 +27,7 @@ model AppUser {
   importedGameAiReviews           ImportedGameAiReview[]
   importRuns                      ImportRun[]
   jobRuns                         JobRun[]
+  dataPreparationRuns             DataPreparationRun[]
   tacticalDetectionRuns           TacticalDetectionRun[]
   tacticalDetections              TacticalDetection[]
   tacticalDetectionProcessedGames TacticalDetectionProcessedGame[]
@@ -44,24 +45,25 @@ model AppUser {
 }
 
 model ExternalAccount {
-  id                     Int                 @id @default(autoincrement())
+  id                     Int                     @id @default(autoincrement())
   userId                 Int
-  user                   AppUser             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider               String
   username               String
   displayName            String?
   providerUserId         String?
-  isActive               Boolean             @default(true)
+  isActive               Boolean                 @default(true)
   lastSyncAt             DateTime?
   syncCursorTime         DateTime?
   lastSyncRunId          Int?
   importedGames          ImportedGame[]
   importRuns             ImportRun[]
+  dataPreparationTargets DataPreparationTarget[]
   ratingStats            AccountRatingStats?
   lichessConnections     LichessConnection[]
-  defaultProgressForUser AppUser?            @relation("DefaultProgressAccount")
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
+  defaultProgressForUser AppUser?                @relation("DefaultProgressAccount")
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
   @@unique([userId, provider, username])
   @@index([userId])
@@ -244,6 +246,7 @@ model ImportedGame {
   @@unique([accountId, providerGameId])
   @@index([userId, endedAt])
   @@index([accountId, endedAt])
+  @@index([accountId, endedAt, id])
   @@index([userId, latestAnalysisStatus, endedAt])
 }
 
@@ -388,44 +391,138 @@ model ImportedGamePly {
 }
 
 model ImportRun {
-  id            Int             @id @default(autoincrement())
-  userId        Int
-  user          AppUser         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId     Int
-  account       ExternalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  provider      String
-  status        String
-  syncSince     DateTime?
-  syncUntil     DateTime?
-  gamesSeen     Int             @default(0)
-  gamesImported Int             @default(0)
-  gamesUpdated  Int             @default(0)
-  gamesSkipped  Int             @default(0)
-  gamesFailed   Int             @default(0)
-  error         String?
-  startedAt     DateTime        @default(now())
-  completedAt   DateTime?
+  id                     Int                     @id @default(autoincrement())
+  userId                 Int
+  user                   AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId              Int
+  account                ExternalAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider               String
+  status                 String
+  syncSince               DateTime?
+  syncUntil               DateTime?
+  gamesSeen               Int                     @default(0)
+  gamesImported           Int                     @default(0)
+  gamesUpdated            Int                     @default(0)
+  gamesSkipped            Int                     @default(0)
+  gamesFailed             Int                     @default(0)
+  error                   String?
+  startedAt               DateTime                @default(now())
+  completedAt             DateTime?
+  dataPreparationTargets  DataPreparationTarget[]
 
   @@index([accountId, startedAt])
   @@index([userId, startedAt])
 }
 
+model DataPreparationRun {
+  id                  Int                     @id @default(autoincrement())
+  userId              Int
+  user                AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose             String
+  status              String
+  recipeVersion       Int
+  recipeJson          Json
+  retryOfRunId        Int?
+  retryOfRun          DataPreparationRun?     @relation("DataPreparationRunRetries", fields: [retryOfRunId], references: [id], onDelete: SetNull)
+  retries             DataPreparationRun[]    @relation("DataPreparationRunRetries")
+  retryGeneration     Int                     @default(0)
+  attentionCode       String?
+  attentionDetail     String?
+  reconcileAfter      DateTime?
+  firstImportedAt     DateTime?
+  firstIndexedAt      DateTime?
+  firstAnalysedAt     DateTime?
+  coreReadyAt         DateTime?
+  analysisCompletedAt DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  targets             DataPreparationTarget[]
+  batches             DataPreparationBatch[]
+
+  // The one-non-terminal-run invariant is a PostgreSQL partial unique index in the migration.
+  @@index([userId, status, updatedAt])
+  @@index([status, reconcileAfter])
+}
+
+model DataPreparationTarget {
+  id                  Int                 @id @default(autoincrement())
+  preparationRunId    Int
+  preparationRun      DataPreparationRun  @relation(fields: [preparationRunId], references: [id], onDelete: Cascade)
+  accountId           Int?
+  account             ExternalAccount?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  accountProvider     String
+  accountUsername     String
+  ordinal             Int
+  scopeVersion        Int
+  scopeHash           String              @db.VarChar(64)
+  scopeJson           Json
+  requestedFrom       DateTime
+  requestedTo         DateTime
+  currentImportRunId  Int?
+  currentImportRun    ImportRun?           @relation(fields: [currentImportRunId], references: [id], onDelete: SetNull)
+  firstImportedAt     DateTime?
+  firstIndexedAt      DateTime?
+  firstAnalysedAt     DateTime?
+  coreReadyAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  batches             DataPreparationBatch[]
+
+  @@unique([preparationRunId, accountId])
+  @@unique([preparationRunId, ordinal])
+  @@index([accountId])
+  @@index([currentImportRunId])
+}
+
+model DataPreparationBatch {
+  id                 Int                    @id @default(autoincrement())
+  preparationRunId   Int
+  preparationRun     DataPreparationRun     @relation(fields: [preparationRunId], references: [id], onDelete: Cascade)
+  targetId           Int
+  target             DataPreparationTarget  @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  stage              String
+  lane               String
+  ordinal            Int
+  status             String
+  plannedLimit       Int
+  jobRunId           Int?                   @unique
+  jobRun             JobRun?                @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+  totalTasks         Int
+  completedTasks     Int                    @default(0)
+  skippedTasks       Int                    @default(0)
+  failedTasks        Int                    @default(0)
+  cancelledTasks     Int                    @default(0)
+  startedAt          DateTime?
+  firstSettledAt     DateTime?
+  settledAt          DateTime?
+  error              String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  // The one-non-terminal-batch-per-stage invariant is a PostgreSQL partial unique index.
+  @@unique([preparationRunId, ordinal])
+  @@index([preparationRunId, stage, status])
+  @@index([targetId, stage, createdAt])
+}
+
 model JobRun {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind        String
-  source      String
-  priority    Int
-  status      String
-  totalTasks  Int
-  force       Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  startedAt   DateTime?
-  completedAt DateTime?
-  dismissedAt DateTime?
-  tasks       JobTask[]
+  id                   Int                   @id @default(autoincrement())
+  userId               Int
+  user                 AppUser               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind                 String
+  source               String
+  priority             Int
+  status               String
+  totalTasks           Int
+  force                Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  startedAt            DateTime?
+  completedAt          DateTime?
+  dismissedAt          DateTime?
+  tasks                JobTask[]
+  dataPreparationBatch DataPreparationBatch?
 
   @@index([status, priority, updatedAt])
   @@index([userId, createdAt])
