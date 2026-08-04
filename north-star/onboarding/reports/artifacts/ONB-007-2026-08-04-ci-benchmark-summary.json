@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-04T04:25:11.627Z",
+  "source": {
+    "workflowRunId": 30877363202,
+    "workflowRunNumber": 1905,
+    "workflowTriggerHeadSha": "3e006513f131688bef30c9b41f43e1e351b28a6a",
+    "benchmarkSourceHeadSha": "1b6b8307102b05e6162a63eaa5f1dcc0b2bb743f",
+    "artifactId": 8880111972,
+    "artifactDigest": "sha256:1373fffd91323a28b5cf96f8b6c71776b456b5df6350f56a3eb342162e6783d2",
+    "harness": "apps/api/benchmarks/onboarding-throughput-safe.mjs",
+    "supersedesProviderTimingIn": "ONB-007-2026-08-03-ci-benchmark-summary.json"
+  },
+  "environment": {
+    "node": "v22.23.1",
+    "platform": "linux",
+    "architecture": "x64",
+    "cpuModel": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpuCount": 4,
+    "totalMemoryBytes": 16770756608,
+    "database": "fresh local disposable PostgreSQL 16 service on the GitHub Actions runner",
+    "engine": "stockfish npm WASM worker",
+    "analysisDepth": 12,
+    "analysisMultipv": 1,
+    "firstImportObserverPollMs": 2,
+    "benchmarkWorkerPollMs": 5,
+    "workerObserverPollMs": 5
+  },
+  "corrections": [
+    "Provider total timing now starts before the sync service is invoked rather than after its promise is created.",
+    "The first-commit observer handles both sync fulfillment and rejection without producing a detached rejected promise.",
+    "The first-commit observer performs a final database observation after sync settlement.",
+    "Unexpected network requests are blocked outside the explicit synthetic provider stubs.",
+    "Worker-wave output records benchmark poll and observer intervals and that the job was queued before worker startup.",
+    "The disposable database name requires a ci, test, or benchmark token rather than an arbitrary substring."
+  ],
+  "keyMeasurements": {
+    "syntheticProviderPersistence": {
+      "lichess50": {
+        "samples": 5,
+        "totalP50Ms": 99.269,
+        "totalP90Ms": 99.902,
+        "firstCommittedGameP50Ms": 6.817,
+        "firstCommittedGameP90Ms": 7.341
+      },
+      "lichess200": {
+        "samples": 5,
+        "totalP50Ms": 353.019,
+        "totalP90Ms": 362.177,
+        "firstCommittedGameP50Ms": 6.819,
+        "firstCommittedGameP90Ms": 7.644
+      },
+      "chessCom50": {
+        "samples": 5,
+        "totalP50Ms": 96.0,
+        "totalP90Ms": 106.834,
+        "firstCommittedGameP50Ms": 6.946,
+        "firstCommittedGameP90Ms": 11.309
+      },
+      "chessCom200": {
+        "samples": 5,
+        "totalP50Ms": 347.243,
+        "totalP90Ms": 351.189,
+        "firstCommittedGameP50Ms": 7.726,
+        "firstCommittedGameP90Ms": 9.662
+      }
+    },
+    "jobAdmission": {
+      "50TasksP50Ms": 5.841,
+      "50TasksP90Ms": 6.485,
+      "200TasksP50Ms": 13.315,
+      "200TasksP90Ms": 14.933
+    },
+    "directIndexing": {
+      "short16PlyP50MsPerGame": 16.956,
+      "short16PlyP90MsPerGame": 21.959,
+      "medium40PlyP50MsPerGame": 24.454,
+      "medium40PlyP90MsPerGame": 25.886,
+      "long80PlyP50MsPerGame": 40.067,
+      "long80PlyP90MsPerGame": 42.71
+    },
+    "depth12Analysis": {
+      "freshEngineFirstPositionP50MsRange": [293.67, 293.919],
+      "freshEngineFirstPositionObservedMaxMsRange": [294.726, 301.409],
+      "short16PlyP50MsPerGame": 1067.933,
+      "short16PlyObservedMaxMsPerGame": 1227.99,
+      "medium40PlyP50MsPerGame": 1355.465,
+      "medium40PlyObservedMaxMsPerGame": 1721.675,
+      "medium40PlyProcessP50MsPerGame": 1672.276,
+      "medium40PlyProcessObservedMaxMsPerGame": 2649.783
+    },
+    "actualWorkerWaves": {
+      "index50MediumGames": {
+        "samples": 3,
+        "firstSettledP50Ms": 40.544,
+        "firstSettledObservedMaxMs": 45.295,
+        "waveTotalP50Ms": 1714.197,
+        "waveTotalObservedMaxMs": 1724.506
+      },
+      "analyse3ShortGamesDepth12": {
+        "samples": 3,
+        "firstSettledP50Ms": 1338.198,
+        "firstSettledObservedMaxMs": 1754.428,
+        "waveTotalP50Ms": 3100.33,
+        "waveTotalObservedMaxMs": 3608.761
+      }
+    }
+  },
+  "limitations": [
+    "Provider responses were synthetic and removed network latency, rate limits, retries, and archive/window variability.",
+    "PostgreSQL was local to the CI runner rather than Neon.",
+    "The engine was WASM rather than the documented local-binary Render worker.",
+    "First-import timing was observed with a 2 ms database poll, adding observer latency and local database load.",
+    "Worker-wave timing began after the job was queued and immediately started an in-process worker; idle polling, deployment wake, and external queue delay were excluded.",
+    "Three-sample depth-12 and worker-wave p90 values equal the observed maximum and are not stable production percentiles.",
+    "The preparation parent and reconciler are not implemented, so complete onboarding duration was not measured."
+  ]
+}
