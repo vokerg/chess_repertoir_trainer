@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import {
   adminErrorResponseSchema,
   adminMeResponseSchema,
@@ -26,6 +27,11 @@ export interface AdminModuleOptions {
   requestBudget: AdminRequestBudget;
   diagnosticsService?: ReturnType<typeof createAdminDiagnosticsService>;
 }
+
+const adminListBadRequestResponseSchema = z.union([
+  validationErrorResponseSchema,
+  adminErrorResponseSchema,
+]);
 
 function forbidden() {
   return { message: 'Forbidden', code: 'ADMIN_FORBIDDEN' as const };
@@ -147,7 +153,7 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
       querystring: adminUserListQuerySchema,
       response: {
         200: adminUserListResponseSchema,
-        400: validationErrorResponseSchema,
+        400: adminListBadRequestResponseSchema,
         401: unauthorizedResponseSchema,
         403: adminErrorResponseSchema,
         429: adminErrorResponseSchema,
