@@ -3,12 +3,14 @@ import { readFile } from 'node:fs/promises';
 import { buildApp } from '../../dist/app.js';
 import {
   loadAdminAuthConfig,
+  validateAdminAuthConfig,
 } from '../../dist/modules/admin/admin-auth.config.js';
 import {
   AdminUserNotFoundError,
 } from '../../dist/modules/admin/admin.errors.js';
 
 const originalEnv = {
+  NODE_ENV: process.env.NODE_ENV,
   ADMIN_AUTH_MODE: process.env.ADMIN_AUTH_MODE,
   ADMIN_CLERK_SUBJECT_ALLOWLIST: process.env.ADMIN_CLERK_SUBJECT_ALLOWLIST,
   ADMIN_ACTOR_KEY_SECRET: process.env.ADMIN_ACTOR_KEY_SECRET,
@@ -43,6 +45,20 @@ try {
       authorizedParties: ['https://app.example.test'],
     }),
     /at least 32/,
+  );
+
+  process.env.NODE_ENV = 'production';
+  assert.throws(
+    () => validateAdminAuthConfig(
+      { mode: 'dev-single-user', userId: 1 },
+      {
+        mode: 'test',
+        userIds: new Set([1]),
+        actorKeySecret: new Uint8Array(32).fill(1),
+        actorKeyVersion: 1,
+      },
+    ),
+    /not allowed when NODE_ENV=production/,
   );
 } finally {
   for (const [key, value] of Object.entries(originalEnv)) {
