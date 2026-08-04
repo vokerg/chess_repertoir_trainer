@@ -15,10 +15,8 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | REVIEW | Design administrator authentication, diagnostics, and action model | Research | PR #275; consumes ONB-004 mutation/audit and ONB-007 diagnostics contracts |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; consumes ONB-004 shared-retention and ONB-007 operation-budget boundaries; coordinates ONB-005 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
-| 76 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | PROPOSED | Build administrator authorization and read-only diagnostics foundation | Implementation | ONB-005; consumes ONB-007 warnings; coordinates actor-key boundary with ONB-019 |
 | 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | READY | Persist preparation execution boundary and bounded child-job batches | Implementation | ONB-003 complete; consumes ONB-007 defaults; coordinate Prisma/schema edits with ONB-011 and ONB-019 before implementation |
 | 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | PROPOSED | Implement progressive preparation reconciliation and control | Implementation | ONB-003/007/017; ONB-011/012/015 |
-| 79 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | PROPOSED | Build administrator diagnostics Angular feature | Implementation | ONB-005/022; Visual Transformation coordination |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001/007; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
@@ -30,7 +28,9 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit/actor policy with ONB-005/022 |
 | 170 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) | P0 | PROPOSED | Implement account and imported-game destructive lifecycle coordinator | Implementation | ONB-004/007/019; ONB-011/012/015/017/018; ONB-005 before admin exposure |
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; ONB-005; mobile offline sync contracts |
-| 185 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-005/022/023; ONB-019 plus applicable ONB-020/021; ONB-006 for cleanup exposure |
+| 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | PROPOSED | Build administrator authorization and read-only diagnostics foundation | Implementation | ONB-005; consumes ONB-007 warnings; coordinates actor-key boundary with ONB-019 |
+| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | PROPOSED | Build administrator diagnostics Angular feature | Implementation | ONB-005/022; Visual Transformation coordination |
+| 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-005/022/023; ONB-019 plus applicable ONB-020/021; ONB-006 for cleanup exposure |
 
 ## Completed planning
 
@@ -62,8 +62,8 @@ ONB-005 defines:
 - a lazy direct-link Angular route with no required normal-navigation item;
 - signed `fva` plus one-use `reverification_id` for destructive administrator execution, with execution disabled until proven;
 - configurable 30-day read-access log and 365-day mutation-audit defaults plus HMAC key-version retention;
-- implementation tasks ONB-022/#272, ONB-023/#273, and ONB-024/#274;
-- report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and self-review addendum.
+- implementation tasks ONB-022/#272, ONB-023/#273, and ONB-024/#274 appended after the existing planned backlog so administration support work does not pre-empt the product critical path;
+- report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and self-review addenda.
 
 ONB-005 remains REVIEW until PR #275 validation and acceptance. Its implementation tasks remain PROPOSED.
 
