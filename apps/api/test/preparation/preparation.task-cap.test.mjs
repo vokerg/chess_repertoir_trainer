@@ -117,8 +117,8 @@ async function createGames(owner, count) {
         providerGameId: `preparation-task-cap-${owner.accountId}-${index}-${suffix}`,
         pgn: '1. e4 e5',
         rated: true,
-        variant: 'STANDARD',
-        speedCategory: 'BLITZ',
+        variant: 'standard',
+        speedCategory: 'blitz',
         endedAt: new Date(Date.UTC(2026, 0, 1, 0, index, 0)),
       },
     });
