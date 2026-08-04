@@ -52,7 +52,7 @@ try {
       recipe: {},
       targets: [targetInput(primary.accountId, 'b')],
     }),
-    /unique|constraint/i,
+    (error) => error?.meta?.code === '23505',
     'the partial unique index rejects a second non-terminal run for one user',
   );
 
