@@ -32,37 +32,37 @@ export function readPreparationConfig(
 ): PreparationConfig {
   return {
     firstIndexBatchSize: positiveInteger(
-      env.PREPARATION_FIRST_INDEX_BATCH_SIZE,
+      env['PREPARATION_FIRST_INDEX_BATCH_SIZE'],
       DEFAULT_PREPARATION_CONFIG.firstIndexBatchSize,
       'PREPARATION_FIRST_INDEX_BATCH_SIZE',
     ),
     indexContinuationBatchSize: positiveInteger(
-      env.PREPARATION_INDEX_CONTINUATION_BATCH_SIZE,
+      env['PREPARATION_INDEX_CONTINUATION_BATCH_SIZE'],
       DEFAULT_PREPARATION_CONFIG.indexContinuationBatchSize,
       'PREPARATION_INDEX_CONTINUATION_BATCH_SIZE',
     ),
     firstAnalysisBatchSize: positiveInteger(
-      env.PREPARATION_FIRST_ANALYSIS_BATCH_SIZE,
+      env['PREPARATION_FIRST_ANALYSIS_BATCH_SIZE'],
       DEFAULT_PREPARATION_CONFIG.firstAnalysisBatchSize,
       'PREPARATION_FIRST_ANALYSIS_BATCH_SIZE',
     ),
     analysisTailBatchSize: positiveInteger(
-      env.PREPARATION_ANALYSIS_TAIL_BATCH_SIZE,
+      env['PREPARATION_ANALYSIS_TAIL_BATCH_SIZE'],
       DEFAULT_PREPARATION_CONFIG.analysisTailBatchSize,
       'PREPARATION_ANALYSIS_TAIL_BATCH_SIZE',
     ),
     maxNonTerminalBatches: positiveInteger(
-      env.PREPARATION_MAX_NON_TERMINAL_BATCHES,
+      env['PREPARATION_MAX_NON_TERMINAL_BATCHES'],
       DEFAULT_PREPARATION_CONFIG.maxNonTerminalBatches,
       'PREPARATION_MAX_NON_TERMINAL_BATCHES',
     ),
     maxQueuedTasks: positiveInteger(
-      env.PREPARATION_MAX_QUEUED_TASKS,
+      env['PREPARATION_MAX_QUEUED_TASKS'],
       DEFAULT_PREPARATION_CONFIG.maxQueuedTasks,
       'PREPARATION_MAX_QUEUED_TASKS',
     ),
     maxQueuedAnalysisTasks: positiveInteger(
-      env.PREPARATION_MAX_QUEUED_ANALYSIS_TASKS,
+      env['PREPARATION_MAX_QUEUED_ANALYSIS_TASKS'],
       DEFAULT_PREPARATION_CONFIG.maxQueuedAnalysisTasks,
       'PREPARATION_MAX_QUEUED_ANALYSIS_TASKS',
     ),
