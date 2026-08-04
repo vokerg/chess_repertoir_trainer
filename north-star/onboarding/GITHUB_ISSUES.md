@@ -37,6 +37,9 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) |
 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) |
 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) |
+| ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) |
+
+ONB-025 / #276 remains reserved by open PR #279; ONB-026 is the next free immutable identifier.
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -134,6 +137,12 @@ ONB-005 allocated:
 
 ONB-005 completed through squash-merged PR #275 after three adversarial self-review rounds. ONB-022 is `READY`. ONB-023 depends on ONB-022. ONB-024 remains behind the applicable lifecycle services, proven signed reverification, and does not enable administrator whole-user deletion by default.
 
+ONB-006 allocated:
+
+- ONB-026 / #280 — dedicated candidate/run persistence, database statement-trigger grace reset, 30-day first-observed grace, input-page-bounded reconcile/observe/dry-run/delete phases, plies-first maintenance locking, observational dry-run/status/control contracts, canonical service plus manual command, and disabled-by-default unscheduled execution.
+
+ONB-026 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 may later expose the canonical cleanup service; it must not own parallel deletion SQL or worker phases.
+
 ONB-007 supplies operational defaults and validation gates to existing owners rather than allocating a new implementation task:
 
 - ONB-008 / #193 and ONB-010 / #195 — exact counts, fixed-denominator percentages, milestones, checked-empty/rate-limit/stall states, and no public ETA;
@@ -144,11 +153,12 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 - ONB-017 / #253 — 50/3/10 preparation waves and four-batch/200-task/40-analysis global caps;
 - ONB-018 / #254 — one-second active/five-second idle reconciliation, three-indexed first-analysis threshold, one-game fallback, and stall codes;
 - ONB-022 / #272 — queue age, heartbeat, reconcile lag, rate-limit, and stage-duration diagnostics;
-- ONB-006 / #153, ONB-020 / #260, and ONB-021 / #261 — operation-specific transaction/lock budgets beginning at no more than 500 Position candidates or 100 game IDs per transaction.
+- ONB-026 / #280 — at most 500 input Position/candidate rows inspected per transaction initially, transaction p90 below one second, lock-wait p90 below 250 ms, and measured reduction before release if budgets are breached;
+- ONB-020 / #260 and ONB-021 / #261 — operation-specific transaction/lock budgets beginning at no more than 100 game IDs per transaction.
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `DONE` through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`; issue #154 is closed completed. ONB-005 is `DONE` through squash-merged PR #275; issue #152 is closed completed. The next deterministic READY research task is ONB-006 / #153. ONB-017 and ONB-022 are additional READY implementation work after their required collision reviews. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 and ONB-023/024 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281 and issue #153 closes completed. ONB-017 remains `IN_PROGRESS` after PR #282 merged its execution-boundary slice; issue #253 remains open. The next unclaimed `READY` task is ONB-022 / #272 after its required collision review. ONB-026 and the other dependency-blocked implementation tasks remain `PROPOSED`; ONB-025 / #276 remains reserved by open PR #279. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 
