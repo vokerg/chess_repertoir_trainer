@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 Statuses:
 
@@ -51,7 +51,7 @@ No client-side bulk import, indexing, analysis, lifecycle deletion, or cleanup.
 
 Status: `LOCKED`
 
-Show persisted stage state and exact counts. Percentages require a fixed denominator. ETA and “almost done” wording are disabled until ONB-007 approves an evidence-based policy.
+Show persisted stage state, milestones, and exact counts. A percentage requires a fixed denominator for that stage instance. Do not show one weighted overall preparation percentage while import can discover games. Public ETA and “almost done” wording remain disabled in the initial release; a later stage ETA requires the ONB-007 telemetry eligibility contract.
 
 ### D-008 — No hardcoded admin credentials
 
@@ -303,7 +303,7 @@ ONB-010 implements semantic, keyboard, focus, reduced-motion, zoom, progress, an
 
 Status: `LOCKED`
 
-Unlock one bounded first-analysis batch from current successfully indexed, unanalysed games before the lower-priority analysis tail. Select newest-first within the target. Start when the configured minimum indexed evidence exists, with a small-account fallback when no more normal index candidates exist. ONB-007 sets sizes/budgets; do not hardcode a calendar month or random sample.
+Unlock a three-game first-analysis batch from current successfully indexed, unanalysed games before the lower-priority analysis tail. Select newest-first within the target. Start when three indexed games exist, with a one-game fallback after normal index/import candidates are quiescent for a smaller account. Keep the sizes configurable.
 
 ### D-055 — Preparation uses targets and retained child-job batches
 
@@ -321,13 +321,13 @@ Create a separate immutable `INDEX_GAMES` or `ANALYSE_GAMES` `JobRun` for each b
 
 Status: `LOCKED`
 
-Permit at most one non-terminal index batch and one non-terminal analysis batch per preparation run. Also enforce configurable global limits on non-terminal onboarding batches and queued onboarding tasks. ONB-007 sets numeric defaults.
+Permit at most one non-terminal index batch and one non-terminal analysis batch per preparation run. Initial global limits are four non-terminal onboarding batches, 200 queued onboarding tasks, and 40 queued onboarding analysis tasks. Keep the limits configurable and increase only after queue-age/direct-user evidence.
 
 ### D-058 — Preparation scheduling remains below direct-user work
 
 Status: `LOCKED`
 
-Use existing `JobRun.source = ONBOARDING`. Initial lane priorities are `FIRST_INDEX = 200`, `FIRST_ANALYSIS = 190`, `INDEX_CONTINUATION = 180`, and `ANALYSIS_TAIL = 100`; retries retain their lane priority. Every preparation lane remains below the current lowest direct-user priority of 250. ONB-007 may tune numbers only while preserving this ordering and floor.
+Use existing `JobRun.source = ONBOARDING`. Initial lane priorities are `FIRST_INDEX = 200`, `FIRST_ANALYSIS = 190`, `INDEX_CONTINUATION = 180`, and `ANALYSIS_TAIL = 100`; retries retain their lane priority. Every preparation lane remains below the current lowest direct-user priority of 250. Preserve this ordering and floor.
 
 ### D-059 — Indexing pipelines from committed import rows
 
@@ -351,7 +351,7 @@ Pause stops new admission and becomes `PAUSED` only after current import/child w
 
 Status: `LOCKED`
 
-Run a bounded PostgreSQL reconcile loop in the existing worker deployment. It may claim/lock a parent only for short idempotent state transitions and child creation. Never hold a reconcile transaction across provider I/O, PGN processing, or Stockfish execution.
+Run a bounded PostgreSQL reconcile loop in the existing worker deployment. Initial cadence is one second for active due work and five seconds for idle scanning, with persisted immediate wake hints after import commits, child settlement, and controls. Never hold a reconcile transaction across provider I/O, PGN processing, or Stockfish execution.
 
 ### D-063 — Expansion is account-round-robin
 
@@ -437,13 +437,49 @@ Status: `LOCKED`
 
 ONB-005 may authorize administrator actors and UI, but it must call the same preview/fence/drain/execution/audit application service. Do not create administrator-only raw delete SQL or a second destructive state machine.
 
-## Provisional
+### D-077 — Preparation wave sizes are measured configuration
 
-### D-040 — Preparation wave sizes are measured configuration
+Status: `LOCKED`
 
-Status: `PROVISIONAL`
+Initial index and index-continuation waves are 50 games, first analysis is three games, and analysis tail is 10 games. Keep all values configurable. The existing worker slice of 25 remains a scheduler fairness/preemption boundary and is not a product wave.
 
-Use approximately 50 games only as a research fixture/default candidate. ONB-007 finalizes index, first-analysis, and analysis-tail sizes, first-analysis minimum evidence, reconcile cadence, and global admission limits. The visible wave size remains independent from `JOB_WORKER_SLICE_SIZE`.
+### D-078 — Provider execution is serial and bounded initially
+
+Status: `LOCKED`
+
+Start with one active account-import executor, one provider request at a time, 14-day replayable Lichess windows, Chess.com calendar-month archive units, and duplicate-safe database writes of at most 100 normalized games per transaction. These are implementation-start defaults, not public timing promises.
+
+### D-079 — Import and preparation loops use measured initial timing
+
+Status: `LOCKED`
+
+Start import polling/heartbeat/stale/recovery at one second, 15 seconds, two minutes, and 30 seconds. Start active/idle preparation reconciliation at one second and five seconds, with a 15-second due-warning threshold and persisted immediate wake hints. Controlled-clock tests and telemetry remain authoritative.
+
+### D-080 — Public ETA is disabled until production telemetry qualifies it
+
+Status: `LOCKED`
+
+A future stage ETA requires a fixed denominator, matching provider/engine/depth/MultiPV/worker/database/game-length fingerprint, at least 30 recent successful samples across five runs and three account scopes, a 14-day-or-newer sample window, p90 no more than twice p50, failure/timeout below 5%, and no active rate limit, stall, pause, or material higher-priority preemption. Configuration or deployment changes invalidate the sample set.
+
+### D-081 — First-value and stall budgets are internal controls
+
+Status: `LOCKED`
+
+Use internal p90 acceptance/alert budgets for durable command acceptance, reconciliation, first imported/indexed/analysed evidence, bounded waves, queue age, and no-progress detection. A budget breach raises telemetry/operational attention and does not fabricate UI progress or automatically cancel durable user work.
+
+### D-082 — Capacity and engine changes require sustained evidence
+
+Status: `LOCKED`
+
+Keep one deployment and the current fresh-engine-per-task design initially. Split provider execution, add imported-game workers, or reuse Stockfish only after sustained queue-age/direct-user-latency/CPU evidence and dedicated fencing, cancellation, state-isolation, crash-recovery, connection-capacity, and memory tests.
+
+## Operational and administrative decisions
+
+### D-040 — Preparation wave sizing finalized
+
+Status: `LOCKED`
+
+Use the D-077 defaults and D-057 global caps. Keep the visible wave independent from `JOB_WORKER_SLICE_SIZE`, and change values only through measured configuration review.
 
 ### D-042 — Admin identity
 
@@ -457,17 +493,17 @@ Status: `PROVISIONAL`
 
 Use a lazy route in the existing web app, hidden and server-authorized, rather than a separate deployment.
 
-### D-044 — Import operational sizing
+### D-044 — Import operational sizing finalized
 
-Status: `PROVISIONAL`
+Status: `LOCKED`
 
-Use deterministic provider windows, bounded database batches, one global import claim, and exact counters initially. ONB-007 finalizes Lichess window duration, batch size, worker timing, backlog, scaling triggers, and any percentage/ETA policy.
+Use D-078/D-079 as initial operational defaults, plus exact counters, rate-limit/retry-at state, queue-age/stage-duration telemetry, and canary validation. Do not infer provider latency or public ETA from synthetic CI timings.
 
-### D-054 — Lichess-first speed language
+### D-054 — Provider-speed preference in onboarding
 
-Status: `PROVISIONAL`
+Status: `REJECTED`
 
-The provider-choice UI may prefer Lichess as the quickest first look only if ONB-007 measurements support that claim for the durable adapters. Provider choice remains user-controlled.
+Do not label Lichess or Chess.com as the quicker first look from synthetic/local benchmarks. Provider choice remains user-controlled. Reopen only with comparable production-like provider telemetry and reviewed copy.
 
 ## Rejected
 
@@ -680,6 +716,42 @@ Scenario snapshots may survive un-analysis/un-index as user training history, bu
 Status: `REJECTED`
 
 Administrator authorization may differ, but execution must reuse the canonical lifecycle operation and audit path.
+
+### D-135 — Public ETA from synthetic CI timing
+
+Status: `REJECTED`
+
+Do not convert local PostgreSQL, synthetic provider, or WASM CI timings into a production completion promise.
+
+### D-136 — Parallel provider requests by default
+
+Status: `REJECTED`
+
+Do not parallelize Lichess windows or Chess.com archives in the initial implementation. Serial provider access and explicit rate-limit handling are required.
+
+### D-137 — Symmetric 50-game analysis waves
+
+Status: `REJECTED`
+
+Do not choose analysis wave size merely to match the index wave. Analysis is materially more expensive; use the measured three-game first sample and 10-game tail.
+
+### D-138 — Scale workers before queue evidence
+
+Status: `REJECTED`
+
+Do not add deployments or replicas because a benchmark can run faster. Require sustained queue-age, direct-user latency, CPU, connection-capacity, and concurrency-safety evidence.
+
+### D-139 — Persistent engine reuse without isolation proof
+
+Status: `REJECTED`
+
+Do not reuse Stockfish across tasks until option/state leakage, cancellation, timeout, crash replacement, memory, and preemption behavior are validated.
+
+### D-140 — Run onboarding benchmark against a normal database
+
+Status: `REJECTED`
+
+The retained benchmark must refuse remote, non-disposable, or non-empty databases and must never call third-party providers.
 
 ## Open
 
