@@ -9,10 +9,21 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import authPlugin from './auth/auth.plugin';
-import type { AuthConfig } from './auth/auth.config';
+import { loadAuthConfig, type AuthConfig } from './auth/auth.config';
 import prisma from './prisma';
 import registerRoutes from './routes';
 import { ensureProductRouteSchema } from './routes/product-route-schema';
+import {
+  loadAdminAuthConfig,
+  validateAdminAuthConfig,
+  type AdminAuthConfig,
+} from './modules/admin/admin-auth.config';
+import { createAdminAuthorizationPolicy } from './modules/admin/admin-authorization.service';
+import {
+  UnenforcedAdminRequestBudget,
+  type AdminRequestBudget,
+} from './modules/admin/admin-request-budget';
+import { createAdminDiagnosticsService } from './modules/admin/admin-diagnostics.service';
 
 export interface PrismaLifecycle {
   $disconnect(): Promise<void>;
@@ -22,10 +33,17 @@ export interface BuildAppOptions {
   logger?: FastifyServerOptions['logger'];
   corsOrigin?: string;
   authConfig?: AuthConfig;
+  adminAuthConfig?: AdminAuthConfig;
+  adminRequestBudget?: AdminRequestBudget;
+  adminDiagnosticsService?: ReturnType<typeof createAdminDiagnosticsService>;
   prisma?: PrismaLifecycle;
 }
 
 export async function buildApp(options: BuildAppOptions = {}) {
+  const authConfig = options.authConfig ?? loadAuthConfig();
+  const adminAuthConfig = options.adminAuthConfig ?? loadAdminAuthConfig(authConfig);
+  validateAdminAuthConfig(authConfig, adminAuthConfig);
+
   const app = Fastify({ logger: options.logger ?? false });
 
   app.setValidatorCompiler(validatorCompiler);
@@ -64,8 +82,16 @@ export async function buildApp(options: BuildAppOptions = {}) {
   });
 
   app.get('/health', async () => ({ ok: true }));
-  await app.register(authPlugin, { authConfig: options.authConfig });
-  registerRoutes(app);
+  await app.register(authPlugin, { authConfig });
+  registerRoutes(app, {
+    admin: {
+      authorizationPolicy: createAdminAuthorizationPolicy(adminAuthConfig),
+      requestBudget: options.adminRequestBudget ?? UnenforcedAdminRequestBudget,
+      ...(options.adminDiagnosticsService
+        ? { diagnosticsService: options.adminDiagnosticsService }
+        : {}),
+    },
+  });
 
   await app.register(swaggerUi, {
     routePrefix: '/api/docs',
