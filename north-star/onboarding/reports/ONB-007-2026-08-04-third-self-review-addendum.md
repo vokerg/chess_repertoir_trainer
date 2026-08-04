@@ -123,7 +123,7 @@ The benchmark evidence taxonomy is tightened: current service/worker observation
 
 ## Validation
 
-The corrected benchmark step passed in CI #1905. The same workflow also passed lint, build, opening audits, architecture guardrails, and migrations before the benchmark. The full test suite result is recorded in the task and pull request after the workflow reaches terminal state.
+CI `30877363202` / #1905 passed lint, build, all opening audits, architecture guardrails, migrations, the corrected clean-build benchmark command, corrected benchmark artifact upload, and the full repository test suite.
 
 ## Files inspected in this review
 
