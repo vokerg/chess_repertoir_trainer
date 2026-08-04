@@ -111,7 +111,7 @@ try {
 
 for (const path of [
   '../../src/modules/admin/admin.routes.ts',
-  '../../../packages/contracts/src/admin/admin.schemas.ts',
+  '../../../../packages/contracts/src/admin/admin.schemas.ts',
 ]) {
   const source = await readFile(new URL(path, import.meta.url), 'utf8');
   assert.doesNotMatch(source, /\bemail\b|\busername\b|\bproviderUrl\b|\baccessToken\b|\bnormalizedFen\b|\bpgn\b/i);
