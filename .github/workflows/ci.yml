@@ -35,6 +35,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Upload ONB-007 source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: onb-007-source-snapshot
+          path: apps/api/benchmarks/onboarding-throughput-safe.mjs
+          if-no-files-found: error
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
