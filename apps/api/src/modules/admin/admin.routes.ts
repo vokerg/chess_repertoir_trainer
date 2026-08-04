@@ -1,4 +1,4 @@
-import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import {
   adminErrorResponseSchema,
   adminMeResponseSchema,
@@ -34,12 +34,12 @@ function requestBudgetExceeded() {
   return { message: 'Administrator request budget exceeded', code: 'ADMIN_REQUEST_BUDGET_EXCEEDED' as const };
 }
 
-const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, options) => {
+const adminModule: FastifyPluginAsync<AdminModuleOptions> = async (app, options) => {
   const service = options.diagnosticsService ?? createAdminDiagnosticsService();
 
   async function requirePrincipal(
-    request: Parameters<typeof options.authorizationPolicy.resolve>[0] extends never ? never : import('fastify').FastifyRequest,
-    reply: import('fastify').FastifyReply,
+    request: FastifyRequest,
+    reply: FastifyReply,
     operationId: string,
   ): Promise<AdminPrincipal | null> {
     if (!request.auth) {
@@ -81,7 +81,7 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
   }
 
   function logRead(
-    request: import('fastify').FastifyRequest,
+    request: FastifyRequest,
     principal: AdminPrincipal,
     operationId: string,
     startedAt: number,
@@ -157,7 +157,7 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
       const principal = await requirePrincipal(request, reply, 'listAdminUsers');
       if (!principal) return;
       try {
-        const response = await service.listUsers(request.query);
+        const response = await service.listUsers(adminUserListQuerySchema.parse(request.query));
         logRead(request, principal, 'listAdminUsers', startedAt, 'SUCCESS');
         return response;
       } catch (error) {
@@ -192,13 +192,14 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
       const startedAt = Date.now();
       const principal = await requirePrincipal(request, reply, 'getAdminUserDetail');
       if (!principal) return;
+      const params = adminUserParamsSchema.parse(request.params);
       try {
-        const response = await service.getUserDetail(request.params.userId);
-        logRead(request, principal, 'getAdminUserDetail', startedAt, 'SUCCESS', request.params.userId);
+        const response = await service.getUserDetail(params.userId);
+        logRead(request, principal, 'getAdminUserDetail', startedAt, 'SUCCESS', params.userId);
         return response;
       } catch (error) {
         if (error instanceof AdminUserNotFoundError) {
-          logRead(request, principal, 'getAdminUserDetail', startedAt, 'NOT_FOUND', request.params.userId);
+          logRead(request, principal, 'getAdminUserDetail', startedAt, 'NOT_FOUND', params.userId);
           reply.code(404);
           return { message: error.message, code: error.code };
         }
@@ -229,13 +230,15 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
       const startedAt = Date.now();
       const principal = await requirePrincipal(request, reply, 'getAdminUserWork');
       if (!principal) return;
+      const params = adminUserParamsSchema.parse(request.params);
+      const query = adminWorkQuerySchema.parse(request.query);
       try {
-        const response = await service.getUserWork(request.params.userId, request.query.limit);
-        logRead(request, principal, 'getAdminUserWork', startedAt, 'SUCCESS', request.params.userId);
+        const response = await service.getUserWork(params.userId, query.limit);
+        logRead(request, principal, 'getAdminUserWork', startedAt, 'SUCCESS', params.userId);
         return response;
       } catch (error) {
         if (error instanceof AdminUserNotFoundError) {
-          logRead(request, principal, 'getAdminUserWork', startedAt, 'NOT_FOUND', request.params.userId);
+          logRead(request, principal, 'getAdminUserWork', startedAt, 'NOT_FOUND', params.userId);
           reply.code(404);
           return { message: error.message, code: error.code };
         }
