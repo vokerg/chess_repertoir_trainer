@@ -34,6 +34,9 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) |
 | ONB-020 | [#260](https://github.com/vokerg/chess_repertoir_trainer/issues/260) |
 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) |
+| ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) |
+| ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) |
+| ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) |
 
 Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
@@ -123,6 +126,14 @@ ONB-004 allocated:
 
 ONB-004 also defines the administrator mutation boundary consumed by ONB-005, the retained shared-position boundary consumed by ONB-006, and the acknowledged import/preparation drain required from ONB-011/012/015/017/018.
 
+ONB-005 allocates:
+
+- ONB-022 / #272 — migration-free server-only administrator authorization, verified-session context, capabilities, and bounded read-only diagnostics;
+- ONB-023 / #273 — lazy direct-link Angular administrator diagnostics with server authority and no required static navigation entry;
+- ONB-024 / #274 — capability-gated preview/execute/status/audit adapters over ONB-019/020/021, with signed recent factor age and one-use reverification binding.
+
+ONB-022 remains `PROPOSED` until ONB-005 is accepted. ONB-023 depends on ONB-022. ONB-024 remains after the applicable lifecycle services and does not enable administrator whole-user deletion by default.
+
 ONB-007 supplies operational defaults and validation gates to existing owners rather than allocating a new implementation task:
 
 - ONB-008 / #193 and ONB-010 / #195 — exact counts, fixed-denominator percentages, milestones, checked-empty/rate-limit/stall states, and no public ETA;
@@ -132,12 +143,12 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 - ONB-014 / #202 — serial calendar-month Chess.com access, cache validators, 100-row writes, and a low-volume canary;
 - ONB-017 / #253 — 50/3/10 preparation waves and four-batch/200-task/40-analysis global caps;
 - ONB-018 / #254 — one-second active/five-second idle reconciliation, three-indexed first-analysis threshold, one-game fallback, and stall codes;
-- ONB-005 / #152 — queue age, heartbeat, reconcile lag, rate-limit, and stage-duration diagnostics;
+- ONB-005 / #152 and ONB-022 / #272 — queue age, heartbeat, reconcile lag, rate-limit, and stage-duration diagnostics;
 - ONB-006 / #153, ONB-020 / #260, and ONB-021 / #261 — operation-specific transaction/lock budgets beginning at no more than 500 Position candidates or 100 game IDs per transaction.
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `DONE` through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`; issue #154 is closed completed. The next deterministic READY research task is ONB-005 / #152. ONB-006 and ONB-017 are additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `DONE` through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`; issue #154 is closed completed. ONB-005 / #152 is in review through PR #275. ONB-006 and ONB-017 remain additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-024 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 
