@@ -26,12 +26,20 @@ try {
   });
   assert.equal(users.length, 105);
 
-  await prisma.externalAccount.create({
+  const account = await prisma.externalAccount.create({
     data: {
       userId: users[0].id,
       provider: 'lichess',
       username: `admin-query-${suffix}`,
       isActive: true,
+    },
+  });
+  await prisma.importRun.create({
+    data: {
+      userId: users[0].id,
+      accountId: account.id,
+      provider: account.provider,
+      status: 'RUNNING',
     },
   });
 
@@ -44,6 +52,7 @@ try {
   assert.equal(first.rows[0].id, users[0].id);
   assert.equal(first.rows[0].accountCount, 1);
   assert.equal(first.rows[0].activeAccountCount, 1);
+  assert.equal(first.rows[0].activeWorkCount, 1, 'active import runs contribute to active work');
   assert.equal(first.hasMore, true);
 
   const second = await AdminDiagnosticsRepository.listUsers({
