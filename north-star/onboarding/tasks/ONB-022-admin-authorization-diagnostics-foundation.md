@@ -1,6 +1,6 @@
 # ONB-022 — Build administrator authorization and read-only diagnostics foundation
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -12,7 +12,13 @@ GitHub issue: [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/27
 
 Target branch: `main`
 
-Suggested branch: `admin/onb-022-authorization-diagnostics`
+Claimed branch: `admin/onb-022-authorization-diagnostics`
+
+Pull request: [#284](https://github.com/vokerg/chess_repertoir_trainer/pull/284) (`DRAFT`)
+
+Claimed by: ChatGPT
+
+Claimed at: 2026-08-04
 
 ## Objective
 
@@ -24,6 +30,14 @@ Implement a migration-free server-only administrator authorization layer and bou
 - consume ONB-007 warning semantics;
 - coordinate actor-key domain and future audit handoff with ONB-019;
 - recheck current API deployment topology before selecting the request-budget implementation.
+
+## Claim-time coordination
+
+- Current authentication retains a minimal ownership `RequestAuth`; ONB-022 adds a separate normalized verified-session context and leaves normal user-owned authorization semantics unchanged.
+- No ONB-019 branch or pull request exists. ONB-022 owns only read-access actor/target HMAC domains and a replaceable policy interface; ONB-019 retains lifecycle persistence, tombstones, mutation audit, fences, and destructive behavior.
+- No parallel administrator implementation branch or pull request exists.
+- The hosted deployment documentation describes a Render API Web Service but does not guarantee one replica and the repository has no shared limiter. The initial `AdminRequestBudget` is therefore injectable but unenforced; strict bounds and telemetry ship without a `429` claim.
+- No Prisma migration, Angular change, mutation route, persisted audit/rate-limit state, Clerk Organizations rollout, impersonation, shared secret/email allowlist, raw-content browser, broker, or new service is included.
 
 ## Primary repository touch points
 
@@ -141,6 +155,8 @@ Aggregate in PostgreSQL:
 - request-budget/no-budget behavior tests for the verified topology;
 - full API/contracts build, lint, test, OpenAPI convergence, and architecture gates.
 
-## Claim rule
+## Completion
 
-ONB-022 is READY after ONB-005 acceptance. Before claiming, re-inspect current authentication, deployment topology, active ONB-019 actor-key work, and any parallel administrator branch. Record the branch and exact exclusions on #272. Do not commit directly to `main`.
+Review-ready: pending focused validation and self-review.
+
+Completed at: none.
