@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -137,7 +137,7 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `REVIEW` on PR #266. The next deterministic READY research task is ONB-005 / #152. ONB-006 and ONB-017 are additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `DONE` through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`; issue #154 is closed completed. The next deterministic READY research task is ONB-005 / #152. ONB-006 and ONB-017 are additional READY work; ONB-017's claimant must inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits before implementation. ONB-018 and ONB-008 through ONB-015 plus ONB-019 through ONB-021 remain `PROPOSED` until their dependency conditions in `TASKS.md` and task files are satisfied. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 

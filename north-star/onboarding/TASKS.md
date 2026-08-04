@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -11,7 +11,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 20 | ONB-002 | [#149](https://github.com/vokerg/chess_repertoir_trainer/issues/149) | P0 | DONE | Design bounded recent-first import and historical backfill | Research | Squash-merged through PR #204 |
 | 30 | ONB-003 | [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150) | P0 | DONE | Design progressive indexing and analysis orchestration | Research | Squash-merged through PR #256 as `d41f75c` |
 | 40 | ONB-004 | [#151](https://github.com/vokerg/chess_repertoir_trainer/issues/151) | P0 | DONE | Define safe purge, un-index, un-analyse, and user deletion invariants | Research | Squash-merged through PR #263 as `32db655` |
-| 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | REVIEW | Benchmark preparation throughput and define truthful progress semantics | Research | Report and reproducible CI evidence complete on PR #266; review/merge pending |
+| 50 | ONB-007 | [#154](https://github.com/vokerg/chess_repertoir_trainer/issues/154) | P0 | DONE | Benchmark preparation throughput and define truthful progress semantics | Research | Squash-merged through PR #266 as `d631382` after corrected benchmark evidence and three self-review rounds |
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | READY | Design administrator authentication, diagnostics, and action model | Research | ONB-000; consumes ONB-004 mutation/audit and ONB-007 diagnostics contracts |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | READY | Design database-only orphan shared-position cleanup | Research | ONB-000; consumes ONB-004 shared-retention and ONB-007 operation-budget boundaries; coordinates ONB-005 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
@@ -42,6 +42,8 @@ ONB-003 established progressive preparation orchestration through squash-merged 
 ONB-016 established the canonical lightweight experience blueprint through squash-merged PR #225 as `b485b9b2992e1152c1810c91d40cc5150d39284d`.
 
 ONB-004 established destructive lifecycle invariants through squash-merged PR #263 as `32db655a100ef1a55264b4d3739e2b7c38e72ee4` and allocated ONB-019/020/021.
+
+ONB-007 established throughput evidence, conservative preparation/import defaults, truthful progress semantics, and implementation validation gates through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
 
 ## ONB-002 completed delivery
 
@@ -94,12 +96,12 @@ ONB-004 defines:
 - reports `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md`, `reports/ONB-004-2026-08-02-self-review-addendum.md`, and `reports/ONB-004-2026-08-02-second-self-review-addendum.md`;
 - implementation tasks ONB-019/#259, ONB-020/#260, and ONB-021/#261.
 
-## ONB-007 review delivery
+## ONB-007 completed delivery
 
 ONB-007 defines and validates:
 
 - a safe disposable-database benchmark harness over current production services and the real child worker;
-- representative 10/50/200-game and 16/40/80-ply profiles;
+- synthetic 10/50/200-game scale profiles and deterministic legal 16/40/80-ply length profiles;
 - depth-12 WASM first-position, per-game, combined-process, and actual worker-wave measurements;
 - index/first-analysis/tail defaults of 50/3/10 games;
 - global preparation limits of four non-terminal batches, 200 queued tasks, and 40 queued analysis tasks;
@@ -109,10 +111,12 @@ ONB-007 defines and validates:
 - exact-count/fixed-denominator progress and no public ETA in the initial release;
 - future ETA telemetry eligibility gates, internal first-value budgets, stall thresholds, scaling triggers, and operation transaction budgets;
 - report `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md`;
-- evidence `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`;
+- original evidence `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`;
+- corrected provider-timing evidence `reports/artifacts/ONB-007-2026-08-04-ci-benchmark-summary.json`;
+- self-review addenda `reports/ONB-007-2026-08-03-self-review-addendum.md` and `reports/ONB-007-2026-08-04-third-self-review-addendum.md`;
 - reusable harness `apps/api/benchmarks/onboarding-throughput-safe.mjs`.
 
-Review acceptance and merge remain pending through PR #266.
+Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d77578bdf`.
 
 ## ONB-016 completed delivery
 
@@ -120,7 +124,7 @@ ONB-016 defines the route-based lightweight first-value experience, progressive 
 
 ## Deterministic next task
 
-ONB-007 / #154 is in review. The next claimable task by canonical order is ONB-005 / #152.
+ONB-007 / #154 is complete. The next claimable task by canonical order is ONB-005 / #152.
 
 Additional READY work after explicit collision review:
 
