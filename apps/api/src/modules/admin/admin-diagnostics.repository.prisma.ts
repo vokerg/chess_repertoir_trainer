@@ -148,10 +148,15 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
     const userIds = page.map((user) => user.id);
     if (userIds.length === 0) return { rows: [], hasMore };
 
-    const [activeAccountsRows, activeJobRows, activePreparationRows] = await Promise.all([
+    const [activeAccountsRows, activeImportRows, activeJobRows, activePreparationRows] = await Promise.all([
       prisma.externalAccount.groupBy({
         by: ['userId'],
         where: { userId: { in: userIds }, isActive: true },
+        _count: { _all: true },
+      }),
+      prisma.importRun.groupBy({
+        by: ['userId'],
+        where: { userId: { in: userIds }, completedAt: null },
         _count: { _all: true },
       }),
       prisma.jobRun.groupBy({
@@ -167,6 +172,7 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
     ]);
 
     const activeAccounts = countMap(activeAccountsRows);
+    const activeImports = countMap(activeImportRows);
     const activeJobs = countMap(activeJobRows);
     const activePreparation = countMap(activePreparationRows);
 
@@ -179,7 +185,10 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
         activeAccountCount: activeAccounts.get(user.id) ?? 0,
         importedGameCount: user._count.importedGames,
         courseCount: user._count.courses,
-        activeWorkCount: (activeJobs.get(user.id) ?? 0) + (activePreparation.get(user.id) ?? 0),
+        activeWorkCount:
+          (activeImports.get(user.id) ?? 0)
+          + (activeJobs.get(user.id) ?? 0)
+          + (activePreparation.get(user.id) ?? 0),
       })),
       hasMore,
     };
