@@ -1,6 +1,6 @@
 # ONB-005 — Design administrator authentication, diagnostics, and action model
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -35,9 +35,10 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - require signed recent factor age plus one-use reverification id for destructive administrator execution;
 - keep execution disabled until that flow is proven with the pinned Clerk JS integration;
 - route every mutation through ONB-019/020/021 lifecycle services;
-- retain read-access security logs for a configurable 30-day default and lifecycle mutation audit for a configurable 365-day default;
+- retain read-access security logs for a configurable 30-day default and lifecycle mutation audit for a configurable 365-day default, both requiring explicit production confirmation;
 - use exact row counts rather than untrustworthy per-user byte estimates;
 - require request-budget enforcement to match verified API replica topology;
+- keep administrator whole-user deletion disabled until a separate support/recovery policy decision;
 - allocate ONB-022, ONB-023, and ONB-024 at orders 190/200/210 so supporting administration work does not pre-empt the existing product critical path.
 
 ## Dependencies consumed
@@ -55,11 +56,12 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md`;
 - `reports/ONB-005-2026-08-04-self-review-addendum.md`;
 - `reports/ONB-005-2026-08-04-second-self-review-addendum.md`;
+- `reports/ONB-005-2026-08-04-third-self-review-addendum.md`;
 - `tasks/ONB-022-admin-authorization-diagnostics-foundation.md`;
 - `tasks/ONB-023-admin-diagnostics-angular.md`;
 - `tasks/ONB-024-admin-lifecycle-controls.md`;
 - corrected GitHub issue definitions #272, #273, and #274;
-- canonical queue and issue-mapping reconciliation.
+- canonical `DECISIONS.md`, `OPEN_QUESTIONS.md`, `ROADMAP.md`, `STATUS.md`, `TASKS.md`, and `GITHUB_ISSUES.md` reconciliation.
 
 ## In scope completed
 
@@ -77,7 +79,8 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - recent-auth/reverification contract;
 - self-service versus administrator action boundary;
 - Angular lazy-route/store/navigation boundary;
-- implementation issue decomposition, ordering, and exclusions.
+- implementation issue decomposition, ordering, and exclusions;
+- canonical decision/question/roadmap/status reconciliation.
 
 ## Out of scope preserved
 
@@ -105,7 +108,8 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - recent auth is backed by signed claims and non-replay: satisfied by `fva` plus one-use `reverification_id` contract;
 - first-release metadata and footprint scope are bounded: satisfied;
 - rate/abuse controls do not overclaim deployment guarantees: satisfied;
-- new implementation tasks do not silently reorder existing P0 work: satisfied after second self-review correction.
+- new implementation tasks do not silently reorder existing P0 work: satisfied;
+- decision, question, roadmap, status, queue, issue, and task records agree: satisfied after third self-review correction.
 
 ## Validation
 
@@ -113,15 +117,12 @@ Define a minimal production-defensible operator boundary that can inspect bounde
 - current API auth, app factory, route registration, module, schema, contracts, jobs, and tests inspected;
 - current Angular route, navigation, auth, interceptor, API, data-access, and signal-store patterns inspected;
 - current hosted deployment guide inspected;
-- official Clerk session, authorized-party, reverification, custom-claim, and Organization authorization docs reviewed;
-- first-pass assumptions independently challenged and corrected in two self-review addenda;
-- no production code, schema, migration, dependency, workflow, worker, authentication, deployment, or UI behavior changed.
+- official Clerk session, authorized-party, reverification, custom-claim, and Organization authorization docs reviewed and revalidated during the third review;
+- assumptions independently challenged and corrected in three self-review addenda;
+- canonical completion files reconciled;
+- no production code, schema, migration, dependency, workflow, worker, authentication, deployment, or UI behavior changed;
+- final-head GitHub Actions is the authoritative repository gate because local clone/build was unavailable in this runtime.
 
-## Remaining review gate
+## Completion
 
-Do not mark DONE or close #152 until:
-
-- PR #275 contains the canonical reconciliation files;
-- normal CI passes on the final current-main-reconciled head;
-- review confirms #272/#273/#274 scopes and ordering;
-- the branch remains free of runtime behavior changes.
+Completed through squash-merged PR #275 after final-head CI, mergeability, changed-file, branch-divergence, and review-thread checks passed.
