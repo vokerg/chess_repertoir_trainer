@@ -42,29 +42,28 @@ Production onboarding release
 
 ONB-017 may begin after collision review with ONB-011 and ONB-019 and consumes ONB-007 numeric defaults. Full ONB-018 delivery requires durable import and preparation handoff.
 
-Supporting data-lifecycle path:
+Supporting administration and data-lifecycle path:
 
 ```text
 ONB-004 destructive invariants — DONE
         +
-ONB-005 admin authorization/read model
-        +
-ONB-019 operation/fence/audit/provenance foundation
-        ↓
-ONB-020 account/game destructive coordinator
-        ↓
-ONB-021 whole-user deletion/mobile purge
-        +
-ONB-006 shared-position cleanup
-        ↓
-Read-only admin
-        ↓
-Audited self-service/admin lifecycle actions
-        ↓
-Bounded orphan cleanup
+ONB-005 administrator architecture — DONE
+        ├──────────────→ ONB-022 server authorization/read-only diagnostics
+        │                              ↓
+        │                    ONB-023 Angular diagnostics
+        │                              +
+        └→ ONB-019 operation/fence/audit/provenance foundation
+                               ↓
+                    ONB-020 account/game coordinator
+                               ↓
+                    ONB-021 whole-user/mobile purge
+                               +
+                    ONB-006 shared-position cleanup
+                               ↓
+                    ONB-024 administrator lifecycle adapters
 ```
 
-ONB-006 remains separate from account/user lifecycle execution: all destructive actions retain shared Position/PositionAnalysis/cache rows, and cleanup later proves orphanhood without touching course MoveNode evidence. ONB-007 supplies only transaction/lock budget envelopes; ONB-006/020/021 still prove their operation-specific batch sizes.
+ONB-022/023 provide read-only administration independently of destructive execution. ONB-024 waits for the applicable canonical lifecycle service and never creates a parallel destructive state machine. ONB-006 remains separate from account/user lifecycle execution: all destructive actions retain shared Position/PositionAnalysis/cache rows, and cleanup later proves orphanhood without touching course MoveNode evidence. ONB-007 supplies only transaction/lock budget envelopes; ONB-006/020/021 still prove their operation-specific batch sizes.
 
 ## Phase 0 — Program foundation
 
@@ -91,7 +90,7 @@ Delivered:
 
 ### P1 supporting
 
-- ONB-005 / #152 — admin architecture — `READY`; consumes ONB-004/007.
+- ONB-005 / #152 — administrator architecture — `DONE` through PR #275 after three self-review rounds.
 - ONB-006 / #153 — orphan cleanup — `READY`; consumes ONB-004 retained-data and ONB-007 budget boundaries.
 - ONB-016 / #224 — lightweight product/experience blueprint — `DONE` through PR #225.
 
@@ -140,6 +139,20 @@ ONB-004:
 - whole-user OAuth-state/token cleanup, identity tombstone, post-delete receipt, and mobile purge receipt;
 - ONB-019/020/021 allocation.
 
+ONB-005:
+
+- Clerk remains the sole production authentication boundary;
+- administrator capability is a disabled-by-default server-only policy after verified authentication;
+- exact subject allowlist bootstrap sits behind a replaceable authorization interface;
+- production `dev-single-user`, shared secrets, email allowlists, `AppUser.isAdmin`, client roles, impersonation, second login, and Organizations solely for global operators are rejected;
+- read-only diagnostics are migration-free, cursor-bounded, database-aggregated, partial-aware, and exclude sensitive identity/chess/auth payloads;
+- the Angular feature is a lazy direct-link route with API authority and no required static-navigation item;
+- destructive administrator execution requires canonical lifecycle services, valid preview, typed confirmation, idempotency, recent signed `fva`, and one-use request-bound `reverification_id`;
+- administrator whole-user deletion remains disabled pending separate policy;
+- read-access and mutation-audit initial retention defaults are configurable 30/365 days with explicit production confirmation and versioned domain-separated HMAC keys;
+- request budgets must match verified API replica topology;
+- ONB-022/023/024 allocation at orders 190/200/210.
+
 ONB-007:
 
 - safe disposable-database benchmark harness and committed p50/p90 evidence;
@@ -167,7 +180,7 @@ Phase exit:
 - preparation orchestration approved;
 - destructive matrix and drain protocol approved;
 - throughput/progress defaults and validation gates approved;
-- admin authorization/audit direction approved;
+- administrator authorization, diagnostics, reverification, audit, and action boundaries approved;
 - orphan cleanup query/concurrency direction approved;
 - implementation tasks promoted only when dependencies are satisfied.
 
@@ -180,7 +193,6 @@ Implementation tasks:
 
 Blocked on:
 
-- ONB-007 review acceptance for operational defaults;
 - schema coordination with ONB-017/019.
 
 Initial operational defaults:
@@ -372,8 +384,13 @@ Primary task: ONB-019 / [#259](https://github.com/vokerg/chess_repertoir_trainer
 
 Blocked on:
 
-- Prisma/schema/migration collision review with ONB-011/017;
-- ONB-005 before admin mutation exposure.
+- Prisma/schema/migration collision review with ONB-011/017.
+
+Policy input from ONB-005:
+
+- mutation-audit configurable initial retention default and HMAC domain/version policy;
+- administrator adapters must remain outside the canonical lifecycle state machine;
+- sensitive payload exclusions apply to audit.
 
 Expected deliveries:
 
@@ -401,8 +418,7 @@ Blocked on:
 
 - ONB-019;
 - ONB-011/012/015 durable import/cutover;
-- ONB-017/018 preparation controls;
-- ONB-005 before admin exposure.
+- ONB-017/018 preparation controls.
 
 Initial calibration envelope:
 
@@ -418,7 +434,7 @@ Expected deliveries:
 - preparation/import/job cancellation and drain proof;
 - deterministic bounded phases and resumable checkpoints;
 - tag recomputation, tactical/AI/scenario/opening rules;
-- authenticated preview/execute/status routes;
+- authenticated self-service preview/execute/status routes;
 - immediate account-delete/raw-cursor-reset cutover;
 - large-fixture, race, restart, and idempotency tests.
 
@@ -436,8 +452,12 @@ Primary task: ONB-021 / [#261](https://github.com/vokerg/chess_repertoir_trainer
 Blocked on:
 
 - ONB-019/020;
-- ONB-005;
 - mobile offline sync contracts.
+
+Policy input from ONB-005:
+
+- self-service whole-user deletion ships first;
+- administrator execution remains disabled pending a separate support/recovery policy decision.
 
 Expected deliveries:
 
@@ -456,3 +476,73 @@ Exit:
 - valid old auth cannot silently recreate the user;
 - stale offline attempts cannot upload after deletion;
 - shared Position cleanup remains separately auditable.
+
+## Phase 11 — Administrator authorization and read-only diagnostics
+
+Primary task: ONB-022 / [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272).
+
+Status: `READY` after ONB-005 acceptance.
+
+Expected deliveries:
+
+- disabled-by-default injectable server-only authorization policy;
+- minimal verified Clerk session context;
+- exact-subject allowlist bootstrap and pseudonymous actor keys;
+- `/api/admin/me`, cursor-paginated users, bounded detail, and work diagnostics;
+- strict sensitive-field exclusions and exact row-count aggregates;
+- ONB-007 warning evidence without ETA/SLA copy;
+- structured read-access security logs;
+- topology-honest request budgets;
+- config, auth, OpenAPI, pagination, no-N+1, query-plan, and security tests.
+
+Exit:
+
+- normal users cannot enumerate targets;
+- read-only administration is deployable without schema changes;
+- diagnostics remain bounded and contain no raw personal/chess/auth payloads;
+- no mutation capability exists.
+
+## Phase 12 — Administrator diagnostics Angular feature
+
+Primary task: ONB-023 / [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273).
+
+Blocked on:
+
+- ONB-022;
+- final Visual Transformation coordination.
+
+Expected deliveries:
+
+- lazy direct-link `/admin` route;
+- typed API and feature-scoped signal store;
+- cursor-bounded user/detail/work views;
+- loading, empty, partial, forbidden, unavailable, stale, and error states;
+- exact warning evidence;
+- responsive, keyboard, focus, zoom, and screen-reader validation;
+- no destructive controls or client authorization authority.
+
+## Phase 13 — Administrator lifecycle adapters
+
+Primary task: ONB-024 / [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274).
+
+Blocked on:
+
+- ONB-022/023;
+- ONB-019 and the applicable ONB-020/021 operation;
+- ONB-006 implementation for cleanup exposure;
+- proven pinned-Clerk reverification flow.
+
+Expected deliveries:
+
+- capability-gated preview/execute/status/permitted-cancel/audit adapters;
+- valid preview, typed confirmation, idempotency, signed recent `fva`, and one-use request-bound `reverification_id`;
+- durable canonical lifecycle operation observation;
+- bounded audit summaries;
+- administrator whole-user deletion disabled by default;
+- Angular controls that render server state and never coordinate phases.
+
+Exit:
+
+- administrator actions cannot bypass fences, drain proof, bounded phases, retry, failure state, or audit;
+- one reverification cannot authorize multiple or mismatched actions;
+- no parallel destructive implementation exists.

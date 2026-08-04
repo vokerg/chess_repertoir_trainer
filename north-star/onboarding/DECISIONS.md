@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 Statuses:
 
@@ -481,17 +481,47 @@ Status: `LOCKED`
 
 Use the D-077 defaults and D-057 global caps. Keep the visible wave independent from `JOB_WORKER_SLICE_SIZE`, and change values only through measured configuration review.
 
-### D-042 — Admin identity
+### D-042 — Administrator identity and authorization
 
-Status: `PROVISIONAL`
+Status: `LOCKED`
 
-Reuse Clerk authentication plus an environment allowlist of verified administrator subjects. ONB-005 validates and defines dev behavior/future role migration.
+Keep normal Clerk authentication as the only production login boundary. Derive administrator capabilities server-side after verified Clerk authentication. Bootstrap with a disabled-by-default exact Clerk-subject allowlist behind one replaceable authorization policy. Production `dev-single-user` never grants administrator authority.
 
-### D-043 — Angular admin surface
+### D-043 — Angular administrator surface
 
-Status: `PROVISIONAL`
+Status: `LOCKED`
 
-Use a lazy route in the existing web app, hidden and server-authorized, rather than a separate deployment.
+Use a lazy direct-link `/admin` feature in the existing Angular deployment. The normal auth guard establishes sign-in only; API capability checks remain authoritative. The first release requires no normal-navigation item, and a future conditional link remains convenience rather than authorization.
+
+### D-083 — Administrator diagnostics are bounded aggregate projections
+
+Status: `LOCKED`
+
+Ship a migration-free read-only foundation first. Use numeric internal user ID lookup, deterministic opaque cursor pagination, database-computed aggregates, explicit partial sections, and exact approved row counts. Exclude display names, email, usernames, raw auth subjects, PGN, provider URLs, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course trees, arbitrary exports, and per-user byte estimates from the initial projection.
+
+### D-084 — Destructive administrator execution requires signed one-use reverification
+
+Status: `LOCKED`
+
+Require a valid actor/target/kind/version/expiry-bound preview, typed confirmation, idempotency key, recent signed Clerk `fva`, and a signed `reverification_id` that is persisted and bound to exactly one matching execution. If the pinned Clerk client flow cannot mint and refresh this evidence, administrator execution stays disabled. Do not simulate reauthentication with a password prompt or shared secret.
+
+### D-085 — Administrator request budgets follow deployment topology
+
+Status: `LOCKED`
+
+Bound filters, page sizes, query shapes, actor/target concurrency, and mutation admission regardless of deployment. An in-process request bucket may be described only as best-effort for a verified single API instance. Multiple API replicas require PostgreSQL or already-existing shared infrastructure; do not add Redis or another service solely for administration.
+
+### D-086 — Administrator audit retention and pseudonymization are explicit
+
+Status: `LOCKED`
+
+Use structured pseudonymous read-access security logs with a configurable 30-day initial default and canonical lifecycle mutation audit with a configurable 365-day initial default. These are operational seeds, not legal conclusions, and production configuration must explicitly confirm them. Keep versioned HMAC actor/target key domains separate from deleted-identity tombstones and retain old key versions until corresponding records expire.
+
+### D-087 — Administrator whole-user deletion is deferred
+
+Status: `LOCKED`
+
+Deliver whole-user deletion self-service first through ONB-021. Administrator execution for `DELETE_APP_USER` remains disabled until a separate support, recovery, and policy decision explicitly enables it; the presence of generic lifecycle capability does not authorize it.
 
 ### D-044 — Import operational sizing finalized
 
@@ -752,6 +782,30 @@ Do not reuse Stockfish across tasks until option/state leakage, cancellation, ti
 Status: `REJECTED`
 
 The retained benchmark must refuse remote, non-disposable, or non-empty databases and must never call third-party providers.
+
+### D-141 — Application-user administrator flag
+
+Status: `REJECTED`
+
+Do not add `AppUser.isAdmin` or another mutable product-data field as the initial operator authority. Application ownership and operator authority remain separate trust domains.
+
+### D-142 — Clerk Organizations solely for global operators
+
+Status: `REJECTED`
+
+Do not introduce active-Organization tenancy, membership, and switching solely to represent global product operators. A future signed global claim may replace the bootstrap policy without changing route/service authorization interfaces.
+
+### D-143 — Shared secret or simulated administrator reauthentication
+
+Status: `REJECTED`
+
+Do not use a reusable administrator secret, browser password prompt, or client-only confirmation as recent-auth evidence. Require signed Clerk verification claims and one-use backend binding.
+
+### D-144 — Unbounded administrator support console
+
+Status: `REJECTED`
+
+Do not expose free-text identity search, arbitrary sorting/field selection, bulk export, raw chess/auth payload browsing, impersonation, or SQL-like access in the initial administrator feature.
 
 ## Open
 

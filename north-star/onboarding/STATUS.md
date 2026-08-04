@@ -20,11 +20,13 @@ Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.co
 
 Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/vokerg/chess_repertoir_trainer/pull/266) as `d6313823bd7da36991972a804f59d47d77578bdf` after corrected benchmark evidence and three self-review rounds.
 
+Administrator architecture: ONB-005 completed through [PR #275](https://github.com/vokerg/chess_repertoir_trainer/pull/275) after three self-review rounds.
+
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next claimable ordered task: ONB-005 / [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152)
+Next claimable ordered task: ONB-006 / [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153)
 
-Latest report: `reports/ONB-007-2026-08-04-third-self-review-addendum.md`
+Latest report: `reports/ONB-005-2026-08-04-third-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -84,6 +86,25 @@ Latest report: `reports/ONB-007-2026-08-04-third-self-review-addendum.md`
 - operation/audit history survives target deletion without raw personal payloads;
 - implementation allocation: ONB-019/#259, ONB-020/#260, ONB-021/#261.
 
+### ONB-005
+
+- normal Clerk authentication remains the sole production login boundary;
+- administrator capabilities are derived server-side after verified authentication;
+- a disabled-by-default exact Clerk-subject allowlist bootstraps one replaceable authorization policy;
+- production `dev-single-user`, shared secrets, email allowlists, `AppUser.isAdmin`, client roles, second login, impersonation, and Organizations solely for global operators are rejected;
+- the API retains only the verified session context required for authorization and future reverification;
+- ONB-022 delivers migration-free cursor-paginated aggregate diagnostics with numeric user-ID lookup, explicit partial sections, exact row counts, and strict sensitive-field exclusions;
+- ONB-023 uses a lazy direct-link `/admin` route in the existing Angular deployment, with no required static-navigation entry and no client authorization authority;
+- administrator execution requires canonical lifecycle services, valid preview, typed confirmation, idempotency, recent signed `fva`, and one-use request-bound `reverification_id`;
+- administrator execution stays disabled until the pinned Clerk client flow proves signed evidence end to end;
+- administrator whole-user deletion remains disabled pending a separate support/recovery policy decision;
+- read-access security logs and lifecycle mutation audit use configurable initial 30/365-day defaults with explicit production confirmation;
+- pseudonymous actor/target HMAC domains are versioned and separate from deleted-identity tombstones;
+- request-budget enforcement must match verified API replica topology;
+- implementation allocation: ONB-022/#272, ONB-023/#273, ONB-024/#274 at orders 190/200/210.
+
+Completed through PR #275 after three adversarial self-review rounds and final canonical reconciliation.
+
 ### ONB-007
 
 - safe reusable benchmark harness restricted to a fresh local disposable PostgreSQL database;
@@ -116,13 +137,14 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 
 ### Research
 
-1. ONB-005 / #152 — administrator authorization, diagnostics, and action model; consumes ONB-004 and ONB-007.
-2. ONB-006 / #153 — orphan shared-position cleanup; consumes ONB-004 retention and ONB-007 transaction-budget boundaries.
+1. ONB-006 / #153 — orphan shared-position cleanup; consumes ONB-004 retention and ONB-007 transaction-budget boundaries.
 
 ### Implementation
 
 - ONB-017 / #253 — preparation execution persistence — `READY` with ONB-007 numeric defaults.
+- ONB-022 / #272 — administrator authorization and read-only diagnostics — `READY` after ONB-005 acceptance.
 - Before claiming ONB-017, inspect ONB-011 and ONB-019 activity and coordinate all Prisma/schema/migration edits.
+- Before claiming ONB-022, re-inspect current authentication, deployment topology, and ONB-019 actor-key activity.
 
 ## Allocated implementation backlog
 
@@ -138,6 +160,8 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 - ONB-019 / #259 — destructive lifecycle operation/fence/guard/failure-state/audit/provenance/receipt foundation — `PROPOSED`.
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; starts with at most 100 games per transaction and operation-specific validation.
 - ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`; consumes the same transaction/lock budgets.
+- ONB-023 / #273 — Angular administrator diagnostics — `PROPOSED`; depends on ONB-022 and Visual Transformation coordination.
+- ONB-024 / #274 — administrator lifecycle adapters — `PROPOSED`; depends on ONB-022/023 and applicable ONB-019/020/021/006 services plus proven reverification.
 
 These tasks must not be claimed until their task-file dependencies are resolved and accepted.
 
@@ -168,21 +192,41 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - partial destructive failure must retain its durable resource fence;
 - post-delete status retrieval cannot depend on recreating the user;
 - shared Position cleanup must remain separate from account/user purge;
+- current administrator authorization/read model is not implemented;
+- current Angular navigation is static and contains no administrator capability state;
+- current API deployment documentation does not guarantee one replica, so in-process rate limiting cannot be treated as distributed enforcement;
+- current auth request context does not yet retain the signed session/factor/reverification fields required by administrator execution;
 - CI-local provider/database/engine timings are evidence for initial configuration and budgets, not a public production ETA.
 
 ## Blockers to production implementation
 
-- ONB-005 has not finalized administrator identity/recent-auth/audit-retention policy;
 - ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
 - ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
 - ONB-017/018 have not delivered preparation execution/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
+- ONB-022/023 have not delivered read-only administrator API/UI;
+- ONB-024 remains blocked by canonical lifecycle services and a proven signed reverification flow;
 - onboarding projection/UI tasks remain blocked by durable foundations;
 - production-like Neon/provider/local-binary telemetry does not exist yet, so public ETA and capacity expansion remain disabled;
 - shared-position cleanup remains owned by ONB-006;
 - Visual Transformation coordination remains required for final UI.
 
 ## Validation
+
+### ONB-005 documentation-only research
+
+- verified current queue, issue, branch, PR, review-thread, and collision state;
+- reset the original branch onto current `main` after ONB-007 merged;
+- inspected current API auth configuration/plugin/request context, app factory, central route registration, representative Zod/OpenAPI modules, jobs, schema, contracts, and tests;
+- inspected current Angular routes, static navigation, auth service/guard/interceptor, API service, feature data-access, signal-store, and responsive/accessibility patterns;
+- inspected current hosted Render/Neon/Vercel deployment documentation;
+- verified current official Clerk session-token V2, authorized-party, custom-claim, reverification, and active-Organization authorization behavior;
+- first self-review corrected stale base state, insufficient repository inspection, unproven recent-auth claims, Organization-role misuse, over-broad data scope, rate-limit overclaiming, retention/key-rotation ambiguity, and under-specified implementation tasks;
+- second self-review corrected implementation-task ordering, deployment-topology assumptions, and a residual display-label projection;
+- third self-review corrected missing `DECISIONS.md`, `OPEN_QUESTIONS.md`, `ROADMAP.md`, and `STATUS.md` reconciliation, finalized task promotion/queue state, and reverified Clerk assumptions;
+- allocated and synchronized ONB-022/#272, ONB-023/#273, and ONB-024/#274;
+- no production code, schema, migration, dependency, workflow, worker, authentication, deployment, or UI behavior changed;
+- local clone/build remained unavailable because this runtime could not resolve `github.com`; GitHub Actions is the authoritative repository gate.
 
 ### ONB-007 research and benchmark
 
@@ -218,4 +262,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-Claim ONB-005 / #152 next by canonical order. ONB-006 and ONB-017 remain additional READY work after required collision review.
+Claim ONB-006 / #153 next by canonical order. ONB-017 and ONB-022 remain additional READY implementation work after their required collision reviews.
