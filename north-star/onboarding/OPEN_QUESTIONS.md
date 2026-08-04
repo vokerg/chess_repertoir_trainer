@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 Every material question has one owning task. Other tasks may contribute evidence but must not silently finalize it.
 
@@ -77,30 +77,30 @@ Resolved by `reports/ONB-004-2026-08-02-destructive-lifecycle-invariants.md` and
 
 No ONB-004-owned lifecycle-semantics question remains open.
 
-Implementation-local naming is delegated to ONB-019/020/021. Administrator actor/recent-auth/audit-retention policy remains with ONB-005. Shared-position cleanup remains with ONB-006. Operation-specific transaction sizing remains with ONB-006/020/021 under the ONB-007 budget envelope.
+Implementation-local naming is delegated to ONB-019/020/021. Administrator identity, recent-auth, diagnostics, and audit-policy direction is resolved by ONB-005 and delegated to ONB-022/023/024. Shared-position cleanup remains with ONB-006. Operation-specific transaction sizing remains with ONB-006/020/021 under the ONB-007 budget envelope.
 
 ## ONB-005 / #152 — Administration
 
-Consumed from ONB-004 and ONB-007:
+Resolved by `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and its three self-review addenda:
 
-- administrator mutations must call the same lifecycle preview/fence/drain/execution/audit service as self-service actions;
-- raw administrator table deletes are prohibited;
-- lifecycle audit stores pseudonymous keys, aggregates, result/error codes, and no raw personal payloads;
-- administrator exposure waits for ONB-019/020/021 dependencies appropriate to each action;
-- diagnostics should include queue age, claim/heartbeat, reconcile lag, rate-limit/retry-at, first/last progress, and aggregate stage/operation durations without raw personal payloads.
+- keep normal Clerk authentication as the sole production login boundary;
+- derive administrator capabilities server-side after verified Clerk authentication;
+- bootstrap with a disabled-by-default exact Clerk-subject allowlist behind one replaceable policy;
+- reject shared secrets, email allowlists, `AppUser.isAdmin`, client-side roles, impersonation, a second login, and Clerk Organizations solely for global operators;
+- reject production administrator authority under `dev-single-user` while permitting explicit non-production test/development injection;
+- retain only the verified session fields needed for authorization and future reverification;
+- ship migration-free read-only diagnostics first with numeric user-ID lookup, opaque cursor pagination, database aggregates, explicit partial sections, and strict sensitive-field exclusions;
+- use exact approved row counts rather than per-user byte estimates;
+- use the existing Angular deployment through a lazy direct-link `/admin` route with API authority and no required static-navigation entry;
+- require valid preview, typed confirmation, idempotency, signed recent `fva`, and one-use request-bound `reverification_id` for administrator execution;
+- keep administrator execution disabled until the pinned Clerk client flow proves that signed evidence end to end;
+- reuse ONB-019/020/021 lifecycle services for every mutation and defer administrator whole-user deletion pending a separate policy decision;
+- use configurable initial defaults of 30 days for read-access security logs and 365 days for mutation audit, with explicit production confirmation and versioned domain-separated HMAC keys;
+- bind request-budget enforcement to verified deployment topology and never describe an in-process limiter as distributed protection;
+- surface ONB-007 warnings with exact triggering evidence and no ETA/SLA implication;
+- allocate ONB-022/#272, ONB-023/#273, and ONB-024/#274 after the existing product critical-path backlog.
 
-Still owned by ONB-005:
-
-- Clerk subject allowlist, role/claim, or temporary separate secret?
-- How is dev-single-user admin explicitly configured?
-- Does the existing Angular app suffice?
-- Exact audit retention/key-rotation policy.
-- Which operator actions require recent authentication, two-step approval, or dual control?
-- Which user/course metadata belongs in the first read-only release?
-- What database-footprint metrics are feasible and cheap?
-- What route-level rate/abuse controls are needed?
-- Which destructive actions are user-self-service, administrator-only, or both in the initial release?
-- How are ONB-007 warning/critical thresholds surfaced without implying a user-visible ETA or SLA?
+No ONB-005-owned architecture or policy question remains open. Implementation-local contracts and validation remain with ONB-022/023/024 and the lifecycle owners.
 
 ## ONB-006 / #153 — Shared-position cleanup
 
@@ -351,10 +351,19 @@ Still owned by ONB-018:
 
 ## ONB-019 / #259 — Destructive lifecycle foundation
 
+Resolved policy input from ONB-005:
+
+- mutation audit has a configurable 365-day initial default that production configuration must explicitly confirm;
+- actor/target HMAC domains are separate from deleted-identity tombstones;
+- old HMAC key versions remain available until corresponding retained records expire;
+- raw administrator identity and sensitive payloads remain excluded.
+
+Still owned by ONB-019:
+
 - Exact model/field names for operation, resource fence, audit event, and deleted-identity tombstone.
 - Whether preview is an operation status or a separate record.
-- Preview expiry and terminal operation/audit retention durations.
-- HMAC key/version storage and rotation policy with ONB-005.
+- Preview expiry and terminal operation retention durations.
+- Physical HMAC key/version configuration, rotation procedure, and retention cleanup implementation.
 - Exact opening-provenance enum/legacy migration.
 - Exact user/account/game fence conflict constraints and admission query shapes.
 - Exact direct-writer guard coverage and module ownership.
@@ -385,6 +394,11 @@ Resolved numeric envelope from ONB-007:
 
 - user/account game phases begin at no more than 100 game IDs per transaction and must meet the same transaction/lock budgets before increase.
 
+Resolved policy input from ONB-005:
+
+- self-service whole-user deletion ships before administrator execution;
+- administrator `DELETE_APP_USER` remains disabled pending a separate support/recovery policy decision.
+
 Still owned by ONB-021:
 
 - Exact deletion receipt and next-contact tombstone response shapes.
@@ -394,6 +408,66 @@ Still owned by ONB-021:
 - How a second offline device identifies the deletion state and discards stale outbox work.
 - Bounded phase ordering for courses/training/puzzle/jobs after account purge reuse.
 - Exact token-revocation timeout/retry/audit policy.
+
+## ONB-022 / #272 — Administrator authorization and read-only diagnostics
+
+Resolved boundaries from ONB-005:
+
+- migration-free server-only authorization and read-only API;
+- exact Clerk-subject allowlist bootstrap behind one replaceable capability policy;
+- production `dev-single-user` rejection;
+- numeric user-ID lookup, cursor pagination, aggregate projections, strict field exclusions, and no arbitrary export;
+- structured pseudonymous read-access logs;
+- request-budget mechanism selected only after replica topology is verified.
+
+Still owned by ONB-022:
+
+- Exact environment/configuration names and parser placement.
+- Minimal verified-session TypeScript shape and Fastify decoration ownership.
+- Capability enum and error-schema names.
+- Actor-key HMAC configuration seam coordinated with ONB-019.
+- Exact cursor encoding/version and aggregate query/index plan.
+- Partial-section and warning contract vocabulary.
+- Read-security-log sink and retention enforcement.
+- Request-budget implementation after deployment topology reinspection.
+- OpenAPI, no-N+1, query-plan, startup-isolation, and sensitive-field tests.
+
+## ONB-023 / #273 — Administrator diagnostics Angular feature
+
+Resolved boundaries from ONB-005:
+
+- lazy direct-link `/admin` route in the existing Angular app;
+- normal auth guard for sign-in only and server capability authority;
+- typed feature-scoped data access/store;
+- no required normal-navigation entry and no destructive controls.
+
+Still owned by ONB-023:
+
+- Exact page/store/component decomposition against current transformed primitives.
+- Cursor restoration and bounded client-page retention behavior.
+- Poll/cache policy for work diagnostics.
+- Optional capability-aware navigation link versus direct-link-only release.
+- Warning-code presentation and partial/unavailable state copy.
+- Browser, responsive, keyboard, focus, zoom, and screen-reader acceptance details.
+
+## ONB-024 / #274 — Administrator lifecycle previews and controls
+
+Resolved boundaries from ONB-005:
+
+- thin capability-gated adapters over ONB-019/020/021 only;
+- valid preview, typed confirmation, idempotency, recent signed `fva`, and one-use request-bound `reverification_id`;
+- no simulated reauthentication or shared secret;
+- no administrator whole-user deletion by default;
+- cleanup exposure only after ONB-006 implementation through the same action protocol.
+
+Still owned by ONB-024:
+
+- Exact route/contract names after canonical lifecycle services exist.
+- Pinned Clerk JS reverification trigger, token-refresh, and failure UX.
+- Reverification freshness window and backend one-use persistence transaction.
+- Capability-to-action matrix for un-analysis, un-index, account purge/delete, cancellation, and audit reads.
+- Audit list/detail projection and UI bounds.
+- Integrated idempotency, fence/drain, partial-failure, restart, and stale-preview tests.
 
 ## Cross-program
 
