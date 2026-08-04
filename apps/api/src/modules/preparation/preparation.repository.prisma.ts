@@ -91,6 +91,8 @@ export function createPreparationRepository(
           }
         }
 
+        await assertPreparationTargetsOwned(transaction, input);
+
         const runRows = await transaction.$queryRaw<RunRow[]>(Prisma.sql`
           INSERT INTO "DataPreparationRun" (
             "userId",
@@ -454,6 +456,37 @@ export function createPreparationRepository(
 }
 
 export const PreparationRepository = createPreparationRepository();
+
+async function assertPreparationTargetsOwned(
+  transaction: Prisma.TransactionClient,
+  input: CreatePreparationRunInput,
+): Promise<void> {
+  for (const target of input.targets) {
+    const currentImportRunId = target.currentImportRunId ?? null;
+    const ownedRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
+      SELECT account."id"
+      FROM "ExternalAccount" AS account
+      WHERE account."id" = ${target.accountId}
+        AND account."userId" = ${input.userId}
+        AND (
+          ${currentImportRunId}::int IS NULL
+          OR EXISTS (
+            SELECT 1
+            FROM "ImportRun" AS import_run
+            WHERE import_run."id" = ${currentImportRunId}
+              AND import_run."userId" = ${input.userId}
+              AND import_run."accountId" = account."id"
+          )
+        )
+      LIMIT 1
+    `);
+    if (ownedRows.length !== 1) {
+      throw new Error(
+        `Preparation target account ${target.accountId} or its import link is not owned by the user.`,
+      );
+    }
+  }
+}
 
 async function selectCandidates(
   transaction: Prisma.TransactionClient,
