@@ -14,7 +14,7 @@ Target branch: `main`
 
 Claimed branch: `admin/onb-022-authorization-diagnostics`
 
-Pull request: [#284](https://github.com/vokerg/chess_repertoir_trainer/pull/284) (`DRAFT`)
+Pull request: [#284](https://github.com/vokerg/chess_repertoir_trainer/pull/284)
 
 Claimed by: ChatGPT
 
@@ -157,6 +157,6 @@ Aggregate in PostgreSQL:
 
 ## Completion
 
-Review-ready: pending focused validation and self-review.
+Review-ready: pending exact-head CI and final PR transition.
 
 Completed at: none.
