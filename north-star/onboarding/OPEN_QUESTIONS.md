@@ -139,6 +139,7 @@ Implementation-local validation remains with ONB-026:
 - trigger, lock-order, concurrency, cancellation, stale-claim, and command implementation details;
 - production lock/cascade/cache-churn telemetry before any scheduling decision;
 - schema/migration coordination with ONB-011, ONB-017, and ONB-019.
+
 ## ONB-007 / #154 — Capacity and progress
 
 Resolved by `reports/ONB-007-2026-08-03-throughput-progress-benchmarks.md` and `reports/artifacts/ONB-007-2026-08-03-ci-benchmark-summary.json`:

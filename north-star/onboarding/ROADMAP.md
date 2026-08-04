@@ -56,13 +56,13 @@ ONB-005 administrator architecture — DONE
                                ↓
                     ONB-020 account/game coordinator
                                ↓
-                                        ONB-021 whole-user/mobile purge
-                     +
-          ONB-006 cleanup research — DONE
-                     ↓
-          ONB-026 bounded orphan cleanup implementation
-                     ↓
-          ONB-024 administrator lifecycle adapters
+                    ONB-021 whole-user/mobile purge
+                               +
+                    ONB-006 cleanup research — DONE
+                               ↓
+                    ONB-026 bounded orphan cleanup implementation
+                               ↓
+                    ONB-024 administrator lifecycle adapters
 ```
 
 ONB-022/023 provide read-only administration independently of destructive execution. ONB-024 waits for the applicable canonical lifecycle or cleanup service and never creates a parallel destructive state machine. ONB-006 completed the separate shared-position cleanup research; ONB-026 owns implementation and deletes only database-proved orphans without touching course `MoveNode` evidence. ONB-007 supplies transaction/lock budget envelopes; ONB-026/020/021 still prove their operation-specific batch sizes.
