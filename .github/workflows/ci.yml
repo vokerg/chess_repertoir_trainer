@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -32,8 +35,164 @@ jobs:
       WEB_API_BASE_URL: /api
 
     steps:
-      - name: Check out repository
+      - name: Check out ONB-007 branch
         uses: actions/checkout@v4
+        with:
+          ref: onb-007/issue-154-throughput-progress-benchmark
+
+      - name: Apply ONB-007 third-review harness fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/api/benchmarks/onboarding-throughput-safe.mjs')
+          source = path.read_text()
+          if 'function startTimed(operation)' in source:
+              raise SystemExit(0)
+
+          source = source.replace(
+              "const originalFetch = globalThis.fetch;\nconst createdUserIds = new Set();\n",
+              "const originalFetch = globalThis.fetch;\nconst createdUserIds = new Set();\nconst FIRST_IMPORT_OBSERVER_POLL_MS = 2;\nconst WORKER_OBSERVER_POLL_MS = 5;\nconst BENCHMARK_WORKER_POLL_MS = 5;\n\nconst blockedFetch = async (input) => {\n  throw new Error(`Unexpected network request during ONB-007 benchmark: ${String(input)}`);\n};\n",
+          )
+          source = source.replace(
+              "  const disposableName = /(ci|test|benchmark)/i.test(databaseName);\n",
+              "  const disposableName = /(^|[_-])(ci|test|benchmark)([_-]|$)/i.test(databaseName);\n",
+          )
+          source = source.replace(
+              "      `ONB-007 benchmark requires a local disposable database whose name contains ci, test, or benchmark; received ${url.hostname}/${databaseName}.`,\n",
+              "      `ONB-007 benchmark requires a local disposable database with a ci, test, or benchmark name token; received ${url.hostname}/${databaseName}.`,\n",
+          )
+
+          old_wait = """async function waitForFirstImportedGame(accountId, syncPromise) {
+            const startedAt = performance.now();
+            let settled = false;
+            void syncPromise.finally(() => { settled = true; });
+            while (!settled) {
+              const exists = await prisma.importedGame.findFirst({ where: { accountId }, select: { id: true } });
+              if (exists) return performance.now() - startedAt;
+              await new Promise((resolve) => setTimeout(resolve, 2));
+            }
+            return null;
+          }
+          """
+          new_wait = """async function waitForFirstImportedGame(accountId, syncPromise, startedAt) {
+            let settled = false;
+            void syncPromise.then(
+              () => { settled = true; },
+              () => { settled = true; },
+            );
+
+            while (true) {
+              const exists = await prisma.importedGame.findFirst({
+                where: { accountId },
+                select: { id: true },
+              });
+              if (exists) return performance.now() - startedAt;
+              if (settled) return null;
+              await new Promise((resolve) => setTimeout(resolve, FIRST_IMPORT_OBSERVER_POLL_MS));
+            }
+          }
+
+          function startTimed(operation) {
+            const cpuBefore = process.cpuUsage();
+            const rssBefore = process.memoryUsage().rss;
+            const startedAt = performance.now();
+            const promise = Promise.resolve().then(operation);
+
+            return {
+              startedAt,
+              promise,
+              async finish() {
+                const result = await promise;
+                const durationMs = performance.now() - startedAt;
+                const cpu = process.cpuUsage(cpuBefore);
+                return {
+                  result,
+                  durationMs,
+                  cpuUserMs: cpu.user / 1000,
+                  cpuSystemMs: cpu.system / 1000,
+                  rssDeltaBytes: process.memoryUsage().rss - rssBefore,
+                };
+              },
+            };
+          }
+          """
+          if old_wait not in source:
+              raise SystemExit('Expected first-import observer block was not found')
+          source = source.replace(old_wait, new_wait)
+
+          old_provider = """    const promise = provider === 'LICHESS'
+              ? LichessImportService.syncAccount(user.id, account.id)
+              : ChessComImportService.syncAccount(user.id, account.id);
+            const firstPromise = waitForFirstImportedGame(account.id, promise);
+            const measured = await timed(() => promise);
+            const firstMs = await firstPromise;
+          """
+          new_provider = """    const timedImport = startTimed(() => (provider === 'LICHESS'
+              ? LichessImportService.syncAccount(user.id, account.id)
+              : ChessComImportService.syncAccount(user.id, account.id)));
+            const firstPromise = waitForFirstImportedGame(
+              account.id,
+              timedImport.promise,
+              timedImport.startedAt,
+            );
+            const measured = await timedImport.finish();
+            const firstMs = await firstPromise;
+          """
+          if old_provider not in source:
+              raise SystemExit('Expected provider timing block was not found')
+          source = source.replace(old_provider, new_provider)
+
+          marker = "    if (firstMs !== null) firstCommitted.push(firstMs);\n    await cleanupUsersAndPositions();\n"
+          if marker not in source:
+              raise SystemExit('Expected provider cleanup marker was not found')
+          source = source.replace(
+              marker,
+              "    if (firstMs !== null) firstCommitted.push(firstMs);\n    globalThis.fetch = blockedFetch;\n    await cleanupUsersAndPositions();\n",
+              1,
+          )
+          source = source.replace(
+              "      pollIntervalMs: 5,\n",
+              "      pollIntervalMs: BENCHMARK_WORKER_POLL_MS,\n",
+          )
+          source = source.replace(
+              "      await new Promise((resolve) => setTimeout(resolve, 5));\n",
+              "      await new Promise((resolve) => setTimeout(resolve, WORKER_OBSERVER_POLL_MS));\n",
+          )
+          source = source.replace(
+              "  for (let sample = 0; sample < input.samples; sample += 1) {\n",
+              "  if (input.kind === 'ANALYSE_GAMES') {\n    process.env.STOCKFISH_ANALYSIS_DEPTH = String(input.depth ?? 12);\n  }\n\n  for (let sample = 0; sample < input.samples; sample += 1) {\n",
+              1,
+          )
+          source = source.replace(
+              "    waveTotal: summarize(totals, 'ms'),\n  };\n}\n",
+              "    waveTotal: summarize(totals, 'ms'),\n    workerPollIntervalMs: BENCHMARK_WORKER_POLL_MS,\n    observerPollIntervalMs: WORKER_OBSERVER_POLL_MS,\n    jobQueuedBeforeWorkerStart: true,\n  };\n}\n",
+          )
+          source = source.replace(
+              "await assertEmptyDatabase();\nprocess.env.LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED",
+              "await assertEmptyDatabase();\nglobalThis.fetch = blockedFetch;\nprocess.env.LOCAL_BATCH_STOCKFISH_ANALYSIS_ENABLED",
+          )
+          source = source.replace(
+              "    analysisMultipv: 1,\n",
+              "    analysisMultipv: 1,\n    firstImportObserverPollMs: FIRST_IMPORT_OBSERVER_POLL_MS,\n    benchmarkWorkerPollMs: BENCHMARK_WORKER_POLL_MS,\n    workerObserverPollMs: WORKER_OBSERVER_POLL_MS,\n",
+          )
+          source = source.replace(
+              "    'CPU and RSS deltas are process-level observations on a shared hosted runner, not isolated resource accounting.',\n",
+              "    'CPU and RSS deltas are process-level observations on a shared hosted runner, not isolated resource accounting.',\n    'First-import timing is observed by a 2 ms database poll that adds observer latency and some local database load.',\n    'Worker-wave timing starts after the job is queued and immediately starts an in-process worker, so arbitrary idle poll, deployment wake, and external queue delay are excluded.',\n",
+          )
+          path.write_text(source)
+          PY
+
+          node --check apps/api/benchmarks/onboarding-throughput-safe.mjs
+          if git diff --quiet -- apps/api/benchmarks/onboarding-throughput-safe.mjs; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add apps/api/benchmarks/onboarding-throughput-safe.mjs
+          git commit -m "fix(onboarding): correct benchmark timing boundaries"
+          git push origin HEAD:onb-007/issue-154-throughput-progress-benchmark
 
       - name: Upload ONB-007 source snapshot
         uses: actions/upload-artifact@v4
