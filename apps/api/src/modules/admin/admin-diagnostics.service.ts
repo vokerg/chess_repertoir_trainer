@@ -254,19 +254,31 @@ export function createAdminDiagnosticsService(dependencies: Dependencies = {}) {
               warnings,
             };
           });
-          const observedOldestQueueAge = items
-            .filter((item) => item.queueAgeSeconds !== null)
-            .reduce((oldest, item) => Math.max(oldest, item.queueAgeSeconds ?? 0), 0);
-          const warnings = imports.value.queuedCount > IMPORT_QUEUE_BACKLOG_COUNT_WARNING
-            && observedOldestQueueAge > IMPORT_QUEUE_AGE_WARNING_SECONDS
-            ? [warning(
+          const oldestQueuedAge = imports.value.oldestQueuedStartedAt
+            ? secondsBetween(now, imports.value.oldestQueuedStartedAt)
+            : 0;
+          const warnings: AdminWarning[] = [];
+          if (oldestQueuedAge > IMPORT_QUEUE_AGE_WARNING_SECONDS) {
+            warnings.push(warning(
+              'IMPORT_QUEUE_AGE_HIGH',
+              'queueAgeSeconds',
+              oldestQueuedAge,
+              IMPORT_QUEUE_AGE_WARNING_SECONDS,
+              'SECONDS',
+            ));
+          }
+          if (
+            imports.value.queuedCount > IMPORT_QUEUE_BACKLOG_COUNT_WARNING
+            && oldestQueuedAge > IMPORT_QUEUE_AGE_WARNING_SECONDS
+          ) {
+            warnings.push(warning(
               'IMPORT_QUEUE_BACKLOG_HIGH',
               'queuedRuns',
               imports.value.queuedCount,
               IMPORT_QUEUE_BACKLOG_COUNT_WARNING,
               'COUNT',
-            )]
-            : [];
+            ));
+          }
           return {
             available: true as const,
             queuedCount: imports.value.queuedCount,
