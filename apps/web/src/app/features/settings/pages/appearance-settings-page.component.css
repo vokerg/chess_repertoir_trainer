@@ -37,11 +37,12 @@
   gap: var(--space-3);
 }
 
-.setting-heading strong {
+.setting-heading output {
   color: var(--ui-action-strong);
   font-family: var(--ui-font-family-mono);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+  font-weight: 750;
 }
 
 .setting-help {
