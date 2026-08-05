@@ -263,7 +263,7 @@ API integration tests require the configured PostgreSQL database. Native board i
 - Activity producers, played-game reconciliation/backfill, and the Home Today checklist are not complete beyond the ACT-001 ledger/API foundation.
 - Onboarding and data-lifecycle implementation is in progress; planning and accepted contracts are ahead of the complete first-use runtime.
 - Repertoire Builder outcome evaluation remains blocked on sufficient real usage and follow-up-game evidence.
-- Visual Transformation still requires authenticated-route inventory reconciliation before its final polish phase.
+- Visual Transformation route-family rollout and inventory are complete; final onboarding, empty-state, accessibility, and responsive polish remain in VT-302.
 - Mobile remains an offline repertoire-training companion rather than a replacement for the full web product.
 - Active web training sessions and prepared web marathon runs are API-memory state and do not survive API restarts.
-- Training statistics use active subline hashes and the latest five scored attempts per active subline; this is not a spaced-repetition scheduler.
+- Training statistics use active subline hashes and the latest five scored attempts per active subline; this is not yet a spaced-repetition scheduler.

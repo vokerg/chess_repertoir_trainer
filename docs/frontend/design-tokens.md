@@ -1,18 +1,18 @@
 # Frontend design tokens
 
-Last updated: 2026-07-29
+Last updated: 2026-08-05
 
 This document is the source of truth for the production visual-token and typography contract used by transformed Angular surfaces.
 
 ## Ownership and loading order
 
-Global styling is intentionally split during migration:
+Global styling remains intentionally split while compatibility debt exists:
 
-1. `apps/web/src/styles.css` remains the legacy compatibility layer. Existing short names such as `--accent`, `--surface`, `--border`, and `--text` continue to support pages that have not yet been migrated.
-2. `apps/web/src/design-system.css` is loaded immediately after `styles.css` and owns the production `--ui-*` tokens plus narrow overrides for the application canvas, typography, controls, page headers, and proven shared primitives.
+1. `apps/web/src/styles.css` is the legacy compatibility layer. Short names such as `--accent`, `--surface`, `--border`, and `--text` continue to support known shared and legacy-compatible consumers.
+2. `apps/web/src/design-system.css` loads immediately after `styles.css` and owns production `--ui-*` tokens plus narrow overrides for the application canvas, typography, controls, page headers, and proven shared primitives.
 3. `responsive.css` and `workbench.css` remain later specialized layers.
 
-Do not repurpose the legacy short token names to mean the new system. Migrate a feature deliberately to `--ui-*` tokens in its owning transformation task, then remove obsolete legacy usage only when all consumers are known.
+Do not repurpose legacy short token names to mean the new system. Migrate a complete consumer boundary deliberately, then remove obsolete roles only when all consumers are known and covered.
 
 ## Typography
 
@@ -23,9 +23,9 @@ Production does not download a remote font and does not bundle or distribute fon
 --ui-font-family-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 ```
 
-IBM Plex Sans remains the visual reference used by the transformation prototypes, but it is not a runtime dependency. The system stack is the production contract until a separate approved task justifies a self-hosted or externally loaded font with licensing, privacy, performance, offline, and fallback evidence.
+IBM Plex Sans remains a visual reference used by transformation prototypes, not a runtime dependency. The system stack is the production contract until a separate approved task justifies a font-loading change with licensing, privacy, performance, offline, and fallback evidence.
 
-Use the UI stack for product copy and controls. Use the mono stack only for analytical numerics such as evaluations, ratings, percentages, move counts, coordinates, hashes, and PGN/FEN output.
+Use the UI stack for product copy and controls. Use the mono stack only for analytical numerics and notation such as evaluations, ratings, percentages, move counts, coordinates, hashes, PGN, and FEN.
 
 ## Production token roles
 
@@ -65,13 +65,13 @@ Use the UI stack for product copy and controls. Use the mono stack only for anal
 | `--ui-shadow-raised` | medium graphite shadow | hover or raised surface |
 | `--ui-shadow-overlay` | strong graphite shadow | menus, dialogs, overlays |
 
-Use tonal separation and borders before adding elevation. Strong shadows belong primarily to overlays and dominant actions.
+Use tonal separation and borders before elevation. Strong shadows belong primarily to overlays and dominant actions.
 
 ### Interaction and focus
 
 | Token | Value | Role |
 | --- | --- | --- |
-| `--ui-action` | `#47B89C` | primary action and signal colour |
+| `--ui-action` | `#47B89C` | primary action and product signal |
 | `--ui-action-hover` | `#3CA98E` | primary-action hover |
 | `--ui-action-strong` | `#1F7865` | accessible mint text, selected state, focus source |
 | `--ui-action-soft` | `#DFF3ED` | selected and quiet interactive background |
@@ -95,26 +95,38 @@ Do not infer status from colour alone. Preserve text, icons, labels, and accessi
 
 The shared page header, panel, shell actions, context strip, fact grid, and select menu consume production roles directly.
 
-- `app-context-strip` uses `--ui-surface`, `--ui-border`, `--ui-radius-control`, `--ui-radius-panel`, text roles, mint marker roles, and `--ui-shadow-soft` for its segmented presentation.
-- `app-fact-grid` uses muted or translucent surface roles, subtle labels, primary values, and the mono stack only when the owning feature marks a value as analytical.
-- `app-select-menu` uses production control, overlay, focus, text, marker, action-soft, and semantic-status roles for compact single-choice filters without defining feature meaning.
-- Shared primitives must not introduce feature colours or remap legacy short token names. Feature-specific semantic data colours remain with the owning component.
-- Layout presentation inputs may alter columns or segmentation, but a token role retains the same meaning across consumers.
+- `app-context-strip` renders typed, read-only label/value context without deriving feature state.
+- `app-fact-grid` renders typed semantic facts; owning features retain status, formatting, eligibility, and command logic.
+- `app-select-menu` owns controlled single-choice trigger, overlay, selection, and keyboard presentation; consuming features own option meaning and state transitions.
+- Shared primitives remain OnPush, router-free, store-free, HTTP-free, and feature-agnostic.
+- Feature-specific semantic data colours and responsive workflow composition remain with the owning feature.
+
+## Route-family completion and compatibility boundary
+
+VT-301 has explicitly dispositioned every current authenticated route family. This does not mean every descendant widget has already abandoned all legacy roles.
+
+Accepted compatibility boundaries:
+
+- Home retains calibrated local `--home-*` aliases whose values match the approved production palette but predate the `--ui-*` namespace.
+- `apps/web/src/workbench.css` and a bounded set of analytical consumers still use legacy short roles. Migrate the full consumer set together; do not partially remap global names.
+- Some global `.library-*` presentation remains while shared line-training surfaces consume it.
+- Feature-local semantic chart, board, and evaluation colours may remain when they do not represent a shared UI role.
+
+These boundaries are recorded debt, not permission for new code to use legacy names and not evidence of an untransformed route family.
 
 ## Migration rules
 
-- New transformed UI uses `--ui-*` tokens.
-- Existing feature-local amber usage may remain until that feature's recorded migration issue.
-- Global controls, shared `app-page-header`, `app-panel`, `app-context-strip`, `app-fact-grid`, `app-select-menu`, and shared shell actions use production tokens now.
-- Games, Study, and Opening Analysis have completed their representative migrations; remaining routes and Labs migrate in their owning VT issues rather than through broad search-and-replace.
-- Do not add isolated hard-coded brand colours when an existing production token expresses the role.
-- Feature-specific semantic data colours may remain local when they do not represent a shared UI role.
-- A token change is a cross-application contract change and requires transformation documentation, representative browser evidence, and normal frontend validation.
+- New transformed UI uses `--ui-*` roles.
+- Do not add isolated hard-coded brand colours when a production role expresses the meaning.
+- Do not globally search-and-replace legacy names or redefine their values.
+- Migrate a shared compatibility layer only after its complete consumer set is inspected and regression-covered.
+- A token contract change is cross-application architecture work and requires transformation documentation, representative browser evidence, and normal frontend validation.
+- VT-302 may clean up accepted compatibility debt only where its complete consumer boundary is proven; it must not reopen completed page-family rollout by default.
 
 ## Accessibility baseline
 
-- Keyboard focus must remain visible with at least a three-pixel outline or an equivalent clearly visible treatment.
-- Normal text and control states must retain readable contrast on their assigned surface.
-- Hover must not be the only indicator of interactivity.
-- Reduced-motion users must not depend on elevation or translation animation to perceive state.
-- Status and evaluation meanings require non-colour cues.
+- Keyboard focus remains visible with at least a three-pixel outline or equivalent clearly visible treatment.
+- Normal text and control states retain readable contrast on their assigned surface.
+- Hover is not the only indicator of interactivity.
+- Reduced-motion users do not depend on elevation or translation animation to perceive state.
+- Status and evaluation meanings use non-colour cues.
