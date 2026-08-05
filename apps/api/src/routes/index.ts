@@ -11,6 +11,7 @@ import openingAnalysisBreakdownsModule from '../modules/imported-games/opening-a
 import openingStrugglesModule from '../modules/opening-struggles/opening-struggles.routes';
 import labModule from '../modules/lab/lab.routes';
 import jobsModule from '../modules/jobs/job-run.routes';
+import adminModule, { type AdminModuleOptions } from '../modules/admin/admin.routes';
 import externalAccountsRoutes from './externalAccounts';
 import lichessAuthRoutes from './lichessAuth';
 import repertoireCoverageModule from '../modules/repertoire-coverage/repertoire-coverage.routes';
@@ -25,7 +26,11 @@ import aiModule from '../modules/ai/ai.routes';
 import ratingNormalizationModule from '../modules/rating-normalization/rating-normalization.routes';
 import activityFeedModule from '../modules/activity-feed/activity-feed.routes';
 
-export default function registerRoutes(app: FastifyInstance): void {
+export interface RegisterRoutesOptions {
+  admin: AdminModuleOptions;
+}
+
+export default function registerRoutes(app: FastifyInstance, options: RegisterRoutesOptions): void {
   app.register(coursesModule);
   app.register(builderCourseReintegrationModule);
   app.register(trainingModule);
@@ -38,6 +43,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(openingStrugglesModule);
   app.register(labModule);
   app.register(jobsModule);
+  app.register(adminModule, options.admin);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);
   app.register(boardImagesModule);

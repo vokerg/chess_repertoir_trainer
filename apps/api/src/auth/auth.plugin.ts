@@ -2,6 +2,7 @@ import fp from 'fastify-plugin';
 import { FastifyRequest } from 'fastify';
 import { AuthConfig, loadAuthConfig } from './auth.config';
 import { CurrentAppUserService } from './current-app-user.service';
+import { normalizeVerifiedSessionContext } from './verified-session-context';
 
 const PUBLIC_PATHS = new Set([
   '/health',
@@ -81,6 +82,7 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
   const clerkJwks = config.mode === 'clerk' ? createRemoteJWKSet!(config.jwksUrl) : null;
 
   app.decorateRequest('auth', null);
+  app.decorateRequest('verifiedSession', null);
 
   app.addHook('onRequest', async (request, reply) => {
     if (isPublicRequest(request)) return;
@@ -109,6 +111,10 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
           audience: readAudience(payload) ?? null,
           authorizedParty: payload['azp'] ?? null,
           hasSubject: typeof payload['sub'] === 'string' && payload['sub'].length > 0,
+          hasVerifiedSessionEvidence: normalizeVerifiedSessionContext(
+            payload,
+            typeof payload['sub'] === 'string' ? payload['sub'] : '',
+          ) !== null,
         }, 'Verified Clerk JWT claims');
       }
     } catch (error) {
@@ -141,6 +147,7 @@ export default fp(async function authPlugin(app, options: AuthPluginOptions) {
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
+    request.verifiedSession = normalizeVerifiedSessionContext(payload, subject);
     const resolved = await CurrentAppUserService.resolveExternalUser({
       provider: 'clerk',
       externalSubject: subject,
