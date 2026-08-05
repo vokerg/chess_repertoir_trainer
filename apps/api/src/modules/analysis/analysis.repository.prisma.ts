@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
+import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 import {
   assertPositionKeyMatchesFen,
@@ -78,6 +79,23 @@ async function updateImportedGameLatestAnalysisSnapshot(
     where: { id: importedGameId },
     data: latestAnalysisSnapshotData(run),
   });
+}
+
+async function recordCompletedGameAnalysisActivity(
+  tx: Prisma.TransactionClient,
+  importedGameId: number,
+  completedAt: Date,
+) {
+  const game = await tx.importedGame.findUnique({
+    where: { id: importedGameId },
+    select: { userId: true },
+  });
+  if (!game) throw new Error('Imported game not found for completed analysis');
+  await ActivityFeedService.recordIncrement({
+    userId: game.userId,
+    type: 'GAME_ANALYSES_COMPLETED',
+    occurredAt: completedAt,
+  }, tx);
 }
 
 function compactPositionAnalysis(row: any, fromCache = true) {
@@ -428,6 +446,30 @@ export async function createClientGameAnalysisRun(data: {
   blackMovesAnalyzed: number;
 }) {
   return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
+      SELECT "id"
+      FROM "ImportedGame"
+      WHERE "id" = ${data.importedGameId}
+      FOR UPDATE
+    `);
+    if (!locked[0]) throw new Error('Imported game not found');
+
+    const existing = await tx.gameAnalysisRun.findFirst({
+      where: {
+        importedGameId: data.importedGameId,
+        status: 'COMPLETED',
+        positionsTotal: data.positionsDone,
+        positionsDone: data.positionsDone,
+      },
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+      include: compactGameAnalysisRunInclude,
+    });
+    if (existing) return { run: existing, reusedExisting: true };
+
+    const completedAt = new Date();
     const run = await tx.gameAnalysisRun.create({
       data: {
         importedGameId: data.importedGameId,
@@ -442,12 +484,13 @@ export async function createClientGameAnalysisRun(data: {
         blackAverageCentipawnLoss: data.blackAverageCentipawnLoss,
         whiteMovesAnalyzed: data.whiteMovesAnalyzed,
         blackMovesAnalyzed: data.blackMovesAnalyzed,
-        completedAt: new Date(),
+        completedAt,
       },
       include: compactGameAnalysisRunInclude,
     });
     await updateImportedGameLatestAnalysisSnapshot(tx, data.importedGameId, run);
-    return run;
+    await recordCompletedGameAnalysisActivity(tx, data.importedGameId, completedAt);
+    return { run, reusedExisting: false };
   });
 }
 
@@ -503,8 +546,9 @@ export async function completeGameAnalysisRun(
   },
 ) {
   return prisma.$transaction(async (tx) => {
-    const run = await tx.gameAnalysisRun.update({
-      where: { id: runId },
+    const completedAt = new Date();
+    const transitioned = await tx.gameAnalysisRun.updateMany({
+      where: { id: runId, status: 'RUNNING' },
       data: {
         status: 'COMPLETED',
         positionsTotal: data.positionsTotal,
@@ -518,11 +562,21 @@ export async function completeGameAnalysisRun(
         whiteMovesAnalyzed: data.whiteMovesAnalyzed,
         blackMovesAnalyzed: data.blackMovesAnalyzed,
         error: null,
-        completedAt: new Date(),
+        completedAt,
       },
+    });
+    const run = await tx.gameAnalysisRun.findUnique({
+      where: { id: runId },
       include: compactGameAnalysisRunInclude,
     });
+    if (!run) throw new Error('Game analysis run not found');
+    if (transitioned.count === 0) {
+      if (run.status === 'COMPLETED') return run;
+      throw new Error('Game analysis run is not running');
+    }
+
     await updateImportedGameLatestAnalysisSnapshot(tx, run.importedGameId, run);
+    await recordCompletedGameAnalysisActivity(tx, run.importedGameId, completedAt);
     return run;
   });
 }

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 import { TacticalScenarioStartInput } from './scenario-training.schema';
 
@@ -305,9 +306,31 @@ export async function createScenarioTrainingAttempt(input: {
 }
 
 export async function completeScenarioTrainingSession(userId: number, sessionId: number) {
-  return prisma.scenarioTrainingSession.updateMany({
-    where: { id: sessionId, userId },
-    data: { status: 'COMPLETED', completedAt: new Date() },
+  return prisma.$transaction(async (transaction) => {
+    const session = await transaction.scenarioTrainingSession.findFirst({
+      where: { id: sessionId, userId },
+      select: {
+        id: true,
+        status: true,
+        _count: { select: { attempts: true } },
+      },
+    });
+    if (!session) return { count: 0 };
+    if (session.status !== 'IN_PROGRESS') return { count: 1 };
+
+    const completedAt = new Date();
+    const transitioned = await transaction.scenarioTrainingSession.updateMany({
+      where: { id: sessionId, userId, status: 'IN_PROGRESS' },
+      data: { status: 'COMPLETED', completedAt },
+    });
+    if (transitioned.count === 1 && session._count.attempts > 0) {
+      await ActivityFeedService.recordIncrement({
+        userId,
+        type: 'TACTICAL_SCENARIOS_COMPLETED',
+        occurredAt: completedAt,
+      }, transaction);
+    }
+    return { count: 1 };
   });
 }
 

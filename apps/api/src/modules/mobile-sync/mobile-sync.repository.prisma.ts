@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { SerializableTrainingSession, SerializableTrainingSubline } from 'chess-domain/training';
+import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 
 const courseBundleSelect = {
@@ -106,6 +107,15 @@ export interface PersistMobileAttemptInput {
 export async function persistMobileAttempt(input: PersistMobileAttemptInput) {
   return prisma.$transaction(async (tx) => {
     const counters = input.session.counters;
+    const completedAt = input.session.completedAt ? new Date(input.session.completedAt) : null;
+    if (completedAt && ['PASSED', 'FAILED'].includes(input.session.status)) {
+      await ActivityFeedService.recordIncrement({
+        userId: input.userId,
+        type: 'REPERTOIRE_LINES_TRAINED',
+        occurredAt: completedAt,
+      }, tx);
+    }
+
     const linkedMoveNodeIds = new Set(input.linkedMoveNodeIds);
     const session = await tx.trainingSession.create({
       data: {
@@ -117,7 +127,7 @@ export async function persistMobileAttempt(input: PersistMobileAttemptInput) {
         courseContentRevision: input.courseContentRevision,
         receivedAt: input.receivedAt,
         startedAt: new Date(input.session.startedAt),
-        completedAt: input.session.completedAt ? new Date(input.session.completedAt) : null,
+        completedAt,
         result: input.session.status,
         mistakesCount: counters.mistakesCount,
         totalExpectedMoves: counters.totalExpectedMoves,
@@ -143,7 +153,7 @@ export async function persistMobileAttempt(input: PersistMobileAttemptInput) {
         correctMoves: counters.correctMoves,
         accuracy: counters.accuracy,
         startedAt: new Date(input.session.startedAt),
-        completedAt: input.session.completedAt ? new Date(input.session.completedAt) : null,
+        completedAt,
       },
     });
 

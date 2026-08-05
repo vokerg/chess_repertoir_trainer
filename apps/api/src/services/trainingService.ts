@@ -12,6 +12,7 @@ import {
   getAvailableSublineRows,
   pickRandomSubline,
 } from '../modules/courses/sublines.service';
+import { ActivityFeedService } from '../modules/activity-feed/activity-feed.service';
 import { TRAINING_MODE_LINE } from '../modules/training/training.constants';
 import prisma from '../prisma';
 
@@ -40,62 +41,83 @@ async function requireOwnedSession(userId: number, sessionId: number) {
   return session;
 }
 
-async function recordMissedExpectedMove(userId: number, sessionId: number, state: TrainingState) {
-  await requireOwnedSession(userId, sessionId);
-  const expectedChild = state.expectedUserMove;
-  const expectedMove = expectedChild?.node.moveUci;
-  if (!expectedChild || !expectedMove) return;
+async function finalizeSession(
+  userId: number,
+  sessionId: number,
+  missedState?: TrainingState,
+) {
+  const completedAt = new Date();
+  const updated = await prisma.$transaction(async (transaction) => {
+    const locked = await transaction.$queryRaw<Array<{ id: number }>>`
+      SELECT "id"
+      FROM "TrainingSession"
+      WHERE "id" = ${sessionId} AND "userId" = ${userId}
+      FOR UPDATE
+    `;
+    if (!locked[0]) throw new Error('Training session not found');
 
-  const fenBefore = state.current.node.fenAfter;
+    const sessionRow = await transaction.trainingSession.findFirst({
+      where: {
+        id: sessionId,
+        userId,
+        line: { chapter: { course: { userId } } },
+      },
+    });
+    if (!sessionRow) throw new Error('Training session not found');
+    if (sessionRow.result !== 'IN_PROGRESS') return sessionRow;
 
-  await prisma.trainingAttemptMove.create({
-    data: {
-      sessionId,
-      moveNodeId: expectedChild.node.id,
-      fenBefore,
-      expectedMoveUci: expectedMove,
-      playedMoveUci: null,
-      wasCorrect: false,
-    },
-  });
+    let mistakesCount = sessionRow.mistakesCount;
+    let totalExpectedMoves = sessionRow.totalExpectedMoves;
+    const expectedChild = missedState?.expectedUserMove;
+    const expectedMove = expectedChild?.node.moveUci;
+    if (expectedChild && expectedMove && missedState) {
+      await transaction.trainingAttemptMove.create({
+        data: {
+          sessionId,
+          moveNodeId: expectedChild.node.id,
+          fenBefore: missedState.current.node.fenAfter,
+          expectedMoveUci: expectedMove,
+          playedMoveUci: null,
+          wasCorrect: false,
+        },
+      });
+      mistakesCount += 1;
+      totalExpectedMoves += 1;
+    }
 
-  await prisma.trainingSession.update({
-    where: { id: sessionId },
-    data: {
-      totalExpectedMoves: { increment: 1 },
-      mistakesCount: { increment: 1 },
-    },
-  });
-}
+    const resultStatus = mistakesCount > 0 ? 'FAILED' : 'PASSED';
+    const accuracy = totalExpectedMoves > 0
+      ? sessionRow.correctMoves / totalExpectedMoves
+      : null;
+    const terminal = await transaction.trainingSession.update({
+      where: { id: sessionId },
+      data: {
+        completedAt,
+        result: resultStatus,
+        mistakesCount,
+        totalExpectedMoves,
+        accuracy: accuracy ?? undefined,
+      },
+    });
 
-async function finalizeSession(userId: number, sessionId: number) {
-  const sessionRow = await requireOwnedSession(userId, sessionId);
-
-  const resultStatus = sessionRow.mistakesCount > 0 ? 'FAILED' : 'PASSED';
-  const accuracy = sessionRow.totalExpectedMoves > 0
-    ? sessionRow.correctMoves / sessionRow.totalExpectedMoves
-    : null;
-
-  const updated = await prisma.trainingSession.update({
-    where: { id: sessionId },
-    data: {
-      completedAt: new Date(),
-      result: resultStatus,
-      accuracy: accuracy ?? undefined,
-    },
-  });
-
-  await prisma.trainingSublineAttempt.updateMany({
-    where: { userId, trainingSessionId: sessionId },
-    data: {
-      result: resultStatus,
-      passed: resultStatus === 'PASSED',
-      mistakesCount: sessionRow.mistakesCount,
-      totalExpectedMoves: sessionRow.totalExpectedMoves,
-      correctMoves: sessionRow.correctMoves,
-      accuracy: accuracy ?? undefined,
-      completedAt: new Date(),
-    },
+    await transaction.trainingSublineAttempt.updateMany({
+      where: { userId, trainingSessionId: sessionId, result: 'IN_PROGRESS' },
+      data: {
+        result: resultStatus,
+        passed: resultStatus === 'PASSED',
+        mistakesCount,
+        totalExpectedMoves,
+        correctMoves: sessionRow.correctMoves,
+        accuracy: accuracy ?? undefined,
+        completedAt,
+      },
+    });
+    await ActivityFeedService.recordIncrement({
+      userId,
+      type: 'REPERTOIRE_LINES_TRAINED',
+      occurredAt: completedAt,
+    }, transaction);
+    return terminal;
   });
 
   activeSessions.delete(sessionId);
@@ -286,9 +308,10 @@ export const TrainingService = {
     }
 
     if (!sessionMeta.state.completed) {
-      await recordMissedExpectedMove(userId, sessionId, sessionMeta.state);
+      const completed = await finalizeSession(userId, sessionId, sessionMeta.state);
       sessionMeta.state.completed = true;
       sessionMeta.state.expectedUserMove = undefined;
+      return completed;
     }
 
     return finalizeSession(userId, sessionId);
@@ -301,22 +324,23 @@ export const TrainingService = {
     await requireOwnedSession(userId, sessionId);
     activeSessions.delete(sessionId);
     const completedAt = new Date();
-    const session = await prisma.trainingSession.update({
-      where: { id: sessionId },
-      data: {
-        completedAt,
-        result: 'ABANDONED',
-      },
+    return prisma.$transaction(async (transaction) => {
+      const transitioned = await transaction.trainingSession.updateMany({
+        where: { id: sessionId, userId, result: 'IN_PROGRESS' },
+        data: { completedAt, result: 'ABANDONED' },
+      });
+      if (transitioned.count === 1) {
+        await transaction.trainingSublineAttempt.updateMany({
+          where: { userId, trainingSessionId: sessionId, result: 'IN_PROGRESS' },
+          data: {
+            result: 'ABANDONED',
+            passed: null,
+            completedAt,
+          },
+        });
+      }
+      return transaction.trainingSession.findUniqueOrThrow({ where: { id: sessionId } });
     });
-    await prisma.trainingSublineAttempt.updateMany({
-      where: { userId, trainingSessionId: sessionId },
-      data: {
-        result: 'ABANDONED',
-        passed: null,
-        completedAt,
-      },
-    });
-    return session;
   },
 
   getSession: async (userId: number, sessionId: number) => getOwnedSession(userId, sessionId),
