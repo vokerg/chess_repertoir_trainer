@@ -115,7 +115,11 @@ export interface AdminDiagnosticsRepositoryBoundary {
   loadPreparationSummary(userId: number): Promise<AdminPreparationSectionRows>;
   loadFootprint(userId: number): Promise<AdminFootprintSectionRows>;
   loadJobs(userId: number, limit: number): Promise<AdminJobRow[]>;
-  loadImports(userId: number, limit: number): Promise<{ rows: AdminImportRow[]; queuedCount: number }>;
+  loadImports(userId: number, limit: number): Promise<{
+    rows: AdminImportRow[];
+    queuedCount: number;
+    oldestQueuedStartedAt: Date | null;
+  }>;
   loadPreparationRuns(userId: number, limit: number): Promise<AdminPreparationRow[]>;
 }
 
@@ -379,7 +383,7 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
   },
 
   async loadImports(userId, limit) {
-    const [rows, queuedCount] = await Promise.all([
+    const [rows, queuedCount, oldestQueued] = await Promise.all([
       prisma.importRun.findMany({
         where: { userId },
         orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
@@ -397,8 +401,16 @@ export const AdminDiagnosticsRepository: AdminDiagnosticsRepositoryBoundary = {
         },
       }),
       prisma.importRun.count({ where: { userId, status: 'QUEUED' } }),
+      prisma.importRun.aggregate({
+        where: { userId, status: 'QUEUED' },
+        _min: { startedAt: true },
+      }),
     ]);
-    return { rows, queuedCount };
+    return {
+      rows,
+      queuedCount,
+      oldestQueuedStartedAt: oldestQueued._min.startedAt,
+    };
   },
 
   loadPreparationRuns: (userId, limit) => prisma.dataPreparationRun.findMany({
