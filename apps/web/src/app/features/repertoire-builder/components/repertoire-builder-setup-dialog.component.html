@@ -10,7 +10,7 @@
       <div>
         <p class="setup-kicker">Repertoire builder</p>
         <h2 id="builder-setup-title">
-          {{ cancelAllowed() ? 'Restart this draft with a new target' : 'Choose the target for this draft' }}
+          {{ replacingDraft() ? 'Restart this draft with a new target' : 'Choose the target for this draft' }}
         </h2>
         <p>
           @if (fixedSide()) {
@@ -18,15 +18,13 @@
           } @else if (profileSuggestion()) {
             Chess profile supplied a transparent starting point. Side and every target setting remain editable; changing them records a deliberate override without changing the factual profile.
           } @else {
-            {{ cancelAllowed()
+            {{ replacingDraft()
               ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
               : 'Setup starts from the initial position. The recursive work continues on the routed board.' }}
           }
         </p>
       </div>
-      @if (cancelAllowed()) {
-        <button type="button" class="icon-button" aria-label="Close setup" [disabled]="loading()" (click)="cancel()">×</button>
-      }
+      <button type="button" class="icon-button" aria-label="Close setup" [disabled]="loading()" (click)="cancel()">×</button>
     </header>
 
     @if (profileSuggestion(); as suggestion) {
@@ -120,7 +118,7 @@
       <aside class="persistence-note">
         <strong>Route-local draft</strong>
         <span>
-          {{ cancelAllowed()
+          {{ replacingDraft()
             ? 'Submitting this setup replaces the current draft. Refreshing the page also starts over.'
             : 'This version does not persist. Refreshing the page starts a new draft.' }}
         </span>
@@ -131,11 +129,9 @@
       }
 
       <footer class="setup-actions">
-        @if (cancelAllowed()) {
-          <button type="button" class="secondary-button" [disabled]="loading()" (click)="cancel()">Cancel</button>
-        }
+        <button type="button" class="secondary-button" [disabled]="loading()" (click)="cancel()">Cancel</button>
         <button type="submit" class="primary-button" [disabled]="loading() || form.invalid">
-          {{ loading() ? 'Preparing evidence…' : cancelAllowed() ? 'Replace draft' : 'Start building' }}
+          {{ loading() ? 'Preparing evidence…' : replacingDraft() ? 'Replace draft' : 'Start building' }}
         </button>
       </footer>
     </form>

@@ -129,7 +129,14 @@ export class RepertoireBuilderPageComponent implements OnInit {
         run: () => void this.backToSource(),
       });
     }
-    if (!this.store.session()) return actions;
+    if (!this.store.session()) {
+      actions.push({
+        id: 'start-setup',
+        label: 'Start setup',
+        run: () => this.store.openSetup(),
+      });
+      return actions;
+    }
     if (this.store.isCompleted()) {
       actions.push({
         id: 'review-course-output',

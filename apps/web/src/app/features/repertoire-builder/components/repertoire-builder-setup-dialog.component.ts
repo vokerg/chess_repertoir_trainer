@@ -66,7 +66,7 @@ export class RepertoireBuilderSetupDialogComponent {
   readonly profileSuggestion = input<string | null>(null);
   readonly loading = input(false);
   readonly error = input<string | null>(null);
-  readonly cancelAllowed = input(false);
+  readonly replacingDraft = input(false);
 
   readonly submitted = output<RepertoireBuilderSetup>();
   readonly cancelled = output<void>();
@@ -137,7 +137,7 @@ export class RepertoireBuilderSetupDialogComponent {
   }
 
   protected cancel(): void {
-    if (this.cancelAllowed() && !this.loading()) this.cancelled.emit();
+    if (!this.loading()) this.cancelled.emit();
   }
 
   private patchFromSetup(setup: RepertoireBuilderSetup): void {

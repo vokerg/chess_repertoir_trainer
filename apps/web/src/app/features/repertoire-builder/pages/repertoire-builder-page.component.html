@@ -140,7 +140,7 @@
       [profileSuggestion]="profileLaunchContext()?.evidenceSummary ?? null"
       [loading]="store.setupLoading()"
       [error]="store.setupError()"
-      [cancelAllowed]="store.session() !== null"
+      [replacingDraft]="store.session() !== null"
       (submitted)="startBuilder($event)"
       (cancelled)="store.closeSetup()"
     />

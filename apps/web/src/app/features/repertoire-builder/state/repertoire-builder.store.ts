@@ -161,7 +161,6 @@ export class RepertoireBuilderStore {
   }
 
   closeSetup(): void {
-    if (!this.sessionState()) return;
     this.setupOpenState.set(false);
   }
 

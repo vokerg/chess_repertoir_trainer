@@ -30,13 +30,25 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
   });
 
   it('makes replacement explicit when setup is reopened from an active draft', () => {
-    fixture.componentRef.setInput('cancelAllowed', true);
+    fixture.componentRef.setInput('replacingDraft', true);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.textContent).toContain('Restart this draft with a new target');
     expect(root.textContent).toContain('replaces the current route-local draft');
     expect(root.querySelector('button[type="submit"]')?.textContent).toContain('Replace draft');
+  });
+
+  it('allows an initial setup to be cancelled from the backdrop or action button', () => {
+    const cancelled = jasmine.createSpy('cancelled');
+    fixture.componentInstance.cancelled.subscribe(cancelled);
+
+    const root = fixture.nativeElement as HTMLElement;
+    (root.querySelector('.setup-backdrop') as HTMLDivElement).click();
+    fixture.detectChanges();
+    (root.querySelector('.secondary-button') as HTMLButtonElement).click();
+
+    expect(cancelled).toHaveBeenCalledTimes(2);
   });
 
   it('emits one explicit standard target setup without hidden provenance', () => {
