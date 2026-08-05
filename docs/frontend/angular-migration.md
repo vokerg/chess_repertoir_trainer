@@ -28,6 +28,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Proven shared presentation primitives: `shared/ui/context-strip` serves Study and Opening Analysis derived context; `shared/ui/fact-grid` serves Games responsive evidence and Study line health. Both remain typed, OnPush, semantic, and feature-agnostic.
 - Mobile-primary navigation: `core/layout/main-navigation` derives Home, Study, Games, and Openings from the existing hierarchical model, uses More for complete grouped route/account access, delegates secondary active state to More, and coordinates safe-area/content/job-panel clearance without changing routes or feature ownership.
 - VT-301 Batch 2: Player Chess Profile presentation is integrated through PR #206 while retaining its store, API, filter, recalculation, evidence-selection, and route contracts.
+- VT-301 Batch 3: Settings presentation is integrated through PR #209 for `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`; account/OAuth/sound behavior remains feature-owned, expensive template filtering is moved to a tested helper, account management is separated from primary workflows, and rendered accessibility regressions are covered.
 - VT-301 Batch 4a: marathon and focused line-training presentation is integrated through PR #211 while retaining stores, APIs, scoring, board mechanics, persistence, and mistake review.
 - VT-301 Batch 4b: Courses and Course Review presentation is integrated through PR #215 while retaining stores, APIs, filters, chapter commands, and exact RB-012 Builder launch contracts.
 - VT-301 Batch 4c: repertoire-authoring presentation is integrated through PR #221 while retaining chapter/line CRUD, transfer, PGN, editor-tree, notes, board, engine, and training ownership.
@@ -38,13 +39,12 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 ## Active rollout
 
 - VT-301 Batch 1 / draft PR #196 migrates `/progress` and `/progress/accounts/:accountId` to the production token and shared fact-grid system; repository CI passed and browser review remains pending.
-- VT-301 Batch 3 / draft PR #209 migrates `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`; exact-head CI #1573 passed and browser review remains pending.
 - VT-301 Batch 7c / draft PR #277 migrates Tactical Detections through the existing Lab page header, `app-panel`, typed shell actions/stats, `app-select-menu`, production tokens, semantic table structure, and rendered component tests; CI and browser disposition remain pending.
 
 ## Accepted feature debt
 
 - `apps/web/src/styles.css` and feature styles still contain amber-era short tokens such as `--accent`. They are an explicit compatibility layer for routes awaiting their recorded visual-transformation task, not the source for new styling.
-- Remaining Progress and Settings routes still need integration or explicit disposition under VT-301. Tactical Detections is active in draft PR #277; the other Lab rollout families are integrated.
+- Remaining Progress routes still need integration or explicit disposition under VT-301. Tactical Detections is active in draft PR #277; Settings and the other Lab rollout families are integrated.
 - Opening Analysis retains a feature-scoped compatibility bridge because several shared analytical widgets still consume legacy short role names. Migrate those widgets only when their full consumer set is reviewed; do not redefine the legacy names globally.
 - Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
 - Games evidence cards, Study workflow-step/launcher/training-plan composition, and analysis-workbench evidence slots remain feature-owned. Their current contracts are domain-specific and were intentionally not generalized during VT-204.
@@ -54,7 +54,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 
 Prioritize by responsibility count and user-facing risk:
 
-1. Complete or disposition the active Progress, Settings, and Tactical Detections VT-301 branches.
+1. Complete or disposition the active Progress and Tactical Detections VT-301 branches.
 2. Reconcile any remaining authenticated route inventory before VT-302 onboarding/accessibility/responsive polish begins.
 
 ## Per-component completion criteria
@@ -71,7 +71,7 @@ Prioritize by responsibility count and user-facing risk:
 
 ## Accepted tooling debt
 
-- `apps/web` has an `ng lint` script but no Angular lint target.
-- The web test script is currently a placeholder even though Jasmine/Karma scaffolding exists.
+- Web linting is currently Angular/TypeScript template compilation through `ngc`; there is no dedicated ESLint or CSS lint stage.
+- The Karma/Chrome Angular test suite is active and remains part of repository CI.
 
-Address tooling separately from feature migrations. Do not block documentation or narrow legacy cleanup on broad test setup.
+Address tooling separately from feature migrations. Do not block documentation or narrow legacy cleanup on broad lint-tool adoption.
