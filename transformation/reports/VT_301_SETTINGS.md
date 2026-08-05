@@ -24,10 +24,11 @@ PR #209 was originally based on `7ee886383baee19503018365a523effc49959687` and a
 
 The branch was reconciled against current `main` commit `c0effb465e8e0127a2e7655825f1c4667caef31f` before substantive review. The reconciliation deliberately:
 
-- retained current `main` code, migrations, tests, rollout history, Tactical Detections coordination, and newer canonical records;
+- retained current `main` code, migrations, tests, rollout history, and newer canonical records;
 - applied only the Settings implementation and its dedicated report from the old branch;
 - discarded stale branch versions of `transformation/STATUS.md`, `docs/frontend/angular-migration.md`, and `VT_301_PLAYER_CHESS_PROFILE.md` rather than overwriting newer integrated history;
-- then rebuilt the canonical Settings and migration records from current `main`.
+- verified that Progress PR #196 and Tactical Detections PR #277 were already integrated, then corrected the stale active-branch claims still present in canonical records;
+- rebuilt the Settings, status, and migration records from verified current repository state.
 
 ## Architecture boundary verified
 
@@ -43,14 +44,14 @@ The branch was reconciled against current `main` commit `c0effb465e8e0127a2e7655
 
 ### 1. Expensive work was repeated from the Accounts template
 
-The approved branch repeatedly constructed `Set` instances and filtered potentially large imported-game ID arrays from multiple template bindings during change detection.
+The original branch repeatedly constructed `Set` instances, filtered potentially large imported-game ID arrays, and rebuilt fact arrays from template bindings during change detection.
 
 Correction:
 
 - added `helpers/account-settings-view.ts` as a pure tested boundary;
-- deduplicated imported IDs once per view calculation;
-- intersected new imported games with current indexed/unindexed candidates once;
-- bound one `@let workflow` result per rendered sync result;
+- deduplicated imported IDs and intersected them with current indexed/unindexed candidates once per signal update;
+- exposed `newImportedWorkflowStates` and `accountFactsById` as computed view-state maps;
+- reduced the template to keyed lookups and trivial label formatting;
 - reused the same helper after candidate refresh before submitting commands.
 
 ### 2. Account action hierarchy was fundamentally weak
@@ -107,14 +108,26 @@ Correction:
 - documented the existing browser-local pack and volume ownership;
 - retained the prohibition on feature-specific sound services and per-mode flags.
 
-### 7. Migration tooling records were stale
+### 7. Migration and rollout records were stale
 
-The migration ledger still described the Angular test script as a placeholder despite the active Karma/Chrome suite and recent full CI runs.
+The migration ledger described the Angular test script as a placeholder, and the status/issue records still treated already merged Progress and Tactical Detections branches as active.
 
 Correction:
 
-- recorded the browser test suite as active CI coverage;
-- accurately described current web linting as Angular/TypeScript template compilation without a separate ESLint/CSS lint stage.
+- recorded the Karma/Chrome browser test suite as active CI coverage;
+- accurately described current web linting as Angular/TypeScript template compilation without a separate ESLint/CSS lint stage;
+- recorded PR #196 and PR #277 as integrated;
+- narrowed remaining VT-301 work to authenticated-route inventory reconciliation.
+
+### 8. New rendered specs leaked fixture lifecycle state
+
+The first two fresh validation attempts completed every non-test gate but reproducibly left Chrome silent after 314 of 315 tests. The new Accounts and Lichess fixtures started asynchronous page initialization without waiting for stability, and none of the three new fixture suites explicitly destroyed their fixtures.
+
+Correction:
+
+- awaited `fixture.whenStable()` after initial change detection for async route pages;
+- explicitly destroyed Accounts, Lichess, and Appearance fixtures in `afterEach`;
+- required a new exact-head complete workflow rather than classifying the repeated browser timeout as infrastructure noise.
 
 ## Implemented presentation
 
@@ -145,16 +158,17 @@ Correction:
 Added or expanded:
 
 - `account-settings-view.spec.ts` — imported-game deduplication/intersection and required Lichess scope guidance;
-- `accounts-page.component.spec.ts` — rendered evidence, action hierarchy, live-region semantics, current workflow eligibility, confirmation boundaries, and header action wiring;
-- `lichess-settings-page.component.spec.ts` — rendered capability evidence, complete missing-scope copy, polite notice semantics, and disconnect confirmation;
-- `appearance-settings-page.component.spec.ts` — explicit labels/descriptions, output semantics, preview group, pack/volume persistence calls, and preview delegation.
+- `accounts-page.component.spec.ts` — rendered evidence, action hierarchy, live-region semantics, current workflow eligibility, confirmation boundaries, header action wiring, stable async initialization, and fixture teardown;
+- `lichess-settings-page.component.spec.ts` — rendered capability evidence, complete missing-scope copy, polite notice semantics, disconnect confirmation, stable async initialization, and fixture teardown;
+- `appearance-settings-page.component.spec.ts` — explicit labels/descriptions, output semantics, preview group, pack/volume persistence calls, preview delegation, and fixture teardown.
 
 ## Validation record
 
 - Original implementation head `e2448cee7620095a239bafb997e7de6cc2b327bb`: repository CI #1573 passed.
-- The old successful run does not validate the current-main merge or the self-review corrections.
+- The old successful run did not validate the current-main merge or the self-review corrections.
+- Two fresh pre-cleanup attempts passed dependency installation, lint, build, audits, architecture guardrails, and migrations, then reproduced the same Karma browser timeout after 314 of 315 tests.
 - This environment could not create a local checkout because DNS resolution for GitHub failed. No local build, lint, test, or browser command is represented as passed.
-- The final refreshed PR head must pass the complete repository CI before squash merge. The exact run is recorded on the PR and issue rather than retroactively editing this report and invalidating the exact-head check.
+- The final refreshed PR head must pass the complete repository CI before squash merge. The exact run and head are recorded on the PR and issue rather than retroactively editing this report and invalidating the exact-head check.
 
 ## Browser disposition
 
@@ -188,11 +202,12 @@ The later consolidated product-review checklist should still cover:
 - `docs/frontend/angular-migration.md`
 - `docs/frontend/design-tokens.md`
 - `apps/web/package.json`
+- `apps/web/karma.conf.js`
 - `apps/web/src/design-system.css`
 - `transformation/STATUS.md`
 - `transformation/reports/VT_301_SETTINGS.md`
 - Visual Transformation issues #122 and #132
-- PR #209 metadata, diff, comments, changed-file inventory, base/head comparison, and CI #1573
+- PRs #196, #209, and #277 metadata; PR #209 diff, comments, changed-file inventory, base/head comparison, CI, and failed-job evidence
 - `apps/web/src/app/shared/ui/page-header/page-header.component.ts`
 - `apps/web/src/app/shared/ui/panel/panel.component.ts`
 - `apps/web/src/app/shared/ui/fact-grid/fact-grid.component.ts`
