@@ -7,9 +7,9 @@
     <div class="rail-brand-row">
       <a routerLink="/home" class="rail-brand-link" aria-label="Chess Repertoire Trainer home">
         @if (railCollapsed()) {
-          <app-brand-mark variant="mark" [size]="42" />
+          <app-brand-mark variant="grid" [size]="42" />
         } @else {
-          <app-brand-lockup tone="inverse" markVariant="mark" [markSize]="40" />
+          <app-brand-lockup tone="inverse" markVariant="grid" [markSize]="42" />
         }
       </a>
       <button
@@ -25,7 +25,11 @@
     </div>
 
     <nav class="rail-nav" aria-label="Main navigation">
+      <div class="rail-section-label">Start</div>
       @for (item of primaryNavItems; track item.id) {
+        @if (item.id === 'games') {
+          <div class="rail-section-label rail-section-label-understand">Understand</div>
+        }
         <div
           class="rail-nav-node"
           [class.rail-nav-node-active]="isNavActive(item)"
@@ -40,14 +44,21 @@
             (click)="closeNavFlyout()"
           >
             <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
-            <span class="rail-nav-label">{{ item.label }}</span>
+            <span class="rail-nav-copy">
+              <span class="rail-nav-label">{{ item.label }}</span>
+              @if (item.description) {
+                <small class="rail-nav-description">{{ item.description }}</small>
+              }
+            </span>
           </a>
 
           @if (item.children) {
             <button
               type="button"
               class="rail-nav-disclosure"
-              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
+              [attr.aria-label]="
+                (isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'
+              "
               [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
               [attr.aria-haspopup]="railCollapsed() ? 'menu' : null"
               [attr.aria-expanded]="isNavFlyoutOpen(item)"
@@ -66,7 +77,11 @@
               [attr.aria-hidden]="!isNavFlyoutOpen(item)"
             >
               <div class="rail-inline-accordion-clip">
-                <div class="rail-inline-children" role="group" [attr.aria-label]="item.label + ' submenu'">
+                <div
+                  class="rail-inline-children"
+                  role="group"
+                  [attr.aria-label]="item.label + ' submenu'"
+                >
                   @for (child of item.children; track child.id) {
                     <a
                       [routerLink]="child.link"
@@ -78,7 +93,12 @@
                       (click)="closeNavFlyout()"
                     >
                       <span class="rail-inline-icon"><app-nav-icon [name]="child.icon" /></span>
-                      <span class="rail-inline-label">{{ child.label }}</span>
+                      <span class="rail-inline-copy">
+                        <span class="rail-inline-label">{{ child.label }}</span>
+                        @if (child.description) {
+                          <small class="rail-inline-description">{{ child.description }}</small>
+                        }
+                      </span>
                     </a>
                   }
                 </div>
@@ -131,14 +151,21 @@
             (click)="closeNavFlyout()"
           >
             <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
-            <span class="rail-nav-label">{{ item.label }}</span>
+            <span class="rail-nav-copy">
+              <span class="rail-nav-label">{{ item.label }}</span>
+              @if (item.description) {
+                <small class="rail-nav-description">{{ item.description }}</small>
+              }
+            </span>
           </a>
 
           @if (item.children) {
             <button
               type="button"
               class="rail-nav-disclosure"
-              [attr.aria-label]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
+              [attr.aria-label]="
+                (isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'
+              "
               [attr.title]="(isNavFlyoutOpen(item) ? 'Hide ' : 'Show ') + item.label + ' submenu'"
               [attr.aria-haspopup]="railCollapsed() ? 'menu' : null"
               [attr.aria-expanded]="isNavFlyoutOpen(item)"
@@ -157,7 +184,11 @@
               [attr.aria-hidden]="!isNavFlyoutOpen(item)"
             >
               <div class="rail-inline-accordion-clip">
-                <div class="rail-inline-children" role="group" [attr.aria-label]="item.label + ' submenu'">
+                <div
+                  class="rail-inline-children"
+                  role="group"
+                  [attr.aria-label]="item.label + ' submenu'"
+                >
                   @for (child of item.children; track child.id) {
                     <a
                       [routerLink]="child.link"
@@ -169,7 +200,12 @@
                       (click)="closeNavFlyout()"
                     >
                       <span class="rail-inline-icon"><app-nav-icon [name]="child.icon" /></span>
-                      <span class="rail-inline-label">{{ child.label }}</span>
+                      <span class="rail-inline-copy">
+                        <span class="rail-inline-label">{{ child.label }}</span>
+                        @if (child.description) {
+                          <small class="rail-inline-description">{{ child.description }}</small>
+                        }
+                      </span>
                     </a>
                   }
                 </div>
@@ -220,7 +256,7 @@
 
   <header class="mobile-header">
     <a routerLink="/home" class="mobile-brand-link" aria-label="Chess Repertoire Trainer home">
-      <app-brand-lockup [markSize]="34" collapseAtMobile />
+      <app-brand-lockup markVariant="grid" [markSize]="36" collapseAtMobile />
     </a>
   </header>
 
@@ -274,7 +310,7 @@
     <div class="mobile-menu-header">
       <div>
         <p class="mobile-menu-kicker">All destinations</p>
-        <app-brand-lockup [markSize]="34" />
+        <app-brand-lockup markVariant="grid" [markSize]="36" />
       </div>
       <button
         #mobileMenuCloseButton
@@ -323,7 +359,7 @@
 } @else {
   <aside class="desktop-rail desktop-rail-auth" aria-label="Authentication navigation">
     <a routerLink="/" class="rail-brand-link" aria-label="Chess Repertoire Trainer landing page">
-      <app-brand-lockup tone="inverse" markVariant="mark" [markSize]="40" />
+      <app-brand-lockup tone="inverse" markVariant="grid" [markSize]="42" />
     </a>
     <nav class="rail-nav" aria-label="Authentication navigation">
       @for (item of authNavItems; track item.id) {
@@ -334,7 +370,9 @@
             [attr.aria-current]="isNavActive(item) ? 'page' : null"
           >
             <span class="rail-nav-icon"><app-nav-icon [name]="item.icon" /></span>
-            <span class="rail-nav-label">{{ item.label }}</span>
+            <span class="rail-nav-copy">
+              <span class="rail-nav-label">{{ item.label }}</span>
+            </span>
           </a>
         </div>
       }

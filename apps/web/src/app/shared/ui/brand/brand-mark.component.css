@@ -50,3 +50,16 @@
 .brand-mark-reversed .brand-mark-nodes {
   fill: #172321;
 }
+
+.brand-grid-background {
+  fill: var(--ui-action, #47b89c);
+}
+
+.brand-grid-cells {
+  fill: var(--ui-action-ink, #071713);
+  opacity: 0.2;
+}
+
+.brand-grid-cell-selected {
+  opacity: 1;
+}

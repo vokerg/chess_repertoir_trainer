@@ -2,6 +2,7 @@
   class="brand-mark"
   [class.brand-mark-plain]="variant() === 'mark'"
   [class.brand-mark-reversed]="variant() === 'reversed'"
+  [class.brand-mark-grid]="variant() === 'grid'"
   viewBox="0 0 64 64"
   [attr.role]="label() ? 'img' : null"
   [attr.aria-hidden]="label() ? null : 'true'"
@@ -10,11 +11,26 @@
   @if (label()) {
     <title>{{ label() }}</title>
   }
-  <rect class="brand-mark-background" width="64" height="64" rx="16" />
-  <path class="brand-mark-branch" d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50" />
-  <g class="brand-mark-nodes">
-    <circle cx="18" cy="50" r="5.5" />
-    <circle cx="34" cy="14" r="5.5" />
-    <circle cx="51" cy="44" r="5.5" />
-  </g>
+  @if (variant() === 'grid') {
+    <rect class="brand-grid-background" width="64" height="64" rx="16" />
+    <g class="brand-grid-cells">
+      <rect x="13" y="13" width="10" height="10" rx="2" />
+      <rect class="brand-grid-cell-selected" x="27" y="13" width="10" height="10" rx="2" />
+      <rect x="41" y="13" width="10" height="10" rx="2" />
+      <rect class="brand-grid-cell-selected" x="13" y="27" width="10" height="10" rx="2" />
+      <rect class="brand-grid-cell-selected" x="27" y="27" width="10" height="10" rx="2" />
+      <rect class="brand-grid-cell-selected" x="41" y="27" width="10" height="10" rx="2" />
+      <rect x="13" y="41" width="10" height="10" rx="2" />
+      <rect x="27" y="41" width="10" height="10" rx="2" />
+      <rect class="brand-grid-cell-selected" x="41" y="41" width="10" height="10" rx="2" />
+    </g>
+  } @else {
+    <rect class="brand-mark-background" width="64" height="64" rx="16" />
+    <path class="brand-mark-branch" d="M18 49V18M18 29H34M34 29V15M34 29V44M34 44H50" />
+    <g class="brand-mark-nodes">
+      <circle cx="18" cy="50" r="5.5" />
+      <circle cx="34" cy="14" r="5.5" />
+      <circle cx="51" cy="44" r="5.5" />
+    </g>
+  }
 </svg>

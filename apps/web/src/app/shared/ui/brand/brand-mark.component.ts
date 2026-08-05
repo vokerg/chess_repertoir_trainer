@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-export type BrandMarkVariant = 'mark' | 'badge' | 'reversed';
+export type BrandMarkVariant = 'mark' | 'badge' | 'reversed' | 'grid';
 
 @Component({
   selector: 'app-brand-mark',
