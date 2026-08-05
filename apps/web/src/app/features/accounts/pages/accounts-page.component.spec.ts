@@ -99,6 +99,12 @@ describe('AccountsPageComponent', () => {
 
     fixture = TestBed.createComponent(AccountsPageComponent);
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
   });
 
   it('renders semantic account evidence and separates workflows from account options', () => {
