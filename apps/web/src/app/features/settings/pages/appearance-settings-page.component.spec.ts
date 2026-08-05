@@ -26,6 +26,10 @@ describe('AppearanceSettingsPageComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    fixture.destroy();
+  });
+
   it('associates each control with explicit labels and local-preference help', () => {
     const root = fixture.nativeElement as HTMLElement;
     const packLabel = root.querySelector('label[for="board-sound-pack"]');
