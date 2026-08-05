@@ -38,4 +38,15 @@ describe('BrandMarkComponent', () => {
     expect(fixture.nativeElement.querySelector('svg').classList).toContain('brand-mark-reversed');
     expect(fixture.nativeElement.querySelectorAll('circle').length).toBe(3);
   });
+
+  it('renders the Decision Grid identity without changing the default mark', () => {
+    fixture.componentRef.setInput('variant', 'grid');
+    fixture.detectChanges();
+
+    const svg = fixture.nativeElement.querySelector('svg');
+    expect(svg.classList).toContain('brand-mark-grid');
+    expect(svg.querySelectorAll('.brand-grid-cells rect').length).toBe(9);
+    expect(svg.querySelectorAll('.brand-grid-cell-selected').length).toBe(5);
+    expect(svg.querySelector('.brand-mark-branch')).toBeNull();
+  });
 });

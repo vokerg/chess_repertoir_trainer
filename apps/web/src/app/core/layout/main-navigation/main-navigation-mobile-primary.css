@@ -81,6 +81,7 @@
     width: 25px;
     height: 25px;
     place-items: center;
+    --nav-icon-signal: var(--ui-action);
   }
 
   .mobile-primary-nav-icon app-nav-icon {
