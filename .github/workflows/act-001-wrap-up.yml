@@ -1,0 +1,46 @@
+name: Reconcile ACT-001 tracker
+
+on:
+  push:
+    branches:
+      - act-001/issue-246-activity-ledger-api
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: act-001/issue-246-activity-ledger-api
+          fetch-depth: 0
+      - name: Update canonical activity queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('north-star/activity-feed/README.md')
+          content = path.read_text()
+          replacements = {
+              'Last updated: 2026-07-31': 'Last updated: 2026-08-05',
+              '| ACT-001 Activity ledger and daily-goal API | [#246](https://github.com/vokerg/chess_repertoir_trainer/issues/246) | READY | — |': '| ACT-001 Activity ledger and daily-goal API | [#246](https://github.com/vokerg/chess_repertoir_trainer/issues/246) | COMPLETE | — |',
+              '| ACT-002 In-app activity producers | [#247](https://github.com/vokerg/chess_repertoir_trainer/issues/247) | PROPOSED | ACT-001 |': '| ACT-002 In-app activity producers | [#247](https://github.com/vokerg/chess_repertoir_trainer/issues/247) | READY | ACT-001 |',
+              '| ACT-003 Imported played-game reconciliation | [#248](https://github.com/vokerg/chess_repertoir_trainer/issues/248) | PROPOSED | ACT-001 |': '| ACT-003 Imported played-game reconciliation | [#248](https://github.com/vokerg/chess_repertoir_trainer/issues/248) | READY | ACT-001 |',
+          }
+          for old, new in replacements.items():
+              if content.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one tracker occurrence: {old}')
+              content = content.replace(old, new)
+          path.write_text(content)
+          PY
+          rm .github/workflows/act-001-wrap-up.yml
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'docs(activity): complete ACT-001 queue state'
+          git push origin HEAD:act-001/issue-246-activity-ledger-api
