@@ -44,7 +44,6 @@ export class AccountsPageComponent implements OnInit {
   protected readonly providerLabel = providerLabel;
   protected readonly providerClass = providerClass;
   protected readonly syncStatusLabel = syncStatusLabel;
-  protected readonly dateLabel = dateLabel;
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'refresh-games',
@@ -67,6 +66,20 @@ export class AccountsPageComponent implements OnInit {
       value: this.store.accounts().filter((account) => account.isActive).length,
     },
   ]);
+  protected readonly accountFactsById = computed<
+    Readonly<Record<number, readonly UiFactItem[]>>
+  >(() =>
+    Object.fromEntries(
+      this.store.accounts().map((account) => [
+        account.id,
+        [
+          { id: 'last-sync', label: 'Last sync', value: dateLabel(account.lastSyncAt) },
+          { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
+          { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
+        ] satisfies readonly UiFactItem[],
+      ]),
+    ),
+  );
   protected readonly newImportedWorkflowStates = computed<
     Readonly<Record<number, NewImportedWorkflowState>>
   >(() => {
@@ -81,14 +94,6 @@ export class AccountsPageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.store.loadAccounts();
-  }
-
-  protected accountFacts(account: ExternalAccount): readonly UiFactItem[] {
-    return [
-      { id: 'last-sync', label: 'Last sync', value: dateLabel(account.lastSyncAt) },
-      { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
-      { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
-    ];
   }
 
   protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
