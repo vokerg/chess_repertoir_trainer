@@ -1,30 +1,36 @@
 <section class="appearance-settings-page stack">
   <app-page-header
     title="Appearance"
-    subtitle="Choose the board feedback preferences used on this device."
+    subtitle="Adjust board sound feedback for this browser."
   />
 
   <app-panel
     title="Board sounds"
-    subtitle="Use original in-browser sound design without copying sounds from another chess site."
+    subtitle="Choose a sound character and volume, then preview the result before returning to the board."
   >
     <div class="sound-settings">
-      <label class="setting-field">
-        <span class="setting-label">Sound pack</span>
-        <select [value]="sounds.pack()" (change)="changePack($event)">
+      <div class="setting-field">
+        <label class="setting-label" for="board-sound-pack">Sound pack</label>
+        <select
+          id="board-sound-pack"
+          [value]="sounds.pack()"
+          (change)="changePack($event)"
+          aria-describedby="board-sound-pack-help"
+        >
           @for (option of soundPacks; track option.id) {
             <option [value]="option.id">{{ option.label }}</option>
           }
         </select>
-        <span class="setting-help">{{ selectedPackDescription() }}</span>
-      </label>
+        <p id="board-sound-pack-help" class="setting-help">{{ selectedPackDescription() }}</p>
+      </div>
 
-      <label class="setting-field">
-        <span class="setting-heading">
-          <span class="setting-label">Volume</span>
-          <strong>{{ volumePercent() }}%</strong>
-        </span>
+      <div class="setting-field">
+        <div class="setting-heading">
+          <label class="setting-label" for="board-sound-volume">Volume</label>
+          <output for="board-sound-volume">{{ volumePercent() }}%</output>
+        </div>
         <input
+          id="board-sound-volume"
           type="range"
           min="0"
           max="100"
@@ -32,14 +38,21 @@
           [value]="volumePercent()"
           [disabled]="sounds.pack() === 'silent'"
           (input)="changeVolume($event)"
-          aria-label="Board sound volume"
+          aria-describedby="board-sound-volume-help"
         />
-        <span class="setting-help">Stored locally in this browser.</span>
-      </label>
+        <p id="board-sound-volume-help" class="setting-help">
+          Sound pack and volume preferences are stored only in this browser.
+        </p>
+      </div>
 
-      <div class="preview-group" aria-label="Sound previews">
-        <span class="setting-label">Preview</span>
-        <p class="setting-help">Test the current pack without leaving this page.</p>
+      <div
+        class="preview-group"
+        role="group"
+        aria-labelledby="board-sound-preview-label"
+        aria-describedby="board-sound-preview-help"
+      >
+        <span id="board-sound-preview-label" class="setting-label">Preview</span>
+        <p id="board-sound-preview-help" class="setting-help">Test the current pack without leaving this page.</p>
         <div class="preview-actions">
           <button
             type="button"
