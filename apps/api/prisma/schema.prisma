@@ -19,6 +19,7 @@ model AppUser {
   authProvider                    String?
   authSubject                     String?
   email                           String?
+  timeZone                        String                           @default("UTC") @db.VarChar(64)
   defaultProgressAccountId        Int?                             @unique
   defaultProgressAccount          ExternalAccount?                 @relation("DefaultProgressAccount", fields: [defaultProgressAccountId], references: [id], onDelete: SetNull)
   externalAccounts                ExternalAccount[]
@@ -38,10 +39,35 @@ model AppUser {
   courses                         Course[]
   trainingSessions                TrainingSession[]
   trainingSublineAttempts         TrainingSublineAttempt[]
+  activityDailyAggregates         UserActivityDailyAggregate[]
   createdAt                       DateTime                         @default(now())
   updatedAt                       DateTime                         @updatedAt
 
   @@unique([authProvider, authSubject])
+}
+
+enum ActivityType {
+  GAMES_PLAYED
+  REPERTOIRE_LINES_TRAINED
+  LICHESS_PUZZLES_COMPLETED
+  TACTICAL_SCENARIOS_COMPLETED
+  GAME_ANALYSES_COMPLETED
+}
+
+model UserActivityDailyAggregate {
+  id              Int          @id @default(autoincrement())
+  userId          Int
+  user            AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityDate    DateTime     @db.Date
+  type            ActivityType
+  count           Int          @default(0)
+  firstOccurredAt DateTime?
+  lastOccurredAt  DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([userId, activityDate, type])
+  @@index([userId, activityDate])
 }
 
 model ExternalAccount {
