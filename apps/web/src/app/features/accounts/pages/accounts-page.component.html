@@ -103,7 +103,7 @@
               />
 
               @if (store.syncResults()[account.id]; as result) {
-                @let workflow = newImportedWorkflowState(account.id, result);
+                @let workflow = newImportedWorkflowStates()[account.id];
                 <div class="sync-result" role="status" aria-live="polite">
                   <strong>{{ syncStatusLabel(result.status) }}</strong>
                   <span>
