@@ -214,6 +214,21 @@ No code change was made. The worker repository remains the authority for claim r
 
 The new `main` commit `fb02c9e99a102092601ee10dde27238a861f6de4` reconciles Visual Transformation documentation. It does not change administrator, authentication, contracts, route-registration, Prisma, or test files. The feature branch still requires an explicit merge refresh and exact-head CI before squash merge.
 
+### 14. Unexpected authorized failures bypassed the administrator response and audit boundary
+
+Severity: high
+
+Unexpected repository or request-budget errors fell through to the application-wide error handler. That path could serialize raw exception messages and did not emit the administrator-specific pseudonymous read event with an `ERROR` result class.
+
+Correction:
+
+- add one generic module-local HTTP 500 response schema that contains no exception detail;
+- catch unexpected diagnostics and request-budget failures inside the administrator module;
+- emit the same pseudonymous actor/target, operation, request id, result class, and duration security event used for successful reads;
+- keep detailed exceptions only in the separate server operational log;
+- add runtime tests proving sensitive exception text is absent from both diagnostics and budget failure responses;
+- advertise the generic 500 response in OpenAPI for every administrator route.
+
 ## Review result
 
-The second review found and corrected two material hardening/correctness defects without expanding ONB-022 into schema, frontend, lifecycle, or infrastructure work. No remaining architecture defect is known. Merge readiness requires the branch to be zero commits behind current `main`, the complete exact-head CI workflow to pass after these corrections, and PR review state to remain free of unresolved blockers.
+The second review found and corrected three material hardening/correctness defects without expanding ONB-022 into schema, frontend, lifecycle, or infrastructure work. No remaining architecture defect is known. Merge readiness requires the branch to be zero commits behind current `main`, the complete exact-head CI workflow to pass after these corrections, and PR review state to remain free of unresolved blockers.
