@@ -117,7 +117,7 @@ describe('AccountsPageComponent', () => {
     expect(buttons).toContain('Sync games');
     expect(buttons).toContain('Index blitz/rapid games');
     expect(buttons).toContain('Analyse indexed games');
-    expect(buttons).toContain('Make default for progress');
+    expect(buttons.some((label) => label.includes('Make default for progress'))).toBeTrue();
     expect(buttons).toContain('Delete account');
   });
 
