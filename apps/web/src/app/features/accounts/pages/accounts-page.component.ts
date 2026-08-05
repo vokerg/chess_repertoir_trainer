@@ -67,6 +67,17 @@ export class AccountsPageComponent implements OnInit {
       value: this.store.accounts().filter((account) => account.isActive).length,
     },
   ]);
+  protected readonly newImportedWorkflowStates = computed<
+    Readonly<Record<number, NewImportedWorkflowState>>
+  >(() => {
+    const candidatesByAccount = this.store.workflowCandidates();
+    return Object.fromEntries(
+      Object.entries(this.store.syncResults()).map(([accountId, result]) => [
+        Number(accountId),
+        buildNewImportedWorkflowState(result, candidatesByAccount[Number(accountId)]),
+      ]),
+    );
+  });
 
   ngOnInit(): void {
     void this.store.loadAccounts();
@@ -78,13 +89,6 @@ export class AccountsPageComponent implements OnInit {
       { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
       { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
     ];
-  }
-
-  protected newImportedWorkflowState(
-    accountId: number,
-    result: ImportRunSummary,
-  ): NewImportedWorkflowState {
-    return buildNewImportedWorkflowState(result, this.store.workflowCandidates()[accountId]);
   }
 
   protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
