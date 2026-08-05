@@ -16,7 +16,7 @@ The authoritative current checkpoint, integrated history, validation, and residu
 - Open pull requests against `main`.
 - Refresh the task branch when concurrent integration moves the base.
 - Do not merge without explicit approval.
-- Squash-merge into `main` by default.
+- Always squash-merge into `main`; do not use merge commits or rebase merges.
 - The former long-running `visual_transformation` branch is historical and retired for new work.
 
 ## Read before work

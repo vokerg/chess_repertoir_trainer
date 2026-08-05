@@ -23,7 +23,7 @@ Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web cl
 - Use a short-lived task branch and a pull request for every meaningful change.
 - Refresh the task branch from current `main` before final review when concurrent integration has moved the base.
 - Do not merge without explicit user or reviewer approval.
-- Pull requests into `main` are squash-merged by default. Use another merge strategy only when the user explicitly requests it.
+- Always squash-merge pull requests into `main`. Do not use merge commits or rebase merges.
 - Never push or commit directly to `main` unless the user explicitly requests that exceptional action.
 
 ## Agent command entry points

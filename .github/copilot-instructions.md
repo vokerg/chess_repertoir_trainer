@@ -10,7 +10,7 @@ This repository is a TypeScript modular monolith:
 - `packages/chess-domain`: framework-neutral chess and training behavior;
 - `packages/contracts`: shared Zod HTTP wire contracts.
 
-Create work from the current `main` head, never work directly on `main`, and do not merge without explicit approval. Pull requests into `main` are squash-merged by default unless the user explicitly requests another strategy.
+Create work from the current `main` head, never work directly on `main`, and do not merge without explicit approval. Always squash-merge pull requests into `main`; do not use merge commits or rebase merges.
 
 For the exact command `update changelog`, load and follow [`.agents/commands/update-changelog.md`](../.agents/commands/update-changelog.md).
 
