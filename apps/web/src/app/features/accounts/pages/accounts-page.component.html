@@ -1,5 +1,9 @@
 <section class="accounts-page stack">
-  <app-page-header title="Import accounts" subtitle="Connect accounts and refresh imported games." [actions]="headerActions()" />
+  <app-page-header
+    title="Import accounts"
+    subtitle="Manage import sources, refresh game history, and run account workflows."
+    [actions]="headerActions()"
+  />
 
   <app-panel title="Add import source" subtitle="Use the public username for a Lichess or Chess.com account.">
     <form class="account-form" (ngSubmit)="store.createAccount()">
@@ -22,6 +26,7 @@
           (ngModelChange)="store.updateForm('username', $event)"
           name="username"
           placeholder="e.g. magnuscarlsen"
+          autocomplete="off"
           required
         />
       </label>
@@ -33,6 +38,7 @@
           (ngModelChange)="store.updateForm('displayName', $event)"
           name="displayName"
           placeholder="Optional label"
+          autocomplete="off"
         />
       </label>
 
@@ -46,26 +52,26 @@
   </app-panel>
 
   <app-panel
-    title="Sync games by account"
-    subtitle="Sync is deliberately per-account so a large archive import does not block every other source."
+    title="Imported accounts"
+    subtitle="Each account keeps its own import status, workflows, and management controls."
     [stats]="accountStats()"
   >
     @if (store.error()) {
-      <p class="status-error">{{ store.error() }}</p>
+      <p class="status-error" role="alert">{{ store.error() }}</p>
     }
     @if (store.notice()) {
-      <p class="status-note">{{ store.notice() }}</p>
+      <p class="status-note" role="status" aria-live="polite">{{ store.notice() }}</p>
     }
     @if (store.loading() && store.accounts().length === 0) {
-      <p class="status-note">Loading accounts...</p>
+      <p class="status-note" role="status">Loading accounts...</p>
     }
     @if (store.syncingAllAccounts()) {
-      <p class="status-note">Refreshing games across active accounts...</p>
+      <p class="status-note" role="status" aria-live="polite">Refreshing games across active accounts...</p>
     }
 
     @if (!store.loading() && store.accounts().length === 0) {
       <div class="empty-state accounts-empty">
-        No accounts configured yet. Add a Lichess or Chess.com username above, then press Sync on the account card.
+        No accounts configured yet. Add a Lichess or Chess.com username above, then sync the account.
       </div>
     }
 
@@ -97,7 +103,8 @@
               />
 
               @if (store.syncResults()[account.id]; as result) {
-                <div class="sync-result">
+                @let workflow = newImportedWorkflowState(account.id, result);
+                <div class="sync-result" role="status" aria-live="polite">
                   <strong>{{ syncStatusLabel(result.status) }}</strong>
                   <span>
                     Seen {{ result.gamesSeen }}, imported {{ result.gamesImported }}, already present {{ result.gamesSkipped || 0 }}, failed {{ result.gamesFailed }}.
@@ -105,15 +112,19 @@
                   @if (result.archivesFetched !== null && result.archivesFetched !== undefined) {
                     <span>Archives fetched: {{ result.archivesFetched }}.</span>
                   }
-                  @if (newImportedEligibleCount(result) > 0) {
+                  @if (workflow.eligibleCount > 0) {
                     <div class="sync-workflow">
-                      <span>{{ newImportedEligibleCount(result) }} newly imported blitz/rapid games are ready for standard workflows.</span>
-                      <div class="sync-workflow-actions">
+                      <span>{{ workflow.eligibleCount }} newly imported blitz/rapid games are ready for standard workflows.</span>
+                      <div
+                        class="sync-workflow-actions"
+                        role="group"
+                        [attr.aria-label]="'Newly imported game actions for ' + account.username"
+                      >
                         <button
                           type="button"
                           class="secondary"
                           (click)="confirmIndexNewImportedGames(account, result)"
-                          [disabled]="newImportedUnindexedGameIds(account.id, result).length === 0 || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id)"
+                          [disabled]="workflow.unindexedGameIds.length === 0 || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id)"
                         >
                           {{ store.isAccountIndexing(account.id) ? 'Indexing in background...' : 'Index new games' }}
                         </button>
@@ -121,7 +132,7 @@
                           type="button"
                           class="secondary"
                           (click)="confirmAnalyseNewImportedGames(account, result)"
-                          [disabled]="newImportedIndexedGameIds(account.id, result).length === 0 || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id)"
+                          [disabled]="workflow.indexedGameIds.length === 0 || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id)"
                         >
                           {{ store.isAccountAnalysing(account.id) ? 'Analysis in background...' : 'Analyse new indexed games' }}
                         </button>
@@ -133,70 +144,81 @@
             </div>
 
             <div class="account-card-actions">
-              <button
-                type="button"
-                class="secondary default-account-button"
-                [class.default-account-button-active]="account.isDefaultProgressAccount"
-                (click)="store.setDefaultProgressAccount(account)"
-                [disabled]="store.settingDefaultProgressAccountId() === account.id || store.deletingAccountId() === account.id"
-                [attr.aria-pressed]="account.isDefaultProgressAccount ? 'true' : 'false'"
-                [attr.aria-label]="account.isDefaultProgressAccount ? 'Clear default progress account' : 'Set as default progress account'"
-                title="Default progress account"
+              <div
+                class="account-primary-actions"
+                role="group"
+                [attr.aria-label]="'Game workflows for ' + account.username"
               >
-                @if (account.isDefaultProgressAccount) {
-                  <span aria-hidden="true">&#9733;</span>
-                } @else {
-                  <span aria-hidden="true">&#9734;</span>
-                }
-              </button>
-              <button
-                type="button"
-                class="primary"
-                (click)="store.syncAccount(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
-              >
-                {{ store.syncingAccountId() === account.id ? 'Syncing...' : 'Sync' }}
-              </button>
-              <button
-                type="button"
-                class="secondary"
-                (click)="confirmIndexEligibleAccountGames(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id) || store.deletingAccountId() === account.id || !account.isActive"
-              >
-                {{ store.isAccountIndexing(account.id) ? 'Indexing in background...' : 'Index blitz/rapid games' }}
-              </button>
-              <button
-                type="button"
-                class="secondary"
-                (click)="confirmAnalyseEligibleAccountGames(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id) || store.deletingAccountId() === account.id || !account.isActive"
-              >
-                {{ store.isAccountAnalysing(account.id) ? 'Analysis in background...' : 'Analyse indexed blitz/rapid games' }}
-              </button>
-              <button
-                type="button"
-                class="secondary"
-                (click)="confirmResetCursor(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
-              >
-                {{ store.resettingCursorAccountId() === account.id ? 'Resetting...' : 'Reset cursor' }}
-              </button>
-              <button
-                type="button"
-                class="secondary"
-                (click)="store.toggleActive(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
-              >
-                {{ account.isActive ? 'Disable' : 'Enable' }}
-              </button>
-              <button
-                type="button"
-                class="secondary account-delete-button"
-                (click)="confirmDeleteAccount(account)"
-                [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
-              >
-                {{ store.deletingAccountId() === account.id ? 'Deleting...' : 'Delete account' }}
-              </button>
+                <button
+                  type="button"
+                  class="primary"
+                  (click)="store.syncAccount(account)"
+                  [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id || !account.isActive"
+                >
+                  {{ store.syncingAccountId() === account.id ? 'Syncing...' : 'Sync games' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="confirmIndexEligibleAccountGames(account)"
+                  [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id) || store.deletingAccountId() === account.id || !account.isActive"
+                >
+                  {{ store.isAccountIndexing(account.id) ? 'Indexing in background...' : 'Index blitz/rapid games' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="confirmAnalyseEligibleAccountGames(account)"
+                  [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.isAccountIndexing(account.id) || store.isAccountAnalysing(account.id) || store.deletingAccountId() === account.id || !account.isActive"
+                >
+                  {{ store.isAccountAnalysing(account.id) ? 'Analysis in background...' : 'Analyse indexed games' }}
+                </button>
+              </div>
+
+              <details class="account-options">
+                <summary>Account options</summary>
+                <div
+                  class="account-options-actions"
+                  role="group"
+                  [attr.aria-label]="'Account options for ' + account.username"
+                >
+                  <button
+                    type="button"
+                    class="secondary default-account-button"
+                    [class.default-account-button-active]="account.isDefaultProgressAccount"
+                    (click)="store.setDefaultProgressAccount(account)"
+                    [disabled]="store.settingDefaultProgressAccountId() === account.id || store.deletingAccountId() === account.id"
+                    [attr.aria-pressed]="account.isDefaultProgressAccount ? 'true' : 'false'"
+                  >
+                    <span aria-hidden="true">{{ account.isDefaultProgressAccount ? '★' : '☆' }}</span>
+                    {{ account.isDefaultProgressAccount ? 'Default progress account' : 'Make default for progress' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="confirmResetCursor(account)"
+                    [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+                  >
+                    {{ store.resettingCursorAccountId() === account.id ? 'Resetting...' : 'Reset import cursor' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary"
+                    (click)="store.toggleActive(account)"
+                    [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+                  >
+                    {{ account.isActive ? 'Disable account' : 'Enable account' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="secondary account-delete-button"
+                    (click)="confirmDeleteAccount(account)"
+                    [disabled]="store.syncingAllAccounts() || store.syncingAccountId() === account.id || store.resettingCursorAccountId() === account.id || store.deletingAccountId() === account.id"
+                  >
+                    {{ store.deletingAccountId() === account.id ? 'Deleting...' : 'Delete account' }}
+                  </button>
+                </div>
+              </details>
             </div>
           </article>
         }
