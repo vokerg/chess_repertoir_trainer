@@ -1,199 +1,305 @@
-.accounts-page { gap: 1rem; }
-      .account-form-actions,
-      .account-card-actions {
-        display: flex;
-        gap: 0.65rem;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .accounts-muted {
-        margin: 0.35rem 0 0;
-        color: var(--muted);
-        line-height: 1.45;
-      }
-      .lichess-connection {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        align-items: flex-start;
-      }
-      .lichess-connection-main {
-        display: grid;
-        gap: 0.75rem;
-        min-width: min(100%, 460px);
-      }
-      .lichess-status {
-        margin: 0;
-        color: var(--text);
-        font-weight: 800;
-      }
-      .lichess-meta-grid {
-        grid-template-columns: repeat(3, minmax(140px, 1fr));
-      }
-      .account-form {
-        display: grid;
-        grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1fr) minmax(220px, 1fr) auto;
-        gap: 0.85rem;
-        align-items: end;
-      }
-      .account-field {
-        display: grid;
-        gap: 0.35rem;
-        color: var(--muted-strong);
-        font-weight: 800;
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-      .account-field input,
-      .account-field select {
-        text-transform: none;
-        letter-spacing: 0;
-        font-weight: 600;
-      }
-      .accounts-empty {
-        border: 1px dashed var(--border-strong);
-        border-radius: 24px;
-        padding: 1.4rem;
-        color: var(--muted);
-      }
-      .accounts-list {
-        display: grid;
-        gap: 0.85rem;
-      }
-      .account-card {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        padding: 1rem;
-        border: 1px solid var(--border);
-        border-radius: 24px;
-        background: rgba(255, 252, 247, 0.72);
-      }
-      .account-card-main {
-        display: grid;
-        gap: 0.7rem;
-        min-width: min(100%, 520px);
-      }
-      .account-title-row {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .account-title {
-        margin: 0;
-        font-size: 1.25rem;
-        letter-spacing: -0.02em;
-      }
-      .account-title a {
-        color: var(--accent-strong);
-        text-decoration: underline;
-        text-underline-offset: 0.18em;
-        text-decoration-thickness: 0.08em;
-      }
-      .account-title a::after {
-        content: ' ->';
-        color: var(--accent);
-        font-size: 0.88em;
-      }
-      .account-title a:hover,
-      .account-title a:focus-visible {
-        color: var(--accent);
-        text-decoration-thickness: 0.12em;
-      }
-      .account-username {
-        margin-top: -0.55rem;
-        font-weight: 700;
-      }
-      .provider-pill,
-      .account-state-pill {
-        display: inline-flex;
-        align-items: center;
-        white-space: nowrap;
-        border-radius: 999px;
-        padding: 0.32rem 0.6rem;
-        font-size: 0.76rem;
-        font-weight: 900;
-      }
-      .provider-lichess { background: rgba(35, 27, 21, 0.08); color: var(--text); }
-      .provider-chess-com { background: var(--success-soft); color: var(--success); }
-      .account-state-pill { background: var(--accent-soft); color: var(--accent-strong); }
-      .account-state-inactive { background: rgba(35, 27, 21, 0.08); color: var(--muted-strong); }
-      .account-default-pill { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 999px; padding: 0.32rem 0.6rem; background: rgba(15, 23, 42, 0.08); color: var(--text); font-size: 0.76rem; font-weight: 900; }
-      .account-meta-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(140px, 1fr));
-        gap: 0.75rem;
-      }
-      .account-meta-grid div {
-        display: grid;
-        gap: 0.2rem;
-        padding: 0.75rem;
-        border-radius: 18px;
-        background: rgba(35, 27, 21, 0.045);
-      }
-      .account-meta-grid span {
-        color: var(--muted-strong);
-        font-size: 0.72rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-      .account-meta-grid strong {
-        color: var(--text);
-      }
-      .sync-result {
-        display: grid;
-        gap: 0.25rem;
-        border-left: 4px solid var(--accent);
-        padding: 0.75rem 0.85rem;
-        border-radius: 14px;
-        background: var(--accent-soft);
-        color: var(--text);
-      }
-      .sync-workflow {
-        display: grid;
-        gap: 0.55rem;
-        margin-top: 0.4rem;
-      }
-      .sync-workflow-actions {
-        display: flex;
-        gap: 0.55rem;
-        flex-wrap: wrap;
-      }
-      .account-card-actions {
-        align-content: flex-start;
-        justify-content: flex-end;
-      }
-      .account-card-actions button {
-        min-height: 40px;
-        padding: 0.65rem 0.9rem;
-      }
-      .account-card-actions .default-account-button {
-        width: 40px;
-        padding: 0;
-        color: var(--muted-strong);
-        font-size: 1.12rem;
-        line-height: 1;
-      }
-      .default-account-button-active {
-        border-color: rgba(183, 121, 39, 0.32);
-        background: var(--accent-soft);
-        color: var(--accent-strong);
-      }
-      .status-error { color: var(--danger); font-weight: 800; }
-      .status-note { color: var(--muted); font-weight: 700; }
-      @media (max-width: 980px) {
-        .account-form { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
-        .account-meta-grid,
-        .lichess-meta-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
-      }
-      @media (max-width: 640px) {
-        .account-form,
-        .account-meta-grid,
-        .lichess-meta-grid { grid-template-columns: 1fr; }
-        .account-card-actions { justify-content: flex-start; }
-      }
+:host {
+  display: block;
+}
+
+.accounts-page {
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.account-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.75fr) repeat(2, minmax(210px, 1fr)) auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.account-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.account-field > span {
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.account-form-actions,
+.account-primary-actions,
+.account-options-actions,
+.sync-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.account-form-actions {
+  justify-content: flex-end;
+}
+
+.accounts-muted {
+  margin: 0;
+  color: var(--ui-text-muted);
+  line-height: 1.45;
+}
+
+.accounts-empty {
+  padding: var(--space-4);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+}
+
+.accounts-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.account-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 0.38fr);
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface);
+}
+
+.account-card-main {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.account-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.account-title {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.account-title a {
+  color: var(--ui-action-strong);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+
+.account-title a::after {
+  content: ' →';
+  color: var(--ui-action);
+  font-size: 0.88em;
+}
+
+.account-title a:hover {
+  color: var(--ui-action-hover);
+}
+
+.account-title a:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
+.account-username {
+  margin-top: calc(var(--space-2) * -1);
+  font-weight: 700;
+}
+
+.provider-pill,
+.account-state-pill,
+.account-default-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.3rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.provider-lichess {
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text);
+}
+
+.provider-chess-com {
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.account-state-pill {
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.account-state-inactive {
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text-muted);
+}
+
+.account-default-pill {
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+}
+
+.sync-result {
+  display: grid;
+  gap: 0.35rem;
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--ui-action) 45%, var(--ui-border));
+  border-left: 4px solid var(--ui-action);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-action-soft);
+  color: var(--ui-text);
+}
+
+.sync-result > strong,
+.sync-result > span {
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-workflow {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid color-mix(in srgb, var(--ui-action) 38%, transparent);
+}
+
+.account-card-actions {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.account-primary-actions {
+  align-items: stretch;
+}
+
+.account-primary-actions button {
+  flex: 1 1 100%;
+}
+
+.account-card-actions button,
+.sync-workflow-actions button {
+  min-height: 40px;
+  padding: 0.62rem 0.85rem;
+}
+
+.account-options {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ui-border);
+}
+
+.account-options summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--ui-action-strong);
+  font-weight: 750;
+}
+
+.account-options summary:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
+.account-options[open] summary {
+  margin-bottom: var(--space-2);
+}
+
+.account-options-actions {
+  align-items: stretch;
+}
+
+.account-options-actions button {
+  flex: 1 1 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.default-account-button {
+  gap: var(--space-2);
+}
+
+.default-account-button-active {
+  border-color: var(--ui-action);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.account-delete-button:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ui-danger) 52%, var(--ui-border));
+  color: var(--ui-danger);
+}
+
+.account-delete-button:hover:not(:disabled) {
+  background: var(--ui-danger-soft);
+}
+
+.status-error {
+  color: var(--ui-danger);
+  font-weight: 750;
+}
+
+.status-note {
+  color: var(--ui-text-muted);
+  font-weight: 700;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */
+@media (max-width: 980px) {
+  .account-form {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .account-form-actions {
+    justify-content: flex-start;
+  }
+
+  .account-card {
+    grid-template-columns: 1fr;
+  }
+
+  .account-primary-actions button,
+  .account-options-actions button {
+    flex-basis: min(100%, 240px);
+  }
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
+@media (max-width: 640px) {
+  .account-form {
+    grid-template-columns: 1fr;
+  }
+
+  .account-form-actions,
+  .account-form-actions button,
+  .account-primary-actions,
+  .account-primary-actions button,
+  .account-options-actions,
+  .account-options-actions button,
+  .sync-workflow-actions,
+  .sync-workflow-actions button {
+    width: 100%;
+  }
+
+  .account-card {
+    padding: var(--space-3);
+  }
+}

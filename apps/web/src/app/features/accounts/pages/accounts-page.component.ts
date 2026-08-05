@@ -2,19 +2,37 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
-import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../shared/ui/fact-grid/fact-grid.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+} from '../../../shared/ui/page-header/page-header.component';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellStat } from '../../../shared/ui/ui-shell.model';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
+import {
+  buildNewImportedWorkflowState,
+  type NewImportedWorkflowState,
+} from '../helpers/account-settings-view';
 import { dateLabel, providerClass, providerLabel, syncStatusLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
 
 @Component({
   selector: 'app-accounts-page',
   standalone: true,
-  imports: [NgClass, FormsModule, RouterLink, PageHeaderComponent, PanelComponent],
+  imports: [
+    NgClass,
+    FormsModule,
+    RouterLink,
+    PageHeaderComponent,
+    PanelComponent,
+    FactGridComponent,
+  ],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',
   styleUrl: './accounts-page.component.css',
@@ -26,7 +44,6 @@ export class AccountsPageComponent implements OnInit {
   protected readonly providerLabel = providerLabel;
   protected readonly providerClass = providerClass;
   protected readonly syncStatusLabel = syncStatusLabel;
-  protected readonly dateLabel = dateLabel;
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
     {
       id: 'refresh-games',
@@ -43,7 +60,37 @@ export class AccountsPageComponent implements OnInit {
   ]);
   protected readonly accountStats = computed<readonly UiShellStat[]>(() => [
     { id: 'accounts', label: 'Accounts', value: this.store.accounts().length },
+    {
+      id: 'active-accounts',
+      label: 'Active',
+      value: this.store.accounts().filter((account) => account.isActive).length,
+    },
   ]);
+  protected readonly accountFactsById = computed<
+    Readonly<Record<number, readonly UiFactItem[]>>
+  >(() =>
+    Object.fromEntries(
+      this.store.accounts().map((account) => [
+        account.id,
+        [
+          { id: 'last-sync', label: 'Last sync', value: dateLabel(account.lastSyncAt) },
+          { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
+          { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
+        ] satisfies readonly UiFactItem[],
+      ]),
+    ),
+  );
+  protected readonly newImportedWorkflowStates = computed<
+    Readonly<Record<number, NewImportedWorkflowState>>
+  >(() => {
+    const candidatesByAccount = this.store.workflowCandidates();
+    return Object.fromEntries(
+      Object.entries(this.store.syncResults()).map(([accountId, result]) => [
+        Number(accountId),
+        buildNewImportedWorkflowState(result, candidatesByAccount[Number(accountId)]),
+      ]),
+    );
+  });
 
   ngOnInit(): void {
     void this.store.loadAccounts();
@@ -114,8 +161,8 @@ export class AccountsPageComponent implements OnInit {
   }
 
   protected async confirmIndexNewImportedGames(account: ExternalAccount, result: ImportRunSummary): Promise<void> {
-    await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = this.newImportedUnindexedGameIds(account.id, result);
+    const candidates = await this.store.refreshWorkflowCandidates(account.id);
+    const gameIds = buildNewImportedWorkflowState(result, candidates).unindexedGameIds;
     if (!gameIds.length) {
       this.store.showNotice('No newly imported blitz/rapid games need indexing.');
       return;
@@ -133,8 +180,8 @@ export class AccountsPageComponent implements OnInit {
   }
 
   protected async confirmAnalyseNewImportedGames(account: ExternalAccount, result: ImportRunSummary): Promise<void> {
-    await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = this.newImportedIndexedGameIds(account.id, result);
+    const candidates = await this.store.refreshWorkflowCandidates(account.id);
+    const gameIds = buildNewImportedWorkflowState(result, candidates).indexedGameIds;
     if (!gameIds.length) {
       this.store.showNotice('Index the newly imported blitz/rapid games before analysing them.');
       return;
@@ -150,19 +197,4 @@ export class AccountsPageComponent implements OnInit {
 
     if (confirmed) void this.store.analyseEligibleAccountGames(account, gameIds);
   }
-
-  protected newImportedEligibleCount(result: ImportRunSummary): number {
-    return result.eligibleImportedGameIds?.length ?? 0;
-  }
-
-  protected newImportedIndexedGameIds(accountId: number, result: ImportRunSummary): number[] {
-    const indexedIds = new Set(this.store.workflowCandidates()[accountId]?.eligibleIndexedGameIds ?? []);
-    return (result.eligibleImportedGameIds ?? []).filter((id) => indexedIds.has(id));
-  }
-
-  protected newImportedUnindexedGameIds(accountId: number, result: ImportRunSummary): number[] {
-    const unindexedIds = new Set(this.store.workflowCandidates()[accountId]?.eligibleUnindexedGameIds ?? []);
-    return (result.eligibleUnindexedGameIds ?? []).filter((id) => unindexedIds.has(id));
-  }
-
 }
