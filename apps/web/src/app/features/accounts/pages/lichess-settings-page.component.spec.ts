@@ -62,6 +62,12 @@ describe('LichessSettingsPageComponent', () => {
 
     fixture = TestBed.createComponent(LichessSettingsPageComponent);
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
   });
 
   it('renders connection evidence and names every missing required permission', () => {
