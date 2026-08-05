@@ -4,9 +4,9 @@ This file is the stable entry point for ChatGPT, Copilot, Codex, and human sessi
 
 ## Current checkpoint
 
-Phase 3 is in progress. VT-301 page-family rollout batches through Tactical Detections are integrated into `main`. The remaining VT-301 work is an authenticated-route inventory reconciliation that classifies every remaining route as transformed, accepted debt, or later-program scope. VT-302 onboarding, empty-state, accessibility, and responsive polish remains blocked until VT-301 closes.
+Phase 3 is in progress. VT-301 page-family rollout and authenticated-route classification are complete in repository records. The final inventory covers all 34 URLs guarded by `authGuard`, their 29 unique route components, and three unguarded compatibility redirects into guarded destinations; no guarded route family remains unclassified.
 
-The authoritative current checkpoint, integrated history, validation, and residual risks are in [`transformation/STATUS.md`](transformation/STATUS.md). Do not copy a volatile “next task” from GitHub issues into this entry point.
+The authoritative integrated history, validation, residual risks, and completion boundary are in [`transformation/STATUS.md`](transformation/STATUS.md) and [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues remain authoritative for live review, merge, closure, and readiness state. Do not select VT-302 / issue #133 unless issue #132 is closed and issue #133 itself is explicitly `READY`.
 
 ## Branch and merge model
 
@@ -38,14 +38,15 @@ Code and tests are the source of truth for runtime behavior. Repository transfor
 
 Use issue #122 and its child issues:
 
-1. consider only open issues whose repository state is `READY`;
-2. exclude unresolved dependencies and already claimed work;
-3. choose the highest priority and then the lowest numeric order;
-4. comment to claim the issue before implementation;
-5. create the recorded task branch from current `main`;
-6. target the pull request at `main`;
-7. keep claim, branch, PR, blocker, and completion state in the issue;
-8. close only after approved squash merge and documentation reconciliation.
+1. continue the sole active `IN_PROGRESS` execution issue while accepted scope remains;
+2. otherwise consider only open issues whose repository state is `READY`;
+3. exclude unresolved dependencies and already claimed work;
+4. choose the highest priority and then the lowest numeric order;
+5. comment to claim the issue before implementation;
+6. create the recorded task branch from current `main`;
+7. target the pull request at `main`;
+8. keep claim, branch, PR, blocker, and completion state in the issue;
+9. close only after approved squash merge and documentation reconciliation.
 
 The exact ready task can change independently of this file. Resolve it from the live issue queue and `transformation/STATUS.md`.
 
