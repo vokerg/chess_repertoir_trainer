@@ -96,7 +96,7 @@
               <p class="accounts-muted account-username">&#64;{{ account.username }}</p>
 
               <app-fact-grid
-                [items]="accountFacts(account)"
+                [items]="accountFactsById()[account.id]"
                 [ariaLabel]="'Account dates for ' + account.username"
                 [columns]="3"
                 [compactColumns]="1"
