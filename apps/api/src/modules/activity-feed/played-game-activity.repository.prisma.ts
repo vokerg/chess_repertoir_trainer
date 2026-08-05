@@ -41,8 +41,8 @@ export function createPlayedGameActivityRepository(database: PlayedGameActivityD
         FROM "ImportedGame"
         WHERE "userId" = ${input.userId}
           AND "endedAt" IS NOT NULL
-          AND "endedAt" >= ${input.fromUtc}
-          AND "endedAt" < ${input.toUtcExclusive}
+          AND "endedAt" >= (CAST(${input.fromUtc} AS timestamptz) AT TIME ZONE 'UTC')
+          AND "endedAt" < (CAST(${input.toUtcExclusive} AS timestamptz) AT TIME ZONE 'UTC')
           AND (("endedAt" AT TIME ZONE 'UTC') AT TIME ZONE ${input.timeZone})::date
             BETWEEN CAST(${input.fromDate} AS date) AND CAST(${input.toDate} AS date)
         GROUP BY 1
