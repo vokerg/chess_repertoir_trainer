@@ -29,7 +29,8 @@
 }
 
 .account-form-actions,
-.account-card-actions,
+.account-primary-actions,
+.account-options-actions,
 .sync-workflow-actions {
   display: flex;
   flex-wrap: wrap;
@@ -62,7 +63,7 @@
 
 .account-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.34fr);
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 0.38fr);
   gap: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--ui-border);
@@ -180,8 +181,18 @@
 }
 
 .account-card-actions {
-  align-content: flex-start;
-  justify-content: flex-end;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.account-primary-actions {
+  align-items: stretch;
+}
+
+.account-primary-actions button {
+  flex: 1 1 100%;
 }
 
 .account-card-actions button,
@@ -190,12 +201,40 @@
   padding: 0.62rem 0.85rem;
 }
 
-.account-card-actions .default-account-button {
-  width: 40px;
-  padding: 0;
-  color: var(--ui-text-muted);
-  font-size: 1.1rem;
-  line-height: 1;
+.account-options {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ui-border);
+}
+
+.account-options summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--ui-action-strong);
+  font-weight: 750;
+}
+
+.account-options summary:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
+.account-options[open] summary {
+  margin-bottom: var(--space-2);
+}
+
+.account-options-actions {
+  align-items: stretch;
+}
+
+.account-options-actions button {
+  flex: 1 1 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.default-account-button {
+  gap: var(--space-2);
 }
 
 .default-account-button-active {
@@ -237,8 +276,9 @@
     grid-template-columns: 1fr;
   }
 
-  .account-card-actions {
-    justify-content: flex-start;
+  .account-primary-actions button,
+  .account-options-actions button {
+    flex-basis: min(100%, 240px);
   }
 }
 
@@ -250,8 +290,10 @@
 
   .account-form-actions,
   .account-form-actions button,
-  .account-card-actions,
-  .account-card-actions button,
+  .account-primary-actions,
+  .account-primary-actions button,
+  .account-options-actions,
+  .account-options-actions button,
   .sync-workflow-actions,
   .sync-workflow-actions button {
     width: 100%;
@@ -259,9 +301,5 @@
 
   .account-card {
     padding: var(--space-3);
-  }
-
-  .account-card-actions .default-account-button {
-    width: 100%;
   }
 }
