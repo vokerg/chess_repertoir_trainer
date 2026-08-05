@@ -23,6 +23,7 @@ import openingExplorerModule from '../modules/opening-explorer/opening-explorer.
 import playerChessProfileModule from '../modules/player-chess-profile/player-chess-profile.routes';
 import aiModule from '../modules/ai/ai.routes';
 import ratingNormalizationModule from '../modules/rating-normalization/rating-normalization.routes';
+import activityFeedModule from '../modules/activity-feed/activity-feed.routes';
 
 export default function registerRoutes(app: FastifyInstance): void {
   app.register(coursesModule);
@@ -47,6 +48,7 @@ export default function registerRoutes(app: FastifyInstance): void {
   app.register(playerChessProfileModule);
   app.register(aiModule);
   app.register(ratingNormalizationModule);
+  app.register(activityFeedModule);
   app.register(lichessAuthRoutes);
   app.register(externalAccountsRoutes);
 }
