@@ -8,7 +8,6 @@ export interface VerifiedSessionContext {
   authorizedParty?: string;
   factorVerificationAge?: readonly [number, number];
   reverificationId?: string;
-  adminClaim?: string;
 }
 
 function integer(value: unknown): number | undefined {
@@ -51,7 +50,6 @@ export function normalizeVerifiedSessionContext(
   const authorizedParty = nonEmptyString(payload['azp']);
   const fva = factorVerificationAge(payload['fva']);
   const reverificationId = nonEmptyString(payload['reverification_id']);
-  const adminClaim = nonEmptyString(payload['crt_admin']);
 
   return {
     provider: 'clerk',
@@ -63,6 +61,5 @@ export function normalizeVerifiedSessionContext(
     ...(authorizedParty ? { authorizedParty } : {}),
     ...(fva ? { factorVerificationAge: fva } : {}),
     ...(reverificationId ? { reverificationId } : {}),
-    ...(adminClaim ? { adminClaim } : {}),
   };
 }
