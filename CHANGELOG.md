@@ -8,6 +8,7 @@ Versions `0.0.x` are daily development snapshots: each version represents a cale
 
 - Added the ACT-001 Activity Feed foundation with typed contracts, a daily aggregate ledger, IANA time-zone preferences, transaction-aware increment and reconciliation services, authenticated history/today/preferences APIs, migration, OpenAPI coverage, and focused tests.
 - Modernized and reconciled the Settings routes with clearer account workflow hierarchy, complete Lichess scope guidance, improved Appearance semantics, accessibility fixes, and rendered regression coverage.
+- Refreshed repository, product, program, and agent documentation; added the exact `update changelog` command workflow; corrected stale mobile and program entry points; and established short-lived branches with squash merge into `main` as the default delivery policy.
 
 ## [0.0.69] - 2026-08-04
 
