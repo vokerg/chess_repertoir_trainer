@@ -3,233 +3,322 @@
   [class.games-filters-explorer]="presentation() === 'explorer'"
   aria-label="Game filters"
 >
-  <div class="games-filter-grid">
-    <label class="games-field"
-      ><span>Account</span
-      ><select [ngModel]="filters().accountId" (ngModelChange)="setFilter('accountId', $event)">
-        <option value="">All accounts</option>
-        @for (account of facets().accounts || []; track facetKey(account)) {
-          <option [value]="facetKey(account)">{{ accountLabel(account) }}</option>
-        }
-      </select></label
-    >
-    <label class="games-field"
-      ><span>Provider</span
-      ><select [ngModel]="filters().provider" (ngModelChange)="setFilter('provider', $event)">
-        <option value="ALL">Lichess + Chess.com</option>
-        <option value="LICHESS">Lichess</option>
-        <option value="CHESS_COM">Chess.com</option>
-      </select></label
-    >
-    <label class="games-field"
-      ><span>Result</span
-      ><select
-        [ngModel]="filters().resultForUser"
-        (ngModelChange)="setFilter('resultForUser', $event)"
-      >
-        <option value="">Any result</option>
-        <option value="WIN">Win</option>
-        <option value="DRAW">Draw</option>
-        <option value="LOSS">Loss</option>
-      </select></label
-    >
-    <label class="games-field"
-      ><span>Colour</span
-      ><select
-        [ngModel]="lockedUserColor() || filters().userColor"
-        [disabled]="!!lockedUserColor()"
-        (ngModelChange)="setFilter('userColor', $event)"
-      >
-        <option value="">White or Black</option>
-        <option value="WHITE">White</option>
-        <option value="BLACK">Black</option>
-      </select></label
-    >
-    <label class="games-field"
-      ><span>Control</span
-      ><select
-        [ngModel]="filters().speedCategory"
-        (ngModelChange)="setFilter('speedCategory', $event)"
-      >
-        <option value="">Any control</option>
-        <option value="bullet">Bullet</option>
-        <option value="blitz,rapid">Blitz + rapid</option>
-        <option value="blitz">Blitz</option>
-        <option value="rapid">Rapid</option>
-        <option value="classical">Classical</option>
-        @for (speed of customSpeedFacets(); track facetKey(speed)) {
-          <option [value]="facetKey(speed)">{{ facetLabel(speed) }}</option>
-        }
-      </select></label
-    >
-    <label class="games-field"
-      ><span>Rated</span
-      ><select [ngModel]="filters().rated" (ngModelChange)="setFilter('rated', $event)">
-        <option value="">Rated or casual</option>
-        <option value="true">Rated</option>
-        <option value="false">Casual</option>
-      </select></label
-    >
-    <label class="games-field"
-      ><span>Analysis</span
-      ><select
-        [ngModel]="filters().analysisStatus"
-        (ngModelChange)="setFilter('analysisStatus', $event)"
-      >
-        <option value="">Any status</option>
-        <option value="NOT_ANALYZED">Not analysed</option>
-        <option value="RUNNING">Running</option>
-        <option value="COMPLETED">Completed</option>
-        <option value="FAILED">Failed</option>
-      </select></label
-    >
-    <div class="games-field tags-field" #tagsPicker>
-      <span>Tags</span>
-      <div class="tags-picker">
-        <button
-          type="button"
-          class="tags-picker-toggle"
-          aria-haspopup="true"
-          [attr.aria-expanded]="tagsOpen()"
-          (click)="toggleTagsPicker($event)"
-        >
-          {{ tagSelectionLabel() }}
-        </button>
-        @if (tagsOpen()) {
-          <div class="tags-options">
-            <label class="tag-option">
-              <input
-                type="checkbox"
-                [checked]="noTagsSelected()"
-                (change)="toggleNoTags($any($event.target).checked)"
-              />
-              <span>No tags</span>
-            </label>
-            @for (tag of facets().tags || []; track tagCode(tag)) {
-              <label class="tag-option">
-                <input
-                  type="checkbox"
-                  [disabled]="noTagsSelected()"
-                  [checked]="isTagSelected(tagCode(tag))"
-                  (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
-                />
-                <span>{{ tagLabel(tag) }}</span>
-              </label>
-            }
-          </div>
-        }
-      </div>
+  <div class="games-filter-grid essential-filters">
+    <div class="games-field">
+      <span>Account</span>
+      <app-select-menu
+        ariaLabel="Account"
+        [value]="filters().accountId"
+        [options]="accountOptions()"
+        (valueChange)="setFilterValue('accountId', $event)"
+      />
     </div>
-    <label class="games-field compact"
-      ><span>Period</span
-      ><select [ngModel]="selectedPeriod()" (ngModelChange)="setPeriod($event)">
-        <option value="TODAY">Today</option>
-        <option value="1M">1M</option>
-        <option value="3M">3M</option>
-        <option value="YTD">YTD</option>
-        <option value="1Y">1Y</option>
-        <option value="3Y">3Y</option>
-        <option value="5Y">5Y</option>
-        <option value="ALL">All</option>
-        <option value="CUSTOM">Custom</option>
-      </select></label
-    >
+    <div class="games-field">
+      <span>Result</span>
+      <app-select-menu
+        ariaLabel="Result"
+        [value]="filters().resultForUser"
+        [options]="resultOptions"
+        (valueChange)="setFilterValue('resultForUser', $event)"
+      />
+    </div>
+    <div class="games-field">
+      <span>Colour</span>
+      <app-select-menu
+        ariaLabel="Colour"
+        [value]="lockedUserColor() || filters().userColor"
+        [options]="colorOptions"
+        [disabled]="!!lockedUserColor()"
+        (valueChange)="setFilterValue('userColor', $event)"
+      />
+    </div>
+    <div class="games-field compact">
+      <span>Period</span>
+      <app-select-menu
+        ariaLabel="Period"
+        [value]="selectedPeriod()"
+        [options]="periodOptions"
+        panelAlign="end"
+        (valueChange)="setPeriodValue($event)"
+      />
+    </div>
     <div class="games-field more-filters-field">
       <span>&nbsp;</span>
       <button
         type="button"
         class="more-filters-toggle"
+        aria-haspopup="dialog"
         [attr.aria-expanded]="moreFiltersOpen()"
-        (click)="moreFiltersOpen.set(!moreFiltersOpen())"
+        (click)="openMoreFilters()"
       >
-        More filters@if (advancedFilterCount() > 0) { ({{ advancedFilterCount() }} active) }
+        <span class="more-filters-icon" aria-hidden="true"></span>
+        <span>More filters</span>
+        @if (advancedFilterCount() > 0) {
+          <span class="more-filters-count">{{ advancedFilterCount() }}</span>
+        }
       </button>
     </div>
   </div>
-  @if (moreFiltersOpen()) {
-    <div class="games-filter-grid advanced-filters">
-      <label class="games-field compact"
-        ><span>From</span
-        ><input type="date" [ngModel]="filters().from" (ngModelChange)="setFilter('from', $event)"
-      /></label>
-      <label class="games-field compact"
-        ><span>To</span
-        ><input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)"
-      /></label>
-      <label class="games-field"
-        ><span>Indexed</span
-        ><select
-          [ngModel]="filters().plyIndexStatus"
-          (ngModelChange)="setFilter('plyIndexStatus', $event)"
-        >
-          <option value="">Any status</option>
-          <option value="NOT_INDEXED">Not indexed</option>
-          <option value="INDEXED">Indexed</option>
-          <option value="FAILED">Failed</option>
-        </select></label
-      >
-      <label class="games-field"
-        ><span>Time control</span
-        ><input
-          [ngModel]="filters().timeControl"
-          (ngModelChange)="setFilterValue('timeControl', $event)"
-          placeholder="e.g. 10+5"
-      /></label>
-      <label class="games-field"
-        ><span>Opponent</span
-        ><input
-          [ngModel]="filters().opponent"
-          (ngModelChange)="setFilterValue('opponent', $event)"
-          placeholder="Username"
-      /></label>
-      <label class="games-field"
-        ><span>Opening</span
-        ><input
-          [ngModel]="filters().openingName"
-          (ngModelChange)="setFilterValue('openingName', $event)"
-          placeholder="Sicilian, London..."
-      /></label>
-      <label class="games-field compact"
-        ><span>Min accuracy</span
-        ><input
-          [ngModel]="filters().minAccuracy"
-          (ngModelChange)="setFilterValue('minAccuracy', $event)"
-          inputmode="decimal"
-          placeholder="0"
-      /></label>
-      <label class="games-field compact"
-        ><span>Max accuracy</span
-        ><input
-          [ngModel]="filters().maxAccuracy"
-          (ngModelChange)="setFilterValue('maxAccuracy', $event)"
-          inputmode="decimal"
-          placeholder="100"
-      /></label>
-      <label class="games-field compact"
-        ><span>Opp. rating &gt;</span
-        ><input
-          [ngModel]="filters().minOpponentRating"
-          (ngModelChange)="setFilterValue('minOpponentRating', $event)"
-          inputmode="numeric"
-          placeholder="1200"
-      /></label>
-      <label class="games-field compact"
-        ><span>Opp. rating &lt;</span
-        ><input
-          [ngModel]="filters().maxOpponentRating"
-          (ngModelChange)="setFilterValue('maxOpponentRating', $event)"
-          inputmode="numeric"
-          placeholder="2200"
-      /></label>
+
+  @if (activeAdvancedFilters().length > 0) {
+    <div class="active-advanced-filters" aria-label="Active advanced filters">
+      <span class="active-advanced-label">Advanced</span>
+      <div class="active-advanced-list">
+        @for (filter of activeAdvancedFilters(); track filter.id) {
+          <button
+            type="button"
+            class="active-filter-chip"
+            [attr.aria-label]="'Clear ' + filter.label"
+            (click)="clearAdvancedFilter(filter.id)"
+          >
+            <span>{{ filter.label }}</span>
+            <span aria-hidden="true">×</span>
+          </button>
+        }
+      </div>
     </div>
   }
+
   @if (showActions()) {
     <div class="games-filter-actions">
       <button type="button" class="primary" (click)="apply.emit()" [disabled]="loading()">
-        {{ loading() ? 'Loading...' : applyLabel() }}</button
-      ><button type="button" class="secondary" (click)="reset.emit()" [disabled]="loading()">
+        {{ loading() ? 'Loading...' : applyLabel() }}
+      </button>
+      <button type="button" class="secondary" (click)="reset.emit()" [disabled]="loading()">
         Reset
       </button>
     </div>
   }
 </section>
+
+<dialog
+  #moreFiltersDialog
+  class="more-filters-dialog"
+  aria-labelledby="more-filters-title"
+  aria-describedby="more-filters-description"
+  (cancel)="onMoreFiltersCancel($event)"
+  (close)="onMoreFiltersClosed()"
+  (mousedown)="onMoreFiltersBackdrop($event)"
+>
+  <section class="more-filters-sheet">
+    <header class="more-filters-header">
+      <div>
+        <p class="more-filters-kicker">Refine your library</p>
+        <h2 id="more-filters-title">More filters</h2>
+        <p id="more-filters-description">Less common choices stay here until you need them.</p>
+      </div>
+      <button
+        #moreFiltersClose
+        type="button"
+        class="more-filters-close"
+        aria-label="Close more filters"
+        (click)="closeMoreFilters()"
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="more-filters-body">
+      <section class="more-filters-section" aria-labelledby="source-game-details-title">
+        <h3 id="source-game-details-title">Source and game details</h3>
+        <div class="advanced-filter-grid">
+          <div class="games-field">
+            <span>Provider</span>
+            <app-select-menu
+              ariaLabel="Provider"
+              [value]="filters().provider"
+              [options]="providerOptions"
+              (valueChange)="setFilterValue('provider', $event)"
+            />
+          </div>
+          <div class="games-field">
+            <span>Control</span>
+            <app-select-menu
+              ariaLabel="Control"
+              [value]="filters().speedCategory"
+              [options]="controlOptions()"
+              (valueChange)="setFilterValue('speedCategory', $event)"
+            />
+          </div>
+          <div class="games-field">
+            <span>Rated</span>
+            <app-select-menu
+              ariaLabel="Rated"
+              [value]="filters().rated"
+              [options]="ratedOptions"
+              (valueChange)="setFilterValue('rated', $event)"
+            />
+          </div>
+          <div class="games-field">
+            <span>Analysis</span>
+            <app-select-menu
+              ariaLabel="Analysis"
+              [value]="filters().analysisStatus"
+              [options]="analysisOptions"
+              (valueChange)="setFilterValue('analysisStatus', $event)"
+            />
+          </div>
+          <div class="games-field">
+            <span>Indexed</span>
+            <app-select-menu
+              ariaLabel="Indexed"
+              [value]="filters().plyIndexStatus"
+              [options]="indexedOptions"
+              (valueChange)="setFilterValue('plyIndexStatus', $event)"
+            />
+          </div>
+          <div class="games-field tags-field" #tagsPicker>
+            <span>Tags</span>
+            <div class="tags-picker">
+              <button
+                type="button"
+                class="tags-picker-toggle"
+                aria-haspopup="true"
+                [attr.aria-expanded]="tagsOpen()"
+                (click)="toggleTagsPicker($event)"
+              >
+                {{ tagSelectionLabel() }}
+              </button>
+              @if (tagsOpen()) {
+                <div class="tags-options">
+                  <label class="tag-option">
+                    <input
+                      type="checkbox"
+                      [checked]="noTagsSelected()"
+                      (change)="toggleNoTags($any($event.target).checked)"
+                    />
+                    <span>No tags</span>
+                  </label>
+                  @for (tag of facets().tags || []; track tagCode(tag)) {
+                    <label class="tag-option">
+                      <input
+                        type="checkbox"
+                        [disabled]="noTagsSelected()"
+                        [checked]="isTagSelected(tagCode(tag))"
+                        (change)="toggleTagCode(tagCode(tag), $any($event.target).checked)"
+                      />
+                      <span>{{ tagLabel(tag) }}</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="more-filters-section" aria-labelledby="date-range-title">
+        <h3 id="date-range-title">Exact date range</h3>
+        <div class="advanced-filter-grid">
+          <label class="games-field">
+            <span>From</span>
+            <input
+              type="date"
+              [ngModel]="filters().from"
+              (ngModelChange)="setFilter('from', $event)"
+            />
+          </label>
+          <label class="games-field">
+            <span>To</span>
+            <input type="date" [ngModel]="filters().to" (ngModelChange)="setFilter('to', $event)" />
+          </label>
+        </div>
+      </section>
+
+      <section class="more-filters-section" aria-labelledby="player-opening-title">
+        <h3 id="player-opening-title">Player and opening</h3>
+        <div class="advanced-filter-grid">
+          <label class="games-field">
+            <span>Exact time control</span>
+            <input
+              [ngModel]="filters().timeControl"
+              (ngModelChange)="setFilterValue('timeControl', $event)"
+              placeholder="e.g. 10+5"
+            />
+          </label>
+          <label class="games-field">
+            <span>Opponent</span>
+            <input
+              [ngModel]="filters().opponent"
+              (ngModelChange)="setFilterValue('opponent', $event)"
+              placeholder="Username"
+            />
+          </label>
+          <label class="games-field advanced-filter-wide">
+            <span>Opening</span>
+            <input
+              [ngModel]="filters().openingName"
+              (ngModelChange)="setFilterValue('openingName', $event)"
+              placeholder="Name or ECO code, e.g. Sicilian, D01…"
+            />
+          </label>
+          <label class="games-field">
+            <span>Minimum opponent rating</span>
+            <input
+              [ngModel]="filters().minOpponentRating"
+              (ngModelChange)="setFilterValue('minOpponentRating', $event)"
+              inputmode="numeric"
+              placeholder="1200"
+            />
+          </label>
+          <label class="games-field">
+            <span>Maximum opponent rating</span>
+            <input
+              [ngModel]="filters().maxOpponentRating"
+              (ngModelChange)="setFilterValue('maxOpponentRating', $event)"
+              inputmode="numeric"
+              placeholder="2200"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="more-filters-section" aria-labelledby="accuracy-title">
+        <h3 id="accuracy-title">Accuracy</h3>
+        <div class="advanced-filter-grid">
+          <label class="games-field">
+            <span>Minimum accuracy</span>
+            <input
+              [ngModel]="filters().minAccuracy"
+              (ngModelChange)="setFilterValue('minAccuracy', $event)"
+              inputmode="decimal"
+              placeholder="0"
+            />
+          </label>
+          <label class="games-field">
+            <span>Maximum accuracy</span>
+            <input
+              [ngModel]="filters().maxAccuracy"
+              (ngModelChange)="setFilterValue('maxAccuracy', $event)"
+              inputmode="decimal"
+              placeholder="100"
+            />
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <footer class="more-filters-actions">
+      @if (showActions()) {
+        <button
+          type="button"
+          class="secondary"
+          (click)="resetFromMoreFilters()"
+          [disabled]="loading()"
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          class="primary"
+          (click)="applyFromMoreFilters()"
+          [disabled]="loading()"
+        >
+          {{ loading() ? 'Loading...' : applyLabel() }}
+        </button>
+      } @else {
+        <button type="button" class="primary" (click)="closeMoreFilters()">Done</button>
+      }
+    </footer>
+  </section>
+</dialog>

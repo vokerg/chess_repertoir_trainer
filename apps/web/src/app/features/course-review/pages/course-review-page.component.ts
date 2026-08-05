@@ -151,6 +151,7 @@ export class CourseReviewPageComponent implements OnInit {
           this.restoredScopeKey = restoredScopeKey;
           this.store.setGameFilters(restoredScope.gameFilters);
           this.store.setMinGames(restoredScope.minGames);
+          this.store.setMinCoveredPlies(restoredScope.minCoveredPlies);
           this.store.applyFilters();
         }
       });

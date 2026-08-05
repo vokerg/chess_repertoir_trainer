@@ -18,6 +18,15 @@ export interface CourseReviewExample {
   plyNumber: number | null;
 }
 
+export interface CourseReviewLineAnchor {
+  kind: 'LINE_START' | 'NODE';
+  lineId: number;
+  lineName: string;
+  chapterId: number;
+  nodeId: number | null;
+  moveSequenceSan: string | null;
+}
+
 export interface CourseReviewGroup {
   key: string;
   status: 'MY_DEVIATION' | 'OPPONENT_UNCOVERED';
@@ -32,6 +41,7 @@ export interface CourseReviewGroup {
   count: number;
   results: { win: number; draw: number; loss: number; unknown: number };
   examples: CourseReviewExample[];
+  lineAnchors: CourseReviewLineAnchor[];
 }
 
 export interface CourseReviewConflict {

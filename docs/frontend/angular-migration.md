@@ -7,42 +7,71 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 ## Completed
 
 - Application shell: external template/styles, OnPush, and app-specific navigation extracted to `core/layout/main-navigation`.
-- Production token foundation: `design-system.css` owns namespaced `--ui-*` roles; the shared page header, panel, shell actions, global controls, and application canvas consume the production layer.
-- Games, Study, and Opening Analysis representative workflows retain feature ownership while consuming production presentation roles.
-- Proven shared presentation primitives: `shared/ui/context-strip` serves derived context and `shared/ui/fact-grid` serves semantic label/value evidence.
-- Mobile-primary navigation derives Home, Study, Games, Openings, and More from the existing hierarchical model without changing routes or feature ownership.
-- Existing feature architecture migrations remain complete for Accounts, Library, Courses, Lines, Lab, Opening Struggles, Free Analysis, and Game Detail.
-- VT-301 Batch 2 / squash-merged PR #206 migrated `/progress/profile` to production `--ui-*` roles while preserving its store, API, filters, recalculation, evidence selection, and component boundaries. CI #1521 passed; direct browser review was explicitly deferred.
+- Production token foundation: `design-system.css` owns namespaced `--ui-*` colour, typography, radius, shadow, focus, and semantic-status roles; the shared page header, panel, shell actions, global controls, and application canvas consume the production layer.
+- Games explorer store: immutable row patching without row-action list reloads.
+- Game detail: feature-local route page, signal store, typed data access, pure tree helpers, presentational summary/workbench components, and built-in control flow.
+- Move tree: OnPush, signal inputs/outputs, built-in control flow, and stable tracking.
+- Opening analysis: feature-local route page, signal store, typed data access, pure query/label helpers, external template/styles, and built-in control flow.
+- Accounts: feature-local route page, signal store, typed data access, immutable row updates, external template/styles, and built-in control flow.
+- Library browser: feature-local route page, signal store, typed data access, computed filtering/selection, stale-request guards, and built-in control flow.
+- Course detail: feature-local route page, signal store, typed data access, immutable chapter updates, external template/styles, and lifecycle-safe route handling.
+- Line training and marathon: feature-local pages/stores, shared presentational session UI within the lines feature, typed training APIs, and no HTTP-owning child component.
+- Courses: feature-local OnPush pages, signal stores, typed data access, external templates/styles, immutable updates, and built-in control flow.
+- Games table presentation: external templates/styles, built-in control flow with stable row tracking, signal-based action-menu state, and tested feature-local display helpers.
+- Lab: composition-only shell with isolated experiment components, page-scoped signal stores, typed experiment data access, external templates/styles, and built-in control flow.
+- Opening struggles: standalone Openings page with feature-local state, data access, query helpers, responsive criteria UI, and no Lab dependency.
+- Study planner refactor: `/library` now uses feature-local presentational components for scope columns, line selection, and the training basket, with selected-line marathon navigation owned by the store.
+- Chapter line health table: chapter lines now use feature-local table/status/action components, store-owned expanded row state, selected line ids, selected subline hashes, and typed subline status data access.
+- Free analysis: `/analysis` now uses a composition-focused route page, feature-local workbench and my-games panel components, signal store workflow state, typed route-query helpers, and built-in control flow.
+- Game detail analysis: `/games/:gameId` now uses `components`, `state`, and `helpers` folders for the route header, summary, shared workbench wrapper, signal store, labels, and game-tree helpers.
+- Representative workflow modernization: Games, Study, and Opening Analysis consume production roles while preserving route, store, data-access, and domain workflow ownership.
+- Proven shared presentation primitives: `shared/ui/context-strip` serves Study and Opening Analysis derived context; `shared/ui/fact-grid` serves Games responsive evidence and Study line health. Both remain typed, OnPush, semantic, and feature-agnostic.
+- Mobile-primary navigation: `core/layout/main-navigation` derives Home, Study, Games, and Openings from the existing hierarchical model, uses More for complete grouped route/account access, delegates secondary active state to More, and coordinates safe-area/content/job-panel clearance without changing routes or feature ownership.
+- VT-301 Batch 2: Player Chess Profile presentation is integrated through PR #206 while retaining its store, API, filter, recalculation, evidence-selection, and route contracts.
+- VT-301 Batch 4a: marathon and focused line-training presentation is integrated through PR #211 while retaining stores, APIs, scoring, board mechanics, persistence, and mistake review.
+- VT-301 Batch 4b: Courses and Course Review presentation is integrated through PR #215 while retaining stores, APIs, filters, chapter commands, and exact RB-012 Builder launch contracts.
+- VT-301 Batch 4c: repertoire-authoring presentation is integrated through PR #221 while retaining chapter/line CRUD, transfer, PGN, editor-tree, notes, board, engine, and training ownership.
+- VT-301 Batch 4d: Lichess puzzle and tactical-scenario presentation is integrated through PR #221 while retaining puzzle rating/sync, scenario selection/evaluation, attempts, engine behavior, board mechanics, and persistence ownership.
+- VT-301 Batch 7a: Lab discovery, Top Opponents, Monthly Games, and Training Log use the production panel/table patterns with rendered regression coverage through PR #252.
+- VT-301 Batch 7b: Performance by Rating uses the production criteria, disclosure, and analytical-table patterns with rendered accessibility regression coverage through PR #269.
 
 ## Active rollout
 
-- VT-301 Batch 1 / draft PR #196 migrates `/progress` and `/progress/accounts/:accountId`; repository CI passed and browser review remains pending.
-- VT-301 Batch 3 / draft PR #209 migrates `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`, reuses `app-fact-grid` for account/connection evidence, and externalizes the Appearance template/styles while preserving account, OAuth, and sound-preference behavior.
+- VT-301 Batch 1 / draft PR #196 migrates `/progress` and `/progress/accounts/:accountId` to the production token and shared fact-grid system; repository CI passed and browser review remains pending.
+- VT-301 Batch 3 / draft PR #209 migrates `/settings/accounts`, `/settings/lichess`, and `/settings/appearance`; exact-head CI #1573 passed and browser review remains pending.
+- VT-301 Batch 7c / draft PR #277 migrates Tactical Detections through the existing Lab page header, `app-panel`, typed shell actions/stats, `app-select-menu`, production tokens, semantic table structure, and rendered component tests; CI and browser disposition remain pending.
 
 ## Accepted feature debt
 
-- `apps/web/src/styles.css` and untransformed feature styles still contain amber-era short tokens as an explicit compatibility layer.
-- Remaining routes and Labs need deliberate migration to the production `--ui-*` contract.
-- Opening Analysis retains a feature-scoped compatibility bridge until all shared analytical-widget consumers are reviewed.
-- Some legacy global `.library-*` CSS remains because shared training surfaces still consume those classes.
-- Games evidence cards, Study workflow composition, and analysis-workbench evidence slots remain feature-owned.
-- Direct browser feedback for several approved transformation batches, including VT-301 Player Chess Profile, remains deferred evidence rather than observed validation.
+- `apps/web/src/styles.css` and feature styles still contain amber-era short tokens such as `--accent`. They are an explicit compatibility layer for routes awaiting their recorded visual-transformation task, not the source for new styling.
+- Remaining Progress and Settings routes still need integration or explicit disposition under VT-301. Tactical Detections is active in draft PR #277; the other Lab rollout families are integrated.
+- Opening Analysis retains a feature-scoped compatibility bridge because several shared analytical widgets still consume legacy short role names. Migrate those widgets only when their full consumer set is reviewed; do not redefine the legacy names globally.
+- Some legacy global `.library-*` CSS remains because `LineTrainingSessionComponent` and other shared training surfaces still consume those classes. A later styling pass can split those remaining globals once the training session UI has its own component stylesheet.
+- Games evidence cards, Study workflow-step/launcher/training-plan composition, and analysis-workbench evidence slots remain feature-owned. Their current contracts are domain-specific and were intentionally not generalized during VT-204.
+- Direct mobile browser feedback for Study, Opening Analysis, the shared-primitives regression, and approved VT-301 batches remains deferred evidence rather than an observed pass.
 
 ## Migration order
 
-1. Remaining shared board, engine, PGN, note, and analytical-widget token migration.
-2. Remaining pages and Labs, followed by onboarding, accessibility, and responsive polish.
+Prioritize by responsibility count and user-facing risk:
+
+1. Complete or disposition the active Progress, Settings, and Tactical Detections VT-301 branches.
+2. Reconcile any remaining authenticated route inventory before VT-302 onboarding/accessibility/responsive polish begins.
 
 ## Per-component completion criteria
 
 - Lives under the owning feature where practical.
 - Route page is a composition shell.
-- Uses OnPush, built-in template control flow, stable tracking, and external template/styles when non-trivial.
-- Keeps HTTP and workflow ownership out of presentational components.
-- Uses production `--ui-*` tokens when in transformed scope.
-- Relevant validation is run and reported.
+- Uses OnPush and built-in template control flow.
+- Has external template/styles when non-trivial.
+- Has no direct HTTP workflow in a presentational component.
+- Uses signals/computed state and lifecycle-safe observable interop.
+- Uses immutable updates and stable repeated-item tracking.
+- Uses production `--ui-*` tokens when the component is in transformed scope.
+- Relevant validation has been run and reported.
 
 ## Accepted tooling debt
 
 - `apps/web` has an `ng lint` script but no Angular lint target.
 - The web test script is currently a placeholder even though Jasmine/Karma scaffolding exists.
+
+Address tooling separately from feature migrations. Do not block documentation or narrow legacy cleanup on broad test setup.

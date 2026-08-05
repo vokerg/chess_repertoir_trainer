@@ -51,13 +51,22 @@ jobs:
         run: npm run build
 
       - name: Opening classification audit
-        run: npm run opening-book:classification-audit --workspace=apps/api > opening-classification-audit.json
+        run: npm --silent run opening-book:classification-audit --workspace=apps/api > opening-classification-audit.json
 
       - name: Upload opening classification audit
         uses: actions/upload-artifact@v4
         with:
           name: opening-classification-audit
           path: opening-classification-audit.json
+
+      - name: Opening knowledge audit
+        run: npm --silent run opening-book:knowledge-audit --workspace=apps/api > opening-knowledge-audit.json
+
+      - name: Upload opening knowledge audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: opening-knowledge-audit
+          path: opening-knowledge-audit.json
 
       - name: Architecture guardrails
         run: npm run check:architecture
@@ -66,7 +75,7 @@ jobs:
         run: npm run db:migrate --workspace=apps/api
 
       - name: Imported-game opening classification audit
-        run: npm run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
+        run: npm --silent run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
 
       - name: Upload imported-game opening classification audit
         uses: actions/upload-artifact@v4
@@ -74,5 +83,24 @@ jobs:
           name: imported-game-opening-classification-audit
           path: imported-game-opening-classification-audit.json
 
+      - name: Imported-game opening knowledge audit
+        run: npm --silent run opening-book:knowledge-game-audit --workspace=apps/api > imported-game-opening-knowledge-audit.json
+
+      - name: Upload imported-game opening knowledge audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: imported-game-opening-knowledge-audit
+          path: imported-game-opening-knowledge-audit.json
+
       - name: Test
+        env:
+          TRAP_PILOT_REPORT_PATH: trap-pilot-validation.txt
         run: npm test
+
+      - name: Upload trap validation report
+        if: always() && hashFiles('apps/api/trap-pilot-validation.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: trap-pilot-validation
+          path: apps/api/trap-pilot-validation.txt
+          if-no-files-found: error

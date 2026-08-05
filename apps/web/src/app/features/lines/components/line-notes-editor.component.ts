@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { UpdateLineNodePayload } from '../data-access/lines.models';
 
 @Component({
   selector: 'app-line-notes-editor',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PanelComponent],
   templateUrl: './line-notes-editor.component.html',
   styleUrl: './line-notes-editor.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

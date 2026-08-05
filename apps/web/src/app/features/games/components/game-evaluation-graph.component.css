@@ -20,33 +20,34 @@
 }
 
 .advantage-band-positive {
-  fill: color-mix(in srgb, var(--success) 7%, transparent);
+  fill: color-mix(in srgb, var(--ui-success) 7%, transparent);
 }
 
 .advantage-band-negative {
-  fill: color-mix(in srgb, var(--danger) 6%, transparent);
+  fill: color-mix(in srgb, var(--ui-danger) 6%, transparent);
 }
 
 .zero-line {
-  stroke: var(--border-strong);
+  stroke: var(--ui-border-strong);
   stroke-width: 1;
   stroke-dasharray: 5 5;
   vector-effect: non-scaling-stroke;
 }
 
 .scale-label {
-  fill: var(--muted);
+  fill: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
   font-size: 10px;
   font-weight: 800;
   pointer-events: none;
 }
 
 .scale-label-positive {
-  fill: var(--success);
+  fill: var(--ui-success);
 }
 
 .scale-label-negative {
-  fill: var(--danger);
+  fill: var(--ui-danger);
 }
 
 .evaluation-area {
@@ -56,7 +57,7 @@
 
 .evaluation-line-shadow {
   fill: none;
-  stroke: var(--surface-strong);
+  stroke: var(--ui-surface);
   stroke-width: 5.5;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -65,7 +66,7 @@
 
 .evaluation-line {
   fill: none;
-  stroke: var(--accent-strong);
+  stroke: var(--ui-action-strong);
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -87,21 +88,21 @@
 }
 
 .selected-point-halo {
-  fill: var(--surface-strong);
-  stroke: var(--accent-strong);
+  fill: var(--ui-surface);
+  stroke: var(--ui-action-strong);
   stroke-width: 2;
   pointer-events: none;
   vector-effect: non-scaling-stroke;
 }
 
 .selected-point {
-  fill: var(--accent-strong);
+  fill: var(--ui-action-strong);
   pointer-events: none;
 }
 
 .empty-note {
   margin: 0;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }

@@ -32,7 +32,13 @@ describe('GameDetailPageComponent', () => {
       ['load', 'reset'],
     );
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
-    capabilities = new BehaviorSubject<AiCapabilitiesResponse>({ widgets: { gameReview: false } });
+    capabilities = new BehaviorSubject<AiCapabilitiesResponse>({
+      widgets: {
+        gameReview: false,
+        builderCandidateExplanation: false,
+        builderCompletionSummary: false,
+      },
+    });
 
     await TestBed.configureTestingModule({
       imports: [GameDetailPageComponent],
@@ -93,7 +99,13 @@ describe('GameDetailPageComponent', () => {
     aiReviewStore.load.and.callFake(async () => {
       incidentalRequestSignal();
     });
-    capabilities.next({ widgets: { gameReview: true } });
+    capabilities.next({
+      widgets: {
+        gameReview: true,
+        builderCandidateExplanation: false,
+        builderCompletionSummary: false,
+      },
+    });
 
     fixture.detectChanges();
     expect(aiReviewStore.load).toHaveBeenCalledOnceWith(1);

@@ -1,252 +1,52 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-07-29
+Last updated: 2026-08-01
 
-This is the canonical ordered queue. IDs are immutable; `Order` and `Priority` may change through reviewed updates.
+This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
-Normal claim metadata lives in the individual task file to reduce conflicts between parallel agents. GitHub Issues execution is governed by [`GITHUB_ISSUES.md`](GITHUB_ISSUES.md).
+| Order | ID | Issue | Priority | Status | Task | Delivery evidence |
+| ---: | --- | ---: | --- | --- | --- | --- |
+| 10 | RB-001 | #89 | P0 | DONE | Lichess-aligned peer population presets | PR #84 |
+| 20 | RB-002 | #90 | P0 | DONE | Multi-account player level resolution | PR #84; closure #107 |
+| 30 | RB-003 | #91 | P0 | DONE | Named opening classification foundation | PR #111 |
+| 35 | RB-018 | #116 | P1 | DONE | Opening classification coverage | PR #121 |
+| 40 | RB-008 | #96 | P1 | DONE | Visual candidate and coverage proof | PR #110 |
+| 50 | RB-004 | #92 | P1 | DONE | Player Chess Profile calculation | #136 → #135; `07299fd`; CI #1103 |
+| 60 | RB-005 | #93 | P1 | DONE | Player Chess Profile experience | #139 → #138 → #135; `07299fd`; CI #1208 |
+| 70 | RB-006 | #94 | P1 | DONE | Repertoire target contract | PR #157; `9d833d9` |
+| 80 | RB-013 | #101 | P1 | DONE | Profile personas and overrides | PR #232; `4d57e14`; CI #1696 |
+| 90 | RB-007 | #95 | P1 | DONE | Explainable candidate evidence/ranking | PR #166; `25d37b4`; CI #1295 |
+| 100 | RB-009 | #97 | P1 | DONE | Builder session and branch queue | PR #177; `00c8f1a`; CI #1360 |
+| 110 | RB-010 | #98 | P1 | DONE | Bounded interactive Builder MVP | PR #184; `ea5b2be`; CI #1417 |
+| 120 | RB-011 | #99 | P1 | DONE | Builder preview/apply to courses | PR #189; `01b36f9`; CI #1488 |
+| 130 | RB-012 | #100 | P2 | DONE | Existing-course Builder entry points | PRs #205/#208; `1583b15`; CI #1597 |
+| 140 | RB-014 | #102 | P2 | DONE | Traps knowledge foundation research | PR #113; `d53ff6e` |
+| 145 | RB-017 | #114 | P2 | DONE | Curated traps knowledge pilot | PR #117; `38bf745`; CI #1725 |
+| 150 | RB-015 | #103 | P3 | DONE | LLM role decision | PR #216; `9a4e616` |
+| 152 | RB-019 | #218 | P3 | DONE | Builder candidate explanation prototype | PR #223; `ee389cb`; CI #1634 |
+| 154 | RB-020 | #219 | P3 | DONE | Post-apply Builder summary prototype | PR #228; `d795572`; CI #1652 |
+| 160 | RB-016 | #104 | P2 | BLOCKED | Adoption and real-game outcomes | Requires sufficient real Builder/course use |
+| 165 | RB-021 | #240 | P1 | DONE | Side-aware opening knowledge foundation research | PR #244; `8e4e0ad`; CI #1757 |
+| 170 | RB-022 | #241 | P1 | READY | Static side-aware opening knowledge implementation | RB-021 architecture accepted |
+| 175 | RB-023 | #242 | P2 | BLOCKED | Opening knowledge in Repertoire Builder | Requires RB-022 reviewed knowledge service |
+| 180 | RB-024 | #243 | P3 | BLOCKED | AI game review grounding with opening plans | Requires RB-022 reviewed knowledge service |
 
-| Order | ID | GitHub issue | Priority | Status | Task | Delivery class | Primary dependencies |
-| ---: | --- | --- | --- | --- | --- | --- | --- |
-| 10 | RB-001 | [#89](https://github.com/vokerg/chess_repertoir_trainer/issues/89) | P0 | DONE | Deliver Lichess-aligned peer population presets | Dual-use | Merged through PR #84 |
-| 20 | RB-002 | [#90](https://github.com/vokerg/chess_repertoir_trainer/issues/90) | P0 | DONE | Define multi-account player level resolution | Dual-use | Delivered by the RB-001 normalized peer resolver in PR #84 |
-| 30 | RB-003 | [#91](https://github.com/vokerg/chess_repertoir_trainer/issues/91) | P0 | DONE | Establish named opening classification foundation | Dual-use | Delivered through PR #111 |
-| 35 | RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) | P1 | DONE | Complete opening classification coverage | Dual-use | Delivered through PR #121; RB-003 method preserved |
-| 40 | RB-008 | [#96](https://github.com/vokerg/chess_repertoir_trainer/issues/96) | P1 | DONE | Prototype visual candidate and coverage choices | North-star | Accepted through PR #110: setup dialog to routed board-first workbench |
-| 50 | RB-004 | [#92](https://github.com/vokerg/chess_repertoir_trainer/issues/92) | P1 | REVIEW | Implement Player Chess Profile calculation | Dual-use | PR #136; final-head CI #1103 passed; awaiting review and integration |
-| 60 | RB-005 | [#93](https://github.com/vokerg/chess_repertoir_trainer/issues/93) | P1 | REVIEW | Deliver Player Chess Profile experience | Standalone | Stacked PR #139 on RB-004; corrected navigation/architecture review awaiting final CI and hands-on acceptance |
-| 70 | RB-006 | [#94](https://github.com/vokerg/chess_repertoir_trainer/issues/94) | P1 | DONE | Define repertoire target contract | North-star | Squash-merged through PR #157 |
-| 80 | RB-013 | [#101](https://github.com/vokerg/chess_repertoir_trainer/issues/101) | P1 | PROPOSED | Support repertoire personas and profile overrides | Dual-use | RB-005, completed RB-006 contract |
-| 90 | RB-007 | [#95](https://github.com/vokerg/chess_repertoir_trainer/issues/95) | P1 | DONE | Aggregate and rank candidate evidence explainably | North-star | Squash-merged through PR #166; final-head CI #1295 passed |
-| 100 | RB-009 | [#97](https://github.com/vokerg/chess_repertoir_trainer/issues/97) | P1 | DONE | Define builder session, branch queue, and draft lifecycle | North-star | Squash-merged through PR #177; final-head CI #1360 passed |
-| 110 | RB-010 | [#98](https://github.com/vokerg/chess_repertoir_trainer/issues/98) | P1 | DONE | Implement bounded interactive builder MVP | North-star | Squash-merged through PR #184; final tested-head CI #1417 passed |
-| 120 | RB-011 | [#99](https://github.com/vokerg/chess_repertoir_trainer/issues/99) | P1 | DONE | Preview and apply builder output to courses | Dual-use | Squash-merged through PR #189 as `01b36f9`; final review-package CI #1488 passed |
-| 130 | RB-012 | [#100](https://github.com/vokerg/chess_repertoir_trainer/issues/100) | P2 | READY | Enter builder from existing-course findings | Dual-use | Course endings merged through PR #205 as `c2266c9`; Opponent gaps is next |
-| 140 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) | P2 | DONE | Research traps knowledge foundation | Research | Approved and squash-merged through PR #113 |
-| 145 | RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) | P2 | CLAIMED | Validate curated traps knowledge pilot | Dual-use pilot | RB-014; implementation branch `rb-017/issue-114-curated-traps-pilot` |
-| 150 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) | P3 | PROPOSED | Decide whether an LLM has a justified role | Research | Deterministic evidence and UX sufficiently understood |
-| 160 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) | P2 | BLOCKED | Measure adoption and real-game outcomes | Dual-use | Builder and course materialization in use |
+## Current execution state
 
-## GitHub Issues program
+- The deterministic Builder capability chain and prior optional prototypes remain complete.
+- RB-016 remains blocked on real usage and follow-up-game evidence.
+- RB-021 is complete: the separate deterministic opening-knowledge architecture, hybrid selector, merge semantics and source/editorial policy were accepted on 2026-08-01.
+- RB-022 is the next dependency-satisfied P1 task.
+- RB-023 and RB-024 remain blocked until RB-022 provides the reviewed service, corpus and stable knowledge identity.
 
-- Program tracker: [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
-- GitHub Issues track execution status, assignee, branch, pull request and active blockers.
-- Repository task files remain the detailed scope and acceptance source.
-- New RB tasks require a corresponding GitHub issue in the same coordination change.
+## Recent closure evidence
 
-## Completed delivery
+- RB-004: `reports/RB-004-2026-07-31-closure.md`.
+- RB-005: `reports/RB-005-2026-07-31-closure.md`.
+- RB-013: `reports/RB-013-2026-07-31-closure.md`.
+- RB-017: `reports/RB-017-2026-07-31-closure.md`.
+- RB-019: `reports/RB-019-2026-07-30-closure.md`.
+- RB-020: `reports/RB-020-2026-07-30-closure.md`.
+- RB-021: `reports/RB-021-2026-08-01-closure.md`.
 
-### RB-001 / #89
-
-- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/84
-- Report: `reports/RB-001-2026-07-26-peer-population-presets.md`
-
-### RB-002 / #90
-
-- Delivery source: RB-001 implementation in PR #84.
-- Closure PR: https://github.com/vokerg/chess_repertoir_trainer/pull/107
-- Report: `reports/RB-002-2026-07-26-delivered-by-rb-001.md`
-
-### RB-003 / #91
-
-- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/111
-- Report: `reports/RB-003-2026-07-27-opening-classification-rules.md`
-- Delivered deterministic versioned White/Black opening profiles using ordered regex family rules, modifiers and exact overrides.
-- Boundary: explicit unknowns; no database, runtime AI, engine audit, API, UI or generated-book mutation.
-
-### RB-018 / #116
-
-- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/121
-- Report: `reports/RB-018-2026-07-27-opening-classification-coverage.md`
-- Delivered `2026-07-rules-v2`, 100% rule-match coverage for the pinned 3,733 generated entries and 3,167 unique names through 114 ordered rules.
-- Added generated and game-weighted audits, grouped unknown-family backlogs and focused family/exception regressions.
-- Boundary: rule-match coverage does not fabricate semantic certainty; rare families retain low confidence or explicit unknown dimensions.
-
-### RB-008 / #96
-
-- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/110
-- Branch: `rb-008/issue-96-visual-candidate-prototype`
-- Report: `reports/RB-008-2026-07-26-visual-candidate-prototype-review.md`
-- Artifacts: `prototypes/rb-008-visual-candidate-choice/`
-- Accepted: focused setup dialog launches a routed board-first workbench.
-- Rejected default: simultaneous candidate mini-board landscape.
-
-### RB-014 / #102
-
-- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/113
-- Squash commit: `d53ff6e2b6eedcbf5f3abcea137373baa0102397`
-- Report: `reports/RB-014-2026-07-27-traps-foundation-discovery.md`
-- Accepted one bounded 20–50 example curated data/validator pilot.
-- Identity: normalized trigger position plus ordered move transitions; opening labels are descriptive only.
-- Source policy: CC0 Lichess data and `chess-openings`, original analysis, explicit provenance and editorial review.
-- Production boundary: no schema, API, Angular UI, course writes or builder integration.
-
-### RB-006 / #94
-
-- PR: https://github.com/vokerg/chess_repertoir_trainer/pull/157
-- Squash commit: `9d833d910205f687b87f3c54e2ff4ea71ced3cb5`
-- Report: `reports/RB-006-2026-07-28-repertoire-target-contract.md`
-- Adds `@chess-trainer/contracts/repertoire-target` with requested/effective population, factual peer snapshot, target-specific intent, per-field default provenance, explicit override validation and mutability/recalculation helpers.
-- Includes canonical new-course, existing-course, profile-override and alternate-persona examples plus invalid-combination and pure-helper tests.
-- Adds no API, UI, persistence, ranking, course write, traps or LLM behavior.
-- PRs #145 and #146 were superseded and closed without merge.
-
-### RB-007 / #95
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/164
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/166
-- Squash commit: `25d37b44c273afe0b7e5838a4fb0a00cee89d88a`
-- Implementation report: `reports/RB-007-2026-07-29-candidate-evidence-ranking.md`
-- Closure report: `reports/RB-007-2026-07-29-closure.md`
-- Adds versioned `candidate-decision` contracts, a pure deterministic ranking policy and authenticated `POST /api/candidate-decisions`.
-- Aggregates bounded stored engine, Masters, selected-population, personal, opening-profile, Player Chess Profile and owned-course evidence through injectable service boundaries.
-- Keeps source facts, target fit, profile fit, eligibility, components, reasons, warnings, manual candidates, course conflict/transposition and opponent coverage separate and inspectable.
-- Publishes no opaque aggregate score and adds no persistence, course write, Angular UI, traps, LLM, live engine run or peer-formula change.
-- CI #1281, #1284 and final implementation-head CI #1295 passed the complete repository workflow.
-
-### RB-009 / #97
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/173
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/177
-- Squash commit: `00c8f1abff4403d4fe5996cbb41759a1608a9cf9`
-- Implementation report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`
-- Closure report: `reports/RB-009-2026-07-29-closure.md`
-- Adds a pure, serializable and versioned builder-session domain with owner/revision checks, retained target and evidence provenance, path-stable branches, normalized-position transpositions, explicit branch states, decision history and a lazy bounded queue.
-- Deterministic transitions cover accept/replace, defer/reopen, stale restart, ignore, branch completion, target/evidence invalidation, queue reorder, session completion/abandonment and snapshot resume.
-- Hard bounds are 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
-- Adds no Prisma model, API, Angular UI or storage adapter.
-- CI #1328 and final implementation-head CI #1360 passed the complete repository workflow.
-
-### RB-010 / #98
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/182
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/184
-- Squash commit: `ea5b2bef4cdc0fa37024213b2e00b9da589b9718`
-- Final tested implementation head: `b3a0076bdc75ea8035b3999a8e10a12d24992c6f`
-- Implementation report: `reports/RB-010-2026-07-29-interactive-builder-mvp.md`
-- Closure report: `reports/RB-010-2026-07-29-closure.md`
-- Adds authenticated `/builder` route and top-level navigation entry.
-- Composes schema-valid RB-006 target setup, the existing RB-007 candidate API and RB-009 session reducer in one page-scoped Angular workflow.
-- Provides one board, visual candidate switching, manual legal-move inclusion, opponent-response selection, inspectable evidence, bounded queue/defer/reopen/ignore/stop/stale controls and structural preview.
-- Bounds the route to initial-position starts, 6 candidates per request and 24 accepted decisions while preserving RB-009 hard limits.
-- Accepts route-local lifetime for the first MVP: refresh starts over; no Prisma model, builder-session API or browser storage is added.
-- Adds no course write; RB-011 owns mandatory preview/apply.
-- Final CI #1417 passed lint, builds, both opening audits, architecture guardrails, migrations and complete repository tests.
-- Merge-readiness review restored pre-existing collapsed-navigation, Escape, route-change and mobile-menu regression tests before integration.
-- PR #184 had no review comments or unresolved inline threads at merge time.
-
-### RB-011 / #99
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/187
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/189
-- Squash commit: `01b36f9503ccfbb3dced55d56589b89cfd163867`
-- Final tested implementation head: `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e`
-- Final review-package head: `30b077377cb5e9337dd455f9f8a8a7a38a152cec`
-- Implementation report: `reports/RB-011-2026-07-29-course-reintegration.md`
-- Closure report: `reports/RB-011-2026-07-29-closure.md`
-- Projects completed builder sessions into the existing analysis merge tree and keeps unresolved branches explicit but outside writes.
-- Adds mandatory preview and exact-preview transactional apply into one owned existing chapter, with reviewed new-line or existing-line-anchor targets.
-- Reuses existing conflict planning, move-node writing, ownership, stale-anchor, legal-move and course revision behavior.
-- Adds strict no-conflict behavior, explicit counts, equivalent-line/repeated-apply safety, shared contracts, Fastify routes and a feature-local Angular review dialog/store.
-- Adds no Prisma model, migration, whole-course orchestration, durable builder persistence or existing-course finding entry point.
-- CI #1479 and final review-package CI #1488 passed lint, builds, audits, architecture guardrails, migrations and complete repository tests.
-- Issue #99 is closed; the accepted boundary unblocks RB-012.
-
-## Review work
-
-### RB-004 / #92
-
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/136
-- Report: `reports/RB-004-2026-07-27-player-chess-profile-calculation.md`
-- Provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance sections, selected-game baselines, evidence grades, explicit classification/analysis coverage and bounded supporting evidence.
-- Final implementation-head CI #1103 passed lint, build, audits, architecture guardrails, migrations, complete tests, multi-account coverage and the 1,200-game bounded performance regression.
-- Await user review and accepted integration before closing #92.
-
-### RB-005 / #93
-
-- Claim PR: https://github.com/vokerg/chess_repertoir_trainer/pull/138
-- Implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/139
-- Report: `reports/RB-005-2026-07-28-player-chess-profile-experience.md`
-- Preserves `/progress` as the default-account dashboard entry, adds `/progress/profile`, and exposes `Account performance` plus `Chess profile` under the existing Progress submenu.
-- Provides recalculable context filters, separate preference/performance views, conclusion and row evidence, supporting openings/games, peer and coverage context, responsive states and focused Angular tests.
-- Uses a lazy composition page, page-scoped store with private writable signals, typed HTTP-only data access, feature-local UI view models and focused pure transformation helpers.
-- Corrected review-head CI and hands-on user review are required before integration.
-- Remains stacked on RB-004 and must be reconciled only after RB-004 acceptance.
-
-## Ready work
-
-### RB-012 / #100
-
-- First implementation branch: `rb-012/issue-100-course-ending-entry`.
-- First implementation PR: https://github.com/vokerg/chess_repertoir_trainer/pull/205
-- Squash commit: `c2266c9a8ffca00696da264abb3476f36ec82b50`
-- Final review-package head: `45851192b77327e23546eb691d3629c3a193144d`
-- Final CI: run `30485910525` / #1541 — success
-- Implementation report: `reports/RB-012-2026-07-29-course-ending-entry.md`
-- Closure report: `reports/RB-012-2026-07-29-course-ending-closure.md`
-- Integrated line-specific **Extend this line in builder** actions for Course ending findings.
-- Preserves exact source context, terminal position, observed continuation, evidence and filters in the existing builder.
-- Reuses RB-006 target, RB-007 candidate, RB-009 session, RB-010 workbench and RB-011 exact preview/apply boundaries.
-- Adds no API route, migration, persistence or second recommendation engine.
-- Issue #100 remains open because later finding types remain under the same immutable RB task.
-- Opponent gaps is the next bounded slice; My deviations requires explicit replace/alternate/keep-course consequence UX first.
-
-## Active claim
-
-### RB-017 / #114
-
-- Implementation branch: `rb-017/issue-114-curated-traps-pilot`.
-- Scope: source-controlled dataset, deterministic validator, reproducible engine/population snapshots, review output, tests and documentation.
-- Exclusions: production persistence, public contracts, frontend, course writes and builder integration.
-
-## Accepted visual direction
-
-PR #110 establishes the setup dialog, routed board-first workbench, one readable board, candidate switcher, focused evidence, opponent-response queue, explicit branch states and target/profile separation.
-
-Squash-merged PR #184 implements this direction. Squash-merged PR #189 adds mandatory reviewed course preview/apply. Squash-merged PR #205 connects the first exact existing-course finding to those integrated boundaries.
-
-## Critical path
-
-```text
-RB-001 and RB-002 factual population/level — DONE
-        +
-RB-003 opening-classification foundation — DONE
-        +
-RB-018 coverage expansion — DONE
-        ↓
-RB-004 calculation — REVIEW
-        +
-RB-005 experience — REVIEW (stacked)
-        ↓
-RB-006 target contract — DONE
-        ↓
-RB-007 candidate evidence/ranking — DONE
-        +
-RB-008 visual proof — DONE
-        ↓
-RB-009 session/queue lifecycle — DONE
-        ↓
-RB-010 routed builder — DONE
-        ↓
-RB-011 course preview/apply — DONE
-        ↓
-RB-012 existing-course adaptation — READY (Opponent gaps next)
-        ↓
-RB-016 feedback
-```
-
-RB-014 and RB-017 remain outside the critical path.
-
-## Queue impact
-
-- RB-003 and RB-018 are `DONE`; opening classification foundation and pinned-book coverage are delivered.
-- RB-004 is `REVIEW` through PR #136.
-- RB-005 is `REVIEW` through stacked PR #139; it is not integrated until corrected review-head CI, hands-on acceptance, RB-004 acceptance and stack reconciliation.
-- RB-006 is `DONE` through squash-merged PR #157.
-- RB-007 is `DONE` through squash-merged PR #166 after final-head CI #1295.
-- RB-009 is `DONE` through squash-merged PR #177 after final-head CI #1360.
-- RB-010 is `DONE` through squash-merged PR #184 after final tested-head CI #1417.
-- RB-011 is `DONE` through squash-merged PR #189 after final review-package CI #1488.
-- RB-012 is `READY` after squash-merged PR #205; Opponent gaps is the recommended next slice.
-- RB-014 is `DONE`; RB-017 remains the only approved traps implementation scope and is `CLAIMED`.
-- No priority or roadmap resequencing is required.
+GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.

@@ -115,6 +115,28 @@ const response = {
         roles: ['INITIATOR'],
         confidence: 'HIGH',
         matchedRuleIds: ['family-kings-pawn'],
+        knowledge: {
+          status: 'PARTIAL',
+          version: '2026-08-knowledge-v1',
+          shortDescription: {
+            text: 'A principled first-move family that claims central space.',
+            confidence: 'HIGH',
+          },
+          strategicSummary: {
+            text: 'Develop quickly and preserve central flexibility.',
+            confidence: 'MEDIUM',
+          },
+          plans: [{
+            id: 'kings-pawn-white-develop',
+            title: 'Develop with purpose',
+            summary: 'Coordinate the pieces around the central pawn before choosing a concrete branch.',
+            conditions: [],
+            caveats: ['The exact plan depends on Black’s response.'],
+            confidence: 'MEDIUM',
+          }],
+          matchedRuleIds: ['knowledge-family-kings-pawn'],
+          sourceIds: ['project-editorial-rb-022'],
+        },
       },
       course: {
         status: 'INSUFFICIENT',
@@ -133,11 +155,67 @@ const response = {
 };
 
 assert.deepEqual(candidateDecisionResponseSchema.parse(response), response);
+assert.equal(CANDIDATE_DECISION_CONTRACT_VERSION, '2026-08-v2');
 assert.equal('total' in response.candidates[0].components, false);
 assert.equal(candidateDecisionResponseSchema.safeParse({
   ...response,
   candidates: [{
     ...response.candidates[0],
     components: { ...response.candidates[0].components, objective: 101 },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      opening: {
+        ...response.candidates[0].evidence.opening,
+        knowledge: {
+          ...response.candidates[0].evidence.opening.knowledge,
+          plans: Array.from({ length: 4 }, (_, index) => ({
+            id: `plan-${index}`,
+            title: `Plan ${index}`,
+            summary: `Summary ${index}`,
+            conditions: [],
+            caveats: [],
+            confidence: 'HIGH',
+          })),
+        },
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      opening: {
+        ...response.candidates[0].evidence.opening,
+        knowledge: {
+          ...response.candidates[0].evidence.opening.knowledge,
+          status: 'UNAVAILABLE',
+        },
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      opening: {
+        ...response.candidates[0].evidence.opening,
+        knowledge: {
+          ...response.candidates[0].evidence.opening.knowledge,
+          version: null,
+        },
+      },
+    },
   }],
 }).success, false);

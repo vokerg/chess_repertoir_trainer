@@ -235,7 +235,8 @@
 }
 
 .source-row strong[data-source-status='STALE'],
-.source-row strong[data-source-status='INSUFFICIENT'] {
+.source-row strong[data-source-status='INSUFFICIENT'],
+.source-row strong[data-source-status='PARTIAL'] {
   color: var(--warning-strong);
 }
 

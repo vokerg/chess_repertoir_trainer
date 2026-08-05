@@ -28,7 +28,7 @@ Versions `0.0.x` are daily development snapshots: each version represents a cale
 ## [0.0.60] - 2026-07-26
 
 - Generalized the Masters integration into a shared Opening Explorer backend with separate Masters and rated-Lichess datasets, source-isolated caching, explicit endpoints, configurable filters, shared contracts, coverage, documentation, and a Lichess Games Explorer widget.
-- Established the Repertoire Builder north-star planning workspace, immutable task queue, Jira coordination protocol, and execution/reporting rules.
+- Established the Repertoire Builder north-star planning workspace, immutable task queue, GitHub Issues coordination protocol, and execution/reporting rules.
 
 ## [0.0.59] - 2026-07-25
 

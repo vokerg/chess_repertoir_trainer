@@ -1,277 +1,49 @@
 # Repertoire Builder Program Status
 
-Last updated: 2026-07-29
+Last updated: 2026-08-03
 
 ## Current state
 
-**Program state:** RB-001, RB-002, RB-003, RB-006, RB-007, RB-008, RB-009, RB-010, RB-011, RB-014 and RB-018 are complete. RB-004 is in review through PR #136. RB-005 is stacked on RB-004 and in hands-on review through PR #139. RB-012 has its first Course endings entry slice integrated through squash-merged PR #205 and is `READY` for Opponent gaps as the next bounded slice. RB-017 is the approved bounded traps data/validator pilot and remains claimed through issue #114.
+**Program state:** the deterministic Repertoire Builder capability chain, static opening-knowledge foundation, focused Builder knowledge consumer and bounded opening-grounded game-review consumer are complete. RB-016 remains independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
 
-**Runtime on `main`:** the application has the Lichess-benchmark population and peer-resolution foundation from PR #84, deterministic opening classification and complete pinned-book rule matching from PRs #111 and #121, the versioned repertoire-target contract from PR #157, deterministic candidate-decision contract/ranking/API from PR #166, storage-neutral builder-session and branch-queue domain from PR #177, the authenticated bounded `/builder` workbench from PR #184, mandatory transactional builder-course preview/apply from PR #189, and exact Course ending → Builder adaptation from squash-merged PR #205.
+**Runtime on `main`:** peer population/level resolution, deterministic opening classification, Player Chess Profile calculation and `/progress/profile`, versioned repertoire targets, profile-derived editable defaults, deterministic candidate evidence/ranking, bounded session/queue semantics, the authenticated Builder workbench, mandatory course preview/apply, exact existing-course entry points, static side-aware opening knowledge, focused target-side knowledge presentation, and the optional disabled-by-default generated interpretation prototypes are integrated.
 
-**Review work not on `main`:** PR #136 adds Player Chess Profile calculation and PR #139 adds the stacked Angular profile experience.
+**RB-024 completion:** PR #268 grounds the existing explicit AI game review with bounded user-side reviewed opening knowledge, validates structured plan references, constructs public opening prose from reviewed knowledge rather than provider prose, and verifies stored-review input identity before reuse. It adds no automatic provider call, ranking, Builder state, course write or runtime opening research.
 
-**GitHub program tracker:** [#105 — Repertoire Builder North Star program](https://github.com/vokerg/chess_repertoir_trainer/issues/105), open.
+**Execution ownership:** RB-021 / #240 is complete through PR #244. RB-022 / #241 is complete through PR #255. RB-023 / #242 is complete through PR #262. RB-024 / #243 is complete through PR #268. Program tracker: #105.
 
-## Completed foundations
+## Completed capability chain
 
-### Population and player level — RB-001 / RB-002
+1. **Evidence foundations:** RB-001, RB-002, RB-003 and RB-018.
+2. **Player profile:** RB-004 and RB-005.
+3. **Target and decisions:** RB-006, RB-013 and RB-007.
+4. **Interaction and lifecycle:** RB-008, RB-009 and RB-010.
+5. **Course materialization:** RB-011 and RB-012.
+6. **Specialized research and knowledge:** RB-014, RB-017, RB-015, RB-021, RB-022, RB-023 and RB-024.
+7. **Optional interpretation prototypes:** RB-019 and RB-020, plus RB-024 as a bounded game-review grounding enhancement.
 
-Available on `main`:
+## Active and blocked work
 
-- fixed speed presets and Lichess rating targets;
-- versioned Chess.com-to-Lichess mappings;
-- provider/speed classification before aggregation;
-- multi-account game-count-weighted normalized band distribution;
-- recent-three-month, all-history and generic fallback;
-- `dominant-contiguous-window-v1`;
-- complete distribution, selected interval, evidence period and contribution provenance;
-- compact Peer games UI and typed API contracts.
+- **RB-016:** independently blocked on real adoption and outcome evidence.
 
-No second durable player-level formula is justified without a measured defect or concrete consumer.
+No additional dependency-satisfied Repertoire Builder task is currently queued.
 
-### Opening classification — RB-003 / RB-018
+## Locked boundaries preserved
 
-Available on `main`:
-
-- deterministic ordered regex rules with family inheritance and narrow overrides;
-- independent White and Black profiles;
-- explicit matched-rule provenance and unknown values;
-- active rule version `2026-07-rules-v2`;
-- rule-match coverage for all 3,733 pinned entries and 3,167 unique names;
-- generated and imported-game weighted audits;
-- CI failure on newly unmatched pinned names.
-
-Rule matching does not fabricate semantic certainty. Rare families may retain low confidence or explicit `UNKNOWN` dimensions.
-
-### Accepted visual direction — RB-008
-
-PR #110 establishes:
-
-1. a focused setup dialog for side, start, speed, population, persona and coverage intent;
-2. a routed builder workbench after **Start building**;
-3. one readable primary board;
-4. candidate switching with focused evidence;
-5. an opponent-response queue and visible branch progress;
-6. separate target fit and profile fit;
-7. no simultaneous multi-board default.
-
-### Repertoire target — RB-006
-
-Squash-merged PR #157 provides:
-
-- versioned target identity and one build/session snapshot;
-- side, starting point and account context;
-- one fixed speed preset and requested/effective population;
-- factual peer-resolution provenance;
-- explicit objective, risk, theory, complexity and coverage intent;
-- field-level defaults and exact overrides;
-- immutable/mutable/recalculation field sets;
-- no API, UI, persistence, ranking or course writes.
-
-### Candidate decisions — RB-007
-
-Squash-merged PR #166 provides:
-
-- candidate contract version `2026-07-v1`;
-- deterministic policy version `2026-07-deterministic-v1`;
-- authenticated `POST /api/candidate-decisions`;
-- separate `USER_MOVE` and `OPPONENT_RESPONSE` roles;
-- bounded stored engine, Masters, selected-population, personal, opening, profile and course evidence;
-- explicit unavailable, stale and insufficient source states;
-- separate target fit and profile fit;
-- stable reasons and warnings without a public opaque aggregate score;
-- course conflict, narrow transposition and opponent-coverage evidence.
-
-Final implementation-head CI #1295 passed the complete repository workflow.
-
-### Builder session and branch queue — RB-009
-
-Squash-merged PR #177 provides:
-
-- pure model version `2026-07-v1` under `packages/chess-domain`;
-- serializable owner-scoped snapshots and optimistic revision;
-- retained RB-006 target and RB-007 evidence/policy references;
-- path-stable branch history plus normalized-position transposition identity;
-- explicit pending, accepted, deferred, ignored, completed and stale states;
-- active, superseded and stale decision history;
-- deterministic accept/replace, defer/reopen, stale restart, ignore, complete, reorder, refresh, resume and lifecycle transitions;
-- lazy one-decision expansion rather than full-tree generation;
-- bounded tree and queue preview;
-- limits of 256 branches, 128 queued branches, 8 selected moves and 256 preview nodes.
-
-RB-009 adds no Prisma model, API route, Angular UI or storage adapter.
-
-CI #1328 and final implementation-head CI #1360 passed lint, build, both opening audits, architecture guardrails, migrations and complete repository tests.
-
-Implementation report: `reports/RB-009-2026-07-29-builder-session-lifecycle.md`.
-
-Closure report: `reports/RB-009-2026-07-29-closure.md`.
-
-### Interactive builder MVP — RB-010
-
-Squash-merged PR #184 provides:
-
-- authenticated lazy `/builder` route and top-level navigation;
-- focused initial-position setup for side, speed, population, persona, theory and coverage;
-- factual peer-resolution provenance versus explicit manual rating targets;
-- one primary Chessground board with candidate preview and manual legal-move inclusion;
-- existing RB-007 candidate API integration with visible source states, reasons, warnings, target fit and profile fit;
-- RB-009 owner/revision-aware transitions through a page-scoped signal store;
-- user-move and opponent-response decision loops;
-- selected coverage progress;
-- queue navigation/reorder, defer/reopen, ignore, stop, stale restart, complete and abandon behavior;
-- bounded structural preview;
-- explicit route-local refresh-loss and setup-replacement behavior;
-- responsive and keyboard-labelled feature-local components;
-- no Prisma model, session API, browser storage or course write.
-
-Accepted bounds are initial-position starts, 6 candidates per request and 24 accepted decisions while preserving RB-009 hard limits.
-
-Final tested head `b3a0076bdc75ea8035b3999a8e10a12d24992c6f` passed CI run `30447177268` / #1417. PR #184 was squash-merged as `ea5b2bef4cdc0fa37024213b2e00b9da589b9718`.
-
-Implementation report: `reports/RB-010-2026-07-29-interactive-builder-mvp.md`.
-
-Closure report: `reports/RB-010-2026-07-29-closure.md`.
-
-The first MVP intentionally remains route-local. Refresh starts a new draft. Durable draft persistence requires a separate demonstrated need.
-
-### Builder course reintegration — RB-011
-
-Squash-merged PR #189 provides:
-
-- pure projection from completed RB-009 sessions to the existing analysis merge tree;
-- explicit excluded pending, deferred, ignored and stale branches;
-- one shared versioned builder-course preview/apply contract;
-- authenticated preview and apply routes for one owned existing chapter;
-- reviewed new-line or exact existing-line-anchor targets;
-- explicit created, reused, skipped and conflicting counts;
-- exact preview binding to user, draft, destination and current course content revision;
-- strict no-conflict behavior;
-- transactional reuse of the existing move-node writer and course revision path;
-- equivalent-line and repeated-apply safety;
-- page-scoped Angular destination, preview, target and apply state;
-- no Prisma model, migration, whole-course orchestration or durable builder persistence.
-
-Final tested implementation head `fa0bda406404a85138acb4c9cbf0ea5b79d6e13e` passed CI #1479. Final review-package head `30b077377cb5e9337dd455f9f8a8a7a38a152cec` passed CI #1488. PR #189 was squash-merged as `01b36f9503ccfbb3dced55d56589b89cfd163867`, and issue #99 is closed.
-
-Implementation report: `reports/RB-011-2026-07-29-course-reintegration.md`.
-
-Closure report: `reports/RB-011-2026-07-29-closure.md`.
-
-The accepted v1 writes to an existing owned course/chapter. Whole-course/new-chapter orchestration and persisted builder target/session metadata remain later concerns, not blockers for exact existing-course adaptation.
-
-### Course ending builder entry — RB-012 first slice
-
-Squash-merged PR #205 provides:
-
-- one line-specific **Extend this line in builder** action per Course ending line/node reference;
-- bounded route validation for exact source course, chapter, line, terminal node, FEN, observed continuation, evidence and filters;
-- canonical expansion of the four-field Course ending FEN before session start;
-- a `COURSE_POSITION` target and RB-009 session starting at the exact terminal position;
-- initial RB-007 candidate inclusion for the observed continuation;
-- fixed source repertoire side with editable speed, population, persona, theory and coverage;
-- a visible source-evidence panel and explicit extend-only consequence;
-- restoration of Course endings mode, filters and minimum-games threshold on return;
-- RB-011 destination preselection and locking to the exact source course/chapter/line/node;
-- safe no-match behavior when the source endpoint is stale or changed;
-- focused route, helper, target, builder-store, course-store and dialog tests;
-- no new API route, Prisma model, migration, persistence layer or recommendation engine.
-
-Final review-package head `45851192b77327e23546eb691d3629c3a193144d` passed CI run `30485910525` / #1541. PR #205 was squash-merged as `c2266c9a8ffca00696da264abb3476f36ec82b50`.
-
-Implementation report: `reports/RB-012-2026-07-29-course-ending-entry.md`.
-
-Closure report: `reports/RB-012-2026-07-29-course-ending-closure.md`.
-
-Issue #100 remains open because RB-012 covers multiple finding types. Opponent gaps is the next bounded coverage-extension slice.
-
-## Review work
-
-### RB-004 / #92 — Player Chess Profile calculation
-
-PR #136 provides a shared contract and authenticated deterministic profile endpoint with separate preference/performance evidence, selected-game baselines, evidence grades, opening-classification provenance and bounded supporting games.
-
-CI #1103 passed. User review and accepted integration remain required.
-
-### RB-005 / #93 — Player Chess Profile experience
-
-Stacked PR #139 provides `/progress/profile`, recalculable context filters, separate `What you choose` and `What works` views, evidence expansion, coverage states and focused Angular architecture/tests.
-
-It remains blocked from integration until RB-004 is accepted, the stacked branches are reconciled and hands-on review is complete.
-
-## Active independent pilot
-
-### RB-017 / #114
-
-The approved traps pilot remains limited to:
-
-- a source-controlled reviewed dataset;
-- deterministic validation;
-- versioned engine and population snapshots;
-- explicit insufficient evidence;
-- review output, tests and documentation.
-
-It excludes production persistence, public API, Angular UI, course writes and RB-006/RB-007 contract changes.
-
-## Repository and GitHub issue state
-
-- RB-001 / #89: `DONE`.
-- RB-002 / #90: `DONE` through RB-001 delivery evidence.
-- RB-003 / #91: `DONE`.
-- RB-004 / #92: `REVIEW` through PR #136.
-- RB-005 / #93: `REVIEW` through stacked PR #139.
-- RB-006 / #94: `DONE` through PR #157.
-- RB-007 / #95: `DONE` through PR #166.
-- RB-008 / #96: `DONE` through accepted PR #110 direction.
-- RB-009 / #97: `DONE` through squash-merged PR #177.
-- RB-010 / #98: `DONE` through squash-merged PR #184.
-- RB-011 / #99: `DONE` through squash-merged PR #189; issue closed.
-- RB-012 / #100: `READY` after squash-merged PR #205; issue remains open for later slices.
-- RB-014 / #102: `DONE` through PR #113.
-- RB-017 / #114: `CLAIMED` for the bounded pilot.
-- RB-018 / #116: `DONE` through PR #121.
-
-## Dependency impact
-
-- RB-006 provides authoritative target snapshots and change-impact semantics.
-- RB-007 provides candidate IDs, decision roles, evidence/policy versions, stable reasons and opponent-coverage contribution.
-- RB-008 provides the accepted routed board-first interaction.
-- RB-009 provides integrated session, decision-history, branch, queue, transposition, stale and preview semantics.
-- RB-010 provides the integrated production workbench and bounded structural preview.
-- RB-011 provides integrated course organization within an existing chapter, mandatory preview, transactional apply, conflicts, reuse and explicit results.
-- RB-012 now has its first exact finding-to-builder adaptation integrated without changing the recommendation or course-write foundations.
-- RB-013 remains responsible for profile-derived personas/defaults beyond RB-010's transparent local presets.
-- RB-017 remains outside the critical path.
-
-## Validation
-
-- RB-004 CI #1103 passed lint, build, audits, guardrails, migrations and complete tests.
-- RB-006 CI #1251 and #1256 passed the complete repository workflow.
-- RB-007 CI #1281, #1284 and #1295 passed the complete repository workflow and focused acceptance cases.
-- RB-008 validation includes responsive prototype review and complete repository CI.
-- RB-009 CI #1328 and #1360 passed the complete repository workflow and focused lifecycle, queue, invalidation, transposition, revision and preview tests.
-- RB-010 CI #1417 passed lint, builds, audits, architecture guardrails, migrations and complete tests, including restored existing navigation regression coverage.
-- RB-011 implementation-head CI #1479 and final review-package CI #1488 passed lint, builds, both opening audits, architecture guardrails, migrations and complete tests.
-- RB-012 final review-package CI #1541 passed lint, all builds, both opening audits, architecture guardrails, migrations and complete tests, including launch, route restoration, target, arbitrary-FEN session, observed-candidate inclusion, exact destination and stale-source coverage.
-- RB-014 source/license verification and complete repository CI passed.
-- RB-017 must add deterministic offline fixture tests and an explicit opt-in live refresh path.
+- Intrinsic classification, static opening knowledge, target-population behavior, player behavior and repertoire intent remain separate concepts.
+- Candidate ranking, Builder reducers/queue and course preview/apply remain deterministic authorities.
+- Opening knowledge is explanatory and does not alter ranking or course writes.
+- Generated interpretation remains optional, explicit, gated and non-authoritative.
+- Public opening-assessment theory is assembled from reviewed knowledge and validated structured claims, not free-form provider prose.
+- RB-017 remains a research fixture rather than a production traps capability.
 
 ## Residual risks
 
-- Opening classifications remain reviewable chess judgments.
-- RB-006 v1 supports the Lichess Games population source only.
-- RB-007 weights, thresholds and evidence limits require real-builder calibration and version increments when changed.
-- RB-010/RB-012 route-local drafts and launch context are intentionally lost on refresh.
-- Six candidates and 24 decisions require normal product-use calibration.
-- Source freshness remains consumer-driven; no background watcher marks evidence stale.
-- Transpositions are recognized within the loaded session snapshot and course preview, but persisted course lines remain separate trees rather than a shared graph.
-- RB-011 targets an existing owned chapter; whole-course/new-chapter organization and persisted target/session metadata are not implemented.
-- RB-012's integrated first slice supports Course endings and extend-only semantics. Opponent gaps and My deviations require separate reviewed consequence mapping.
-- Four-field Course ending FENs do not contain move counters; canonical session FENs use neutral `0 1` counters while exact position identity remains the normalized four fields.
-- Engine, personal, course and profile providers do not share one universal freshness timestamp model.
+- Strategic opening prose can overgeneralize and requires source/revision governance.
+- Initial knowledge coverage is intentionally incomplete and must remain weighted by actual games separately from generated-name count.
+- RB-024 has deterministic client/service coverage but no live configured-provider validation in the execution environment.
+- RB-016 outcome claims remain unavailable until real usage evidence exists.
 
 ## Queue recommendation
 
-Keep task order and priorities unchanged.
-
-RB-012 is `READY` after squash-merged PR #205. Opponent gaps is the recommended next slice because its consequence remains coverage extension. My deviations should follow only after replace/alternate/keep-course consequences are made explicit. Do not retire the Course endings source report yet.
+Do not start RB-016 before its usage gate is genuinely satisfied. New Repertoire Builder work requires new planning or newly available outcome evidence.

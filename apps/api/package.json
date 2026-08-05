@@ -23,11 +23,17 @@
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
     "opening-book:classification-audit": "ts-node --transpile-only src/scripts/audit-opening-classification.ts",
     "opening-book:classification-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-classification.ts",
+    "opening-book:knowledge-audit": "ts-node --transpile-only src/scripts/audit-opening-knowledge.ts",
+    "opening-book:knowledge-game-audit": "ts-node --transpile-only src/scripts/audit-imported-game-opening-knowledge.ts",
     "tags:refresh-analysed": "ts-node --transpile-only src/scripts/refresh-analysed-game-tags.ts",
+    "traps:validate": "ts-node --transpile-only src/scripts/validate-trap-pilot.ts",
+    "traps:refresh-engine": "ts-node --transpile-only src/scripts/refresh-trap-pilot-engine-evidence.ts",
+    "traps:refresh-population": "ts-node --transpile-only src/scripts/refresh-trap-pilot-population-evidence.ts",
+    "benchmark:onboarding": "npm run build && node benchmarks/onboarding-throughput-safe.mjs",
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force --schema prisma/schema.prisma && prisma generate --schema prisma/schema.prisma && npm run db:seed",
     "prisma:studio": "prisma studio",
-    "test": "npm run build && node test/run-all.mjs"
+    "test": "npm run build && npm run traps:validate && node test/run-all.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",

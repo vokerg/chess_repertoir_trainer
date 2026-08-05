@@ -1,36 +1,36 @@
-<section class="section-card stack conflict-panel">
-  <div>
-    <span class="eyebrow">Course conflicts</span>
-    <h3 class="collection-title">Fix conflicting repertoire moves</h3>
-    <p class="collection-description">
-      This course has multiple repertoire moves for the same trained-side position. Fix these before
-      trusting review results.
-    </p>
-  </div>
+<app-panel
+  class="conflict-panel"
+  title="Fix conflicting repertoire moves"
+  subtitle="This course has multiple repertoire moves for the same trained-side position. Resolve them before trusting review results."
+>
+  <div class="conflict-list">
+    @for (conflict of conflicts(); track conflict.normalizedFenBefore) {
+      <article class="conflict-card">
+        <code class="conflict-fen">{{ conflict.normalizedFenBefore }}</code>
 
-  @for (conflict of conflicts(); track conflict.normalizedFenBefore) {
-    <article class="collection-card stack">
-      <code>{{ conflict.normalizedFenBefore }}</code>
-      @for (move of conflict.moves; track move.moveUci) {
-        <div class="conflict-move stack">
-          <strong>{{ move.moveSan || move.moveUci }}</strong>
-          @for (ref of move.lineRefs; track ref.lineId + ':' + ref.nodeId) {
-            <div class="conflict-line">
-              <div class="stack conflict-line-copy">
-                <span class="metric-label">{{ ref.lineName }}</span>
-                <span class="move-sequence">{{ ref.moveSequenceSan || move.moveSan }}</span>
-              </div>
-              <a
-                class="button-link"
-                [routerLink]="['/lines', ref.lineId, 'edit']"
-                [queryParams]="{ nodeId: ref.nodeId }"
-              >
-                <button type="button" class="secondary">Edit line</button>
-              </a>
-            </div>
+        <div class="conflict-moves">
+          @for (move of conflict.moves; track move.moveUci) {
+            <section class="conflict-move">
+              <h4>{{ move.moveSan || move.moveUci }}</h4>
+              @for (ref of move.lineRefs; track ref.lineId + ':' + ref.nodeId) {
+                <div class="conflict-line">
+                  <div class="conflict-line-copy">
+                    <strong>{{ ref.lineName }}</strong>
+                    <span class="move-sequence">{{ ref.moveSequenceSan || move.moveSan }}</span>
+                  </div>
+                  <a
+                    class="conflict-action"
+                    [routerLink]="['/lines', ref.lineId, 'edit']"
+                    [queryParams]="{ nodeId: ref.nodeId }"
+                  >
+                    Edit line
+                  </a>
+                </div>
+              }
+            </section>
           }
         </div>
-      }
-    </article>
-  }
-</section>
+      </article>
+    }
+  </div>
+</app-panel>

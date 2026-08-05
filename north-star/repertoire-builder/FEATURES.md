@@ -1,6 +1,6 @@
 # Repertoire Builder Feature Catalog
 
-Last updated: 2026-07-29
+Last updated: 2026-08-03
 
 Planning maturity values:
 
@@ -24,6 +24,7 @@ Delivery classes:
 | Factual peer-band resolver | Dual-use | Implemented and merged | Enables My peers immediately | Supplies automatic population target defaults |
 | Durable multi-account player level | Dual-use | Implemented through the shared resolver | One inspectable level across accounts | Reuses factual peer evidence without a second formula |
 | Named opening classification | Dual-use | Implemented and merged | Enables opening browsing and taxonomy | Supplies intrinsic side-aware opening character |
+| Side-aware opening knowledge | Dual-use | Foundation and Builder consumer complete | Reusable opening explanations and plans | Explains focused candidate strategy without changing ranking |
 | Player Chess Profile calculation | Dual-use | Implemented for review | Standalone identity and performance insight | Advises repertoire target and candidate fit |
 | Player Chess Profile experience | Standalone | Implemented for review | Recalculable profile page with evidence | Entry point into builder |
 | Repertoire target contract | North-star | Implemented and merged | Limited direct value | Captures preset population, persona, risk and coverage intent |
@@ -32,12 +33,12 @@ Delivery classes:
 | Visual move-choice experience | North-star | Accepted and implemented | Reusable analysis pattern | Core human decision surface |
 | Builder session and branch queue | North-star | Implemented and merged | Storage-neutral state foundation | Supports resume semantics, deferral, staleness and multi-branch coverage |
 | Interactive builder MVP | North-star | Implemented and merged | First production builder slice | Alternates user choice and opponent coverage in a bounded routed workbench |
-| Course reintegration and preview | Dual-use | Ready for implementation | Safer course edits | Materializes accepted builder trees through mandatory preview/apply |
-| Existing-course adaptation | Dual-use | Outlined | Improves current course review | Reuses builder for gaps, endings and weak choices |
-| Repertoire personas and profile override | Dual-use | Agreed concept | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
-| Traps knowledge foundation | Research | Discovery complete; bounded pilot claimed | Possible future opening resource | Enables evidence-backed traps persona |
-| LLM explanation/orchestration | Research | Open | Possible narrative value elsewhere | Optional explanation or conversational layer |
-| Outcome feedback and builder evaluation | Dual-use | Placeholder | Better improvement measurement | Validates whether recommendations work later |
+| Course reintegration and preview | Dual-use | Implemented and merged | Safer course edits | Materializes accepted builder trees through mandatory preview/apply |
+| Existing-course adaptation | Dual-use | Implemented and merged | Improves current course review | Reuses builder for gaps and endings |
+| Repertoire personas and profile override | Dual-use | Implemented and merged | Supports multiple purposeful courses | Prevents profile defaults becoming constraints |
+| Traps knowledge foundation | Research | Discovery and bounded pilot complete | Possible future opening resource | Enables evidence-backed traps persona |
+| LLM explanation/orchestration | Research | Bounded prototypes complete; opening-grounded game review in PR #268 | Optional generated narrative value | Read-only interpretation over deterministic evidence |
+| Outcome feedback and builder evaluation | Dual-use | Blocked | Better improvement measurement | Validates whether recommendations work later |
 
 ## Feature relationships
 
@@ -49,11 +50,23 @@ Rating normalization remains a shared versioned domain. The active Lichess-bench
 
 RB-002 is delivered through the same factual multi-account resolver. Opening classification remains independent.
 
+### Opening classification and knowledge
+
+Opening classification remains the compact deterministic intrinsic taxonomy delivered by RB-003/RB-018: soundness, character, theoretical status, theory burden, roles, confidence and matched rule IDs.
+
+RB-021 established the separate source-controlled opening knowledge architecture. RB-022 delivered the reviewed service and corpus with explicit conditions, caveats, provenance, lifecycle and partial/unavailable states.
+
+RB-023 projects that knowledge through the authoritative candidate-decision path. The Builder receives only the target side's bounded summary and plans and renders them in the focused evidence experience. Knowledge remains separate from complete classification coverage and does not become a ranking input.
+
+RB-024 reuses the same reviewed service for the existing explicit game-review AI context. It supplies only bounded user-side knowledge, validates generated plan references against authoritative game plies, and does not turn narrative plans into deterministic analysis.
+
 ### Chess Profile
 
 The profile consumes opening classification and factual player-level context for its strongest conclusions. It may display or consume the resolved peer band, but it must not silently recalculate or mutate factual level evidence.
 
-The integrated builder displays RB-007 profile fit as advisory evidence. It does not derive setup defaults from RB-004/RB-005 and does not prevent a user from choosing against profile evidence.
+The integrated builder displays RB-007 profile fit as advisory evidence. It does not prevent a user from choosing against profile evidence.
+
+Opening knowledge is not a statistical profile dimension. Plan IDs are not aggregated into player conclusions.
 
 ### Repertoire target
 
@@ -67,34 +80,36 @@ Evidence aggregation and ranking remain separate. Aggregation gathers comparable
 
 The builder consumes the existing authenticated candidate endpoint rather than adding a UI-specific recommendation engine. Manual board moves use `includeMoveUci` and remain subject to the same evidence/eligibility response.
 
+RB-023 nests reviewed knowledge inside candidate opening evidence. Descriptions and plans remain explanatory and cannot change ranking, eligibility, fit, coverage or session state.
+
 ### Visual choice
 
 The accepted production direction is a routed, board-first workbench launched from a focused setup dialog. Candidate switching updates one readable board and focused evidence; opponent responses use a queue rather than a dense matrix.
 
-Squash-merged PR #184 implements that direction with one primary board, explicit target/profile separation, opponent-response selection, queue controls and bounded structural preview.
+Squash-merged PR #184 implements that direction with one primary board, explicit target/profile separation, opponent-response selection, queue controls and bounded structural preview. RB-023 reuses the focused evidence grid rather than adding a second presentation surface.
 
 ### Builder state
 
 RB-009 implements the queue, accepted choices, deferred and ignored responses, staleness, transposition references, decision history and bounded preview as a pure serializable `chess-domain` snapshot.
 
-RB-010 composes that snapshot through a page-scoped Angular store. It adds no second reducer or global builder state. The accepted first MVP is route-local: refresh starts over, and reopening setup explicitly replaces the current draft. Durable resume requires a separate demonstrated need.
+RB-010 composes that snapshot through a page-scoped Angular store. RB-023 adds no new store: knowledge follows the selected candidate response and its independent version is captured in the existing evidence reference.
 
 ### Existing courses
 
-Course review, endings, gaps and performance findings should enter the same builder decision loop rather than create separate recommendation engines.
+Course review, endings, gaps and performance findings enter the same builder decision loop rather than create separate recommendation engines.
 
-RB-010 displays RB-007 course evidence and a structural draft preview but performs no write. RB-011 is now ready and owns mandatory preview, explicit transactional apply, conflict handling, reuse and result reporting.
+Opening knowledge explains focused choices but does not become course content or a course-write command.
 
 ### Repertoire personas
 
 A measured profile may propose a default persona. The user can create alternatives such as solid, sharp, dubious or low-theory. Persona is a target choice, not a permanent label.
 
-RB-010 uses four transparent local presets over explicit RB-006 objective dimensions. Profile-derived defaults remain RB-013 work.
-
 ### Traps
 
-The critical-path MVP does not depend on traps. RB-017 remains the only approved bounded data/validator pilot after RB-014 discovery.
+The critical-path MVP does not depend on traps. RB-017 remains research evidence and is not a production database or Builder input.
 
 ### LLM
 
-No core stage depends on an LLM. A later discovery task may identify safe narrative or orchestration roles after deterministic evidence and UX are understood.
+No core stage depends on an LLM. Existing prototypes remain optional, disabled by default and non-authoritative.
+
+RB-024 grounds the existing on-demand game review in supplied reviewed user-side plans. It adds structured claim reconciliation and stale-artifact invalidation without runtime research, automatic provider calls or deterministic-analysis mutation.

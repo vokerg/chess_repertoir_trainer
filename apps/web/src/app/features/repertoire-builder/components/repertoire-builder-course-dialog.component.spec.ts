@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { AiBuilderCompletionSummaryResponse } from '@chess-trainer/contracts/ai';
 import type {
   BuilderCourseDraft,
+  BuilderCourseReintegrationApplyResponse,
   BuilderCourseReintegrationPreviewResponse,
   BuilderCourseReintegrationTarget,
 } from '@chess-trainer/contracts/courses';
@@ -47,6 +49,37 @@ const existingTarget: BuilderCourseReintegrationTarget = {
   lineId: 9,
   anchor: { kind: 'LINE_START', nodeId: null, normalizedFen: 'normalized-start' },
 };
+
+const applyResult: BuilderCourseReintegrationApplyResponse = {
+  contractVersion: '2026-07-v1',
+  targetKind: 'NEW_LINE',
+  courseId: 1,
+  chapterId: 2,
+  lineId: 10,
+  lineName: 'Reviewed line',
+  createdMoves: 3,
+  reusedMoves: 0,
+  skippedBranches: 1,
+  conflictingMoves: 0,
+  totalDraftMoves: 3,
+  courseContentRevision: 5,
+  idempotent: false,
+};
+
+const completionSummary = {
+  authoritativeResult: {
+    factualSummary: 'Reviewed line in Course · Chapter was updated with 3 created moves.',
+  },
+  interpretation: {
+    interpretation: 'The supplied result contains one applied repertoire slice.',
+    highlights: [],
+    studyChecklist: [{ text: 'Review the supplied applied path.' }],
+    unresolvedWorkNote: null,
+    warning: null,
+  },
+  referencedFacts: [],
+  disclaimer: 'Course changes are authoritative; generated study suggestions are optional.',
+} as unknown as AiBuilderCompletionSummaryResponse;
 
 describe('RepertoireBuilderCourseDialogComponent', () => {
   let fixture: ComponentFixture<RepertoireBuilderCourseDialogComponent>;
@@ -116,5 +149,43 @@ describe('RepertoireBuilderCourseDialogComponent', () => {
     expect(existingButton?.disabled).toBeFalse();
     expect((fixture.nativeElement.querySelector('select[formControlName="courseId"]') as HTMLSelectElement).disabled)
       .toBeTrue();
+  });
+
+  it('never exposes or requests a completion summary before apply succeeds', () => {
+    fixture.componentRef.setInput('completionSummaryAvailable', true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.completion-summary')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Generate study summary');
+  });
+
+  it('exposes one explicit summary request only after the authoritative result exists', () => {
+    fixture.componentRef.setInput('completionSummaryAvailable', true);
+    fixture.componentRef.setInput('result', applyResult);
+    fixture.detectChanges();
+
+    const emitted: void[] = [];
+    fixture.componentInstance.completionSummaryRequested.subscribe(() => emitted.push(undefined));
+    const button = Array.from(
+      fixture.nativeElement.querySelectorAll('.completion-summary button') as NodeListOf<HTMLButtonElement>,
+    ).find((item) => item.textContent?.includes('Generate study summary'));
+    button?.click();
+
+    expect(fixture.nativeElement.textContent).toContain('Course updated');
+    expect(button).toBeDefined();
+    expect(emitted.length).toBe(1);
+  });
+
+  it('keeps the verified result before generated interpretation', () => {
+    fixture.componentRef.setInput('completionSummaryAvailable', true);
+    fixture.componentRef.setInput('result', applyResult);
+    fixture.componentRef.setInput('completionSummary', completionSummary);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Verified result');
+    expect(text).toContain('Generated interpretation');
+    expect(text.indexOf('Verified result')).toBeLessThan(text.indexOf('Generated interpretation'));
+    expect(text).toContain('Course changes are authoritative');
   });
 });

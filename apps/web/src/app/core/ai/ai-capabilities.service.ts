@@ -7,7 +7,13 @@ import { ApiService } from '../api/api.service';
 export class AiCapabilitiesService {
   private readonly api = inject(ApiService);
   private readonly capabilities$ = this.api.get<AiCapabilitiesResponse>('/ai/capabilities').pipe(
-    catchError(() => of<AiCapabilitiesResponse>({ widgets: { gameReview: false } })),
+    catchError(() => of<AiCapabilitiesResponse>({
+      widgets: {
+        gameReview: false,
+        builderCandidateExplanation: false,
+        builderCompletionSummary: false,
+      },
+    })),
     shareReplay({ bufferSize: 1, refCount: false }),
   );
 

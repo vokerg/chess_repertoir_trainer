@@ -1,6 +1,6 @@
 # ONB-003 — Design progressive indexing and analysis orchestration
 
-Status: READY
+Status: DONE
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 30
 
 Delivery class: Research
 
-Planning maturity: Outlined
+Planning maturity: Completed through squash-merged PR #256
 
 GitHub issue: [#150](https://github.com/vokerg/chess_repertoir_trainer/issues/150)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT/Codex research session for `vokerg`
 
-Claim branch: none
+Claim branch: `onb-003/issue-150-progressive-preparation-orchestration`
 
-Claimed at: none
+Claimed at: 2026-08-01
 
-Claim scope: none
+Claim scope: orchestration research, decisions, reports, queue reconciliation, and bounded implementation-task allocation only
 
 ## Outcome
 
@@ -28,7 +28,7 @@ Define the smallest durable parent/wave orchestration that progressively turns i
 
 The existing worker is strong per game but does not represent an onboarding recipe, import handoff, stage dependencies, visible waves, readiness milestones, or expansion.
 
-## Current repository anchors to inspect
+## Current repository anchors inspected
 
 - `apps/api/src/modules/jobs/`
 - `apps/api/src/modules/imported-games/imported-game-processing.service.ts`
@@ -42,7 +42,7 @@ The existing worker is strong per game but does not represent an onboarding reci
 ## Dependencies
 
 - ONB-000.
-- Coordinate lifecycle with ONB-001, import handoff with ONB-002, and capacity with ONB-007.
+- Coordinated lifecycle with ONB-001, import handoff with ONB-002, and capacity with ONB-007.
 
 ## In scope
 
@@ -52,7 +52,7 @@ The existing worker is strong per game but does not represent an onboarding reci
 - Job source/priority/fairness.
 - Server-side eligible selection.
 - Import pipelining.
-- parent/child progress, pause, resume, retry, cancel, restart, and expansion.
+- Parent/child progress, pause, resume, retry, cancel, restart, and expansion.
 - Angular job-store integration boundary.
 - Schema/API outline and implementation tasks.
 
@@ -64,32 +64,47 @@ The existing worker is strong per game but does not represent an onboarding reci
 
 ## Questions owned
 
-See `OPEN_QUESTIONS.md` under ONB-003.
+Resolved in `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md` and the self-review addendum.
 
-## Acceptance criteria
+Numeric wave sizes, polling budgets, admission limits, and stalled thresholds are delegated to ONB-007.
 
-- Existing imported-game worker remains the executor.
-- Useful indexed results are available before all selected games finish.
-- Analysis is limited to successfully indexed games.
-- Direct user jobs remain responsive.
-- Parent state survives restart and child dismissal.
-- Queue backlog is bounded.
-- Failure/retry/cancel semantics do not duplicate completed work.
-- Follow-up tasks are narrow.
+## Acceptance criteria result
 
-## Required validation
+- Existing imported-game worker remains the executor: satisfied.
+- Useful indexed results are available before all selected games finish: satisfied by committed-import pipelining and bounded index batches.
+- Analysis is limited to successfully indexed games: satisfied by evidence-based analysis selection.
+- Direct user jobs remain responsive: satisfied by lower preparation priorities and existing preemption.
+- Parent state survives restart and child dismissal: satisfied by durable parent/target/batch state and terminal snapshots.
+- Queue backlog is bounded: satisfied by per-run bounds plus globally serialized admission caps.
+- Failure/retry/cancel semantics do not duplicate completed work: satisfied by evidence-based selection, immutable child jobs, explicit retry, and acknowledged cancellation.
+- Follow-up tasks are narrow: satisfied by ONB-017 / #253 and ONB-018 / #254.
 
-- Reinspect worker claims, priority, stale recovery, cancellation, task creation, and Angular polling.
-- Model large-account and preemption scenarios.
-- Use ONB-007 measurements or explicit pending assumptions.
-- Identify concurrency/integration tests required by implementation.
+## Required validation result
+
+- Worker claims, priority, stale recovery, cancellation, task creation, and Angular polling re-inspected.
+- Large-account, concurrent-parent admission, and direct-user preemption scenarios modelled.
+- ONB-007 numeric inputs remain explicit pending assumptions.
+- Concurrency and integration tests are specified in ONB-017/018.
+- Self-review found and corrected cross-parent global-admission serialization and stage-specific multi-account fairness gaps.
+- Final PR CI run `30714419045` passed lint, build, architecture guardrails, migrations, audits, and the full test suite.
 
 ## Completion updates
 
-- Report, decisions, open questions, queue, issue #150, and implementation tasks.
+- Main report and self-review addendum added.
+- ONB-017 / #253 and ONB-018 / #254 allocated and corrected.
+- Queue, status, roadmap, decisions/open-question handoffs, issue mapping, and dependent task boundaries reconciled.
+- Production code, schema, worker, provider, and Angular behavior unchanged.
 
 ## Completion
 
-Report: none
+Report: `reports/ONB-003-2026-08-01-progressive-preparation-orchestration.md`
 
-Completed at: none
+Self-review addendum: `reports/ONB-003-2026-08-01-self-review-addendum.md`
+
+Implementation tasks: ONB-017 / #253 and ONB-018 / #254
+
+Pull request: [#256](https://github.com/vokerg/chess_repertoir_trainer/pull/256)
+
+Squash commit: `d41f75c080cd19ad106b2143acecd3b0606adacb`
+
+Completed at: 2026-08-01

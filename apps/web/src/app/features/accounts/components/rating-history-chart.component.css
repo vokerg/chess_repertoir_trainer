@@ -5,7 +5,7 @@
 
 .rating-chart {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
   min-width: 0;
 }
 
@@ -13,7 +13,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 
@@ -30,42 +30,48 @@
   min-width: 42px;
   min-height: 36px;
   padding: 0.45rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 252, 247, 0.68);
-  color: var(--muted-strong);
-  font-weight: 900;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  font-weight: 800;
 }
 
 .speed-button:hover:not(:disabled),
 .range-button:hover:not(:disabled) {
-  border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--text);
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.speed-button:focus-visible,
+.range-button:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
 }
 
 .speed-button-active,
 .range-button-active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
 }
 
 .chart-status {
   margin: 0;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .chart-status-error {
-  color: var(--danger);
+  color: var(--ui-danger);
 }
 
 .chart-frame {
   position: relative;
   min-height: 360px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: rgba(255, 252, 247, 0.66);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-surface-muted);
   overflow: hidden;
 }
 
@@ -79,15 +85,15 @@
   display: grid;
   place-items: center;
   padding: 1.25rem;
-  color: var(--muted);
-  font-weight: 800;
+  color: var(--ui-text-muted);
+  font-weight: 750;
   text-align: center;
 }
 
 .chart-loading {
   position: absolute;
   inset: 0;
-  background: rgba(255, 252, 247, 0.72);
+  background: color-mix(in srgb, var(--ui-surface-overlay) 84%, transparent);
 }
 
 .legend {
@@ -101,9 +107,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: var(--muted-strong);
+  color: var(--ui-text-muted);
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .legend-swatch,
@@ -127,15 +133,17 @@
 }
 
 .grid line {
-  stroke: var(--border);
+  stroke: var(--ui-border);
   stroke-width: 1;
 }
 
 .grid text,
 .date-label {
-  fill: var(--muted);
+  fill: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
 }
 
 .grid text {
@@ -147,7 +155,7 @@
 }
 
 .axis {
-  stroke: var(--border-strong);
+  stroke: var(--ui-border-strong);
   stroke-width: 1.2;
 }
 
@@ -160,22 +168,22 @@
 }
 
 .crosshair {
-  stroke: var(--muted-strong);
+  stroke: var(--ui-text-muted);
   stroke-width: 1.5;
   stroke-dasharray: 5 5;
   opacity: 0.72;
 }
 
 .rating-speed-bullet {
-  color: var(--danger);
+  color: var(--ui-danger);
 }
 
 .rating-speed-blitz {
-  color: var(--accent-strong);
+  color: var(--ui-action-strong);
 }
 
 .rating-speed-rapid {
-  color: var(--success);
+  color: var(--ui-success);
 }
 
 .tooltip {
@@ -185,14 +193,15 @@
   display: grid;
   gap: 0.45rem;
   padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-strong);
-  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-overlay);
+  box-shadow: var(--ui-shadow-overlay);
   pointer-events: none;
 }
 
 .tooltip > strong {
+  color: var(--ui-text);
   font-size: 0.88rem;
 }
 
@@ -201,16 +210,22 @@
   grid-template-columns: auto 1fr auto;
   gap: 0.35rem 0.5rem;
   align-items: center;
-  color: var(--text);
+  color: var(--ui-text);
   font-size: 0.82rem;
+}
+
+.tooltip-row > strong {
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .tooltip-row small {
   grid-column: 2 / 4;
-  color: var(--muted);
+  color: var(--ui-text-muted);
   font-weight: 700;
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx (640). */
 @media (max-width: 640px) {
   .chart-frame,
   .chart-empty,

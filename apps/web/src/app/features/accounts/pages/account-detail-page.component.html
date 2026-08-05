@@ -17,24 +17,12 @@
 
       @if (account(); as account) {
         <div class="account-overview-content">
-          <dl class="account-summary">
-            <div>
-              <dt>Provider</dt>
-              <dd>{{ account.provider === 'LICHESS' ? 'Lichess' : 'Chess.com' }}</dd>
-            </div>
-            <div>
-              <dt>Username</dt>
-              <dd>&#64;{{ account.username }}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{{ account.isActive ? 'Active' : 'Inactive' }}</dd>
-            </div>
-            <div>
-              <dt>Progress</dt>
-              <dd>{{ account.isDefaultProgressAccount ? 'Default' : 'Available' }}</dd>
-            </div>
-          </dl>
+          <app-fact-grid
+            [items]="accountFacts()"
+            ariaLabel="Account summary"
+            [columns]="4"
+            [compactColumns]="1"
+          />
 
           <label class="account-switcher">
             <span>Account</span>
@@ -55,21 +43,23 @@
       }
     </app-panel>
 
-    <app-panel title="Rating stats" subtitle="Stored highs and milestones from imported games.">
-      <app-account-rating-stats
-        [stats]="ratingStats()"
-        [loading]="ratingStatsLoading()"
-        [error]="ratingStatsError()"
-      />
-    </app-panel>
+    <div class="account-metrics-grid">
+      <app-panel title="Rating stats" subtitle="Stored highs and milestones from imported games.">
+        <app-account-rating-stats
+          [stats]="ratingStats()"
+          [loading]="ratingStatsLoading()"
+          [error]="ratingStatsError()"
+        />
+      </app-panel>
 
-    <app-panel title="Yearly highs" subtitle="Stored annual peak rating by speed.">
-      <app-account-yearly-highs
-        [stats]="ratingStats()"
-        [loading]="ratingStatsLoading()"
-        [error]="ratingStatsError()"
-      />
-    </app-panel>
+      <app-panel title="Yearly highs" subtitle="Stored annual peak rating by speed.">
+        <app-account-yearly-highs
+          [stats]="ratingStats()"
+          [loading]="ratingStatsLoading()"
+          [error]="ratingStatsError()"
+        />
+      </app-panel>
+    </div>
 
     <app-panel title="Period performance" subtitle="Results and opponent ratings for the selected graph period.">
       <app-account-performance-stats

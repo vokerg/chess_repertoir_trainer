@@ -1,40 +1,124 @@
+:host,
 .conflict-panel {
-  border-color: rgba(181, 69, 53, 0.4);
-  background: rgba(181, 69, 53, 0.06);
+  display: block;
+  min-width: 0;
 }
 
-code {
+.conflict-panel {
+  --panel-accent: var(--ui-danger);
+}
+
+.conflict-list,
+.conflict-moves {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.conflict-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 42%, var(--ui-border));
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-danger-soft);
+}
+
+.conflict-fen,
+.move-sequence {
   overflow-wrap: anywhere;
+  font-family: var(--ui-font-family-mono);
+}
+
+.conflict-fen {
+  padding: var(--space-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: 0.78rem;
 }
 
 .conflict-move {
-  gap: 0.65rem;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.conflict-move h4 {
+  margin: 0;
+  color: var(--ui-danger);
+  font-size: 1rem;
 }
 
 .conflict-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(255, 252, 247, 0.72);
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
 }
 
 .conflict-line-copy {
+  display: grid;
   min-width: 0;
   gap: 0.3rem;
 }
 
-.move-sequence {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  overflow-wrap: anywhere;
+.conflict-line-copy strong {
+  color: var(--ui-text);
 }
 
+.move-sequence {
+  color: var(--ui-text-muted);
+  font-size: 0.82rem;
+}
+
+.conflict-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.conflict-action:hover {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+
+.conflict-action:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Keep in sync with the shared compact breakpoint. */
 @media (max-width: 640px) {
+  .conflict-card {
+    padding: var(--space-2);
+  }
+
   .conflict-line {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .conflict-action {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conflict-action {
+    transition: none;
   }
 }

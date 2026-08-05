@@ -9,7 +9,11 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+  PageHeaderStat,
+} from '../../../shared/ui/page-header/page-header.component';
 import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
 import { gamesExplorerLinkQueryParams } from '../../../shared/games/navigation/games-explorer-link.helper';
 import { GamesTableComponent } from '../components/games-table.component';
@@ -46,31 +50,29 @@ export class GamesExplorerPageComponent implements OnInit {
       {
         id: 'index-all',
         label: `Index all: ${this.store.bulkIndexProgressLabel()}`,
-        disabled: this.store.loading() || submitting || this.store.bulkIndexableGames().length === 0,
+        disabled:
+          this.store.loading() || submitting || this.store.bulkIndexableGames().length === 0,
         run: () => this.store.indexAllVisibleGames(),
       },
       {
-        id: 'batch-analyse',
-        label: `Batch analyse: ${this.store.batchAnalysisProgressLabel()}`,
-        disabled: this.store.loading() || submitting || this.store.bulkAnalyzableGames().length === 0,
-        run: () => this.store.batchAnalyzeVisibleGames(),
-      },
-      {
-        id: 'tags',
-        label: `Refresh tags: ${this.store.bulkRefreshTagsProgressLabel()}`,
-        disabled: this.store.loading() || submitting || this.store.filteredGames().length === 0,
-        run: () => this.store.refreshTagsForVisibleGames(),
+        id: 'analyse',
+        label: `Analyse: ${this.store.analysisProgressLabel()}`,
+        disabled:
+          this.store.loading() || submitting || this.store.bulkAnalyzableGames().length === 0,
+        run: () => this.store.analyseVisibleGames(),
       },
     ];
   });
 
   ngOnInit(): void {
     this.store.loadFacets();
-    this.route.queryParamMap.pipe(
-      map((params) => parseGamesExplorerRouteQuery(params)),
-      distinctUntilChanged(gamesExplorerRouteQueriesEqual),
-      takeUntilDestroyed(this.destroyRef),
-    ).subscribe((routeQuery) => this.store.applyRouteQuery(routeQuery.query));
+    this.route.queryParamMap
+      .pipe(
+        map((params) => parseGamesExplorerRouteQuery(params)),
+        distinctUntilChanged(gamesExplorerRouteQueriesEqual),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((routeQuery) => this.store.applyRouteQuery(routeQuery.query));
   }
 
   protected applyFilters(): void {
@@ -79,7 +81,8 @@ export class GamesExplorerPageComponent implements OnInit {
     const currentKeys = new Set(this.route.snapshot.queryParamMap.keys);
     const targetParams = gamesExplorerLinkQueryParams(draftQuery);
     const targetKeys = Object.keys(targetParams);
-    const isCanonicalUrl = currentKeys.size === targetKeys.length &&
+    const isCanonicalUrl =
+      currentKeys.size === targetKeys.length &&
       targetKeys.every((key) => this.route.snapshot.queryParamMap.get(key) === targetParams[key]);
 
     if (isCanonicalUrl && importedGameSearchCriteriaEqual(current.query, draftQuery)) {

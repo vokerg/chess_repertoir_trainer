@@ -15,6 +15,8 @@
         <p>
           @if (fixedSide()) {
             This draft starts from an exact existing-course position. Adjust the evidence population and repertoire intent before building the continuation.
+          } @else if (profileSuggestion()) {
+            Chess profile supplied a transparent starting point. Side and every target setting remain editable; changing them records a deliberate override without changing the factual profile.
           } @else {
             {{ cancelAllowed()
               ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
@@ -26,6 +28,13 @@
         <button type="button" class="icon-button" aria-label="Close setup" [disabled]="loading()" (click)="cancel()">×</button>
       }
     </header>
+
+    @if (profileSuggestion(); as suggestion) {
+      <aside class="profile-suggestion-note">
+        <strong>Suggested from Chess profile</strong>
+        <span>{{ suggestion }}</span>
+      </aside>
+    }
 
     <form [formGroup]="form" (ngSubmit)="submit()">
       <div class="setup-grid">
@@ -41,6 +50,8 @@
           </label>
           @if (fixedSide()) {
             <small>The source course fixes this side. Other target settings remain editable.</small>
+          } @else if (profileSuggestion()) {
+            <small>The suggestion was calculated for one side. Choosing the other side treats all values as manual choices.</small>
           }
         </fieldset>
 
@@ -72,6 +83,8 @@
               <input type="radio" formControlName="persona" [value]="preset.id" />
               <strong>{{ preset.label }}</strong>
               <span>{{ preset.description }}</span>
+              <small>{{ preset.intentSummary }}</small>
+              <small>{{ preset.defaultTheoryBurden.toLowerCase() }} theory · {{ preset.defaultCoveragePercent }}% coverage default</small>
             </label>
           }
         </div>

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Decisions
 
-Last updated: 2026-07-29
+Last updated: 2026-08-04
 
 Statuses:
 
@@ -51,7 +51,7 @@ No client-side bulk import, indexing, analysis, lifecycle deletion, or cleanup.
 
 Status: `LOCKED`
 
-Show persisted stage state and exact counts. Percentages require a fixed denominator. ETA and “almost done” wording are disabled until ONB-007 approves an evidence-based policy.
+Show persisted stage state, milestones, and exact counts. A percentage requires a fixed denominator for that stage instance. Do not show one weighted overall preparation percentage while import can discover games. Public ETA and “almost done” wording remain disabled in the initial release; a later stage ETA requires the ONB-007 telemetry eligibility contract.
 
 ### D-008 — No hardcoded admin credentials
 
@@ -225,7 +225,7 @@ A provider parse, normalization, or persistence failure makes the current window
 
 Status: `LOCKED`
 
-Replace per-game existence N+1 with duplicate-safe bulk insert and bounded reads. Do not return all imported or eligible IDs. ONB-003 selects eligible unindexed games from PostgreSQL by account, immutable scope/range, state, newest-first ordering, and wave limit.
+Replace per-game existence N+1 with duplicate-safe bulk insert and bounded reads. Do not return all imported or eligible IDs. Preparation selects eligible games from PostgreSQL by account, immutable scope/range, state, newest-first ordering, and configured wave limit.
 
 ### D-037 — Legacy cursors are migration hints, not coverage proof
 
@@ -251,31 +251,307 @@ Status: `LOCKED`
 
 The accepted physical direction is extended `ImportRun` plus `AccountImportCoverage`, with retries represented as new linked runs and at most one non-terminal run per account.
 
-## Provisional
+### D-045 — Lightweight presentation uses focused progressive disclosure
 
-### D-040 — Visible wave target
+Status: `LOCKED`
 
-Status: `PROVISIONAL`
+The functional onboarding experience follows [`EXPERIENCE_BLUEPRINT.md`](EXPERIENCE_BLUEPRINT.md): use a protected resumable route, present one dominant action per focused surface, progressively disclose advanced detail, and do not reproduce account Settings as a first-run dashboard or table.
 
-Start research with approximately 50 games per preparation wave. ONB-003/007 decide final policy/configuration.
+### D-046 — Additional accounts follow first value
 
-### D-042 — Admin identity
+Status: `LOCKED`
 
-Status: `PROVISIONAL`
+Preserve the one-selected-account first run. Offer additional Lichess or Chess.com accounts as explicit expansion after account acceptance and preferably after the first useful result; do not require every account before preparation starts.
 
-Reuse Clerk authentication plus an environment allowlist of verified administrator subjects. ONB-005 validates and defines dev behavior/future role migration.
+### D-047 — Activity is communicated with real milestones
 
-### D-043 — Angular admin surface
+Status: `LOCKED`
 
-Status: `PROVISIONAL`
+Make background work feel active through persisted provider-window, import, index, analysis, readiness, and newly-ready-value milestones. Do not time-smooth, fabricate, or visually advance progress without authoritative state.
 
-Use a lazy route in the existing web app, hidden and server-authorized, rather than a separate deployment.
+### D-048 — Reveals reuse canonical evidence
 
-### D-044 — Import operational sizing
+Status: `LOCKED`
 
-Status: `PROVISIONAL`
+Onboarding may present a bounded ordered subset of import, opening, Player Chess Profile, analysis, or tactical facts, but feature-owned calculations and evidence thresholds remain authoritative. Angular must not create a second insight engine.
 
-Use deterministic provider windows, bounded database batches, one global import claim, and exact counters initially. ONB-007 finalizes Lichess window duration, batch size, worker timing, backlog, scaling triggers, and any percentage/ETA policy.
+### D-049 — Reveal density is bounded
+
+Status: `LOCKED`
+
+Expose useful value progressively and show at most three evidence-labelled insight cards in one onboarding reveal. A reveal may occur before full preparation when its feature-specific evidence threshold is met.
+
+### D-050 — Personal tactics and Builder are optional continuations
+
+Status: `LOCKED`
+
+An eligible personal tactical scenario and an evidence-anchored Repertoire Builder entry may be offered as optional next actions. Neither is a core-completion gate, and onboarding never selects repertoire moves, creates courses, or applies Builder changes.
+
+### D-051 — Generated prototypes are design references, not production authority
+
+Status: `LOCKED`
+
+ChatGPT Sites, Figma Make, Codex/Figma, or repository-local prototypes use synthetic data and private review to validate states and interaction. Production remains the existing Angular/server architecture; generated framework, storage, authentication, routing, or migration choices are not accepted without normal architecture review.
+
+### D-052 — Functional accessibility precedes final visual polish
+
+Status: `LOCKED`
+
+ONB-010 implements semantic, keyboard, focus, reduced-motion, zoom, progress, and state behavior as part of the functional experience. VT-302 / #133 owns final product-wide visual, responsive, empty-state, motion, and accessibility acceptance.
+
+### D-053 — First-analysis lane is deterministic and bounded
+
+Status: `LOCKED`
+
+Unlock a three-game first-analysis batch from current successfully indexed, unanalysed games before the lower-priority analysis tail. Select newest-first within the target. Start when three indexed games exist, with a one-game fallback after normal index/import candidates are quiescent for a smaller account. Keep the sizes configurable.
+
+### D-055 — Preparation uses targets and retained child-job batches
+
+Status: `LOCKED`
+
+Persist one `DataPreparationRun` with ordered account targets and durable `DataPreparationBatch` rows. A batch links to one child `JobRun` and retains terminal counts after child dismissal or retention deletion. Do not use child job history as the only parent state.
+
+### D-056 — Every preparation batch has an immutable child job
+
+Status: `LOCKED`
+
+Create a separate immutable `INDEX_GAMES` or `ANALYSE_GAMES` `JobRun` for each bounded batch. Do not append tasks to an active run or combine index and analysis into `PROCESS_GAMES` for onboarding.
+
+### D-057 — Preparation admission is bounded per run and globally
+
+Status: `LOCKED`
+
+Permit at most one non-terminal index batch and one non-terminal analysis batch per preparation run. Initial global limits are four non-terminal onboarding batches, 200 queued onboarding tasks, and 40 queued onboarding analysis tasks. Keep the limits configurable and increase only after queue-age/direct-user evidence.
+
+### D-058 — Preparation scheduling remains below direct-user work
+
+Status: `LOCKED`
+
+Use existing `JobRun.source = ONBOARDING`. Initial lane priorities are `FIRST_INDEX = 200`, `FIRST_ANALYSIS = 190`, `INDEX_CONTINUATION = 180`, and `ANALYSIS_TAIL = 100`; retries retain their lane priority. Every preparation lane remains below the current lowest direct-user priority of 250. Preserve this ordering and floor.
+
+### D-059 — Indexing pipelines from committed import rows
+
+Status: `LOCKED`
+
+Preparation may select and index valid committed `ImportedGame` rows before the provider window or import run is terminal. Core readiness still waits for terminal exact import coverage and terminal indexing outcomes. Persisted-state reconciliation is authoritative; no delivery event is required for correctness.
+
+### D-060 — Current game evidence is readiness authority
+
+Status: `LOCKED`
+
+Use current index/opening/analysis evidence plus active child work to derive readiness. `JobTask.COMPLETED` or `SKIPPED` is execution history, not sufficient readiness proof. Historical batch totals are audit/progress evidence and must not be summed as the current eligible result set.
+
+### D-061 — Preparation control is acknowledged and restart-safe
+
+Status: `LOCKED`
+
+Pause stops new admission and becomes `PAUSED` only after current import/child work is quiescent. Cancel becomes terminal only after import and child claims are acknowledged. Retry creates new child batches for failed/unprepared evidence without resetting historical jobs. Restart creates a linked recovery run; expansion creates a new immutable run.
+
+### D-062 — Preparation reconciliation is a separate short worker loop
+
+Status: `LOCKED`
+
+Run a bounded PostgreSQL reconcile loop in the existing worker deployment. Initial cadence is one second for active due work and five seconds for idle scanning, with persisted immediate wake hints after import commits, child settlement, and controls. Never hold a reconcile transaction across provider I/O, PGN processing, or Stockfish execution.
+
+### D-063 — Expansion is account-round-robin
+
+Status: `LOCKED`
+
+The first run remains one account. Multi-account expansion selects newest-first within each target and admits batches account-round-robin using immutable target order as the tie-break. The run still has only one active index and one active analysis batch.
+
+### D-064 — Destructive actions have five separate meanings
+
+Status: `LOCKED`
+
+Use distinct actions for un-analysis, un-index, account-data purge, external-account deletion, and whole-app-user deletion. Do not expose one ambiguous reset/delete command whose retained data depends on hidden implementation details.
+
+### D-065 — Destructive execution is durable, previewed, fenced, and idempotent
+
+Status: `LOCKED`
+
+Persist the preview/execution/checkpoint/audit boundary and user/account/game resource fences. Clients submit bounded server-resolved scope, a valid preview, confirmation, and an idempotency key; the browser never coordinates deletion phases.
+
+### D-066 — Drain proof requires claim acknowledgement
+
+Status: `LOCKED`
+
+Install the resource fence before cancellation, reject new work, request preparation/import/job cancellation, and wait for every provider/import claim plus relevant `JobTask.workKey` to clear. Terminal run/task status alone is not sufficient proof that an executor can no longer write.
+
+### D-067 — Un-index always includes un-analysis; shared engine evidence survives
+
+Status: `LOCKED`
+
+Un-index first clears all per-game analysis evidence and then removes plies/index state. Un-analysis, un-index, account purge/delete, and user deletion retain shared `Position`, `PositionAnalysis`, and `MastersExplorerCache`; ONB-006 owns separately proved orphan cleanup.
+
+### D-068 — Derived analysis state is cleared by canonical source, then tags are recomputed
+
+Status: `LOCKED`
+
+Un-analysis deletes game analysis runs and AI reviews, clears latest-analysis and ply classification fields, removes every tactical detection/processed version, and recomputes the complete tag set. Retain tactical feedback and self-contained scenario history for un-analysis/un-index; purge/delete removes target-game scenario copies.
+
+### D-069 — Account purge and account deletion retain independent OAuth by default
+
+Status: `LOCKED`
+
+Account purge removes games, import/coverage state, copied scenario data, rating statistics, and sync frontiers while retaining the account. Account deletion performs purge and removes the account/default reference. A separately managed `LichessConnection` remains unless the user explicitly disconnects it or deletes the whole app user.
+
+### D-070 — Opening provenance is required
+
+Status: `LOCKED`
+
+Persist provider, local-book, legacy/unknown, and none provenance. Un-index clears only locally assigned opening values. Existing non-null values without provable source migrate conservatively to unknown and are retained.
+
+### D-071 — Large destructive actions are bounded and forward-only
+
+Status: `LOCKED`
+
+Use deterministic short transactions with persisted phase/checkpoint progress. After deletion begins, retry resumes forward and does not promise rollback. Parent cascades are final cleanup/safety, not the only large-data execution plan.
+
+### D-072 — Destructive audit survives deletion without becoming a shadow data store
+
+Status: `LOCKED`
+
+Retain action/status/timestamps/pseudonymous actor-target keys/aggregate counts/error codes and result linkage outside target cascades. Do not retain PGN, tokens, email, usernames, FEN history, AI content, scenario JSON, provider URLs, or raw auth subjects.
+
+### D-073 — Whole-user deletion removes OAuth state and blocks silent identity recreation
+
+Status: `LOCKED`
+
+Delete local encrypted provider connections and OAuth login-state rows explicitly, attempt bounded upstream token revocation, remove all AppUser-owned rows in bounded phases, then delete `AppUser`. Persist a versioned HMAC identity tombstone checked before normal external-user upsert; starting fresh must be a deliberate later policy.
+
+### D-074 — Mobile deletion requires a local-purge handshake
+
+Status: `LOCKED`
+
+Server deletion cannot erase offline SQLite data. The initiating client receives a terminal receipt and deletes its `local_user` row, cascading downloads, local training, and outbox rows before sign-out. Other offline devices purge on next contact and cannot upload stale attempts.
+
+### D-075 — Account/game lifecycle actions rederive readiness, not disposition
+
+Status: `LOCKED`
+
+Un-analysis/un-index/purge/delete change feature readiness and active preparation evidence. They do not silently reset user onboarding disposition. Whole-user deletion removes disposition entirely; explicit preparation restart/recovery remains a separate command.
+
+### D-076 — User and administrator actions share one lifecycle service
+
+Status: `LOCKED`
+
+ONB-005 may authorize administrator actors and UI, but it must call the same preview/fence/drain/execution/audit application service. Do not create administrator-only raw delete SQL or a second destructive state machine.
+
+### D-077 — Preparation wave sizes are measured configuration
+
+Status: `LOCKED`
+
+Initial index and index-continuation waves are 50 games, first analysis is three games, and analysis tail is 10 games. Keep all values configurable. The existing worker slice of 25 remains a scheduler fairness/preemption boundary and is not a product wave.
+
+### D-078 — Provider execution is serial and bounded initially
+
+Status: `LOCKED`
+
+Start with one active account-import executor, one provider request at a time, 14-day replayable Lichess windows, Chess.com calendar-month archive units, and duplicate-safe database writes of at most 100 normalized games per transaction. These are implementation-start defaults, not public timing promises.
+
+### D-079 — Import and preparation loops use measured initial timing
+
+Status: `LOCKED`
+
+Start import polling/heartbeat/stale/recovery at one second, 15 seconds, two minutes, and 30 seconds. Start active/idle preparation reconciliation at one second and five seconds, with a 15-second due-warning threshold and persisted immediate wake hints. Controlled-clock tests and telemetry remain authoritative.
+
+### D-080 — Public ETA is disabled until production telemetry qualifies it
+
+Status: `LOCKED`
+
+A future stage ETA requires a fixed denominator, matching provider/engine/depth/MultiPV/worker/database/game-length fingerprint, at least 30 recent successful samples across five runs and three account scopes, a 14-day-or-newer sample window, p90 no more than twice p50, failure/timeout below 5%, and no active rate limit, stall, pause, or material higher-priority preemption. Configuration or deployment changes invalidate the sample set.
+
+### D-081 — First-value and stall budgets are internal controls
+
+Status: `LOCKED`
+
+Use internal p90 acceptance/alert budgets for durable command acceptance, reconciliation, first imported/indexed/analysed evidence, bounded waves, queue age, and no-progress detection. A budget breach raises telemetry/operational attention and does not fabricate UI progress or automatically cancel durable user work.
+
+### D-082 — Capacity and engine changes require sustained evidence
+
+Status: `LOCKED`
+
+Keep one deployment and the current fresh-engine-per-task design initially. Split provider execution, add imported-game workers, or reuse Stockfish only after sustained queue-age/direct-user-latency/CPU evidence and dedicated fencing, cancellation, state-isolation, crash-recovery, connection-capacity, and memory tests.
+
+## Operational and administrative decisions
+
+### D-040 — Preparation wave sizing finalized
+
+Status: `LOCKED`
+
+Use the D-077 defaults and D-057 global caps. Keep the visible wave independent from `JOB_WORKER_SLICE_SIZE`, and change values only through measured configuration review.
+
+### D-042 — Administrator identity and authorization
+
+Status: `LOCKED`
+
+Keep normal Clerk authentication as the only production login boundary. Derive administrator capabilities server-side after verified Clerk authentication. Bootstrap with a disabled-by-default exact Clerk-subject allowlist behind one replaceable authorization policy. Production `dev-single-user` never grants administrator authority.
+
+### D-043 — Angular administrator surface
+
+Status: `LOCKED`
+
+Use a lazy direct-link `/admin` feature in the existing Angular deployment. The normal auth guard establishes sign-in only; API capability checks remain authoritative. The first release requires no normal-navigation item, and a future conditional link remains convenience rather than authorization.
+
+### D-083 — Administrator diagnostics are bounded aggregate projections
+
+Status: `LOCKED`
+
+Ship a migration-free read-only foundation first. Use numeric internal user ID lookup, deterministic opaque cursor pagination, database-computed aggregates, explicit partial sections, and exact approved row counts. Exclude display names, email, usernames, raw auth subjects, PGN, provider URLs, tokens, FEN/position content, tactical/scenario payloads, AI reviews, raw job errors, full course trees, arbitrary exports, and per-user byte estimates from the initial projection.
+
+### D-084 — Destructive administrator execution requires signed one-use reverification
+
+Status: `LOCKED`
+
+Require a valid actor/target/kind/version/expiry-bound preview, typed confirmation, idempotency key, recent signed Clerk `fva`, and a signed `reverification_id` that is persisted and bound to exactly one matching execution. If the pinned Clerk client flow cannot mint and refresh this evidence, administrator execution stays disabled. Do not simulate reauthentication with a password prompt or shared secret.
+
+### D-085 — Administrator request budgets follow deployment topology
+
+Status: `LOCKED`
+
+Bound filters, page sizes, query shapes, actor/target concurrency, and mutation admission regardless of deployment. An in-process request bucket may be described only as best-effort for a verified single API instance. Multiple API replicas require PostgreSQL or already-existing shared infrastructure; do not add Redis or another service solely for administration.
+
+### D-086 — Administrator audit retention and pseudonymization are explicit
+
+Status: `LOCKED`
+
+Use structured pseudonymous read-access security logs with a configurable 30-day initial default and canonical lifecycle mutation audit with a configurable 365-day initial default. These are operational seeds, not legal conclusions, and production configuration must explicitly confirm them. Keep versioned HMAC actor/target key domains separate from deleted-identity tombstones and retain old key versions until corresponding records expire.
+
+### D-087 — Administrator whole-user deletion is deferred
+
+Status: `LOCKED`
+
+Deliver whole-user deletion self-service first through ONB-021. Administrator execution for `DELETE_APP_USER` remains disabled until a separate support, recovery, and policy decision explicitly enables it; the presence of generic lifecycle capability does not authorize it.
+
+### D-044 — Import operational sizing finalized
+
+Status: `LOCKED`
+
+Use D-078/D-079 as initial operational defaults, plus exact counters, rate-limit/retry-at state, queue-age/stage-duration telemetry, and canary validation. Do not infer provider latency or public ETA from synthetic CI timings.
+
+### D-054 — Provider-speed preference in onboarding
+
+Status: `REJECTED`
+
+Do not label Lichess or Chess.com as the quicker first look from synthetic/local benchmarks. Provider choice remains user-controlled. Reopen only with comparable production-like provider telemetry and reviewed copy.
+
+### D-145 — Orphan cleanup uses observed grace and database-enforced reference reset
+
+Status: `LOCKED`
+
+A shared `Position` is orphaned only when no `ImportedGamePly` references it. Persist a dedicated first-observed candidate with an initial 30-day grace. Every insert or update that creates a ply reference deletes the candidate in the same PostgreSQL transaction through statement triggers with transition relations. `PositionAnalysis` and `MastersExplorerCache` remain dependent cascades; course `MoveNode` rows never participate.
+
+### D-146 — Cleanup phases bound input rows and dry-run remains observational
+
+Status: `LOCKED`
+
+Every reconcile, observe, dry-run, and execute transaction limits its input Position/candidate page before applying orphan or grace filters. Begin with at most 500 input rows inspected per transaction, checkpoint the last input row inspected, and snapshot a phase upper bound. A durable multi-transaction dry-run reports exact eligibility observed during its traversal with start/completion timestamps; it does not claim one database snapshot or promise the same execution set.
+
+### D-147 — Cleanup uses plies-first locks and manual canonical invocation
+
+Status: `LOCKED`
+
+Execute batches acquire short `SHARE ROW EXCLUSIVE` locks in the fixed order `ImportedGamePly` → `ImportedGamePosition` → `PositionAnalysis` → `MastersExplorerCache`, then recheck `NOT EXISTS` and preserve the existing FK restriction. The first release is disabled by default, manually initiated through a server-side command over the canonical service, defaults to dry-run, requires explicit apply/confirmation for execute, and has no schedule, ETA, or reclaimed-byte promise.
 
 ## Rejected
 
@@ -374,6 +650,192 @@ Status: `REJECTED`
 Status: `REJECTED`
 
 Clearing `syncCursorTime` is ambiguous and can trigger full-history rescans. Older-history expansion and destructive reset are explicit domain commands.
+
+### D-116 — First-run account-management dashboard
+
+Status: `REJECTED`
+
+Do not expose sync, index, analyse, cursor, activation, default-account, deletion, and other advanced account controls together as the onboarding experience. Keep them in Settings or progressively disclosed recovery/advanced destinations.
+
+### D-117 — Blocking modal train
+
+Status: `REJECTED`
+
+Do not make the durable onboarding lifecycle a sequence of blocking modals. Use the resumable route; reserve dialogs for bounded confirmations.
+
+### D-118 — Require all accounts before first value
+
+Status: `REJECTED`
+
+Do not delay the initial preparation run until every provider account is connected. Additional accounts are explicit expansion.
+
+### D-119 — Fabricated or weighted overall progress
+
+Status: `REJECTED`
+
+Do not derive progress from elapsed time or combine import, indexing, and analysis into an arbitrary weighted overall percentage.
+
+### D-120 — Adopt generated prototype code as architecture
+
+Status: `REJECTED`
+
+Do not bypass Angular, typed contracts, server-owned state, authentication, feature stores, design tokens, or repository guardrails because a generated prototype appears polished.
+
+### D-121 — One mutable or unbounded preparation job
+
+Status: `REJECTED`
+
+Do not create one account-sized `JobRun`, append tasks to an active run, or change its denominator as import progresses. Use bounded immutable child jobs.
+
+### D-122 — Generic DAG or per-game preparation mirror
+
+Status: `REJECTED`
+
+Do not introduce a generic workflow graph or a duplicate per-game preparation-state table without a later demonstrated recipe that cannot be represented by targets, current game evidence, and child jobs.
+
+### D-123 — Task status equals readiness
+
+Status: `REJECTED`
+
+Do not treat `JobTask.COMPLETED` as proof of current readiness or `SKIPPED` as failure. Reconcile canonical game evidence.
+
+### D-124 — Wait for terminal import before any indexing
+
+Status: `REJECTED`
+
+Do not withhold all index work until provider completion. Valid committed imported rows may provide first value while exact coverage continues.
+
+### D-125 — Preparation retry outranks direct user work
+
+Status: `REJECTED`
+
+Do not boost onboarding retry above direct user actions. Retry remains bounded and uses the normal preparation lane priority.
+
+### D-126 — Immediate cascade while writers are active
+
+Status: `REJECTED`
+
+Do not delete an account/user or clear game evidence before persisted fences are installed and active preparation/import/job claims are acknowledged.
+
+### D-127 — Terminal status proves destructive quiescence
+
+Status: `REJECTED`
+
+A cancelled running task may retain `workKey` while its executor stops. Never treat terminal run/task status alone as drain proof.
+
+### D-128 — Existing ply-clear primitive is public un-index
+
+Status: `REJECTED`
+
+Deleting plies and index timestamps alone leaves analysis, AI, tactical, tag, and opening state. Use the complete lifecycle operation.
+
+### D-129 — Delete shared engine analysis during user/account reset
+
+Status: `REJECTED`
+
+Do not delete shared Position/PositionAnalysis/cache as part of lifecycle actions. ONB-006 handles separately proved orphan cleanup.
+
+### D-130 — Clear tags or opening values blindly
+
+Status: `REJECTED`
+
+Recompute tags from remaining evidence and clear opening data only when provenance proves local assignment.
+
+### D-131 — One giant destructive transaction
+
+Status: `REJECTED`
+
+Do not place an account/user-sized cascade and external token call in one transaction. Use bounded forward-only phases and short transactions.
+
+### D-132 — Delete AppUser without OAuth/mobile/auth-recreation handling
+
+Status: `REJECTED`
+
+Do not claim whole-user deletion after only cascading `AppUser`. OAuth state, tokens, external identity recreation, initiating-device local data, and other offline devices require explicit handling.
+
+### D-133 — Preserve copied scenario personal data after account purge
+
+Status: `REJECTED`
+
+Scenario snapshots may survive un-analysis/un-index as user training history, but account purge/delete must remove snapshots sourced from target games.
+
+### D-134 — Separate administrator deletion implementation
+
+Status: `REJECTED`
+
+Administrator authorization may differ, but execution must reuse the canonical lifecycle operation and audit path.
+
+### D-135 — Public ETA from synthetic CI timing
+
+Status: `REJECTED`
+
+Do not convert local PostgreSQL, synthetic provider, or WASM CI timings into a production completion promise.
+
+### D-136 — Parallel provider requests by default
+
+Status: `REJECTED`
+
+Do not parallelize Lichess windows or Chess.com archives in the initial implementation. Serial provider access and explicit rate-limit handling are required.
+
+### D-137 — Symmetric 50-game analysis waves
+
+Status: `REJECTED`
+
+Do not choose analysis wave size merely to match the index wave. Analysis is materially more expensive; use the measured three-game first sample and 10-game tail.
+
+### D-138 — Scale workers before queue evidence
+
+Status: `REJECTED`
+
+Do not add deployments or replicas because a benchmark can run faster. Require sustained queue-age, direct-user latency, CPU, connection-capacity, and concurrency-safety evidence.
+
+### D-139 — Persistent engine reuse without isolation proof
+
+Status: `REJECTED`
+
+Do not reuse Stockfish across tasks until option/state leakage, cancellation, timeout, crash replacement, memory, and preemption behavior are validated.
+
+### D-140 — Run onboarding benchmark against a normal database
+
+Status: `REJECTED`
+
+The retained benchmark must refuse remote, non-disposable, or non-empty databases and must never call third-party providers.
+
+### D-141 — Application-user administrator flag
+
+Status: `REJECTED`
+
+Do not add `AppUser.isAdmin` or another mutable product-data field as the initial operator authority. Application ownership and operator authority remain separate trust domains.
+
+### D-142 — Clerk Organizations solely for global operators
+
+Status: `REJECTED`
+
+Do not introduce active-Organization tenancy, membership, and switching solely to represent global product operators. A future signed global claim may replace the bootstrap policy without changing route/service authorization interfaces.
+
+### D-143 — Shared secret or simulated administrator reauthentication
+
+Status: `REJECTED`
+
+Do not use a reusable administrator secret, browser password prompt, or client-only confirmation as recent-auth evidence. Require signed Clerk verification claims and one-use backend binding.
+
+### D-144 — Unbounded administrator support console
+
+Status: `REJECTED`
+
+Do not expose free-text identity search, arbitrary sorting/field selection, bulk export, raw chess/auth payload browsing, impersonation, or SQL-like access in the initial administrator feature.
+
+### D-148 — Application-only orphan-grace reset
+
+Status: `REJECTED`
+
+Do not rely solely on the current indexing repository or periodic reconciliation to reset `PositionCleanupCandidate`. A reference can be written by direct SQL, migrations, or future paths and can disappear before reconciliation. The reset must be enforced in the same database transaction as every reference insert/update.
+
+### D-149 — Match-limited scans and point-snapshot dry-run claims
+
+Status: `REJECTED`
+
+Do not scan/filter an unbounded table to find a limited number of orphan matches, and do not describe a bounded multi-transaction dry-run as one point-in-time database snapshot. Limit input pages before filtering and label dry-run results as traversal observations.
 
 ## Open
 

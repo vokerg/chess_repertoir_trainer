@@ -1,6 +1,6 @@
 # Repertoire Builder Decisions
 
-Last updated: 2026-07-28
+Last updated: 2026-08-01
 
 States:
 
@@ -124,6 +124,22 @@ This metric means every pinned name has extractable characteristics and matched-
 
 Generated-book breadth and actual-game distribution are separate measurements. The generated audit guards upstream naming changes; the database-backed game audit weights classifications by existing imported-game opening metadata. Neither requires classification persistence, a background job, an API, or one row per generated opening.
 
+### RB-D046 — Static opening knowledge is separate, deterministic and side-aware
+
+State: **LOCKED**
+
+Opening descriptions and strategic plans are owned by a separate, independently versioned `OpeningKnowledgeService` beside opening lookup and classification. They are not fields of `OpeningSideClassification`.
+
+The service consumes the resolved opening entry and current classification result. Knowledge rules primarily reference stable classification rule IDs and may use narrow opening-name, ECO or UCI selectors when a strategic distinction does not belong in the classification taxonomy.
+
+Rules apply in explicit broad-family, subfamily and line order. Descriptions and side summaries use later-value replacement. White and Black plans use stable plan IDs with deterministic merge, explicit removal and full side replacement. Plans retain conditions and caveats so typical ideas are not presented as forced moves or universally valid across transpositions.
+
+Only reviewed project-original prose appears in normal runtime results. Draft and deprecated records remain editorial/audit data. Knowledge exposes independent version, matched rule IDs, sources, confidence, lifecycle and explicit available, partial or unavailable status.
+
+The foundation requires no database, background job, runtime LLM or runtime web lookup. Knowledge availability is measured separately from complete classification rule-match coverage and may remain intentionally partial.
+
+Builder consumption is explanatory only and cannot change deterministic ranking, eligibility, fit, coverage, session state or course writes. AI game-review grounding remains an optional, on-demand and non-authoritative downstream use.
+
 ### RB-D014 — Chess Profile is standalone
 
 State: **LOCKED**
@@ -226,11 +242,26 @@ State: **LOCKED**
 
 The core roadmap does not depend on an LLM.
 
-### RB-D026 — LLM role
+### RB-D026 — LLM role is read-only generated interpretation
 
-State: **OPEN**
+State: **LOCKED**
 
-Explanation, summarization, naming or conversational orchestration may be useful, but factual authority and write behavior require separate review.
+An LLM may be tested only as an optional, disabled-by-default, on-demand presentation capability over immutable deterministic snapshots.
+
+Generated output is never an input to chess facts, opening classification, Player Chess Profile calculation, RB-007 ranking/eligibility/reasons/warnings/fit/coverage, selected moves or responses, RB-009 reducers/revisions/branch state/queue, completion eligibility, RB-011 destination/preview/conflict/apply/transaction/revision/course writes, or Course review findings.
+
+The accepted prototype seams are:
+
+- RB-019/#218: advisory candidate explanation immediately after the existing Focused evidence panel;
+- RB-020/#219: post-apply summary immediately after the authoritative RB-011 result.
+
+Each use case requires its own global-plus-specific feature gate, capability boolean, bounded server-side context adapter, schema validation, transient state, stale-response handling, deterministic fallback, provider-failure isolation, human usefulness comparison, and purge path.
+
+A generic mutable Builder-AI layer, automatic generation, persisted prototype output by default, generated commands, model-selected moves, ranking replacement, destination selection, preview approval, conflict resolution or course mutation are rejected.
+
+Player-profile narrative and conversational target refinement remain deferred until accepted populated profile UX demonstrates a concrete gap after deterministic evidence-aware copy and explicit controls.
+
+Provider model names, pricing, API behavior, privacy, retention and regional requirements must be re-verified when a prototype is implemented. Provider uncertainty disables only the optional use case.
 
 ### RB-D027 — Trap knowledge requires evidence and curation
 

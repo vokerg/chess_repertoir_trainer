@@ -4,11 +4,11 @@
 
 .rating-stats-status {
   margin: 0 0 0.85rem;
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .rating-stats-error {
-  color: var(--danger);
+  color: var(--ui-danger);
 }
 
 .rating-stats {
@@ -26,22 +26,22 @@
   display: grid;
   place-items: center;
   margin: 0;
-  padding: 1rem;
-  color: var(--muted);
-  font-weight: 800;
+  padding: var(--space-3);
+  color: var(--ui-text-muted);
+  font-weight: 750;
   text-align: center;
 }
 
 .rating-stats-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 252, 247, 0.72);
+  background: color-mix(in srgb, var(--ui-surface-overlay) 84%, transparent);
 }
 
 .rating-stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: var(--space-3);
 }
 
 .rating-stat-card {
@@ -49,9 +49,9 @@
   grid-template-rows: auto auto 1fr;
   gap: 0.85rem;
   padding: 0.95rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 252, 247, 0.66);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
 }
 
 .rating-stat-card header {
@@ -65,7 +65,7 @@
 .rating-stat-card h3,
 .milestones h4 {
   margin: 0;
-  color: var(--text);
+  color: var(--ui-text);
 }
 
 .rating-stat-card h3 {
@@ -76,8 +76,8 @@
 .rating-stat-facts dt,
 .milestones p,
 .milestones li span {
-  color: var(--muted);
-  font-weight: 800;
+  color: var(--ui-text-muted);
+  font-weight: 750;
 }
 
 .rating-stat-card header span {
@@ -101,8 +101,8 @@
 
 .rating-stat-facts dt {
   font-size: 0.72rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .rating-stat-facts dd {
@@ -113,7 +113,10 @@
 }
 
 .rating-stat-facts strong {
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
   font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
@@ -143,16 +146,16 @@
   font-size: 0.88rem;
 }
 
+.milestones li strong {
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .milestones li span {
   text-align: right;
 }
 
 .milestones p {
   margin: 0;
-}
-
-@media (max-width: 900px) {
-  .rating-stat-grid {
-    grid-template-columns: 1fr;
-  }
 }

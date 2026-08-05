@@ -70,3 +70,9 @@ export function displayTimeControl(game: ImportedGameSearchItem): string {
 export function accuracyLabel(value?: number | null): string {
   return typeof value === 'number' ? `${Math.round(value)}%` : '—';
 }
+
+export function gameStatusLabel(game: ImportedGameSearchItem): string {
+  if (game.analysis?.status === 'COMPLETED') return 'Analysed';
+  if (game.plyIndex?.status === 'INDEXED') return 'Indexed';
+  return 'Not indexed';
+}

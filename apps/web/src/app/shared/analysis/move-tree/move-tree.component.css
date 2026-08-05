@@ -3,23 +3,25 @@
   min-width: 0;
 }
 
-.move-tree-modern {
+.move-tree-modern,
+.move-tree-line,
+.move-tree-step,
+.move-tree-branches {
   display: grid;
+}
+
+.move-tree-modern {
   gap: 0.3rem;
 }
 
-.move-tree-line {
-  display: grid;
-  gap: 0.18rem;
-}
-
-.move-tree-line-branch {
-  gap: 0.16rem;
-}
-
+.move-tree-line,
 .move-tree-step {
-  display: grid;
   gap: 0.18rem;
+}
+
+.move-tree-line-branch,
+.move-tree-branches {
+  gap: 0.16rem;
 }
 
 .move-tree-step-row {
@@ -32,11 +34,11 @@
 
 .move-tree-move-number {
   min-width: 1.35rem;
-  flex: 0 0 1.35rem;
-  text-align: left;
-  color: var(--muted);
-  font-size: 0.76rem;
+  color: var(--ui-text-subtle);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.72rem;
   font-weight: 700;
+  text-align: left;
 }
 
 .move-tree-node-controls {
@@ -53,35 +55,44 @@
   gap: 0.32rem;
   min-width: 0;
   justify-self: start;
-  padding: 0.24rem 0.58rem;
+  padding: 0.28rem 0.58rem;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: inherit;
+  color: var(--ui-text);
   font-weight: 800;
   line-height: 1.2;
 }
 
 .move-tree-node-button:hover {
-  border-color: var(--border, var(--border-subtle, rgba(255, 255, 255, 0.12)));
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-muted);
+}
+
+.move-tree-node-button:focus-visible,
+.move-tree-delete-action:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 2px;
 }
 
 .move-tree-node-pilled {
-  border-color: var(--border-subtle, rgba(255, 255, 255, 0.12));
-  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border-color: var(--ui-border);
+  background: var(--ui-surface-muted);
 }
 
 .move-tree-node-selected {
-  border-color: color-mix(in srgb, var(--accent, #68b3ff) 50%, transparent);
-  background: color-mix(in srgb, var(--accent, #68b3ff) 14%, var(--surface-2, rgba(255, 255, 255, 0.04)));
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
 }
 
-.move-tree-node-trained {
-  box-shadow: none;
-}
-
+.move-tree-node-trained,
 .move-tree-node-opponent {
   box-shadow: none;
+}
+
+.move-tree-node-opponent:not(.move-tree-node-selected) {
+  color: var(--ui-text-muted);
 }
 
 .move-tree-delete-action {
@@ -95,7 +106,7 @@
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: var(--muted);
+  color: var(--ui-text-subtle);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -129,9 +140,9 @@
 
 .move-tree-delete-action:hover:not(:disabled),
 .move-tree-delete-action:focus-visible:not(:disabled) {
-  border-color: color-mix(in srgb, var(--danger, #c43d3d) 34%, transparent);
-  background: color-mix(in srgb, var(--danger, #c43d3d) 9%, transparent);
-  color: var(--danger, #a72d2d);
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
 
 .move-tree-delete-action:disabled {
@@ -140,8 +151,9 @@
 }
 
 .move-tree-meta {
-  color: var(--muted);
-  font-size: 0.7rem;
+  color: var(--ui-text-subtle);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.66rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -153,53 +165,50 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 0.05rem 0.18rem;
-  border-radius: 0;
   border: 0;
   background: transparent;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   line-height: 1;
   white-space: nowrap;
 }
 
 .move-tree-classification {
   min-width: 1.25rem;
+  margin-left: 0.08rem;
   padding: 0.12rem 0.28rem;
   border-radius: 999px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  background: var(--ui-surface-quiet);
+  color: var(--ui-text-muted);
   font-weight: 800;
-  color: var(--muted);
-  margin-left: 0.08rem;
 }
 
 .move-tree-classification-good {
-  background: color-mix(in srgb, #57c785 14%, transparent);
-  color: #2f6f49;
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
 }
 
 .move-tree-classification-warning {
-  background: color-mix(in srgb, #d59a2f 18%, transparent);
-  color: #9a6116;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
 }
 
 .move-tree-classification-bad {
-  background: color-mix(in srgb, #d85b5b 15%, transparent);
-  color: #8c2f2f;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
 
 .move-tree-eval {
-  color: color-mix(in srgb, var(--text, currentColor) 74%, var(--muted) 26%);
+  margin-left: 0.05rem;
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  margin-left: 0.05rem;
 }
 
 .move-tree-branches {
-  display: grid;
-  gap: 0.16rem;
-  padding-left: 0.5rem;
-  border-left: 1px solid color-mix(in srgb, var(--border-subtle, rgba(255, 255, 255, 0.12)) 70%, transparent);
   margin-left: 0.9rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--ui-border);
 }
 
 @media (hover: none) {
@@ -211,6 +220,7 @@
   }
 }
 
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
   .move-tree-step-row {
     grid-template-columns: 1.15rem minmax(0, 1fr);
@@ -218,8 +228,7 @@
 
   .move-tree-move-number {
     min-width: 1.15rem;
-    flex-basis: 1.15rem;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
   }
 
   .move-tree-node-button {

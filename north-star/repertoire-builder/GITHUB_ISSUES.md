@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-07-26
+Last updated: 2026-08-01
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -28,6 +28,16 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 | RB-014 | [#102](https://github.com/vokerg/chess_repertoir_trainer/issues/102) |
 | RB-015 | [#103](https://github.com/vokerg/chess_repertoir_trainer/issues/103) |
 | RB-016 | [#104](https://github.com/vokerg/chess_repertoir_trainer/issues/104) |
+| RB-017 | [#114](https://github.com/vokerg/chess_repertoir_trainer/issues/114) |
+| RB-018 | [#116](https://github.com/vokerg/chess_repertoir_trainer/issues/116) |
+| RB-019 | [#218](https://github.com/vokerg/chess_repertoir_trainer/issues/218) |
+| RB-020 | [#219](https://github.com/vokerg/chess_repertoir_trainer/issues/219) |
+| RB-021 | [#240](https://github.com/vokerg/chess_repertoir_trainer/issues/240) |
+| RB-022 | [#241](https://github.com/vokerg/chess_repertoir_trainer/issues/241) |
+| RB-023 | [#242](https://github.com/vokerg/chess_repertoir_trainer/issues/242) |
+| RB-024 | [#243](https://github.com/vokerg/chess_repertoir_trainer/issues/243) |
+
+RB-021 architecture was accepted on 2026-08-01 through PR #244. RB-022 is the next ready task; RB-023 and RB-024 remain blocked on it.
 
 Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same change or coordination session.
 
@@ -115,7 +125,3 @@ Before closing an issue as completed:
 - queue reprioritization was explicitly considered.
 
 The final issue update should link or name the report and state residual risks, new tasks, and queue impact.
-
-## Migration note
-
-Jira epic `CRT-2` and tasks `CRT-3` through `CRT-18` were replaced by GitHub issues on 2026-07-26. Historical reports may retain Jira references as records of work performed before the migration; active coordination must use GitHub Issues.

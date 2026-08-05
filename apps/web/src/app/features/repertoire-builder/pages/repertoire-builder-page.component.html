@@ -10,10 +10,50 @@
     <p class="launch-error" role="alert">{{ error }}</p>
   }
 
-  @if (launchContext(); as launch) {
+  @if (profileLaunchContext(); as launch) {
     <app-panel
-      title="Course ending source"
-      subtitle="This builder draft extends one exact terminal course position. The source evidence remains visible while you adjust the target setup."
+      title="Chess profile starting point"
+      subtitle="This is a transparent, side-specific suggestion from the last calculated profile. It is not a permanent player label or a Builder constraint."
+    >
+      <div class="launch-context">
+        <div class="launch-facts">
+          <div>
+            <span class="metric-label">Profile side</span>
+            <strong>{{ launch.side === 'WHITE' ? 'White' : 'Black' }}</strong>
+          </div>
+          <div>
+            <span class="metric-label">Suggested intent</span>
+            <strong>{{ launch.setup.persona.toLowerCase() }} · {{ launch.setup.maximumTheoryBurden.toLowerCase() }} theory</strong>
+          </div>
+          <div>
+            <span class="metric-label">Profile evidence</span>
+            <strong>{{ launch.profiledGames }} classified games</strong>
+          </div>
+          <div>
+            <span class="metric-label">Suggested coverage</span>
+            <strong>{{ launch.setup.coveragePercent }}%</strong>
+          </div>
+        </div>
+        <p class="launch-filter-summary">{{ launch.evidenceSummary }}</p>
+        <p class="launch-boundary">
+          Consequence: these values are defaults only. Editing them records explicit target overrides; changing side or discarding the suggestion removes profile provenance without changing the profile.
+        </p>
+        <div class="launch-actions">
+          @if (!store.session()) {
+            <button type="button" class="secondary" (click)="discardProfileSuggestion()">
+              Use standard Builder defaults
+            </button>
+          }
+          <button type="button" class="secondary" (click)="backToSource()">
+            {{ backLabel(launch) }}
+          </button>
+        </div>
+      </div>
+    </app-panel>
+  } @else if (courseLaunchContext(); as launch) {
+    <app-panel
+      [title]="sourceTitle(launch)"
+      [subtitle]="sourceSubtitle(launch)"
     >
       <div class="launch-context">
         <div class="launch-facts">
@@ -23,25 +63,22 @@
           </div>
           <div>
             <span class="metric-label">Course path</span>
-            <strong>{{ launch.sequence || 'Terminal line position' }}</strong>
+            <strong>{{ pathFallback(launch) }}</strong>
           </div>
           <div>
-            <span class="metric-label">Observed continuation</span>
+            <span class="metric-label">Observed opponent move</span>
             <strong>{{ launch.observedMoveSan || launch.observedMoveUci }}</strong>
           </div>
           <div>
             <span class="metric-label">Evidence</span>
-            <strong>
-              {{ launch.observedGameCount }} games · minimum {{ launch.minGames }} ·
-              {{ launch.results.win }}W {{ launch.results.draw }}D {{ launch.results.loss }}L
-            </strong>
+            <strong>{{ evidenceLabel(launch) }}</strong>
           </div>
         </div>
         <p class="launch-filter-summary">{{ launch.filterSummary }}</p>
-        <p class="launch-boundary">
-          Consequence: extend this existing line only. Replacement, a separate line, and another destination are not treated as equivalent actions.
-        </p>
-        <button type="button" class="secondary" (click)="backToSource()">Back to course endings</button>
+        <p class="launch-boundary">{{ sourceBoundary(launch) }}</p>
+        <button type="button" class="secondary" (click)="backToSource()">
+          {{ backLabel(launch) }}
+        </button>
       </div>
     </app-panel>
   }
@@ -73,6 +110,11 @@
     [canFinishSession]="store.canFinishSession()"
     [completed]="store.isCompleted()"
     [abandoned]="store.isAbandoned()"
+    [candidateExplanationAvailable]="candidateExplanationStore.available()"
+    [candidateExplanationLoading]="candidateExplanationStore.loading()"
+    [candidateExplanationError]="candidateExplanationStore.error()"
+    [candidateExplanation]="candidateExplanationStore.response()"
+    [candidateExplanationComparisonMoveUci]="candidateExplanationStore.comparisonMoveUci()"
     (boardMove)="store.selectBoardMove($event)"
     (candidateSelected)="store.selectCandidate($event)"
     (responseToggled)="store.toggleResponse($event)"
@@ -87,12 +129,15 @@
     (sessionFinished)="store.finishSession()"
     (sessionAbandoned)="store.abandonSession()"
     (newDraftRequested)="startNewDraft()"
+    (candidateExplanationRequested)="requestCandidateExplanation()"
+    (candidateExplanationComparisonChanged)="setCandidateExplanationComparison($event)"
   />
 
   @if (store.setupOpen()) {
     <app-repertoire-builder-setup-dialog
       [initialSetup]="initialSetup()"
-      [fixedSide]="launchContext()?.side ?? null"
+      [fixedSide]="courseLaunchContext()?.side ?? null"
+      [profileSuggestion]="profileLaunchContext()?.evidenceSummary ?? null"
       [loading]="store.setupLoading()"
       [error]="store.setupError()"
       [cancelAllowed]="store.session() !== null"
@@ -120,12 +165,17 @@
       [error]="courseStore.error()"
       [canPreview]="courseStore.canPreview()"
       [canApply]="courseStore.canApply()"
+      [completionSummaryAvailable]="completionSummaryStore.available()"
+      [completionSummaryLoading]="completionSummaryStore.loading()"
+      [completionSummaryError]="completionSummaryStore.error()"
+      [completionSummary]="completionSummaryStore.response()"
       (courseSelected)="courseStore.selectCourse($event)"
       (chapterSelected)="courseStore.selectChapter($event)"
       (newLineNameChanged)="courseStore.setNewLineName($event)"
       (previewRequested)="courseStore.previewCourseOutput()"
       (targetSelected)="courseStore.selectTarget($event)"
       (applyRequested)="courseStore.applyCourseOutput()"
+      (completionSummaryRequested)="requestCompletionSummary()"
       (closed)="courseStore.close()"
     />
   }

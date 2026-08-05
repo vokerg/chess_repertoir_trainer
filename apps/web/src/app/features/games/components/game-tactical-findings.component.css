@@ -11,21 +11,18 @@
   font-size: 0.78rem;
 }
 
-.finding-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
 .finding-list {
   display: grid;
 }
 
 .finding-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   min-height: 42px;
   padding: 0.35rem 0;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--ui-border);
 }
 
 .finding-summary {
@@ -36,21 +33,24 @@
 }
 
 .finding-row span {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   font-size: 0.78rem;
 }
 
 .finding-kind {
   padding: 0.16rem 0.42rem;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  font-size: 0.72rem;
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 
 .finding-move {
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
   font-size: 0.86rem;
 }
 
@@ -68,11 +68,12 @@
 .finding-error {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 0.75rem;
 }
 
 .finding-error p {
   margin: 0;
+  color: var(--ui-danger);
 }
 
 @media (max-width: 700px) {

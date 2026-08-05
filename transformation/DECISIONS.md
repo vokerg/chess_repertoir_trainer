@@ -233,6 +233,24 @@ Both components remain OnPush, semantic, router-free, store-free, HTTP-free, and
 
 The following remain feature-owned because the comparison did not prove a common contract: Games filter presentation and responsive evidence cards; Study numbered section headers, training-plan composition, scope-versus-mode controls, and mobile launcher; Opening Analysis workbench slots, evidence-stack hierarchy, header toggle ownership, and feature-scoped legacy-role bridge. Future consumers may reuse the shared primitives, but they must not broaden these contracts speculatively.
 
+### D-027 - Shared single-choice filter menu
+
+**Status:** Locked for VT-301 Batch 5 review
+
+Use `app-select-menu` as the production shared primitive for compact, controlled single-choice filters after Games and Player Chess Profile demonstrated the same contract.
+
+The primitive owns:
+
+- a compact trigger and production-token overlay;
+- typed string options with optional captions and semantic or product-signal markers;
+- a visible selected-state check;
+- click-outside, Escape, Tab, Arrow, Home, End, Enter, Space, and single-character navigation;
+- disabled-option and visible-focus presentation.
+
+The consuming feature continues to own option meaning, current value, emitted-change handling, URL and store synchronization, filtering semantics, multi-selection, dates, validation, apply/reset actions, and responsive workflow composition. The Games filter panel remains feature-owned; this decision promotes only the compatible single-choice control within it.
+
+Native `select` remains valid for ordinary forms and constrained platform surfaces. Do not replace every select globally or broaden this component into multi-select, autocomplete, data fetching, feature state, or workflow orchestration without separate evidence.
+
 ## Locked navigation decisions
 
 ### D-310 — Initial desktop rail geometry

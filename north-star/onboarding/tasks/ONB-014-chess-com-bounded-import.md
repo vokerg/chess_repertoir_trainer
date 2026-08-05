@@ -8,7 +8,7 @@ Order: 140
 
 Delivery class: Implementation
 
-Planning maturity: Researched
+Planning maturity: Researched; initial operational defaults supplied by ONB-007
 
 GitHub issue: [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202)
 
@@ -28,43 +28,60 @@ Provide a serial, restartable, cancellable Chess.com monthly adapter that distin
 
 - ONB-011.
 - ONB-012.
-- ONB-007 for final batch configuration.
+- ONB-007 report for serial access, monthly units, 100-row writes, cache validators, telemetry, and canary budgets.
+- Coordinate one provider-neutral guarded-commit seam with ONB-019 without making ONB-019 an automatic hard dependency.
 
 ## In scope
 
-- UTC range-to-month planning.
+- UTC range-to-calendar-month and exact epoch-second boundary planning.
 - Archive-index reconciliation.
-- Serial monthly requests.
+- One provider request at a time.
+- Serial monthly requests and explicit HTTP 429 retry state.
 - Exact scope/range filtering.
-- Retry-After/backoff/User-Agent/AbortSignal.
-- Optional cache validators.
-- Bounded duplicate-safe writes.
+- Retry-After/backoff/contact User-Agent/AbortSignal.
+- `ETag` and `Last-Modified` validators where provider responses support them.
+- Bounded duplicate-safe writes, initially 100 games per transaction.
 - Empty-month coverage and incomplete-month replay.
-- Provider fixtures and restart/cancel tests.
+- Aggregate request/parse/write/checkpoint timing without raw personal payloads.
+- One short provider-neutral guarded-commit boundary immediately before persisted game/checkpoint writes.
+- Provider fixtures, one low-volume canary, and restart/cancel/fence-race tests.
+
+Provider network, retry delays, parsing, and normalization remain outside database transactions and lifecycle guards. ONB-014 may land before ONB-019 with an explicit allow-all guard implementation, but destructive safety remains incomplete until ONB-019 supplies persisted fence enforcement through the same seam.
 
 ## Out of scope
 
 - Lichess.
 - Angular UI.
 - Index/analysis orchestration.
+- Lifecycle-operation persistence or destructive execution.
 - Parallel archive fetching.
+- Public ETA or unbenchmarked timing promise.
 
 ## Acceptance criteria
 
-- Only intersecting months are requested.
+- Only intersecting calendar months are requested.
+- Exact epoch-second filtering excludes games outside the accepted half-open range.
 - Forward and historical frontiers remain independent.
-- Absent/empty months can become proved coverage.
-- Failed listed archives never advance coverage.
-- Provider access remains serial and retry-aware.
-- Database writes are bounded and duplicate-safe.
+- Absent/empty months become proved coverage only after complete successful traversal.
+- Failed, partial, or lifecycle-fenced listed archives never advance coverage.
+- Provider access remains serial, retry-aware, and cache-validator aware.
+- Cancellation or lifecycle fencing prevents stale completion.
+- No provider/network work runs while holding the lifecycle guard.
+- Exactly one guarded-commit seam exists for ONB-019 integration.
+- Database writes are duplicate-safe and committed in 100-row-or-smaller batches.
+- Metrics distinguish queue wait, archive discovery, provider response, parse, write, checkpoint, retry-at, and total month duration.
+- One low-volume canary validates large-month memory, exact boundaries, caching, cancellation, and 429 behavior before general release.
 
 ## Required validation
 
 - Month-planner tests across year boundaries.
 - Empty/absent/archive inconsistency tests.
-- 404/410/429/5xx tests.
+- 304/404/410/429/5xx, Retry-After, User-Agent, and cache-validator tests where applicable.
+- `ETag`/`Last-Modified` validator tests.
 - Exact epoch-second boundary tests.
-- Restart/cancellation/duplicate tests.
+- Restart/cancellation/duplicate and lifecycle-fence-race tests.
+- 100-row bounded bulk persistence and guarded-commit interface tests.
+- Low-volume canary evidence; no provider load test.
 - Full API gates.
 
 ## Completion

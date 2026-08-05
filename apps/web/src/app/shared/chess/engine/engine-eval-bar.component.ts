@@ -30,12 +30,56 @@ type DisplayedEval =
       }
 
       .eval-bar-modern {
+        position: relative;
         height: 100%;
+        min-height: min(76vw, 520px);
+        overflow: hidden;
+        border: 1px solid var(--ui-border-strong);
+        border-radius: 999px;
+        background: var(--ui-surface);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
       }
 
       .eval-bar-fit-height {
         min-height: auto;
         min-width: 0;
+      }
+
+      .eval-black-modern {
+        position: absolute;
+        inset: 0 0 auto;
+        background: var(--ui-chrome);
+        transition: height 180ms ease;
+      }
+
+      .eval-bar-modern-flipped .eval-black-modern {
+        inset: auto 0 0;
+      }
+
+      .eval-label-modern {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) rotate(180deg);
+        writing-mode: vertical-rl;
+        padding: 0.35rem 0.12rem;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--ui-chrome) 82%, transparent);
+        color: var(--ui-text-inverse);
+        box-shadow: var(--ui-shadow-soft);
+        font-family: var(--ui-font-family-mono);
+        font-size: 0.7rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.02em;
+        user-select: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .eval-black-modern {
+          transition: none;
+        }
       }
     `,
   ],

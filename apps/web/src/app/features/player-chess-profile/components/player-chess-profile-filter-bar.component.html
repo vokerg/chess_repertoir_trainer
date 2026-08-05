@@ -1,25 +1,14 @@
 <div class="profile-filter-stack">
   <div class="profile-filter-grid">
-    <label class="profile-field compact">
+    <div class="profile-field compact">
       <span>Period</span>
-      <select [value]="filters().period" (change)="periodChange.emit($any($event.target).value)">
-        <option value="1M">Last month</option>
-        <option value="3M">Last 3 months</option>
-        <option value="1Y">Last year</option>
-        <option value="ALL">All time</option>
-        <option value="CUSTOM">Custom</option>
-      </select>
-    </label>
+      <app-select-menu ariaLabel="Period" [value]="filters().period" [options]="periodOptions" (valueChange)="changePeriod($event)" />
+    </div>
 
-    <label class="profile-field">
+    <div class="profile-field">
       <span>Speed</span>
-      <select [value]="filters().speedPreset" (change)="speedPresetChange.emit($any($event.target).value)">
-        <option value="BLITZ_AND_SLOWER">Blitz and slower</option>
-        <option value="ALL">All speeds</option>
-        <option value="BLITZ">Blitz</option>
-        <option value="BULLET">Bullet</option>
-      </select>
-    </label>
+      <app-select-menu ariaLabel="Speed" [value]="filters().speedPreset" [options]="speedOptions" (valueChange)="changeSpeedPreset($event)" />
+    </div>
 
     <fieldset class="profile-field profile-colors">
       <legend>Colour</legend>
@@ -43,16 +32,10 @@
       </div>
     </fieldset>
 
-    <label class="profile-field compact">
+    <div class="profile-field compact">
       <span>Game status</span>
-      <select
-        [value]="filters().rated ? 'true' : 'false'"
-        (change)="ratedChange.emit($any($event.target).value === 'true')"
-      >
-        <option value="true">Rated</option>
-        <option value="false">Casual</option>
-      </select>
-    </label>
+      <app-select-menu ariaLabel="Game status" [value]="filters().rated ? 'true' : 'false'" [options]="ratedOptions" (valueChange)="changeRated($event)" />
+    </div>
 
     <button
       type="button"

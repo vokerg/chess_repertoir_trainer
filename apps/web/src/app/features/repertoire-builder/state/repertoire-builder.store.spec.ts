@@ -52,7 +52,7 @@ function responseFixture(
   generatedAt = '2026-07-29T08:00:00.000Z',
 ): CandidateDecisionResponse {
   return {
-    contractVersion: '2026-07-v1',
+    contractVersion: '2026-08-v2',
     rankingPolicyVersion: '2026-07-deterministic-v1',
     generatedAt,
     targetId: '00000000-0000-4000-8000-000000000010',
@@ -86,7 +86,9 @@ function candidateFixture(input: {
   rank?: number;
   contributionPercent?: number | null;
   manuallyRequested?: boolean;
+  knowledgePlanId?: string;
 }): CandidateDecisionCandidate {
+  const knowledgePlanId = input.knowledgePlanId ?? `${input.moveUci}-plan`;
   return {
     rank: input.rank ?? 1,
     moveUci: input.moveUci,
@@ -154,6 +156,22 @@ function candidateFixture(input: {
         roles: [],
         confidence: 'HIGH',
         matchedRuleIds: ['test'],
+        knowledge: {
+          status: 'AVAILABLE',
+          version: '2026-08-knowledge-v1',
+          shortDescription: { text: `${input.moveSan} opening description`, confidence: 'HIGH' },
+          strategicSummary: { text: `${input.moveSan} strategic summary`, confidence: 'MEDIUM' },
+          plans: [{
+            id: knowledgePlanId,
+            title: `${input.moveSan} plan`,
+            summary: `Plan for ${input.moveSan}`,
+            conditions: [],
+            caveats: [],
+            confidence: 'MEDIUM',
+          }],
+          matchedRuleIds: [`knowledge-${input.moveUci}`],
+          sourceIds: ['project-editorial-rb-022'],
+        },
       },
       course: {
         status: 'AVAILABLE',
@@ -171,13 +189,19 @@ describe('RepertoireBuilderStore', () => {
   let api: jasmine.SpyObj<RepertoireBuilderApiService>;
   let store: RepertoireBuilderStore;
 
-  const e4 = candidateFixture({ moveUci: 'e2e4', moveSan: 'e4', resultingFen: AFTER_E4 });
+  const e4 = candidateFixture({
+    moveUci: 'e2e4',
+    moveSan: 'e4',
+    resultingFen: AFTER_E4,
+    knowledgePlanId: 'e4-plan',
+  });
   const e5 = candidateFixture({
     moveUci: 'e7e5',
     moveSan: 'e5',
     resultingFen: AFTER_E4_E5,
     contributionPercent: 42,
     manuallyRequested: true,
+    knowledgePlanId: 'e5-plan',
   });
 
   beforeEach(() => {
@@ -224,6 +248,25 @@ describe('RepertoireBuilderStore', () => {
       decisionRole: 'USER_MOVE',
       candidateLimit: 6,
     }));
+  });
+
+  it('keeps focused opening knowledge attached to the selected candidate', async () => {
+    const d4 = candidateFixture({
+      moveUci: 'd2d4',
+      moveSan: 'd4',
+      resultingFen: AFTER_D4,
+      rank: 2,
+      knowledgePlanId: 'd4-plan',
+    });
+    api.getCandidates.and.returnValue(of(responseFixture('USER_MOVE', [e4, d4])));
+    await store.start(explicitSetup());
+
+    expect(store.previewCandidate()?.evidence.opening.knowledge.plans[0].id).toBe('e4-plan');
+
+    store.selectCandidate('d2d4');
+
+    expect(store.previewCandidate()?.moveUci).toBe('d2d4');
+    expect(store.previewCandidate()?.evidence.opening.knowledge.plans[0].id).toBe('d4-plan');
   });
 
   it('starts at the exact Course ending and includes the observed continuation', async () => {
@@ -285,6 +328,7 @@ describe('RepertoireBuilderStore', () => {
       resultingFen: AFTER_D4,
       rank: 2,
       manuallyRequested: true,
+      knowledgePlanId: 'd4-plan',
     });
     api.getCandidates.and.returnValues(
       of(responseFixture('USER_MOVE', [e4])),
@@ -298,6 +342,7 @@ describe('RepertoireBuilderStore', () => {
       includeMoveUci: 'd2d4',
     }));
     expect(store.previewCandidate()?.moveUci).toBe('d2d4');
+    expect(store.previewCandidate()?.evidence.opening.knowledge.plans[0].id).toBe('d4-plan');
   });
 
   it('ignores a stale candidate response after a later draft has loaded', async () => {

@@ -1,22 +1,24 @@
-<section class="line-train-page stack">
+<section class="line-train-page">
   @if (store.loading()) {
-    <section class="section-card stack">
+    <app-panel
+      title="Loading training focus"
+      subtitle="Preparing the selected active subline and its latest training state."
+    >
       <p class="status-note">Loading training focus...</p>
       @if (store.error(); as error) {
         <p class="status-error">{{ error }}</p>
       }
-    </section>
+    </app-panel>
   } @else {
-    <header class="workbench-header">
-      <div class="workbench-title-group">
-        <a routerLink="/library" class="workbench-breadcrumb">&larr; Library / Training focus</a>
-        <h2 class="workbench-title">{{ store.lineName() }}</h2>
-        <div class="workbench-meta">
-          <span>Train as {{ store.sideToTrain() === 'BLACK' ? 'Black' : 'White' }}</span>
-          <span>{{ store.sessionStatusLabel() }}</span>
-        </div>
-      </div>
-    </header>
+    <div class="line-train-header-shell">
+      <a routerLink="/library" class="training-back-link">&larr; Library / Training focus</a>
+      <app-page-header
+        [title]="store.lineName()"
+        [subtitle]="store.sublineMoveText() || 'Play the selected active subline from memory.'"
+        [stats]="headerStats()"
+        [actions]="headerActions()"
+      />
+    </div>
 
     @if (store.error(); as error) {
       <p class="status-error">{{ error }}</p>

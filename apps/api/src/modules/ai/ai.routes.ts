@@ -2,16 +2,28 @@ import type { FastifyReply } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
+  aiBuilderCandidateExplanationRequestSchema,
+  aiBuilderCandidateExplanationResponseSchema,
+  aiBuilderCompletionSummaryRequestSchema,
+  aiBuilderCompletionSummaryResponseSchema,
   aiCapabilitiesResponseSchema,
   aiErrorResponseSchema,
   aiGameReviewResponseSchema,
   aiGameReviewStateResponseSchema,
 } from '@chess-trainer/contracts/ai';
 import { requireAuth } from '../../auth/request-auth';
+import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
-import { loadAiConfig, gameReviewAvailable } from './ai.config';
+import {
+  builderCandidateExplanationAvailable,
+  builderCompletionSummaryAvailable,
+  gameReviewAvailable,
+  loadAiConfig,
+} from './ai.config';
 import { asAiFeatureError } from './ai.errors';
 import { GameReviewService } from './game-review/game-review.service';
+import { CandidateExplanationService } from './repertoire-builder/candidate-explanation/candidate-explanation.service';
+import { CompletionSummaryService } from './repertoire-builder/completion-summary/completion-summary.service';
 
 const gameIdParamsSchema = z.object({
   gameId: z.coerce.number().int().positive(),
@@ -32,7 +44,77 @@ const aiModule: FastifyPluginAsyncZod = async (app) => {
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
     if (!auth) return;
-    return { widgets: { gameReview: gameReviewAvailable(loadAiConfig()) } };
+    const config = loadAiConfig();
+    return {
+      widgets: {
+        gameReview: gameReviewAvailable(config),
+        builderCandidateExplanation: builderCandidateExplanationAvailable(config),
+        builderCompletionSummary: builderCompletionSummaryAvailable(config),
+      },
+    };
+  });
+
+  app.post('/api/ai/repertoire-builder/candidate-explanation', {
+    schema: {
+      operationId: 'generateBuilderCandidateExplanation',
+      tags: ['AI'],
+      summary: 'Generate an advisory explanation for one Builder candidate',
+      description: 'Rebuilds the authoritative deterministic candidate decision server-side, then returns a transient generated interpretation whose references are reconciled against that response. It cannot change ranking, selection, Builder state, or course output.',
+      body: aiBuilderCandidateExplanationRequestSchema,
+      response: {
+        200: aiBuilderCandidateExplanationResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        404: aiErrorResponseSchema,
+        409: aiErrorResponseSchema,
+        429: aiErrorResponseSchema,
+        500: aiErrorResponseSchema,
+        502: aiErrorResponseSchema,
+        503: aiErrorResponseSchema,
+        504: aiErrorResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+
+    try {
+      return await CandidateExplanationService.generate(auth.userId, request.body, request.log);
+    } catch (error) {
+      return sendAiError(reply, error);
+    }
+  });
+
+  app.post('/api/ai/repertoire-builder/completion-summary', {
+    schema: {
+      operationId: 'generateBuilderCompletionSummary',
+      tags: ['AI'],
+      summary: 'Generate an advisory summary after Builder course apply',
+      description: 'Validates a completed Builder draft and authoritative apply response against the owned current destination, then returns a transient generated interpretation and study checklist. It cannot preview, apply, or mutate course content.',
+      body: aiBuilderCompletionSummaryRequestSchema,
+      response: {
+        200: aiBuilderCompletionSummaryResponseSchema,
+        400: validationErrorResponseSchema,
+        401: unauthorizedResponseSchema,
+        403: aiErrorResponseSchema,
+        404: aiErrorResponseSchema,
+        409: aiErrorResponseSchema,
+        429: aiErrorResponseSchema,
+        500: aiErrorResponseSchema,
+        502: aiErrorResponseSchema,
+        503: aiErrorResponseSchema,
+        504: aiErrorResponseSchema,
+      },
+    },
+  }, async (request, reply) => {
+    const auth = requireAuth(request, reply);
+    if (!auth) return;
+
+    try {
+      return await CompletionSummaryService.generate(auth.userId, request.body, request.log);
+    } catch (error) {
+      return sendAiError(reply, error);
+    }
   });
 
   app.get('/api/imported-games/:gameId/ai-review', {

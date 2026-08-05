@@ -11,5 +11,5 @@ export class AiFeatureError extends Error {
 
 export function asAiFeatureError(error: unknown): AiFeatureError {
   if (error instanceof AiFeatureError) return error;
-  return new AiFeatureError(500, 'AI_INTERNAL_ERROR', 'AI game review failed unexpectedly.');
+  return new AiFeatureError(500, 'AI_INTERNAL_ERROR', 'AI request failed unexpectedly.');
 }

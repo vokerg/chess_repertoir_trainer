@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { Chess } from 'chess.js';
 import { buildRepertoireGraph, getRepertoireConflicts, normalizeFenForPosition } from 'chess-domain';
+import { findCourseReviewLineAnchors } from '../../dist/modules/repertoire-coverage/course-review.anchors.js';
 import { classifyCourseReviewGame } from '../../dist/modules/repertoire-coverage/course-review.matcher.js';
 
 const game = {
@@ -91,12 +92,22 @@ const uncovered = classifyCourseReviewGame({
 });
 assert.equal(uncovered.status, 'MY_DEVIATION');
 
-const opponentGraph = buildRepertoireGraph([
-  makeLine(5, 'English response', 'BLACK', ['c2c4', 'e7e5']),
-]);
+const opponentLine = makeLine(5, 'English response', 'BLACK', ['c2c4', 'e7e5']);
+const opponentGraph = buildRepertoireGraph([opponentLine]);
 const opponentUncovered = classify(opponentGraph, ['g1f3'], { minCoveredPlies: 0 });
 assert.equal(opponentUncovered.status, 'OPPONENT_UNCOVERED');
 assert.equal(opponentUncovered.playedMoveUci, 'g1f3');
+assert.deepEqual(
+  findCourseReviewLineAnchors(normalizeFenForPosition(new Chess().fen()), [opponentLine]),
+  [{
+    kind: 'LINE_START',
+    lineId: 5,
+    lineName: 'English response',
+    chapterId: 1,
+    nodeId: null,
+    moveSequenceSan: null,
+  }],
+);
 
 const nimzoTranspositionGraph = buildRepertoireGraph([
   makeLine(12, 'Nimzo via e6', 'WHITE', ['d2d4', 'e7e6', 'c2c4', 'g8f6', 'b1c3']),
@@ -115,9 +126,8 @@ assert.equal(nimzoTranspositionGraph.positions.size, nimzoTranspositionPositionC
 assert.equal(classify(blackGraph, ['e2e4', 'c7c5', 'g1f3']).status, 'REPERTOIRE_ENDED');
 assert.equal(classify(blackGraph, ['e2e4', 'c7c5']).status, 'GAME_ENDED_INSIDE_REPERTOIRE');
 
-const sicilianGraph = buildRepertoireGraph([
-  makeLine(10, 'Sicilian d6', 'BLACK', ['e2e4', 'c7c5', 'g1f3', 'd7d6']),
-]);
+const sicilianLine = makeLine(10, 'Sicilian d6', 'BLACK', ['e2e4', 'c7c5', 'g1f3', 'd7d6']);
+const sicilianGraph = buildRepertoireGraph([sicilianLine]);
 
 const d4 = classify(sicilianGraph, ['d2d4'], { minCoveredPlies: 2 });
 assert.equal(d4.status, 'OUT_OF_SCOPE');
@@ -134,6 +144,18 @@ assert.equal(e4e5Min1.playedMoveUci, 'e7e5');
 const b3 = classify(sicilianGraph, ['e2e4', 'c7c5', 'b2b3'], { minCoveredPlies: 2 });
 assert.equal(b3.status, 'OPPONENT_UNCOVERED');
 assert.equal(b3.playedMoveUci, 'b2b3');
+const b3Position = buildPlies(['e2e4', 'c7c5', 'b2b3'])[2].normalizedFenBefore;
+assert.deepEqual(
+  findCourseReviewLineAnchors(b3Position, [sicilianLine]),
+  [{
+    kind: 'NODE',
+    lineId: 10,
+    lineName: 'Sicilian d6',
+    chapterId: 1,
+    nodeId: 1002,
+    moveSequenceSan: '1. e4 c5',
+  }],
+);
 
 const nc6InsteadOfD6 = classify(
   sicilianGraph,

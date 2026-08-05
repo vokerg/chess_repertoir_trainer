@@ -18,7 +18,7 @@ import {
   type RepertoireBuilderChapterOption,
   type RepertoireBuilderCourseOption,
 } from '../data-access/repertoire-builder-api.service';
-import type { RepertoireBuilderCourseEndingLaunch } from '../helpers/repertoire-builder-launch';
+import type { RepertoireBuilderCourseFindingLaunch } from '../helpers/repertoire-builder-launch';
 
 @Injectable()
 export class RepertoireBuilderCourseStore {
@@ -76,7 +76,7 @@ export class RepertoireBuilderCourseStore {
 
   async openFor(
     session: BuilderSession<RepertoireTarget>,
-    launch: RepertoireBuilderCourseEndingLaunch | null = null,
+    launch: RepertoireBuilderCourseFindingLaunch | null = null,
   ): Promise<void> {
     this.errorState.set(null);
     try {
@@ -149,7 +149,7 @@ export class RepertoireBuilderCourseStore {
       this.selectedTargetState.set(target);
       if (this.requiredTarget() && !target) {
         this.errorState.set(
-          'The source course ending no longer matches this exact line endpoint. Return to Course review and refresh the finding.',
+          'The source course position no longer matches this exact line anchor. Return to Course review and refresh the finding.',
         );
       }
     } catch (error) {
@@ -195,13 +195,13 @@ export class RepertoireBuilderCourseStore {
   }
 
   private async initializeLockedDestination(
-    launch: RepertoireBuilderCourseEndingLaunch,
+    launch: RepertoireBuilderCourseFindingLaunch,
   ): Promise<void> {
     const requiredTarget: BuilderCourseReintegrationTarget = {
       kind: 'EXISTING_LINE',
       lineId: launch.lineId,
       anchor: {
-        kind: 'NODE',
+        kind: launch.anchorKind,
         nodeId: launch.nodeId,
         normalizedFen: normalizeFenForPosition(launch.startingFen),
       },

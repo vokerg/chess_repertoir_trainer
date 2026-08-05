@@ -16,6 +16,15 @@ export interface CourseReviewLineRef {
   moveSequenceSan?: string | null;
 }
 
+export interface CourseReviewLineAnchor {
+  kind: 'LINE_START' | 'NODE';
+  lineId: number;
+  lineName: string;
+  chapterId: number;
+  nodeId: number | null;
+  moveSequenceSan: string | null;
+}
+
 export interface CourseGraphMove {
   moveUci: string;
   moveSan: string;
@@ -110,4 +119,5 @@ export interface CourseReviewGroup {
   count: number;
   results: { win: number; draw: number; loss: number; unknown: number };
   examples: CourseReviewGameExample[];
+  lineAnchors: CourseReviewLineAnchor[];
 }
