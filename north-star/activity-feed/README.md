@@ -1,6 +1,6 @@
 # User Activity Feed and Daily Momentum
 
-Last updated: 2026-07-31
+Last updated: 2026-08-05
 
 Program tracker: [#245 — User Activity Feed and Daily Momentum sub-project](https://github.com/vokerg/chess_repertoir_trainer/issues/245)
 
@@ -176,9 +176,9 @@ Activity loading is independent. Failure produces a local unavailable state and 
 | Task | Issue | State | Depends on |
 | --- | --- | --- | --- |
 | ACT-000 Program foundation | [#245](https://github.com/vokerg/chess_repertoir_trainer/issues/245) | IN_PROGRESS | — |
-| ACT-001 Activity ledger and daily-goal API | [#246](https://github.com/vokerg/chess_repertoir_trainer/issues/246) | READY | — |
-| ACT-002 In-app activity producers | [#247](https://github.com/vokerg/chess_repertoir_trainer/issues/247) | PROPOSED | ACT-001 |
-| ACT-003 Imported played-game reconciliation | [#248](https://github.com/vokerg/chess_repertoir_trainer/issues/248) | PROPOSED | ACT-001 |
+| ACT-001 Activity ledger and daily-goal API | [#246](https://github.com/vokerg/chess_repertoir_trainer/issues/246) | COMPLETE | — |
+| ACT-002 In-app activity producers | [#247](https://github.com/vokerg/chess_repertoir_trainer/issues/247) | COMPLETE | ACT-001 |
+| ACT-003 Imported played-game reconciliation | [#248](https://github.com/vokerg/chess_repertoir_trainer/issues/248) | READY | ACT-001 |
 | ACT-004 Home Today checklist | [#249](https://github.com/vokerg/chess_repertoir_trainer/issues/249) | PROPOSED | ACT-001, ACT-002, ACT-003 |
 
 ACT-002 and ACT-003 can proceed in parallel after ACT-001. ACT-004 follows once the initial data is trustworthy.

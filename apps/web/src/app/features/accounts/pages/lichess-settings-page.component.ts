@@ -1,16 +1,22 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
+import {
+  FactGridComponent,
+  type UiFactItem,
+} from '../../../shared/ui/fact-grid/fact-grid.component';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
-import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { AccountsApiService } from '../data-access/accounts-api.service';
+import type { LichessConnectionStatus } from '../data-access/accounts.models';
+import { missingLichessScopeLabels } from '../helpers/account-settings-view';
 import { dateLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
 
 @Component({
   selector: 'app-lichess-settings-page',
   standalone: true,
-  imports: [PageHeaderComponent, PanelComponent],
+  imports: [PageHeaderComponent, PanelComponent, FactGridComponent],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './lichess-settings-page.component.html',
   styleUrl: './lichess-settings-page.component.css',
@@ -20,11 +26,47 @@ export class LichessSettingsPageComponent implements OnInit {
   protected readonly store = inject(AccountsStore);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly route = inject(ActivatedRoute);
-  protected readonly dateLabel = dateLabel;
+  protected readonly missingLichessScopeLabels = missingLichessScopeLabels;
 
   ngOnInit(): void {
     void this.store.loadLichessConnection();
     this.showLichessCallbackNotice();
+  }
+
+  protected connectionFacts(
+    account: NonNullable<LichessConnectionStatus['account']>,
+  ): readonly UiFactItem[] {
+    const facts: UiFactItem[] = [
+      { id: 'connected', label: 'Connected', value: dateLabel(account.connectedAt) },
+    ];
+
+    if (account.expiresAt) {
+      facts.push({ id: 'expires', label: 'Expires', value: dateLabel(account.expiresAt) });
+    }
+
+    if (account.externalAccountId) {
+      facts.push({ id: 'tracked-account', label: 'Tracked account', value: 'Linked for imports' });
+    }
+
+    facts.push(
+      {
+        id: 'bot-challenges',
+        label: 'Bot challenges',
+        value: this.hasScope(account, 'challenge:write') ? 'Ready' : 'Missing',
+      },
+      {
+        id: 'read-puzzles',
+        label: 'Read puzzles',
+        value: this.hasScope(account, 'puzzle:read') ? 'Ready' : 'Missing',
+      },
+      {
+        id: 'submit-puzzles',
+        label: 'Submit puzzle results',
+        value: this.hasScope(account, 'puzzle:write') ? 'Ready' : 'Missing',
+      },
+    );
+
+    return facts;
   }
 
   protected async confirmDisconnectLichess(): Promise<void> {

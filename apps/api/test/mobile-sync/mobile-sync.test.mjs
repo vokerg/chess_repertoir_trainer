@@ -102,7 +102,7 @@ try {
   const accepted = await MobileSyncService.ingestTrainingAttempts(userA.id, {
     deviceId: 'device-a', attempts: [acceptedAttempt],
   });
-  assert.equal(accepted.results[0].status, 'ACCEPTED');
+  assert.equal(accepted.results[0].status, 'ACCEPTED', JSON.stringify(accepted.results[0]));
   const acceptedSessionId = accepted.results[0].trainingSessionId;
   assert.ok(acceptedSessionId);
 
@@ -128,6 +128,11 @@ try {
   assert.equal(duplicate.results[0].status, 'DUPLICATE');
   assert.equal(duplicate.results[0].trainingSessionId, acceptedSessionId);
   assert.equal(duplicate.results[0].receivedAt, accepted.results[0].receivedAt);
+  const mobileActivity = await prisma.userActivityDailyAggregate.findMany({
+    where: { userId: userA.id, type: 'REPERTOIRE_LINES_TRAINED' },
+  });
+  assert.equal(mobileActivity.reduce((total, row) => total + row.count, 0), 1);
+  assert.equal(mobileActivity[0].firstOccurredAt.toISOString(), acceptedAttempt.session.completedAt);
 
   const early = earlyFinishAttempt(bundle.courseId, bundle.contentRevision, subline);
   const badCountersBase = earlyFinishAttempt(bundle.courseId, bundle.contentRevision, subline);

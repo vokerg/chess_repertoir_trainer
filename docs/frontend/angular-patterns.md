@@ -125,7 +125,7 @@ Projected side content may compose the shared position-game-moves panel with fea
 
 Promotion moves are emitted as full UCI strings with the selected suffix, such as `e7e8q` or `e2e1n`. Features should handle those UCI moves exactly like any other board move.
 
-Board sounds are integral shared board behavior and are always on. Do not add per-page, per-mode, or feature-level sound flags; keep `ChessSoundService` as the only sound implementation.
+Board sounds remain centralized shared behavior. `ChessSoundService` is the only sound implementation and owns the existing browser-local pack and volume preferences exposed by Appearance settings. Feature pages and modes must not add independent sound services or separate sound flags.
 
 Board themes are hardcoded in `apps/web/src/app/shared/chess/board/chess-board-theme.ts`. To switch the application board theme, change `ACTIVE_CHESS_BOARD_THEME`; do not add per-page theming, runtime settings, local storage, API persistence, or user preferences for board themes.
 

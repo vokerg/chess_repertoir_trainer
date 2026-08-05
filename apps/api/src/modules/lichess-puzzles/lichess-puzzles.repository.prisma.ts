@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { LichessPuzzleDifficulty } from '@chess-trainer/contracts/lichess-puzzles';
+import { ActivityFeedService } from '../activity-feed/activity-feed.service';
 import prisma from '../../prisma';
 import type { StoredLichessPuzzleMoveAttempt } from './lichess-puzzle-round.logic';
 import type { NormalizedLichessPuzzle } from './lichess-puzzle.types';
@@ -121,6 +122,17 @@ export async function updateOwnedLichessPuzzleRound(
     });
 
     if (updated.count !== 1) throw new LichessPuzzleRoundConflictError();
+
+    if (snapshot.status === 'IN_PROGRESS' && data.status === 'COMPLETED') {
+      if (!(data.completedAt instanceof Date)) {
+        throw new Error('Completed Lichess puzzle rounds require completedAt');
+      }
+      await ActivityFeedService.recordIncrement({
+        userId: snapshot.userId,
+        type: 'LICHESS_PUZZLES_COMPLETED',
+        occurredAt: data.completedAt,
+      }, tx);
+    }
 
     if (options.recordFailure) {
       const dueAt = options.failureDueAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000);

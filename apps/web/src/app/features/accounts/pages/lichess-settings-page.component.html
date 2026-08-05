@@ -1,53 +1,44 @@
 <section class="lichess-settings-page stack">
-  <app-page-header title="Lichess integration" subtitle="Connect Lichess for OAuth-powered actions." />
+  <app-page-header
+    title="Lichess integration"
+    subtitle="Connect Lichess for bot challenges and puzzle actions."
+  />
 
   <app-panel
     title="Connected Lichess account"
-    subtitle="This connection is separate from tracked accounts used for imports and stats."
+    subtitle="OAuth permissions are separate from tracked accounts used for imports and statistics."
   >
     @if (store.error()) {
-      <p class="status-error">{{ store.error() }}</p>
+      <p class="status-error" role="alert">{{ store.error() }}</p>
     }
     @if (store.notice()) {
-      <p class="status-note">{{ store.notice() }}</p>
+      <p class="status-note" role="status" aria-live="polite">{{ store.notice() }}</p>
     }
 
     @if (store.loadingLichessConnection()) {
-      <p class="status-note">Checking Lichess connection...</p>
+      <p class="status-note" role="status">Checking Lichess connection...</p>
     } @else if (store.lichessConnection()?.connected && store.lichessConnection()?.account; as account) {
+      @let missingScopes = missingLichessScopeLabels(account);
       <div class="lichess-connection">
         <div class="lichess-connection-main">
           <p class="lichess-status">Connected as <strong>&#64;{{ account.username }}</strong></p>
-          <div class="account-meta-grid">
-            <div><span>Connected</span><strong>{{ dateLabel(account.connectedAt) }}</strong></div>
-            @if (account.expiresAt) {
-              <div><span>Expires</span><strong>{{ dateLabel(account.expiresAt) }}</strong></div>
-            }
-            @if (account.externalAccountId) {
-              <div><span>Tracked account</span><strong>Also tracked as an import account.</strong></div>
-            }
-            <div>
-              <span>Bot challenges</span>
-              <strong>{{ hasScope(account, 'challenge:write') ? 'Ready' : 'Missing' }}</strong>
-            </div>
-            <div>
-              <span>Read puzzles</span>
-              <strong>{{ hasScope(account, 'puzzle:read') ? 'Ready' : 'Missing' }}</strong>
-            </div>
-            <div>
-              <span>Submit puzzle results</span>
-              <strong>{{ hasScope(account, 'puzzle:write') ? 'Ready' : 'Missing' }}</strong>
-            </div>
-          </div>
-          @if (!hasScope(account, 'puzzle:read') || !hasScope(account, 'puzzle:write')) {
-            <p class="status-note">Reconnect Lichess to enable puzzle training and rating updates.</p>
+          <app-fact-grid
+            [items]="connectionFacts(account)"
+            [ariaLabel]="'Lichess connection facts for ' + account.username"
+            [columns]="3"
+            [compactColumns]="1"
+          />
+          @if (missingScopes.length > 0) {
+            <p class="lichess-scope-warning" role="status">
+              Missing access: {{ missingScopes.join(', ') }}. Reconnect Lichess to restore these actions.
+            </p>
           }
         </div>
         <div class="lichess-actions">
-          <button type="button" class="primary" (click)="store.connectLichess()">Reconnect</button>
+          <button type="button" class="primary" (click)="store.connectLichess()">Reconnect Lichess</button>
           <button
             type="button"
-            class="secondary"
+            class="secondary lichess-disconnect-button"
             (click)="confirmDisconnectLichess()"
             [disabled]="store.disconnectingLichess()"
           >
@@ -56,8 +47,11 @@
         </div>
       </div>
     } @else {
-      <div class="lichess-connection">
-        <p class="accounts-muted">No Lichess account connected.</p>
+      <div class="lichess-empty">
+        <div>
+          <strong>No Lichess account connected</strong>
+          <p class="accounts-muted">Connect when you want OAuth-powered challenges or puzzle training.</p>
+        </div>
         <div class="lichess-actions">
           <button type="button" class="primary" (click)="store.connectLichess()">Connect Lichess</button>
         </div>

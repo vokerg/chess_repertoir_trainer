@@ -164,9 +164,10 @@ export const GameAnalysisService = {
 
     const plies = await getImportedGamePliesForAnalysisSummary(userId, importedGameId);
     const accuracy = buildAccuracySummary(plies, game.userColor);
-    const run = await createClientGameAnalysisRun({
+    const positionsDone = input.positionsDone ?? plies.length;
+    const { run, reusedExisting } = await createClientGameAnalysisRun({
       importedGameId,
-      positionsDone: input.positionsDone ?? plies.length,
+      positionsDone,
       summary: input.summary ?? buildSummary(plies),
       accuracyVersion: accuracy.version,
       whiteAccuracy: accuracy.white.accuracy,
@@ -177,6 +178,6 @@ export const GameAnalysisService = {
       blackMovesAnalyzed: accuracy.black.moves,
     });
 
-    return { reusedExisting: false, run: compactRun(run) };
+    return { reusedExisting, run: compactRun(run) };
   },
 };
