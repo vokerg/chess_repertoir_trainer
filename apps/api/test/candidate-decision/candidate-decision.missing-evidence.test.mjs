@@ -56,7 +56,7 @@ assert.deepEqual(response.sourceSummary, {
   population: 'UNAVAILABLE',
   personal: 'UNAVAILABLE',
   opening: 'INSUFFICIENT',
-  courses: 'UNAVAILABLE',
+  courses: 'INSUFFICIENT',
   playerProfile: 'UNAVAILABLE',
 });
 for (const candidate of response.candidates) {

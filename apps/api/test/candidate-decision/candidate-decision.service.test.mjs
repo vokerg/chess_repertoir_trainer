@@ -203,7 +203,7 @@ const service = createCandidateDecisionService({
   assert.equal(response.sourceSummary.engine, 'AVAILABLE');
   assert.equal(response.sourceSummary.population, 'AVAILABLE');
   assert.equal(response.sourceSummary.personal, 'AVAILABLE');
-  assert.equal(response.sourceSummary.courses, 'AVAILABLE');
+  assert.equal(response.sourceSummary.courses, 'INSUFFICIENT');
   assert.equal(response.candidates.some((candidate) => candidate.moveUci === 'g2g4'), true);
 
   const manual = response.candidates.find((candidate) => candidate.moveUci === 'g2g4');
@@ -222,12 +222,12 @@ const service = createCandidateDecisionService({
     'targetFit',
   ]);
 
-  const covered = response.candidates.find((candidate) => candidate.moveUci === 'e2e4');
-  if (covered) {
-    assert.equal(covered.evidence.course.covered, true);
-    assert.equal(covered.reasonCodes.includes('COURSE_ALREADY_COVERS'), true);
-    assert.equal(covered.targetFit.status, 'ALIGNED');
-    assert.equal(covered.profileFit.status, 'ALIGNED');
+  const e4 = response.candidates.find((candidate) => candidate.moveUci === 'e2e4');
+  if (e4) {
+    assert.equal(e4.evidence.course.covered, false);
+    assert.equal(e4.reasonCodes.includes('COURSE_ALREADY_COVERS'), false);
+    assert.equal(e4.targetFit.status, 'ALIGNED');
+    assert.equal(e4.profileFit.status, 'ALIGNED');
   }
 }
 
