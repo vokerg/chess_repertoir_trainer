@@ -170,6 +170,50 @@ The administrator feature stores only the normalized fields required for current
 - Angular administrator diagnostics remain ONB-023-owned.
 - Mutation previews and controls remain ONB-024-owned and cannot reuse this read module as a destructive state machine.
 
+## Second self-review — 2026-08-05
+
+A second adversarial pass re-read the authorization, normalized session state, route handling, repository queries, warning semantics, worker-claim behavior, response schemas, tests, and the latest `main` delta rather than relying on the first review report.
+
+### 10. Token-side administrator claim retention created an unnecessary authority seam
+
+Severity: high as future drift risk
+
+`VerifiedSessionContext` normalized an unused custom `crt_admin` token claim into `adminClaim`. Current authorization did not consult that value, but retaining a token-side role contradicts the server-only exact-subject allowlist boundary and makes a later accidental privilege check easier.
+
+Correction:
+
+- remove `adminClaim` from normalized verified session state;
+- ignore `crt_admin` completely;
+- add runtime and source-boundary tests proving a token-side administrator claim cannot enter feature state.
+
+Administrator authority now has one source: the server-only `AdminAuthorizationPolicy` configured from the exact Clerk subject allowlist.
+
+### 11. Import queue warnings depended on the bounded newest-first item page
+
+Severity: high for operational correctness
+
+The work endpoint returned a bounded newest-first list but derived oldest queued age from only those visible rows. An old queued import outside the page could therefore fail to produce the ONB-007 queue-age and backlog warnings.
+
+Correction:
+
+- retain the bounded newest-first item list;
+- add one aggregate `_min(startedAt)` query across all queued imports for the target user;
+- derive section-level `IMPORT_QUEUE_AGE_HIGH` and `IMPORT_QUEUE_BACKLOG_HIGH` warnings from the full queued population;
+- keep item-level warnings tied only to each visible item's own evidence;
+- add disposable-database and service tests where the visible row is recent but an older queued run exists outside the requested limit.
+
+### 12. Non-null cancelled-task work keys were rechecked and retained
+
+Severity: informational
+
+`activeWorkKeys` counts non-null `JobTask.workKey` values. A cancelled task can deliberately retain its claim until the worker acknowledges cancellation or stale recovery clears it. Treating that key as active fencing evidence is therefore correct; filtering solely by `RUNNING` would hide an owned claim that still blocks same-game work.
+
+No code change was made. The worker repository remains the authority for claim release and stale cleanup.
+
+### 13. Latest `main` change was reviewed for collision
+
+The new `main` commit `fb02c9e99a102092601ee10dde27238a861f6de4` reconciles Visual Transformation documentation. It does not change administrator, authentication, contracts, route-registration, Prisma, or test files. The feature branch still requires an explicit merge refresh and exact-head CI before squash merge.
+
 ## Review result
 
-No remaining architecture defect was found that requires expanding ONB-022 into schema, frontend, lifecycle, or infrastructure work. Review readiness still requires a green exact-head CI run after all focused tests and corrections.
+The second review found and corrected two material hardening/correctness defects without expanding ONB-022 into schema, frontend, lifecycle, or infrastructure work. No remaining architecture defect is known. Merge readiness requires the branch to be zero commits behind current `main`, the complete exact-head CI workflow to pass after these corrections, and PR review state to remain free of unresolved blockers.
