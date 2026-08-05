@@ -280,6 +280,7 @@ await withApp({
   assert.equal(document.paths['/api/admin/me'].get.operationId, 'getAdminMe');
   assert.equal(document.paths['/api/admin/users'].get.operationId, 'listAdminUsers');
   assert.equal(document.paths['/api/admin/users/{userId}'].get.operationId, 'getAdminUserDetail');
+  assert.ok(document.paths['/api/admin/users'].get.responses['500']);
 });
 
 await withApp({
@@ -293,6 +294,33 @@ await withApp({
   const rejected = await app.inject({ method: 'GET', url: '/api/admin/me' });
   assert.equal(rejected.statusCode, 429);
   assert.equal(rejected.headers['retry-after'], '30');
+});
+
+await withApp({
+  adminAuthConfig: TEST_ADMIN,
+  adminDiagnosticsService: {
+    ...fakeDiagnosticsService([]),
+    listUsers: async () => { throw new Error('sensitive database detail'); },
+  },
+}, async (app) => {
+  const failed = await app.inject({ method: 'GET', url: '/api/admin/users' });
+  assert.equal(failed.statusCode, 500);
+  assert.deepEqual(failed.json(), { error: 'Administrator diagnostics unavailable' });
+  assert.doesNotMatch(failed.body, /sensitive database detail/);
+});
+
+await withApp({
+  adminAuthConfig: TEST_ADMIN,
+  adminDiagnosticsService: fakeDiagnosticsService([]),
+  adminRequestBudget: {
+    enforcement: () => 'ENFORCED',
+    check: async () => { throw new Error('sensitive budget detail'); },
+  },
+}, async (app) => {
+  const failed = await app.inject({ method: 'GET', url: '/api/admin/me' });
+  assert.equal(failed.statusCode, 500);
+  assert.deepEqual(failed.json(), { error: 'Administrator diagnostics unavailable' });
+  assert.doesNotMatch(failed.body, /sensitive budget detail/);
 });
 
 console.log('Administrator authorization and diagnostics foundation tests passed.');
