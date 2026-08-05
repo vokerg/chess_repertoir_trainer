@@ -1,49 +1,52 @@
 # Repertoire Builder North Star
 
-Status: active program execution. The planning foundation, rated Lichess Peer games population-evidence baseline, and versioned rating-normalization baseline are merged to `main`, while the interactive repertoire builder remains target behavior rather than current product behavior.
+Last updated: 2026-08-05
 
-This workspace defines the long-term program for constructing and evolving a personal chess repertoire from engine evaluation, opening populations, the user's own games, existing courses, and explicit user choices.
+The Repertoire Builder program defines how the product constructs and evolves a personal opening repertoire from population evidence, the player's own games and profile, existing courses, reviewed opening knowledge, and explicit user choices.
 
-## Current delivery boundary
+## Current state
 
-Available in the current product:
+The deterministic capability chain is integrated into `main`. The authenticated `/builder` route is current product behavior, not a future-only prototype.
 
-- through PR #80: shared Masters and rated Lichess Opening Explorer infrastructure, configurable Peer games evidence by month/rating group/speed, and a reusable Peer games widget in Opening Analysis;
-- through PR #76: the current versioned 13-grade rating-normalization profile for Chess.com and Lichess bullet, blitz, and rapid; source confidence and soft-padding metadata; grade classification/range helpers; `GET /api/rating-normalization/default`; and a reference table in the performance-by-rating lab.
+Current runtime includes:
 
-Revised next delivery through RB-001:
+- peer population and player-level resolution;
+- deterministic opening classification and Player Chess Profile evidence;
+- versioned repertoire targets and editable profile-derived defaults;
+- deterministic candidate evidence and ranking;
+- bounded Builder session and queue behavior;
+- the board-first Builder workbench;
+- mandatory course preview and explicit apply;
+- exact existing-course entry points from course-review findings;
+- reviewed side-aware opening knowledge as explanatory, ranking-neutral evidence;
+- optional generated candidate and completion interpretations behind explicit disabled-by-default boundaries;
+- bounded reviewed-opening grounding for the explicit AI game-review consumer.
 
-- fixed Peer games speed presets: All speeds, Blitz and slower, Blitz, and Bullet;
-- rating targets: All players, My peers, My peers and above, or one explicit Lichess group;
-- a new versioned normalization profile aligned to Lichess Explorer rating groups, including Chess.com mappings;
-- an on-demand peer-band resolver using recent imported games, then all history, then a generic fallback;
-- one mixed Lichess response and the existing mixed cache architecture;
-- two compact dropdowns replacing raw month and checkbox filters;
-- direct requested/effective population provenance.
+The remaining RB-016 outcome-evaluation task is independently blocked on sufficient real Builder/course usage and follow-up-game evidence. No other dependency-satisfied Repertoire Builder task is currently queued.
 
-Still planned after RB-001:
+Do not copy a future “next task” into this file. [`STATUS.md`](STATUS.md) and the mapped GitHub issues own volatile readiness, blockers, and current execution state.
 
-- durable multi-account player-level storage/projection through RB-002;
-- opening classification, Player Chess Profile, candidate ranking, visual builder flow, course materialization, and outcome feedback.
+## Read in this order
 
-See [Status](STATUS.md), [RB-001](tasks/RB-001-population-evidence.md), and [RB-002](tasks/RB-002-player-level-resolution.md) for exact delivered-versus-remaining assessments.
+1. [`STATUS.md`](STATUS.md) — current runtime, completed chain, active/blocked work, and residual risks.
+2. [`AGENTS.md`](AGENTS.md) — task claim, branch, issue, validation, report, and completion protocol.
+3. [`TASKS.md`](TASKS.md) — canonical task inventory and ordering.
+4. [Program issue #105](https://github.com/vokerg/chess_repertoir_trainer/issues/105) and mapped child issues — live ownership, branch, PR, blocker, and completion state.
+5. [`FOUNDATION.md`](FOUNDATION.md) — stable product and data principles.
+6. [`NORTH_STAR.md`](NORTH_STAR.md) — target interaction and long-term product outcome.
+7. [`FEATURES.md`](FEATURES.md) — capability catalog and planning maturity.
+8. [`ROADMAP.md`](ROADMAP.md), [`DECISIONS.md`](DECISIONS.md), and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 
-## Entry points
+Detailed immutable work items live under [`tasks/`](tasks/). Completion and research evidence lives under [`reports/`](reports/).
 
-- [Foundation](FOUNDATION.md) — agreed product and data principles.
-- [North star](NORTH_STAR.md) — target interactive repertoire-building experience.
-- [Feature catalog](FEATURES.md) — capabilities, standalone value, north-star role, and planning maturity.
-- [Roadmap](ROADMAP.md) — ordered delivery stages and gates.
-- [Task queue](TASKS.md) — canonical priority and execution order.
-- [GitHub Issues coordination](GITHUB_ISSUES.md) — program/task mapping, issue-state rules, branch/PR visibility, and synchronization protocol.
-- [Program issue #105](https://github.com/vokerg/chess_repertoir_trainer/issues/105) — top-level GitHub execution tracker.
-- [Status](STATUS.md) — current program state and active work.
-- [Decisions](DECISIONS.md) — locked and provisional choices.
-- [Open questions](OPEN_QUESTIONS.md) — unresolved product, data, UX, and architecture questions.
-- [Agent instructions](AGENTS.md) — required reading, task claiming, reporting, GitHub Issues, and queue-update protocol.
+## Authority boundaries
 
-Individual work items live under [`tasks/`](tasks/). Every completed task produces a report under [`reports/`](reports/). Meaningful status reconciliations may add explicitly non-completion reports. Every existing task maps to one GitHub issue under program tracker [#105](https://github.com/vokerg/chess_repertoir_trainer/issues/105).
+- Candidate ranking, Builder reducers/queue behavior, and course preview/apply are deterministic authorities.
+- Static opening knowledge is reviewed explanatory evidence and does not alter candidate ranking or write courses by itself.
+- Generated interpretation is optional, explicit, gated, bounded, and non-authoritative.
+- The curated traps pilot remains research evidence rather than a production traps feature.
+- Outcome claims remain unavailable until RB-016's real-usage evidence gate is satisfied.
 
-## Scope boundary
+## Documentation boundary
 
-This directory is deliberately separate from canonical current-state architecture documentation. It may describe unimplemented target behavior, but every such statement must remain clearly labelled as planned, provisional, optional, or open. Current product behavior must be verified against the implementation and canonical current-state documentation before planning claims are updated.
+This directory contains both current program status and target/research material. Runtime claims must be verified against code, tests, canonical current-state documentation, and `STATUS.md`. Planned, optional, blocked, and research behavior must remain labelled as such.

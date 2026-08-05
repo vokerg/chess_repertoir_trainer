@@ -6,9 +6,9 @@ Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web cl
 
 - `apps/web`: Angular UI, feature state, and typed data access.
 - `apps/mobile`: Expo routes, native lifecycle, Chessground DOM hosting, Clerk authentication, user-scoped SQLite content/training persistence, offline marathons, and attempt synchronization.
-- `apps/api`: Fastify routes, application services, provider integration, and Prisma repositories.
-- `packages/chess-domain`: pure chess and training behavior.
-- `packages/contracts`: active package for verified HTTP wire schemas and inferred DTO types.
+- `apps/api`: Fastify routes, application services, provider integration, workers, and Prisma repositories.
+- `packages/chess-domain`: framework-neutral chess and training behavior.
+- `packages/contracts`: verified cross-workspace HTTP wire schemas and inferred DTO types.
 
 ## Before changing code
 
@@ -16,7 +16,34 @@ Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web cl
 - Read the closest `.github/instructions/*.instructions.md` and `.github/skills/*/SKILL.md`.
 - Prefer small feature-local changes. Do not create cross-feature deep imports or new global abstractions.
 - Preserve URLs, JSON fields, nullability, status codes, filtering, sorting, and ownership behavior unless a change is explicit.
-- Do not work directly on `main`.
+- Create work from the current `main` head. Do not work directly on `main`.
+
+## Branch and merge policy
+
+- Use a short-lived task branch and a pull request for every meaningful change.
+- Refresh the task branch from current `main` before final review when concurrent integration has moved the base.
+- Do not merge without explicit user or reviewer approval.
+- Always squash-merge pull requests into `main`. Do not use merge commits or rebase merges.
+- Never push or commit directly to `main` unless the user explicitly requests that exceptional action.
+
+## Agent command entry points
+
+Recognize only the exact command listed here. Load the linked procedure before doing the work.
+
+- `update changelog` → [`.agents/commands/update-changelog.md`](.agents/commands/update-changelog.md)
+
+Do not infer aliases or add command behavior to this file. New commands receive their own file under `.agents/commands/` and one routing line here.
+
+## Program entry points
+
+Root instructions stay stable; volatile queue and checkpoint details belong in the program status documents and GitHub issues.
+
+- Repertoire Builder: [`north-star/repertoire-builder/README.md`](north-star/repertoire-builder/README.md), then `STATUS.md`, `TASKS.md`, and its scoped `AGENTS.md`.
+- Onboarding and data lifecycle: [`north-star/onboarding/README.md`](north-star/onboarding/README.md), then `STATUS.md`, `TASKS.md`, and its scoped `AGENTS.md`.
+- Activity Feed and Daily Momentum: [`north-star/activity-feed/README.md`](north-star/activity-feed/README.md).
+- Visual Transformation: [`TRANSFORMATION.md`](TRANSFORMATION.md), then `transformation/STATUS.md` and `transformation/WORKING_RULES.md`.
+
+For live task readiness, ownership, branch, pull-request, and blocker state, inspect the linked GitHub program and child issues. Repository status documents own accepted architecture, integrated history, validation, and residual risks.
 
 ## Sources of truth
 
@@ -24,9 +51,12 @@ Chess Repertoire Trainer is a TypeScript modular monolith with an Angular web cl
 - Shared HTTP wire shapes: Zod schemas in `packages/contracts`.
 - OpenAPI operations: Fastify route schemas.
 - Imported-game filters: repository predicates, especially `buildImportedGameWhere`.
-- Architecture: `docs/architecture.md` and topic documents indexed by `docs/README.md`.
+- Current architecture: `docs/architecture.md` and topic documents indexed by `docs/README.md`.
+- Product capabilities and setup: `README.md`.
+- Daily development history: `CHANGELOG.md`.
 - Rating grades and cross-pool calibration decisions: `docs/rating-normalization.md`; executable values remain in the rating-normalization API configuration and tests.
 - Agent workflows: `.github/skills/*/SKILL.md`.
+- Program execution: the relevant program entry point, status/task documents, and mapped GitHub issues.
 
 Do not add `*.openapi.ts`, a separate OpenAPI registry, or hand-maintained path objects. Product endpoints use Fastify route schemas; shared request and response DTOs belong in `packages/contracts` when consumed across workspace boundaries.
 

@@ -4,6 +4,54 @@ This changelog was reconstructed retrospectively from the repository commit hist
 
 Versions `0.0.x` are daily development snapshots: each version represents a calendar day on which project work was committed, not a separately published package release. Snapshot numbering continues independently of package versions; the current repository version remains `1.0.0`.
 
+## [0.0.70] - 2026-08-05
+
+- Added the ACT-001 Activity Feed foundation with typed contracts, a daily aggregate ledger, IANA time-zone preferences, transaction-aware increment and reconciliation services, authenticated history/today/preferences APIs, migration, OpenAPI coverage, and focused tests.
+- Modernized and reconciled the Settings routes with clearer account workflow hierarchy, complete Lichess scope guidance, improved Appearance semantics, accessibility fixes, and rendered regression coverage.
+- Refreshed repository, product, program, and agent documentation; added the exact `update changelog` command workflow; corrected stale mobile and program entry points; and established short-lived branches with required squash merge into `main`.
+
+## [0.0.69] - 2026-08-04
+
+- Added the durable onboarding preparation run/target/batch execution boundary with globally serialized bounded child-job admission, retained execution snapshots, and focused selection/concurrency coverage.
+- Completed onboarding research for administrator authorization and diagnostics, orphan shared-position cleanup, and measured throughput/progress semantics, including bounded defaults and an explicit no-ETA policy.
+- Modernized Tactical Detections with the shared Lab panel, action, stat, and select-menu patterns while clarifying result versus run scope, enforcing API row limits, improving request locking, accessibility, responsiveness, and rendered coverage.
+
+## [0.0.68] - 2026-08-03
+
+- Grounded explicit AI game review in bounded reviewed side-aware opening knowledge while preserving deterministic analysis, feature gating, and non-authoritative generated output.
+- Redesigned Study and simplified Games exploration and analysis actions, including removal of the game action-menu component and speed-category analysis eligibility.
+- Modernized Performance by Rating plus the Lab discovery, Top Opponents, Monthly Games, and Training Log surfaces with the production visual system and accessibility-focused regression coverage.
+- Reconciled durable account-import and onboarding coordination with the accepted preparation, lifecycle, throughput, and Activity Feed boundaries.
+
+## [0.0.67] - 2026-08-02
+
+- Surfaced reviewed side-aware opening knowledge in Repertoire Builder through a versioned candidate-decision contract with bounded summaries, plans, conditions, provenance, and ranking-neutral behavior.
+- Finalized destructive onboarding lifecycle invariants, implementation allocations, and canonical completion records for account/game/user operations and shared-data retention boundaries.
+
+## [0.0.66] - 2026-08-01
+
+- Added the versioned static side-aware opening-knowledge foundation with deterministic inheritance, provenance validation, generated-book and imported-game-weighted audits, and regression coverage.
+- Defined progressive onboarding preparation orchestration with durable parents, targets and batches, bounded admission, direct-user priority, committed-import pipelining, and stage-specific account fairness.
+- Accepted and closed the Repertoire Builder side-aware knowledge foundation while retaining outcome evaluation as an evidence-gated follow-up.
+- Modernized the authenticated Progress account dashboard with the production visual system and responsive containment fixes.
+- Established the User Activity Feed and Daily Momentum sub-project with one bounded tracker and four implementation issues.
+
+## [0.0.65] - 2026-07-31
+
+- Modernized the shared analytical workbench and opening-evidence surfaces across Free Analysis, Game Review, Opening Analysis, and Opening Struggles while preserving route, store, API, board, engine, filter, and persistence ownership.
+- Added profile-derived Repertoire Builder personas and editable/rejectable defaults with deterministic provenance and override accounting.
+- Defined and accepted the lightweight onboarding experience blueprint for progressive disclosure, first-value reveals, and product/visual-program coordination.
+- Validated the curated chess-trap knowledge pilot with retained engine and Lichess evidence and an explicit revise-before-production recommendation.
+- Lightened shared game filters into a sheet-based presentation and removed obsolete external tracker references from North Star coordination.
+
+## [0.0.64] - 2026-07-30
+
+- Added exact existing-course Repertoire Builder entry from opponent-gap findings and closed the bounded existing-course adaptation task.
+- Added optional, disabled-by-default generated Repertoire Builder candidate explanations and post-apply completion summaries while keeping deterministic evidence, state, and course writes authoritative.
+- Modernized line training, Courses, Course Review, repertoire authoring, and remaining training surfaces using the Visual Transformation system without changing their workflow ownership.
+- Added the shared single-choice filter select menu and improved training-layout responsiveness.
+- Defined bounded recent-first provider import and resumable historical backfill contracts for onboarding and data lifecycle work.
+
 ## [0.0.63] - 2026-07-29
 
 - Added a persisted Lichess puzzle trainer with server-owned solutions, rated-result synchronization, refresh-safe rounds, OAuth configuration, Prisma persistence, API contracts, Angular UI, and focused tests.
