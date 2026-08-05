@@ -133,4 +133,14 @@ for (const path of [
   assert.doesNotMatch(source, /\bemail\b|\busername\b|\bproviderUrl\b|\baccessToken\b|\bnormalizedFen\b|\bpgn\b/i);
 }
 
+const verifiedSessionSource = await readFile(
+  new URL('../../src/auth/verified-session-context.ts', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(
+  verifiedSessionSource,
+  /crt_admin|adminClaim/,
+  'administrator authority must not enter verified session state from token claims',
+);
+
 console.log('Administrator startup, non-enumeration, and sensitive-field boundary tests passed.');
