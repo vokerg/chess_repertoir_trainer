@@ -12,10 +12,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./admin": {
-      "types": "./dist/admin/index.d.ts",
-      "default": "./dist/admin/index.js"
-    },
     "./ai": {
       "types": "./dist/ai/index.d.ts",
       "default": "./dist/ai/index.js"
@@ -75,6 +71,10 @@
     "./rating-normalization": {
       "types": "./dist/rating-normalization/index.d.ts",
       "default": "./dist/rating-normalization/index.js"
+    },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "default": "./dist/admin/index.js"
     }
   },
   "scripts": {
