@@ -15,6 +15,10 @@ import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { type UiShellStat } from '../../../shared/ui/ui-shell.model';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
+import {
+  buildNewImportedWorkflowState,
+  type NewImportedWorkflowState,
+} from '../helpers/account-settings-view';
 import { dateLabel, providerClass, providerLabel, syncStatusLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
 
@@ -57,6 +61,11 @@ export class AccountsPageComponent implements OnInit {
   ]);
   protected readonly accountStats = computed<readonly UiShellStat[]>(() => [
     { id: 'accounts', label: 'Accounts', value: this.store.accounts().length },
+    {
+      id: 'active-accounts',
+      label: 'Active',
+      value: this.store.accounts().filter((account) => account.isActive).length,
+    },
   ]);
 
   ngOnInit(): void {
@@ -69,6 +78,13 @@ export class AccountsPageComponent implements OnInit {
       { id: 'import-cursor', label: 'Import cursor', value: dateLabel(account.syncCursorTime) },
       { id: 'created', label: 'Created', value: dateLabel(account.createdAt) },
     ];
+  }
+
+  protected newImportedWorkflowState(
+    accountId: number,
+    result: ImportRunSummary,
+  ): NewImportedWorkflowState {
+    return buildNewImportedWorkflowState(result, this.store.workflowCandidates()[accountId]);
   }
 
   protected async confirmResetCursor(account: ExternalAccount): Promise<void> {
@@ -136,8 +152,8 @@ export class AccountsPageComponent implements OnInit {
   }
 
   protected async confirmIndexNewImportedGames(account: ExternalAccount, result: ImportRunSummary): Promise<void> {
-    await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = this.newImportedUnindexedGameIds(account.id, result);
+    const candidates = await this.store.refreshWorkflowCandidates(account.id);
+    const gameIds = buildNewImportedWorkflowState(result, candidates).unindexedGameIds;
     if (!gameIds.length) {
       this.store.showNotice('No newly imported blitz/rapid games need indexing.');
       return;
@@ -155,8 +171,8 @@ export class AccountsPageComponent implements OnInit {
   }
 
   protected async confirmAnalyseNewImportedGames(account: ExternalAccount, result: ImportRunSummary): Promise<void> {
-    await this.store.refreshWorkflowCandidates(account.id);
-    const gameIds = this.newImportedIndexedGameIds(account.id, result);
+    const candidates = await this.store.refreshWorkflowCandidates(account.id);
+    const gameIds = buildNewImportedWorkflowState(result, candidates).indexedGameIds;
     if (!gameIds.length) {
       this.store.showNotice('Index the newly imported blitz/rapid games before analysing them.');
       return;
@@ -171,19 +187,5 @@ export class AccountsPageComponent implements OnInit {
     });
 
     if (confirmed) void this.store.analyseEligibleAccountGames(account, gameIds);
-  }
-
-  protected newImportedEligibleCount(result: ImportRunSummary): number {
-    return result.eligibleImportedGameIds?.length ?? 0;
-  }
-
-  protected newImportedIndexedGameIds(accountId: number, result: ImportRunSummary): number[] {
-    const indexedIds = new Set(this.store.workflowCandidates()[accountId]?.eligibleIndexedGameIds ?? []);
-    return (result.eligibleImportedGameIds ?? []).filter((id) => indexedIds.has(id));
-  }
-
-  protected newImportedUnindexedGameIds(accountId: number, result: ImportRunSummary): number[] {
-    const unindexedIds = new Set(this.store.workflowCandidates()[accountId]?.eligibleUnindexedGameIds ?? []);
-    return (result.eligibleUnindexedGameIds ?? []).filter((id) => unindexedIds.has(id));
   }
 }
