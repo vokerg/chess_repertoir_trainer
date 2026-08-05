@@ -11,6 +11,10 @@ describe('repertoire builder opening knowledge view model', () => {
   it('renders the target-side summary and bounded plans in focused evidence', () => {
     const items = buildRepertoireBuilderSourceItems(candidate);
 
+    expect(items.find((item) => item.id === 'population')?.detail).toBe(
+      '29.8M games · 50% frequency · 50% score',
+    );
+    expect(items.some((item) => item.id === 'course')).toBeFalse();
     expect(items.find((item) => item.id === 'opening-knowledge')).toEqual(jasmine.objectContaining({
       label: 'Opening knowledge · Black',
       status: 'PARTIAL',
@@ -94,7 +98,7 @@ const candidate = {
       pvUci: ['e7e6'],
     },
     masters: corpus(),
-    population: corpus(),
+    population: { ...corpus(), games: 29_846_453 },
     personal: { status: 'INSUFFICIENT', occurrences: 0, games: 0, scorePercent: null },
     opening: {
       status: 'AVAILABLE',

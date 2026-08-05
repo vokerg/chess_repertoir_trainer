@@ -8,6 +8,7 @@ import type {
   BuilderPreviewNode,
   BuilderSessionPreview,
 } from 'chess-domain';
+import { compactGameCount } from '../../../shared/lichess-games-explorer/lichess-games-explorer.helpers';
 import type {
   RepertoireBuilderPreviewRow,
   RepertoireBuilderSourceItem,
@@ -118,18 +119,6 @@ export function buildRepertoireBuilderSourceItems(
         ? `${candidate.evidence.playerProfile.matches.length} matching observations`
         : null,
     },
-    {
-      id: 'course',
-      label: 'Courses',
-      status: candidate.evidence.course.status,
-      detail: candidate.evidence.course.conflict
-        ? 'Conflict found'
-        : candidate.evidence.course.covered
-          ? 'Already covered'
-          : candidate.evidence.course.transposesToCoveredPosition
-            ? 'Transposes to coverage'
-            : null,
-    },
   ];
 }
 
@@ -217,7 +206,7 @@ function visitPreview(
 
 function corpusDetail(games: number, frequency: number | null, score: number | null): string | null {
   if (games <= 0) return null;
-  return `${games} games · ${percent(frequency)} frequency · ${percent(score)} score`;
+  return `${compactGameCount(games)} games · ${percent(frequency)} frequency · ${percent(score)} score`;
 }
 
 function percent(value: number | null): string {

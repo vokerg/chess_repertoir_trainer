@@ -116,13 +116,8 @@
       @if (previewCandidate(); as candidate) {
         <app-panel title="Focused evidence" [subtitle]="candidate.moveSan + ' · ' + candidate.previewUci.join(' ')">
           <div class="evidence-summary">
-            <div><span>Eligibility</span><strong>{{ statusLabel(candidate.eligibility.status) }}</strong></div>
             <div><span>Target fit</span><strong>{{ statusLabel(candidate.targetFit.status) }}</strong></div>
             <div><span>Profile fit</span><strong>{{ statusLabel(candidate.profileFit.status) }}</strong></div>
-            <div>
-              <span>Course state</span>
-              <strong>{{ candidate.evidence.course.covered ? 'Covered' : candidate.evidence.course.conflict ? 'Conflict' : 'New' }}</strong>
-            </div>
           </div>
 
           <div class="evidence-grid">

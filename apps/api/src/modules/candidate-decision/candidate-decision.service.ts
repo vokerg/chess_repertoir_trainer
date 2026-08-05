@@ -37,7 +37,6 @@ import type {
 import type { RepertoireTarget } from '@chess-trainer/contracts/repertoire-target';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
 import type { StoredPositionAnalysis } from '../analysis/analysis.types';
-import { CoursePositionSuggestionService } from '../courses/courses.service';
 import {
   OpeningAnalysisService,
   type OpeningAnalysisCoreResponse,
@@ -103,9 +102,6 @@ interface CandidateDecisionDependencies {
   };
   personal?: {
     get(userId: number, fen: string, target: RepertoireTarget): Promise<OpeningAnalysisCoreResponse>;
-  };
-  courses?: {
-    get(userId: number, fen: string): Promise<CoursePositionSuggestionsResponse>;
   };
   playerProfile?: {
     get(userId: number, target: RepertoireTarget): Promise<PlayerChessProfileResponse>;
@@ -183,9 +179,9 @@ const defaultPersonalProvider = {
   },
 };
 
-const defaultCoursesProvider = {
-  get(userId: number, fen: string): Promise<CoursePositionSuggestionsResponse> {
-    return CoursePositionSuggestionService.listForFen(userId, fen);
+const disabledCoursesProvider = {
+  async get(_userId: number, fen: string): Promise<CoursePositionSuggestionsResponse> {
+    return { normalizedFen: normalizeFenForPosition(fen), suggestions: [] };
   },
 };
 
@@ -206,7 +202,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
   const mastersProvider = dependencies.masters ?? defaultMastersProvider;
   const populationProvider = dependencies.population ?? defaultPopulationProvider;
   const personalProvider = dependencies.personal ?? defaultPersonalProvider;
-  const coursesProvider = dependencies.courses ?? defaultCoursesProvider;
+  const coursesProvider = disabledCoursesProvider;
   const playerProfileProvider = dependencies.playerProfile ?? defaultPlayerProfileProvider;
   const classifyOpening = dependencies.classifyOpening ?? resolveCandidateOpeningEvidence;
   const clock = dependencies.clock ?? (() => new Date());
