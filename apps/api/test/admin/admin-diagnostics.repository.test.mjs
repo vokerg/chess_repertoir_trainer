@@ -34,13 +34,25 @@ try {
       isActive: true,
     },
   });
-  await prisma.importRun.create({
-    data: {
-      userId: users[0].id,
-      accountId: account.id,
-      provider: account.provider,
-      status: 'RUNNING',
-    },
+  const oldestQueuedStartedAt = new Date('2026-08-04T18:00:00.000Z');
+  const newestQueuedStartedAt = new Date('2026-08-04T19:59:00.000Z');
+  await prisma.importRun.createMany({
+    data: [
+      {
+        userId: users[0].id,
+        accountId: account.id,
+        provider: account.provider,
+        status: 'QUEUED',
+        startedAt: oldestQueuedStartedAt,
+      },
+      {
+        userId: users[0].id,
+        accountId: account.id,
+        provider: account.provider,
+        status: 'QUEUED',
+        startedAt: newestQueuedStartedAt,
+      },
+    ],
   });
 
   const first = await AdminDiagnosticsRepository.listUsers({ limit: 25 });
@@ -52,8 +64,18 @@ try {
   assert.equal(first.rows[0].id, users[0].id);
   assert.equal(first.rows[0].accountCount, 1);
   assert.equal(first.rows[0].activeAccountCount, 1);
-  assert.equal(first.rows[0].activeWorkCount, 1, 'active import runs contribute to active work');
+  assert.equal(first.rows[0].activeWorkCount, 2, 'active import runs contribute to active work');
   assert.equal(first.hasMore, true);
+
+  const imports = await AdminDiagnosticsRepository.loadImports(users[0].id, 1);
+  assert.equal(imports.rows.length, 1, 'the visible import list remains bounded');
+  assert.equal(imports.rows[0].startedAt.toISOString(), newestQueuedStartedAt.toISOString());
+  assert.equal(imports.queuedCount, 2);
+  assert.equal(
+    imports.oldestQueuedStartedAt?.toISOString(),
+    oldestQueuedStartedAt.toISOString(),
+    'oldest queued evidence must be independent of the bounded newest-first list',
+  );
 
   const second = await AdminDiagnosticsRepository.listUsers({
     cursorId: first.rows.at(-1).id,
@@ -79,6 +101,7 @@ try {
   );
   assert.match(repositorySource, /take: input\.limit \+ 1/);
   assert.match(repositorySource, /userId: \{ in: userIds \}/);
+  assert.match(repositorySource, /_min: \{ startedAt: true \}/);
   assert.doesNotMatch(
     repositorySource,
     /Promise\.all\(\s*page\.map/,
