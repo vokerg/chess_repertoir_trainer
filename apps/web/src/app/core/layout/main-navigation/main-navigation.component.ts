@@ -64,7 +64,8 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
   private restoreMobileMenuFocus = false;
 
   @ViewChild('mobileMenuDialog') private mobileMenuDialogRef?: ElementRef<HTMLDialogElement>;
-  @ViewChild('mobileMenuCloseButton') private mobileMenuCloseButtonRef?: ElementRef<HTMLButtonElement>;
+  @ViewChild('mobileMenuCloseButton')
+  private mobileMenuCloseButtonRef?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreButton') private mobileMoreButtonRef?: ElementRef<HTMLButtonElement>;
 
   protected readonly railCollapsed = signal(false);
@@ -76,6 +77,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'home',
       label: 'Home',
+      description: 'Your next move',
       link: '/home',
       icon: 'home',
       activePrefixes: ['/home'],
@@ -83,6 +85,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'study',
       label: 'Study',
+      description: 'Train your lines',
       link: '/library',
       icon: 'study',
       activePrefixes: [
@@ -99,7 +102,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Repertoire library',
           description: 'Plan and train your repertoire lines',
           link: '/library',
-          icon: 'study',
+          icon: 'library',
           activePrefixes: ['/library', '/chapters', '/lines'],
         },
         {
@@ -107,7 +110,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Lichess puzzles',
           description: 'Solve rated or practice puzzles without leaving the app.',
           link: '/puzzles',
-          icon: 'target',
+          icon: 'puzzle',
           activePrefixes: ['/puzzles'],
         },
         {
@@ -115,7 +118,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Missed shots',
           description: 'Practice tactical chances you missed in analysed games.',
           link: '/scenario-training/tactical-missed-shot',
-          icon: 'target',
+          icon: 'missed',
           activePrefixes: ['/scenario-training/tactical-missed-shot'],
         },
         {
@@ -123,7 +126,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Avoid blunders',
           description: 'Practice safer choices from mistakes in analysed games.',
           link: '/scenario-training/tactical-blunder',
-          icon: 'target',
+          icon: 'shield',
           activePrefixes: ['/scenario-training/tactical-blunder'],
         },
       ],
@@ -131,6 +134,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'courses',
       label: 'Courses',
+      description: 'Build your repertoire',
       link: '/courses',
       icon: 'courses',
       activePrefixes: ['/courses'],
@@ -138,6 +142,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'games',
       label: 'Games',
+      description: 'Review imported play',
       link: '/games',
       icon: 'games',
       activePrefixes: ['/games'],
@@ -145,6 +150,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'openings',
       label: 'Openings',
+      description: 'Explore positions',
       link: '/opening-analysis',
       icon: 'openings',
       activePrefixes: ['/opening-analysis', '/opening-struggles'],
@@ -154,7 +160,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Opening analysis',
           description: 'Explore next moves from your games',
           link: '/opening-analysis',
-          icon: 'openings',
+          icon: 'opening-analysis',
           activePrefixes: ['/opening-analysis'],
         },
         {
@@ -162,7 +168,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Opening struggles',
           description: 'Find lines costing the most points',
           link: '/opening-struggles',
-          icon: 'progress',
+          icon: 'opening-struggles',
           activePrefixes: ['/opening-struggles'],
         },
       ],
@@ -170,14 +176,15 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'builder',
       label: 'Builder',
-      description: 'Build a bounded repertoire draft',
+      description: 'Shape new lines',
       link: '/builder',
-      icon: 'target',
+      icon: 'builder',
       activePrefixes: ['/builder'],
     },
     {
       id: 'progress',
       label: 'Progress',
+      description: 'Read the evidence',
       link: '/progress',
       icon: 'progress',
       activePrefixes: ['/progress'],
@@ -187,7 +194,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Account performance',
           description: 'Rating history and results for your default account',
           link: '/progress',
-          icon: 'progress',
+          icon: 'performance',
           activePrefixes: ['/progress/accounts'],
         },
         {
@@ -195,7 +202,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Chess profile',
           description: 'Opening preferences, strengths, and supporting evidence',
           link: '/progress/profile',
-          icon: 'openings',
+          icon: 'profile',
           activePrefixes: ['/progress/profile'],
         },
       ],
@@ -203,6 +210,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'tools',
       label: 'Tools',
+      description: 'Analysis and experiments',
       link: '/analysis',
       icon: 'analysis',
       activePrefixes: ['/analysis', '/lab'],
@@ -230,6 +238,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
     {
       id: 'settings',
       label: 'Settings',
+      description: 'Accounts and display',
       link: '/settings/accounts',
       icon: 'settings',
       activePrefixes: ['/settings'],
@@ -240,7 +249,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Import accounts',
           description: 'Configure import sources and sync games',
           link: '/settings/accounts',
-          icon: 'account',
+          icon: 'import',
           activePrefixes: ['/settings/accounts'],
         },
         {
@@ -248,7 +257,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Lichess integration',
           description: 'Connect OAuth for Lichess actions',
           link: '/settings/lichess',
-          icon: 'openings',
+          icon: 'link',
           activePrefixes: ['/settings/lichess'],
         },
         {
@@ -256,7 +265,7 @@ export class MainNavigationComponent implements OnInit, AfterViewInit, OnDestroy
           label: 'Appearance',
           description: 'Review display preferences',
           link: '/settings/appearance',
-          icon: 'settings',
+          icon: 'appearance',
           activePrefixes: ['/settings/appearance'],
         },
       ],

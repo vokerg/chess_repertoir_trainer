@@ -6,13 +6,13 @@
 }
 
 .rail-nav-node:has(.rail-nav-disclosure) {
-  grid-template-columns: minmax(0, 1fr) 40px;
+  grid-template-columns: minmax(0, 1fr) 42px;
 }
 
 .rail-nav-disclosure {
   width: 36px;
-  min-height: 36px;
-  margin: 4px 4px 4px 0;
+  min-height: 40px;
+  margin: 5px 5px 5px 0;
   border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.045);
@@ -83,20 +83,20 @@
 .rail-inline-children {
   display: grid;
   gap: 0.14rem;
-  margin: 0 0.38rem 0.28rem 2.55rem;
+  margin: 0 0.38rem 0.28rem 1.52rem;
   border-left: 1px solid rgba(123, 212, 189, 0.22);
-  padding: 0.08rem 0 0.08rem 0.42rem;
+  padding: 0.08rem 0 0.08rem 0.72rem;
 }
 
 .rail-inline-item {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 0.42rem;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 0.56rem;
   align-items: center;
   min-width: 0;
-  min-height: 34px;
+  min-height: 42px;
   border-radius: 8px;
-  padding: 0.3rem 0.4rem;
+  padding: 0.38rem 0.4rem;
   color: #a8bbb5;
   text-decoration: none;
   transition:
@@ -126,22 +126,51 @@
 
 .rail-inline-icon {
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.045);
-  color: currentColor;
+  background: rgba(255, 255, 255, 0.035);
+  color: #82a39a;
+  --nav-icon-signal: var(--ui-action);
+}
+
+.rail-inline-icon app-nav-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rail-inline-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.rail-inline-label,
+.rail-inline-description {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rail-inline-label {
-  min-width: 0;
-  overflow: hidden;
   font-size: 0.72rem;
   font-weight: 760;
   line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.rail-inline-description {
+  color: #60766f;
+  font-size: 0.56rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rail-inline-item:hover .rail-inline-description,
+.rail-inline-item-active .rail-inline-description {
+  color: #8fa79e;
 }
 
 .desktop-rail-collapsed .rail-nav-node:has(.rail-nav-disclosure) {
