@@ -9,6 +9,7 @@ import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import type { LichessConnectionStatus } from '../data-access/accounts.models';
+import { missingLichessScopeLabels } from '../helpers/account-settings-view';
 import { dateLabel } from '../helpers/account-labels';
 import { AccountsStore } from '../state/accounts.store';
 
@@ -25,7 +26,7 @@ export class LichessSettingsPageComponent implements OnInit {
   protected readonly store = inject(AccountsStore);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly route = inject(ActivatedRoute);
-  protected readonly dateLabel = dateLabel;
+  protected readonly missingLichessScopeLabels = missingLichessScopeLabels;
 
   ngOnInit(): void {
     void this.store.loadLichessConnection();
