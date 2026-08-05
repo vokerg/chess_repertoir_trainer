@@ -32,6 +32,9 @@ const adminListBadRequestResponseSchema = z.union([
   validationErrorResponseSchema,
   adminErrorResponseSchema,
 ]);
+const adminUnavailableResponseSchema = z.object({
+  error: z.literal('Administrator diagnostics unavailable'),
+});
 
 function forbidden() {
   return { message: 'Forbidden', code: 'ADMIN_FORBIDDEN' as const };
@@ -41,51 +44,12 @@ function requestBudgetExceeded() {
   return { message: 'Administrator request budget exceeded', code: 'ADMIN_REQUEST_BUDGET_EXCEEDED' as const };
 }
 
+function diagnosticsUnavailable() {
+  return { error: 'Administrator diagnostics unavailable' as const };
+}
+
 const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, options) => {
   const service = options.diagnosticsService ?? createAdminDiagnosticsService();
-
-  async function requirePrincipal(
-    request: FastifyRequest,
-    reply: FastifyReply,
-    operationId: string,
-  ): Promise<AdminPrincipal | null> {
-    if (!request.auth) {
-      reply.code(401).send({ message: 'Unauthorized' });
-      return null;
-    }
-
-    const principal = options.authorizationPolicy.resolve({
-      auth: request.auth,
-      verifiedSession: request.verifiedSession,
-    });
-    if (!principal || !hasAdminCapability(principal, 'ADMIN_DIAGNOSTICS_READ')) {
-      request.log.warn({
-        securityEvent: 'admin_read_access',
-        operationId,
-        requestId: request.id,
-        resultClass: 'FORBIDDEN',
-      }, 'Administrator capability denied');
-      reply.code(403).send(forbidden());
-      return null;
-    }
-
-    const budget = await options.requestBudget.check({ actorKey: principal.actorKey, operationId });
-    if (!budget.allowed && budget.enforcement === 'ENFORCED') {
-      if (budget.retryAfterSeconds) reply.header('Retry-After', String(budget.retryAfterSeconds));
-      request.log.warn({
-        securityEvent: 'admin_read_access',
-        actorKey: principal.actorKey,
-        actorKeyVersion: principal.actorKeyVersion,
-        operationId,
-        requestId: request.id,
-        resultClass: 'BUDGET_REJECTED',
-      }, 'Administrator request budget rejected');
-      reply.code(429).send(requestBudgetExceeded());
-      return null;
-    }
-
-    return principal;
-  }
 
   function logRead(
     request: FastifyRequest,
@@ -107,6 +71,74 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
     }, 'Administrator read access');
   }
 
+  function failRead(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    principal: AdminPrincipal,
+    operationId: string,
+    startedAt: number,
+    error: unknown,
+    targetUserId?: number,
+  ) {
+    logRead(request, principal, operationId, startedAt, 'ERROR', targetUserId);
+    request.log.error({
+      err: error,
+      operationId,
+      requestId: request.id,
+    }, 'Administrator diagnostics failed');
+    reply.code(500);
+    return diagnosticsUnavailable();
+  }
+
+  async function requirePrincipal(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    operationId: string,
+    startedAt: number,
+  ): Promise<AdminPrincipal | null> {
+    if (!request.auth) {
+      reply.code(401).send({ message: 'Unauthorized' });
+      return null;
+    }
+
+    const principal = options.authorizationPolicy.resolve({
+      auth: request.auth,
+      verifiedSession: request.verifiedSession,
+    });
+    if (!principal || !hasAdminCapability(principal, 'ADMIN_DIAGNOSTICS_READ')) {
+      request.log.warn({
+        securityEvent: 'admin_read_access',
+        operationId,
+        requestId: request.id,
+        resultClass: 'FORBIDDEN',
+      }, 'Administrator capability denied');
+      reply.code(403).send(forbidden());
+      return null;
+    }
+
+    try {
+      const budget = await options.requestBudget.check({ actorKey: principal.actorKey, operationId });
+      if (!budget.allowed && budget.enforcement === 'ENFORCED') {
+        if (budget.retryAfterSeconds) reply.header('Retry-After', String(budget.retryAfterSeconds));
+        request.log.warn({
+          securityEvent: 'admin_read_access',
+          actorKey: principal.actorKey,
+          actorKeyVersion: principal.actorKeyVersion,
+          operationId,
+          requestId: request.id,
+          resultClass: 'BUDGET_REJECTED',
+        }, 'Administrator request budget rejected');
+        reply.code(429).send(requestBudgetExceeded());
+        return null;
+      }
+    } catch (error) {
+      reply.send(failRead(request, reply, principal, operationId, startedAt, error));
+      return null;
+    }
+
+    return principal;
+  }
+
   app.route({
     method: 'GET',
     url: '/api/admin/me',
@@ -119,11 +151,12 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
         401: unauthorizedResponseSchema,
         403: adminErrorResponseSchema,
         429: adminErrorResponseSchema,
+        500: adminUnavailableResponseSchema,
       },
     },
     handler: async (request, reply) => {
       const startedAt = Date.now();
-      const principal = await requirePrincipal(request, reply, 'getAdminMe');
+      const principal = await requirePrincipal(request, reply, 'getAdminMe', startedAt);
       if (!principal) return;
       const response = {
         capabilities: [...principal.capabilities],
@@ -157,11 +190,12 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
         401: unauthorizedResponseSchema,
         403: adminErrorResponseSchema,
         429: adminErrorResponseSchema,
+        500: adminUnavailableResponseSchema,
       },
     },
     handler: async (request, reply) => {
       const startedAt = Date.now();
-      const principal = await requirePrincipal(request, reply, 'listAdminUsers');
+      const principal = await requirePrincipal(request, reply, 'listAdminUsers', startedAt);
       if (!principal) return;
       try {
         const response = await service.listUsers(request.query);
@@ -173,7 +207,7 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
           reply.code(400);
           return { message: error.message, code: error.code };
         }
-        throw error;
+        return failRead(request, reply, principal, 'listAdminUsers', startedAt, error);
       }
     },
   });
@@ -193,11 +227,12 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
         403: adminErrorResponseSchema,
         404: adminErrorResponseSchema,
         429: adminErrorResponseSchema,
+        500: adminUnavailableResponseSchema,
       },
     },
     handler: async (request, reply) => {
       const startedAt = Date.now();
-      const principal = await requirePrincipal(request, reply, 'getAdminUserDetail');
+      const principal = await requirePrincipal(request, reply, 'getAdminUserDetail', startedAt);
       if (!principal) return;
       try {
         const response = await service.getUserDetail(request.params.userId);
@@ -209,7 +244,15 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
           reply.code(404);
           return { message: error.message, code: error.code };
         }
-        throw error;
+        return failRead(
+          request,
+          reply,
+          principal,
+          'getAdminUserDetail',
+          startedAt,
+          error,
+          request.params.userId,
+        );
       }
     },
   });
@@ -230,11 +273,12 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
         403: adminErrorResponseSchema,
         404: adminErrorResponseSchema,
         429: adminErrorResponseSchema,
+        500: adminUnavailableResponseSchema,
       },
     },
     handler: async (request, reply) => {
       const startedAt = Date.now();
-      const principal = await requirePrincipal(request, reply, 'getAdminUserWork');
+      const principal = await requirePrincipal(request, reply, 'getAdminUserWork', startedAt);
       if (!principal) return;
       try {
         const response = await service.getUserWork(request.params.userId, request.query.limit);
@@ -246,7 +290,15 @@ const adminModule: FastifyPluginAsyncZod<AdminModuleOptions> = async (app, optio
           reply.code(404);
           return { message: error.message, code: error.code };
         }
-        throw error;
+        return failRead(
+          request,
+          reply,
+          principal,
+          'getAdminUserWork',
+          startedAt,
+          error,
+          request.params.userId,
+        );
       }
     },
   });
