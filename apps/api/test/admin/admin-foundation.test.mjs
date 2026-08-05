@@ -44,10 +44,12 @@ const session = normalizeVerifiedSessionContext({
   azp: 'https://app.example.test',
   fva: [3, -1],
   reverification_id: 'rev_123',
+  crt_admin: 'ADMIN',
 }, 'user_admin');
 assert.ok(session);
 assert.equal(session.sessionId, 'sess_123');
 assert.deepEqual(session.factorVerificationAge, [3, -1]);
+assert.equal('adminClaim' in session, false, 'token-side administrator claims must not enter verified session state');
 assert.equal(normalizeVerifiedSessionContext({ sid: 'x' }, 'user_admin'), null);
 
 const policy = createAdminAuthorizationPolicy({
@@ -143,6 +145,7 @@ const repository = {
   }],
   loadImports: async () => ({
     queuedCount: 21,
+    oldestQueuedStartedAt: new Date('2026-08-04T19:50:00.000Z'),
     rows: [{
       id: 2,
       accountId: 5,
@@ -151,7 +154,7 @@ const repository = {
       gamesSeen: 0,
       gamesImported: 0,
       gamesFailed: 0,
-      startedAt: new Date('2026-08-04T19:50:00.000Z'),
+      startedAt: new Date('2026-08-04T19:59:30.000Z'),
       completedAt: null,
     }],
   }),
@@ -176,7 +179,15 @@ assert.equal(detail.sections.accounts.available, true);
 assert.equal('email' in detail.user, false);
 const work = await diagnostics.getUserWork(10, 20);
 assert.deepEqual(work.sections.jobs.items[0].warnings.map((item) => item.code), ['ONBOARDING_ANALYSIS_QUEUE_AGE_HIGH']);
-assert.deepEqual(work.sections.imports.warnings.map((item) => item.code), ['IMPORT_QUEUE_BACKLOG_HIGH']);
+assert.deepEqual(work.sections.imports.items[0].warnings, [], 'recent bounded rows must not fabricate old-age evidence');
+assert.deepEqual(
+  work.sections.imports.warnings.map((item) => item.code),
+  ['IMPORT_QUEUE_AGE_HIGH', 'IMPORT_QUEUE_BACKLOG_HIGH'],
+);
+assert.deepEqual(
+  work.sections.imports.warnings.map((item) => item.evidence.observed),
+  [600, 21],
+);
 assert.deepEqual(work.sections.preparation.items[0].warnings.map((item) => item.code), ['PREPARATION_RECONCILE_LAG']);
 await assert.rejects(() => diagnostics.getUserDetail(999), /not found/);
 
