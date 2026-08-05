@@ -18,6 +18,7 @@
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:backfill-position-keys": "ts-node --transpile-only src/scripts/backfill-position-keys.ts",
     "db:backfill-game-openings": "ts-node --transpile-only src/scripts/backfill-missing-game-openings.ts",
+    "activity:backfill-played-games": "ts-node --transpile-only src/scripts/backfill-played-game-activity.ts",
     "db:cleanup-position-analysis-lines": "ts-node --transpile-only src/scripts/cleanup-position-analysis-lines.ts",
     "db:rewrite-position-keys-128": "ts-node --transpile-only src/scripts/rewrite-position-keys-to-128-bit.ts",
     "opening-book:update": "ts-node --transpile-only src/scripts/update-opening-book.ts",
