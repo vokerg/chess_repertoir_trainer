@@ -1,6 +1,6 @@
 # ONB-022 — Build administrator authorization and read-only diagnostics foundation
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P1
 
@@ -157,6 +157,12 @@ Aggregate in PostgreSQL:
 
 ## Completion
 
-Review-ready: pending exact-head CI and final PR transition.
+Review-ready: 2026-08-05.
 
-Completed at: none.
+Validation: CI run #2022 passed on the complete implementation, self-review, query-plan, security-boundary, and documentation head before this task-state-only transition. The transition changes documentation only.
+
+Completion evidence: `north-star/onboarding/reports/ONB-022-2026-08-04-self-review.md`.
+
+Residual risks: distributed request-budget enforcement remains intentionally absent until API replica topology and shared limiter infrastructure are verified; Angular administrator diagnostics and every lifecycle mutation remain owned by ONB-023/024 and ONB-019/020/021.
+
+Completed at: none; reviewer acceptance and merge are still required for `DONE`.
