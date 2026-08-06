@@ -1,16 +1,18 @@
 # Repertoire Builder Program Status
 
-Last updated: 2026-08-03
+Last updated: 2026-08-06
 
 ## Current state
 
-**Program state:** the deterministic Repertoire Builder capability chain, static opening-knowledge foundation, focused Builder knowledge consumer and bounded opening-grounded game-review consumer are complete. RB-016 remains independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
+**Program state:** the deterministic Repertoire Builder capability chain, static opening-knowledge foundation, focused Builder knowledge consumer and bounded opening-grounded game-review consumer are complete. RB-025 is now claimed for opening-knowledge coverage research and editorial-tooling foundations. RB-016 remains independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
 
 **Runtime on `main`:** peer population/level resolution, deterministic opening classification, Player Chess Profile calculation and `/progress/profile`, versioned repertoire targets, profile-derived editable defaults, deterministic candidate evidence/ranking, bounded session/queue semantics, the authenticated Builder workbench, mandatory course preview/apply, exact existing-course entry points, static side-aware opening knowledge, focused target-side knowledge presentation, and the optional disabled-by-default generated interpretation prototypes are integrated.
 
-**RB-024 completion:** PR #268 grounds the existing explicit AI game review with bounded user-side reviewed opening knowledge, validates structured plan references, constructs public opening prose from reviewed knowledge rather than provider prose, and verifies stored-review input identity before reuse. It adds no automatic provider call, ranking, Builder state, course write or runtime opening research.
+**Opening-knowledge baseline:** `OpeningKnowledgeService` contains 25 ordered reviewed rules. The RB-022 generated audit reported 1,352 `AVAILABLE`, 299 `PARTIAL` and 2,082 `UNAVAILABLE` entries across the 3,733-entry generated opening book. Classification match coverage and strategic-knowledge completeness remain separate measures.
 
-**Execution ownership:** RB-021 / #240 is complete through PR #244. RB-022 / #241 is complete through PR #255. RB-023 / #242 is complete through PR #262. RB-024 / #243 is complete through PR #268. Program tracker: #105.
+**RB-025 execution:** issue #290 is claimed on `rb-025/issue-290-coverage-scale-research`. The first delivery covers deterministic coverage/uncertainty audits, independent White/Black completeness, prioritized backlog design, editorial workflow and a bounded batch-manifest format. Bulk runtime prose, classification changes, ranking changes, persistence and new endpoints are excluded from the claim.
+
+**Execution ownership:** RB-021 / #240 is complete through PR #244. RB-022 / #241 is complete through PR #255. RB-023 / #242 is complete through PR #262. RB-024 / #243 is complete through PR #268. RB-025 / #290 is claimed. Program tracker: #105.
 
 ## Completed capability chain
 
@@ -24,9 +26,10 @@ Last updated: 2026-08-03
 
 ## Active and blocked work
 
+- **RB-025:** claimed for opening-knowledge coverage research and tooling.
 - **RB-016:** independently blocked on real adoption and outcome evidence.
 
-No additional dependency-satisfied Repertoire Builder task is currently queued.
+No other dependency-satisfied Repertoire Builder task is currently queued.
 
 ## Locked boundaries preserved
 
@@ -36,14 +39,17 @@ No additional dependency-satisfied Repertoire Builder task is currently queued.
 - Generated interpretation remains optional, explicit, gated and non-authoritative.
 - Public opening-assessment theory is assembled from reviewed knowledge and validated structured claims, not free-form provider prose.
 - RB-017 remains a research fixture rather than a production traps capability.
+- RB-025 must not turn nominal rule matching into a claim of semantic completeness.
 
 ## Residual risks
 
 - Strategic opening prose can overgeneralize and requires source/revision governance.
-- Initial knowledge coverage is intentionally incomplete and must remain weighted by actual games separately from generated-name count.
+- Current knowledge status is global while Builder consumes one selected side; audit work must distinguish overall completeness from White/Black usefulness.
+- Existing classification audits do not yet report every side-specific unknown dimension independently.
+- Initial knowledge coverage remains incomplete and must remain weighted by actual games separately from generated-name count.
 - RB-024 has deterministic client/service coverage but no live configured-provider validation in the execution environment.
 - RB-016 outcome claims remain unavailable until real usage evidence exists.
 
 ## Queue recommendation
 
-Do not start RB-016 before its usage gate is genuinely satisfied. New Repertoire Builder work requires new planning or newly available outcome evidence.
+Proceed with the claimed RB-025 research/tooling slice. Do not start bulk corpus expansion until its prioritized backlog, coverage targets and editorial workflow are reviewed. Do not start RB-016 before its usage gate is genuinely satisfied.
