@@ -38,6 +38,7 @@
   --ui-action-strong: #1f7865;
   --ui-action-soft: #dff3ed;
   --ui-action-ink: #071713;
+  --ui-focus-outline: #1f7865;
   --ui-focus-ring: rgba(31, 120, 101, 0.38);
 
   /* Semantic status roles remain distinct from the brand signal. */
@@ -92,12 +93,9 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--ui-focus-ring);
 }
 
-.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible,
-.app-shell a[href]:focus-visible,
-.app-shell [role="button"]:focus-visible,
-.app-shell [role="link"]:focus-visible,
-.app-shell [tabindex]:not([tabindex="-1"]):focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"])):not(.clerk-user-button *):focus-visible,
+.app-shell :where(a[href], [role="button"], [role="link"], [tabindex="0"]):not(.clerk-user-button *):focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
 }
 
