@@ -21,9 +21,23 @@ describe('home today activity view model', () => {
 
     expect(view?.completedGoals).toBe(1);
     expect(view?.completionPercent).toBe(20);
+    expect(view?.goals[1].progressValue).toBe(2);
     expect(view?.goals[1].progressPercent).toBe(40);
     expect(view?.goals[1].completed).toBe(false);
     expect(view?.hasProgress).toBe(true);
+  });
+
+  it('caps semantic progress at the target while retaining the actual server count', () => {
+    const response = todayResponse([
+      { ...GOALS[1], current: 8, completed: true },
+    ]);
+
+    const view = buildHomeTodayActivity(response);
+
+    expect(view?.goals[0].current).toBe(8);
+    expect(view?.goals[0].target).toBe(5);
+    expect(view?.goals[0].progressValue).toBe(5);
+    expect(view?.goals[0].progressPercent).toBe(100);
   });
 
   it('recognizes the positive all-complete state from server booleans', () => {
