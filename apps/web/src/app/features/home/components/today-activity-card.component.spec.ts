@@ -31,6 +31,19 @@ describe('TodayActivityCardComponent', () => {
     expect(overall.getAttribute('aria-valuemax')).toBe('2');
   });
 
+  it('keeps over-target progressbar semantics within the declared range', () => {
+    fixture.componentRef.setInput('activity', activity(true));
+    fixture.detectChanges();
+
+    const goalProgress = fixture.nativeElement.querySelector(
+      '[aria-label="Train repertoire lines progress"]',
+    ) as HTMLElement;
+
+    expect(goalProgress.getAttribute('aria-valuenow')).toBe('5');
+    expect(goalProgress.getAttribute('aria-valuemax')).toBe('5');
+    expect(fixture.nativeElement.querySelector('.goal-list')?.textContent).toContain('7 / 5');
+  });
+
   it('shows the positive all-done state when every server goal is complete', () => {
     fixture.componentRef.setInput('activity', activity(true));
     fixture.detectChanges();
@@ -58,14 +71,16 @@ function activity(allCompleted: boolean): HomeTodayActivity {
         current: 1,
         target: 1,
         completed: true,
+        progressValue: 1,
         progressPercent: 100,
       },
       {
         id: 'TRAIN_REPERTOIRE_LINES',
         label: 'Train repertoire lines',
-        current: allCompleted ? 5 : 2,
+        current: allCompleted ? 7 : 2,
         target: 5,
         completed: allCompleted,
+        progressValue: allCompleted ? 5 : 2,
         progressPercent: allCompleted ? 100 : 40,
       },
     ],
