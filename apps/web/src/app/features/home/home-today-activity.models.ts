@@ -6,6 +6,7 @@ export interface HomeTodayGoal {
   current: number;
   target: number;
   completed: boolean;
+  progressValue: number;
   progressPercent: number;
 }
 
