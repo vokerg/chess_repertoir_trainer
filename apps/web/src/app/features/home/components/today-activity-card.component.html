@@ -79,7 +79,7 @@
                 [attr.aria-label]="goal.label + ' progress'"
                 aria-valuemin="0"
                 [attr.aria-valuemax]="goal.target"
-                [attr.aria-valuenow]="goal.current"
+                [attr.aria-valuenow]="goal.progressValue"
               >
                 <span [style.width.%]="goal.progressPercent"></span>
               </div>
