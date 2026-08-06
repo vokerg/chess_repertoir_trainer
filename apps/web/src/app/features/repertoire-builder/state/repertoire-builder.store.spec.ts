@@ -4,8 +4,10 @@ import type {
   CandidateDecisionResponse,
   CandidateDecisionRole,
 } from '@chess-trainer/contracts/candidate-decision';
-import { Subject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { PositionAnalysisCacheService } from '../../../shared/chess/engine/position-analysis-cache.service';
+import type { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { RepertoireBuilderApiService } from '../data-access/repertoire-builder-api.service';
 import type { RepertoireBuilderCourseEndingLaunch } from '../helpers/repertoire-builder-launch';
 import { defaultRepertoireBuilderSetup } from '../helpers/repertoire-builder-target';
@@ -58,9 +60,10 @@ function responseFixture(
     targetId: '00000000-0000-4000-8000-000000000010',
     decisionRole: role,
     fen: role === 'USER_MOVE' ? START_FEN : AFTER_E4,
-    normalizedFen: role === 'USER_MOVE'
-      ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -'
-      : 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -',
+    normalizedFen:
+      role === 'USER_MOVE'
+        ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -'
+        : 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -',
     sideToMove: role === 'USER_MOVE' ? 'WHITE' : 'BLACK',
     legalMoveCount: 20,
     returnedCandidateCount: candidates.length,
@@ -110,9 +113,13 @@ function candidateFixture(input: {
     },
     reasonCodes: ['TARGET_CHARACTER_MATCH'],
     warningCodes: [],
-    coverage: input.contributionPercent === undefined
-      ? null
-      : { contributionPercent: input.contributionPercent, cumulativePercent: input.contributionPercent },
+    coverage:
+      input.contributionPercent === undefined
+        ? null
+        : {
+            contributionPercent: input.contributionPercent,
+            cumulativePercent: input.contributionPercent,
+          },
     evidence: {
       engine: {
         status: 'AVAILABLE',
@@ -161,14 +168,16 @@ function candidateFixture(input: {
           version: '2026-08-knowledge-v1',
           shortDescription: { text: `${input.moveSan} opening description`, confidence: 'HIGH' },
           strategicSummary: { text: `${input.moveSan} strategic summary`, confidence: 'MEDIUM' },
-          plans: [{
-            id: knowledgePlanId,
-            title: `${input.moveSan} plan`,
-            summary: `Plan for ${input.moveSan}`,
-            conditions: [],
-            caveats: [],
-            confidence: 'MEDIUM',
-          }],
+          plans: [
+            {
+              id: knowledgePlanId,
+              title: `${input.moveSan} plan`,
+              summary: `Plan for ${input.moveSan}`,
+              conditions: [],
+              caveats: [],
+              confidence: 'MEDIUM',
+            },
+          ],
           matchedRuleIds: [`knowledge-${input.moveUci}`],
           sourceIds: ['project-editorial-rb-022'],
         },
@@ -187,6 +196,13 @@ function candidateFixture(input: {
 
 describe('RepertoireBuilderStore', () => {
   let api: jasmine.SpyObj<RepertoireBuilderApiService>;
+  let positionAnalysis: {
+    state$: BehaviorSubject<EngineAnalysis>;
+    getOrAnalyzeRichPosition: jasmine.Spy;
+    getOrAnalyzeCompactGamePosition: jasmine.Spy;
+    flushPendingPositionAnalysisSaves: jasmine.Spy;
+    stop: jasmine.Spy;
+  };
   let store: RepertoireBuilderStore;
 
   const e4 = candidateFixture({
@@ -209,6 +225,21 @@ describe('RepertoireBuilderStore', () => {
       'getCandidates',
       'getPopulation',
     ]);
+    positionAnalysis = {
+      getOrAnalyzeRichPosition: jasmine.createSpy('getOrAnalyzeRichPosition'),
+      getOrAnalyzeCompactGamePosition: jasmine.createSpy('getOrAnalyzeCompactGamePosition'),
+      flushPendingPositionAnalysisSaves: jasmine.createSpy('flushPendingPositionAnalysisSaves'),
+      stop: jasmine.createSpy('stop'),
+      state$: new BehaviorSubject<EngineAnalysis>({
+        fen: '',
+        running: false,
+        ready: false,
+        error: null,
+        bestMove: null,
+        lines: [],
+      }),
+    };
+    positionAnalysis.flushPendingPositionAnalysisSaves.and.resolveTo();
     const auth = {
       initialize: jasmine.createSpy('initialize').and.resolveTo(),
       appUser: () => ({
@@ -230,6 +261,7 @@ describe('RepertoireBuilderStore', () => {
         RepertoireBuilderStore,
         { provide: RepertoireBuilderApiService, useValue: api },
         { provide: AuthService, useValue: auth },
+        { provide: PositionAnalysisCacheService, useValue: positionAnalysis },
       ],
     });
     store = TestBed.inject(RepertoireBuilderStore);
@@ -244,10 +276,12 @@ describe('RepertoireBuilderStore', () => {
     expect(store.activeBranch()?.role).toBe('USER_MOVE');
     expect(store.candidateResponse()?.candidates[0].moveUci).toBe('e2e4');
     expect(api.getPopulation).not.toHaveBeenCalled();
-    expect(api.getCandidates).toHaveBeenCalledWith(jasmine.objectContaining({
-      decisionRole: 'USER_MOVE',
-      candidateLimit: 6,
-    }));
+    expect(api.getCandidates).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        decisionRole: 'USER_MOVE',
+        candidateLimit: 6,
+      }),
+    );
   });
 
   it('keeps focused opening knowledge attached to the selected candidate', async () => {
@@ -269,6 +303,66 @@ describe('RepertoireBuilderStore', () => {
     expect(store.previewCandidate()?.evidence.opening.knowledge.plans[0].id).toBe('d4-plan');
   });
 
+  it('calculates and persists missing candidate engine impact in the browser', async () => {
+    const d4 = candidateFixture({
+      moveUci: 'd2d4',
+      moveSan: 'd4',
+      resultingFen: AFTER_D4,
+      rank: 2,
+    });
+    d4.evidence.engine = {
+      status: 'INSUFFICIENT',
+      depth: null,
+      multipv: null,
+      scoreCpForTarget: null,
+      mateForTarget: null,
+      objectiveDeltaCp: null,
+      pvUci: [],
+    };
+    positionAnalysis.getOrAnalyzeRichPosition.and.resolveTo({
+      fen: START_FEN,
+      bestMoveUci: 'e2e4',
+      bestScoreCpWhite: 25,
+      lines: [
+        {
+          moveUci: 'e2e4',
+          scoreCpWhite: 25,
+          depth: 18,
+          pvUci: ['e2e4'],
+        },
+      ],
+      fromCache: true,
+    });
+    positionAnalysis.getOrAnalyzeCompactGamePosition.and.resolveTo({
+      fen: AFTER_D4,
+      bestMoveUci: 'd7d5',
+      bestScoreCpWhite: -15,
+      lines: [{ depth: 12, moveUci: 'd7d5', scoreCpWhite: -15, pvUci: ['d7d5'] }],
+      fromCache: false,
+    });
+    api.getCandidates.and.returnValue(of(responseFixture('USER_MOVE', [e4, d4])));
+
+    await store.start(explicitSetup());
+    await flushAsync();
+
+    expect(positionAnalysis.getOrAnalyzeRichPosition).toHaveBeenCalledWith(START_FEN, {
+      keepAlive: true,
+    });
+    expect(positionAnalysis.getOrAnalyzeCompactGamePosition).toHaveBeenCalledWith(AFTER_D4, {
+      keepAlive: true,
+    });
+    expect(positionAnalysis.flushPendingPositionAnalysisSaves).toHaveBeenCalled();
+    expect(store.engineImpacts()['d2d4']).toEqual(
+      jasmine.objectContaining({
+        status: 'AVAILABLE',
+        source: 'BROWSER',
+        persistence: 'SAVED',
+        scoreCpForTarget: -15,
+        objectiveDeltaCp: 40,
+      }),
+    );
+  });
+
   it('starts at the exact Course ending and includes the observed continuation', async () => {
     api.getCandidates.and.returnValue(of(responseFixture('OPPONENT_RESPONSE', [e5])));
 
@@ -282,11 +376,13 @@ describe('RepertoireBuilderStore', () => {
     });
     expect(store.activeBranch()?.role).toBe('OPPONENT_RESPONSE');
     expect(store.previewCandidate()?.moveUci).toBe('e7e5');
-    expect(api.getCandidates).toHaveBeenCalledWith(jasmine.objectContaining({
-      fen: AFTER_E4,
-      decisionRole: 'OPPONENT_RESPONSE',
-      includeMoveUci: 'e7e5',
-    }));
+    expect(api.getCandidates).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        fen: AFTER_E4,
+        decisionRole: 'OPPONENT_RESPONSE',
+        includeMoveUci: 'e7e5',
+      }),
+    );
   });
 
   it('accepts a user move and advances to opponent-response coverage', async () => {
@@ -321,6 +417,17 @@ describe('RepertoireBuilderStore', () => {
     expect(store.activeBranch()?.status).toBe('PENDING');
   });
 
+  it('does not ignore the only branch and leave the draft without a useful next action', async () => {
+    api.getCandidates.and.returnValue(of(responseFixture('USER_MOVE', [e4])));
+    await store.start(explicitSetup());
+
+    await store.ignoreActiveBranch();
+
+    expect(store.activeBranch()?.status).toBe('PENDING');
+    expect(store.queue()).toHaveSize(1);
+    expect(store.commandError()).toBe('Abandon the draft instead of ignoring its only branch.');
+  });
+
   it('reloads candidates with a legal manual board move', async () => {
     const d4 = candidateFixture({
       moveUci: 'd2d4',
@@ -338,9 +445,11 @@ describe('RepertoireBuilderStore', () => {
 
     await store.selectBoardMove('d2d4');
 
-    expect(api.getCandidates.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
-      includeMoveUci: 'd2d4',
-    }));
+    expect(api.getCandidates.calls.mostRecent().args[0]).toEqual(
+      jasmine.objectContaining({
+        includeMoveUci: 'd2d4',
+      }),
+    );
     expect(store.previewCandidate()?.moveUci).toBe('d2d4');
     expect(store.previewCandidate()?.evidence.opening.knowledge.plans[0].id).toBe('d4-plan');
   });
@@ -366,3 +475,7 @@ describe('RepertoireBuilderStore', () => {
     expect(store.candidateResponse()?.generatedAt).toBe('2026-07-29T08:20:00.000Z');
   });
 });
+
+function flushAsync(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}

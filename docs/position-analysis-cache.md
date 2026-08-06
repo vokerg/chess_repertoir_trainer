@@ -1,6 +1,6 @@
 # Position Analysis Cache
 
-Position analysis stores reusable engine results for a normalized chess position. It is shared by browser free analysis, browser imported-game analysis, and backend Stockfish batch analysis.
+Position analysis stores reusable engine results for a normalized chess position. It is shared by browser free analysis, Repertoire Builder candidate-impact analysis, browser imported-game analysis, and backend Stockfish batch analysis.
 
 ## Stored Data
 
@@ -26,6 +26,8 @@ Browser imported-game analysis first bulk-lookups known cached positions with `P
 Missing positions are analyzed with browser Stockfish. Results are placed into the in-memory cache immediately so classification can continue with full transient lines. Position-analysis saves are deferred and deduped by normalized FEN, then compact-persisted in chunks through `POST /api/position-analysis/bulk-store`.
 
 Browser free/opening/game-detail/line-editor interactive analysis uses rich persistence and a `lines` cache requirement. A compact row is not sufficient for interactive analysis that requested engine lines; the browser re-runs the engine and rich-saves the resulting lines. Rich cache reuse is depth-aware: the cache must have the required legal PV lines, and the best line must have depth 17 or deeper for the current depth-18 interactive setting. Opening analysis no longer embeds stored position analysis in its core response; the frontend cache service performs its normal `GET /api/position-analysis?fen=...` lookup when an interactive engine panel needs a seed.
+
+Repertoire Builder keeps the authenticated candidate response and its stored engine evidence authoritative for the current rank. When a returned candidate has no usable stored engine value, the page-scoped Builder store separately requests one awaited rich analysis for the decision position, reuses matching MultiPV lines, and sequentially analyzes any remaining candidate-result positions with the compact depth-12 profile. New compact results are flushed through the existing bulk-store path before the UI labels them saved. These browser results power the board eval bar and the explicitly separate candidate-impact presentation; they do not rewrite or rerank the current candidate response.
 
 Per-game ply score loss and classification are stored separately with the existing batched `PATCH /api/imported-games/:gameId/plies/analysis` request. The game analysis run is created only after pending position-analysis saves have been flushed.
 

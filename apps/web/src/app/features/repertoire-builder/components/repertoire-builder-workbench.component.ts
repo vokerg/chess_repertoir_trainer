@@ -5,15 +5,16 @@ import type {
   CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
 import type { RepertoireTarget } from '@chess-trainer/contracts/repertoire-target';
-import type {
-  BuilderBranch,
-  BuilderSession,
-  BuilderSessionPreview,
-} from 'chess-domain';
+import type { BuilderBranch, BuilderSession, BuilderSessionPreview } from 'chess-domain';
 import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
+import { EngineEvalBarComponent } from '../../../shared/chess/engine/engine-eval-bar.component';
+import type { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import type { UiShellAction } from '../../../shared/ui/ui-shell.model';
 import {
   REPERTOIRE_BUILDER_DECISION_LIMIT,
+  type RepertoireBuilderEngineImpact,
+  type RepertoireBuilderPositionEvaluation,
   type RepertoireBuilderPreviewRow,
   type RepertoireBuilderSourceItem,
 } from '../state/repertoire-builder.models';
@@ -26,7 +27,7 @@ export interface RepertoireBuilderQueueMove {
 @Component({
   selector: 'app-repertoire-builder-workbench',
   standalone: true,
-  imports: [ChessgroundBoardComponent, PanelComponent],
+  imports: [ChessgroundBoardComponent, EngineEvalBarComponent, PanelComponent],
   templateUrl: './repertoire-builder-workbench.component.html',
   styleUrls: [
     './repertoire-builder-workbench.component.css',
@@ -66,6 +67,9 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly candidateExplanationError = input<string | null>(null);
   readonly candidateExplanation = input<AiBuilderCandidateExplanationResponse | null>(null);
   readonly candidateExplanationComparisonMoveUci = input<string | null>(null);
+  readonly engineAnalysis = input.required<EngineAnalysis>();
+  readonly engineImpacts = input<Readonly<Record<string, RepertoireBuilderEngineImpact>>>({});
+  readonly activePositionEvaluation = input<RepertoireBuilderPositionEvaluation | null>(null);
 
   readonly boardMove = output<string>();
   readonly candidateSelected = output<string>();
@@ -79,20 +83,51 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly staleBranchRestarted = output<string>();
   readonly queueReordered = output<RepertoireBuilderQueueMove>();
   readonly sessionFinished = output<void>();
-  readonly sessionAbandoned = output<void>();
   readonly newDraftRequested = output<void>();
   readonly candidateExplanationRequested = output<void>();
   readonly candidateExplanationComparisonChanged = output<string | null>();
 
   protected readonly decisionLimit = REPERTOIRE_BUILDER_DECISION_LIMIT;
   private readonly boardEntryMode = signal(false);
-  protected readonly boardFen = computed(() => (
-    this.boardEntryMode() ? this.activeBranch()?.fen ?? this.displayedFen() : this.displayedFen()
-  ));
+  protected readonly boardFen = computed(() =>
+    this.boardEntryMode() ? (this.activeBranch()?.fen ?? this.displayedFen()) : this.displayedFen(),
+  );
   protected readonly boardCanMove = computed(() => this.boardEntryMode() && this.boardMovable());
+  protected readonly boardPanelActions = computed<readonly UiShellAction[]>(() => {
+    if (this.activeBranch()?.role !== 'USER_MOVE' || !this.previewCandidate()) return [];
+    return [
+      {
+        id: 'toggle-board-entry',
+        label: this.boardEntryMode() ? 'Show suggestion' : 'Enter move',
+        kind: 'toggle',
+        pressed: this.boardEntryMode(),
+        run: () => this.boardEntryMode.update((enabled) => !enabled),
+      },
+    ];
+  });
+  protected readonly canIgnoreActiveBranch = computed(
+    () => (this.session()?.branches.length ?? 0) > 1,
+  );
+  protected readonly decisionPanelTitle = computed(() => {
+    const role = this.activeBranch()?.role;
+    if (role === 'OPPONENT_RESPONSE') return 'Opponent responses';
+    if (role === 'USER_MOVE') return 'Your move';
+    return 'Draft ready';
+  });
+  protected readonly previewEngineImpact = computed(() => {
+    const moveUci = this.previewCandidate()?.moveUci;
+    return moveUci ? (this.engineImpacts()[moveUci] ?? null) : null;
+  });
+  protected readonly boardEvaluation = computed(() => {
+    if (this.boardEntryMode()) return this.activePositionEvaluation();
+    const impact = this.previewEngineImpact();
+    return impact?.status === 'AVAILABLE' ? impact : null;
+  });
   protected readonly comparisonCandidates = computed(() => {
     const selectedMoveUci = this.previewCandidate()?.moveUci;
-    return this.response()?.candidates.filter((candidate) => candidate.moveUci !== selectedMoveUci) ?? [];
+    return (
+      this.response()?.candidates.filter((candidate) => candidate.moveUci !== selectedMoveUci) ?? []
+    );
   });
 
   protected isResponseSelected(moveUci: string): boolean {
@@ -106,10 +141,6 @@ export class RepertoireBuilderWorkbenchComponent {
   protected previewMove(moveUci: string): void {
     this.boardEntryMode.set(false);
     this.candidateSelected.emit(moveUci);
-  }
-
-  protected enterBoardMoveMode(): void {
-    this.boardEntryMode.set(true);
   }
 
   protected handleBoardMove(moveUci: string): void {
@@ -139,10 +170,65 @@ export class RepertoireBuilderWorkbenchComponent {
   }
 
   protected candidateEngineLabel(candidate: CandidateDecisionCandidate): string {
+    const impact = this.engineImpacts()[candidate.moveUci];
+    if (impact?.status === 'QUEUED' || impact?.status === 'ANALYZING') return 'Analyzing…';
+    if (impact?.status === 'AVAILABLE') {
+      return this.engineScoreLabel(impact.scoreCpForTarget, impact.mateForTarget);
+    }
     const engine = candidate.evidence.engine;
-    if (engine.mateForTarget !== null) return `Mate ${engine.mateForTarget}`;
-    if (engine.scoreCpForTarget === null) return 'No stored score';
-    const pawns = engine.scoreCpForTarget / 100;
+    return this.engineScoreLabel(engine.scoreCpForTarget, engine.mateForTarget);
+  }
+
+  protected candidateEngineDetail(candidate: CandidateDecisionCandidate): string {
+    const impact = this.engineImpacts()[candidate.moveUci];
+    if (!impact) return 'stored engine';
+    if (impact.status === 'QUEUED') return 'browser engine queued';
+    if (impact.status === 'ANALYZING') return 'browser engine running';
+    if (impact.status === 'FAILED') return 'engine unavailable';
+    const source = this.engineImpactSourceLabel(impact);
+    return impact.objectiveDeltaCp === null
+      ? source
+      : `${source} · ${impact.objectiveDeltaCp} cp from best`;
+  }
+
+  protected engineImpactSummary(impact: RepertoireBuilderEngineImpact): string {
+    if (impact.status === 'QUEUED') return 'Queued behind the other candidate positions.';
+    if (impact.status === 'ANALYZING')
+      return 'Stockfish is evaluating this resulting position in your browser.';
+    if (impact.status === 'FAILED')
+      return impact.error ?? 'Browser Stockfish analysis was unavailable.';
+    const score = this.engineScoreLabel(impact.scoreCpForTarget, impact.mateForTarget);
+    const source =
+      impact.source === 'BROWSER'
+        ? impact.persistence === 'SAVED'
+          ? 'Calculated in this browser and persisted for reuse.'
+          : impact.persistence === 'FAILED'
+            ? 'Calculated in this browser, but persistence failed.'
+            : 'Calculated in this browser and queued for persistence.'
+        : 'Loaded from persisted position analysis.';
+    const delta =
+      impact.objectiveDeltaCp === null
+        ? ''
+        : ` ${impact.objectiveDeltaCp} centipawns from the safest evaluated candidate.`;
+    return `${score} for the repertoire side. ${source}${delta}`;
+  }
+
+  protected engineImpactStatus(impact: RepertoireBuilderEngineImpact): string {
+    if (impact.status !== 'AVAILABLE') return this.statusLabel(impact.status);
+    return this.statusLabel(this.engineImpactSourceLabel(impact));
+  }
+
+  private engineImpactSourceLabel(impact: RepertoireBuilderEngineImpact): string {
+    if (impact.source !== 'BROWSER') return 'stored';
+    if (impact.persistence === 'SAVED') return 'browser · saved';
+    if (impact.persistence === 'FAILED') return 'browser · save failed';
+    return 'browser · saving';
+  }
+
+  private engineScoreLabel(scoreCpForTarget: number | null, mateForTarget: number | null): string {
+    if (mateForTarget !== null) return `Mate ${mateForTarget}`;
+    if (scoreCpForTarget === null) return 'No score';
+    const pawns = scoreCpForTarget / 100;
     return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(2)}`;
   }
 }

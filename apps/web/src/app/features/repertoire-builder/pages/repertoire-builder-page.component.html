@@ -1,10 +1,5 @@
 <section class="repertoire-builder-page">
-  <app-page-header
-    title="Repertoire builder"
-    subtitle="Build one bounded repertoire slice with explainable evidence and explicit branch control. Drafts are route-local and are not saved after refresh."
-    [stats]="headerStats()"
-    [actions]="headerActions()"
-  />
+  <app-page-header title="Repertoire builder" [stats]="headerStats()" [actions]="headerActions()" />
 
   @if (launchError(); as error) {
     <p class="launch-error" role="alert">{{ error }}</p>
@@ -23,7 +18,10 @@
           </div>
           <div>
             <span class="metric-label">Suggested intent</span>
-            <strong>{{ launch.setup.persona.toLowerCase() }} · {{ launch.setup.maximumTheoryBurden.toLowerCase() }} theory</strong>
+            <strong
+              >{{ launch.setup.persona.toLowerCase() }} ·
+              {{ launch.setup.maximumTheoryBurden.toLowerCase() }} theory</strong
+            >
           </div>
           <div>
             <span class="metric-label">Profile evidence</span>
@@ -36,7 +34,9 @@
         </div>
         <p class="launch-filter-summary">{{ launch.evidenceSummary }}</p>
         <p class="launch-boundary">
-          Consequence: these values are defaults only. Editing them records explicit target overrides; changing side or discarding the suggestion removes profile provenance without changing the profile.
+          Consequence: these values are defaults only. Editing them records explicit target
+          overrides; changing side or discarding the suggestion removes profile provenance without
+          changing the profile.
         </p>
         <div class="launch-actions">
           @if (!store.session()) {
@@ -51,10 +51,7 @@
       </div>
     </app-panel>
   } @else if (courseLaunchContext(); as launch) {
-    <app-panel
-      [title]="sourceTitle(launch)"
-      [subtitle]="sourceSubtitle(launch)"
-    >
+    <app-panel [title]="sourceTitle(launch)" [subtitle]="sourceSubtitle(launch)">
       <div class="launch-context">
         <div class="launch-facts">
           <div>
@@ -115,6 +112,9 @@
     [candidateExplanationError]="candidateExplanationStore.error()"
     [candidateExplanation]="candidateExplanationStore.response()"
     [candidateExplanationComparisonMoveUci]="candidateExplanationStore.comparisonMoveUci()"
+    [engineAnalysis]="store.engineAnalysis()"
+    [engineImpacts]="store.engineImpacts()"
+    [activePositionEvaluation]="store.activePositionEvaluation()"
     (boardMove)="store.selectBoardMove($event)"
     (candidateSelected)="store.selectCandidate($event)"
     (responseToggled)="store.toggleResponse($event)"
@@ -127,7 +127,6 @@
     (staleBranchRestarted)="store.restartStaleBranch($event)"
     (queueReordered)="reorderQueue($event)"
     (sessionFinished)="store.finishSession()"
-    (sessionAbandoned)="store.abandonSession()"
     (newDraftRequested)="startNewDraft()"
     (candidateExplanationRequested)="requestCandidateExplanation()"
     (candidateExplanationComparisonChanged)="setCandidateExplanationComparison($event)"

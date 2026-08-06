@@ -12,6 +12,7 @@
         <a
           class="ui-shell-action"
           [class.disabled]="action.disabled"
+          [class.danger]="action.tone === 'danger'"
           [attr.aria-disabled]="action.disabled || null"
           [routerLink]="action.disabled ? null : action.link"
         >
@@ -24,6 +25,7 @@
           [class.ui-shell-toggle]="action.kind === 'toggle'"
           [class.active]="action.kind === 'toggle' && action.pressed"
           [class.disabled]="action.disabled"
+          [class.danger]="action.tone === 'danger'"
           [attr.aria-pressed]="action.kind === 'toggle' ? action.pressed : null"
           [disabled]="action.disabled"
           (click)="run(action)"

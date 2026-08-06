@@ -56,3 +56,29 @@ export interface RepertoireBuilderSourceItem {
   status: string;
   detail: string | null;
 }
+
+export type RepertoireBuilderEngineImpactStatus = 'QUEUED' | 'ANALYZING' | 'AVAILABLE' | 'FAILED';
+
+export interface RepertoireBuilderEngineImpact {
+  moveUci: string;
+  status: RepertoireBuilderEngineImpactStatus;
+  source: 'STORED' | 'BROWSER' | null;
+  persistence: 'STORED' | 'PENDING' | 'SAVED' | 'FAILED' | null;
+  depth: number | null;
+  scoreCpForTarget: number | null;
+  mateForTarget: number | null;
+  scoreCpWhite: number | null;
+  mateWhite: number | null;
+  objectiveDeltaCp: number | null;
+  error: string | null;
+}
+
+export interface RepertoireBuilderPositionEvaluation {
+  source: 'STORED' | 'BROWSER';
+  persistence: 'STORED' | 'PENDING' | 'SAVED' | 'FAILED';
+  depth: number | null;
+  scoreCpForTarget: number | null;
+  mateForTarget: number | null;
+  scoreCpWhite: number | null;
+  mateWhite: number | null;
+}

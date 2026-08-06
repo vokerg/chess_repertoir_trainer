@@ -75,10 +75,12 @@ export class RepertoireBuilderPageComponent implements OnInit {
   protected readonly courseStore = inject(RepertoireBuilderCourseStore);
   protected readonly launchContext = signal<RepertoireBuilderLaunchContext | null>(null);
   protected readonly launchError = signal<string | null>(null);
-  protected readonly courseLaunchContext = computed<RepertoireBuilderCourseFindingLaunch | null>(() => {
-    const launch = this.launchContext();
-    return isRepertoireBuilderCourseFindingLaunch(launch) ? launch : null;
-  });
+  protected readonly courseLaunchContext = computed<RepertoireBuilderCourseFindingLaunch | null>(
+    () => {
+      const launch = this.launchContext();
+      return isRepertoireBuilderCourseFindingLaunch(launch) ? launch : null;
+    },
+  );
   protected readonly profileLaunchContext = computed<RepertoireBuilderProfileLaunch | null>(() => {
     const launch = this.launchContext();
     return isRepertoireBuilderProfileLaunch(launch) ? launch : null;
@@ -144,6 +146,14 @@ export class RepertoireBuilderPageComponent implements OnInit {
         run: () => void this.openCourseReview(),
       });
     }
+    if (!this.store.isCompleted() && !this.store.isAbandoned()) {
+      actions.push({
+        id: 'abandon-draft',
+        label: 'Abandon draft',
+        tone: 'danger',
+        run: () => this.store.abandonSession(),
+      });
+    }
     actions.push(
       {
         id: 'restart-setup',
@@ -183,9 +193,10 @@ export class RepertoireBuilderPageComponent implements OnInit {
   }
 
   protected evidenceLabel(launch: RepertoireBuilderCourseFindingLaunch): string {
-    const threshold = launch.source === 'COURSE_ENDING'
-      ? `minimum ${launch.minGames}`
-      : `minimum overlap ${launch.minCoveredPlies} plies`;
+    const threshold =
+      launch.source === 'COURSE_ENDING'
+        ? `minimum ${launch.minGames}`
+        : `minimum overlap ${launch.minCoveredPlies} plies`;
     return `${launch.observedGameCount} games · ${threshold} · ${launch.results.win}W ${launch.results.draw}D ${launch.results.loss}L`;
   }
 

@@ -8,6 +8,7 @@ interface UiShellActionBase {
   id: string;
   label: string;
   disabled?: boolean;
+  tone?: 'default' | 'danger';
 }
 
 export type UiShellAction =

@@ -4,7 +4,7 @@ import { EngineAnalysis, EngineLine } from './stockfish-analysis.service';
 
 type DisplayedEval =
   | { kind: 'engine'; line: EngineLine; fen: string }
-  | { kind: 'saved'; scoreCpWhite: number };
+  | { kind: 'saved'; scoreCpWhite: number | null; mateWhite: number | null };
 
 @Component({
   selector: 'app-engine-eval-bar',
@@ -91,6 +91,7 @@ export class EngineEvalBarComponent implements OnChanges {
   @Input() fitHeight = false;
   @Input() holdPrevious = true;
   @Input() savedScoreCpWhite: number | null | undefined = null;
+  @Input() savedMateWhite: number | null | undefined = null;
   @Input() title = 'Stockfish evaluation';
 
   private displayedEval: DisplayedEval | null = null;
@@ -102,8 +103,12 @@ export class EngineEvalBarComponent implements OnChanges {
       return;
     }
 
-    if (typeof this.savedScoreCpWhite === 'number') {
-      this.displayedEval = { kind: 'saved', scoreCpWhite: this.savedScoreCpWhite };
+    if (typeof this.savedScoreCpWhite === 'number' || typeof this.savedMateWhite === 'number') {
+      this.displayedEval = {
+        kind: 'saved',
+        scoreCpWhite: this.savedScoreCpWhite ?? null,
+        mateWhite: this.savedMateWhite ?? null,
+      };
       return;
     }
 
@@ -114,13 +119,20 @@ export class EngineEvalBarComponent implements OnChanges {
 
   protected evalLabel(): string {
     if (!this.displayedEval) return '—';
-    if (this.displayedEval.kind === 'saved') return this.cpLabel(this.displayedEval.scoreCpWhite);
+    if (this.displayedEval.kind === 'saved') {
+      return this.displayedEval.mateWhite === null
+        ? this.cpLabel(this.displayedEval.scoreCpWhite ?? 0)
+        : `M${this.displayedEval.mateWhite}`;
+    }
     return this.lineScoreLabel(this.displayedEval.line, this.displayedEval.fen);
   }
 
   protected evalWhitePercent(): number {
     if (!this.displayedEval) return 50;
-    if (this.displayedEval.kind === 'saved') return this.cpPercent(this.displayedEval.scoreCpWhite);
+    if (this.displayedEval.kind === 'saved') {
+      if (this.displayedEval.mateWhite !== null) return this.displayedEval.mateWhite > 0 ? 100 : 0;
+      return this.cpPercent(this.displayedEval.scoreCpWhite ?? 0);
+    }
 
     const { line, fen } = this.displayedEval;
     if (line.mate !== undefined) return this.mateFromWhitePerspective(line.mate, fen) > 0 ? 100 : 0;

@@ -24,10 +24,19 @@ describe('PositionAnalysisCacheService', () => {
   beforeEach(() => {
     api = {
       get: jasmine.createSpy('get').and.returnValue(of({ positionAnalysis: null })),
-      post: jasmine.createSpy('post').and.returnValue(of({ positionAnalyses: [], positionAnalysis: null })),
+      post: jasmine
+        .createSpy('post')
+        .and.returnValue(of({ positionAnalyses: [], positionAnalysis: null })),
     };
     stockfish = {
-      state$: new BehaviorSubject<EngineAnalysis>({ fen: '', running: false, ready: false, error: null, bestMove: null, lines: [] }),
+      state$: new BehaviorSubject<EngineAnalysis>({
+        fen: '',
+        running: false,
+        ready: false,
+        error: null,
+        bestMove: null,
+        lines: [],
+      }),
       analyze: jasmine.createSpy('analyze'),
       analyzeOnce: jasmine.createSpy('analyzeOnce'),
       stop: jasmine.createSpy('stop'),
@@ -58,13 +67,15 @@ describe('PositionAnalysisCacheService', () => {
     const compact = (service as any).toStoreRequest(position.fen, position, 'compact');
     const rich = (service as any).toStoreRequest(position.fen, position, 'rich');
 
-    expect(compact).toEqual(jasmine.objectContaining({
-      fen: position.fen,
-      bestMoveUci: 'e2e3',
-      bestScoreCpWhite: 25,
-      bestMateWhite: null,
-      persistenceMode: 'compact',
-    }));
+    expect(compact).toEqual(
+      jasmine.objectContaining({
+        fen: position.fen,
+        bestMoveUci: 'e2e3',
+        bestScoreCpWhite: 25,
+        bestMateWhite: null,
+        persistenceMode: 'compact',
+      }),
+    );
     expect(compact.lines).toBeUndefined();
     expect(rich.lines).toEqual(position.lines);
     expect(rich.persistenceMode).toBe('rich');
@@ -80,13 +91,29 @@ describe('PositionAnalysisCacheService', () => {
       lines: [],
     };
 
-    expect((service as any).usablePosition(compactPosition, fen, 1, 12, 'best-eval')).toBe(compactPosition);
-    expect((service as any).usablePosition(compactPosition, fen, 1, RICH_INTERACTIVE_CACHE_MIN_DEPTH, 'lines')).toBeNull();
+    expect((service as any).usablePosition(compactPosition, fen, 1, 12, 'best-eval')).toBe(
+      compactPosition,
+    );
+    expect(
+      (service as any).usablePosition(
+        compactPosition,
+        fen,
+        1,
+        RICH_INTERACTIVE_CACHE_MIN_DEPTH,
+        'lines',
+      ),
+    ).toBeNull();
   });
 
   it('does not let a compact pending save replace a rich pending save', () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
-    const compact = { fen, bestMoveUci: 'e2e3', bestScoreCpWhite: 10, bestMateWhite: null, lines: [] };
+    const compact = {
+      fen,
+      bestMoveUci: 'e2e3',
+      bestScoreCpWhite: 10,
+      bestMateWhite: null,
+      lines: [],
+    };
     const rich = {
       fen,
       bestMoveUci: 'e2e4',
@@ -109,54 +136,67 @@ describe('PositionAnalysisCacheService', () => {
     service.analyzeInteractiveRichPosition(fen);
     await flushAsync();
 
-    expect(stockfish.analyze).toHaveBeenCalledWith(fen, jasmine.objectContaining({
-      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
-      multipv: DEFAULT_INTERACTIVE_MULTIPV,
-    }));
+    expect(stockfish.analyze).toHaveBeenCalledWith(
+      fen,
+      jasmine.objectContaining({
+        depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+        multipv: DEFAULT_INTERACTIVE_MULTIPV,
+      }),
+    );
   });
 
   it('completed rich interactive analysis POSTs rich storage with 3 lines', async () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
-    api.post.and.returnValue(of({
-      positionAnalysis: richPosition(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH),
-    }));
+    api.post.and.returnValue(
+      of({
+        positionAnalysis: richPosition(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH),
+      }),
+    );
 
     service.analyzeInteractiveRichPosition(fen);
     await flushAsync();
     stockfish.state$.next(engineAnalysis(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH));
     await flushAsync();
 
-    expect(api.post).toHaveBeenCalledWith('/position-analysis/store', jasmine.objectContaining({
-      fen,
-      persistenceMode: 'rich',
-      lines: jasmine.arrayWithExactContents([
-        jasmine.objectContaining({ multipv: 1, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
-        jasmine.objectContaining({ multipv: 2, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
-        jasmine.objectContaining({ multipv: 3, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
-      ]),
-    }));
+    expect(api.post).toHaveBeenCalledWith(
+      '/position-analysis/store',
+      jasmine.objectContaining({
+        fen,
+        persistenceMode: 'rich',
+        lines: jasmine.arrayWithExactContents([
+          jasmine.objectContaining({ multipv: 1, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
+          jasmine.objectContaining({ multipv: 2, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
+          jasmine.objectContaining({ multipv: 3, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
+        ]),
+      }),
+    );
   });
 
   it('completed rich interactive analysis persists when secondary MultiPV lines lag the best-line depth', async () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
-    api.post.and.returnValue(of({
-      positionAnalysis: variedDepthRichPosition(fen, [RICH_INTERACTIVE_ANALYSIS_DEPTH, 15, 14]),
-    }));
+    api.post.and.returnValue(
+      of({
+        positionAnalysis: variedDepthRichPosition(fen, [RICH_INTERACTIVE_ANALYSIS_DEPTH, 15, 14]),
+      }),
+    );
 
     service.analyzeInteractiveRichPosition(fen);
     await flushAsync();
     stockfish.state$.next(engineAnalysisWithDepths(fen, [RICH_INTERACTIVE_ANALYSIS_DEPTH, 15, 14]));
     await flushAsync();
 
-    expect(api.post).toHaveBeenCalledWith('/position-analysis/store', jasmine.objectContaining({
-      fen,
-      persistenceMode: 'rich',
-      lines: jasmine.arrayWithExactContents([
-        jasmine.objectContaining({ multipv: 1, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
-        jasmine.objectContaining({ multipv: 2, depth: 15 }),
-        jasmine.objectContaining({ multipv: 3, depth: 14 }),
-      ]),
-    }));
+    expect(api.post).toHaveBeenCalledWith(
+      '/position-analysis/store',
+      jasmine.objectContaining({
+        fen,
+        persistenceMode: 'rich',
+        lines: jasmine.arrayWithExactContents([
+          jasmine.objectContaining({ multipv: 1, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
+          jasmine.objectContaining({ multipv: 2, depth: 15 }),
+          jasmine.objectContaining({ multipv: 3, depth: 14 }),
+        ]),
+      }),
+    );
   });
 
   it('shallow running partial analysis does not POST rich storage', async () => {
@@ -201,11 +241,14 @@ describe('PositionAnalysisCacheService', () => {
     stockfish.state$.next(engineAnalysis(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH));
     await flushAsync();
 
-    expect(warnSpy).toHaveBeenCalledWith('Interactive position-analysis save failed.', jasmine.objectContaining({
-      fen,
-      persistenceMode: 'rich',
-      error,
-    }));
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Interactive position-analysis save failed.',
+      jasmine.objectContaining({
+        fen,
+        persistenceMode: 'rich',
+        error,
+      }),
+    );
     expect((service as any).pendingInteractiveSave).toEqual(jasmine.objectContaining({ fen }));
     (service as any).pendingInteractiveSave = null;
   });
@@ -213,19 +256,24 @@ describe('PositionAnalysisCacheService', () => {
   it('getOrAnalyzeCompactGamePosition uses compact profile, omits lines, and uses background persistence', async () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
     stockfish.analyzeOnce.and.resolveTo(engineAnalysis(fen, COMPACT_GAME_ANALYSIS_DEPTH));
-    api.post.and.returnValue(of({
-      positionAnalyses: [richPosition(fen, COMPACT_GAME_ANALYSIS_DEPTH)],
-      positionAnalysis: richPosition(fen, COMPACT_GAME_ANALYSIS_DEPTH),
-    }));
+    api.post.and.returnValue(
+      of({
+        positionAnalyses: [richPosition(fen, COMPACT_GAME_ANALYSIS_DEPTH)],
+        positionAnalysis: richPosition(fen, COMPACT_GAME_ANALYSIS_DEPTH),
+      }),
+    );
 
     await service.getOrAnalyzeCompactGamePosition(fen, { keepAlive: true });
 
-    expect(stockfish.analyzeOnce).toHaveBeenCalledWith(fen, jasmine.objectContaining({
-      depth: COMPACT_GAME_ANALYSIS_DEPTH,
-      multipv: COMPACT_GAME_MULTIPV,
-      pvMoveLimit: 1,
-      keepAlive: true,
-    }));
+    expect(stockfish.analyzeOnce).toHaveBeenCalledWith(
+      fen,
+      jasmine.objectContaining({
+        depth: COMPACT_GAME_ANALYSIS_DEPTH,
+        multipv: COMPACT_GAME_MULTIPV,
+        pvMoveLimit: 1,
+        keepAlive: true,
+      }),
+    );
     expect(api.post).not.toHaveBeenCalled();
 
     await service.flushPendingPositionAnalysisSaves();
@@ -241,19 +289,55 @@ describe('PositionAnalysisCacheService', () => {
     expect(api.post.calls.mostRecent().args[1].positions[0].lines).toBeUndefined();
   });
 
+  it('getOrAnalyzeRichPosition awaits rich persistence and keeps the worker alive for a batch', async () => {
+    const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
+    stockfish.analyzeOnce.and.resolveTo(engineAnalysis(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH));
+    api.post.and.returnValue(
+      of({
+        positionAnalysis: richPosition(fen, RICH_INTERACTIVE_ANALYSIS_DEPTH),
+      }),
+    );
+
+    await service.getOrAnalyzeRichPosition(fen, { keepAlive: true });
+
+    expect(stockfish.analyzeOnce).toHaveBeenCalledWith(
+      fen,
+      jasmine.objectContaining({
+        depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+        multipv: DEFAULT_INTERACTIVE_MULTIPV,
+        keepAlive: true,
+      }),
+    );
+    expect(api.post).toHaveBeenCalledWith(
+      '/position-analysis/store',
+      jasmine.objectContaining({
+        fen,
+        persistenceMode: 'rich',
+        lines: jasmine.arrayContaining([
+          jasmine.objectContaining({ multipv: 1, depth: RICH_INTERACTIVE_ANALYSIS_DEPTH }),
+        ]),
+      }),
+    );
+  });
+
   it('reruns Stockfish when cached rich lines are shallower than requested depth', async () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
-    api.get.and.returnValue(of({
-      positionAnalysis: richPosition(fen, 12),
-    }));
+    api.get.and.returnValue(
+      of({
+        positionAnalysis: richPosition(fen, 12),
+      }),
+    );
 
     service.analyzeInteractiveRichPosition(fen);
     await flushAsync();
 
-    expect(stockfish.analyze).toHaveBeenCalledWith(fen, jasmine.objectContaining({
-      depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
-      multipv: DEFAULT_INTERACTIVE_MULTIPV,
-    }));
+    expect(stockfish.analyze).toHaveBeenCalledWith(
+      fen,
+      jasmine.objectContaining({
+        depth: RICH_INTERACTIVE_ANALYSIS_DEPTH,
+        multipv: DEFAULT_INTERACTIVE_MULTIPV,
+      }),
+    );
   });
 
   it('reuses cached rich lines at the interactive cache threshold', async () => {
@@ -294,16 +378,18 @@ describe('PositionAnalysisCacheService', () => {
 
   it('reruns Stockfish for rich requests when the cached row is compact only', async () => {
     const fen = '8/8/8/8/8/8/4K3/6k1 w - - 0 1';
-    api.get.and.returnValue(of({
-      positionAnalysis: {
-        fen,
-        normalizedFen: '8/8/8/8/8/8/4K3/6k1 w - -',
-        bestMoveUci: 'e2e3',
-        bestScoreCpWhite: 25,
-        bestMateWhite: null,
-        lines: [],
-      },
-    }));
+    api.get.and.returnValue(
+      of({
+        positionAnalysis: {
+          fen,
+          normalizedFen: '8/8/8/8/8/8/4K3/6k1 w - -',
+          bestMoveUci: 'e2e3',
+          bestScoreCpWhite: 25,
+          bestMateWhite: null,
+          lines: [],
+        },
+      }),
+    );
 
     service.analyzeInteractiveRichPosition(fen);
     await flushAsync();

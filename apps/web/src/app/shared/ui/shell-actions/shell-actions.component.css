@@ -60,6 +60,19 @@
   background: var(--ui-action-hover);
 }
 
+.ui-shell-action.danger {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+  box-shadow: none;
+}
+
+.ui-shell-action.danger:hover:not(.disabled) {
+  border-color: var(--ui-danger);
+  background: var(--ui-danger);
+  color: #ffffff;
+}
+
 .ui-shell-action:focus-visible {
   outline: 3px solid var(--ui-focus-ring);
   outline-offset: 2px;
