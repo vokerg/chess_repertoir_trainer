@@ -1,6 +1,6 @@
 # RB-025 — Scale opening knowledge toward comprehensive coverage
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 185
 
 Delivery class: Research followed by incremental implementation
 
-Planning maturity: Claimed for coverage research and editorial-tooling foundation
+Planning maturity: In progress — deterministic coverage and uncertainty audit foundation
 
 GitHub issue: #290
 
@@ -16,7 +16,11 @@ Claimed by: ChatGPT agent session
 
 Claim branch: `rb-025/issue-290-coverage-scale-research`
 
+Implementation branch: `rb-025/issue-290-audit-foundation`
+
 Claimed at: 2026-08-06
+
+Started at: 2026-08-06
 
 ## Objective
 
