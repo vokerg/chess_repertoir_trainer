@@ -3,6 +3,8 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { AccountsApiService } from '../accounts/data-access/accounts-api.service';
 import type { AccountPerformanceStatsResponse, ExternalAccount } from '../accounts/data-access/accounts.models';
+import { ActivityFeedApiService } from '../activity-feed';
+import type { TodayActivityResponse } from '../activity-feed';
 import { GamesApiService } from '../games/data-access/games-api.service';
 import type { ImportedGameFacetsResponse, ImportedGameSearchItem } from '../games/data-access/games.models';
 import { LibraryApiService } from '../library/data-access/library-api.service';
@@ -14,13 +16,24 @@ import {
   selectHomeAccount,
 } from './home-dashboard.helpers';
 import type { HomeDashboardData } from './home-dashboard.models';
+import {
+  buildHomeTodayActivity,
+  resolveBrowserTimeZone,
+} from './home-today-activity.helpers';
 
 const EMPTY_CATALOG: LibraryCatalogResponse = { courses: [] };
+const ACTIVITY_UNAVAILABLE_MESSAGE = 'Your other Home sections are still available. Try loading today’s progress again.';
+
+interface LoadedActivity {
+  summary: TodayActivityResponse;
+  notice: string | null;
+}
 
 @Injectable()
 export class HomeDashboardStore {
   private readonly auth = inject(AuthService);
   private readonly accountsApi = inject(AccountsApiService);
+  private readonly activityApi = inject(ActivityFeedApiService);
   private readonly libraryApi = inject(LibraryApiService);
   private readonly gamesApi = inject(GamesApiService);
 
@@ -32,6 +45,10 @@ export class HomeDashboardStore {
   readonly facets = signal<ImportedGameFacetsResponse | null>(null);
   readonly recentGames = signal<readonly ImportedGameSearchItem[]>([]);
   readonly performance = signal<AccountPerformanceStatsResponse | null>(null);
+  readonly activity = signal<TodayActivityResponse | null>(null);
+  readonly activityLoading = signal(false);
+  readonly activityError = signal<string | null>(null);
+  readonly activityNotice = signal<string | null>(null);
 
   readonly selectedAccount = computed(() => selectHomeAccount(this.accounts()));
   readonly data = computed<HomeDashboardData>(() => ({
@@ -44,6 +61,7 @@ export class HomeDashboardStore {
   readonly continueAction = computed(() => buildHomeContinueAction(this.data()));
   readonly recommendations = computed(() => buildHomeRecommendations(this.data(), this.continueAction()));
   readonly progress = computed(() => buildHomeProgressSummary(this.data()));
+  readonly todayActivity = computed(() => buildHomeTodayActivity(this.activity()));
   readonly greeting = computed(() => `${daypartGreeting()}, ${firstName(this.auth.displayName())}.`);
   readonly accountLabel = computed(() => {
     const account = this.selectedAccount();
@@ -56,13 +74,17 @@ export class HomeDashboardStore {
     this.loading.set(true);
     this.error.set(null);
     this.warnings.set([]);
+    this.activityLoading.set(true);
+    this.activityError.set(null);
+    this.activityNotice.set(null);
 
     const warnings: string[] = [];
-    const [accountsResult, catalogResult, facetsResult, gamesResult] = await Promise.allSettled([
+    const [accountsResult, catalogResult, facetsResult, gamesResult, activityResult] = await Promise.allSettled([
       firstValueFrom(this.accountsApi.getAccounts()),
       firstValueFrom(this.libraryApi.getCatalog()),
       firstValueFrom(this.gamesApi.getFacets()),
       firstValueFrom(this.gamesApi.searchGames({ sort: 'endedAtDesc', limit: 6 })),
+      this.fetchActivity(),
     ]);
 
     if (accountsResult.status === 'fulfilled') this.accounts.set(accountsResult.value);
@@ -76,6 +98,9 @@ export class HomeDashboardStore {
 
     if (gamesResult.status === 'fulfilled') this.recentGames.set(gamesResult.value.items);
     else warnings.push('Recent games could not be loaded.');
+
+    this.applyActivityResult(activityResult);
+    this.activityLoading.set(false);
 
     const selectedAccount = selectHomeAccount(
       accountsResult.status === 'fulfilled' ? accountsResult.value : [],
@@ -101,13 +126,74 @@ export class HomeDashboardStore {
     this.loading.set(false);
   }
 
+  async loadActivity(): Promise<void> {
+    if (this.activityLoading()) return;
+    this.activityLoading.set(true);
+    this.activityError.set(null);
+    this.activityNotice.set(null);
+
+    try {
+      const result = await this.fetchActivity();
+      this.activity.set(result.summary);
+      this.activityNotice.set(result.notice);
+    } catch {
+      this.activity.set(null);
+      this.activityError.set(ACTIVITY_UNAVAILABLE_MESSAGE);
+    } finally {
+      this.activityLoading.set(false);
+    }
+  }
+
   async reload(): Promise<void> {
     this.accounts.set([]);
     this.catalog.set(EMPTY_CATALOG);
     this.facets.set(null);
     this.recentGames.set([]);
     this.performance.set(null);
+    this.activity.set(null);
+    this.activityError.set(null);
+    this.activityNotice.set(null);
     await this.load();
+  }
+
+  private async fetchActivity(): Promise<LoadedActivity> {
+    const summary = await firstValueFrom(this.activityApi.getToday());
+    const browserTimeZone = resolveBrowserTimeZone();
+    if (!browserTimeZone || browserTimeZone === summary.timeZone) {
+      return { summary, notice: null };
+    }
+
+    try {
+      await firstValueFrom(this.activityApi.updatePreferences({ timeZone: browserTimeZone }));
+    } catch {
+      return {
+        summary,
+        notice: `Daily progress is using ${summary.timeZone}; your browser time zone could not be saved automatically.`,
+      };
+    }
+
+    try {
+      return {
+        summary: await firstValueFrom(this.activityApi.getToday()),
+        notice: null,
+      };
+    } catch {
+      return {
+        summary,
+        notice: 'Your time zone was updated, but today’s progress could not be reloaded yet.',
+      };
+    }
+  }
+
+  private applyActivityResult(result: PromiseSettledResult<LoadedActivity>): void {
+    if (result.status === 'fulfilled') {
+      this.activity.set(result.value.summary);
+      this.activityNotice.set(result.value.notice);
+      return;
+    }
+
+    this.activity.set(null);
+    this.activityError.set(ACTIVITY_UNAVAILABLE_MESSAGE);
   }
 }
 

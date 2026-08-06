@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AccountsApiService } from '../accounts/data-access/accounts-api.service';
+import { ActivityFeedApiService } from '../activity-feed';
 import { LibraryApiService } from '../library/data-access/library-api.service';
+import { TodayActivityCardComponent } from './components/today-activity-card.component';
 import { HomeDashboardStore } from './home-dashboard.store';
 
 interface HomeShortcut {
@@ -14,8 +16,13 @@ interface HomeShortcut {
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [RouterLink],
-  providers: [AccountsApiService, LibraryApiService, HomeDashboardStore],
+  imports: [RouterLink, TodayActivityCardComponent],
+  providers: [
+    AccountsApiService,
+    ActivityFeedApiService,
+    LibraryApiService,
+    HomeDashboardStore,
+  ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,5 +44,9 @@ export class HomePageComponent implements OnInit {
 
   protected reload(): void {
     void this.store.reload();
+  }
+
+  protected reloadActivity(): void {
+    void this.store.loadActivity();
   }
 }

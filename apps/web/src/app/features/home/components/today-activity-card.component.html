@@ -1,0 +1,108 @@
+<section class="today-section" aria-labelledby="today-title">
+  <div class="today-heading">
+    <div>
+      <p class="today-eyebrow">TODAY</p>
+      <h2 id="today-title">Build momentum one completed action at a time.</h2>
+    </div>
+    @if (activity(); as activity) {
+      <span class="today-date">{{ activity.date }}</span>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="today-card today-loading" aria-live="polite" aria-label="Loading today activity">
+      <span class="loading-summary"></span>
+      <div class="loading-goals">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  } @else if (error(); as error) {
+    <div class="today-card today-unavailable" role="status">
+      <div>
+        <strong>Today’s activity is unavailable</strong>
+        <p>{{ error }}</p>
+      </div>
+      <button type="button" (click)="retry.emit()">Try again</button>
+    </div>
+  } @else if (activity(); as activity) {
+    <div class="today-card" [class.today-card-complete]="activity.allCompleted">
+      <div class="today-summary">
+        <div
+          class="overall-progress"
+          role="progressbar"
+          aria-label="Daily goals completed"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="activity.totalGoals"
+          [attr.aria-valuenow]="activity.completedGoals"
+        >
+          <strong>{{ activity.completedGoals }} / {{ activity.totalGoals }}</strong>
+          <span>goals complete</span>
+          <div class="overall-meter" aria-hidden="true">
+            <span [style.width.%]="activity.completionPercent"></span>
+          </div>
+          <small>{{ activity.completionPercent }}%</small>
+        </div>
+
+        @if (activity.allCompleted) {
+          <div class="all-done" role="status">
+            <strong>Everything is done for today.</strong>
+            <span>Your recorded chess work has reached every daily target.</span>
+          </div>
+        } @else if (!activity.hasProgress) {
+          <div class="today-empty" role="status">
+            <strong>No activity recorded yet.</strong>
+            <span>Progress updates automatically as you play, train, solve, and analyse.</span>
+          </div>
+        } @else {
+          <div class="today-empty">
+            <strong>Momentum is underway.</strong>
+            <span>Keep going with the remaining server-tracked goals.</span>
+          </div>
+        }
+      </div>
+
+      <ul class="goal-list" aria-label="Today’s chess goals">
+        @for (goal of activity.goals; track goal.id) {
+          <li class="goal-row" [class.goal-row-complete]="goal.completed">
+            <input
+              class="goal-checkbox"
+              type="checkbox"
+              [checked]="goal.completed"
+              disabled
+              [attr.aria-label]="goal.label + (goal.completed ? ', completed' : ', not completed')"
+            />
+            <div class="goal-copy">
+              <strong>{{ goal.label }}</strong>
+              <div
+                class="goal-meter"
+                role="progressbar"
+                [attr.aria-label]="goal.label + ' progress'"
+                aria-valuemin="0"
+                [attr.aria-valuemax]="goal.target"
+                [attr.aria-valuenow]="goal.current"
+              >
+                <span [style.width.%]="goal.progressPercent"></span>
+              </div>
+            </div>
+            <span class="goal-count">{{ goal.current }} / {{ goal.target }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="today-footnote">
+      <span>Daily boundary: {{ activity.timeZone }}</span>
+      @if (notice(); as notice) {
+        <span class="today-notice" role="status">{{ notice }}</span>
+      }
+    </div>
+  } @else {
+    <div class="today-card today-unavailable" role="status">
+      <div>
+        <strong>No activity summary is available yet</strong>
+        <p>Refresh Home to load the current server-owned daily goals.</p>
+      </div>
+      <button type="button" (click)="retry.emit()">Refresh</button>
+    </div>
+  }
+</section>
