@@ -37,7 +37,7 @@ Do not copy a future “next task” into this file. [`STATUS.md`](STATUS.md) an
 5. [`FOUNDATION.md`](FOUNDATION.md) — stable product and data principles.
 6. [`NORTH_STAR.md`](NORTH_STAR.md) — target interaction and long-term product outcome.
 7. [`FEATURES.md`](FEATURES.md) — capability catalog and planning maturity.
-8. [`ROADMAP.md`](ROADMAP.md), [`DECISIONS.md`](DECISIONS.md), and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md`).
+8. [`ROADMAP.md`](ROADMAP.md), [`DECISIONS.md`](DECISIONS.md), and [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md).
 
 Detailed immutable work items live under [`tasks/`](tasks/). Completion and research evidence lives under [`reports/`](reports/).
 
