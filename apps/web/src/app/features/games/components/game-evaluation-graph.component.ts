@@ -9,6 +9,8 @@ interface EvaluationGraphPoint {
   y: number;
 }
 
+type PointFocusMove = 'first' | 'last' | 'next' | 'previous';
+
 const VIEWBOX_WIDTH = 600;
 const VIEWBOX_HEIGHT = 180;
 const HORIZONTAL_PADDING = 14;
@@ -109,9 +111,62 @@ export class GameEvaluationGraphComponent {
     return `${moveNumber}${plyNumber % 2 === 0 ? '…' : '.'}`;
   }
 
-  protected selectFromKeyboard(event: Event, nodeId: number): void {
+  protected pointTabIndex(nodeId: number): 0 | -1 {
+    const points = this.points();
+    const activeNodeId = this.selectedPoint()?.nodeId ?? points[0]?.nodeId;
+    return activeNodeId === nodeId ? 0 : -1;
+  }
+
+  protected handlePointKeydown(event: KeyboardEvent, nodeId: number): void {
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        this.nodeSelected.emit(nodeId);
+        return;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        this.movePointFocus(event, nodeId, 'previous');
+        return;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        this.movePointFocus(event, nodeId, 'next');
+        return;
+      case 'Home':
+        this.movePointFocus(event, nodeId, 'first');
+        return;
+      case 'End':
+        this.movePointFocus(event, nodeId, 'last');
+        return;
+    }
+  }
+
+  private movePointFocus(event: KeyboardEvent, nodeId: number, move: PointFocusMove): void {
+    const points = this.points();
+    if (points.length === 0) return;
+
     event.preventDefault();
-    this.nodeSelected.emit(nodeId);
+    const currentIndex = Math.max(
+      0,
+      points.findIndex((point) => point.nodeId === nodeId),
+    );
+    const targetIndex = this.targetPointIndex(currentIndex, points.length, move);
+    const targetPoint = points[targetIndex];
+
+    this.nodeSelected.emit(targetPoint.nodeId);
+
+    const currentTarget = event.currentTarget as SVGCircleElement | null;
+    const pointElements = currentTarget?.ownerSVGElement?.querySelectorAll<SVGCircleElement>(
+      '.point-hit-target',
+    );
+    pointElements?.[targetIndex]?.focus();
+  }
+
+  private targetPointIndex(currentIndex: number, pointCount: number, move: PointFocusMove): number {
+    if (move === 'first') return 0;
+    if (move === 'last') return pointCount - 1;
+    if (move === 'previous') return (currentIndex - 1 + pointCount) % pointCount;
+    return (currentIndex + 1) % pointCount;
   }
 
   private mainGameLine(tree: GameTree): GameTreeNode[] {
