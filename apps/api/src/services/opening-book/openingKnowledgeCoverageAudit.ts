@@ -14,6 +14,7 @@ export const OPENING_KNOWLEDGE_PRIORITY_POLICY = {
     unavailableKnowledge: 100,
     partialKnowledge: 40,
     missingKnowledgeField: 12,
+    sideGap: 8,
     unknownClassificationDimension: 4,
     lowConfidenceSide: 2,
     uniqueNameBreadth: 1,
@@ -112,6 +113,7 @@ function priorityScore(group: MutableFamily): number {
   return group.unavailableKnowledgeWeight * weights.unavailableKnowledge
     + group.partialKnowledgeWeight * weights.partialKnowledge
     + group.missingKnowledgeFieldWeight * weights.missingKnowledgeField
+    + group.sideGapWeight * weights.sideGap
     + group.unknownClassificationDimensionWeight * weights.unknownClassificationDimension
     + group.lowConfidenceSideWeight * weights.lowConfidenceSide
     + group.names.size * weights.uniqueNameBreadth;
