@@ -1,6 +1,6 @@
 # ONB-017 — Persist preparation execution boundary and bounded child-job batches
 
-Status: IN_PROGRESS
+Status: DONE
 
 Priority: P0
 
@@ -8,13 +8,15 @@ Order: 77
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-003; numeric admission defaults supplied by ONB-007; implementation in progress after ONB-011/019 collision review
+Planning maturity: Decisioned by ONB-003; numeric admission defaults supplied by ONB-007; implementation validated and squash-merged; completion reconciliation completed through PR #293
 
 GitHub issue: [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253)
 
 Claimed by: ChatGPT
 
-Claim branch: `onb-017/issue-253-preparation-execution-boundary`
+Implementation branch: `onb-017/issue-253-preparation-execution-boundary`
+
+Reconciliation branch: `onb-017/issue-253-completion-reconciliation`
 
 Claimed at: 2026-08-04
 
@@ -115,8 +117,26 @@ These are configuration defaults backed by ONB-007 CI evidence, not schema const
 
 ## Completion
 
-Report: none
+Implementation report: `north-star/onboarding/reports/ONB-017-2026-08-04-self-review-addendum.md`
 
-Pull request: none
+Implementation pull request: [#282](https://github.com/vokerg/chess_repertoir_trainer/pull/282)
 
-Completed at: none
+Implementation head: `c226f15b9c75c6fb4cea3072828842d728b9eb5a`
+
+Squash commit: `885ef785bdac1b0c77cc500e3345745b0e723912`
+
+Final implementation CI: run 1994 (`30898278426`), passed lint, build, architecture guardrails, the complete PostgreSQL migration chain, audits, and the full test suite
+
+Completion reconciliation pull request: [#293](https://github.com/vokerg/chess_repertoir_trainer/pull/293)
+
+Final reconciliation CI: run 2114 (`31077878915`) on head `e315eee560adfa9ba9a88e6baa2a212d1a86244e`, passed dependency installation, lint, the full monorepo build, opening and imported-game audits, architecture guardrails, the complete PostgreSQL migration chain, the full test suite, and artifact upload
+
+Completed at: 2026-08-04
+
+Reconciled at: 2026-08-06 through PR #293
+
+## Completion self-review
+
+The first reconciliation draft was incomplete: it changed only this task file, removed the original scope/acceptance/validation contract, left the canonical queue and status ledger stale, and recorded an incorrect implementation-head SHA. A second pass also found that reduced configurable capacity tests existed but the required large-candidate/default-200-task validation was not explicit.
+
+The corrected reconciliation preserves the full task contract, records the exact implementation evidence, synchronizes the canonical queue and status records, and adds focused regression coverage using a 250-game candidate set, four bounded 50-game waves, the exact default 200 queued-task ceiling, and a blocked fifth parent. PR #293 completed the reconciliation, and issue #253 was closed as completed after its squash merge.
