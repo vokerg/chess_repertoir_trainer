@@ -14,6 +14,6 @@
 }
 
 .line-editor-page :is(button, a, input, select, textarea):focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }

@@ -36,7 +36,7 @@
 .status-panel button:focus-visible,
 .status-panel input:focus-visible,
 .status-panel a:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 

@@ -71,7 +71,7 @@
 
 .move-tree-node-button:focus-visible,
 .move-tree-delete-action:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
 }
 
