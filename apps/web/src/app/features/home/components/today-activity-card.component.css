@@ -250,7 +250,7 @@
 }
 
 .today-unavailable button:focus-visible {
-  outline: 3px solid rgba(31, 120, 101, 0.38);
+  outline: 3px solid var(--ui-focus-outline, #1f7865);
   outline-offset: 3px;
 }
 
