@@ -8,6 +8,10 @@ const evaluationGraphCssUrl = new URL(
   '../apps/web/src/app/features/games/components/game-evaluation-graph.component.css',
   import.meta.url,
 );
+const evaluationGraphHtmlUrl = new URL(
+  '../apps/web/src/app/features/games/components/game-evaluation-graph.component.html',
+  import.meta.url,
+);
 
 const lowContrastStandaloneOutline =
   /outline\s*:\s*[^;\n{}]+\s+solid\s+(?:var\(--ui-focus-ring\)|rgba\(\s*31\s*,\s*120\s*,\s*101\s*,\s*0\.38\s*\))\s*;/i;
@@ -55,6 +59,28 @@ assert.match(
   evaluationGraphCss,
   /\.point-hit-target:focus-visible\s*\{[^}]*stroke:\s*var\(--ui-focus-outline\);[^}]*\}/s,
   'Keyboard-selectable evaluation points must retain a visible focus stroke',
+);
+
+const evaluationGraphHtml = readFileSync(evaluationGraphHtmlUrl, 'utf8');
+assert.doesNotMatch(
+  evaluationGraphHtml,
+  /<svg\b[^>]*\brole\s*=\s*["']img["']/is,
+  'Interactive evaluation-graph controls must not be descendants of role="img"',
+);
+assert.match(
+  evaluationGraphHtml,
+  /<svg\b[^>]*\brole\s*=\s*["']group["'][^>]*\baria-label\s*=/is,
+  'The evaluation graph must expose a labelled interactive group',
+);
+assert.match(
+  evaluationGraphHtml,
+  /\[attr\.tabindex\]="pointTabIndex\(point\.nodeId\)"/,
+  'The evaluation graph must use roving tabindex instead of one page tab stop per point',
+);
+assert.match(
+  evaluationGraphHtml,
+  /\(keydown\)="handlePointKeydown\(\$event, point\.nodeId\)"/,
+  'The evaluation graph must retain composite keyboard navigation',
 );
 
 function readHexToken(css, token) {
