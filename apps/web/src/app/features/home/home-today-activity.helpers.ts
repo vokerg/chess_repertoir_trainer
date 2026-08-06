@@ -6,14 +6,18 @@ export function buildHomeTodayActivity(
 ): HomeTodayActivity | null {
   if (!response) return null;
 
-  const goals: readonly HomeTodayGoal[] = response.goals.map((goal) => ({
-    id: goal.id,
-    label: goal.label,
-    current: goal.current,
-    target: goal.target,
-    completed: goal.completed,
-    progressPercent: Math.min(100, Math.round((goal.current / goal.target) * 100)),
-  }));
+  const goals: readonly HomeTodayGoal[] = response.goals.map((goal) => {
+    const progressValue = Math.min(goal.current, goal.target);
+    return {
+      id: goal.id,
+      label: goal.label,
+      current: goal.current,
+      target: goal.target,
+      completed: goal.completed,
+      progressValue,
+      progressPercent: Math.round((progressValue / goal.target) * 100),
+    };
+  });
   const totalGoals = goals.length;
   const completedGoals = goals.filter((goal) => goal.completed).length;
 
