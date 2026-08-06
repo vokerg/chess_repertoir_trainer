@@ -112,14 +112,14 @@
               <td data-label="Actions">
                 <div class="games-row-actions">
                   @if (canAnalyse(game)) {
-                    <a
+                    <button
+                      type="button"
                       class="games-row-action-link"
-                      href="#"
-                      role="button"
-                      [attr.aria-disabled]="isAnalysing(game)"
-                      (click)="$event.preventDefault(); analyseGame(game)"
-                      >{{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}</a
+                      [disabled]="isAnalysing(game)"
+                      (click)="analyseGame(game)"
                     >
+                      {{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}
+                    </button>
                   }
                 </div>
               </td>
@@ -144,14 +144,14 @@
 
             <div class="games-mobile-actions">
               @if (canAnalyse(game)) {
-                <a
+                <button
+                  type="button"
                   class="games-row-action-link"
-                  href="#"
-                  role="button"
-                  [attr.aria-disabled]="isAnalysing(game)"
-                  (click)="$event.preventDefault(); analyseGame(game)"
-                  >{{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}</a
+                  [disabled]="isAnalysing(game)"
+                  (click)="analyseGame(game)"
                 >
+                  {{ isAnalysing(game) ? 'Analysing...' : 'Analyse' }}
+                </button>
               }
             </div>
           </div>
