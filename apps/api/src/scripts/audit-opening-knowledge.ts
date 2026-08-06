@@ -1,6 +1,10 @@
 import { buildUnknownOpeningFamilyBacklog } from '../services/opening-book/openingClassificationAudit';
 import { OPENING_BOOK } from '../services/opening-book/openingBook.generated';
 import { OpeningClassificationService } from '../services/opening-book/openingClassificationService';
+import {
+  buildOpeningKnowledgeCoverageAudit,
+  type OpeningKnowledgeCoverageObservation,
+} from '../services/opening-book/openingKnowledgeCoverageAudit';
 import { OpeningKnowledgeService } from '../services/opening-book/openingKnowledgeService';
 
 function pct(value: number, total: number): number {
@@ -11,11 +15,18 @@ const ruleUsage = new Map(OpeningKnowledgeService.rules().map((rule) => [rule.id
 const sourceUsage = new Map(OpeningKnowledgeService.sources().map((source) => [source.id, 0]));
 const uniqueNames = new Map<string, 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE'>();
 const unavailableEntryNames: string[] = [];
+const coverageObservations: OpeningKnowledgeCoverageObservation[] = [];
 const statusCounts = { AVAILABLE: 0, PARTIAL: 0, UNAVAILABLE: 0 };
 
 for (const entry of OPENING_BOOK) {
   const classification = OpeningClassificationService.classify(entry);
   const result = OpeningKnowledgeService.resolve(entry, classification);
+  coverageObservations.push({
+    name: entry.name,
+    weight: 1,
+    classification,
+    knowledge: result,
+  });
   statusCounts[result.status] += 1;
   if (result.status === 'UNAVAILABLE') unavailableEntryNames.push(entry.name);
 
@@ -58,6 +69,10 @@ console.log(JSON.stringify({
     partialPct: pct(uniqueStatusCounts.PARTIAL, uniqueNames.size),
     unavailablePct: pct(uniqueStatusCounts.UNAVAILABLE, uniqueNames.size),
   },
+  coverageModel: buildOpeningKnowledgeCoverageAudit(
+    coverageObservations,
+    OPENING_BOOK.length,
+  ),
   unavailableFamilyBacklog: buildUnknownOpeningFamilyBacklog(
     unavailableEntryNames,
     OPENING_BOOK.length,
