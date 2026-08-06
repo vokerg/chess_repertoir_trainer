@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { OPENING_BOOK } from '../../dist/services/opening-book/openingBook.generated.js';
 import { OPENING_KNOWLEDGE_BATCH_MANIFESTS } from '../../dist/services/opening-book/openingKnowledgeBatch.manifests.js';
 import { validateOpeningKnowledgeBatchManifest } from '../../dist/services/opening-book/openingKnowledgeBatchManifest.js';
 
@@ -16,3 +17,10 @@ assert.equal(manifest.expectedGain.uniqueAvailableNames, 561);
 assert.ok(manifest.plannedRules.every((rule) => rule.sides.includes('WHITE')));
 assert.ok(manifest.plannedRules.every((rule) => rule.sides.includes('BLACK')));
 assert.ok(manifest.plannedRules.every((rule) => rule.regressionFixtures.length > 0));
+
+const openingNames = new Set(OPENING_BOOK.map((entry) => entry.name));
+for (const plannedRule of manifest.plannedRules) {
+  for (const fixture of plannedRule.regressionFixtures) {
+    assert.ok(openingNames.has(fixture), `${plannedRule.id} fixture must exist: ${fixture}`);
+  }
+}
