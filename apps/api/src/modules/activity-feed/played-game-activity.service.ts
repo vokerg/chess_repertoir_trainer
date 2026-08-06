@@ -74,9 +74,15 @@ export function resolveCommittedImportReconciliationRange(input: {
   firstPersistedEndedAt: Date | null;
   lastPersistedEndedAt: Date | null;
 }): CommittedImportReconciliationRange | null {
-  const from = input.firstPersistedEndedAt ?? input.syncSince;
+  const fromCandidates = [input.syncSince, input.firstPersistedEndedAt]
+    .filter((value): value is Date => value !== null);
   const to = input.lastPersistedEndedAt;
-  if (!from || !to || from.getTime() > to.getTime()) return null;
+  if (fromCandidates.length === 0 || !to) return null;
+
+  const from = fromCandidates.reduce((earliest, candidate) => (
+    candidate.getTime() < earliest.getTime() ? candidate : earliest
+  ));
+  if (from.getTime() > to.getTime()) return null;
   return { from, to };
 }
 
