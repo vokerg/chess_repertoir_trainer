@@ -16,7 +16,7 @@ Bounded import/backfill contract: ONB-002 squash-merged through [PR #204](https:
 
 Preparation orchestration: ONB-003 squash-merged through [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`
 
-Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](https://github.com/vokerg/chess_repertoir_trainer/pull/282) as `885ef785bdac1b0c77cc500e3345745b0e723912`; completion reconciliation is in PR #293.
+Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](https://github.com/vokerg/chess_repertoir_trainer/pull/282) as `885ef785bdac1b0c77cc500e3345745b0e723912`; completion records reconciled through PR #293.
 
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
@@ -166,7 +166,7 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 - ONB-019 admission-guard seam without lifecycle persistence or destructive-safety overclaim;
 - exact implementation head `c226f15b9c75c6fb4cea3072828842d728b9eb5a` and final CI run 1994 (`30898278426`).
 
-Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 preserves the original task contract and reconciles the task, queue, status, and completion evidence. Issue #253 remains open until PR #293 is approved and squash-merged.
+Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 preserved the original task contract and reconciled the task, queue, status, and completion evidence. Issue #253 was closed as completed after the reconciliation squash merge.
 
 ## Active and ready work
 
@@ -256,8 +256,10 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - final implementation CI run 1994 (`30898278426`) passed lint, build, architecture guardrails, the complete PostgreSQL migration chain, audits, and the full test suite;
 - PR #282 squash-merged as `885ef785bdac1b0c77cc500e3345745b0e723912`;
 - the first completion-reconciliation draft was incomplete because it changed only the task file, removed the original scope/acceptance/validation contract, left queue/status records stale, and recorded an incorrect implementation-head SHA;
-- the corrected PR #293 preserves the full task contract, records exact evidence, synchronizes `TASKS.md` and `STATUS.md`, and keeps issue #253 open until review and squash merge;
-- CI run 2098 passed on the initial documentation-only reconciliation commit; the corrected head requires its own final CI result before review completion;
+- corrected PR #293 preserved the full task contract, recorded exact evidence, synchronized `TASKS.md` and `STATUS.md`, and closed issue #253 as completed after squash merge;
+- initial reconciliation CI run 2098 passed before the self-review corrections;
+- CI run 2110 exposed unnecessary concurrent fixture setup that exhausted Prisma's five-second interactive transaction timeout before admission assertions began;
+- final corrected CI run 2114 (`31077878915`) passed dependency installation, lint, the full monorepo build, opening and imported-game audits, architecture guardrails, the complete PostgreSQL migration chain, the full test suite including the default-200-task regression, and artifact upload on exact head `e315eee560adfa9ba9a88e6baa2a212d1a86244e`;
 - local clone/build remains unavailable because this runtime cannot resolve or connect to `github.com`; no local result is claimed.
 
 ### ONB-006 documentation-only research
@@ -320,4 +322,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-Complete review and squash merge of PR #293, then close issue #253 and reconcile its live issue state. Afterward, continue the still-active ONB-022 / #272 completion-record work before claiming any new implementation issue. Do not merge either pull request without explicit approval.
+Continue the still-active ONB-022 / #272 completion-record work before claiming any new implementation issue. Do not merge its pull request without explicit approval.
