@@ -56,7 +56,7 @@ describe('GamesTableComponent', () => {
     expect(pagination.textContent).toContain('All matching games loaded');
   });
 
-  it('uses a single Analyse link for an unanalysed game', () => {
+  it('uses native Analyse buttons in both responsive representations', () => {
     const unanalysedGame = {
       ...game(),
       analysis: {
@@ -71,12 +71,15 @@ describe('GamesTableComponent', () => {
     fixture.componentRef.setInput('games', [unanalysedGame]);
     fixture.detectChanges();
 
-    const analyseLink = fixture.nativeElement.querySelector(
-      '.games-row-action-link',
-    ) as HTMLAnchorElement;
-    analyseLink.click();
+    const analyseButtons = fixture.nativeElement.querySelectorAll(
+      'button.games-row-action-link',
+    ) as NodeListOf<HTMLButtonElement>;
 
-    expect(analyseLink.textContent?.trim()).toBe('Analyse');
+    expect(analyseButtons.length).toBe(2);
+    expect(Array.from(analyseButtons).every((button) => button.type === 'button')).toBeTrue();
+    analyseButtons[0].click();
+
+    expect(analyseButtons[0].textContent?.trim()).toBe('Analyse');
     expect(analysedGame).toBe(unanalysedGame);
     expect(fixture.nativeElement.querySelector('app-game-action-menu')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Open on Lichess');
