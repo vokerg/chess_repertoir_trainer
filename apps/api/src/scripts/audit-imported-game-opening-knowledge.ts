@@ -6,6 +6,10 @@ import {
 import { OPENING_BOOK } from '../services/opening-book/openingBook.generated';
 import type { OpeningBookEntry } from '../services/opening-book/openingBook.types';
 import { OpeningClassificationService } from '../services/opening-book/openingClassificationService';
+import {
+  buildOpeningKnowledgeCoverageAudit,
+  type OpeningKnowledgeCoverageObservation,
+} from '../services/opening-book/openingKnowledgeCoverageAudit';
 import { OpeningKnowledgeService } from '../services/opening-book/openingKnowledgeService';
 
 function pct(value: number, total: number): number {
@@ -42,6 +46,7 @@ async function main() {
 
   const statusCounts = { AVAILABLE: 0, PARTIAL: 0, UNAVAILABLE: 0 };
   const unavailableFrequencies: OpeningNameFrequency[] = [];
+  const coverageObservations: OpeningKnowledgeCoverageObservation[] = [];
   const uniqueOpeningNames = new Set<string>();
 
   for (const row of groupedOpenings) {
@@ -51,6 +56,12 @@ async function main() {
     const entry = knowledgeEntry(row.openingName, row.openingEco);
     const classification = OpeningClassificationService.classify(entry);
     const result = OpeningKnowledgeService.resolve(entry, classification);
+    coverageObservations.push({
+      name: row.openingName,
+      weight: games,
+      classification,
+      knowledge: result,
+    });
     statusCounts[result.status] += games;
     if (result.status === 'UNAVAILABLE') {
       unavailableFrequencies.push({ name: row.openingName, count: games });
@@ -75,6 +86,10 @@ async function main() {
       partialPct: pct(statusCounts.PARTIAL, gamesWithOpeningName),
       unavailablePct: pct(statusCounts.UNAVAILABLE, gamesWithOpeningName),
     },
+    coverageModel: buildOpeningKnowledgeCoverageAudit(
+      coverageObservations,
+      gamesWithOpeningName,
+    ),
     unavailableFamilyBacklog: buildUnknownOpeningFamilyBacklogFromFrequencies(
       unavailableFrequencies,
       gamesWithOpeningName,
