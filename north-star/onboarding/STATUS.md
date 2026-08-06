@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-04
+Last updated: 2026-08-06
 
 ## Program state
 
@@ -16,6 +16,8 @@ Bounded import/backfill contract: ONB-002 squash-merged through [PR #204](https:
 
 Preparation orchestration: ONB-003 squash-merged through [PR #256](https://github.com/vokerg/chess_repertoir_trainer/pull/256) as `d41f75c080cd19ad106b2143acecd3b0606adacb`
 
+Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](https://github.com/vokerg/chess_repertoir_trainer/pull/282) as `885ef785bdac1b0c77cc500e3345745b0e723912`; completion reconciliation is in PR #293.
+
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
 Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/vokerg/chess_repertoir_trainer/pull/266) as `d6313823bd7da36991972a804f59d47d77578bdf` after corrected benchmark evidence and three self-review rounds.
@@ -26,9 +28,9 @@ Shared-position cleanup research: ONB-006 completed through [PR #281](https://gi
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next unclaimed `READY` task: ONB-022 / [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272)
+Next active completion boundary: ONB-022 / [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272), whose runtime merged through PR #284 while task and issue completion records remain open.
 
-Latest report: `reports/ONB-006-2026-08-04-second-self-review-addendum.md`
+Latest report: `reports/ONB-017-2026-08-04-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -150,16 +152,31 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 - optional tactical and Builder continuations;
 - functional Angular ownership with VT coordination.
 
+### ONB-017
+
+- `DataPreparationRun`, ordered account target, and retained preparation batch persistence;
+- immutable recipe/scope/range snapshots with nullable current-import and child-job links;
+- PostgreSQL lifecycle constraints and partial unique indexes for one non-terminal run per user and one active batch per run/stage;
+- database triggers retaining aggregate child evidence before job retention clears links;
+- configurable 50/50/3/10 wave defaults and 4/200/40 global admission caps;
+- bounded database-side ownership, scope, range, evidence, retry, active-work, and newest-first candidate selection;
+- one short globally serialized parent-locked transaction for capacity recount, candidate selection, and atomic batch/job/task creation;
+- direct-user priority above all preparation lanes;
+- immutable denominators, retained terminal evidence, and queue/settlement telemetry;
+- ONB-019 admission-guard seam without lifecycle persistence or destructive-safety overclaim;
+- exact implementation head `c226f15b9c75c6fb4cea3072828842d728b9eb5a` and final CI run 1994 (`30898278426`).
+
+Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 preserves the original task contract and reconciles the task, queue, status, and completion evidence. Issue #253 remains open until PR #293 is approved and squash-merged.
+
 ## Active and ready work
 
-### Active implementation
+### Active completion reconciliation
 
-- ONB-017 / #253 — preparation execution boundary — `IN_PROGRESS`; PR #282 merged the execution-boundary slice, while issue #253 and task completion records remain open.
+- ONB-022 / #272 — administrator authorization and read-only diagnostics — runtime squash-merged through PR #284; task and issue completion records remain open.
 
 ### Ready implementation
 
-- ONB-022 / #272 — administrator authorization and read-only diagnostics — `READY` after ONB-005 acceptance.
-- Before claiming ONB-022, re-inspect current authentication, deployment topology, and ONB-019 actor-key activity.
+- None recorded. Do not start a new implementation task until the active ONB-022 completion state is reconciled and the canonical queue explicitly promotes the next task to `READY`.
 
 ## Allocated implementation backlog
 
@@ -210,19 +227,19 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - partial destructive failure must retain its durable resource fence;
 - post-delete status retrieval cannot depend on recreating the user;
 - shared Position cleanup must remain separate from account/user purge;
-- current administrator authorization/read model is not implemented;
+- read-only administrator API runtime exists through ONB-022 / PR #284, but its task and issue completion records remain unreconciled;
 - current Angular navigation is static and contains no administrator capability state;
 - current API deployment documentation does not guarantee one replica, so in-process rate limiting cannot be treated as distributed enforcement;
-- current auth request context does not yet retain the signed session/factor/reverification fields required by administrator execution;
+- current auth request context now retains the signed session/factor/reverification fields needed by future administrator execution adapters, but no mutation execution is enabled;
 - CI-local provider/database/engine timings are evidence for initial configuration and budgets, not a public production ETA.
 
 ## Blockers to production implementation
 
 - ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
 - ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
-- ONB-017/018 have not delivered preparation execution/control;
+- ONB-017 delivered the preparation execution boundary; ONB-018 has not delivered preparation reconciliation/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
-- ONB-022/023 have not delivered read-only administrator API/UI;
+- ONB-022 delivered the read-only administrator API runtime through PR #284, but its completion records remain open; ONB-023 has not delivered the administrator UI;
 - ONB-024 remains blocked by canonical lifecycle services and a proven signed reverification flow;
 - onboarding projection/UI tasks remain blocked by durable foundations;
 - production-like Neon/provider/local-binary telemetry does not exist yet, so public ETA and capacity expansion remain disabled;
@@ -230,6 +247,18 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - Visual Transformation coordination remains required for final UI.
 
 ## Validation
+
+### ONB-017 implementation and completion reconciliation
+
+- implementation PR #282 introduced the preparation persistence, constraints, bounded candidate selection, globally serialized admission, retention evidence, configuration, and focused tests;
+- adversarial implementation self-review corrected provider-shaped speed/variant aliases, failed-evidence-only retries, cancellation-lease filtering, active-stage index coverage, and both direct-user/preparation race orderings;
+- exact implementation head is `c226f15b9c75c6fb4cea3072828842d728b9eb5a`;
+- final implementation CI run 1994 (`30898278426`) passed lint, build, architecture guardrails, the complete PostgreSQL migration chain, audits, and the full test suite;
+- PR #282 squash-merged as `885ef785bdac1b0c77cc500e3345745b0e723912`;
+- the first completion-reconciliation draft was incomplete because it changed only the task file, removed the original scope/acceptance/validation contract, left queue/status records stale, and recorded an incorrect implementation-head SHA;
+- the corrected PR #293 preserves the full task contract, records exact evidence, synchronizes `TASKS.md` and `STATUS.md`, and keeps issue #253 open until review and squash merge;
+- CI run 2098 passed on the initial documentation-only reconciliation commit; the corrected head requires its own final CI result before review completion;
+- local clone/build remains unavailable because this runtime cannot resolve or connect to `github.com`; no local result is claimed.
 
 ### ONB-006 documentation-only research
 
@@ -291,4 +320,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-Claim ONB-022 / #272 next after its required authentication, topology, and actor-key collision review. ONB-017 / #253 remains active; ONB-026 / #280 remains dependency-gated and `PROPOSED`.
+Complete review and squash merge of PR #293, then close issue #253 and reconcile its live issue state. Afterward, continue the still-active ONB-022 / #272 completion-record work before claiming any new implementation issue. Do not merge either pull request without explicit approval.
