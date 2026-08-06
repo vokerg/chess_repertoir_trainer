@@ -92,7 +92,11 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--ui-focus-ring);
 }
 
-.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible {
+.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible,
+.app-shell a[href]:focus-visible,
+.app-shell [role="button"]:focus-visible,
+.app-shell [role="link"]:focus-visible,
+.app-shell [tabindex]:not([tabindex="-1"]):focus-visible {
   outline: 3px solid var(--ui-focus-ring);
   outline-offset: 2px;
 }
@@ -202,10 +206,29 @@ textarea:focus {
   color: var(--ui-danger);
 }
 
+@media (max-width: 640px) {
+  .page-shell {
+    width: min(100%, calc(100vw - 16px));
+  }
+
+  .app-shell app-home-page .home-page {
+    width: min(100%, calc(100% - 16px));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .app-shell button:where(.primary, .secondary, .danger, .danger-text),
-  .compact-action,
-  .collection-card {
-    transition: none;
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  .app-shell *,
+  .app-shell *::before,
+  .app-shell *::after {
+    animation-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0.01ms !important;
   }
 }
