@@ -7,6 +7,22 @@ import {
 
 assert.deepEqual(resolveCommittedImportReconciliationRange({
   syncSince: new Date('2026-08-01T00:00:00.000Z'),
+  firstPersistedEndedAt: new Date('2026-08-02T08:00:00.000Z'),
+  lastPersistedEndedAt: new Date('2026-08-03T00:00:00.000Z'),
+}), {
+  from: new Date('2026-08-01T00:00:00.000Z'),
+  to: new Date('2026-08-03T00:00:00.000Z'),
+});
+assert.deepEqual(resolveCommittedImportReconciliationRange({
+  syncSince: new Date('2026-08-02T00:00:00.000Z'),
+  firstPersistedEndedAt: new Date('2026-08-01T08:00:00.000Z'),
+  lastPersistedEndedAt: new Date('2026-08-03T00:00:00.000Z'),
+}), {
+  from: new Date('2026-08-01T08:00:00.000Z'),
+  to: new Date('2026-08-03T00:00:00.000Z'),
+});
+assert.deepEqual(resolveCommittedImportReconciliationRange({
+  syncSince: new Date('2026-08-01T00:00:00.000Z'),
   firstPersistedEndedAt: null,
   lastPersistedEndedAt: new Date('2026-08-02T00:00:00.000Z'),
 }), {
