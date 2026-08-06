@@ -41,7 +41,8 @@ Classification is implemented under `apps/api/src/services/opening-book/` as:
 - `openingClassification.coverage.rules.ts` — RB-018 systematic family expansion and exceptions;
 - `openingClassification.coverage.corrections.rules.ts` — stable-ID replacements for corrected regex boundaries;
 - `openingClassificationService.ts` — transport-independent ordered matching and inheritance;
-- `openingClassificationAudit.ts` — deterministic grouping and frequency-weighting helpers for unmatched opening families.
+- `openingClassificationAudit.ts` — deterministic grouping and frequency-weighting helpers for unmatched opening families;
+- `openingClassificationCoverageAudit.ts` — weighted per-side semantic completeness, unknown-dimension and confidence metrics.
 
 The active rule version is `2026-07-rules-v2`.
 
@@ -95,7 +96,9 @@ Knowledge is implemented beside lookup and classification as:
 - `openingKnowledge.types.ts` — independent version, lifecycle, source, statement, plan, selector and result contracts;
 - `openingKnowledge.sources.ts` — source/license/retrieval provenance;
 - `openingKnowledge.rules.ts` — ordered reviewed family, subfamily and line knowledge;
-- `openingKnowledgeService.ts` — validation, matching, inheritance and runtime projection.
+- `openingKnowledgeService.ts` — validation, matching, inheritance and runtime projection;
+- `openingKnowledgeCoverageAudit.ts` — weighted descriptions, independent side completeness and deterministic family prioritization;
+- `openingKnowledgeBatchManifest.ts` — validated source-controlled format for bounded editorial delivery batches.
 
 The active knowledge version is `2026-08-knowledge-v1`. The initial corpus contains 25 reviewed rules covering the required Sicilian/Najdorf, French, Caro-Kann, London, Queen’s Gambit, King’s Indian, Grünfeld, English/Réti, Evans and Benko pilot areas plus a bounded set of related high-value families.
 
@@ -130,7 +133,61 @@ The validator also rejects duplicate rule/source/plan IDs, unknown classificatio
 
 The service returns `AVAILABLE`, `PARTIAL` or `UNAVAILABLE`. `AVAILABLE` requires concise and longer descriptions, both side summaries and at least one plan for each side. Knowledge coverage is intentionally separate from classification rule-match coverage; consumers must not manufacture generic plans for partial or unavailable results.
 
-There is no Prisma model, background job, runtime LLM call, runtime web lookup, public route or Angular contract in this foundation.
+Builder consumes one repertoire side, while the service status describes the complete two-sided record. Coverage audits therefore report White and Black summary/plan completeness independently instead of treating the global status as the only usefulness measure.
+
+There is no Prisma model, background job, runtime LLM call, runtime web lookup or separate public knowledge route.
+
+## Coverage and prioritization model
+
+RB-025 adds weighted observations shared by generated-book and imported-game audits.
+
+Classification coverage reports, independently for White and Black:
+
+- complete semantic dimensions;
+- complete semantic dimensions at high confidence;
+- unknown soundness, character, theoretical status, theory burden and roles;
+- high, medium and low confidence distribution.
+
+Knowledge coverage reports:
+
+- global `AVAILABLE`, `PARTIAL` and `UNAVAILABLE` status;
+- concise and longer description availability;
+- White and Black `AVAILABLE`, `PARTIAL` and `UNAVAILABLE` status based on summary plus plans;
+- missing strategic summaries and plans for each side;
+- the same side-specific classification uncertainty alongside knowledge gaps.
+
+The priority backlog is deterministic and versioned. It groups observations by root family and exposes every scoring factor:
+
+- unavailable global knowledge;
+- partial global knowledge;
+- missing descriptions, side summaries and plans;
+- side-specific knowledge gaps;
+- unknown classification dimensions;
+- low-confidence sides;
+- unique-name breadth.
+
+The priority score is an editorial ordering aid. It is not chess evaluation, candidate ranking, theoretical importance by itself, or a runtime recommendation. Generated-entry and imported-game-weighted reports must be reviewed together before selecting a batch.
+
+## Editorial batch manifests
+
+A bounded expansion batch is represented by `OpeningKnowledgeBatchManifest`.
+
+The manifest records:
+
+- schema version, stable batch ID, revision and lifecycle;
+- priority-policy version and selected families;
+- exact knowledge/classification baseline versions;
+- generated-entry, unique-name and optional imported-game status snapshots;
+- expected measurable gains;
+- planned stable knowledge-rule IDs;
+- selector and knowledge intent summaries;
+- affected sides, registered sources and regression fixtures;
+- minimum accepted gains and authority guardrails;
+- reviewer identity/date once the batch is reviewed or applied.
+
+Validation rejects stale priority-policy versions, invalid status totals, duplicate rule/family/source/fixture values, missing registered sources, missing regression fixtures, negative gains, impossible dates and reviewed/applied batches without a reviewer.
+
+A manifest does not create runtime rules. Runtime content is added only by a separately reviewed change to the existing rule/source registries, followed by before/after audits and normal regression validation.
 
 ## Generated-book coverage audits
 
@@ -146,12 +203,16 @@ Run the independent knowledge audit with:
 npm run opening-book:knowledge-audit --workspace=apps/api
 ```
 
+The classification audit retains legacy match coverage and adds `dimensionCoverage` for side-specific semantic certainty.
+
 The knowledge audit processes every generated row and reports:
 
 - `AVAILABLE`, `PARTIAL` and `UNAVAILABLE` entry and unique-name coverage;
+- the RB-025 `coverageModel` described above;
+- deterministic priority-policy identity and family backlog;
 - rule and source usage;
 - unused rule IDs;
-- a frequency-sorted unavailable-family backlog.
+- the legacy frequency-sorted unavailable-family backlog.
 
 CI publishes classification and knowledge reports as separate artifacts so complete classification matching cannot be mistaken for complete strategic knowledge coverage.
 
@@ -169,14 +230,19 @@ Run the game-weighted knowledge audit with:
 npm run opening-book:knowledge-game-audit --workspace=apps/api
 ```
 
-The knowledge command reads existing `ImportedGame.openingName` and `openingEco`, resolves the closest generated entry where available, and reports game-weighted availability plus an unavailable-family backlog. It adds no knowledge table, persistence, backfill, API or background job.
+The commands group existing `ImportedGame.openingName` and `openingEco` in the database, resolve the closest generated entry where available, and apply game counts as audit weights. They do not load an unbounded game set into Node.
+
+The imported-game reports expose the same `dimensionCoverage` and `coverageModel` shapes as the generated reports, allowing high-volume personal gaps to be distinguished from broad generated-book gaps. A zero-row CI database produces a valid zero-weight report.
+
+The audit path adds no knowledge table, persistence, backfill, API or background job.
 
 ## Non-goals
 
 - No classification or knowledge database and no one row per generated opening entry.
-- No Stockfish or engine-assisted classification/knowledge audit.
+- No Stockfish or engine-assisted runtime classification/knowledge audit.
 - No runtime external API or runtime LLM call.
 - No Player Chess Profile aggregation in the opening-book services.
-- No public API or UI field until a concrete consumer requires it.
+- No new public knowledge endpoint or client-side lookup.
 - No automatic imported-game backfill because both services derive results from existing opening metadata.
 - No machine-actionable move recommendation or forced-plan field.
+- No use of editorial priority scores in candidate ranking, Builder state or course writes.
