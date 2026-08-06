@@ -4,6 +4,10 @@ import {
   isStandardImportedGameVariant,
   normalizeImportedGameVariant,
 } from '../modules/imported-games/imported-game-workflow-eligibility';
+import {
+  PlayedGameActivityReconciliationService,
+  resolveCommittedImportReconciliationRange,
+} from '../modules/activity-feed/played-game-activity.service';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const LICHESS_GAMES_URL = 'https://lichess.org/api/games/user';
@@ -232,6 +236,7 @@ export const LichessImportService = {
     let gamesFailed = 0;
     const importedGameIds: number[] = [];
     const eligibleImportedGameIds: number[] = [];
+    let minActivityEndedAt: Date | null = null;
     let maxEndedAt = account.syncCursorTime ?? null;
 
     try {
@@ -287,12 +292,30 @@ export const LichessImportService = {
             gamesImported += 1;
           }
 
-          if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
-            maxEndedAt = data.endedAt;
+          if (data.endedAt) {
+            if (!minActivityEndedAt || data.endedAt < minActivityEndedAt) {
+              minActivityEndedAt = data.endedAt;
+            }
+            if (!maxEndedAt || data.endedAt > maxEndedAt) {
+              maxEndedAt = data.endedAt;
+            }
           }
         } catch (err) {
           gamesFailed += 1;
         }
+      }
+
+      const reconciliationRange = resolveCommittedImportReconciliationRange({
+        syncSince,
+        firstPersistedEndedAt: minActivityEndedAt,
+        lastPersistedEndedAt: maxEndedAt,
+      });
+      if (reconciliationRange) {
+        await PlayedGameActivityReconciliationService.reconcileCommittedRange({
+          userId: account.userId,
+          accountId: account.id,
+          ...reconciliationRange,
+        });
       }
 
       const completedAt = new Date();

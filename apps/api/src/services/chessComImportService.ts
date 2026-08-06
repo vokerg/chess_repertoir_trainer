@@ -4,6 +4,10 @@ import {
   isStandardImportedGameVariant,
   normalizeImportedGameVariant,
 } from '../modules/imported-games/imported-game-workflow-eligibility';
+import {
+  PlayedGameActivityReconciliationService,
+  resolveCommittedImportReconciliationRange,
+} from '../modules/activity-feed/played-game-activity.service';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
@@ -330,6 +334,7 @@ export const ChessComImportService = {
     let archivesSkipped = 0;
     const importedGameIds: number[] = [];
     const eligibleImportedGameIds: number[] = [];
+    let minActivityEndedAt: Date | null = null;
     let maxEndedAt = account.syncCursorTime ?? null;
 
     try {
@@ -392,13 +397,31 @@ export const ChessComImportService = {
               gamesImported += 1;
             }
 
-            if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
-              maxEndedAt = data.endedAt;
+            if (data.endedAt) {
+              if (!minActivityEndedAt || data.endedAt < minActivityEndedAt) {
+                minActivityEndedAt = data.endedAt;
+              }
+              if (!maxEndedAt || data.endedAt > maxEndedAt) {
+                maxEndedAt = data.endedAt;
+              }
             }
           } catch {
             gamesFailed += 1;
           }
         }
+      }
+
+      const reconciliationRange = resolveCommittedImportReconciliationRange({
+        syncSince,
+        firstPersistedEndedAt: minActivityEndedAt,
+        lastPersistedEndedAt: maxEndedAt,
+      });
+      if (reconciliationRange) {
+        await PlayedGameActivityReconciliationService.reconcileCommittedRange({
+          userId: account.userId,
+          accountId: account.id,
+          ...reconciliationRange,
+        });
       }
 
       const completedAt = new Date();
