@@ -6,8 +6,11 @@ import { GamesTableComponent } from './games-table.component';
 
 describe('GamesTableComponent', () => {
   let fixture: ComponentFixture<GamesTableComponent>;
+  let isGameActive: jasmine.Spy;
 
   beforeEach(async () => {
+    isGameActive = jasmine.createSpy('isGameActive').and.returnValue(false);
+
     await TestBed.configureTestingModule({
       imports: [GamesTableComponent],
       providers: [
@@ -15,7 +18,7 @@ describe('GamesTableComponent', () => {
         {
           provide: ImportedGameJobStore,
           useValue: {
-            isGameActive: jasmine.createSpy('isGameActive').and.returnValue(false),
+            isGameActive,
             activeRunForGame: jasmine.createSpy('activeRunForGame').and.returnValue(null),
           },
         },
@@ -57,15 +60,7 @@ describe('GamesTableComponent', () => {
   });
 
   it('uses native Analyse buttons in both responsive representations', () => {
-    const unanalysedGame = {
-      ...game(),
-      analysis: {
-        status: 'NOT_ANALYZED' as const,
-        whiteAccuracy: null,
-        blackAccuracy: null,
-        userAccuracy: null,
-      },
-    };
+    const unanalysedGame = gameAwaitingAnalysis();
     let analysedGame: ImportedGameSearchItem | undefined;
     fixture.componentInstance.analyse.subscribe((candidate) => (analysedGame = candidate));
     fixture.componentRef.setInput('games', [unanalysedGame]);
@@ -84,7 +79,39 @@ describe('GamesTableComponent', () => {
     expect(fixture.nativeElement.querySelector('app-game-action-menu')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Open on Lichess');
   });
+
+  it('disables both Analyse buttons while the game has an active analysis job', () => {
+    isGameActive.and.returnValue(true);
+    const unanalysedGame = gameAwaitingAnalysis();
+    let analysedGame: ImportedGameSearchItem | undefined;
+    fixture.componentInstance.analyse.subscribe((candidate) => (analysedGame = candidate));
+    fixture.componentRef.setInput('games', [unanalysedGame]);
+    fixture.detectChanges();
+
+    const analyseButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('button.games-row-action-link'),
+    ) as HTMLButtonElement[];
+
+    expect(analyseButtons.length).toBe(2);
+    expect(analyseButtons.every((button) => button.disabled)).toBeTrue();
+    expect(analyseButtons.every((button) => button.textContent?.trim() === 'Analysing...')).toBeTrue();
+
+    analyseButtons[0].click();
+    expect(analysedGame).toBeUndefined();
+  });
 });
+
+function gameAwaitingAnalysis(): ImportedGameSearchItem {
+  return {
+    ...game(),
+    analysis: {
+      status: 'NOT_ANALYZED',
+      whiteAccuracy: null,
+      blackAccuracy: null,
+      userAccuracy: null,
+    },
+  };
+}
 
 function game(): ImportedGameSearchItem {
   return {
