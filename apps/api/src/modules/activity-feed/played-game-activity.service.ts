@@ -25,11 +25,12 @@ interface PlayedGameRepositoryBoundary {
     toDate: string;
     fromUtc: Date;
     toUtcExclusive: Date;
-  }): Promise<PlayedGameDaySummary[]>;
+  }, transaction: ActivityFeedTransaction): Promise<PlayedGameDaySummary[]>;
   listExistingAggregateDates(
     userId: number,
     fromDate: string,
     toDate: string,
+    transaction: ActivityFeedTransaction,
   ): Promise<string[]>;
   getHistoryBounds(userId: number): Promise<PlayedGameHistoryBounds>;
   listBackfillUserIds(afterUserId: number, limit: number): Promise<number[]>;
@@ -49,6 +50,10 @@ interface ActivityFeedBoundary {
 interface ActivityRepositoryBoundary {
   transaction<T>(work: (transaction: ActivityFeedTransaction) => Promise<T>): Promise<T>;
   getTimeZone(userId: number): Promise<string>;
+  getTimeZoneForWrite(
+    userId: number,
+    transaction: ActivityFeedTransaction,
+  ): Promise<string>;
 }
 
 export interface PlayedGameActivityWriteScope {
@@ -185,27 +190,42 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
         input.toDate,
       );
       const bounds = paddedUtcBounds(chunkStart, chunkEnd);
-      const [summaries, existingAggregateDates] = await Promise.all([
-        repository.summarizeDays({
-          userId: input.userId,
-          timeZone: input.timeZone,
-          fromDate: chunkStart,
-          toDate: chunkEnd,
-          ...bounds,
-        }),
-        repository.listExistingAggregateDates(input.userId, chunkStart, chunkEnd),
-      ]);
-      const summariesByDate = new Map(summaries.map((summary) => [summary.activityDate, summary]));
-      const datesToReconcile = [...new Set([
-        ...summariesByDate.keys(),
-        ...existingAggregateDates,
-      ])].sort();
-
-      if (datesToReconcile.length > 0) await writeGuard.run({
+      const chunkResult = await writeGuard.run({
         userId: input.userId,
         ...(input.accountId === undefined ? {} : { accountId: input.accountId }),
         reason: 'PLAYED_GAME_ACTIVITY_RECONCILIATION',
       }, async (transaction) => {
+        const activeTimeZone = await activityRepository.getTimeZoneForWrite(
+          input.userId,
+          transaction,
+        );
+        if (activeTimeZone !== input.timeZone) {
+          throw new Error('Effective time zone changed during played-game reconciliation');
+        }
+
+        const [summaries, existingAggregateDates] = await Promise.all([
+          repository.summarizeDays({
+            userId: input.userId,
+            timeZone: input.timeZone,
+            fromDate: chunkStart,
+            toDate: chunkEnd,
+            ...bounds,
+          }, transaction),
+          repository.listExistingAggregateDates(
+            input.userId,
+            chunkStart,
+            chunkEnd,
+            transaction,
+          ),
+        ]);
+        const summariesByDate = new Map(
+          summaries.map((summary) => [summary.activityDate, summary]),
+        );
+        const datesToReconcile = [...new Set([
+          ...summariesByDate.keys(),
+          ...existingAggregateDates,
+        ])].sort();
+
         for (const date of datesToReconcile) {
           const summary = summariesByDate.get(date);
           await activityFeed.reconcileDaily({
@@ -216,11 +236,16 @@ export function createPlayedGameActivityReconciliationService(dependencies: Depe
             firstOccurredAt: summary?.firstOccurredAt ?? null,
             lastOccurredAt: summary?.lastOccurredAt ?? null,
           }, transaction);
-          daysReconciled += 1;
-          gamesCounted += summary?.count ?? 0;
         }
+
+        return {
+          daysReconciled: datesToReconcile.length,
+          gamesCounted: summaries.reduce((total, summary) => total + summary.count, 0),
+        };
       });
 
+      daysReconciled += chunkResult.daysReconciled;
+      gamesCounted += chunkResult.gamesCounted;
       chunksProcessed += 1;
       chunkStart = addDays(chunkEnd, 1);
     }

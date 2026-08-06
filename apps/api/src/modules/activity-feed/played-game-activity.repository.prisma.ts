@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '../../prisma';
 
 export interface PlayedGameDaySummary {
@@ -25,14 +25,17 @@ interface SummarizePlayedGameDaysInput {
 }
 
 type PlayedGameActivityDatabase = Pick<
-  PrismaClient,
+  Prisma.TransactionClient,
   'appUser' | 'importedGame' | 'userActivityDailyAggregate' | '$queryRaw'
 >;
 
 export function createPlayedGameActivityRepository(database: PlayedGameActivityDatabase = prisma) {
   return {
-    async summarizeDays(input: SummarizePlayedGameDaysInput): Promise<PlayedGameDaySummary[]> {
-      return database.$queryRaw<PlayedGameDaySummary[]>(Prisma.sql`
+    async summarizeDays(
+      input: SummarizePlayedGameDaysInput,
+      client: PlayedGameActivityDatabase = database,
+    ): Promise<PlayedGameDaySummary[]> {
+      return client.$queryRaw<PlayedGameDaySummary[]>(Prisma.sql`
         SELECT
           TO_CHAR((("endedAt" AT TIME ZONE 'UTC') AT TIME ZONE ${input.timeZone})::date, 'YYYY-MM-DD') AS "activityDate",
           COUNT(DISTINCT "id")::int AS "count",
@@ -54,8 +57,9 @@ export function createPlayedGameActivityRepository(database: PlayedGameActivityD
       userId: number,
       fromDate: string,
       toDate: string,
+      client: PlayedGameActivityDatabase = database,
     ): Promise<string[]> {
-      const aggregates = await database.userActivityDailyAggregate.findMany({
+      const aggregates = await client.userActivityDailyAggregate.findMany({
         where: {
           userId,
           type: 'GAMES_PLAYED',
