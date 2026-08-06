@@ -175,13 +175,13 @@ Activity loading is independent. Failure produces a local unavailable state and 
 
 | Task | Issue | State | Depends on |
 | --- | --- | --- | --- |
-| ACT-000 Program foundation | [#245](https://github.com/vokerg/chess_repertoir_trainer/issues/245) | IN_PROGRESS | — |
+| ACT-000 Program foundation | [#245](https://github.com/vokerg/chess_repertoir_trainer/issues/245) | COMPLETE | — |
 | ACT-001 Activity ledger and daily-goal API | [#246](https://github.com/vokerg/chess_repertoir_trainer/issues/246) | COMPLETE | — |
 | ACT-002 In-app activity producers | [#247](https://github.com/vokerg/chess_repertoir_trainer/issues/247) | COMPLETE | ACT-001 |
 | ACT-003 Imported played-game reconciliation | [#248](https://github.com/vokerg/chess_repertoir_trainer/issues/248) | COMPLETE | ACT-001 |
-| ACT-004 Home Today checklist | [#249](https://github.com/vokerg/chess_repertoir_trainer/issues/249) | READY | ACT-001, ACT-002, ACT-003 |
+| ACT-004 Home Today checklist | [#249](https://github.com/vokerg/chess_repertoir_trainer/issues/249) | COMPLETE | ACT-001, ACT-002, ACT-003 |
 
-ACT-003 is complete. ACT-004 is now the next dependency-satisfied Activity Feed task.
+ACT-001 through ACT-004 are complete. The Activity Feed and Daily Momentum foundation has reached its defined completion boundary and is closed.
 
 Recommended task branches:
 
