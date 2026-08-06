@@ -26,8 +26,9 @@ The review found:
 4. reduced-motion handling disabled transitions on only a few named classes;
 5. desktop page-shell and Home gutters remained unnecessarily large at compact widths;
 6. the evaluation graph removed focus outlines from keyboard-selectable SVG points without a replacement;
-7. the Games table implemented Analyse actions as anchors with `role="button"`, which did not provide native Space-key button behavior;
-8. the original pull request and report claimed complete VT-302 delivery despite missing functional onboarding and final browser evidence.
+7. the evaluation graph exposed focusable buttons beneath `role="img"` and placed every evaluated move in the page Tab sequence instead of managing it as one keyboard composite;
+8. the Games table implemented Analyse actions as anchors with `role="button"`, and the first native-button correction left its disabled visual selector targeting the removed `aria-disabled` state;
+9. the original pull request and report claimed complete VT-302 delivery despite missing functional onboarding and final browser evidence.
 
 ## Implemented foundation changes
 
@@ -40,8 +41,9 @@ The branch now:
 - disables effective feature animation, transition, and smooth scrolling under `prefers-reduced-motion: reduce`;
 - reduces shared page-shell and Home gutters at widths up to 640px;
 - restores a visible non-scaling focus stroke for keyboard-selectable evaluation-graph points;
+- exposes the evaluation graph as a labelled interactive group with one roving Tab stop, arrow/Home/End navigation, Enter/Space activation, and `aria-pressed` selection state;
 - replaces Analyse pseudo-buttons with native `<button type="button">` controls in desktop and mobile Games representations;
-- adds focused component coverage for the native Analyse controls;
+- preserves the muted waiting treatment on disabled Analyse buttons and adds focused coverage for active-job behavior;
 - adds `scripts/check-web-accessibility-contract.mjs` to the normal architecture gate.
 
 The accessibility contract guard now fails when:
@@ -50,7 +52,8 @@ The accessibility contract guard now fails when:
 - an Angular template uses an anchor with `role="button"`;
 - the design system loses its opaque focus-outline role;
 - focus-outline contrast falls below 3:1 against the principal white, canvas, or graphite surfaces;
-- the keyboard-selectable evaluation graph loses its visible focus stroke.
+- the keyboard-selectable evaluation graph loses its visible focus stroke;
+- the interactive evaluation graph regresses to `role="img"`, loses its labelled group semantics, roving tabindex, or composite keyboard binding.
 
 No API, backend, schema, dependency, authentication, provider, analysis, course, or training business logic is changed.
 
@@ -59,9 +62,10 @@ No API, backend, schema, dependency, authentication, provider, analysis, course,
 - CI run 2122 passed on the original two-file draft head; that result is historical only.
 - CI run 2128 passed dependency installation, lint, the full monorepo build, audits, architecture guardrails, the complete migration chain, the full test suite, artifact upload, and cleanup on corrected head `3106d607c7f88e30ca8967afb4bf580ea5001854`.
 - the repository-wide focus replacement workflow reported 59 corrected declarations across 54 files and removed its temporary workflow file before committing;
-- the final accessibility guard and record changes require their own exact-head CI result.
+- CI run 2138 passed the complete repository workflow, including the first accessibility contract, on remediation head `c040f90de20d03c4c46b6a58be92a8e5afa9d37c`;
+- ACT-004 compatibility head `7447293fb0cee7e4a2ee2df8d234cfa18e79a9ab` passed its own complete CI run 2139.
 
-The repository CI remains authoritative for Angular template/type compilation, web build and tests, lint, architecture checks, migrations, and audits.
+The repository CI remains authoritative for Angular template/type compilation, web build and tests, lint, architecture checks, migrations, and audits. Any later self-review correction must receive a new green exact-head result before integration; the pull request records the current exact run rather than freezing it in this report.
 
 Direct authenticated browser, keyboard, screen-reader, zoom, contrast-tool, reduced-motion, and representative-device observation is unavailable in this execution environment and is not claimed as passed.
 
@@ -75,6 +79,6 @@ Direct authenticated browser, keyboard, screen-reader, zoom, contrast-tool, redu
 
 ## Completion assessment
 
-All concrete accessibility defects identified in this branch's static review have been corrected and regression-guarded. The branch remains a draft foundation slice because the functional onboarding dependency, cross-route state review, manual assistive-technology/browser evidence, and final program reconciliation are outside the presently available implementation boundary.
+All concrete accessibility defects identified through the current static self-review have been corrected and regression-guarded. The branch remains a draft foundation slice because the functional onboarding dependency, cross-route state review, manual assistive-technology/browser evidence, and final program reconciliation are outside the presently available implementation boundary.
 
 PR #297 must reference issue #133 without closing it. It may be considered independently for integration only after exact-head CI and explicit approval; it must not be represented as completion of VT-302.
