@@ -71,6 +71,14 @@
       </a>
     </section>
 
+    <app-today-activity-card
+      [activity]="store.todayActivity()"
+      [loading]="store.activityLoading()"
+      [error]="store.activityError()"
+      [notice]="store.activityNotice()"
+      (retry)="reloadActivity()"
+    />
+
     <section class="recommendations-section" aria-labelledby="recommendations-title">
       <div class="section-heading compact-heading">
         <div>
