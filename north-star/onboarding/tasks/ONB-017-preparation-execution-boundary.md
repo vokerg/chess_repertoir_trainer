@@ -8,7 +8,7 @@ Order: 77
 
 Delivery class: Implementation
 
-Planning maturity: Decisioned by ONB-003; numeric admission defaults supplied by ONB-007; implementation validated and squash-merged; completion reconciliation tracked through PR #293
+Planning maturity: Decisioned by ONB-003; numeric admission defaults supplied by ONB-007; implementation validated and squash-merged; completion reconciliation completed through PR #293
 
 GitHub issue: [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253)
 
@@ -129,6 +129,8 @@ Final implementation CI: run 1994 (`30898278426`), passed lint, build, architect
 
 Completion reconciliation pull request: [#293](https://github.com/vokerg/chess_repertoir_trainer/pull/293)
 
+Final reconciliation CI: run 2114 (`31077878915`) on head `e315eee560adfa9ba9a88e6baa2a212d1a86244e`, passed dependency installation, lint, the full monorepo build, opening and imported-game audits, architecture guardrails, the complete PostgreSQL migration chain, the full test suite, and artifact upload
+
 Completed at: 2026-08-04
 
 Reconciled at: 2026-08-06 through PR #293
@@ -137,4 +139,4 @@ Reconciled at: 2026-08-06 through PR #293
 
 The first reconciliation draft was incomplete: it changed only this task file, removed the original scope/acceptance/validation contract, left the canonical queue and status ledger stale, and recorded an incorrect implementation-head SHA. A second pass also found that reduced configurable capacity tests existed but the required large-candidate/default-200-task validation was not explicit.
 
-The corrected reconciliation preserves the full task contract, records the exact implementation evidence, synchronizes the canonical queue and status records, and adds focused regression coverage using a 250-game candidate set, four bounded 50-game waves, the exact default 200 queued-task ceiling, and a blocked fifth parent. Issue #253 must remain open until PR #293 is approved and squash-merged; no merge is performed by this task.
+The corrected reconciliation preserves the full task contract, records the exact implementation evidence, synchronizes the canonical queue and status records, and adds focused regression coverage using a 250-game candidate set, four bounded 50-game waves, the exact default 200 queued-task ceiling, and a blocked fifth parent. PR #293 completed the reconciliation, and issue #253 was closed as completed after its squash merge.
