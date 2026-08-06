@@ -15,7 +15,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 60 | ONB-005 | [#152](https://github.com/vokerg/chess_repertoir_trainer/issues/152) | P1 | DONE | Design administrator authentication, diagnostics, and action model | Research | Squash-merged through PR #275 after three self-review rounds |
 | 70 | ONB-006 | [#153](https://github.com/vokerg/chess_repertoir_trainer/issues/153) | P1 | DONE | Design database-only orphan shared-position cleanup | Research | Squash-merged through PR #281 after two adversarial self-review rounds; allocated ONB-026/#280 |
 | 75 | ONB-016 | [#224](https://github.com/vokerg/chess_repertoir_trainer/issues/224) | P1 | DONE | Define lightweight onboarding product and experience blueprint | Research/product design | Squash-merged through PR #225 as `b485b9b`; informs ONB-008/009/010 and VT-302 |
-| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | DONE | Persist preparation execution boundary and bounded child-job batches | Implementation | Squash-merged through PR #282 as `885ef785`; completion reconciliation in PR #293 |
+| 77 | ONB-017 | [#253](https://github.com/vokerg/chess_repertoir_trainer/issues/253) | P0 | DONE | Persist preparation execution boundary and bounded child-job batches | Implementation | Runtime squash-merged through PR #282 as `885ef785`; completion records reconciled through PR #293 |
 | 78 | ONB-018 | [#254](https://github.com/vokerg/chess_repertoir_trainer/issues/254) | P0 | PROPOSED | Implement progressive preparation reconciliation and control | Implementation | ONB-003/007/017; ONB-011/012/015 |
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001/007; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
@@ -170,7 +170,7 @@ ONB-016 defines the route-based lightweight first-value experience, progressive 
 
 ## Completed implementation
 
-ONB-017 / #253 delivered the preparation execution boundary through PR #282 and squash commit `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 reconciles its task, queue, status, exact implementation head, validation evidence, and preserved acceptance contract. Issue #253 remains open until that reconciliation is approved and squash-merged.
+ONB-017 / #253 delivered the preparation execution boundary through PR #282 and squash commit `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 reconciled its task, queue, status, exact implementation head, validation evidence, and preserved acceptance contract. Issue #253 was closed as completed after the reconciliation squash merge.
 
 ## Deterministic next task
 
