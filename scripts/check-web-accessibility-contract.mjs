@@ -11,7 +11,7 @@ const evaluationGraphCssUrl = new URL(
 
 const lowContrastStandaloneOutline =
   /outline\s*:\s*[^;\n{}]+\s+solid\s+(?:var\(--ui-focus-ring\)|rgba\(\s*31\s*,\s*120\s*,\s*101\s*,\s*0\.38\s*\))\s*;/i;
-const anchorButtonRole = /<a\b(?=[^>]*\brole\s*=\s*["']button["'])[^>]*>/gis;
+const anchorButtonRole = /<a\b(?=[^>]*\brole\s*=\s*["']button["'])[^>]*>/is;
 
 for (const fileUrl of sourceFiles(webSourceRoot)) {
   const path = fileURLToPath(fileUrl);
@@ -35,16 +35,20 @@ for (const fileUrl of sourceFiles(webSourceRoot)) {
 }
 
 const designSystem = readFileSync(designSystemUrl, 'utf8');
-assert.match(
-  designSystem,
-  /--ui-focus-outline:\s*#[0-9a-f]{6};/i,
-  'The production design system must expose an opaque focus-outline token',
-);
+const focusOutline = readHexToken(designSystem, '--ui-focus-outline');
 assert.match(
   designSystem,
   /outline:\s*3px\s+solid\s+var\(--ui-focus-outline\);/,
   'The shared signed-in-shell focus rule must use the opaque focus-outline token',
 );
+
+for (const surfaceToken of ['--ui-surface', '--ui-canvas', '--ui-chrome']) {
+  const surface = readHexToken(designSystem, surfaceToken);
+  assert.ok(
+    contrastRatio(focusOutline, surface) >= 3,
+    `${surfaceToken} must have at least 3:1 contrast with --ui-focus-outline`,
+  );
+}
 
 const evaluationGraphCss = readFileSync(evaluationGraphCssUrl, 'utf8');
 assert.match(
@@ -52,6 +56,35 @@ assert.match(
   /\.point-hit-target:focus-visible\s*\{[^}]*stroke:\s*var\(--ui-focus-outline\);[^}]*\}/s,
   'Keyboard-selectable evaluation points must retain a visible focus stroke',
 );
+
+function readHexToken(css, token) {
+  const match = css.match(new RegExp(`${escapeRegExp(token)}:\\s*(#[0-9a-f]{6});`, 'i'));
+  assert.ok(match, `${token} must be defined as an opaque six-digit hex color`);
+  return match[1];
+}
+
+function contrastRatio(first, second) {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  return (
+    (Math.max(firstLuminance, secondLuminance) + 0.05) /
+    (Math.min(firstLuminance, secondLuminance) + 0.05)
+  );
+}
+
+function relativeLuminance(hex) {
+  const channels = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const linear = channels.map((channel) =>
+    channel <= 0.04045
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function sourceFiles(directoryUrl) {
   return readdirSync(directoryUrl, { withFileTypes: true }).flatMap((entry) => {
