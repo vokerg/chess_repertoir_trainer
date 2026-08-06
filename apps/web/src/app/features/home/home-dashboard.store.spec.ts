@@ -39,7 +39,12 @@ describe('HomeDashboardStore activity loading', () => {
       'searchGames',
     ]);
     gamesApi.getFacets.and.returnValue(of({} as ImportedGameFacetsResponse));
-    gamesApi.searchGames.and.returnValue(of({ items: [] } as ImportedGameSearchResponse));
+    const emptySearchResponse: ImportedGameSearchResponse = {
+      items: [],
+      pageInfo: { nextCursor: null, hasMore: false },
+      appliedFilters: { sort: 'endedAtDesc', limit: 6 },
+    };
+    gamesApi.searchGames.and.returnValue(of(emptySearchResponse));
 
     TestBed.configureTestingModule({
       providers: [
