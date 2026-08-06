@@ -1,3 +1,4 @@
+import { OPENING_BOOK } from './openingBook.generated';
 import {
   type OpeningKnowledgeBatchManifest,
   validateOpeningKnowledgeBatchManifest,
@@ -68,7 +69,7 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
         'knowledge-family-ruy-lopez',
         'classification rule family-ruy-lopez',
         'Add principal-family orientation around central pressure, development, the e-file and long-term queenside structure for both sides.',
-        ['Ruy Lopez', 'Ruy Lopez: Closed', 'Ruy Lopez: Open'],
+        ['Ruy Lopez', 'Ruy Lopez: Alapin Defense', 'Ruy Lopez: Open'],
       ),
       rule(
         'knowledge-subfamily-ruy-lopez-berlin',
@@ -140,13 +141,13 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
         'knowledge-family-benoni-defense',
         'classification rule family-benoni-defense',
         'Describe White’s space and central majority versus Black’s queenside play, dark-square activity and timed pawn breaks.',
-        ['Benoni Defense', 'Modern Benoni Defense: Classical Variation'],
+        ['Benoni Defense', 'Benoni Defense: Classical Variation'],
       ),
       rule(
         'knowledge-subfamily-benoni-czech',
         'Benoni Defense names containing Czech Benoni',
         'Add the closed-centre manoeuvring and delayed-break boundary rather than inheriting open Modern Benoni assumptions.',
-        ['Benoni Defense: Czech Benoni Defense', 'Benoni Defense: Czech Benoni Defense, King’s Indian System'],
+        ['Benoni Defense: Czech Benoni Defense'],
       ),
       rule(
         'knowledge-family-alekhine-defense',
@@ -170,6 +171,14 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
   },
 ];
 
+const openingNames = new Set(OPENING_BOOK.map((entry) => entry.name));
 for (const manifest of OPENING_KNOWLEDGE_BATCH_MANIFESTS) {
   validateOpeningKnowledgeBatchManifest(manifest);
+  for (const plannedRule of manifest.plannedRules) {
+    for (const fixture of plannedRule.regressionFixtures) {
+      if (!openingNames.has(fixture)) {
+        throw new Error(`Opening knowledge batch rule ${plannedRule.id} has missing fixture: ${fixture}`);
+      }
+    }
+  }
 }
