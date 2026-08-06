@@ -12,6 +12,10 @@ const evaluationGraphHtmlUrl = new URL(
   '../apps/web/src/app/features/games/components/game-evaluation-graph.component.html',
   import.meta.url,
 );
+const gamesTableCssUrl = new URL(
+  '../apps/web/src/app/features/games/components/games-table.component.css',
+  import.meta.url,
+);
 
 const lowContrastStandaloneOutline =
   /outline\s*:\s*[^;\n{}]+\s+solid\s+(?:var\(--ui-focus-ring\)|rgba\(\s*31\s*,\s*120\s*,\s*101\s*,\s*0\.38\s*\))\s*;/i;
@@ -81,6 +85,18 @@ assert.match(
   evaluationGraphHtml,
   /\(keydown\)="handlePointKeydown\(\$event, point\.nodeId\)"/,
   'The evaluation graph must retain composite keyboard navigation',
+);
+
+const gamesTableCss = readFileSync(gamesTableCssUrl, 'utf8');
+assert.doesNotMatch(
+  gamesTableCss,
+  /\.games-row-action-link\[aria-disabled=['"]true['"]\]/,
+  'Native Analyse buttons must not retain the removed anchor aria-disabled selector',
+);
+assert.match(
+  gamesTableCss,
+  /\.games-row-action-link:disabled\s*\{[^}]*cursor:\s*wait;[^}]*\}/s,
+  'Disabled Analyse buttons must retain the visible waiting treatment',
 );
 
 function readHexToken(css, token) {
