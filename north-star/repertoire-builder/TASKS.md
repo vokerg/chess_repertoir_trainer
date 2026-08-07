@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-08-01
+Last updated: 2026-08-07
 
 This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
@@ -27,19 +27,20 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 154 | RB-020 | #219 | P3 | DONE | Post-apply Builder summary prototype | PR #228; `d795572`; CI #1652 |
 | 160 | RB-016 | #104 | P2 | BLOCKED | Adoption and real-game outcomes | Requires sufficient real Builder/course use |
 | 165 | RB-021 | #240 | P1 | DONE | Side-aware opening knowledge foundation research | PR #244; `8e4e0ad`; CI #1757 |
-| 170 | RB-022 | #241 | P1 | READY | Static side-aware opening knowledge implementation | RB-021 architecture accepted |
-| 175 | RB-023 | #242 | P2 | BLOCKED | Opening knowledge in Repertoire Builder | Requires RB-022 reviewed knowledge service |
-| 180 | RB-024 | #243 | P3 | BLOCKED | AI game review grounding with opening plans | Requires RB-022 reviewed knowledge service |
+| 170 | RB-022 | #241 | P1 | DONE | Static side-aware opening knowledge implementation | PR #255 |
+| 175 | RB-023 | #242 | P2 | DONE | Opening knowledge in Repertoire Builder | PR #262 |
+| 180 | RB-024 | #243 | P3 | DONE | AI game review grounding with opening plans | PR #268 |
+| 185 | RB-025 | #290 | P1 | REVIEW | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; 3,733/3,733 generated entries available |
 
 ## Current execution state
 
-- The deterministic Builder capability chain and prior optional prototypes remain complete.
-- RB-016 remains blocked on real usage and follow-up-game evidence.
-- RB-021 is complete: the separate deterministic opening-knowledge architecture, hybrid selector, merge semantics and source/editorial policy were accepted on 2026-08-01.
-- RB-022 is the next dependency-satisfied P1 task.
-- RB-023 and RB-024 remain blocked until RB-022 provides the reviewed service, corpus and stable knowledge identity.
+- The deterministic Builder capability chain, static opening-knowledge service, Builder consumer and bounded AI game-review consumer are complete.
+- RB-016 remains independently blocked on real usage and follow-up-game evidence.
+- RB-025 has reached 100% strategic-knowledge coverage of the pinned generated opening book and remains in review through stacked PRs #302/#304.
+- Completion head `6acbcbe08797e059ca9d31b281de0425935c8e55` passed CI #2208 with 3,733/3,733 generated entries, 3,167/3,167 unique names, and independent White/Black summary-plus-plan coverage all at 100%.
+- Coverage is explicit rather than a catch-all: arbitrary names outside the pinned opening book remain `UNAVAILABLE`.
 
-## Recent closure evidence
+## Recent closure and review evidence
 
 - RB-004: `reports/RB-004-2026-07-31-closure.md`.
 - RB-005: `reports/RB-005-2026-07-31-closure.md`.
@@ -48,5 +49,11 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 - RB-019: `reports/RB-019-2026-07-30-closure.md`.
 - RB-020: `reports/RB-020-2026-07-30-closure.md`.
 - RB-021: `reports/RB-021-2026-08-01-closure.md`.
+- RB-022: `reports/RB-022-2026-08-01-static-opening-knowledge.md`.
+- RB-023: `reports/RB-023-2026-08-02-builder-opening-knowledge.md`.
+- RB-024: `reports/RB-024-2026-08-03-ai-game-review-opening-grounding.md`.
+- RB-025 foundation: `reports/RB-025-2026-08-06-opening-knowledge-coverage-scale.md`.
+- RB-025 first batch: `reports/RB-025-2026-08-07-opening-knowledge-batch-001.md`.
+- RB-025 completion: `reports/RB-025-2026-08-07-opening-knowledge-completion.md`.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.

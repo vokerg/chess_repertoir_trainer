@@ -32,7 +32,7 @@ const projectPlan = (id, summary = id) => ({
 });
 
 validateOpeningKnowledgeRegistry();
-assert.equal(OpeningKnowledgeService.rules().length, 25);
+assert.equal(OpeningKnowledgeService.rules().length, 160);
 
 {
   const opening = entry('Sicilian Defense: Najdorf Variation, English Attack');
@@ -82,13 +82,63 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
 {
   const result = OpeningKnowledgeService.resolve(entry('Italian Game: Evans Gambit Accepted'));
 
-  assert.equal(result.status, 'PARTIAL');
+  assert.equal(result.status, 'AVAILABLE');
   assert.ok(result.shortDescription);
-  assert.equal(result.description, null);
+  assert.ok(result.description);
+  assert.ok(result.matchedKnowledgeRuleIds.includes('knowledge-family-italian-game'));
   assert.ok(result.white.plans.some((plan) => plan.id === 'evans-white-open-centre-for-development'));
   assert.ok(result.white.plans.some((plan) => plan.id === 'evans-accepted-white-use-tempi-on-bishop'));
   assert.ok(result.black.plans.some((plan) => plan.id === 'evans-accepted-black-return-pawn-if-needed'));
   assert.notEqual(result.white.strategicSummary.text, result.black.strategicSummary.text);
+}
+
+{
+  const cases = [
+    {
+      name: 'Ruy Lopez: Berlin Defense',
+      ruleId: 'knowledge-subfamily-ruy-lopez-berlin',
+      whitePlanId: 'berlin-white-restrict-and-create-targets',
+      blackPlanId: 'berlin-black-activate-before-defending',
+    },
+    {
+      name: 'Italian Game: Two Knights Defense',
+      ruleId: 'knowledge-subfamily-italian-two-knights',
+      whitePlanId: 'two-knights-white-use-development-tempi',
+      blackPlanId: 'two-knights-black-counterattack-the-centre',
+    },
+    {
+      name: 'Dutch Defense: Leningrad Variation',
+      ruleId: 'knowledge-subfamily-dutch-leningrad',
+      whitePlanId: 'leningrad-white-restrain-e5',
+      blackPlanId: 'leningrad-black-achieve-e5-safely',
+    },
+    {
+      name: 'Semi-Slav Defense: Botvinnik Variation',
+      ruleId: 'knowledge-line-semi-slav-botvinnik',
+      whitePlanId: 'botvinnik-white-open-lines-with-centre',
+      blackPlanId: 'botvinnik-black-use-queenside-passer-and-lines',
+    },
+    {
+      name: 'Benoni Defense: Czech Benoni Defense',
+      ruleId: 'knowledge-subfamily-benoni-czech',
+      whitePlanId: 'czech-benoni-white-expand-on-flank',
+      blackPlanId: 'czech-benoni-black-prepare-freeing-break',
+    },
+    {
+      name: 'Alekhine Defense: Four Pawns Attack',
+      ruleId: 'knowledge-subfamily-alekhine-four-pawns',
+      whitePlanId: 'four-pawns-white-convert-space-into-activity',
+      blackPlanId: 'four-pawns-black-break-the-centre',
+    },
+  ];
+
+  for (const value of cases) {
+    const result = OpeningKnowledgeService.resolve(entry(value.name));
+    assert.equal(result.status, 'AVAILABLE', value.name);
+    assert.ok(result.matchedKnowledgeRuleIds.includes(value.ruleId), value.name);
+    assert.ok(result.white.plans.some((plan) => plan.id === value.whitePlanId), value.name);
+    assert.ok(result.black.plans.some((plan) => plan.id === value.blackPlanId), value.name);
+  }
 }
 
 {
@@ -265,7 +315,7 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
 }
 
 {
-  assert.ok(OPENING_BOOK.length > 3000);
+  assert.equal(OPENING_BOOK.length, 3733);
   let available = 0;
   let partial = 0;
   let unavailable = 0;
@@ -284,10 +334,10 @@ assert.equal(OpeningKnowledgeService.rules().length, 25);
     if (result.status === 'UNAVAILABLE') unavailable += 1;
   }
 
-  assert.ok(available > 0);
-  assert.ok(partial > 0);
-  assert.ok(unavailable > 0);
-  assert.ok(usedRuleIds.size >= 20);
+  assert.equal(available, OPENING_BOOK.length);
+  assert.equal(partial, 0);
+  assert.equal(unavailable, 0);
+  assert.equal(usedRuleIds.size, 160);
   console.log(JSON.stringify({
     openingKnowledgeCoverage: {
       entries: OPENING_BOOK.length,
