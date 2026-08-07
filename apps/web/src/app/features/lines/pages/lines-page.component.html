@@ -6,11 +6,7 @@
     [actions]="headerActions()"
   />
 
-  @if (store.loading() && !loadedChapter()) {
-    <app-panel title="Loading chapter">
-      <p class="status-note" role="status" aria-live="polite">Loading chapter lines...</p>
-    </app-panel>
-  } @else if (store.error() && !loadedChapter()) {
+  @if (store.error() && !loadedChapter()) {
     <app-panel title="Chapter unavailable" subtitle="The chapter could not be loaded, so training and authoring actions are temporarily unavailable.">
       <p class="status-error" role="alert">{{ store.error() }}</p>
       <div class="collection-actions">
@@ -19,6 +15,10 @@
         }
         <a routerLink="/courses" class="compact-action secondary">Back to courses</a>
       </div>
+    </app-panel>
+  } @else if (store.loading() && !loadedChapter()) {
+    <app-panel title="Loading chapter">
+      <p class="status-note" role="status" aria-live="polite">Loading chapter lines...</p>
     </app-panel>
   } @else if (loadedChapter(); as chapter) {
     @if (store.error()) {
