@@ -1,6 +1,6 @@
 # ONB-022 — Build administrator authorization and read-only diagnostics foundation
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -15,6 +15,10 @@ Target branch: `main`
 Claimed branch: `admin/onb-022-authorization-diagnostics`
 
 Pull request: [#284](https://github.com/vokerg/chess_repertoir_trainer/pull/284)
+
+Completion branch: `admin/onb-022-completion-reconciliation`
+
+Completion pull request: [#298](https://github.com/vokerg/chess_repertoir_trainer/pull/298)
 
 Claimed by: ChatGPT
 
@@ -157,12 +161,21 @@ Aggregate in PostgreSQL:
 
 ## Completion
 
-Review-ready: 2026-08-05.
+Runtime review-ready: 2026-08-05.
 
-Validation: CI run #2022 passed on the complete implementation, self-review, query-plan, security-boundary, and documentation head before this task-state-only transition. The transition changes documentation only.
+Final runtime pull-request head: `fad7a19216c3249827a111e75238aafccac0ec75`.
 
-Completion evidence: `north-star/onboarding/reports/ONB-022-2026-08-04-self-review.md`.
+Runtime validation: final CI run #2089 (`31031618906`) passed dependency installation, lint, the full monorepo build, architecture guardrails, the complete migration chain, opening and imported-game audits, the full test suite, artifact upload, and runner cleanup on that exact head.
+
+Runtime integration: PR #284 squash-merged into `main` as `f83d26157e5da2d69f643b0d12100244219d2771`.
+
+Completion evidence:
+
+- `north-star/onboarding/reports/ONB-022-2026-08-04-self-review.md`;
+- `north-star/onboarding/reports/ONB-022-2026-08-06-completion-reconciliation.md`;
+- completion PR #298 synchronizes this task, the downstream ONB-023 task promotion, `TASKS.md`, `STATUS.md`, and the corrected merge evidence;
+- completion self-review corrected the missing ONB-023 task-file promotion, stale live issue #272 execution metadata, stale branch base/history, and the earlier non-final `4c8018cc…` / CI #2074 evidence claim.
 
 Residual risks: distributed request-budget enforcement remains intentionally absent until API replica topology and shared limiter infrastructure are verified; Angular administrator diagnostics and every lifecycle mutation remain owned by ONB-023/024 and ONB-019/020/021.
 
-Completed at: none; reviewer acceptance and merge are still required for `DONE`.
+Completed at: 2026-08-06, effective when PR #298 is approved and squash-merged. Issue #272 remains open until that merge.
