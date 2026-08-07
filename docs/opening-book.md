@@ -95,18 +95,24 @@ Knowledge is implemented beside lookup and classification as:
 
 - `openingKnowledge.types.ts` — independent version, lifecycle, source, statement, plan, selector and result contracts;
 - `openingKnowledge.sources.ts` — source/license/retrieval provenance;
-- `openingKnowledge.rules.ts` — ordered reviewed family, subfamily and line knowledge;
+- `openingKnowledge.base.rules.ts` — the original RB-022 reviewed corpus;
+- `openingKnowledge.expansion.rules.ts` — RB-025 broad-family and narrow-override expansion;
+- `openingKnowledge.rules.ts` — ordered registry composition;
 - `openingKnowledgeService.ts` — validation, matching, inheritance and runtime projection;
 - `openingKnowledgeCoverageAudit.ts` — weighted descriptions, independent side completeness and deterministic family prioritization;
 - `openingKnowledgeBatchManifest.ts` — validated source-controlled format for bounded editorial delivery batches.
 
-The active knowledge version is `2026-08-knowledge-v1`. The initial corpus contains 25 reviewed rules covering the required Sicilian/Najdorf, French, Caro-Kann, London, Queen’s Gambit, King’s Indian, Grünfeld, English/Réti, Evans and Benko pilot areas plus a bounded set of related high-value families.
+The active knowledge version is `2026-08-knowledge-v2`. The corpus contains 41 reviewed rules: the original 25-rule Sicilian/Najdorf, French, Caro-Kann, London, Queen’s Gambit, King’s Indian, Grünfeld, English/Réti, Evans and Benko foundation plus 16 RB-025 rules for Ruy Lopez, Italian, Dutch, Semi-Slav, Benoni and Alekhine families and their Berlin, Exchange, Marshall, Two Knights, Stonewall, Leningrad, Meran, Botvinnik, Czech Benoni and Four Pawns exceptions.
+
+Generated-entry global availability is 2,024 of 3,733 entries (54.2%), up from 1,352 (36.2%). Unique-name availability is 1,671 of 3,167 names (52.8%), up from 1,109 (35.0%). White and Black each have a strategic summary plus at least one plan for 2,272 entries (60.9%).
 
 ### Selection and inheritance
 
 `OpeningKnowledgeService.resolve()` consumes the resolved `OpeningBookEntry` and its current `OpeningClassificationResult`.
 
 Knowledge rules primarily select through stable classification rule IDs. A narrow rule may additionally use opening-name, ECO or UCI-prefix selectors when the strategic distinction does not belong in the classification taxonomy. Rules remain explicitly ordered from broad families to narrow exceptions; specificity is never inferred from regex length.
+
+A rule is a reusable knowledge card, not a chess-engine rule. A broad Ruy Lopez rule supplies common orientation for hundreds of generated rows. A Berlin, Exchange or Marshall rule then inherits the family record and replaces only the summaries or plans that no longer apply. This avoids authoring one duplicated record for every named row while preserving materially different structures.
 
 Later reviewed scalar values replace earlier values for:
 
@@ -115,7 +121,7 @@ Later reviewed scalar values replace earlier values for:
 - White strategic summary;
 - Black strategic summary.
 
-Plans use stable IDs. The default `MERGE` mode preserves inherited plans, appends new IDs and replaces a same-ID plan in place. `removePlanIds` explicitly removes inherited plans. `REPLACE` clears all inherited plans for that side before applying the narrow rule. The French Exchange, Najdorf Poisoned Pawn and Benko Declined rules exercise full replacement where broad structural assumptions no longer apply.
+Plans use stable IDs. The default `MERGE` mode preserves inherited plans, appends new IDs and replaces a same-ID plan in place. `removePlanIds` explicitly removes inherited plans. `REPLACE` clears all inherited plans for that side before applying the narrow rule. The French Exchange, Najdorf Poisoned Pawn, Benko Declined, Ruy Lopez Berlin/Exchange/Marshall, Italian Two Knights, Semi-Slav Botvinnik and Czech Benoni rules use replacement where broad structural assumptions would be misleading.
 
 ### Lifecycle and provenance
 
@@ -187,7 +193,7 @@ The manifest records:
 
 Validation rejects stale priority-policy versions, invalid status totals, duplicate rule/family/source/fixture values, missing registered sources, missing regression fixtures, negative gains, impossible dates and reviewed/applied batches without a reviewer.
 
-A manifest does not create runtime rules. Runtime content is added only by a separately reviewed change to the existing rule/source registries, followed by before/after audits and normal regression validation.
+A manifest is planning and verification metadata; it does not itself create runtime behavior. Batch `rb-025-generated-priority-batch-001` is `APPLIED`: its 16 planned IDs now exist as reviewed runtime rules, its measured gains exceed the acceptance minimums and all rule/fixture checks are exercised by the generated book.
 
 ## Generated-book coverage audits
 
