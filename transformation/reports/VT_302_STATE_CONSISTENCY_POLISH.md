@@ -35,8 +35,8 @@ Both routes now render their page shell and fallback header independently of loa
 
 Initial route state follows one bounded hierarchy:
 
-1. loading without route-matched domain data shows a live status panel;
-2. initial failure without route-matched domain data shows an alert panel with deterministic recovery/navigation;
+1. an explicit route/load error without route-matched domain data shows an alert panel with deterministic recovery/navigation, even if a superseded request still reports loading;
+2. loading without route-matched domain data and without a current error shows a live status panel;
 3. domain data is treated as loaded only when its entity id matches the current route id;
 4. matched domain data reveals course/chapter workflow and authoring controls;
 5. later command errors remain visible without discarding already loaded matched content.
