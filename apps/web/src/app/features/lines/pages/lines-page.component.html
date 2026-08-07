@@ -1,11 +1,29 @@
-@if (store.chapter(); as chapter) {
-  <section class="lines-page stack">
-    <app-page-header
-      [title]="chapter.name || 'Chapter lines'"
-      [subtitle]="chapter.description || 'Diagnose line health and drill weak or untrained sublines.'"
-      [stats]="headerStats()"
-      [actions]="headerActions()"
-    />
+<section class="lines-page stack">
+  <app-page-header
+    [title]="loadedChapter()?.name || 'Chapter lines'"
+    [subtitle]="loadedChapter()?.description || 'Diagnose line health and drill weak or untrained sublines.'"
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
+
+  @if (store.error() && !loadedChapter()) {
+    <app-panel title="Chapter unavailable" subtitle="The chapter could not be loaded, so training and authoring actions are temporarily unavailable.">
+      <p class="status-error" role="alert">{{ store.error() }}</p>
+      <div class="collection-actions">
+        @if (canRetryLoad()) {
+          <button type="button" class="primary" (click)="store.loadPage()">Retry</button>
+        }
+        <a routerLink="/courses" class="compact-action secondary">Back to courses</a>
+      </div>
+    </app-panel>
+  } @else if (store.loading() && !loadedChapter()) {
+    <app-panel title="Loading chapter">
+      <p class="status-note" role="status" aria-live="polite">Loading chapter lines...</p>
+    </app-panel>
+  } @else if (loadedChapter(); as chapter) {
+    @if (store.error()) {
+      <p class="status-error" role="alert">{{ store.error() }}</p>
+    }
 
     @if (store.editingChapterName()) {
       <app-panel title="Rename chapter" subtitle="Update the chapter label without changing its lines or training history.">
@@ -38,15 +56,12 @@
       </div>
 
       @if (store.loading()) {
-        <p class="status-note" aria-live="polite">Loading lines...</p>
-      }
-      @if (store.error(); as error) {
-        <p class="status-error" role="alert">{{ error }}</p>
+        <p class="status-note" aria-live="polite">Refreshing lines...</p>
       }
       @if (store.transferMessage(); as message) {
         <p class="status-success" aria-live="polite">{{ message }}</p>
       }
-      @if (!store.loading() && !store.error() && store.lines().length === 0) {
+      @if (!store.loading() && store.lines().length === 0) {
         <div class="empty-state">No lines yet. Add your first trainable branch below.</div>
       }
       @if (store.lines().length > 0) {
@@ -189,5 +204,5 @@
         }
       </div>
     </details>
-  </section>
-}
+  }
+</section>

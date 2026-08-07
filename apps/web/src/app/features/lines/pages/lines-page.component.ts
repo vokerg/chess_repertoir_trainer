@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
@@ -13,7 +13,7 @@ import { LinesPageStore } from '../state/lines-page.store';
 @Component({
   selector: 'app-lines-page',
   standalone: true,
-  imports: [FormsModule, PageHeaderComponent, PanelComponent, LineHealthTableComponent],
+  imports: [FormsModule, RouterLink, PageHeaderComponent, PanelComponent, LineHealthTableComponent],
   providers: [LinesPageStore],
   templateUrl: './lines-page.component.html',
   styleUrl: './lines-page.component.css',
@@ -24,16 +24,32 @@ export class LinesPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(LinesPageStore);
-  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
-    { id: 'lines', label: 'Lines', value: this.store.lines().length },
-    { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
-    { id: 'attempts', label: 'Recent attempts', value: this.store.totalAttempts() },
-    { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%` },
-  ]);
-  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
+  protected readonly routeChapterId = signal<number | null>(null);
+  protected readonly loadedChapter = computed(() => {
+    const routeChapterId = this.routeChapterId();
     const chapter = this.store.chapter();
-    if (!chapter) return [];
-    const courseId = this.store.courseId();
+    return chapter && routeChapterId === chapter.id ? chapter : null;
+  });
+  protected readonly canRetryLoad = computed(() => this.routeChapterId() !== null);
+  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
+    if (!this.loadedChapter()) return [];
+    return [
+      { id: 'lines', label: 'Lines', value: this.store.lines().length },
+      { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
+      { id: 'attempts', label: 'Recent attempts', value: this.store.totalAttempts() },
+      { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%` },
+    ];
+  });
+  protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
+    const chapter = this.loadedChapter();
+    const courseId = chapter ? this.store.courseId() : null;
+    const backAction: PageHeaderAction = {
+      id: 'back',
+      label: 'Back',
+      link: courseId ? ['/courses', courseId] : ['/courses'],
+    };
+    if (!chapter) return [backAction];
+
     const marathonAction: PageHeaderAction = this.store.selectedLineCount() > 0
       ? {
           id: 'selected-marathon',
@@ -42,11 +58,7 @@ export class LinesPageComponent implements OnInit {
         }
       : { id: 'marathon', label: 'Train chapter', link: ['/chapters', chapter.id, 'marathon'] };
     return [
-      {
-        id: 'back',
-        label: 'Back',
-        link: courseId ? ['/courses', courseId] : ['/courses'],
-      },
+      backAction,
       marathonAction,
       {
         id: 'select-all',
@@ -75,7 +87,10 @@ export class LinesPageComponent implements OnInit {
         distinctUntilChanged(),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((chapterId) => this.store.initialize(chapterId));
+      .subscribe((chapterId) => {
+        this.routeChapterId.set(Number.isFinite(chapterId) && chapterId > 0 ? chapterId : null);
+        this.store.initialize(chapterId);
+      });
   }
 
   protected async confirmDeleteLine(line: LineSummary): Promise<void> {
