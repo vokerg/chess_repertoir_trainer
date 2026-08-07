@@ -1,26 +1,26 @@
 <section class="course-detail-page stack">
   <app-page-header
-    [title]="store.course()?.name || 'Course'"
-    [subtitle]="store.course()?.description || 'Manage chapters and training lines.'"
+    [title]="loadedCourse()?.name || 'Course'"
+    [subtitle]="loadedCourse()?.description || 'Manage chapters and training lines.'"
     [stats]="headerStats()"
     [actions]="headerActions()"
   />
 
-  @if (store.loading() && !store.course()) {
+  @if (store.loading() && !loadedCourse()) {
     <app-panel title="Loading course">
       <p class="status-note" role="status" aria-live="polite">Loading course details...</p>
     </app-panel>
-  } @else if (store.error() && !store.course()) {
+  } @else if (store.error() && !loadedCourse()) {
     <app-panel title="Course unavailable" subtitle="The course could not be loaded, so authoring actions are temporarily unavailable.">
       <p class="status-error" role="alert">{{ store.error() }}</p>
       <div class="inline-actions">
-        @if (store.courseId()) {
+        @if (routeCourseId()) {
           <button type="button" class="primary" (click)="store.loadCoursePage()">Retry</button>
         }
         <a routerLink="/courses" class="chapter-action">Back to courses</a>
       </div>
     </app-panel>
-  } @else if (store.course(); as course) {
+  } @else if (loadedCourse(); as course) {
     @if (store.error()) {
       <p class="status-error" role="alert">{{ store.error() }}</p>
     }
