@@ -1,16 +1,16 @@
 <section class="lines-page stack">
   <app-page-header
-    [title]="store.chapter()?.name || 'Chapter lines'"
-    [subtitle]="store.chapter()?.description || 'Diagnose line health and drill weak or untrained sublines.'"
+    [title]="loadedChapter()?.name || 'Chapter lines'"
+    [subtitle]="loadedChapter()?.description || 'Diagnose line health and drill weak or untrained sublines.'"
     [stats]="headerStats()"
     [actions]="headerActions()"
   />
 
-  @if (store.loading() && !store.chapter()) {
+  @if (store.loading() && !loadedChapter()) {
     <app-panel title="Loading chapter">
       <p class="status-note" role="status" aria-live="polite">Loading chapter lines...</p>
     </app-panel>
-  } @else if (store.error() && !store.chapter()) {
+  } @else if (store.error() && !loadedChapter()) {
     <app-panel title="Chapter unavailable" subtitle="The chapter could not be loaded, so training and authoring actions are temporarily unavailable.">
       <p class="status-error" role="alert">{{ store.error() }}</p>
       <div class="collection-actions">
@@ -20,7 +20,7 @@
         <a routerLink="/courses" class="compact-action secondary">Back to courses</a>
       </div>
     </app-panel>
-  } @else if (store.chapter(); as chapter) {
+  } @else if (loadedChapter(); as chapter) {
     @if (store.error()) {
       <p class="status-error" role="alert">{{ store.error() }}</p>
     }
