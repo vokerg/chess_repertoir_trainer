@@ -1,3 +1,11 @@
+:host {
+  --navigation-focus-outline: color-mix(
+    in srgb,
+    var(--ui-action-strong) 55%,
+    var(--ui-action) 45%
+  );
+}
+
 .desktop-rail:not(.desktop-rail-collapsed) {
   overflow-x: hidden;
   overflow-y: auto;
@@ -24,6 +32,15 @@
   border-color: rgba(71, 184, 156, 0.42);
   background: rgba(71, 184, 156, 0.13);
   color: #7bd4bd;
+}
+
+.rail-collapse-button:focus-visible,
+.rail-nav-link:focus-visible,
+.rail-nav-disclosure:focus-visible,
+.rail-flyout-item:focus-visible,
+.rail-brand-link:focus-visible {
+  outline: 3px solid var(--navigation-focus-outline);
+  outline-offset: 2px;
 }
 
 .rail-nav-node-active .rail-nav-disclosure {
@@ -120,7 +137,7 @@
 }
 
 .rail-inline-item:focus-visible {
-  outline: 3px solid rgba(71, 184, 156, 0.48);
+  outline: 3px solid var(--navigation-focus-outline);
   outline-offset: 1px;
 }
 

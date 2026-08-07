@@ -77,7 +77,7 @@
 .health-table input:focus-visible,
 .health-table a:focus-visible,
 .health-table button:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 

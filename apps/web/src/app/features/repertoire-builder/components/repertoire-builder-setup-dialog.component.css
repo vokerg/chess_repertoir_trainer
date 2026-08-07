@@ -274,7 +274,7 @@ select:focus-visible,
 input:focus-visible,
 .persona-card:focus-within,
 .side-group label:focus-within {
-  outline: 3px solid var(--focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
 }
 

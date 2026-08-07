@@ -200,7 +200,7 @@
   color: var(--ui-chrome);
 }
 
-.games-row-action-link[aria-disabled='true'] {
+.games-row-action-link:disabled {
   color: var(--ui-text-subtle);
   cursor: wait;
   pointer-events: none;

@@ -99,7 +99,7 @@
 .lines-page input:focus-visible,
 .lines-page select:focus-visible,
 .lines-page textarea:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 
