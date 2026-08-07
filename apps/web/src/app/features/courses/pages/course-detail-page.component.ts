@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -25,8 +25,14 @@ export class CourseDetailPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(CourseDetailStore);
+  protected readonly routeCourseId = signal<number | null>(null);
+  protected readonly loadedCourse = computed(() => {
+    const routeCourseId = this.routeCourseId();
+    const course = this.store.course();
+    return course && routeCourseId === course.id ? course : null;
+  });
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
-    if (!this.store.course()) return [];
+    if (!this.loadedCourse()) return [];
     return [
       { id: 'chapters', label: 'Chapters', value: this.store.chapters().length },
       { id: 'sublines', label: 'Active sublines', value: this.store.stats()?.activeSublineCount ?? 0 },
@@ -34,8 +40,8 @@ export class CourseDetailPageComponent implements OnInit {
   });
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const backAction: PageHeaderAction = { id: 'back', label: 'Back', link: ['/courses'] };
-    const course = this.store.course();
-    const courseId = this.store.courseId();
+    const course = this.loadedCourse();
+    const courseId = this.routeCourseId();
     if (!course || !courseId) return [backAction];
 
     return [
@@ -61,7 +67,10 @@ export class CourseDetailPageComponent implements OnInit {
         distinctUntilChanged(),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((courseId) => this.store.initialize(courseId));
+      .subscribe((courseId) => {
+        this.routeCourseId.set(Number.isFinite(courseId) && courseId > 0 ? courseId : null);
+        this.store.initialize(courseId);
+      });
   }
 
   protected async confirmDeleteChapter(chapter: CourseChapter): Promise<void> {
@@ -77,7 +86,7 @@ export class CourseDetailPageComponent implements OnInit {
   }
 
   protected async confirmDeleteCurrentCourse(): Promise<void> {
-    const course = this.store.course();
+    const course = this.loadedCourse();
     if (!course) return;
 
     const confirmed = await this.confirmDialog.confirm({
