@@ -1,6 +1,6 @@
 # GitHub Issues Coordination
 
-Last updated: 2026-08-04
+Last updated: 2026-08-07
 
 GitHub Issues is the execution layer for the Onboarding and Data Lifecycle program. Repository documents remain the detailed product, architecture, acceptance, and historical source.
 
@@ -37,19 +37,18 @@ GitHub Issues is the execution layer for the Onboarding and Data Lifecycle progr
 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) |
 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) |
 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) |
+| ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) |
 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) |
 
-ONB-025 / #276 remains reserved by open PR #279; ONB-026 is the next free immutable identifier.
-
-Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
+All currently allocated ONB IDs are mapped. Do not create a second issue for an existing ONB ID. New tasks receive a new immutable ID and issue in the same coordination change.
 
 ## Coordination umbrellas
 
-- [#257 — Durable Account Import and Background Refresh](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups ONB-011 through ONB-015 into the planned delivery sequence `#199 → #200 → (#201 + #202) → #203`.
+- [#257 — Durable Account Import and Background Refresh](https://github.com/vokerg/chess_repertoir_trainer/issues/257) groups ONB-011 through ONB-015 plus ONB-025 into the planned delivery sequence `#199 → #200 → (#201 + #202) → #203 → #276`.
 
 A coordination umbrella may summarize an existing multi-task delivery track and record cross-track dependencies. It does not receive an ONB ID, replace any task issue, own runtime scope, alter task priority/status/order, or authorize claims. `TASKS.md` and the individual task files remain authoritative.
 
-For #257, material coordination includes preparation #253/#254, lifecycle persistence/execution #259/#260, throughput #154, and Activity Feed import reconciliation #248. ONB-007 supplies initial operational defaults and validation gates without changing the umbrella's delivery ownership.
+For #257, material coordination includes preparation #253/#254, lifecycle persistence/execution #259/#260, throughput #154, Activity Feed import reconciliation #248, and the post-cutover authenticated stale-refresh trigger #276. ONB-007 supplies initial operational defaults and validation gates without changing the umbrella's delivery ownership.
 
 ## Related programs
 
@@ -116,6 +115,8 @@ ONB-001 allocated ONB-008 through ONB-010 as bounded lifecycle/readiness/Angular
 
 ONB-002 allocated ONB-011 through ONB-015 as bounded import persistence, worker, provider-adapter, and cutover tasks. Coordination umbrella #257 packages those existing tasks without changing their canonical states and records preparation, lifecycle, operations, Activity Feed, and throughput handoffs.
 
+ONB-025 / #276 is the bounded post-cutover follow-up for automatic stale forward refresh on authenticated application bootstrap. It depends on ONB-015 and must not invoke the legacy synchronous provider path.
+
 ONB-003 allocated:
 
 - ONB-017 / #253 — preparation run/target/batch persistence, bounded database selection, globally serialized admission, and atomic child-job creation;
@@ -135,7 +136,7 @@ ONB-005 allocated:
 - ONB-023 / #273 — lazy direct-link Angular administrator diagnostics with server authority and no required static navigation entry;
 - ONB-024 / #274 — capability-gated preview/execute/status/audit adapters over ONB-019/020/021, with signed recent factor age and one-use reverification binding.
 
-ONB-005 completed through squash-merged PR #275 after three adversarial self-review rounds. ONB-022 is `READY`. ONB-023 depends on ONB-022. ONB-024 remains behind the applicable lifecycle services, proven signed reverification, and does not enable administrator whole-user deletion by default.
+ONB-005 completed through squash-merged PR #275 after three adversarial self-review rounds. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298. ONB-023 is `READY`; ONB-024 remains `PROPOSED` behind ONB-023, the applicable lifecycle services, and proven signed reverification.
 
 ONB-006 allocated:
 
@@ -158,7 +159,7 @@ ONB-007 supplies operational defaults and validation gates to existing owners ra
 
 ONB-016 was explicitly authorized as parallel product/experience research. It refines ONB-010 and cross-program handoffs without taking implementation ownership from the other programs.
 
-ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281 and issue #153 closes completed. ONB-017 remains `IN_PROGRESS` after PR #282 merged its execution-boundary slice; issue #253 remains open. The next unclaimed `READY` task is ONB-022 / #272 after its required collision review. ONB-026 and the other dependency-blocked implementation tasks remain `PROPOSED`; ONB-025 / #276 remains reserved by open PR #279. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
+ONB-007 is `DONE` through squash-merged PR #266. ONB-005 is `DONE` through squash-merged PR #275. ONB-006 is `DONE` through squash-merged PR #281. ONB-017 is `DONE` through runtime PR #282 and completion reconciliation PR #293; issue #253 is closed completed. ONB-022 is `DONE` through runtime PR #284 and completion reconciliation PR #298; issue #272 is closed completed. The next unclaimed `READY` onboarding task is ONB-023 / #273. ONB-025 / #276 and ONB-026 / #280 remain `PROPOSED`, as do the other dependency-blocked implementation tasks. Issue creation, an umbrella, or a numeric handoff alone is not permission to claim blocked work.
 
 ## Completion
 

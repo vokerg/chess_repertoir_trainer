@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Roadmap
 
-Last updated: 2026-08-04
+Last updated: 2026-08-07
 
 Program: [#147](https://github.com/vokerg/chess_repertoir_trainer/issues/147)
 
@@ -17,7 +17,7 @@ ONB-007 throughput/progress evidence — DONE
         ↓
 ONB-011 import persistence/coverage
         +
-ONB-017 preparation execution persistence/batches
+ONB-017 preparation execution persistence/batches — DONE
         ↓
 ONB-012 import worker/API lifecycle
         ↓
@@ -40,7 +40,7 @@ Visual/accessibility integration with #133
 Production onboarding release
 ```
 
-ONB-017 may begin after collision review with ONB-011 and ONB-019 and consumes ONB-007 numeric defaults. Full ONB-018 delivery requires durable import and preparation handoff.
+ONB-017 is complete through runtime PR #282 and completion reconciliation PR #293. Full ONB-018 delivery still requires durable import and preparation handoff. ONB-025 / #276 is a post-ONB-015 stale-account-refresh follow-up and does not gate the initial durable sync cutover or onboarding release.
 
 Supporting administration and data-lifecycle path:
 
@@ -48,9 +48,9 @@ Supporting administration and data-lifecycle path:
 ONB-004 destructive invariants — DONE
         +
 ONB-005 administrator architecture — DONE
-        ├──────────────→ ONB-022 server authorization/read-only diagnostics
+        ├──────────────→ ONB-022 server authorization/read-only diagnostics — DONE
         │                              ↓
-        │                    ONB-023 Angular diagnostics
+        │                    ONB-023 Angular diagnostics — READY
         │                              +
         └→ ONB-019 operation/fence/audit/provenance foundation
                                ↓
@@ -65,7 +65,7 @@ ONB-005 administrator architecture — DONE
                     ONB-024 administrator lifecycle adapters
 ```
 
-ONB-022/023 provide read-only administration independently of destructive execution. ONB-024 waits for the applicable canonical lifecycle or cleanup service and never creates a parallel destructive state machine. ONB-006 completed the separate shared-position cleanup research; ONB-026 owns implementation and deletes only database-proved orphans without touching course `MoveNode` evidence. ONB-007 supplies transaction/lock budget envelopes; ONB-026/020/021 still prove their operation-specific batch sizes.
+ONB-022 is complete through runtime PR #284 and completion reconciliation PR #298; ONB-023 is the next unclaimed `READY` administrator task and still requires Visual Transformation coordination before claim. ONB-024 waits for the applicable canonical lifecycle or cleanup service and never creates a parallel destructive state machine. ONB-006 completed the separate shared-position cleanup research; ONB-026 owns implementation and deletes only database-proved orphans without touching course `MoveNode` evidence. ONB-007 supplies transaction/lock budget envelopes; ONB-026/020/021 still prove their operation-specific batch sizes.
 
 ## Phase 0 — Program foundation
 
@@ -307,11 +307,13 @@ Exit:
 - preparation consumes import progress without browser coordination;
 - ONB-020 can replace immediate unfenced account deletion.
 
+Post-cutover follow-up: ONB-025 / #276 — `PROPOSED`. It adds server-owned stale forward-refresh evaluation on authenticated application bootstrap only after ONB-015 is accepted and merged; it does not block this phase's cutover exit.
+
 ## Phase 5 — Progressive preparation core
 
 Implementation tasks:
 
-1. ONB-017 / #253 — persist preparation execution boundary and bounded child jobs.
+1. ONB-017 / #253 — `DONE` through runtime PR #282 and completion reconciliation PR #293.
 2. ONB-018 / #254 — implement progressive preparation reconciliation/control.
 
 Initial preparation defaults:
@@ -331,7 +333,7 @@ PREPARATION_RECONCILE_IDLE_MS=5000
 PREPARATION_RECONCILE_DUE_WARNING_MS=15000
 ```
 
-ONB-017 expected deliveries:
+ONB-017 delivered:
 
 - run/target/batch models and constraints;
 - import and child-job links;
@@ -528,9 +530,9 @@ Exit:
 
 Primary task: ONB-022 / [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272).
 
-Status: `READY` after ONB-005 acceptance.
+Status: `DONE` through runtime PR #284 and completion reconciliation PR #298.
 
-Expected deliveries:
+Delivered:
 
 - disabled-by-default injectable server-only authorization policy;
 - minimal verified Clerk session context;
@@ -542,7 +544,7 @@ Expected deliveries:
 - topology-honest request budgets;
 - config, auth, OpenAPI, pagination, no-N+1, query-plan, and security tests.
 
-Exit:
+Exit achieved:
 
 - normal users cannot enumerate targets;
 - read-only administration is deployable without schema changes;
@@ -553,10 +555,13 @@ Exit:
 
 Primary task: ONB-023 / [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273).
 
-Blocked on:
+Status: `READY` after ONB-022 completion.
 
-- ONB-022;
-- final Visual Transformation coordination.
+Pre-claim coordination:
+
+- re-inspect the merged administrator contracts/routes;
+- coordinate final Visual Transformation #133 boundaries;
+- confirm there is no parallel administrator Angular branch or pull request.
 
 Expected deliveries:
 

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Program
 
-Last updated: 2026-08-05
+Last updated: 2026-08-07
 
 This workspace is the canonical planning and execution area for progressive onboarding, chess-data preparation, operator administration, destructive lifecycle controls, and shared-position maintenance.
 
@@ -19,9 +19,11 @@ Accepted and completed program work includes:
 - ONB-005 administrator authorization and diagnostics architecture;
 - ONB-006 orphan shared-position cleanup architecture;
 - ONB-007 throughput benchmarks, bounded defaults, exact progress, and no-ETA policy;
-- ONB-016 lightweight progressive-disclosure experience blueprint.
+- ONB-016 lightweight progressive-disclosure experience blueprint;
+- ONB-017 durable preparation run/target/batch execution boundary;
+- ONB-022 administrator authorization and bounded read-only diagnostics foundation.
 
-The ONB-017 durable preparation run/target/batch execution boundary is integrated, while its issue and canonical completion records still require reconciliation. The current next unclaimed `READY` task is recorded in [`STATUS.md`](STATUS.md); do not duplicate that volatile value here.
+The current next unclaimed `READY` task is recorded in [`STATUS.md`](STATUS.md); do not duplicate that volatile value here. ONB-025 / #276 is canonically allocated as a post-cutover stale-account-refresh follow-up and remains `PROPOSED` behind ONB-015.
 
 Planning and accepted contracts are ahead of the complete first-use runtime. This workspace must distinguish implemented code from approved target behavior.
 

@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-06
+Last updated: 2026-08-07
 
 ## Program state
 
@@ -24,13 +24,13 @@ Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/
 
 Administrator architecture: ONB-005 completed through [PR #275](https://github.com/vokerg/chess_repertoir_trainer/pull/275) after three self-review rounds.
 
-Administrator read-only foundation: ONB-022 runtime squash-merged through [PR #284](https://github.com/vokerg/chess_repertoir_trainer/pull/284) as `f83d26157e5da2d69f643b0d12100244219d2771`; completion records reconciled through PR #298.
+Administrator read-only foundation: ONB-022 runtime squash-merged through [PR #284](https://github.com/vokerg/chess_repertoir_trainer/pull/284) as `f83d26157e5da2d69f643b0d12100244219d2771`; completion records reconciled through PR #298 as `04e77e2e3f4575b260bca26cadbfec6129187552`.
 
 Shared-position cleanup research: ONB-006 completed through [PR #281](https://github.com/vokerg/chess_repertoir_trainer/pull/281) after two adversarial self-review rounds.
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next unclaimed `READY` onboarding task: ONB-023 / [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273), subject to issue #272 closure, issue #273 execution-metadata synchronization, current API-contract inspection, Visual Transformation coordination, and a parallel-work collision check.
+Next unclaimed `READY` onboarding task: ONB-023 / [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273), subject to current API-contract inspection, Visual Transformation coordination, and a parallel-work collision check.
 
 Latest report: `reports/ONB-022-2026-08-06-completion-reconciliation.md`
 
@@ -184,17 +184,17 @@ Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e7239
 - structured pseudonymous security logs and strict sensitive-field exclusions;
 - no Prisma schema/migration, Angular UI, lifecycle mutation, persisted mutation audit, distributed limiter persistence, broker, or new service.
 
-Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`). PR #284 squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. PR #298 corrects the completion evidence and synchronizes both affected task files, the queue, status, and report.
+Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`). PR #284 squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. Refreshed completion head `3d1ec5e84baa34dfa37d0d13f81f4b28e5ba4736` passed CI #2201 (`31197631342`) and PR #298 squash-merged as `04e77e2e3f4575b260bca26cadbfec6129187552`, closing issue #272 completed and promoting ONB-023 to `READY`.
 
 ## Active and ready work
 
 ### Active implementation
 
-- None recorded after ONB-022 completion reconciliation merges.
+- None recorded.
 
 ### Ready implementation
 
-- ONB-023 / #273 — Angular administrator diagnostics — `READY`; depends on completed ONB-022 and requires issue #273 execution-metadata synchronization, current API-contract inspection, a parallel-work collision check, and Visual Transformation #133 coordination before claim.
+- ONB-023 / #273 — Angular administrator diagnostics — `READY`; depends on completed ONB-022 and requires current API-contract inspection, a parallel-work collision check, and Visual Transformation #133 coordination before claim.
 
 ## Allocated implementation backlog
 
@@ -207,13 +207,12 @@ Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passe
 - ONB-013 / #201 — Lichess adapter — `PROPOSED`; initial 14-day windows, serial access, and 100-row writes.
 - ONB-014 / #202 — Chess.com adapter — `PROPOSED`; serial monthly archives, cache validators, and 100-row writes.
 - ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
+- ONB-025 / #276 — authenticated stale-account refresh trigger — `PROPOSED`; depends on accepted ONB-015 and reuses the durable account-import lifecycle without request-time provider traversal.
 - ONB-019 / #259 — destructive lifecycle operation/fence/guard/failure-state/audit/provenance/receipt foundation — `PROPOSED`.
 - ONB-020 / #260 — account/game destructive coordinator — `PROPOSED`; starts with at most 100 games per transaction and operation-specific validation.
 - ONB-021 / #261 — whole-user deletion and mobile purge handshake — `PROPOSED`; consumes the same transaction/lock budgets.
 - ONB-024 / #274 — administrator lifecycle adapters — `PROPOSED`; depends on ONB-022/023 and applicable ONB-019/020/021/026 services plus proven reverification.
 - ONB-026 / #280 — bounded orphan shared-position cleanup — `PROPOSED`; consumes ONB-006/007 and remains behind trigger/version/schema/audit coordination gates.
-
-ONB-025 / #276 remains reserved by open PR #279.
 
 These tasks must not be claimed until their task-file dependencies are resolved and accepted.
 
@@ -244,7 +243,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - partial destructive failure must retain its durable resource fence;
 - post-delete status retrieval cannot depend on recreating the user;
 - shared Position cleanup must remain separate from account/user purge;
-- read-only administrator API runtime is delivered through ONB-022 / PR #284 and its canonical completion records are reconciled through PR #298;
+- read-only administrator API runtime and completion reconciliation are delivered through ONB-022 / PRs #284 and #298;
 - current Angular navigation is static and contains no administrator capability state;
 - current API deployment documentation does not guarantee one replica, so in-process rate limiting cannot be treated as distributed enforcement;
 - current auth request context retains the signed session/factor/reverification fields needed by future administrator execution adapters, but no mutation execution is enabled;
@@ -256,11 +255,12 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
 - ONB-017 delivered the preparation execution boundary; ONB-018 has not delivered preparation reconciliation/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
-- ONB-022 delivered the read-only administrator API; ONB-023 has not delivered the administrator UI;
+- ONB-022 delivered and reconciled the read-only administrator API; ONB-023 has not delivered the administrator UI;
 - ONB-024 remains blocked by ONB-023, canonical lifecycle services, and a proven signed reverification flow;
 - onboarding projection/UI tasks remain blocked by durable foundations;
 - production-like Neon/provider/local-binary telemetry does not exist yet, so public ETA and capacity expansion remain disabled;
 - ONB-026 shared-position cleanup implementation has not been delivered;
+- ONB-025 stale-refresh automation remains blocked by ONB-015 durable sync cutover;
 - Visual Transformation coordination remains required for final UI.
 
 ## Validation
@@ -277,8 +277,9 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - CI run #2141 (`31094431988`) passed the first corrected multi-file head `cc68fc55822d3bcacd16c42629a319537d9db2ce`;
 - CI run #2145 (`31096659920`) passed the second-review head `99f20c63e238a985fd4eafca641ab1b35a8c9894`;
 - a full review found that ONB-023 had been promoted in queue/status records while its own task file remained `PROPOSED`, issue #272 live metadata still advertised `READY`, the branch was stale and retained superseded mistakes in three commits, and `4c8018cc…` / CI #2074 was incorrectly presented as final runtime evidence despite fourteen later PR commits;
-- corrected PR #298 preserves the full task contract, records the actual final runtime and merge evidence, synchronizes both affected task files plus `TASKS.md` and `STATUS.md`, promotes ONB-023 only after ONB-022 completion, and is rebuilt as one commit on the latest `main`;
-- the current exact reconciliation head must pass repository checks before approval;
+- PR #298 was rebuilt as one clean commit on main `90ea23965b5a4ce032ca9b75d837e4e3dfff58ab`, producing final head `3d1ec5e84baa34dfa37d0d13f81f4b28e5ba4736` with one commit ahead and zero behind;
+- exact-head CI #2201 (`31197631342`) passed dependency installation, lint, full build, generated and imported-game opening audits, architecture guardrails, migrations, full tests, artifact handling, and cleanup;
+- PR #298 squash-merged as `04e77e2e3f4575b260bca26cadbfec6129187552`, issue #272 closed completed, and issue #273 was synchronized to `READY`;
 - local clone/build remains unavailable because this runtime cannot resolve or connect to `github.com`; no local result is claimed.
 
 ### ONB-017 implementation and completion reconciliation
@@ -355,4 +356,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-Do not claim a second issue while PR #298 remains under review. After approval and merge, close issue #272 through the PR, update issue #273 execution metadata to `READY`, and then re-run global issue selection. Within the onboarding queue, ONB-023 / #273 is the next `READY` task; inspect current contracts, Visual Transformation #133 activity, and parallel administrator work before claiming.
+ONB-023 / #273 is the next unclaimed `READY` onboarding task. Before claiming it, re-inspect the merged administrator contracts and `/api/admin` routes, coordinate shared layout/accessibility boundaries with active Visual Transformation #133 work, and confirm there is no parallel administrator Angular branch or pull request. ONB-025 / #276 remains `PROPOSED` behind ONB-015 and is not claimable yet.
