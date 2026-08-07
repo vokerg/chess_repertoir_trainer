@@ -14,6 +14,7 @@ describe('repertoire builder opening knowledge view model', () => {
     expect(items.find((item) => item.id === 'population')?.detail).toBe(
       '29.8M games · 50% frequency · 50% score',
     );
+    expect(items.some((item) => item.id === 'engine')).toBeFalse();
     expect(items.some((item) => item.id === 'course')).toBeFalse();
     expect(items.find((item) => item.id === 'opening-knowledge')).toEqual(jasmine.objectContaining({
       label: 'Opening knowledge · Black',
