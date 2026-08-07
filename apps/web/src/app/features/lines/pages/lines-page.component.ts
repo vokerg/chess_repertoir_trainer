@@ -24,9 +24,15 @@ export class LinesPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(LinesPageStore);
-  protected readonly canRetryLoad = signal(false);
+  protected readonly routeChapterId = signal<number | null>(null);
+  protected readonly loadedChapter = computed(() => {
+    const routeChapterId = this.routeChapterId();
+    const chapter = this.store.chapter();
+    return chapter && routeChapterId === chapter.id ? chapter : null;
+  });
+  protected readonly canRetryLoad = computed(() => this.routeChapterId() !== null);
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
-    if (!this.store.chapter()) return [];
+    if (!this.loadedChapter()) return [];
     return [
       { id: 'lines', label: 'Lines', value: this.store.lines().length },
       { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
@@ -35,13 +41,13 @@ export class LinesPageComponent implements OnInit {
     ];
   });
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
-    const courseId = this.store.courseId();
+    const chapter = this.loadedChapter();
+    const courseId = chapter ? this.store.courseId() : null;
     const backAction: PageHeaderAction = {
       id: 'back',
       label: 'Back',
       link: courseId ? ['/courses', courseId] : ['/courses'],
     };
-    const chapter = this.store.chapter();
     if (!chapter) return [backAction];
 
     const marathonAction: PageHeaderAction = this.store.selectedLineCount() > 0
@@ -82,7 +88,7 @@ export class LinesPageComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((chapterId) => {
-        this.canRetryLoad.set(Number.isFinite(chapterId) && chapterId > 0);
+        this.routeChapterId.set(Number.isFinite(chapterId) && chapterId > 0 ? chapterId : null);
         this.store.initialize(chapterId);
       });
   }
