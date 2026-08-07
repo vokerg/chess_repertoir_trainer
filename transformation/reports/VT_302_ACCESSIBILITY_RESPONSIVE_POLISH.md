@@ -30,7 +30,7 @@ The review found:
 8. the Games table implemented Analyse actions as anchors with `role="button"`, and the first native-button correction left its disabled visual selector targeting the removed `aria-disabled` state;
 9. the original pull request and report claimed complete VT-302 delivery despite missing functional onboarding and final browser evidence;
 10. the Repertoire Builder setup dialog and workbench used `var(--focus-ring)` for explicit outlines even though that custom property is not defined, removing their intended keyboard-focus indicator;
-11. desktop navigation still overrode the shared focus treatment with a translucent mint outline that fell below 3:1 on graphite chrome, including inline disclosure items.
+11. desktop navigation still overrode the shared focus treatment with a translucent mint outline that fell below 3:1 on graphite chrome, and a dark-surface-only replacement was insufficient for the collapsed rail button because it straddles graphite chrome and the light page canvas.
 
 ## Implemented foundation changes
 
@@ -47,7 +47,7 @@ The branch now:
 - replaces Analyse pseudo-buttons with native `<button type="button">` controls in desktop and mobile Games representations;
 - preserves the muted waiting treatment on disabled Analyse buttons and adds focused coverage for active-job behavior;
 - restores the production opaque focus outline in both Repertoire Builder focus consumers without changing Builder workflow behavior;
-- restores contrast-safe desktop navigation focus by using opaque `--ui-action` on graphite rail controls and `--ui-focus-outline` on the light flyout;
+- restores desktop-navigation focus with an opaque cross-surface mint derived from `--ui-action-strong` and `--ui-action`, so the same indicator remains visible on white/canvas surfaces and all graphite chrome variants, including the collapsed rail boundary;
 - adds `scripts/check-web-accessibility-contract.mjs` to the normal architecture gate.
 
 The accessibility contract guard now fails when:
@@ -56,8 +56,8 @@ The accessibility contract guard now fails when:
 - an Angular template uses an anchor with `role="button"`;
 - the design system loses its opaque focus-outline role;
 - focus-outline contrast falls below 3:1 against the principal white, canvas, or graphite surfaces;
-- the navigation focus color falls below 3:1 against `--ui-chrome`, `--ui-chrome-raised`, or `--ui-chrome-soft`;
-- the later-loaded navigation disclosure stylesheet no longer provides the contrast-safe graphite-rail and light-flyout focus overrides;
+- the derived navigation focus color falls below 3:1 against white, canvas, canvas-soft, chrome, chrome-raised, or chrome-soft surfaces;
+- the later-loaded navigation disclosure stylesheet loses the cross-surface focus mix or required overrides;
 - the keyboard-selectable evaluation graph loses its visible focus stroke;
 - the interactive evaluation graph regresses to `role="img"`, loses its labelled group semantics, roving tabindex, or composite keyboard binding;
 - native Games Analyse buttons regress to the removed anchor disabled-state selector.
@@ -74,7 +74,7 @@ No API, backend, schema, dependency, authentication, provider, analysis, course,
 - CI run 2152 passed the complete repository workflow on prior exact head `2c1ffd816162671013d4e7d2e145d10bb7775cd9`;
 - CI run 2180 passed the complete repository workflow on prior exact head `0c51dc55ddfe155f41cfa83144272b513e4da095`, including the Repertoire Builder focus correction;
 - the branch was refreshed through `main` commit `90ea23965b5a4ce032ca9b75d837e4e3dfff58ab` before the navigation-focus correction was finalized;
-- the navigation-focus correction and expanded guard require a new green exact-head CI result before integration.
+- the final cross-surface navigation-focus correction and expanded guard require a new green exact-head CI result before integration.
 
 The repository CI remains authoritative for Angular template/type compilation, web build and tests, lint, architecture checks, migrations, and audits. Any later self-review correction must receive a new green exact-head result before integration; the pull request records the current exact run rather than freezing it in this report.
 
