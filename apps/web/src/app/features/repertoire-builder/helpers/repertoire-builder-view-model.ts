@@ -77,14 +77,6 @@ export function buildRepertoireBuilderSourceItems(
 
   return [
     {
-      id: 'engine',
-      label: 'Engine',
-      status: candidate.evidence.engine.status,
-      detail: candidate.evidence.engine.depth === null
-        ? null
-        : `Depth ${candidate.evidence.engine.depth}${candidate.evidence.engine.objectiveDeltaCp === null ? '' : ` · ${candidate.evidence.engine.objectiveDeltaCp} cp from best`}`,
-    },
-    {
       id: 'population',
       label: 'Target population',
       status: candidate.evidence.population.status,
