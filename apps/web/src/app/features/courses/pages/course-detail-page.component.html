@@ -1,11 +1,29 @@
-@if (store.courseId(); as courseId) {
-  <section class="course-detail-page stack">
-    <app-page-header
-      [title]="store.course()?.name || 'Course'"
-      [subtitle]="store.course()?.description || 'Manage chapters and training lines.'"
-      [stats]="headerStats()"
-      [actions]="headerActions()"
-    />
+<section class="course-detail-page stack">
+  <app-page-header
+    [title]="store.course()?.name || 'Course'"
+    [subtitle]="store.course()?.description || 'Manage chapters and training lines.'"
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
+
+  @if (store.loading() && !store.course()) {
+    <app-panel title="Loading course">
+      <p class="status-note" role="status" aria-live="polite">Loading course details...</p>
+    </app-panel>
+  } @else if (store.error() && !store.course()) {
+    <app-panel title="Course unavailable" subtitle="The course could not be loaded, so authoring actions are temporarily unavailable.">
+      <p class="status-error" role="alert">{{ store.error() }}</p>
+      <div class="inline-actions">
+        @if (store.courseId()) {
+          <button type="button" class="primary" (click)="store.loadCoursePage()">Retry</button>
+        }
+        <a routerLink="/courses" class="chapter-action">Back to courses</a>
+      </div>
+    </app-panel>
+  } @else if (store.course(); as course) {
+    @if (store.error()) {
+      <p class="status-error" role="alert">{{ store.error() }}</p>
+    }
 
     @if (store.editingCourseName()) {
       <app-panel class="rename-panel" title="Rename course" subtitle="Use a concise name that remains recognizable in training and review views.">
@@ -38,12 +56,9 @@
         subtitle="Organize the course into complete branches, systems, or model structures."
       >
         @if (store.loading()) {
-          <p class="status-note" role="status">Loading chapters...</p>
+          <p class="status-note" role="status">Refreshing chapters...</p>
         }
-        @if (store.error()) {
-          <p class="status-error" role="alert">{{ store.error() }}</p>
-        }
-        @if (!store.loading() && !store.error() && store.chapters().length === 0) {
+        @if (!store.loading() && store.chapters().length === 0) {
           <div class="empty-state">No chapters yet. Add the first chapter in the setup panel.</div>
         }
         @if (store.chapters().length > 0) {
@@ -164,5 +179,5 @@
         />
       </div>
     </details>
-  </section>
-}
+  }
+</section>
