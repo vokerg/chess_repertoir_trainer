@@ -25,10 +25,13 @@ export class CourseDetailPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(CourseDetailStore);
-  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
-    { id: 'chapters', label: 'Chapters', value: this.store.chapters().length },
-    { id: 'sublines', label: 'Active sublines', value: this.store.stats()?.activeSublineCount ?? 0 },
-  ]);
+  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
+    if (!this.store.course()) return [];
+    return [
+      { id: 'chapters', label: 'Chapters', value: this.store.chapters().length },
+      { id: 'sublines', label: 'Active sublines', value: this.store.stats()?.activeSublineCount ?? 0 },
+    ];
+  });
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const backAction: PageHeaderAction = { id: 'back', label: 'Back', link: ['/courses'] };
     const course = this.store.course();
