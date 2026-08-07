@@ -30,16 +30,17 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 170 | RB-022 | #241 | P1 | DONE | Static side-aware opening knowledge implementation | PR #255 |
 | 175 | RB-023 | #242 | P2 | DONE | Opening knowledge in Repertoire Builder | PR #262 |
 | 180 | RB-024 | #243 | P3 | DONE | AI game review grounding with opening plans | PR #268 |
-| 185 | RB-025 | #290 | P1 | CLAIMED | Scale opening knowledge toward comprehensive coverage | `rb-025/issue-290-coverage-scale-research` |
+| 185 | RB-025 | #290 | P1 | REVIEW | Scale opening knowledge toward comprehensive coverage | PR #302; report `RB-025-2026-08-06-opening-knowledge-coverage-scale.md` |
 
 ## Current execution state
 
 - The deterministic Builder capability chain, static opening-knowledge service, Builder consumer and bounded AI game-review consumer are complete.
 - RB-016 remains independently blocked on real usage and follow-up-game evidence.
-- RB-025 is claimed for deterministic coverage research, uncertainty audits, prioritized backlog design and editorial-tooling foundations.
-- The RB-025 claim excludes bulk runtime prose, classification judgments, ranking changes, persistence and new runtime endpoints.
+- RB-025 research/tooling is in review through PR #302.
+- The reviewed slice adds deterministic side completeness, classification uncertainty, priority backlog and batch-manifest tooling; it adds no runtime prose or ranking changes.
+- The first content batch remains `DRAFT` pending acceptance and populated imported-game-weighted evidence.
 
-## Recent closure evidence
+## Recent closure and review evidence
 
 - RB-004: `reports/RB-004-2026-07-31-closure.md`.
 - RB-005: `reports/RB-005-2026-07-31-closure.md`.
@@ -51,5 +52,6 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 - RB-022: `reports/RB-022-2026-08-01-static-opening-knowledge.md`.
 - RB-023: `reports/RB-023-2026-08-02-builder-opening-knowledge.md`.
 - RB-024: `reports/RB-024-2026-08-03-ai-game-review-opening-grounding.md`.
+- RB-025: `reports/RB-025-2026-08-06-opening-knowledge-coverage-scale.md`.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.

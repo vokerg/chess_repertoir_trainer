@@ -8,19 +8,21 @@ GitHub issue: `#290`
 
 Coordination pull request: `#300`
 
-Implementation pull request: `#301`
+Review pull request: `#302`
+
+Superseded implementation pull request: `#301`
 
 Claim branch: `rb-025/issue-290-coverage-scale-research`
 
-Implementation branch: `rb-025/issue-290-audit-foundation`
+Review branch: `rb-025/issue-290-audit-review`
 
 Delivery class: Research and deterministic editorial-tooling foundation
 
-Status: In progress; implementation is reviewable after final exact-head validation
+Status: Review; PR #302 owns the final exact-head validation and acceptance gate
 
 ## Purpose
 
-The initial opening-knowledge corpus proved the ordered family/subfamily/line inheritance model with 25 reviewed rules, but it did not provide a scalable way to distinguish broad generated-book coverage, selected-side usefulness, global editorial completeness, classification uncertainty and imported-game-weighted demand.
+The initial opening-knowledge corpus proved the ordered family/subfamily/line inheritance model with 25 reviewed rules, but it did not provide a scalable way to distinguish generated-book breadth, selected-side usefulness, global editorial completeness, classification uncertainty and imported-game-weighted demand.
 
 RB-025 establishes those measurements and a repeatable bounded-batch workflow before bulk runtime prose is added.
 
@@ -34,6 +36,7 @@ The delivery adds:
 - one generated/imported-game-compatible observation model;
 - a versioned deterministic family-priority policy with inspectable factors;
 - a validated source-controlled editorial batch-manifest format;
+- generated-book validation for every checked-in manifest fixture;
 - explicit coverage tiers and scale targets;
 - source, review, stale-content and offline AI-drafting policy;
 - a first `DRAFT` implementation manifest selected from generated-book evidence;
@@ -43,7 +46,7 @@ No runtime opening prose or classification judgment is added in this delivery.
 
 ## Current generated-book baseline
 
-Audit source: CI run #2165, exact implementation head `d782621a46b390084dac52dcd3cb2de9957c93c2`.
+Audit source: CI run #2165 on implementation head `d782621a46b390084dac52dcd3cb2de9957c93c2`. PR #302 must validate the complete review head, including manifest, fixture, documentation and report commits.
 
 Totals:
 
@@ -99,14 +102,7 @@ Classification match coverage was already complete. These metrics show why match
 
 ## Generated priority backlog
 
-The deterministic backlog groups opening names by root family and exposes:
-
-- unavailable and partial knowledge weight;
-- missing description/summary/plan fields;
-- White/Black side gaps;
-- unknown classification dimensions;
-- low-confidence sides;
-- unique-name breadth.
+The deterministic backlog groups opening names by root family and exposes unavailable/partial knowledge, missing descriptions and side fields, independent side gaps, unknown classification dimensions, low-confidence sides and unique-name breadth.
 
 Largest generated families by uncovered or partial entry weight:
 
@@ -140,7 +136,7 @@ Planned shape:
 
 - six broad family rules;
 - ten narrow structural or tactical overrides;
-- 32 generated-book regression fixtures;
+- generated-book regression fixtures validated against the pinned book;
 - both White and Black covered by every planned rule;
 - expected generated `AVAILABLE` gain: 671 entries;
 - expected unique-name `AVAILABLE` gain: 561 names;
@@ -148,9 +144,9 @@ Planned shape:
 
 If the expected gain is achieved, global generated-entry availability would rise from 36.2% to approximately 54.2%, and unique-name availability from 35.0% to approximately 52.7%.
 
-King's Gambit Accepted is deliberately not included despite its high generated score. Its many concrete sacrificial branches require a dedicated evidence/reviewer batch rather than one broad generic inheritance rule. Queen's Pawn Game is also deferred because it is an umbrella/transpositional label overlapping already reviewed London and other structures; selector and replacement behavior require a separate review.
+King's Gambit Accepted is deliberately excluded despite its high generated score because its concrete sacrificial branches need a dedicated evidence/reviewer batch. Queen's Pawn Game is deferred because it is a transpositional umbrella overlapping already reviewed structures.
 
-The draft manifest does not add runtime prose. It records baseline, expected gains, stable planned IDs, selector intent, sources, fixtures and authority guardrails.
+The manifest remains `DRAFT`. It records baseline, expected gains, stable planned IDs, selector intent, sources, fixtures and authority guardrails; it does not create runtime knowledge.
 
 ## Coverage targets
 
@@ -176,29 +172,27 @@ Targets must not be reached through generic fallback prose, unsafe selector broa
 
 ## Imported-game-weighted evidence
 
-The database-backed audits now emit the same side completeness, classification uncertainty and family-priority shape using grouped `ImportedGame.openingName` / `openingEco` counts.
+The database-backed audits emit the same side completeness, classification uncertainty and family-priority shape using grouped `ImportedGame.openingName` / `openingEco` counts.
 
-CI's migrated test database contains zero imported games. The exact-head artifact correctly reports zero total weight and an empty priority backlog. This validates command, schema and zero-row behavior but is not evidence of real imported-game coverage.
-
-Before the first content manifest moves from `DRAFT` to `READY_FOR_REVIEW`, the game-weighted audit should be run in a populated owner-controlled environment and its top families compared with the generated backlog. No database credentials or production data were available in this execution environment.
+CI's migrated test database contains zero imported games. It therefore validates the command, schema and zero-row behavior but does not provide real weighted coverage. Before the first manifest advances from `DRAFT` to `READY_FOR_REVIEW`, the game-weighted audit should be run in a populated owner-controlled environment and compared with the generated backlog.
 
 ## Architecture decisions
 
 ### Overall and selected-side completeness remain separate
 
-The existing public knowledge status remains unchanged. Audits add White/Black usefulness rather than changing the candidate contract in a research task.
+The public knowledge status is unchanged. Audits add White/Black usefulness rather than changing the candidate contract.
 
 ### Classification uncertainty remains a separate backlog
 
-Knowledge enrichment must not silently revise soundness, theoretical status, burden, roles or confidence. Any such changes require separate evidence and review because they may affect target/profile fit and candidate ranking.
+Knowledge enrichment does not silently revise soundness, theoretical status, burden, roles or confidence. Such changes require separate evidence because they may affect target/profile fit and ranking.
 
 ### Priority policy is versioned and inspectable
 
-Every factor and weight is returned in audit JSON. The score may order editorial work but cannot enter runtime ranking or Builder behavior.
+Every factor and weight is returned in audit JSON. The score cannot enter runtime ranking or Builder behavior.
 
 ### Batches are source-controlled and validated
 
-A manifest records lifecycle, versions, baselines, expected gains, planned stable IDs, source references, fixtures, acceptance thresholds and reviewer identity. `REVIEWED` and `APPLIED` states require a reviewer. Fixtures in checked-in manifests must exist in the pinned generated opening book.
+A manifest records lifecycle, versions, baselines, expected gains, planned stable IDs, source references, fixtures, acceptance thresholds and reviewer identity. Reviewed/applied states require a reviewer, and checked-in fixtures must exist in the pinned generated opening book.
 
 ### Runtime remains local and deterministic
 
@@ -210,7 +204,7 @@ The complete workflow is documented in `docs/opening-knowledge-editorial-workflo
 
 Key boundaries:
 
-- the generated opening dataset supplies identity and move/position metadata, not project strategic prose;
+- generated opening data supplies identity and position metadata, not project strategic prose;
 - references support fact checking but their prose is not copied;
 - reviewed runtime wording requires project-original authorship provenance;
 - engine, masters and population evidence may inform separately reviewed judgments but do not generate runtime prose;
@@ -247,39 +241,35 @@ No route, shared HTTP contract, Angular component/store, MCP module, Prisma sche
 
 ## Validation
 
-First implementation head `d782621a46b390084dac52dcd3cb2de9957c93c2` passed CI run #2165:
+CI run #2165 passed the initial implementation head with:
 
 - dependency installation;
 - lint;
 - complete monorepo build;
-- generated opening classification audit;
-- generated opening knowledge audit;
+- generated opening classification and knowledge audits;
 - architecture guardrails;
 - complete database migration chain;
-- imported-game classification audit;
-- imported-game knowledge audit;
+- imported-game classification and knowledge audits;
 - complete repository test suite;
 - audit/report artifact upload and cleanup.
 
-Final exact-head validation is required after the editorial manifest, fixture validation, documentation and report commits.
+PR #302 is the mandatory final exact-head validation gate for the complete review branch. The task must not be accepted or merged unless that head passes the same pipeline.
 
 ## Limitations and residual risks
 
 - Populated imported-game-weighted results remain unavailable in CI.
-- The first batch is `DRAFT`; its strategic claims and family-specific sources are not yet reviewed.
-- Generated-family breadth can overvalue many obscure named branches relative to real player demand, which is why populated weighting is required before review promotion.
-- Broad Ruy Lopez and Italian inheritance needs careful narrow exceptions to avoid flattening materially different structures.
-- The current side-availability symmetry reflects the initial rule-writing pattern, not a guarantee that future White/Black gaps remain equal.
-- Priority weights are editorial policy and may need revision after two or three applied batches; changes require a new policy version.
+- The first batch is `DRAFT`; its strategic claims and family-specific sources are not reviewed.
+- Generated breadth can overvalue obscure named branches relative to real player demand.
+- Broad Ruy Lopez and Italian inheritance needs careful narrow exceptions.
+- Current side-availability symmetry reflects the pilot rule pattern, not a permanent guarantee.
+- Priority weights may need a new version after evidence from applied batches.
 
 ## Standalone product and north-star impact
 
-The Builder already displays opening knowledge in focused evidence. Better coverage therefore improves immediate explanatory value without changing candidate authority or course writes.
+Builder already displays opening knowledge in focused evidence. Better coverage improves immediate explanatory value without changing candidate authority or course writes.
 
-The audit and manifest model also prevents the project from claiming “complete opening knowledge” because every generated name matched a classification regex. It provides measurable, reviewable progress toward broad opening education while preserving the human-controlled Builder north star.
+The audit and manifest model prevents the project from claiming complete opening knowledge merely because every name matched a classification regex. It provides measurable, reviewable progress while preserving the human-controlled Builder north star.
 
 ## Queue recommendation
 
-Keep RB-025 active through review of the research/tooling PR and populated game-weighted evidence. After acceptance, execute `rb-025-generated-priority-batch-001` as the first separate content expansion delivery.
-
-RB-016 remains blocked on real Builder/course usage and should not be started or conflated with knowledge coverage.
+Review PR #302. After acceptance, run the weighted audit in a populated owner-controlled environment and then implement `rb-025-generated-priority-batch-001` as a separate bounded content delivery. RB-016 remains blocked on real-use outcome evidence.
