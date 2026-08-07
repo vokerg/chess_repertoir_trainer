@@ -71,11 +71,15 @@ describe('CourseDetailPageComponent state presentation', () => {
     fixture = TestBed.createComponent(CourseDetailPageComponent);
   });
 
-  it('renders an explicit loading state before course data exists', () => {
+  it('renders loading instead of stale course content while the route identity changes', () => {
+    store.course.set({ id: 6, name: 'Previous course', description: null });
+    store.chapters.set([{ id: 60, name: 'Previous chapter', description: null, sortOrder: 0 }]);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Loading course details...');
     expect(fixture.nativeElement.querySelector('[role="status"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Previous course');
+    expect(fixture.nativeElement.textContent).not.toContain('Previous chapter');
     expect(fixture.nativeElement.textContent).not.toContain('Create a chapter');
   });
 
