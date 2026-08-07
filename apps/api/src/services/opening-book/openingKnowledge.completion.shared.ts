@@ -55,11 +55,15 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function lowerInitial(value: string): string {
+  return `${value.charAt(0).toLowerCase()}${value.slice(1)}`;
+}
+
 export function completionFamilyRule(
   item: OpeningKnowledgeCompletionFamily,
 ): OpeningKnowledgeRule {
   const selector = {
-    namePattern: new RegExp(`^${escapeRegex(item.family)}(?::|$)`, 'i'),
+    namePattern: new RegExp(`^${escapeRegex(item.family)}(?::|,|$)`, 'i'),
   };
   const description = statement(item.orientation, item.confidence);
 
@@ -85,7 +89,7 @@ export function completionFamilyRule(
     selector,
     shortDescription: description,
     description: statement(
-      `${item.orientation} White's practical priority is to ${item.whiteSummary[0].toLowerCase()}${item.whiteSummary.slice(1)} Black's practical priority is to ${item.blackSummary[0].toLowerCase()}${item.blackSummary.slice(1)}`,
+      `${item.orientation} White's practical priority is to ${lowerInitial(item.whiteSummary)} Black's practical priority is to ${lowerInitial(item.blackSummary)}`,
       item.confidence,
     ),
     white: {
