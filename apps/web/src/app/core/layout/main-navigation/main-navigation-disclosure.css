@@ -1,3 +1,11 @@
+:host {
+  --navigation-focus-outline: color-mix(
+    in srgb,
+    var(--ui-action-strong) 55%,
+    var(--ui-action) 45%
+  );
+}
+
 .desktop-rail:not(.desktop-rail-collapsed) {
   overflow-x: hidden;
   overflow-y: auto;
@@ -29,13 +37,9 @@
 .rail-collapse-button:focus-visible,
 .rail-nav-link:focus-visible,
 .rail-nav-disclosure:focus-visible,
+.rail-flyout-item:focus-visible,
 .rail-brand-link:focus-visible {
-  outline: 3px solid var(--ui-action);
-  outline-offset: 2px;
-}
-
-.rail-flyout-item:focus-visible {
-  outline: 3px solid var(--ui-focus-outline);
+  outline: 3px solid var(--navigation-focus-outline);
   outline-offset: 2px;
 }
 
@@ -133,7 +137,7 @@
 }
 
 .rail-inline-item:focus-visible {
-  outline: 3px solid var(--ui-action);
+  outline: 3px solid var(--navigation-focus-outline);
   outline-offset: 1px;
 }
 
