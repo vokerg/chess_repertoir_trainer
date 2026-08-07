@@ -80,11 +80,15 @@
   pointer-events: all;
 }
 
-.point-hit-target:focus,
-.point-hit-target:focus-visible {
-  fill: transparent;
-  stroke: none;
+.point-hit-target:focus {
   outline: none;
+}
+
+.point-hit-target:focus-visible {
+  fill: color-mix(in srgb, var(--ui-focus-outline) 12%, transparent);
+  stroke: var(--ui-focus-outline);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
 }
 
 .selected-point-halo {

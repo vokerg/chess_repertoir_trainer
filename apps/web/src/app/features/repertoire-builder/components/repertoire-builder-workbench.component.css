@@ -545,7 +545,7 @@ button:disabled {
 }
 
 button:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
 }
 

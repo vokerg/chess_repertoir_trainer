@@ -38,6 +38,7 @@
   --ui-action-strong: #1f7865;
   --ui-action-soft: #dff3ed;
   --ui-action-ink: #071713;
+  --ui-focus-outline: #1f7865;
   --ui-focus-ring: rgba(31, 120, 101, 0.38);
 
   /* Semantic status roles remain distinct from the brand signal. */
@@ -92,8 +93,9 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--ui-focus-ring);
 }
 
-.app-shell button:not([class^="cl-"]):not([class*=" cl-"]):focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+.app-shell :where(button:not([class^="cl-"]):not([class*=" cl-"])):not(.clerk-user-button *):focus-visible,
+.app-shell :where(a[href], [role="button"], [role="link"], [tabindex="0"]):not(.clerk-user-button *):focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
 }
 
@@ -202,10 +204,29 @@ textarea:focus {
   color: var(--ui-danger);
 }
 
+@media (max-width: 640px) {
+  .page-shell {
+    width: min(100%, calc(100vw - 16px));
+  }
+
+  .app-shell app-home-page .home-page {
+    width: min(100%, calc(100% - 16px));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .app-shell button:where(.primary, .secondary, .danger, .danger-text),
-  .compact-action,
-  .collection-card {
-    transition: none;
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  .app-shell *,
+  .app-shell *::before,
+  .app-shell *::after {
+    animation-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0.01ms !important;
   }
 }
