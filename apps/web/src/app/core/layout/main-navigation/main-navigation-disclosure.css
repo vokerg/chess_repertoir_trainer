@@ -26,6 +26,19 @@
   color: #7bd4bd;
 }
 
+.rail-collapse-button:focus-visible,
+.rail-nav-link:focus-visible,
+.rail-nav-disclosure:focus-visible,
+.rail-brand-link:focus-visible {
+  outline: 3px solid var(--ui-action);
+  outline-offset: 2px;
+}
+
+.rail-flyout-item:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}
+
 .rail-nav-node-active .rail-nav-disclosure {
   border-color: rgba(71, 184, 156, 0.22);
   color: #47b89c;
@@ -120,7 +133,7 @@
 }
 
 .rail-inline-item:focus-visible {
-  outline: 3px solid rgba(71, 184, 156, 0.48);
+  outline: 3px solid var(--ui-action);
   outline-offset: 1px;
 }
 

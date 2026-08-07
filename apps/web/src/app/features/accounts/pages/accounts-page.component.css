@@ -109,7 +109,7 @@
 
 .account-title a:focus-visible {
   border-radius: 4px;
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 
@@ -215,7 +215,7 @@
 
 .account-options summary:focus-visible {
   border-radius: 4px;
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 

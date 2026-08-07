@@ -114,7 +114,7 @@
 .expected-move-action:focus-visible,
 .training-session-actions :is(button, a):focus-visible,
 .training-result-actions a:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 

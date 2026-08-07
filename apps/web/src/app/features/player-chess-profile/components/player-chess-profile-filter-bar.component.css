@@ -75,7 +75,7 @@
 .profile-toggle-group button:focus-visible,
 .profile-picker > summary:focus-visible,
 .profile-clear-rating:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
 }
 

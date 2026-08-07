@@ -72,7 +72,7 @@
   .mobile-primary-nav-item:focus-visible,
   .mobile-menu-close:focus-visible,
   .mobile-nav-item:focus-visible {
-    outline: 3px solid var(--ui-focus-ring);
+    outline: 3px solid var(--ui-focus-outline);
     outline-offset: 2px;
   }
 
