@@ -6,11 +6,7 @@
     [actions]="headerActions()"
   />
 
-  @if (store.loading() && !loadedCourse()) {
-    <app-panel title="Loading course">
-      <p class="status-note" role="status" aria-live="polite">Loading course details...</p>
-    </app-panel>
-  } @else if (store.error() && !loadedCourse()) {
+  @if (store.error() && !loadedCourse()) {
     <app-panel title="Course unavailable" subtitle="The course could not be loaded, so authoring actions are temporarily unavailable.">
       <p class="status-error" role="alert">{{ store.error() }}</p>
       <div class="inline-actions">
@@ -19,6 +15,10 @@
         }
         <a routerLink="/courses" class="chapter-action">Back to courses</a>
       </div>
+    </app-panel>
+  } @else if (store.loading() && !loadedCourse()) {
+    <app-panel title="Loading course">
+      <p class="status-note" role="status" aria-live="polite">Loading course details...</p>
     </app-panel>
   } @else if (loadedCourse(); as course) {
     @if (store.error()) {
