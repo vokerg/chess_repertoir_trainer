@@ -246,7 +246,7 @@ const service = createCandidateDecisionService({
 
   assert.equal(white.status, 'AVAILABLE');
   assert.equal(white.knowledge.status, 'AVAILABLE');
-  assert.equal(white.knowledge.version, '2026-08-knowledge-v1');
+  assert.equal(white.knowledge.version, '2026-08-knowledge-v2');
   assert.ok(white.knowledge.plans.some((plan) => plan.id === 'french-white-use-space-and-pawn-chain'));
   assert.ok(black.knowledge.plans.some((plan) => plan.id === 'french-black-undermine-centre'));
   assert.notEqual(white.knowledge.strategicSummary.text, black.knowledge.strategicSummary.text);
