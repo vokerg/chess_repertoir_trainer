@@ -30,13 +30,17 @@ export class CourseDetailPageComponent implements OnInit {
     { id: 'sublines', label: 'Active sublines', value: this.store.stats()?.activeSublineCount ?? 0 },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
+    const backAction: PageHeaderAction = { id: 'back', label: 'Back', link: ['/courses'] };
+    const course = this.store.course();
     const courseId = this.store.courseId();
-    if (!courseId) return [];
+    if (!course || !courseId) return [backAction];
+
     return [
+      backAction,
       { id: 'marathon', label: 'Marathon', link: ['/courses', courseId, 'marathon'] },
       { id: 'review', label: 'Review', link: ['/courses', courseId, 'review'] },
       ...(!this.store.editingCourseName()
-        ? [{ id: 'rename', label: 'Rename', disabled: !this.store.course(), run: () => this.store.startCourseEdit() }]
+        ? [{ id: 'rename', label: 'Rename', run: () => this.store.startCourseEdit() }]
         : []),
       {
         id: 'delete',
