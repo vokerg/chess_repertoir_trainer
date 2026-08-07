@@ -111,7 +111,7 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
         'knowledge-subfamily-dutch-stonewall',
         'Dutch Defense names containing Stonewall',
         'Add Stonewall pawn-chain, dark-square and bad-bishop conditions.',
-        ['Dutch Defense: Stonewall Variation', 'Dutch Defense: Stonewall, Botvinnik Variation'],
+        ['Dutch Defense: Stonewall Variation', 'Dutch Defense: Stonewall Variation, Botvinnik Variation'],
       ),
       rule(
         'knowledge-subfamily-dutch-leningrad',
