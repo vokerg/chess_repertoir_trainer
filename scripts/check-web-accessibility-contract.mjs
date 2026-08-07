@@ -66,11 +66,22 @@ for (const surfaceToken of ['--ui-surface', '--ui-canvas', '--ui-chrome']) {
   );
 }
 
-const chromeFocusOutline = readHexToken(designSystem, '--ui-action');
-for (const surfaceToken of ['--ui-chrome', '--ui-chrome-raised', '--ui-chrome-soft']) {
+const navigationFocusOutline = mixHex(
+  readHexToken(designSystem, '--ui-action-strong'),
+  readHexToken(designSystem, '--ui-action'),
+  0.55,
+);
+for (const surfaceToken of [
+  '--ui-surface',
+  '--ui-canvas',
+  '--ui-canvas-soft',
+  '--ui-chrome',
+  '--ui-chrome-raised',
+  '--ui-chrome-soft',
+]) {
   const surface = readHexToken(designSystem, surfaceToken);
   assert.ok(
-    contrastRatio(chromeFocusOutline, surface) >= 3,
+    contrastRatio(navigationFocusOutline, surface) >= 3,
     `${surfaceToken} must have at least 3:1 contrast with the navigation focus color`,
   );
 }
@@ -85,18 +96,18 @@ assert.match(
 const navigationDisclosureCss = readFileSync(navigationDisclosureCssUrl, 'utf8');
 assert.match(
   navigationDisclosureCss,
-  /\.rail-collapse-button:focus-visible,\s*\.rail-nav-link:focus-visible,\s*\.rail-nav-disclosure:focus-visible,\s*\.rail-brand-link:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--ui-action\);[^}]*\}/s,
-  'Graphite navigation controls must use the contrast-safe opaque navigation focus color',
+  /--navigation-focus-outline:\s*color-mix\(\s*in srgb,\s*var\(--ui-action-strong\)\s+55%,\s*var\(--ui-action\)\s+45%\s*\);/s,
+  'Navigation focus must retain the opaque cross-surface mint mix',
 );
 assert.match(
   navigationDisclosureCss,
-  /\.rail-inline-item:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--ui-action\);[^}]*\}/s,
-  'Inline graphite navigation controls must use the contrast-safe opaque navigation focus color',
+  /\.rail-collapse-button:focus-visible,\s*\.rail-nav-link:focus-visible,\s*\.rail-nav-disclosure:focus-visible,\s*\.rail-flyout-item:focus-visible,\s*\.rail-brand-link:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--navigation-focus-outline\);[^}]*\}/s,
+  'Desktop navigation controls must use the cross-surface focus outline',
 );
 assert.match(
   navigationDisclosureCss,
-  /\.rail-flyout-item:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--ui-focus-outline\);[^}]*\}/s,
-  'Light navigation flyouts must use the standard opaque focus-outline token',
+  /\.rail-inline-item:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--navigation-focus-outline\);[^}]*\}/s,
+  'Inline navigation controls must use the cross-surface focus outline',
 );
 
 const evaluationGraphCss = readFileSync(evaluationGraphCssUrl, 'utf8');
@@ -144,6 +155,19 @@ function readHexToken(css, token) {
   const match = css.match(new RegExp(`${escapeRegExp(token)}:\\s*(#[0-9a-f]{6});`, 'i'));
   assert.ok(match, `${token} must be defined as an opaque six-digit hex color`);
   return match[1];
+}
+
+function mixHex(first, second, firstWeight) {
+  const firstChannels = hexChannels(first);
+  const secondChannels = hexChannels(second);
+  const mixedChannels = firstChannels.map((channel, index) =>
+    Math.round(channel * firstWeight + secondChannels[index] * (1 - firstWeight)),
+  );
+  return `#${mixedChannels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function hexChannels(hex) {
+  return [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
 }
 
 function contrastRatio(first, second) {
