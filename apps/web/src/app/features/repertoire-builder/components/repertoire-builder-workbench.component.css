@@ -6,23 +6,18 @@
 .builder-context {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
+  gap: var(--space-2);
   align-items: center;
-  padding: 0.15rem 0.25rem;
-  color: var(--ui-text-subtle);
-  font-size: 0.75rem;
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+  font-size: 0.86rem;
 }
 
 .builder-context > span {
-  display: inline-flex;
-  gap: 0.2rem;
-  align-items: center;
-}
-
-.builder-context > span:not(:first-child)::before {
-  content: '·';
-  color: var(--ui-border-strong);
-  margin-right: 0.15rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
 }
 
 .builder-context strong {
@@ -30,13 +25,15 @@
 }
 
 .route-local-badge {
-  color: var(--ui-warning);
+  border-color: var(--warning) !important;
+  background: var(--warning-soft) !important;
+  color: var(--muted-strong);
 }
 
 .workbench-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: start;
 }
 
@@ -49,42 +46,27 @@
 .board-column,
 .side-column {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-width: 0;
-}
-
-.workbench-grid app-panel {
-  --panel-gap: 0.75rem;
-  --panel-padding: 0.95rem;
 }
 
 .board-stage {
-  --builder-eval-width: 30px;
-  --builder-board-gap: 0.55rem;
   display: grid;
-  grid-template-columns:
-    var(--builder-eval-width)
-    minmax(0, min(520px, calc(100% - var(--builder-eval-width) - var(--builder-board-gap))));
-  gap: var(--builder-board-gap);
+  grid-template-columns: minmax(0, min(520px, 100%));
   justify-content: center;
-  align-items: stretch;
-  padding: 0 0 var(--space-2);
+  place-items: center;
+  padding: var(--space-2) 0 var(--space-4);
 }
 
-.board-stage app-engine-eval-bar {
-  height: 100%;
-  min-width: 0;
-}
-
-.board-shell {
-  display: grid;
-  min-width: 0;
-}
-
-.board-shell app-chessground-board {
+.board-entry-button {
   display: block;
-  width: 100%;
-  min-width: 0;
+  margin: 0 auto var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .state-message {
@@ -128,10 +110,10 @@
 .candidate-preview {
   display: grid;
   grid-template-columns: auto minmax(90px, 1fr) repeat(2, minmax(70px, auto)) auto auto;
-  gap: var(--space-2);
+  gap: var(--space-3);
   align-items: center;
   min-width: 0;
-  padding: var(--space-2);
+  padding: var(--space-3);
   border: 0;
   background: transparent;
   color: var(--text);
@@ -213,43 +195,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
   margin-bottom: var(--space-4);
-}
-
-.engine-impact {
-  display: grid;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-control);
-  background: var(--ui-surface-muted);
-}
-
-.engine-impact > div {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: space-between;
-}
-
-.engine-impact span,
-.engine-impact p {
-  color: var(--ui-text-muted);
-}
-
-.engine-impact p {
-  margin: 0;
-  font-size: 0.82rem;
-}
-
-.engine-impact[data-status='QUEUED'],
-.engine-impact[data-status='ANALYZING'] {
-  border-color: var(--ui-info);
-  background: var(--ui-info-soft);
-}
-
-.engine-impact[data-status='FAILED'] {
-  border-color: var(--ui-danger);
-  background: var(--ui-danger-soft);
 }
 
 .evidence-summary > div {
@@ -366,9 +311,14 @@
 }
 
 .decision-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
+}
+
+.decision-actions .primary-button,
+.decision-actions .danger-text {
+  grid-column: 1 / -1;
 }
 
 .primary-button,
@@ -382,10 +332,9 @@
 
 .primary-button,
 .secondary-button {
-  min-height: 2.15rem;
-  padding: 0.4rem 0.7rem;
+  min-height: 2.55rem;
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  font-size: 0.86rem;
   font-weight: 700;
 }
 
@@ -530,6 +479,7 @@ button:disabled {
   font-size: 0.68rem;
 }
 
+.session-actions,
 .terminal-state {
   display: flex;
   flex-wrap: wrap;
@@ -560,7 +510,8 @@ button:focus-visible {
   }
 
   .side-column > :first-child,
-  .side-column > :last-child {
+  .side-column > :last-child,
+  .session-actions {
     grid-column: 1 / -1;
   }
 }
@@ -582,7 +533,8 @@ button:focus-visible {
   }
 
   .side-column > :first-child,
-  .side-column > :last-child {
+  .side-column > :last-child,
+  .session-actions {
     grid-column: auto;
   }
 }
