@@ -1,6 +1,6 @@
 import type { OpeningBookEntry } from './openingBook.types';
 
-export const OPENING_KNOWLEDGE_VERSION = '2026-08-knowledge-v2' as const;
+export const OPENING_KNOWLEDGE_VERSION = '2026-08-knowledge-v3' as const;
 
 export type OpeningKnowledgeStatus = 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
 export type OpeningKnowledgeLifecycle = 'DRAFT' | 'REVIEWED' | 'DEPRECATED';
