@@ -25,12 +25,15 @@ export class LinesPageComponent implements OnInit {
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(LinesPageStore);
   protected readonly canRetryLoad = signal(false);
-  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => [
-    { id: 'lines', label: 'Lines', value: this.store.lines().length },
-    { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
-    { id: 'attempts', label: 'Recent attempts', value: this.store.totalAttempts() },
-    { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%` },
-  ]);
+  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
+    if (!this.store.chapter()) return [];
+    return [
+      { id: 'lines', label: 'Lines', value: this.store.lines().length },
+      { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
+      { id: 'attempts', label: 'Recent attempts', value: this.store.totalAttempts() },
+      { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%` },
+    ];
+  });
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const courseId = this.store.courseId();
     const backAction: PageHeaderAction = {
