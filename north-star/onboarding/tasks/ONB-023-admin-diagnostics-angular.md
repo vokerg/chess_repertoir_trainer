@@ -1,6 +1,6 @@
 # ONB-023 — Build administrator diagnostics Angular feature
 
-Status: PROPOSED
+Status: READY
 
 Priority: P2
 
@@ -14,6 +14,8 @@ Target branch: `main`
 
 Suggested branch: `admin/onb-023-diagnostics-angular`
 
+Promotion pull request: [#298](https://github.com/vokerg/chess_repertoir_trainer/pull/298)
+
 ## Objective
 
 Build a lazy direct-link administrator diagnostics experience over ONB-022 without moving authorization decisions into Angular or modifying normal user-owned feature behavior.
@@ -21,7 +23,7 @@ Build a lazy direct-link administrator diagnostics experience over ONB-022 witho
 ## Dependencies
 
 - ONB-005 accepted and merged;
-- ONB-022 accepted and merged;
+- ONB-022 runtime merged through PR #284 and its canonical `DONE` transition merges through PR #298;
 - coordinate visual implementation with Visual Transformation without changing diagnostics behavior.
 
 ## Primary repository touch points
@@ -88,4 +90,4 @@ A conditional administrator navigation entry is optional only if this task delib
 
 ## Claim rule
 
-Do not claim until ONB-022 is DONE and `TASKS.md` promotes ONB-023 to READY. Re-inspect current navigation and shared UI patterns before implementation. Do not commit directly to `main`.
+Do not claim until PR #298 is approved and merged, issue #272 is closed, and `TASKS.md`, this task file, and issue #273 execution metadata all show ONB-023 as `READY`. Re-inspect current navigation, merged administrator contracts, shared UI patterns, active Visual Transformation #133 work, and parallel administrator branches before implementation. Do not commit directly to `main`.
