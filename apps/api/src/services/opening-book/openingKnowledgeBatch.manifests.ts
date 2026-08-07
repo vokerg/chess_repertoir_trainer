@@ -30,8 +30,8 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
   {
     schemaVersion: 1,
     id: 'rb-025-generated-priority-batch-001',
-    revision: 1,
-    lifecycle: 'DRAFT',
+    revision: 2,
+    lifecycle: 'APPLIED',
     title: 'Major uncovered families and inheritance exceptions',
     rationale: 'Use the generated-book priority backlog to add broad two-sided knowledge for six high-impact families, then protect structurally distinct branches with bounded narrow overrides.',
     priorityPolicyVersion: '2026-08-rb-025-v1',
@@ -167,6 +167,10 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
       minimumUniqueNameAvailableGain: 500,
       requireAllRulesExercised: true,
       requireNoRankingContractChange: true,
+    },
+    reviewer: {
+      name: 'ChatGPT agent session — user-directed implementation',
+      reviewedAt: '2026-08-07',
     },
   },
 ];
