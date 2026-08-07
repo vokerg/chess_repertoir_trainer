@@ -117,7 +117,7 @@ export const OPENING_KNOWLEDGE_BATCH_MANIFESTS: readonly OpeningKnowledgeBatchMa
         'knowledge-subfamily-dutch-leningrad',
         'Dutch Defense names containing Leningrad',
         'Add fianchetto, e5-break and king-exposure guidance distinct from Stonewall structures.',
-        ['Dutch Defense: Leningrad Variation', 'Dutch Defense: Leningrad, Main Variation'],
+        ['Dutch Defense: Leningrad Variation', 'Dutch Defense: Leningrad Variation, Warsaw Variation'],
       ),
       rule(
         'knowledge-family-semi-slav-defense',
