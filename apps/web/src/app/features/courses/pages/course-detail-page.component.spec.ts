@@ -3,7 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
-import { CourseDetail, CourseStats } from '../data-access/course-detail.models';
+import { CourseChapter, CourseDetail, CourseStats } from '../data-access/course-detail.models';
+import { AvailableSubline } from '../data-access/sublines/sublines.models';
 import { CourseDetailStore } from '../state/course-detail.store';
 import { CourseDetailPageComponent } from './course-detail-page.component';
 
@@ -31,8 +32,8 @@ describe('CourseDetailPageComponent state presentation', () => {
         courseId: signal<number | null>(7),
         course: signal<CourseDetail | null>(null),
         stats: signal<CourseStats | null>(null),
-        chapters: signal([]),
-        sublines: signal([]),
+        chapters: signal<CourseChapter[]>([]),
+        sublines: signal<AvailableSubline[]>([]),
         sublinesLoading: signal(false),
         sublinesError: signal<string | null>(null),
         loading: signal(true),
