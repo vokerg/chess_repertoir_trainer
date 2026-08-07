@@ -145,7 +145,7 @@ const run = {
   assert.equal(built.authoritativeMoves.get(3).bestMoveSan, 'Nf3');
   assert.equal(built.context.moves[0].before, undefined, 'FEN is not included in provider context');
   assert.equal(built.context.openingKnowledge.side, 'WHITE');
-  assert.equal(built.context.openingKnowledge.version, '2026-08-knowledge-v1');
+  assert.equal(built.context.openingKnowledge.version, '2026-08-knowledge-v3');
   assert.ok(built.context.openingKnowledge.plans.some(
     (plan) => plan.id === 'french-white-use-space-and-pawn-chain',
   ));

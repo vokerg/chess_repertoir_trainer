@@ -1,8 +1,12 @@
 import prisma from '../prisma';
 import {
   buildUnknownOpeningFamilyBacklogFromFrequencies,
-  OpeningNameFrequency,
+  type OpeningNameFrequency,
 } from '../services/opening-book/openingClassificationAudit';
+import {
+  buildOpeningClassificationCoverageAudit,
+  type OpeningClassificationCoverageObservation,
+} from '../services/opening-book/openingClassificationCoverageAudit';
 import { OPENING_BOOK } from '../services/opening-book/openingBook.generated';
 import type { OpeningBookEntry } from '../services/opening-book/openingBook.types';
 import { OpeningClassificationService } from '../services/opening-book/openingClassificationService';
@@ -49,6 +53,7 @@ async function main() {
 
   const uniqueOpeningNames = new Set<string>();
   const unknownFrequencies: OpeningNameFrequency[] = [];
+  const coverageObservations: OpeningClassificationCoverageObservation[] = [];
   let matchedGames = 0;
   let bothSidesKnownGames = 0;
 
@@ -60,6 +65,11 @@ async function main() {
     const result = OpeningClassificationService.classify(
       classificationEntry(row.openingName, row.openingEco),
     );
+    coverageObservations.push({
+      name: row.openingName,
+      weight: games,
+      classification: result,
+    });
     const whiteKnown = result.white.soundness !== 'UNKNOWN' || result.white.character.length > 0;
     const blackKnown = result.black.soundness !== 'UNKNOWN' || result.black.character.length > 0;
 
@@ -89,6 +99,10 @@ async function main() {
       bothSidesKnownGames,
       bothSidesKnownGamesPct: pct(bothSidesKnownGames, gamesWithOpeningName),
     },
+    dimensionCoverage: buildOpeningClassificationCoverageAudit(
+      coverageObservations,
+      gamesWithOpeningName,
+    ),
     unknownFamilyBacklog: buildUnknownOpeningFamilyBacklogFromFrequencies(
       unknownFrequencies,
       gamesWithOpeningName,

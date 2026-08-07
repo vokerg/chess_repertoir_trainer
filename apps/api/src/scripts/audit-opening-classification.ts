@@ -1,4 +1,8 @@
 import { buildUnknownOpeningFamilyBacklog } from '../services/opening-book/openingClassificationAudit';
+import {
+  buildOpeningClassificationCoverageAudit,
+  type OpeningClassificationCoverageObservation,
+} from '../services/opening-book/openingClassificationCoverageAudit';
 import { OPENING_BOOK } from '../services/opening-book/openingBook.generated';
 import { OpeningClassificationService } from '../services/opening-book/openingClassificationService';
 
@@ -11,6 +15,7 @@ const names = new Set<string>();
 const matchedNames = new Set<string>();
 const unknownNames = new Set<string>();
 const unknownEntryNames: string[] = [];
+const coverageObservations: OpeningClassificationCoverageObservation[] = [];
 let matched = 0;
 let bothSidesKnown = 0;
 let asymmetricSoundness = 0;
@@ -21,6 +26,7 @@ let asymmetricGambitSoundness = 0;
 for (const entry of OPENING_BOOK) {
   names.add(entry.name);
   const result = OpeningClassificationService.classify(entry);
+  coverageObservations.push({ name: entry.name, weight: 1, classification: result });
   const whiteKnown = result.white.soundness !== 'UNKNOWN' || result.white.character.length > 0;
   const blackKnown = result.black.soundness !== 'UNKNOWN' || result.black.character.length > 0;
 
@@ -70,6 +76,10 @@ console.log(JSON.stringify({
     bothSidesKnown,
     bothSidesKnownPct: pct(bothSidesKnown, OPENING_BOOK.length),
   },
+  dimensionCoverage: buildOpeningClassificationCoverageAudit(
+    coverageObservations,
+    OPENING_BOOK.length,
+  ),
   sideAwareness: { asymmetricSoundness, asymmetricRoles, asymmetricGambitSoundness },
   unknownFamilyBacklog,
   ruleUsage,

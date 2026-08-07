@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-08-01
+Last updated: 2026-08-06
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -36,8 +36,9 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 | RB-022 | [#241](https://github.com/vokerg/chess_repertoir_trainer/issues/241) |
 | RB-023 | [#242](https://github.com/vokerg/chess_repertoir_trainer/issues/242) |
 | RB-024 | [#243](https://github.com/vokerg/chess_repertoir_trainer/issues/243) |
+| RB-025 | [#290](https://github.com/vokerg/chess_repertoir_trainer/issues/290) |
 
-RB-021 architecture was accepted on 2026-08-01 through PR #244. RB-022 is the next ready task; RB-023 and RB-024 remain blocked on it.
+RB-021 through RB-024 are complete. RB-025 is claimed for the coverage-research and editorial-tooling slice on `rb-025/issue-290-coverage-scale-research`. RB-016 remains independently blocked on real-use evidence.
 
 Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same change or coordination session.
 

@@ -18,6 +18,14 @@ export const OPENING_KNOWLEDGE_SOURCES: readonly OpeningKnowledgeSource[] = [
     retrievedAt: '2026-07-31',
   },
   {
+    id: 'project-editorial-rb-025-completion',
+    title: 'RB-025 generated-book opening knowledge completion corpus',
+    sourceRef: 'north-star/repertoire-builder/reports/RB-025-2026-08-07-opening-knowledge-completion.md',
+    sourceType: 'PROJECT_RESEARCH',
+    license: 'PROJECT_ORIGINAL',
+    retrievedAt: '2026-08-07',
+  },
+  {
     id: 'lichess-chess-openings',
     title: 'lichess-org/chess-openings',
     sourceRef: 'https://github.com/lichess-org/chess-openings',

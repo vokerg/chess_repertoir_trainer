@@ -1,6 +1,6 @@
 # Repertoire Builder North Star
 
-Last updated: 2026-08-05
+Last updated: 2026-08-06
 
 The Repertoire Builder program defines how the product constructs and evolves a personal opening repertoire from population evidence, the player's own games and profile, existing courses, reviewed opening knowledge, and explicit user choices.
 
@@ -22,7 +22,9 @@ Current runtime includes:
 - optional generated candidate and completion interpretations behind explicit disabled-by-default boundaries;
 - bounded reviewed-opening grounding for the explicit AI game-review consumer.
 
-The remaining RB-016 outcome-evaluation task is independently blocked on sufficient real Builder/course usage and follow-up-game evidence. No other dependency-satisfied Repertoire Builder task is currently queued.
+RB-025 / #290 is claimed for deterministic opening-knowledge coverage research, side-specific completeness audits, prioritized backlog design and editorial-tooling foundations. Its first delivery does not add bulk runtime prose or change classification/ranking authority.
+
+The remaining RB-016 outcome-evaluation task is independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
 
 Do not copy a future “next task” into this file. [`STATUS.md`](STATUS.md) and the mapped GitHub issues own volatile readiness, blockers, and current execution state.
 
