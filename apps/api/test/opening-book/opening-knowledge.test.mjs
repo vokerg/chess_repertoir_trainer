@@ -32,7 +32,7 @@ const projectPlan = (id, summary = id) => ({
 });
 
 validateOpeningKnowledgeRegistry();
-assert.equal(OpeningKnowledgeService.rules().length, 41);
+assert.equal(OpeningKnowledgeService.rules().length, 160);
 
 {
   const opening = entry('Sicilian Defense: Najdorf Variation, English Attack');
@@ -315,7 +315,7 @@ assert.equal(OpeningKnowledgeService.rules().length, 41);
 }
 
 {
-  assert.ok(OPENING_BOOK.length > 3000);
+  assert.equal(OPENING_BOOK.length, 3733);
   let available = 0;
   let partial = 0;
   let unavailable = 0;
@@ -334,10 +334,10 @@ assert.equal(OpeningKnowledgeService.rules().length, 41);
     if (result.status === 'UNAVAILABLE') unavailable += 1;
   }
 
-  assert.ok(available > 2000);
-  assert.ok(partial > 0);
-  assert.ok(unavailable > 0);
-  assert.ok(usedRuleIds.size >= 40);
+  assert.equal(available, OPENING_BOOK.length);
+  assert.equal(partial, 0);
+  assert.equal(unavailable, 0);
+  assert.equal(usedRuleIds.size, 160);
   console.log(JSON.stringify({
     openingKnowledgeCoverage: {
       entries: OPENING_BOOK.length,
