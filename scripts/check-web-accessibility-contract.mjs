@@ -18,7 +18,7 @@ const gamesTableCssUrl = new URL(
 );
 
 const lowContrastStandaloneOutline =
-  /outline\s*:\s*[^;\n{}]+\s+solid\s+(?:var\(--ui-focus-ring\)|rgba\(\s*31\s*,\s*120\s*,\s*101\s*,\s*0\.38\s*\))\s*;/i;
+  /outline\s*:\s*[^;\n{}]+\s+solid\s+(?:var\(--focus-ring\)|var\(--ui-focus-ring\)|rgba\(\s*31\s*,\s*120\s*,\s*101\s*,\s*0\.38\s*\))\s*;/i;
 const anchorButtonRole = /<a\b(?=[^>]*\brole\s*=\s*["']button["'])[^>]*>/is;
 
 for (const fileUrl of sourceFiles(webSourceRoot)) {
@@ -29,7 +29,7 @@ for (const fileUrl of sourceFiles(webSourceRoot)) {
     assert.doesNotMatch(
       source,
       lowContrastStandaloneOutline,
-      `Standalone focus outlines must use --ui-focus-outline, not the translucent halo token: ${path}`,
+      `Standalone focus outlines must use --ui-focus-outline, not an undefined or translucent focus token: ${path}`,
     );
   }
 
