@@ -73,8 +73,9 @@ No API, backend, schema, dependency, authentication, provider, analysis, course,
 - ACT-004 compatibility head `7447293fb0cee7e4a2ee2df8d234cfa18e79a9ab` passed its own complete CI run 2139;
 - CI run 2152 passed the complete repository workflow on prior exact head `2c1ffd816162671013d4e7d2e145d10bb7775cd9`;
 - CI run 2180 passed the complete repository workflow on prior exact head `0c51dc55ddfe155f41cfa83144272b513e4da095`, including the Repertoire Builder focus correction;
-- the branch was refreshed through `main` commit `90ea23965b5a4ce032ca9b75d837e4e3dfff58ab` before the navigation-focus correction was finalized;
-- the final cross-surface navigation-focus correction and expanded guard require a new green exact-head CI result before integration.
+- CI run 2200 passed the complete repository workflow on prior exact head `f3ef4f5bb103966f40e50851bfbecf7ab1cce519`, including the final cross-surface navigation-focus correction and expanded guard;
+- before final review, the branch was refreshed through current `main` commit `997d1ecc0ead422c696ec4460bdb914c47d2d848` by merge commit `fd34cde585d674dae49a4e85cc802596f24944e0`; the three incoming `main` commits changed only `apps/api`, `docs`, and `north-star`, which do not overlap this PR's production web changes;
+- the post-refresh exact head requires a new green CI result before integration.
 
 The repository CI remains authoritative for Angular template/type compilation, web build and tests, lint, architecture checks, migrations, and audits. Any later self-review correction must receive a new green exact-head result before integration; the pull request records the current exact run rather than freezing it in this report.
 
@@ -88,7 +89,7 @@ Direct authenticated browser, keyboard, screen-reader, zoom, contrast-tool, redu
 - Empty, loading, partial-data, error, and recovery states still require a complete cross-route inventory and focused corrections rather than a shared-CSS-only claim.
 - Keyboard and screen-reader review remains incomplete across all primary workflows.
 - Contrast-tool, 200%/400% zoom, desktop, tablet, compact, and narrow-phone browser evidence remains unobserved.
-- The branch must remain synchronized with current `main` through final review; the latest recorded refresh includes `90ea23965b5a4ce032ca9b75d837e4e3dfff58ab`.
+- The branch must remain synchronized with current `main` through final review; the latest recorded refresh includes `997d1ecc0ead422c696ec4460bdb914c47d2d848`.
 - `transformation/STATUS.md`, decisions, migration records, and final program-completion assessment must be reconciled only after the complete issue scope is delivered and approved.
 
 ## Completion assessment
