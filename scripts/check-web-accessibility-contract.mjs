@@ -4,6 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 const webSourceRoot = new URL('../apps/web/src/', import.meta.url);
 const designSystemUrl = new URL('../apps/web/src/design-system.css', import.meta.url);
+const navigationComponentTsUrl = new URL(
+  '../apps/web/src/app/core/layout/main-navigation/main-navigation.component.ts',
+  import.meta.url,
+);
+const navigationDisclosureCssUrl = new URL(
+  '../apps/web/src/app/core/layout/main-navigation/main-navigation-disclosure.css',
+  import.meta.url,
+);
 const evaluationGraphCssUrl = new URL(
   '../apps/web/src/app/features/games/components/game-evaluation-graph.component.css',
   import.meta.url,
@@ -57,6 +65,39 @@ for (const surfaceToken of ['--ui-surface', '--ui-canvas', '--ui-chrome']) {
     `${surfaceToken} must have at least 3:1 contrast with --ui-focus-outline`,
   );
 }
+
+const chromeFocusOutline = readHexToken(designSystem, '--ui-action');
+for (const surfaceToken of ['--ui-chrome', '--ui-chrome-raised', '--ui-chrome-soft']) {
+  const surface = readHexToken(designSystem, surfaceToken);
+  assert.ok(
+    contrastRatio(chromeFocusOutline, surface) >= 3,
+    `${surfaceToken} must have at least 3:1 contrast with the navigation focus color`,
+  );
+}
+
+const navigationComponentTs = readFileSync(navigationComponentTsUrl, 'utf8');
+assert.match(
+  navigationComponentTs,
+  /styleUrls:\s*\[\s*['"]\.\/main-navigation\.component\.css['"],\s*['"]\.\/main-navigation-disclosure\.css['"]/s,
+  'Navigation disclosure styles must remain after the base navigation stylesheet so contrast-safe focus overrides win',
+);
+
+const navigationDisclosureCss = readFileSync(navigationDisclosureCssUrl, 'utf8');
+assert.match(
+  navigationDisclosureCss,
+  /\.rail-collapse-button:focus-visible,\s*\.rail-nav-link:focus-visible,\s*\.rail-nav-disclosure:focus-visible,\s*\.rail-brand-link:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--ui-action\);[^}]*\}/s,
+  'Graphite navigation controls must use the contrast-safe opaque navigation focus color',
+);
+assert.match(
+  navigationDisclosureCss,
+  /\.rail-inline-item:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--ui-action\);[^}]*\}/s,
+  'Inline graphite navigation controls must use the contrast-safe opaque navigation focus color',
+);
+assert.match(
+  navigationDisclosureCss,
+  /\.rail-flyout-item:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+var\(--ui-focus-outline\);[^}]*\}/s,
+  'Light navigation flyouts must use the standard opaque focus-outline token',
+);
 
 const evaluationGraphCss = readFileSync(evaluationGraphCssUrl, 'utf8');
 assert.match(
