@@ -1,0 +1,33 @@
+<app-panel
+  class="opening-evidence-shell"
+  title="Position evidence"
+  subtitle="Switch sources without adding more panels to the page."
+>
+  <div class="opening-evidence-tabs" role="tablist" aria-label="Position evidence sources">
+    @for (tab of tabs; track tab.id; let index = $index) {
+      <button
+        #tabButton
+        type="button"
+        role="tab"
+        [id]="'opening-evidence-tab-' + tab.id"
+        [class.active]="activeTab() === tab.id"
+        [attr.aria-selected]="activeTab() === tab.id"
+        aria-controls="opening-evidence-tab-panel"
+        [attr.tabindex]="activeTab() === tab.id ? 0 : -1"
+        (click)="selectTab(tab.id)"
+        (keydown)="handleTabKeydown($event, index)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <div
+    id="opening-evidence-tab-panel"
+    class="opening-evidence-tab-panel"
+    role="tabpanel"
+    [attr.aria-labelledby]="'opening-evidence-tab-' + activeTab()"
+  >
+    <ng-content />
+  </div>
+</app-panel>

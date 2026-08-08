@@ -6,12 +6,19 @@
     [actions]="headerActions()"
   />
 
-  <app-context-strip
-    class="opening-context"
-    presentation="segments"
-    ariaLabel="Current analysis context"
-    [items]="contextItems()"
-  />
+  <app-panel class="opening-line-toolbar">
+    <app-copyable-line
+      name="Line"
+      label="Copy"
+      [line]="store.lineLabel()"
+      [trail]="true"
+      [segments]="lineTrailMoves()"
+      [currentSegment]="store.history().length"
+      [link]="['/analysis']"
+      [queryParams]="analysisQueryParams()"
+      (segmentSelected)="store.goToPly($event)"
+    />
+  </app-panel>
 
   <app-analysis-workbench
     class="opening-workbench"
@@ -22,6 +29,7 @@
     [boardPositionVersion]="store.boardPositionVersion()"
     [analysis]="store.engine()"
     [engineVisible]="store.engineVisible()"
+    [engineLinesSelectable]="true"
     [showTreePanel]="false"
     [showDangerZone]="false"
     [showNextNavigation]="false"
@@ -29,32 +37,15 @@
     [canGoBackward]="store.history().length > 0"
     keyboardHint="Keyboard: Left arrow to go back, Home for start"
     (boardMove)="store.playBoardMove($event)"
+    (engineMoveSelected)="store.playBoardMove($event)"
     (goStart)="store.resetBoard()"
     (goPrevious)="store.goBack()"
   >
     <div analysisWorkbenchLeftExtra class="opening-left-stack">
-      <app-copyable-line
-        class="opening-line-card"
-        name="Current line"
-        [line]="store.lineLabel()"
-        [link]="['/analysis']"
-        [queryParams]="analysisQueryParams()"
-      />
-
       <app-course-position-suggestions-widget
         [fen]="store.currentFen()"
         (moveSelected)="store.playBoardMove($event.moveUci)"
       />
-
-      @if (store.tagsOpen()) {
-        <app-position-performance-panel
-          [performance]="store.performance()"
-          [loading]="store.performanceLoading()"
-          [selectableTags]="true"
-          [selectedTagCodes]="store.filters().tagCodes"
-          (tagSelected)="store.toggleTagFilter($event)"
-        />
-      }
     </div>
 
     <div analysisWorkbenchSideBeforeTree class="opening-primary-evidence">
@@ -79,19 +70,46 @@
     </div>
 
     <div analysisWorkbenchSideExtra class="opening-secondary-evidence">
-      @if (store.mastersOpen()) {
-        <app-masters-explorer-widget
-          [fen]="store.currentFen()"
-          (moveSelected)="store.playBoardMove($event)"
-        />
-      }
-
-      @if (store.peersOpen()) {
-        <app-lichess-games-explorer-widget
-          [fen]="store.currentFen()"
-          (moveSelected)="store.playBoardMove($event)"
-        />
-      }
+      <app-opening-evidence-tabs
+        [activeTab]="store.activeEvidenceTab()"
+        (tabChange)="store.selectEvidenceTab($event)"
+      >
+        @switch (store.activeEvidenceTab()) {
+          @case ('performance') {
+            <app-position-performance-panel
+              [performance]="store.performance()"
+              [loading]="store.performanceLoading()"
+              [embedded]="true"
+              [selectableTags]="true"
+              [selectedTagCodes]="store.filters().tagCodes"
+              (tagSelected)="store.toggleTagFilter($event)"
+            />
+          }
+          @case ('masters') {
+            <app-masters-explorer-widget
+              [fen]="store.currentFen()"
+              [embedded]="true"
+              (moveSelected)="store.playBoardMove($event)"
+            />
+          }
+          @case ('peers') {
+            <app-lichess-games-explorer-widget
+              [fen]="store.currentFen()"
+              [embedded]="true"
+              (moveSelected)="store.playBoardMove($event)"
+            />
+          }
+          @case ('last-games') {
+            <app-position-top-games
+              [games]="store.topGames()"
+              [loading]="store.topGamesLoading()"
+              title="Last games in this position"
+              subtitle="Most recent indexed games reaching this exact position."
+              [resetKey]="store.currentFen()"
+            />
+          }
+        }
+      </app-opening-evidence-tabs>
 
       <app-game-filter-breakdown-panel
         title="My openings in this position"
@@ -103,18 +121,6 @@
         emptyText="No assigned openings found for this position."
         (itemSelected)="selectOpening($event)"
       />
-
-      @if (store.lastGamesOpen()) {
-        <app-panel class="opening-last-games-panel">
-          <app-position-top-games
-            [games]="store.topGames()"
-            [loading]="store.topGamesLoading()"
-            title="Last games in this position"
-            subtitle="Most recent indexed games reaching this exact position."
-            [resetKey]="store.currentFen()"
-          />
-        </app-panel>
-      }
     </div>
   </app-analysis-workbench>
 

@@ -1,10 +1,10 @@
 # Visual Transformation Status
 
-Last updated: 2026-08-05
+Last updated: 2026-08-08
 
 ## Current state
 
-**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete in repository records.
+**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 continues through issue #133 with accessibility foundations and repertoire-detail state consistency integrated; later bounded review slices remain live-issue owned.
 
 **Integration target:** `main`
 
@@ -40,7 +40,7 @@ VT-204 promoted only `app-context-strip` and `app-fact-grid`. D-027 later locked
 
 ### Phase 3 — rollout and polish
 
-VT-301 page-family implementation and route inventory are complete in repository records. VT-302 remains dependent on the live completion and readiness state of issues #132 and #133.
+VT-301 page-family implementation and route inventory are complete in repository records. VT-302 is in progress through live issue #133. Accessibility/responsive foundations and repertoire-authoring detail-state consistency are integrated; functional onboarding, wider state review, authenticated browser/assistive-technology evidence, and final program reconciliation remain open.
 
 ## VT-301 integrated batches
 
@@ -89,16 +89,26 @@ A local checkout was not available in the reconciliation runtime because `github
 
 ## Selection disposition
 
-- Issues #123–#131 are complete.
-- The repository acceptance evidence for #132 is complete through the final route-inventory report.
-- Continue #132 while its live GitHub issue remains open.
-- Do not select #133 until #132 is closed and #133 itself is explicitly changed from `BLOCKED` to `READY`.
+- Issues #123–#132 are complete.
+- Issue #133 is the sole active VT-302 execution boundary; its live body and comments own current branch, review, and remaining-scope state.
+- Continue only a claimed, collision-checked #133 slice from current `main`; do not infer a branch or completion claim from this status file.
 
 ## Open work after VT-301
 
 VT-302 owns coherent onboarding, empty/loading/error/recovery states, accessibility review, responsive polish, reduced-motion and appearance refinement, and final residual-risk disposition. It must build on the integrated system rather than introduce a second identity or reopen completed route-family rollout.
 
 ## Session log
+
+### 2026-08-08 — VT-302 Opening Analysis evidence workbench review slice
+
+- Claimed a bounded issue #133 continuation from `main` `22f40016499d7491a82e3ebd64f18f6afe1171bb` after checking the live issue, comments, open pull requests, and complete workbench/Stockfish consumer boundary.
+- Refreshed the completed slice without conflict through current `main` `07d19790a20beedf79bb094fead2c48c76404912` after Builder inheritance PR #306 and the administrator diagnostics UI PR #307 landed in disjoint files.
+- Replaced four independent optional-evidence toggles with one typed, lazy, keyboard-accessible Position evidence tab set while keeping personal Next moves first and My openings below it.
+- Removed the redundant context strip and retained one compact current-line toolbar by extending the established copyable-line boundary with an optional segmented rewind mode.
+- Kept Engine visible by default and retained its header toggle, evaluation bar, arrow, and lines. Opening Analysis alone opts into first-move Stockfish-row selection; all other consumers keep the original non-interactive contract.
+- Preserved production typography and `--ui-*` roles; no navigation, API, backend, schema, filter, Challenge Bot, or unrelated workflow behavior changed.
+- Added the bounded implementation and residual-risk record at [`reports/VT_302_OPENING_ANALYSIS_EVIDENCE_WORKBENCH.md`](./reports/VT_302_OPENING_ANALYSIS_EVIDENCE_WORKBENCH.md).
+- Focused Angular coverage, the complete 436-test web suite, the production web build, lint, architecture checks, and diff checks pass. Direct authenticated visual review is not claimed because the available in-app browser has no signed-in local session.
 
 ### 2026-08-05 — VT-301 authenticated-route inventory reconciliation
 

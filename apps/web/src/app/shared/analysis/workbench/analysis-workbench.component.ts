@@ -32,6 +32,7 @@ export class AnalysisWorkbenchComponent {
   readonly showNextNavigation = input(true);
   readonly showEndNavigation = input(true);
   readonly engineVisible = input(true);
+  readonly engineLinesSelectable = input(false);
   readonly showTreePanel = input(true);
 
   readonly treeTitle = input('Move tree');
@@ -43,6 +44,7 @@ export class AnalysisWorkbenchComponent {
   readonly deleteDisabled = input(false);
 
   readonly boardMove = output<string>();
+  readonly engineMoveSelected = output<string>();
   readonly nodeSelected = output<number>();
   readonly goStart = output<void>();
   readonly goPrevious = output<void>();

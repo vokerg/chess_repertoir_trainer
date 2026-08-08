@@ -1,6 +1,6 @@
 # Visual Transformation Working Rules
 
-Last updated: 2026-08-05
+Last updated: 2026-08-08
 
 These rules apply to ChatGPT, Copilot, Codex, agents, and human contributors working on the visual transformation.
 
@@ -151,9 +151,9 @@ Prefer coherent slices with an approved issue, clear outcome, limited architectu
 
 ## 15. Current selection boundary
 
-The repository records VT-301 page-family rollout and authenticated-route classification as complete through `VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`. GitHub issue state remains authoritative for whether the reconciliation is still active or already integrated.
+The repository records VT-301 page-family rollout and authenticated-route classification as complete through `VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`; issues #123–#132 are integrated and closed. GitHub issue state remains authoritative for current VT-302 execution.
 
-- Continue issue #132 while it remains open and `IN_PROGRESS`.
-- Do not select issue #133 while #132 is open or while #133 is `BLOCKED`.
-- Select issue #133 only after issue #132 is closed and issue #133 itself says `Repository state: READY`.
-- After those states change, select subsequent work from the live queue rather than from a hard-coded branch or task number in this document.
+- Continue issue #133 while it remains open and `IN_PROGRESS` and accepted scope remains.
+- Every meaningful continuation uses a fresh, collision-checked branch from current `main` and records its bounded claim in issue #133.
+- Keep issue #133 open for partial slices; only final reconciliation after complete acceptance and approved integration may close it.
+- Select subsequent work from the live queue rather than from a hard-coded branch or task number in this document.

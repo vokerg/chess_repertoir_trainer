@@ -42,6 +42,7 @@ export class LichessGamesExplorerWidgetComponent {
   private readonly defaultFilters = defaultLichessGamesExplorerFilters();
 
   readonly fen = input.required<string>();
+  readonly embedded = input(false);
   readonly moveSelected = output<string>();
 
   readonly filters = signal(this.defaultFilters);

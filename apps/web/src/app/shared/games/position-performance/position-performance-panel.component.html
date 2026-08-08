@@ -1,4 +1,8 @@
-<section class="workbench-panel position-performance-panel" aria-label="Performance in this position">
+<section
+  class="workbench-panel position-performance-panel"
+  [class.position-performance-panel-embedded]="embedded()"
+  aria-label="Performance in this position"
+>
   <div class="position-performance-header">
     <div>
       <h3 class="workbench-panel-title">{{ title() }}</h3>

@@ -8,28 +8,20 @@ import { OpeningAnalysisPageComponent } from './opening-analysis-page.component'
 describe('OpeningAnalysisPageComponent', () => {
   let fixture: ComponentFixture<OpeningAnalysisPageComponent>;
   let store: jasmine.SpyObj<OpeningAnalysisStore>;
-  let blackPerspective: WritableSignal<boolean>;
+  let history: WritableSignal<Array<{ uci: string; san: string }>>;
 
   beforeEach(async () => {
-    blackPerspective = signal(false);
+    history = signal<Array<{ uci: string; san: string }>>([]);
     store = jasmine.createSpyObj<OpeningAnalysisStore>('OpeningAnalysisStore', [
       'initialize',
-      'toggleTags',
-      'toggleMasters',
-      'togglePeers',
-      'toggleLastGames',
       'toggleEngine',
     ]);
     Object.assign(store, {
-      tagsOpen: signal(true),
-      mastersOpen: signal(false),
-      peersOpen: signal(false),
-      lastGamesOpen: signal(false),
+      activeEvidenceTab: signal('performance'),
       engineVisible: signal(true),
       currentFen: signal('startpos'),
-      history: signal([]),
+      history,
       filters: signal(defaultOpeningFilters()),
-      blackPerspective,
       analysis: signal(null),
       wdl: signal({ total: 0, wins: 0, draws: 0, losses: 0, scorePct: null }),
     });
@@ -55,55 +47,42 @@ describe('OpeningAnalysisPageComponent', () => {
     fixture = TestBed.createComponent(OpeningAnalysisPageComponent);
   });
 
-  it('orders the header actions with public explorers before Last games and Engine', () => {
+  it('keeps only Engine and Challenge bot in the header actions', () => {
     const actions = page().headerActions();
 
-    expect(actions.map((action) => action.id)).toEqual([
-      'tags',
-      'masters',
-      'peers',
-      'last-games',
-      'engine',
-      'challenge-lichess-bot',
-    ]);
+    expect(actions.map((action) => action.id)).toEqual(['engine', 'challenge-lichess-bot']);
     expect(actions[0].pressed).toBeTrue();
-    expect(actions[1].pressed).toBeFalse();
-    expect(actions[2].pressed).toBeFalse();
-    expect(actions[3].pressed).toBeFalse();
 
-    actions[1].run();
-    actions[2].run();
-    actions[3].run();
+    actions[0].run();
 
-    expect(store.toggleMasters).toHaveBeenCalled();
-    expect(store.togglePeers).toHaveBeenCalled();
-    expect(store.toggleLastGames).toHaveBeenCalled();
+    expect(store.toggleEngine).toHaveBeenCalled();
   });
 
-  it('derives workspace context without introducing duplicate state', () => {
-    expect(page().perspectiveLabel()).toBe('White perspective');
-    expect(page().activeToolCount()).toBe(2);
-    expect(page().filterSummary()).toBe('White - blitz + rapid - Rated');
+  it('keeps the approved three summary stats and derives the reusable move trail', () => {
+    expect(page().headerStats().map((stat) => stat.id)).toEqual(['games', 'score', 'wdl']);
 
-    blackPerspective.set(true);
-    store.mastersOpen.set(true);
-    store.peersOpen.set(true);
+    history.set([
+      { uci: 'd2d4', san: 'd4' },
+      { uci: 'd7d5', san: 'd5' },
+      { uci: 'c2c4', san: 'c4' },
+    ]);
 
-    expect(page().perspectiveLabel()).toBe('Black perspective');
-    expect(page().activeToolCount()).toBe(4);
+    expect(page().lineTrailMoves()).toEqual([
+      { id: '1-d2d4', label: 'd4', index: 1 },
+      { id: '2-d7d5', label: 'd5', index: 2 },
+      { id: '3-c2c4', label: 'c4', index: 3 },
+    ]);
   });
 
   function page(): {
     headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
-    perspectiveLabel(): string;
-    activeToolCount(): number;
-    filterSummary(): string;
+    headerStats(): readonly { id: string }[];
+    lineTrailMoves(): readonly { id: string | number; label: string; index: number }[];
   } {
     return fixture.componentInstance as unknown as {
       headerActions(): readonly { id: string; pressed?: boolean; run: () => void }[];
-      perspectiveLabel(): string;
-      activeToolCount(): number;
-      filterSummary(): string;
+      headerStats(): readonly { id: string }[];
+      lineTrailMoves(): readonly { id: string | number; label: string; index: number }[];
     };
   }
 });

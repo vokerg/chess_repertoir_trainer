@@ -42,6 +42,8 @@
       [analysis]="analysis()"
       [currentFen]="currentFen()"
       [warning]="engineWarning()"
+      [selectable]="engineLinesSelectable()"
+      (moveSelected)="engineMoveSelected.emit($event)"
     />
   }
 </section>

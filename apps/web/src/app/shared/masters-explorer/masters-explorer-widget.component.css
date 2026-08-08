@@ -15,6 +15,14 @@
   color: var(--ui-text);
 }
 
+.masters-explorer-panel-embedded {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .masters-explorer-header,
 .masters-error,
 .masters-summary-heading {
@@ -245,7 +253,7 @@
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
-  .masters-explorer-panel {
+  .masters-explorer-panel:not(.masters-explorer-panel-embedded) {
     border-radius: var(--ui-radius-control);
     padding: 0.85rem;
   }

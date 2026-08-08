@@ -5,10 +5,22 @@
 
   <div class="stockfish-lines">
     @for (line of lineViewModels(); track line.id) {
-      <div class="engine-line-modern stockfish-line-slot">
-        <span class="engine-score-modern">{{ line.score }}</span>
-        <code>{{ line.moves }}</code>
-      </div>
+      @if (selectable() && line.moveUci) {
+        <button
+          type="button"
+          class="engine-line-modern stockfish-line-slot stockfish-line-selectable"
+          [attr.aria-label]="'Play engine line: ' + line.moves"
+          (click)="selectMove(line.moveUci)"
+        >
+          <span class="engine-score-modern">{{ line.score }}</span>
+          <code>{{ line.moves }}</code>
+        </button>
+      } @else {
+        <div class="engine-line-modern stockfish-line-slot">
+          <span class="engine-score-modern">{{ line.score }}</span>
+          <code>{{ line.moves }}</code>
+        </div>
+      }
     }
 
     @if (statusText(); as status) {

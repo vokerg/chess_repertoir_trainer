@@ -1,11 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { uciMovesToSan } from '../notation/uci-to-san.helper';
+import { firstEngineUciMove } from './engine-best-move.helper';
 import { EngineAnalysis, EngineLine } from './stockfish-analysis.service';
 
 interface EngineLineViewModel {
   id: number;
   score: string;
   moves: string;
+  moveUci: string | null;
 }
 
 @Component({
@@ -19,12 +21,15 @@ export class StockfishPanelComponent {
   readonly analysis = input.required<EngineAnalysis>();
   readonly currentFen = input.required<string>();
   readonly warning = input<string | null>(null);
+  readonly selectable = input(false);
+  readonly moveSelected = output<string>();
   protected readonly lineViewModels = computed<readonly EngineLineViewModel[]>(() => {
     if (!this.isCurrentFen()) return [];
     return this.analysis().lines.slice(0, 3).map((line) => ({
       id: line.multipv,
       score: this.lineScoreLabel(line),
       moves: this.sanLine(line.pv.slice(0, 8)),
+      moveUci: firstEngineUciMove(line.pv[0]),
     }));
   });
   protected readonly statusText = computed(() => {
@@ -37,6 +42,10 @@ export class StockfishPanelComponent {
 
   protected isCurrentFen(): boolean {
     return this.analysis().fen === this.currentFen();
+  }
+
+  protected selectMove(moveUci: string | null): void {
+    if (moveUci) this.moveSelected.emit(moveUci);
   }
 
   private lineScoreLabel(line: EngineLine): string {

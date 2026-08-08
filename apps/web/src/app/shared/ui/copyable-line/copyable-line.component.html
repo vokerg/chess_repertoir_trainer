@@ -1,23 +1,64 @@
 @if (!buttonOnly()) {
-  <div class="copyable-line-content">
-    @if (link()) {
-      <a class="line-link" [routerLink]="link()" [queryParams]="queryParams()">
+  @if (trail()) {
+    <div class="copyable-line-content copyable-line-trail-content">
+      <div class="line-trail-main">
         @if (name()) { <span class="metric-label">{{ name() }}</span> }
-        <span class="line-text">{{ line() }}</span>
-      </a>
-    } @else {
-      <div class="line-display">
-        @if (name()) { <span class="metric-label">{{ name() }}</span> }
-        <span class="line-text">{{ line() }}</span>
+        @if (segments().length) {
+          <nav class="line-trail" aria-label="Current line moves">
+            @for (segment of segments(); track segment.id; let first = $first) {
+              @if (!first) {
+                <span class="line-trail-separator" aria-hidden="true">›</span>
+              }
+              <button
+                type="button"
+                [class.current]="segment.index === currentSegment()"
+                [attr.aria-current]="segment.index === currentSegment() ? 'step' : null"
+                [attr.aria-label]="'Go to position after ' + segment.label"
+                (click)="selectSegment(segment.index)"
+              >
+                {{ segment.label }}
+              </button>
+            }
+          </nav>
+        } @else {
+          <span class="line-trail-empty">{{ emptyLabel() }}</span>
+        }
       </div>
-    }
-    <app-copy-button
-      [value]="line()"
-      [buttonClass]="buttonClass()"
-      [label]="label()"
-      [ariaLabel]="ariaLabel()"
-    />
-  </div>
+      <div class="line-trail-actions">
+        <app-copy-button
+          [value]="line()"
+          [buttonClass]="buttonClass()"
+          [label]="label()"
+          [ariaLabel]="ariaLabel()"
+        />
+        @if (link()) {
+          <a class="line-trail-open" [routerLink]="link()" [queryParams]="queryParams()">
+            {{ linkLabel() }}
+          </a>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="copyable-line-content">
+      @if (link()) {
+        <a class="line-link" [routerLink]="link()" [queryParams]="queryParams()">
+          @if (name()) { <span class="metric-label">{{ name() }}</span> }
+          <span class="line-text">{{ line() }}</span>
+        </a>
+      } @else {
+        <div class="line-display">
+          @if (name()) { <span class="metric-label">{{ name() }}</span> }
+          <span class="line-text">{{ line() }}</span>
+        </div>
+      }
+      <app-copy-button
+        [value]="line()"
+        [buttonClass]="buttonClass()"
+        [label]="label()"
+        [ariaLabel]="ariaLabel()"
+      />
+    </div>
+  }
 } @else {
   <app-copy-button
     [value]="line()"

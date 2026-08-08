@@ -15,6 +15,14 @@
   color: var(--ui-text);
 }
 
+.peers-panel-embedded {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .peers-summary,
 .peers-moves,
 .peers-filters {
@@ -224,7 +232,7 @@
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
 @media (max-width: 640px) {
-  .peers-panel {
+  .peers-panel:not(.peers-panel-embedded) {
     border-radius: var(--ui-radius-control);
     padding: 0.85rem;
   }

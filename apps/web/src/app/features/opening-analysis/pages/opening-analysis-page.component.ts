@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, inj
 import { AnalysisWorkbenchComponent } from '../../../shared/analysis/workbench/analysis-workbench.component';
 import { CoursePositionSuggestionsWidgetComponent } from '../../../shared/courses/position-suggestions/course-position-suggestions-widget.component';
 import { GameFilterBreakdownItem, GameFilterBreakdownPanelComponent } from '../../../shared/games/filter-breakdown/game-filter-breakdown-panel.component';
-import { summaryGameFilters } from '../../../shared/games/filters/game-filter-summary';
 import { PositionGameMovesPanelComponent } from '../../../shared/games/position-moves/position-game-moves-panel.component';
 import { scoreLabel, wdlLabel } from '../../../shared/games/position-moves/position-game-moves.helpers';
 import { PositionTopGamesComponent } from '../../../shared/games/position-moves/position-top-games.component';
@@ -14,12 +13,12 @@ import { LichessBotChallengeDialogComponent } from '../../../shared/lichess/bot-
 import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/lichess-bot-challenge.store';
 import { MastersExplorerWidgetComponent } from '../../../shared/masters-explorer/masters-explorer-widget.component';
 import {
-  ContextStripComponent,
-  type UiContextItem,
-} from '../../../shared/ui/context-strip/context-strip.component';
-import { CopyableLineComponent } from '../../../shared/ui/copyable-line/copyable-line.component';
+  CopyableLineComponent,
+  type CopyableLineSegment,
+} from '../../../shared/ui/copyable-line/copyable-line.component';
 import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { OpeningEvidenceTabsComponent } from '../components/opening-evidence-tabs/opening-evidence-tabs.component';
 import { OpeningAnalysisStore } from '../state/opening-analysis.store';
 
 @Component({
@@ -34,8 +33,8 @@ import { OpeningAnalysisStore } from '../state/opening-analysis.store';
     PositionGameMovesPanelComponent,
     PositionTopGamesComponent,
     PageHeaderComponent,
-    ContextStripComponent,
     CopyableLineComponent,
+    OpeningEvidenceTabsComponent,
     PanelComponent,
     PositionPerformancePanelComponent,
     LichessBotChallengeDialogComponent,
@@ -52,6 +51,13 @@ export class OpeningAnalysisPageComponent implements OnInit {
   protected readonly analysisQueryParams = computed(() => ({
     moves: this.store.history().map((move) => move.uci).join(','),
   }));
+  protected readonly lineTrailMoves = computed<readonly CopyableLineSegment[]>(() =>
+    this.store.history().map((move, index) => ({
+      id: `${index + 1}-${move.uci}`,
+      label: move.san || move.uci,
+      index: index + 1,
+    })),
+  );
   protected readonly pageSubtitle = computed(() => {
     const opening = this.store.analysis()?.bookOpening;
     if (!opening) return 'Explore positions from your indexed games.';
@@ -61,37 +67,8 @@ export class OpeningAnalysisPageComponent implements OnInit {
     { id: 'games', label: 'Games', value: this.store.wdl().total },
     { id: 'score', label: 'Score', value: this.scoreLabel(this.store.wdl()) },
     { id: 'wdl', label: 'WDL', value: wdlLabel(this.store.wdl()) },
-    { id: 'next-moves', label: 'Next moves', value: this.store.analysis()?.nextMoves?.length || 0 },
   ]);
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => [
-    {
-      id: 'tags',
-      kind: 'toggle',
-      label: 'Tags',
-      pressed: this.store.tagsOpen(),
-      run: () => this.store.toggleTags(),
-    },
-    {
-      id: 'masters',
-      kind: 'toggle',
-      label: 'Masters',
-      pressed: this.store.mastersOpen(),
-      run: () => this.store.toggleMasters(),
-    },
-    {
-      id: 'peers',
-      kind: 'toggle',
-      label: 'Peers',
-      pressed: this.store.peersOpen(),
-      run: () => this.store.togglePeers(),
-    },
-    {
-      id: 'last-games',
-      kind: 'toggle',
-      label: 'Last games',
-      pressed: this.store.lastGamesOpen(),
-      run: () => this.store.toggleLastGames(),
-    },
     {
       id: 'engine',
       kind: 'toggle',
@@ -115,42 +92,6 @@ export class OpeningAnalysisPageComponent implements OnInit {
     const selected = this.store.filters().openingNameExact;
     return selected ? [selected] : [];
   });
-  protected readonly filterSummary = computed(() => summaryGameFilters(this.store.filters()));
-  protected readonly perspectiveLabel = computed(() =>
-    this.store.blackPerspective() ? 'Black perspective' : 'White perspective',
-  );
-  protected readonly activeToolCount = computed(() =>
-    [
-      this.store.tagsOpen(),
-      this.store.mastersOpen(),
-      this.store.peersOpen(),
-      this.store.lastGamesOpen(),
-      this.store.engineVisible(),
-    ].filter(Boolean).length,
-  );
-  protected readonly contextItems = computed<readonly UiContextItem[]>(() => [
-    {
-      id: 'line',
-      label: 'Current line',
-      value: this.store.lineLabel(),
-      mono: true,
-    },
-    {
-      id: 'perspective',
-      label: 'Perspective',
-      value: this.perspectiveLabel(),
-    },
-    {
-      id: 'evidence',
-      label: 'Game evidence',
-      value: this.filterSummary(),
-    },
-    {
-      id: 'tools',
-      label: 'Visible tools',
-      value: `${this.activeToolCount()} of 5`,
-    },
-  ]);
 
   ngOnInit(): void {
     this.store.initialize();

@@ -17,6 +17,8 @@ import { AnalysisWorkbenchComponent } from './analysis-workbench.component';
       [analysis]="analysis"
       [showTreePanel]="showTreePanel()"
       [deleteDisabled]="deleteDisabled()"
+      [engineLinesSelectable]="engineLinesSelectable()"
+      (engineMoveSelected)="selectEngineMove($event)"
     >
       <div analysisWorkbenchLeftExtra data-testid="left-extra">Left extra</div>
       <div analysisWorkbenchSideBeforeTree data-testid="side-before">Side before</div>
@@ -37,6 +39,12 @@ class AnalysisWorkbenchTestHostComponent {
   };
   readonly showTreePanel = signal(true);
   readonly deleteDisabled = signal(false);
+  readonly engineLinesSelectable = signal(false);
+  readonly selectedEngineMove = signal<string | null>(null);
+
+  selectEngineMove(moveUci: string): void {
+    this.selectedEngineMove.set(moveUci);
+  }
 }
 
 describe('AnalysisWorkbenchComponent', () => {
@@ -94,5 +102,19 @@ describe('AnalysisWorkbenchComponent', () => {
     const moveTreePanel = fixture.debugElement.query(By.directive(MoveTreePanelComponent))
       .componentInstance as MoveTreePanelComponent;
     expect(moveTreePanel.deletionDisabled()).toBeTrue();
+  });
+
+  it('keeps engine rows non-selectable by default and forwards opt-in selections', () => {
+    fixture.detectChanges();
+    const board = fixture.debugElement.query(By.directive(AnalysisBoardComponent))
+      .componentInstance as AnalysisBoardComponent;
+    expect(board.engineLinesSelectable()).toBeFalse();
+
+    fixture.componentInstance.engineLinesSelectable.set(true);
+    fixture.detectChanges();
+    expect(board.engineLinesSelectable()).toBeTrue();
+
+    board.engineMoveSelected.emit('e2e4');
+    expect(fixture.componentInstance.selectedEngineMove()).toBe('e2e4');
   });
 });
