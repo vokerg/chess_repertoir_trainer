@@ -7,8 +7,8 @@ import {
   buildRepertoireBuilderSourceItems,
 } from './repertoire-builder-view-model';
 
-describe('repertoire builder opening knowledge view model', () => {
-  it('renders the target-side summary and bounded plans in focused evidence', () => {
+describe('repertoire builder evidence view model', () => {
+  it('keeps source availability separate from opening identity and strategic knowledge', () => {
     const items = buildRepertoireBuilderSourceItems(candidate);
 
     expect(items.find((item) => item.id === 'population')?.detail).toBe(
@@ -16,17 +16,10 @@ describe('repertoire builder opening knowledge view model', () => {
     );
     expect(items.some((item) => item.id === 'engine')).toBeFalse();
     expect(items.some((item) => item.id === 'course')).toBeFalse();
-    expect(items.find((item) => item.id === 'opening-knowledge')).toEqual(jasmine.objectContaining({
-      label: 'Opening knowledge · Black',
-      status: 'PARTIAL',
-      detail: 'Counter in the centre before White consolidates.',
-    }));
-    expect(items.find((item) => item.id === 'opening-plan-french-black-break')).toEqual(jasmine.objectContaining({
-      label: 'Challenge the centre',
-      status: 'HIGH confidence',
-    }));
-    expect(items.find((item) => item.id === 'opening-plan-french-black-break')?.detail).toContain('When: White retains the pawn chain.');
-    expect(items.find((item) => item.id === 'opening-plan-french-black-break')?.detail).toContain('Caveat: Exchange structures need a different plan.');
+    expect(items.some((item) => item.id === 'opening')).toBeFalse();
+    expect(items.some((item) => item.id === 'opening-knowledge')).toBeFalse();
+    expect(items.some((item) => item.id.startsWith('opening-plan-'))).toBeFalse();
+    expect(items.map((item) => item.id)).toEqual(['population', 'masters', 'personal', 'profile']);
   });
 
   it('snapshots available evidence versions even when the first candidate lacks them', () => {
@@ -117,15 +110,20 @@ const candidate = {
         status: 'PARTIAL',
         version: '2026-08-knowledge-v1',
         shortDescription: { text: 'A resilient defence.', confidence: 'HIGH' },
-        strategicSummary: { text: 'Counter in the centre before White consolidates.', confidence: 'HIGH' },
-        plans: [{
-          id: 'french-black-break',
-          title: 'Challenge the centre',
-          summary: 'Prepare the thematic central break.',
-          conditions: ['White retains the pawn chain.'],
-          caveats: ['Exchange structures need a different plan.'],
+        strategicSummary: {
+          text: 'Counter in the centre before White consolidates.',
           confidence: 'HIGH',
-        }],
+        },
+        plans: [
+          {
+            id: 'french-black-break',
+            title: 'Challenge the centre',
+            summary: 'Prepare the thematic central break.',
+            conditions: ['White retains the pawn chain.'],
+            caveats: ['Exchange structures need a different plan.'],
+            confidence: 'HIGH',
+          },
+        ],
         matchedRuleIds: ['knowledge-family-french-defense'],
         sourceIds: ['project-editorial-rb-022'],
       },

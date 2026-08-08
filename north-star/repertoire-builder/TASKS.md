@@ -31,14 +31,14 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 175 | RB-023 | #242 | P2 | DONE | Opening knowledge in Repertoire Builder | PR #262 |
 | 180 | RB-024 | #243 | P3 | DONE | AI game review grounding with opening plans | PR #268 |
 | 185 | RB-025 | #290 | P1 | DONE | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; merged via `997d1ecc`; 3,733/3,733 generated entries available |
-| 190 | RB-026 | #310 | P1 | CLAIMED | Reintegrate the Builder Cockpit workspace | Branch `rb-026/issue-310-builder-cockpit` |
+| 190 | RB-026 | #310 | P1 | IN_PROGRESS | Reintegrate the Builder Cockpit workspace | Draft PR #311 |
 
 ## Current execution state
 
 - The deterministic Builder capability chain, static opening-knowledge service, Builder consumer and bounded AI game-review consumer are complete.
 - RB-016 remains independently blocked on real usage and follow-up-game evidence.
 - RB-025 implementation is integrated on `main`: 3,733/3,733 generated entries, 3,167/3,167 unique names, and independent White/Black summary-plus-plan coverage are all at 100% for the pinned opening book.
-- RB-026 is claimed for the product-owner-selected Cockpit reintegration, coordinated with #133 / draft PR #309's workbench token migration.
+- RB-026 is in progress through draft PR #311 for the product-owner-selected Cockpit reintegration, coordinated with #133 / draft PR #309's workbench token migration.
 - The runtime registry contains 160 reviewed rules and the all-book completion test requires every pinned entry to remain `AVAILABLE` with both descriptions and both side plans.
 - Coverage is explicit rather than a catch-all: arbitrary names outside the pinned opening book remain `UNAVAILABLE`.
 - PR #300 is the final metadata reconciliation only and does not represent additional opening-knowledge implementation work.

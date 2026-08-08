@@ -1,7 +1,6 @@
 import type {
   CandidateDecisionCandidate,
   CandidateDecisionResponse,
-  CandidateOpeningKnowledgePlan,
 } from '@chess-trainer/contracts/candidate-decision';
 import type {
   BuilderEvidenceReference,
@@ -63,53 +62,45 @@ export function buildRepertoireBuilderSourceItems(
   candidate: CandidateDecisionCandidate | null,
 ): readonly RepertoireBuilderSourceItem[] {
   if (!candidate) return [];
-  const knowledge = candidate.evidence.opening.knowledge;
-  const targetSide = candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black';
-  const knowledgeItems: RepertoireBuilderSourceItem[] = [{
-    id: 'opening-knowledge',
-    label: `Opening knowledge · ${targetSide}`,
-    status: knowledge.status,
-    detail: knowledge.strategicSummary?.text
-      ?? knowledge.shortDescription?.text
-      ?? 'No reviewed strategic knowledge is available for this opening and side.',
-  }];
-  knowledgeItems.push(...knowledge.plans.map((plan) => openingPlanSourceItem(plan)));
 
   return [
     {
       id: 'population',
       label: 'Target population',
       status: candidate.evidence.population.status,
-      detail: corpusDetail(candidate.evidence.population.games, candidate.evidence.population.frequencyPercent, candidate.evidence.population.scorePercentForTarget),
+      detail: corpusDetail(
+        candidate.evidence.population.games,
+        candidate.evidence.population.frequencyPercent,
+        candidate.evidence.population.scorePercentForTarget,
+      ),
     },
     {
       id: 'masters',
       label: 'Masters',
       status: candidate.evidence.masters.status,
-      detail: corpusDetail(candidate.evidence.masters.games, candidate.evidence.masters.frequencyPercent, candidate.evidence.masters.scorePercentForTarget),
+      detail: corpusDetail(
+        candidate.evidence.masters.games,
+        candidate.evidence.masters.frequencyPercent,
+        candidate.evidence.masters.scorePercentForTarget,
+      ),
     },
     {
       id: 'personal',
       label: 'Your games',
       status: candidate.evidence.personal.status,
-      detail: candidate.evidence.personal.games > 0
-        ? `${candidate.evidence.personal.games} games · ${percent(candidate.evidence.personal.scorePercent)} score`
-        : null,
+      detail:
+        candidate.evidence.personal.games > 0
+          ? `${candidate.evidence.personal.games} games · ${percent(candidate.evidence.personal.scorePercent)} score`
+          : null,
     },
-    {
-      id: 'opening',
-      label: 'Opening profile',
-      status: candidate.evidence.opening.status,
-      detail: candidate.evidence.opening.opening?.name ?? null,
-    },
-    ...knowledgeItems,
     {
       id: 'profile',
       label: 'Chess profile',
       status: candidate.evidence.playerProfile.status,
-      detail: candidate.evidence.playerProfile.matches.length > 0
-        ? `${candidate.evidence.playerProfile.matches.length} matching observations`
-        : null,
+      detail:
+        candidate.evidence.playerProfile.matches.length > 0
+          ? `${candidate.evidence.playerProfile.matches.length} matching observations`
+          : null,
     },
   ];
 }
@@ -144,9 +135,11 @@ export function buildRepertoireBuilderEvidenceReference(
 
   if (mastersDatasetVersion) sourceVersions['mastersDataset'] = mastersDatasetVersion;
   if (populationDatasetVersion) sourceVersions['populationDataset'] = populationDatasetVersion;
-  if (openingClassificationVersion) sourceVersions['openingClassification'] = openingClassificationVersion;
+  if (openingClassificationVersion)
+    sourceVersions['openingClassification'] = openingClassificationVersion;
   if (openingKnowledgeVersion) sourceVersions['openingKnowledge'] = openingKnowledgeVersion;
-  if (playerProfileGeneratedAt) sourceVersions['playerProfileGeneratedAt'] = playerProfileGeneratedAt;
+  if (playerProfileGeneratedAt)
+    sourceVersions['playerProfileGeneratedAt'] = playerProfileGeneratedAt;
 
   return {
     candidateContractVersion: response.contractVersion,
@@ -166,19 +159,6 @@ export function buildRepertoireBuilderPreviewRows(
   return rows;
 }
 
-function openingPlanSourceItem(plan: CandidateOpeningKnowledgePlan): RepertoireBuilderSourceItem {
-  const qualifiers = [
-    ...plan.conditions.map((value) => `When: ${value}`),
-    ...plan.caveats.map((value) => `Caveat: ${value}`),
-  ];
-  return {
-    id: `opening-plan-${plan.id}`,
-    label: plan.title,
-    status: `${plan.confidence} confidence`,
-    detail: [plan.summary, ...qualifiers].join(' · '),
-  };
-}
-
 function visitPreview(
   node: BuilderPreviewNode,
   rows: RepertoireBuilderPreviewRow[],
@@ -196,7 +176,11 @@ function visitPreview(
   for (const child of node.children) visitPreview(child, rows, depth + 1);
 }
 
-function corpusDetail(games: number, frequency: number | null, score: number | null): string | null {
+function corpusDetail(
+  games: number,
+  frequency: number | null,
+  score: number | null,
+): string | null {
   if (games <= 0) return null;
   return `${compactGameCount(games)} games · ${percent(frequency)} frequency · ${percent(score)} score`;
 }

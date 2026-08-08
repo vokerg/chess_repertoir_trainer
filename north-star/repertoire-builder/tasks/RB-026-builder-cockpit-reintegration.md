@@ -1,6 +1,6 @@
 # RB-026 — Reintegrate the Builder Cockpit workspace
 
-Status: CLAIMED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -17,6 +17,10 @@ Claimed by: Codex agent session
 Claim branch: `rb-026/issue-310-builder-cockpit`
 
 Claimed at: 2026-08-08
+
+Started at: 2026-08-08
+
+Draft pull request: #311
 
 Concurrent dependency: #133 / draft PR #309 — Builder workbench production-token migration
 
@@ -58,4 +62,3 @@ Reintegrate the selected Cockpit direction into the production Repertoire Builde
 ## Dependency handling
 
 PR #309 edits the same workbench CSS while migrating it to production `--ui-*` tokens. RB-026 will use the production token vocabulary from the start and refresh from current `main` after that dependency moves before final review. The tasks do not share product behavior or data-flow scope.
-

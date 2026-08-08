@@ -400,6 +400,28 @@ describe('RepertoireBuilderStore', () => {
     expect(store.candidateResponse()?.decisionRole).toBe('OPPONENT_RESPONSE');
   });
 
+  it('keeps opponent-response preview separate from multi-selection and sums coverage', async () => {
+    const d5 = candidateFixture({
+      moveUci: 'd7d5',
+      moveSan: 'd5',
+      resultingFen: AFTER_E4_E5,
+      rank: 2,
+      contributionPercent: 23,
+      knowledgePlanId: 'd5-plan',
+    });
+    api.getCandidates.and.returnValue(of(responseFixture('OPPONENT_RESPONSE', [e5, d5])));
+
+    await store.start(explicitSetup(), courseEndingLaunch);
+
+    store.toggleResponse('e7e5');
+    store.toggleResponse('d7d5');
+    store.selectCandidate('e7e5');
+
+    expect(store.selectedResponseUcis()).toEqual(['e7e5', 'd7d5']);
+    expect(store.selectedCoveragePercent()).toBe(65);
+    expect(store.previewCandidate()?.moveUci).toBe('e7e5');
+  });
+
   it('keeps deferred work visible and allows it to be reopened', async () => {
     api.getCandidates.and.returnValues(
       of(responseFixture('USER_MOVE', [e4])),
