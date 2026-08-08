@@ -27,7 +27,7 @@
 }
 
 .admin-table-scroll:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
 }
 
@@ -80,7 +80,7 @@
 }
 
 .admin-user-button:focus-visible {
-  outline: 3px solid var(--ui-focus-ring);
+  outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;
   border-radius: 2px;
 }
