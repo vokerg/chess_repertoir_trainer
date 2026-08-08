@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-08-06
+Last updated: 2026-08-08
 
 This roadmap records capability stages and decision gates. Detailed implementation history lives in task and report files.
 
@@ -57,28 +57,17 @@ Required future evidence includes adoption, recall, opening-position quality, re
 
 ## Stage 9 — opening knowledge enrichment
 
-The architecture and initial consumer sequence is complete:
+Complete through RB-021–RB-025:
 
 1. **RB-021 — research and architecture:** complete through PR #244.
 2. **RB-022 — deterministic foundation:** complete through PR #255 with 25 reviewed ordered rules and generated/imported-game audits.
 3. **RB-023 — Builder consumer:** complete through PR #262; target-side summaries and plans remain ranking-neutral explanatory evidence.
 4. **RB-024 — AI game-review grounding:** complete through PR #268; bounded reviewed plans ground the explicit optional review consumer.
+5. **RB-025 — coverage scale and editorial tooling:** implementation merged through PR #302, including stacked completion PR #304. The pinned generated opening book now resolves 3,733/3,733 entries and 3,167/3,167 unique names as `AVAILABLE`, with independent White/Black summary-plus-plan coverage at 100% and 160 exercised reviewed rules.
 
-The next scale gate is **RB-025 / #290**, claimed on `rb-025/issue-290-coverage-scale-research`.
+RB-025 also delivered deterministic generated-book and imported-game-weighted audit models, per-dimension classification uncertainty, side-specific completeness metrics, a deterministic priority backlog, validated batch manifests, source/editorial policy and hard all-book regression gates.
 
-RB-025 delivery sequence:
-
-1. reconcile canonical metadata and establish explicit coverage tiers;
-2. measure generated-entry, unique-name and imported-game-weighted knowledge coverage;
-3. measure independent White/Black completeness and classification uncertainty by dimension;
-4. produce a deterministic prioritized backlog and bounded batch-manifest format;
-5. define reviewer workflow, source policy, stale-content handling and coverage targets;
-6. select the first reviewed implementation batch from the accepted backlog;
-7. expand runtime rules incrementally while recording measurable coverage gains.
-
-The first claimed delivery excludes bulk runtime prose, classification changes, ranking changes, persistence and new runtime endpoints.
-
-Gate for the first content-expansion batch: accepted RB-025 research report with explicit targets, deterministic prioritization, source/reviewer policy and representative regression fixtures.
+The completion boundary is intentionally finite: 100% applies to the pinned generated opening book, not arbitrary names and not equal theoretical depth for every rare line. Unknown names outside the book remain `UNAVAILABLE`, and narrow reviewed rules may continue to deepen specific families when real use justifies it.
 
 This stage remains independent of the blocked RB-016 outcome gate. Opening knowledge delivers standalone educational value without representing outcome evidence.
 
@@ -86,13 +75,13 @@ This stage remains independent of the blocked RB-016 outcome gate. Opening knowl
 
 The deterministic Builder foundation remains complete: evidence is inspectable, target intent and overrides are explicit, decisions and session transitions are bounded, course writes require preview/apply, exact existing-course launches preserve identity, and optional generated text can be disabled without changing workflow authority.
 
-Opening knowledge is part of current runtime as explanatory evidence. Coverage expansion must preserve the ranking-neutral authority boundary and explicit unavailable/partial states.
+Opening knowledge is current runtime explanatory evidence with complete strategic-knowledge coverage for the pinned generated book. Candidate ranking, eligibility, Builder state and course writes remain separate deterministic authorities.
 
 Outcome claims remain excluded until RB-016 evidence exists.
 
 ## Queue impact
 
-- RB-001 through RB-015 and RB-017 through RB-024 are `DONE` according to their canonical task rows.
+- RB-001 through RB-015 and RB-017 through RB-025 are `DONE` according to their canonical task rows once the final RB-025 reconciliation PR is accepted.
 - RB-016 remains `BLOCKED` on real use.
-- RB-025 is `CLAIMED` and is the only active dependency-satisfied Repertoire Builder task.
-- Future content batches must be derived from the reviewed RB-025 backlog rather than added ad hoc.
+- No dependency-satisfied Repertoire Builder implementation task is currently queued.
+- Future opening-knowledge work should be driven by observed depth/quality demand, low-confidence classification cases, imported-game weighting, or upstream opening-book changes rather than nominal coverage-gap filling.

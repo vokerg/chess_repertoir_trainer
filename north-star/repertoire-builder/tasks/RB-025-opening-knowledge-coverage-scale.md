@@ -1,6 +1,6 @@
 # RB-025 — Scale opening knowledge toward comprehensive coverage
 
-Status: REVIEW
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 185
 
 Delivery class: Research and incremental implementation
 
-Planning maturity: Review — complete generated-book strategic-knowledge coverage
+Planning maturity: Complete — pinned generated-book strategic-knowledge coverage
 
 GitHub issue: #290
 
@@ -28,13 +28,17 @@ Foundation review pull request: #302
 
 Completion review pull request: #304
 
-Coordination pull request: #300
+Coordination/reconciliation pull request: #300
+
+Integrated main commit: `997d1ecc0ead422c696ec4460bdb914c47d2d848`
 
 Research report: `reports/RB-025-2026-08-06-opening-knowledge-coverage-scale.md`
 
 First-batch report: `reports/RB-025-2026-08-07-opening-knowledge-batch-001.md`
 
 Completion report: `reports/RB-025-2026-08-07-opening-knowledge-completion.md`
+
+Closure report: `reports/RB-025-2026-08-08-closure.md`
 
 ## Objective
 
@@ -55,8 +59,8 @@ For a resolved opening and selected side, the corpus provides:
 - Runtime knowledge corpus: 25 reviewed rules.
 - Generated-entry coverage: 1,352 `AVAILABLE`, 299 `PARTIAL`, 2,082 `UNAVAILABLE`.
 - Unique-name coverage: 1,109 `AVAILABLE`, 223 `PARTIAL`, 1,835 `UNAVAILABLE`.
-- Builder already consumes selected-side summaries and plans through candidate-decision evidence.
-- Opening knowledge remains explanatory and does not affect ranking, eligibility or course writes.
+- Builder already consumed selected-side summaries and plans through candidate-decision evidence.
+- Opening knowledge remained explanatory and did not affect ranking, eligibility or course writes.
 
 ## Delivered scope
 
@@ -74,7 +78,7 @@ For a resolved opening and selected side, the corpus provides:
 
 ## Final measured generated-book result
 
-Exact audit on completion head `6acbcbe08797e059ca9d31b281de0425935c8e55`:
+Exact audit on PR #304 final review head `4ac6751e320896b58dc746dc7637bd9a13a0cfea`:
 
 - generated entries `AVAILABLE`: 3,733 / 3,733 — **100%**;
 - generated entries `PARTIAL`: 0;
@@ -104,7 +108,7 @@ Coverage completeness is not a claim that every obscure named line has equal the
 
 ## Validation gate
 
-PR #302 passed exact-head CI #2192. PR #304 completion head `6acbcbe08797e059ca9d31b281de0425935c8e55` passed CI #2208, including:
+PR #302 passed exact-head CI #2192. PR #304 final review head `4ac6751e320896b58dc746dc7637bd9a13a0cfea` passed CI #2212, including:
 
 - lint;
 - complete monorepo build;
@@ -114,8 +118,10 @@ PR #302 passed exact-head CI #2192. PR #304 completion head `6acbcbe08797e059ca9
 - migrations;
 - complete repository test suite, including two independent all-3,733-entry knowledge gates.
 
+PR #304 merged into the #302 integration branch, and PR #302 then merged to `main` as `997d1ecc0ead422c696ec4460bdb914c47d2d848` on 2026-08-07.
+
 The CI database contains zero imported games, so populated personal-game weighting remains owner-controlled evidence; it is not required to prove generated-book completion.
 
 ## Queue impact
 
-RB-025 has reached its generated-book strategic-knowledge completion target and remains in `REVIEW` only because PRs #302 and #304 are unmerged. Further opening-knowledge work should be quality/depth refinement driven by real use, low-confidence classification, or specific line demand rather than coverage-gap filling. RB-016 remains independently blocked on real-use outcome evidence.
+RB-025 is complete. Further opening-knowledge work should be quality/depth refinement driven by real use, low-confidence classification, imported-game demand, upstream opening-book changes, or specific line demand rather than coverage-gap filling. RB-016 remains independently blocked on real-use outcome evidence. No additional dependency-satisfied Repertoire Builder implementation task is currently queued.
