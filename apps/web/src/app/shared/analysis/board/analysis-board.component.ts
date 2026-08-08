@@ -42,6 +42,7 @@ export class AnalysisBoardComponent {
   readonly showNextNavigation = input(true);
   readonly showEndNavigation = input(true);
   readonly engineVisible = input(true);
+  readonly engineLinesSelectable = input(false);
 
   readonly boardArrows = computed<AnalysisBoardArrow[]>(() => {
     if (!this.engineVisible()) return this.arrows();
@@ -58,6 +59,7 @@ export class AnalysisBoardComponent {
   });
 
   readonly boardMove = output<string>();
+  readonly engineMoveSelected = output<string>();
   readonly goStart = output<void>();
   readonly goPrevious = output<void>();
   readonly goNext = output<void>();

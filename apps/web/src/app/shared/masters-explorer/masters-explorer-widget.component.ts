@@ -33,6 +33,7 @@ export class MastersExplorerWidgetComponent {
   private readonly api = inject(MastersExplorerApiService);
 
   readonly fen = input.required<string>();
+  readonly embedded = input(false);
   readonly moveSelected = output<string>();
 
   readonly response = signal<OpeningExplorerResponse | null>(null);

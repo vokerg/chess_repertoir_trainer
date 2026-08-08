@@ -15,6 +15,7 @@ export class PositionPerformancePanelComponent {
   readonly loading = input(false);
   readonly title = input('Performance in this position');
   readonly subtitle = input('Distinct imported games that reached this normalized position.');
+  readonly embedded = input(false);
   readonly selectableTags = input(false);
   readonly selectedTagCodes = input<readonly number[]>([]);
   readonly tagSelected = output<number>();

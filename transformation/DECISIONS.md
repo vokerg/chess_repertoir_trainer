@@ -305,6 +305,18 @@ Use native modal-dialog behavior for complete destination access, Escape handlin
 
 Preserve desktop rail behavior, route taxonomy, account ownership, feature-owned mobile launchers, board/training workflows, APIs, stores, schemas, database behavior, and dependencies.
 
+### D-315 — Opening Analysis evidence and line interaction hierarchy
+
+**Status:** Locked for VT-302 review
+
+Opening Analysis keeps personal Next moves as the persistent first evidence surface. My performance, Masters, Peers, and Last games use one single-selection tab set in that order, with My performance selected by default. Only the active source is mounted. Feature state owns tab selection and the store-owned Performance and Last-games requests remain lazy and stale-response guarded; Masters and Peers retain their existing self-loading widget contracts.
+
+The redundant context strip is removed. The shared copyable-line boundary may expose an optional segmented trail while retaining its existing stacked and copy-button-only modes. Opening Analysis uses that trail to rewind to an earlier ply through one store-owned board synchronization and preserves copying plus the deep link to Free Analysis.
+
+The engine remains visible by default and retains its explicit toggle, evaluation bar, best-move arrow, and Stockfish lines. Stockfish row selection is opt-in and defaults off through the complete `StockfishPanelComponent` → `AnalysisBoardComponent` → `AnalysisWorkbenchComponent` chain. Opening Analysis alone enables it. Selecting a row emits only its first validated UCI move into the existing board-move workflow; it does not apply an entire principal variation or alter other workbench consumers.
+
+This hierarchy uses the established application font stack, production `--ui-*` roles, panel boundary, board mechanics, filters, APIs, and Challenge Bot behavior. It does not introduce a second typography or visual-token system.
+
 ## Provisional decisions
 
 ### D-101 — Palette values

@@ -20,6 +20,7 @@ import {
   PositionAnalysisCacheService,
 } from '../../../shared/chess/engine/position-analysis-cache.service';
 import { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
+import type { OpeningEvidenceTab } from '../opening-analysis.models';
 
 const EMPTY_WDL: OpeningWdl = { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 const EMPTY_ENGINE: EngineAnalysis = {
@@ -61,10 +62,7 @@ export class OpeningAnalysisStore implements OnDestroy {
   readonly lastMove = signal<{ from: string; to: string } | null>(null);
   readonly history = signal<PlayedMove[]>([]);
   readonly currentFen = signal(new Chess().fen());
-  readonly tagsOpen = signal(true);
-  readonly mastersOpen = signal(false);
-  readonly peersOpen = signal(false);
-  readonly lastGamesOpen = signal(false);
+  readonly activeEvidenceTab = signal<OpeningEvidenceTab>('performance');
   readonly engineVisible = signal(true);
   readonly engine = toSignal(this.positionAnalysis.state$, { initialValue: EMPTY_ENGINE });
 
@@ -93,35 +91,27 @@ export class OpeningAnalysisStore implements OnDestroy {
     this.positionAnalysis.stop();
   }
 
-  toggleTags(): void {
-    const open = !this.tagsOpen();
-    this.tagsOpen.set(open);
-    if (!open || this.performance() || this.performanceLoading()) return;
-    void this.refreshPerformance(buildOpeningAnalysisQuery(this.currentFen(), this.filters()));
-  }
-
   toggleEngine(): void {
     this.engineVisible.update((visible) => !visible);
   }
 
-  toggleMasters(): void {
-    this.mastersOpen.update((open) => !open);
-  }
+  selectEvidenceTab(tab: OpeningEvidenceTab): void {
+    const previousTab = this.activeEvidenceTab();
+    if (tab === previousTab) return;
+    this.activeEvidenceTab.set(tab);
 
-  togglePeers(): void {
-    this.peersOpen.update((open) => !open);
-  }
-
-  toggleLastGames(): void {
-    const open = !this.lastGamesOpen();
-    this.lastGamesOpen.set(open);
-    if (!open) {
+    if (previousTab === 'last-games' && tab !== 'last-games') {
       this.topGamesRequestSeq += 1;
       this.topGamesLoading.set(false);
-      return;
     }
-    if (this.topGames().length || this.topGamesLoading()) return;
-    void this.refreshTopGames(buildOpeningAnalysisQuery(this.currentFen(), this.filters()));
+
+    const query = buildOpeningAnalysisQuery(this.currentFen(), this.filters());
+    if (tab === 'performance' && !this.performance() && !this.performanceLoading()) {
+      void this.refreshPerformance(query);
+    }
+    if (tab === 'last-games' && !this.topGames().length && !this.topGamesLoading()) {
+      void this.refreshTopGames(query);
+    }
   }
 
   async refresh(): Promise<void> {
@@ -134,8 +124,8 @@ export class OpeningAnalysisStore implements OnDestroy {
     this.performance.set(null);
     this.topGames.set([]);
     this.openingBreakdowns.set([]);
-    if (this.tagsOpen()) void this.refreshPerformance(query);
-    if (this.lastGamesOpen()) void this.refreshTopGames(query);
+    if (this.activeEvidenceTab() === 'performance') void this.refreshPerformance(query);
+    if (this.activeEvidenceTab() === 'last-games') void this.refreshTopGames(query);
     void this.refreshBreakdowns(query);
     this.loading.set(true);
     this.error.set(null);
@@ -255,6 +245,19 @@ export class OpeningAnalysisStore implements OnDestroy {
   goBack(): void {
     if (!this.chess.undo()) return;
     this.history.update((history) => history.slice(0, -1));
+    const previous = this.history().at(-1);
+    this.lastMove.set(previous ? { from: previous.from, to: previous.to } : null);
+    this.syncBoardState();
+  }
+
+  goToPly(ply: number): void {
+    const currentPly = this.history().length;
+    if (!Number.isInteger(ply) || ply < 0 || ply >= currentPly) return;
+
+    for (let index = currentPly; index > ply; index -= 1) {
+      if (!this.chess.undo()) return;
+    }
+    this.history.update((history) => history.slice(0, ply));
     const previous = this.history().at(-1);
     this.lastMove.set(previous ? { from: previous.from, to: previous.to } : null);
     this.syncBoardState();

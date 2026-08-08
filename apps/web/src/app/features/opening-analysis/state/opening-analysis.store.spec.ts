@@ -56,20 +56,16 @@ describe('OpeningAnalysisStore', () => {
     store = TestBed.inject(OpeningAnalysisStore);
   });
 
-  it('defaults Tags to open, optional data panels to closed, and engine to visible', () => {
-    expect(store.tagsOpen()).toBeTrue();
-    expect(store.mastersOpen()).toBeFalse();
-    expect(store.peersOpen()).toBeFalse();
-    expect(store.lastGamesOpen()).toBeFalse();
+  it('defaults to My performance, keeps engine visible, and does not load imported panels for public tabs', () => {
+    expect(store.activeEvidenceTab()).toBe('performance');
     expect(store.engineVisible()).toBeTrue();
 
-    store.toggleMasters();
-    store.togglePeers();
-    store.toggleLastGames();
+    store.selectEvidenceTab('masters');
+    store.selectEvidenceTab('peers');
 
-    expect(store.mastersOpen()).toBeTrue();
-    expect(store.peersOpen()).toBeTrue();
-    expect(store.lastGamesOpen()).toBeTrue();
+    expect(store.activeEvidenceTab()).toBe('peers');
+    expect(api.getPerformance).not.toHaveBeenCalled();
+    expect(api.getTopGames).not.toHaveBeenCalled();
 
     store.toggleEngine();
 
@@ -78,7 +74,7 @@ describe('OpeningAnalysisStore', () => {
     expect(positionAnalysis.analyzeInteractiveRichPosition).not.toHaveBeenCalled();
   });
 
-  it('loads default panels and requests last games only when their toggle is opened', async () => {
+  it('loads the active evidence tab and requests last games only when selected', async () => {
     await store.refresh();
 
     expect(api.getAnalysis).toHaveBeenCalledTimes(1);
@@ -90,7 +86,7 @@ describe('OpeningAnalysisStore', () => {
     expect(store.openingBreakdowns()[0].name).toBe("King's Pawn Game");
     expect(positionAnalysis.analyzeInteractiveRichPosition).toHaveBeenCalledWith(store.currentFen());
 
-    store.toggleLastGames();
+    store.selectEvidenceTab('last-games');
     await flushPromises();
 
     expect(api.getTopGames).toHaveBeenCalledTimes(1);
@@ -99,17 +95,22 @@ describe('OpeningAnalysisStore', () => {
     store.toggleTagFilter(104);
     await flushPromises();
 
-    expect(api.getPerformance).toHaveBeenCalledTimes(2);
+    expect(api.getPerformance).toHaveBeenCalledTimes(1);
     expect(api.getTopGames).toHaveBeenCalledTimes(2);
+
+    store.selectEvidenceTab('performance');
+    await flushPromises();
+
+    expect(api.getPerformance).toHaveBeenCalledTimes(2);
   });
 
   it('does not start a duplicate performance request while one is already running', async () => {
     const pendingPerformance = deferred<OpeningAnalysisPerformanceResponse>();
     api.getPerformance.and.returnValue(pendingPerformance.observable);
 
-    store.toggleTags();
-    store.toggleTags();
-    store.toggleTags();
+    void store.refresh();
+    store.selectEvidenceTab('masters');
+    store.selectEvidenceTab('performance');
 
     expect(api.getPerformance).toHaveBeenCalledTimes(1);
 
@@ -118,23 +119,22 @@ describe('OpeningAnalysisStore', () => {
     expect(store.performance()?.sample.games).toBe(1);
   });
 
-  it('invalidates an old tag-performance request when the position refreshes while tags are closed', async () => {
+  it('invalidates an old performance request when the position refreshes on another tab', async () => {
     const stalePerformance = deferred<OpeningAnalysisPerformanceResponse>();
     api.getPerformance.and.returnValues(
       stalePerformance.observable,
       of(performanceResponse('fresh', 2)),
     );
 
-    store.toggleTags();
-    store.toggleTags();
-    store.toggleTags();
+    await store.refresh();
+    store.selectEvidenceTab('masters');
     await store.refresh();
 
     stalePerformance.next(performanceResponse('stale', 1));
     await flushPromises();
     expect(store.performance()).toBeNull();
 
-    store.toggleTags();
+    store.selectEvidenceTab('performance');
     await flushPromises();
 
     expect(api.getPerformance).toHaveBeenCalledTimes(2);
@@ -144,18 +144,13 @@ describe('OpeningAnalysisStore', () => {
   it('does not let stale core or panel responses overwrite newer state', async () => {
     const firstCore = deferred<OpeningAnalysisResponse>();
     const firstPerformance = deferred<OpeningAnalysisPerformanceResponse>();
-    const firstTopGames = deferred<OpeningAnalysisTopGamesResponse>();
     const firstBreakdowns = deferred<OpeningAnalysisBreakdownsResponse>();
     const secondCore = deferred<OpeningAnalysisResponse>();
     const secondPerformance = deferred<OpeningAnalysisPerformanceResponse>();
-    const secondTopGames = deferred<OpeningAnalysisTopGamesResponse>();
     const secondBreakdowns = deferred<OpeningAnalysisBreakdownsResponse>();
 
-    store.tagsOpen.set(true);
-    store.lastGamesOpen.set(true);
     api.getAnalysis.and.returnValues(firstCore.observable, secondCore.observable);
     api.getPerformance.and.returnValues(firstPerformance.observable, secondPerformance.observable);
-    api.getTopGames.and.returnValues(firstTopGames.observable, secondTopGames.observable);
     api.getBreakdowns.and.returnValues(firstBreakdowns.observable, secondBreakdowns.observable);
 
     const firstRefresh = store.refresh();
@@ -163,20 +158,40 @@ describe('OpeningAnalysisStore', () => {
 
     firstCore.next(coreResponse('stale', 1));
     firstPerformance.next(performanceResponse('stale', 1));
-    firstTopGames.next(topGamesResponse('stale', 1));
     firstBreakdowns.next(breakdownsResponse('stale', 1));
     await Promise.resolve();
 
     secondCore.next(coreResponse('fresh', 2));
     secondPerformance.next(performanceResponse('fresh', 2));
-    secondTopGames.next(topGamesResponse('fresh', 2));
     secondBreakdowns.next(breakdownsResponse('fresh', 2));
     await Promise.all([firstRefresh, secondRefresh]);
 
     expect(store.analysis()?.fen).toBe('fresh');
     expect(store.performance()?.sample.games).toBe(2);
-    expect(store.topGames()[0].id).toBe(2);
+    expect(store.topGames()).toEqual([]);
     expect(store.openingBreakdowns()[0].games).toBe(2);
+  });
+
+  it('navigates to an earlier ply with one refresh and preserves undo history', async () => {
+    store.playBoardMove('e2e4');
+    store.playBoardMove('e7e5');
+    await flushPromises();
+    const firstPosition = store.history()[0].fenAfter;
+    api.getAnalysis.calls.reset();
+
+    store.goToPly(1);
+    await flushPromises();
+
+    expect(store.history().map((move) => move.uci)).toEqual(['e2e4']);
+    expect(store.currentFen()).toBe(firstPosition);
+    expect(store.lastMove()).toEqual({ from: 'e2', to: 'e4' });
+    expect(api.getAnalysis).toHaveBeenCalledTimes(1);
+
+    store.goBack();
+    await flushPromises();
+
+    expect(store.history()).toEqual([]);
+    expect(api.getAnalysis).toHaveBeenCalledTimes(2);
   });
 
   it('applies exact opening-name filters and toggles tag filters', () => {

@@ -3,6 +3,7 @@ import { By } from '@angular/platform-browser';
 import { Chess } from 'chess.js';
 import { BoardActionToolbarComponent } from '../../chess/board/board-action-toolbar.component';
 import { ChessgroundBoardComponent } from '../../chess/board/chessground-board.component';
+import { StockfishPanelComponent } from '../../chess/engine/stockfish-panel.component';
 import { AnalysisBoardComponent } from './analysis-board.component';
 
 describe('AnalysisBoardComponent', () => {
@@ -57,6 +58,23 @@ describe('AnalysisBoardComponent', () => {
     expect(fixture.nativeElement.querySelector('app-engine-eval-bar')).toBeNull();
     expect(fixture.nativeElement.querySelector('app-stockfish-panel')).toBeNull();
     expect(fixture.componentInstance.boardArrows()).toEqual([callerArrow]);
+  });
+
+  it('keeps engine rows non-selectable by default and re-emits opt-in selections', () => {
+    const engineMoveSelected = jasmine.createSpy('engineMoveSelected');
+    fixture.componentInstance.engineMoveSelected.subscribe(engineMoveSelected);
+    fixture.detectChanges();
+
+    const panel = fixture.debugElement.query(By.directive(StockfishPanelComponent))
+      .componentInstance as StockfishPanelComponent;
+    expect(panel.selectable()).toBeFalse();
+
+    fixture.componentRef.setInput('engineLinesSelectable', true);
+    fixture.detectChanges();
+    expect(panel.selectable()).toBeTrue();
+
+    panel.moveSelected.emit('e2e4');
+    expect(engineMoveSelected).toHaveBeenCalledOnceWith('e2e4');
   });
 
   it('emits board and navigation events', () => {

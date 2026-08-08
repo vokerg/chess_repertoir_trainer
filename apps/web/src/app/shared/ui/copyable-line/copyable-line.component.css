@@ -39,3 +39,110 @@ app-copy-button ::ng-deep button {
   height: auto;
   min-height: 0;
 }
+
+.copyable-line-trail-content,
+.line-trail-main,
+.line-trail,
+.line-trail-actions {
+  display: flex;
+  align-items: center;
+}
+
+.copyable-line-trail-content {
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.line-trail-main,
+.line-trail {
+  flex-wrap: wrap;
+}
+
+.line-trail-main {
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.line-trail {
+  gap: 0.3rem;
+}
+
+.line-trail button {
+  appearance: none;
+  min-height: 2rem;
+  border: 0;
+  border-radius: calc(var(--ui-radius-control) - 3px);
+  padding: 0.25rem 0.35rem;
+  background: transparent;
+  color: var(--ui-text);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.line-trail button:hover {
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.line-trail button.current {
+  color: var(--ui-action-strong);
+}
+
+.line-trail button:focus-visible,
+.line-trail-open:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}
+
+.line-trail-separator {
+  color: var(--ui-border-strong);
+  font-size: 1rem;
+}
+
+.line-trail-empty {
+  color: var(--ui-text-muted);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.line-trail-actions {
+  flex: 0 0 auto;
+  gap: 0.45rem;
+}
+
+.line-trail-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  border-left: 1px solid var(--ui-border);
+  padding: 0.25rem 0.3rem 0.25rem 0.75rem;
+  color: var(--ui-text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.line-trail-open:hover {
+  color: var(--ui-action-strong);
+}
+
+.copyable-line-trail-content app-copy-button ::ng-deep button {
+  min-height: 2rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .copyable-line-trail-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .line-trail-actions {
+    align-self: stretch;
+    justify-content: flex-end;
+  }
+}
