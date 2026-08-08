@@ -39,7 +39,7 @@ const migratedWorkbenchStyles = [
   ),
 ];
 const legacyVisualTokenUsage =
-  /var\(--(?:surface(?:-strong|-2|-3)?|border(?:-strong)?|text|muted(?:-strong)?|accent(?:-strong|-soft)?|danger(?:-soft)?|success(?:-soft)?|warning(?:-strong|-soft)?|radius-(?:sm|md|lg|xl)|shadow(?:-soft|-lg|-lifted)?|on-accent)\)/;
+  /var\(--(?:bg(?:-strong)?|surface(?:-strong|-muted|-dark|-2|-3)?|border(?:-strong)?|text|muted(?:-strong)?|accent(?:-strong|-soft)?|danger(?:-soft)?|success(?:-soft)?|warning(?:-strong|-soft)?|radius-(?:sm|md|lg|xl)|shadow(?:-soft|-lg|-lifted)?|on-accent)\)/;
 
 assert.equal(existsSync(new URL('../apps/mobile', import.meta.url)), true, 'apps/mobile must be a supported workspace');
 assert.ok(rootPackage.workspaces.includes('apps/mobile'), 'root workspaces must include apps/mobile');
