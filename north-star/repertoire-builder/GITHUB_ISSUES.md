@@ -64,6 +64,10 @@ When an issue and repository metadata disagree, stop and reconcile them before s
 
 A blocked task stays open. Its blocker must be explicit and linked.
 
+## Current added task mapping
+
+- RB-026 maps to [#310](https://github.com/vokerg/chess_repertoir_trainer/issues/310) for the Builder Cockpit reintegration.
+
 ## Claim and branch protocol
 
 Before work:
