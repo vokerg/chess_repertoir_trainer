@@ -20,6 +20,8 @@ export class AdminDiagnosticsStore {
   private capabilityRequestSequence = 0;
   private userListRequestSequence = 0;
   private selectionRequestSequence = 0;
+  private userListRetryCursor: string | null = null;
+  private userListRetryPageNumber = 1;
 
   readonly accessState = signal<AdminAccessState>('idle');
   readonly capability = signal<AdminMeResponse | null>(null);
@@ -76,7 +78,7 @@ export class AdminDiagnosticsStore {
 
   async retryUsers(): Promise<void> {
     if (this.accessState() !== 'ready') return;
-    await this.loadUsers(this.currentCursor(), this.pageNumber());
+    await this.loadUsers(this.userListRetryCursor, this.userListRetryPageNumber);
   }
 
   async nextUsersPage(): Promise<void> {
@@ -111,6 +113,8 @@ export class AdminDiagnosticsStore {
 
   private async loadUsers(cursor: string | null, pageNumber: number): Promise<void> {
     const requestSequence = ++this.userListRequestSequence;
+    this.userListRetryCursor = cursor;
+    this.userListRetryPageNumber = pageNumber;
     ++this.selectionRequestSequence;
     this.clearSelection();
     this.usersState.set('loading');
@@ -194,6 +198,8 @@ export class AdminDiagnosticsStore {
     this.currentCursor.set(null);
     this.nextCursor.set(null);
     this.pageNumber.set(1);
+    this.userListRetryCursor = null;
+    this.userListRetryPageNumber = 1;
     this.clearSelection();
   }
 
