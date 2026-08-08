@@ -4,7 +4,7 @@ Last updated: 2026-08-08
 
 ## Current state
 
-**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 continues through issue #133 with accessibility foundations and repertoire-detail state consistency integrated; later bounded review slices remain live-issue owned.
+**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 continues through issue #133. Opening Analysis evidence-workbench refinement is integrated; the bounded workbench visual-semantic compatibility cleanup is the next review slice and does not complete VT-302.
 
 **Integration target:** `main`
 
@@ -40,7 +40,7 @@ VT-204 promoted only `app-context-strip` and `app-fact-grid`. D-027 later locked
 
 ### Phase 3 — rollout and polish
 
-VT-301 page-family implementation and route inventory are complete in repository records. VT-302 is in progress through live issue #133. Accessibility/responsive foundations and repertoire-authoring detail-state consistency are integrated; functional onboarding, wider state review, authenticated browser/assistive-technology evidence, and final program reconciliation remain open.
+VT-301 page-family implementation and route inventory are complete in repository records. VT-302 is in progress through live issue #133. Accessibility/responsive foundations, repertoire-authoring detail-state consistency, and Opening Analysis evidence-workbench refinement are integrated. The workbench visual-semantic compatibility boundary is addressed by the current bounded review slice; functional onboarding, wider state review, authenticated browser/assistive-technology evidence, and final program reconciliation remain open.
 
 ## VT-301 integrated batches
 
@@ -73,8 +73,8 @@ The exact inventory, owning route component, integration evidence, redirects, an
 Completion of route-family rollout does not mean all legacy CSS is removed or all browser evidence exists.
 
 - Home retains its calibrated local `--home-*` role aliases. Their values match the approved graphite/mint direction, but the namespace predates the production `--ui-*` contract.
-- `apps/web/src/styles.css` remains the explicit amber-era compatibility layer. It must not be globally redefined or copied into new transformed UI.
-- `apps/web/src/workbench.css` and a bounded set of shared analytical/training consumers still reference legacy short roles. Their full consumer set must be migrated together; this is compatibility debt, not an untransformed route family.
+- `apps/web/src/styles.css` remains the explicit amber-era compatibility layer for known remaining consumers and the established `--space-*` scale. It must not be globally redefined or copied into new transformed visual presentation.
+- The former `apps/web/src/workbench.css` visual-semantic debt is resolved by the current bounded VT-302 slice together with the remaining Repertoire Builder workbench/setup/explanation surfaces. The shared spacing scale remains intentionally unchanged.
 - Some global `.library-*` presentation remains while shared line-training surfaces still consume it.
 - Direct authenticated browser review was explicitly deferred for several accepted batches. Deferred evidence is not represented as observed validation.
 - Cross-route onboarding, empty/loading/error/recovery consistency, keyboard and screen-reader review, contrast, focus, reduced motion, zoom, and representative responsive verification remain VT-302 scope.
@@ -83,9 +83,7 @@ Completion of route-family rollout does not mean all legacy CSS is removed or al
 
 Implementation batches passed their recorded exact-head CI runs, including full build, Angular template/type compilation, tests, architecture guardrails, audits, and migrations where applicable. The focused reports and pull requests remain the detailed validation authority for each batch.
 
-The final route reconciliation changes documentation only. It does not change Angular runtime, routes, stores, APIs, contracts, schemas, migrations, dependencies, or application behavior. Documentation-only validation still verifies the literal guard count, route/component mapping, redirect classification, report links, changed-file scope, branch/base state, Markdown structure, issue coordination, and pull-request CI.
-
-A local checkout was not available in the reconciliation runtime because `github.com` DNS resolution failed. No local command is represented as passed.
+For the VT-302 workbench compatibility slice, CI #2242 passed on implementation head `5e40464b7a0b327a26bdeb7554cd88c85c607b99` before the branch was refreshed onto current `main`. The branch refresh preserved the five-file runtime/guard diff while incorporating the disjoint Repertoire Builder documentation commit already on `main`; documentation reconciliation followed. Local checkout-based commands remain unavailable because the execution runner cannot resolve `github.com`, so no local build/test result is claimed. Direct authenticated browser review is also not claimed for this token-only slice.
 
 ## Selection disposition
 
@@ -98,6 +96,17 @@ A local checkout was not available in the reconciliation runtime because `github
 VT-302 owns coherent onboarding, empty/loading/error/recovery states, accessibility review, responsive polish, reduced-motion and appearance refinement, and final residual-risk disposition. It must build on the integrated system rather than introduce a second identity or reopen completed route-family rollout.
 
 ## Session log
+
+### 2026-08-08 — VT-302 workbench visual-token compatibility slice
+
+- Continued issue #133 after PR #308 integrated and verified that no other Visual Transformation execution issue superseded the active VT-302 boundary.
+- Audited the documented compatibility debt, `apps/web/src/workbench.css`, the shared analysis/line-editor usage boundary, Repertoire Builder workbench presentation, production token definitions, and open pull-request collisions.
+- Migrated `workbench.css` plus the Repertoire Builder workbench, setup dialog, and candidate-explanation presentation from legacy amber-era visual-semantic names to production `--ui-*` roles without changing the existing shared `--space-*` scale.
+- Replaced unresolved Builder aliases such as `--surface-2`, `--surface-3`, `--on-accent`, and `--shadow-lg` with defined production roles and standardized explicit focus treatment on `--ui-focus-outline`.
+- Added an architecture guard that rejects reintroduction of the bounded legacy visual-token names in the migrated files.
+- Exact-head CI #2242 passed on the initial implementation head. After `main` advanced through a disjoint Repertoire Builder documentation commit, the branch was rebuilt on `main` `0ae880e8cba60be69caba5aa55c5fb64112b48c1`; the resulting comparison remained five runtime/guard files ahead and zero commits behind before documentation reconciliation.
+- Added the bounded implementation and residual-risk report at [`reports/VT_302_WORKBENCH_TOKEN_COMPATIBILITY.md`](./reports/VT_302_WORKBENCH_TOKEN_COMPATIBILITY.md).
+- No route, API, store, schema, board, engine, persistence, dependency, Home alias, or `.library-*` change is part of this slice. It does not complete VT-302 or close issue #133.
 
 ### 2026-08-08 — VT-302 Opening Analysis evidence workbench review slice
 
