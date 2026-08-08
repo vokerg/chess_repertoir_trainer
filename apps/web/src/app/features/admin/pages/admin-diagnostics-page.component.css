@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.admin-diagnostics-page {
+  min-width: 0;
+}
+
+.admin-state,
+.admin-access-state p {
+  margin: 0;
+  color: var(--ui-text-muted);
+}
+
+.admin-access-state {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+
+@media (max-width: 760px) {
+  /* Sync: VIEWPORT_BREAKPOINTS.mobileMaxPx in shared/ui/responsive/breakpoints.ts. */
+  .admin-diagnostics-page {
+    gap: 0.75rem;
+  }
+}

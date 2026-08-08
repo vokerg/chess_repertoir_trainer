@@ -1,0 +1,73 @@
+<section class="admin-diagnostics-page stack">
+  <app-page-header
+    title="Administrator diagnostics"
+    subtitle="Read-only operational diagnostics. Server authorization remains authoritative for every request."
+    [stats]="headerStats()"
+    [actions]="headerActions()"
+  />
+
+  @switch (store.accessState()) {
+    @case ('idle') {
+      <app-panel title="Administrator access">
+        <p class="admin-state" role="status">Preparing administrator diagnostics…</p>
+      </app-panel>
+    }
+    @case ('loading') {
+      <app-panel title="Administrator access">
+        <p class="admin-state" role="status" aria-live="polite">Checking administrator diagnostics access…</p>
+      </app-panel>
+    }
+    @case ('forbidden') {
+      <app-panel title="Administrator diagnostics unavailable">
+        <div class="admin-access-state" role="alert">
+          <p>This signed-in account cannot access administrator diagnostics.</p>
+          <p>Access is decided by the server; route and client state are not authorization boundaries.</p>
+          <button type="button" class="secondary" (click)="store.refresh()">Retry access check</button>
+        </div>
+      </app-panel>
+    }
+    @case ('unavailable') {
+      <app-panel title="Administrator diagnostics unavailable">
+        <div class="admin-access-state" role="alert">
+          <p>The administrator diagnostics service could not be loaded.</p>
+          <button type="button" class="secondary" (click)="store.refresh()">Retry</button>
+        </div>
+      </app-panel>
+    }
+    @case ('ready') {
+      <app-panel
+        title="Server capability"
+        subtitle="This information reflects the successful /api/admin/me response; it is descriptive, not a client authorization rule."
+      >
+        <app-fact-grid
+          ariaLabel="Administrator server capability evidence"
+          [items]="capabilityFacts()"
+          [columns]="3"
+        />
+      </app-panel>
+
+      <app-admin-user-list
+        [users]="store.users()"
+        [loading]="store.usersState() === 'loading'"
+        [error]="store.usersError()"
+        [selectedUserId]="store.selectedUserId()"
+        [pageNumber]="store.pageNumber()"
+        [hasNextPage]="store.hasNextPage()"
+        (selectUser)="store.selectUser($event)"
+        (nextPage)="store.nextUsersPage()"
+        (retry)="store.retryUsers()"
+      />
+
+      <app-admin-user-diagnostics
+        [selectedUserId]="store.selectedUserId()"
+        [detail]="store.detail()"
+        [detailState]="store.detailState()"
+        [detailError]="store.detailError()"
+        [work]="store.work()"
+        [workState]="store.workState()"
+        [workError]="store.workError()"
+        (retry)="store.retrySelectedUser()"
+      />
+    }
+  }
+</section>

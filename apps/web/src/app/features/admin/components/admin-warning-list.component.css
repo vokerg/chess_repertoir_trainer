@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.admin-warning-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-warning {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-warning);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-warning-soft);
+  color: var(--ui-text);
+}
+
+.admin-warning-code,
+.admin-warning-evidence {
+  font-family: var(--ui-font-family-mono);
+}
+
+.admin-warning-code {
+  color: var(--ui-warning);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admin-warning-evidence,
+.admin-warning-policy {
+  font-size: 0.875rem;
+}
+
+.admin-warning-policy {
+  color: var(--ui-text-muted);
+}
