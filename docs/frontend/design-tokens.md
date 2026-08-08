@@ -1,6 +1,6 @@
 # Frontend design tokens
 
-Last updated: 2026-08-05
+Last updated: 2026-08-08
 
 This document is the source of truth for the production visual-token and typography contract used by transformed Angular surfaces.
 
@@ -8,9 +8,9 @@ This document is the source of truth for the production visual-token and typogra
 
 Global styling remains intentionally split while compatibility debt exists:
 
-1. `apps/web/src/styles.css` is the legacy compatibility layer. Short names such as `--accent`, `--surface`, `--border`, and `--text` continue to support known shared and legacy-compatible consumers.
+1. `apps/web/src/styles.css` is the legacy compatibility layer. Short names such as `--accent`, `--surface`, `--border`, and `--text` continue to support known legacy-compatible consumers and the shared spacing scale.
 2. `apps/web/src/design-system.css` loads immediately after `styles.css` and owns production `--ui-*` tokens plus narrow overrides for the application canvas, typography, controls, page headers, and proven shared primitives.
-3. `responsive.css` and `workbench.css` remain later specialized layers.
+3. `responsive.css` and `workbench.css` remain later specialized layers. `workbench.css` now uses production `--ui-*` visual-semantic roles while continuing to consume the established shared `--space-*` spacing scale.
 
 Do not repurpose legacy short token names to mean the new system. Migrate a complete consumer boundary deliberately, then remove obsolete roles only when all consumers are known and covered.
 
@@ -73,10 +73,11 @@ Use tonal separation and borders before elevation. Strong shadows belong primari
 | --- | --- | --- |
 | `--ui-action` | `#47B89C` | primary action and product signal |
 | `--ui-action-hover` | `#3CA98E` | primary-action hover |
-| `--ui-action-strong` | `#1F7865` | accessible mint text, selected state, focus source |
+| `--ui-action-strong` | `#1F7865` | accessible mint text and selected state |
 | `--ui-action-soft` | `#DFF3ED` | selected and quiet interactive background |
 | `--ui-action-ink` | `#071713` | text on signal mint |
-| `--ui-focus-ring` | strong-mint alpha | visible keyboard focus |
+| `--ui-focus-outline` | `#1F7865` | opaque keyboard-focus outline across supported surfaces |
+| `--ui-focus-ring` | strong-mint alpha | supplementary focus halo, not a standalone outline colour |
 
 Mint is a product signal and interaction colour. It must not replace success, warning, danger, information, chess evaluation, or chart-series semantics.
 
@@ -105,18 +106,20 @@ The shared page header, panel, shell actions, context strip, fact grid, and sele
 
 VT-301 has explicitly dispositioned every current authenticated route family. This does not mean every descendant widget has already abandoned all legacy roles.
 
-Accepted compatibility boundaries:
+VT-302 has resolved the previously recorded visual-semantic compatibility boundary in `apps/web/src/workbench.css` and the remaining Repertoire Builder workbench/setup/explanation surfaces. Those files now use production `--ui-*` visual roles, and architecture guardrails prevent reintroduction of the bounded legacy semantic names.
+
+Accepted compatibility boundaries that remain:
 
 - Home retains calibrated local `--home-*` aliases whose values match the approved production palette but predate the `--ui-*` namespace.
-- `apps/web/src/workbench.css` and a bounded set of analytical consumers still use legacy short roles. Migrate the full consumer set together; do not partially remap global names.
 - Some global `.library-*` presentation remains while shared line-training surfaces consume it.
+- `styles.css` still owns legacy roles required by other known compatibility consumers and the established `--space-*` scale; resolving the workbench visual roles does not authorize global deletion or redefinition of that layer.
 - Feature-local semantic chart, board, and evaluation colours may remain when they do not represent a shared UI role.
 
-These boundaries are recorded debt, not permission for new code to use legacy names and not evidence of an untransformed route family.
+These boundaries are recorded debt, not permission for new code to use legacy visual names and not evidence of an untransformed route family.
 
 ## Migration rules
 
-- New transformed UI uses `--ui-*` roles.
+- New transformed UI uses `--ui-*` visual roles.
 - Do not add isolated hard-coded brand colours when a production role expresses the meaning.
 - Do not globally search-and-replace legacy names or redefine their values.
 - Migrate a shared compatibility layer only after its complete consumer set is inspected and regression-covered.
