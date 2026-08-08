@@ -17,6 +17,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Opening Struggles and repertoire Builder: feature-local state/data access/query ownership with shared workbench presentation and no Lab or cross-feature implementation dependency.
 - Proven shared presentation primitives: `shared/ui/context-strip`, `shared/ui/fact-grid`, and `shared/ui/select-menu` remain typed, OnPush, semantic, feature-agnostic, store-free, and HTTP-free.
 - Mobile-primary navigation: Home, Study, Games, Openings, and More are derived from the existing hierarchical model while preserving complete grouped route/account access.
+- VT-302 workbench compatibility cleanup: global `workbench.css` plus Repertoire Builder workbench, setup, and explanation presentation use production `--ui-*` visual-semantic roles; an architecture guard prevents those bounded files from regressing to the legacy amber-era visual names.
 
 ## Visual-transformation route disposition
 
@@ -44,16 +45,17 @@ Integrated VT-301 slices:
 
 A transformed route may still compose a bounded legacy-compatible shared widget. Route-family completion does not authorize a global token rewrite.
 
-- `apps/web/src/styles.css` remains the explicit amber-era compatibility layer. New transformed UI must not add dependencies on its short role names.
+- `apps/web/src/styles.css` remains the explicit amber-era compatibility layer for known remaining consumers and the shared `--space-*` scale. New transformed UI must not add dependencies on its short visual role names.
 - Home retains calibrated local `--home-*` aliases whose values match the approved graphite/mint direction but predate the production `--ui-*` namespace.
-- `apps/web/src/workbench.css` still references short roles such as `--accent`, `--surface-strong`, `--border`, and `--text`. Shared analytical consumers must be migrated as a complete compatibility set rather than through a partial global remap.
 - Some global `.library-*` CSS remains while shared line-training presentation still consumes it. Split it only when the full consumer set is inspected and covered.
-- Games evidence cards, Study workflow/launcher composition, Lab experiment internals, and workbench evidence slots remain feature-owned because their hierarchy and commands are domain-specific.
+- Games evidence cards, Study workflow/launcher composition, Lab experiment internals, and workbench evidence slots remain feature-owned because their hierarchy and commands are domain-specific. Feature ownership is not visual-token compatibility debt.
 - Deferred authenticated browser checks remain deferred evidence, not observed passes.
+
+The former `workbench.css` visual-semantic debt is no longer an accepted boundary: VT-302 migrated the complete bounded global workbench and Repertoire Builder workbench/setup/explanation presentation to `--ui-*` roles and added a regression guard. This does not remove the legacy spacing scale or authorize deletion/redefinition of `styles.css`.
 
 ## VT-302-owned polish
 
-After the final VT-301 reconciliation pull request is approved and squash-merged, and issue #132 is closed, VT-302 may address:
+VT-302 may address:
 
 - coherent first-run/onboarding guidance;
 - consistent empty, loading, partial-data, error, recovery, and retry states;
@@ -73,7 +75,7 @@ VT-302 must not reopen route-family rollout merely because a transformed route r
 - Has no direct HTTP workflow in a presentational component.
 - Uses signals/computed state and lifecycle-safe observable interop.
 - Uses immutable updates and stable repeated-item tracking.
-- Uses production `--ui-*` roles when the component is in transformed scope, except for an explicitly documented compatibility boundary.
+- Uses production `--ui-*` visual roles when the component is in transformed scope, except for an explicitly documented compatibility boundary.
 - Relevant validation has been run and reported.
 
 ## Accepted tooling debt

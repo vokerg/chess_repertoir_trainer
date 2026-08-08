@@ -104,7 +104,12 @@
                     [attr.aria-selected]="isPreviewed(candidate.moveUci)"
                     (click)="previewMove(candidate.moveUci)"
                   >
-                    <span class="candidate-rank">#{{ candidate.rank }}</span>
+                    <span class="candidate-rank">
+                      <span>#{{ candidate.rank }}</span>
+                      @if (isPreviewed(candidate.moveUci)) {
+                        <small>Preview</small>
+                      }
+                    </span>
                     <span class="candidate-move">
                       <strong>{{ candidate.moveSan }}</strong>
                       <small>{{ candidate.moveUci }}</small>
@@ -275,48 +280,6 @@
             </section>
           }
 
-          <section class="brief-section" aria-labelledby="evidence-title">
-            <div class="section-heading">
-              <h3 id="evidence-title">Decision signals</h3>
-            </div>
-
-            @if (previewEngineImpact(); as impact) {
-              <div class="engine-impact" [attr.data-status]="impact.status" aria-live="polite">
-                <div>
-                  <span>Engine impact</span>
-                  <strong>{{ engineImpactStatus(impact) }}</strong>
-                </div>
-                <p>{{ engineImpactSummary(impact) }}</p>
-              </div>
-            }
-
-            <dl class="evidence-list">
-              @for (source of sourceItems(); track source.id) {
-                <div>
-                  <dt>{{ source.label }}</dt>
-                  <dd>
-                    @if (source.detail) {
-                      {{ source.detail }}
-                    } @else {
-                      {{ statusLabel(source.status) }}
-                    }
-                  </dd>
-                </div>
-              }
-            </dl>
-          </section>
-
-          @if (reasonLabels().length > 0) {
-            <section class="brief-section reason-list">
-              <h3>Why it is ranked here</h3>
-              <ul>
-                @for (reason of reasonLabels(); track reason) {
-                  <li>{{ reason }}</li>
-                }
-              </ul>
-            </section>
-          }
-
           @if (warningLabels().length > 0) {
             <section class="warning-list" role="note">
               <h3>Warnings</h3>
@@ -327,6 +290,47 @@
               </ul>
             </section>
           }
+
+          <details class="evidence-details">
+            <summary>Evidence details</summary>
+            <div class="evidence-details-content">
+              @if (previewEngineImpact(); as impact) {
+                <div class="engine-impact" [attr.data-status]="impact.status" aria-live="polite">
+                  <div>
+                    <span>Engine impact</span>
+                    <strong>{{ engineImpactStatus(impact) }}</strong>
+                  </div>
+                  <p>{{ engineImpactSummary(impact) }}</p>
+                </div>
+              }
+
+              <dl class="evidence-list">
+                @for (source of sourceItems(); track source.id) {
+                  <div>
+                    <dt>{{ source.label }}</dt>
+                    <dd>
+                      @if (source.detail) {
+                        {{ source.detail }}
+                      } @else {
+                        {{ statusLabel(source.status) }}
+                      }
+                    </dd>
+                  </div>
+                }
+              </dl>
+
+              @if (reasonLabels().length > 0) {
+                <section class="reason-list">
+                  <h3>Why it is ranked here</h3>
+                  <ul>
+                    @for (reason of reasonLabels(); track reason) {
+                      <li>{{ reason }}</li>
+                    }
+                  </ul>
+                </section>
+              }
+            </div>
+          </details>
 
           @if (candidateExplanationAvailable()) {
             <details class="generated-details">
