@@ -71,6 +71,28 @@ describe('AdminDiagnosticsStore', () => {
     expect(api.listUsers.calls.argsFor(1)).toEqual(['cursor-2', 25]);
   });
 
+  it('retries the cursor page that failed instead of falling back to the last successful page', async () => {
+    api.getMe.and.returnValue(of(capability()));
+    api.listUsers.and.returnValues(
+      of(userPage([1, 2], 'cursor-2')),
+      throwError(() => ({ status: 500 })),
+      of(userPage([3, 4], null)),
+    );
+
+    await store.initialize();
+    await store.nextUsersPage();
+
+    expect(store.usersState()).toBe('error');
+    expect(store.pageNumber()).toBe(1);
+
+    await store.retryUsers();
+
+    expect(api.listUsers.calls.argsFor(2)).toEqual(['cursor-2', 25]);
+    expect(store.users().map((user) => user.id)).toEqual([3, 4]);
+    expect(store.pageNumber()).toBe(2);
+    expect(store.currentCursor()).toBe('cursor-2');
+  });
+
   it('keeps detail and work failures independent so partial diagnostics remain explicit', async () => {
     store.accessState.set('ready');
     api.getUserDetail.and.returnValue(throwError(() => ({ status: 500 })));
