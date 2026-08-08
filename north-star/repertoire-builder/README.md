@@ -1,6 +1,6 @@
 # Repertoire Builder North Star
 
-Last updated: 2026-08-06
+Last updated: 2026-08-08
 
 The Repertoire Builder program defines how the product constructs and evolves a personal opening repertoire from population evidence, the player's own games and profile, existing courses, reviewed opening knowledge, and explicit user choices.
 
@@ -19,10 +19,12 @@ Current runtime includes:
 - mandatory course preview and explicit apply;
 - exact existing-course entry points from course-review findings;
 - reviewed side-aware opening knowledge as explanatory, ranking-neutral evidence;
+- complete strategic-knowledge coverage of the pinned generated opening book through RB-025, with explicit unavailable behavior for arbitrary names outside that book;
+- deterministic opening-knowledge coverage/editorial tooling and hard all-book regression gates;
 - optional generated candidate and completion interpretations behind explicit disabled-by-default boundaries;
 - bounded reviewed-opening grounding for the explicit AI game-review consumer.
 
-RB-025 / #290 is claimed for deterministic opening-knowledge coverage research, side-specific completeness audits, prioritized backlog design and editorial-tooling foundations. Its first delivery does not add bulk runtime prose or change classification/ranking authority.
+RB-025 / #290 is complete in runtime through merged PRs #302/#304. The remaining reconciliation PR #300 only aligns canonical program/task metadata with the already-integrated implementation; it does not add another opening-knowledge implementation layer.
 
 The remaining RB-016 outcome-evaluation task is independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
 

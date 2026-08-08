@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-08-07
+Last updated: 2026-08-08
 
 This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
@@ -30,15 +30,16 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 170 | RB-022 | #241 | P1 | DONE | Static side-aware opening knowledge implementation | PR #255 |
 | 175 | RB-023 | #242 | P2 | DONE | Opening knowledge in Repertoire Builder | PR #262 |
 | 180 | RB-024 | #243 | P3 | DONE | AI game review grounding with opening plans | PR #268 |
-| 185 | RB-025 | #290 | P1 | REVIEW | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; 3,733/3,733 generated entries available |
+| 185 | RB-025 | #290 | P1 | DONE | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; merged via `997d1ecc`; 3,733/3,733 generated entries available |
 
 ## Current execution state
 
 - The deterministic Builder capability chain, static opening-knowledge service, Builder consumer and bounded AI game-review consumer are complete.
 - RB-016 remains independently blocked on real usage and follow-up-game evidence.
-- RB-025 has reached 100% strategic-knowledge coverage of the pinned generated opening book and remains in review through stacked PRs #302/#304.
-- Completion head `6acbcbe08797e059ca9d31b281de0425935c8e55` passed CI #2208 with 3,733/3,733 generated entries, 3,167/3,167 unique names, and independent White/Black summary-plus-plan coverage all at 100%.
+- RB-025 implementation is integrated on `main`: 3,733/3,733 generated entries, 3,167/3,167 unique names, and independent White/Black summary-plus-plan coverage are all at 100% for the pinned opening book.
+- The runtime registry contains 160 reviewed rules and the all-book completion test requires every pinned entry to remain `AVAILABLE` with both descriptions and both side plans.
 - Coverage is explicit rather than a catch-all: arbitrary names outside the pinned opening book remain `UNAVAILABLE`.
+- PR #300 is the final metadata reconciliation only and does not represent additional opening-knowledge implementation work.
 
 ## Recent closure and review evidence
 
@@ -55,5 +56,6 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 - RB-025 foundation: `reports/RB-025-2026-08-06-opening-knowledge-coverage-scale.md`.
 - RB-025 first batch: `reports/RB-025-2026-08-07-opening-knowledge-batch-001.md`.
 - RB-025 completion: `reports/RB-025-2026-08-07-opening-knowledge-completion.md`.
+- RB-025 closure reconciliation: `reports/RB-025-2026-08-08-closure.md`.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.
