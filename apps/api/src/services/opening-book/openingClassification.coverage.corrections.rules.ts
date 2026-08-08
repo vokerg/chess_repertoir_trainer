@@ -1,11 +1,19 @@
 import type { OpeningClassificationRule } from './openingClassification.types';
 
 /**
- * Corrected replacements for coverage rules whose first draft had overly broad
- * or overly narrow punctuation handling. The service removes the superseded
- * definitions before appending these replacements, preserving stable rule IDs.
+ * Corrected replacements for foundation or coverage rules whose first draft had
+ * overly broad or overly narrow punctuation/name handling. The service removes
+ * the superseded definitions before appending these replacements, preserving
+ * stable rule IDs.
  */
 export const OPENING_CLASSIFICATION_COVERAGE_CORRECTIONS: readonly OpeningClassificationRule[] = [
+  {
+    id: 'family-london-system',
+    namePattern: /^(?:London System|(?:Queen's Pawn Game|Indian Defense): (?:Accelerated )?London System)(?:\b|:|,)/i,
+    white: { soundness: 'SOUND', character: ['SOLID', 'POSITIONAL'], theoreticalStatus: 'MAINLINE', theoryBurden: 'MEDIUM', roles: ['INITIATOR'], confidence: 'HIGH' },
+    black: { soundness: 'SOUND', character: ['BALANCED', 'DYNAMIC'], theoreticalStatus: 'MAINLINE', theoryBurden: 'MEDIUM', roles: ['RESPONDER'], confidence: 'HIGH' },
+    rationale: 'London identity is preserved across the generated standalone, Queen’s Pawn Game and Indian Defense naming forms, including accelerated move orders.',
+  },
   {
     id: 'family-formation-attacks',
     namePattern: /^(?:Formation|Creepy Crawly Formation)(?:\b|:|,)/i,
