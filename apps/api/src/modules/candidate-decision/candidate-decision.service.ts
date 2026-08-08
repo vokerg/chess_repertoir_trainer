@@ -251,6 +251,10 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
       const personal = personalResult.ok ? personalResult.value : null;
       const courses = coursesResult.ok ? coursesResult.value : null;
       const playerProfile = profileResult.ok ? profileResult.value : null;
+      const parentOpening = resolveOpeningEntry(
+        position.fen,
+        population?.opening ?? masters?.opening ?? null,
+      );
 
       const mastersByMove = moveMap(masters?.moves ?? []);
       const populationByMove = moveMap(population?.moves ?? []);
@@ -298,6 +302,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
           legalMove.resultingFen,
           populationMove?.opening ?? mastersMove?.opening ?? null,
           request.target.side,
+          parentOpening,
         );
         const course = courseEvidence(
           legalMove,
@@ -606,20 +611,31 @@ function personalEvidence(
   };
 }
 
-export function resolveCandidateOpeningEvidence(
-  resultingFen: string,
+function resolveOpeningEntry(
+  fen: string,
   hint: OpeningExplorerMove['opening'],
-  side: UserColor,
-): CandidateOpeningEvidence {
-  const exact = OpeningLookupService.lookupByFen(resultingFen);
-  const entry: OpeningBookEntry | null = exact ?? (hint ? {
+  fallbackEntry: OpeningBookEntry | null = null,
+): OpeningBookEntry | null {
+  const exact = OpeningLookupService.lookupByFen(fen);
+  if (exact) return exact;
+  if (!hint) return fallbackEntry;
+  return {
     eco: hint.eco,
     name: hint.name,
     pgn: '',
     uci: '',
     epd: '',
     ply: 0,
-  } : null);
+  };
+}
+
+export function resolveCandidateOpeningEvidence(
+  resultingFen: string,
+  hint: OpeningExplorerMove['opening'],
+  side: UserColor,
+  fallbackEntry: OpeningBookEntry | null = null,
+): CandidateOpeningEvidence {
+  const entry = resolveOpeningEntry(resultingFen, hint, fallbackEntry);
   if (!entry) return unavailableOpeningEvidence(side);
   const classification = OpeningClassificationService.classify(entry);
   if (!classification.matchedRuleIds.length) return unavailableOpeningEvidence(side);
