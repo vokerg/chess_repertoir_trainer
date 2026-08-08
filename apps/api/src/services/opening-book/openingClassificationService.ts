@@ -24,7 +24,10 @@ export type {
 } from './openingClassification.types';
 export { OPENING_CLASSIFICATION_VERSION } from './openingClassification.types';
 
-const REPLACED_FOUNDATION_RULE_IDS = new Set(['family-owens-defense']);
+const REPLACED_FOUNDATION_RULE_IDS = new Set([
+  'family-owens-defense',
+  'family-london-system',
+]);
 const REPLACED_COVERAGE_RULE_IDS = new Set([
   'family-formation-attacks',
   'family-rare-white-opening-systems',
