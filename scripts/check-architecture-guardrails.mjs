@@ -23,6 +23,23 @@ const apiRouteUrls = [
   new URL('../apps/api/src/modules/', import.meta.url),
   new URL('../apps/api/src/routes/', import.meta.url),
 ];
+const migratedWorkbenchStyles = [
+  new URL('../apps/web/src/workbench.css', import.meta.url),
+  new URL(
+    '../apps/web/src/app/features/repertoire-builder/components/repertoire-builder-workbench.component.css',
+    import.meta.url,
+  ),
+  new URL(
+    '../apps/web/src/app/features/repertoire-builder/components/repertoire-builder-setup-dialog.component.css',
+    import.meta.url,
+  ),
+  new URL(
+    '../apps/web/src/app/features/repertoire-builder/components/repertoire-builder-workbench-explanation.component.css',
+    import.meta.url,
+  ),
+];
+const legacyVisualTokenUsage =
+  /var\(--(?:bg(?:-strong)?|surface(?:-strong|-muted|-dark|-2|-3)?|border(?:-strong)?|text|muted(?:-strong)?|accent(?:-strong|-soft)?|danger(?:-soft)?|success(?:-soft)?|warning(?:-strong|-soft)?|radius-(?:sm|md|lg|xl)|shadow(?:-soft|-lg|-lifted)?|on-accent)\)/;
 
 assert.equal(existsSync(new URL('../apps/mobile', import.meta.url)), true, 'apps/mobile must be a supported workspace');
 assert.ok(rootPackage.workspaces.includes('apps/mobile'), 'root workspaces must include apps/mobile');
@@ -94,6 +111,15 @@ for (const fileUrl of sourceFiles(new URL('../apps/mobile/', import.meta.url))) 
 for (const fileUrl of sourceFiles(new URL('../apps/web/src/', import.meta.url))) {
   const source = readFileSync(fileUrl, 'utf8');
   assert.doesNotMatch(source, /(?:from|import\s*)\s*['"][^'"]*apps\/mobile[^'"]*['"]/, `web must not import mobile: ${fileUrl.pathname}`);
+}
+
+for (const fileUrl of migratedWorkbenchStyles) {
+  const source = readFileSync(fileUrl, 'utf8');
+  assert.doesNotMatch(
+    source,
+    legacyVisualTokenUsage,
+    `Migrated workbench presentation must use production --ui-* visual roles: ${fileUrl.pathname}`,
+  );
 }
 
 assert.doesNotMatch(gitignore, /^backups\/courses\/$/m, 'course backups must remain eligible for version control');
