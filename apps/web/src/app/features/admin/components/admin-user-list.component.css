@@ -1,0 +1,112 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.admin-state {
+  margin: 0;
+  color: var(--ui-text-muted);
+}
+
+.admin-state-error {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  color: var(--ui-danger);
+}
+
+.admin-state-error p {
+  margin: 0;
+}
+
+.admin-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+}
+
+.admin-table-scroll:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+}
+
+.admin-table {
+  width: 100%;
+  min-width: 54rem;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--ui-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table thead th {
+  color: var(--ui-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-table tbody td {
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-table tbody tr:last-child th,
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-row-selected {
+  background: var(--ui-action-soft);
+}
+
+.admin-user-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-action-strong);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.admin-user-button:focus-visible {
+  outline: 3px solid var(--ui-focus-ring);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.admin-warning-row td {
+  background: var(--ui-warning-soft);
+  white-space: normal;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  color: var(--ui-text-muted);
+}
+
+.admin-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

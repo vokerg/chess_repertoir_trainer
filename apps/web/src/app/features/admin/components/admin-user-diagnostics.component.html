@@ -1,0 +1,256 @@
+@if (selectedUserId(); as userId) {
+  <app-panel
+    [title]="'User ' + userId + ' diagnostics'"
+    subtitle="Only bounded aggregate diagnostics from the administrator API are requested."
+  >
+    @if (detailState() === 'loading') {
+      <p class="admin-state" role="status" aria-live="polite">Loading user diagnostics…</p>
+    } @else if (detailState() === 'error') {
+      <div class="admin-state admin-state-error" role="alert">
+        <p>{{ detailError() || 'User diagnostics are unavailable.' }}</p>
+        <button type="button" class="secondary" (click)="retry.emit()">Retry user diagnostics</button>
+      </div>
+    } @else if (detail(); as detailValue) {
+      <div class="admin-identity">
+        <span>User {{ detailValue.user.id }}</span>
+        <span>Created {{ detailValue.user.createdAt | date: 'medium' }}</span>
+        <span>Updated {{ detailValue.user.updatedAt | date: 'medium' }}</span>
+      </div>
+
+      <div class="admin-diagnostic-sections">
+        <section class="admin-diagnostic-section" aria-labelledby="admin-accounts-heading">
+          <h4 id="admin-accounts-heading">Accounts</h4>
+          @if (detailValue.sections.accounts.available) {
+            <app-fact-grid ariaLabel="Account diagnostics" [items]="accountFacts()" />
+            @if (detailValue.sections.accounts.groups.length) {
+              <ul class="admin-compact-list" aria-label="Account provider groups">
+                @for (group of detailValue.sections.accounts.groups; track group.provider + ':' + group.active) {
+                  <li>
+                    <code>{{ group.provider }}</code>
+                    <span>{{ group.active ? 'active' : 'inactive' }}</span>
+                    <strong>{{ group.count }}</strong>
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ detailValue.sections.accounts.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-games-heading">
+          <h4 id="admin-games-heading">Games</h4>
+          @if (detailValue.sections.games.available) {
+            <app-fact-grid ariaLabel="Game diagnostics" [items]="gameFacts()" />
+            <div class="admin-breakdowns">
+              <div>
+                <h5>Speed</h5>
+                <ul class="admin-compact-list">
+                  @for (group of detailValue.sections.games.bySpeed; track group.speed) {
+                    <li><code>{{ group.speed || 'UNKNOWN' }}</code><strong>{{ group.count }}</strong></li>
+                  }
+                </ul>
+              </div>
+              <div>
+                <h5>Index state</h5>
+                <ul class="admin-compact-list">
+                  @for (group of detailValue.sections.games.byIndexState; track group.state) {
+                    <li><code>{{ group.state }}</code><strong>{{ group.count }}</strong></li>
+                  }
+                </ul>
+              </div>
+              <div>
+                <h5>Analysis state</h5>
+                <ul class="admin-compact-list">
+                  @for (group of detailValue.sections.games.byAnalysisState; track group.state) {
+                    <li><code>{{ group.state || 'NONE' }}</code><strong>{{ group.count }}</strong></li>
+                  }
+                </ul>
+              </div>
+            </div>
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ detailValue.sections.games.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-courses-heading">
+          <h4 id="admin-courses-heading">Courses</h4>
+          @if (detailValue.sections.courses.available) {
+            <app-fact-grid ariaLabel="Course diagnostics" [items]="courseFacts()" />
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ detailValue.sections.courses.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-training-heading">
+          <h4 id="admin-training-heading">Training</h4>
+          @if (detailValue.sections.training.available) {
+            <app-fact-grid ariaLabel="Training diagnostics" [items]="trainingFacts()" />
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ detailValue.sections.training.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-preparation-heading">
+          <h4 id="admin-preparation-heading">Preparation</h4>
+          @if (detailValue.sections.preparation.available) {
+            <app-fact-grid ariaLabel="Preparation diagnostics" [items]="preparationFacts()" />
+            <app-admin-warning-list [warnings]="detailValue.sections.preparation.warnings" />
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ detailValue.sections.preparation.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-footprint-heading">
+          <h4 id="admin-footprint-heading">Data footprint</h4>
+          @if (detailValue.sections.footprint.available) {
+            <app-fact-grid ariaLabel="Data footprint row counts" [items]="footprintFacts()" [columns]="3" />
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ detailValue.sections.footprint.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-lifecycle-heading">
+          <h4 id="admin-lifecycle-heading">Lifecycle</h4>
+          <p class="admin-unavailable">Unavailable: {{ detailValue.sections.lifecycle.reason }}</p>
+        </section>
+      </div>
+    }
+  </app-panel>
+
+  <app-panel
+    title="Recent work"
+    subtitle="Bounded active and recent work returned by the administrator diagnostics API."
+  >
+    @if (workState() === 'loading') {
+      <p class="admin-state" role="status" aria-live="polite">Loading recent work…</p>
+    } @else if (workState() === 'error') {
+      <div class="admin-state admin-state-error" role="alert">
+        <p>{{ workError() || 'User work diagnostics are unavailable.' }}</p>
+        <button type="button" class="secondary" (click)="retry.emit()">Retry work diagnostics</button>
+      </div>
+    } @else if (work(); as workValue) {
+      <div class="admin-work-sections">
+        <section class="admin-diagnostic-section" aria-labelledby="admin-jobs-heading">
+          <h4 id="admin-jobs-heading">Jobs</h4>
+          @if (workValue.sections.jobs.available) {
+            @if (workValue.sections.jobs.items.length) {
+              <div class="admin-table-scroll" tabindex="0" aria-label="Recent jobs table">
+                <table class="admin-table">
+                  <caption class="admin-visually-hidden">Recent jobs for user {{ userId }}</caption>
+                  <thead><tr><th scope="col">Job</th><th scope="col">Kind</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col">Tasks</th><th scope="col">Active keys</th><th scope="col">Queue age</th><th scope="col">Updated</th></tr></thead>
+                  <tbody>
+                    @for (job of workValue.sections.jobs.items; track job.id) {
+                      <tr>
+                        <th scope="row">{{ job.id }}</th>
+                        <td><code>{{ job.kind }}</code></td>
+                        <td><code>{{ job.source }}</code></td>
+                        <td><code>{{ job.status }}</code></td>
+                        <td class="admin-task-counts">{{ job.totalTasks }} total · {{ job.taskCounts.queued }} queued · {{ job.taskCounts.running }} running · {{ job.taskCounts.completed }} completed · {{ job.taskCounts.skipped }} skipped · {{ job.taskCounts.failed }} failed · {{ job.taskCounts.cancelled }} cancelled</td>
+                        <td>{{ job.activeWorkKeys }}</td>
+                        <td>{{ job.queueAgeSeconds === null ? '—' : job.queueAgeSeconds + ' s' }}</td>
+                        <td>{{ job.updatedAt | date: 'medium' }}</td>
+                      </tr>
+                      @if (job.warnings.length) {
+                        <tr class="admin-warning-row">
+                          <td colspan="8"><app-admin-warning-list [warnings]="job.warnings" [ariaLabel]="'Warnings for job ' + job.id" /></td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="admin-empty">No recent jobs in the bounded result.</p>
+            }
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ workValue.sections.jobs.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-imports-heading">
+          <h4 id="admin-imports-heading">Imports</h4>
+          @if (workValue.sections.imports.available) {
+            <p class="admin-inline-stat">Queued imports: <strong>{{ workValue.sections.imports.queuedCount }}</strong></p>
+            <app-admin-warning-list [warnings]="workValue.sections.imports.warnings" ariaLabel="Import queue warnings" />
+            @if (workValue.sections.imports.items.length) {
+              <div class="admin-table-scroll" tabindex="0" aria-label="Recent imports table">
+                <table class="admin-table">
+                  <caption class="admin-visually-hidden">Recent imports for user {{ userId }}</caption>
+                  <thead><tr><th scope="col">Run</th><th scope="col">Account</th><th scope="col">Provider</th><th scope="col">Status</th><th scope="col">Seen</th><th scope="col">Imported</th><th scope="col">Failed</th><th scope="col">Queue age</th></tr></thead>
+                  <tbody>
+                    @for (run of workValue.sections.imports.items; track run.id) {
+                      <tr>
+                        <th scope="row">{{ run.id }}</th>
+                        <td>{{ run.accountId }}</td>
+                        <td><code>{{ run.provider }}</code></td>
+                        <td><code>{{ run.status }}</code></td>
+                        <td>{{ run.gamesSeen }}</td>
+                        <td>{{ run.gamesImported }}</td>
+                        <td>{{ run.gamesFailed }}</td>
+                        <td>{{ run.queueAgeSeconds === null ? '—' : run.queueAgeSeconds + ' s' }}</td>
+                      </tr>
+                      @if (run.warnings.length) {
+                        <tr class="admin-warning-row">
+                          <td colspan="8"><app-admin-warning-list [warnings]="run.warnings" [ariaLabel]="'Warnings for import run ' + run.id" /></td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="admin-empty">No recent imports in the bounded result.</p>
+            }
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ workValue.sections.imports.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-work-preparation-heading">
+          <h4 id="admin-work-preparation-heading">Preparation runs</h4>
+          @if (workValue.sections.preparation.available) {
+            @if (workValue.sections.preparation.items.length) {
+              <div class="admin-table-scroll" tabindex="0" aria-label="Recent preparation runs table">
+                <table class="admin-table">
+                  <caption class="admin-visually-hidden">Recent preparation runs for user {{ userId }}</caption>
+                  <thead><tr><th scope="col">Run</th><th scope="col">Purpose</th><th scope="col">Status</th><th scope="col">Attention</th><th scope="col">Reconcile after</th><th scope="col">Updated</th></tr></thead>
+                  <tbody>
+                    @for (run of workValue.sections.preparation.items; track run.id) {
+                      <tr>
+                        <th scope="row">{{ run.id }}</th>
+                        <td><code>{{ run.purpose }}</code></td>
+                        <td><code>{{ run.status }}</code></td>
+                        <td><code>{{ run.attentionCode || '—' }}</code></td>
+                        <td>{{ run.reconcileAfter ? (run.reconcileAfter | date: 'medium') : '—' }}</td>
+                        <td>{{ run.updatedAt | date: 'medium' }}</td>
+                      </tr>
+                      @if (run.warnings.length) {
+                        <tr class="admin-warning-row">
+                          <td colspan="6"><app-admin-warning-list [warnings]="run.warnings" [ariaLabel]="'Warnings for preparation run ' + run.id" /></td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="admin-empty">No recent preparation runs in the bounded result.</p>
+            }
+          } @else {
+            <p class="admin-unavailable">Unavailable: {{ workValue.sections.preparation.reason }}</p>
+          }
+        </section>
+
+        <section class="admin-diagnostic-section" aria-labelledby="admin-work-lifecycle-heading">
+          <h4 id="admin-work-lifecycle-heading">Lifecycle work</h4>
+          <p class="admin-unavailable">Unavailable: {{ workValue.sections.lifecycle.reason }}</p>
+        </section>
+      </div>
+    }
+  </app-panel>
+} @else {
+  <app-panel title="User diagnostics" subtitle="Choose a user summary to inspect bounded diagnostics and recent work.">
+    <p class="admin-state">No user is selected.</p>
+  </app-panel>
+}

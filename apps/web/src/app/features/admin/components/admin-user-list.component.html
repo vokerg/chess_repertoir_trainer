@@ -1,0 +1,78 @@
+<app-panel
+  title="Users"
+  subtitle="Current cursor page only. Moving forward replaces this page instead of accumulating users in browser state."
+>
+  @if (loading()) {
+    <p class="admin-state" role="status" aria-live="polite">Loading user summaries…</p>
+  } @else if (error(); as errorMessage) {
+    <div class="admin-state admin-state-error" role="alert">
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="secondary" (click)="retry.emit()">Retry user list</button>
+    </div>
+  } @else if (users().length === 0) {
+    <p class="admin-state">No users are available on this cursor page.</p>
+  } @else {
+    <div class="admin-table-scroll" tabindex="0" aria-label="Administrator user summaries table">
+      <table class="admin-table">
+        <caption class="admin-visually-hidden">Administrator user summaries, page {{ pageNumber() }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">User</th>
+            <th scope="col">Accounts</th>
+            <th scope="col">Active</th>
+            <th scope="col">Games</th>
+            <th scope="col">Courses</th>
+            <th scope="col">Active work</th>
+            <th scope="col">Warnings</th>
+            <th scope="col">Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr [class.admin-row-selected]="selectedUserId() === user.id">
+              <th scope="row">
+                <button
+                  type="button"
+                  class="admin-user-button"
+                  [attr.aria-current]="selectedUserId() === user.id ? 'true' : null"
+                  (click)="selectUser.emit(user.id)"
+                >
+                  User {{ user.id }}
+                </button>
+              </th>
+              <td>{{ user.accountCount }}</td>
+              <td>{{ user.activeAccountCount }}</td>
+              <td>{{ user.importedGameCount }}</td>
+              <td>{{ user.courseCount }}</td>
+              <td>{{ user.activeWorkCount }}</td>
+              <td>{{ user.warnings.length }}</td>
+              <td>{{ user.updatedAt | date: 'medium' }}</td>
+            </tr>
+            @if (user.warnings.length) {
+              <tr class="admin-warning-row">
+                <td colspan="8">
+                  <app-admin-warning-list
+                    [warnings]="user.warnings"
+                    [ariaLabel]="'Warnings for user ' + user.id"
+                  />
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="admin-pagination" aria-label="Administrator user pagination">
+      <span>Page {{ pageNumber() }}</span>
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="!hasNextPage()"
+        (click)="nextPage.emit()"
+      >
+        Next page
+      </button>
+    </div>
+  }
+</app-panel>

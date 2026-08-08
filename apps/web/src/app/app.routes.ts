@@ -302,5 +302,14 @@ export const routes: Routes = [
         (m) => m.FreeAnalysisPageComponent,
       ),
   },
+  {
+    path: 'admin',
+    title: 'Administrator diagnostics | Chess Repertoire Trainer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/pages/admin-diagnostics-page.component').then(
+        (m) => m.AdminDiagnosticsPageComponent,
+      ),
+  },
   { path: '**', redirectTo: '/' },
 ];
