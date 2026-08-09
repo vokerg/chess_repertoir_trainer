@@ -18,6 +18,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Proven shared presentation primitives: `shared/ui/context-strip`, `shared/ui/fact-grid`, and `shared/ui/select-menu` remain typed, OnPush, semantic, feature-agnostic, store-free, and HTTP-free.
 - Mobile-primary navigation: Home, Study, Games, Openings, and More are derived from the existing hierarchical model while preserving complete grouped route/account access.
 - VT-302 workbench compatibility cleanup: global `workbench.css` plus Repertoire Builder workbench, setup, and explanation presentation use production `--ui-*` visual-semantic roles; an architecture guard prevents those bounded files from regressing to the legacy amber-era visual names.
+- VT-302 shared async-state foundation: `shared/ui/state-message` provides a bounded store-free loading/empty/error presentation contract; Courses and Accounts are the first proven consumers, with focused semantic tests and an accessibility-contract guard preventing those migrated boundaries from regressing to local empty-state presentation.
 
 ## Visual-transformation route disposition
 
@@ -63,6 +64,8 @@ VT-302 may address:
 - contrast, focus, reduced motion, zoom, and representative responsive widths;
 - evidence-based cleanup of accepted compatibility roles where the complete consumer boundary is known;
 - restrained appearance and motion refinement without creating another visual identity.
+
+The shared state-message slice establishes only the first loading/empty/error presentation contract and migrates Courses plus Accounts. Broader route adoption, partial-data/recovery/retry behavior, and functional onboarding remain separate evidence-driven work; the shared primitive does not move feature workflow ownership into `shared/ui`.
 
 VT-302 must not reopen route-family rollout merely because a transformed route retains accepted compatibility debt.
 

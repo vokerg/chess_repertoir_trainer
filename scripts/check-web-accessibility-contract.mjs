@@ -24,6 +24,26 @@ const gamesTableCssUrl = new URL(
   '../apps/web/src/app/features/games/components/games-table.component.css',
   import.meta.url,
 );
+const stateMessageTsUrl = new URL(
+  '../apps/web/src/app/shared/ui/state-message/state-message.component.ts',
+  import.meta.url,
+);
+const stateMessageHtmlUrl = new URL(
+  '../apps/web/src/app/shared/ui/state-message/state-message.component.html',
+  import.meta.url,
+);
+const migratedStateConsumerUrls = [
+  [
+    'Courses',
+    'courses',
+    new URL('../apps/web/src/app/features/courses/pages/courses-page.component.html', import.meta.url),
+  ],
+  [
+    'Accounts',
+    'accounts',
+    new URL('../apps/web/src/app/features/accounts/pages/accounts-page.component.html', import.meta.url),
+  ],
+];
 
 const lowContrastStandaloneOutline =
   /outline\s*:\s*[^;\n{}]+\s+solid\s+(?:var\(--focus-ring\)|var\(--ui-focus-ring\)|rgba\(\s*31\s*,\s*120\s*,\s*101\s*,\s*0\.38\s*\))\s*;/i;
@@ -150,6 +170,58 @@ assert.match(
   /\.games-row-action-link:disabled\s*\{[^}]*cursor:\s*wait;[^}]*\}/s,
   'Disabled Analyse buttons must retain the visible waiting treatment',
 );
+
+const stateMessageTs = readFileSync(stateMessageTsUrl, 'utf8');
+assert.match(
+  stateMessageTs,
+  /export type UiStateMessageTone = 'loading' \| 'empty' \| 'error';/,
+  'The shared state-message primitive must retain the bounded loading/empty/error contract',
+);
+assert.match(
+  stateMessageTs,
+  /if \(this\.tone\(\) === 'error'\) return 'alert';[\s\S]*if \(this\.tone\(\) === 'loading'\) return 'status';/,
+  'Error and loading state messages must retain alert/status semantics',
+);
+
+const stateMessageHtml = readFileSync(stateMessageHtmlUrl, 'utf8');
+assert.match(
+  stateMessageHtml,
+  /\[attr\.role\]="semanticRole\(\)"/,
+  'Shared state messages must expose the computed semantic role',
+);
+assert.match(
+  stateMessageHtml,
+  /\[attr\.aria-live\]="liveMode\(\)"/,
+  'Shared state messages must expose the computed live-region behavior',
+);
+assert.doesNotMatch(
+  stateMessageHtml,
+  /aria-busy/,
+  'The loading status must not mark its own live region busy and suppress its announcement',
+);
+
+for (const [consumerName, collectionSignal, consumerUrl] of migratedStateConsumerUrls) {
+  const consumer = readFileSync(consumerUrl, 'utf8');
+  for (const tone of ['loading', 'empty', 'error']) {
+    assert.match(
+      consumer,
+      new RegExp(`<app-state-message\\b[^>]*tone=["']${tone}["']`, 's'),
+      `${consumerName} must retain the shared ${tone} state presentation`,
+    );
+  }
+  assert.match(
+    consumer,
+    new RegExp(
+      `@if \\(!store\\.loading\\(\\) && !store\\.error\\(\\) && store\\.${collectionSignal}\\(\\)\\.length === 0\\)`,
+    ),
+    `${consumerName} empty state must stay suppressed while loading or an error is active`,
+  );
+  assert.doesNotMatch(
+    consumer,
+    /class=["'][^"']*\bempty-state\b[^"']*["']/,
+    `${consumerName} must not regress to the legacy local empty-state presentation`,
+  );
+}
 
 function readHexToken(css, token) {
   const match = css.match(new RegExp(`${escapeRegExp(token)}:\\s*(#[0-9a-f]{6});`, 'i'));
