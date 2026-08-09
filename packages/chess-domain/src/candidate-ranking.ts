@@ -358,12 +358,18 @@ function resolveEligibility(
 
   const delta = input.engine.objectiveDeltaCp;
   if (delta === null) {
+    if (persona !== 'CUSTOM') return 'WARNING';
     return input.targetFit === 'CONFLICT' || input.course.conflict ? 'WARNING' : 'ELIGIBLE';
   }
 
   const thresholds = riskThresholds(context, persona);
   if (delta >= thresholds.exclude) return 'EXCLUDED';
-  if (delta >= thresholds.warn || input.targetFit === 'CONFLICT' || input.course.conflict) return 'WARNING';
+  if (delta >= thresholds.warn
+    || (persona !== 'CUSTOM' && !hasUsableEngineEvidence(input.engine))
+    || input.targetFit === 'CONFLICT'
+    || input.course.conflict) {
+    return 'WARNING';
+  }
   return 'ELIGIBLE';
 }
 
@@ -432,7 +438,9 @@ function buildWarningCodes(
   const warnings = new Set<CandidateRankingWarningCode>(input.targetWarningCodes);
   if (input.engine.mateForTarget !== null && input.engine.mateForTarget < 0) {
     warnings.add('FORCED_MATE_AGAINST_TARGET');
-  } else if (context.role === 'USER_MOVE' && eligibility !== 'ELIGIBLE') {
+  } else if (context.role === 'USER_MOVE'
+    && eligibility !== 'ELIGIBLE'
+    && (persona === 'CUSTOM' || input.engine.objectiveDeltaCp !== null)) {
     warnings.add('OBJECTIVE_LOSS');
   }
   if (context.role === 'USER_MOVE' && persona !== 'CUSTOM' && !hasUsableEngineEvidence(input.engine)) {
