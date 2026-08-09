@@ -22,7 +22,7 @@ const candidateDecisionModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'createCandidateDecision',
       tags: ['Candidate decisions'],
       summary: 'Aggregate and rank repertoire candidate evidence',
-      description: 'Returns a bounded deterministic candidate decision for one legal position and versioned repertoire target. Engine, Masters, selected-population, personal, opening classification and reviewed side-aware opening knowledge, player-profile, and owned-course evidence remain separated with explicit availability, reasons, warnings, target fit, profile fit, and opponent-coverage contribution. Opening knowledge is explanatory only and does not affect ranking or Builder state.',
+      description: 'Returns a bounded deterministic candidate decision for one legal position and versioned repertoire target. USER_MOVE persona ranking uses selected-population frequency and score relative to the exact-position baseline, Masters support, and stored engine safety evidence. Personal history, reviewed opening knowledge, and player-profile evidence remain inspectable context rather than persona-score authority; explicit target constraints and course conflicts remain independent eligibility warnings. Opponent-response ranking remains a separate policy surface.',
       body: candidateDecisionRequestSchema,
       response: {
         200: candidateDecisionResponseSchema,

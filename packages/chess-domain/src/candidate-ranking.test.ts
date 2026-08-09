@@ -262,6 +262,68 @@ describe('candidate ranking', () => {
     expect(rankForPersona([tiny, supported], 'SURPRISE')[0]).toBe('a2a3');
   });
 
+  it('gives missing stored engine evidence no V2 objective credit and exposes the gap', () => {
+    const uncommon = benchmarkCandidate('h2h3', {
+      objectiveDeltaCp: 30,
+      populationGames: 40,
+      populationFrequency: 5,
+      populationScore: 62,
+      populationBaseline: 50,
+      mastersGames: 20,
+      mastersFrequency: 2,
+      mastersScore: 50,
+      mastersBaseline: 50,
+    });
+    uncommon.engine = {
+      status: 'INSUFFICIENT',
+      depth: null,
+      mateForTarget: null,
+      objectiveDeltaCp: null,
+    };
+
+    const ranked = rankCandidateEvidence([uncommon], {
+      ...baseContext,
+      persona: 'SURPRISE',
+    })[0];
+
+    expect(ranked.components.objective).toBe(0);
+    expect(ranked.warningCodes).toContain('OBJECTIVE_EVIDENCE_MISSING');
+  });
+
+  it('applies persona guardrails before legacy deliberately-dubious allowances', () => {
+    const risky = candidate('g2g4', {
+      engine: {
+        status: 'AVAILABLE',
+        depth: 20,
+        mateForTarget: null,
+        objectiveDeltaCp: 300,
+      },
+      population: {
+        status: 'AVAILABLE',
+        games: 50,
+        frequencyPercent: 5,
+        scorePercentForTarget: 60,
+        positionBaselineScorePercentForTarget: 50,
+      },
+    });
+
+    const surprise = rankCandidateEvidence([risky], {
+      ...baseContext,
+      persona: 'SURPRISE',
+      riskTolerance: 'HIGH',
+      allowDeliberatelyDubious: true,
+    })[0];
+    const custom = rankCandidateEvidence([risky], {
+      ...baseContext,
+      persona: 'CUSTOM',
+      riskTolerance: 'HIGH',
+      allowDeliberatelyDubious: true,
+    })[0];
+
+    expect(surprise.eligibility).toBe('EXCLUDED');
+    expect(custom.eligibility).toBe('WARNING');
+  });
+
   it('keeps a deliberately dubious manual move visible with an explicit warning', () => {
     const risky = candidate('g2g4', {
       manuallyRequested: true,
@@ -342,5 +404,47 @@ describe('candidate ranking', () => {
     expect(ranked[0].reasonCodes).toContain('COMMON_AT_TARGET_LEVEL');
     expect(ranked[0].coverageContributionPercent).toBe(60);
     expect(ranked[1].cumulativeCoveragePercent).toBe(80);
+  });
+
+  it('keeps opponent-response policy unchanged when a user-move persona is present', () => {
+    const inputs = [
+      candidate('e7e5', {
+        population: {
+          status: 'AVAILABLE',
+          games: 600,
+          frequencyPercent: 60,
+          scorePercentForTarget: 48,
+          positionBaselineScorePercentForTarget: 52,
+        },
+      }),
+      candidate('c7c5', {
+        population: {
+          status: 'AVAILABLE',
+          games: 200,
+          frequencyPercent: 20,
+          scorePercentForTarget: 56,
+          positionBaselineScorePercentForTarget: 52,
+        },
+      }),
+    ];
+    const withoutPersona = rankCandidateEvidence(inputs, {
+      ...baseContext,
+      role: 'OPPONENT_RESPONSE',
+    });
+    const withPersona = rankCandidateEvidence(inputs, {
+      ...baseContext,
+      role: 'OPPONENT_RESPONSE',
+      persona: 'SURPRISE',
+    });
+
+    expect(withPersona.map(({ input, components, warningCodes }) => ({
+      moveUci: input.moveUci,
+      components,
+      warningCodes,
+    }))).toEqual(withoutPersona.map(({ input, components, warningCodes }) => ({
+      moveUci: input.moveUci,
+      components,
+      warningCodes,
+    })));
   });
 });

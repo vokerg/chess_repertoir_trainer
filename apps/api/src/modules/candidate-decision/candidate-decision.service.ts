@@ -55,6 +55,7 @@ import { OpeningKnowledgeService } from '../../services/opening-book/openingKnow
 
 const ENGINE_LINE_LIMIT = 3;
 const POPULATION_SEED_LIMIT = 8;
+const POPULATION_SURPRISE_SEED_LIMIT = 12;
 const MASTERS_SEED_LIMIT = 5;
 const PERSONAL_SEED_LIMIT = 5;
 const COURSE_SEED_LIMIT = 8;
@@ -270,8 +271,12 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
       );
 
       const seeds = new Set<string>();
+      const populationSeedLimit = request.decisionRole === 'USER_MOVE'
+        && request.target.objective.persona === 'SURPRISE'
+        ? POPULATION_SURPRISE_SEED_LIMIT
+        : POPULATION_SEED_LIMIT;
       addSeeds(seeds, engineLines.map(lineMove), legalMoves, ENGINE_LINE_LIMIT);
-      addSeeds(seeds, population?.moves.map((move) => move.uci) ?? [], legalMoves, POPULATION_SEED_LIMIT);
+      addSeeds(seeds, population?.moves.map((move) => move.uci) ?? [], legalMoves, populationSeedLimit);
       addSeeds(seeds, masters?.moves.map((move) => move.uci) ?? [], legalMoves, MASTERS_SEED_LIMIT);
       addSeeds(seeds, personal?.nextMoves.map((move) => move.moveUci) ?? [], legalMoves, PERSONAL_SEED_LIMIT);
       addSeeds(seeds, courses?.suggestions.map((move) => move.moveUci) ?? [], legalMoves, COURSE_SEED_LIMIT);
@@ -354,12 +359,14 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
             games: evidence.population.games,
             frequencyPercent: evidence.population.frequencyPercent,
             scorePercentForTarget: evidence.population.scorePercentForTarget,
+            positionBaselineScorePercentForTarget: evidence.population.positionBaselineScorePercentForTarget,
           },
           masters: {
             status: evidence.masters.status,
             games: evidence.masters.games,
             frequencyPercent: evidence.masters.frequencyPercent,
             scorePercentForTarget: evidence.masters.scorePercentForTarget,
+            positionBaselineScorePercentForTarget: evidence.masters.positionBaselineScorePercentForTarget,
           },
           personal: {
             status: evidence.personal.status,
@@ -389,6 +396,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         speedPreset: request.target.speedPreset,
         riskTolerance: request.target.objective.riskTolerance,
         allowDeliberatelyDubious: request.target.objective.allowDeliberatelyDubious,
+        persona: request.target.objective.persona,
       });
       const selected = selectBoundedCandidates(ranked, request.candidateLimit, includedMove);
       const candidates: CandidateDecisionCandidate[] = selected.map((entry, index) => ({
@@ -564,11 +572,17 @@ function corpusEvidence(
   const status = sourceStatus === 'STALE'
     ? 'STALE'
     : games >= minimumGames ? 'AVAILABLE' : 'INSUFFICIENT';
+  const scorePercentForTarget = corpusScorePercent(move, targetSide);
+  const positionBaselineScorePercentForTarget = corpusPositionScorePercent(response, targetSide);
   return {
     status,
     games,
     frequencyPercent: percentage(games, response.games.total),
-    scorePercentForTarget: corpusScorePercent(move, targetSide),
+    scorePercentForTarget,
+    positionBaselineScorePercentForTarget,
+    scoreDeltaVsPositionPercent: scorePercentForTarget === null || positionBaselineScorePercentForTarget === null
+      ? null
+      : roundMetric(scorePercentForTarget - positionBaselineScorePercentForTarget),
     averageRating: move.averageRating,
     datasetVersion: `${response.dataset.source}:${response.dataset.profileVersion}`,
     fetchedAt: response.cache.fetchedAt,
@@ -582,6 +596,8 @@ function unavailableCorpusEvidence(): CandidateCorpusEvidence {
     games: 0,
     frequencyPercent: null,
     scorePercentForTarget: null,
+    positionBaselineScorePercentForTarget: null,
+    scoreDeltaVsPositionPercent: null,
     averageRating: null,
     datasetVersion: null,
     fetchedAt: null,
@@ -593,6 +609,12 @@ function corpusScorePercent(move: OpeningExplorerMove, targetSide: UserColor): n
   if (!move.games.total) return null;
   const wins = targetSide === 'WHITE' ? move.games.whiteWins : move.games.blackWins;
   return roundMetric(((wins + move.games.draws * 0.5) / move.games.total) * 100);
+}
+
+function corpusPositionScorePercent(response: OpeningExplorerResponse, targetSide: UserColor): number | null {
+  if (!response.games.total) return null;
+  const wins = targetSide === 'WHITE' ? response.games.whiteWins : response.games.blackWins;
+  return roundMetric(((wins + response.games.draws * 0.5) / response.games.total) * 100);
 }
 
 function personalEvidence(

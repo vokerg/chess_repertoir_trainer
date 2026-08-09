@@ -11,8 +11,8 @@ import {
 } from '../player-chess-profile';
 import { repertoireTargetSchema } from '../repertoire-target';
 
-export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-08-v2' as const;
-export const CANDIDATE_RANKING_POLICY_VERSION = '2026-07-deterministic-v1' as const;
+export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-08-v3' as const;
+export const CANDIDATE_RANKING_POLICY_VERSION = '2026-08-empirical-persona-v2' as const;
 
 export const candidateDecisionContractVersionSchema = z.literal(CANDIDATE_DECISION_CONTRACT_VERSION);
 export const candidateRankingPolicyVersionSchema = z.literal(CANDIDATE_RANKING_POLICY_VERSION);
@@ -66,6 +66,7 @@ export type CandidateReasonCode = z.infer<typeof candidateReasonCodeSchema>;
 export const candidateWarningCodeSchema = z.enum([
   'FORCED_MATE_AGAINST_TARGET',
   'OBJECTIVE_LOSS',
+  'OBJECTIVE_EVIDENCE_MISSING',
   'LOW_ENGINE_DEPTH',
   'TARGET_SOUNDNESS_MISMATCH',
   'THEORY_BUDGET_EXCEEDED',
@@ -100,6 +101,8 @@ export const candidateCorpusEvidenceSchema = z.object({
   games: z.number().int().nonnegative(),
   frequencyPercent: z.number().min(0).max(100).nullable(),
   scorePercentForTarget: z.number().min(0).max(100).nullable(),
+  positionBaselineScorePercentForTarget: z.number().min(0).max(100).nullable().optional(),
+  scoreDeltaVsPositionPercent: z.number().min(-100).max(100).nullable().optional(),
   averageRating: z.number().int().nonnegative().nullable(),
   datasetVersion: z.string().min(1).nullable(),
   fetchedAt: z.iso.datetime({ offset: true }).nullable(),
