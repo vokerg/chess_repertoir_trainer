@@ -239,11 +239,14 @@ function userMoveScore(
     );
   }
 
-  const populationRarity = corpusRaritySignal(input.population, 5);
+  const populationScoreDelta = corpusScoreDelta(input.population);
+  const populationRarity = populationScoreDelta !== null && populationScoreDelta >= 3
+    ? corpusRaritySignal(input.population, 5)
+    : 0;
   const masterRarity = corpusRaritySignal(input.masters, 6);
   return Math.round(
     populationRarity * 0.30
-    + Math.max(0, populationPerformance) * 0.35
+    + populationPerformance * 0.35
     + objective * 0.20
     + masterRarity * 0.15,
   );
