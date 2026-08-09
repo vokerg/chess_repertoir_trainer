@@ -47,14 +47,14 @@ VT-301 page-family implementation and route inventory are complete in repository
 - [x] Batch 1 — Progress account dashboard, PR #196.
 - [x] Batch 2 — Player Chess Profile, PR #206.
 - [x] Batch 3 — Settings routes, PR #209, squash commit `875f9e65d5a28d1df310a3ec4c621b566b6ad6cc`; exact-head CI #2050 passed.
-- [x] Batch 4a — marathon and focused line training, PR #211; reconciliation PR #212.
-- [x] Batch 4b — Courses and Course Review, PR #215; reconciliation PR #217.
-- [x] Batches 4c/4d — repertoire authoring, line editing, Lichess puzzles, and tactical scenarios, PR #221; reconciliation PR #229.
-- [x] Batch 5 — shared single-choice filter menu, commit `a30303ffb9e59de4f4a99e1be936e4624ba13b63`.
-- [x] Batch 6 — analytical workbench consumers, Game Review, Free Analysis, Opening Analysis evidence, and Opening Struggles, PR #235; reconciliation PR #236.
-- [x] Batch 7a — Lab discovery, Top Opponents, Monthly Games, and Training Log, PR #252.
-- [x] Batch 7b — Performance by Rating, PR #269.
-- [x] Batch 7c — Tactical Detections, PR #277.
+- [x] Batch 4a — marathon and focused line training — PR #211; reconciliation PR #212.
+- [x] Batch 4b — Courses and Course Review — PR #215; reconciliation PR #217.
+- [x] Batches 4c/4d — repertoire authoring, line editing, Lichess puzzles, and tactical scenarios — PR #221; reconciliation PR #229.
+- [x] Batch 5 — shared single-choice filter menu — commit `a30303ffb9e59de4f4a99e1be936e4624ba13b63`.
+- [x] Batch 6 — analytical workbench consumers, Game Review, Free Analysis, Opening Analysis evidence, and Opening Struggles — PR #235; reconciliation PR #236.
+- [x] Batch 7a — Lab discovery, Top Opponents, Monthly Games, and Training Log — PR #252.
+- [x] Batch 7b — Performance by Rating — PR #269.
+- [x] Batch 7c — Tactical Detections — PR #277.
 
 ## Authenticated-route inventory result
 
@@ -90,7 +90,7 @@ The VT-302 shared async-state presentation slice passed final CI #2272 on PR #31
 
 The VT-302 Lines/Library compatibility slice passed exact-head CI #2285 on PR #315 head `0e0074855c01b4619cc4b433293c4ab3b77ea613` and is integrated as squash commit `3e1f9d373fb85f946e29677e4f4445deaba643d3`.
 
-For the current Course Review async-status slice, the accessibility guard requires the shared assertive error message and both shared polite loading messages. The initial runtime/guard/report review head `34e39ec7310ea8362ba4019186f726a3bcf95810` passed CI #2288, including lint, full build, architecture guardrails, migrations, audits, and the complete test step. The subsequent documentation reconciliation must receive its own exact-head CI before the slice is considered review-complete. Local checkout-based commands remain unavailable because the execution runner cannot resolve `github.com`, so no local build/test result is claimed. Direct authenticated browser or assistive-technology review is also not claimed unless separately observed and recorded.
+For the current Course Review async-status slice, the accessibility guard requires the shared assertive error message and both shared polite loading messages. The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295, including lint, full build, architecture guardrails, migrations, audits, and the complete test step. A final pre-merge self-review found no runtime, state-ownership, diff-scope, review-thread, or branch-freshness defect; it found only stale validation wording in this status/report, corrected as a documentation-only reconciliation. The pull-request head must remain green before merge. Local checkout-based commands remain unavailable because the execution runner cannot resolve `github.com`, so no local build/test result is claimed. Direct authenticated browser or assistive-technology review is also not claimed unless separately observed and recorded.
 
 ## Selection disposition
 
@@ -113,6 +113,8 @@ VT-302 owns coherent onboarding, broader empty/loading/partial/error/recovery/re
 - Added [`reports/VT_302_COURSE_REVIEW_STATUS_SEMANTICS.md`](./reports/VT_302_COURSE_REVIEW_STATUS_SEMANTICS.md) with scope, ownership, validation limits, and residual VT-302 work.
 - Review round 1 verified the store transitions and shared live-region contract and found no runtime defect. Exact-head CI #2288 passed the initial four-file review head.
 - Review round 2 found a delivery-process defect: this status record had not been updated for the meaningful review and issue #133 did not yet record the opened pull request, contrary to the transformation working rules. The documentation/issue bookkeeping was corrected before the slice was treated as review-complete.
+- Required-doc review found that the Angular migration ledger would otherwise remain stale after Course Review became another `app-state-message` consumer; the ledger and focused report were reconciled while `docs/frontend/design-tokens.md` remained intentionally unchanged because no token contract changed.
+- The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295. The final pre-merge self-review found no runtime/state/diff/review-thread defect and only corrected stale validation wording in this status/report; the resulting documentation-only head requires green PR CI before merge.
 - Direct authenticated browser or screen-reader evidence remains unobserved and is not claimed. This partial slice does not complete VT-302 or close issue #133.
 
 ### 2026-08-09 — VT-302 line-training / Library presentation compatibility slice
