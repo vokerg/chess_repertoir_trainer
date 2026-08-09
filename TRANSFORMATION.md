@@ -6,7 +6,7 @@ This file is the stable entry point for ChatGPT, Copilot, Codex, and human sessi
 
 Phase 3 is in progress. VT-301 page-family rollout and authenticated-route classification are complete in repository records. The final inventory covers all 34 URLs guarded by `authGuard`, their 29 unique route components, and three unguarded compatibility redirects into guarded destinations; no guarded route family remains unclassified.
 
-The authoritative integrated history, validation, residual risks, and completion boundary are in [`transformation/STATUS.md`](transformation/STATUS.md) and [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues remain authoritative for live review, merge, closure, and readiness state. Do not select VT-302 / issue #133 unless issue #132 is closed and issue #133 itself is explicitly `READY`.
+The authoritative integrated history, validation, residual risks, and completion boundary are in [`transformation/STATUS.md`](transformation/STATUS.md) and [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues remain authoritative for live review, merge, closure, readiness, and active-claim state. Issue #133 / VT-302 is currently the sole active `IN_PROGRESS` Visual Transformation execution boundary; continue it only through the branch and scope recorded in its live issue state.
 
 ## Branch and merge model
 
@@ -48,7 +48,7 @@ Use issue #122 and its child issues:
 8. keep claim, branch, PR, blocker, and completion state in the issue;
 9. close only after approved squash merge and documentation reconciliation.
 
-The exact ready task can change independently of this file. Resolve it from the live issue queue and `transformation/STATUS.md`.
+The exact active or ready task can change independently of this file. Resolve it from the live issue queue and `transformation/STATUS.md`.
 
 ## Delivery contract
 

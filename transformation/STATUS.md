@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current state
 
-**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 continues through issue #133. Opening Analysis evidence-workbench refinement, the bounded workbench visual-semantic compatibility cleanup, the shared loading/empty/error presentation foundation, and the Lines/Library presentation decoupling are integrated. The current review slice applies the shared async-state accessibility semantics to Course Review errors and long-running loading states without changing review behavior; it does not complete VT-302.
+**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 continues through issue #133. Opening Analysis evidence-workbench refinement, the bounded workbench visual-semantic compatibility cleanup, the shared loading/empty/error presentation foundation, the Lines/Library presentation decoupling, and the Course Review async-status accessibility semantics from PR #316 are integrated. Issue #133 remains the active VT-302 execution boundary for residual scope; the Course Review slice does not complete VT-302.
 
 **Integration target:** `main`
 
@@ -40,7 +40,7 @@ VT-204 promoted only `app-context-strip` and `app-fact-grid`. D-027 later locked
 
 ### Phase 3 — rollout and polish
 
-VT-301 page-family implementation and route inventory are complete in repository records. VT-302 is in progress through live issue #133. Accessibility/responsive foundations, repertoire-authoring detail-state consistency, Opening Analysis evidence-workbench refinement, the workbench visual-semantic compatibility cleanup, the shared async-state foundation from PR #313, and the Lines/Library presentation decoupling from PR #315 are integrated. The current review slice extends the shared async-state semantics to Course Review. Functional onboarding, wider state/recovery review, authenticated browser/assistive-technology evidence, remaining compatibility disposition, and final program reconciliation remain open.
+VT-301 page-family implementation and route inventory are complete in repository records. VT-302 is in progress through live issue #133. Accessibility/responsive foundations, repertoire-authoring detail-state consistency, Opening Analysis evidence-workbench refinement, the workbench visual-semantic compatibility cleanup, the shared async-state foundation from PR #313, the Lines/Library presentation decoupling from PR #315, and the Course Review async-status semantics from PR #316 are integrated. Functional onboarding, wider state/recovery review, authenticated browser/assistive-technology evidence, remaining compatibility disposition, and final program reconciliation remain open.
 
 ## VT-301 integrated batches
 
@@ -77,7 +77,7 @@ Completion of route-family rollout does not mean all legacy CSS is removed or al
 - The former `apps/web/src/workbench.css` visual-semantic debt is resolved through integrated PR #309 together with the remaining Repertoire Builder workbench/setup/explanation surfaces. The shared spacing scale remains intentionally unchanged.
 - Global `.library-*` presentation remains a bounded Study/library compatibility layer, but Lines no longer consumes it after integrated PR #315. Removing or relocating that Library-owned block requires its own complete consumer inspection.
 - Direct authenticated browser review was explicitly deferred for several accepted batches. Deferred evidence is not represented as observed validation.
-- Cross-route onboarding and broader empty/loading/partial/error/recovery/retry consistency remain VT-302 scope. PR #313 addresses only the first bounded shared loading/empty/error presentation contract for Courses and Accounts; the current Course Review slice extends that proven presentation contract to one additional workflow without claiming an all-route migration.
+- Cross-route onboarding and broader empty/loading/partial/error/recovery/retry consistency remain VT-302 scope. PR #313 establishes the bounded shared loading/empty/error presentation contract for Courses and Accounts; integrated PR #316 extends the same proven error/loading semantics to Course Review without claiming an all-route migration.
 - Keyboard and screen-reader review, contrast, focus, reduced motion, zoom, and representative responsive verification remain VT-302 scope where direct evidence is still missing.
 
 ## Validation status
@@ -90,13 +90,14 @@ The VT-302 shared async-state presentation slice passed final CI #2272 on PR #31
 
 The VT-302 Lines/Library compatibility slice passed exact-head CI #2285 on PR #315 head `0e0074855c01b4619cc4b433293c4ab3b77ea613` and is integrated as squash commit `3e1f9d373fb85f946e29677e4f4445deaba643d3`.
 
-For the current Course Review async-status slice, the accessibility guard requires the shared assertive error message and both shared polite loading messages. The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295, including lint, full build, architecture guardrails, migrations, audits, and the complete test step. A final pre-merge self-review found no runtime, state-ownership, diff-scope, review-thread, or branch-freshness defect; it found only stale validation wording in this status/report, corrected as a documentation-only reconciliation. The pull-request head must remain green before merge. Local checkout-based commands remain unavailable because the execution runner cannot resolve `github.com`, so no local build/test result is claimed. Direct authenticated browser or assistive-technology review is also not claimed unless separately observed and recorded.
+The VT-302 Course Review async-status accessibility slice passed exact-head CI #2298 (`31320653117`) on final PR #316 head `9650aaa573dbe80f1c911e895e5795285bd1d8d4`. Lint, full build, architecture guardrails, database migrations, all audits, and the complete test step succeeded. PR #316 is integrated as squash commit `050f9c80a11f08498089ca6bcd1834c60e6ba700`. The accessibility guard requires the shared assertive error message and both shared polite loading messages. Local checkout-based commands remained unavailable because the execution runner could not resolve `github.com`, so no local build/test result is claimed. Direct authenticated browser or assistive-technology review is also not claimed unless separately observed and recorded.
 
 ## Selection disposition
 
 - Issues #123–#132 are complete.
 - Issue #133 is the sole active VT-302 execution boundary; its live body and comments own current branch, review, and remaining-scope state.
 - Continue only a claimed, collision-checked #133 slice from current `main`; do not infer a branch or completion claim from this status file.
+- The historical `visual-transformation/vt-302-onboarding-accessibility-polish` branch is stale/diverged from current `main` and is not a valid task base or source of current implementation truth.
 
 ## Open work after VT-301
 
@@ -114,7 +115,9 @@ VT-302 owns coherent onboarding, broader empty/loading/partial/error/recovery/re
 - Review round 1 verified the store transitions and shared live-region contract and found no runtime defect. Exact-head CI #2288 passed the initial four-file review head.
 - Review round 2 found a delivery-process defect: this status record had not been updated for the meaningful review and issue #133 did not yet record the opened pull request, contrary to the transformation working rules. The documentation/issue bookkeeping was corrected before the slice was treated as review-complete.
 - Required-doc review found that the Angular migration ledger would otherwise remain stale after Course Review became another `app-state-message` consumer; the ledger and focused report were reconciled while `docs/frontend/design-tokens.md` remained intentionally unchanged because no token contract changed.
-- The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295. The final pre-merge self-review found no runtime/state/diff/review-thread defect and only corrected stale validation wording in this status/report; the resulting documentation-only head requires green PR CI before merge.
+- The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295. A final pre-merge review then found stale canonical validation wording; it was corrected, one unrelated punctuation drift from the large status rewrite was removed, and final head `9650aaa573dbe80f1c911e895e5795285bd1d8d4` passed exact-head CI #2298.
+- PR #316 was squash-merged as `050f9c80a11f08498089ca6bcd1834c60e6ba700`; post-merge verification confirmed `main` at that commit. GitHub briefly auto-closed #133 during merge, and the issue was reopened because this slice is explicitly partial VT-302 work.
+- Post-merge documentation reconciliation is tracked by PR #323. It aligns `TRANSFORMATION.md`, this status record, the focused report, and parent issue #122 with the integrated state and explicitly excludes the stale/diverged historical broad VT-302 branch. No runtime change is part of that reconciliation.
 - Direct authenticated browser or screen-reader evidence remains unobserved and is not claimed. This partial slice does not complete VT-302 or close issue #133.
 
 ### 2026-08-09 — VT-302 line-training / Library presentation compatibility slice
