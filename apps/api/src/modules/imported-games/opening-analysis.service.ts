@@ -30,6 +30,7 @@ export interface OpeningAnalysisNextMove {
   moveNumber: number;
   occurrences: number;
   games: OpeningAnalysisWdl;
+  lastPlayedAt: string | null;
 }
 
 export interface OpeningAnalysisGame {
@@ -269,10 +270,17 @@ export const OpeningAnalysisService = {
     }
 
     const gamesByMove = new Map<string, OpeningAnalysisWdl>();
+    const lastPlayedAtByMove = new Map<string, Date>();
     for (const row of moves.distinctGames) {
       const wdl = gamesByMove.get(row.moveUci) ?? emptyWdl();
       addResult(wdl, row.importedGame.resultForUser);
       gamesByMove.set(row.moveUci, wdl);
+
+      const endedAt = row.importedGame.endedAt;
+      const previous = lastPlayedAtByMove.get(row.moveUci);
+      if (endedAt && (!previous || endedAt > previous)) {
+        lastPlayedAtByMove.set(row.moveUci, endedAt);
+      }
     }
 
     const nextMoves = Array.from(occurrencesByMove.entries())
@@ -286,6 +294,7 @@ export const OpeningAnalysisService = {
           moveNumber: moveNumberFromPly(count.firstPlyNumber),
           occurrences: count.occurrences,
           games: gamesByMove.get(moveUci) ?? emptyWdl(),
+          lastPlayedAt: lastPlayedAtByMove.get(moveUci)?.toISOString() ?? null,
         };
       })
       .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || (a.moveSan ?? '').localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));
