@@ -94,7 +94,11 @@ try {
       url: '/api/opening-analysis?fen=startpos&rated=true&speedCategory=blitz&openingNameExact=King%27s%20Pawn%20Game&openingName=King%27s%20Pawn%20Game',
     });
     assert.equal(filteredResponse.statusCode, 200);
-    assert.equal(filteredResponse.json().games.total, 2);
+    const filtered = filteredResponse.json();
+    assert.equal(filtered.games.total, 2);
+    assert.equal(filtered.nextMoves.length, 1);
+    assert.equal(filtered.nextMoves[0].moveUci, 'e2e4');
+    assert.equal(filtered.nextMoves[0].lastPlayedAt, '2026-06-02T12:00:00.000Z');
   } finally {
     await app.close();
   }
