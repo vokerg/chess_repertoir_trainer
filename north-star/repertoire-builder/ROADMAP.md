@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-08-08
+Last updated: 2026-08-09
 
 This roadmap records capability stages and decision gates. Detailed implementation history lives in task and report files.
 
@@ -27,6 +27,8 @@ Gate: passed.
 ## Stage 4 — visual decision proof
 
 Complete through RB-008. The accepted direction is a focused setup flow and one routed board-first workbench.
+
+RB-026 later reintegrated the selected Cockpit composition into the production Builder through PR #311: board/candidate selection, focused decision context and branch/action controls now form one desktop workspace while preserving the existing Builder state, ranking and course-write authorities. Completion records are reconciled through PR #314.
 
 ## Stage 5 — Builder lifecycle and MVP
 
@@ -63,7 +65,7 @@ Complete through RB-021–RB-025:
 2. **RB-022 — deterministic foundation:** complete through PR #255 with 25 reviewed ordered rules and generated/imported-game audits.
 3. **RB-023 — Builder consumer:** complete through PR #262; target-side summaries and plans remain ranking-neutral explanatory evidence.
 4. **RB-024 — AI game-review grounding:** complete through PR #268; bounded reviewed plans ground the explicit optional review consumer.
-5. **RB-025 — coverage scale and editorial tooling:** implementation merged through PR #302, including stacked completion PR #304. The pinned generated opening book now resolves 3,733/3,733 entries and 3,167/3,167 unique names as `AVAILABLE`, with independent White/Black summary-plus-plan coverage at 100% and 160 exercised reviewed rules.
+5. **RB-025 — coverage scale and editorial tooling:** implementation merged through PR #302, including stacked completion PR #304, and canonical closure reconciled through PR #300. The pinned generated opening book resolves 3,733/3,733 entries and 3,167/3,167 unique names as `AVAILABLE`, with independent White/Black summary-plus-plan coverage at 100% and 160 exercised reviewed rules.
 
 RB-025 also delivered deterministic generated-book and imported-game-weighted audit models, per-dimension classification uncertainty, side-specific completeness metrics, a deterministic priority backlog, validated batch manifests, source/editorial policy and hard all-book regression gates.
 
@@ -77,11 +79,14 @@ The deterministic Builder foundation remains complete: evidence is inspectable, 
 
 Opening knowledge is current runtime explanatory evidence with complete strategic-knowledge coverage for the pinned generated book. Candidate ranking, eligibility, Builder state and course writes remain separate deterministic authorities.
 
+RB-026's Cockpit reintegration is a presentation refinement over those same authorities; it does not create a new recommendation or persistence layer.
+
 Outcome claims remain excluded until RB-016 evidence exists.
 
 ## Queue impact
 
-- RB-001 through RB-015 and RB-017 through RB-025 are `DONE` according to their canonical task rows once the final RB-025 reconciliation PR is accepted.
+- RB-001 through RB-015 and RB-017 through RB-026 are `DONE` once RB-026 completion reconciliation PR #314 is accepted.
 - RB-016 remains `BLOCKED` on real use.
 - No dependency-satisfied Repertoire Builder implementation task is currently queued.
+- Future Builder work should be driven by observed product demand, concrete visual/interaction findings, or new evidence-backed capability decisions.
 - Future opening-knowledge work should be driven by observed depth/quality demand, low-confidence classification cases, imported-game weighting, or upstream opening-book changes rather than nominal coverage-gap filling.

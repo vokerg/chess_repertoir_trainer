@@ -1,6 +1,6 @@
 # Repertoire Builder North Star
 
-Last updated: 2026-08-08
+Last updated: 2026-08-09
 
 The Repertoire Builder program defines how the product constructs and evolves a personal opening repertoire from population evidence, the player's own games and profile, existing courses, reviewed opening knowledge, and explicit user choices.
 
@@ -16,6 +16,7 @@ Current runtime includes:
 - deterministic candidate evidence and ranking;
 - bounded Builder session and queue behavior;
 - the board-first Builder workbench;
+- the three-zone Builder Cockpit composition keeping the board/candidates, focused decision brief, and branch/action controls visible as one desktop workspace;
 - mandatory course preview and explicit apply;
 - exact existing-course entry points from course-review findings;
 - reviewed side-aware opening knowledge as explanatory, ranking-neutral evidence;
@@ -24,7 +25,9 @@ Current runtime includes:
 - optional generated candidate and completion interpretations behind explicit disabled-by-default boundaries;
 - bounded reviewed-opening grounding for the explicit AI game-review consumer.
 
-RB-025 / #290 is complete in runtime through merged PRs #302/#304. The remaining reconciliation PR #300 only aligns canonical program/task metadata with the already-integrated implementation; it does not add another opening-knowledge implementation layer.
+RB-025 / #290 is complete through implementation PRs #302/#304 and final reconciliation PR #300.
+
+RB-026 / #310 is runtime-complete through squash-merged PR #311. Completion PR #314 only adds the required closure report and reconciles current Builder program/task/issue metadata; it contains no additional Builder runtime implementation.
 
 The remaining RB-016 outcome-evaluation task is independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
 
