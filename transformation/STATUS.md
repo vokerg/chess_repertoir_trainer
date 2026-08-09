@@ -47,14 +47,14 @@ VT-301 page-family implementation and route inventory are complete in repository
 - [x] Batch 1 — Progress account dashboard, PR #196.
 - [x] Batch 2 — Player Chess Profile, PR #206.
 - [x] Batch 3 — Settings routes, PR #209, squash commit `875f9e65d5a28d1df310a3ec4c621b566b6ad6cc`; exact-head CI #2050 passed.
-- [x] Batch 4a — marathon and focused line training — PR #211; reconciliation PR #212.
-- [x] Batch 4b — Courses and Course Review — PR #215; reconciliation PR #217.
-- [x] Batches 4c/4d — repertoire authoring, line editing, Lichess puzzles, and tactical scenarios — PR #221; reconciliation PR #229.
-- [x] Batch 5 — shared single-choice filter menu — commit `a30303ffb9e59de4f4a99e1be936e4624ba13b63`.
-- [x] Batch 6 — analytical workbench consumers, Game Review, Free Analysis, Opening Analysis evidence, and Opening Struggles — PR #235; reconciliation PR #236.
-- [x] Batch 7a — Lab discovery, Top Opponents, Monthly Games, and Training Log — PR #252.
-- [x] Batch 7b — Performance by Rating — PR #269.
-- [x] Batch 7c — Tactical Detections — PR #277.
+- [x] Batch 4a — marathon and focused line training, PR #211; reconciliation PR #212.
+- [x] Batch 4b — Courses and Course Review, PR #215; reconciliation PR #217.
+- [x] Batches 4c/4d — repertoire authoring, line editing, Lichess puzzles, and tactical scenarios, PR #221; reconciliation PR #229.
+- [x] Batch 5 — shared single-choice filter menu, commit `a30303ffb9e59de4f4a99e1be936e4624ba13b63`.
+- [x] Batch 6 — analytical workbench consumers, Game Review, Free Analysis, Opening Analysis evidence, and Opening Struggles, PR #235; reconciliation PR #236.
+- [x] Batch 7a — Lab discovery, Top Opponents, Monthly Games, and Training Log, PR #252.
+- [x] Batch 7b — Performance by Rating, PR #269.
+- [x] Batch 7c — Tactical Detections, PR #277.
 
 ## Authenticated-route inventory result
 
