@@ -153,7 +153,7 @@ import { setupLandingScrollReveal } from './landing-scroll-reveal';
 
       <section id="progress" class="progress-section">
         <div class="section-shell progress-layout">
-          <div class="progress-copy" data-scroll-reveal><p class="eyebrow">PROGRESS WITH CONTEXT</p><h2>Know what changed—and what deserves attention next.</h2><p>Progress is not a decorative dashboard. It connects recent training and game outcomes to the next useful decision.</p><a class="button button-reversed" routerLink="/signup">Explore your progress</a></div>
+          <div class="progress-copy" data-scroll-reveal><p class="eyebrow">PROGRESS WITH CONTEXT</p><h2>Know what changed — and what deserves attention next.</h2><p>Progress is not a decorative dashboard. It connects recent training and game outcomes to the next useful decision.</p><a class="button button-reversed" routerLink="/signup">Explore your progress</a></div>
           <div class="progress-dashboard" data-scroll-reveal data-reveal-delay="90"><div class="progress-main"><small>Repertoire coverage</small><strong>68%</strong><div class="coverage-track"><span></span></div><p>+9 percentage points in 30 days</p></div><div class="progress-side"><article><small>Lines trained</small><strong>34</strong><span>this month</span></article><article><small>Review accuracy</small><strong>82%</strong><span>+6 points</span></article><article><small>Games analysed</small><strong>19</strong><span>5 need review</span></article></div></div>
         </div>
       </section>
