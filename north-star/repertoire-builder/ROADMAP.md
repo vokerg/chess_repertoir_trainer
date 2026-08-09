@@ -14,21 +14,23 @@ Complete through RB-001, RB-002, RB-003 and RB-018: peer population/level resolu
 
 ## Stage 2 — Player Chess Profile
 
-Complete through RB-004 and RB-005. The deterministic API/contract and authenticated `/progress/profile` experience are on `main` through the stacked integration ending in PR #135.
+Complete through RB-004 and RB-005. The deterministic API/contract and authenticated `/progress/profile` experience are integrated.
 
-Gate: passed with populated-data latency and direct desktop/mobile review retained as deferred product evidence, not claimed validation.
+The profile remains a standalone capability. Builder V2 deliberately stops treating broad profile similarity as direct candidate familiarity/ranking authority.
 
-## Stage 3 — target, personas and candidate decisions
+## Stage 3 — V1 target, personas and candidate decisions
 
-Complete through RB-006, RB-013 and RB-007: versioned target intent, optional editable profile-derived defaults, exact override provenance, deterministic candidate evidence and explainable ranking.
+Complete through RB-006, RB-013 and RB-007: versioned target intent, editable defaults, deterministic candidate evidence and explainable V1 ranking.
 
-Gate: passed.
+This stage is historical runtime foundation. The 2026-08-09 product review identified semantic revisions rather than discarding the evidence pipeline.
 
-## Stage 4 — visual decision proof
+## Stage 4 — visual decision proof and Cockpit
 
-Complete through RB-008. The accepted direction is a focused setup flow and one routed board-first workbench.
+Complete through RB-008 and RB-026.
 
-RB-026 later reintegrated the selected Cockpit composition into the production Builder through PR #311: board/candidate selection, focused decision context and branch/action controls now form one desktop workspace while preserving the existing Builder state, ranking and course-write authorities. Completion records are reconciled through PR #314.
+The accepted product composition remains one routed board-first workbench. RB-026 integrated the three-zone Cockpit through PR #311: board/candidates, focused decision context, and branch/action controls remain visible together on desktop.
+
+Builder V2 preserves this composition and changes its evidence hierarchy.
 
 ## Stage 5 — Builder lifecycle and MVP
 
@@ -38,55 +40,91 @@ Gate: passed for route-local bounded construction.
 
 ## Stage 6 — course materialization and adaptation
 
-Complete through RB-011 and RB-012: mandatory preview, explicit transactional apply, and exact Course-ending/Opponent-gap entry points.
-
-Gate: passed for existing-owned-chapter materialization and exact coverage extension.
+Complete through RB-011 and RB-012: mandatory preview, explicit transactional apply, and exact existing-course entry points.
 
 ## Stage 7 — specialized research and optional intelligence
 
 Complete through RB-014, RB-017, RB-015, RB-019 and RB-020.
 
-- The traps pilot proves deterministic evidence/review architecture but recommends revision before production.
-- Generated interpretation remains independently gated, explicit, transient, non-authoritative and removable.
-
-Gate: prior research complete; any production traps or AI enablement work requires a new evidence-backed task.
+Production traps remain separate from normal Surprise semantics. Generated interpretation remains gated, transient, non-authoritative and removable.
 
 ## Stage 8 — outcome feedback
 
-Blocked through RB-016 until sufficient Builder-created/course-applied material has been trained, played and followed by measurable games.
+RB-016 remains blocked.
 
-Required future evidence includes adoption, recall, opening-position quality, results and regression/coverage signals. No honest implementation specification exists before that usage gate.
+The useful evaluation cohort is now explicitly **post-V2**. Outcome work should not calibrate the current profile-fit/coverage/persona semantics that the product has decided to replace.
+
+Required future evidence still includes adoption, recall, opening-position quality, results and regression/coverage signals after Builder-created material has been trained and encountered in later games.
 
 ## Stage 9 — opening knowledge enrichment
 
-Complete through RB-021–RB-025:
+Complete through RB-021–RB-025.
 
-1. **RB-021 — research and architecture:** complete through PR #244.
-2. **RB-022 — deterministic foundation:** complete through PR #255 with 25 reviewed ordered rules and generated/imported-game audits.
-3. **RB-023 — Builder consumer:** complete through PR #262; target-side summaries and plans remain ranking-neutral explanatory evidence.
-4. **RB-024 — AI game-review grounding:** complete through PR #268; bounded reviewed plans ground the explicit optional review consumer.
-5. **RB-025 — coverage scale and editorial tooling:** implementation merged through PR #302, including stacked completion PR #304, and canonical closure reconciled through PR #300. The pinned generated opening book resolves 3,733/3,733 entries and 3,167/3,167 unique names as `AVAILABLE`, with independent White/Black summary-plus-plan coverage at 100% and 160 exercised reviewed rules.
+Opening knowledge is current runtime explanatory evidence with complete strategic-knowledge coverage for the pinned generated book. It remains ranking-neutral under Builder V2.
 
-RB-025 also delivered deterministic generated-book and imported-game-weighted audit models, per-dimension classification uncertainty, side-specific completeness metrics, a deterministic priority backlog, validated batch manifests, source/editorial policy and hard all-book regression gates.
+## Stage 10 — Builder V2 decision model
 
-The completion boundary is intentionally finite: 100% applies to the pinned generated opening book, not arbitrary names and not equal theoretical depth for every rare line. Unknown names outside the book remain `UNAVAILABLE`, and narrow reviewed rules may continue to deepen specific families when real use justifies it.
+Product direction locked on 2026-08-09. See [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md).
 
-This stage remains independent of the blocked RB-016 outcome gate. Opening knowledge delivers standalone educational value without representing outcome evidence.
+### 10.1 RB-027 / #317 — empirical user-move personas
+
+Status: **READY**, P0.
+
+Rebuild Balanced/Solid/Aggressive/Surprise around target-population, Masters and engine evidence. Calibrate representative positions before locking numeric weights. Surprise must support uncommon viable candidates without relying on static opening labels or tiny samples.
+
+Gate: versioned policy produces understandable, materially different persona orderings and safely handles rare-candidate discovery/engine evidence.
+
+### 10.2 RB-028 / #318 — factual personal move evidence
+
+Status: **READY**, P1.
+
+Replace primary Builder Profile Fit with exact-position common/rare/new, result context and recency. Familiarity uses all eligible indexed history and remains primarily informational rather than a hidden persona authority.
+
+Can proceed alongside RB-027 with shared contract coordination.
+
+### 10.3 RB-029 / #319 — opponent preparation and computed coverage
+
+Status: **READY**, P1.
+
+Opponent turns become preparation priority driven by peer relevance, personal encounters, objective challenge and course state. Remove persona/profile judgment from opponent moves. Recommend a response set and show cumulative selected target-population coverage as feedback.
+
+Gate: existing RB-009 multi-selection/branch semantics remain unchanged.
+
+### 10.4 RB-030 / #320 — single-dialog setup
+
+Status: **READY**, P1.
+
+Normal setup remains one dialog with side/starting scope, speed population, rating target and persona exactly once. Remove normal coverage and hard theory controls. Reuse existing starting-position/session mechanics for common first-move scopes.
+
+Gate: V2 target-contract compatibility is clear after RB-027/RB-029 shared changes.
+
+### 10.5 RB-031 / #321 — Cockpit evidence hierarchy
+
+Status: **PROPOSED**, P1.
+
+Integrate the settled V2 evidence into the RB-026 Cockpit. Foreground peer/Masters/engine and factual personal evidence on user turns; preparation priority/computed coverage on opponent turns; keep opening knowledge as concise explanation; remove normal ECO and obsolete fit badges.
+
+Gate: RB-027–RB-029 semantics/contracts are stable enough that Angular does not invent a second recommendation model.
 
 ## Release condition
 
-The deterministic Builder foundation remains complete: evidence is inspectable, target intent and overrides are explicit, decisions and session transitions are bounded, course writes require preview/apply, exact existing-course launches preserve identity, and optional generated text can be disabled without changing workflow authority.
+The current deterministic Builder remains production runtime while V2 is implemented incrementally.
 
-Opening knowledge is current runtime explanatory evidence with complete strategic-knowledge coverage for the pinned generated book. Candidate ranking, eligibility, Builder state and course writes remain separate deterministic authorities.
+V2 is ready as the new product authority when:
 
-RB-026's Cockpit reintegration is a presentation refinement over those same authorities; it does not create a new recommendation or persistence layer.
+- user-move personas are empirically calibrated and versioned;
+- exact-position personal familiarity/results replace broad Builder Profile Fit;
+- opponent turns no longer use persona/profile fit and coverage is computed from selection;
+- normal setup is simplified to one understandable dialog;
+- the Cockpit communicates the new evidence hierarchy without losing existing state/course behavior.
 
-Outcome claims remain excluded until RB-016 evidence exists.
+Outcome claims remain excluded until RB-016 has sufficient post-V2 evidence.
 
 ## Queue impact
 
-- RB-001 through RB-015 and RB-017 through RB-026 are `DONE` once RB-026 completion reconciliation PR #314 is accepted.
-- RB-016 remains `BLOCKED` on real use.
-- No dependency-satisfied Repertoire Builder implementation task is currently queued.
-- Future Builder work should be driven by observed product demand, concrete visual/interaction findings, or new evidence-backed capability decisions.
-- Future opening-knowledge work should be driven by observed depth/quality demand, low-confidence classification cases, imported-game weighting, or upstream opening-book changes rather than nominal coverage-gap filling.
+- RB-027 is the first available V2 task.
+- RB-028 may proceed in parallel with contract coordination.
+- RB-029 follows/coordinates shared candidate-policy changes.
+- RB-030 follows target-policy compatibility work.
+- RB-031 integrates the settled V2 semantics into the Cockpit.
+- RB-016 remains blocked behind both V2 delivery and real usage.
