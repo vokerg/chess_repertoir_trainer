@@ -71,4 +71,32 @@ describe('Surprise persona empirical qualification', () => {
     expect(ranked[0].reasonCodes).toContain('POPULATION_STRONG_SCORE');
     expect(ranked[1].reasonCodes).not.toContain('POPULATION_STRONG_SCORE');
   });
+
+  it('marks missing objective proof as a warning without inventing an objective loss', () => {
+    const uncommon = candidate('h2h3', {
+      status: 'AVAILABLE',
+      games: 80,
+      frequencyPercent: 5,
+      scorePercentForTarget: 60,
+      positionBaselineScorePercentForTarget: 50,
+    });
+    uncommon.engine = {
+      status: 'INSUFFICIENT',
+      depth: null,
+      mateForTarget: null,
+      objectiveDeltaCp: null,
+    };
+
+    const ranked = rankCandidateEvidence([uncommon], {
+      role: 'USER_MOVE',
+      speedPreset: 'BLITZ_AND_SLOWER',
+      riskTolerance: 'HIGH',
+      allowDeliberatelyDubious: true,
+      persona: 'SURPRISE',
+    })[0];
+
+    expect(ranked.eligibility).toBe('WARNING');
+    expect(ranked.warningCodes).toContain('OBJECTIVE_EVIDENCE_MISSING');
+    expect(ranked.warningCodes).not.toContain('OBJECTIVE_LOSS');
+  });
 });
