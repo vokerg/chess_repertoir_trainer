@@ -54,9 +54,11 @@ This slice does not change:
 
 ## Validation boundary
 
-The branch was refreshed onto current `main` `85688c392f937b67007d5404b9b088c99f259d69` after PR #315 integrated and the later disjoint landing-copy correction advanced `main`. No local checkout-based build/test result is claimed in this connector-driven session. GitHub Actions on the pull request is the executable validation source.
+The branch was refreshed onto current `main` `85688c392f937b67007d5404b9b088c99f259d69` after PR #315 integrated and the later disjoint landing-copy correction advanced `main`.
 
-Direct authenticated browser or screen-reader review is not claimed unless separately observed and recorded.
+The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295. Lint, build, architecture guardrails, database migrations, audits, and the complete test step all succeeded. A later documentation-only reconciliation may advance the pull-request head; that final head must also have green PR CI before merge.
+
+No local checkout-based build/test result is claimed in this connector-driven session. Direct authenticated browser or screen-reader review is not claimed unless separately observed and recorded.
 
 ## Residual VT-302 work
 
