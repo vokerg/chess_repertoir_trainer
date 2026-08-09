@@ -32,6 +32,10 @@ const stateMessageHtmlUrl = new URL(
   '../apps/web/src/app/shared/ui/state-message/state-message.component.html',
   import.meta.url,
 );
+const courseReviewPageHtmlUrl = new URL(
+  '../apps/web/src/app/features/course-review/pages/course-review-page.component.html',
+  import.meta.url,
+);
 const migratedStateConsumerUrls = [
   [
     'Courses',
@@ -222,6 +226,28 @@ for (const [consumerName, collectionSignal, consumerUrl] of migratedStateConsume
     `${consumerName} must not regress to the legacy local empty-state presentation`,
   );
 }
+
+const courseReviewPageHtml = readFileSync(courseReviewPageHtmlUrl, 'utf8');
+assert.match(
+  courseReviewPageHtml,
+  /<app-state-message\b[^>]*tone=["']error["'][^>]*\[message\]=["']error["'][^>]*\/>/s,
+  'Course Review errors must retain the shared assertive error announcement',
+);
+assert.match(
+  courseReviewPageHtml,
+  /<app-state-message\b[^>]*tone=["']loading["'][^>]*message=["']Checking course endings against indexed games\.\.\.["'][^>]*\/>/s,
+  'Course-ending review progress must retain the shared polite loading announcement',
+);
+assert.match(
+  courseReviewPageHtml,
+  /<app-state-message\b[^>]*tone=["']loading["'][^>]*message=["']Reviewing imported games\.\.\.["'][^>]*\/>/s,
+  'Course Review progress must retain the shared polite loading announcement',
+);
+assert.doesNotMatch(
+  courseReviewPageHtml,
+  /<p\b[^>]*class=["'][^"']*\bstatus-(?:error|note)\b[^"']*["'][^>]*>\s*(?:\{\{\s*error\s*\}\}|Checking course endings against indexed games\.\.\.|Reviewing imported games\.\.\.)\s*<\/p>/s,
+  'Course Review async error/loading states must not regress to non-announcing local status paragraphs',
+);
 
 function readHexToken(css, token) {
   const match = css.match(new RegExp(`${escapeRegExp(token)}:\\s*(#[0-9a-f]{6});`, 'i'));

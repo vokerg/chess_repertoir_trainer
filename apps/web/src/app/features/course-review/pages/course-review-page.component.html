@@ -104,7 +104,7 @@
   </app-panel>
 
   @if (store.error(); as error) {
-    <p class="status-error">{{ error }}</p>
+    <app-state-message tone="error" [message]="error" />
   }
 
   @if (store.course()?.hasMixedSides && store.activeMode() !== 'COURSE_ENDINGS') {
@@ -126,7 +126,7 @@
         [filterSummary]="store.filterSummary()"
       />
     } @else if (store.loading()) {
-      <p class="status-note">Checking course endings against indexed games...</p>
+      <app-state-message tone="loading" message="Checking course endings against indexed games..." />
     }
   } @else {
     @if (store.review(); as review) {
@@ -145,7 +145,7 @@
         [filterSummary]="store.filterSummary()"
       />
     } @else if (store.loading()) {
-      <p class="status-note">Reviewing imported games...</p>
+      <app-state-message tone="loading" message="Reviewing imported games..." />
     }
   }
 </section>

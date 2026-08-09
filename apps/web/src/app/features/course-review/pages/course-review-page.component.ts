@@ -13,6 +13,7 @@ import { combineLatest, distinctUntilChanged, map } from 'rxjs';
 import { GameFilterPanelComponent } from '../../../shared/games/filters/game-filter-panel.component';
 import { PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { CourseReviewConflictsComponent } from '../components/course-review-conflicts.component';
 import { CourseReviewIssueListComponent } from '../components/course-review-issue-list.component';
 import { CourseReviewModeTabsComponent } from '../components/course-review-mode-tabs.component';
@@ -36,6 +37,7 @@ import {
     RouterLink,
     PageHeaderComponent,
     PanelComponent,
+    StateMessageComponent,
     GameFilterPanelComponent,
     CourseReviewConflictsComponent,
     CourseReviewIssueListComponent,
