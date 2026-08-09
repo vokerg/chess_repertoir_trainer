@@ -46,9 +46,9 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 
 ## Current coordination state
 
-RB-026 runtime shipped through PR #311; its documentation-only completion PR #314 is still the canonical predecessor for the V2 planning change because both edit the same program records.
+RB-026 is complete: runtime PR #311 and documentation completion PR #314 are merged, and issue #310 is closed as completed. Builder V2 planning PR #324 is also squash-merged to `main`; `BUILDER_V2_PLAN.md` and RB-027–RB-031 are now canonical program planning rather than stacked review work.
 
-Builder V2 product direction is recorded in `BUILDER_V2_PLAN.md` and split into five execution issues:
+Builder V2 is split into five execution issues:
 
 - #317 / RB-027 — empirical user-move personas, `READY`, P0;
 - #318 / RB-028 — factual personal move evidence, `READY`, P1;
@@ -56,7 +56,7 @@ Builder V2 product direction is recorded in `BUILDER_V2_PLAN.md` and split into 
 - #320 / RB-030 — single-dialog setup, `READY`, P1;
 - #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-027–RB-029 semantics settle.
 
-RB-016 / #104 remains open and blocked. Its blocker now includes completion of the V2 decision model plus sufficient post-V2 Builder/course use and follow-up games.
+RB-016 / #104 remains open and blocked. Its blocker includes completion of the V2 decision model plus sufficient post-V2 Builder/course use and follow-up games.
 
 Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same coordination change.
 

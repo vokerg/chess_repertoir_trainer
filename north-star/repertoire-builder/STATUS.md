@@ -12,7 +12,7 @@ Last updated: 2026-08-09
 
 **Outcome task:** RB-016 / #104 remains `BLOCKED`. Its useful cohort is explicitly post-V2 real usage so it measures the product model we intend to retain rather than the V1 semantics being replaced.
 
-**RB-026 completion:** runtime merged through PR #311. PR #314 remains documentation/execution-state reconciliation only; this V2 planning work is stacked on its head to avoid conflicting edits to the same canonical program documents.
+**Planning integration:** RB-026 completion PR #314 and Builder V2 planning PR #324 are both squash-merged to `main`. Issue #310 is closed as completed. The next executable Builder work is the V2 queue beginning with RB-027 / #317.
 
 ## Runtime capability chain preserved
 
@@ -62,7 +62,7 @@ Normal setup remains one dialog with side/starting scope, speed population, rati
 - **RB-030 / #320 — READY, P1:** single-dialog setup, coordinated with V2 target/coverage contract cleanup.
 - **RB-031 / #321 — PROPOSED, P1:** Cockpit evidence hierarchy after RB-027–RB-029 semantics stabilize.
 - **RB-016 / #104 — BLOCKED, P2:** post-V2 adoption and real-game outcome evidence.
-- **RB-026 / #310 — runtime complete:** only PR #314 completion reconciliation remains open at the time this planning branch was cut.
+- **RB-026 / #310 — DONE:** runtime PR #311 and completion reconciliation PR #314 are merged; issue #310 is closed.
 
 ## Locked boundaries preserved
 
