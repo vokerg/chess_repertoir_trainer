@@ -1,6 +1,6 @@
 # ONB-023 — Build administrator diagnostics Angular feature
 
-Status: READY
+Status: DONE
 
 Priority: P2
 
@@ -15,6 +15,14 @@ Target branch: `main`
 Suggested branch: `admin/onb-023-diagnostics-angular`
 
 Promotion pull request: [#298](https://github.com/vokerg/chess_repertoir_trainer/pull/298)
+
+Runtime branch: `admin/onb-023-diagnostics-angular`
+
+Runtime pull request: [#307](https://github.com/vokerg/chess_repertoir_trainer/pull/307)
+
+Completion branch: `admin/onb-023-completion-reconciliation`
+
+Completion pull request: [#312](https://github.com/vokerg/chess_repertoir_trainer/pull/312)
 
 ## Objective
 
@@ -91,3 +99,23 @@ A conditional administrator navigation entry is optional only if this task delib
 ## Claim rule
 
 Do not claim until PR #298 is approved and merged, issue #272 is closed, and `TASKS.md`, this task file, and issue #273 execution metadata all show ONB-023 as `READY`. Re-inspect current navigation, merged administrator contracts, shared UI patterns, active Visual Transformation #133 work, and parallel administrator branches before implementation. Do not commit directly to `main`.
+
+## Completion
+
+Runtime review-ready: 2026-08-08.
+
+Final runtime pull-request head: `d9b826054748d9d891584a593954c82b65520965`.
+
+Runtime validation: CI run #2237 (`31248860891`) passed dependency installation, lint, the full repository build, opening audits, architecture and accessibility guardrails, the migration chain, imported-game audits, the full test suite, artifact handling, and cleanup on that exact head.
+
+Runtime integration: PR #307 squash-merged into `main` as `07d19790a20beedf79bb094fead2c48c76404912`.
+
+Implementation self-review found and fixed one pagination-recovery defect before merge: retry after a failed next-page request now preserves and retries the failed cursor/page instead of reloading the last successful page, with regression coverage.
+
+Delivered runtime preserves the server authorization boundary: Angular uses the existing `authGuard` only for sign-in and bootstraps capability from `GET /api/admin/me`; it contains no local administrator identity, role, claim, or destructive-action authority.
+
+Completion evidence is reconciled in `north-star/onboarding/reports/ONB-023-2026-08-09-completion-reconciliation.md` together with `TASKS.md`, `STATUS.md`, and issue #273 execution metadata through completion PR #312.
+
+Residual handoff: ONB-024 remains `PROPOSED` behind its lifecycle-service and signed-reverification dependencies. This task does not promote or enable administrator mutation behavior.
+
+Completed at: 2026-08-09, effective when PR #312 is approved and squash-merged. Issue #273 remains open until that merge.
