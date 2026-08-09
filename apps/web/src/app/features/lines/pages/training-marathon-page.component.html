@@ -58,7 +58,7 @@
     <p class="status-note">Loading marathon training...</p>
     @if (store.error()) {
       <p class="status-error">{{ store.error() }}</p>
-      <a class="library-button-link secondary" [routerLink]="store.backLink()">Back</a>
+      <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
     }
   </app-panel>
 }

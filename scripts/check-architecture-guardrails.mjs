@@ -38,8 +38,10 @@ const migratedWorkbenchStyles = [
     import.meta.url,
   ),
 ];
+const linesPresentationRoot = new URL('../apps/web/src/app/features/lines/', import.meta.url);
 const legacyVisualTokenUsage =
   /var\(--(?:bg(?:-strong)?|surface(?:-strong|-muted|-dark|-2|-3)?|border(?:-strong)?|text|muted(?:-strong)?|accent(?:-strong|-soft)?|danger(?:-soft)?|success(?:-soft)?|warning(?:-strong|-soft)?|radius-(?:sm|md|lg|xl)|shadow(?:-soft|-lg|-lifted)?|on-accent)\)/;
+const libraryPresentationClass = /\blibrary-[a-z0-9-]+\b/i;
 
 assert.equal(existsSync(new URL('../apps/mobile', import.meta.url)), true, 'apps/mobile must be a supported workspace');
 assert.ok(rootPackage.workspaces.includes('apps/mobile'), 'root workspaces must include apps/mobile');
@@ -122,6 +124,15 @@ for (const fileUrl of migratedWorkbenchStyles) {
   );
 }
 
+for (const fileUrl of presentationFiles(linesPresentationRoot)) {
+  const source = readFileSync(fileUrl, 'utf8');
+  assert.doesNotMatch(
+    source,
+    libraryPresentationClass,
+    `Lines presentation must not depend on Library-owned CSS classes: ${fileUrl.pathname}`,
+  );
+}
+
 assert.doesNotMatch(gitignore, /^backups\/courses\/$/m, 'course backups must remain eligible for version control');
 assert.doesNotMatch(importedGameRepository, /findImportedGamesForSummary/);
 assert.doesNotMatch(importedGameQueryService, /summarizeRows/);
@@ -180,5 +191,13 @@ function sourceFiles(directoryUrl) {
     const entryUrl = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directoryUrl);
     if (entry.isDirectory()) return sourceFiles(entryUrl);
     return entry.isFile() && /\.(?:ts|tsx|js|mjs)$/.test(entry.name) ? [entryUrl] : [];
+  });
+}
+
+function presentationFiles(directoryUrl) {
+  return readdirSync(directoryUrl, { withFileTypes: true }).flatMap((entry) => {
+    const entryUrl = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directoryUrl);
+    if (entry.isDirectory()) return presentationFiles(entryUrl);
+    return entry.isFile() && /\.(?:html|css)$/.test(entry.name) ? [entryUrl] : [];
   });
 }
