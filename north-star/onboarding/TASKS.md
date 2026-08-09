@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-07
+Last updated: 2026-08-09
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -31,7 +31,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 180 | ONB-021 | [#261](https://github.com/vokerg/chess_repertoir_trainer/issues/261) | P0 | PROPOSED | Implement whole-user deletion and mobile purge handshake | Implementation | ONB-004/007/019/020; mobile offline sync contracts; admin execution deferred by ONB-005 |
 | 185 | ONB-026 | [#280](https://github.com/vokerg/chess_repertoir_trainer/issues/280) | P1 | PROPOSED | Implement bounded orphan shared-position cleanup | Implementation | ONB-006/007; trigger/schema coordination with ONB-011/017/019; canonical service may later be exposed by ONB-024 |
 | 190 | ONB-022 | [#272](https://github.com/vokerg/chess_repertoir_trainer/issues/272) | P1 | DONE | Build administrator authorization and read-only diagnostics foundation | Implementation | Runtime squash-merged through PR #284 as `f83d2615`; completion records reconciled through PR #298 |
-| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | READY | Build administrator diagnostics Angular feature | Implementation | ONB-022 complete; coordinate shared UI and accessibility boundaries with VT-302/#133 |
+| 200 | ONB-023 | [#273](https://github.com/vokerg/chess_repertoir_trainer/issues/273) | P2 | DONE | Build administrator diagnostics Angular feature | Implementation | Runtime squash-merged through PR #307 as `07d19790`; completion records reconciled through PR #312 |
 | 210 | ONB-024 | [#274](https://github.com/vokerg/chess_repertoir_trainer/issues/274) | P1 | PROPOSED | Add administrator lifecycle previews and controls | Implementation | ONB-022/023; ONB-019 plus applicable ONB-020/021; ONB-026 for cleanup exposure |
 
 ONB-025 / #276 is canonically allocated at order 155 and remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains allocated at order 185.
@@ -73,7 +73,7 @@ ONB-005 defines:
 - implementation tasks ONB-022/#272, ONB-023/#273, and ONB-024/#274 appended after the existing planned backlog so administration support work does not pre-empt the product critical path;
 - report `reports/ONB-005-2026-08-04-admin-auth-diagnostics-actions.md` and three self-review addenda.
 
-Completed through squash-merged PR #275 after final canonical reconciliation and three adversarial self-review rounds. ONB-022 is completed through runtime PR #284 and reconciliation PR #298. ONB-023 is `READY`; ONB-024 remains `PROPOSED` behind its lifecycle and reverification dependencies.
+Completed through squash-merged PR #275 after final canonical reconciliation and three adversarial self-review rounds. ONB-022 is completed through runtime PR #284 and reconciliation PR #298. ONB-023 is completed through runtime PR #307 and completion reconciliation PR #312. ONB-024 remains `PROPOSED` behind its lifecycle and reverification dependencies.
 
 ## ONB-006 completed delivery
 
@@ -177,11 +177,13 @@ ONB-017 / #253 delivered the preparation execution boundary through PR #282 and 
 
 ONB-022 / #272 delivered the migration-free administrator authorization and bounded read-only diagnostics foundation through PR #284. Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`) and squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. PR #298 reconciled the completion evidence and synchronized the task, queue, status, report, downstream task promotion, and issue closure.
 
+ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics experience through PR #307. Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`) and squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. PR #312 reconciles the task, queue, status, completion report, and live issue state; ONB-024 remains unpromoted.
+
 ## Deterministic next task
 
-ONB-023 / #273 is the next onboarding `READY` task by canonical order. Before claiming it, re-inspect the merged `@chess-trainer/contracts/admin` and `/api/admin` API, coordinate with active Visual Transformation #133 work, and confirm there is no parallel administrator Angular branch or pull request.
+After PR #312 merges, no onboarding implementation task is currently `READY`. Do not infer a new task from numeric order alone: ONB-024, ONB-018, ONB-008 through ONB-015, ONB-019 through ONB-021, ONB-025, and ONB-026 remain `PROPOSED` until their task-file dependencies and promotion gates are satisfied.
 
-ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-024, ONB-018, ONB-008 through ONB-015, and ONB-019 through ONB-021 remain governed by their listed dependencies.
+ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
 
 ## Implementation backlog rule
 
