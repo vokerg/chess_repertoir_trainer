@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
-import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
 import { CourseDetail } from '../data-access/course-detail.models';
 import { CoursesStore } from '../state/courses.store';
@@ -11,7 +12,7 @@ import { CoursesStore } from '../state/courses.store';
 @Component({
   selector: 'app-courses-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, PageHeaderComponent, PanelComponent],
+  imports: [FormsModule, RouterLink, PageHeaderComponent, PanelComponent, StateMessageComponent],
   providers: [CourseDetailApiService, CoursesStore],
   templateUrl: './courses-page.component.html',
   styleUrl: './courses-page.component.css',

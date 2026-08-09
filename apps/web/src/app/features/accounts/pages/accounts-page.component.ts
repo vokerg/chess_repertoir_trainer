@@ -12,6 +12,7 @@ import {
   PageHeaderComponent,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { type UiShellStat } from '../../../shared/ui/ui-shell.model';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { ExternalAccount, ImportRunSummary } from '../data-access/accounts.models';
@@ -32,6 +33,7 @@ import { AccountsStore } from '../state/accounts.store';
     PageHeaderComponent,
     PanelComponent,
     FactGridComponent,
+    StateMessageComponent,
   ],
   providers: [AccountsApiService, AccountsStore],
   templateUrl: './accounts-page.component.html',

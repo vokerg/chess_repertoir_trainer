@@ -48,14 +48,6 @@
   line-height: 1.45;
 }
 
-.accounts-empty {
-  padding: var(--space-4);
-  border: 1px dashed var(--ui-border-strong);
-  border-radius: var(--ui-radius-panel);
-  background: var(--ui-surface-muted);
-  color: var(--ui-text-muted);
-}
-
 .accounts-list {
   display: grid;
   gap: var(--space-3);
@@ -250,11 +242,6 @@
 
 .account-delete-button:hover:not(:disabled) {
   background: var(--ui-danger-soft);
-}
-
-.status-error {
-  color: var(--ui-danger);
-  font-weight: 750;
 }
 
 .status-note {

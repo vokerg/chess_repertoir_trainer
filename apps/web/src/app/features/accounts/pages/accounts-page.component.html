@@ -56,23 +56,24 @@
     subtitle="Each account keeps its own import status, workflows, and management controls."
     [stats]="accountStats()"
   >
-    @if (store.error()) {
-      <p class="status-error" role="alert">{{ store.error() }}</p>
+    @if (store.error(); as error) {
+      <app-state-message tone="error" [message]="error" />
     }
     @if (store.notice()) {
       <p class="status-note" role="status" aria-live="polite">{{ store.notice() }}</p>
     }
     @if (store.loading() && store.accounts().length === 0) {
-      <p class="status-note" role="status">Loading accounts...</p>
+      <app-state-message tone="loading" message="Loading accounts..." />
     }
     @if (store.syncingAllAccounts()) {
       <p class="status-note" role="status" aria-live="polite">Refreshing games across active accounts...</p>
     }
 
-    @if (!store.loading() && store.accounts().length === 0) {
-      <div class="empty-state accounts-empty">
-        No accounts configured yet. Add a Lichess or Chess.com username above, then sync the account.
-      </div>
+    @if (!store.loading() && !store.error() && store.accounts().length === 0) {
+      <app-state-message
+        tone="empty"
+        message="No accounts configured yet. Add a Lichess or Chess.com username above, then sync the account."
+      />
     }
 
     @if (store.accounts().length > 0) {
