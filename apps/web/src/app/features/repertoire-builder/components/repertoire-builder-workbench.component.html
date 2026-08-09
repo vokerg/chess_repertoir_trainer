@@ -19,6 +19,23 @@
     </app-panel>
   }
 
+  <header class="builder-context" aria-label="Current repertoire draft">
+    <span class="build-label">Building</span>
+    <strong>{{ activeSession.repertoireSide === 'WHITE' ? 'White' : 'Black' }} repertoire</strong>
+    @if (previewCandidate()?.evidence.opening.opening; as opening) {
+      <span class="opening-context">
+        {{ opening.eco ? opening.eco + ' · ' : '' }}{{ opening.name }}
+      </span>
+    }
+    <span>{{
+      activeSession.targetSnapshot.value.speedPreset.toLowerCase().replaceAll('_', ' ')
+    }}</span>
+    <span>{{ targetPopulationLabel() }}</span>
+    <span>{{ activeSession.targetSnapshot.value.objective.persona.toLowerCase() }}</span>
+    <span>{{ acceptedDecisionCount() }}/{{ decisionLimit }} decisions</span>
+    <span class="route-local-badge">Draft resets on refresh</span>
+  </header>
+
   <div class="workbench-grid" [class.inactive]="completed() || abandoned()">
     <main class="board-column">
       <app-panel
@@ -29,6 +46,13 @@
         "
         [actions]="boardPanelActions()"
       >
+        @if (boardEntryMode()) {
+          <p class="manual-entry-note" role="status">
+            <strong>Manual move entry.</strong> Play one legal move on the board. It will be checked
+            with the same candidate evidence before you accept it.
+          </p>
+        }
+
         <div class="board-stage">
           <app-engine-eval-bar
             [analysis]="engineAnalysis()"
@@ -80,27 +104,40 @@
                     [attr.aria-selected]="isPreviewed(candidate.moveUci)"
                     (click)="previewMove(candidate.moveUci)"
                   >
-                    <span class="candidate-rank">#{{ candidate.rank }}</span>
+                    <span class="candidate-rank">
+                      <span>#{{ candidate.rank }}</span>
+                      @if (isPreviewed(candidate.moveUci)) {
+                        <small>Preview</small>
+                      }
+                    </span>
                     <span class="candidate-move">
                       <strong>{{ candidate.moveSan }}</strong>
                       <small>{{ candidate.moveUci }}</small>
+                    </span>
+                    <span class="candidate-kind">
+                      <strong>{{ candidateKindLabel(candidate) }}</strong>
+                      <small>{{
+                        candidate.evidence.opening.opening?.name ?? 'Unknown opening'
+                      }}</small>
                     </span>
                     <span class="candidate-metric">
                       <strong>{{ candidateEngineLabel(candidate) }}</strong>
                       <small>{{ candidateEngineDetail(candidate) }}</small>
                     </span>
-                    <span class="candidate-metric">
+                    <span class="candidate-metric population-metric">
                       <strong>{{ percent(candidate.evidence.population.frequencyPercent) }}</strong>
                       <small>target play</small>
                     </span>
-                    <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
-                      Target {{ statusLabel(candidate.targetFit.status) }}
-                    </span>
-                    <span
-                      class="fit-chip profile-fit"
-                      [attr.data-status]="candidate.profileFit.status"
-                    >
-                      Profile {{ statusLabel(candidate.profileFit.status) }}
+                    <span class="fit-stack">
+                      <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
+                        Target {{ statusLabel(candidate.targetFit.status) }}
+                      </span>
+                      <span
+                        class="fit-chip profile-fit"
+                        [attr.data-status]="candidate.profileFit.status"
+                      >
+                        Profile {{ statusLabel(candidate.profileFit.status) }}
+                      </span>
                     </span>
                   </button>
 
@@ -110,6 +147,11 @@
                       class="coverage-toggle"
                       [class.active]="isResponseSelected(candidate.moveUci)"
                       [attr.aria-pressed]="isResponseSelected(candidate.moveUci)"
+                      [attr.aria-label]="
+                        (isResponseSelected(candidate.moveUci) ? 'Remove ' : 'Cover ') +
+                        candidate.moveSan +
+                        ' response'
+                      "
                       (click)="responseToggled.emit(candidate.moveUci)"
                     >
                       {{ isResponseSelected(candidate.moveUci) ? 'Covered' : 'Cover' }}
@@ -124,142 +166,248 @@
           }
         }
       </app-panel>
+    </main>
 
+    <section class="brief-column" aria-label="Focused candidate decision brief">
       @if (previewCandidate(); as candidate) {
         <app-panel
-          title="Focused evidence"
+          title="Decision brief"
           [subtitle]="candidate.moveSan + ' · ' + candidate.previewUci.join(' ')"
         >
-          @if (previewEngineImpact(); as impact) {
-            <div class="engine-impact" [attr.data-status]="impact.status" aria-live="polite">
+          <div class="move-identity">
+            <span class="eyebrow">Focused move</span>
+            <div>
+              <strong>{{ candidate.moveSan }}</strong>
+              <span>{{ candidateKindLabel(candidate) }}</span>
+            </div>
+          </div>
+
+          <section class="brief-section opening-identity" aria-labelledby="opening-identity-title">
+            <div class="section-heading">
               <div>
-                <span>Candidate engine impact</span>
-                <strong>{{ engineImpactStatus(impact) }}</strong>
+                <span class="eyebrow">Opening after this move</span>
+                <h3 id="opening-identity-title">
+                  {{ candidate.evidence.opening.opening?.name ?? 'Opening not classified' }}
+                </h3>
               </div>
-              <p>{{ engineImpactSummary(impact) }}</p>
+              @if (candidate.evidence.opening.opening?.eco; as eco) {
+                <span class="eco-badge">{{ eco }}</span>
+              }
             </div>
-          }
 
-          <div class="evidence-summary">
-            <div>
-              <span>Target fit</span><strong>{{ statusLabel(candidate.targetFit.status) }}</strong>
-            </div>
-            <div>
-              <span>Profile fit</span
-              ><strong>{{ statusLabel(candidate.profileFit.status) }}</strong>
-            </div>
-          </div>
-
-          <div class="evidence-grid">
-            @for (source of sourceItems(); track source.id) {
-              <div class="source-row">
-                <span>{{ source.label }}</span>
-                <strong [attr.data-source-status]="source.status">{{
-                  statusLabel(source.status)
-                }}</strong>
-                @if (source.detail) {
-                  <small>{{ source.detail }}</small>
-                }
-              </div>
+            @if (candidate.evidence.opening.knowledge.shortDescription; as description) {
+              <p class="opening-description">{{ description.text }}</p>
             }
-          </div>
 
-          @if (reasonLabels().length > 0) {
-            <div class="reason-list">
-              <h3>Why it is ranked here</h3>
-              <ul>
-                @for (reason of reasonLabels(); track reason) {
-                  <li>{{ reason }}</li>
-                }
-              </ul>
+            <div class="trait-list" aria-label="Opening character">
+              @if (candidate.evidence.opening.soundness; as soundness) {
+                <span [attr.data-trait]="soundness">{{ statusLabel(soundness) }}</span>
+              }
+              @for (character of candidate.evidence.opening.character; track character) {
+                <span>{{ statusLabel(character) }}</span>
+              }
+              @if (candidate.evidence.opening.theoreticalStatus; as theoreticalStatus) {
+                <span>{{ statusLabel(theoreticalStatus) }}</span>
+              }
+              @if (candidate.evidence.opening.theoryBurden; as theoryBurden) {
+                <span>{{ statusLabel(theoryBurden) }} theory</span>
+              }
             </div>
+            <small class="classification-boundary">
+              {{ candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black' }} perspective ·
+              {{ statusLabel(candidate.evidence.opening.confidence ?? 'UNKNOWN') }} classification
+              confidence
+            </small>
+          </section>
+
+          <section class="brief-section" aria-labelledby="fit-title">
+            <div class="section-heading">
+              <h3 id="fit-title">Fit for this repertoire</h3>
+            </div>
+            <div class="fit-comparison">
+              <div>
+                <span>Target fit</span>
+                <strong [attr.data-fit-status]="candidate.targetFit.status">
+                  {{ statusLabel(candidate.targetFit.status) }}
+                </strong>
+                <small>The repertoire intent you chose.</small>
+              </div>
+              <div>
+                <span>Profile fit</span>
+                <strong [attr.data-fit-status]="candidate.profileFit.status">
+                  {{ statusLabel(candidate.profileFit.status) }}
+                </strong>
+                <small>Your observed playing preferences.</small>
+              </div>
+            </div>
+          </section>
+
+          @if (
+            candidate.evidence.opening.knowledge.strategicSummary ||
+            candidate.evidence.opening.knowledge.plans.length > 0
+          ) {
+            <section class="brief-section strategy-section" aria-labelledby="strategy-title">
+              <span class="eyebrow"
+                >Plan for
+                {{ candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black' }}</span
+              >
+              <h3 id="strategy-title">
+                {{
+                  candidate.evidence.opening.knowledge.strategicSummary?.text ??
+                    'Reviewed strategic plans'
+                }}
+              </h3>
+
+              @if (candidate.evidence.opening.knowledge.plans.length > 0) {
+                <div class="plan-list">
+                  @for (plan of candidate.evidence.opening.knowledge.plans; track plan.id) {
+                    <article>
+                      <div>
+                        <strong>{{ plan.title }}</strong>
+                        <span>{{ statusLabel(plan.confidence) }} confidence</span>
+                      </div>
+                      <p>{{ plan.summary }}</p>
+                      @if (plan.conditions.length > 0) {
+                        <small><strong>Use when:</strong> {{ plan.conditions.join(' ') }}</small>
+                      }
+                      @if (plan.caveats.length > 0) {
+                        <small><strong>Watch for:</strong> {{ plan.caveats.join(' ') }}</small>
+                      }
+                    </article>
+                  }
+                </div>
+              }
+            </section>
           }
+
           @if (warningLabels().length > 0) {
-            <div class="warning-list" role="note">
+            <section class="warning-list" role="note">
               <h3>Warnings</h3>
               <ul>
                 @for (warning of warningLabels(); track warning) {
                   <li>{{ warning }}</li>
                 }
               </ul>
-            </div>
+            </section>
           }
-        </app-panel>
 
-        @if (candidateExplanationAvailable()) {
-          <app-panel
-            title="Generated interpretation"
-            subtitle="Optional, transient explanation of the deterministic evidence above."
-          >
-            <div class="candidate-explanation-controls">
-              <label>
-                <span>Compare with</span>
-                <select
-                  [value]="candidateExplanationComparisonMoveUci() ?? ''"
-                  [disabled]="candidateExplanationLoading()"
-                  (change)="handleExplanationComparisonChange($event)"
-                >
-                  <option value="">No comparison</option>
-                  @for (comparison of comparisonCandidates(); track comparison.moveUci) {
-                    <option [value]="comparison.moveUci">
-                      #{{ comparison.rank }} {{ comparison.moveSan }}
-                    </option>
-                  }
-                </select>
-              </label>
-              <button
-                type="button"
-                class="secondary-button"
-                [disabled]="candidateExplanationLoading()"
-                (click)="candidateExplanationRequested.emit()"
-              >
-                {{ candidateExplanationLoading() ? 'Generating…' : 'Explain this evidence' }}
-              </button>
-            </div>
+          <details class="evidence-details">
+            <summary>Evidence details</summary>
+            <div class="evidence-details-content">
+              @if (previewEngineImpact(); as impact) {
+                <div class="engine-impact" [attr.data-status]="impact.status" aria-live="polite">
+                  <div>
+                    <span>Engine impact</span>
+                    <strong>{{ engineImpactStatus(impact) }}</strong>
+                  </div>
+                  <p>{{ engineImpactSummary(impact) }}</p>
+                </div>
+              }
 
-            <p class="generated-boundary">
-              This text cannot change candidate rank, selection, coverage, Builder state, or course
-              output.
-            </p>
-
-            @if (candidateExplanationError(); as explanationError) {
-              <p class="command-error" role="alert">{{ explanationError }}</p>
-            }
-
-            @if (candidateExplanation(); as generated) {
-              <div class="candidate-explanation-result" aria-live="polite">
-                <p class="candidate-explanation-summary">{{ generated.explanation.summary }}</p>
-
-                @if (generated.explanation.tradeoffs.length > 0) {
-                  <div class="candidate-explanation-tradeoffs">
-                    <h3>Trade-offs in the supplied evidence</h3>
-                    <ul>
-                      @for (tradeoff of generated.explanation.tradeoffs; track tradeoff.text) {
-                        <li>{{ tradeoff.text }}</li>
+              <dl class="evidence-list">
+                @for (source of sourceItems(); track source.id) {
+                  <div>
+                    <dt>{{ source.label }}</dt>
+                    <dd>
+                      @if (source.detail) {
+                        {{ source.detail }}
+                      } @else {
+                        {{ statusLabel(source.status) }}
                       }
-                    </ul>
+                    </dd>
                   </div>
                 }
+              </dl>
 
-                <div class="candidate-explanation-facts">
-                  <h3>Referenced deterministic facts</h3>
-                  <dl>
-                    @for (fact of generated.referencedFacts; track fact.id) {
-                      <div [class.missing-fact]="fact.missing">
-                        <dt>{{ fact.label }}</dt>
-                        <dd>{{ fact.value }}</dd>
-                      </div>
+              @if (reasonLabels().length > 0) {
+                <section class="reason-list">
+                  <h3>Why it is ranked here</h3>
+                  <ul>
+                    @for (reason of reasonLabels(); track reason) {
+                      <li>{{ reason }}</li>
                     }
-                  </dl>
-                </div>
+                  </ul>
+                </section>
+              }
+            </div>
+          </details>
 
-                <p class="generated-disclaimer">{{ generated.disclaimer }}</p>
+          @if (candidateExplanationAvailable()) {
+            <details class="generated-details">
+              <summary>Optional generated interpretation</summary>
+              <p class="generated-boundary">
+                Transient explanation only. It cannot change rank, coverage, Builder state, or
+                course output.
+              </p>
+              <div class="candidate-explanation-controls">
+                <label>
+                  <span>Compare with</span>
+                  <select
+                    [value]="candidateExplanationComparisonMoveUci() ?? ''"
+                    [disabled]="candidateExplanationLoading()"
+                    (change)="handleExplanationComparisonChange($event)"
+                  >
+                    <option value="">No comparison</option>
+                    @for (comparison of comparisonCandidates(); track comparison.moveUci) {
+                      <option [value]="comparison.moveUci">
+                        #{{ comparison.rank }} {{ comparison.moveSan }}
+                      </option>
+                    }
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  [disabled]="candidateExplanationLoading()"
+                  (click)="candidateExplanationRequested.emit()"
+                >
+                  {{ candidateExplanationLoading() ? 'Generating…' : 'Explain this evidence' }}
+                </button>
               </div>
-            }
-          </app-panel>
-        }
+
+              @if (candidateExplanationError(); as explanationError) {
+                <p class="command-error" role="alert">{{ explanationError }}</p>
+              }
+
+              @if (candidateExplanation(); as generated) {
+                <div class="candidate-explanation-result" aria-live="polite">
+                  <p class="candidate-explanation-summary">{{ generated.explanation.summary }}</p>
+                  @if (generated.explanation.tradeoffs.length > 0) {
+                    <div class="candidate-explanation-tradeoffs">
+                      <h3>Trade-offs in the supplied evidence</h3>
+                      <ul>
+                        @for (tradeoff of generated.explanation.tradeoffs; track tradeoff.text) {
+                          <li>{{ tradeoff.text }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                  <div class="candidate-explanation-facts">
+                    <h3>Referenced deterministic facts</h3>
+                    <dl>
+                      @for (fact of generated.referencedFacts; track fact.id) {
+                        <div [class.missing-fact]="fact.missing">
+                          <dt>{{ fact.label }}</dt>
+                          <dd>{{ fact.value }}</dd>
+                        </div>
+                      }
+                    </dl>
+                  </div>
+                  <p class="generated-disclaimer">{{ generated.disclaimer }}</p>
+                </div>
+              }
+            </details>
+          }
+        </app-panel>
+      } @else {
+        <app-panel
+          title="Decision brief"
+          subtitle="Preview a candidate to inspect its character and plan."
+        >
+          <p class="empty-copy">The focused candidate will appear here.</p>
+        </app-panel>
       }
-    </main>
+    </section>
 
     <aside class="side-column">
       <app-panel [title]="decisionPanelTitle()">
@@ -278,10 +426,10 @@
               >
                 <span [style.width.%]="selectedCoveragePercent()"></span>
               </div>
-              <small
-                >Target: {{ coverageTargetPercent() }}%. You remain in control of which responses
-                are included.</small
-              >
+              <small>
+                Target: {{ coverageTargetPercent() }}%. Select any combination of responses; each
+                accepted response becomes its own continuation branch.
+              </small>
             </div>
           }
 
@@ -303,22 +451,24 @@
             >
               {{ branch.role === 'USER_MOVE' ? 'Accept move' : 'Accept covered responses' }}
             </button>
-            <button
-              type="button"
-              class="secondary-button"
-              [disabled]="loading()"
-              (click)="branchDeferred.emit()"
-            >
-              Defer
-            </button>
-            <button
-              type="button"
-              class="secondary-button"
-              [disabled]="loading()"
-              (click)="branchStopped.emit()"
-            >
-              Stop line here
-            </button>
+            <div class="secondary-actions">
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="loading()"
+                (click)="branchDeferred.emit()"
+              >
+                Defer
+              </button>
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="loading()"
+                (click)="branchStopped.emit()"
+              >
+                Stop line
+              </button>
+            </div>
             @if (canIgnoreActiveBranch()) {
               <button
                 type="button"
@@ -340,114 +490,112 @@
         }
       </app-panel>
 
-      <app-panel title="Branch queue" [subtitle]="queue().length + ' active branches'">
-        @if (queue().length === 0) {
-          <p class="empty-copy">No active queued work.</p>
-        } @else {
-          <ol class="queue-list">
-            @for (branch of queue(); track branch.branchId; let index = $index) {
-              <li [class.active]="branch.branchId === activeBranch()?.id">
-                <button
-                  type="button"
-                  class="queue-select"
-                  (click)="queueBranchSelected.emit(branch.branchId)"
-                >
-                  <strong>{{
-                    branch.role === 'USER_MOVE' ? 'Your move' : 'Opponent responses'
-                  }}</strong>
-                  <small>{{ pathLabel(branch.pathUci) }}</small>
-                </button>
-                <div class="queue-order-actions" aria-label="Queue order controls">
+      <app-panel title="Branch control" [subtitle]="queue().length + ' active branches'">
+        <section class="control-section" aria-labelledby="queue-title">
+          <div class="section-heading">
+            <h3 id="queue-title">Queue</h3>
+          </div>
+          @if (queue().length === 0) {
+            <p class="empty-copy">No active queued work.</p>
+          } @else {
+            <ol class="queue-list">
+              @for (branch of queue(); track branch.branchId; let index = $index) {
+                <li [class.active]="branch.branchId === activeBranch()?.id">
                   <button
                     type="button"
-                    aria-label="Move branch earlier"
-                    [disabled]="index === 0"
-                    (click)="
-                      queueReordered.emit({ branchId: branch.branchId, targetIndex: index - 1 })
-                    "
+                    class="queue-select"
+                    (click)="queueBranchSelected.emit(branch.branchId)"
                   >
-                    ↑
+                    <strong>{{
+                      branch.role === 'USER_MOVE' ? 'Your move' : 'Opponent responses'
+                    }}</strong>
+                    <small>{{ pathLabel(branch.pathUci) }}</small>
                   </button>
+                  <div class="queue-order-actions" aria-label="Queue order controls">
+                    <button
+                      type="button"
+                      aria-label="Move branch earlier"
+                      [disabled]="index === 0"
+                      (click)="
+                        queueReordered.emit({ branchId: branch.branchId, targetIndex: index - 1 })
+                      "
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Move branch later"
+                      [disabled]="index === queue().length - 1"
+                      (click)="
+                        queueReordered.emit({ branchId: branch.branchId, targetIndex: index + 1 })
+                      "
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+
+        @if (deferredBranches().length > 0 || staleBranches().length > 0) {
+          <section class="control-section" aria-labelledby="paused-title">
+            <div class="section-heading">
+              <h3 id="paused-title">Paused work</h3>
+            </div>
+            <div class="paused-list">
+              @for (branch of deferredBranches(); track branch.id) {
+                <div>
+                  <span><strong>Deferred</strong> · {{ pathLabel(branch.pathUci) }}</span>
                   <button
                     type="button"
-                    aria-label="Move branch later"
-                    [disabled]="index === queue().length - 1"
-                    (click)="
-                      queueReordered.emit({ branchId: branch.branchId, targetIndex: index + 1 })
-                    "
+                    class="text-button"
+                    (click)="deferredBranchReopened.emit(branch.id)"
                   >
-                    ↓
+                    Reopen
                   </button>
                 </div>
-              </li>
-            }
-          </ol>
+              }
+              @for (branch of staleBranches(); track branch.id) {
+                <div>
+                  <span><strong>Stale</strong> · {{ pathLabel(branch.pathUci) }}</span>
+                  <button
+                    type="button"
+                    class="text-button"
+                    (click)="staleBranchRestarted.emit(branch.id)"
+                  >
+                    Restart
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
         }
-      </app-panel>
 
-      @if (deferredBranches().length > 0 || staleBranches().length > 0) {
-        <app-panel title="Paused work">
-          <div class="paused-list">
-            @for (branch of deferredBranches(); track branch.id) {
-              <div>
-                <span><strong>Deferred</strong> · {{ pathLabel(branch.pathUci) }}</span>
-                <button
-                  type="button"
-                  class="text-button"
-                  (click)="deferredBranchReopened.emit(branch.id)"
-                >
-                  Reopen
-                </button>
-              </div>
-            }
-            @for (branch of staleBranches(); track branch.id) {
-              <div>
-                <span><strong>Stale</strong> · {{ pathLabel(branch.pathUci) }}</span>
-                <button
-                  type="button"
-                  class="text-button"
-                  (click)="staleBranchRestarted.emit(branch.id)"
-                >
-                  Restart
-                </button>
+        <section class="control-section" aria-labelledby="preview-title">
+          <div class="section-heading">
+            <h3 id="preview-title">Draft preview</h3>
+            <span>{{ previewRows().length }} branches</span>
+          </div>
+          <div class="preview-tree">
+            @for (row of previewRows(); track row.branchId) {
+              <div class="preview-row" [style.padding-left.rem]="row.depth * 0.65">
+                <span class="preview-status">{{ row.status }}</span>
+                <div>
+                  <strong>{{ row.moveLabel }}</strong>
+                  <small>{{ row.roleLabel }}</small>
+                  @if (row.transpositionOfBranchId) {
+                    <small>Transposes to {{ row.transpositionOfBranchId }}</small>
+                  }
+                </div>
               </div>
             }
           </div>
-        </app-panel>
-      }
-
-      <app-panel title="Draft preview" [subtitle]="previewRows().length + ' visible branches'">
-        <div class="preview-tree">
-          @for (row of previewRows(); track row.branchId) {
-            <div class="preview-row" [style.padding-left.rem]="row.depth * 0.8">
-              <span class="preview-status">{{ row.status }}</span>
-              <div>
-                <strong>{{ row.moveLabel }}</strong>
-                <small>{{ row.roleLabel }}</small>
-                @if (row.transpositionOfBranchId) {
-                  <small>Transposes to {{ row.transpositionOfBranchId }}</small>
-                }
-              </div>
-            </div>
-          }
-        </div>
+        </section>
       </app-panel>
     </aside>
   </div>
-
-  <footer class="builder-context" aria-label="Builder target summary">
-    <span
-      ><strong>{{ activeSession.repertoireSide === 'WHITE' ? 'White' : 'Black' }}</strong>
-      repertoire</span
-    >
-    <span>{{
-      activeSession.targetSnapshot.value.speedPreset.toLowerCase().replaceAll('_', ' ')
-    }}</span>
-    <span>{{ targetPopulationLabel() }}</span>
-    <span>{{ activeSession.targetSnapshot.value.objective.persona.toLowerCase() }}</span>
-    <span>{{ acceptedDecisionCount() }}/{{ decisionLimit }} decisions</span>
-    <span class="route-local-badge">Not saved after refresh</span>
-  </footer>
 } @else {
   <app-panel title="Start a bounded repertoire draft">
     <p>The setup dialog defines one target and opens the board-first workbench.</p>

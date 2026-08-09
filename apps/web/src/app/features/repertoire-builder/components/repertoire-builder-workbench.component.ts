@@ -88,7 +88,7 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly candidateExplanationComparisonChanged = output<string | null>();
 
   protected readonly decisionLimit = REPERTOIRE_BUILDER_DECISION_LIMIT;
-  private readonly boardEntryMode = signal(false);
+  protected readonly boardEntryMode = signal(false);
   protected readonly boardFen = computed(() =>
     this.boardEntryMode() ? (this.activeBranch()?.fen ?? this.displayedFen()) : this.displayedFen(),
   );
@@ -98,7 +98,7 @@ export class RepertoireBuilderWorkbenchComponent {
     return [
       {
         id: 'toggle-board-entry',
-        label: this.boardEntryMode() ? 'Show suggestion' : 'Enter move',
+        label: this.boardEntryMode() ? 'Back to suggestion' : 'Enter your own move',
         kind: 'toggle',
         pressed: this.boardEntryMode(),
         run: () => this.boardEntryMode.update((enabled) => !enabled),
@@ -189,6 +189,14 @@ export class RepertoireBuilderWorkbenchComponent {
     return impact.objectiveDeltaCp === null
       ? source
       : `${source} · ${impact.objectiveDeltaCp} cp from best`;
+  }
+
+  protected candidateKindLabel(candidate: CandidateDecisionCandidate): string {
+    const opening = candidate.evidence.opening;
+    const traits = [opening.soundness, ...opening.character.slice(0, 2)]
+      .filter((value) => value !== null && value !== 'UNKNOWN')
+      .map((value) => this.statusLabel(value));
+    return traits.length > 0 ? traits.join(' · ') : 'Character not classified';
   }
 
   protected engineImpactSummary(impact: RepertoireBuilderEngineImpact): string {
