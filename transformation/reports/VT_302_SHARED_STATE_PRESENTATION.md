@@ -4,7 +4,8 @@ Date: 2026-08-09
 Issue: #133  
 Pull request: #313  
 Branch: `visual-transformation/vt-302-shared-state-presentation`  
-Review base: `main` `fe0a5ada0205e1d2cf0e27017886d8e907ef4ff7`
+Review base: `main` `57a864a6b7424174aac538f29ee793ce8754992e`  
+Initial claim base: `main` `fe0a5ada0205e1d2cf0e27017886d8e907ef4ff7`
 
 ## Scope
 
@@ -14,7 +15,7 @@ It is not the complete cross-route state review and does not complete VT-302.
 
 ## Evidence and ownership boundary
 
-Current `main` had no shared loading/empty/error component under `apps/web/src/app/shared/ui`. Courses and Accounts independently rendered the same three state categories with local `status-note`, `status-error`, and `empty-state` markup.
+The inspected review base had no shared loading/empty/error component under `apps/web/src/app/shared/ui`. Courses and Accounts independently rendered the same three state categories with local `status-note`, `status-error`, and `empty-state` markup.
 
 That duplication is sufficient evidence for a shared presentational primitive while keeping feature workflow ownership unchanged:
 
@@ -71,6 +72,8 @@ The first exact-head CI pass exposed no compiler/test failures, but manual revie
 2. Accounts could render its load error and its empty-account message together after an initial request failure because `loadAccounts()` leaves the collection empty and clears `loading` in `finally`. The empty condition now also requires `!store.error()`, matching Courses and avoiding contradictory state messaging.
 
 Neither correction changes APIs, stores, routes, persistence, or account workflow commands.
+
+During self-review, `main` advanced through the disjoint ONB-023 completion-record reconciliation commit `57a864a6b7424174aac538f29ee793ce8754992e`. The branch was rebuilt on that exact current base while preserving the four onboarding files from the new main commit, leaving only this slice's 13-file diff.
 
 ## Regression coverage
 
