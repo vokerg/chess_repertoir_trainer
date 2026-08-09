@@ -1,6 +1,7 @@
 export type CandidateRankingRole = 'USER_MOVE' | 'OPPONENT_RESPONSE';
 export type CandidateRankingSpeedPreset = 'ALL' | 'BLITZ_AND_SLOWER' | 'BLITZ' | 'BULLET';
 export type CandidateRankingRiskTolerance = 'LOW' | 'MEDIUM' | 'HIGH';
+export type CandidateRankingPersona = 'BALANCED' | 'SOLID' | 'AGGRESSIVE' | 'SURPRISE' | 'CUSTOM';
 export type CandidateRankingFit = 'ALIGNED' | 'NEUTRAL' | 'CONFLICT' | 'UNKNOWN';
 export type CandidateRankingEvidenceStatus = 'AVAILABLE' | 'STALE' | 'INSUFFICIENT' | 'UNAVAILABLE';
 export type CandidateRankingEligibility = 'ELIGIBLE' | 'WARNING' | 'EXCLUDED';
@@ -45,6 +46,7 @@ export interface CandidateRankingCorpusInput {
   games: number;
   frequencyPercent: number | null;
   scorePercentForTarget: number | null;
+  positionBaselineScorePercentForTarget?: number | null;
 }
 
 export interface CandidateRankingPersonalInput {
@@ -84,6 +86,7 @@ export interface CandidateRankingContext {
   speedPreset: CandidateRankingSpeedPreset;
   riskTolerance: CandidateRankingRiskTolerance;
   allowDeliberatelyDubious: boolean;
+  persona?: CandidateRankingPersona;
 }
 
 export interface CandidateRankingComponents {
@@ -117,7 +120,7 @@ interface Weights {
   course: number;
 }
 
-const USER_WEIGHTS: Record<CandidateRankingSpeedPreset, Weights> = {
+const LEGACY_USER_WEIGHTS: Record<CandidateRankingSpeedPreset, Weights> = {
   ALL: { objective: 0.35, population: 0.20, masters: 0.15, personal: 0.10, targetFit: 0.12, profileFit: 0.03, course: 0.05 },
   BLITZ_AND_SLOWER: { objective: 0.40, population: 0.18, masters: 0.17, personal: 0.08, targetFit: 0.12, profileFit: 0.02, course: 0.03 },
   BLITZ: { objective: 0.30, population: 0.25, masters: 0.10, personal: 0.12, targetFit: 0.13, profileFit: 0.04, course: 0.06 },
@@ -138,13 +141,15 @@ export function rankCandidateEvidence<T extends CandidateRankingInput>(
   inputs: readonly T[],
   context: CandidateRankingContext,
 ): RankedCandidate<T>[] {
-  const weights = context.role === 'USER_MOVE' ? USER_WEIGHTS[context.speedPreset] : OPPONENT_WEIGHTS;
+  const persona = context.persona ?? 'CUSTOM';
   const ranked = inputs.map((input) => {
     const components = buildComponents(input, context.role);
     const eligibility = resolveEligibility(input, context);
     const reasonCodes = buildReasonCodes(input, context.role);
     const warningCodes = buildWarningCodes(input, context, eligibility);
-    const score = weightedScore(components, weights);
+    const score = context.role === 'USER_MOVE'
+      ? userMoveScore(input, components, context, persona)
+      : weightedScore(components, OPPONENT_WEIGHTS);
     return { input, eligibility, components, reasonCodes, warningCodes, score };
   });
 
@@ -189,6 +194,57 @@ function buildComponents(
   };
 }
 
+function userMoveScore(
+  input: CandidateRankingInput,
+  components: CandidateRankingComponents,
+  context: CandidateRankingContext,
+  persona: CandidateRankingPersona,
+): number {
+  if (persona === 'CUSTOM') {
+    return weightedScore(components, LEGACY_USER_WEIGHTS[context.speedPreset]);
+  }
+
+  const populationFrequency = corpusFrequencySignal(input.population);
+  const populationPerformance = corpusPerformanceSignal(input.population);
+  const masterSupport = masterSupportSignal(input.masters);
+
+  if (persona === 'BALANCED') {
+    return Math.round(
+      populationFrequency * 0.35
+      + populationPerformance * 0.30
+      + components.objective * 0.20
+      + masterSupport * 0.15,
+    );
+  }
+
+  if (persona === 'SOLID') {
+    return Math.round(
+      populationFrequency * 0.15
+      + populationPerformance * 0.10
+      + components.objective * 0.40
+      + masterSupport * 0.35,
+    );
+  }
+
+  if (persona === 'AGGRESSIVE') {
+    return Math.round(
+      populationFrequency * 0.10
+      + populationPerformance * 0.55
+      + components.objective * 0.15
+      + masterSupport * 0.20,
+    );
+  }
+
+  const populationRarity = corpusRaritySignal(input.population, 5);
+  const masterRarity = corpusRaritySignal(input.masters, 6);
+  return Math.round(
+    populationRarity * 0.30
+    + Math.max(0, populationPerformance) * 0.35
+    + components.objective * 0.20
+    + masterRarity * 0.15,
+  );
+}
+
 function objectiveComponent(
   engine: CandidateRankingInput['engine'],
   role: CandidateRankingRole,
@@ -208,11 +264,46 @@ function objectiveComponent(
 }
 
 function corpusComponent(input: CandidateRankingCorpusInput): number {
-  if (input.status === 'UNAVAILABLE' || input.games <= 0 || input.frequencyPercent === null) return 0;
-  const scoreAdjustment = input.scorePercentForTarget === null
-    ? 0
-    : clamp(Math.round((input.scorePercentForTarget - 50) * 1.5), -30, 30);
-  return clamp(Math.round(input.frequencyPercent) + scoreAdjustment, -100, 100);
+  if (!hasUsableCorpus(input) || input.frequencyPercent === null) return 0;
+  const frequency = corpusFrequencySignal(input);
+  const performance = corpusPerformanceSignal(input);
+  return clamp(Math.round(frequency * 0.6 + performance * 0.4), -100, 100);
+}
+
+function corpusFrequencySignal(input: CandidateRankingCorpusInput): number {
+  if (!hasUsableCorpus(input) || input.frequencyPercent === null) return 0;
+  return clamp(Math.round(input.frequencyPercent * 2), 0, 100);
+}
+
+function corpusPerformanceSignal(input: CandidateRankingCorpusInput): number {
+  const delta = corpusScoreDelta(input);
+  if (delta === null || !hasUsableCorpus(input)) return 0;
+  const reliability = input.games / (input.games + 30);
+  return clamp(Math.round(delta * reliability * 10), -100, 100);
+}
+
+function masterSupportSignal(input: CandidateRankingCorpusInput): number {
+  if (!hasUsableCorpus(input)) return 0;
+  return clamp(Math.round(
+    corpusFrequencySignal(input) * 0.75
+    + corpusPerformanceSignal(input) * 0.25,
+  ), -100, 100);
+}
+
+function corpusRaritySignal(input: CandidateRankingCorpusInput, frequencyScale: number): number {
+  if (!hasUsableCorpus(input) || input.frequencyPercent === null) return 0;
+  return clamp(Math.round(100 - input.frequencyPercent * frequencyScale), 0, 100);
+}
+
+function corpusScoreDelta(input: CandidateRankingCorpusInput): number | null {
+  if (input.scorePercentForTarget === null) return null;
+  const baseline = input.positionBaselineScorePercentForTarget;
+  if (baseline === undefined || baseline === null) return null;
+  return input.scorePercentForTarget - baseline;
+}
+
+function hasUsableCorpus(input: CandidateRankingCorpusInput): boolean {
+  return (input.status === 'AVAILABLE' || input.status === 'STALE') && input.games > 0;
 }
 
 function personalComponent(input: CandidateRankingPersonalInput): number {
@@ -278,7 +369,11 @@ function buildReasonCodes(
   if ((input.population.frequencyPercent ?? 0) >= 10 && input.population.games >= 20) {
     reasons.add(role === 'OPPONENT_RESPONSE' ? 'COMMON_AT_TARGET_LEVEL' : 'POPULATION_COMMON');
   }
-  if ((input.population.scorePercentForTarget ?? 0) >= 55 && input.population.games >= 20) {
+  const populationScoreDelta = corpusScoreDelta(input.population);
+  const populationStrong = populationScoreDelta === null
+    ? (input.population.scorePercentForTarget ?? 0) >= 55
+    : populationScoreDelta >= 3;
+  if (populationStrong && input.population.games >= 20) {
     reasons.add('POPULATION_STRONG_SCORE');
   }
   if (input.masters.games >= 10) reasons.add('MASTER_SUPPORTED');
