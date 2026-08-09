@@ -1,8 +1,8 @@
 # Repertoire Builder Foundation
 
-Last updated: 2026-07-26
+Last updated: 2026-08-09
 
-This document records the stable agreements behind the repertoire-builder program. It describes target direction, not current product behavior.
+This document records stable agreements behind the repertoire-builder program. It describes target direction, not current runtime behavior.
 
 ## 1. Product premise
 
@@ -10,223 +10,191 @@ The north star is a **human-in-the-loop repertoire architect**.
 
 The product should help a player construct and continuously evolve a repertoire that:
 
-- is objectively defensible within the player's chosen risk tolerance;
-- fits positions the player enjoys or deliberately wants to learn;
+- is objectively defensible within the chosen practical risk;
 - is relevant to the time controls and rating populations the player expects;
-- uses master practice, population practice, engine evaluation, personal games, tags and existing courses as evidence;
+- uses peer-population practice, Masters practice, engine evaluation, personal games, reviewed opening knowledge, and existing courses as separated evidence;
 - covers important opponent responses without pretending every legal move must be studied now;
-- remains reviewable, explainable, editable and owned by the player.
+- remains reviewable, explainable, editable, and owned by the player.
 
 The system proposes and organizes. The user decides.
 
-## 2. Four separate evidence layers
+## 2. Separate evidence layers
 
-Do not collapse these layers into one profile or one unexplained score.
+Do not collapse evidence into one profile or one unexplained score.
 
 ### 2.1 Intrinsic opening profile
 
-A side-aware description of an opening or variation: soundness, sharpness, tacticality, solidity, theoretical status, practical risk, learning burden and future dimensions.
+A side-aware deterministic description of an opening or variation: soundness, character, theoretical status, theory burden, roles, confidence, and related reviewed knowledge.
 
-The classification method is intentionally independent and unresolved.
+This layer describes the chess. It is not the primary empirical authority for persona ranking.
 
 ### 2.2 Target-population profile
 
-How moves and openings behave in a selected playing environment:
+How moves behave in the selected playing environment:
 
-- provider/population source;
 - one product speed preset;
 - one peer-rating target;
-- move frequency and score;
-- response diversity;
-- changes across benchmark bands and presets.
+- move frequency;
+- target-side score;
+- position-relative performance;
+- response diversity and sample size.
 
 This layer describes the environment, not the user.
 
-### 2.3 Player Chess Profile
+### 2.3 Personal move evidence
 
-What the player tends to choose and how well those choices work, calculated from filtered personal games and analysis.
+Exact-position personal history answers whether the user actually plays a move and how it has worked:
 
-Preference and performance are separate.
+- games/occurrences and share;
+- score with sample qualification;
+- position-relative result context;
+- last-played date;
+- effective account/side/rated/speed filters.
 
-### 2.4 Repertoire target
+For Builder familiarity, all eligible indexed history matters. Recency is a separate fact, not an invisible hard cutoff.
 
-The intent of the repertoire being built now. It can deliberately differ from the measured player profile or factual peer level.
+### 2.4 Player Chess Profile
 
-Examples:
+The Player Chess Profile remains a separate standalone capability for broader tendencies across periods, speeds, colors, rating context, and opening characteristics. It must not be presented as proof that a specific Builder move is familiar or suitable.
 
-- general-purpose repertoire;
-- Bullet repertoire;
-- Blitz and slower repertoire;
-- solid `1.d4` repertoire;
-- sharp or dubious `1.d4` repertoire;
-- low-theory repertoire;
-- future trap-oriented repertoire.
+### 2.5 Repertoire target
+
+The current build target records side/scope, speed population, rating population, and one selected persona. It may deliberately differ from the player's past habits.
 
 ## 3. User control is foundational
 
-Profile conclusions and factual peer ranges are suggestions/defaults, never hard constraints.
+Factual peer ranges, personal history, profile conclusions, and recommendations are evidence, not constraints.
 
-The system must distinguish:
-
-- profile-derived recommendation;
-- factual player-level evidence;
-- explicit repertoire intent;
-- manual user choice.
-
-Manual choice wins. The application may warn about tradeoffs but must not silently override it.
+Manual user choice wins. The application may show objective or practical tradeoffs but must not silently override a legal choice.
 
 ## 4. Speed targeting uses product presets
 
-The first product contract exposes exactly four presets:
+The product exposes exactly four normal speed presets:
 
-- **All speeds** — bullet, blitz, rapid, classical and correspondence;
-- **Blitz and slower** — blitz, rapid, classical and correspondence;
+- **All speeds** — bullet, blitz, rapid, classical, and correspondence;
+- **Blitz and slower** — blitz, rapid, classical, and correspondence;
 - **Blitz**;
 - **Bullet**.
 
-UltraBullet is excluded.
-
-The upstream Lichess API may accept arbitrary speed arrays, but arbitrary combinations are not part of the product target. A combined preset uses one mixed Lichess Explorer response; the MVP does not fetch and weight every speed separately.
+UltraBullet and arbitrary product-facing speed mixtures remain excluded. A combined preset uses the existing mixed Lichess Explorer aggregate unless empirical recommendation testing demonstrates a material defect.
 
 Default: **Blitz and slower**.
 
-## 5. Rating targeting and player level
+## 5. Rating targeting and factual player level
 
-The product peer bands are aligned directly to the nine Lichess Explorer groups:
+The product peer bands align to the nine Lichess Explorer groups. Provider-aware rating normalization remains versioned and shared; raw Chess.com and Lichess ratings are not averaged directly.
 
-- `<1000`;
-- `1000–1199`;
-- `1200–1399`;
-- `1400–1599`;
-- `1600–1799`;
-- `1800–1999`;
-- `2000–2199`;
-- `2200–2499`;
-- `2500+`.
-
-Lichess ratings classify directly. Chess.com bullet, blitz and rapid ratings map into the same bands through versioned approximate source ranges in the shared rating-normalization domain. Raw cross-provider ratings must not be averaged or compared directly.
-
-The population target supports:
+Population targets remain:
 
 - all players;
 - my peers;
-- my peers plus one adjacent higher band;
+- my peers plus one adjacent higher group;
 - one explicit benchmark group.
 
-Default: **My peers and above**, defined as the resolved peer interval plus exactly one higher group where available.
+The factual peer resolver remains inspectable and versioned. Its recent-evidence rule is a player-level resolution mechanism, not a Builder personal-familiarity period.
 
-RB-001 provides an on-demand peer resolver from owned imported standard games:
+## 6. User-move recommendation authority
 
-1. last three months;
-2. all history when no recent evidence exists;
-3. `1400–1599` as the generic fallback containing rating 1500.
+At a user decision point, compare a bounded candidate set using separated empirical evidence centered on:
 
-It resolves a dominant contiguous interval from the band distribution and returns visible provenance. The exact dominance threshold is versioned and tested by RB-001.
+- target-population practice and position-relative results;
+- Masters practice;
+- engine quality/cost;
+- existing-course relationship where relevant.
 
-RB-002 later owns durable multi-account storage/snapshot, confidence, exclusions and override semantics. The factual result remains inspectable and can be overridden for a particular repertoire target without being mutated.
+The selected persona interprets those facts.
 
-## 6. Player Chess Profile principles
+### Balanced
 
-The Chess Profile is a standalone product capability and a north-star input.
+Peer-practical first, with Masters and engine validation.
 
-It should be recalculable for selected periods, accounts, speed presets, colors and rating context. Conclusions retain:
+### Solid
 
-- total and analysed game counts;
-- color and speed context;
-- peer/benchmark context;
-- baseline comparison;
-- opening-position outcome;
-- score and confidence;
-- supporting openings and games.
+More conservative toward established Master practice and objective quality.
 
-Tags are useful signals but not a complete statistical model.
+### Aggressive
 
-The profile should distinguish what the player chooses, what produces good positions/results, what holds against peers or stronger players and what changes by context.
+Active/imbalanced choices with strong practical results, meaningful Master justification, and bounded extra objective cost.
 
-## 7. Opening classification dependency
+### Surprise
 
-The plan assumes every named opening can be resolved to a side-aware opening profile.
+Uncommon but viable practical outliers: low frequency, target-population overperformance relative to the position baseline, sufficient sample, lower Master adoption, and reliable objective safety.
 
-Agreed needs include soundness, sharpness/tacticality, positional/solid character, mainline/sideline status, theory burden and side perspective.
+Opening classification and opening knowledge explain the resulting chess but do not define these rankings by themselves. Broad Player Chess Profile fit is not a V2 ranking authority.
 
-Algorithm, curation, hierarchy, storage, taxonomy, confidence and update process remain assigned to RB-003.
+Exact weights, shrinkage/confidence functions, and candidate-seeding details remain versioned implementation work under RB-027.
 
-## 8. Candidate selection and explanation
+## 7. Opponent-response authority
 
-At a user decision point, compare a small set of meaningful candidate moves using separated evidence:
+At an opponent decision point, the question is preparation priority, not persona fit.
 
-- engine evaluation;
-- master practice;
-- selected population practice;
-- personal familiarity/results;
-- existing repertoire coverage/conflict;
-- opening character and learning burden;
-- target fit;
-- advisory profile fit.
+Prioritize replies using separated evidence centered on:
 
-At an opponent decision point, prioritize responses using selected-population frequency, personal occurrence, danger, objective relevance, existing coverage and coverage budget.
+- target-population frequency/relevance;
+- exact-position personal encounters;
+- objective challenge for uncommon replies;
+- existing course coverage/gaps;
+- Masters as secondary context when useful.
 
-Every recommendation exposes reasons, sample size and missing evidence.
+Persona, opening-character preference, theory ceiling, and Player Chess Profile fit do not determine whether an opponent reply matters.
 
-## 9. Visual interaction is required
+Coverage is calculated from the actual selected replies and shown as target-population feedback. It is not a persona property or a mandatory setup percentage.
 
-The final choice experience is visual, not only SAN tables.
+## 8. Setup principle
 
-The substantial builder should be a routed, resumable workbench. Exact boards/cards/branch-map composition remains a prototype task.
+Normal setup is one focused dialog. Persona appears once.
 
-## 10. Existing courses use the same mechanism
+It captures side/starting scope, speed population, rating target, and one persona. Coverage percentage and hard maximum-theory-burden controls are removed from normal setup.
 
-New repertoire generation and existing-course improvement are entry points into the same decision process.
+Any future theory preference must have understandable operational semantics before becoming a user control.
 
-Existing courses should eventually enter from uncovered responses, early endings, repeated deviations, weak choices, changed population targets or alternative personas.
+## 9. Opening classification and knowledge
 
-Accepted changes should reuse current course-tree/reintegration patterns after reinspection.
+Opening classification remains a deterministic side-aware intrinsic taxonomy. Opening knowledge remains a separate reviewed deterministic service.
 
-## 11. Traps and repertoire personas
+Their Builder role is explanatory:
 
-The plan reserves room for solid, sharp, positional, dubious, low-theory and future traps-oriented personas, including multiple courses from the same opening with different intent.
+- classification: what kind of chess the move creates;
+- knowledge: strategic plans, conditions, and caveats.
 
-Traps remain research; no data source or schema is assumed.
+Opening knowledge remains ranking-neutral. Classification must not silently recreate the old persona policy through hard fit badges.
 
-## 12. LLM boundary
+## 10. Visual interaction is required
 
-LLM integration is optional.
+The Builder remains a routed board-first Cockpit with one readable primary board, candidate switching, a focused decision brief, branch/action controls, and responsive stacking.
 
-Possible roles include explanation, summarization, naming and conversational navigation. An LLM is not the factual source of engine data, population statistics, ownership, writes or opening classification without a later reviewed task.
+The product must explain why candidates are ranked and why opponent replies are prioritized without requiring the user to reverse-engineer hidden weights.
 
-## 13. Delivery philosophy
+## 11. Existing courses use the same mechanism
 
-Advance through small deliveries with standalone value that compound toward the north star.
+New repertoire generation and existing-course improvement remain entry points into the same decision loop. Course gaps, early endings, repeated deviations, weak choices, changed target environments, and alternative personas should reuse the Builder rather than create separate recommendation systems.
 
-Unknown UX and optional AI work must not block deterministic evidence foundations or the standalone Chess Profile.
+Accepted writes continue through explicit preview/apply boundaries.
 
-## 14. Verified repository anchors at foundation creation
+## 12. Traps and Surprise are separate
 
-These anchors must be reverified by each task:
+`Surprise` is an empirical practical ranking policy, not a traps database. Production trap knowledge remains separately reviewed research with its own evidence and curation requirements.
 
-- local named opening lookup;
-- imported-game filters and game-recorded ratings;
-- game tags and position-level personal move/results analysis;
-- shared Masters/rated Lichess Opening Explorer and cache;
-- course trees and line editor;
-- course review, continuation gaps and endings;
-- analysis-tree preview/reintegration;
-- shared versioned rating-normalization domain.
+## 13. LLM boundary
 
-These are implementation inputs, not authorization to reuse them without current inspection.
+LLM integration remains optional and non-authoritative. It may explain deterministic evidence but does not select moves, calculate chess facts, mutate Builder state, or write courses.
+
+## 14. Delivery philosophy
+
+Advance through small versioned deliveries with standalone value. Calibrate statistical and ranking claims against representative evidence before locking numeric policy.
+
+RB-027 through RB-031 implement the V2 revision. RB-016 outcome feedback remains blocked until sufficient post-V2 use exists.
 
 ## 15. Non-goals of the foundation
 
-This foundation does not decide:
+This foundation does not lock:
 
-- exact opening-classification mechanics;
-- the durable RB-002 multi-account formula and persistence;
-- the exact RB-001 dominant-range threshold;
-- candidate-ranking weights;
-- final builder UI;
-- whether/how an LLM is used;
-- traps data source/schema;
-- builder-session persistence;
-- final API field names beyond the agreed preset/target concepts.
+- exact V2 persona weights;
+- exact peer-performance shrinkage/confidence formulas;
+- exact common/rare personal thresholds;
+- exact recommended opponent-response stopping rule;
+- Builder-session persistence;
+- production traps;
+- optional generated interpretation enablement.
 
 Those details belong to ordered tasks and evidence-based implementation decisions.

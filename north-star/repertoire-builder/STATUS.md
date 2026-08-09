@@ -4,61 +4,88 @@ Last updated: 2026-08-09
 
 ## Current state
 
-**Program state:** the deterministic Repertoire Builder capability chain, static opening-knowledge service, focused Builder knowledge consumer, bounded opening-grounded game-review consumer, RB-025 opening-knowledge coverage scale, and RB-026 Builder Cockpit reintegration are complete in runtime. RB-016 remains independently blocked on sufficient real Builder/course usage and follow-up-game evidence.
+**Runtime state:** the deterministic Repertoire Builder capability chain, opening-knowledge service, course preview/apply path, optional bounded interpretation prototypes, and RB-026 three-zone Builder Cockpit are integrated. The current runtime still uses the V1 target/profile-fit/coverage/persona semantics until the V2 tasks are implemented.
 
-**Runtime on `main`:** peer population/level resolution, deterministic opening classification, Player Chess Profile calculation and `/progress/profile`, versioned repertoire targets, profile-derived editable defaults, deterministic candidate evidence/ranking, bounded session/queue semantics, the authenticated Builder workbench, the three-zone Builder Cockpit composition, mandatory course preview/apply, exact existing-course entry points, static side-aware opening knowledge, focused target-side knowledge presentation, deterministic opening-knowledge coverage/editorial tooling, and the optional disabled-by-default generated interpretation prototypes are integrated.
+**Product direction:** hands-on review on 2026-08-09 accepted the Cockpit and revised the Builder's decision authority. [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md) is now the target model. The revision is semantic, not a ground-up UI replacement.
 
-**Opening-knowledge completion:** `OpeningKnowledgeService` contains 160 ordered reviewed rules at version `2026-08-knowledge-v3`. The pinned 3,733-entry / 3,167-name generated opening book resolves to 100% `AVAILABLE`: zero partial/unavailable entries, 100% concise and long descriptions, and 100% independent White/Black summary-plus-plan availability. Every runtime rule is exercised.
+**Builder V2 tasks:** RB-027 / #317, RB-028 / #318, RB-029 / #319 and RB-030 / #320 are `READY`; RB-031 / #321 is `PROPOSED` until the shared V2 evidence semantics/contracts stabilize.
 
-**Quality boundary:** 100% means complete strategic-knowledge coverage for the pinned generated opening book, not equal grandmaster-level depth for every obscure line. Major/specific openings retain detailed narrow rules; rare/offbeat families use explicit lower-confidence strategic orientation. Arbitrary opening names outside the pinned book remain `UNAVAILABLE`; no generic fallback was added.
+**Outcome task:** RB-016 / #104 remains `BLOCKED`. Its useful cohort is explicitly post-V2 real usage so it measures the product model we intend to retain rather than the V1 semantics being replaced.
 
-**RB-025 integration:** PR #304 supplied the final 119-family completion layer and hard all-book regression gates, then merged into the #302 integration branch. PR #302 merged to `main` as `997d1ecc0ead422c696ec4460bdb914c47d2d848`; final canonical reconciliation PR #300 squash-merged as `0ae880e8cba60be69caba5aa55c5fb64112b48c1` and closed #290.
+**RB-026 completion:** runtime merged through PR #311. PR #314 remains documentation/execution-state reconciliation only; this V2 planning work is stacked on its head to avoid conflicting edits to the same canonical program documents.
 
-**RB-026 integration:** PR #311 reintegrated the selected Builder Cockpit direction and squash-merged to `main` as `fe0a5ada0205e1d2cf0e27017886d8e907ef4ff7`. Final runtime head `42e57a331cb99a2b8a88160bfec16704e1b96b73` passed exact-head CI #2253 (`31275215472`). PR #314 is completion-record reconciliation only; no additional Builder runtime implementation remains in it.
+## Runtime capability chain preserved
 
-**Execution ownership:** RB-021 / #240 is complete through PR #244. RB-022 / #241 is complete through PR #255. RB-023 / #242 is complete through PR #262. RB-024 / #243 is complete through PR #268. RB-025 / #290 is complete through implementation PRs #302/#304 and reconciliation PR #300. RB-026 / #310 is runtime-complete through PR #311 and in canonical completion review through PR #314. Program tracker: #105.
+1. **Evidence foundations:** peer population/level resolution, deterministic opening classification and opening audits.
+2. **Standalone Player Chess Profile:** broader preference/performance analysis remains available at `/progress/profile`.
+3. **Candidate evidence orchestration:** engine, target population, Masters, personal, opening and course evidence are already gathered through the authenticated candidate path.
+4. **Interaction and lifecycle:** board-first Builder, serializable session/branch queue, defer/ignore/stale state and manual move entry.
+5. **Course materialization:** mandatory preview and explicit apply, plus existing-course entry points.
+6. **Opening knowledge:** reviewed side-aware descriptions/plans remain deterministic and ranking-neutral.
+7. **Builder Cockpit:** board/candidates, focused decision context and branch/action controls remain the accepted three-zone desktop composition with responsive stacking.
+8. **Optional interpretation:** generated candidate/completion explanations remain gated and non-authoritative.
 
-## Completed capability chain
+## V2 revision
 
-1. **Evidence foundations:** RB-001, RB-002, RB-003 and RB-018.
-2. **Player profile:** RB-004 and RB-005.
-3. **Target and decisions:** RB-006, RB-013 and RB-007.
-4. **Interaction and lifecycle:** RB-008, RB-009 and RB-010.
-5. **Course materialization:** RB-011 and RB-012.
-6. **Specialized research and knowledge:** RB-014, RB-017, RB-015, RB-021, RB-022, RB-023, RB-024 and RB-025.
-7. **Optional interpretation prototypes:** RB-019 and RB-020, plus RB-024 as a bounded game-review grounding enhancement.
-8. **Builder workspace reintegration:** RB-026.
+### User moves
+
+Persona applies only when the repertoire side chooses a move.
+
+- **Balanced:** peer-practical first, validated by Masters and engine.
+- **Solid:** stronger Master/objective authority.
+- **Aggressive:** active/imbalanced practical choices with meaningful Master justification and bounded extra objective cost.
+- **Surprise:** uncommon viable choices that overperform the same-position peer baseline with sufficient sample, lower Master adoption and reliable objective safety.
+
+Opening classification/knowledge explain the resulting chess but are no longer the main persona-ranking mechanism. Exact numeric policy remains RB-027 calibration work.
+
+### Personal evidence
+
+Primary Builder `Profile Aligned/Conflict` is replaced by exact-position factual evidence: common/rare/new, sample-qualified results and last-played recency. Familiarity uses all eligible indexed history. The standalone Player Chess Profile remains separate.
+
+### Opponent moves
+
+Opponent replies become preparation priorities driven by peer relevance, exact personal encounters, objective challenge and course state. Persona/profile fit does not judge opponent choices.
+
+### Coverage
+
+Coverage becomes the cumulative target-population share of the replies actually selected. Normal setup no longer asks for a coverage percentage or persona-specific coverage target.
+
+### Setup and Cockpit
+
+Normal setup remains one dialog with side/starting scope, speed population, rating target and persona exactly once. The existing RB-026 Cockpit remains the visual foundation; RB-031 changes its evidence hierarchy rather than replacing it.
 
 ## Active and blocked work
 
-- **RB-026:** runtime work is complete; PR #314 only reconciles the required closure report and canonical task/program/issue state. Issue #310 remains open in `REVIEW` until that reconciliation is approved and squash-merged.
-- **RB-016:** independently blocked on real adoption and outcome evidence.
-
-No dependency-satisfied Repertoire Builder implementation task is currently queued.
+- **RB-027 / #317 — READY, P0:** empirical persona ranking V2. First recommended implementation task.
+- **RB-028 / #318 — READY, P1:** factual personal move evidence. May proceed in parallel where contract collisions are coordinated.
+- **RB-029 / #319 — READY, P1:** opponent preparation and computed coverage.
+- **RB-030 / #320 — READY, P1:** single-dialog setup, coordinated with V2 target/coverage contract cleanup.
+- **RB-031 / #321 — PROPOSED, P1:** Cockpit evidence hierarchy after RB-027–RB-029 semantics stabilize.
+- **RB-016 / #104 — BLOCKED, P2:** post-V2 adoption and real-game outcome evidence.
+- **RB-026 / #310 — runtime complete:** only PR #314 completion reconciliation remains open at the time this planning branch was cut.
 
 ## Locked boundaries preserved
 
-- Intrinsic classification, static opening knowledge, target-population behavior, player behavior and repertoire intent remain separate concepts.
-- Candidate ranking, Builder reducers/queue and course preview/apply remain deterministic authorities.
-- Opening knowledge is explanatory and does not alter ranking or course writes.
-- Generated interpretation remains optional, explicit, gated and non-authoritative.
-- Public opening-assessment theory is assembled from reviewed knowledge and validated structured claims, not free-form provider prose.
-- RB-017 remains a research fixture rather than a production traps capability.
-- Complete knowledge coverage does not erase explicit unknown/low-confidence classification dimensions.
-- Editorial priority scores cannot enter runtime candidate ranking or course materialization.
-- RB-026 changes Builder presentation and view-model organization only; it does not create a new recommendation, persistence, or course-write authority.
+- Builder remains human-controlled; recommendations are non-binding.
+- Peer population, Masters, exact personal history, opening classification/knowledge and repertoire intent remain separated evidence concepts.
+- Candidate ranking remains deterministic and versioned.
+- Builder reducers/queue remain the RB-009 authority.
+- Course preview/apply remains the write authority.
+- Opening knowledge remains explanatory and cannot change ranking/state/writes.
+- Generated interpretation remains optional and non-authoritative.
+- Surprise does not silently become production trap integration.
+- V2 adds no persistence, queue, job or automatic course-write requirement.
 
-## Residual risks
+## Residual risks and implementation questions
 
-- Strategic opening prose can overgeneralize and requires source/revision governance.
-- Repository `REVIEWED` lifecycle means validated runtime-eligible project content; it does not imply independent grandmaster review.
-- Rare/offbeat families deliberately carry lower-confidence broad guidance and may deserve narrower refinement when real demand appears.
-- CI's migrated database has zero imported games, so real imported-game-weighted demand evidence remains unavailable in this environment.
-- Opening-book upstream changes can introduce new families; the hard 100% tests will fail until those additions receive explicit knowledge.
-- RB-016 outcome claims remain unavailable until real usage evidence exists.
-- Authenticated desktop/tablet/mobile visual review of the final RB-026 Cockpit was not completed in the implementation session; that remains deferred product evidence and is not represented as a pass.
-- Broader cross-route keyboard, screen-reader, responsive and state-consistency polish remains owned by active VT-302 / #133.
+- V2 persona weights and sample treatment are deliberately not locked until representative benchmark positions are tested.
+- Surprise may require changes to candidate seeding and bounded engine evidence so genuinely uncommon candidates can be evaluated safely.
+- Exact common/rare personal thresholds and position-relative result confidence remain RB-028 work.
+- The recommended opponent-response stopping rule must be versioned and must not hide the old fixed percentage defaults.
+- Target-contract migration must preserve reproducibility of V1 snapshots rather than silently reinterpret old objective/coverage fields.
+- Authenticated populated visual review remains important for RB-031 after the new evidence lands.
+- Broader product-wide accessibility/responsive work remains owned by VT-302 / #133 and should not be duplicated.
 
 ## Queue recommendation
 
-Approve and squash-merge PR #314 to close RB-026's required completion protocol, then close issue #310 as completed. Keep RB-016 blocked until its real-use gate is satisfied. No dependency-satisfied Repertoire Builder implementation task should be inferred merely from numeric order; future Builder work should be opened from concrete product feedback, outcome evidence or a separately approved capability decision.
+Start with RB-027 / #317. RB-028 may run in parallel if shared contract edits are coordinated. Then settle RB-029, simplify setup through RB-030, and finish with RB-031 Cockpit integration. Keep RB-016 blocked until sufficient post-V2 material has been built, trained and encountered in later games.

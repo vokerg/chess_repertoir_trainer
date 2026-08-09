@@ -1,235 +1,196 @@
 # Repertoire Builder North Star
 
-Last updated: 2026-07-27
+Last updated: 2026-08-09
 
-This document describes the intended end-state experience. It is not an implementation specification and does not claim that the workflow exists today.
+This document describes the intended end-state experience. It is not a claim that all V2 behavior already exists.
 
 ## Product promise
 
 > Build a repertoire you will actually want to play, for the opponents and time controls you actually expect, while staying in control of every important choice.
 
-The product performs research, prioritization, comparison, coverage planning, and course assembly. The player remains the repertoire author.
+The product researches, prioritizes, compares, plans preparation, and assembles course material. The player remains the repertoire author.
 
 ## Entry points
 
-### Build a new repertoire
+- Build a new White or Black repertoire from the initial position, a common first-move scope, a named opening, move sequence, or position.
+- Improve an existing course from a gap, early ending, repeated deviation, weak result, changed target environment, or user move worth reconsidering.
+- Build an alternative persona for the same opening without replacing the original.
 
-Start from White, Black, a first move, a named opening, a move sequence, or a position.
-
-### Improve an existing course
-
-Start from a course gap, early ending, repeated deviation, weak result, profile mismatch, or changed target environment.
-
-### Build from a Chess Profile
-
-Start with profile-derived suggestions, then accept, edit, or reject the proposed intent.
-
-### Build an alternative persona
-
-Create another course for the same opening with a different objective, such as solid, sharp, dubious, low-theory, slower-play focused, blitz-focused, or eventually traps-focused.
+The standalone Player Chess Profile can inspire a build, but broad profile similarity is not a primary Builder recommendation authority.
 
 ## Setup flow
 
-Setup is a focused dialog that captures enough intent to rank evidence without forcing premature detail or containing the recursive builder itself.
+Setup remains **one focused dialog**. Persona appears exactly once.
 
-Expected dimensions:
+Normal setup captures:
 
-1. side and starting point;
-2. accounts or player identity to use;
-3. speed preset: All speeds, Blitz and slower, Blitz, or Bullet;
-4. rating target: All players, My peers, My peers and above, or one explicit benchmark group;
-5. repertoire objective and persona;
-6. coverage and theory tolerance;
-7. whether profile suggestions should initialize the target.
+1. repertoire side and starting scope;
+2. speed preset: All speeds, Blitz and slower, Blitz, or Bullet;
+3. rating target: All players, My peers, My peers and one group higher, or one explicit benchmark group;
+4. one persona: Balanced, Solid, Aggressive, or Surprise.
 
-Defaults may come from factual player-level evidence or the Player Chess Profile, but every suggested value remains editable. The dialog visibly separates factual peer evidence, profile recommendation, and selected repertoire intent.
+Useful starting scopes reuse the existing starting-position/session model, for example White full repertoire or `1.e4` / `1.d4` / `1.c4` / `1.Nf3`, and Black full repertoire or a scope against a common first move.
 
-Selecting **Start building** closes the dialog and opens the routed workbench. The setup dialog does not own recursive candidate decisions, branch progress, draft navigation, or resume behavior.
+Normal setup does **not** ask for a coverage percentage or a hard low/medium/high theory ceiling. Coverage is calculated from the opponent replies the user actually selects. A future independent theory preference must have understandable operational semantics before returning.
 
-## The interactive decision loop
+Selecting **Start building** closes the dialog and opens the routed workbench.
 
-The builder alternates between two different decision types.
+## Two decision roles
 
-### User move: choose a direction
+Builder alternates between two different questions.
 
-The system presents a small set of meaningful candidate moves. Each candidate should make its position and tradeoffs visually understandable.
+### User move — choose the repertoire move
 
-Evidence can include:
+Question: **Which move should become part of my repertoire?**
 
-- objective evaluation;
-- master use;
-- selected population use and score;
-- personal use and results;
-- opening character;
-- learning burden;
-- existing-course relationships;
-- player-profile fit;
-- repertoire-target fit;
-- optional validated trap evidence when a future reviewed source exists.
+A small candidate set is ranked according to the selected persona using separated evidence centered on:
 
-The recommendation is explicit but non-binding. A candidate may be labelled as profile-aligned, target-aligned, objectively safest, most practical, sharpest, lowest theory, or deliberately dubious when supported by data.
+- selected target-population frequency and performance;
+- Masters practice;
+- objective engine quality/cost;
+- existing-course relationship where relevant.
 
-Trap evidence, if implemented later, must not become an opaque reason to recommend a move. It must expose setup soundness, practical temptation, punishment, safe defenses, target-population sample, confidence, and provenance separately.
+Personal move history is factual context: whether the move is common, rare, or new for the user; how it has performed with adequate sample qualification; and when it was last played. It is not represented as broad `Profile fit`.
 
-### Opponent move: choose coverage
+Opening classification and reviewed opening knowledge explain what kind of chess the candidate creates and which plans/caveats matter. They are secondary explanation rather than the main persona-ranking mechanism.
 
-The system shows the opponent continuations that matter for the selected target.
+The user may preview or manually enter another legal move and receive the same evidence before accepting it.
 
-The user may:
+### Persona semantics
 
-- include a response now;
-- include all responses above a selected coverage threshold;
-- always include responses seen in personal games;
-- include a dangerous uncommon response;
-- defer a response;
-- explicitly ignore a response for this repertoire version.
+**Balanced** prefers practical peer-tested choices. Peer evidence is primary; Masters and engine evidence validate that practicality. Small objective differences may be accepted when target-population evidence is clearly better.
 
-Deferred work is a first-class state, not an accidental unfinished course.
+**Solid** prefers established, dependable choices. Masters and objective quality carry more authority than in Balanced. Static opening labels can describe the resulting chess but do not define the rank by themselves.
 
-### Continue recursively
+**Aggressive** prefers active or imbalanced choices with strong practical evidence and meaningful Master justification. A bounded additional objective cost is acceptable. Aggressive remains more mainstream/theoretically justified than Surprise.
 
-For every covered opponent response, the builder proposes the next user choice. It continues until branch-specific stopping rules are met.
+**Surprise** prefers uncommon but viable choices that materially overperform the normal result from the same position in the selected target population. Rarity, sample sufficiency, low Master frequency, and objective safety are explicit. A tiny high-result sample or a static `SURPRISE` classification label is not enough.
 
-Possible stopping inputs include:
+Exact numeric weights and statistical treatment are versioned implementation details and must be calibrated against representative positions before being locked.
 
-- practical frequency becoming negligible;
-- selected cumulative coverage reached;
-- depth or theory budget reached;
-- transposition to existing coverage;
-- stable or forced continuation;
-- deliberate user stop;
-- branch deferred for later.
+### Opponent response — choose what to prepare
 
-The final stopping model remains open.
+Question: **Which replies are important enough that this repertoire should prepare for them?**
+
+Persona does not apply to the opponent. An opponent reply cannot become `Target Conflict` merely because the user chose a different style or lower-theory preference.
+
+Preparation priority is driven by separated evidence centered on:
+
+- selected target-population frequency/relevance;
+- exact-position personal encounters;
+- objective danger for uncommon but challenging replies;
+- existing course coverage/gaps;
+- Masters as secondary context where useful.
+
+The system may recommend a preparation set, but the user can add, remove, defer, or explicitly ignore replies.
+
+## Coverage is feedback
+
+For the currently selected opponent replies, Builder shows the cumulative share of target-population games they represent, e.g. `Selected replies represent 82% of target games`.
+
+Coverage is not a persona property and is not configured before the responses are visible. A versioned deterministic policy may propose a reasonable default set; it must not simply conceal the previous fixed persona percentages behind new wording.
+
+Deferred work remains first-class.
+
+## Personal evidence relationship
+
+The standalone Player Chess Profile remains a separate deterministic product capability for broader tendencies across period, speed, color, and rating context.
+
+Builder V2 instead exposes exact-position personal facts such as:
+
+- `Common for you`;
+- `Rare for you`;
+- `New to you`;
+- `Common for you · results below your baseline`, only with sufficient evidence;
+- game/occurrence counts;
+- personal score and position-relative comparison;
+- last-played date.
+
+Familiarity uses all eligible indexed history. Recency is displayed separately rather than enforced as an invisible three-month cutoff.
 
 ## Visual workbench target
 
-The core builder is a routed, resumable, board-first workbench launched from the setup dialog.
+The core Builder remains the routed board-first Cockpit delivered through RB-026.
 
-The accepted default composition uses:
+Preserve:
 
-- one readable primary board and current move sequence;
-- a compact candidate switcher that updates the board and evidence;
-- focused objective, population, master, personal, theory, profile-fit, and target-fit evidence;
-- explicit profile-versus-target disagreement;
-- an opponent-response coverage queue;
-- pending, selected, deferred, ignored, and completed states;
-- branch queue and coverage progress;
-- navigation through accepted and pending branches;
-- preview before course changes are written.
+- one readable primary board and engine evaluation bar;
+- compact candidate switching that updates the board and focused evidence;
+- a persistent decision brief;
+- reviewed opening descriptions, plans, conditions, and caveats;
+- inspectable deterministic evidence and reasons;
+- manual legal move entry;
+- actions, branch queue, defer/ignore/stop/reopen controls, and bounded draft preview;
+- preview before course changes are written;
+- responsive stacking rather than a separate mobile workflow.
 
-The simultaneous multi-board candidate landscape is not the default because it is visually heavy and reduces board readability, particularly on mobile. A deliberate mini-board comparison mode may be added later if structural comparison proves important enough, but it is not required for the first production workbench.
+V2 changes the evidence hierarchy, not the Cockpit concept.
 
-The recursive workflow must not depend on a modal remaining open.
+For user moves, rows foreground engine, target-population, and Masters evidence plus concise factual personal familiarity. For opponent moves, rows foreground preparation priority and selected coverage.
 
-## Player profile relationship
+Normal Builder UI keeps the opening name and strategic knowledge but removes ECO codes/badges such as `A01`. Ambiguous labels such as `target play` should be replaced by explicit target-population wording.
 
-The Chess Profile may initialize recommendations such as:
-
-- sharp positions appear to fit recent blitz results;
-- solid structures work better as Black;
-- theory-heavy branches correlate with early mistakes;
-- a style works against peers but not the next benchmark group.
-
-The builder must show that these are derived conclusions with sample size and confidence.
-
-The player can choose a different target. The UI should distinguish:
-
-- `Factual peer evidence`;
-- `Recommended from your profile`;
-- `Selected for this repertoire`;
-- `Manually chosen despite tradeoff`.
+The simultaneous multi-board candidate landscape remains rejected as the default.
 
 ## Target environment
 
-A target uses one product speed preset:
+A target uses one product speed preset: All speeds, Blitz and slower, Blitz, or Bullet.
 
-- All speeds;
-- Blitz and slower;
-- Blitz;
-- Bullet.
+The current population foundation uses one mixed Lichess Explorer population for combined presets unless later evidence demonstrates a material recommendation problem.
 
-For the MVP, a combined preset is represented by one mixed Lichess Explorer population. Separate per-speed weighting is not required unless later evidence demonstrates a material recommendation problem.
+A target rating population can be all players, the resolved peer interval, the peer interval plus one adjacent higher group, or one explicit Lichess benchmark group. The factual peer interval remains inspectable and versioned. Masters remains a separate corpus rather than the only definition of correctness.
 
-A target rating population can be:
+## Opening classification and knowledge boundary
 
-- all players;
-- around the player's resolved peer interval;
-- the peer interval plus one adjacent higher group;
-- one explicit Lichess-benchmark group.
+Opening classification remains deterministic side-aware intrinsic metadata. Opening knowledge remains reviewed, deterministic, and ranking-neutral.
 
-The factual peer interval is resolved from versioned provider-aware rating evidence and remains inspectable. A manual target override does not mutate that factual result.
+Their V2 role is explanatory:
 
-Population evidence should reflect the selected preset and rating target. Master evidence remains a separate source rather than being treated as the only definition of correctness.
+- ranking says **why this candidate is strong for the selected target/persona**;
+- classification/knowledge says **what kind of chess it creates and what plans/caveats matter**.
 
-## Trap-oriented repertoire boundary
+They must not silently recreate the old persona policy through hard character/theory-fit badges.
 
-A future traps-oriented persona is a willingness to prioritize practical temptation and tactical punishment within explicit objective-risk limits. It is not permission to recommend unsound lines without warning.
+## Course output and adaptation
 
-A trustworthy trap occurrence requires:
+Before writing, the user should see selected lines/branches, computed target-population coverage for selected replies, deferred/ignored responses, course conflicts/transpositions, and low-confidence evidence.
 
-- normalized trigger-position and move identity;
-- a practically tempting opponent response;
-- bounded punishment;
-- explicit safe defenses or refutations;
-- setup soundness separate from practical success;
-- rating/speed population context;
-- engine and source versions;
-- editorial review and lifecycle state.
-
-Opening name and ECO are descriptive links, not trap identity. Related positions may share a trap family without being collapsed into one occurrence.
-
-RB-014 recommends proving this through a bounded curated data/validator pilot before any production database, API, UI, or builder integration is introduced.
-
-## Course output
-
-Before writing, the user should see:
-
-- selected lines and branches;
-- achieved population coverage;
-- deferred responses;
-- conflicts or transpositions with existing courses;
-- approximate learning burden;
-- missing or low-confidence evidence;
-- intended course/chapter organization.
-
-The user can save to a new course or merge into an existing course when supported by the selected entry point and existing architecture.
-
-## Existing-course adaptation
-
-The same workbench should support targeted maintenance:
-
-- cover a frequent opponent response;
-- extend a line that ends too early;
-- reconsider a user move;
-- adapt a general course for a different speed preset;
-- adapt a peer-level repertoire for the next stronger group;
-- create a second persona without replacing the original;
-- defer low-priority branches while keeping an explicit backlog.
+Course preview/apply remains the write authority. The same workbench supports covering frequent replies, extending early endings, reconsidering a user move, adapting to a different target environment, creating another persona, and deferring low-priority branches.
 
 ## Explainability target
 
-Every proposed move or coverage decision should answer:
+Every user-move recommendation should answer:
 
-- Why is this shown?
-- Why is it recommended or not recommended?
-- Which datasets contributed?
-- How much evidence exists?
-- What changes if the speed preset, rating target, or persona changes?
-- What objective or practical cost is being accepted?
+- Why is this candidate shown and ranked here?
+- What do peers do and how does it perform relative to the position baseline?
+- What do Masters do?
+- What objective cost is accepted?
+- Is this move common, rare, or new in my own indexed history?
+- What kind of chess and plans does it create?
 
-A narrative layer may eventually help explain this, but deterministic source evidence remains visible.
+Every opponent-response decision should answer:
+
+- How common is this reply in the target population?
+- Have I actually faced it?
+- Is it unusually challenging despite low frequency?
+- Is it already covered?
+- What share of target games do my selected replies represent?
+
+Deterministic evidence remains authoritative and visible. Generated interpretation may assist but never selects moves or changes state.
 
 ## North-star success
 
 The program succeeds when a user can:
 
-1. define the environment and intent of a repertoire;
-2. visually choose between meaningful continuations;
-3. cover the opponent responses that matter;
-4. create or update a trainable course;
-5. understand why every recommendation was made;
-6. maintain multiple repertoire personas;
-7. return after real games and evolve the material using new evidence.
+1. define one understandable build scope, environment, and persona;
+2. visually choose between empirically meaningful user-move candidates;
+3. prepare for opponent replies that matter without confusing preparation with persona fit;
+4. understand whether a move is familiar/new and whether personal results are concerning without turning history into a hidden constraint;
+5. create or update a trainable course through explicit preview/apply;
+6. understand why every recommendation or preparation priority was made;
+7. maintain multiple repertoire personas;
+8. return after real games and evolve the material using new evidence.
 
-A future quality metric should measure not only course size, but whether recommended and trained choices are played, remembered, and associated with improved opening outcomes in later games.
+RB-016 owns future outcome measurement after sufficient post-V2 usage exists.
+
+See [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md) for the detailed migration plan and examples.

@@ -38,19 +38,36 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 | RB-024 | [#243](https://github.com/vokerg/chess_repertoir_trainer/issues/243) |
 | RB-025 | [#290](https://github.com/vokerg/chess_repertoir_trainer/issues/290) |
 | RB-026 | [#310](https://github.com/vokerg/chess_repertoir_trainer/issues/310) |
+| RB-027 | [#317](https://github.com/vokerg/chess_repertoir_trainer/issues/317) |
+| RB-028 | [#318](https://github.com/vokerg/chess_repertoir_trainer/issues/318) |
+| RB-029 | [#319](https://github.com/vokerg/chess_repertoir_trainer/issues/319) |
+| RB-030 | [#320](https://github.com/vokerg/chess_repertoir_trainer/issues/320) |
+| RB-031 | [#321](https://github.com/vokerg/chess_repertoir_trainer/issues/321) |
 
-RB-021 through RB-025 are complete, including RB-025 final reconciliation through PR #300. RB-026 runtime shipped through PR #311 and is in completion review through documentation-only PR #314. Issue #310 remains open until that required closure reconciliation is approved and squash-merged. RB-016 remains independently blocked on real-use evidence.
+## Current coordination state
 
-Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same change or coordination session.
+RB-026 runtime shipped through PR #311; its documentation-only completion PR #314 is still the canonical predecessor for the V2 planning change because both edit the same program records.
+
+Builder V2 product direction is recorded in `BUILDER_V2_PLAN.md` and split into five execution issues:
+
+- #317 / RB-027 — empirical user-move personas, `READY`, P0;
+- #318 / RB-028 — factual personal move evidence, `READY`, P1;
+- #319 / RB-029 — opponent preparation and computed coverage, `READY`, P1;
+- #320 / RB-030 — single-dialog setup, `READY`, P1;
+- #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-027–RB-029 semantics settle.
+
+RB-016 / #104 remains open and blocked. Its blocker now includes completion of the V2 decision model plus sufficient post-V2 Builder/course use and follow-up games.
+
+Do not create a second issue for an existing `RB-###` task. New repository tasks receive a new immutable RB ID and a new GitHub issue in the same coordination change.
 
 ## Sources of truth
 
-- `FOUNDATION.md`, `NORTH_STAR.md`, and `DECISIONS.md`: product direction.
+- `FOUNDATION.md`, `NORTH_STAR.md`, `BUILDER_V2_PLAN.md`, and `DECISIONS.md`: product direction.
 - `TASKS.md` and individual `tasks/RB-###-*.md`: ordering, dependencies, detailed scope, acceptance criteria, and claim metadata.
 - GitHub Issues: assignee, execution state, blockers, active branch, and pull-request visibility.
 - `reports/`: append-only completion evidence.
 
-When an issue and repository metadata disagree, stop and reconcile them before substantive work. Do not silently choose one.
+When an issue and repository metadata disagree, stop and reconcile them before substantive work.
 
 ## State mapping
 
@@ -69,49 +86,43 @@ A blocked task stays open. Its blocker must be explicit and linked.
 
 Before work:
 
-1. Read the repository task and inspect current code and relevant pull requests.
+1. Read the repository task, `BUILDER_V2_PLAN.md` when relevant, and inspect current code plus relevant pull requests.
 2. Confirm the mapped GitHub issue.
 3. Record the claimant and exact scope in the repository task file.
 4. Assign the issue when appropriate; otherwise add a comment naming the agent/session.
 5. Record the branch in the issue.
-6. Prefer a branch name containing the RB ID and issue number, for example `rb-008/issue-96-visual-candidate-prototype`.
+6. Prefer a branch name containing both identifiers, for example `rb-027/issue-317-empirical-personas`.
 7. Make the claim visible before substantive implementation or research.
+
+For V2 specifically, RB-027 and RB-028 may proceed in parallel only when shared candidate-contract collisions are explicitly coordinated. RB-031 must not be claimed as if its upstream semantics were already stable.
 
 ## Pull-request protocol
 
 Every implementation or review pull request must be visible from its GitHub issue.
 
 - Include the RB ID and issue reference in the pull-request title or body.
-- Recommended title pattern: `RB-008: prototype visual candidate choices (#96)`.
 - Use `Closes #<issue>` only when merging the pull request should complete the task; otherwise use `Refs #<issue>`.
-- Immediately after opening a pull request, ensure the issue or pull-request body records scope, validation performed, validation pending, and review readiness.
-- Do not close an issue merely because a pull request was opened or CI passed.
+- Record source/target branches, scope, validation performed/pending, and review readiness.
+- Do not close an issue merely because a pull request exists or CI passed.
 
 ## Work-session updates
 
-Contributors should update the issue during meaningful state changes:
+Update issues on meaningful state changes: claim/transfer, implementation start, blocker, material scope/dependency change, PR creation/replacement, validation failure changing delivery risk, request for review, completion/rejection/supersession.
 
-- claim or ownership transfer;
-- start of substantive work;
-- newly discovered blocker;
-- scope or dependency change;
-- pull-request creation or replacement;
-- validation failure that changes delivery risk;
-- request for review;
-- completion, rejection, or supersession.
-
-Avoid low-value comments for every commit. Issues should record decisions and state changes another contributor needs to understand.
+Avoid low-value comments for every commit.
 
 ## Dependency links
 
-Repository task files remain the complete dependency definition. Material execution dependencies should also be linked in issue bodies or comments using direct issue references.
+Repository task files remain the complete dependency definition. Material execution dependencies should also be represented in issue bodies/comments using direct issue references.
 
-When a dependency changes:
+For the V2 queue:
 
-1. update the task file;
-2. update `TASKS.md` if ordering or dependency changed;
-3. update affected issue references or comments;
-4. reassess the roadmap and queue in the completion report.
+- RB-027 / #317 defines authoritative user-move ranking semantics;
+- RB-028 / #318 owns exact-position personal evidence and must coordinate contract edits with #317;
+- RB-029 / #319 owns opponent-response preparation/coverage semantics and must preserve RB-009 state behavior;
+- RB-030 / #320 owns setup after V2 target/coverage compatibility is clear;
+- RB-031 / #321 integrates the settled evidence into the Cockpit;
+- RB-016 / #104 remains blocked behind V2 delivery plus real use.
 
 ## Completion protocol
 
@@ -126,4 +137,4 @@ Before closing an issue as completed:
 - new tasks have both RB IDs and GitHub issues;
 - queue reprioritization was explicitly considered.
 
-The final issue update should link or name the report and state residual risks, new tasks, and queue impact.
+The final issue update should name the report, residual risks, new tasks, and queue impact.
