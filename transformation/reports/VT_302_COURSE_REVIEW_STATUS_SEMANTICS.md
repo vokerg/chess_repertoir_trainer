@@ -2,8 +2,9 @@
 
 Date: 2026-08-09  
 Issue: #133  
-Branch: `visual-transformation/vt-302-course-review-status-semantics`  
-Review base: `main` `85688c392f937b67007d5404b9b088c99f259d69`
+Implementation branch: `visual-transformation/vt-302-course-review-status-semantics`  
+Review base: `main` `85688c392f937b67007d5404b9b088c99f259d69`  
+Integrated: PR #316, squash commit `050f9c80a11f08498089ca6bcd1834c60e6ba700`
 
 ## Scope
 
@@ -25,7 +26,7 @@ The integrated shared component supplies the accessibility semantics: errors use
 
 ## Regression coverage
 
-`check-web-accessibility-contract.mjs` now guards the Course Review boundary explicitly. It requires:
+`check-web-accessibility-contract.mjs` guards the Course Review boundary explicitly. It requires:
 
 - the shared error state for the store error;
 - the shared loading state for Course Endings progress;
@@ -36,7 +37,7 @@ Angular template compilation remains responsible for validating the standalone s
 
 ## Documentation reconciliation
 
-`transformation/STATUS.md` records the current slice, the integrated PR #315 predecessor, validation limits, and the self-review correction. `docs/frontend/angular-migration.md` now records Course Review as a consumer of the proven shared loading/error semantics so the migration ledger does not remain stale after this adoption.
+`transformation/STATUS.md` records the integrated PR #316 outcome, the integrated PR #315 predecessor, validation limits, and the self-review corrections. `docs/frontend/angular-migration.md` records Course Review as a consumer of the proven shared loading/error semantics so the migration ledger remains aligned with the integrated implementation.
 
 `docs/frontend/design-tokens.md` is intentionally unchanged: this slice reuses the existing state-message styling and production semantic roles and does not change the token contract, token ownership, or compatibility boundary.
 
@@ -54,12 +55,12 @@ This slice does not change:
 
 ## Validation boundary
 
-The branch was refreshed onto current `main` `85688c392f937b67007d5404b9b088c99f259d69` after PR #315 integrated and the later disjoint landing-copy correction advanced `main`.
+The implementation branch was refreshed onto `main` `85688c392f937b67007d5404b9b088c99f259d69` after PR #315 integrated and the later disjoint landing-copy correction advanced `main`.
 
-The reviewed six-file head `c676e9420b03fc4ccd4c0897ea88e4dc2c42297b` passed exact-head CI #2295. Lint, build, architecture guardrails, database migrations, audits, and the complete test step all succeeded. A later documentation-only reconciliation may advance the pull-request head; that final head must also have green PR CI before merge.
+The final PR head `9650aaa573dbe80f1c911e895e5795285bd1d8d4` passed exact-head CI #2298 (`31320653117`). Lint, build, architecture guardrails, database migrations, all audits, and the complete test step succeeded. PR #316 was then squash-merged as `050f9c80a11f08498089ca6bcd1834c60e6ba700`, and post-merge verification confirmed `main` at that integration commit before this documentation reconciliation was claimed.
 
 No local checkout-based build/test result is claimed in this connector-driven session. Direct authenticated browser or screen-reader review is not claimed unless separately observed and recorded.
 
 ## Residual VT-302 work
 
-VT-302 remains open for broader state/recovery consistency, functional-onboarding-dependent visual polish, remaining accessibility/browser evidence, responsive/zoom/reduced-motion verification, compatibility disposition, and final program reconciliation.
+VT-302 remains open through issue #133 for broader state/recovery consistency, functional-onboarding-dependent visual polish, remaining accessibility/browser evidence, responsive/zoom/reduced-motion verification, compatibility disposition, and final program reconciliation.
