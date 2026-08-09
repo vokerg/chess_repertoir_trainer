@@ -1,6 +1,6 @@
 # Frontend design tokens
 
-Last updated: 2026-08-08
+Last updated: 2026-08-09
 
 This document is the source of truth for the production visual-token and typography contract used by transformed Angular surfaces.
 
@@ -108,11 +108,13 @@ VT-301 has explicitly dispositioned every current authenticated route family. Th
 
 VT-302 has resolved the previously recorded visual-semantic compatibility boundary in `apps/web/src/workbench.css` and the remaining Repertoire Builder workbench/setup/explanation surfaces. Those files now use production `--ui-*` visual roles, and architecture guardrails prevent reintroduction of the bounded legacy semantic names.
 
+VT-302 also removed the only non-Library `.library-*` presentation consumers from the Lines feature. Focused and marathon training links now reuse the generic `compact-action secondary` contract, whose production override is owned by `design-system.css`, and architecture guardrails reject renewed `.library-*` coupling anywhere in Lines HTML/CSS.
+
 Accepted compatibility boundaries that remain:
 
 - Home retains calibrated local `--home-*` aliases whose values match the approved production palette but predate the `--ui-*` namespace.
-- Some global `.library-*` presentation remains while shared line-training surfaces consume it.
-- `styles.css` still owns legacy roles required by other known compatibility consumers and the established `--space-*` scale; resolving the workbench visual roles does not authorize global deletion or redefinition of that layer.
+- Global `.library-*` presentation remains a bounded Study/library compatibility layer. It no longer serves Lines; removing or relocating it requires inspection of the remaining Library-owned consumers rather than a global deletion.
+- `styles.css` still owns legacy roles required by other known compatibility consumers and the established `--space-*` scale; resolving the workbench and training visual roles does not authorize global deletion or redefinition of that layer.
 - Feature-local semantic chart, board, and evaluation colours may remain when they do not represent a shared UI role.
 
 These boundaries are recorded debt, not permission for new code to use legacy visual names and not evidence of an untransformed route family.

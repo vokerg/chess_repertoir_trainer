@@ -19,6 +19,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - Mobile-primary navigation: Home, Study, Games, Openings, and More are derived from the existing hierarchical model while preserving complete grouped route/account access.
 - VT-302 workbench compatibility cleanup: global `workbench.css` plus Repertoire Builder workbench, setup, and explanation presentation use production `--ui-*` visual-semantic roles; an architecture guard prevents those bounded files from regressing to the legacy amber-era visual names.
 - VT-302 shared async-state foundation: `shared/ui/state-message` provides a bounded store-free loading/empty/error presentation contract; Courses and Accounts are the first proven consumers, with focused semantic tests and an accessibility-contract guard preventing those migrated boundaries from regressing to local empty-state presentation.
+- VT-302 training/Library compatibility cleanup: Lines no longer consumes Library-owned `.library-*` presentation. The three affected training links reuse the existing `compact-action secondary` contract, and architecture guardrails reject `.library-*` classes anywhere in Lines HTML/CSS.
 
 ## Visual-transformation route disposition
 
@@ -48,7 +49,7 @@ A transformed route may still compose a bounded legacy-compatible shared widget.
 
 - `apps/web/src/styles.css` remains the explicit amber-era compatibility layer for known remaining consumers and the shared `--space-*` scale. New transformed UI must not add dependencies on its short visual role names.
 - Home retains calibrated local `--home-*` aliases whose values match the approved graphite/mint direction but predate the production `--ui-*` namespace.
-- Some global `.library-*` CSS remains while shared line-training presentation still consumes it. Split it only when the full consumer set is inspected and covered.
+- Global `.library-*` presentation remains for the Study/library feature itself, but Lines no longer consumes it. Removing or relocating the remaining Library-owned global block requires its own complete Library consumer inspection; it is not implied by the training cleanup.
 - Games evidence cards, Study workflow/launcher composition, Lab experiment internals, and workbench evidence slots remain feature-owned because their hierarchy and commands are domain-specific. Feature ownership is not visual-token compatibility debt.
 - Deferred authenticated browser checks remain deferred evidence, not observed passes.
 

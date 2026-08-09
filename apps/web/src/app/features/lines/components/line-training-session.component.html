@@ -76,7 +76,7 @@
         @if (completed()) {
           <button type="button" class="primary" (click)="primaryAction.emit()">{{ primaryActionLabel() }}</button>
           @if (secondaryActionLink(); as secondaryActionLink) {
-            <a class="library-button-link secondary" [routerLink]="secondaryActionLink">
+            <a class="compact-action secondary" [routerLink]="secondaryActionLink">
               {{ secondaryActionLabel() }}
             </a>
           }
@@ -98,7 +98,7 @@
           </div>
           @if (editActionLink(); as editActionLink) {
             <div class="training-result-actions">
-              <a class="library-button-link secondary" [routerLink]="editActionLink">
+              <a class="compact-action secondary" [routerLink]="editActionLink">
                 {{ editActionLabel() }}
               </a>
             </div>
