@@ -1,6 +1,6 @@
 # RB-026 — Reintegrate the Builder Cockpit workspace
 
-Status: IN_PROGRESS
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 190
 
 Delivery class: Frontend product implementation
 
-Planning maturity: Ready — prototype direction selected by the product owner
+Planning maturity: Complete — Builder Cockpit integrated; canonical completion reconciliation in PR #314
 
 GitHub issue: #310
 
@@ -20,9 +20,21 @@ Claimed at: 2026-08-08
 
 Started at: 2026-08-08
 
-Draft pull request: #311
+Runtime pull request: #311
 
-Concurrent dependency: #133 / draft PR #309 — Builder workbench production-token migration
+Runtime squash commit: `fe0a5ada0205e1d2cf0e27017886d8e907ef4ff7`
+
+Final runtime head: `42e57a331cb99a2b8a88160bfec16704e1b96b73`
+
+Final runtime CI: #2253 (`31275215472`) — passed
+
+Completion reconciliation branch: `rb-026/issue-310-completion-reconciliation`
+
+Completion reconciliation pull request: #314
+
+Closure report: `reports/RB-026-2026-08-09-builder-cockpit-closure.md`
+
+Concurrent dependency: #133 / PR #309 — Builder workbench production-token migration, merged before final RB-026 review
 
 ## Objective
 
@@ -61,4 +73,18 @@ Reintegrate the selected Cockpit direction into the production Repertoire Builde
 
 ## Dependency handling
 
-PR #309 edits the same workbench CSS while migrating it to production `--ui-*` tokens. RB-026 will use the production token vocabulary from the start and refresh from current `main` after that dependency moves before final review. The tasks do not share product behavior or data-flow scope.
+PR #309 edited the same workbench CSS while migrating it to production `--ui-*` tokens. RB-026 was refreshed after that migration landed and the final runtime pull request targeted `main` from the production token vocabulary. The tasks did not share product behavior or data-flow scope.
+
+## Completion
+
+PR #311 squash-merged the RB-026 runtime into `main` as `fe0a5ada0205e1d2cf0e27017886d8e907ef4ff7`. Final runtime head `42e57a331cb99a2b8a88160bfec16704e1b96b73` passed exact-head CI #2253 (`31275215472`), including lint, build, opening audits, architecture guardrails, migrations, imported-game audits and the complete test gate.
+
+The implementation preserved the existing Builder store/API/course boundaries and added no backend, contract, ranking, persistence or course-write behavior. Runtime PR #311 changed the Builder workbench/view-model/test surface plus the shared responsive breakpoint helper and coordination metadata.
+
+Authenticated desktop/tablet/mobile visual review was not completed in the implementation session because the available browser redirected `/builder` to sign-in. That remains deferred product evidence and is not represented as a pass by this task.
+
+Completion evidence is recorded in `reports/RB-026-2026-08-09-builder-cockpit-closure.md` and synchronized through `README.md`, `GITHUB_ISSUES.md`, `ROADMAP.md`, `STATUS.md`, `TASKS.md`, issue #310 and program tracker #105 by completion PR #314. PR #314 contains no runtime implementation.
+
+Queue impact: RB-016 remains `BLOCKED` on real-use outcome evidence. No dependency-satisfied Repertoire Builder implementation task is currently queued, and RB-026 does not promote or invent one.
+
+Completed at: 2026-08-09, effective when PR #314 is approved and squash-merged. Issue #310 remains open until that merge.

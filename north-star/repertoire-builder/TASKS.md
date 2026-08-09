@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-08-08
+Last updated: 2026-08-09
 
 This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
@@ -30,18 +30,19 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 170 | RB-022 | #241 | P1 | DONE | Static side-aware opening knowledge implementation | PR #255 |
 | 175 | RB-023 | #242 | P2 | DONE | Opening knowledge in Repertoire Builder | PR #262 |
 | 180 | RB-024 | #243 | P3 | DONE | AI game review grounding with opening plans | PR #268 |
-| 185 | RB-025 | #290 | P1 | DONE | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; merged via `997d1ecc`; 3,733/3,733 generated entries available |
-| 190 | RB-026 | #310 | P1 | IN_PROGRESS | Reintegrate the Builder Cockpit workspace | Draft PR #311 |
+| 185 | RB-025 | #290 | P1 | DONE | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; runtime `997d1ecc`; reconciliation PR #300; 3,733/3,733 generated entries available |
+| 190 | RB-026 | #310 | P1 | DONE | Reintegrate the Builder Cockpit workspace | Runtime PR #311; `fe0a5ada`; final runtime CI #2253; completion reconciliation PR #314 |
 
 ## Current execution state
 
-- The deterministic Builder capability chain, static opening-knowledge service, Builder consumer and bounded AI game-review consumer are complete.
+- The deterministic Builder capability chain, static opening-knowledge service, Builder consumer, bounded AI game-review consumer and Builder Cockpit reintegration are complete in runtime.
 - RB-016 remains independently blocked on real usage and follow-up-game evidence.
-- RB-025 implementation is integrated on `main`: 3,733/3,733 generated entries, 3,167/3,167 unique names, and independent White/Black summary-plus-plan coverage are all at 100% for the pinned opening book.
-- RB-026 is in progress through draft PR #311 for the product-owner-selected Cockpit reintegration, coordinated with #133 / draft PR #309's workbench token migration.
-- The runtime registry contains 160 reviewed rules and the all-book completion test requires every pinned entry to remain `AVAILABLE` with both descriptions and both side plans.
+- RB-025 is complete and reconciled through implementation PRs #302/#304 and final reconciliation PR #300: 3,733/3,733 generated entries, 3,167/3,167 unique names, and independent White/Black summary-plus-plan coverage are all at 100% for the pinned opening book.
+- RB-026 runtime is integrated through PR #311 as `fe0a5ada0205e1d2cf0e27017886d8e907ef4ff7`; final runtime head `42e57a331cb99a2b8a88160bfec16704e1b96b73` passed CI #2253 (`31275215472`). PR #314 is completion-record reconciliation only.
+- The runtime opening-knowledge registry contains 160 reviewed rules and the all-book completion test requires every pinned entry to remain `AVAILABLE` with both descriptions and both side plans.
 - Coverage is explicit rather than a catch-all: arbitrary names outside the pinned opening book remain `UNAVAILABLE`.
-- PR #300 is the final metadata reconciliation only and does not represent additional opening-knowledge implementation work.
+- Authenticated desktop/tablet/mobile visual walkthrough of the final RB-026 Cockpit remains deferred evidence; it is not claimed as a validation pass.
+- No dependency-satisfied Repertoire Builder implementation task is currently queued.
 
 ## Recent closure and review evidence
 
@@ -59,5 +60,6 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 - RB-025 first batch: `reports/RB-025-2026-08-07-opening-knowledge-batch-001.md`.
 - RB-025 completion: `reports/RB-025-2026-08-07-opening-knowledge-completion.md`.
 - RB-025 closure reconciliation: `reports/RB-025-2026-08-08-closure.md`.
+- RB-026 closure reconciliation: `reports/RB-026-2026-08-09-builder-cockpit-closure.md`.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.
