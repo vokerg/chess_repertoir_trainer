@@ -73,6 +73,8 @@ export const accountImportGameCountsSchema = z.object({
   matchedScope: z.number().int().nonnegative(),
   imported: z.number().int().nonnegative(),
   duplicate: z.number().int().nonnegative(),
+  updated: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
   skippedOutOfScope: z.number().int().nonnegative(),
   failed: z.number().int().nonnegative(),
 });
@@ -101,7 +103,7 @@ const accountImportRunBaseSchema = z.object({
   rateLimitUntil: nullableIsoDateTimeSchema,
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
-  startedAt: nullableIsoDateTimeSchema,
+  startedAt: isoDateTimeSchema,
   completedAt: nullableIsoDateTimeSchema,
   errorCode: z.string().min(1).nullable(),
   error: z.string().min(1).nullable(),
