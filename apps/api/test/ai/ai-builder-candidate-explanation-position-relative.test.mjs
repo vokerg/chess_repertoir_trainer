@@ -34,7 +34,7 @@ const candidate = {
       pvUci: ['e2e4'],
     },
     population: {
-      status: 'AVAILABLE',
+      status: 'STALE',
       games: 200,
       frequencyPercent: 18,
       scorePercentForTarget: 47,
@@ -95,7 +95,7 @@ const response = {
   sourceSummary: {
     engine: 'AVAILABLE',
     masters: 'AVAILABLE',
-    population: 'AVAILABLE',
+    population: 'STALE',
     personal: 'INSUFFICIENT',
     opening: 'INSUFFICIENT',
     courses: 'INSUFFICIENT',
@@ -106,6 +106,9 @@ const response = {
 const context = buildCandidateExplanationContext(response, candidate, null);
 const byId = new Map(context.facts.map((fact) => [fact.id, fact]));
 
+assert.equal(byId.get('source.population')?.missing, false);
+assert.equal(byId.get('selected.population_status')?.missing, false);
+assert.equal(byId.get('selected.engine_objective_delta')?.value, '20 cp');
 assert.equal(byId.get('selected.population_position_baseline_score')?.value, '42%');
 assert.equal(byId.get('selected.population_score_delta_vs_position')?.value, '+5 pp');
 assert.equal(byId.get('selected.masters_position_baseline_score')?.value, '44%');
@@ -126,5 +129,13 @@ assert.deepEqual(
   context.referencedFacts(explanation).map((fact) => fact.id),
   explanation.evidenceReferenceIds,
 );
+
+const engineExplanation = {
+  summary: 'The objective delta is 20 centipawns.',
+  tradeoffs: [],
+  evidenceReferenceIds: ['selected.engine_objective_delta'],
+  missingEvidenceReferenceId: null,
+};
+assert.deepEqual(context.reconcile(engineExplanation), engineExplanation);
 
 console.log('AI Builder position-relative candidate explanation tests passed.');
