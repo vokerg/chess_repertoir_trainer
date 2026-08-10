@@ -146,6 +146,23 @@ export class RepertoireBuilderWorkbenchComponent {
     return isOpponentPreparationRecommended(candidate.reasonCodes);
   }
 
+  protected useRecommendedResponses(): void {
+    const candidates = this.response()?.candidates ?? [];
+    const recommended = new Set(
+      candidates
+        .filter((candidate) => this.isOpponentResponseRecommended(candidate))
+        .map((candidate) => candidate.moveUci),
+    );
+    const selected = new Set(this.selectedResponseUcis());
+
+    for (const moveUci of selected) {
+      if (!recommended.has(moveUci)) this.responseToggled.emit(moveUci);
+    }
+    for (const moveUci of recommended) {
+      if (!selected.has(moveUci)) this.responseToggled.emit(moveUci);
+    }
+  }
+
   protected isPreviewed(moveUci: string): boolean {
     return !this.boardEntryMode() && this.previewCandidate()?.moveUci === moveUci;
   }
