@@ -71,6 +71,9 @@ jobs:
       - name: Architecture guardrails
         run: npm run check:architecture
 
+      - name: Repository hygiene guardrails
+        run: npm run check:hygiene
+
       - name: Apply database migrations
         run: npm run db:migrate --workspace=apps/api
 
