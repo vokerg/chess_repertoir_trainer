@@ -400,8 +400,8 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         persona: request.target.objective.persona,
       });
       const selected = selectBoundedCandidates(ranked, request.candidateLimit, includedMove);
-      const candidates: CandidateDecisionCandidate[] = selected.map((entry, index) => ({
-        rank: index + 1,
+      const candidates: CandidateDecisionCandidate[] = selected.map((entry) => ({
+        rank: entry.rank,
         moveUci: entry.input.moveUci,
         moveSan: entry.input.moveSan,
         resultingFen: entry.input.resultingFen,
