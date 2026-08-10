@@ -16,9 +16,11 @@ import {
   validateRepertoireBuilderStartingPosition,
 } from '../helpers/repertoire-builder-starting-position';
 import { repertoireBuilderPersonaPresets } from '../helpers/repertoire-builder-target';
-import type {
-  RepertoireBuilderSetup,
-  RepertoireBuilderStartingScope,
+import {
+  REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
+  REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+  type RepertoireBuilderSetup,
+  type RepertoireBuilderStartingScope,
 } from '../state/repertoire-builder.models';
 
 interface RatingOption {
@@ -125,6 +127,8 @@ export class RepertoireBuilderSetupDialogComponent {
       ratingTarget: rating.target,
       ratingGroup: rating.ratingGroup,
       persona: value.persona,
+      maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+      coveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
       ...(profileDefaults?.setup.side === value.side ? { profileDefaults } : {}),
     };
 
