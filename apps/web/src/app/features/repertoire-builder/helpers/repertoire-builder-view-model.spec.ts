@@ -4,6 +4,7 @@ import {
   type CandidateDecisionCandidate,
   type CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
+import { OPPONENT_PREPARATION_POLICY_VERSION } from 'chess-domain';
 import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
@@ -124,6 +125,9 @@ describe('repertoire builder evidence view model', () => {
     expect(reference.sourceVersions['personalEvidencePolicy']).toBe('2026-08-personal-move-v1');
     expect(reference.sourceVersions['openingClassification']).toBe('2026-07-rules-v2');
     expect(reference.sourceVersions['openingKnowledge']).toBe('2026-08-knowledge-v1');
+    expect(reference.sourceVersions['opponentPreparationPolicy']).toBe(
+      OPPONENT_PREPARATION_POLICY_VERSION,
+    );
     expect(reference.candidateContractVersion).toBe(CANDIDATE_DECISION_CONTRACT_VERSION);
   });
 });
