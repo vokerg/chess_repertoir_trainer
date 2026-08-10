@@ -11,7 +11,7 @@ export type PersonalMoveResultContext = 'ABOVE_BASELINE' | 'BELOW_BASELINE' | 'N
 export interface PersonalMoveEvidenceClassificationInput {
   games: number;
   resultGames: number;
-  gameSharePercent: number | null;
+  moveSharePercent: number | null;
   scoreDeltaVsPositionPercent: number | null;
 }
 
@@ -26,10 +26,10 @@ export interface PersonalMoveEvidenceClassification {
  * Classifies factual exact-position personal evidence for presentation only.
  *
  * Familiarity requires the same five-game minimum already used by Player Chess
- * Profile evidence before a high share can be called established. A 20% exact-
- * position share means no more than five moves can simultaneously qualify as
- * common, while smaller or sparse samples remain factual `RARE` rather than
- * being promoted by percentage alone.
+ * Profile evidence before a high share can be called established. A 20% share
+ * of the user's move choices from the exact position means no more than five
+ * moves can simultaneously qualify as common, while smaller or sparse samples
+ * remain factual `RARE` rather than being promoted by percentage alone.
  *
  * Result context deliberately reuses the existing Player Chess Profile
  * conclusion boundary: at least ten games with known results and a +/-5
@@ -41,14 +41,14 @@ export function classifyPersonalMoveEvidence(
 ): PersonalMoveEvidenceClassification {
   const games = Math.max(0, Math.trunc(input.games));
   const resultGames = Math.min(games, Math.max(0, Math.trunc(input.resultGames)));
-  const gameSharePercent = finiteMetric(input.gameSharePercent);
+  const moveSharePercent = finiteMetric(input.moveSharePercent);
   const scoreDelta = finiteMetric(input.scoreDeltaVsPositionPercent);
 
   const familiarity: PersonalMoveFamiliarity = games === 0
     ? 'NEW'
     : games >= MIN_FAMILIAR_GAMES
-      && gameSharePercent !== null
-      && gameSharePercent >= COMMON_MOVE_SHARE_PERCENT
+      && moveSharePercent !== null
+      && moveSharePercent >= COMMON_MOVE_SHARE_PERCENT
       ? 'COMMON'
       : 'RARE';
 
