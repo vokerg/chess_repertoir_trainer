@@ -105,6 +105,7 @@ export interface NormalizedAccountImportGame {
 export interface PersistAccountImportGamesInput {
   userId: number;
   importRunId: number;
+  workKey?: string | null;
   games: NormalizedAccountImportGame[];
 }
 
