@@ -1,16 +1,16 @@
 # Repertoire Builder V2 decision model
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
-Status: **Agreed product direction; implementation planned through RB-027–RB-031**
+Status: **Agreed product direction; RB-027 implemented, RB-028–RB-031 remain incremental delivery work**
 
-This document records the product-owner review of the current Builder and the agreed V2 decision model. It is a target plan, not a claim that V2 behavior already exists on `main`.
+This document records the product-owner review of the Builder and the agreed V2 decision model. It is both the target plan for the remaining V2 tasks and a coordination record for the portions already implemented. RB-027's empirical `USER_MOVE` ranking is now on `main`; personal evidence, opponent preparation/coverage, setup consolidation and final Cockpit hierarchy remain downstream work.
 
 ## Why V2 exists
 
 The current Builder got several important things right: the board-first Cockpit, compact candidate preview, focused decision brief, reviewed opening plans, manual move entry, recursive branch queue, explicit defer/ignore/stop states, and course preview/apply boundaries are worth preserving.
 
-The review found a deeper problem in the decision semantics. The current product mixes four different concepts — repertoire intent, opponent-response relevance, broad Player Chess Profile similarity, and opening classification — into badges and setup controls that look more authoritative than they are.
+The review found a deeper problem in the decision semantics. The product mixed four different concepts — repertoire intent, opponent-response relevance, broad Player Chess Profile similarity, and opening classification — into badges and setup controls that looked more authoritative than they were.
 
 V2 keeps the interaction model and changes the authority model.
 
@@ -72,7 +72,7 @@ If an independent theory preference later returns, it must have understandable o
 
 ## Revised personas
 
-The current personas are too tightly coupled to static opening traits. V2 treats them as empirical ranking policies for user moves.
+V2 treats personas as empirical ranking policies for user moves. RB-027 implemented this authority model as a versioned deterministic policy.
 
 ### Balanced
 
@@ -119,24 +119,26 @@ A tiny sample with a high win rate is not enough. A static `SURPRISE` opening-cl
 
 The distinction is deliberate:
 
-- **Aggressive = backed aggression.** Active, forcing or imbalanced choices that retain meaningful mainstream/Master justification.
+- **Aggressive = backed aggression.** Active or imbalanced practical choices with stronger mainstream/Master support and more tolerance for bounded objective cost.
 - **Surprise = practical anomaly.** Less expected choices whose target-population results are unusually strong despite lower frequency and lower Master adoption, while remaining objectively viable.
 
 ## Peer versus Masters evidence
 
-Peer and Masters data should not be collapsed into one vague `target fit` concept.
+Peer and Masters data are not collapsed into one vague `target fit` concept.
 
-For user moves the useful comparison is:
+For user moves the implemented V3 comparison is:
 
 - how often peers choose the move;
-- how the move scores relative to the peer baseline from the same position;
+- how the move scores relative to the target-side baseline from the same exact position;
 - how often Masters choose it;
-- how Masters score where meaningful;
-- objective engine cost relative to the best supported candidate.
+- how Masters score relative to their same-position target-side baseline where meaningful;
+- objective engine cost relative to the best usable stored candidate.
 
 For example, if peers normally score 51% from a position and a candidate scores 58% across a credible sample, the useful practical signal is approximately `+7 percentage points versus the position baseline`, not simply `58% > 50%`.
 
-V2 must calibrate this with deterministic benchmark positions before locking new weights. The product should not replace one arbitrary weight table with another.
+RB-027 locked a versioned policy after representative deterministic tests rather than leaving this as an unversioned weight table. The current empirical preset floors are 20 selected-population games and 10 Masters games. Surprise rarity contributes only after at least +3 percentage points versus the selected-position baseline. The exact persona weights and objective guardrails are recorded in `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`.
+
+Objective evidence uses only already-stored legal, internally consistent roots at depth at least 12 with score/mate evidence. RB-027 did not add candidate-specific on-demand or unbounded engine analysis.
 
 ## Personal evidence: familiarity, not profile fit
 
@@ -162,7 +164,7 @@ Familiarity should use all eligible indexed history. A game from 2024 still matt
 
 The standalone Player Chess Profile remains useful elsewhere. Broad matches such as `Sound + Positional + Mainline` should not be presented inside Builder as proof that a specific move is familiar or suited to the player.
 
-V2 therefore removes primary `Profile Aligned/Conflict` from Builder decisions. Personal history is primarily informational rather than a persona-ranking authority, so repeated old habits do not automatically outrank better empirical choices.
+RB-027 already removes broad profile/personal authority from preset ranking. RB-028 owns the factual personal-evidence replacement and is active on PR #327.
 
 ## Opponent responses: preparation, not fit
 
@@ -185,6 +187,8 @@ Priority should combine separated evidence:
 - objective danger;
 - existing course coverage/gap;
 - Masters only as secondary context where useful.
+
+RB-029 owns this policy. RB-027 intentionally leaves `OPPONENT_RESPONSE` ranking semantics unchanged.
 
 ## Coverage becomes feedback
 
@@ -215,7 +219,7 @@ Both remain valuable, but with a clearer role.
 
 **Opening classification/knowledge answers:** What kind of chess does this move create, and what strategic plans/caveats should I understand?
 
-Opening knowledge stays ranking-neutral. Classification is secondary descriptive evidence rather than the cornerstone of persona fit.
+Opening knowledge stays ranking-neutral. Classification is secondary descriptive evidence rather than the cornerstone of persona fit. RB-027 enforces that separation in preset USER_MOVE ranking authority.
 
 Normal Builder UI should keep the opening name and reviewed plans while removing ECO codes/badges such as `A01`, which add little to this decision surface.
 
@@ -288,33 +292,36 @@ Opponent rows foreground preparation evidence and selection state, not persona/p
 
 ### RB-027 / #317 — empirical persona ranking V2
 
-Define and calibrate the new user-move authority model before UI copy is finalized.
+**DONE.** Runtime PR #325 / squash `34dadd25`; final runtime CI #2392. Candidate Decision V3 and versioned preset USER_MOVE policy are integrated.
 
 ### RB-028 / #318 — factual personal move evidence
 
-Provide common/rare/new, results and recency at the exact position and remove broad Profile Fit from Builder.
+**IN_PROGRESS on PR #327.** Provide common/rare/new, results and recency at the exact position and remove broad Profile Fit from Builder presentation.
 
 ### RB-029 / #319 — opponent preparation and computed coverage
 
-Remove opponent target/profile fit, produce a recommended response set and make coverage observable feedback.
+**READY; next unclaimed policy task.** Remove opponent target/profile fit, produce a recommended response set and make coverage observable feedback.
 
 ### RB-030 / #320 — single-dialog setup
 
-Persona appears once. Keep side/scope, speed, rating target and persona; remove the coverage slider and hard theory control.
+**READY.** Persona appears once. Keep side/scope, speed, rating target and persona; remove the coverage slider and hard theory control.
 
 ### RB-031 / #321 — Cockpit evidence hierarchy V2
 
-Integrate the final evidence models into the already-shipped Cockpit, including ECO removal and clear rank explanations.
+**PROPOSED.** Integrate the final evidence models into the already-shipped Cockpit, including ECO removal and clear rank explanations.
 
-RB-016 outcome feedback remains blocked. It should evaluate post-V2 behavior rather than calibrating the semantics that V2 is replacing.
+RB-016 outcome feedback remains blocked. It should evaluate post-V2 behavior rather than calibrating semantics that V2 is replacing.
 
 ## Decisions intentionally not locked yet
 
-- exact numeric persona weights;
-- exact peer overperformance shrinkage/confidence formula;
-- exact common/rare personal thresholds;
-- exact recommended opponent-response stopping rule;
-- whether an uncommon candidate requires bounded on-demand engine evaluation or can be supported entirely by existing stored analysis;
-- whether a future understandable soft theory preference is valuable after V2 is used.
+RB-027 has resolved the user-move persona weights, target-position baseline semantics, empirical sample floors, Surprise overperformance gate, bounded candidate seeding, and stored-engine evidence boundary for its current ranking-policy version.
 
-These belong to the new tasks and must be backed by representative positions and tests.
+Still open under downstream tasks:
+
+- exact common/rare personal thresholds and result-confidence treatment — RB-028;
+- exact recommended opponent-response stopping rule — RB-029;
+- V1 target-field compatibility/removal details required by setup/coverage changes — RB-029/RB-030;
+- whether a future understandable soft theory preference is valuable after V2 is used — deferred product evidence;
+- final compact evidence hierarchy and responsive wording — RB-031.
+
+Future changes to RB-027's implemented numeric policy must be explicit, evidence-backed, and versioned rather than silently changing the meaning of existing Builder decisions.
