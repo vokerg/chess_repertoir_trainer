@@ -76,3 +76,40 @@ export interface ExtendAccountImportCoverageInput {
   coveredFrom: Date;
   coveredThrough: Date;
 }
+
+export interface NormalizedAccountImportGame {
+  providerGameId: string;
+  providerUrl?: string | null;
+  pgn?: string | null;
+  rated?: boolean | null;
+  variant?: string | null;
+  speedCategory?: string | null;
+  timeControlRaw?: string | null;
+  timeControlInitial?: number | null;
+  timeControlIncrement?: number | null;
+  startedAt?: Date | null;
+  endedAt?: Date | null;
+  whiteUsername?: string | null;
+  blackUsername?: string | null;
+  whiteRating?: number | null;
+  blackRating?: number | null;
+  userColor?: string | null;
+  opponentUsername?: string | null;
+  result?: string | null;
+  resultForUser?: string | null;
+  status?: string | null;
+  openingName?: string | null;
+  openingEco?: string | null;
+}
+
+export interface PersistAccountImportGamesInput {
+  userId: number;
+  importRunId: number;
+  games: NormalizedAccountImportGame[];
+}
+
+export interface PersistAccountImportGamesResult {
+  attempted: number;
+  inserted: number;
+  duplicate: number;
+}
