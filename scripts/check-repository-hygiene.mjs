@@ -6,39 +6,48 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const apiSourceRoot = new URL('../apps/api/src/', import.meta.url);
 
-const allowedLegacyOpaqueResponseConsumers = new Set([
-  'apps/api/src/modules/analysis/analysis.routes.ts',
-  'apps/api/src/modules/courses/courses.routes.ts',
-  'apps/api/src/modules/imported-games/imported-games.routes.ts',
-  'apps/api/src/modules/lab/lab.routes.ts',
-  'apps/api/src/modules/repertoire-coverage/repertoire-coverage.routes.ts',
-  'apps/api/src/modules/scenario-training/scenario-training.routes.ts',
-  'apps/api/src/modules/training-marathons/training-marathons.routes.ts',
-  'apps/api/src/modules/training/training.routes.ts',
-  'apps/api/src/routes/externalAccounts.ts',
-  'apps/api/src/routes/lichessAuth.ts',
+// Counts include the import reference plus every route response reference in the file.
+// Keep this map exact: contract migrations must reduce the relevant count in the same change.
+const expectedLegacyOpaqueResponseOccurrences = new Map([
+  ['apps/api/src/modules/analysis/analysis.routes.ts', 8],
+  ['apps/api/src/modules/courses/courses.routes.ts', 21],
+  ['apps/api/src/modules/imported-games/imported-games.routes.ts', 5],
+  ['apps/api/src/modules/lab/lab.routes.ts', 6],
+  ['apps/api/src/modules/repertoire-coverage/repertoire-coverage.routes.ts', 2],
+  ['apps/api/src/modules/scenario-training/scenario-training.routes.ts', 8],
+  ['apps/api/src/modules/training-marathons/training-marathons.routes.ts', 3],
+  ['apps/api/src/modules/training/training.routes.ts', 8],
+  ['apps/api/src/routes/externalAccounts.ts', 13],
+  ['apps/api/src/routes/lichessAuth.ts', 5],
 ]);
 
-const legacyOpaqueResponseConsumers = sourceFiles(apiSourceRoot)
-  .filter((fileUrl) => fileUrl.pathname.endsWith('.ts'))
-  .filter((fileUrl) => !fileUrl.pathname.endsWith('/routes/legacy-route.schemas.ts'))
-  .filter((fileUrl) => readFileSync(fileUrl, 'utf8').includes('legacyOpaqueResponseSchema'))
-  .map((fileUrl) => relative(repositoryRoot, fileURLToPath(fileUrl)).replaceAll('\\', '/'))
-  .sort();
-const allowedLegacyConsumers = [...allowedLegacyOpaqueResponseConsumers].sort();
+const actualLegacyOccurrences = new Map(
+  sourceFiles(apiSourceRoot)
+    .filter((fileUrl) => fileUrl.pathname.endsWith('.ts'))
+    .filter((fileUrl) => !fileUrl.pathname.endsWith('/routes/legacy-route.schemas.ts'))
+    .map((fileUrl) => {
+      const source = readFileSync(fileUrl, 'utf8');
+      const count = source.match(/legacyOpaqueResponseSchema/g)?.length ?? 0;
+      const path = relative(repositoryRoot, fileURLToPath(fileUrl)).replaceAll('\\', '/');
+      return [path, count];
+    })
+    .filter(([, count]) => count > 0),
+);
 
 assert.deepEqual(
-  legacyOpaqueResponseConsumers,
-  allowedLegacyConsumers,
+  [...actualLegacyOccurrences.entries()].sort(([left], [right]) => left.localeCompare(right)),
+  [...expectedLegacyOpaqueResponseOccurrences.entries()].sort(([left], [right]) => left.localeCompare(right)),
   [
-    'legacyOpaqueResponseSchema is transitional debt: the allowlist must exactly match current consumers.',
-    'New consumers are forbidden, and migrated/deleted consumers must be removed from the allowlist in the same change.',
+    'legacyOpaqueResponseSchema is transitional debt: exact usage counts must not drift.',
+    'New usages are forbidden, and migrated/deleted usages must reduce this baseline in the same change.',
     'Define a concrete response schema, preferably in packages/contracts when the payload crosses workspace boundaries.',
   ].join(' '),
 );
 
+const totalLegacyOccurrences = [...actualLegacyOccurrences.values()].reduce((sum, count) => sum + count, 0);
+const routeResponseOccurrences = totalLegacyOccurrences - actualLegacyOccurrences.size;
 console.log(
-  `Repository hygiene guardrails passed. ${legacyOpaqueResponseConsumers.length} legacy opaque response consumer(s) remain.`,
+  `Repository hygiene guardrails passed. ${routeResponseOccurrences} legacy opaque route response reference(s) remain across ${actualLegacyOccurrences.size} file(s).`,
 );
 
 function sourceFiles(directoryUrl) {
