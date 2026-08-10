@@ -4,6 +4,7 @@
 **Issue:** #317  
 **Runtime PR:** #325  
 **Runtime squash:** `34dadd251d4310f427cc60b466158c132823e398`  
+**Completion reconciliation PR:** #330  
 **Final runtime head:** `3f5c75bfe36776a16235f0fa5193711898f1b1e5`  
 **Final runtime CI:** #2392 (`31383710305`) — green  
 **Closed:** 2026-08-10
