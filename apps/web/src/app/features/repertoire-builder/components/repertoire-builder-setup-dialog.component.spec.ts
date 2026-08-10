@@ -24,9 +24,10 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
     expect(root.querySelector('[role="dialog"]')).not.toBeNull();
     expect(root.textContent).toContain('Choose the target for this draft');
     expect(root.textContent).toContain('Refreshing the page starts a new draft');
-    expect(root.querySelector('[aria-label="Opponent-response coverage percent"]')).not.toBeNull();
+    expect(root.querySelector('[aria-label="Opponent-response coverage percent"]')).toBeNull();
     expect(root.textContent).toContain('playable minimum');
-    expect(root.textContent).toContain('coverage default');
+    expect(root.textContent).not.toContain('coverage default');
+    expect(root.textContent).toContain('Coverage is feedback from the replies you actually select');
   });
 
   it('makes replacement explicit when setup is reopened from an active draft', () => {
