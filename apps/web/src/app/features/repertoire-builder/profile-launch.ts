@@ -8,9 +8,7 @@ import {
 import type {
   RepertoireTargetDefaultSource,
   RepertoireTargetPersona,
-  RepertoireTargetTheoryBurden,
 } from '@chess-trainer/contracts/repertoire-target';
-import { repertoireBuilderPersonaPresets } from './helpers/repertoire-builder-target';
 import type { RepertoireBuilderSetup } from './state/repertoire-builder.models';
 
 const PROFILE_SOURCE = 'player-profile' as const;
@@ -28,8 +26,6 @@ const CHARACTER_ORDER: readonly PlayerChessProfileOpeningCharacter[] = [
   'TACTICAL',
   'SURPRISE',
 ];
-
-const THEORY_ORDER: readonly RepertoireTargetTheoryBurden[] = ['MEDIUM', 'LOW', 'HIGH'];
 
 export interface RepertoireBuilderProfileSuggestion {
   side: 'WHITE' | 'BLACK';
@@ -72,8 +68,6 @@ export function buildRepertoireBuilderProfileLaunchQueryParams(
     side: suggestion.side,
     speedPreset: suggestion.setup.speedPreset,
     persona: suggestion.setup.persona,
-    theoryBurden: suggestion.setup.maximumTheoryBurden,
-    coveragePercent: suggestion.setup.coveragePercent,
     profileContractVersion: suggestion.profileSource.profileContractVersion,
     profileGeneratedAt: suggestion.profileSource.profileGeneratedAt,
     classificationVersion: suggestion.profileSource.classificationVersion,
@@ -92,8 +86,6 @@ export function parseRepertoireBuilderProfileLaunch(
   const side = profileSide(params.get('side'));
   const speedPreset = profileSpeedPreset(params.get('speedPreset'));
   const persona = profilePersona(params.get('persona'));
-  const maximumTheoryBurden = theoryBurden(params.get('theoryBurden'));
-  const coveragePercent = boundedInteger(params.get('coveragePercent'), 50, 100);
   const profileContractVersion = boundedText(params.get('profileContractVersion'), 80);
   const profileGeneratedAt = profileDateTime(params.get('profileGeneratedAt'));
   const classificationVersion = boundedText(params.get('classificationVersion'), 120);
@@ -104,8 +96,6 @@ export function parseRepertoireBuilderProfileLaunch(
     side === null
     || speedPreset === null
     || persona === null
-    || maximumTheoryBurden === null
-    || coveragePercent === null
     || profileContractVersion !== PLAYER_CHESS_PROFILE_CONTRACT_VERSION
     || profileGeneratedAt === null
     || classificationVersion === null
@@ -125,17 +115,16 @@ export function parseRepertoireBuilderProfileLaunch(
 
   const setup: RepertoireBuilderSetup = {
     side,
+    startingScope: 'FULL',
+    customStartingPosition: '',
     speedPreset,
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona,
-    maximumTheoryBurden,
-    coveragePercent,
   };
   const evidenceSummary = profileEvidenceSummary(
     side,
     persona,
-    maximumTheoryBurden,
     profiledGames,
     strongestCharacter,
   );
@@ -178,17 +167,14 @@ function buildSideSuggestion(
 
   const strongestCharacter = strongestProfileCharacter(rows);
   const persona = personaForCharacter(strongestCharacter);
-  const preset = repertoireBuilderPersonaPresets.find((entry) => entry.id === persona);
-  if (!preset) return null;
-  const maximumTheoryBurden = dominantTheoryBurden(rows, preset.defaultTheoryBurden);
   const setup: RepertoireBuilderSetup = {
     side,
+    startingScope: 'FULL',
+    customStartingPosition: '',
     speedPreset: response.filters.speedPreset,
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona,
-    maximumTheoryBurden,
-    coveragePercent: preset.defaultCoveragePercent,
   };
 
   return {
@@ -205,7 +191,6 @@ function buildSideSuggestion(
     evidenceSummary: profileEvidenceSummary(
       side,
       persona,
-      maximumTheoryBurden,
       profiledGames,
       strongestCharacter,
     ),
@@ -232,22 +217,6 @@ function strongestProfileCharacter(
   }, null);
 }
 
-function dominantTheoryBurden(
-  rows: readonly PlayerChessProfileOpeningGroup[],
-  fallback: RepertoireTargetTheoryBurden,
-): RepertoireTargetTheoryBurden {
-  const gamesByTheory = new Map<RepertoireTargetTheoryBurden, number>();
-  for (const row of rows) {
-    const theory = row.classification?.theoryBurden;
-    if (theory !== 'LOW' && theory !== 'MEDIUM' && theory !== 'HIGH') continue;
-    gamesByTheory.set(theory, (gamesByTheory.get(theory) ?? 0) + row.games);
-  }
-  if (gamesByTheory.size === 0) return fallback;
-  return THEORY_ORDER.reduce((best, theory) => (
-    (gamesByTheory.get(theory) ?? 0) > (gamesByTheory.get(best) ?? 0) ? theory : best
-  ), fallback);
-}
-
 function personaForCharacter(
   character: PlayerChessProfileOpeningCharacter | null,
 ): Exclude<RepertoireTargetPersona, 'CUSTOM'> {
@@ -270,12 +239,11 @@ function personaForCharacter(
 function profileEvidenceSummary(
   side: 'WHITE' | 'BLACK',
   persona: Exclude<RepertoireTargetPersona, 'CUSTOM'>,
-  theory: RepertoireTargetTheoryBurden,
   profiledGames: number,
   strongestCharacter: PlayerChessProfileOpeningCharacter | null,
 ): string {
   const character = strongestCharacter ? humanize(strongestCharacter) : 'mixed character';
-  return `${profiledGames} profiled ${side.toLowerCase()} games · ${character} · ${humanize(persona)} intent · ${theory.toLowerCase()} theory`;
+  return `${profiledGames} profiled ${side.toLowerCase()} games · ${character} · ${humanize(persona)} intent`;
 }
 
 function profileSide(value: string | null): 'WHITE' | 'BLACK' | null {
@@ -292,10 +260,6 @@ function profilePersona(value: string | null): RepertoireBuilderSetup['persona']
   return value === 'BALANCED' || value === 'SOLID' || value === 'AGGRESSIVE' || value === 'SURPRISE'
     ? value
     : null;
-}
-
-function theoryBurden(value: string | null): RepertoireTargetTheoryBurden | null {
-  return value === 'LOW' || value === 'MEDIUM' || value === 'HIGH' ? value : null;
 }
 
 function optionalCharacter(value: string | null): PlayerChessProfileOpeningCharacter | null {
