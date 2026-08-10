@@ -11,7 +11,7 @@ import {
 } from '../player-chess-profile';
 import { repertoireTargetSchema } from '../repertoire-target';
 
-export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-08-v3' as const;
+export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-08-v4' as const;
 export const CANDIDATE_RANKING_POLICY_VERSION = '2026-08-empirical-persona-v2' as const;
 
 export const candidateDecisionContractVersionSchema = z.literal(CANDIDATE_DECISION_CONTRACT_VERSION);
@@ -110,11 +110,123 @@ export const candidateCorpusEvidenceSchema = z.object({
 });
 export type CandidateCorpusEvidence = z.infer<typeof candidateCorpusEvidenceSchema>;
 
+export const candidatePersonalFamiliaritySchema = z.enum(['COMMON', 'RARE', 'NEW']);
+export type CandidatePersonalFamiliarity = z.infer<typeof candidatePersonalFamiliaritySchema>;
+
+export const candidatePersonalResultContextSchema = z.enum([
+  'ABOVE_BASELINE',
+  'BELOW_BASELINE',
+  'NEUTRAL',
+  'INSUFFICIENT',
+]);
+export type CandidatePersonalResultContext = z.infer<typeof candidatePersonalResultContextSchema>;
+
+export const candidatePersonalFilterContextSchema = z.object({
+  accountScope: z.enum(['ALL_USER_ACCOUNTS', 'SELECTED_ACCOUNTS']),
+  accountIds: z.array(z.number().int().positive()),
+  side: z.enum(['WHITE', 'BLACK']),
+  rated: z.boolean(),
+  speedCategories: z.array(z.string().min(1)),
+  historyWindow: z.literal('ALL_INDEXED'),
+}).superRefine((filter, context) => {
+  if (filter.accountScope === 'ALL_USER_ACCOUNTS' && filter.accountIds.length > 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['accountIds'],
+      message: 'All-user-account personal evidence must not carry selected account IDs.',
+    });
+  }
+  if (filter.accountScope === 'SELECTED_ACCOUNTS' && filter.accountIds.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['accountIds'],
+      message: 'Selected-account personal evidence requires at least one account ID.',
+    });
+  }
+});
+export type CandidatePersonalFilterContext = z.infer<typeof candidatePersonalFilterContextSchema>;
+
 export const candidatePersonalEvidenceSchema = z.object({
   status: candidateEvidenceStatusSchema,
   occurrences: z.number().int().nonnegative(),
   games: z.number().int().nonnegative(),
+  gameCount: z.number().int().nonnegative(),
+  moveSharePercent: z.number().min(0).max(100).nullable(),
   scorePercent: z.number().min(0).max(100).nullable(),
+  scoreDeltaVsPositionPercent: z.number().min(-100).max(100).nullable(),
+  lastPlayedAt: z.iso.datetime({ offset: true }).nullable(),
+  policyVersion: z.string().min(1).nullable(),
+  familiarity: candidatePersonalFamiliaritySchema.nullable(),
+  resultContext: candidatePersonalResultContextSchema.nullable(),
+  resultSampleQualified: z.boolean(),
+  filterContext: candidatePersonalFilterContextSchema,
+}).superRefine((evidence, context) => {
+  if (evidence.games > evidence.gameCount) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['games'],
+      message: 'Known-result games cannot exceed all-history personal game count.',
+    });
+  }
+
+  if (evidence.status === 'UNAVAILABLE') {
+    if (evidence.policyVersion !== null
+      || evidence.familiarity !== null
+      || evidence.resultContext !== null
+      || evidence.resultSampleQualified) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Unavailable personal evidence must not claim a factual classification.',
+      });
+    }
+    return;
+  }
+
+  if (!evidence.policyVersion) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['policyVersion'],
+      message: 'Loaded personal evidence requires a policy version.',
+    });
+  }
+  if (!evidence.familiarity) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['familiarity'],
+      message: 'Loaded personal evidence requires a familiarity classification.',
+    });
+  }
+  if (!evidence.resultContext) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['resultContext'],
+      message: 'Loaded personal evidence requires a result-context classification.',
+    });
+  }
+  if (evidence.familiarity === 'NEW'
+    && (evidence.gameCount !== 0 || evidence.occurrences !== 0 || evidence.lastPlayedAt !== null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['familiarity'],
+      message: 'New personal evidence cannot carry prior games, occurrences, or a last-played date.',
+    });
+  }
+  if (evidence.resultSampleQualified && evidence.resultContext === 'INSUFFICIENT') {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['resultContext'],
+      message: 'Qualified personal results require a position-relative result label.',
+    });
+  }
+  if (!evidence.resultSampleQualified
+    && evidence.resultContext !== null
+    && evidence.resultContext !== 'INSUFFICIENT') {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['resultContext'],
+      message: 'Unqualified personal results must remain insufficient.',
+    });
+  }
 });
 export type CandidatePersonalEvidence = z.infer<typeof candidatePersonalEvidenceSchema>;
 
