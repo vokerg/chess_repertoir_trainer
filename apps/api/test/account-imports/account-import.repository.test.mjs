@@ -340,6 +340,8 @@ function isUniqueConstraintViolation(error) {
 }
 
 function isCheckConstraintViolation(error) {
+  const message = String(error?.message ?? error);
   return error?.code === 'P2004'
-    || (error?.code === 'P2010' && error?.meta?.code === '23514');
+    || (error?.code === 'P2010' && error?.meta?.code === '23514')
+    || (message.includes('23514') && message.includes('AccountImportCoverage_interval_check'));
 }
