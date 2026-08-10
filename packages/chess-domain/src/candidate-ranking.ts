@@ -199,10 +199,10 @@ function buildComponents(
     masters: empiricalUserMove
       ? empiricalCorpusComponent(input.masters, EMPIRICAL_MASTERS_MIN_GAMES)
       : legacyCorpusComponent(input.masters),
-    personal: personalComponent(input.personal),
-    targetFit: fitComponent(input.targetFit, 40, -50),
-    profileFit: fitComponent(input.profileFit, 25, -25),
-    course: courseComponent(input.course),
+    personal: empiricalUserMove ? 0 : personalComponent(input.personal),
+    targetFit: empiricalUserMove ? 0 : fitComponent(input.targetFit, 40, -50),
+    profileFit: empiricalUserMove ? 0 : fitComponent(input.profileFit, 25, -25),
+    course: empiricalUserMove ? 0 : courseComponent(input.course),
   };
 }
 
@@ -386,13 +386,14 @@ function resolveEligibility(
   if (input.engine.mateForTarget !== null && input.engine.mateForTarget < 0) return 'EXCLUDED';
 
   const delta = input.engine.objectiveDeltaCp;
+  const targetConflictAffectsEligibility = persona === 'CUSTOM' && input.targetFit === 'CONFLICT';
   if (delta === null) {
-    return input.targetFit === 'CONFLICT' || input.course.conflict ? 'WARNING' : 'ELIGIBLE';
+    return targetConflictAffectsEligibility || input.course.conflict ? 'WARNING' : 'ELIGIBLE';
   }
 
   const thresholds = riskThresholds(context, persona);
   if (delta >= thresholds.exclude) return 'EXCLUDED';
-  if (delta >= thresholds.warn || input.targetFit === 'CONFLICT' || input.course.conflict) return 'WARNING';
+  if (delta >= thresholds.warn || targetConflictAffectsEligibility || input.course.conflict) return 'WARNING';
   return 'ELIGIBLE';
 }
 
@@ -440,21 +441,27 @@ function buildReasonCodes(
     ? hasUsableCorpus(input.masters, EMPIRICAL_MASTERS_MIN_GAMES)
     : input.masters.games >= 10;
   if (masterSupported) reasons.add('MASTER_SUPPORTED');
-  if (input.personal.games >= 3 || input.personal.occurrences >= 3) {
-    reasons.add(role === 'OPPONENT_RESPONSE' ? 'PERSONALLY_ENCOUNTERED' : 'PERSONALLY_FAMILIAR');
+
+  if (!empiricalUserMove) {
+    if (input.personal.games >= 3 || input.personal.occurrences >= 3) {
+      reasons.add(role === 'OPPONENT_RESPONSE' ? 'PERSONALLY_ENCOUNTERED' : 'PERSONALLY_FAMILIAR');
+    }
+    if ((input.personal.scorePercent ?? 0) >= 55 && input.personal.games >= 5) {
+      reasons.add('PERSONAL_RESULTS_POSITIVE');
+    }
+    for (const reason of input.targetReasonCodes) reasons.add(reason);
+    for (const reason of input.profileReasonCodes) reasons.add(reason);
+    if (input.course.covered) reasons.add('COURSE_ALREADY_COVERS');
+    if (input.course.transposesToCoveredPosition) reasons.add('TRANSPOSES_TO_COVERAGE');
   }
-  if ((input.personal.scorePercent ?? 0) >= 55 && input.personal.games >= 5) {
-    reasons.add('PERSONAL_RESULTS_POSITIVE');
-  }
-  for (const reason of input.targetReasonCodes) reasons.add(reason);
-  for (const reason of input.profileReasonCodes) reasons.add(reason);
-  if (input.course.covered) reasons.add('COURSE_ALREADY_COVERS');
   if (input.course.conflict) reasons.add('COURSE_CONFLICT');
-  if (input.course.transposesToCoveredPosition) reasons.add('TRANSPOSES_TO_COVERAGE');
   if (role === 'OPPONENT_RESPONSE' && (delta ?? 0) >= 100) reasons.add('DANGEROUS_RESPONSE');
   if (input.manuallyRequested) reasons.add('MANUAL_CANDIDATE');
 
-  const sourceCount = [input.engine, input.population, input.masters, input.personal]
+  const authoritativeSources = empiricalUserMove
+    ? [input.engine, input.population, input.masters]
+    : [input.engine, input.population, input.masters, input.personal];
+  const sourceCount = authoritativeSources
     .filter((source) => source.status === 'AVAILABLE' || source.status === 'STALE').length;
   if (sourceCount <= 1) reasons.add('LOW_EVIDENCE');
   return [...reasons];
@@ -485,7 +492,9 @@ function buildWarningCodes(
     warnings.add('OBJECTIVE_EVIDENCE_MISSING');
   }
   if (input.engine.depth !== null && input.engine.depth < 12) warnings.add('LOW_ENGINE_DEPTH');
-  if (input.personal.status === 'INSUFFICIENT' && (input.personal.games > 0 || input.personal.occurrences > 0)) {
+  if (!empiricalUserMove
+    && input.personal.status === 'INSUFFICIENT'
+    && (input.personal.games > 0 || input.personal.occurrences > 0)) {
     warnings.add('SPARSE_PERSONAL_EVIDENCE');
   }
   if (input.course.conflict) warnings.add('COURSE_CONFLICT');
