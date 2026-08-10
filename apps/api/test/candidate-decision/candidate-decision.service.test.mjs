@@ -151,6 +151,16 @@ const service = createCandidateDecisionService({
           moveNumber: 1,
           occurrences: 6,
           games: { total: 6, wins: 3, draws: 1, losses: 2, scorePct: 58.3 },
+          gameCount: 6,
+          moveSharePercent: 100,
+          scoreDeltaVsPositionPercent: 0,
+          lastPlayedAt: '2024-01-05T12:00:00.000Z',
+          personalContext: {
+            policyVersion: '2026-08-personal-move-v1',
+            familiarity: 'COMMON',
+            resultContext: 'INSUFFICIENT',
+            resultSampleQualified: false,
+          },
         }],
         appliedFilters: {},
       };
@@ -196,7 +206,7 @@ const service = createCandidateDecisionService({
     includeMoveUci: 'g2g4',
   });
 
-  assert.equal(response.contractVersion, '2026-08-v3');
+  assert.equal(response.contractVersion, '2026-08-v4');
   assert.equal(response.rankingPolicyVersion, '2026-08-empirical-persona-v2');
   assert.equal(response.candidates.length, 2);
   assert.equal(response.requestedMoveIncluded, true);
@@ -212,6 +222,16 @@ const service = createCandidateDecisionService({
   assert.equal(manual.reasonCodes.includes('MANUAL_CANDIDATE'), true);
   assert.equal(manual.warningCodes.includes('OBJECTIVE_LOSS'), true);
   assert.equal(manual.evidence.opening.knowledge.plans[0].id, 'test-plan');
+  assert.equal(manual.evidence.personal.familiarity, 'NEW');
+  assert.equal(manual.evidence.personal.gameCount, 0);
+  assert.equal(manual.evidence.personal.games, 0);
+  assert.equal(manual.evidence.personal.moveSharePercent, 0);
+  assert.equal(manual.evidence.personal.lastPlayedAt, null);
+  assert.equal(manual.evidence.personal.policyVersion, '2026-08-personal-move-v1');
+  assert.equal(manual.evidence.personal.resultSampleQualified, false);
+  assert.equal(manual.evidence.personal.filterContext.historyWindow, 'ALL_INDEXED');
+  assert.equal(manual.evidence.personal.filterContext.rated, true);
+  assert.equal(manual.evidence.personal.filterContext.side, 'WHITE');
   assert.deepEqual(Object.keys(manual.components).sort(), [
     'course',
     'masters',
@@ -233,6 +253,24 @@ const service = createCandidateDecisionService({
     assert.equal(e4.targetFit.status, 'ALIGNED');
     assert.equal(e4.profileFit.status, 'ALIGNED');
   }
+}
+
+{
+  const response = await service.get(42, {
+    fen: 'startpos',
+    decisionRole: 'USER_MOVE',
+    target,
+    candidateLimit: 6,
+  });
+  const d4 = response.candidates.find((candidate) => candidate.moveUci === 'd2d4');
+  assert.ok(d4);
+  assert.equal(d4.evidence.personal.familiarity, 'COMMON');
+  assert.equal(d4.evidence.personal.gameCount, 6);
+  assert.equal(d4.evidence.personal.games, 6);
+  assert.equal(d4.evidence.personal.moveSharePercent, 100);
+  assert.equal(d4.evidence.personal.lastPlayedAt, '2024-01-05T12:00:00.000Z');
+  assert.equal(d4.evidence.personal.resultContext, 'INSUFFICIENT');
+  assert.equal(d4.evidence.personal.resultSampleQualified, false);
 }
 
 {
