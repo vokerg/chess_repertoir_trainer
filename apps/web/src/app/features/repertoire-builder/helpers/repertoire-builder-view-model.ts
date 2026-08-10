@@ -8,7 +8,7 @@ import type {
   BuilderPreviewNode,
   BuilderSessionPreview,
 } from 'chess-domain';
-import { compactGameCount } from '../../../shared/lichess-games-explorer/lichess-games-explorer.helpers';
+import { compactGameCount } from '../../../shared/games/game-count.helpers';
 import type {
   RepertoireBuilderPreviewRow,
   RepertoireBuilderSourceItem,

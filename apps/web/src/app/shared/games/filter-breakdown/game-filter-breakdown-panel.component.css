@@ -33,9 +33,9 @@
 }
 
 .game-filter-breakdown-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 0.42fr);
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   width: 100%;
   border: 1px solid transparent;
@@ -45,7 +45,9 @@
   color: var(--ui-text);
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .game-filter-breakdown-row:hover {
@@ -84,12 +86,12 @@
 
 .game-filter-breakdown-stats {
   display: grid;
-  flex: 0 0 auto;
   justify-items: end;
   gap: 0.15rem;
   color: var(--ui-text-muted);
   font-family: var(--ui-font-family-mono);
   font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .game-filter-breakdown-stats strong {
@@ -119,5 +121,6 @@
 
   .game-filter-breakdown-row {
     align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }

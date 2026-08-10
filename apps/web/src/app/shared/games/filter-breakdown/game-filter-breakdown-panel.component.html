@@ -12,7 +12,9 @@
   @if (loading() && !items().length) {
     <div class="game-filter-breakdown-list" aria-hidden="true">
       @for (row of [0, 1, 2, 3]; track row) {
-        <div class="game-filter-breakdown-row loading-row"><span>&nbsp;</span><strong>&nbsp;</strong></div>
+        <div class="game-filter-breakdown-row loading-row">
+          <span>&nbsp;</span><strong>&nbsp;</strong>
+        </div>
       }
     </div>
   } @else if (error()) {
@@ -35,12 +37,28 @@
       >
         <span class="game-filter-breakdown-label">
           <strong>{{ item.label }}</strong>
-          @if (item.detail) { <small>{{ item.detail }}</small> }
+          @if (item.detail) {
+            <small>{{ item.detail }}</small>
+          }
         </span>
         <span class="game-filter-breakdown-stats">
-          <strong>{{ item.games }} games</strong>
+          <strong [title]="exactGameCount(item.games) + ' games'">
+            {{ compactGameCount(item.games) }} games
+          </strong>
           @if (item.wdl; as wdl) {
-            <small>{{ wdl.wins }} {{ wdl.draws }} {{ wdl.losses }} WDL</small>
+            <small
+              [title]="
+                'W ' +
+                exactGameCount(wdl.wins) +
+                ' · D ' +
+                exactGameCount(wdl.draws) +
+                ' · L ' +
+                exactGameCount(wdl.losses)
+              "
+            >
+              W {{ compactGameCount(wdl.wins) }} · D {{ compactGameCount(wdl.draws) }} · L
+              {{ compactGameCount(wdl.losses) }}
+            </small>
           }
         </span>
       </button>

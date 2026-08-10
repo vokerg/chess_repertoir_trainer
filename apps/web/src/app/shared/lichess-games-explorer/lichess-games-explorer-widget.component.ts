@@ -11,13 +11,8 @@ import {
 } from '@angular/core';
 import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { firstValueFrom } from 'rxjs';
-import { percentage, sameOpening } from '../masters-explorer/masters-explorer.helpers';
-import { ProgressiveListComponent } from '../ui/progressive-list/progressive-list.component';
+import { OpeningExplorerResultsComponent } from '../opening-explorer/opening-explorer-results.component';
 import { LichessGamesExplorerApiService } from './lichess-games-explorer-api.service';
-import {
-  compactGameCount,
-  exactGameCount,
-} from './lichess-games-explorer.helpers';
 import {
   defaultLichessGamesExplorerFilters,
   effectiveRatingLabel,
@@ -32,7 +27,7 @@ import {
 @Component({
   selector: 'app-lichess-games-explorer-widget',
   standalone: true,
-  imports: [ProgressiveListComponent],
+  imports: [OpeningExplorerResultsComponent],
   templateUrl: './lichess-games-explorer-widget.component.html',
   styleUrl: './lichess-games-explorer-widget.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,19 +48,17 @@ export class LichessGamesExplorerWidgetComponent {
 
   protected readonly ratingOptions = lichessRatingSelectionOptions;
   protected readonly speedOptions = lichessSpeedPresetOptions;
-  protected readonly percentage = percentage;
-  protected readonly sameOpening = sameOpening;
-  protected readonly compactGameCount = compactGameCount;
-  protected readonly exactGameCount = exactGameCount;
   protected readonly hasGames = computed(() => (this.response()?.games.total ?? 0) > 0);
   protected readonly currentRatingSelection = computed(() => ratingSelectionValue(this.filters()));
   protected readonly activeFilterCount = computed(() => {
     const filters = this.filters();
-    return Number(filters.speedPreset !== this.defaultFilters.speedPreset)
-      + Number(
-        filters.ratingTarget !== this.defaultFilters.ratingTarget
-        || filters.ratingGroup !== this.defaultFilters.ratingGroup,
-      );
+    return (
+      Number(filters.speedPreset !== this.defaultFilters.speedPreset) +
+      Number(
+        filters.ratingTarget !== this.defaultFilters.ratingTarget ||
+          filters.ratingGroup !== this.defaultFilters.ratingGroup,
+      )
+    );
   });
   protected readonly populationSummary = computed(() => {
     const population = this.response()?.population;
@@ -124,10 +117,7 @@ export class LichessGamesExplorerWidgetComponent {
     void this.load(this.fen(), this.filters());
   }
 
-  private async load(
-    fen: string,
-    filters: LichessGamesExplorerFilters,
-  ): Promise<void> {
+  private async load(fen: string, filters: LichessGamesExplorerFilters): Promise<void> {
     const currentRequestId = ++this.requestId;
     this.loading.set(true);
     this.error.set(null);
@@ -146,7 +136,10 @@ export class LichessGamesExplorerWidgetComponent {
 }
 
 function readError(error: unknown): string {
-  const response = error as { error?: string | { error?: string; message?: string }; message?: string };
+  const response = error as {
+    error?: string | { error?: string; message?: string };
+    message?: string;
+  };
   if (typeof response?.error === 'string' && response.error) return response.error;
   if (typeof response?.error === 'object') {
     if (response.error.error) return response.error.error;

@@ -2,11 +2,9 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { Subject, of, throwError } from 'rxjs';
+import { percentage } from '../opening-explorer/opening-explorer.helpers';
 import { MastersExplorerApiService } from './masters-explorer-api.service';
-import {
-  gameResultLabel,
-  percentage,
-} from './masters-explorer.helpers';
+import { gameResultLabel } from './masters-explorer.helpers';
 import { MastersExplorerWidgetComponent } from './masters-explorer-widget.component';
 
 @Component({
@@ -14,10 +12,7 @@ import { MastersExplorerWidgetComponent } from './masters-explorer-widget.compon
   imports: [MastersExplorerWidgetComponent],
   template: `
     @if (visible()) {
-      <app-masters-explorer-widget
-        [fen]="fen()"
-        (moveSelected)="selectedMove.set($event)"
-      />
+      <app-masters-explorer-widget [fen]="fen()" (moveSelected)="selectedMove.set($event)" />
     }
   `,
 })
@@ -113,7 +108,7 @@ describe('MastersExplorerWidgetComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    button('.masters-move-row').click();
+    button('.opening-explorer-move-row').click();
 
     expect(host.selectedMove()).toBe('e2e4');
   });
@@ -125,6 +120,33 @@ describe('MastersExplorerWidgetComponent', () => {
     fixture.detectChanges();
 
     expect(text()).toContain('½–½');
+  });
+
+  it('uses compact counts for Masters results while preserving the exact total', async () => {
+    const response = responseFor('startpos');
+    api.getPosition.and.returnValue(
+      of({
+        ...response,
+        games: {
+          total: 2_214_234,
+          whiteWins: 699_411,
+          draws: 1_010_633,
+          blackWins: 504_190,
+        },
+      }),
+    );
+    host.visible.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(text()).toContain('2.2M master games');
+    expect(text()).toContain('699.4K games');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+        '.opening-explorer-summary-heading strong',
+      )?.title,
+    ).toBe('2,214,234 master games');
   });
 
   it('shows the stale-data warning', async () => {
@@ -174,7 +196,9 @@ describe('MastersExplorerWidgetComponent', () => {
   }
 
   function button(selector: string): HTMLButtonElement {
-    const element = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(selector);
+    const element = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      selector,
+    );
     if (!element) throw new Error(`Missing button: ${selector}`);
     return element;
   }

@@ -2,8 +2,8 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { of } from 'rxjs';
+import { compactGameCount, exactGameCount } from '../games/game-count.helpers';
 import { LichessGamesExplorerApiService } from './lichess-games-explorer-api.service';
-import { compactGameCount, exactGameCount } from './lichess-games-explorer.helpers';
 import { defaultLichessGamesExplorerFilters } from './lichess-games-explorer.models';
 import { LichessGamesExplorerWidgetComponent } from './lichess-games-explorer-widget.component';
 
@@ -11,10 +11,7 @@ import { LichessGamesExplorerWidgetComponent } from './lichess-games-explorer-wi
   standalone: true,
   imports: [LichessGamesExplorerWidgetComponent],
   template: `
-    <app-lichess-games-explorer-widget
-      [fen]="fen()"
-      (moveSelected)="selectedMove.set($event)"
-    />
+    <app-lichess-games-explorer-widget [fen]="fen()" (moveSelected)="selectedMove.set($event)" />
   `,
 })
 class TestHostComponent {
@@ -28,10 +25,9 @@ describe('LichessGamesExplorerWidgetComponent', () => {
   let api: jasmine.SpyObj<LichessGamesExplorerApiService>;
 
   beforeEach(async () => {
-    api = jasmine.createSpyObj<LichessGamesExplorerApiService>(
-      'LichessGamesExplorerApiService',
-      ['getPosition'],
-    );
+    api = jasmine.createSpyObj<LichessGamesExplorerApiService>('LichessGamesExplorerApiService', [
+      'getPosition',
+    ]);
     api.getPosition.and.returnValue(of(response()));
 
     await TestBed.configureTestingModule({
@@ -91,7 +87,7 @@ describe('LichessGamesExplorerWidgetComponent', () => {
   });
 
   it('emits a selected next move', () => {
-    button('.peers-move-row').click();
+    button('.opening-explorer-move-row').click();
     expect(host.selectedMove()).toBe('e2e4');
   });
 
@@ -100,7 +96,9 @@ describe('LichessGamesExplorerWidgetComponent', () => {
   }
 
   function button(selector: string): HTMLButtonElement {
-    const element = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(selector);
+    const element = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      selector,
+    );
     if (!element) throw new Error(`Missing button: ${selector}`);
     return element;
   }
@@ -109,7 +107,8 @@ describe('LichessGamesExplorerWidgetComponent', () => {
     const labels = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLLabelElement>('label'),
     );
-    const element = labels.find((candidate) => candidate.textContent?.includes(label))
+    const element = labels
+      .find((candidate) => candidate.textContent?.includes(label))
       ?.querySelector<HTMLSelectElement>('select');
     if (!element) throw new Error(`Missing select: ${label}`);
     return element;
@@ -135,23 +134,27 @@ function response(): OpeningExplorerResponse {
     normalizedFen: 'startpos',
     opening,
     games: { total: 10, whiteWins: 4, draws: 3, blackWins: 3 },
-    moves: [{
-      uci: 'e2e4',
-      san: 'e4',
-      averageRating: 1800,
-      games: { total: 6, whiteWins: 3, draws: 2, blackWins: 1 },
-      opening,
-      representativeGame: null,
-    }],
-    topGames: [{
-      id: 'hidden-game',
-      moveUci: 'e2e4',
-      winner: 'WHITE',
-      white: { name: 'Example White', rating: 1900 },
-      black: { name: 'Example Black', rating: 1800 },
-      year: 2026,
-      month: '2026-01',
-    }],
+    moves: [
+      {
+        uci: 'e2e4',
+        san: 'e4',
+        averageRating: 1800,
+        games: { total: 6, whiteWins: 3, draws: 2, blackWins: 1 },
+        opening,
+        representativeGame: null,
+      },
+    ],
+    topGames: [
+      {
+        id: 'hidden-game',
+        moveUci: 'e2e4',
+        winner: 'WHITE',
+        white: { name: 'Example White', rating: 1900 },
+        black: { name: 'Example Black', rating: 1800 },
+        year: 2026,
+        month: '2026-01',
+      },
+    ],
     dataset: {
       source: 'LICHESS_GAMES',
       profileVersion: 666067204,
@@ -183,13 +186,15 @@ function response(): OpeningExplorerResponse {
           group: group as 0 | 1000 | 1200 | 1400 | 1600 | 1800 | 2000 | 2200 | 2500,
           games: group === 1400 ? 12 : 0,
         })),
-        contributions: [{
-          accountId: 1,
-          provider: 'LICHESS',
-          username: 'player',
-          speed: 'blitz',
-          games: 12,
-        }],
+        contributions: [
+          {
+            accountId: 1,
+            provider: 'LICHESS',
+            username: 'player',
+            speed: 'blitz',
+            games: 12,
+          },
+        ],
         normalizationProfile: {
           id: 'universal-online-strength',
           version: '2026-07-lichess-bands-v1',
