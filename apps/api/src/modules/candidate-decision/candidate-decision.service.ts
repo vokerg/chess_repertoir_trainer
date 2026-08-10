@@ -242,7 +242,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
             EMPIRICAL_USER_POPULATION_MIN_GAMES,
           )
         : request.target.coverage.minimumPopulationGames;
-      const engineStatus = engineSourceStatus(engineResult);
+      const engineStatus = engineSourceStatus(engineResult, legalMoves);
       const mastersStatus = explorerSourceStatus(mastersResult, MIN_MASTERS_GAMES);
       const populationStatus = explorerSourceStatus(populationResult, populationMinimumGames);
       const personalStatus = personalSourceStatus(personalResult);
@@ -295,7 +295,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
       }
 
       const comparableScores = engineLines
-        .filter(isUsableStoredEngineLine)
+        .filter((line) => isAuthoritativeStoredEngineLine(line, legalMoves))
         .map((line) => targetComparableScore(line, request.target.side))
         .filter((score): score is number => score !== null);
       const safestTargetScore = comparableScores.length ? Math.max(...comparableScores) : null;
@@ -523,6 +523,14 @@ function isUsableStoredEngineLine(line: StoredEngineLine): boolean {
   return line.depth !== undefined
     && line.depth >= MIN_ENGINE_DEPTH
     && (line.scoreCpWhite !== undefined || line.mateWhite !== undefined);
+}
+
+function isAuthoritativeStoredEngineLine(
+  line: StoredEngineLine,
+  legalMoves: ReadonlyMap<string, LegalMove>,
+): boolean {
+  const moveUci = lineMove(line);
+  return isUsableStoredEngineLine(line) && moveUci !== null && legalMoves.has(moveUci);
 }
 
 function engineEvidence(
@@ -955,11 +963,16 @@ function theoryRank(value: CandidateOpeningEvidence['theoryBurden'] | Repertoire
   return null;
 }
 
-function engineSourceStatus(result: SettledValue<StoredPositionAnalysis | null>): CandidateEvidenceStatus {
+function engineSourceStatus(
+  result: SettledValue<StoredPositionAnalysis | null>,
+  legalMoves: ReadonlyMap<string, LegalMove>,
+): CandidateEvidenceStatus {
   if (!result.ok || !result.value) return 'UNAVAILABLE';
   const lines = result.value.lines.slice(0, ENGINE_LINE_LIMIT);
   if (!lines.length) return 'INSUFFICIENT';
-  return lines.some(isUsableStoredEngineLine) ? 'AVAILABLE' : 'INSUFFICIENT';
+  return lines.some((line) => isAuthoritativeStoredEngineLine(line, legalMoves))
+    ? 'AVAILABLE'
+    : 'INSUFFICIENT';
 }
 
 function explorerSourceStatus(
