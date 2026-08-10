@@ -150,6 +150,7 @@ export function createCandidateDecisionOpponentPreparationService(
       }
 
       const canonicalFen = position.fen;
+      const includedMove = request.includeMoveUci?.toLowerCase();
       const [engine, masters, population, personal, playerProfile, courses] = await Promise.all([
         capture(() => deps.engine.get(canonicalFen)),
         capture(() => deps.masters.get(canonicalFen, userId)),
@@ -181,7 +182,7 @@ export function createCandidateDecisionOpponentPreparationService(
         population,
         personal,
         courses,
-        includeMoveUci: request.includeMoveUci,
+        includeMoveUci: includedMove,
       });
       for (const moveUci of discoveryMoves) {
         if (candidatesByMove.has(moveUci)) continue;
@@ -192,7 +193,12 @@ export function createCandidateDecisionOpponentPreparationService(
             includeMoveUci: moveUci,
           });
           const candidate = expanded.candidates.find((entry) => entry.moveUci === moveUci);
-          if (candidate) candidatesByMove.set(moveUci, candidate);
+          if (candidate) {
+            candidatesByMove.set(moveUci, {
+              ...candidate,
+              manuallyRequested: includedMove === moveUci,
+            });
+          }
         } catch {
           // Source results can contain stale moves. The underlying service remains the legality authority.
         }
@@ -218,7 +224,7 @@ export function createCandidateDecisionOpponentPreparationService(
           candidates: candidatesWithCourse,
         },
         request.candidateLimit,
-        request.includeMoveUci?.toLowerCase(),
+        includedMove,
       );
     },
   };
@@ -243,7 +249,7 @@ export function applyOpponentPreparationPolicy(
     includedMove,
   );
 
-  const candidates = selected.map((prepared) => {
+  const candidates = selected.map((prepared, index) => {
     const candidate = byMove.get(prepared.input.moveUci);
     if (!candidate) throw new Error(`Missing opponent candidate ${prepared.input.moveUci}.`);
 
@@ -253,7 +259,7 @@ export function applyOpponentPreparationPolicy(
 
     return {
       ...candidate,
-      rank: prepared.rank,
+      rank: index + 1,
       eligibility: {
         status: 'ELIGIBLE' as const,
         reasonCodes: prepared.reasonCodes.slice(0, 8),
