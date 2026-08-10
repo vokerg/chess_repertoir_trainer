@@ -14,6 +14,8 @@ import { canonicalizeAccountImportScope } from './account-import.scope';
 import type {
   CreateAccountImportRunInput,
   ExtendAccountImportCoverageInput,
+  PersistAccountImportGamesInput,
+  PersistAccountImportGamesResult,
   StoredAccountImportCoverage,
   StoredAccountImportRun,
 } from './account-import.types';
@@ -25,6 +27,7 @@ const NON_TERMINAL_IMPORT_STATUSES = [
   'PAUSED',
   'CANCEL_REQUESTED',
 ] as const;
+const DEFAULT_MAX_WRITE_BATCH_SIZE = 100;
 
 interface AccountRow {
   id: number;
@@ -94,6 +97,10 @@ interface IdRow {
   id: number;
 }
 
+export interface AccountImportRepositoryOptions {
+  maxWriteBatchSize?: number;
+}
+
 export class AccountImportAccountNotFoundError extends Error {
   constructor() {
     super('Owned external account not found.');
@@ -129,6 +136,27 @@ export class AccountImportCoverageGapError extends Error {
   }
 }
 
+export class AccountImportRunNotWritableError extends Error {
+  constructor(status: string) {
+    super(`Account import run is not writable in status ${status}.`);
+    this.name = 'AccountImportRunNotWritableError';
+  }
+}
+
+export class AccountImportClaimLostError extends Error {
+  constructor() {
+    super('Account import claim no longer matches the active work key.');
+    this.name = 'AccountImportClaimLostError';
+  }
+}
+
+export class AccountImportWriteBatchTooLargeError extends Error {
+  constructor(maxWriteBatchSize: number) {
+    super(`Account import write batch exceeds the configured maximum of ${maxWriteBatchSize}.`);
+    this.name = 'AccountImportWriteBatchTooLargeError';
+  }
+}
+
 export interface AccountImportRepository {
   createRun(input: CreateAccountImportRunInput): Promise<StoredAccountImportRun>;
   getRun(userId: number, importRunId: number): Promise<StoredAccountImportRun | null>;
@@ -141,12 +169,16 @@ export interface AccountImportRepository {
   extendCoverage(input: ExtendAccountImportCoverageInput): Promise<StoredAccountImportCoverage>;
   clearCoverageForAccount(userId: number, accountId: number): Promise<number>;
   hasActiveClaimForAccount(userId: number, accountId: number): Promise<boolean>;
+  persistGames(input: PersistAccountImportGamesInput): Promise<PersistAccountImportGamesResult>;
 }
 
 export function createAccountImportRepository(
   database: PrismaClient = prisma,
   admissionGuard: AccountImportAdmissionGuard = allowAccountImportAdmission,
+  options: AccountImportRepositoryOptions = {},
 ): AccountImportRepository {
+  const maxWriteBatchSize = resolveMaxWriteBatchSize(options.maxWriteBatchSize);
+
   return {
     async createRun(input) {
       validateCreateRunInput(input);
@@ -359,6 +391,82 @@ export function createAccountImportRepository(
       `);
       return rows.length === 1;
     },
+
+    async persistGames(input) {
+      validatePersistGamesInput(input, maxWriteBatchSize);
+      if (input.games.length === 0) {
+        return { attempted: 0, inserted: 0, duplicate: 0 };
+      }
+
+      return database.$transaction(async (transaction) => {
+        const runRows = await transaction.$queryRaw<ImportRunRow[]>(Prisma.sql`
+          SELECT ${importRunColumns('run')}
+          FROM "ImportRun" AS run
+          WHERE run."id" = ${input.importRunId}
+            AND run."userId" = ${input.userId}
+          FOR UPDATE
+        `);
+        const run = runRows[0];
+        if (!run) throw new AccountImportRunNotFoundError();
+        if (run.mode === 'LEGACY_SYNC' || run.status !== 'RUNNING') {
+          throw new AccountImportRunNotWritableError(run.status);
+        }
+        if (run.workKey !== (input.workKey ?? null)) {
+          throw new AccountImportClaimLostError();
+        }
+
+        await admissionGuard.assertAllowed(transaction, {
+          userId: input.userId,
+          accountId: run.accountId,
+        });
+
+        const write = await transaction.importedGame.createMany({
+          data: input.games.map((game) => ({
+            userId: input.userId,
+            accountId: run.accountId,
+            provider: run.provider,
+            providerGameId: game.providerGameId,
+            providerUrl: game.providerUrl ?? null,
+            pgn: game.pgn ?? null,
+            rated: game.rated ?? null,
+            variant: game.variant ?? null,
+            speedCategory: game.speedCategory ?? null,
+            timeControlRaw: game.timeControlRaw ?? null,
+            timeControlInitial: game.timeControlInitial ?? null,
+            timeControlIncrement: game.timeControlIncrement ?? null,
+            startedAt: game.startedAt ?? null,
+            endedAt: game.endedAt ?? null,
+            whiteUsername: game.whiteUsername ?? null,
+            blackUsername: game.blackUsername ?? null,
+            whiteRating: game.whiteRating ?? null,
+            blackRating: game.blackRating ?? null,
+            userColor: game.userColor ?? null,
+            opponentUsername: game.opponentUsername ?? null,
+            result: game.result ?? null,
+            resultForUser: game.resultForUser ?? null,
+            status: game.status ?? null,
+            openingName: game.openingName ?? null,
+            openingEco: game.openingEco ?? null,
+          })),
+          skipDuplicates: true,
+        });
+        const attempted = input.games.length;
+        const inserted = write.count;
+        const duplicate = attempted - inserted;
+
+        await transaction.$executeRaw(Prisma.sql`
+          UPDATE "ImportRun"
+          SET "gamesMatchedScope" = "gamesMatchedScope" + ${attempted},
+              "gamesImported" = "gamesImported" + ${inserted},
+              "gamesDuplicate" = "gamesDuplicate" + ${duplicate},
+              "lastProgressAt" = NOW(),
+              "updatedAt" = NOW()
+          WHERE "id" = ${run.id}
+        `);
+
+        return { attempted, inserted, duplicate };
+      });
+    },
   };
 }
 
@@ -469,6 +577,34 @@ function validateCreateRunInput(input: CreateAccountImportRunInput): void {
     throw new Error('Account import windowsTotal must be a non-negative integer or null.');
   }
   validateCoverageRange(input.requestedFrom, input.requestedTo);
+}
+
+function validatePersistGamesInput(
+  input: PersistAccountImportGamesInput,
+  maxWriteBatchSize: number,
+): void {
+  if (!Number.isSafeInteger(input.userId) || input.userId <= 0) {
+    throw new Error('Account import userId must be a positive integer.');
+  }
+  if (!Number.isSafeInteger(input.importRunId) || input.importRunId <= 0) {
+    throw new Error('Account import importRunId must be a positive integer.');
+  }
+  if (input.games.length > maxWriteBatchSize) {
+    throw new AccountImportWriteBatchTooLargeError(maxWriteBatchSize);
+  }
+  for (const game of input.games) {
+    if (typeof game.providerGameId !== 'string' || game.providerGameId.trim().length === 0) {
+      throw new Error('Every normalized import game requires a providerGameId.');
+    }
+  }
+}
+
+function resolveMaxWriteBatchSize(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_MAX_WRITE_BATCH_SIZE;
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('Account import maxWriteBatchSize must be a positive integer.');
+  }
+  return value;
 }
 
 function validateCoverageRange(from: Date, through: Date): void {
