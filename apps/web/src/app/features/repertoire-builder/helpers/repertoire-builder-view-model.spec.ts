@@ -7,8 +7,11 @@ import {
 import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
+  corpusEvidenceMetric,
+  courseRelationshipLabel,
   personalEvidenceDetail,
   personalEvidenceLabel,
+  primaryEvidenceReasonLabels,
   reasonLabel,
 } from './repertoire-builder-view-model';
 
@@ -28,6 +31,64 @@ describe('repertoire builder evidence view model', () => {
     expect(items.some((item) => item.id === 'opening-knowledge')).toBeFalse();
     expect(items.some((item) => item.id.startsWith('opening-plan-'))).toBeFalse();
     expect(items.map((item) => item.id)).toEqual(['population', 'masters', 'personal', 'profile']);
+  });
+
+  it('formats population and Masters metrics around frequency and position-relative results', () => {
+    expect(corpusEvidenceMetric(candidate.evidence.population)).toEqual({
+      primary: '50%',
+      secondary: '0pp vs position · 29.8M games',
+    });
+    expect(corpusEvidenceMetric({
+      ...candidate.evidence.masters,
+      games: 0,
+      frequencyPercent: null,
+      scoreDeltaVsPositionPercent: null,
+      status: 'INSUFFICIENT',
+    })).toEqual({
+      primary: '—',
+      secondary: 'Insufficient',
+    });
+  });
+
+  it('keeps dominant Cockpit reasons on empirical evidence instead of target/profile chips', () => {
+    const evidenceCandidate = {
+      ...candidate,
+      reasonCodes: [
+        'TARGET_CHARACTER_MATCH',
+        'POPULATION_STRONG_SCORE',
+        'PROFILE_PREFERENCE_MATCH',
+        'ENGINE_CLOSE',
+        'COURSE_ALREADY_COVERS',
+      ],
+    } as CandidateDecisionCandidate;
+
+    expect(primaryEvidenceReasonLabels(evidenceCandidate)).toEqual([
+      'Outperforms the position baseline in the selected population',
+      'Close to the best engine line',
+      'Already covered in a course',
+    ]);
+  });
+
+  it('summarizes only meaningful existing-course relationships', () => {
+    expect(courseRelationshipLabel(candidate)).toBeNull();
+    expect(courseRelationshipLabel({
+      ...candidate,
+      evidence: {
+        ...candidate.evidence,
+        course: { ...candidate.evidence.course, status: 'AVAILABLE', covered: true },
+      },
+    })).toBe('Already in course');
+    expect(courseRelationshipLabel({
+      ...candidate,
+      evidence: {
+        ...candidate.evidence,
+        course: {
+          ...candidate.evidence.course,
+          status: 'AVAILABLE',
+          transposesToCoveredPosition: true,
+        },
+      },
+    })).toBe('Transposes to course');
   });
 
   it('renders factual familiarity and qualified position-relative result context', () => {
