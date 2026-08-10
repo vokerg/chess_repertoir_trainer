@@ -13,6 +13,10 @@ import {
 } from './opening-analysis.repository.prisma';
 import { summarizeGamePerformance } from './performance-insights.service';
 import { GamePerformanceSummary } from './performance-insights.types';
+import {
+  classifyPersonalMoveEvidence,
+  type PersonalMoveEvidenceClassification,
+} from './personal-move-evidence';
 
 export interface OpeningAnalysisWdl {
   total: number;
@@ -33,6 +37,7 @@ export interface OpeningAnalysisNextMove {
   gameSharePercent: number | null;
   scoreDeltaVsPositionPercent: number | null;
   lastPlayedAt: string | null;
+  personalContext: PersonalMoveEvidenceClassification;
 }
 
 export interface OpeningAnalysisGame {
@@ -297,6 +302,8 @@ export const OpeningAnalysisService = {
       .map(([moveUci, count]) => {
         const details = playUci(resolved.fen, moveUci);
         const games = gamesByMove.get(moveUci) ?? emptyWdl();
+        const gameSharePercent = percentage(games.total, positionWdl.total);
+        const scoreDeltaVsPositionPercent = scoreDelta(games.scorePct, positionWdl.scorePct);
         return {
           moveUci,
           moveSan: details.moveSan,
@@ -305,9 +312,14 @@ export const OpeningAnalysisService = {
           moveNumber: moveNumberFromPly(count.firstPlyNumber),
           occurrences: count.occurrences,
           games,
-          gameSharePercent: percentage(games.total, positionWdl.total),
-          scoreDeltaVsPositionPercent: scoreDelta(games.scorePct, positionWdl.scorePct),
+          gameSharePercent,
+          scoreDeltaVsPositionPercent,
           lastPlayedAt: lastPlayedAtByMove.get(moveUci)?.toISOString() ?? null,
+          personalContext: classifyPersonalMoveEvidence({
+            games: games.total,
+            gameSharePercent,
+            scoreDeltaVsPositionPercent,
+          }),
         };
       })
       .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || (a.moveSan ?? '').localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));
