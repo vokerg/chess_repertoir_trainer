@@ -16,9 +16,9 @@ Run:
 npm run check:hygiene
 ```
 
-The guard currently ratchets use of `legacyOpaqueResponseSchema`. Existing transitional consumers are explicitly enumerated in `scripts/check-repository-hygiene.mjs`, and the allowlist must exactly match the current consumers. New consumers fail the check; migrating or deleting a consumer requires removing its allowance in the same change, so stale exceptions cannot remain.
+The guard currently ratchets use of `legacyOpaqueResponseSchema`. `scripts/check-repository-hygiene.mjs` records the exact current token count for every remaining consumer file, including its import and route response references. New usages fail the check; migrating or deleting a usage requires reducing that file's baseline in the same change, and removing the last usage requires removing the file entry entirely.
 
-The statistics routes are no longer part of that allowlist. Their aggregate summary, line/chapter/course statistics, and subline-status responses use schemas from `@chess-trainer/contracts/training`, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
+The statistics routes are no longer part of that baseline. Their aggregate summary, line/chapter/course statistics, and subline-status responses use schemas from `@chess-trainer/contracts/training`, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
 
 CI runs the hygiene guard independently from the architecture guardrails so cleanup-specific constraints stay visible and can expand without turning the architecture script into a general lint bucket.
 
@@ -26,7 +26,7 @@ CI runs the hygiene guard independently from the architecture guardrails so clea
 
 1. Inventory and classify suspected residue as referenced, dynamically referenced, generated, tooling-only, historical, or proven zero-reference.
 2. Remove only proven zero-reference artifacts, with focused tests or build coverage for the owning area.
-3. Migrate transitional response contracts endpoint-by-endpoint and shrink the hygiene allowlist in the same change.
+3. Migrate transitional response contracts endpoint-by-endpoint and reduce the exact hygiene baseline in the same change.
 4. Refactor oversized modules only along existing domain boundaries.
 5. Reconcile canonical docs, feature tests, Web/Mobile/MCP capability ownership, and operational scripts after the code change is verified.
 
