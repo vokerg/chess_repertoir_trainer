@@ -1,6 +1,6 @@
 # Repertoire Builder North Star
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 The Repertoire Builder program defines how the product constructs and evolves a personal opening repertoire from population evidence, the player's own games, existing courses, reviewed opening knowledge, and explicit user choices.
 
@@ -13,7 +13,9 @@ Current runtime includes:
 - peer population and player-level resolution;
 - deterministic opening classification and Player Chess Profile evidence;
 - versioned repertoire targets and editable profile-derived defaults;
-- deterministic candidate evidence and ranking;
+- Candidate Decision V3 exact-position selected-population/Masters baselines and per-move result deltas;
+- versioned empirical Balanced/Solid/Aggressive/Surprise ranking for preset `USER_MOVE` decisions through RB-027, with bounded stored-engine guardrails and opening/profile/personal context kept out of preset rank authority;
+- deterministic legacy behavior retained for `CUSTOM` user-move policy and the still-pending RB-029 opponent-response policy;
 - bounded Builder session and queue behavior;
 - the board-first Builder workbench;
 - the three-zone Builder Cockpit composition keeping the board/candidates, focused decision brief, and branch/action controls visible as one desktop workspace;
@@ -27,7 +29,9 @@ Current runtime includes:
 
 RB-025 / #290 is complete through implementation PRs #302/#304 and final reconciliation PR #300.
 
-RB-026 / #310 is runtime-complete through squash-merged PR #311. Completion PR #314 only adds the required closure report and reconciles current Builder program/task/issue metadata; it contains no additional Builder runtime implementation.
+RB-026 / #310 is complete through runtime PR #311 and completion PR #314.
+
+RB-027 / #317 is runtime-complete through squash-merged PR #325 (`34dadd25`) with final exact-head CI #2392 green. Its closure report records the versioned weights, sample floors, Surprise qualification, objective guardrails and review hardening.
 
 ## Builder V2 product revision
 
@@ -36,14 +40,14 @@ Hands-on product review of the integrated Builder exposed a semantic problem rat
 Read [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md) for the complete revision. The key changes are:
 
 - personas apply only to the user's repertoire move, not to opponent replies;
-- Balanced/Solid/Aggressive/Surprise become empirical interpretations of peer, Masters and engine evidence;
-- broad Player Chess Profile fit is removed from the primary Builder decision model and replaced by factual exact-position personal familiarity/results;
-- opponent replies become preparation priorities driven by peer relevance, personal encounters, danger and course state;
+- Balanced/Solid/Aggressive/Surprise are now implemented for preset user moves as empirical interpretations of selected-population, Masters and bounded engine evidence;
+- broad Player Chess Profile fit is removed from preset persona rank authority; RB-028 is implementing factual exact-position personal familiarity/results for presentation and evidence context;
+- opponent replies become preparation priorities driven by peer relevance, personal encounters, danger and course state under RB-029;
 - coverage becomes computed feedback from selected replies rather than a setup slider/persona default;
 - normal setup remains one dialog and shows persona exactly once;
-- opening classification/knowledge remain useful secondary explanation, while ECO codes leave the normal Builder surface.
+- opening classification/knowledge remain useful secondary explanation, while ECO codes leave the normal Builder surface in the final Cockpit hierarchy work.
 
-Execution is planned through RB-027–RB-031 / issues #317–#321. RB-016 outcome feedback remains blocked and should evaluate post-V2 usage rather than calibrating the semantics V2 is replacing.
+RB-027 is complete. RB-028 is in progress on PR #327; RB-029 and RB-030 are ready; RB-031 remains proposed until the remaining evidence contracts settle. RB-016 outcome feedback remains blocked and should evaluate post-V2 usage rather than calibrating semantics still being replaced.
 
 ## Read in this order
 
@@ -62,8 +66,9 @@ Detailed immutable work items live under [`tasks/`](tasks/). Completion and rese
 ## Authority boundaries
 
 - Candidate ranking, Builder reducers/queue behavior, and course preview/apply are deterministic authorities.
+- Preset `USER_MOVE` persona ranking is versioned empirical policy over selected-population, Masters and bounded objective evidence.
 - Static opening knowledge is reviewed explanatory evidence and does not alter candidate ranking or write courses by itself.
-- Player Chess Profile remains a separate deterministic capability; Builder V2 does not treat broad profile similarity as direct move familiarity.
+- Player Chess Profile remains a separate deterministic capability; Builder V2 does not treat broad profile similarity as direct move familiarity or preset rank authority.
 - Generated interpretation is optional, explicit, gated, bounded, and non-authoritative.
 - The curated traps pilot remains research evidence rather than a production traps feature.
 - Outcome claims remain unavailable until RB-016's real-usage evidence gate is satisfied.
