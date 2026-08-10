@@ -64,7 +64,7 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
     expect(submissions[0]).toEqual(jasmine.objectContaining({
       startingScope: 'CUSTOM',
       customStartingPosition: '1. e4 c5',
-      maximumTheoryBurden: 'MEDIUM',
+      maximumTheoryBurden: 'HIGH',
       coveragePercent: 80,
     }));
   });
@@ -189,7 +189,7 @@ function createProfileDefaults(): RepertoireBuilderProfileDefaults {
       ratingTarget: 'MY_PEERS',
       ratingGroup: null,
       persona: 'SOLID',
-      maximumTheoryBurden: 'MEDIUM',
+      maximumTheoryBurden: 'HIGH',
       coveragePercent: 80,
     },
   };
