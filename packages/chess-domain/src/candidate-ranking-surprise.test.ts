@@ -72,6 +72,38 @@ describe('Surprise persona empirical qualification', () => {
     expect(ranked[1].reasonCodes).not.toContain('POPULATION_STRONG_SCORE');
   });
 
+  it('does not let Master rarity bypass the population overperformance gate', () => {
+    const rareNotQualified = candidate('a2a3', {
+      status: 'AVAILABLE',
+      games: 100,
+      frequencyPercent: 1,
+      scorePercentForTarget: 52,
+      positionBaselineScorePercentForTarget: 50,
+    });
+    rareNotQualified.masters.frequencyPercent = 0.1;
+
+    const qualified = candidate('b2b3', {
+      status: 'AVAILABLE',
+      games: 100,
+      frequencyPercent: 20,
+      scorePercentForTarget: 53,
+      positionBaselineScorePercentForTarget: 50,
+    });
+    qualified.masters.frequencyPercent = 10;
+
+    const ranked = rankCandidateEvidence([rareNotQualified, qualified], {
+      role: 'USER_MOVE',
+      speedPreset: 'BLITZ_AND_SLOWER',
+      riskTolerance: 'HIGH',
+      allowDeliberatelyDubious: true,
+      persona: 'SURPRISE',
+    });
+
+    expect(ranked[0].input.moveUci).toBe('b2b3');
+    expect(ranked[0].reasonCodes).toContain('POPULATION_STRONG_SCORE');
+    expect(ranked[1].reasonCodes).not.toContain('POPULATION_STRONG_SCORE');
+  });
+
   it('keeps a fixed policy sample floor even when upstream marks a tiny sample available', () => {
     const tinyAvailable = candidate('a2a3', {
       status: 'AVAILABLE',
@@ -126,6 +158,7 @@ describe('Surprise persona empirical qualification', () => {
     })[0];
 
     expect(ranked.eligibility).toBe('WARNING');
+    expect(ranked.components.objective).toBe(0);
     expect(ranked.warningCodes).toContain('OBJECTIVE_EVIDENCE_MISSING');
     expect(ranked.warningCodes).not.toContain('OBJECTIVE_LOSS');
   });
@@ -154,7 +187,7 @@ describe('Surprise persona empirical qualification', () => {
     })[0];
 
     expect(ranked.eligibility).toBe('WARNING');
-    expect(ranked.components.objective).toBe(-40);
+    expect(ranked.components.objective).toBe(0);
     expect(ranked.warningCodes).toContain('OBJECTIVE_EVIDENCE_MISSING');
     expect(ranked.warningCodes).toContain('LOW_ENGINE_DEPTH');
     expect(ranked.warningCodes).not.toContain('OBJECTIVE_LOSS');
