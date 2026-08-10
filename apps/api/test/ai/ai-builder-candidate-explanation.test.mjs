@@ -311,11 +311,15 @@ function candidate(rank, moveUci, moveSan, engineScore, populationFrequency, rea
 }
 
 function corpusEvidence(games, frequencyPercent) {
+  const positionBaselineScorePercentForTarget = 50;
+  const scorePercentForTarget = 52;
   return {
     status: 'AVAILABLE',
     games,
     frequencyPercent,
-    scorePercentForTarget: 52,
+    scorePercentForTarget,
+    positionBaselineScorePercentForTarget,
+    scoreDeltaVsPositionPercent: scorePercentForTarget - positionBaselineScorePercentForTarget,
     averageRating: 1800,
     datasetVersion: 'test-v1',
     fetchedAt: '2026-07-30T14:00:00.000Z',
