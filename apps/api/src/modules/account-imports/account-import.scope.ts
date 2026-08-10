@@ -1,14 +1,13 @@
 import { createHash } from 'node:crypto';
 import {
   accountImportScopeSchema,
-  accountImportScopeVersionSchema,
   type AccountImportScope,
 } from '@chess-trainer/contracts';
 
 const SPEED_ORDER = ['BULLET', 'BLITZ', 'RAPID'] as const;
 const SPEED_RANK = new Map(SPEED_ORDER.map((speed, index) => [speed, index]));
 
-export const ACCOUNT_IMPORT_SCOPE_VERSION = accountImportScopeVersionSchema.value;
+export const ACCOUNT_IMPORT_SCOPE_VERSION = 1 as const;
 
 export interface CanonicalAccountImportScope {
   scopeVersion: typeof ACCOUNT_IMPORT_SCOPE_VERSION;
