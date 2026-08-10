@@ -129,4 +129,35 @@ describe('Surprise persona empirical qualification', () => {
     expect(ranked.warningCodes).toContain('OBJECTIVE_EVIDENCE_MISSING');
     expect(ranked.warningCodes).not.toContain('OBJECTIVE_LOSS');
   });
+
+  it('does not exclude or label objective loss from an insufficient low-depth delta', () => {
+    const uncommon = candidate('h2h3', {
+      status: 'AVAILABLE',
+      games: 80,
+      frequencyPercent: 5,
+      scorePercentForTarget: 60,
+      positionBaselineScorePercentForTarget: 50,
+    });
+    uncommon.engine = {
+      status: 'INSUFFICIENT',
+      depth: 8,
+      mateForTarget: null,
+      objectiveDeltaCp: 300,
+    };
+
+    const ranked = rankCandidateEvidence([uncommon], {
+      role: 'USER_MOVE',
+      speedPreset: 'BLITZ_AND_SLOWER',
+      riskTolerance: 'HIGH',
+      allowDeliberatelyDubious: true,
+      persona: 'SURPRISE',
+    })[0];
+
+    expect(ranked.eligibility).toBe('WARNING');
+    expect(ranked.components.objective).toBe(-40);
+    expect(ranked.warningCodes).toContain('OBJECTIVE_EVIDENCE_MISSING');
+    expect(ranked.warningCodes).toContain('LOW_ENGINE_DEPTH');
+    expect(ranked.warningCodes).not.toContain('OBJECTIVE_LOSS');
+    expect(ranked.reasonCodes).not.toContain('OBJECTIVE_COST');
+  });
 });
