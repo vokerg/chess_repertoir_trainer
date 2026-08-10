@@ -40,6 +40,25 @@ const REASON_LABELS: Record<string, string> = {
   MANUAL_CANDIDATE: 'Included from the board',
 };
 
+const PRIMARY_EVIDENCE_REASON_CODES = new Set([
+  'ENGINE_BEST',
+  'ENGINE_CLOSE',
+  'OBJECTIVE_COST',
+  'POPULATION_COMMON',
+  'POPULATION_STRONG_SCORE',
+  'MASTER_SUPPORTED',
+  'PERSONALLY_FAMILIAR',
+  'PERSONAL_RESULTS_POSITIVE',
+  'COURSE_ALREADY_COVERS',
+  'COURSE_CONFLICT',
+  'TRANSPOSES_TO_COVERAGE',
+  'COMMON_AT_TARGET_LEVEL',
+  'PERSONALLY_ENCOUNTERED',
+  'DANGEROUS_RESPONSE',
+  'LOW_EVIDENCE',
+  'MANUAL_CANDIDATE',
+]);
+
 const WARNING_LABELS: Record<string, string> = {
   FORCED_MATE_AGAINST_TARGET: 'Stored analysis indicates forced mate against the repertoire side.',
   OBJECTIVE_LOSS: 'This move gives up substantial objective value.',
@@ -51,12 +70,52 @@ const WARNING_LABELS: Record<string, string> = {
   SOURCE_UNAVAILABLE: 'One or more evidence sources are unavailable.',
 };
 
+export interface RepertoireBuilderCorpusMetric {
+  primary: string;
+  secondary: string;
+}
+
 export function reasonLabel(code: string): string {
   return REASON_LABELS[code] ?? readableCode(code);
 }
 
 export function warningLabel(code: string): string {
   return WARNING_LABELS[code] ?? readableCode(code);
+}
+
+export function primaryEvidenceReasonLabels(
+  candidate: CandidateDecisionCandidate,
+  limit = 3,
+): readonly string[] {
+  return candidate.reasonCodes
+    .filter((code) => PRIMARY_EVIDENCE_REASON_CODES.has(code))
+    .slice(0, Math.max(0, limit))
+    .map(reasonLabel);
+}
+
+export function corpusEvidenceMetric(
+  evidence: CandidateDecisionCandidate['evidence']['population'],
+): RepertoireBuilderCorpusMetric {
+  const primary = percent(evidence.frequencyPercent);
+  const details: string[] = [];
+  if (evidence.scoreDeltaVsPositionPercent !== null
+    && evidence.scoreDeltaVsPositionPercent !== undefined) {
+    details.push(`${signedPercent(evidence.scoreDeltaVsPositionPercent)} vs position`);
+  }
+  if (evidence.games > 0) details.push(`${compactGameCount(evidence.games)} games`);
+  return {
+    primary,
+    secondary: details.join(' · ') || readableCode(evidence.status),
+  };
+}
+
+export function courseRelationshipLabel(candidate: CandidateDecisionCandidate): string | null {
+  const course = candidate.evidence.course;
+  if (course.status === 'UNAVAILABLE') return 'Course unavailable';
+  if (course.conflict) return 'Course conflict';
+  if (course.covered) return 'Already in course';
+  if (course.transposesToCoveredPosition) return 'Transposes to course';
+  return null;
 }
 
 export function personalEvidenceLabel(evidence: CandidatePersonalEvidence): string {
