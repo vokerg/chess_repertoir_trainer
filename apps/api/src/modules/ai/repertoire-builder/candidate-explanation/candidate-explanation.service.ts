@@ -109,7 +109,7 @@ export function createCandidateExplanationService(
 
 function ensureFeatureEnabled(config: AiConfig): void {
   if (!config.enabled || !config.builderCandidateExplanationEnabled) {
-    throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'AI candidate explanation is disabled.');
+    throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'Builder candidate explanation is disabled.');
   }
 }
 
