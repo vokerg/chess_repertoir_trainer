@@ -121,6 +121,9 @@ interface Weights {
   course: number;
 }
 
+const EMPIRICAL_POPULATION_MIN_GAMES = 20;
+const EMPIRICAL_MASTERS_MIN_GAMES = 10;
+
 const LEGACY_USER_WEIGHTS: Record<CandidateRankingSpeedPreset, Weights> = {
   ALL: { objective: 0.35, population: 0.20, masters: 0.15, personal: 0.10, targetFit: 0.12, profileFit: 0.03, course: 0.05 },
   BLITZ_AND_SLOWER: { objective: 0.40, population: 0.18, masters: 0.17, personal: 0.08, targetFit: 0.12, profileFit: 0.02, course: 0.03 },
@@ -188,8 +191,12 @@ function buildComponents(
   const empiricalUserMove = role === 'USER_MOVE' && persona !== 'CUSTOM';
   return {
     objective: objectiveComponent(input.engine, role),
-    population: empiricalUserMove ? empiricalCorpusComponent(input.population) : legacyCorpusComponent(input.population),
-    masters: empiricalUserMove ? empiricalCorpusComponent(input.masters) : legacyCorpusComponent(input.masters),
+    population: empiricalUserMove
+      ? empiricalCorpusComponent(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
+      : legacyCorpusComponent(input.population),
+    masters: empiricalUserMove
+      ? empiricalCorpusComponent(input.masters, EMPIRICAL_MASTERS_MIN_GAMES)
+      : legacyCorpusComponent(input.masters),
     personal: personalComponent(input.personal),
     targetFit: fitComponent(input.targetFit, 40, -50),
     profileFit: fitComponent(input.profileFit, 25, -25),
@@ -207,8 +214,8 @@ function userMoveScore(
     return weightedScore(components, LEGACY_USER_WEIGHTS[context.speedPreset]);
   }
 
-  const populationFrequency = corpusFrequencySignal(input.population);
-  const populationPerformance = corpusPerformanceSignal(input.population);
+  const populationFrequency = corpusFrequencySignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  const populationPerformance = corpusPerformanceSignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
   const masterSupport = masterSupportSignal(input.masters);
   const objective = hasUsableEngineEvidence(input.engine) ? components.objective : 0;
 
@@ -239,11 +246,13 @@ function userMoveScore(
     );
   }
 
-  const populationScoreDelta = corpusScoreDelta(input.population);
+  const populationScoreDelta = hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
+    ? corpusScoreDelta(input.population)
+    : null;
   const populationRarity = populationScoreDelta !== null && populationScoreDelta >= 3
-    ? corpusRaritySignal(input.population, 5)
+    ? corpusRaritySignal(input.population, 5, EMPIRICAL_POPULATION_MIN_GAMES)
     : 0;
-  const masterRarity = corpusRaritySignal(input.masters, 6);
+  const masterRarity = corpusRaritySignal(input.masters, 6, EMPIRICAL_MASTERS_MIN_GAMES);
   return Math.round(
     populationRarity * 0.30
     + populationPerformance * 0.35
@@ -270,10 +279,13 @@ function objectiveComponent(
   return -100;
 }
 
-function empiricalCorpusComponent(input: CandidateRankingCorpusInput): number {
-  if (!hasUsableCorpus(input) || input.frequencyPercent === null) return 0;
-  const frequency = corpusFrequencySignal(input);
-  const performance = corpusPerformanceSignal(input);
+function empiricalCorpusComponent(
+  input: CandidateRankingCorpusInput,
+  minimumGames: number,
+): number {
+  if (!hasUsableCorpus(input, minimumGames) || input.frequencyPercent === null) return 0;
+  const frequency = corpusFrequencySignal(input, minimumGames);
+  const performance = corpusPerformanceSignal(input, minimumGames);
   return clamp(Math.round(frequency * 0.6 + performance * 0.4), -100, 100);
 }
 
@@ -285,28 +297,38 @@ function legacyCorpusComponent(input: CandidateRankingCorpusInput): number {
   return clamp(Math.round(input.frequencyPercent) + scoreAdjustment, -100, 100);
 }
 
-function corpusFrequencySignal(input: CandidateRankingCorpusInput): number {
-  if (!hasUsableCorpus(input) || input.frequencyPercent === null) return 0;
+function corpusFrequencySignal(
+  input: CandidateRankingCorpusInput,
+  minimumGames = 1,
+): number {
+  if (!hasUsableCorpus(input, minimumGames) || input.frequencyPercent === null) return 0;
   return clamp(Math.round(input.frequencyPercent * 2), 0, 100);
 }
 
-function corpusPerformanceSignal(input: CandidateRankingCorpusInput): number {
+function corpusPerformanceSignal(
+  input: CandidateRankingCorpusInput,
+  minimumGames = 1,
+): number {
   const delta = corpusScoreDelta(input);
-  if (delta === null || !hasUsableCorpus(input)) return 0;
+  if (delta === null || !hasUsableCorpus(input, minimumGames)) return 0;
   const reliability = input.games / (input.games + 30);
   return clamp(Math.round(delta * reliability * 10), -100, 100);
 }
 
 function masterSupportSignal(input: CandidateRankingCorpusInput): number {
-  if (!hasUsableCorpus(input)) return 0;
+  if (!hasUsableCorpus(input, EMPIRICAL_MASTERS_MIN_GAMES)) return 0;
   return clamp(Math.round(
-    corpusFrequencySignal(input) * 0.75
-    + corpusPerformanceSignal(input) * 0.25,
+    corpusFrequencySignal(input, EMPIRICAL_MASTERS_MIN_GAMES) * 0.75
+    + corpusPerformanceSignal(input, EMPIRICAL_MASTERS_MIN_GAMES) * 0.25,
   ), -100, 100);
 }
 
-function corpusRaritySignal(input: CandidateRankingCorpusInput, frequencyScale: number): number {
-  if (!hasUsableCorpus(input) || input.frequencyPercent === null) return 0;
+function corpusRaritySignal(
+  input: CandidateRankingCorpusInput,
+  frequencyScale: number,
+  minimumGames = 1,
+): number {
+  if (!hasUsableCorpus(input, minimumGames) || input.frequencyPercent === null) return 0;
   return clamp(Math.round(100 - input.frequencyPercent * frequencyScale), 0, 100);
 }
 
@@ -317,8 +339,8 @@ function corpusScoreDelta(input: CandidateRankingCorpusInput): number | null {
   return input.scorePercentForTarget - baseline;
 }
 
-function hasUsableCorpus(input: CandidateRankingCorpusInput): boolean {
-  return (input.status === 'AVAILABLE' || input.status === 'STALE') && input.games > 0;
+function hasUsableCorpus(input: CandidateRankingCorpusInput, minimumGames = 1): boolean {
+  return (input.status === 'AVAILABLE' || input.status === 'STALE') && input.games >= minimumGames;
 }
 
 function hasUsableEngineEvidence(input: CandidateRankingInput['engine']): boolean {
