@@ -132,15 +132,7 @@
                       <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
                         Target {{ statusLabel(candidate.targetFit.status) }}
                       </span>
-                      <span class="fit-chip">
-                        {{
-                          candidate.evidence.personal.status === 'UNAVAILABLE'
-                            ? 'History unavailable'
-                            : candidate.evidence.personal.games > 0
-                              ? candidate.evidence.personal.games + ' of your games'
-                              : 'New to you'
-                        }}
-                      </span>
+                      <span class="fit-chip">{{ personalEvidenceLabel(candidate) }}</span>
                     </span>
                   </button>
 
@@ -237,25 +229,8 @@
               </div>
               <div>
                 <span>Your games</span>
-                <strong>
-                  {{
-                    candidate.evidence.personal.status === 'UNAVAILABLE'
-                      ? 'History unavailable'
-                      : candidate.evidence.personal.games > 0
-                        ? candidate.evidence.personal.games + ' games'
-                        : 'New to you'
-                  }}
-                </strong>
-                <small>
-                  {{
-                    candidate.evidence.personal.status === 'UNAVAILABLE'
-                      ? 'Personal game history could not be loaded.'
-                      : candidate.evidence.personal.games > 0
-                        ? percent(candidate.evidence.personal.scorePercent) +
-                          ' score in exact-position history.'
-                        : 'No matching exact-position games in the selected history.'
-                  }}
-                </small>
+                <strong>{{ personalEvidenceLabel(candidate) }}</strong>
+                <small>{{ personalEvidenceDetail(candidate) }}</small>
               </div>
             </div>
           </section>
