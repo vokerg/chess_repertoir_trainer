@@ -1,5 +1,23 @@
 @if (points().length > 0) {
   <div class="graph-frame">
+    <header class="graph-header">
+      <div>
+        <strong>Game evaluation</strong>
+        <span>{{ perspectiveLabel() }} · select a point to jump to that move</span>
+      </div>
+
+      @if (selectedPoint(); as point) {
+        <div
+          class="evaluation-readout"
+          [class]="'evaluation-readout evaluation-readout-' + evaluationTone(point.scoreCp)"
+        >
+          <span>Selected</span>
+          <strong>{{ evaluationLabel(point.scoreCp) }}</strong>
+          <small>Move {{ moveLabel(point.plyNumber) }}</small>
+        </div>
+      }
+    </header>
+
     <svg
       class="evaluation-graph"
       viewBox="0 0 600 180"
@@ -7,23 +25,52 @@
       aria-label="Imported game evaluation by move"
     >
       <desc>
-        Use Tab to enter the graph, arrow keys to move between evaluated moves, and Enter or Space to select a move.
+        Use Tab to enter the graph, arrow keys to move between evaluated moves, and Enter or Space
+        to select a move.
       </desc>
       <defs>
         <linearGradient id="evaluation-area" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="var(--success)" stop-opacity="0.32" />
-          <stop offset="48%" stop-color="var(--accent)" stop-opacity="0.08" />
-          <stop offset="52%" stop-color="var(--danger)" stop-opacity="0.08" />
-          <stop offset="100%" stop-color="var(--danger)" stop-opacity="0.28" />
+          <stop offset="0%" stop-color="var(--ui-success)" stop-opacity="0.3" />
+          <stop offset="48%" stop-color="var(--ui-action-strong)" stop-opacity="0.06" />
+          <stop offset="52%" stop-color="var(--ui-danger)" stop-opacity="0.06" />
+          <stop offset="100%" stop-color="var(--ui-danger)" stop-opacity="0.25" />
         </linearGradient>
       </defs>
 
-      <rect class="advantage-band advantage-band-positive" [attr.x]="horizontalPadding" y="12" [attr.width]="viewboxWidth - horizontalPadding * 2" [attr.height]="zeroY - 12" />
-      <rect class="advantage-band advantage-band-negative" [attr.x]="horizontalPadding" [attr.y]="zeroY" [attr.width]="viewboxWidth - horizontalPadding * 2" [attr.height]="zeroY - 12" />
-      <text class="scale-label scale-label-positive" [attr.x]="horizontalPadding + 3" y="24">+8</text>
+      <rect
+        class="advantage-band advantage-band-positive"
+        [attr.x]="horizontalPadding"
+        y="12"
+        [attr.width]="viewboxWidth - horizontalPadding * 2"
+        [attr.height]="zeroY - 12"
+      />
+      <rect
+        class="advantage-band advantage-band-negative"
+        [attr.x]="horizontalPadding"
+        [attr.y]="zeroY"
+        [attr.width]="viewboxWidth - horizontalPadding * 2"
+        [attr.height]="zeroY - 12"
+      />
+      <g class="move-grid" aria-hidden="true">
+        @for (tick of moveTicks(); track tick.nodeId) {
+          <line [attr.x1]="tick.x" [attr.x2]="tick.x" y1="12" y2="168" />
+          <text [attr.x]="tick.x" y="177">{{ tick.label }}</text>
+        }
+      </g>
+      <text class="scale-label scale-label-positive" [attr.x]="horizontalPadding + 3" y="24">
+        +8
+      </text>
       <text class="scale-label" [attr.x]="horizontalPadding + 3" [attr.y]="zeroY - 5">0.0</text>
-      <text class="scale-label scale-label-negative" [attr.x]="horizontalPadding + 3" y="164">−8</text>
-      <line class="zero-line" [attr.x1]="horizontalPadding" [attr.x2]="viewboxWidth - horizontalPadding" [attr.y1]="zeroY" [attr.y2]="zeroY" />
+      <text class="scale-label scale-label-negative" [attr.x]="horizontalPadding + 3" y="164">
+        −8
+      </text>
+      <line
+        class="zero-line"
+        [attr.x1]="horizontalPadding"
+        [attr.x2]="viewboxWidth - horizontalPadding"
+        [attr.y1]="zeroY"
+        [attr.y2]="zeroY"
+      />
 
       @if (areaPath(); as graphAreaPath) {
         <path class="evaluation-area" [attr.d]="graphAreaPath" />
@@ -31,6 +78,10 @@
       @if (path(); as graphPath) {
         <path class="evaluation-line-shadow" [attr.d]="graphPath" />
         <path class="evaluation-line" [attr.d]="graphPath" />
+      }
+
+      @if (selectedPoint(); as point) {
+        <line class="selected-guide" [attr.x1]="point.x" [attr.x2]="point.x" y1="12" y2="168" />
       }
 
       @for (point of points(); track point.nodeId) {
@@ -42,7 +93,12 @@
           [attr.tabindex]="pointTabIndex(point.nodeId)"
           role="button"
           [attr.aria-pressed]="point.nodeId === selectedNodeId()"
-          [attr.aria-label]="'Select move ' + moveLabel(point.plyNumber) + ', evaluation ' + evaluationLabel(point.scoreCp)"
+          [attr.aria-label]="
+            'Select move ' +
+            moveLabel(point.plyNumber) +
+            ', evaluation ' +
+            evaluationLabel(point.scoreCp)
+          "
           (click)="nodeSelected.emit(point.nodeId)"
           (keydown)="handlePointKeydown($event, point.nodeId)"
         >
