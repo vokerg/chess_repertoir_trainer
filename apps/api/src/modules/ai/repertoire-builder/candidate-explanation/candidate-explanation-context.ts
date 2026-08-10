@@ -243,10 +243,28 @@ function validateText(
     throw invalidResponse('AI explanation referenced an unsupported move.');
   }
 
-  requireEvidenceForVocabulary(text, referenceIds, /\b(rank|ranked|ranking|higher|lower|order)\b/i, ['.rank']);
+  requireEvidenceForVocabulary(
+    text,
+    referenceIds,
+    /\b(rank|ranked|ranking)\b|\branks?\s+(?:higher|lower)\b|\b(?:higher|lower)\s+rank(?:ed|ing)?\b/i,
+    ['.rank'],
+  );
   requireEvidenceForVocabulary(text, referenceIds, /\b(engine|evaluation|depth|mate|centipawn|objective delta)\b/i, ['.engine_']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(population|masters?|target play|frequency|common|games|baseline|percentage points?|overperform(?:s|ed|ing)?)\b/i, ['.population_', '.masters_', '.personal_']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(?:population|masters?|personal|position) score\b|\bscore delta\b/i, ['.population_', '.masters_', '.personal_']);
+  requireEvidenceForVocabulary(
+    text,
+    referenceIds,
+    /\bscore\b/i,
+    [
+      '.engine_score',
+      '.population_score',
+      '.masters_score',
+      '.personal_score',
+      '_position_baseline_score',
+      '_score_delta_vs_position',
+    ],
+  );
   requireEvidenceForVocabulary(text, referenceIds, /\b(target fit|aligned|misaligned)\b/i, ['.target_fit']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(profile fit|profile evidence)\b/i, ['.profile_fit', '.player_profile_']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(course|covered|conflict|transposes?)\b/i, ['.course_']);
