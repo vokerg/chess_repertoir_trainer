@@ -111,7 +111,7 @@ export function corpusEvidenceMetric(
 
 export function courseRelationshipLabel(candidate: CandidateDecisionCandidate): string | null {
   const course = candidate.evidence.course;
-  if (course.status === 'UNAVAILABLE') return 'Course unavailable';
+  if (course.status === 'UNAVAILABLE') return null;
   if (course.conflict) return 'Course conflict';
   if (course.covered) return 'Already in course';
   if (course.transposesToCoveredPosition) return 'Transposes to course';
