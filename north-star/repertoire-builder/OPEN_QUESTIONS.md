@@ -47,24 +47,26 @@ Owner: future versioned calibration work if production evidence warrants it.
 
 ## Personal move familiarity and performance — RB-028 / #318
 
-### Locked direction
+Status: resolved by RB-028. See `reports/RB-028-2026-08-10-personal-move-evidence-closure.md`.
 
-- Builder should show exact-position factual personal history rather than broad Profile Aligned/Conflict.
+### Locked implementation policy
+
+- Builder shows exact-position factual personal history rather than broad Profile Aligned/Conflict as move familiarity.
 - Familiarity uses all eligible indexed history; recency is shown separately.
-- Preference/frequency and quality/results remain distinct.
-- Personal history is primarily informational in V2 rather than a persona-ranking authority.
+- `COMMON` requires at least 5 distinct indexed games and at least 20% of the user's move choices from the exact position.
+- Any previously played move below the Common policy is `RARE`; a legal candidate absent from successfully loaded personal history is `NEW`.
+- Repeated occurrences in one game affect exact-position move share through occurrences, while familiarity game count remains distinct by game.
+- Result context uses W/D/L-qualified games only and requires at least 10 known-result games.
+- Result performance is compared with the user's result baseline from the same exact position; +/-5 percentage points separates above/below from neutral.
+- Result-less indexed games can establish familiarity and recency without strengthening result confidence.
+- Candidate Decision V4 exposes effective account, side, rated, speed and explicit all-indexed-history scope with the factual fields.
+- The new all-history/context fields do not enter the existing Candidate Ranking personal input; personal history remains primarily informational in V2.
 
-### Questions to resolve
+### Future calibration, not an RB-028 blocker
 
-- What exact denominator defines `Common for you` versus `Rare for you`: share at the position, game count, or a combination?
-- What minimum sample allows `results above/below your baseline` wording?
-- Should the baseline be the user's score from the exact position, the parent position, or another bounded context?
-- How should transpositions and repeated occurrences in one game affect familiarity counts?
-- Which selected speed/account/rated filters should familiarity inherit from the build, and which should be separately visible?
-- How should last-played date be summarized when evidence spans multiple accounts/providers?
-- Which personal fields belong in the candidate contract versus an expandable details payload?
+Production evidence may justify different Common/Result sample thresholds or wording. Any such change requires a new personal-evidence policy version rather than silently changing the meaning of `2026-08-personal-move-v1`.
 
-Owner: RB-028 / #318.
+Owner: future versioned calibration work if production evidence warrants it.
 
 ## Opponent preparation and computed coverage — RB-029 / #319
 
@@ -123,7 +125,6 @@ Owner: RB-030 / #320.
 - Which 2–4 facts fit in a candidate row at desktop/tablet widths without losing scanability?
 - How should peer overperformance be phrased when confidence is weak?
 - Which deterministic reasons best explain why #1 outranks #2 without exposing a fake-precision aggregate?
-- Where should `Common/Rare/New for you` appear: row, focused brief, or both?
 - How should personal poor-result context be visually strong enough to notice without behaving like a warning/exclusion?
 - Which current classification traits remain useful above the fold after recommendation authority moves to empirical evidence?
 - Can authenticated populated review validate the Cockpit at representative desktop/tablet/mobile widths after the new evidence lands?
