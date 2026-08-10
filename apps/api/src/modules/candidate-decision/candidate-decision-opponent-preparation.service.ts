@@ -23,6 +23,7 @@ import {
 } from 'chess-domain';
 import { PositionAnalysisService } from '../analysis/position-analysis.service';
 import type { StoredPositionAnalysis } from '../analysis/analysis.types';
+import { CoursePositionSuggestionService } from '../courses/courses.service';
 import {
   OpeningAnalysisService,
   type OpeningAnalysisCoreResponse,
@@ -32,7 +33,6 @@ import {
   MastersExplorerService,
 } from '../opening-explorer/opening-explorer.service';
 import { PlayerChessProfileService } from '../player-chess-profile/player-chess-profile.service';
-import { CoursePositionSuggestionService } from '../courses/courses.service';
 import {
   CandidateDecisionService,
   createCandidateDecisionService,
@@ -75,6 +75,11 @@ interface OpponentPreparationDependencies {
 type SourceSnapshot<T> =
   | { ok: true; value: T }
   | { ok: false; error: unknown };
+
+interface OpponentPosition {
+  fen: string;
+  sideToMove: 'WHITE' | 'BLACK';
+}
 
 const defaultDependencies: OpponentPreparationDependencies = {
   engine: {
@@ -139,7 +144,12 @@ export function createCandidateDecisionOpponentPreparationService(
         return CandidateDecisionService.get(userId, request);
       }
 
-      const canonicalFen = canonicalFenOrInput(request.fen);
+      const position = resolveOpponentPosition(request.fen);
+      if (!position || position.sideToMove === request.target.side) {
+        return CandidateDecisionService.get(userId, request);
+      }
+
+      const canonicalFen = position.fen;
       const [engine, masters, population, personal, playerProfile, courses] = await Promise.all([
         capture(() => deps.engine.get(canonicalFen)),
         capture(() => deps.masters.get(canonicalFen, userId)),
@@ -448,11 +458,15 @@ function lineMove(line: StoredEngineLine): string | null {
   return (line.moveUci ?? line.pvUci[0] ?? '').trim().toLowerCase() || null;
 }
 
-function canonicalFenOrInput(inputFen: string): string {
+function resolveOpponentPosition(inputFen: string): OpponentPosition | null {
   try {
-    return inputFen === 'startpos' ? new Chess().fen() : new Chess(inputFen).fen();
+    const chess = inputFen === 'startpos' ? new Chess() : new Chess(inputFen);
+    return {
+      fen: chess.fen(),
+      sideToMove: chess.turn() === 'w' ? 'WHITE' : 'BLACK',
+    };
   } catch {
-    return inputFen;
+    return null;
   }
 }
 
