@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts",
     "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "dev:prepared": "ts-node-dev --transpile-only src/main.ts",
     "predev:worker": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts",
     "dev:worker": "ts-node-dev --respawn --transpile-only src/worker.ts",
     "prebuild": "npm --prefix ../.. run build:domain && npm --prefix ../.. run build:contracts && prisma generate --schema prisma/schema.prisma",

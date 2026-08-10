@@ -46,63 +46,70 @@ export async function buildApp(options: BuildAppOptions = {}) {
 
   const app = Fastify({ logger: options.logger ?? false });
 
-  app.setValidatorCompiler(validatorCompiler);
-  app.setSerializerCompiler(serializerCompiler);
-  app.setErrorHandler((error, request, reply) => {
-    if (typeof error === 'object' && error !== null && 'validation' in error) {
-      request.log.warn({ err: error }, 'Request validation failed');
-      return reply.code(400).send({ error: 'Validation failed' });
-    }
+  try {
+    app.setValidatorCompiler(validatorCompiler);
+    app.setSerializerCompiler(serializerCompiler);
+    app.setErrorHandler((error, request, reply) => {
+      if (typeof error === 'object' && error !== null && 'validation' in error) {
+        request.log.warn({ err: error }, 'Request validation failed');
+        return reply.code(400).send({ error: 'Validation failed' });
+      }
 
-    request.log.error({ err: error }, 'Request failed');
-    return reply.send(error);
-  });
-  app.addHook('onRoute', ensureProductRouteSchema);
-  app.addHook('onClose', async () => {
-    await (options.prisma ?? prisma).$disconnect();
-  });
+      request.log.error({ err: error }, 'Request failed');
+      return reply.send(error);
+    });
+    app.addHook('onRoute', ensureProductRouteSchema);
+    app.addHook('onClose', async () => {
+      await (options.prisma ?? prisma).$disconnect();
+    });
 
-  await app.register(swagger, {
-    openapi: {
-      openapi: '3.0.3',
-      info: {
-        title: 'Chess Repertoire Trainer API',
-        version: '1.0.0',
+    await app.register(swagger, {
+      openapi: {
+        openapi: '3.0.3',
+        info: {
+          title: 'Chess Repertoire Trainer API',
+          version: '1.0.0',
+        },
       },
-    },
-    hideUntagged: true,
-    transform: jsonSchemaTransform,
-    transformObject: jsonSchemaTransformObject,
-  });
+      hideUntagged: true,
+      transform: jsonSchemaTransform,
+      transformObject: jsonSchemaTransformObject,
+    });
 
-  await app.register(cors, {
-    origin: options.corsOrigin ?? process.env['CORS_ORIGIN'] ?? 'http://localhost:4200',
-    credentials: true,
-    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  });
+    await app.register(cors, {
+      origin: options.corsOrigin ?? process.env['CORS_ORIGIN'] ?? 'http://localhost:4200',
+      credentials: true,
+      methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    });
 
-  app.get('/health', async () => ({ ok: true }));
-  await app.register(authPlugin, { authConfig });
-  registerRoutes(app, {
-    admin: {
-      authorizationPolicy: createAdminAuthorizationPolicy(adminAuthConfig),
-      requestBudget: options.adminRequestBudget ?? UnenforcedAdminRequestBudget,
-      ...(options.adminDiagnosticsService
-        ? { diagnosticsService: options.adminDiagnosticsService }
-        : {}),
-    },
-  });
+    app.get('/health', async () => ({ ok: true }));
+    await app.register(authPlugin, { authConfig });
+    registerRoutes(app, {
+      admin: {
+        authorizationPolicy: createAdminAuthorizationPolicy(adminAuthConfig),
+        requestBudget: options.adminRequestBudget ?? UnenforcedAdminRequestBudget,
+        ...(options.adminDiagnosticsService
+          ? { diagnosticsService: options.adminDiagnosticsService }
+          : {}),
+      },
+    });
 
-  await app.register(swaggerUi, {
-    routePrefix: '/api/docs',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking: true,
-    },
-  });
-  app.get('/api/docs/openapi.json', {
-    schema: { hide: true },
-  }, async () => app.swagger());
+    await app.register(swaggerUi, {
+      routePrefix: '/api/docs',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking: true,
+      },
+    });
+    app.get('/api/docs/openapi.json', {
+      schema: { hide: true },
+    }, async () => app.swagger());
 
-  return app;
+    return app;
+  } catch (error) {
+    await app.close().catch((closeError) => {
+      app.log.error({ err: closeError }, 'API cleanup after app construction failure failed');
+    });
+    throw error;
+  }
 }
