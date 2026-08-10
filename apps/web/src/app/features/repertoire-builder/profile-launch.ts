@@ -9,7 +9,11 @@ import type {
   RepertoireTargetDefaultSource,
   RepertoireTargetPersona,
 } from '@chess-trainer/contracts/repertoire-target';
-import type { RepertoireBuilderSetup } from './state/repertoire-builder.models';
+import {
+  REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
+  REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+  type RepertoireBuilderSetup,
+} from './state/repertoire-builder.models';
 
 const PROFILE_SOURCE = 'player-profile' as const;
 const PROFILE_INTENT = 'profile-starting-point' as const;
@@ -121,6 +125,8 @@ export function parseRepertoireBuilderProfileLaunch(
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona,
+    maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+    coveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
   };
   const evidenceSummary = profileEvidenceSummary(
     side,
@@ -175,6 +181,8 @@ function buildSideSuggestion(
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona,
+    maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+    coveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
   };
 
   return {
