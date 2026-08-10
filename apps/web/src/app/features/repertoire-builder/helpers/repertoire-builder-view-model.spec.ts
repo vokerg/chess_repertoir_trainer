@@ -179,6 +179,8 @@ function corpus() {
     games: 10,
     frequencyPercent: 50,
     scorePercentForTarget: 50,
+    positionBaselineScorePercentForTarget: 50,
+    scoreDeltaVsPositionPercent: 0,
     averageRating: 1800,
     datasetVersion: 'test-v1',
     fetchedAt: '2026-08-02T08:00:00.000Z',
