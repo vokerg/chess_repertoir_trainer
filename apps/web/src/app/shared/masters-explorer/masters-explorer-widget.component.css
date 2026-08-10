@@ -24,8 +24,7 @@
 }
 
 .masters-explorer-header,
-.masters-error,
-.masters-summary-heading {
+.masters-error {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -84,112 +83,42 @@
   line-height: 1.4;
 }
 
-.masters-summary,
 .masters-section {
   display: grid;
   gap: 0.75rem;
 }
 
-.masters-summary-heading {
-  align-items: baseline;
-}
-
-.masters-summary h4,
 .masters-section h4 {
   margin: 0;
   color: var(--ui-text);
   font-size: 0.95rem;
 }
 
-.masters-summary-heading > strong {
-  color: var(--ui-text-muted);
-  font-size: 0.86rem;
-}
-
-.masters-result-bar {
-  display: flex;
-  height: 0.65rem;
-  overflow: hidden;
-  border: 1px solid var(--ui-border);
-  border-radius: 999px;
-  background: var(--ui-surface-quiet);
-}
-
-.masters-result-white {
-  background: var(--ui-surface);
-}
-
-.masters-result-draw {
-  background: var(--ui-border-strong);
-}
-
-.masters-result-black {
-  background: var(--ui-chrome);
-}
-
-.masters-result-labels {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.masters-result-labels span,
-.masters-move-primary,
-.masters-move-games,
-.masters-move-results,
 .masters-game-meta {
   display: grid;
   gap: 0.15rem;
   min-width: 0;
 }
 
-.masters-result-labels small,
-.masters-move-row small,
 .masters-game-row small,
 .masters-game-players span {
   color: var(--ui-text-muted);
   font-weight: 700;
 }
 
-.masters-move-row,
 .masters-game-row {
   border-radius: var(--ui-radius-control);
   color: var(--ui-text);
 }
 
-.masters-move-row {
-  display: grid;
-  grid-template-columns: minmax(100px, 1fr) auto minmax(190px, auto);
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  border: 0;
-  padding: 0.75rem 0.8rem;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.masters-move-row:hover,
 .masters-game-row:hover {
   background: var(--ui-surface-muted);
 }
 
-.masters-move-row:focus-visible,
 .masters-game-row:focus-visible {
   outline: 3px solid var(--ui-focus-outline);
   outline-offset: 2px;
   background: var(--ui-surface-muted);
-}
-
-.masters-move-primary strong {
-  color: var(--ui-action-strong);
-  font-family: var(--ui-font-family-mono);
-}
-
-.masters-move-games,
-.masters-move-results {
-  text-align: right;
 }
 
 .masters-top-games {
@@ -226,20 +155,6 @@
 @media (max-width: 680px) {
   .masters-explorer-header {
     display: grid;
-  }
-
-  .masters-result-labels {
-    grid-template-columns: 1fr;
-  }
-
-  .masters-move-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.75rem;
-  }
-
-  .masters-move-results {
-    grid-column: 1 / -1;
-    text-align: left;
   }
 
   .masters-game-row {

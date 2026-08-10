@@ -1,0 +1,129 @@
+:host {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.opening-explorer-summary,
+.opening-explorer-moves {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.opening-explorer-summary-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.opening-explorer-summary h4,
+.opening-explorer-moves h4 {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 0.95rem;
+}
+
+.opening-explorer-summary-heading > strong {
+  color: var(--ui-text-muted);
+  font-family: var(--ui-font-family-mono);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.opening-explorer-result-bar {
+  display: flex;
+  height: 0.65rem;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-quiet);
+}
+
+.opening-explorer-result-white {
+  background: var(--ui-surface);
+}
+
+.opening-explorer-result-draw {
+  background: var(--ui-border-strong);
+}
+
+.opening-explorer-result-black {
+  background: var(--ui-chrome);
+}
+
+.opening-explorer-result-labels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.opening-explorer-result-labels span,
+.opening-explorer-move-primary,
+.opening-explorer-move-games,
+.opening-explorer-move-results {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.opening-explorer-result-labels small,
+.opening-explorer-move-row small {
+  color: var(--ui-text-muted);
+  font-weight: 700;
+}
+
+.opening-explorer-move-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(7.5rem, 0.42fr) minmax(14rem, 0.72fr);
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  padding: 0.75rem 0.8rem;
+  background: transparent;
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.opening-explorer-move-row:hover {
+  background: var(--ui-surface-muted);
+}
+
+.opening-explorer-move-row:focus-visible {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+  background: var(--ui-surface-muted);
+}
+
+.opening-explorer-move-primary strong {
+  color: var(--ui-action-strong);
+  font-family: var(--ui-font-family-mono);
+}
+
+.opening-explorer-move-games,
+.opening-explorer-move-results {
+  font-family: var(--ui-font-family-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 680px) {
+  .opening-explorer-result-labels {
+    grid-template-columns: 1fr;
+  }
+
+  .opening-explorer-move-row {
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, auto);
+    gap: 0.75rem;
+  }
+
+  .opening-explorer-move-results {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}

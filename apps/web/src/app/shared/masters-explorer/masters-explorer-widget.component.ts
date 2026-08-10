@@ -11,20 +11,15 @@ import {
 } from '@angular/core';
 import type { OpeningExplorerResponse } from '@chess-trainer/contracts/opening-explorer';
 import { firstValueFrom } from 'rxjs';
+import { OpeningExplorerResultsComponent } from '../opening-explorer/opening-explorer-results.component';
 import { ProgressiveListComponent } from '../ui/progressive-list/progressive-list.component';
 import { MastersExplorerApiService } from './masters-explorer-api.service';
-import {
-  gameDateLabel,
-  gameResultLabel,
-  percentage,
-  playerLabel,
-  sameOpening,
-} from './masters-explorer.helpers';
+import { gameDateLabel, gameResultLabel, playerLabel } from './masters-explorer.helpers';
 
 @Component({
   selector: 'app-masters-explorer-widget',
   standalone: true,
-  imports: [ProgressiveListComponent],
+  imports: [OpeningExplorerResultsComponent, ProgressiveListComponent],
   templateUrl: './masters-explorer-widget.component.html',
   styleUrl: './masters-explorer-widget.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,11 +36,9 @@ export class MastersExplorerWidgetComponent {
   readonly error = signal<string | null>(null);
 
   protected readonly hasGames = computed(() => (this.response()?.games.total ?? 0) > 0);
-  protected readonly percentage = percentage;
   protected readonly gameResultLabel = gameResultLabel;
   protected readonly gameDateLabel = gameDateLabel;
   protected readonly playerLabel = playerLabel;
-  protected readonly sameOpening = sameOpening;
 
   private requestId = 0;
   private requestedFen: string | null = null;

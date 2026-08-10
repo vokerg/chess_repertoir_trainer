@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ProgressiveListComponent } from '../../ui/progressive-list/progressive-list.component';
+import { compactGameCount, exactGameCount } from '../game-count.helpers';
 
 export interface GameFilterBreakdownItem {
   key: string;
@@ -33,4 +34,6 @@ export class GameFilterBreakdownPanelComponent {
   readonly itemSelected = output<string>();
 
   protected readonly selected = computed(() => new Set(this.selectedKeys()));
+  protected readonly compactGameCount = compactGameCount;
+  protected readonly exactGameCount = exactGameCount;
 }

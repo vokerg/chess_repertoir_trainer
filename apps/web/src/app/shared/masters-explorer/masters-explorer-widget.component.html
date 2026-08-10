@@ -40,78 +40,13 @@
     @if (!hasGames()) {
       <div class="empty-state">No master games found for this position.</div>
     } @else {
-      <section class="masters-summary" aria-label="Master game results">
-        <div class="masters-summary-heading">
-          <h4>Position results</h4>
-          <strong>{{ data.games.total }} master games</strong>
-        </div>
-        <div class="masters-result-bar" aria-hidden="true">
-          <span
-            class="masters-result-white"
-            [style.width.%]="percentage(data.games.whiteWins, data.games.total)"
-          ></span>
-          <span
-            class="masters-result-draw"
-            [style.width.%]="percentage(data.games.draws, data.games.total)"
-          ></span>
-          <span
-            class="masters-result-black"
-            [style.width.%]="percentage(data.games.blackWins, data.games.total)"
-          ></span>
-        </div>
-        <div class="masters-result-labels">
-          <span>
-            <strong>White {{ percentage(data.games.whiteWins, data.games.total) }}%</strong>
-            <small>{{ data.games.whiteWins }} games</small>
-          </span>
-          <span>
-            <strong>Draw {{ percentage(data.games.draws, data.games.total) }}%</strong>
-            <small>{{ data.games.draws }} games</small>
-          </span>
-          <span>
-            <strong>Black {{ percentage(data.games.blackWins, data.games.total) }}%</strong>
-            <small>{{ data.games.blackWins }} games</small>
-          </span>
-        </div>
-      </section>
-
-      <section class="masters-section">
-        <h4>Next moves</h4>
-        <app-progressive-list
-          [items]="data.moves"
-          [itemTemplate]="moveRow"
-          [initialCount]="6"
-          [resetKey]="fen()"
-        />
-
-        <ng-template #moveRow let-move>
-          <button
-            type="button"
-            class="masters-move-row"
-            [attr.aria-label]="'Play ' + move.san"
-            (click)="moveSelected.emit(move.uci)"
-          >
-            <span class="masters-move-primary">
-              <strong>{{ move.san }}</strong>
-              @if (!sameOpening(move.opening, data.opening) && move.opening; as opening) {
-                <small>{{ opening.eco }} · {{ opening.name }}</small>
-              }
-            </span>
-            <span class="masters-move-games">
-              <strong>{{ move.games.total }}</strong>
-              <small>{{ percentage(move.games.total, data.games.total) }}% of games</small>
-            </span>
-            <span class="masters-move-results">
-              <strong>
-                W {{ percentage(move.games.whiteWins, move.games.total) }}% ·
-                D {{ percentage(move.games.draws, move.games.total) }}% ·
-                B {{ percentage(move.games.blackWins, move.games.total) }}%
-              </strong>
-              <small>Average rating {{ move.averageRating }}</small>
-            </span>
-          </button>
-        </ng-template>
-      </section>
+      <app-opening-explorer-results
+        [data]="data"
+        [resetKey]="fen()"
+        singularGameLabel="master game"
+        pluralGameLabel="master games"
+        (moveSelected)="moveSelected.emit($event)"
+      />
 
       @if (data.topGames.length > 0) {
         <section class="masters-section masters-top-games">

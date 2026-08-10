@@ -1,7 +1,4 @@
-import type {
-  OpeningExplorerOpening,
-  OpeningExplorerPlayer,
-} from '@chess-trainer/contracts/opening-explorer';
+import type { OpeningExplorerPlayer } from '@chess-trainer/contracts/opening-explorer';
 
 const MONTH_NAMES = [
   'January',
@@ -17,11 +14,6 @@ const MONTH_NAMES = [
   'November',
   'December',
 ] as const;
-
-export function percentage(part: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.round((part / total) * 1_000) / 10;
-}
 
 export function gameResultLabel(winner: 'WHITE' | 'BLACK' | null): string {
   if (winner === 'WHITE') return '1–0';
@@ -43,12 +35,4 @@ export function gameDateLabel(year: number, month: string | null): string {
 
 export function playerLabel(player: OpeningExplorerPlayer): string {
   return player.rating === null ? player.name : `${player.name} · ${player.rating}`;
-}
-
-export function sameOpening(
-  left: OpeningExplorerOpening | null,
-  right: OpeningExplorerOpening | null,
-): boolean {
-  if (!left || !right) return left === right;
-  return left.eco === right.eco && left.name === right.name;
 }
