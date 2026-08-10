@@ -13,7 +13,6 @@ const allowedLegacyOpaqueResponseConsumers = new Set([
   'apps/api/src/modules/lab/lab.routes.ts',
   'apps/api/src/modules/repertoire-coverage/repertoire-coverage.routes.ts',
   'apps/api/src/modules/scenario-training/scenario-training.routes.ts',
-  'apps/api/src/modules/stats/stats.routes.ts',
   'apps/api/src/modules/training-marathons/training-marathons.routes.ts',
   'apps/api/src/modules/training/training.routes.ts',
   'apps/api/src/routes/externalAccounts.ts',
