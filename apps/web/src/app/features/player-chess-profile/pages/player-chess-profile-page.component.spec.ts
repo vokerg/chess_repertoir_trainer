@@ -5,12 +5,14 @@ const whiteSuggestion: RepertoireBuilderProfileSuggestion = {
   side: 'WHITE',
   setup: {
     side: 'WHITE',
+    startingScope: 'FULL',
+    customStartingPosition: '',
     speedPreset: 'BLITZ_AND_SLOWER',
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona: 'SOLID',
-    maximumTheoryBurden: 'LOW',
-    coveragePercent: 85,
+    maximumTheoryBurden: 'MEDIUM',
+    coveragePercent: 80,
   },
   profileSource: {
     kind: 'PLAYER_PROFILE',
