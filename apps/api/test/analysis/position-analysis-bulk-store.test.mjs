@@ -100,7 +100,7 @@ try {
       depth: 12,
       moveUci: 'e2e4 e7e5',
       scoreCpWhite: 22,
-      pvUci: ['d2d4', 'd7d5'],
+      pvUci: ['e2e4', 'e7e5'],
     }],
   });
   const lineFallback = await getPositionAnalysisByFen(fenD);
