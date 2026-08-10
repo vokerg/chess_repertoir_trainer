@@ -49,7 +49,7 @@ export interface StoredAccountImportRun {
   heartbeatAt: Date | null;
   retryAt: Date | null;
   rateLimitUntil: Date | null;
-  startedAt: Date | null;
+  startedAt: Date;
   completedAt: Date | null;
   errorCode: string | null;
   error: string | null;
