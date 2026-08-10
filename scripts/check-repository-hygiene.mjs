@@ -25,18 +25,15 @@ const legacyOpaqueResponseConsumers = sourceFiles(apiSourceRoot)
   .filter((fileUrl) => readFileSync(fileUrl, 'utf8').includes('legacyOpaqueResponseSchema'))
   .map((fileUrl) => relative(repositoryRoot, fileURLToPath(fileUrl)).replaceAll('\\', '/'))
   .sort();
-
-const unexpectedLegacyConsumers = legacyOpaqueResponseConsumers.filter(
-  (path) => !allowedLegacyOpaqueResponseConsumers.has(path),
-);
+const allowedLegacyConsumers = [...allowedLegacyOpaqueResponseConsumers].sort();
 
 assert.deepEqual(
-  unexpectedLegacyConsumers,
-  [],
+  legacyOpaqueResponseConsumers,
+  allowedLegacyConsumers,
   [
-    'legacyOpaqueResponseSchema is transitional debt and must not gain new consumers.',
+    'legacyOpaqueResponseSchema is transitional debt: the allowlist must exactly match current consumers.',
+    'New consumers are forbidden, and migrated/deleted consumers must be removed from the allowlist in the same change.',
     'Define a concrete response schema, preferably in packages/contracts when the payload crosses workspace boundaries.',
-    `Unexpected consumers: ${unexpectedLegacyConsumers.join(', ')}`,
   ].join(' '),
 );
 
