@@ -8,7 +8,7 @@ Order: 220
 
 Delivery class: North-star decision policy and UX
 
-Planning maturity: Agreed product semantics; recommended-set rule requires implementation evidence
+Planning maturity: Runtime implementation on draft PR #331; exact-head validation pending
 
 GitHub issue: #319
 
@@ -47,6 +47,29 @@ Coverage is an outcome of selected replies, not a persona/setup preference.
 
 The recommended-set stopping rule must be versioned and tested. It must not simply conceal the old fixed percentages under new copy.
 
+## Implemented runtime semantics
+
+Draft PR: #331
+
+Policy: `2026-08-opponent-preparation-v1`
+
+- opponent replies are ranked by an opponent-only domain policy rather than persona/target/profile fit;
+- population relevance requires at least 20 target-population games and frequency at least the greater of 3% or 20% of the strongest observed reply at the exact position;
+- at least three exact-position personal encounters independently qualify a reply for recommendation;
+- mate against the repertoire side or at least 100 cp objective challenge independently qualifies a reply as dangerous;
+- course coverage/transposition/conflict remains inspectable context and a deterministic tie-breaker, but does not by itself make a low-relevance reply recommended;
+- uncommon dangerous or personally repeated replies are recommended with their factual reason and are not relabeled common;
+- Candidate Decision removes target/profile fit reason authority and target/theory warnings from opponent decisions while preserving relevant course/source warnings;
+- candidate coverage carries only each reply's target-population contribution; ranked cumulative coverage is deliberately absent;
+- the Builder computes selected target-population share from the replies actually selected, with explicit non-theoretical-completeness copy;
+- every reply remains independently selectable/removable, and `Use recommended set` applies the deterministic recommendation without automatic acceptance;
+- accepting selections continues through the existing RB-009 reducer, producing independent continuation branches with unchanged queue/defer/ignore semantics;
+- the normal setup no longer displays a coverage percentage or persona-specific coverage default.
+
+## Compatibility boundary for RB-030
+
+The current `RepertoireTarget.coverage` shape and route-local `RepertoireBuilderSetup.coveragePercent` field remain temporarily populated for contract compatibility. RB-029 does **not** read those percentages when ranking or recommending opponent replies, and they are no longer exposed as normal setup decisions. RB-030 owns removal/simplification of the residual setup/target compatibility fields after this policy is integrated.
+
 ## In scope
 
 - opponent ranking/reasons and response-set recommendation;
@@ -75,6 +98,11 @@ Coordinate shared candidate-contract work with RB-027. RB-031 consumes the final
 - accepting selected responses retains current branch creation, queue and reducer semantics;
 - setup no longer requires a coverage percentage;
 - tests cover common, dangerous-uncommon, personally encountered, sparse, defer, ignore and selection cases.
+
+## Validation evidence
+
+- initial domain-policy slice: CI #2421 (`31402443680`) passed on head `6fdd9184b011af69a9ee63cb9aae1a125d5a0df5`;
+- exact-head full CI: pending for the final PR head.
 
 ## Completion
 
