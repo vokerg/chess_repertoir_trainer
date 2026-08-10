@@ -72,6 +72,36 @@ describe('Surprise persona empirical qualification', () => {
     expect(ranked[1].reasonCodes).not.toContain('POPULATION_STRONG_SCORE');
   });
 
+  it('keeps a fixed policy sample floor even when upstream marks a tiny sample available', () => {
+    const tinyAvailable = candidate('a2a3', {
+      status: 'AVAILABLE',
+      games: 1,
+      frequencyPercent: 0.1,
+      scorePercentForTarget: 100,
+      positionBaselineScorePercentForTarget: 50,
+    });
+    const supportedOverperformer = candidate('b2b3', {
+      status: 'AVAILABLE',
+      games: 40,
+      frequencyPercent: 8,
+      scorePercentForTarget: 60,
+      positionBaselineScorePercentForTarget: 50,
+    });
+
+    const ranked = rankCandidateEvidence([tinyAvailable, supportedOverperformer], {
+      role: 'USER_MOVE',
+      speedPreset: 'BLITZ_AND_SLOWER',
+      riskTolerance: 'HIGH',
+      allowDeliberatelyDubious: true,
+      persona: 'SURPRISE',
+    });
+    const tinyRanked = ranked.find((entry) => entry.input.moveUci === 'a2a3');
+
+    expect(ranked[0].input.moveUci).toBe('b2b3');
+    expect(tinyRanked?.components.population).toBe(0);
+    expect(tinyRanked?.reasonCodes).not.toContain('POPULATION_STRONG_SCORE');
+  });
+
   it('marks missing objective proof as a warning without inventing an objective loss', () => {
     const uncommon = candidate('h2h3', {
       status: 'AVAILABLE',
