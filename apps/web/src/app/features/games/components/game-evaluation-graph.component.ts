@@ -9,12 +9,18 @@ interface EvaluationGraphPoint {
   y: number;
 }
 
+interface EvaluationGraphTick {
+  nodeId: number;
+  x: number;
+  label: string;
+}
+
 type PointFocusMove = 'first' | 'last' | 'next' | 'previous';
 
 const VIEWBOX_WIDTH = 600;
 const VIEWBOX_HEIGHT = 180;
 const HORIZONTAL_PADDING = 14;
-const VERTICAL_PADDING = 12;
+const VERTICAL_PADDING = 22;
 const MAX_SCORE_CP = 800;
 
 @Component({
@@ -48,9 +54,8 @@ export class GameEvaluationGraphComponent {
           : null;
       })
       .filter(
-        (
-          point,
-        ): point is { nodeId: number; plyNumber: number; scoreCpWhite: number } => point !== null,
+        (point): point is { nodeId: number; plyNumber: number; scoreCpWhite: number } =>
+          point !== null,
       )
       .sort((left, right) => left.plyNumber - right.plyNumber);
 
@@ -100,6 +105,24 @@ export class GameEvaluationGraphComponent {
   protected readonly selectedPoint = computed(
     () => this.points().find((point) => point.nodeId === this.selectedNodeId()) ?? null,
   );
+  protected readonly moveTicks = computed<EvaluationGraphTick[]>(() => {
+    const points = this.points();
+    if (points.length === 0) return [];
+
+    const tickCount = Math.min(5, points.length);
+    const indexes = Array.from({ length: tickCount }, (_, index) =>
+      tickCount === 1 ? 0 : Math.round((index * (points.length - 1)) / (tickCount - 1)),
+    );
+
+    return Array.from(new Set(indexes)).map((index) => ({
+      nodeId: points[index].nodeId,
+      x: points[index].x,
+      label: this.moveLabel(points[index].plyNumber),
+    }));
+  });
+  protected readonly perspectiveLabel = computed(() =>
+    this.blackPerspective() ? 'Black perspective' : 'White perspective',
+  );
 
   protected evaluationLabel(scoreCp: number): string {
     const pawns = scoreCp / 100;
@@ -109,6 +132,12 @@ export class GameEvaluationGraphComponent {
   protected moveLabel(plyNumber: number): string {
     const moveNumber = Math.ceil(plyNumber / 2);
     return `${moveNumber}${plyNumber % 2 === 0 ? '…' : '.'}`;
+  }
+
+  protected evaluationTone(scoreCp: number): 'positive' | 'negative' | 'neutral' {
+    if (scoreCp > 15) return 'positive';
+    if (scoreCp < -15) return 'negative';
+    return 'neutral';
   }
 
   protected pointTabIndex(nodeId: number): 0 | -1 {
@@ -156,9 +185,8 @@ export class GameEvaluationGraphComponent {
     this.nodeSelected.emit(targetPoint.nodeId);
 
     const currentTarget = event.currentTarget as SVGCircleElement | null;
-    const pointElements = currentTarget?.ownerSVGElement?.querySelectorAll<SVGCircleElement>(
-      '.point-hit-target',
-    );
+    const pointElements =
+      currentTarget?.ownerSVGElement?.querySelectorAll<SVGCircleElement>('.point-hit-target');
     pointElements?.[targetIndex]?.focus();
   }
 

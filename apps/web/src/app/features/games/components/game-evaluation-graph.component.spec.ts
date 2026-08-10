@@ -71,6 +71,18 @@ describe('GameEvaluationGraphComponent', () => {
     expect(event.defaultPrevented).toBeTrue();
     expect(selectedNodeId).toBe(2);
   });
+
+  it('shows move context and the selected evaluation alongside the plot', () => {
+    const readout = fixture.nativeElement.querySelector('.evaluation-readout') as HTMLElement;
+    const ticks = Array.from(
+      fixture.nativeElement.querySelectorAll('.move-grid text'),
+    ) as SVGTextElement[];
+
+    expect(readout.textContent).toContain('Selected');
+    expect(readout.textContent).toContain('-0.40');
+    expect(readout.textContent).toContain('Move 1…');
+    expect(ticks.map((tick) => tick.textContent)).toEqual(['1.', '1…', '2.']);
+  });
 });
 
 function evaluationTree(): GameTree {

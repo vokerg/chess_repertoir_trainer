@@ -6,6 +6,7 @@
           type="button"
           class="speed-button"
           [class.speed-button-active]="selectedSpeed() === speed.key"
+          [attr.aria-pressed]="selectedSpeed() === speed.key"
           (click)="selectSpeed(speed.key)"
         >
           {{ speed.label }}
@@ -19,6 +20,7 @@
           type="button"
           class="range-button"
           [class.range-button-active]="selectedRange() === range"
+          [attr.aria-pressed]="selectedRange() === range"
           (click)="selectRange(range)"
         >
           {{ range }}
@@ -33,15 +35,24 @@
 
   <div class="chart-frame" [class.chart-frame-loading]="loading()">
     @if (!loading() && !hasPoints()) {
-      <div class="chart-empty">No bullet, blitz, or rapid rating history is available for this range.</div>
+      <div class="chart-empty">
+        No bullet, blitz, or rapid rating history is available for this range.
+      </div>
     }
 
     @if (hasPoints()) {
       <div class="legend" aria-label="Rating series">
-        @for (series of history()?.series ?? []; track series.key) {
+        @for (series of seriesPaths(); track series.key) {
           <span class="legend-item" [ngClass]="speedClass(series.key)">
             <span class="legend-swatch"></span>
-            {{ series.label }}
+            <span class="legend-label">{{ series.label }}</span>
+            <strong>{{ series.latestRating }}</strong>
+            <small
+              [class.legend-delta-positive]="series.delta > 0"
+              [class.legend-delta-negative]="series.delta < 0"
+            >
+              {{ deltaLabel(series.delta) }}
+            </small>
           </span>
         }
       </div>
@@ -50,11 +61,27 @@
         <svg
           class="rating-svg"
           [attr.viewBox]="viewBox"
-          role="img"
-          aria-label="Rating history line chart"
+          role="group"
+          tabindex="0"
+          aria-label="Rating history line chart. Use arrow keys to inspect dates."
           (pointermove)="onPointerMove($event)"
           (pointerleave)="clearHover()"
+          (focus)="onChartFocus()"
+          (blur)="clearHover()"
+          (keydown)="onChartKeydown($event)"
         >
+          <g class="plot-bands" aria-hidden="true">
+            @for (band of plotBands; track band) {
+              <rect
+                [class.plot-band-alternate]="band % 2 === 1"
+                [attr.x]="plotLeft"
+                [attr.y]="plotBandY(band)"
+                [attr.width]="plotWidth"
+                [attr.height]="plotHeight / plotBands.length"
+              />
+            }
+          </g>
+
           <g class="grid">
             @for (tick of yTicks(); track tick) {
               @if (yForTick(tick); as y) {
@@ -64,25 +91,94 @@
             }
           </g>
 
-          <line class="axis axis-x" [attr.x1]="plotLeft" [attr.x2]="plotRight" [attr.y1]="plotBottom" [attr.y2]="plotBottom" />
-          <line class="axis axis-y" [attr.x1]="plotLeft" [attr.x2]="plotLeft" [attr.y1]="plotTop" [attr.y2]="plotBottom" />
+          <line
+            class="axis axis-x"
+            [attr.x1]="plotLeft"
+            [attr.x2]="plotRight"
+            [attr.y1]="plotBottom"
+            [attr.y2]="plotBottom"
+          />
+          <line
+            class="axis axis-y"
+            [attr.x1]="plotLeft"
+            [attr.x2]="plotLeft"
+            [attr.y1]="plotTop"
+            [attr.y2]="plotBottom"
+          />
 
           @for (series of seriesPaths(); track series.key) {
+            <path
+              class="rating-area"
+              [ngClass]="speedClass(series.key)"
+              [attr.d]="series.areaPath"
+            />
+          }
+
+          @for (series of seriesPaths(); track series.key) {
+            <path class="rating-line-shadow" [attr.d]="series.path" />
             <path class="rating-line" [ngClass]="speedClass(series.key)" [attr.d]="series.path" />
+            <circle
+              class="endpoint-halo"
+              [ngClass]="speedClass(series.key)"
+              [attr.cx]="series.endX"
+              [attr.cy]="series.endY"
+              r="5"
+            />
+            <circle
+              class="endpoint"
+              [ngClass]="speedClass(series.key)"
+              [attr.cx]="series.endX"
+              [attr.cy]="series.endY"
+              r="2.5"
+            />
           }
 
           @if (crosshairX(); as x) {
-            <line class="crosshair" [attr.x1]="x" [attr.x2]="x" [attr.y1]="plotTop" [attr.y2]="plotBottom" />
+            <line
+              class="crosshair"
+              [attr.x1]="x"
+              [attr.x2]="x"
+              [attr.y1]="plotTop"
+              [attr.y2]="plotBottom"
+            />
+          }
+
+          @for (point of highlightedPoints(); track point.key) {
+            <circle
+              class="hover-point-halo"
+              [ngClass]="speedClass(point.key)"
+              [attr.cx]="point.x"
+              [attr.cy]="point.y"
+              r="6"
+            />
+            <circle
+              class="hover-point"
+              [ngClass]="speedClass(point.key)"
+              [attr.cx]="point.x"
+              [attr.cy]="point.y"
+              r="3"
+            />
           }
 
           @if (dateLabels(); as labels) {
-            <text class="date-label" [attr.x]="plotLeft" [attr.y]="height - 10">{{ labels.start }}</text>
-            <text class="date-label date-label-end" [attr.x]="plotRight" [attr.y]="height - 10">{{ labels.end }}</text>
+            <text class="date-label" [attr.x]="plotLeft" [attr.y]="height - 10">
+              {{ labels.start }}
+            </text>
+            <text
+              class="date-label date-label-middle"
+              [attr.x]="plotLeft + plotWidth / 2"
+              [attr.y]="height - 10"
+            >
+              {{ labels.middle }}
+            </text>
+            <text class="date-label date-label-end" [attr.x]="plotRight" [attr.y]="height - 10">
+              {{ labels.end }}
+            </text>
           }
         </svg>
 
         @if (tooltip(); as tip) {
-          <div class="tooltip" [style.left.px]="tooltipLeft()">
+          <div class="tooltip" [style.left.%]="tooltipLeftPercent()">
             <strong>{{ formatDate(tip.date) }}</strong>
             @for (row of tip.rows; track row.key) {
               <div class="tooltip-row" [ngClass]="speedClass(row.key)">
