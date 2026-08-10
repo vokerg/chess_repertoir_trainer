@@ -19,7 +19,7 @@ export interface ActiveSublineStats {
   failureRate: number;
   attemptPassRate: number | null;
   status: SublineTrainingStatusValue;
-  weakestSublines?: WeakSublineStats[];
+  weakestSublines: WeakSublineStats[];
 }
 
 export interface WeakSublineStats {
@@ -173,7 +173,7 @@ export const StatsService = {
     const courseStats = (await Promise.all(
       courseRows.map((course) => computeStats(userId, { type: 'COURSE', id: course.id })),
     )).filter((stats): stats is ActiveSublineStats => Boolean(stats));
-    const weakestSublines = courseStats.flatMap((stats) => stats.weakestSublines ?? [])
+    const weakestSublines = courseStats.flatMap((stats) => stats.weakestSublines)
       .sort((a, b) => a.passRate - b.passRate || a.recentAttempts - b.recentAttempts)
       .slice(0, 5);
 
