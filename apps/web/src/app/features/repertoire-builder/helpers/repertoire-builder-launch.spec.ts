@@ -1,14 +1,17 @@
 import { convertToParamMap } from '@angular/router';
+import { defaultRepertoireBuilderSetup } from './repertoire-builder-target';
 import {
   builderLaunchReturnUrl,
   builderLaunchStartingPoint,
   buildCourseEndingBuilderLaunchQueryParams,
   buildOpponentGapBuilderLaunchQueryParams,
+  buildRepertoireBuilderSetupStartingLaunch,
   parseRepertoireBuilderLaunch,
 } from './repertoire-builder-launch';
 
 const STARTING_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
 const NORMALIZED_STARTING_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -';
+const AFTER_E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
 
 function courseEndingQuery() {
   return buildCourseEndingBuilderLaunchQueryParams({
@@ -120,6 +123,23 @@ describe('repertoire builder launch payload', () => {
       nodeId: 17,
       sequence: '1. e4 e5',
     }));
+  });
+
+  it('bridges a normal scoped setup into the exact Builder session and target root', () => {
+    const launch = buildRepertoireBuilderSetupStartingLaunch({
+      ...defaultRepertoireBuilderSetup(),
+      startingScope: 'E4',
+    });
+
+    expect(launch).toEqual({
+      source: 'SETUP_SCOPE',
+      startingFen: AFTER_E4_FEN,
+      startingPoint: { kind: 'FEN', fen: AFTER_E4_FEN },
+    });
+    expect(builderLaunchStartingPoint(launch)).toEqual({
+      kind: 'FEN',
+      fen: AFTER_E4_FEN,
+    });
   });
 
   it('accepts the normalized four-field FEN emitted by Course review', () => {
