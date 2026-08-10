@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import {
+  accountImportCoverageSchema,
+  accountImportRunSchema,
+  accountImportScopeSchema,
   boardImageQuerySchema,
+  createAccountImportRunBodySchema,
   importedGameFacetsResponseSchema,
   importedGameSearchQuerySchema,
   mobileSyncManifestSchema,
@@ -13,6 +17,111 @@ import {
   positionAnalysisLineSchema,
   serializableTrainingSessionSchema,
 } from '../dist/index.js';
+
+const durableImportScope = {
+  variant: 'STANDARD',
+  speeds: ['BLITZ', 'RAPID'],
+  rated: 'BOTH',
+};
+assert.deepEqual(accountImportScopeSchema.parse(durableImportScope), durableImportScope);
+assert.equal(
+  accountImportScopeSchema.safeParse({ ...durableImportScope, speeds: ['BLITZ', 'BLITZ'] }).success,
+  false,
+  'durable import scopes reject duplicate speed literals',
+);
+assert.equal(
+  createAccountImportRunBodySchema.safeParse({
+    accountId: 7,
+    mode: 'BOUNDED_INITIAL',
+    scope: durableImportScope,
+    requestedFrom: '2026-05-01T00:00:00.000Z',
+    requestedTo: '2026-08-01T00:00:00.000Z',
+  }).success,
+  true,
+);
+assert.equal(
+  createAccountImportRunBodySchema.safeParse({
+    accountId: 7,
+    mode: 'BOUNDED_INITIAL',
+    scope: durableImportScope,
+    requestedFrom: '2026-08-01T00:00:00.000Z',
+    requestedTo: '2026-08-01T00:00:00.000Z',
+  }).success,
+  false,
+  'durable import requests require a non-empty half-open range',
+);
+
+const durableImportRun = {
+  id: 41,
+  accountId: 7,
+  provider: 'LICHESS',
+  mode: 'BOUNDED_INITIAL',
+  source: 'ONBOARDING',
+  status: 'QUEUED',
+  priority: 100,
+  scopeVersion: 1,
+  scopeHash: 'a'.repeat(64),
+  scope: durableImportScope,
+  requestedFrom: '2026-05-01T00:00:00.000Z',
+  requestedTo: '2026-08-01T00:00:00.000Z',
+  retryOfImportRunId: null,
+  windows: { total: 7, completed: 0 },
+  games: {
+    seen: 0,
+    matchedScope: 0,
+    imported: 0,
+    duplicate: 0,
+    skippedOutOfScope: 0,
+    failed: 0,
+  },
+  lastProgressAt: null,
+  retryAt: null,
+  rateLimitUntil: null,
+  createdAt: '2026-08-10T20:00:00.000Z',
+  updatedAt: '2026-08-10T20:00:00.000Z',
+  startedAt: null,
+  completedAt: null,
+  errorCode: null,
+  error: null,
+};
+assert.deepEqual(accountImportRunSchema.parse(durableImportRun), durableImportRun);
+assert.equal(
+  accountImportRunSchema.safeParse({ ...durableImportRun, scope: null }).success,
+  false,
+  'durable runs cannot lose their immutable scope',
+);
+assert.equal(
+  accountImportRunSchema.safeParse({
+    ...durableImportRun,
+    mode: 'LEGACY_SYNC',
+    source: 'LEGACY_SYNC',
+    scopeVersion: null,
+    scopeHash: null,
+    scope: null,
+    requestedFrom: null,
+    requestedTo: null,
+  }).success,
+  true,
+  'legacy synchronous history remains explicitly representable',
+);
+
+const importCoverage = {
+  accountId: 7,
+  scopeVersion: 1,
+  scopeHash: 'b'.repeat(64),
+  scope: durableImportScope,
+  coveredFrom: '2026-05-01T00:00:00.000Z',
+  coveredThrough: '2026-08-01T00:00:00.000Z',
+  lastCompletedImportRunId: 41,
+  createdAt: '2026-08-10T20:00:00.000Z',
+  updatedAt: '2026-08-10T20:00:00.000Z',
+};
+assert.deepEqual(accountImportCoverageSchema.parse(importCoverage), importCoverage);
+assert.equal(
+  accountImportCoverageSchema.safeParse({ ...importCoverage, coveredThrough: null }).success,
+  false,
+  'coverage boundaries are both present or both absent',
+);
 
 assert.deepEqual(boardImageQuerySchema.parse({ fen: 'startpos' }), {
   fen: 'startpos',
