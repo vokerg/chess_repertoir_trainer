@@ -43,20 +43,20 @@ const profileDefaults: RepertoireBuilderProfileDefaults = {
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona: 'SOLID',
-    maximumTheoryBurden: 'MEDIUM',
+    maximumTheoryBurden: 'HIGH',
     coveragePercent: 80,
   },
 };
 
 describe('repertoire builder target factory', () => {
-  it('creates a schema-valid explicit population target with V2 setup compatibility internals', () => {
+  it('creates a schema-valid explicit population target with non-gating V1 compatibility internals', () => {
     const target = buildRepertoireBuilderTarget({
       ...defaultRepertoireBuilderSetup(),
       speedPreset: 'BLITZ',
       ratingTarget: 'GROUP',
       ratingGroup: 1800,
       persona: 'SOLID',
-      maximumTheoryBurden: 'HIGH',
+      maximumTheoryBurden: 'LOW',
       coveragePercent: 95,
     }, null, NOW, TARGET_ID);
 
@@ -66,7 +66,7 @@ describe('repertoire builder target factory', () => {
       ratingGroup: 1800,
     });
     expect(target.population.peerResolution).toBeNull();
-    expect(target.objective.maximumTheoryBurden).toBe('MEDIUM');
+    expect(target.objective.maximumTheoryBurden).toBe('HIGH');
     expect(target.coverage.opponentResponseCoveragePercent).toBe(80);
     expect(target.defaults.some((entry) => entry.field === 'population')).toBeFalse();
     expect(target.overriddenFields).toEqual(['speedPreset']);
