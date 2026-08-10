@@ -1,6 +1,6 @@
 # RB-029 — Opponent preparation and computed coverage V2
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -12,13 +12,13 @@ Planning maturity: Agreed product semantics; recommended-set rule requires imple
 
 GitHub issue: #319
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `repertoire-builder/rb-029-opponent-preparation`
 
-Claimed at: none
+Claimed at: 2026-08-10
 
-Claim scope: none
+Claim scope: opponent preparation policy, computed selected coverage, Candidate Decision integration and Builder presentation while preserving RB-009 reducer/queue semantics
 
 ## Objective
 
