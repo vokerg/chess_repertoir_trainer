@@ -55,6 +55,8 @@ export function defaultRepertoireBuilderSetup(): RepertoireBuilderSetup {
     ratingTarget: 'MY_PEERS_PLUS_ONE',
     ratingGroup: null,
     persona: 'BALANCED',
+    maximumTheoryBurden: COMPATIBILITY_THEORY_BURDEN,
+    coveragePercent: COMPATIBILITY_COVERAGE_PERCENT,
   };
 }
 
