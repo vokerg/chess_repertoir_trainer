@@ -160,3 +160,42 @@ function serviceFor(lines) {
   assert.equal(candidate.evidence.engine.objectiveDeltaCp, null);
   assert.equal(candidate.warningCodes.includes('OBJECTIVE_EVIDENCE_MISSING'), true);
 }
+
+{
+  const service = serviceFor([
+    { multipv: 1, depth: 18, moveUci: 'a1a8', scoreCpWhite: 500, pvUci: ['a1a8'] },
+    { multipv: 2, depth: 18, moveUci: 'e2e4', scoreCpWhite: 30, pvUci: ['e2e4'] },
+    { multipv: 3, depth: 18, moveUci: 'd2d4', scoreCpWhite: 20, pvUci: ['d2d4'] },
+  ]);
+  const response = await service.get(42, {
+    fen: 'startpos',
+    decisionRole: 'USER_MOVE',
+    target: newCourseRepertoireTargetExample,
+    candidateLimit: 3,
+  });
+
+  assert.equal(response.sourceSummary.engine, 'AVAILABLE');
+  const e4 = response.candidates.find((candidate) => candidate.moveUci === 'e2e4');
+  const d4 = response.candidates.find((candidate) => candidate.moveUci === 'd2d4');
+  assert.ok(e4);
+  assert.ok(d4);
+  assert.equal(e4.evidence.engine.objectiveDeltaCp, 0);
+  assert.equal(d4.evidence.engine.objectiveDeltaCp, 10);
+  assert.equal(response.candidates.some((candidate) => candidate.moveUci === 'a1a8'), false);
+}
+
+{
+  const service = serviceFor([
+    { multipv: 1, depth: 18, moveUci: 'a1a8', scoreCpWhite: 500, pvUci: ['a1a8'] },
+  ]);
+  const response = await service.get(42, {
+    fen: 'startpos',
+    decisionRole: 'USER_MOVE',
+    target: newCourseRepertoireTargetExample,
+    candidateLimit: 1,
+  });
+
+  assert.equal(response.sourceSummary.engine, 'INSUFFICIENT');
+  assert.equal(response.candidates[0].evidence.engine.status, 'INSUFFICIENT');
+  assert.equal(response.candidates[0].evidence.engine.objectiveDeltaCp, null);
+}
