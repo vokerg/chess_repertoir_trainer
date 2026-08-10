@@ -12,6 +12,10 @@ import type { EngineAnalysis } from '../../../shared/chess/engine/stockfish-anal
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import type { UiShellAction } from '../../../shared/ui/ui-shell.model';
 import {
+  personalEvidenceDetail as formatPersonalEvidenceDetail,
+  personalEvidenceLabel as formatPersonalEvidenceLabel,
+} from '../helpers/repertoire-builder-view-model';
+import {
   REPERTOIRE_BUILDER_DECISION_LIMIT,
   type RepertoireBuilderEngineImpact,
   type RepertoireBuilderPositionEvaluation,
@@ -167,6 +171,15 @@ export class RepertoireBuilderWorkbenchComponent {
 
   protected percent(value: number | null): string {
     return value === null ? '—' : `${Math.round(value)}%`;
+  }
+
+  protected personalEvidenceLabel(candidate: CandidateDecisionCandidate): string {
+    return formatPersonalEvidenceLabel(candidate.evidence.personal);
+  }
+
+  protected personalEvidenceDetail(candidate: CandidateDecisionCandidate): string {
+    return formatPersonalEvidenceDetail(candidate.evidence.personal)
+      ?? 'Personal game history could not be loaded.';
   }
 
   protected candidateEngineLabel(candidate: CandidateDecisionCandidate): string {
