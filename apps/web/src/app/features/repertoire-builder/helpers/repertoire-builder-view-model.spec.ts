@@ -1,6 +1,8 @@
-import type {
-  CandidateDecisionCandidate,
-  CandidateDecisionResponse,
+import {
+  CANDIDATE_DECISION_CONTRACT_VERSION,
+  CANDIDATE_RANKING_POLICY_VERSION,
+  type CandidateDecisionCandidate,
+  type CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
 import {
   buildRepertoireBuilderEvidenceReference,
@@ -55,7 +57,7 @@ describe('repertoire builder evidence view model', () => {
     expect(reference.sourceVersions['populationDataset']).toBe('test-v1');
     expect(reference.sourceVersions['openingClassification']).toBe('2026-07-rules-v2');
     expect(reference.sourceVersions['openingKnowledge']).toBe('2026-08-knowledge-v1');
-    expect(reference.candidateContractVersion).toBe('2026-08-v2');
+    expect(reference.candidateContractVersion).toBe(CANDIDATE_DECISION_CONTRACT_VERSION);
   });
 });
 
@@ -140,8 +142,8 @@ const candidate = {
 } as CandidateDecisionCandidate;
 
 const response = {
-  contractVersion: '2026-08-v2',
-  rankingPolicyVersion: '2026-07-deterministic-v1',
+  contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
+  rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
   generatedAt: '2026-08-02T08:00:00.000Z',
   targetId: '00000000-0000-4000-8000-000000000010',
   decisionRole: 'OPPONENT_RESPONSE',
