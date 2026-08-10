@@ -9,7 +9,7 @@ import type {
   CandidateDecisionRequest,
   CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
-import { CandidateDecisionService } from '../../../candidate-decision/candidate-decision.service';
+import { CandidateDecisionOpponentPreparationService } from '../../../candidate-decision/candidate-decision-opponent-preparation.service';
 import { loadAiConfig, type AiConfig } from '../../ai.config';
 import { AiFeatureError } from '../../ai.errors';
 import { OpenAiCompatibleLlmClient } from '../../openai-compatible-llm.client';
@@ -32,7 +32,8 @@ export interface CandidateExplanationDependencies {
 }
 
 const defaultDependencies: CandidateExplanationDependencies = {
-  getCandidateDecision: (userId, request) => CandidateDecisionService.get(userId, request),
+  getCandidateDecision: (userId, request) =>
+    CandidateDecisionOpponentPreparationService.get(userId, request),
   loadConfig: loadAiConfig,
   createClient: (config, logger) => new OpenAiCompatibleLlmClient(config, fetch, logger),
   now: () => new Date(),
@@ -108,7 +109,7 @@ export function createCandidateExplanationService(
 
 function ensureFeatureEnabled(config: AiConfig): void {
   if (!config.enabled || !config.builderCandidateExplanationEnabled) {
-    throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'Builder candidate explanation is disabled.');
+    throw new AiFeatureError(404, 'AI_WIDGET_DISABLED', 'AI candidate explanation is disabled.');
   }
 }
 
