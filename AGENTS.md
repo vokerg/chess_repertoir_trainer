@@ -81,6 +81,7 @@ From the repository root:
 - `npm test`
 - `npm run lint`
 - `npm run check:architecture`
+- `npm run check:hygiene`
 - API: `npm run build:api` and `npm run test --workspace=apps/api`
 - Web: `npm run build:web` and `npm run test --workspace=apps/web`
 - Mobile: `npm run build:mobile`, `npm run test:mobile`, `npm run lint:mobile`, and `npm run expo:check`
