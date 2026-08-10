@@ -44,6 +44,7 @@ export interface RepertoireBuilderQueueMove {
   styleUrls: [
     './repertoire-builder-workbench.component.css',
     './repertoire-builder-workbench-explanation.component.css',
+    './repertoire-builder-workbench-v2.component.css',
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -238,7 +239,15 @@ export class RepertoireBuilderWorkbenchComponent {
 
   protected candidateEngineDetail(candidate: CandidateDecisionCandidate): string {
     const impact = this.engineImpacts()[candidate.moveUci];
-    if (!impact) return 'stored engine';
+    if (!impact) {
+      const engine = candidate.evidence.engine;
+      if (engine.status === 'UNAVAILABLE' || engine.status === 'INSUFFICIENT') {
+        return `${this.statusLabel(engine.status)} engine evidence`;
+      }
+      return engine.objectiveDeltaCp === null
+        ? 'stored engine'
+        : `stored engine · ${engine.objectiveDeltaCp} cp from best`;
+    }
     if (impact.status === 'QUEUED') return 'browser engine queued';
     if (impact.status === 'ANALYZING') return 'browser engine running';
     if (impact.status === 'FAILED') return 'engine unavailable';
