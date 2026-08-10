@@ -2,7 +2,7 @@
 
 ## Ownership
 
-`packages/contracts` is an active root workspace consumed by API and client build graphs. Its verified public exports include imported-game browsing, persistent imported-game jobs, board-image endpoints, course read models, serializable training, mobile synchronization, the Lab performance-by-rating report, opening-struggles queries/responses, repertoire-target definitions, and Lichess puzzle rounds. Add schemas only after checking the real service output and consumers; unverified provisional exports are not acceptable.
+`packages/contracts` is an active root workspace consumed by API and client build graphs. Its verified public exports include imported-game browsing, persistent imported-game jobs, board-image endpoints, course read models, serializable training and training statistics, mobile synchronization, the Lab performance-by-rating report, opening-struggles queries/responses, repertoire-target definitions, and Lichess puzzle rounds. Add schemas only after checking the real service output and consumers; unverified provisional exports are not acceptable.
 
 For each cross-workspace endpoint DTO, `packages/contracts` owns the Zod request/response wire schema and inferred TypeScript types. The API imports schemas at runtime for validation/serialization. Angular normally imports DTO types only, while mobile imports the runtime schemas needed to validate downloaded bundles and attempt-sync responses. Feature-local input schemas may stay with the API when no other workspace consumes them.
 
@@ -17,6 +17,7 @@ Contracts may contain HTTP params/query/body/response schemas, stable wire liter
 - Test the schema against actual mapper/service output and representative invalid values.
 - Delete handwritten duplicates only after every consuming workspace compiles against the shared contract.
 - Public position-analysis lines require `pvUci`. Historical persisted JSON is normalized at the API mapping boundary so legacy rows cannot weaken the wire contract.
+- Training statistics responses for aggregate summary, line/chapter/course statistics, and subline status are exported from `@chess-trainer/contracts/training`; Angular consumes the inferred DTOs rather than maintaining duplicate response interfaces.
 - Lab performance-by-rating requests and responses are exported from `@chess-trainer/contracts/lab`; requests may filter by minimum opponent rating, the API owns filtering/descending rating-band aggregation order, and Angular owns only report presentation state.
 - Opening-struggles requests, successful responses, coverage status literals, and the bounded-scope `422` response are exported from `@chess-trainer/contracts/opening-struggles`. Angular keeps only its UI criteria model because full-move depth is converted into wire-level plies.
 - Lichess puzzle round requests, public round state, move results, stable statuses and feature errors are exported from `@chess-trainer/contracts/lichess-puzzles`. Public puzzle DTOs expose the normalized position, trigger move, orientation, rating, themes and solution length, but never the server-owned solution moves or OAuth token.
