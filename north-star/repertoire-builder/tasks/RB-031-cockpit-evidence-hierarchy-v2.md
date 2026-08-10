@@ -1,6 +1,6 @@
 # RB-031 — Cockpit evidence hierarchy V2
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -8,17 +8,17 @@ Order: 240
 
 Delivery class: Frontend product integration
 
-Planning maturity: Agreed direction; waits on V2 evidence contracts
+Planning maturity: Evidence contracts settled; implementation active
 
 GitHub issue: #321
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `repertoire-builder/rb-031-cockpit-evidence-v2`
 
-Claimed at: none
+Claimed at: 2026-08-10
 
-Claim scope: none
+Claim scope: Cockpit workbench evidence hierarchy, V2 presentation cleanup and focused tests; avoid setup/page-composition files while RB-030 / PR #335 is active
 
 ## Objective
 
@@ -63,19 +63,19 @@ Use RB-029 preparation semantics: target-population frequency, personal encounte
 
 ## Dependencies
 
-Depends on RB-027, RB-028 and RB-029 contract/semantic completion. Coordinate setup/context copy with RB-030.
+RB-027, RB-028 and corrected RB-029 contract/semantic work is complete on `main`. RB-030 is concurrently active on PR #335; the initial RB-031 slice stays out of setup and page-composition files to avoid collision.
 
 ## Acceptance criteria
 
-- existing three-zone Cockpit remains the default desktop composition;
-- user-move rows expose enough peer/Masters/engine information to understand ordering quickly;
-- personal evidence reads as factual familiarity/results, never profile similarity;
-- focused reasons identify dominant tradeoffs deterministically;
-- opponent rows communicate preparation priority and computed coverage;
-- ECO is absent from normal Builder presentation;
-- opening knowledge stays concise and ranking-neutral;
-- all existing actions/state transitions/manual move/generated interpretation/course boundaries remain wired;
-- authenticated populated visual review covers desktop/tablet/mobile, keyboard and zoom when available, with skipped evidence recorded explicitly.
+- [ ] existing three-zone Cockpit remains the default desktop composition;
+- [ ] user-move rows expose enough peer/Masters/engine information to understand ordering quickly;
+- [ ] personal evidence reads as factual familiarity/results, never profile similarity;
+- [ ] focused reasons identify dominant tradeoffs deterministically;
+- [ ] opponent rows communicate preparation priority and computed coverage;
+- [ ] ECO is absent from normal Builder presentation;
+- [ ] opening knowledge stays concise and ranking-neutral;
+- [ ] all existing actions/state transitions/manual move/generated interpretation/course boundaries remain wired;
+- [ ] authenticated populated visual review covers desktop/tablet/mobile, keyboard and zoom when available, with skipped evidence recorded explicitly.
 
 ## Completion
 
