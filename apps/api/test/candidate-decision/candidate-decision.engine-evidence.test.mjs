@@ -199,3 +199,25 @@ function serviceFor(lines) {
   assert.equal(response.candidates[0].evidence.engine.status, 'INSUFFICIENT');
   assert.equal(response.candidates[0].evidence.engine.objectiveDeltaCp, null);
 }
+
+{
+  const service = serviceFor([
+    { multipv: 1, depth: 18, moveUci: 'e2e4', scoreCpWhite: 30, pvUci: ['e2e4'] },
+    { multipv: 2, depth: 18, moveUci: 'e2e4', scoreCpWhite: 500, pvUci: ['e2e4'] },
+    { multipv: 3, depth: 18, moveUci: 'd2d4', scoreCpWhite: 20, pvUci: ['d2d4'] },
+  ]);
+  const response = await service.get(42, {
+    fen: 'startpos',
+    decisionRole: 'USER_MOVE',
+    target: newCourseRepertoireTargetExample,
+    candidateLimit: 2,
+  });
+
+  const e4 = response.candidates.find((candidate) => candidate.moveUci === 'e2e4');
+  const d4 = response.candidates.find((candidate) => candidate.moveUci === 'd2d4');
+  assert.ok(e4);
+  assert.ok(d4);
+  assert.equal(e4.evidence.engine.scoreCpForTarget, 30);
+  assert.equal(e4.evidence.engine.objectiveDeltaCp, 0);
+  assert.equal(d4.evidence.engine.objectiveDeltaCp, 10);
+}
