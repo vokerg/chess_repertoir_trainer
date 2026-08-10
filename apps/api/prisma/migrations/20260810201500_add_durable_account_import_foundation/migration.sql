@@ -2,6 +2,32 @@
 -- contiguous coverage per account/canonical scope. Existing synchronous rows
 -- remain explicit LEGACY_SYNC history and do not manufacture exact coverage.
 
+-- Fail before any DDL if deployed legacy state cannot satisfy the durable
+-- lifecycle invariant. Current synchronous providers persist only
+-- RUNNING -> COMPLETED/FAILED, so any other legacy status needs explicit
+-- operator review rather than an implicit migration rewrite.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM "ImportRun"
+    WHERE "status" NOT IN ('RUNNING', 'COMPLETED', 'FAILED')
+  ) THEN
+    RAISE EXCEPTION 'ONB-011 cannot migrate ImportRun: unsupported legacy status exists';
+  END IF;
+
+  IF EXISTS (
+    SELECT "accountId"
+    FROM "ImportRun"
+    WHERE "status" = 'RUNNING'
+    GROUP BY "accountId"
+    HAVING COUNT(*) > 1
+  ) THEN
+    RAISE EXCEPTION 'ONB-011 cannot create one-active-import invariant: an account has multiple running ImportRun rows';
+  END IF;
+END
+$$;
+
 ALTER TABLE "ImportRun"
 ADD COLUMN "mode" TEXT NOT NULL DEFAULT 'LEGACY_SYNC',
 ADD COLUMN "source" TEXT NOT NULL DEFAULT 'LEGACY_SYNC',
@@ -100,23 +126,6 @@ ADD CONSTRAINT "ImportRun_game_counts_check" CHECK (
   AND "gamesSkippedOutOfScope" >= 0
   AND "gamesFailed" >= 0
 );
-
--- Do not silently discard or rewrite live historical state to make the new
--- one-active-import invariant fit. Deployment must stop if incompatible data
--- already exists so an operator can inspect it explicitly.
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT "accountId"
-    FROM "ImportRun"
-    WHERE "status" IN ('QUEUED', 'RUNNING', 'PAUSE_REQUESTED', 'PAUSED', 'CANCEL_REQUESTED')
-    GROUP BY "accountId"
-    HAVING COUNT(*) > 1
-  ) THEN
-    RAISE EXCEPTION 'ONB-011 cannot create one-active-import invariant: an account has multiple non-terminal ImportRun rows';
-  END IF;
-END
-$$;
 
 CREATE UNIQUE INDEX "ImportRun_one_active_per_account_key"
 ON "ImportRun"("accountId")
