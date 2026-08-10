@@ -1,6 +1,6 @@
 # Repertoire Builder Feature Catalog
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 Planning maturity values:
 
@@ -25,16 +25,16 @@ Delivery classes:
 | Multi-account player level | Dual-use | Implemented through shared resolver | One inspectable level across accounts | Reuses factual peer evidence without a second formula |
 | Named opening classification | Dual-use | Implemented and merged | Enables opening browsing and taxonomy | Secondary intrinsic explanation in Builder V2 |
 | Side-aware opening knowledge | Dual-use | Runtime complete | Reusable opening explanations and plans | Explains focused strategy without changing ranking |
-| Player Chess Profile | Standalone / Dual-use | Runtime complete | Recalculable broader player tendencies and performance | Separate advisory/inspiration capability; no longer direct move-familiarity authority in V2 |
-| V1 repertoire target contract | North-star | Runtime complete | Current target snapshots and provenance | Historical runtime foundation to migrate explicitly for V2 |
+| Player Chess Profile | Standalone / Dual-use | Runtime complete | Recalculable broader player tendencies and performance | Separate advisory/inspiration capability; no longer direct preset-persona authority in V2 |
+| V1 repertoire target contract | North-star | Runtime complete | Current target snapshots and provenance | Historical runtime foundation to migrate explicitly for remaining V2 work |
 | Candidate evidence aggregation | North-star | Runtime complete | Supports one-position decisions | Reused evidence orchestration for V2 |
-| V1 explainable candidate ranking | North-star | Runtime complete | Current deterministic recommendations | Historical policy replaced incrementally by RB-027/RB-029 |
+| V1 explainable candidate ranking | North-star | Historical runtime foundation | Deterministic legacy behavior for CUSTOM/opponent paths | Preset USER_MOVE policy replaced by RB-027; opponent policy remains RB-029 |
 | Board-first Builder Cockpit | North-star | Runtime complete through RB-026 | Coherent one-workspace decision loop | Preserved as V2 presentation foundation |
 | Builder session and branch queue | North-star | Runtime complete | Storage-neutral state foundation | Preserved V2 state authority |
 | Course reintegration and preview/apply | Dual-use | Runtime complete | Safer course edits | Preserved V2 write authority |
 | Existing-course adaptation | Dual-use | Runtime complete | Improves course review | Reuses same Builder loop |
-| **Empirical persona ranking V2** | North-star | **Agreed / READY — RB-027** | — | Balanced/Solid/Aggressive/Surprise interpret peer, Masters and engine evidence on user moves |
-| **Factual personal move evidence** | Dual-use | **Agreed / READY — RB-028** | Improves exact-position personal research | Replaces broad Profile Fit with common/rare/new, result context and recency |
+| **Empirical persona ranking V2** | North-star | **Runtime complete — RB-027** | Empirical deterministic USER_MOVE recommendations | Balanced/Solid/Aggressive/Surprise interpret selected-population, Masters and bounded engine evidence |
+| **Factual personal move evidence** | Dual-use | **IN_PROGRESS — RB-028 / PR #327** | Improves exact-position personal research | Replaces broad Profile Fit with common/rare/new, result context and recency |
 | **Opponent preparation + computed coverage V2** | North-star | **Agreed / READY — RB-029** | — | Prioritizes replies to prepare and makes coverage selection feedback |
 | **Single-dialog setup V2** | North-star | **Agreed / READY — RB-030** | — | Side/scope, speed, rating target and persona once; removes coverage/theory overload |
 | **Cockpit evidence hierarchy V2** | North-star | **Outlined / PROPOSED — RB-031** | — | Re-presents settled V2 evidence without replacing RB-026 Cockpit |
@@ -48,7 +48,7 @@ Delivery classes:
 
 The shared Opening Explorer remains the rated target-population implementation. RB-001 provides compact presets, benchmark bands and factual peer resolution; V2 does not create a second public-game extractor.
 
-Masters remains a distinct corpus. The V2 user-move policy deliberately compares target-population behavior with Masters behavior rather than treating either as the single definition of correctness.
+Masters remains a distinct corpus. The V2 user-move policy compares target-population behavior with Masters behavior rather than treating either as the single definition of correctness.
 
 ### Opening classification and knowledge
 
@@ -64,20 +64,20 @@ RB-028 adds a different Builder concept: exact-position move familiarity and res
 
 ### Repertoire target and setup
 
-The current V1 target stores explicit objective/coverage fields and provenance. V2 retains reproducible side/scope, population and persona identity while revising which target fields are product authority.
+The current target stores explicit objective/coverage fields and provenance. V2 retains reproducible side/scope, population and persona identity while revising which target fields are product authority.
 
 RB-030 owns the normal one-dialog setup surface. Persona appears once. Coverage percentage and hard maximum-theory-burden controls leave the normal setup rather than being renamed and preserved invisibly.
 
 ### User-move recommendation
 
-RB-027 owns the V2 ranking authority:
+RB-027 is implemented as the V2 preset USER_MOVE ranking authority:
 
 - Balanced — peer-practical with Masters/engine validation;
 - Solid — stronger Master/objective authority;
-- Aggressive — active/imbalanced practical strength with meaningful Master justification and bounded extra objective cost;
+- Aggressive — practical overperformance with meaningful Master justification and bounded extra objective cost;
 - Surprise — uncommon viable target-population overperformance with sample, Master-rarity and engine safeguards.
 
-Exact weights and statistical treatment remain implementation-calibration work, not planning fiction.
+Candidate Decision V3 supplies exact-position target-side population/Masters baselines and per-move deltas. The current versioned policy uses a 20-game selected-population floor, 10-game Masters floor, +3 percentage-point Surprise overperformance gate, and already-stored legal internally consistent engine evidence at depth at least 12. Exact weights and objective guardrails are recorded in the RB-027 closure report. Future changes require an explicit policy-version change rather than silent recalibration.
 
 ### Opponent preparation and coverage
 
@@ -89,7 +89,7 @@ Coverage becomes the cumulative target-population share of the replies actually 
 
 RB-026's Cockpit remains the accepted production composition: primary board/candidates, focused brief and branch/action controls in one desktop workspace with responsive stacking.
 
-RB-031 changes the evidence hierarchy only after RB-027–RB-029 settle contracts. User rows foreground peer/Masters/engine plus factual personal context; opponent rows foreground preparation priority and computed coverage. Opening names/plans remain; ECO codes and obsolete fit badges leave the normal decision surface.
+RB-031 changes the evidence hierarchy only after RB-028–RB-029 settle contracts. User rows foreground peer/Masters/engine plus factual personal context; opponent rows foreground preparation priority and computed coverage. Opening names/plans remain; ECO codes and obsolete fit badges leave the normal decision surface.
 
 ### Builder state and course writes
 
