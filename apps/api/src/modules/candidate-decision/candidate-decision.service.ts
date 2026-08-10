@@ -582,9 +582,9 @@ function corpusEvidence(
   if (!response || sourceStatus === 'UNAVAILABLE') return unavailableCorpusEvidence();
   if (!move) return { ...unavailableCorpusEvidence(), status: 'INSUFFICIENT' };
   const games = move.games.total;
-  const status = sourceStatus === 'STALE'
-    ? 'STALE'
-    : games >= minimumGames ? 'AVAILABLE' : 'INSUFFICIENT';
+  const status = games < minimumGames
+    ? 'INSUFFICIENT'
+    : sourceStatus === 'STALE' ? 'STALE' : 'AVAILABLE';
   const scorePercentForTarget = corpusScorePercent(move, targetSide);
   const positionBaselineScorePercentForTarget = corpusPositionScorePercent(response, targetSide);
   return {
@@ -962,8 +962,8 @@ function explorerSourceStatus(
   minimumGames: number,
 ): CandidateEvidenceStatus {
   if (!result.ok || !result.value) return 'UNAVAILABLE';
-  if (result.value.cache.status === 'STALE') return 'STALE';
-  return result.value.games.total >= minimumGames ? 'AVAILABLE' : 'INSUFFICIENT';
+  if (result.value.games.total < minimumGames) return 'INSUFFICIENT';
+  return result.value.cache.status === 'STALE' ? 'STALE' : 'AVAILABLE';
 }
 
 function personalSourceStatus(
