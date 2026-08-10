@@ -92,11 +92,14 @@ const response = await service.get(42, {
 assert.equal(response.rankingPolicyVersion, '2026-08-opponent-preparation-v1');
 assert.equal(response.sourceSummary.courses, 'AVAILABLE');
 assert.equal(response.candidates.length, 6);
+assert.deepEqual(response.candidates.map((candidate) => candidate.rank), [1, 2, 3, 4, 5, 6]);
 
 const repeatedTail = response.candidates.find((candidate) => candidate.moveUci === 'h7h6');
 assert.ok(repeatedTail, 'A sixth personal reply outside the old seed/top-six boundary must be discoverable.');
 assert.equal(repeatedTail.reasonCodes.includes('PERSONALLY_ENCOUNTERED'), true);
 assert.equal(repeatedTail.reasonCodes.includes('COMMON_AT_TARGET_LEVEL'), false);
+assert.equal(repeatedTail.reasonCodes.includes('MANUAL_CANDIDATE'), false);
+assert.equal(repeatedTail.manuallyRequested, false);
 assert.equal(repeatedTail.evidence.course.covered, true);
 assert.equal(repeatedTail.evidence.course.references.length, 1);
 
@@ -113,6 +116,20 @@ for (const candidate of response.candidates) {
   assert.equal(candidate.components.profileFit, 0);
   assert.equal(candidate.coverage?.cumulativePercent, null);
 }
+
+const manualResponse = await service.get(42, {
+  fen,
+  decisionRole: 'OPPONENT_RESPONSE',
+  target: newCourseRepertoireTargetExample,
+  candidateLimit: 6,
+  includeMoveUci: 'a7a6',
+});
+const manual = manualResponse.candidates.find((candidate) => candidate.moveUci === 'a7a6');
+assert.ok(manual);
+assert.equal(manualResponse.requestedMoveIncluded, true);
+assert.equal(manual.manuallyRequested, true);
+assert.equal(manual.reasonCodes.includes('MANUAL_CANDIDATE'), true);
+assert.deepEqual(manualResponse.candidates.map((candidate) => candidate.rank), [1, 2, 3, 4, 5, 6]);
 
 function explorer(source, moves) {
   const total = moves.reduce((sum, move) => sum + move.games.total, 0);
