@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../../../core/api/api.service';
-import { TopOpponentsResponse } from './top-opponents.models';
+import type { TopOpponentsResponse } from './top-opponents.models';
 
 @Injectable()
 export class TopOpponentsApiService {
