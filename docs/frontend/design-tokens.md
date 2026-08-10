@@ -1,6 +1,6 @@
 # Frontend design tokens
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 This document is the source of truth for the production visual-token and typography contract used by transformed Angular surfaces.
 
@@ -110,11 +110,12 @@ VT-302 has resolved the previously recorded visual-semantic compatibility bounda
 
 VT-302 also removed the only non-Library `.library-*` presentation consumers from the Lines feature. Focused and marathon training links now reuse the generic `compact-action secondary` contract, whose production override is owned by `design-system.css`, and architecture guardrails reject renewed `.library-*` coupling anywhere in Lines HTML/CSS.
 
+VT-302 also resolves the bounded Home-local visual-token namespace. `home-page.component.css` and the Today Activity child stylesheet consume the existing production `--ui-*` canvas, surface, graphite, text, border, action, focus and elevation roles directly, and architecture guardrails reject `--home-*` in Home HTML/CSS. The colour, surface and border aliases map exactly to the production values. The former Home soft/raised shadow aliases were slightly lighter (`0.045`/`0.085` alpha) than `--ui-shadow-soft`/`--ui-shadow-raised` (`0.055`/`0.09`); using the production roles is a deliberate restrained elevation normalization rather than an exact pixel-value preservation claim. Direct authenticated browser evidence for that small visual delta remains unobserved unless separately recorded.
+
 Accepted compatibility boundaries that remain:
 
-- Home retains calibrated local `--home-*` aliases whose values match the approved production palette but predate the `--ui-*` namespace.
 - Global `.library-*` presentation remains a bounded Study/library compatibility layer. It no longer serves Lines; removing or relocating it requires inspection of the remaining Library-owned consumers rather than a global deletion.
-- `styles.css` still owns legacy roles required by other known compatibility consumers and the established `--space-*` scale; resolving the workbench and training visual roles does not authorize global deletion or redefinition of that layer.
+- `styles.css` still owns legacy roles required by other known compatibility consumers and the established `--space-*` scale; resolving the workbench, training and Home visual roles does not authorize global deletion or redefinition of that layer.
 - Feature-local semantic chart, board, and evaluation colours may remain when they do not represent a shared UI role.
 
 These boundaries are recorded debt, not permission for new code to use legacy visual names and not evidence of an untransformed route family.

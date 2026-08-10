@@ -20,6 +20,7 @@ Old page-heavy code is intentionally allowed to remain until touched. New featur
 - VT-302 workbench compatibility cleanup: global `workbench.css` plus Repertoire Builder workbench, setup, and explanation presentation use production `--ui-*` visual-semantic roles; an architecture guard prevents those bounded files from regressing to the legacy amber-era visual names.
 - VT-302 shared async-state foundation: `shared/ui/state-message` provides a bounded store-free loading/empty/error presentation contract. Courses and Accounts consume the complete generic loading/empty/error boundary, while Course Review reuses the same loading/error semantics for its asynchronous review states; focused semantic tests and the accessibility-contract guard protect the shared contract and migrated consumers.
 - VT-302 training/Library compatibility cleanup: Lines no longer consumes Library-owned `.library-*` presentation. The three affected training links reuse the existing `compact-action secondary` contract, and architecture guardrails reject `.library-*` classes anywhere in Lines HTML/CSS.
+- VT-302 Home token compatibility cleanup: the Home page and Today Activity child consume production `--ui-*` visual roles directly instead of the local `--home-*` namespace; Home HTML/CSS is guarded against reintroducing that namespace. The colour/surface/border mappings are exact; the former slightly lighter Home shadow aliases intentionally normalize to the production soft/raised elevation roles.
 
 ## Visual-transformation route disposition
 
@@ -48,12 +49,13 @@ Integrated VT-301 slices:
 A transformed route may still compose a bounded legacy-compatible shared widget. Route-family completion does not authorize a global token rewrite.
 
 - `apps/web/src/styles.css` remains the explicit amber-era compatibility layer for known remaining consumers and the shared `--space-*` scale. New transformed UI must not add dependencies on its short visual role names.
-- Home retains calibrated local `--home-*` aliases whose values match the approved graphite/mint direction but predate the production `--ui-*` namespace.
 - Global `.library-*` presentation remains for the Study/library feature itself, but Lines no longer consumes it. Removing or relocating the remaining Library-owned global block requires its own complete Library consumer inspection; it is not implied by the training cleanup.
 - Games evidence cards, Study workflow/launcher composition, Lab experiment internals, and workbench evidence slots remain feature-owned because their hierarchy and commands are domain-specific. Feature ownership is not visual-token compatibility debt.
 - Deferred authenticated browser checks remain deferred evidence, not observed passes.
 
 The former `workbench.css` visual-semantic debt is no longer an accepted boundary: VT-302 migrated the complete bounded global workbench and Repertoire Builder workbench/setup/explanation presentation to `--ui-*` roles and added a regression guard. This does not remove the legacy spacing scale or authorize deletion/redefinition of `styles.css`.
+
+The former Home-local token namespace is likewise no longer an accepted compatibility boundary once the VT-302 Home cleanup lands: the complete current Home presentation consumer set uses production `--ui-*` roles and is regression-guarded. This does not imply that feature-local semantic colours or every historical Home hard-coded decorative value must become a shared token.
 
 ## VT-302-owned polish
 
