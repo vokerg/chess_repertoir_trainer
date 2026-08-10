@@ -16,7 +16,7 @@
           @if (fixedSide()) {
             This draft starts from an exact existing-course position. Adjust the evidence population and repertoire intent before building the continuation.
           } @else if (profileSuggestion()) {
-            Chess profile supplied a transparent starting point. Side and every target setting remain editable; changing them records a deliberate override without changing the factual profile.
+            Chess profile supplied a transparent starting point. Side and every visible target setting remain editable; changing them records a deliberate override without changing the factual profile.
           } @else {
             {{ replacingDraft()
               ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
@@ -82,7 +82,7 @@
               <strong>{{ preset.label }}</strong>
               <span>{{ preset.description }}</span>
               <small>{{ preset.intentSummary }}</small>
-              <small>{{ preset.defaultTheoryBurden.toLowerCase() }} theory · {{ preset.defaultCoveragePercent }}% coverage default</small>
+              <small>{{ preset.defaultTheoryBurden.toLowerCase() }} theory</small>
             </label>
           }
         </div>
@@ -97,22 +97,12 @@
             }
           </select>
         </label>
-
-        <label class="field coverage-field">
-          <span>Opponent-response coverage</span>
-          <div class="range-row">
-            <input
-              type="range"
-              formControlName="coveragePercent"
-              min="50"
-              max="100"
-              step="5"
-              aria-label="Opponent-response coverage percent"
-            />
-            <output>{{ form.controls.coveragePercent.value }}%</output>
-          </div>
-          <small>Coverage is a target, not automatic full-tree generation.</small>
-        </label>
+        <div class="field">
+          <span>Opponent preparation</span>
+          <small>
+            Builder recommends replies from target-population relevance, your exact-position encounters, objective danger, and course context. Coverage is feedback from the replies you actually select.
+          </small>
+        </div>
       </div>
 
       <aside class="persistence-note">
