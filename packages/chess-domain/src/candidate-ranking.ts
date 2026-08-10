@@ -190,7 +190,9 @@ function buildComponents(
 ): CandidateRankingComponents {
   const empiricalUserMove = role === 'USER_MOVE' && persona !== 'CUSTOM';
   return {
-    objective: objectiveComponent(input.engine, role),
+    objective: empiricalUserMove && !hasUsableEngineEvidence(input.engine)
+      ? 0
+      : objectiveComponent(input.engine, role),
     population: empiricalUserMove
       ? empiricalCorpusComponent(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
       : legacyCorpusComponent(input.population),
@@ -217,7 +219,7 @@ function userMoveScore(
   const populationFrequency = corpusFrequencySignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
   const populationPerformance = corpusPerformanceSignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
   const masterSupport = masterSupportSignal(input.masters);
-  const objective = hasUsableEngineEvidence(input.engine) ? components.objective : 0;
+  const objective = components.objective;
 
   if (persona === 'BALANCED') {
     return Math.round(
@@ -249,10 +251,13 @@ function userMoveScore(
   const populationScoreDelta = hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
     ? corpusScoreDelta(input.population)
     : null;
-  const populationRarity = populationScoreDelta !== null && populationScoreDelta >= 3
+  const surpriseQualified = populationScoreDelta !== null && populationScoreDelta >= 3;
+  const populationRarity = surpriseQualified
     ? corpusRaritySignal(input.population, 5, EMPIRICAL_POPULATION_MIN_GAMES)
     : 0;
-  const masterRarity = corpusRaritySignal(input.masters, 6, EMPIRICAL_MASTERS_MIN_GAMES);
+  const masterRarity = surpriseQualified
+    ? corpusRaritySignal(input.masters, 6, EMPIRICAL_MASTERS_MIN_GAMES)
+    : 0;
   return Math.round(
     populationRarity * 0.30
     + populationPerformance * 0.35
@@ -419,16 +424,22 @@ function buildReasonCodes(
   else if (delta !== null && delta <= 50) reasons.add('ENGINE_CLOSE');
   else if (delta !== null && delta >= 100) reasons.add('OBJECTIVE_COST');
 
-  if ((input.population.frequencyPercent ?? 0) >= 10 && input.population.games >= 20) {
+  const usablePopulation = !empiricalUserMove
+    || hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  if (usablePopulation && (input.population.frequencyPercent ?? 0) >= 10 && input.population.games >= 20) {
     reasons.add(role === 'OPPONENT_RESPONSE' ? 'COMMON_AT_TARGET_LEVEL' : 'POPULATION_COMMON');
   }
   const populationStrong = empiricalUserMove
-    ? (corpusScoreDelta(input.population) ?? Number.NEGATIVE_INFINITY) >= 3
+    ? hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
+      && (corpusScoreDelta(input.population) ?? Number.NEGATIVE_INFINITY) >= 3
     : (input.population.scorePercentForTarget ?? 0) >= 55;
   if (populationStrong && input.population.games >= 20) {
     reasons.add('POPULATION_STRONG_SCORE');
   }
-  if (input.masters.games >= 10) reasons.add('MASTER_SUPPORTED');
+  const masterSupported = empiricalUserMove
+    ? hasUsableCorpus(input.masters, EMPIRICAL_MASTERS_MIN_GAMES)
+    : input.masters.games >= 10;
+  if (masterSupported) reasons.add('MASTER_SUPPORTED');
   if (input.personal.games >= 3 || input.personal.occurrences >= 3) {
     reasons.add(role === 'OPPONENT_RESPONSE' ? 'PERSONALLY_ENCOUNTERED' : 'PERSONALLY_FAMILIAR');
   }
