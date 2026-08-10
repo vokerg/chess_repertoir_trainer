@@ -17,8 +17,11 @@ import type { EngineAnalysis } from '../../../shared/chess/engine/stockfish-anal
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import type { UiShellAction } from '../../../shared/ui/ui-shell.model';
 import {
+  corpusEvidenceMetric,
+  courseRelationshipLabel as formatCourseRelationshipLabel,
   personalEvidenceDetail as formatPersonalEvidenceDetail,
   personalEvidenceLabel as formatPersonalEvidenceLabel,
+  primaryEvidenceReasonLabels as formatPrimaryEvidenceReasonLabels,
 } from '../helpers/repertoire-builder-view-model';
 import {
   REPERTOIRE_BUILDER_DECISION_LIMIT,
@@ -41,6 +44,7 @@ export interface RepertoireBuilderQueueMove {
   styleUrls: [
     './repertoire-builder-workbench.component.css',
     './repertoire-builder-workbench-explanation.component.css',
+    './repertoire-builder-workbench-evidence.component.css',
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -207,6 +211,22 @@ export class RepertoireBuilderWorkbenchComponent {
       ?? 'Personal game history could not be loaded.';
   }
 
+  protected populationMetric(candidate: CandidateDecisionCandidate) {
+    return corpusEvidenceMetric(candidate.evidence.population);
+  }
+
+  protected mastersMetric(candidate: CandidateDecisionCandidate) {
+    return corpusEvidenceMetric(candidate.evidence.masters);
+  }
+
+  protected courseRelationshipLabel(candidate: CandidateDecisionCandidate): string | null {
+    return formatCourseRelationshipLabel(candidate);
+  }
+
+  protected primaryEvidenceReasonLabels(candidate: CandidateDecisionCandidate): readonly string[] {
+    return formatPrimaryEvidenceReasonLabels(candidate);
+  }
+
   protected candidateEngineLabel(candidate: CandidateDecisionCandidate): string {
     const impact = this.engineImpacts()[candidate.moveUci];
     if (impact?.status === 'QUEUED' || impact?.status === 'ANALYZING') return 'Analyzing…';
@@ -219,7 +239,15 @@ export class RepertoireBuilderWorkbenchComponent {
 
   protected candidateEngineDetail(candidate: CandidateDecisionCandidate): string {
     const impact = this.engineImpacts()[candidate.moveUci];
-    if (!impact) return 'stored engine';
+    if (!impact) {
+      const engine = candidate.evidence.engine;
+      if (engine.status === 'UNAVAILABLE' || engine.status === 'INSUFFICIENT') {
+        return `${this.statusLabel(engine.status)} engine evidence`;
+      }
+      return engine.objectiveDeltaCp === null
+        ? 'stored engine'
+        : `stored engine · ${engine.objectiveDeltaCp} cp from best`;
+    }
     if (impact.status === 'QUEUED') return 'browser engine queued';
     if (impact.status === 'ANALYZING') return 'browser engine running';
     if (impact.status === 'FAILED') return 'engine unavailable';

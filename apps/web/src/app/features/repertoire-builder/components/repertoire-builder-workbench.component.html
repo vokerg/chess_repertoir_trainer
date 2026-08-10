@@ -23,9 +23,7 @@
     <span class="build-label">Building</span>
     <strong>{{ activeSession.repertoireSide === 'WHITE' ? 'White' : 'Black' }} repertoire</strong>
     @if (previewCandidate()?.evidence.opening.opening; as opening) {
-      <span class="opening-context">
-        {{ opening.eco ? opening.eco + ' · ' : '' }}{{ opening.name }}
-      </span>
+      <span class="opening-context">{{ opening.name }}</span>
     }
     <span>{{
       activeSession.targetSnapshot.value.speedPreset.toLowerCase().replaceAll('_', ' ')
@@ -114,31 +112,32 @@
                       <strong>{{ candidate.moveSan }}</strong>
                       <small>{{ candidate.moveUci }}</small>
                     </span>
-                    <span class="candidate-kind">
-                      <strong>{{ candidateKindLabel(candidate) }}</strong>
-                      <small>{{
-                        candidate.evidence.opening.opening?.name ?? 'Unknown opening'
-                      }}</small>
-                    </span>
                     <span class="candidate-metric">
                       <strong>{{ candidateEngineLabel(candidate) }}</strong>
                       <small>{{ candidateEngineDetail(candidate) }}</small>
                     </span>
-                    <span class="candidate-metric population-metric">
-                      <strong>{{ percent(candidate.evidence.population.frequencyPercent) }}</strong>
-                      <small>target-population games</small>
-                    </span>
+                    @if (populationMetric(candidate); as population) {
+                      <span class="candidate-metric population-metric">
+                        <strong>{{ population.primary }}</strong>
+                        <small>Target population · {{ population.secondary }}</small>
+                      </span>
+                    }
+                    @if (mastersMetric(candidate); as masters) {
+                      <span class="candidate-metric masters-metric">
+                        <strong>{{ masters.primary }}</strong>
+                        <small>Masters · {{ masters.secondary }}</small>
+                      </span>
+                    }
                     <span class="fit-stack">
                       @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
                         <span class="fit-chip">
                           {{ isOpponentResponseRecommended(candidate) ? 'Recommended' : 'Optional' }}
                         </span>
-                      } @else {
-                        <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
-                          Target {{ statusLabel(candidate.targetFit.status) }}
-                        </span>
                       }
                       <span class="fit-chip">{{ personalEvidenceLabel(candidate) }}</span>
+                      @if (courseRelationshipLabel(candidate); as courseRelationship) {
+                        <span class="fit-chip">{{ courseRelationship }}</span>
+                      }
                     </span>
                   </button>
 
@@ -183,6 +182,75 @@
             </div>
           </div>
 
+          <section class="brief-section" aria-labelledby="decision-evidence-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">
+                  {{ activeBranch()?.role === 'OPPONENT_RESPONSE' ? 'Preparation evidence' : 'Ranking evidence' }}
+                </span>
+                <h3 id="decision-evidence-title">
+                  {{ activeBranch()?.role === 'OPPONENT_RESPONSE' ? 'Why this reply matters' : 'Why this move ranks here' }}
+                </h3>
+              </div>
+            </div>
+            <div class="fit-comparison">
+              @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
+                <div>
+                  <span>Preparation priority</span>
+                  <strong>
+                    {{ isOpponentResponseRecommended(candidate) ? 'Recommended' : 'Optional' }}
+                  </strong>
+                  <small>Independent of repertoire persona or profile fit.</small>
+                </div>
+              }
+              <div>
+                <span>Engine</span>
+                <strong>{{ candidateEngineLabel(candidate) }}</strong>
+                <small>{{ candidateEngineDetail(candidate) }}</small>
+              </div>
+              @if (populationMetric(candidate); as population) {
+                <div>
+                  <span>Target population</span>
+                  <strong>{{ population.primary }}</strong>
+                  <small>{{ population.secondary }}</small>
+                </div>
+              }
+              @if (activeBranch()?.role !== 'OPPONENT_RESPONSE') {
+                @if (mastersMetric(candidate); as masters) {
+                  <div>
+                    <span>Masters</span>
+                    <strong>{{ masters.primary }}</strong>
+                    <small>{{ masters.secondary }}</small>
+                  </div>
+                }
+              }
+              <div>
+                <span>Your games</span>
+                <strong>{{ personalEvidenceLabel(candidate) }}</strong>
+                <small>{{ personalEvidenceDetail(candidate) }}</small>
+              </div>
+              @if (courseRelationshipLabel(candidate); as courseRelationship) {
+                <div>
+                  <span>Existing course</span>
+                  <strong>{{ courseRelationship }}</strong>
+                  <small>Course state is context; it does not create a second recommendation model.</small>
+                </div>
+              }
+            </div>
+            @if (primaryEvidenceReasonLabels(candidate); as primaryReasons) {
+              @if (primaryReasons.length > 0) {
+                <div class="reason-list dominant-reasons">
+                  <h3>Dominant deterministic reasons</h3>
+                  <ul>
+                    @for (reason of primaryReasons; track reason) {
+                      <li>{{ reason }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            }
+          </section>
+
           <section class="brief-section opening-identity" aria-labelledby="opening-identity-title">
             <div class="section-heading">
               <div>
@@ -191,9 +259,6 @@
                   {{ candidate.evidence.opening.opening?.name ?? 'Opening not classified' }}
                 </h3>
               </div>
-              @if (candidate.evidence.opening.opening?.eco; as eco) {
-                <span class="eco-badge">{{ eco }}</span>
-              }
             </div>
 
             @if (candidate.evidence.opening.knowledge.shortDescription; as description) {
@@ -217,38 +282,8 @@
             <small class="classification-boundary">
               {{ candidate.evidence.opening.side === 'WHITE' ? 'White' : 'Black' }} perspective ·
               {{ statusLabel(candidate.evidence.opening.confidence ?? 'UNKNOWN') }} classification
-              confidence
+              confidence · explanatory context only
             </small>
-          </section>
-
-          <section class="brief-section" aria-labelledby="fit-title">
-            <div class="section-heading">
-              <h3 id="fit-title">
-                {{ activeBranch()?.role === 'OPPONENT_RESPONSE' ? 'Preparation context' : 'Repertoire context' }}
-              </h3>
-            </div>
-            <div class="fit-comparison">
-              <div>
-                @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
-                  <span>Preparation priority</span>
-                  <strong>
-                    {{ isOpponentResponseRecommended(candidate) ? 'Recommended' : 'Optional' }}
-                  </strong>
-                  <small>Based on target-population relevance, your encounters, objective danger, and course context.</small>
-                } @else {
-                  <span>Target fit</span>
-                  <strong [attr.data-fit-status]="candidate.targetFit.status">
-                    {{ statusLabel(candidate.targetFit.status) }}
-                  </strong>
-                  <small>The repertoire intent you chose.</small>
-                }
-              </div>
-              <div>
-                <span>Your games</span>
-                <strong>{{ personalEvidenceLabel(candidate) }}</strong>
-                <small>{{ personalEvidenceDetail(candidate) }}</small>
-              </div>
-            </div>
           </section>
 
           @if (
@@ -330,7 +365,7 @@
 
               @if (reasonLabels().length > 0) {
                 <section class="reason-list">
-                  <h3>Why it is ranked here</h3>
+                  <h3>All deterministic reasons</h3>
                   <ul>
                     @for (reason of reasonLabels(); track reason) {
                       <li>{{ reason }}</li>
@@ -411,7 +446,7 @@
       } @else {
         <app-panel
           title="Decision brief"
-          subtitle="Preview a candidate to inspect its character and plan."
+          subtitle="Preview a candidate to inspect its deterministic evidence and opening context."
         >
           <p class="empty-copy">The focused candidate will appear here.</p>
         </app-panel>
