@@ -158,14 +158,20 @@ function emptyWdl(): OpeningAnalysisWdl {
   return { total: 0, wins: 0, draws: 0, losses: 0, scorePct: null };
 }
 
+function resultGameCount(wdl: OpeningAnalysisWdl): number {
+  return wdl.wins + wdl.draws + wdl.losses;
+}
+
 function addResult(wdl: OpeningAnalysisWdl, result: string | null, count = 1) {
+  wdl.total += count;
   if (result === 'WIN') wdl.wins += count;
   else if (result === 'DRAW') wdl.draws += count;
   else if (result === 'LOSS') wdl.losses += count;
-  else return;
 
-  wdl.total += count;
-  wdl.scorePct = Math.round(((wdl.wins + wdl.draws * 0.5) / wdl.total) * 1000) / 10;
+  const resultGames = resultGameCount(wdl);
+  wdl.scorePct = resultGames > 0
+    ? Math.round(((wdl.wins + wdl.draws * 0.5) / resultGames) * 1000) / 10
+    : null;
 }
 
 function percentage(value: number, total: number): number | null {
@@ -317,6 +323,7 @@ export const OpeningAnalysisService = {
           lastPlayedAt: lastPlayedAtByMove.get(moveUci)?.toISOString() ?? null,
           personalContext: classifyPersonalMoveEvidence({
             games: games.total,
+            resultGames: resultGameCount(games),
             gameSharePercent,
             scoreDeltaVsPositionPercent,
           }),
