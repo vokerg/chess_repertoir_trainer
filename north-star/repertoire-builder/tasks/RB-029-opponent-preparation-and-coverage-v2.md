@@ -1,6 +1,6 @@
 # RB-029 — Opponent preparation and computed coverage V2
 
-Status: IN_PROGRESS
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 220
 
 Delivery class: North-star decision policy and UX
 
-Planning maturity: Runtime implementation on draft PR #331; exact-head validation pending
+Planning maturity: Implemented, reviewed and exact-head validation gated on PR #331
 
 GitHub issue: #319
 
@@ -49,7 +49,7 @@ The recommended-set stopping rule must be versioned and tested. It must not simp
 
 ## Implemented runtime semantics
 
-Draft PR: #331
+Runtime PR: #331
 
 Policy: `2026-08-opponent-preparation-v1`
 
@@ -64,6 +64,7 @@ Policy: `2026-08-opponent-preparation-v1`
 - the Builder computes selected target-population share from the replies actually selected, with explicit non-theoretical-completeness copy;
 - every reply remains independently selectable/removable, and `Use recommended set` applies the deterministic recommendation without automatic acceptance;
 - accepting selections continues through the existing RB-009 reducer, producing independent continuation branches with unchanged queue/defer/ignore semantics;
+- accepted opponent decision evidence snapshots `opponentPreparationPolicy=2026-08-opponent-preparation-v1` separately from the underlying Candidate Ranking policy version;
 - the normal setup no longer displays a coverage percentage or persona-specific coverage default.
 
 ## Compatibility boundary for RB-030
@@ -86,26 +87,29 @@ The current `RepertoireTarget.coverage` shape and route-local `RepertoireBuilder
 
 ## Dependencies
 
-Coordinate shared candidate-contract work with RB-027. RB-031 consumes the final opponent presentation. RB-030 removes setup controls after target-policy compatibility is settled.
+RB-027 and RB-028 are complete. RB-031 consumes the final opponent presentation. RB-030 owns removal of residual setup/target coverage compatibility fields.
 
 ## Acceptance criteria
 
-- opponent candidates are not labeled Target/Profile Aligned or Conflict;
-- frequency, personal encounter, danger and course-state reasons are independently inspectable;
-- recommended responses are deterministic and editable;
-- selected coverage is calculated from actual selected response contributions and clearly labeled as target-population share;
-- uncommon but dangerous/personal responses can be promoted without being called common;
-- accepting selected responses retains current branch creation, queue and reducer semantics;
-- setup no longer requires a coverage percentage;
-- tests cover common, dangerous-uncommon, personally encountered, sparse, defer, ignore and selection cases.
+- [x] opponent candidates are not labeled Target/Profile Aligned or Conflict;
+- [x] frequency, personal encounter, danger and course-state reasons are independently inspectable;
+- [x] recommended responses are deterministic and editable;
+- [x] selected coverage is calculated from actual selected response contributions and clearly labeled as target-population share;
+- [x] uncommon but dangerous/personal responses can be promoted without being called common;
+- [x] accepting selected responses retains current branch creation, queue and reducer semantics;
+- [x] setup no longer requires a coverage percentage;
+- [x] tests cover common, dangerous-uncommon, personally encountered, sparse, defer, ignore and selection cases.
 
 ## Validation evidence
 
-- initial domain-policy slice: CI #2421 (`31402443680`) passed on head `6fdd9184b011af69a9ee63cb9aae1a125d5a0df5`;
-- exact-head full CI: pending for the final PR head.
+- initial domain-policy slice: CI #2421 (`31402443680`) passed;
+- integrated API/web/setup slice: CI #2431 (`31406321314`) passed;
+- opponent API projection coverage: CI #2432 (`31406462746`) passed;
+- pre-review final implementation: CI #2435 (`31406955302`) passed;
+- final merge gate: exact-head full CI on PR #331 after review provenance fix and closure reconciliation.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-029-2026-08-10-opponent-preparation-closure.md`
 
-Completed at: none
+Completed at: 2026-08-10
