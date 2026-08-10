@@ -11,7 +11,7 @@ const whiteSuggestion: RepertoireBuilderProfileSuggestion = {
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona: 'SOLID',
-    maximumTheoryBurden: 'MEDIUM',
+    maximumTheoryBurden: 'HIGH',
     coveragePercent: 80,
   },
   profileSource: {
