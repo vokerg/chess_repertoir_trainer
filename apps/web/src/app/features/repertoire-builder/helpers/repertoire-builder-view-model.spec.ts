@@ -1,10 +1,9 @@
 import {
   CANDIDATE_DECISION_CONTRACT_VERSION,
-  CANDIDATE_RANKING_POLICY_VERSION,
+  CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION,
   type CandidateDecisionCandidate,
   type CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
-import { OPPONENT_PREPARATION_POLICY_VERSION } from 'chess-domain';
 import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
@@ -76,7 +75,7 @@ describe('repertoire builder evidence view model', () => {
     );
   });
 
-  it('snapshots available evidence versions even when the first candidate lacks them', () => {
+  it('uses the authoritative response policy while snapshotting available evidence versions', () => {
     const unavailableFirst = {
       ...candidate,
       moveUci: 'd7d6',
@@ -125,10 +124,9 @@ describe('repertoire builder evidence view model', () => {
     expect(reference.sourceVersions['personalEvidencePolicy']).toBe('2026-08-personal-move-v1');
     expect(reference.sourceVersions['openingClassification']).toBe('2026-07-rules-v2');
     expect(reference.sourceVersions['openingKnowledge']).toBe('2026-08-knowledge-v1');
-    expect(reference.sourceVersions['opponentPreparationPolicy']).toBe(
-      OPPONENT_PREPARATION_POLICY_VERSION,
-    );
+    expect(reference.sourceVersions['opponentPreparationPolicy']).toBeUndefined();
     expect(reference.candidateContractVersion).toBe(CANDIDATE_DECISION_CONTRACT_VERSION);
+    expect(reference.rankingPolicyVersion).toBe(CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION);
   });
 });
 
@@ -235,7 +233,7 @@ const candidate = {
 
 const response = {
   contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
-  rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
+  rankingPolicyVersion: CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION,
   generatedAt: '2026-08-02T08:00:00.000Z',
   targetId: '00000000-0000-4000-8000-000000000010',
   decisionRole: 'OPPONENT_RESPONSE',
