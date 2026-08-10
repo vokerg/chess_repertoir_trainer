@@ -30,6 +30,8 @@ export interface OpeningAnalysisNextMove {
   moveNumber: number;
   occurrences: number;
   games: OpeningAnalysisWdl;
+  gameSharePercent: number | null;
+  scoreDeltaVsPositionPercent: number | null;
   lastPlayedAt: string | null;
 }
 
@@ -161,6 +163,14 @@ function addResult(wdl: OpeningAnalysisWdl, result: string | null, count = 1) {
   wdl.scorePct = Math.round(((wdl.wins + wdl.draws * 0.5) / wdl.total) * 1000) / 10;
 }
 
+function percentage(value: number, total: number): number | null {
+  return total > 0 ? Math.round((value / total) * 1000) / 10 : null;
+}
+
+function scoreDelta(score: number | null, baseline: number | null): number | null {
+  return score === null || baseline === null ? null : Math.round((score - baseline) * 10) / 10;
+}
+
 function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
   return {
     ...query,
@@ -286,6 +296,7 @@ export const OpeningAnalysisService = {
     const nextMoves = Array.from(occurrencesByMove.entries())
       .map(([moveUci, count]) => {
         const details = playUci(resolved.fen, moveUci);
+        const games = gamesByMove.get(moveUci) ?? emptyWdl();
         return {
           moveUci,
           moveSan: details.moveSan,
@@ -293,7 +304,9 @@ export const OpeningAnalysisService = {
           side: sideToMove(resolved.fen),
           moveNumber: moveNumberFromPly(count.firstPlyNumber),
           occurrences: count.occurrences,
-          games: gamesByMove.get(moveUci) ?? emptyWdl(),
+          games,
+          gameSharePercent: percentage(games.total, positionWdl.total),
+          scoreDeltaVsPositionPercent: scoreDelta(games.scorePct, positionWdl.scorePct),
           lastPlayedAt: lastPlayedAtByMove.get(moveUci)?.toISOString() ?? null,
         };
       })
