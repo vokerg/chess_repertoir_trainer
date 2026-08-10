@@ -11,4 +11,5 @@ export * from './repertoire-merge-planner';
 export * from './sublines';
 export * from './stockfish-analysis';
 export * from './candidate-ranking';
+export * from './opponent-preparation';
 export * from './builder-session';

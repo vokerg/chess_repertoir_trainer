@@ -1,6 +1,6 @@
 # RB-029 — Opponent preparation and computed coverage V2
 
-Status: READY
+Status: DONE
 
 Priority: P1
 
@@ -8,17 +8,17 @@ Order: 220
 
 Delivery class: North-star decision policy and UX
 
-Planning maturity: Agreed product semantics; recommended-set rule requires implementation evidence
+Planning maturity: Implemented, reviewed and exact-head validation gated on PR #331
 
 GitHub issue: #319
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `repertoire-builder/rb-029-opponent-preparation`
 
-Claimed at: none
+Claimed at: 2026-08-10
 
-Claim scope: none
+Claim scope: opponent preparation policy, computed selected coverage, Candidate Decision integration and Builder presentation while preserving RB-009 reducer/queue semantics
 
 ## Objective
 
@@ -47,6 +47,30 @@ Coverage is an outcome of selected replies, not a persona/setup preference.
 
 The recommended-set stopping rule must be versioned and tested. It must not simply conceal the old fixed percentages under new copy.
 
+## Implemented runtime semantics
+
+Runtime PR: #331
+
+Policy: `2026-08-opponent-preparation-v1`
+
+- opponent replies are ranked by an opponent-only domain policy rather than persona/target/profile fit;
+- population relevance requires at least 20 target-population games and frequency at least the greater of 3% or 20% of the strongest observed reply at the exact position;
+- at least three exact-position personal encounters independently qualify a reply for recommendation;
+- mate against the repertoire side or at least 100 cp objective challenge independently qualifies a reply as dangerous;
+- course coverage/transposition/conflict remains inspectable context and a deterministic tie-breaker, but does not by itself make a low-relevance reply recommended;
+- uncommon dangerous or personally repeated replies are recommended with their factual reason and are not relabeled common;
+- Candidate Decision removes target/profile fit reason authority and target/theory warnings from opponent decisions while preserving relevant course/source warnings;
+- candidate coverage carries only each reply's target-population contribution; ranked cumulative coverage is deliberately absent;
+- the Builder computes selected target-population share from the replies actually selected, with explicit non-theoretical-completeness copy;
+- every reply remains independently selectable/removable, and `Use recommended set` applies the deterministic recommendation without automatic acceptance;
+- accepting selections continues through the existing RB-009 reducer, producing independent continuation branches with unchanged queue/defer/ignore semantics;
+- accepted opponent decision evidence snapshots `opponentPreparationPolicy=2026-08-opponent-preparation-v1` separately from the underlying Candidate Ranking policy version;
+- the normal setup no longer displays a coverage percentage or persona-specific coverage default.
+
+## Compatibility boundary for RB-030
+
+The current `RepertoireTarget.coverage` shape and route-local `RepertoireBuilderSetup.coveragePercent` field remain temporarily populated for contract compatibility. RB-029 does **not** read those percentages when ranking or recommending opponent replies, and they are no longer exposed as normal setup decisions. RB-030 owns removal/simplification of the residual setup/target compatibility fields after this policy is integrated.
+
 ## In scope
 
 - opponent ranking/reasons and response-set recommendation;
@@ -63,21 +87,29 @@ The recommended-set stopping rule must be versioned and tested. It must not simp
 
 ## Dependencies
 
-Coordinate shared candidate-contract work with RB-027. RB-031 consumes the final opponent presentation. RB-030 removes setup controls after target-policy compatibility is settled.
+RB-027 and RB-028 are complete. RB-031 consumes the final opponent presentation. RB-030 owns removal of residual setup/target coverage compatibility fields.
 
 ## Acceptance criteria
 
-- opponent candidates are not labeled Target/Profile Aligned or Conflict;
-- frequency, personal encounter, danger and course-state reasons are independently inspectable;
-- recommended responses are deterministic and editable;
-- selected coverage is calculated from actual selected response contributions and clearly labeled as target-population share;
-- uncommon but dangerous/personal responses can be promoted without being called common;
-- accepting selected responses retains current branch creation, queue and reducer semantics;
-- setup no longer requires a coverage percentage;
-- tests cover common, dangerous-uncommon, personally encountered, sparse, defer, ignore and selection cases.
+- [x] opponent candidates are not labeled Target/Profile Aligned or Conflict;
+- [x] frequency, personal encounter, danger and course-state reasons are independently inspectable;
+- [x] recommended responses are deterministic and editable;
+- [x] selected coverage is calculated from actual selected response contributions and clearly labeled as target-population share;
+- [x] uncommon but dangerous/personal responses can be promoted without being called common;
+- [x] accepting selected responses retains current branch creation, queue and reducer semantics;
+- [x] setup no longer requires a coverage percentage;
+- [x] tests cover common, dangerous-uncommon, personally encountered, sparse, defer, ignore and selection cases.
+
+## Validation evidence
+
+- initial domain-policy slice: CI #2421 (`31402443680`) passed;
+- integrated API/web/setup slice: CI #2431 (`31406321314`) passed;
+- opponent API projection coverage: CI #2432 (`31406462746`) passed;
+- pre-review final implementation: CI #2435 (`31406955302`) passed;
+- final merge gate: exact-head full CI on PR #331 after review provenance fix and closure reconciliation.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-029-2026-08-10-opponent-preparation-closure.md`
 
-Completed at: none
+Completed at: 2026-08-10

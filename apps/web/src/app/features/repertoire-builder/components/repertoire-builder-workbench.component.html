@@ -126,12 +126,18 @@
                     </span>
                     <span class="candidate-metric population-metric">
                       <strong>{{ percent(candidate.evidence.population.frequencyPercent) }}</strong>
-                      <small>target play</small>
+                      <small>target-population games</small>
                     </span>
                     <span class="fit-stack">
-                      <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
-                        Target {{ statusLabel(candidate.targetFit.status) }}
-                      </span>
+                      @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
+                        <span class="fit-chip">
+                          {{ isOpponentResponseRecommended(candidate) ? 'Recommended' : 'Optional' }}
+                        </span>
+                      } @else {
+                        <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
+                          Target {{ statusLabel(candidate.targetFit.status) }}
+                        </span>
+                      }
                       <span class="fit-chip">{{ personalEvidenceLabel(candidate) }}</span>
                     </span>
                   </button>
@@ -143,13 +149,13 @@
                       [class.active]="isResponseSelected(candidate.moveUci)"
                       [attr.aria-pressed]="isResponseSelected(candidate.moveUci)"
                       [attr.aria-label]="
-                        (isResponseSelected(candidate.moveUci) ? 'Remove ' : 'Cover ') +
+                        (isResponseSelected(candidate.moveUci) ? 'Remove ' : 'Select ') +
                         candidate.moveSan +
                         ' response'
                       "
                       (click)="responseToggled.emit(candidate.moveUci)"
                     >
-                      {{ isResponseSelected(candidate.moveUci) ? 'Covered' : 'Cover' }}
+                      {{ isResponseSelected(candidate.moveUci) ? 'Selected' : 'Select' }}
                       @if (candidate.coverage?.contributionPercent != null) {
                         <small>+{{ percent(candidate.coverage!.contributionPercent) }}</small>
                       }
@@ -217,15 +223,25 @@
 
           <section class="brief-section" aria-labelledby="fit-title">
             <div class="section-heading">
-              <h3 id="fit-title">Repertoire context</h3>
+              <h3 id="fit-title">
+                {{ activeBranch()?.role === 'OPPONENT_RESPONSE' ? 'Preparation context' : 'Repertoire context' }}
+              </h3>
             </div>
             <div class="fit-comparison">
               <div>
-                <span>Target fit</span>
-                <strong [attr.data-fit-status]="candidate.targetFit.status">
-                  {{ statusLabel(candidate.targetFit.status) }}
-                </strong>
-                <small>The repertoire intent you chose.</small>
+                @if (activeBranch()?.role === 'OPPONENT_RESPONSE') {
+                  <span>Preparation priority</span>
+                  <strong>
+                    {{ isOpponentResponseRecommended(candidate) ? 'Recommended' : 'Optional' }}
+                  </strong>
+                  <small>Based on target-population relevance, your encounters, objective danger, and course context.</small>
+                } @else {
+                  <span>Target fit</span>
+                  <strong [attr.data-fit-status]="candidate.targetFit.status">
+                    {{ statusLabel(candidate.targetFit.status) }}
+                  </strong>
+                  <small>The repertoire intent you chose.</small>
+                }
               </div>
               <div>
                 <span>Your games</span>
@@ -408,7 +424,7 @@
           @if (branch.role === 'OPPONENT_RESPONSE') {
             <div class="coverage-progress">
               <div>
-                <span>Selected coverage</span><strong>{{ selectedCoveragePercent() }}%</strong>
+                <span>Selected target-population coverage</span><strong>{{ selectedCoveragePercent() }}%</strong>
               </div>
               <div
                 class="coverage-bar"
@@ -420,9 +436,16 @@
                 <span [style.width.%]="selectedCoveragePercent()"></span>
               </div>
               <small>
-                Target: {{ coverageTargetPercent() }}%. Select any combination of responses; each
-                accepted response becomes its own continuation branch.
+                This is the share of target-population games represented by the replies you selected, where population evidence is available. It is not theoretical completeness. Each accepted response becomes its own continuation branch.
               </small>
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="loading() || !response()"
+                (click)="useRecommendedResponses()"
+              >
+                Use recommended set
+              </button>
             </div>
           }
 
@@ -442,7 +465,7 @@
               [disabled]="loading() || decisionLimitReached() || !response()"
               (click)="decisionAccepted.emit()"
             >
-              {{ branch.role === 'USER_MOVE' ? 'Accept move' : 'Accept covered responses' }}
+              {{ branch.role === 'USER_MOVE' ? 'Accept move' : 'Accept selected responses' }}
             </button>
             <div class="secondary-actions">
               <button

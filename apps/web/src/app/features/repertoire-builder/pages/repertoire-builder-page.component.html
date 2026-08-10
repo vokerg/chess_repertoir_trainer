@@ -27,10 +27,6 @@
             <span class="metric-label">Profile evidence</span>
             <strong>{{ launch.profiledGames }} classified games</strong>
           </div>
-          <div>
-            <span class="metric-label">Suggested coverage</span>
-            <strong>{{ launch.setup.coveragePercent }}%</strong>
-          </div>
         </div>
         <p class="launch-filter-summary">{{ launch.evidenceSummary }}</p>
         <p class="launch-boundary">
@@ -93,7 +89,6 @@
     [commandError]="store.commandError()"
     [selectedResponseUcis]="store.selectedResponseUcis()"
     [selectedCoveragePercent]="store.selectedCoveragePercent()"
-    [coverageTargetPercent]="store.coverageTargetPercent()"
     [sourceItems]="store.sourceItems()"
     [reasonLabels]="store.selectedReasonLabels()"
     [warningLabels]="store.selectedWarningLabels()"
