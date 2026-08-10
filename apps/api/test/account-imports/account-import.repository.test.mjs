@@ -3,8 +3,10 @@ import { randomUUID } from 'node:crypto';
 import prismaModule from '../../dist/prisma.js';
 import {
   AccountImportActiveRunError,
+  AccountImportClaimLostError,
   AccountImportCoverageGapError,
   AccountImportInvalidRetryError,
+  AccountImportWriteBatchTooLargeError,
   createAccountImportRepository,
 } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
 import {
@@ -105,6 +107,69 @@ try {
     'the database independently enforces one non-terminal import per account',
   );
 
+  await prisma.importRun.update({
+    where: { id: initialRun.id },
+    data: { status: 'RUNNING', startedAt: new Date() },
+  });
+
+  const twoGameRepository = createAccountImportRepository(
+    prisma,
+    { async assertAllowed() {} },
+    { maxWriteBatchSize: 2 },
+  );
+  await assert.rejects(
+    twoGameRepository.persistGames({
+      userId: primary.userId,
+      importRunId: initialRun.id,
+      games: [normalizedGame('batch-1'), normalizedGame('batch-2'), normalizedGame('batch-3')],
+    }),
+    AccountImportWriteBatchTooLargeError,
+    'configured batch size is enforced before database work',
+  );
+
+  const firstWrite = await twoGameRepository.persistGames({
+    userId: primary.userId,
+    importRunId: initialRun.id,
+    games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
+  });
+  assert.deepEqual(firstWrite, { attempted: 2, inserted: 2, duplicate: 0 });
+  assert.equal(
+    await prisma.importedGame.count({ where: { accountId: primary.accountId } }),
+    2,
+    'bounded commit inserts the normalized batch without per-game pre-reads',
+  );
+
+  const replayWrite = await twoGameRepository.persistGames({
+    userId: primary.userId,
+    importRunId: initialRun.id,
+    games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
+  });
+  assert.deepEqual(replayWrite, { attempted: 2, inserted: 0, duplicate: 2 });
+  assert.equal(
+    await prisma.importedGame.count({ where: { accountId: primary.accountId } }),
+    2,
+    'replaying a committed batch is duplicate-safe',
+  );
+  const writeCounters = await repository.getRun(primary.userId, initialRun.id);
+  assert.equal(writeCounters?.gamesMatchedScope, 4);
+  assert.equal(writeCounters?.gamesImported, 2);
+  assert.equal(writeCounters?.gamesDuplicate, 2);
+
+  await assert.rejects(
+    guardRepository.persistGames({
+      userId: primary.userId,
+      importRunId: initialRun.id,
+      games: [normalizedGame('fenced-write')],
+    }),
+    /lifecycle-fenced/,
+    'the ONB-019 guard is rechecked in the same bounded commit transaction',
+  );
+  assert.equal(
+    await prisma.importedGame.count({ where: { accountId: primary.accountId } }),
+    2,
+    'a lifecycle-fenced commit writes no games',
+  );
+
   const newestWindowFrom = new Date('2026-07-15T00:00:00.000Z');
   const newestWindowThrough = new Date('2026-08-01T00:00:00.000Z');
   const firstCoverage = await repository.extendCoverage({
@@ -190,15 +255,34 @@ try {
   assert.equal(retryRun.requestedFrom.toISOString(), requestedFrom.toISOString());
   assert.equal(retryRun.requestedTo.toISOString(), requestedTo.toISOString());
 
+  const retryWorkKey = `account-import-${suffix}`;
   await prisma.importRun.update({
     where: { id: retryRun.id },
     data: {
       status: 'RUNNING',
-      workKey: `account-import-${suffix}`,
+      workKey: retryWorkKey,
       claimedAt: new Date(),
       heartbeatAt: new Date(),
     },
   });
+  await assert.rejects(
+    repository.persistGames({
+      userId: primary.userId,
+      importRunId: retryRun.id,
+      workKey: 'stale-work-key',
+      games: [normalizedGame('stale-worker')],
+    }),
+    AccountImportClaimLostError,
+    'a stale worker cannot persist through a mismatched work key',
+  );
+  const claimedWrite = await repository.persistGames({
+    userId: primary.userId,
+    importRunId: retryRun.id,
+    workKey: retryWorkKey,
+    games: [normalizedGame('claimed-worker')],
+  });
+  assert.deepEqual(claimedWrite, { attempted: 1, inserted: 1, duplicate: 0 });
+
   assert.equal(
     await repository.hasActiveClaimForAccount(primary.userId, primary.accountId),
     true,
@@ -258,6 +342,24 @@ function runInput(overrides) {
     priority: overrides.priority ?? 100,
     windowsTotal: overrides.windowsTotal ?? 7,
     retryOfImportRunId: overrides.retryOfImportRunId ?? null,
+  };
+}
+
+function normalizedGame(providerGameId) {
+  return {
+    providerGameId,
+    providerUrl: `https://example.invalid/game/${providerGameId}`,
+    pgn: `[Event "ONB-011"]\n\n1. e4 e5 2. Nf3 Nc6 *`,
+    rated: true,
+    variant: 'standard',
+    speedCategory: 'blitz',
+    endedAt: new Date('2026-07-20T12:00:00.000Z'),
+    whiteUsername: 'white',
+    blackUsername: 'black',
+    userColor: 'WHITE',
+    opponentUsername: 'black',
+    result: '*',
+    resultForUser: 'DRAW',
   };
 }
 
