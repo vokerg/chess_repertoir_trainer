@@ -6,6 +6,7 @@ import type {
 import type {
   RepertoireTargetDefaultSource,
   RepertoireTargetPersona,
+  RepertoireTargetTheoryBurden,
 } from '@chess-trainer/contracts/repertoire-target';
 
 export const REPERTOIRE_BUILDER_CANDIDATE_LIMIT = 6;
@@ -28,6 +29,10 @@ export interface RepertoireBuilderSetupValues {
   ratingTarget: LichessGamesRatingTarget;
   ratingGroup: LichessGamesRatingGroup | null;
   persona: Exclude<RepertoireTargetPersona, 'CUSTOM'>;
+  /** V1 target-contract compatibility only. Not a V2 setup decision. */
+  maximumTheoryBurden: RepertoireTargetTheoryBurden;
+  /** V1 target-contract compatibility only. Not a V2 setup decision. */
+  coveragePercent: number;
 }
 
 export interface RepertoireBuilderProfileDefaults {
