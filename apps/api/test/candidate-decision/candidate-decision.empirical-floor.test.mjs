@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { newCourseRepertoireTargetExample } from '@chess-trainer/contracts/repertoire-target';
+import {
+  newCourseRepertoireTargetExample,
+  repertoireTargetSchema,
+} from '@chess-trainer/contracts/repertoire-target';
 import { createCandidateDecisionService } from '../../dist/modules/candidate-decision/candidate-decision.service.js';
 
 const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -44,7 +47,7 @@ const population = {
 };
 
 function target(persona) {
-  return {
+  return repertoireTargetSchema.parse({
     ...newCourseRepertoireTargetExample,
     coverage: {
       ...newCourseRepertoireTargetExample.coverage,
@@ -54,7 +57,10 @@ function target(persona) {
       ...newCourseRepertoireTargetExample.objective,
       persona,
     },
-  };
+    overriddenFields: persona === 'CUSTOM'
+      ? ['coverage', 'objective']
+      : ['coverage'],
+  });
 }
 
 function service() {
