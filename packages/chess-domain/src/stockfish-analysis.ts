@@ -128,7 +128,11 @@ export function normalizeStoredEngineLines(lines?: readonly unknown[] | null): S
     const pvUci = (Array.isArray(persisted['pvUci']) ? persisted['pvUci'] : [])
       .map((move) => firstUciMove(move))
       .filter((move): move is string => move !== null);
-    const moveUci = firstUciMove(typeof persisted['moveUci'] === 'string' ? persisted['moveUci'] : null) ?? pvUci[0] ?? null;
+    const explicitMoveUci = firstUciMove(
+      typeof persisted['moveUci'] === 'string' ? persisted['moveUci'] : null,
+    );
+    if (explicitMoveUci && pvUci[0] && explicitMoveUci !== pvUci[0]) return [];
+    const moveUci = explicitMoveUci ?? pvUci[0] ?? null;
     if (!moveUci) return [];
 
     const scoreCpWhite = boundedInt(persisted['scoreCpWhite'], -32768, 32767);
