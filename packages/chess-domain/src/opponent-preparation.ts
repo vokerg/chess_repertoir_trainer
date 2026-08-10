@@ -103,6 +103,18 @@ export function rankOpponentPreparationCandidates<T extends CandidateRankingInpu
 }
 
 /**
+ * Presentation helper for already-ranked API candidates. It intentionally consumes
+ * only the domain policy reason codes so clients do not recreate recommendation math.
+ */
+export function isOpponentPreparationRecommended(
+  reasonCodes: readonly CandidateRankingReasonCode[],
+): boolean {
+  return reasonCodes.includes('COMMON_AT_TARGET_LEVEL')
+    || reasonCodes.includes('PERSONALLY_ENCOUNTERED')
+    || reasonCodes.includes('DANGEROUS_RESPONSE');
+}
+
+/**
  * Computes target-population coverage from the replies the user has actually selected.
  * Missing/unusable population evidence is excluded rather than guessed.
  */
