@@ -132,11 +132,12 @@
                       <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
                         Target {{ statusLabel(candidate.targetFit.status) }}
                       </span>
-                      <span
-                        class="fit-chip profile-fit"
-                        [attr.data-status]="candidate.profileFit.status"
-                      >
-                        Profile {{ statusLabel(candidate.profileFit.status) }}
+                      <span class="fit-chip">
+                        {{
+                          candidate.evidence.personal.games > 0
+                            ? candidate.evidence.personal.games + ' of your games'
+                            : 'New to you'
+                        }}
                       </span>
                     </span>
                   </button>
@@ -222,7 +223,7 @@
 
           <section class="brief-section" aria-labelledby="fit-title">
             <div class="section-heading">
-              <h3 id="fit-title">Fit for this repertoire</h3>
+              <h3 id="fit-title">Repertoire context</h3>
             </div>
             <div class="fit-comparison">
               <div>
@@ -233,11 +234,22 @@
                 <small>The repertoire intent you chose.</small>
               </div>
               <div>
-                <span>Profile fit</span>
-                <strong [attr.data-fit-status]="candidate.profileFit.status">
-                  {{ statusLabel(candidate.profileFit.status) }}
+                <span>Your games</span>
+                <strong>
+                  {{
+                    candidate.evidence.personal.games > 0
+                      ? candidate.evidence.personal.games + ' games'
+                      : 'New to you'
+                  }}
                 </strong>
-                <small>Your observed playing preferences.</small>
+                <small>
+                  {{
+                    candidate.evidence.personal.games > 0
+                      ? percent(candidate.evidence.personal.scorePercent) +
+                        ' score in exact-position history.'
+                      : 'No matching exact-position games in the selected history.'
+                  }}
+                </small>
               </div>
             </div>
           </section>
