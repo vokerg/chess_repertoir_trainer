@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import {
   CANDIDATE_DECISION_CONTRACT_VERSION,
+  CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION,
   CANDIDATE_RANKING_POLICY_VERSION,
   type CandidateDecisionCandidate,
   type CandidateDecisionResponse,
   type CandidateDecisionRole,
+  type CandidateReasonCode,
 } from '@chess-trainer/contracts/candidate-decision';
 import { BehaviorSubject, Subject, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -57,7 +59,10 @@ function responseFixture(
 ): CandidateDecisionResponse {
   return {
     contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
-    rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
+    rankingPolicyVersion:
+      role === 'OPPONENT_RESPONSE'
+        ? CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION
+        : CANDIDATE_RANKING_POLICY_VERSION,
     generatedAt,
     targetId: '00000000-0000-4000-8000-000000000010',
     decisionRole: role,
@@ -92,8 +97,10 @@ function candidateFixture(input: {
   contributionPercent?: number | null;
   manuallyRequested?: boolean;
   knowledgePlanId?: string;
+  reasonCodes?: CandidateReasonCode[];
 }): CandidateDecisionCandidate {
   const knowledgePlanId = input.knowledgePlanId ?? `${input.moveUci}-plan`;
+  const reasonCodes = input.reasonCodes ?? ['TARGET_CHARACTER_MATCH'];
   return {
     rank: input.rank ?? 1,
     moveUci: input.moveUci,
@@ -101,7 +108,7 @@ function candidateFixture(input: {
     resultingFen: input.resultingFen,
     previewUci: [input.moveUci],
     manuallyRequested: input.manuallyRequested ?? false,
-    eligibility: { status: 'ELIGIBLE', reasonCodes: [], warningCodes: [] },
+    eligibility: { status: 'ELIGIBLE', reasonCodes: reasonCodes.slice(0, 8), warningCodes: [] },
     targetFit: { status: 'ALIGNED', reasonCodes: ['TARGET_CHARACTER_MATCH'] },
     profileFit: { status: 'NEUTRAL', reasonCodes: [] },
     components: {
@@ -113,7 +120,7 @@ function candidateFixture(input: {
       profileFit: 0,
       course: 0,
     },
-    reasonCodes: ['TARGET_CHARACTER_MATCH'],
+    reasonCodes,
     warningCodes: [],
     coverage:
       input.contributionPercent === undefined
@@ -245,6 +252,7 @@ describe('RepertoireBuilderStore', () => {
     contributionPercent: 42,
     manuallyRequested: true,
     knowledgePlanId: 'e5-plan',
+    reasonCodes: ['COMMON_AT_TARGET_LEVEL'],
   });
 
   beforeEach(() => {
@@ -403,6 +411,8 @@ describe('RepertoireBuilderStore', () => {
     });
     expect(store.activeBranch()?.role).toBe('OPPONENT_RESPONSE');
     expect(store.previewCandidate()?.moveUci).toBe('e7e5');
+    expect(store.selectedResponseUcis()).toEqual(['e7e5']);
+    expect(store.selectedCoveragePercent()).toBe(42);
     expect(api.getCandidates).toHaveBeenCalledWith(
       jasmine.objectContaining({
         fen: AFTER_E4,
@@ -425,9 +435,10 @@ describe('RepertoireBuilderStore', () => {
     expect(store.queue().length).toBe(1);
     expect(store.acceptedDecisionCount()).toBe(1);
     expect(store.candidateResponse()?.decisionRole).toBe('OPPONENT_RESPONSE');
+    expect(store.selectedResponseUcis()).toEqual(['e7e5']);
   });
 
-  it('keeps opponent-response preview separate from multi-selection and sums coverage', async () => {
+  it('keeps opponent-response preview separate from recommended multi-selection and sums coverage', async () => {
     const d5 = candidateFixture({
       moveUci: 'd7d5',
       moveSan: 'd5',
@@ -435,18 +446,37 @@ describe('RepertoireBuilderStore', () => {
       rank: 2,
       contributionPercent: 23,
       knowledgePlanId: 'd5-plan',
+      reasonCodes: [],
     });
     api.getCandidates.and.returnValue(of(responseFixture('OPPONENT_RESPONSE', [e5, d5])));
 
     await store.start(explicitSetup(), courseEndingLaunch);
 
-    store.toggleResponse('e7e5');
+    expect(store.selectedResponseUcis()).toEqual(['e7e5']);
+    expect(store.selectedCoveragePercent()).toBe(42);
+
     store.toggleResponse('d7d5');
     store.selectCandidate('e7e5');
 
     expect(store.selectedResponseUcis()).toEqual(['e7e5', 'd7d5']);
     expect(store.selectedCoveragePercent()).toBe(65);
     expect(store.previewCandidate()?.moveUci).toBe('e7e5');
+  });
+
+  it('keeps selected coverage unavailable when recommended replies lack population evidence', async () => {
+    const h6 = candidateFixture({
+      moveUci: 'h7h6',
+      moveSan: 'h6',
+      resultingFen: AFTER_E4_E5,
+      contributionPercent: null,
+      reasonCodes: ['PERSONALLY_ENCOUNTERED'],
+    });
+    api.getCandidates.and.returnValue(of(responseFixture('OPPONENT_RESPONSE', [h6])));
+
+    await store.start(explicitSetup(), courseEndingLaunch);
+
+    expect(store.selectedResponseUcis()).toEqual(['h7h6']);
+    expect(store.selectedCoveragePercent()).toBeNull();
   });
 
   it('keeps deferred work visible and allows it to be reopened', async () => {

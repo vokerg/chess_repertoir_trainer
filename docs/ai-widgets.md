@@ -31,7 +31,7 @@ Angular Builder page
   -> GET /api/ai/capabilities
   -> explicit user click only
   -> POST /api/ai/repertoire-builder/candidate-explanation
-       -> CandidateDecisionService.get(...)
+       -> role-aware candidate-decision application service
        -> bounded authoritative fact projection
        -> OpenAI-compatible JSON client
        -> evidence-reference and move reconciliation
@@ -57,7 +57,7 @@ Angular Builder course dialog
 `apps/api/src/modules/ai` owns provider configuration, request execution, prompts, output validation, persistence where a use case explicitly requires it, and AI-specific errors. Feature adapters under that module own subject-specific context and reconciliation.
 
 - Game review reads existing imported-game and completed-analysis application services.
-- Builder candidate explanation calls the existing candidate-decision application service directly.
+- Builder candidate explanation calls the same role-aware candidate-decision application service as the Builder API, so USER_MOVE and OPPONENT_RESPONSE explanations rebuild through their respective deterministic policy authorities.
 - Builder completion summary re-reads the current owned course destination after apply, but never calls preview/apply services or writes course data.
 
 No AI adapter calls REST internally or runs Stockfish.
@@ -124,7 +124,7 @@ The browser sends the existing candidate-decision request plus an identity conta
 - selected move UCI;
 - optional comparison move UCI.
 
-The browser does not send rankings, evaluations, reason labels, warnings, fits, or evidence as authoritative input. The API calls `CandidateDecisionService.get()` using the authenticated user and rebuilds the current response. A stale target, normalized position, role, policy, or missing candidate is rejected before provider work.
+The browser does not send rankings, evaluations, reason labels, warnings, fits, or evidence as authoritative input. The API calls the same role-aware candidate-decision application service as the Builder using the authenticated user and rebuilds the current response. `USER_MOVE` remains on the empirical persona policy; `OPPONENT_RESPONSE` rebuilds through the opponent-preparation policy before final candidate truncation. A stale target, normalized position, role, policy, or missing candidate is rejected before provider work.
 
 The provider receives no FEN, complete candidate response, PV tree, Builder session, queue, course destination, user identity, or command state. It receives only selected/comparison identities and bounded fact records derived from the authoritative response.
 

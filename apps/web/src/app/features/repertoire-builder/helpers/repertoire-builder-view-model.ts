@@ -3,11 +3,10 @@ import type {
   CandidateDecisionResponse,
   CandidatePersonalEvidence,
 } from '@chess-trainer/contracts/candidate-decision';
-import {
-  OPPONENT_PREPARATION_POLICY_VERSION,
-  type BuilderEvidenceReference,
-  type BuilderPreviewNode,
-  type BuilderSessionPreview,
+import type {
+  BuilderEvidenceReference,
+  BuilderPreviewNode,
+  BuilderSessionPreview,
 } from 'chess-domain';
 import { compactGameCount } from '../../../shared/games/game-count.helpers';
 import type {
@@ -157,9 +156,6 @@ export function buildRepertoireBuilderEvidenceReference(
     courses: response.sourceSummary.courses,
     playerProfile: response.sourceSummary.playerProfile,
   };
-  if (response.decisionRole === 'OPPONENT_RESPONSE') {
-    sourceVersions['opponentPreparationPolicy'] = OPPONENT_PREPARATION_POLICY_VERSION;
-  }
   const mastersDatasetVersion = response.candidates.find(
     (candidate) => candidate.evidence.masters.datasetVersion !== null,
   )?.evidence.masters.datasetVersion;

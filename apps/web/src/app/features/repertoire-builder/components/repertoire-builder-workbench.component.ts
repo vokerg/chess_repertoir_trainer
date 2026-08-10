@@ -56,7 +56,7 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly error = input<string | null>(null);
   readonly commandError = input<string | null>(null);
   readonly selectedResponseUcis = input<readonly string[]>([]);
-  readonly selectedCoveragePercent = input(0);
+  readonly selectedCoveragePercent = input<number | null>(0);
   readonly sourceItems = input<readonly RepertoireBuilderSourceItem[]>([]);
   readonly reasonLabels = input<readonly string[]>([]);
   readonly warningLabels = input<readonly string[]>([]);

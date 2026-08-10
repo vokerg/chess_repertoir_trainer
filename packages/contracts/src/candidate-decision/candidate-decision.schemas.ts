@@ -13,9 +13,13 @@ import { repertoireTargetSchema } from '../repertoire-target';
 
 export const CANDIDATE_DECISION_CONTRACT_VERSION = '2026-08-v4' as const;
 export const CANDIDATE_RANKING_POLICY_VERSION = '2026-08-empirical-persona-v2' as const;
+export const CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION = '2026-08-opponent-preparation-v1' as const;
 
 export const candidateDecisionContractVersionSchema = z.literal(CANDIDATE_DECISION_CONTRACT_VERSION);
-export const candidateRankingPolicyVersionSchema = z.literal(CANDIDATE_RANKING_POLICY_VERSION);
+export const candidateRankingPolicyVersionSchema = z.union([
+  z.literal(CANDIDATE_RANKING_POLICY_VERSION),
+  z.literal(CANDIDATE_OPPONENT_PREPARATION_POLICY_VERSION),
+]);
 
 export const candidateMoveUciSchema = z.string().regex(/^[a-h][1-8][a-h][1-8][qrbn]?$/i);
 

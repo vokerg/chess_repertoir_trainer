@@ -424,7 +424,7 @@
           @if (branch.role === 'OPPONENT_RESPONSE') {
             <div class="coverage-progress">
               <div>
-                <span>Selected target-population coverage</span><strong>{{ selectedCoveragePercent() }}%</strong>
+                <span>Selected target-population coverage</span><strong>{{ percent(selectedCoveragePercent()) }}</strong>
               </div>
               <div
                 class="coverage-bar"
@@ -433,7 +433,7 @@
                 aria-valuemin="0"
                 aria-valuemax="100"
               >
-                <span [style.width.%]="selectedCoveragePercent()"></span>
+                <span [style.width.%]="selectedCoveragePercent() ?? 0"></span>
               </div>
               <small>
                 This is the share of target-population games represented by the replies you selected, where population evidence is available. It is not theoretical completeness. Each accepted response becomes its own continuation branch.
