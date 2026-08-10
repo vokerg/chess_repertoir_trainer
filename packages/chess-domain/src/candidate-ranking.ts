@@ -465,7 +465,7 @@ function buildReasonCodes(
     reasons.add('POPULATION_STRONG_SCORE');
   }
   const masterSupported = empiricalUserMove
-    ? persona !== 'SURPRISE' && hasUsableCorpus(input.masters, EMPIRICAL_MASTERS_MIN_GAMES)
+    ? persona !== 'SURPRISE' && masterSupportSignal(input.masters) > 0
     : input.masters.games >= 10;
   if (masterSupported) reasons.add('MASTER_SUPPORTED');
 
