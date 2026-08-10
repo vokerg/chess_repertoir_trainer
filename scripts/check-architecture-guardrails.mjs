@@ -39,9 +39,11 @@ const migratedWorkbenchStyles = [
   ),
 ];
 const linesPresentationRoot = new URL('../apps/web/src/app/features/lines/', import.meta.url);
+const homePresentationRoot = new URL('../apps/web/src/app/features/home/', import.meta.url);
 const legacyVisualTokenUsage =
   /var\(--(?:bg(?:-strong)?|surface(?:-strong|-muted|-dark|-2|-3)?|border(?:-strong)?|text|muted(?:-strong)?|accent(?:-strong|-soft)?|danger(?:-soft)?|success(?:-soft)?|warning(?:-strong|-soft)?|radius-(?:sm|md|lg|xl)|shadow(?:-soft|-lg|-lifted)?|on-accent)\)/;
 const libraryPresentationClass = /\blibrary-[a-z0-9-]+\b/i;
+const homeCompatibilityToken = /--home-[a-z0-9-]+/i;
 
 assert.equal(existsSync(new URL('../apps/mobile', import.meta.url)), true, 'apps/mobile must be a supported workspace');
 assert.ok(rootPackage.workspaces.includes('apps/mobile'), 'root workspaces must include apps/mobile');
@@ -130,6 +132,15 @@ for (const fileUrl of presentationFiles(linesPresentationRoot)) {
     source,
     libraryPresentationClass,
     `Lines presentation must not depend on Library-owned CSS classes: ${fileUrl.pathname}`,
+  );
+}
+
+for (const fileUrl of presentationFiles(homePresentationRoot)) {
+  const source = readFileSync(fileUrl, 'utf8');
+  assert.doesNotMatch(
+    source,
+    homeCompatibilityToken,
+    `Home presentation must use production --ui-* visual roles: ${fileUrl.pathname}`,
   );
 }
 
