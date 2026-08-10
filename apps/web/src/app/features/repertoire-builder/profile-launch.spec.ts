@@ -49,7 +49,7 @@ describe('profile-derived Builder launch', () => {
       setup: jasmine.objectContaining({
         persona: 'SOLID',
         startingScope: 'FULL',
-        maximumTheoryBurden: 'MEDIUM',
+        maximumTheoryBurden: 'HIGH',
         coveragePercent: 80,
         speedPreset: 'BLITZ_AND_SLOWER',
         ratingTarget: 'MY_PEERS',
@@ -62,7 +62,7 @@ describe('profile-derived Builder launch', () => {
       setup: jasmine.objectContaining({
         persona: 'AGGRESSIVE',
         startingScope: 'FULL',
-        maximumTheoryBurden: 'MEDIUM',
+        maximumTheoryBurden: 'HIGH',
         coveragePercent: 80,
       }),
     }));
