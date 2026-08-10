@@ -34,7 +34,7 @@ Delivery classes:
 | Course reintegration and preview/apply | Dual-use | Runtime complete | Safer course edits | Preserved V2 write authority |
 | Existing-course adaptation | Dual-use | Runtime complete | Improves course review | Reuses same Builder loop |
 | **Empirical persona ranking V2** | North-star | **Runtime complete — RB-027** | Empirical deterministic USER_MOVE recommendations | Balanced/Solid/Aggressive/Surprise interpret selected-population, Masters and bounded engine evidence |
-| **Factual personal move evidence** | Dual-use | **IN_PROGRESS — RB-028 / PR #327** | Improves exact-position personal research | Replaces broad Profile Fit with common/rare/new, result context and recency |
+| **Factual personal move evidence** | Dual-use | **Runtime complete — RB-028** | Exact-position Common/Rare/New, recency/share and qualified result context | Replaces broad Profile Fit as move-familiarity presentation without becoming preset persona authority |
 | **Opponent preparation + computed coverage V2** | North-star | **Agreed / READY — RB-029** | — | Prioritizes replies to prepare and makes coverage selection feedback |
 | **Single-dialog setup V2** | North-star | **Agreed / READY — RB-030** | — | Side/scope, speed, rating target and persona once; removes coverage/theory overload |
 | **Cockpit evidence hierarchy V2** | North-star | **Outlined / PROPOSED — RB-031** | — | Re-presents settled V2 evidence without replacing RB-026 Cockpit |
@@ -60,7 +60,7 @@ Builder V2 clarifies their role: they explain **what kind of chess a candidate c
 
 The Player Chess Profile remains valuable as a standalone view of broader tendencies by period, color, speed and rating context.
 
-RB-028 adds a different Builder concept: exact-position move familiarity and results. A candidate can be `Common for you`, `Rare for you` or `New to you`, with sample-qualified results and recency. This is not inferred from broad profile-character similarity.
+RB-028 is now runtime evidence with a different Builder role: exact-position move familiarity and results. A candidate can be `Common for you`, `Rare for you` or `New to you`, with all-indexed game count/share, recency, effective history scope, and sample-qualified results versus the same-position baseline. This is not inferred from broad profile-character similarity.
 
 ### Repertoire target and setup
 
@@ -77,7 +77,7 @@ RB-027 is implemented as the V2 preset USER_MOVE ranking authority:
 - Aggressive — practical overperformance with meaningful Master justification and bounded extra objective cost;
 - Surprise — uncommon viable target-population overperformance with sample, Master-rarity and engine safeguards.
 
-Candidate Decision V3 supplies exact-position target-side population/Masters baselines and per-move deltas. The current versioned policy uses a 20-game selected-population floor, 10-game Masters floor, +3 percentage-point Surprise overperformance gate, and already-stored legal internally consistent engine evidence at depth at least 12. Exact weights and objective guardrails are recorded in the RB-027 closure report. Future changes require an explicit policy-version change rather than silent recalibration.
+Candidate Decision V4 supplies exact-position target-side population/Masters baselines and per-move deltas plus RB-028 factual personal context. The ranking policy remains `2026-08-empirical-persona-v2`; RB-028's new all-history personal fields do not enter preset ranking. The current empirical policy uses a 20-game selected-population floor, 10-game Masters floor, +3 percentage-point Surprise overperformance gate, and already-stored legal internally consistent engine evidence at depth at least 12. Exact weights and objective guardrails are recorded in the RB-027 closure report. Future changes require an explicit policy-version change rather than silent recalibration.
 
 ### Opponent preparation and coverage
 
@@ -89,7 +89,7 @@ Coverage becomes the cumulative target-population share of the replies actually 
 
 RB-026's Cockpit remains the accepted production composition: primary board/candidates, focused brief and branch/action controls in one desktop workspace with responsive stacking.
 
-RB-031 changes the evidence hierarchy only after RB-028–RB-029 settle contracts. User rows foreground peer/Masters/engine plus factual personal context; opponent rows foreground preparation priority and computed coverage. Opening names/plans remain; ECO codes and obsolete fit badges leave the normal decision surface.
+RB-031 changes the evidence hierarchy after RB-029 settles opponent contracts. User rows can consume the settled RB-027/RB-028 peer/Masters/engine plus factual personal context; opponent rows will foreground preparation priority and computed coverage. Opening names/plans remain; ECO codes and obsolete fit badges leave the normal decision surface.
 
 ### Builder state and course writes
 
