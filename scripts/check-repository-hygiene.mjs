@@ -8,6 +8,7 @@ const apiSourceRoot = new URL('../apps/api/src/', import.meta.url);
 
 // Counts include the import reference plus every route response reference in the file.
 // Keep this map exact: contract migrations must reduce the relevant count in the same change.
+// This is a debt-count ratchet, not an identity-level allowlist for individual route usages.
 const expectedLegacyOpaqueResponseOccurrences = new Map([
   ['apps/api/src/modules/analysis/analysis.routes.ts', 8],
   ['apps/api/src/modules/courses/courses.routes.ts', 23],
@@ -38,8 +39,8 @@ assert.deepEqual(
   [...actualLegacyOccurrences.entries()].sort(([left], [right]) => left.localeCompare(right)),
   [...expectedLegacyOpaqueResponseOccurrences.entries()].sort(([left], [right]) => left.localeCompare(right)),
   [
-    'legacyOpaqueResponseSchema is transitional debt: exact usage counts must not drift.',
-    'New usages are forbidden, and migrated/deleted usages must reduce this baseline in the same change.',
+    'legacyOpaqueResponseSchema is transitional debt: exact per-file usage counts must match the reviewed baseline.',
+    'New consumer files and net usage growth fail this check; migrated/deleted usages must reduce the baseline in the same change.',
     'Define a concrete response schema, preferably in packages/contracts when the payload crosses workspace boundaries.',
   ].join(' '),
 );
