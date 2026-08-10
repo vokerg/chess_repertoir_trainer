@@ -10,6 +10,7 @@ export type PersonalMoveResultContext = 'ABOVE_BASELINE' | 'BELOW_BASELINE' | 'N
 
 export interface PersonalMoveEvidenceClassificationInput {
   games: number;
+  resultGames: number;
   gameSharePercent: number | null;
   scoreDeltaVsPositionPercent: number | null;
 }
@@ -31,13 +32,15 @@ export interface PersonalMoveEvidenceClassification {
  * being promoted by percentage alone.
  *
  * Result context deliberately reuses the existing Player Chess Profile
- * conclusion boundary: at least ten games and a +/-5 percentage-point delta
- * versus the relevant baseline. It has no candidate-ranking authority.
+ * conclusion boundary: at least ten games with known results and a +/-5
+ * percentage-point delta versus the relevant baseline. It has no
+ * candidate-ranking authority.
  */
 export function classifyPersonalMoveEvidence(
   input: PersonalMoveEvidenceClassificationInput,
 ): PersonalMoveEvidenceClassification {
   const games = Math.max(0, Math.trunc(input.games));
+  const resultGames = Math.min(games, Math.max(0, Math.trunc(input.resultGames)));
   const gameSharePercent = finiteMetric(input.gameSharePercent);
   const scoreDelta = finiteMetric(input.scoreDeltaVsPositionPercent);
 
@@ -49,7 +52,7 @@ export function classifyPersonalMoveEvidence(
       ? 'COMMON'
       : 'RARE';
 
-  const resultSampleQualified = games >= MIN_RESULT_CONTEXT_GAMES && scoreDelta !== null;
+  const resultSampleQualified = resultGames >= MIN_RESULT_CONTEXT_GAMES && scoreDelta !== null;
   let resultContext: PersonalMoveResultContext = 'INSUFFICIENT';
   if (resultSampleQualified) {
     if (scoreDelta >= RESULT_CONTEXT_DELTA_PERCENT) resultContext = 'ABOVE_BASELINE';
