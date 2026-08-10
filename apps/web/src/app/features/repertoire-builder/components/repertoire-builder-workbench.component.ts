@@ -5,7 +5,12 @@ import type {
   CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
 import type { RepertoireTarget } from '@chess-trainer/contracts/repertoire-target';
-import type { BuilderBranch, BuilderSession, BuilderSessionPreview } from 'chess-domain';
+import {
+  isOpponentPreparationRecommended,
+  type BuilderBranch,
+  type BuilderSession,
+  type BuilderSessionPreview,
+} from 'chess-domain';
 import { ChessgroundBoardComponent } from '../../../shared/chess/board/chessground-board.component';
 import { EngineEvalBarComponent } from '../../../shared/chess/engine/engine-eval-bar.component';
 import type { EngineAnalysis } from '../../../shared/chess/engine/stockfish-analysis.service';
@@ -52,7 +57,6 @@ export class RepertoireBuilderWorkbenchComponent {
   readonly commandError = input<string | null>(null);
   readonly selectedResponseUcis = input<readonly string[]>([]);
   readonly selectedCoveragePercent = input(0);
-  readonly coverageTargetPercent = input(0);
   readonly sourceItems = input<readonly RepertoireBuilderSourceItem[]>([]);
   readonly reasonLabels = input<readonly string[]>([]);
   readonly warningLabels = input<readonly string[]>([]);
@@ -136,6 +140,10 @@ export class RepertoireBuilderWorkbenchComponent {
 
   protected isResponseSelected(moveUci: string): boolean {
     return this.selectedResponseUcis().includes(moveUci);
+  }
+
+  protected isOpponentResponseRecommended(candidate: CandidateDecisionCandidate): boolean {
+    return isOpponentPreparationRecommended(candidate.reasonCodes);
   }
 
   protected isPreviewed(moveUci: string): boolean {
