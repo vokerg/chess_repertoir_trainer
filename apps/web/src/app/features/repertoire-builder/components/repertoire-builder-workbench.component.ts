@@ -44,7 +44,7 @@ export interface RepertoireBuilderQueueMove {
   styleUrls: [
     './repertoire-builder-workbench.component.css',
     './repertoire-builder-workbench-explanation.component.css',
-    './repertoire-builder-workbench-v2.component.css',
+    './repertoire-builder-workbench-evidence.component.css',
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
