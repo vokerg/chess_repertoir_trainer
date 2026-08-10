@@ -7,6 +7,7 @@ import {
 import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
+  reasonLabel,
 } from './repertoire-builder-view-model';
 
 describe('repertoire builder evidence view model', () => {
@@ -22,6 +23,12 @@ describe('repertoire builder evidence view model', () => {
     expect(items.some((item) => item.id === 'opening-knowledge')).toBeFalse();
     expect(items.some((item) => item.id.startsWith('opening-plan-'))).toBeFalse();
     expect(items.map((item) => item.id)).toEqual(['population', 'masters', 'personal', 'profile']);
+  });
+
+  it('labels the V2 strong-population reason as position-relative evidence', () => {
+    expect(reasonLabel('POPULATION_STRONG_SCORE')).toBe(
+      'Outperforms the position baseline in the selected population',
+    );
   });
 
   it('snapshots available evidence versions even when the first candidate lacks them', () => {
