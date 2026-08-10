@@ -28,25 +28,37 @@ export class SignupPageComponent implements AfterViewInit, OnDestroy {
   protected readonly appUserError = this.auth.appUserError;
   protected readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/home';
   protected readonly authQueryParams = { returnUrl: this.returnUrl };
+  private redirectStarted = false;
 
   @ViewChild('signUpMount') private signUpMount?: ElementRef<HTMLDivElement>;
 
   constructor() {
     effect(() => {
       if (this.auth.initialized() && this.auth.isSignedIn()) {
-        void this.router.navigateByUrl(this.returnUrl);
+        this.redirectToApplication();
       }
     });
   }
 
   async ngAfterViewInit(): Promise<void> {
     await this.auth.initialize();
+    if (this.auth.isSignedIn()) {
+      this.redirectToApplication();
+      return;
+    }
+
     const mount = this.signUpMount?.nativeElement;
-    if (mount && !this.auth.isDevAuth()) await this.auth.mountSignUp(mount);
+    if (mount && !this.auth.isDevAuth()) await this.auth.mountSignUp(mount, this.returnUrl);
   }
 
   ngOnDestroy(): void {
     const mount = this.signUpMount?.nativeElement;
     if (mount) this.auth.unmountSignUp(mount);
+  }
+
+  private redirectToApplication(): void {
+    if (this.redirectStarted) return;
+    this.redirectStarted = true;
+    void this.router.navigateByUrl(this.returnUrl);
   }
 }

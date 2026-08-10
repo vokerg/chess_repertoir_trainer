@@ -28,25 +28,37 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
   protected readonly appUserError = this.auth.appUserError;
   protected readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/home';
   protected readonly authQueryParams = { returnUrl: this.returnUrl };
+  private redirectStarted = false;
 
   @ViewChild('signInMount') private signInMount?: ElementRef<HTMLDivElement>;
 
   constructor() {
     effect(() => {
       if (this.auth.initialized() && this.auth.isSignedIn()) {
-        void this.router.navigateByUrl(this.returnUrl);
+        this.redirectToApplication();
       }
     });
   }
 
   async ngAfterViewInit(): Promise<void> {
     await this.auth.initialize();
+    if (this.auth.isSignedIn()) {
+      this.redirectToApplication();
+      return;
+    }
+
     const mount = this.signInMount?.nativeElement;
-    if (mount && !this.auth.isDevAuth()) await this.auth.mountSignIn(mount);
+    if (mount && !this.auth.isDevAuth()) await this.auth.mountSignIn(mount, this.returnUrl);
   }
 
   ngOnDestroy(): void {
     const mount = this.signInMount?.nativeElement;
     if (mount) this.auth.unmountSignIn(mount);
+  }
+
+  private redirectToApplication(): void {
+    if (this.redirectStarted) return;
+    this.redirectStarted = true;
+    void this.router.navigateByUrl(this.returnUrl);
   }
 }

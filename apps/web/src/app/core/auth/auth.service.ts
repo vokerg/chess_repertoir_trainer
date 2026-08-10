@@ -85,18 +85,20 @@ export class AuthService {
     this.resolvedSessionId = null;
   }
 
-  async mountSignIn(node: HTMLDivElement): Promise<void> {
+  async mountSignIn(node: HTMLDivElement, fallbackRedirectUrl: string): Promise<void> {
     await this.initialize();
-    this.clerk?.mountSignIn(node);
+    if (this.isSignedIn()) return;
+    this.clerk?.mountSignIn(node, { fallbackRedirectUrl });
   }
 
   unmountSignIn(node: HTMLDivElement): void {
     this.clerk?.unmountSignIn(node);
   }
 
-  async mountSignUp(node: HTMLDivElement): Promise<void> {
+  async mountSignUp(node: HTMLDivElement, fallbackRedirectUrl: string): Promise<void> {
     await this.initialize();
-    this.clerk?.mountSignUp(node);
+    if (this.isSignedIn()) return;
+    this.clerk?.mountSignUp(node, { fallbackRedirectUrl });
   }
 
   unmountSignUp(node: HTMLDivElement): void {
