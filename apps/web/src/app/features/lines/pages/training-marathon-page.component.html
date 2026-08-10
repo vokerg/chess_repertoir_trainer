@@ -8,9 +8,6 @@
         [stats]="headerStats()"
         [actions]="headerActions()"
       />
-      @if (store.sublineMoveText(); as sublineMoveText) {
-        <p class="marathon-line-context">Current subline: <strong>{{ sublineMoveText }}</strong></p>
-      }
     </div>
 
     <app-line-training-session
@@ -32,7 +29,7 @@
       [lastMove]="store.lastMove()"
       [boardPositionVersion]="store.boardPositionVersion()"
       [goalTitle]="store.lineName()"
-      [goalSubtitle]="store.sublineMoveText() || 'Current marathon subline. Recent stats are recorded per active subline hash.'"
+      goalSubtitle="Play the current line from memory. Keep the expected move hidden unless you are stuck."
       progressTitle="Current line progress"
       finishButtonLabel="Finish current line"
       primaryActionLabel="Next line"
