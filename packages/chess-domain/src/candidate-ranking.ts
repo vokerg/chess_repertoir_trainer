@@ -376,22 +376,18 @@ function resolveEligibility(
   persona: CandidateRankingPersona,
 ): CandidateRankingEligibility {
   if (context.role === 'OPPONENT_RESPONSE') return 'ELIGIBLE';
+  const empiricalUserMove = persona !== 'CUSTOM';
+  if (empiricalUserMove && !hasUsableEngineEvidence(input.engine)) return 'WARNING';
   if (input.engine.mateForTarget !== null && input.engine.mateForTarget < 0) return 'EXCLUDED';
 
   const delta = input.engine.objectiveDeltaCp;
   if (delta === null) {
-    if (persona !== 'CUSTOM') return 'WARNING';
     return input.targetFit === 'CONFLICT' || input.course.conflict ? 'WARNING' : 'ELIGIBLE';
   }
 
   const thresholds = riskThresholds(context, persona);
   if (delta >= thresholds.exclude) return 'EXCLUDED';
-  if (delta >= thresholds.warn
-    || (persona !== 'CUSTOM' && !hasUsableEngineEvidence(input.engine))
-    || input.targetFit === 'CONFLICT'
-    || input.course.conflict) {
-    return 'WARNING';
-  }
+  if (delta >= thresholds.warn || input.targetFit === 'CONFLICT' || input.course.conflict) return 'WARNING';
   return 'ELIGIBLE';
 }
 
@@ -415,7 +411,10 @@ function buildReasonCodes(
   persona: CandidateRankingPersona,
 ): CandidateRankingReasonCode[] {
   const reasons = new Set<CandidateRankingReasonCode>();
-  const delta = input.engine.objectiveDeltaCp;
+  const empiricalUserMove = role === 'USER_MOVE' && persona !== 'CUSTOM';
+  const delta = empiricalUserMove && !hasUsableEngineEvidence(input.engine)
+    ? null
+    : input.engine.objectiveDeltaCp;
   if (delta === 0) reasons.add('ENGINE_BEST');
   else if (delta !== null && delta <= 50) reasons.add('ENGINE_CLOSE');
   else if (delta !== null && delta >= 100) reasons.add('OBJECTIVE_COST');
@@ -423,7 +422,6 @@ function buildReasonCodes(
   if ((input.population.frequencyPercent ?? 0) >= 10 && input.population.games >= 20) {
     reasons.add(role === 'OPPONENT_RESPONSE' ? 'COMMON_AT_TARGET_LEVEL' : 'POPULATION_COMMON');
   }
-  const empiricalUserMove = role === 'USER_MOVE' && persona !== 'CUSTOM';
   const populationStrong = empiricalUserMove
     ? (corpusScoreDelta(input.population) ?? Number.NEGATIVE_INFINITY) >= 3
     : (input.population.scorePercentForTarget ?? 0) >= 55;
@@ -458,14 +456,21 @@ function buildWarningCodes(
   eligibility: CandidateRankingEligibility,
 ): CandidateRankingWarningCode[] {
   const warnings = new Set<CandidateRankingWarningCode>(input.targetWarningCodes);
-  if (input.engine.mateForTarget !== null && input.engine.mateForTarget < 0) {
+  const empiricalUserMove = context.role === 'USER_MOVE' && persona !== 'CUSTOM';
+  const usableEngine = hasUsableEngineEvidence(input.engine);
+  if (input.engine.mateForTarget !== null
+    && input.engine.mateForTarget < 0
+    && (!empiricalUserMove || usableEngine)) {
     warnings.add('FORCED_MATE_AGAINST_TARGET');
   } else if (context.role === 'USER_MOVE'
     && eligibility !== 'ELIGIBLE'
-    && (persona === 'CUSTOM' || input.engine.objectiveDeltaCp !== null)) {
+    && (persona === 'CUSTOM'
+      || (usableEngine
+        && input.engine.objectiveDeltaCp !== null
+        && input.engine.objectiveDeltaCp >= riskThresholds(context, persona).warn))) {
     warnings.add('OBJECTIVE_LOSS');
   }
-  if (context.role === 'USER_MOVE' && persona !== 'CUSTOM' && !hasUsableEngineEvidence(input.engine)) {
+  if (empiricalUserMove && !usableEngine) {
     warnings.add('OBJECTIVE_EVIDENCE_MISSING');
   }
   if (input.engine.depth !== null && input.engine.depth < 12) warnings.add('LOW_ENGINE_DEPTH');
