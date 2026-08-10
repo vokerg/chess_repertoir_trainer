@@ -134,9 +134,11 @@
                       </span>
                       <span class="fit-chip">
                         {{
-                          candidate.evidence.personal.games > 0
-                            ? candidate.evidence.personal.games + ' of your games'
-                            : 'New to you'
+                          candidate.evidence.personal.status === 'UNAVAILABLE'
+                            ? 'History unavailable'
+                            : candidate.evidence.personal.games > 0
+                              ? candidate.evidence.personal.games + ' of your games'
+                              : 'New to you'
                         }}
                       </span>
                     </span>
@@ -237,17 +239,21 @@
                 <span>Your games</span>
                 <strong>
                   {{
-                    candidate.evidence.personal.games > 0
-                      ? candidate.evidence.personal.games + ' games'
-                      : 'New to you'
+                    candidate.evidence.personal.status === 'UNAVAILABLE'
+                      ? 'History unavailable'
+                      : candidate.evidence.personal.games > 0
+                        ? candidate.evidence.personal.games + ' games'
+                        : 'New to you'
                   }}
                 </strong>
                 <small>
                   {{
-                    candidate.evidence.personal.games > 0
-                      ? percent(candidate.evidence.personal.scorePercent) +
-                        ' score in exact-position history.'
-                      : 'No matching exact-position games in the selected history.'
+                    candidate.evidence.personal.status === 'UNAVAILABLE'
+                      ? 'Personal game history could not be loaded.'
+                      : candidate.evidence.personal.games > 0
+                        ? percent(candidate.evidence.personal.scorePercent) +
+                          ' score in exact-position history.'
+                        : 'No matching exact-position games in the selected history.'
                   }}
                 </small>
               </div>
