@@ -290,6 +290,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
       }
 
       const comparableScores = engineLines
+        .filter(isUsableStoredEngineLine)
         .map((line) => targetComparableScore(line, request.target.side))
         .filter((score): score is number => score !== null);
       const safestTargetScore = comparableScores.length ? Math.max(...comparableScores) : null;
@@ -513,6 +514,12 @@ function lineMove(line: StoredEngineLine): string | null {
   return (line.moveUci ?? line.pvUci[0] ?? '').trim().toLowerCase() || null;
 }
 
+function isUsableStoredEngineLine(line: StoredEngineLine): boolean {
+  return line.depth !== undefined
+    && line.depth >= MIN_ENGINE_DEPTH
+    && (line.scoreCpWhite !== undefined || line.mateWhite !== undefined);
+}
+
 function engineEvidence(
   line: StoredEngineLine | null,
   sourceStatus: CandidateEvidenceStatus,
@@ -530,14 +537,20 @@ function engineEvidence(
       pvUci: [],
     };
   }
+  const usableLine = isUsableStoredEngineLine(line);
   const scoreCpForTarget = orientForTarget(line.scoreCpWhite, targetSide);
   const mateForTarget = orientForTarget(line.mateWhite, targetSide);
-  const comparable = targetComparableScore(line, targetSide);
+  const comparable = usableLine ? targetComparableScore(line, targetSide) : null;
   const objectiveDeltaCp = comparable === null || safestTargetScore === null
     ? null
     : Math.max(0, Math.min(32_767, Math.round(safestTargetScore - comparable)));
+  const status: CandidateEvidenceStatus = sourceStatus === 'UNAVAILABLE'
+    ? 'UNAVAILABLE'
+    : usableLine
+      ? sourceStatus === 'STALE' ? 'STALE' : 'AVAILABLE'
+      : 'INSUFFICIENT';
   return {
-    status: line.depth !== undefined && line.depth < MIN_ENGINE_DEPTH ? 'INSUFFICIENT' : sourceStatus,
+    status,
     depth: line.depth ?? null,
     multipv: line.multipv ?? null,
     scoreCpForTarget: scoreCpForTarget ?? null,
@@ -939,10 +952,9 @@ function theoryRank(value: CandidateOpeningEvidence['theoryBurden'] | Repertoire
 
 function engineSourceStatus(result: SettledValue<StoredPositionAnalysis | null>): CandidateEvidenceStatus {
   if (!result.ok || !result.value) return 'UNAVAILABLE';
-  if (!result.value.lines.length) return 'INSUFFICIENT';
-  return result.value.lines.some((line) => line.depth !== undefined && line.depth < MIN_ENGINE_DEPTH)
-    ? 'INSUFFICIENT'
-    : 'AVAILABLE';
+  const lines = result.value.lines.slice(0, ENGINE_LINE_LIMIT);
+  if (!lines.length) return 'INSUFFICIENT';
+  return lines.some(isUsableStoredEngineLine) ? 'AVAILABLE' : 'INSUFFICIENT';
 }
 
 function explorerSourceStatus(
