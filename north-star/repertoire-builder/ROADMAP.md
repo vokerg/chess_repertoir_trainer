@@ -76,11 +76,13 @@ Gate: passed. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closur
 
 ### 10.2 RB-028 / #318 — factual personal move evidence
 
-Status: **IN_PROGRESS**, P1.
+Status: **DONE**, P1.
 
-Replace primary Builder Profile Fit with exact-position common/rare/new, result context and recency. Familiarity uses all eligible indexed history and remains primarily informational rather than a hidden persona authority.
+Runtime PR #327 advances Candidate Decision to V4 and replaces primary Builder Profile Fit with exact-position Common/Rare/New, all-indexed game count/share, last-played recency, and sample-qualified result context versus the same-position baseline. Effective account/side/rated/speed/history scope remains inspectable. Result-less indexed games count for familiarity without strengthening result confidence or legacy personal ranking inputs.
 
-Implementation is active on PR #327 and can consume the stabilized RB-027 V3 corpus semantics.
+The factual policy is versioned as `2026-08-personal-move-v1`; the ranking policy remains `2026-08-empirical-persona-v2`. Runtime head `9d0a65a5` passed CI #2409.
+
+Gate: passed. See `reports/RB-028-2026-08-10-personal-move-evidence-closure.md`.
 
 ### 10.3 RB-029 / #319 — opponent preparation and computed coverage
 
@@ -88,7 +90,7 @@ Status: **READY**, P1.
 
 Opponent turns become preparation priority driven by peer relevance, personal encounters, objective challenge and course state. Remove persona/profile judgment from opponent moves. Recommend a response set and show cumulative selected target-population coverage as feedback.
 
-Gate: existing RB-009 multi-selection/branch semantics remain unchanged.
+Gate: existing RB-009 multi-selection/branch semantics remain unchanged. RB-028 factual personal encounter evidence is available as separated context.
 
 ### 10.4 RB-030 / #320 — single-dialog setup
 
@@ -104,16 +106,16 @@ Status: **PROPOSED**, P1.
 
 Integrate the settled V2 evidence into the RB-026 Cockpit. Foreground peer/Masters/engine and factual personal evidence on user turns; preparation priority/computed coverage on opponent turns; keep opening knowledge as concise explanation; remove normal ECO and obsolete fit badges.
 
-Gate: RB-028–RB-029 semantics/contracts are stable enough that Angular does not invent a second recommendation model.
+Gate: RB-029 opponent semantics/contracts are stable enough that Angular does not invent a second recommendation model.
 
 ## Release condition
 
-The deterministic Builder remains production runtime while V2 is implemented incrementally. RB-027's empirical user-move ranking is now part of that runtime; remaining V2 stages are still incremental work.
+The deterministic Builder remains production runtime while V2 is implemented incrementally. RB-027 empirical user-move ranking and RB-028 factual personal move evidence are now part of that runtime; remaining V2 stages are incremental work.
 
 V2 is ready as the complete new product authority when:
 
 - [x] user-move personas are empirically calibrated and versioned;
-- [ ] exact-position personal familiarity/results replace broad Builder Profile Fit;
+- [x] exact-position personal familiarity/results replace broad Builder Profile Fit;
 - [ ] opponent turns no longer use persona/profile fit and coverage is computed from selection;
 - [ ] normal setup is simplified to one understandable dialog;
 - [ ] the Cockpit communicates the new evidence hierarchy without losing existing state/course behavior.
@@ -123,8 +125,8 @@ Outcome claims remain excluded until RB-016 has sufficient post-V2 evidence.
 ## Queue impact
 
 - RB-027 is complete.
-- RB-028 is active on PR #327.
+- RB-028 is complete on PR #327 with Candidate Decision V4 factual personal evidence.
 - RB-029 is the next unclaimed candidate-policy task.
 - RB-030 follows target-policy compatibility work.
-- RB-031 integrates the settled V2 semantics into the Cockpit.
+- RB-031 integrates the settled V2 semantics into the Cockpit after RB-029.
 - RB-016 remains blocked behind both V2 delivery and real usage.
