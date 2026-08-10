@@ -138,4 +138,30 @@ const engineExplanation = {
 };
 assert.deepEqual(context.reconcile(engineExplanation), engineExplanation);
 
+assert.throws(
+  () => context.reconcile({
+    summary: 'The score is 47%.',
+    tradeoffs: [],
+    evidenceReferenceIds: ['selected.move'],
+    missingEvidenceReferenceId: null,
+  }),
+  (error) => error?.code === 'AI_INVALID_RESPONSE',
+);
+
+const comparison = structuredClone(candidate);
+comparison.rank = 2;
+comparison.moveUci = 'd2d4';
+comparison.moveSan = 'd4';
+comparison.resultingFen = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
+comparison.previewUci = ['d2d4'];
+comparison.evidence.population.frequencyPercent = 12;
+const comparisonContext = buildCandidateExplanationContext(response, candidate, comparison);
+const frequencyComparison = {
+  summary: 'The selected population frequency is higher.',
+  tradeoffs: [],
+  evidenceReferenceIds: ['selected.population_frequency', 'comparison.population_frequency'],
+  missingEvidenceReferenceId: null,
+};
+assert.deepEqual(comparisonContext.reconcile(frequencyComparison), frequencyComparison);
+
 console.log('AI Builder position-relative candidate explanation tests passed.');
