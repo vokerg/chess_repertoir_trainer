@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import {
+  CANDIDATE_DECISION_CONTRACT_VERSION,
+  CANDIDATE_RANKING_POLICY_VERSION,
+} from '@chess-trainer/contracts/candidate-decision';
 import { newCourseRepertoireTargetExample } from '@chess-trainer/contracts/repertoire-target';
 import { AiFeatureError } from '../../dist/modules/ai/ai.errors.js';
 import { createCandidateExplanationService } from '../../dist/modules/ai/repertoire-builder/candidate-explanation/candidate-explanation.service.js';
@@ -6,8 +10,8 @@ import { createCandidateExplanationService } from '../../dist/modules/ai/reperto
 const normalizedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 const target = newCourseRepertoireTargetExample;
 const response = {
-  contractVersion: '2026-08-v2',
-  rankingPolicyVersion: '2026-07-deterministic-v1',
+  contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
+  rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
   generatedAt: '2026-07-30T14:55:00.000Z',
   targetId: target.targetId,
   decisionRole: 'USER_MOVE',
@@ -44,7 +48,7 @@ const request = {
     targetId: target.targetId,
     normalizedFen,
     decisionRole: 'USER_MOVE',
-    rankingPolicyVersion: '2026-07-deterministic-v1',
+    rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
     responseGeneratedAt: response.generatedAt,
     selectedMoveUci: 'e2e4',
     comparisonMoveUci: 'd2d4',
