@@ -283,8 +283,9 @@ function objectiveComponent(
 
 function empiricalPopulationComponent(
   input: CandidateRankingInput,
-  persona: Exclude<CandidateRankingPersona, 'CUSTOM'>,
+  persona: CandidateRankingPersona,
 ): number {
+  if (persona === 'CUSTOM') return 0;
   const frequency = corpusFrequencySignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
   const performance = corpusPerformanceSignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
   if (persona === 'BALANCED') return normalizedPolicyComponent(frequency * 0.35 + performance * 0.30, 0.65);
@@ -298,8 +299,9 @@ function empiricalPopulationComponent(
 
 function empiricalMastersComponent(
   input: CandidateRankingInput,
-  persona: Exclude<CandidateRankingPersona, 'CUSTOM'>,
+  persona: CandidateRankingPersona,
 ): number {
+  if (persona === 'CUSTOM') return 0;
   if (persona !== 'SURPRISE') return masterSupportSignal(input.masters);
   return surpriseQualified(input)
     ? corpusRaritySignal(input.masters, 6, EMPIRICAL_MASTERS_MIN_GAMES)
