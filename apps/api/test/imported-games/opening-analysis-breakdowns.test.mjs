@@ -101,6 +101,12 @@ try {
     assert.equal(filtered.nextMoves[0].gameSharePercent, 100);
     assert.equal(filtered.nextMoves[0].scoreDeltaVsPositionPercent, 0);
     assert.equal(filtered.nextMoves[0].lastPlayedAt, '2026-06-02T12:00:00.000Z');
+    assert.deepEqual(filtered.nextMoves[0].personalContext, {
+      policyVersion: '2026-08-personal-move-v1',
+      familiarity: 'RARE',
+      resultContext: 'INSUFFICIENT',
+      resultSampleQualified: false,
+    });
 
     const allResponse = await app.inject({
       method: 'GET',
@@ -118,6 +124,8 @@ try {
     assert.equal(e4.games.scorePct, 83.3);
     assert.equal(e4.scoreDeltaVsPositionPercent, 20.8);
     assert.equal(e4.lastPlayedAt, '2026-06-03T12:00:00.000Z');
+    assert.equal(e4.personalContext.familiarity, 'RARE');
+    assert.equal(e4.personalContext.resultContext, 'INSUFFICIENT');
 
     const d4 = all.nextMoves.find((move) => move.moveUci === 'd2d4');
     assert.equal(d4.games.total, 1);
@@ -125,6 +133,8 @@ try {
     assert.equal(d4.games.scorePct, 0);
     assert.equal(d4.scoreDeltaVsPositionPercent, -62.5);
     assert.equal(d4.lastPlayedAt, '2026-06-04T12:00:00.000Z');
+    assert.equal(d4.personalContext.familiarity, 'RARE');
+    assert.equal(d4.personalContext.resultContext, 'INSUFFICIENT');
   } finally {
     await app.close();
   }
