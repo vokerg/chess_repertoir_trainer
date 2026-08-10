@@ -67,6 +67,7 @@ const OPENING_KNOWLEDGE_REFERENCE_LIMIT = 12;
 const OPENING_KNOWLEDGE_CONDITION_LIMIT = 4;
 const MIN_ENGINE_DEPTH = 12;
 const MIN_MASTERS_GAMES = 10;
+const EMPIRICAL_USER_POPULATION_MIN_GAMES = 20;
 const MIN_PERSONAL_GAMES = 3;
 const MIN_PROFILE_GAMES = 5;
 
@@ -234,12 +235,16 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         settle(() => playerProfileProvider.get(userId, request.target)),
       ]);
 
+      const populationMinimumGames = request.decisionRole === 'USER_MOVE'
+        && request.target.objective.persona !== 'CUSTOM'
+        ? Math.max(
+            request.target.coverage.minimumPopulationGames,
+            EMPIRICAL_USER_POPULATION_MIN_GAMES,
+          )
+        : request.target.coverage.minimumPopulationGames;
       const engineStatus = engineSourceStatus(engineResult);
       const mastersStatus = explorerSourceStatus(mastersResult, MIN_MASTERS_GAMES);
-      const populationStatus = explorerSourceStatus(
-        populationResult,
-        request.target.coverage.minimumPopulationGames,
-      );
+      const populationStatus = explorerSourceStatus(populationResult, populationMinimumGames);
       const personalStatus = personalSourceStatus(personalResult);
       const coursesStatus = courseSourceStatus(coursesResult);
       const profileStatus = profileSourceStatus(profileResult);
@@ -335,7 +340,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
             population,
             populationStatus,
             request.target.side,
-            request.target.coverage.minimumPopulationGames,
+            populationMinimumGames,
           ),
           personal: personalEvidence(personalMove, personalStatus),
           opening,
