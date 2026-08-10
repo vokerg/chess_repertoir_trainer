@@ -16,6 +16,7 @@ import {
   createBuilderSession,
   deferBuilderBranch,
   ignoreBuilderBranch,
+  isOpponentPreparationRecommended,
   reopenBuilderBranch,
   reorderBuilderQueue,
   restartStaleBuilderBranch,
@@ -183,17 +184,20 @@ export class RepertoireBuilderStore implements OnDestroy {
   readonly decisionLimitReached = computed(
     () => this.acceptedDecisionCount() >= REPERTOIRE_BUILDER_DECISION_LIMIT,
   );
-  readonly selectedCoveragePercent = computed(() => {
+  readonly selectedCoveragePercent = computed<number | null>(() => {
     const selected = new Set(this.selectedResponseUcisState());
-    const total =
-      this.candidateResponseState()?.candidates.reduce(
-        (sum, candidate) =>
-          selected.has(candidate.moveUci)
-            ? sum + (candidate.coverage?.contributionPercent ?? 0)
-            : sum,
-        0,
-      ) ?? 0;
-    return Math.min(100, Math.round(total * 10) / 10);
+    if (selected.size === 0) return 0;
+
+    let total = 0;
+    let hasCoverageEvidence = false;
+    for (const candidate of this.candidateResponseState()?.candidates ?? []) {
+      if (!selected.has(candidate.moveUci)) continue;
+      const contribution = candidate.coverage?.contributionPercent;
+      if (contribution === null || contribution === undefined) continue;
+      hasCoverageEvidence = true;
+      total += contribution;
+    }
+    return hasCoverageEvidence ? Math.min(100, Math.round(total * 10) / 10) : null;
   });
   readonly coverageTargetPercent = computed(
     () => this.sessionState()?.targetSnapshot.value.coverage.opponentResponseCoveragePercent ?? 0,
@@ -525,6 +529,13 @@ export class RepertoireBuilderStore implements OnDestroy {
       if (currentRequest !== this.candidateRequestId || this.activeBranchIdState() !== branch.id)
         return;
       this.candidateResponseState.set(response);
+      this.selectedResponseUcisState.set(
+        branch.role === 'OPPONENT_RESPONSE'
+          ? response.candidates
+              .filter((candidate) => isOpponentPreparationRecommended(candidate.reasonCodes))
+              .map((candidate) => candidate.moveUci)
+          : [],
+      );
       this.previewMoveUciState.set(
         includeMoveUci &&
           response.candidates.some((candidate) => candidate.moveUci === includeMoveUci)
