@@ -166,6 +166,32 @@ assert.equal(candidateDecisionResponseSchema.safeParse({
   ...response,
   candidates: [{
     ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      population: {
+        ...unavailableCorpus,
+        positionBaselineScorePercentForTarget: undefined,
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      population: {
+        ...unavailableCorpus,
+        scoreDeltaVsPositionPercent: undefined,
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
     components: { ...response.candidates[0].components, objective: 101 },
   }],
 }).success, false);
