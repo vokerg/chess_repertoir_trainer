@@ -65,7 +65,7 @@ function responseFixture(
     normalizedFen:
       role === 'USER_MOVE'
         ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -'
-        : 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKQkq -',
+        : 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -',
     sideToMove: role === 'USER_MOVE' ? 'WHITE' : 'BLACK',
     legalMoveCount: 20,
     returnedCandidateCount: candidates.length,
