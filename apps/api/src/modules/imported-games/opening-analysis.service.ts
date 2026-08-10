@@ -35,7 +35,7 @@ export interface OpeningAnalysisNextMove {
   occurrences: number;
   games: OpeningAnalysisWdl;
   gameCount: number;
-  gameSharePercent: number | null;
+  moveSharePercent: number | null;
   scoreDeltaVsPositionPercent: number | null;
   lastPlayedAt: string | null;
   personalContext: PersonalMoveEvidenceClassification;
@@ -275,7 +275,6 @@ export const OpeningAnalysisService = {
 
     const positionWdl = emptyWdl();
     for (const result of summary.gameResults) addResult(positionWdl, result.resultForUser, result._count._all);
-    const positionGameCount = summary.gameResults.reduce((sum, result) => sum + result._count._all, 0);
 
     const occurrencesByMove = new Map<string, { occurrences: number; firstPlyNumber: number }>();
     for (const row of moves.occurrences) {
@@ -308,7 +307,7 @@ export const OpeningAnalysisService = {
         const details = playUci(resolved.fen, moveUci);
         const games = gamesByMove.get(moveUci) ?? emptyWdl();
         const gameCount = gameCountByMove.get(moveUci) ?? 0;
-        const gameSharePercent = percentage(gameCount, positionGameCount);
+        const moveSharePercent = percentage(count.occurrences, summary.occurrences);
         const scoreDeltaVsPositionPercent = scoreDelta(games.scorePct, positionWdl.scorePct);
         return {
           moveUci,
@@ -319,13 +318,13 @@ export const OpeningAnalysisService = {
           occurrences: count.occurrences,
           games,
           gameCount,
-          gameSharePercent,
+          moveSharePercent,
           scoreDeltaVsPositionPercent,
           lastPlayedAt: lastPlayedAtByMove.get(moveUci)?.toISOString() ?? null,
           personalContext: classifyPersonalMoveEvidence({
             games: gameCount,
             resultGames: games.total,
-            gameSharePercent,
+            moveSharePercent,
             scoreDeltaVsPositionPercent,
           }),
         };
