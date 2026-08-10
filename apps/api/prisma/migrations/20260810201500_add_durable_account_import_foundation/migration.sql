@@ -40,7 +40,6 @@ ALTER TABLE "ImportRun"
 ALTER COLUMN "createdAt" SET NOT NULL,
 ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP,
 ALTER COLUMN "updatedAt" SET NOT NULL,
-ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP,
 ALTER COLUMN "startedAt" DROP NOT NULL;
 
 ALTER TABLE "ImportRun"
@@ -150,7 +149,7 @@ CREATE TABLE "AccountImportCoverage" (
   "coveredThrough" TIMESTAMP(3),
   "lastCompletedImportRunId" INTEGER,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
 
   CONSTRAINT "AccountImportCoverage_pkey" PRIMARY KEY ("id"),
   CONSTRAINT "AccountImportCoverage_scopeVersion_check" CHECK ("scopeVersion" > 0),
