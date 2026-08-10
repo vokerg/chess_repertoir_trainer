@@ -1,6 +1,6 @@
 # Repertoire Builder Open Questions
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 Open questions are not decisions. Resolve them in the assigned task and update `DECISIONS.md` when a product decision becomes locked, revised, or rejected.
 
@@ -24,27 +24,26 @@ The following remain settled and are not reopened by Builder V2:
 
 ## Builder V2 user-move ranking — RB-027 / #317
 
-### Locked direction
+Status: resolved by RB-027. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`.
+
+### Locked implementation policy
 
 - Balanced/Solid/Aggressive/Surprise apply only to the repertoire side's move.
-- Peer-vs-Masters evidence is the main empirical comparison; engine evidence is the objective guardrail.
-- Opening classification/knowledge are secondary explanation, not the persona cornerstone.
-- Broad Player Chess Profile fit is not a V2 ranking authority.
-- Surprise is an uncommon viable practical outlier, not a static opening label.
+- Selected-population and Masters performance are evaluated against the exact-position target-side baseline rather than a fixed 50% score.
+- Preset ranking authority is selected-population, Masters, and bounded objective evidence; opening classification/knowledge, Player Chess Profile fit, personal history, and existing-course coverage remain inspectable context rather than preset-persona rank authority.
+- Empirical preset population evidence requires at least 20 games; Masters evidence requires at least 10 games.
+- Surprise is an uncommon viable practical outlier. Its rarity signal is gated until selected-population performance exceeds the position baseline by at least 3 percentage points.
+- Bounded Surprise discovery uses the existing wider selected-population seed payload while keeping the final public candidate list bounded.
+- Stored objective evidence is authoritative only for legal, internally consistent roots with depth at least 12 and a score/mate value. Illegal, contradictory-root/PV, duplicate-later, shallow, or unscored lines cannot poison the objective baseline.
+- Numeric weights and objective-loss guardrails are versioned implementation policy, recorded in the closure report and ranking tests.
+- Manually requested legal candidates use the same deterministic ranking policy and retain their true rank.
+- Generated AI explanation remains explanation-only and may not rank, mutate eligibility, Builder state, or course data.
 
-### Questions to resolve
+### Future calibration, not an RB-027 blocker
 
-- What representative benchmark positions best expose the difference between all four personas?
-- What exact target-population baseline should be used for move overperformance?
-- What statistical shrinkage/minimum sample is sufficient before a rare move can be called an overperformer?
-- How should Master frequency and score be combined without simply copying Master fashion?
-- What objective-cost bands distinguish Solid, Balanced, Aggressive, and Surprise?
-- Can current stored MultiPV evidence safely evaluate uncommon Surprise candidates, or is bounded candidate-specific evaluation required?
-- Does the current candidate seed union hide useful rare moves before ranking sees them?
-- How many final visible candidates are enough after the seed strategy changes?
-- What policy-version migration/display behavior is required for old Builder snapshots?
+Representative production usage may justify changing weights, sample floors, overperformance thresholds, engine depth requirements, or objective guardrails. Such changes require an explicit new ranking-policy version and evidence-backed task; they are not open implementation questions for RB-027.
 
-Owner: RB-027 / #317.
+Owner: future versioned calibration work if production evidence warrants it.
 
 ## Personal move familiarity and performance — RB-028 / #318
 
@@ -167,7 +166,7 @@ No RB-027–RB-031 task may silently turn Surprise into traps integration.
 
 ## Outcome feedback — RB-016 / #104
 
-RB-016 remains blocked. Its evidence cohort should be post-V2 so it does not measure the superseded current persona/profile/coverage semantics as the long-term product model.
+RB-016 remains blocked. Its evidence cohort should be post-V2 so it does not measure superseded persona/profile/coverage semantics as the long-term product model.
 
 Questions remain:
 
