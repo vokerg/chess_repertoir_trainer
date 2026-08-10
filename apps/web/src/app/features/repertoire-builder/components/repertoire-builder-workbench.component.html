@@ -438,6 +438,14 @@
               <small>
                 This is the share of target-population games represented by the replies you selected, where population evidence is available. It is not theoretical completeness. Each accepted response becomes its own continuation branch.
               </small>
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="loading() || !response()"
+                (click)="useRecommendedResponses()"
+              >
+                Use recommended set
+              </button>
             </div>
           }
 
