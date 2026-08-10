@@ -12,16 +12,16 @@ import {
   type RepertoireTargetPopulationRequest,
   type RepertoireTargetStartingPoint,
 } from '@chess-trainer/contracts/repertoire-target';
-import type {
-  RepertoireBuilderPersonaPreset,
-  RepertoireBuilderProfileDefaults,
-  RepertoireBuilderSetup,
+import {
+  REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
+  REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+  type RepertoireBuilderPersonaPreset,
+  type RepertoireBuilderProfileDefaults,
+  type RepertoireBuilderSetup,
 } from '../state/repertoire-builder.models';
 
 const PERSONA_PRESET_VERSION = '2026-08-builder-v2';
 const SYSTEM_DEFAULT_VERSION = '2026-08-builder-v2';
-const COMPATIBILITY_THEORY_BURDEN = 'MEDIUM' as const;
-const COMPATIBILITY_COVERAGE_PERCENT = 80;
 
 export const repertoireBuilderPersonaPresets: readonly RepertoireBuilderPersonaPreset[] = [
   {
@@ -55,8 +55,8 @@ export function defaultRepertoireBuilderSetup(): RepertoireBuilderSetup {
     ratingTarget: 'MY_PEERS_PLUS_ONE',
     ratingGroup: null,
     persona: 'BALANCED',
-    maximumTheoryBurden: COMPATIBILITY_THEORY_BURDEN,
-    coveragePercent: COMPATIBILITY_COVERAGE_PERCENT,
+    maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+    coveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
   };
 }
 
@@ -185,7 +185,7 @@ function objectiveForPersona(
         minimumSoundness: 'PLAYABLE',
         riskTolerance: 'MEDIUM',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden: COMPATIBILITY_THEORY_BURDEN,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'MEDIUM',
       };
     case 'SOLID':
@@ -195,7 +195,7 @@ function objectiveForPersona(
         minimumSoundness: 'SOUND',
         riskTolerance: 'LOW',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden: COMPATIBILITY_THEORY_BURDEN,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'LOW',
       };
     case 'AGGRESSIVE':
@@ -205,7 +205,7 @@ function objectiveForPersona(
         minimumSoundness: 'PLAYABLE',
         riskTolerance: 'HIGH',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden: COMPATIBILITY_THEORY_BURDEN,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'HIGH',
       };
     case 'SURPRISE':
@@ -215,7 +215,7 @@ function objectiveForPersona(
         minimumSoundness: 'RISKY',
         riskTolerance: 'HIGH',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden: COMPATIBILITY_THEORY_BURDEN,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'HIGH',
       };
   }
@@ -223,7 +223,7 @@ function objectiveForPersona(
 
 function compatibilityCoverage(): RepertoireTargetCoverage {
   return {
-    opponentResponseCoveragePercent: COMPATIBILITY_COVERAGE_PERCENT,
+    opponentResponseCoveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
     alwaysCoverPersonalResponseCount: 4,
     minimumPopulationGames: 20,
   };
