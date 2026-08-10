@@ -41,6 +41,7 @@ import {
   OpeningAnalysisService,
   type OpeningAnalysisCoreResponse,
 } from '../imported-games/opening-analysis.service';
+import { classifyPersonalMoveEvidence } from '../imported-games/personal-move-evidence';
 import {
   createLichessGamesExplorerService,
   LichessGamesExplorerUnavailableError,
@@ -337,7 +338,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
             request.target.side,
             populationMinimumGames,
           ),
-          personal: personalEvidence(personalMove, personalStatus),
+          personal: personalEvidence(personalMove, personal, personalStatus, request.target),
           opening,
           course,
           playerProfile: profile,
@@ -645,17 +646,71 @@ function corpusPositionScorePercent(response: OpeningExplorerResponse, targetSid
 
 function personalEvidence(
   move: OpeningAnalysisCoreResponse['nextMoves'][number] | null,
+  response: OpeningAnalysisCoreResponse | null,
   sourceStatus: CandidateEvidenceStatus,
+  target: RepertoireTarget,
 ): CandidatePersonalEvidence {
-  if (sourceStatus === 'UNAVAILABLE') {
-    return { status: 'UNAVAILABLE', occurrences: 0, games: 0, scorePercent: null };
+  const filterContext: CandidatePersonalEvidence['filterContext'] = {
+    accountScope: target.accountIds.length ? 'SELECTED_ACCOUNTS' : 'ALL_USER_ACCOUNTS',
+    accountIds: [...target.accountIds],
+    side: target.side,
+    rated: true,
+    speedCategories: personalSpeeds(target.speedPreset),
+    historyWindow: 'ALL_INDEXED',
+  };
+
+  if (!response || sourceStatus === 'UNAVAILABLE') {
+    return {
+      status: 'UNAVAILABLE',
+      occurrences: 0,
+      games: 0,
+      gameCount: 0,
+      moveSharePercent: null,
+      scorePercent: null,
+      scoreDeltaVsPositionPercent: null,
+      lastPlayedAt: null,
+      policyVersion: null,
+      familiarity: null,
+      resultContext: null,
+      resultSampleQualified: false,
+      filterContext,
+    };
   }
-  if (!move) return { status: 'INSUFFICIENT', occurrences: 0, games: 0, scorePercent: null };
+
+  const occurrences = move?.occurrences ?? 0;
+  const games = move?.games.total ?? 0;
+  const gameCount = move?.gameCount ?? games;
+  const moveSharePercent = move
+    ? move.moveSharePercent ?? percentage(occurrences, response.occurrences)
+    : response.occurrences > 0 ? 0 : null;
+  const scorePercent = move?.games.scorePct ?? null;
+  const scoreDeltaVsPositionPercent = move
+    ? move.scoreDeltaVsPositionPercent
+      ?? (scorePercent === null || response.games.scorePct === null
+        ? null
+        : roundMetric(scorePercent - response.games.scorePct))
+    : null;
+  const classification = move?.personalContext ?? classifyPersonalMoveEvidence({
+    games: gameCount,
+    resultGames: games,
+    moveSharePercent,
+    scoreDeltaVsPositionPercent,
+  });
+
   return {
-    status: move.games.total >= MIN_PERSONAL_GAMES ? 'AVAILABLE' : 'INSUFFICIENT',
-    occurrences: move.occurrences,
-    games: move.games.total,
-    scorePercent: move.games.scorePct,
+    status: move && games >= MIN_PERSONAL_GAMES ? 'AVAILABLE' : 'INSUFFICIENT',
+    occurrences,
+    games,
+    gameCount,
+    moveSharePercent,
+    scorePercent,
+    scoreDeltaVsPositionPercent,
+    lastPlayedAt: move?.lastPlayedAt ?? null,
+    policyVersion: classification.policyVersion,
+    familiarity: classification.familiarity,
+    resultContext: classification.resultContext,
+    resultSampleQualified: classification.resultSampleQualified,
+    filterContext,
   };
 }
 

@@ -1,6 +1,6 @@
 # RB-028 — Factual personal move evidence
 
-Status: READY
+Status: DONE
 
 Priority: P1
 
@@ -8,17 +8,17 @@ Order: 210
 
 Delivery class: Dual-use evidence and Builder presentation
 
-Planning maturity: Agreed
+Planning maturity: Implemented and validated; thresholds are versioned factual-presentation policy
 
 GitHub issue: #318
 
-Claimed by: unclaimed
+Claimed by: vokerg
 
-Claim branch: none
+Claim branch: `rb-028/factual-personal-move-evidence`
 
-Claimed at: none
+Claimed at: 2026-08-09
 
-Claim scope: none
+Claim scope: exact-position personal familiarity/result evidence, Candidate Decision transport and Builder presentation
 
 ## Objective
 
@@ -28,31 +28,39 @@ The standalone Player Chess Profile remains independent. Builder familiarity is 
 
 ## Target semantics
 
-Candidate evidence should support concise factual states such as:
+Candidate evidence supports concise factual states such as:
 
 - `Common for you`;
 - `Rare for you`;
 - `New to you`;
-- `Common for you · results below your baseline`, only with sufficient evidence.
+- `Common for you · results below position baseline`, only with sufficient evidence.
 
-Underlying evidence should retain games/occurrences, exact-position share where available, score, last-played date, filters and a position-relative performance comparison.
+Underlying evidence retains games/occurrences, exact-position move share, score, last-played date, effective filters and a position-relative performance comparison.
 
 ## Period rule
 
-Use all eligible indexed history for familiarity. Older games are relevant to whether the user knows a move. Recency is shown separately as a fact rather than enforced through the Player Chess Profile's default three-month window.
+All eligible indexed history is used for familiarity. Older games remain relevant to whether the user knows a move. Recency is shown separately as a fact rather than enforced through the Player Chess Profile's default three-month window.
 
 ## Ranking boundary
 
-Personal move evidence is primarily informational in Builder V2. It must not overpower the peer/Masters/engine persona policy merely because an old habit is frequent. Any retained ranking influence requires explicit evidence and separate reasons; the default direction is no persona-ranking authority.
+Personal move evidence is primarily informational in Builder V2. The new all-history/context fields do not enter the Candidate Ranking personal input. Existing legacy personal ranking inputs remain unchanged for policies that still consume them; empirical preset `USER_MOVE` persona authority remains the RB-027 peer/Masters/engine policy.
+
+## Delivered policy
+
+- `COMMON`: at least 5 distinct indexed games and at least 20% of move choices from the exact position.
+- `RARE`: previously played but below the common threshold.
+- `NEW`: no indexed game with the candidate move when the personal source loaded successfully.
+- result context requires at least 10 games with known W/D/L results and a +/-5 percentage-point delta versus the exact-position result baseline.
+- result qualification is independent from familiarity, so result-less indexed games can establish familiarity without manufacturing result confidence.
 
 ## In scope
 
-- inspect/reuse opening-analysis and imported-game aggregation patterns;
-- add bounded aggregate fields needed for exact-position frequency/share, results and last-played evidence;
-- define statistically safe common/rare/new and result-context labels;
-- remove primary Player Chess Profile fit presentation from Builder candidate decisions;
-- preserve inspectable source/filter/sample details;
-- web/API/contract tests.
+- reused opening-analysis and imported-game aggregation patterns;
+- added bounded aggregate fields for exact-position frequency/share, results and last-played evidence;
+- added statistically guarded common/rare/new and result-context labels;
+- removed primary Player Chess Profile fit presentation from Builder candidate decisions;
+- preserved inspectable source/filter/sample details;
+- added web/API/contract coverage.
 
 ## Out of scope
 
@@ -63,21 +71,21 @@ Personal move evidence is primarily informational in Builder V2. It must not ove
 
 ## Dependencies
 
-Can proceed beside RB-027 with contract coordination. RB-031 consumes the final presentation model.
+RB-027 is complete and Candidate Decision V4 now carries the final personal-evidence presentation model. RB-031 can consume this settled user-move evidence hierarchy after RB-029 opponent semantics stabilize.
 
 ## Acceptance criteria
 
-- old but familiar moves remain recognized;
-- rare and never-played candidates are distinguishable;
-- supported good/poor results are compared with an appropriate position baseline, not fixed 50%;
-- sparse samples do not receive strong good/bad labels;
-- last-played evidence is available where dates exist;
-- Player Chess Profile fit is no longer presented as direct move familiarity;
-- repository aggregation remains bounded and user-owned;
-- focused tests cover old-but-familiar, rare, new, sparse and below-baseline cases.
+- [x] old but familiar moves remain recognized;
+- [x] rare and never-played candidates are distinguishable;
+- [x] supported good/poor results are compared with an appropriate position baseline, not fixed 50%;
+- [x] sparse samples do not receive strong good/bad labels;
+- [x] last-played evidence is available where dates exist;
+- [x] Player Chess Profile fit is no longer presented as direct move familiarity;
+- [x] repository aggregation remains bounded and user-owned;
+- [x] focused tests cover old-but-familiar, rare, new, sparse and below-baseline cases.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-028-2026-08-10-personal-move-evidence-closure.md`
 
-Completed at: none
+Completed at: 2026-08-10

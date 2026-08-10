@@ -132,12 +132,7 @@
                       <span class="fit-chip" [attr.data-status]="candidate.targetFit.status">
                         Target {{ statusLabel(candidate.targetFit.status) }}
                       </span>
-                      <span
-                        class="fit-chip profile-fit"
-                        [attr.data-status]="candidate.profileFit.status"
-                      >
-                        Profile {{ statusLabel(candidate.profileFit.status) }}
-                      </span>
+                      <span class="fit-chip">{{ personalEvidenceLabel(candidate) }}</span>
                     </span>
                   </button>
 
@@ -222,7 +217,7 @@
 
           <section class="brief-section" aria-labelledby="fit-title">
             <div class="section-heading">
-              <h3 id="fit-title">Fit for this repertoire</h3>
+              <h3 id="fit-title">Repertoire context</h3>
             </div>
             <div class="fit-comparison">
               <div>
@@ -233,11 +228,9 @@
                 <small>The repertoire intent you chose.</small>
               </div>
               <div>
-                <span>Profile fit</span>
-                <strong [attr.data-fit-status]="candidate.profileFit.status">
-                  {{ statusLabel(candidate.profileFit.status) }}
-                </strong>
-                <small>Your observed playing preferences.</small>
+                <span>Your games</span>
+                <strong>{{ personalEvidenceLabel(candidate) }}</strong>
+                <small>{{ personalEvidenceDetail(candidate) }}</small>
               </div>
             </div>
           </section>

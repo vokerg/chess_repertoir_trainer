@@ -33,10 +33,10 @@ try {
   });
 
   const openings = [
-    { eco: 'C20', name: "King's Pawn Game", result: 'WIN' },
-    { eco: 'C21', name: "King's Pawn Game", result: 'DRAW' },
-    { eco: 'C20', name: "King's Pawn Game: Leonardis Variation", result: 'WIN' },
-    { eco: 'B01', name: 'Scandinavian Defense', result: 'LOSS' },
+    { eco: 'C20', name: "King's Pawn Game", result: 'WIN', endedAt: '2024-01-01T12:00:00.000Z' },
+    { eco: 'C21', name: "King's Pawn Game", result: 'DRAW', endedAt: '2024-01-02T12:00:00.000Z' },
+    { eco: 'C20', name: "King's Pawn Game: Leonardis Variation", result: 'WIN', endedAt: '2024-01-03T12:00:00.000Z' },
+    { eco: 'B01', name: 'Scandinavian Defense', result: 'LOSS', endedAt: '2026-06-04T12:00:00.000Z' },
   ];
 
   for (const [index, opening] of openings.entries()) {
@@ -53,7 +53,7 @@ try {
         resultForUser: opening.result,
         openingEco: opening.eco,
         openingName: opening.name,
-        endedAt: new Date(`2026-06-0${index + 1}T12:00:00.000Z`),
+        endedAt: new Date(opening.endedAt),
       },
     });
 
@@ -94,7 +94,113 @@ try {
       url: '/api/opening-analysis?fen=startpos&rated=true&speedCategory=blitz&openingNameExact=King%27s%20Pawn%20Game&openingName=King%27s%20Pawn%20Game',
     });
     assert.equal(filteredResponse.statusCode, 200);
-    assert.equal(filteredResponse.json().games.total, 2);
+    const filtered = filteredResponse.json();
+    assert.equal(filtered.games.total, 2);
+    assert.equal(filtered.nextMoves.length, 1);
+    assert.equal(filtered.nextMoves[0].moveUci, 'e2e4');
+    assert.equal(filtered.nextMoves[0].gameCount, 2);
+    assert.equal(filtered.nextMoves[0].moveSharePercent, 100);
+    assert.equal(filtered.nextMoves[0].scoreDeltaVsPositionPercent, 0);
+    assert.equal(filtered.nextMoves[0].lastPlayedAt, '2024-01-02T12:00:00.000Z');
+    assert.deepEqual(filtered.nextMoves[0].personalContext, {
+      policyVersion: '2026-08-personal-move-v1',
+      familiarity: 'RARE',
+      resultContext: 'INSUFFICIENT',
+      resultSampleQualified: false,
+    });
+
+    const resultLessGame = await prisma.importedGame.create({
+      data: {
+        userId: devUser.id,
+        accountId,
+        provider: 'LICHESS',
+        providerGameId: `opening-breakdown-result-less-${suffix}`,
+        rated: true,
+        variant: 'standard',
+        speedCategory: 'blitz',
+        userColor: 'WHITE',
+        resultForUser: null,
+        openingEco: 'C20',
+        openingName: "King's Pawn Game: Result-less Fixture",
+        endedAt: new Date('2024-01-05T12:00:00.000Z'),
+      },
+    });
+    await prisma.importedGamePly.createMany({
+      data: [
+        {
+          importedGameId: resultLessGame.id,
+          positionId: position.id,
+          plyNumber: 1,
+          moveUci: 'e2e4',
+        },
+        {
+          importedGameId: resultLessGame.id,
+          positionId: position.id,
+          plyNumber: 3,
+          moveUci: 'd2d4',
+        },
+      ],
+    });
+
+    const oldFamiliarityGame = await prisma.importedGame.create({
+      data: {
+        userId: devUser.id,
+        accountId,
+        provider: 'LICHESS',
+        providerGameId: `opening-breakdown-old-familiarity-${suffix}`,
+        rated: true,
+        variant: 'standard',
+        speedCategory: 'blitz',
+        userColor: 'WHITE',
+        resultForUser: 'DRAW',
+        openingEco: 'C20',
+        openingName: "King's Pawn Game: Old Familiarity Fixture",
+        endedAt: new Date('2024-01-04T12:00:00.000Z'),
+      },
+    });
+    await prisma.importedGamePly.create({
+      data: {
+        importedGameId: oldFamiliarityGame.id,
+        positionId: position.id,
+        plyNumber: 1,
+        moveUci: 'e2e4',
+      },
+    });
+
+    const allResponse = await app.inject({
+      method: 'GET',
+      url: '/api/opening-analysis?fen=startpos&rated=true&speedCategory=blitz',
+    });
+    assert.equal(allResponse.statusCode, 200);
+    const all = allResponse.json();
+    assert.equal(all.games.total, 5, 'Legacy W/D/L total remains result-qualified.');
+    assert.equal(all.games.scorePct, 60);
+    assert.equal(all.occurrences, 7);
+    assert.equal(all.nextMoves.length, 2);
+
+    const e4 = all.nextMoves.find((move) => move.moveUci === 'e2e4');
+    assert.equal(e4.games.total, 4, 'Result-qualified sample remains separate from familiarity.');
+    assert.equal(e4.gameCount, 5, 'Result-less indexed games still count as personal history.');
+    assert.equal(e4.occurrences, 5);
+    assert.equal(e4.moveSharePercent, 71.4);
+    assert.equal(e4.games.scorePct, 75);
+    assert.equal(e4.scoreDeltaVsPositionPercent, 15);
+    assert.equal(e4.lastPlayedAt, '2024-01-05T12:00:00.000Z');
+    assert.equal(e4.personalContext.familiarity, 'COMMON', 'Old indexed history must remain familiar.');
+    assert.equal(e4.personalContext.resultContext, 'INSUFFICIENT');
+    assert.equal(e4.personalContext.resultSampleQualified, false);
+
+    const d4 = all.nextMoves.find((move) => move.moveUci === 'd2d4');
+    assert.equal(d4.games.total, 1);
+    assert.equal(d4.gameCount, 2, 'One repeated-position game may contribute to more than one move.');
+    assert.equal(d4.occurrences, 2);
+    assert.equal(d4.moveSharePercent, 28.6);
+    assert.equal(d4.games.scorePct, 0);
+    assert.equal(d4.scoreDeltaVsPositionPercent, -60);
+    assert.equal(d4.lastPlayedAt, '2026-06-04T12:00:00.000Z');
+    assert.equal(d4.personalContext.familiarity, 'RARE');
+    assert.equal(d4.personalContext.resultContext, 'INSUFFICIENT');
+    assert.equal(e4.moveSharePercent + d4.moveSharePercent, 100);
   } finally {
     await app.close();
   }

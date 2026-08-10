@@ -13,6 +13,10 @@ import {
 } from './opening-analysis.repository.prisma';
 import { summarizeGamePerformance } from './performance-insights.service';
 import { GamePerformanceSummary } from './performance-insights.types';
+import {
+  classifyPersonalMoveEvidence,
+  type PersonalMoveEvidenceClassification,
+} from './personal-move-evidence';
 
 export interface OpeningAnalysisWdl {
   total: number;
@@ -30,6 +34,11 @@ export interface OpeningAnalysisNextMove {
   moveNumber: number;
   occurrences: number;
   games: OpeningAnalysisWdl;
+  gameCount: number;
+  moveSharePercent: number | null;
+  scoreDeltaVsPositionPercent: number | null;
+  lastPlayedAt: string | null;
+  personalContext: PersonalMoveEvidenceClassification;
 }
 
 export interface OpeningAnalysisGame {
@@ -160,6 +169,14 @@ function addResult(wdl: OpeningAnalysisWdl, result: string | null, count = 1) {
   wdl.scorePct = Math.round(((wdl.wins + wdl.draws * 0.5) / wdl.total) * 1000) / 10;
 }
 
+function percentage(value: number, total: number): number | null {
+  return total > 0 ? Math.round((value / total) * 1000) / 10 : null;
+}
+
+function scoreDelta(score: number | null, baseline: number | null): number | null {
+  return score === null || baseline === null ? null : Math.round((score - baseline) * 10) / 10;
+}
+
 function toAppliedFilters(query: OpeningAnalysisQuery, normalizedFen: string) {
   return {
     ...query,
@@ -269,15 +286,29 @@ export const OpeningAnalysisService = {
     }
 
     const gamesByMove = new Map<string, OpeningAnalysisWdl>();
+    const gameCountByMove = new Map<string, number>();
+    const lastPlayedAtByMove = new Map<string, Date>();
     for (const row of moves.distinctGames) {
+      gameCountByMove.set(row.moveUci, (gameCountByMove.get(row.moveUci) ?? 0) + 1);
+
       const wdl = gamesByMove.get(row.moveUci) ?? emptyWdl();
       addResult(wdl, row.importedGame.resultForUser);
       gamesByMove.set(row.moveUci, wdl);
+
+      const endedAt = row.importedGame.endedAt;
+      const previous = lastPlayedAtByMove.get(row.moveUci);
+      if (endedAt && (!previous || endedAt > previous)) {
+        lastPlayedAtByMove.set(row.moveUci, endedAt);
+      }
     }
 
     const nextMoves = Array.from(occurrencesByMove.entries())
       .map(([moveUci, count]) => {
         const details = playUci(resolved.fen, moveUci);
+        const games = gamesByMove.get(moveUci) ?? emptyWdl();
+        const gameCount = gameCountByMove.get(moveUci) ?? 0;
+        const moveSharePercent = percentage(count.occurrences, summary.occurrences);
+        const scoreDeltaVsPositionPercent = scoreDelta(games.scorePct, positionWdl.scorePct);
         return {
           moveUci,
           moveSan: details.moveSan,
@@ -285,7 +316,17 @@ export const OpeningAnalysisService = {
           side: sideToMove(resolved.fen),
           moveNumber: moveNumberFromPly(count.firstPlyNumber),
           occurrences: count.occurrences,
-          games: gamesByMove.get(moveUci) ?? emptyWdl(),
+          games,
+          gameCount,
+          moveSharePercent,
+          scoreDeltaVsPositionPercent,
+          lastPlayedAt: lastPlayedAtByMove.get(moveUci)?.toISOString() ?? null,
+          personalContext: classifyPersonalMoveEvidence({
+            games: gameCount,
+            resultGames: games.total,
+            moveSharePercent,
+            scoreDeltaVsPositionPercent,
+          }),
         };
       })
       .sort((a, b) => b.games.total - a.games.total || b.occurrences - a.occurrences || (a.moveSan ?? '').localeCompare(b.moveSan ?? '') || a.moveUci.localeCompare(b.moveUci));

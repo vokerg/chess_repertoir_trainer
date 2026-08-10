@@ -33,6 +33,29 @@ const unavailableCorpus = {
   representativeGameId: null,
 };
 
+const newPersonalEvidence = {
+  status: 'INSUFFICIENT',
+  occurrences: 0,
+  games: 0,
+  gameCount: 0,
+  moveSharePercent: null,
+  scorePercent: null,
+  scoreDeltaVsPositionPercent: null,
+  lastPlayedAt: null,
+  policyVersion: '2026-08-personal-move-v1',
+  familiarity: 'NEW',
+  resultContext: 'INSUFFICIENT',
+  resultSampleQualified: false,
+  filterContext: {
+    accountScope: 'ALL_USER_ACCOUNTS',
+    accountIds: [],
+    side: 'WHITE',
+    rated: true,
+    speedCategories: ['bullet', 'blitz', 'rapid'],
+    historyWindow: 'ALL_INDEXED',
+  },
+};
+
 const response = {
   contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
   rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
@@ -99,12 +122,7 @@ const response = {
       },
       masters: unavailableCorpus,
       population: unavailableCorpus,
-      personal: {
-        status: 'INSUFFICIENT',
-        occurrences: 0,
-        games: 0,
-        scorePercent: null,
-      },
+      personal: newPersonalEvidence,
       opening: {
         status: 'AVAILABLE',
         opening: { eco: 'B00', name: "King's Pawn Game" },
@@ -157,8 +175,10 @@ const response = {
 };
 
 assert.deepEqual(candidateDecisionResponseSchema.parse(response), response);
-assert.equal(CANDIDATE_DECISION_CONTRACT_VERSION, '2026-08-v3');
+assert.equal(CANDIDATE_DECISION_CONTRACT_VERSION, '2026-08-v4');
 assert.equal(CANDIDATE_RANKING_POLICY_VERSION, '2026-08-empirical-persona-v2');
+assert.equal(response.candidates[0].evidence.personal.familiarity, 'NEW');
+assert.equal(response.candidates[0].evidence.personal.filterContext.historyWindow, 'ALL_INDEXED');
 assert.equal(response.candidates[0].evidence.population.positionBaselineScorePercentForTarget, null);
 assert.equal(response.candidates[0].evidence.population.scoreDeltaVsPositionPercent, null);
 assert.equal('total' in response.candidates[0].components, false);
@@ -184,6 +204,34 @@ assert.equal(candidateDecisionResponseSchema.safeParse({
       population: {
         ...unavailableCorpus,
         scoreDeltaVsPositionPercent: undefined,
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      personal: {
+        ...newPersonalEvidence,
+        familiarity: undefined,
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      personal: {
+        ...newPersonalEvidence,
+        games: 2,
+        gameCount: 1,
+        familiarity: 'RARE',
       },
     },
   }],

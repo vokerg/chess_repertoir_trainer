@@ -52,6 +52,7 @@ export interface OpeningNextMoveGameRow {
   importedGameId: number;
   importedGame: {
     resultForUser: string | null;
+    endedAt: Date | null;
   };
 }
 
@@ -129,6 +130,7 @@ export async function findOpeningNextMoves(
         importedGame: {
           select: {
             resultForUser: true,
+            endedAt: true,
           },
         },
       },

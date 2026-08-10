@@ -7,6 +7,8 @@ import {
 import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
+  personalEvidenceDetail,
+  personalEvidenceLabel,
   reasonLabel,
 } from './repertoire-builder-view-model';
 
@@ -17,12 +19,54 @@ describe('repertoire builder evidence view model', () => {
     expect(items.find((item) => item.id === 'population')?.detail).toBe(
       '29.8M games · 50% frequency · 50% score',
     );
+    expect(items.find((item) => item.id === 'personal')?.detail).toBe(
+      '12 indexed games · 40% of choices · last played 2024-01-05 · 12 result games · 55% score · -6pp vs position baseline · Black · rated · blitz · all indexed history · all accounts',
+    );
     expect(items.some((item) => item.id === 'engine')).toBeFalse();
     expect(items.some((item) => item.id === 'course')).toBeFalse();
     expect(items.some((item) => item.id === 'opening')).toBeFalse();
     expect(items.some((item) => item.id === 'opening-knowledge')).toBeFalse();
     expect(items.some((item) => item.id.startsWith('opening-plan-'))).toBeFalse();
     expect(items.map((item) => item.id)).toEqual(['population', 'masters', 'personal', 'profile']);
+  });
+
+  it('renders factual familiarity and qualified position-relative result context', () => {
+    expect(personalEvidenceLabel(candidate.evidence.personal)).toBe(
+      'Common for you · results below position baseline',
+    );
+
+    const newEvidence = {
+      ...candidate.evidence.personal,
+      status: 'INSUFFICIENT' as const,
+      occurrences: 0,
+      games: 0,
+      gameCount: 0,
+      moveSharePercent: 0,
+      scorePercent: null,
+      scoreDeltaVsPositionPercent: null,
+      lastPlayedAt: null,
+      familiarity: 'NEW' as const,
+      resultContext: 'INSUFFICIENT' as const,
+      resultSampleQualified: false,
+    };
+    expect(personalEvidenceLabel(newEvidence)).toBe('New to you');
+    expect(personalEvidenceDetail(newEvidence)).toContain(
+      'No indexed games with this move from the exact position',
+    );
+
+    const sparseEvidence = {
+      ...candidate.evidence.personal,
+      status: 'INSUFFICIENT' as const,
+      games: 2,
+      gameCount: 2,
+      familiarity: 'RARE' as const,
+      resultContext: 'INSUFFICIENT' as const,
+      resultSampleQualified: false,
+    };
+    expect(personalEvidenceLabel(sparseEvidence)).toBe('Rare for you');
+    expect(personalEvidenceDetail(sparseEvidence)).toContain(
+      'result sample too small for a good/bad label',
+    );
   });
 
   it('labels the V2 strong-population reason as position-relative evidence', () => {
@@ -39,6 +83,21 @@ describe('repertoire builder evidence view model', () => {
         ...candidate.evidence,
         masters: { ...candidate.evidence.masters, datasetVersion: null },
         population: { ...candidate.evidence.population, datasetVersion: null },
+        personal: {
+          ...candidate.evidence.personal,
+          status: 'UNAVAILABLE',
+          occurrences: 0,
+          games: 0,
+          gameCount: 0,
+          moveSharePercent: null,
+          scorePercent: null,
+          scoreDeltaVsPositionPercent: null,
+          lastPlayedAt: null,
+          policyVersion: null,
+          familiarity: null,
+          resultContext: null,
+          resultSampleQualified: false,
+        },
         opening: {
           ...candidate.evidence.opening,
           classificationVersion: null,
@@ -62,6 +121,7 @@ describe('repertoire builder evidence view model', () => {
 
     expect(reference.sourceVersions['mastersDataset']).toBe('test-v1');
     expect(reference.sourceVersions['populationDataset']).toBe('test-v1');
+    expect(reference.sourceVersions['personalEvidencePolicy']).toBe('2026-08-personal-move-v1');
     expect(reference.sourceVersions['openingClassification']).toBe('2026-07-rules-v2');
     expect(reference.sourceVersions['openingKnowledge']).toBe('2026-08-knowledge-v1');
     expect(reference.candidateContractVersion).toBe(CANDIDATE_DECISION_CONTRACT_VERSION);
@@ -102,7 +162,28 @@ const candidate = {
     },
     masters: corpus(),
     population: { ...corpus(), games: 29_846_453 },
-    personal: { status: 'INSUFFICIENT', occurrences: 0, games: 0, scorePercent: null },
+    personal: {
+      status: 'AVAILABLE',
+      occurrences: 12,
+      games: 12,
+      gameCount: 12,
+      moveSharePercent: 40,
+      scorePercent: 55,
+      scoreDeltaVsPositionPercent: -6,
+      lastPlayedAt: '2024-01-05T12:00:00.000Z',
+      policyVersion: '2026-08-personal-move-v1',
+      familiarity: 'COMMON',
+      resultContext: 'BELOW_BASELINE',
+      resultSampleQualified: true,
+      filterContext: {
+        accountScope: 'ALL_USER_ACCOUNTS',
+        accountIds: [],
+        side: 'BLACK',
+        rated: true,
+        speedCategories: ['blitz'],
+        historyWindow: 'ALL_INDEXED',
+      },
+    },
     opening: {
       status: 'AVAILABLE',
       opening: { eco: 'C00', name: 'French Defense' },
@@ -165,7 +246,7 @@ const response = {
     engine: 'AVAILABLE',
     masters: 'AVAILABLE',
     population: 'AVAILABLE',
-    personal: 'INSUFFICIENT',
+    personal: 'AVAILABLE',
     opening: 'AVAILABLE',
     courses: 'INSUFFICIENT',
     playerProfile: 'INSUFFICIENT',

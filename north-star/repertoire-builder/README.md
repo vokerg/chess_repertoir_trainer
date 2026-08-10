@@ -13,8 +13,9 @@ Current runtime includes:
 - peer population and player-level resolution;
 - deterministic opening classification and Player Chess Profile evidence;
 - versioned repertoire targets and editable profile-derived defaults;
-- Candidate Decision V3 exact-position selected-population/Masters baselines and per-move result deltas;
+- Candidate Decision V4 exact-position selected-population/Masters baselines, per-move corpus result deltas, and versioned factual personal move evidence;
 - versioned empirical Balanced/Solid/Aggressive/Surprise ranking for preset `USER_MOVE` decisions through RB-027, with bounded stored-engine guardrails and opening/profile/personal context kept out of preset rank authority;
+- RB-028 exact-position `Common for you` / `Rare for you` / `New to you`, all-indexed familiarity, last-played recency, move share, sample-qualified position-relative result context and effective history scope;
 - deterministic legacy behavior retained for `CUSTOM` user-move policy and the still-pending RB-029 opponent-response policy;
 - bounded Builder session and queue behavior;
 - the board-first Builder workbench;
@@ -33,6 +34,8 @@ RB-026 / #310 is complete through runtime PR #311 and completion PR #314.
 
 RB-027 / #317 is runtime-complete through squash-merged PR #325 (`34dadd25`) with final exact-head CI #2392 green. Its closure report records the versioned weights, sample floors, Surprise qualification, objective guardrails and review hardening.
 
+RB-028 / #318 is complete on PR #327. Runtime implementation head `9d0a65a5` passed CI #2409 with Candidate Decision V4 and factual personal evidence policy `2026-08-personal-move-v1`.
+
 ## Builder V2 product revision
 
 Hands-on product review of the integrated Builder exposed a semantic problem rather than a need to replace the Cockpit. The agreed V2 direction keeps the board-first workspace, branch queue, opening plans, manual move entry and course boundaries while changing what drives and explains decisions.
@@ -40,14 +43,14 @@ Hands-on product review of the integrated Builder exposed a semantic problem rat
 Read [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md) for the complete revision. The key changes are:
 
 - personas apply only to the user's repertoire move, not to opponent replies;
-- Balanced/Solid/Aggressive/Surprise are now implemented for preset user moves as empirical interpretations of selected-population, Masters and bounded engine evidence;
-- broad Player Chess Profile fit is removed from preset persona rank authority; RB-028 is implementing factual exact-position personal familiarity/results for presentation and evidence context;
+- Balanced/Solid/Aggressive/Surprise are implemented for preset user moves as empirical interpretations of selected-population, Masters and bounded engine evidence;
+- broad Player Chess Profile fit is removed from preset persona rank authority and primary move-familiarity presentation; RB-028 now supplies factual exact-position personal familiarity/results as separate evidence context;
 - opponent replies become preparation priorities driven by peer relevance, personal encounters, danger and course state under RB-029;
 - coverage becomes computed feedback from selected replies rather than a setup slider/persona default;
 - normal setup remains one dialog and shows persona exactly once;
 - opening classification/knowledge remain useful secondary explanation, while ECO codes leave the normal Builder surface in the final Cockpit hierarchy work.
 
-RB-027 is complete. RB-028 is in progress on PR #327; RB-029 and RB-030 are ready; RB-031 remains proposed until the remaining evidence contracts settle. RB-016 outcome feedback remains blocked and should evaluate post-V2 usage rather than calibrating semantics still being replaced.
+RB-027 and RB-028 are complete. RB-029 and RB-030 are ready; RB-031 remains proposed until opponent/setup evidence contracts settle. RB-016 outcome feedback remains blocked and should evaluate post-V2 usage rather than calibrating semantics still being replaced.
 
 ## Read in this order
 
@@ -67,6 +70,7 @@ Detailed immutable work items live under [`tasks/`](tasks/). Completion and rese
 
 - Candidate ranking, Builder reducers/queue behavior, and course preview/apply are deterministic authorities.
 - Preset `USER_MOVE` persona ranking is versioned empirical policy over selected-population, Masters and bounded objective evidence.
+- Factual exact-position personal history is presentation/decision context; RB-028's new all-history fields do not become preset persona rank authority.
 - Static opening knowledge is reviewed explanatory evidence and does not alter candidate ranking or write courses by itself.
 - Player Chess Profile remains a separate deterministic capability; Builder V2 does not treat broad profile similarity as direct move familiarity or preset rank authority.
 - Generated interpretation is optional, explicit, gated, bounded, and non-authoritative.

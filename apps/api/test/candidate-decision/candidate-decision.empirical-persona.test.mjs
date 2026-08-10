@@ -161,7 +161,7 @@ const response = await service.get(42, {
   candidateLimit: 8,
 });
 
-assert.equal(response.contractVersion, '2026-08-v3');
+assert.equal(response.contractVersion, '2026-08-v4');
 assert.equal(response.rankingPolicyVersion, '2026-08-empirical-persona-v2');
 assert.equal(response.candidates.length, 8);
 

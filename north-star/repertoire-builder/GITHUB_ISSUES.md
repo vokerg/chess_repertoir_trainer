@@ -48,15 +48,17 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 
 RB-026 is complete: runtime PR #311 and documentation completion PR #314 are merged, and issue #310 is closed as completed. Builder V2 planning PR #324 is squash-merged to `main`.
 
-RB-027 runtime implementation is complete through PR #325 / squash `34dadd25`, with final exact-head CI #2392 green. This completion reconciliation records the canonical task/report/status evidence before issue #317 is closed.
+RB-027 runtime implementation is complete through PR #325 / squash `34dadd25`, with final exact-head CI #2392 green.
+
+RB-028 runtime implementation is complete on PR #327. Implementation head `9d0a65a5` passed full CI #2409 and Candidate Decision V4 carries factual exact-position personal evidence without adding new preset-persona ranking authority.
 
 Builder V2 execution state:
 
-- #317 / RB-027 — empirical user-move personas, `DONE`, P0 after completion reconciliation;
-- #318 / RB-028 — factual personal move evidence, `IN_PROGRESS`, P1 on PR #327;
+- #317 / RB-027 — empirical user-move personas, `DONE`, P0;
+- #318 / RB-028 — factual personal move evidence, `DONE`, P1 pending merge/issue closure of PR #327;
 - #319 / RB-029 — opponent preparation and computed coverage, `READY`, P1 and next unclaimed policy task;
 - #320 / RB-030 — single-dialog setup, `READY`, P1;
-- #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-028–RB-029 semantics settle.
+- #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-029 opponent semantics settle.
 
 RB-016 / #104 remains open and blocked. Its blocker includes completion of the V2 decision model plus sufficient post-V2 Builder/course use and follow-up games.
 
@@ -96,7 +98,7 @@ Before work:
 6. Prefer a branch name containing both identifiers, for example `rb-029/issue-319-opponent-preparation`.
 7. Make the claim visible before substantive implementation or research.
 
-RB-028 now consumes the stabilized RB-027 V3 corpus semantics. RB-031 must not be claimed as if its remaining upstream semantics were already stable.
+RB-028 now supplies settled Candidate Decision V4 factual personal evidence. RB-029 can consume exact personal encounters as separated context. RB-031 must not be claimed as if its remaining opponent semantics were already stable.
 
 ## Pull-request protocol
 
@@ -119,11 +121,11 @@ Repository task files remain the complete dependency definition. Material execut
 
 For the V2 queue:
 
-- RB-027 / #317 defines the now-integrated authoritative preset user-move ranking semantics;
-- RB-028 / #318 owns exact-position personal evidence and consumes the stabilized V3 corpus fields without restoring personal history as preset persona authority;
+- RB-027 / #317 defines the integrated authoritative preset user-move ranking semantics;
+- RB-028 / #318 defines settled factual exact-position personal evidence in Candidate Decision V4 without restoring personal history as preset persona authority;
 - RB-029 / #319 owns opponent-response preparation/coverage semantics and must preserve RB-009 state behavior;
 - RB-030 / #320 owns setup after V2 target/coverage compatibility is clear;
-- RB-031 / #321 integrates the settled evidence into the Cockpit;
+- RB-031 / #321 integrates the settled evidence into the Cockpit after RB-029;
 - RB-016 / #104 remains blocked behind V2 delivery plus real use.
 
 ## Completion protocol

@@ -2,9 +2,9 @@
 
 Last updated: 2026-08-10
 
-Status: **Agreed product direction; RB-027 implemented, RB-028–RB-031 remain incremental delivery work**
+Status: **Agreed product direction; RB-027 and RB-028 implemented, RB-029–RB-031 remain incremental delivery work**
 
-This document records the product-owner review of the Builder and the agreed V2 decision model. It is both the target plan for the remaining V2 tasks and a coordination record for the portions already implemented. RB-027's empirical `USER_MOVE` ranking is now on `main`; personal evidence, opponent preparation/coverage, setup consolidation and final Cockpit hierarchy remain downstream work.
+This document records the product-owner review of the Builder and the agreed V2 decision model. It is both the target plan for the remaining V2 tasks and a coordination record for the portions already implemented. RB-027's empirical `USER_MOVE` ranking and RB-028 factual exact-position personal evidence are now implemented; opponent preparation/coverage, setup consolidation and final Cockpit hierarchy remain downstream work.
 
 ## Why V2 exists
 
@@ -126,7 +126,7 @@ The distinction is deliberate:
 
 Peer and Masters data are not collapsed into one vague `target fit` concept.
 
-For user moves the implemented V3 comparison is:
+For user moves the implemented corpus comparison is:
 
 - how often peers choose the move;
 - how the move scores relative to the target-side baseline from the same exact position;
@@ -144,27 +144,27 @@ Objective evidence uses only already-stored legal, internally consistent roots a
 
 The user wants to know whether a candidate is something they actually play.
 
-Builder should answer directly:
+Builder now answers directly:
 
 - **Common for you**;
 - **Rare for you**;
 - **New to you**;
-- and, when supported, **Common for you · results below your baseline** or the positive equivalent.
+- and, when supported, **Common for you · results below position baseline** or the positive equivalent.
 
-Underlying factual evidence should include:
+Underlying factual evidence includes:
 
 - exact-position move games/occurrences;
-- share of the user's moves from that position where meaningful;
+- share of the user's moves from that position;
 - personal score;
 - position-relative result comparison with adequate sample qualification;
 - last-played date;
-- effective account/side/rated/speed filters.
+- effective account/side/rated/speed filters and explicit all-indexed-history scope.
 
-Familiarity should use all eligible indexed history. A game from 2024 still matters to the question "do I know/play this move?". Recency should be displayed separately rather than turning the Player Chess Profile's default three-month window into an invisible familiarity cutoff.
+Familiarity uses all eligible indexed history. A game from 2024 still matters to the question "do I know/play this move?". Recency is displayed separately rather than turning the Player Chess Profile's default three-month window into an invisible familiarity cutoff.
 
-The standalone Player Chess Profile remains useful elsewhere. Broad matches such as `Sound + Positional + Mainline` should not be presented inside Builder as proof that a specific move is familiar or suited to the player.
+The standalone Player Chess Profile remains useful elsewhere. Broad matches such as `Sound + Positional + Mainline` are not presented inside Builder as proof that a specific move is familiar or suited to the player.
 
-RB-027 already removes broad profile/personal authority from preset ranking. RB-028 owns the factual personal-evidence replacement and is active on PR #327.
+RB-028 implements this model through Candidate Decision V4 and factual policy `2026-08-personal-move-v1`. The new all-history/context fields remain presentation evidence and do not enter the existing personal ranking input.
 
 ## Opponent responses: preparation, not fit
 
@@ -188,7 +188,7 @@ Priority should combine separated evidence:
 - existing course coverage/gap;
 - Masters only as secondary context where useful.
 
-RB-029 owns this policy. RB-027 intentionally leaves `OPPONENT_RESPONSE` ranking semantics unchanged.
+RB-029 owns this policy. RB-027 intentionally leaves `OPPONENT_RESPONSE` ranking semantics unchanged; RB-028 factual personal evidence is available as separated encounter context.
 
 ## Coverage becomes feedback
 
@@ -292,11 +292,11 @@ Opponent rows foreground preparation evidence and selection state, not persona/p
 
 ### RB-027 / #317 — empirical persona ranking V2
 
-**DONE.** Runtime PR #325 / squash `34dadd25`; final runtime CI #2392. Candidate Decision V3 and versioned preset USER_MOVE policy are integrated.
+**DONE.** Runtime PR #325 / squash `34dadd25`; final runtime CI #2392. Candidate Decision V3 introduced the versioned preset USER_MOVE corpus semantics.
 
 ### RB-028 / #318 — factual personal move evidence
 
-**IN_PROGRESS on PR #327.** Provide common/rare/new, results and recency at the exact position and remove broad Profile Fit from Builder presentation.
+**DONE.** Runtime PR #327; implementation head `9d0a65a5`; final runtime CI #2409. Candidate Decision V4 carries factual Common/Rare/New, recency/share, qualified result context and effective all-indexed history scope without adding new preset ranking authority.
 
 ### RB-029 / #319 — opponent preparation and computed coverage
 
@@ -308,20 +308,21 @@ Opponent rows foreground preparation evidence and selection state, not persona/p
 
 ### RB-031 / #321 — Cockpit evidence hierarchy V2
 
-**PROPOSED.** Integrate the final evidence models into the already-shipped Cockpit, including ECO removal and clear rank explanations.
+**PROPOSED.** Integrate the final evidence models into the already-shipped Cockpit, including ECO removal and clear rank explanations after RB-029 settles opponent semantics.
 
 RB-016 outcome feedback remains blocked. It should evaluate post-V2 behavior rather than calibrating semantics that V2 is replacing.
 
 ## Decisions intentionally not locked yet
 
-RB-027 has resolved the user-move persona weights, target-position baseline semantics, empirical sample floors, Surprise overperformance gate, bounded candidate seeding, and stored-engine evidence boundary for its current ranking-policy version.
+RB-027 resolved the user-move persona weights, target-position baseline semantics, empirical sample floors, Surprise overperformance gate, bounded candidate seeding, and stored-engine evidence boundary for its current ranking-policy version.
+
+RB-028 resolved the factual personal thresholds for policy `2026-08-personal-move-v1`: 5 distinct indexed games plus 20% exact-position move share for Common; at least 10 known-result games plus +/-5 percentage points versus the same-position baseline for a qualified result label.
 
 Still open under downstream tasks:
 
-- exact common/rare personal thresholds and result-confidence treatment — RB-028;
 - exact recommended opponent-response stopping rule — RB-029;
 - V1 target-field compatibility/removal details required by setup/coverage changes — RB-029/RB-030;
 - whether a future understandable soft theory preference is valuable after V2 is used — deferred product evidence;
 - final compact evidence hierarchy and responsive wording — RB-031.
 
-Future changes to RB-027's implemented numeric policy must be explicit, evidence-backed, and versioned rather than silently changing the meaning of existing Builder decisions.
+Future changes to RB-027 ranking policy or RB-028 personal-evidence thresholds must be explicit, evidence-backed, and versioned rather than silently changing the meaning of existing Builder decisions.
