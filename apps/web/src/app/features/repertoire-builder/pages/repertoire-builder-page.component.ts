@@ -25,6 +25,7 @@ import {
   type RepertoireBuilderQueueMove,
 } from '../components/repertoire-builder-workbench.component';
 import {
+  buildRepertoireBuilderSetupStartingLaunch,
   builderLaunchReturnUrl,
   isRepertoireBuilderCourseFindingLaunch,
   parseRepertoireBuilderLaunch,
@@ -216,7 +217,8 @@ export class RepertoireBuilderPageComponent implements OnInit {
   }
 
   protected startBuilder(setup: RepertoireBuilderSetup): void {
-    void this.store.start(setup, this.courseLaunchContext());
+    const launch = this.courseLaunchContext() ?? buildRepertoireBuilderSetupStartingLaunch(setup);
+    void this.store.start(setup, launch);
   }
 
   protected startNewDraft(): void {
