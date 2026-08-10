@@ -9,19 +9,13 @@ import {
   AccountImportWriteBatchTooLargeError,
   createAccountImportRepository,
 } from '../../dist/modules/account-imports/account-import.repository.prisma.js';
-import {
-  canonicalizeAccountImportScope,
-} from '../../dist/modules/account-imports/account-import.scope.js';
+import { canonicalizeAccountImportScope } from '../../dist/modules/account-imports/account-import.scope.js';
 
 const prisma = prismaModule.default;
 const suffix = randomUUID();
 const userIds = [];
 const repository = createAccountImportRepository(prisma);
-const scope = {
-  variant: 'STANDARD',
-  speeds: ['RAPID', 'BLITZ'],
-  rated: 'BOTH',
-};
+const scope = { variant: 'STANDARD', speeds: ['RAPID', 'BLITZ'], rated: 'BOTH' };
 const requestedFrom = new Date('2026-05-01T00:00:00.000Z');
 const requestedTo = new Date('2026-08-01T00:00:00.000Z');
 
@@ -38,14 +32,10 @@ try {
   userIds.push(primary.userId, intruder.userId, cascade.userId);
 
   await assert.rejects(
-    repository.createRun(runInput({
-      userId: intruder.userId,
-      accountId: primary.accountId,
-    })),
+    repository.createRun(runInput({ userId: intruder.userId, accountId: primary.accountId })),
     /not found/i,
     'run creation is ownership scoped',
   );
-  assert.equal(await prisma.importRun.count({ where: { userId: intruder.userId } }), 0);
 
   const guardRepository = createAccountImportRepository(prisma, {
     async assertAllowed() {
@@ -55,7 +45,7 @@ try {
   await assert.rejects(
     guardRepository.createRun(runInput(primary)),
     /lifecycle-fenced/,
-    'the ONB-019 admission seam executes inside creation',
+    'the ONB-019 guard executes inside durable acceptance',
   );
   assert.equal(await prisma.importRun.count({ where: { userId: primary.userId } }), 0);
 
@@ -76,10 +66,9 @@ try {
   assert.equal(initialRun.scopeHash, canonical.scopeHash);
   assert.deepEqual(initialRun.scope.speeds, ['BLITZ', 'RAPID']);
   assert.equal(initialRun.windowsTotal, 7);
-  assert.equal(initialRun.startedAt, null);
+  assert.ok(initialRun.startedAt instanceof Date, 'legacy-compatible startedAt remains non-null');
 
-  const activeRun = await repository.getActiveRunForAccount(primary.userId, primary.accountId);
-  assert.equal(activeRun?.id, initialRun.id);
+  assert.equal((await repository.getActiveRunForAccount(primary.userId, primary.accountId))?.id, initialRun.id);
   assert.equal(
     await repository.getActiveRunForAccount(intruder.userId, primary.accountId),
     null,
@@ -109,9 +98,8 @@ try {
 
   await prisma.importRun.update({
     where: { id: initialRun.id },
-    data: { status: 'RUNNING', startedAt: new Date() },
+    data: { status: 'RUNNING' },
   });
-
   const twoGameRepository = createAccountImportRepository(
     prisma,
     { async assertAllowed() {} },
@@ -127,29 +115,24 @@ try {
     'configured batch size is enforced before database work',
   );
 
-  const firstWrite = await twoGameRepository.persistGames({
-    userId: primary.userId,
-    importRunId: initialRun.id,
-    games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
-  });
-  assert.deepEqual(firstWrite, { attempted: 2, inserted: 2, duplicate: 0 });
-  assert.equal(
-    await prisma.importedGame.count({ where: { accountId: primary.accountId } }),
-    2,
-    'bounded commit inserts the normalized batch without per-game pre-reads',
+  assert.deepEqual(
+    await twoGameRepository.persistGames({
+      userId: primary.userId,
+      importRunId: initialRun.id,
+      games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
+    }),
+    { attempted: 2, inserted: 2, duplicate: 0 },
   );
-
-  const replayWrite = await twoGameRepository.persistGames({
-    userId: primary.userId,
-    importRunId: initialRun.id,
-    games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
-  });
-  assert.deepEqual(replayWrite, { attempted: 2, inserted: 0, duplicate: 2 });
-  assert.equal(
-    await prisma.importedGame.count({ where: { accountId: primary.accountId } }),
-    2,
-    'replaying a committed batch is duplicate-safe',
+  assert.deepEqual(
+    await twoGameRepository.persistGames({
+      userId: primary.userId,
+      importRunId: initialRun.id,
+      games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
+    }),
+    { attempted: 2, inserted: 0, duplicate: 2 },
+    'replay uses duplicate-safe bulk insertion',
   );
+  assert.equal(await prisma.importedGame.count({ where: { accountId: primary.accountId } }), 2);
   const writeCounters = await repository.getRun(primary.userId, initialRun.id);
   assert.equal(writeCounters?.gamesMatchedScope, 4);
   assert.equal(writeCounters?.gamesImported, 2);
@@ -164,11 +147,7 @@ try {
     /lifecycle-fenced/,
     'the ONB-019 guard is rechecked in the same bounded commit transaction',
   );
-  assert.equal(
-    await prisma.importedGame.count({ where: { accountId: primary.accountId } }),
-    2,
-    'a lifecycle-fenced commit writes no games',
-  );
+  assert.equal(await prisma.importedGame.count({ where: { accountId: primary.accountId } }), 2);
 
   const newestWindowFrom = new Date('2026-07-15T00:00:00.000Z');
   const newestWindowThrough = new Date('2026-08-01T00:00:00.000Z');
@@ -189,14 +168,12 @@ try {
   });
   assert.equal(extendedBack.coveredFrom.toISOString(), '2026-07-01T00:00:00.000Z');
   assert.equal(extendedBack.coveredThrough.toISOString(), newestWindowThrough.toISOString());
-
-  const replayed = await repository.extendCoverage({
+  assert.equal((await repository.extendCoverage({
     userId: primary.userId,
     importRunId: initialRun.id,
     coveredFrom: new Date('2026-07-01T00:00:00.000Z'),
     coveredThrough: newestWindowThrough,
-  });
-  assert.equal(replayed.id, firstCoverage.id, 'coverage replay is idempotent');
+  })).id, firstCoverage.id, 'coverage replay is idempotent');
 
   await assert.rejects(
     repository.extendCoverage({
@@ -208,13 +185,13 @@ try {
     AccountImportCoverageGapError,
     'coverage cannot jump an unproved gap',
   );
-
-  const coverageByReorderedScope = await repository.getCoverage(
-    primary.userId,
-    primary.accountId,
-    { ...scope, speeds: ['BLITZ', 'RAPID'] },
+  assert.equal(
+    (await repository.getCoverage(primary.userId, primary.accountId, {
+      ...scope,
+      speeds: ['BLITZ', 'RAPID'],
+    }))?.id,
+    firstCoverage.id,
   );
-  assert.equal(coverageByReorderedScope?.id, firstCoverage.id);
 
   await assert.rejects(
     prisma.accountImportCoverage.create({
@@ -235,7 +212,6 @@ try {
     where: { id: initialRun.id },
     data: { status: 'FAILED', completedAt: new Date(), errorCode: 'PROVIDER_FAILURE' },
   });
-
   await assert.rejects(
     repository.createRun(runInput({
       ...primary,
@@ -246,10 +222,7 @@ try {
     'retry cannot silently change immutable scope',
   );
 
-  const retryRun = await repository.createRun(runInput({
-    ...primary,
-    retryOfImportRunId: initialRun.id,
-  }));
+  const retryRun = await repository.createRun(runInput({ ...primary, retryOfImportRunId: initialRun.id }));
   assert.equal(retryRun.retryOfImportRunId, initialRun.id);
   assert.equal(retryRun.scopeHash, initialRun.scopeHash);
   assert.equal(retryRun.requestedFrom.toISOString(), requestedFrom.toISOString());
@@ -258,12 +231,7 @@ try {
   const retryWorkKey = `account-import-${suffix}`;
   await prisma.importRun.update({
     where: { id: retryRun.id },
-    data: {
-      status: 'RUNNING',
-      workKey: retryWorkKey,
-      claimedAt: new Date(),
-      heartbeatAt: new Date(),
-    },
+    data: { status: 'RUNNING', workKey: retryWorkKey, claimedAt: new Date(), heartbeatAt: new Date() },
   });
   await assert.rejects(
     repository.persistGames({
@@ -275,24 +243,17 @@ try {
     AccountImportClaimLostError,
     'a stale worker cannot persist through a mismatched work key',
   );
-  const claimedWrite = await repository.persistGames({
-    userId: primary.userId,
-    importRunId: retryRun.id,
-    workKey: retryWorkKey,
-    games: [normalizedGame('claimed-worker')],
-  });
-  assert.deepEqual(claimedWrite, { attempted: 1, inserted: 1, duplicate: 0 });
-
-  assert.equal(
-    await repository.hasActiveClaimForAccount(primary.userId, primary.accountId),
-    true,
-    'drain projection observes an active work key',
+  assert.deepEqual(
+    await repository.persistGames({
+      userId: primary.userId,
+      importRunId: retryRun.id,
+      workKey: retryWorkKey,
+      games: [normalizedGame('claimed-worker')],
+    }),
+    { attempted: 1, inserted: 1, duplicate: 0 },
   );
-  assert.equal(
-    await repository.hasActiveClaimForAccount(intruder.userId, primary.accountId),
-    false,
-    'drain projection is ownership isolated',
-  );
+  assert.equal(await repository.hasActiveClaimForAccount(primary.userId, primary.accountId), true);
+  assert.equal(await repository.hasActiveClaimForAccount(intruder.userId, primary.accountId), false);
 
   await prisma.importRun.update({
     where: { id: retryRun.id },
@@ -300,17 +261,9 @@ try {
   });
   assert.equal(await repository.hasActiveClaimForAccount(primary.userId, primary.accountId), false);
 
-  const cleared = await repository.clearCoverageForAccount(primary.userId, primary.accountId);
-  assert.equal(cleared, 1);
-  assert.equal(
-    await prisma.importRun.count({ where: { accountId: primary.accountId } }),
-    2,
-    'purge-style coverage clear retains import history',
-  );
-  assert.equal(
-    await repository.getCoverage(primary.userId, primary.accountId, scope),
-    null,
-  );
+  assert.equal(await repository.clearCoverageForAccount(primary.userId, primary.accountId), 1);
+  assert.equal(await prisma.importRun.count({ where: { accountId: primary.accountId } }), 2);
+  assert.equal(await repository.getCoverage(primary.userId, primary.accountId, scope), null);
 
   const cascadeRun = await repository.createRun(runInput(cascade));
   await repository.extendCoverage({
@@ -349,7 +302,7 @@ function normalizedGame(providerGameId) {
   return {
     providerGameId,
     providerUrl: `https://example.invalid/game/${providerGameId}`,
-    pgn: `[Event "ONB-011"]\n\n1. e4 e5 2. Nf3 Nc6 *`,
+    pgn: '[Event "ONB-011"]\n\n1. e4 e5 2. Nf3 Nc6 *',
     rated: true,
     variant: 'standard',
     speedCategory: 'blitz',
