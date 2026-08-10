@@ -17,8 +17,11 @@ import type { EngineAnalysis } from '../../../shared/chess/engine/stockfish-anal
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import type { UiShellAction } from '../../../shared/ui/ui-shell.model';
 import {
+  corpusEvidenceMetric,
+  courseRelationshipLabel as formatCourseRelationshipLabel,
   personalEvidenceDetail as formatPersonalEvidenceDetail,
   personalEvidenceLabel as formatPersonalEvidenceLabel,
+  primaryEvidenceReasonLabels as formatPrimaryEvidenceReasonLabels,
 } from '../helpers/repertoire-builder-view-model';
 import {
   REPERTOIRE_BUILDER_DECISION_LIMIT,
@@ -205,6 +208,22 @@ export class RepertoireBuilderWorkbenchComponent {
   protected personalEvidenceDetail(candidate: CandidateDecisionCandidate): string {
     return formatPersonalEvidenceDetail(candidate.evidence.personal)
       ?? 'Personal game history could not be loaded.';
+  }
+
+  protected populationMetric(candidate: CandidateDecisionCandidate) {
+    return corpusEvidenceMetric(candidate.evidence.population);
+  }
+
+  protected mastersMetric(candidate: CandidateDecisionCandidate) {
+    return corpusEvidenceMetric(candidate.evidence.masters);
+  }
+
+  protected courseRelationshipLabel(candidate: CandidateDecisionCandidate): string | null {
+    return formatCourseRelationshipLabel(candidate);
+  }
+
+  protected primaryEvidenceReasonLabels(candidate: CandidateDecisionCandidate): readonly string[] {
+    return formatPrimaryEvidenceReasonLabels(candidate);
   }
 
   protected candidateEngineLabel(candidate: CandidateDecisionCandidate): string {
