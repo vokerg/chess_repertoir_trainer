@@ -1,6 +1,6 @@
 # RB-029 — Opponent preparation and computed coverage V2
 
-Status: DONE
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -8,17 +8,17 @@ Order: 220
 
 Delivery class: North-star decision policy and UX
 
-Planning maturity: Implemented, reviewed and exact-head validation gated on PR #331
+Planning maturity: Corrective implementation after post-merge High-mode audit of PR #331
 
 GitHub issue: #319
 
 Claimed by: ChatGPT
 
-Claim branch: `repertoire-builder/rb-029-opponent-preparation`
+Claim branch: `fix/rb-029-correctness-audit`
 
 Claimed at: 2026-08-10
 
-Claim scope: opponent preparation policy, computed selected coverage, Candidate Decision integration and Builder presentation while preserving RB-009 reducer/queue semantics
+Claim scope: correct opponent candidate discovery/ranking authority, course evidence wiring, policy provenance, AI consistency, recommended default selection and nullable selected coverage while preserving RB-009 reducer/queue semantics and RB-027 USER_MOVE behavior
 
 ## Objective
 
@@ -47,9 +47,7 @@ Coverage is an outcome of selected replies, not a persona/setup preference.
 
 The recommended-set stopping rule must be versioned and tested. It must not simply conceal the old fixed percentages under new copy.
 
-## Implemented runtime semantics
-
-Runtime PR: #331
+## Implemented policy semantics
 
 Policy: `2026-08-opponent-preparation-v1`
 
@@ -57,15 +55,23 @@ Policy: `2026-08-opponent-preparation-v1`
 - population relevance requires at least 20 target-population games and frequency at least the greater of 3% or 20% of the strongest observed reply at the exact position;
 - at least three exact-position personal encounters independently qualify a reply for recommendation;
 - mate against the repertoire side or at least 100 cp objective challenge independently qualifies a reply as dangerous;
-- course coverage/transposition/conflict remains inspectable context and a deterministic tie-breaker, but does not by itself make a low-relevance reply recommended;
+- course coverage/transposition remains inspectable context and deterministic ordering context, but does not by itself make a low-relevance reply recommended;
 - uncommon dangerous or personally repeated replies are recommended with their factual reason and are not relabeled common;
-- Candidate Decision removes target/profile fit reason authority and target/theory warnings from opponent decisions while preserving relevant course/source warnings;
-- candidate coverage carries only each reply's target-population contribution; ranked cumulative coverage is deliberately absent;
-- the Builder computes selected target-population share from the replies actually selected, with explicit non-theoretical-completeness copy;
-- every reply remains independently selectable/removable, and `Use recommended set` applies the deterministic recommendation without automatic acceptance;
-- accepting selections continues through the existing RB-009 reducer, producing independent continuation branches with unchanged queue/defer/ignore semantics;
-- accepted opponent decision evidence snapshots `opponentPreparationPolicy=2026-08-opponent-preparation-v1` separately from the underlying Candidate Ranking policy version;
-- the normal setup no longer displays a coverage percentage or persona-specific coverage default.
+- selected coverage is the sum of actual selected target-population contributions, not a hidden target percentage;
+- normal setup no longer displays a coverage percentage or persona-specific coverage default.
+
+## Correctness audit after PR #331
+
+PR #331 was squash-merged as `591e26f833b4dd92286c6201856320155f06aa4c`, but a deeper post-merge audit found that the implementation did not satisfy the complete authority boundary:
+
+1. the opponent policy was applied only after generic Candidate Decision seeding, ranking and candidate-limit truncation, so qualifying personal/dangerous replies outside that old bounded set could never be promoted;
+2. AI candidate explanation rebuilt opponent decisions through `CandidateDecisionService` directly and therefore bypassed the route-only opponent post-processor;
+3. Candidate Decision runtime hard-disabled course-position suggestions even though `CoursePositionSuggestionService` exists, so course context claimed by RB-029 was not actually available;
+4. opponent policy provenance was stamped in the Angular evidence-reference layer from `decisionRole` instead of being returned authoritatively by Candidate Decision;
+5. the recommended preparation set was exposed only through a reset button instead of being the initial checked selection described by the V2 plan;
+6. selected replies with no usable population evidence were displayed as `0%` rather than unavailable coverage.
+
+The corrective branch moves opponent preparation into the canonical Candidate Decision service before final truncation, keeps USER_MOVE behavior unchanged, uses real opponent-only course evidence, returns the actual role-specific policy version, makes every consumer use the same decision service, initializes opponent selections from the recommended set, and preserves `null` when selected coverage cannot be computed.
 
 ## Compatibility boundary for RB-030
 
@@ -77,7 +83,8 @@ The current `RepertoireTarget.coverage` shape and route-local `RepertoireBuilder
 - contract cleanup needed to remove irrelevant target/profile fit from opponent decisions;
 - computed coverage presentation semantics;
 - reuse of current RB-009 multi-selection/branch queue;
-- focused domain/API/web tests.
+- focused domain/API/web tests;
+- correction of PR #331 authority/provenance gaps listed above.
 
 ## Out of scope
 
@@ -92,24 +99,31 @@ RB-027 and RB-028 are complete. RB-031 consumes the final opponent presentation.
 ## Acceptance criteria
 
 - [x] opponent candidates are not labeled Target/Profile Aligned or Conflict;
-- [x] frequency, personal encounter, danger and course-state reasons are independently inspectable;
-- [x] recommended responses are deterministic and editable;
-- [x] selected coverage is calculated from actual selected response contributions and clearly labeled as target-population share;
-- [x] uncommon but dangerous/personal responses can be promoted without being called common;
+- [x] frequency, personal encounter and danger reasons are independently inspectable;
+- [ ] qualifying opponent replies are discovered and ranked by the opponent policy before the final candidate limit is applied;
+- [ ] real existing-course context is available on opponent turns without changing USER_MOVE course/ranking behavior;
+- [ ] Candidate Decision returns the actual role-specific opponent-preparation policy version and all consumers use that canonical service;
+- [ ] recommended responses are deterministic, initially selected and manually editable/resettable;
+- [ ] selected coverage is calculated from actual selected response contributions, clearly labeled as target-population share, and remains unavailable when no selected coverage evidence exists;
+- [x] uncommon but dangerous/personal responses can be represented without being called common;
 - [x] accepting selected responses retains current branch creation, queue and reducer semantics;
 - [x] setup no longer requires a coverage percentage;
-- [x] tests cover common, dangerous-uncommon, personally encountered, sparse, defer, ignore and selection cases.
+- [ ] focused regression tests cover the post-merge correctness findings plus common, dangerous-uncommon, personal, sparse, defer, ignore and selection cases.
 
 ## Validation evidence
 
-- initial domain-policy slice: CI #2421 (`31402443680`) passed;
-- integrated API/web/setup slice: CI #2431 (`31406321314`) passed;
-- opponent API projection coverage: CI #2432 (`31406462746`) passed;
-- pre-review final implementation: CI #2435 (`31406955302`) passed;
-- final merge gate: exact-head full CI on PR #331 after review provenance fix and closure reconciliation.
+Historical PR #331 validation remains useful but is not accepted as closure evidence for the corrective task:
+
+- CI #2421 (`31402443680`) passed the initial domain slice;
+- CI #2431 (`31406321314`) passed the integrated API/web/setup slice;
+- CI #2432 (`31406462746`) passed the route-level opponent projection test;
+- CI #2435 (`31406955302`) passed the pre-review implementation;
+- CI #2441 (`31412564060`) passed the merged PR head but did not cover the authority gaps found by the post-merge audit.
+
+Corrective exact-head CI: pending.
 
 ## Completion
 
-Report: `../reports/RB-029-2026-08-10-opponent-preparation-closure.md`
+Report: `../reports/RB-029-2026-08-10-opponent-preparation-closure.md` requires corrective addendum before final closure.
 
-Completed at: 2026-08-10
+Completed at: none
