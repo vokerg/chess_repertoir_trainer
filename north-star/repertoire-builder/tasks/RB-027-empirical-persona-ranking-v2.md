@@ -88,6 +88,8 @@ Runtime PR: #325
 
 Runtime squash: `34dadd251d4310f427cc60b466158c132823e398`
 
+Completion reconciliation PR: #330
+
 Final runtime CI: #2392 (`31383710305`) — green
 
 Report: `north-star/repertoire-builder/reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`
