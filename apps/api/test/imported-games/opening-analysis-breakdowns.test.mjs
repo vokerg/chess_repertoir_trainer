@@ -99,7 +99,7 @@ try {
     assert.equal(filtered.nextMoves.length, 1);
     assert.equal(filtered.nextMoves[0].moveUci, 'e2e4');
     assert.equal(filtered.nextMoves[0].gameCount, 2);
-    assert.equal(filtered.nextMoves[0].gameSharePercent, 100);
+    assert.equal(filtered.nextMoves[0].moveSharePercent, 100);
     assert.equal(filtered.nextMoves[0].scoreDeltaVsPositionPercent, 0);
     assert.equal(filtered.nextMoves[0].lastPlayedAt, '2024-01-02T12:00:00.000Z');
     assert.deepEqual(filtered.nextMoves[0].personalContext, {
@@ -125,13 +125,21 @@ try {
         endedAt: new Date('2024-01-05T12:00:00.000Z'),
       },
     });
-    await prisma.importedGamePly.create({
-      data: {
-        importedGameId: resultLessGame.id,
-        positionId: position.id,
-        plyNumber: 1,
-        moveUci: 'e2e4',
-      },
+    await prisma.importedGamePly.createMany({
+      data: [
+        {
+          importedGameId: resultLessGame.id,
+          positionId: position.id,
+          plyNumber: 1,
+          moveUci: 'e2e4',
+        },
+        {
+          importedGameId: resultLessGame.id,
+          positionId: position.id,
+          plyNumber: 3,
+          moveUci: 'd2d4',
+        },
+      ],
     });
 
     const oldFamiliarityGame = await prisma.importedGame.create({
@@ -167,12 +175,14 @@ try {
     const all = allResponse.json();
     assert.equal(all.games.total, 5, 'Legacy W/D/L total remains result-qualified.');
     assert.equal(all.games.scorePct, 60);
+    assert.equal(all.occurrences, 7);
     assert.equal(all.nextMoves.length, 2);
 
     const e4 = all.nextMoves.find((move) => move.moveUci === 'e2e4');
     assert.equal(e4.games.total, 4, 'Result-qualified sample remains separate from familiarity.');
     assert.equal(e4.gameCount, 5, 'Result-less indexed games still count as personal history.');
-    assert.equal(e4.gameSharePercent, 83.3);
+    assert.equal(e4.occurrences, 5);
+    assert.equal(e4.moveSharePercent, 71.4);
     assert.equal(e4.games.scorePct, 75);
     assert.equal(e4.scoreDeltaVsPositionPercent, 15);
     assert.equal(e4.lastPlayedAt, '2024-01-05T12:00:00.000Z');
@@ -182,13 +192,15 @@ try {
 
     const d4 = all.nextMoves.find((move) => move.moveUci === 'd2d4');
     assert.equal(d4.games.total, 1);
-    assert.equal(d4.gameCount, 1);
-    assert.equal(d4.gameSharePercent, 16.7);
+    assert.equal(d4.gameCount, 2, 'One repeated-position game may contribute to more than one move.');
+    assert.equal(d4.occurrences, 2);
+    assert.equal(d4.moveSharePercent, 28.6);
     assert.equal(d4.games.scorePct, 0);
     assert.equal(d4.scoreDeltaVsPositionPercent, -60);
     assert.equal(d4.lastPlayedAt, '2026-06-04T12:00:00.000Z');
     assert.equal(d4.personalContext.familiarity, 'RARE');
     assert.equal(d4.personalContext.resultContext, 'INSUFFICIENT');
+    assert.equal(e4.moveSharePercent + d4.moveSharePercent, 100);
   } finally {
     await app.close();
   }
