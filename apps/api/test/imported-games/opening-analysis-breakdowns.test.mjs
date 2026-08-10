@@ -98,7 +98,33 @@ try {
     assert.equal(filtered.games.total, 2);
     assert.equal(filtered.nextMoves.length, 1);
     assert.equal(filtered.nextMoves[0].moveUci, 'e2e4');
+    assert.equal(filtered.nextMoves[0].gameSharePercent, 100);
+    assert.equal(filtered.nextMoves[0].scoreDeltaVsPositionPercent, 0);
     assert.equal(filtered.nextMoves[0].lastPlayedAt, '2026-06-02T12:00:00.000Z');
+
+    const allResponse = await app.inject({
+      method: 'GET',
+      url: '/api/opening-analysis?fen=startpos&rated=true&speedCategory=blitz',
+    });
+    assert.equal(allResponse.statusCode, 200);
+    const all = allResponse.json();
+    assert.equal(all.games.total, 4);
+    assert.equal(all.games.scorePct, 62.5);
+    assert.equal(all.nextMoves.length, 2);
+
+    const e4 = all.nextMoves.find((move) => move.moveUci === 'e2e4');
+    assert.equal(e4.games.total, 3);
+    assert.equal(e4.gameSharePercent, 75);
+    assert.equal(e4.games.scorePct, 83.3);
+    assert.equal(e4.scoreDeltaVsPositionPercent, 20.8);
+    assert.equal(e4.lastPlayedAt, '2026-06-03T12:00:00.000Z');
+
+    const d4 = all.nextMoves.find((move) => move.moveUci === 'd2d4');
+    assert.equal(d4.games.total, 1);
+    assert.equal(d4.gameSharePercent, 25);
+    assert.equal(d4.games.scorePct, 0);
+    assert.equal(d4.scoreDeltaVsPositionPercent, -62.5);
+    assert.equal(d4.lastPlayedAt, '2026-06-04T12:00:00.000Z');
   } finally {
     await app.close();
   }
