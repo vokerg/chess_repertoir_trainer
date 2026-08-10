@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import type {
-  CandidateDecisionCandidate,
-  CandidateDecisionResponse,
-  CandidateDecisionRole,
+import {
+  CANDIDATE_DECISION_CONTRACT_VERSION,
+  CANDIDATE_RANKING_POLICY_VERSION,
+  type CandidateDecisionCandidate,
+  type CandidateDecisionResponse,
+  type CandidateDecisionRole,
 } from '@chess-trainer/contracts/candidate-decision';
 import { BehaviorSubject, Subject, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -54,8 +56,8 @@ function responseFixture(
   generatedAt = '2026-07-29T08:00:00.000Z',
 ): CandidateDecisionResponse {
   return {
-    contractVersion: '2026-08-v2',
-    rankingPolicyVersion: '2026-07-deterministic-v1',
+    contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
+    rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
     generatedAt,
     targetId: '00000000-0000-4000-8000-000000000010',
     decisionRole: role,
@@ -135,6 +137,8 @@ function candidateFixture(input: {
         games: 100,
         frequencyPercent: 40,
         scorePercentForTarget: 52,
+        positionBaselineScorePercentForTarget: 50,
+        scoreDeltaVsPositionPercent: 2,
         averageRating: 2300,
         datasetVersion: 'masters-v1',
         fetchedAt: '2026-07-29T08:00:00.000Z',
@@ -145,6 +149,8 @@ function candidateFixture(input: {
         games: 1000,
         frequencyPercent: 45,
         scorePercentForTarget: 51,
+        positionBaselineScorePercentForTarget: 50,
+        scoreDeltaVsPositionPercent: 1,
         averageRating: 1500,
         datasetVersion: 'population-v1',
         fetchedAt: '2026-07-29T08:00:00.000Z',

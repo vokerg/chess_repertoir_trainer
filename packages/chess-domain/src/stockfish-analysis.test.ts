@@ -66,4 +66,13 @@ describe('stockfish analysis helpers', () => {
       { multipv: 3, depth: 0, moveUci: 'd2d4', pvUci: ['d2d4'] },
     ]);
   });
+
+  it('rejects stored lines whose explicit root contradicts the PV root', () => {
+    expect(normalizeStoredEngineLines([
+      { multipv: 1, depth: 18, moveUci: 'e2e4', scoreCpWhite: 500, pvUci: ['d2d4', 'd7d5'] },
+      { multipv: 2, depth: 18, moveUci: 'g1f3', scoreCpWhite: 20, pvUci: ['g1f3', 'g8f6'] },
+    ])).toEqual([
+      { multipv: 2, depth: 18, moveUci: 'g1f3', scoreCpWhite: 20, pvUci: ['g1f3', 'g8f6'] },
+    ]);
+  });
 });

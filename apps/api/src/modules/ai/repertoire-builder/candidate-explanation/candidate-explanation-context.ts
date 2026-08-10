@@ -49,7 +49,7 @@ function buildFacts(
       id: `source.${source.toLowerCase()}`,
       label: `${humanize(source)} source`,
       value: humanize(status),
-      missing: status !== 'AVAILABLE',
+      missing: isMissingEvidenceStatus(status as CandidateEvidenceStatus),
     });
   }
 
@@ -80,6 +80,14 @@ function addCandidateFacts(
   addStatusFact(add, `${prefix}.engine_status`, `${humanize(prefix)} engine evidence`, engine.status);
   if (engine.scoreCpForTarget !== null) {
     addFact(add, `${prefix}.engine_score`, `${humanize(prefix)} engine score`, formatCentipawns(engine.scoreCpForTarget));
+  }
+  if (engine.objectiveDeltaCp !== null) {
+    addFact(
+      add,
+      `${prefix}.engine_objective_delta`,
+      `${humanize(prefix)} objective delta from best stored line`,
+      `${engine.objectiveDeltaCp} cp`,
+    );
   }
   if (engine.depth !== null) {
     addFact(add, `${prefix}.engine_depth`, `${humanize(prefix)} engine depth`, String(engine.depth));
@@ -151,6 +159,24 @@ function addCorpusFacts(
   if (evidence.scorePercentForTarget !== null) {
     addFact(add, `${prefix}.${source}_score`, `${humanize(prefix)} ${source} score`, formatPercent(evidence.scorePercentForTarget));
   }
+  if (evidence.positionBaselineScorePercentForTarget !== null
+    && evidence.positionBaselineScorePercentForTarget !== undefined) {
+    addFact(
+      add,
+      `${prefix}.${source}_position_baseline_score`,
+      `${humanize(prefix)} ${source} position baseline score`,
+      formatPercent(evidence.positionBaselineScorePercentForTarget),
+    );
+  }
+  if (evidence.scoreDeltaVsPositionPercent !== null
+    && evidence.scoreDeltaVsPositionPercent !== undefined) {
+    addFact(
+      add,
+      `${prefix}.${source}_score_delta_vs_position`,
+      `${humanize(prefix)} ${source} score delta versus position`,
+      formatPercentagePoints(evidence.scoreDeltaVsPositionPercent),
+    );
+  }
 }
 
 function addStatusFact(
@@ -159,7 +185,11 @@ function addStatusFact(
   label: string,
   status: CandidateEvidenceStatus,
 ): void {
-  add({ id, label, value: humanize(status), missing: status !== 'AVAILABLE' });
+  add({ id, label, value: humanize(status), missing: isMissingEvidenceStatus(status) });
+}
+
+function isMissingEvidenceStatus(status: CandidateEvidenceStatus): boolean {
+  return status === 'INSUFFICIENT' || status === 'UNAVAILABLE';
 }
 
 function addFact(
@@ -213,9 +243,28 @@ function validateText(
     throw invalidResponse('AI explanation referenced an unsupported move.');
   }
 
-  requireEvidenceForVocabulary(text, referenceIds, /\b(rank|ranked|ranking|higher|lower|order)\b/i, ['.rank']);
-  requireEvidenceForVocabulary(text, referenceIds, /\b(engine|evaluation|score|depth|mate|centipawn)\b/i, ['.engine_']);
-  requireEvidenceForVocabulary(text, referenceIds, /\b(population|target play|frequency|common|games)\b/i, ['.population_', '.masters_', '.personal_']);
+  requireEvidenceForVocabulary(
+    text,
+    referenceIds,
+    /\b(rank|ranked|ranking)\b|\branks?\s+(?:higher|lower)\b|\b(?:higher|lower)\s+rank(?:ed|ing)?\b/i,
+    ['.rank'],
+  );
+  requireEvidenceForVocabulary(text, referenceIds, /\b(engine|evaluation|depth|mate|centipawn|objective delta)\b/i, ['.engine_']);
+  requireEvidenceForVocabulary(text, referenceIds, /\b(population|masters?|target play|frequency|common|games|baseline|percentage points?|overperform(?:s|ed|ing)?)\b/i, ['.population_', '.masters_', '.personal_']);
+  requireEvidenceForVocabulary(text, referenceIds, /\b(?:population|masters?|personal|position) score\b|\bscore delta\b/i, ['.population_', '.masters_', '.personal_']);
+  requireEvidenceForVocabulary(
+    text,
+    referenceIds,
+    /\bscore\b/i,
+    [
+      '.engine_score',
+      '.population_score',
+      '.masters_score',
+      '.personal_score',
+      '_position_baseline_score',
+      '_score_delta_vs_position',
+    ],
+  );
   requireEvidenceForVocabulary(text, referenceIds, /\b(target fit|aligned|misaligned)\b/i, ['.target_fit']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(profile fit|profile evidence)\b/i, ['.profile_fit', '.player_profile_']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(course|covered|conflict|transposes?)\b/i, ['.course_']);
@@ -262,6 +311,11 @@ function formatCentipawns(score: number): string {
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 10) / 10}%`;
+}
+
+function formatPercentagePoints(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return `${rounded > 0 ? '+' : ''}${rounded} pp`;
 }
 
 function humanize(value: string): string {

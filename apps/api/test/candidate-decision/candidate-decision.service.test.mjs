@@ -196,8 +196,8 @@ const service = createCandidateDecisionService({
     includeMoveUci: 'g2g4',
   });
 
-  assert.equal(response.contractVersion, '2026-08-v2');
-  assert.equal(response.rankingPolicyVersion, '2026-07-deterministic-v1');
+  assert.equal(response.contractVersion, '2026-08-v3');
+  assert.equal(response.rankingPolicyVersion, '2026-08-empirical-persona-v2');
   assert.equal(response.candidates.length, 2);
   assert.equal(response.requestedMoveIncluded, true);
   assert.equal(response.sourceSummary.engine, 'AVAILABLE');
@@ -221,6 +221,10 @@ const service = createCandidateDecisionService({
     'profileFit',
     'targetFit',
   ]);
+
+  const ranked = response.candidates.find((candidate) => candidate.moveUci !== 'g2g4');
+  assert.equal(ranked.evidence.population.positionBaselineScorePercentForTarget, 50);
+  assert.equal(ranked.evidence.population.scoreDeltaVsPositionPercent !== undefined, true);
 
   const e4 = response.candidates.find((candidate) => candidate.moveUci === 'e2e4');
   if (e4) {

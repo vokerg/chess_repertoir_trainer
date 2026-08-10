@@ -1,10 +1,13 @@
-import type {
-  CandidateDecisionCandidate,
-  CandidateDecisionResponse,
+import {
+  CANDIDATE_DECISION_CONTRACT_VERSION,
+  CANDIDATE_RANKING_POLICY_VERSION,
+  type CandidateDecisionCandidate,
+  type CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
 import {
   buildRepertoireBuilderEvidenceReference,
   buildRepertoireBuilderSourceItems,
+  reasonLabel,
 } from './repertoire-builder-view-model';
 
 describe('repertoire builder evidence view model', () => {
@@ -20,6 +23,12 @@ describe('repertoire builder evidence view model', () => {
     expect(items.some((item) => item.id === 'opening-knowledge')).toBeFalse();
     expect(items.some((item) => item.id.startsWith('opening-plan-'))).toBeFalse();
     expect(items.map((item) => item.id)).toEqual(['population', 'masters', 'personal', 'profile']);
+  });
+
+  it('labels the V2 strong-population reason as position-relative evidence', () => {
+    expect(reasonLabel('POPULATION_STRONG_SCORE')).toBe(
+      'Outperforms the position baseline in the selected population',
+    );
   });
 
   it('snapshots available evidence versions even when the first candidate lacks them', () => {
@@ -55,7 +64,7 @@ describe('repertoire builder evidence view model', () => {
     expect(reference.sourceVersions['populationDataset']).toBe('test-v1');
     expect(reference.sourceVersions['openingClassification']).toBe('2026-07-rules-v2');
     expect(reference.sourceVersions['openingKnowledge']).toBe('2026-08-knowledge-v1');
-    expect(reference.candidateContractVersion).toBe('2026-08-v2');
+    expect(reference.candidateContractVersion).toBe(CANDIDATE_DECISION_CONTRACT_VERSION);
   });
 });
 
@@ -140,8 +149,8 @@ const candidate = {
 } as CandidateDecisionCandidate;
 
 const response = {
-  contractVersion: '2026-08-v2',
-  rankingPolicyVersion: '2026-07-deterministic-v1',
+  contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
+  rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
   generatedAt: '2026-08-02T08:00:00.000Z',
   targetId: '00000000-0000-4000-8000-000000000010',
   decisionRole: 'OPPONENT_RESPONSE',
@@ -170,6 +179,8 @@ function corpus() {
     games: 10,
     frequencyPercent: 50,
     scorePercentForTarget: 50,
+    positionBaselineScorePercentForTarget: 50,
+    scoreDeltaVsPositionPercent: 0,
     averageRating: 1800,
     datasetVersion: 'test-v1',
     fetchedAt: '2026-08-02T08:00:00.000Z',

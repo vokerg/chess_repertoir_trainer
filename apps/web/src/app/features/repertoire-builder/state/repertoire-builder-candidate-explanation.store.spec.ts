@@ -3,9 +3,12 @@ import type {
   AiBuilderCandidateExplanationResponse,
   AiCapabilitiesResponse,
 } from '@chess-trainer/contracts/ai';
-import type {
-  CandidateDecisionRequest,
-  CandidateDecisionResponse,
+import {
+  CANDIDATE_DECISION_CONTRACT_VERSION,
+  CANDIDATE_RANKING_POLICY_VERSION,
+  type CandidateDecisionCandidate,
+  type CandidateDecisionRequest,
+  type CandidateDecisionResponse,
 } from '@chess-trainer/contracts/candidate-decision';
 import { of, Subject } from 'rxjs';
 import { AiCapabilitiesService } from '../../../core/ai/ai-capabilities.service';
@@ -99,18 +102,34 @@ function capability(enabled: boolean): AiCapabilitiesResponse {
 
 const normalizedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -';
 const targetId = 'fa8d7aae-f46e-4dce-b2a7-6644b9eca199';
-const candidateResponse = {
-  contractVersion: '2026-08-v2',
-  rankingPolicyVersion: '2026-07-deterministic-v1',
+
+const candidateResponse: CandidateDecisionResponse = {
+  contractVersion: CANDIDATE_DECISION_CONTRACT_VERSION,
+  rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
   generatedAt: '2026-07-30T15:00:00.000Z',
   targetId,
   decisionRole: 'USER_MOVE',
+  fen: `${normalizedFen} 0 1`,
   normalizedFen,
+  sideToMove: 'WHITE',
+  legalMoveCount: 20,
+  returnedCandidateCount: 2,
+  omittedLegalMoveCount: 18,
+  requestedMoveIncluded: false,
+  sourceSummary: {
+    engine: 'UNAVAILABLE',
+    masters: 'UNAVAILABLE',
+    population: 'UNAVAILABLE',
+    personal: 'INSUFFICIENT',
+    opening: 'UNAVAILABLE',
+    courses: 'INSUFFICIENT',
+    playerProfile: 'UNAVAILABLE',
+  },
   candidates: [
-    { moveUci: 'e2e4' },
-    { moveUci: 'd2d4' },
+    candidate(1, 'e2e4', 'e4'),
+    candidate(2, 'd2d4', 'd4'),
   ],
-} as CandidateDecisionResponse;
+};
 
 const decisionRequest = {
   fen: `${normalizedFen} 0 1`,
@@ -119,7 +138,7 @@ const decisionRequest = {
   candidateLimit: 6,
 } as CandidateDecisionRequest;
 
-const explanationResponse = {
+const explanationResponse: AiBuilderCandidateExplanationResponse = {
   kind: 'BUILDER_CANDIDATE_EXPLANATION',
   schemaVersion: 1,
   generatedAt: '2026-07-30T15:02:00.000Z',
@@ -127,7 +146,7 @@ const explanationResponse = {
     targetId,
     normalizedFen,
     decisionRole: 'USER_MOVE',
-    rankingPolicyVersion: '2026-07-deterministic-v1',
+    rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
     responseGeneratedAt: candidateResponse.generatedAt,
     selectedMoveUci: 'e2e4',
     comparisonMoveUci: null,
@@ -147,4 +166,98 @@ const explanationResponse = {
     missing: false,
   }],
   disclaimer: 'Candidate ranking remains deterministic and move choice remains yours.',
-} as AiBuilderCandidateExplanationResponse;
+};
+
+function candidate(rank: number, moveUci: string, moveSan: string): CandidateDecisionCandidate {
+  return {
+    rank,
+    moveUci,
+    moveSan,
+    resultingFen: `${normalizedFen} 0 1`,
+    previewUci: [moveUci],
+    manuallyRequested: false,
+    eligibility: { status: 'ELIGIBLE', reasonCodes: [], warningCodes: [] },
+    targetFit: { status: 'NEUTRAL', reasonCodes: [] },
+    profileFit: { status: 'UNKNOWN', reasonCodes: [] },
+    components: {
+      objective: 0,
+      population: 0,
+      masters: 0,
+      personal: 0,
+      targetFit: 0,
+      profileFit: 0,
+      course: 0,
+    },
+    reasonCodes: [],
+    warningCodes: [],
+    coverage: null,
+    evidence: {
+      engine: {
+        status: 'UNAVAILABLE',
+        depth: null,
+        multipv: null,
+        scoreCpForTarget: null,
+        mateForTarget: null,
+        objectiveDeltaCp: null,
+        pvUci: [],
+      },
+      masters: unavailableCorpus(),
+      population: unavailableCorpus(),
+      personal: {
+        status: 'INSUFFICIENT',
+        occurrences: 0,
+        games: 0,
+        scorePercent: null,
+      },
+      opening: {
+        status: 'UNAVAILABLE',
+        opening: null,
+        classificationVersion: null,
+        side: 'WHITE',
+        soundness: null,
+        character: [],
+        theoreticalStatus: null,
+        theoryBurden: null,
+        roles: [],
+        confidence: null,
+        matchedRuleIds: [],
+        knowledge: {
+          status: 'UNAVAILABLE',
+          version: null,
+          shortDescription: null,
+          strategicSummary: null,
+          plans: [],
+          matchedRuleIds: [],
+          sourceIds: [],
+        },
+      },
+      course: {
+        status: 'INSUFFICIENT',
+        covered: false,
+        conflict: false,
+        transposesToCoveredPosition: false,
+        references: [],
+      },
+      playerProfile: {
+        status: 'UNAVAILABLE',
+        generatedAt: null,
+        matches: [],
+      },
+    },
+  };
+}
+
+function unavailableCorpus() {
+  return {
+    status: 'UNAVAILABLE' as const,
+    games: 0,
+    frequencyPercent: null,
+    scorePercentForTarget: null,
+    positionBaselineScorePercentForTarget: null,
+    scoreDeltaVsPositionPercent: null,
+    averageRating: null,
+    datasetVersion: null,
+    fetchedAt: null,
+    representativeGameId: null,
+  };
+}

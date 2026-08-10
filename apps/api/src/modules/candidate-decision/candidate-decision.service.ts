@@ -55,6 +55,7 @@ import { OpeningKnowledgeService } from '../../services/opening-book/openingKnow
 
 const ENGINE_LINE_LIMIT = 3;
 const POPULATION_SEED_LIMIT = 8;
+const POPULATION_SURPRISE_SEED_LIMIT = 12;
 const MASTERS_SEED_LIMIT = 5;
 const PERSONAL_SEED_LIMIT = 5;
 const COURSE_SEED_LIMIT = 8;
@@ -66,6 +67,7 @@ const OPENING_KNOWLEDGE_REFERENCE_LIMIT = 12;
 const OPENING_KNOWLEDGE_CONDITION_LIMIT = 4;
 const MIN_ENGINE_DEPTH = 12;
 const MIN_MASTERS_GAMES = 10;
+const EMPIRICAL_USER_POPULATION_MIN_GAMES = 20;
 const MIN_PERSONAL_GAMES = 3;
 const MIN_PROFILE_GAMES = 5;
 
@@ -233,12 +235,16 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         settle(() => playerProfileProvider.get(userId, request.target)),
       ]);
 
-      const engineStatus = engineSourceStatus(engineResult);
+      const populationMinimumGames = request.decisionRole === 'USER_MOVE'
+        && request.target.objective.persona !== 'CUSTOM'
+        ? Math.max(
+            request.target.coverage.minimumPopulationGames,
+            EMPIRICAL_USER_POPULATION_MIN_GAMES,
+          )
+        : request.target.coverage.minimumPopulationGames;
+      const engineStatus = engineSourceStatus(engineResult, legalMoves);
       const mastersStatus = explorerSourceStatus(mastersResult, MIN_MASTERS_GAMES);
-      const populationStatus = explorerSourceStatus(
-        populationResult,
-        request.target.coverage.minimumPopulationGames,
-      );
+      const populationStatus = explorerSourceStatus(populationResult, populationMinimumGames);
       const personalStatus = personalSourceStatus(personalResult);
       const coursesStatus = courseSourceStatus(coursesResult);
       const profileStatus = profileSourceStatus(profileResult);
@@ -262,16 +268,15 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         (personal?.nextMoves ?? []).map((move) => [move.moveUci.toLowerCase(), move]),
       );
       const coursesByMove = groupCoursesByMove(courses?.suggestions ?? []);
-      const engineByMove = new Map(
-        engineLines.flatMap((line) => {
-          const moveUci = lineMove(line);
-          return moveUci ? [[moveUci, line] as const] : [];
-        }),
-      );
+      const engineByMove = engineLineMap(engineLines, legalMoves);
 
       const seeds = new Set<string>();
+      const populationSeedLimit = request.decisionRole === 'USER_MOVE'
+        && request.target.objective.persona === 'SURPRISE'
+        ? POPULATION_SURPRISE_SEED_LIMIT
+        : POPULATION_SEED_LIMIT;
       addSeeds(seeds, engineLines.map(lineMove), legalMoves, ENGINE_LINE_LIMIT);
-      addSeeds(seeds, population?.moves.map((move) => move.uci) ?? [], legalMoves, POPULATION_SEED_LIMIT);
+      addSeeds(seeds, population?.moves.map((move) => move.uci) ?? [], legalMoves, populationSeedLimit);
       addSeeds(seeds, masters?.moves.map((move) => move.uci) ?? [], legalMoves, MASTERS_SEED_LIMIT);
       addSeeds(seeds, personal?.nextMoves.map((move) => move.moveUci) ?? [], legalMoves, PERSONAL_SEED_LIMIT);
       addSeeds(seeds, courses?.suggestions.map((move) => move.moveUci) ?? [], legalMoves, COURSE_SEED_LIMIT);
@@ -284,7 +289,8 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         }
       }
 
-      const comparableScores = engineLines
+      const comparableScores = [...engineByMove.values()]
+        .filter(isUsableStoredEngineLine)
         .map((line) => targetComparableScore(line, request.target.side))
         .filter((score): score is number => score !== null);
       const safestTargetScore = comparableScores.length ? Math.max(...comparableScores) : null;
@@ -329,7 +335,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
             population,
             populationStatus,
             request.target.side,
-            request.target.coverage.minimumPopulationGames,
+            populationMinimumGames,
           ),
           personal: personalEvidence(personalMove, personalStatus),
           opening,
@@ -354,12 +360,14 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
             games: evidence.population.games,
             frequencyPercent: evidence.population.frequencyPercent,
             scorePercentForTarget: evidence.population.scorePercentForTarget,
+            positionBaselineScorePercentForTarget: evidence.population.positionBaselineScorePercentForTarget,
           },
           masters: {
             status: evidence.masters.status,
             games: evidence.masters.games,
             frequencyPercent: evidence.masters.frequencyPercent,
             scorePercentForTarget: evidence.masters.scorePercentForTarget,
+            positionBaselineScorePercentForTarget: evidence.masters.positionBaselineScorePercentForTarget,
           },
           personal: {
             status: evidence.personal.status,
@@ -389,10 +397,11 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         speedPreset: request.target.speedPreset,
         riskTolerance: request.target.objective.riskTolerance,
         allowDeliberatelyDubious: request.target.objective.allowDeliberatelyDubious,
+        persona: request.target.objective.persona,
       });
       const selected = selectBoundedCandidates(ranked, request.candidateLimit, includedMove);
-      const candidates: CandidateDecisionCandidate[] = selected.map((entry, index) => ({
-        rank: index + 1,
+      const candidates: CandidateDecisionCandidate[] = selected.map((entry) => ({
+        rank: entry.rank,
         moveUci: entry.input.moveUci,
         moveSan: entry.input.moveSan,
         resultingFen: entry.input.resultingFen,
@@ -505,6 +514,25 @@ function lineMove(line: StoredEngineLine): string | null {
   return (line.moveUci ?? line.pvUci[0] ?? '').trim().toLowerCase() || null;
 }
 
+function engineLineMap(
+  lines: readonly StoredEngineLine[],
+  legalMoves: ReadonlyMap<string, LegalMove>,
+): Map<string, StoredEngineLine> {
+  const byMove = new Map<string, StoredEngineLine>();
+  for (const line of lines) {
+    const moveUci = lineMove(line);
+    if (!moveUci || !legalMoves.has(moveUci) || byMove.has(moveUci)) continue;
+    byMove.set(moveUci, line);
+  }
+  return byMove;
+}
+
+function isUsableStoredEngineLine(line: StoredEngineLine): boolean {
+  return line.depth !== undefined
+    && line.depth >= MIN_ENGINE_DEPTH
+    && (line.scoreCpWhite !== undefined || line.mateWhite !== undefined);
+}
+
 function engineEvidence(
   line: StoredEngineLine | null,
   sourceStatus: CandidateEvidenceStatus,
@@ -522,14 +550,20 @@ function engineEvidence(
       pvUci: [],
     };
   }
+  const usableLine = isUsableStoredEngineLine(line);
   const scoreCpForTarget = orientForTarget(line.scoreCpWhite, targetSide);
   const mateForTarget = orientForTarget(line.mateWhite, targetSide);
-  const comparable = targetComparableScore(line, targetSide);
+  const comparable = usableLine ? targetComparableScore(line, targetSide) : null;
   const objectiveDeltaCp = comparable === null || safestTargetScore === null
     ? null
     : Math.max(0, Math.min(32_767, Math.round(safestTargetScore - comparable)));
+  const status: CandidateEvidenceStatus = sourceStatus === 'UNAVAILABLE'
+    ? 'UNAVAILABLE'
+    : usableLine
+      ? sourceStatus === 'STALE' ? 'STALE' : 'AVAILABLE'
+      : 'INSUFFICIENT';
   return {
-    status: line.depth !== undefined && line.depth < MIN_ENGINE_DEPTH ? 'INSUFFICIENT' : sourceStatus,
+    status,
     depth: line.depth ?? null,
     multipv: line.multipv ?? null,
     scoreCpForTarget: scoreCpForTarget ?? null,
@@ -561,14 +595,20 @@ function corpusEvidence(
   if (!response || sourceStatus === 'UNAVAILABLE') return unavailableCorpusEvidence();
   if (!move) return { ...unavailableCorpusEvidence(), status: 'INSUFFICIENT' };
   const games = move.games.total;
-  const status = sourceStatus === 'STALE'
-    ? 'STALE'
-    : games >= minimumGames ? 'AVAILABLE' : 'INSUFFICIENT';
+  const status = games < minimumGames
+    ? 'INSUFFICIENT'
+    : sourceStatus === 'STALE' ? 'STALE' : 'AVAILABLE';
+  const scorePercentForTarget = corpusScorePercent(move, targetSide);
+  const positionBaselineScorePercentForTarget = corpusPositionScorePercent(response, targetSide);
   return {
     status,
     games,
     frequencyPercent: percentage(games, response.games.total),
-    scorePercentForTarget: corpusScorePercent(move, targetSide),
+    scorePercentForTarget,
+    positionBaselineScorePercentForTarget,
+    scoreDeltaVsPositionPercent: scorePercentForTarget === null || positionBaselineScorePercentForTarget === null
+      ? null
+      : roundMetric(scorePercentForTarget - positionBaselineScorePercentForTarget),
     averageRating: move.averageRating,
     datasetVersion: `${response.dataset.source}:${response.dataset.profileVersion}`,
     fetchedAt: response.cache.fetchedAt,
@@ -582,6 +622,8 @@ function unavailableCorpusEvidence(): CandidateCorpusEvidence {
     games: 0,
     frequencyPercent: null,
     scorePercentForTarget: null,
+    positionBaselineScorePercentForTarget: null,
+    scoreDeltaVsPositionPercent: null,
     averageRating: null,
     datasetVersion: null,
     fetchedAt: null,
@@ -593,6 +635,12 @@ function corpusScorePercent(move: OpeningExplorerMove, targetSide: UserColor): n
   if (!move.games.total) return null;
   const wins = targetSide === 'WHITE' ? move.games.whiteWins : move.games.blackWins;
   return roundMetric(((wins + move.games.draws * 0.5) / move.games.total) * 100);
+}
+
+function corpusPositionScorePercent(response: OpeningExplorerResponse, targetSide: UserColor): number | null {
+  if (!response.games.total) return null;
+  const wins = targetSide === 'WHITE' ? response.games.whiteWins : response.games.blackWins;
+  return roundMetric(((wins + response.games.draws * 0.5) / response.games.total) * 100);
 }
 
 function personalEvidence(
@@ -915,12 +963,16 @@ function theoryRank(value: CandidateOpeningEvidence['theoryBurden'] | Repertoire
   return null;
 }
 
-function engineSourceStatus(result: SettledValue<StoredPositionAnalysis | null>): CandidateEvidenceStatus {
+function engineSourceStatus(
+  result: SettledValue<StoredPositionAnalysis | null>,
+  legalMoves: ReadonlyMap<string, LegalMove>,
+): CandidateEvidenceStatus {
   if (!result.ok || !result.value) return 'UNAVAILABLE';
-  if (!result.value.lines.length) return 'INSUFFICIENT';
-  return result.value.lines.some((line) => line.depth !== undefined && line.depth < MIN_ENGINE_DEPTH)
-    ? 'INSUFFICIENT'
-    : 'AVAILABLE';
+  const lines = result.value.lines.slice(0, ENGINE_LINE_LIMIT);
+  if (!lines.length) return 'INSUFFICIENT';
+  return [...engineLineMap(lines, legalMoves).values()].some(isUsableStoredEngineLine)
+    ? 'AVAILABLE'
+    : 'INSUFFICIENT';
 }
 
 function explorerSourceStatus(
@@ -928,8 +980,8 @@ function explorerSourceStatus(
   minimumGames: number,
 ): CandidateEvidenceStatus {
   if (!result.ok || !result.value) return 'UNAVAILABLE';
-  if (result.value.cache.status === 'STALE') return 'STALE';
-  return result.value.games.total >= minimumGames ? 'AVAILABLE' : 'INSUFFICIENT';
+  if (result.value.games.total < minimumGames) return 'INSUFFICIENT';
+  return result.value.cache.status === 'STALE' ? 'STALE' : 'AVAILABLE';
 }
 
 function personalSourceStatus(
