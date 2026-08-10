@@ -16,7 +16,7 @@ Run:
 npm run check:hygiene
 ```
 
-The guard currently ratchets use of `legacyOpaqueResponseSchema`. Existing transitional consumers are explicitly enumerated in `scripts/check-repository-hygiene.mjs`; a new consumer fails the check, while migrating or deleting an existing consumer reduces the count without requiring a new exception.
+The guard currently ratchets use of `legacyOpaqueResponseSchema`. Existing transitional consumers are explicitly enumerated in `scripts/check-repository-hygiene.mjs`, and the allowlist must exactly match the current consumers. New consumers fail the check; migrating or deleting a consumer requires removing its allowance in the same change, so stale exceptions cannot remain.
 
 The statistics routes are no longer part of that allowlist. Their aggregate summary, line/chapter/course statistics, and subline-status responses use schemas from `@chess-trainer/contracts/training`, and the Angular Lines client consumes the inferred DTOs instead of duplicate handwritten response interfaces.
 
