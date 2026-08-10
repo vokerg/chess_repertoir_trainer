@@ -26,6 +26,7 @@ Canonical documents in `docs/` describe current runtime architecture and operati
 - [API conventions](api-conventions.md): route and service conventions.
 - [API contracts](api-contracts.md): shared HTTP schema ownership.
 - [OpenAPI](openapi.md): generated documentation rules.
+- [Repository hygiene](repository-hygiene.md): cleanup safety rules, transitional-debt ratchets, and validation expectations.
 - [Deployment](deployment.md): environment and hosting setup.
 - [Manual Docker deployment](docker-manual-deployment.md): Compose testing, multi-platform publishing, VM update, and rollback.
 - [Mobile development](mobile/development.md): Expo setup, device networking, validation, and release gates.
