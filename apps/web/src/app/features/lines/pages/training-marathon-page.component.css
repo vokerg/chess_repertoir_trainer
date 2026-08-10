@@ -41,20 +41,6 @@
   border-radius: var(--ui-radius-control);
 }
 
-.marathon-line-context {
-  margin: 0;
-  padding-inline: 0.2rem;
-  color: var(--ui-text-muted);
-  font-size: 0.86rem;
-  line-height: 1.4;
-}
-
-.marathon-line-context strong {
-  color: var(--ui-text);
-  font-family: var(--ui-font-family-mono);
-  font-weight: 700;
-}
-
 .status-error {
   color: var(--ui-danger);
   font-weight: 800;
@@ -82,14 +68,6 @@
 
   .training-back-link {
     font-size: 0.8rem;
-  }
-
-  .marathon-line-context {
-    overflow: hidden;
-    padding-inline: 0;
-    font-size: 0.78rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .marathon-error {

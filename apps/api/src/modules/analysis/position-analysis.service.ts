@@ -1,5 +1,6 @@
 import { normalizeFenForPosition } from 'chess-domain';
 import { StorePositionAnalysisInput, StoredPositionAnalysis } from './analysis.types';
+import { normalizeStoredEngineLines } from './position-analysis-normalization';
 import {
   findOrCreatePositionByFen,
   getPositionAnalysesByFens,
@@ -10,7 +11,11 @@ import {
 
 function withRequestedFen<T extends StoredPositionAnalysis | null>(analysis: T, fen: string): T {
   if (!analysis) return analysis;
-  return { ...analysis, fen } as T;
+  return {
+    ...analysis,
+    fen,
+    lines: normalizeStoredEngineLines(analysis.lines),
+  } as T;
 }
 
 export const PositionAnalysisService = {

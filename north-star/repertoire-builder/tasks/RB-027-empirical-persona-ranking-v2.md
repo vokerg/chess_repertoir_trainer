@@ -1,6 +1,6 @@
 # RB-027 — Empirical persona ranking V2
 
-Status: READY
+Status: DONE
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 200
 
 Delivery class: North-star ranking policy
 
-Planning maturity: Agreed product semantics; calibration required before final weights
+Planning maturity: Implemented and validated; future calibration requires a new ranking-policy version
 
 GitHub issue: #317
 
-Claimed by: unclaimed
+Claimed by: vokerg
 
-Claim branch: none
+Claim branch: `rb-027/empirical-persona-ranking-v2`
 
-Claimed at: none
+Claimed at: 2026-08-09
 
-Claim scope: none
+Claim scope: empirical `USER_MOVE` persona ranking V2 and required Candidate Decision V3 evidence semantics
 
 ## Objective
 
@@ -35,14 +35,16 @@ Persona applies only when the repertoire side is choosing a move. It does not ra
 
 Opening classification and reviewed opening knowledge remain explanatory context. Player Chess Profile fit is not a V2 persona-ranking input.
 
-## Required discovery before locking weights
+## Implemented calibration
 
-1. Build representative deterministic benchmark positions with expected ordering for all four personas.
-2. Define peer performance relative to the position baseline rather than a fixed 50% score.
-3. Define sample-size treatment so tiny rare samples cannot dominate Surprise.
-4. Inspect candidate seeding: an uncommon candidate must be discoverable without widening the public list into noise.
-5. Inspect bounded engine evidence for uncommon candidates. Surprise must not call a move objectively acceptable when no suitable engine evidence exists.
-6. Reinspect current candidate endpoint/contracts/domain ranking, Opening Explorer behavior and stored analysis before implementation.
+- target-population performance is measured against the exact-position target-side baseline rather than a fixed 50% score;
+- empirical preset population evidence requires at least 20 games and Masters evidence requires at least 10 games;
+- Surprise rarity contributes only when selected-population performance beats the position baseline by at least 3 percentage points;
+- bounded candidate discovery keeps the public result compact while allowing a wider selected-population seed set for Surprise;
+- objective evidence is limited to usable already-stored legal engine roots at depth at least 12, with no on-demand or unbounded engine workflow;
+- contradictory explicit root/PV pairs and illegal/duplicate roots cannot poison objective authority.
+
+The exact versioned weights and objective guardrails are recorded in the closure report and implementation tests.
 
 ## In scope
 
@@ -64,24 +66,32 @@ Opening classification and reviewed opening knowledge remain explanatory context
 
 ## Dependencies
 
-RB-001/RB-007/RB-010 foundations are complete. Coordinate shared contract changes with RB-028 and RB-029. RB-031 depends on the final evidence semantics from this task.
+RB-001/RB-007/RB-010 foundations are complete. RB-028 can consume the stabilized Candidate Decision V3 corpus semantics. RB-029 still owns opponent-response policy, and RB-031 depends on the final evidence semantics completed here.
 
 ## Acceptance criteria
 
-- four personas produce meaningfully different, understandable orderings on benchmark positions;
-- Balanced is peer-practical rather than engine-first;
-- Solid is materially more Master/objective conservative;
-- Aggressive is distinguishable from Surprise through stronger mainstream/Master justification and less dependence on rarity;
-- Surprise is driven by rarity plus peer overperformance with sample and engine safeguards, not a static `SURPRISE` label;
-- opening classification/knowledge are not the primary ranking mechanism;
-- no Player Chess Profile fit component is required to rank V2 user moves;
-- public explanations expose dominant evidence without publishing fake precision;
-- manual legal candidates use the same policy;
-- tests cover sparse, rare, common, Master-supported, engine-costly and missing-evidence cases;
-- build/lint/architecture validation is recorded.
+- [x] four personas produce meaningfully different, understandable orderings on benchmark positions;
+- [x] Balanced is peer-practical rather than engine-first;
+- [x] Solid is materially more Master/objective conservative;
+- [x] Aggressive is distinguishable from Surprise through stronger mainstream/Master justification and less dependence on rarity;
+- [x] Surprise is driven by rarity plus peer overperformance with sample and engine safeguards, not a static `SURPRISE` label;
+- [x] opening classification/knowledge are not the primary ranking mechanism;
+- [x] no Player Chess Profile fit component is required to rank V2 user moves;
+- [x] public explanations expose dominant evidence without publishing fake precision;
+- [x] manual legal candidates use the same policy;
+- [x] tests cover sparse, rare, common, Master-supported, engine-costly and missing-evidence cases;
+- [x] build/lint/architecture validation is recorded.
 
 ## Completion
 
-Report: none
+Runtime PR: #325
 
-Completed at: none
+Runtime squash: `34dadd251d4310f427cc60b466158c132823e398`
+
+Completion reconciliation PR: #330
+
+Final runtime CI: #2392 (`31383710305`) — green
+
+Report: `north-star/repertoire-builder/reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`
+
+Completed at: 2026-08-10

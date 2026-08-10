@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 This roadmap records capability stages and decision gates. Detailed implementation history lives in task and report files.
 
@@ -52,7 +52,7 @@ Production traps remain separate from normal Surprise semantics. Generated inter
 
 RB-016 remains blocked.
 
-The useful evaluation cohort is now explicitly **post-V2**. Outcome work should not calibrate the current profile-fit/coverage/persona semantics that the product has decided to replace.
+The useful evaluation cohort is explicitly **post-V2**. Outcome work should not calibrate semantics that are still being revised by the V2 queue.
 
 Required future evidence still includes adoption, recall, opening-position quality, results and regression/coverage signals after Builder-created material has been trained and encountered in later games.
 
@@ -68,19 +68,19 @@ Product direction locked on 2026-08-09. See [`BUILDER_V2_PLAN.md`](BUILDER_V2_PL
 
 ### 10.1 RB-027 / #317 — empirical user-move personas
 
-Status: **READY**, P0.
+Status: **DONE**, P0.
 
-Rebuild Balanced/Solid/Aggressive/Surprise around target-population, Masters and engine evidence. Calibrate representative positions before locking numeric weights. Surprise must support uncommon viable candidates without relying on static opening labels or tiny samples.
+Runtime PR #325 (`34dadd25`) implements versioned Balanced/Solid/Aggressive/Surprise `USER_MOVE` policies over exact-position selected-population, Masters and bounded objective evidence. The Candidate Decision V3 contract exposes position baselines/deltas; Surprise uses rarity plus material peer overperformance with explicit sample/objective safeguards. Final runtime CI #2392 is green.
 
-Gate: versioned policy produces understandable, materially different persona orderings and safely handles rare-candidate discovery/engine evidence.
+Gate: passed. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`.
 
 ### 10.2 RB-028 / #318 — factual personal move evidence
 
-Status: **READY**, P1.
+Status: **IN_PROGRESS**, P1.
 
 Replace primary Builder Profile Fit with exact-position common/rare/new, result context and recency. Familiarity uses all eligible indexed history and remains primarily informational rather than a hidden persona authority.
 
-Can proceed alongside RB-027 with shared contract coordination.
+Implementation is active on PR #327 and can consume the stabilized RB-027 V3 corpus semantics.
 
 ### 10.3 RB-029 / #319 — opponent preparation and computed coverage
 
@@ -96,7 +96,7 @@ Status: **READY**, P1.
 
 Normal setup remains one dialog with side/starting scope, speed population, rating target and persona exactly once. Remove normal coverage and hard theory controls. Reuse existing starting-position/session mechanics for common first-move scopes.
 
-Gate: V2 target-contract compatibility is clear after RB-027/RB-029 shared changes.
+Gate: V2 target-contract compatibility is clear after RB-029 shared changes.
 
 ### 10.5 RB-031 / #321 — Cockpit evidence hierarchy
 
@@ -104,27 +104,27 @@ Status: **PROPOSED**, P1.
 
 Integrate the settled V2 evidence into the RB-026 Cockpit. Foreground peer/Masters/engine and factual personal evidence on user turns; preparation priority/computed coverage on opponent turns; keep opening knowledge as concise explanation; remove normal ECO and obsolete fit badges.
 
-Gate: RB-027–RB-029 semantics/contracts are stable enough that Angular does not invent a second recommendation model.
+Gate: RB-028–RB-029 semantics/contracts are stable enough that Angular does not invent a second recommendation model.
 
 ## Release condition
 
-The current deterministic Builder remains production runtime while V2 is implemented incrementally.
+The deterministic Builder remains production runtime while V2 is implemented incrementally. RB-027's empirical user-move ranking is now part of that runtime; remaining V2 stages are still incremental work.
 
-V2 is ready as the new product authority when:
+V2 is ready as the complete new product authority when:
 
-- user-move personas are empirically calibrated and versioned;
-- exact-position personal familiarity/results replace broad Builder Profile Fit;
-- opponent turns no longer use persona/profile fit and coverage is computed from selection;
-- normal setup is simplified to one understandable dialog;
-- the Cockpit communicates the new evidence hierarchy without losing existing state/course behavior.
+- [x] user-move personas are empirically calibrated and versioned;
+- [ ] exact-position personal familiarity/results replace broad Builder Profile Fit;
+- [ ] opponent turns no longer use persona/profile fit and coverage is computed from selection;
+- [ ] normal setup is simplified to one understandable dialog;
+- [ ] the Cockpit communicates the new evidence hierarchy without losing existing state/course behavior.
 
 Outcome claims remain excluded until RB-016 has sufficient post-V2 evidence.
 
 ## Queue impact
 
-- RB-027 is the first available V2 task.
-- RB-028 may proceed in parallel with contract coordination.
-- RB-029 follows/coordinates shared candidate-policy changes.
+- RB-027 is complete.
+- RB-028 is active on PR #327.
+- RB-029 is the next unclaimed candidate-policy task.
 - RB-030 follows target-policy compatibility work.
 - RB-031 integrates the settled V2 semantics into the Cockpit.
 - RB-016 remains blocked behind both V2 delivery and real usage.

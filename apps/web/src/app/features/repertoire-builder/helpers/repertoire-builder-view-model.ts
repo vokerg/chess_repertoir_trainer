@@ -18,7 +18,7 @@ const REASON_LABELS: Record<string, string> = {
   ENGINE_CLOSE: 'Close to the best engine line',
   OBJECTIVE_COST: 'Carries an objective cost',
   POPULATION_COMMON: 'Common in the selected population',
-  POPULATION_STRONG_SCORE: 'Scores well in the selected population',
+  POPULATION_STRONG_SCORE: 'Outperforms the position baseline in the selected population',
   MASTER_SUPPORTED: 'Supported by master practice',
   PERSONALLY_FAMILIAR: 'Already familiar from your games',
   PERSONAL_RESULTS_POSITIVE: 'Positive personal results',

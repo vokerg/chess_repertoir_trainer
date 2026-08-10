@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
@@ -32,8 +32,8 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 180 | RB-024 | #243 | P3 | DONE | AI game review grounding with opening plans | PR #268 |
 | 185 | RB-025 | #290 | P1 | DONE | Scale opening knowledge toward comprehensive coverage | PRs #302/#304; runtime `997d1ecc`; reconciliation PR #300 |
 | 190 | RB-026 | #310 | P1 | DONE | Reintegrate the Builder Cockpit workspace | Runtime PR #311; `fe0a5ada`; completion PR #314 |
-| 200 | RB-027 | #317 | P0 | READY | Empirical persona ranking V2 | Planned |
-| 210 | RB-028 | #318 | P1 | READY | Factual personal move evidence | Planned |
+| 200 | RB-027 | #317 | P0 | DONE | Empirical persona ranking V2 | Runtime PR #325; `34dadd25`; CI #2392 |
+| 210 | RB-028 | #318 | P1 | IN_PROGRESS | Factual personal move evidence | PR #327 |
 | 220 | RB-029 | #319 | P1 | READY | Opponent preparation and computed coverage V2 | Planned |
 | 230 | RB-030 | #320 | P1 | READY | Single-dialog Builder setup V2 | Planned |
 | 240 | RB-031 | #321 | P1 | PROPOSED | Cockpit evidence hierarchy V2 | Depends on RB-027–RB-029 semantics |
@@ -41,21 +41,19 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 ## Current execution state
 
 - The deterministic Builder capability chain, opening-knowledge service, course integration and RB-026 Cockpit are complete in runtime.
-- Product review on 2026-08-09 revised the Builder decision model without rejecting the Cockpit. [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md) records the agreed direction.
-- RB-027 / #317 is the first executable V2 task: calibrate and implement empirical user-move personas before UI copy is finalized.
-- RB-028 / #318 can proceed in parallel with contract coordination: replace broad Profile Fit with factual exact-position common/rare/new and result/recency evidence.
-- RB-029 / #319 reframes opponent turns as preparation priority and makes coverage computed feedback rather than setup/persona intent.
-- RB-030 / #320 simplifies normal launch to one dialog with side/scope, speed, rating target and persona exactly once; it should coordinate with target-contract changes from RB-027/RB-029.
-- RB-031 / #321 integrates the final evidence semantics into the existing Cockpit after RB-027–RB-029 stabilize.
+- RB-027 / #317 is complete in runtime. Preset `USER_MOVE` personas now use versioned empirical selected-population, Masters and bounded objective evidence with exact-position baselines and V3 explanation semantics.
+- RB-028 / #318 is in progress on PR #327 and can consume the stabilized V3 population/Masters evidence while keeping factual personal evidence distinct from persona authority.
+- RB-029 / #319 is the next unclaimed policy task: opponent turns become preparation priority and coverage becomes computed feedback rather than setup/persona intent.
+- RB-030 / #320 simplifies normal launch to one dialog with side/scope, speed, rating target and persona exactly once; it should coordinate with target-contract changes from RB-029.
+- RB-031 / #321 integrates the final evidence semantics into the existing Cockpit after RB-028–RB-029 stabilize.
 - RB-016 remains blocked; its useful cohort is post-V2 real usage rather than the semantics being replaced.
 
 ## Queue recommendation
 
-1. RB-027 / #317 — first, because it defines the authoritative user-move evidence semantics and may affect shared contracts/candidate seeding.
-2. RB-028 / #318 — parallel where safe; coordinate contract collisions with RB-027.
-3. RB-029 / #319 — next shared candidate-policy change; preserve RB-009 reducer/queue semantics.
-4. RB-030 / #320 — simplify setup after V2 target/coverage compatibility is clear.
-5. RB-031 / #321 — final Cockpit integration over the settled V2 contracts.
-6. RB-016 / #104 — remain blocked until sufficient post-V2 training and follow-up-game evidence exists.
+1. RB-028 / #318 — active implementation; finish V3 personal-evidence integration without restoring personal history as preset persona authority.
+2. RB-029 / #319 — next unclaimed shared candidate-policy change; preserve RB-009 reducer/queue semantics.
+3. RB-030 / #320 — simplify setup after V2 target/coverage compatibility is clear.
+4. RB-031 / #321 — final Cockpit integration over the settled V2 contracts.
+5. RB-016 / #104 — remain blocked until sufficient post-V2 training and follow-up-game evidence exists.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.

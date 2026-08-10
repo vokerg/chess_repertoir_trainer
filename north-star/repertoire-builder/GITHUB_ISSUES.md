@@ -1,6 +1,6 @@
 # GitHub Issues coordination
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 GitHub Issues is the execution layer for this north-star program. Repository documents remain the detailed planning, architecture, acceptance, and historical source.
 
@@ -46,15 +46,17 @@ GitHub Issues is the execution layer for this north-star program. Repository doc
 
 ## Current coordination state
 
-RB-026 is complete: runtime PR #311 and documentation completion PR #314 are merged, and issue #310 is closed as completed. Builder V2 planning PR #324 is also squash-merged to `main`; `BUILDER_V2_PLAN.md` and RB-027–RB-031 are now canonical program planning rather than stacked review work.
+RB-026 is complete: runtime PR #311 and documentation completion PR #314 are merged, and issue #310 is closed as completed. Builder V2 planning PR #324 is squash-merged to `main`.
 
-Builder V2 is split into five execution issues:
+RB-027 runtime implementation is complete through PR #325 / squash `34dadd25`, with final exact-head CI #2392 green. This completion reconciliation records the canonical task/report/status evidence before issue #317 is closed.
 
-- #317 / RB-027 — empirical user-move personas, `READY`, P0;
-- #318 / RB-028 — factual personal move evidence, `READY`, P1;
-- #319 / RB-029 — opponent preparation and computed coverage, `READY`, P1;
+Builder V2 execution state:
+
+- #317 / RB-027 — empirical user-move personas, `DONE`, P0 after completion reconciliation;
+- #318 / RB-028 — factual personal move evidence, `IN_PROGRESS`, P1 on PR #327;
+- #319 / RB-029 — opponent preparation and computed coverage, `READY`, P1 and next unclaimed policy task;
 - #320 / RB-030 — single-dialog setup, `READY`, P1;
-- #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-027–RB-029 semantics settle.
+- #321 / RB-031 — Cockpit evidence hierarchy, `PROPOSED`, P1 until RB-028–RB-029 semantics settle.
 
 RB-016 / #104 remains open and blocked. Its blocker includes completion of the V2 decision model plus sufficient post-V2 Builder/course use and follow-up games.
 
@@ -91,10 +93,10 @@ Before work:
 3. Record the claimant and exact scope in the repository task file.
 4. Assign the issue when appropriate; otherwise add a comment naming the agent/session.
 5. Record the branch in the issue.
-6. Prefer a branch name containing both identifiers, for example `rb-027/issue-317-empirical-personas`.
+6. Prefer a branch name containing both identifiers, for example `rb-029/issue-319-opponent-preparation`.
 7. Make the claim visible before substantive implementation or research.
 
-For V2 specifically, RB-027 and RB-028 may proceed in parallel only when shared candidate-contract collisions are explicitly coordinated. RB-031 must not be claimed as if its upstream semantics were already stable.
+RB-028 now consumes the stabilized RB-027 V3 corpus semantics. RB-031 must not be claimed as if its remaining upstream semantics were already stable.
 
 ## Pull-request protocol
 
@@ -117,8 +119,8 @@ Repository task files remain the complete dependency definition. Material execut
 
 For the V2 queue:
 
-- RB-027 / #317 defines authoritative user-move ranking semantics;
-- RB-028 / #318 owns exact-position personal evidence and must coordinate contract edits with #317;
+- RB-027 / #317 defines the now-integrated authoritative preset user-move ranking semantics;
+- RB-028 / #318 owns exact-position personal evidence and consumes the stabilized V3 corpus fields without restoring personal history as preset persona authority;
 - RB-029 / #319 owns opponent-response preparation/coverage semantics and must preserve RB-009 state behavior;
 - RB-030 / #320 owns setup after V2 target/coverage compatibility is clear;
 - RB-031 / #321 integrates the settled evidence into the Cockpit;

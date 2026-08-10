@@ -6,6 +6,7 @@ import {
   aiGameReviewResponseSchema,
   aiGameReviewStateResponseSchema,
 } from '../dist/ai/index.js';
+import { CANDIDATE_RANKING_POLICY_VERSION } from '../dist/candidate-decision/index.js';
 
 assert.deepEqual(aiCapabilitiesResponseSchema.parse({
   widgets: {
@@ -29,7 +30,7 @@ const explanation = {
     targetId: 'fa8d7aae-f46e-4dce-b2a7-6644b9eca199',
     normalizedFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
     decisionRole: 'USER_MOVE',
-    rankingPolicyVersion: '2026-07-deterministic-v1',
+    rankingPolicyVersion: CANDIDATE_RANKING_POLICY_VERSION,
     responseGeneratedAt: '2026-07-30T14:59:00.000Z',
     selectedMoveUci: 'e2e4',
     comparisonMoveUci: 'd2d4',

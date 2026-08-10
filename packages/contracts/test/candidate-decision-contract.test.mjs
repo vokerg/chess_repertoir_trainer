@@ -25,6 +25,8 @@ const unavailableCorpus = {
   games: 0,
   frequencyPercent: null,
   scorePercentForTarget: null,
+  positionBaselineScorePercentForTarget: null,
+  scoreDeltaVsPositionPercent: null,
   averageRating: null,
   datasetVersion: null,
   fetchedAt: null,
@@ -155,8 +157,37 @@ const response = {
 };
 
 assert.deepEqual(candidateDecisionResponseSchema.parse(response), response);
-assert.equal(CANDIDATE_DECISION_CONTRACT_VERSION, '2026-08-v2');
+assert.equal(CANDIDATE_DECISION_CONTRACT_VERSION, '2026-08-v3');
+assert.equal(CANDIDATE_RANKING_POLICY_VERSION, '2026-08-empirical-persona-v2');
+assert.equal(response.candidates[0].evidence.population.positionBaselineScorePercentForTarget, null);
+assert.equal(response.candidates[0].evidence.population.scoreDeltaVsPositionPercent, null);
 assert.equal('total' in response.candidates[0].components, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      population: {
+        ...unavailableCorpus,
+        positionBaselineScorePercentForTarget: undefined,
+      },
+    },
+  }],
+}).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    evidence: {
+      ...response.candidates[0].evidence,
+      population: {
+        ...unavailableCorpus,
+        scoreDeltaVsPositionPercent: undefined,
+      },
+    },
+  }],
+}).success, false);
 assert.equal(candidateDecisionResponseSchema.safeParse({
   ...response,
   candidates: [{
@@ -164,6 +195,13 @@ assert.equal(candidateDecisionResponseSchema.safeParse({
     components: { ...response.candidates[0].components, objective: 101 },
   }],
 }).success, false);
+assert.equal(candidateDecisionResponseSchema.safeParse({
+  ...response,
+  candidates: [{
+    ...response.candidates[0],
+    warningCodes: ['OBJECTIVE_EVIDENCE_MISSING'],
+  }],
+}).success, true);
 assert.equal(candidateDecisionResponseSchema.safeParse({
   ...response,
   candidates: [{

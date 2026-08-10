@@ -1,6 +1,7 @@
 export type CandidateRankingRole = 'USER_MOVE' | 'OPPONENT_RESPONSE';
 export type CandidateRankingSpeedPreset = 'ALL' | 'BLITZ_AND_SLOWER' | 'BLITZ' | 'BULLET';
 export type CandidateRankingRiskTolerance = 'LOW' | 'MEDIUM' | 'HIGH';
+export type CandidateRankingPersona = 'BALANCED' | 'SOLID' | 'AGGRESSIVE' | 'SURPRISE' | 'CUSTOM';
 export type CandidateRankingFit = 'ALIGNED' | 'NEUTRAL' | 'CONFLICT' | 'UNKNOWN';
 export type CandidateRankingEvidenceStatus = 'AVAILABLE' | 'STALE' | 'INSUFFICIENT' | 'UNAVAILABLE';
 export type CandidateRankingEligibility = 'ELIGIBLE' | 'WARNING' | 'EXCLUDED';
@@ -33,6 +34,7 @@ export type CandidateRankingReasonCode =
 export type CandidateRankingWarningCode =
   | 'FORCED_MATE_AGAINST_TARGET'
   | 'OBJECTIVE_LOSS'
+  | 'OBJECTIVE_EVIDENCE_MISSING'
   | 'LOW_ENGINE_DEPTH'
   | 'TARGET_SOUNDNESS_MISMATCH'
   | 'THEORY_BUDGET_EXCEEDED'
@@ -45,6 +47,7 @@ export interface CandidateRankingCorpusInput {
   games: number;
   frequencyPercent: number | null;
   scorePercentForTarget: number | null;
+  positionBaselineScorePercentForTarget?: number | null;
 }
 
 export interface CandidateRankingPersonalInput {
@@ -84,6 +87,7 @@ export interface CandidateRankingContext {
   speedPreset: CandidateRankingSpeedPreset;
   riskTolerance: CandidateRankingRiskTolerance;
   allowDeliberatelyDubious: boolean;
+  persona?: CandidateRankingPersona;
 }
 
 export interface CandidateRankingComponents {
@@ -117,7 +121,10 @@ interface Weights {
   course: number;
 }
 
-const USER_WEIGHTS: Record<CandidateRankingSpeedPreset, Weights> = {
+const EMPIRICAL_POPULATION_MIN_GAMES = 20;
+const EMPIRICAL_MASTERS_MIN_GAMES = 10;
+
+const LEGACY_USER_WEIGHTS: Record<CandidateRankingSpeedPreset, Weights> = {
   ALL: { objective: 0.35, population: 0.20, masters: 0.15, personal: 0.10, targetFit: 0.12, profileFit: 0.03, course: 0.05 },
   BLITZ_AND_SLOWER: { objective: 0.40, population: 0.18, masters: 0.17, personal: 0.08, targetFit: 0.12, profileFit: 0.02, course: 0.03 },
   BLITZ: { objective: 0.30, population: 0.25, masters: 0.10, personal: 0.12, targetFit: 0.13, profileFit: 0.04, course: 0.06 },
@@ -138,13 +145,15 @@ export function rankCandidateEvidence<T extends CandidateRankingInput>(
   inputs: readonly T[],
   context: CandidateRankingContext,
 ): RankedCandidate<T>[] {
-  const weights = context.role === 'USER_MOVE' ? USER_WEIGHTS[context.speedPreset] : OPPONENT_WEIGHTS;
+  const persona = context.persona ?? 'CUSTOM';
   const ranked = inputs.map((input) => {
-    const components = buildComponents(input, context.role);
-    const eligibility = resolveEligibility(input, context);
-    const reasonCodes = buildReasonCodes(input, context.role);
-    const warningCodes = buildWarningCodes(input, context, eligibility);
-    const score = weightedScore(components, weights);
+    const components = buildComponents(input, context.role, persona);
+    const eligibility = resolveEligibility(input, context, persona);
+    const reasonCodes = buildReasonCodes(input, context.role, persona);
+    const warningCodes = buildWarningCodes(input, context, persona, eligibility);
+    const score = context.role === 'USER_MOVE'
+      ? userMoveScore(input, components, context, persona)
+      : weightedScore(components, OPPONENT_WEIGHTS);
     return { input, eligibility, components, reasonCodes, warningCodes, score };
   });
 
@@ -177,16 +186,81 @@ export function rankCandidateEvidence<T extends CandidateRankingInput>(
 function buildComponents(
   input: CandidateRankingInput,
   role: CandidateRankingRole,
+  persona: CandidateRankingPersona,
 ): CandidateRankingComponents {
+  const empiricalUserMove = role === 'USER_MOVE' && persona !== 'CUSTOM';
   return {
-    objective: objectiveComponent(input.engine, role),
-    population: corpusComponent(input.population),
-    masters: corpusComponent(input.masters),
-    personal: personalComponent(input.personal),
-    targetFit: fitComponent(input.targetFit, 40, -50),
-    profileFit: fitComponent(input.profileFit, 25, -25),
-    course: courseComponent(input.course),
+    objective: empiricalUserMove && !hasUsableEngineEvidence(input.engine)
+      ? 0
+      : objectiveComponent(input.engine, role),
+    population: empiricalUserMove
+      ? empiricalPopulationComponent(input, persona)
+      : legacyCorpusComponent(input.population),
+    masters: empiricalUserMove
+      ? empiricalMastersComponent(input, persona)
+      : legacyCorpusComponent(input.masters),
+    personal: empiricalUserMove ? 0 : personalComponent(input.personal),
+    targetFit: empiricalUserMove ? 0 : fitComponent(input.targetFit, 40, -50),
+    profileFit: empiricalUserMove ? 0 : fitComponent(input.profileFit, 25, -25),
+    course: empiricalUserMove ? 0 : courseComponent(input.course),
   };
+}
+
+function userMoveScore(
+  input: CandidateRankingInput,
+  components: CandidateRankingComponents,
+  context: CandidateRankingContext,
+  persona: CandidateRankingPersona,
+): number {
+  if (persona === 'CUSTOM') {
+    return weightedScore(components, LEGACY_USER_WEIGHTS[context.speedPreset]);
+  }
+
+  const populationFrequency = corpusFrequencySignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  const populationPerformance = corpusPerformanceSignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  const masterSupport = masterSupportSignal(input.masters);
+  const objective = components.objective;
+
+  if (persona === 'BALANCED') {
+    return Math.round(
+      populationFrequency * 0.35
+      + populationPerformance * 0.30
+      + objective * 0.20
+      + masterSupport * 0.15,
+    );
+  }
+
+  if (persona === 'SOLID') {
+    return Math.round(
+      populationFrequency * 0.15
+      + populationPerformance * 0.10
+      + objective * 0.40
+      + masterSupport * 0.35,
+    );
+  }
+
+  if (persona === 'AGGRESSIVE') {
+    return Math.round(
+      populationFrequency * 0.10
+      + populationPerformance * 0.55
+      + objective * 0.15
+      + masterSupport * 0.20,
+    );
+  }
+
+  const qualified = surpriseQualified(input);
+  const populationRarity = qualified
+    ? corpusRaritySignal(input.population, 5, EMPIRICAL_POPULATION_MIN_GAMES)
+    : 0;
+  const masterRarity = qualified
+    ? corpusRaritySignal(input.masters, 6, EMPIRICAL_MASTERS_MIN_GAMES)
+    : 0;
+  return Math.round(
+    populationRarity * 0.30
+    + populationPerformance * 0.35
+    + objective * 0.20
+    + masterRarity * 0.15,
+  );
 }
 
 function objectiveComponent(
@@ -207,12 +281,100 @@ function objectiveComponent(
   return -100;
 }
 
-function corpusComponent(input: CandidateRankingCorpusInput): number {
+function empiricalPopulationComponent(
+  input: CandidateRankingInput,
+  persona: CandidateRankingPersona,
+): number {
+  if (persona === 'CUSTOM') return 0;
+  const frequency = corpusFrequencySignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  const performance = corpusPerformanceSignal(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  if (persona === 'BALANCED') return normalizedPolicyComponent(frequency * 0.35 + performance * 0.30, 0.65);
+  if (persona === 'SOLID') return normalizedPolicyComponent(frequency * 0.15 + performance * 0.10, 0.25);
+  if (persona === 'AGGRESSIVE') return normalizedPolicyComponent(frequency * 0.10 + performance * 0.55, 0.65);
+  const rarity = surpriseQualified(input)
+    ? corpusRaritySignal(input.population, 5, EMPIRICAL_POPULATION_MIN_GAMES)
+    : 0;
+  return normalizedPolicyComponent(rarity * 0.30 + performance * 0.35, 0.65);
+}
+
+function empiricalMastersComponent(
+  input: CandidateRankingInput,
+  persona: CandidateRankingPersona,
+): number {
+  if (persona === 'CUSTOM') return 0;
+  if (persona !== 'SURPRISE') return masterSupportSignal(input.masters);
+  return surpriseQualified(input)
+    ? corpusRaritySignal(input.masters, 6, EMPIRICAL_MASTERS_MIN_GAMES)
+    : 0;
+}
+
+function normalizedPolicyComponent(weightedValue: number, totalWeight: number): number {
+  if (totalWeight <= 0) return 0;
+  return clamp(Math.round(weightedValue / totalWeight), -100, 100);
+}
+
+function legacyCorpusComponent(input: CandidateRankingCorpusInput): number {
   if (input.status === 'UNAVAILABLE' || input.games <= 0 || input.frequencyPercent === null) return 0;
   const scoreAdjustment = input.scorePercentForTarget === null
     ? 0
     : clamp(Math.round((input.scorePercentForTarget - 50) * 1.5), -30, 30);
   return clamp(Math.round(input.frequencyPercent) + scoreAdjustment, -100, 100);
+}
+
+function corpusFrequencySignal(
+  input: CandidateRankingCorpusInput,
+  minimumGames = 1,
+): number {
+  if (!hasUsableCorpus(input, minimumGames) || input.frequencyPercent === null) return 0;
+  return clamp(Math.round(input.frequencyPercent * 2), 0, 100);
+}
+
+function corpusPerformanceSignal(
+  input: CandidateRankingCorpusInput,
+  minimumGames = 1,
+): number {
+  const delta = corpusScoreDelta(input);
+  if (delta === null || !hasUsableCorpus(input, minimumGames)) return 0;
+  const reliability = input.games / (input.games + 30);
+  return clamp(Math.round(delta * reliability * 10), -100, 100);
+}
+
+function masterSupportSignal(input: CandidateRankingCorpusInput): number {
+  if (!hasUsableCorpus(input, EMPIRICAL_MASTERS_MIN_GAMES)) return 0;
+  return clamp(Math.round(
+    corpusFrequencySignal(input, EMPIRICAL_MASTERS_MIN_GAMES) * 0.75
+    + corpusPerformanceSignal(input, EMPIRICAL_MASTERS_MIN_GAMES) * 0.25,
+  ), -100, 100);
+}
+
+function corpusRaritySignal(
+  input: CandidateRankingCorpusInput,
+  frequencyScale: number,
+  minimumGames = 1,
+): number {
+  if (!hasUsableCorpus(input, minimumGames) || input.frequencyPercent === null) return 0;
+  return clamp(Math.round(100 - input.frequencyPercent * frequencyScale), 0, 100);
+}
+
+function corpusScoreDelta(input: CandidateRankingCorpusInput): number | null {
+  if (input.scorePercentForTarget === null) return null;
+  const baseline = input.positionBaselineScorePercentForTarget;
+  if (baseline === undefined || baseline === null) return null;
+  return input.scorePercentForTarget - baseline;
+}
+
+function surpriseQualified(input: CandidateRankingInput): boolean {
+  return hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
+    && (corpusScoreDelta(input.population) ?? Number.NEGATIVE_INFINITY) >= 3;
+}
+
+function hasUsableCorpus(input: CandidateRankingCorpusInput, minimumGames = 1): boolean {
+  return (input.status === 'AVAILABLE' || input.status === 'STALE') && input.games >= minimumGames;
+}
+
+function hasUsableEngineEvidence(input: CandidateRankingInput['engine']): boolean {
+  return (input.status === 'AVAILABLE' || input.status === 'STALE')
+    && input.objectiveDeltaCp !== null;
 }
 
 function personalComponent(input: CandidateRankingPersonalInput): number {
@@ -240,64 +402,95 @@ function courseComponent(input: CandidateRankingInput['course']): number {
 function resolveEligibility(
   input: CandidateRankingInput,
   context: CandidateRankingContext,
+  persona: CandidateRankingPersona,
 ): CandidateRankingEligibility {
   if (context.role === 'OPPONENT_RESPONSE') return 'ELIGIBLE';
+  const empiricalUserMove = persona !== 'CUSTOM';
+  if (empiricalUserMove && !hasUsableEngineEvidence(input.engine)) return 'WARNING';
   if (input.engine.mateForTarget !== null && input.engine.mateForTarget < 0) return 'EXCLUDED';
 
   const delta = input.engine.objectiveDeltaCp;
+  const targetConflictAffectsEligibility = persona === 'CUSTOM' && input.targetFit === 'CONFLICT';
   if (delta === null) {
-    return input.targetFit === 'CONFLICT' || input.course.conflict ? 'WARNING' : 'ELIGIBLE';
+    return targetConflictAffectsEligibility || input.course.conflict ? 'WARNING' : 'ELIGIBLE';
   }
 
-  const thresholds = riskThresholds(context.riskTolerance, context.allowDeliberatelyDubious);
+  const thresholds = riskThresholds(context, persona);
   if (delta >= thresholds.exclude) return 'EXCLUDED';
-  if (delta >= thresholds.warn || input.targetFit === 'CONFLICT' || input.course.conflict) return 'WARNING';
+  if (delta >= thresholds.warn || targetConflictAffectsEligibility || input.course.conflict) return 'WARNING';
   return 'ELIGIBLE';
 }
 
 function riskThresholds(
-  risk: CandidateRankingRiskTolerance,
-  allowDeliberatelyDubious: boolean,
+  context: CandidateRankingContext,
+  persona: CandidateRankingPersona,
 ): { warn: number; exclude: number } {
-  if (allowDeliberatelyDubious) return { warn: 250, exclude: 700 };
-  if (risk === 'LOW') return { warn: 80, exclude: 180 };
-  if (risk === 'HIGH') return { warn: 220, exclude: 450 };
+  if (persona === 'SOLID') return { warn: 80, exclude: 180 };
+  if (persona === 'BALANCED') return { warn: 120, exclude: 280 };
+  if (persona === 'AGGRESSIVE') return { warn: 180, exclude: 380 };
+  if (persona === 'SURPRISE') return { warn: 120, exclude: 260 };
+  if (context.allowDeliberatelyDubious) return { warn: 250, exclude: 700 };
+  if (context.riskTolerance === 'LOW') return { warn: 80, exclude: 180 };
+  if (context.riskTolerance === 'HIGH') return { warn: 220, exclude: 450 };
   return { warn: 140, exclude: 300 };
 }
 
 function buildReasonCodes(
   input: CandidateRankingInput,
   role: CandidateRankingRole,
+  persona: CandidateRankingPersona,
 ): CandidateRankingReasonCode[] {
   const reasons = new Set<CandidateRankingReasonCode>();
-  const delta = input.engine.objectiveDeltaCp;
+  const empiricalUserMove = role === 'USER_MOVE' && persona !== 'CUSTOM';
+  const delta = empiricalUserMove && !hasUsableEngineEvidence(input.engine)
+    ? null
+    : input.engine.objectiveDeltaCp;
   if (delta === 0) reasons.add('ENGINE_BEST');
   else if (delta !== null && delta <= 50) reasons.add('ENGINE_CLOSE');
   else if (delta !== null && delta >= 100) reasons.add('OBJECTIVE_COST');
 
-  if ((input.population.frequencyPercent ?? 0) >= 10 && input.population.games >= 20) {
+  const usablePopulation = !empiricalUserMove
+    || hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES);
+  const populationCommon = usablePopulation
+    && (input.population.frequencyPercent ?? 0) >= 10
+    && input.population.games >= 20;
+  if (populationCommon && (!empiricalUserMove || persona !== 'SURPRISE')) {
     reasons.add(role === 'OPPONENT_RESPONSE' ? 'COMMON_AT_TARGET_LEVEL' : 'POPULATION_COMMON');
   }
-  if ((input.population.scorePercentForTarget ?? 0) >= 55 && input.population.games >= 20) {
+  const populationStrong = empiricalUserMove
+    ? hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES)
+      && (corpusScoreDelta(input.population) ?? Number.NEGATIVE_INFINITY) >= 3
+    : (input.population.scorePercentForTarget ?? 0) >= 55;
+  if (populationStrong && input.population.games >= 20) {
     reasons.add('POPULATION_STRONG_SCORE');
   }
-  if (input.masters.games >= 10) reasons.add('MASTER_SUPPORTED');
-  if (input.personal.games >= 3 || input.personal.occurrences >= 3) {
-    reasons.add(role === 'OPPONENT_RESPONSE' ? 'PERSONALLY_ENCOUNTERED' : 'PERSONALLY_FAMILIAR');
+  const masterSupported = empiricalUserMove
+    ? persona !== 'SURPRISE' && masterSupportSignal(input.masters) > 0
+    : input.masters.games >= 10;
+  if (masterSupported) reasons.add('MASTER_SUPPORTED');
+
+  if (!empiricalUserMove) {
+    if (input.personal.games >= 3 || input.personal.occurrences >= 3) {
+      reasons.add(role === 'OPPONENT_RESPONSE' ? 'PERSONALLY_ENCOUNTERED' : 'PERSONALLY_FAMILIAR');
+    }
+    if ((input.personal.scorePercent ?? 0) >= 55 && input.personal.games >= 5) {
+      reasons.add('PERSONAL_RESULTS_POSITIVE');
+    }
+    for (const reason of input.targetReasonCodes) reasons.add(reason);
+    for (const reason of input.profileReasonCodes) reasons.add(reason);
+    if (input.course.covered) reasons.add('COURSE_ALREADY_COVERS');
+    if (input.course.transposesToCoveredPosition) reasons.add('TRANSPOSES_TO_COVERAGE');
   }
-  if ((input.personal.scorePercent ?? 0) >= 55 && input.personal.games >= 5) {
-    reasons.add('PERSONAL_RESULTS_POSITIVE');
-  }
-  for (const reason of input.targetReasonCodes) reasons.add(reason);
-  for (const reason of input.profileReasonCodes) reasons.add(reason);
-  if (input.course.covered) reasons.add('COURSE_ALREADY_COVERS');
   if (input.course.conflict) reasons.add('COURSE_CONFLICT');
-  if (input.course.transposesToCoveredPosition) reasons.add('TRANSPOSES_TO_COVERAGE');
   if (role === 'OPPONENT_RESPONSE' && (delta ?? 0) >= 100) reasons.add('DANGEROUS_RESPONSE');
   if (input.manuallyRequested) reasons.add('MANUAL_CANDIDATE');
 
-  const sourceCount = [input.engine, input.population, input.masters, input.personal]
-    .filter((source) => source.status === 'AVAILABLE' || source.status === 'STALE').length;
+  const sourceCount = empiricalUserMove
+    ? Number(hasUsableEngineEvidence(input.engine))
+      + Number(hasUsableCorpus(input.population, EMPIRICAL_POPULATION_MIN_GAMES))
+      + Number(hasUsableCorpus(input.masters, EMPIRICAL_MASTERS_MIN_GAMES))
+    : [input.engine, input.population, input.masters, input.personal]
+      .filter((source) => source.status === 'AVAILABLE' || source.status === 'STALE').length;
   if (sourceCount <= 1) reasons.add('LOW_EVIDENCE');
   return [...reasons];
 }
@@ -305,16 +498,31 @@ function buildReasonCodes(
 function buildWarningCodes(
   input: CandidateRankingInput,
   context: CandidateRankingContext,
+  persona: CandidateRankingPersona,
   eligibility: CandidateRankingEligibility,
 ): CandidateRankingWarningCode[] {
   const warnings = new Set<CandidateRankingWarningCode>(input.targetWarningCodes);
-  if (input.engine.mateForTarget !== null && input.engine.mateForTarget < 0) {
+  const empiricalUserMove = context.role === 'USER_MOVE' && persona !== 'CUSTOM';
+  const usableEngine = hasUsableEngineEvidence(input.engine);
+  if (input.engine.mateForTarget !== null
+    && input.engine.mateForTarget < 0
+    && (!empiricalUserMove || usableEngine)) {
     warnings.add('FORCED_MATE_AGAINST_TARGET');
-  } else if (context.role === 'USER_MOVE' && eligibility !== 'ELIGIBLE') {
+  } else if (context.role === 'USER_MOVE'
+    && eligibility !== 'ELIGIBLE'
+    && (persona === 'CUSTOM'
+      || (usableEngine
+        && input.engine.objectiveDeltaCp !== null
+        && input.engine.objectiveDeltaCp >= riskThresholds(context, persona).warn))) {
     warnings.add('OBJECTIVE_LOSS');
   }
+  if (empiricalUserMove && !usableEngine) {
+    warnings.add('OBJECTIVE_EVIDENCE_MISSING');
+  }
   if (input.engine.depth !== null && input.engine.depth < 12) warnings.add('LOW_ENGINE_DEPTH');
-  if (input.personal.status === 'INSUFFICIENT' && (input.personal.games > 0 || input.personal.occurrences > 0)) {
+  if (!empiricalUserMove
+    && input.personal.status === 'INSUFFICIENT'
+    && (input.personal.games > 0 || input.personal.occurrences > 0)) {
     warnings.add('SPARSE_PERSONAL_EVIDENCE');
   }
   if (input.course.conflict) warnings.add('COURSE_CONFLICT');
