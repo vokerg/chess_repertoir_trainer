@@ -151,6 +151,24 @@ function addCorpusFacts(
   if (evidence.scorePercentForTarget !== null) {
     addFact(add, `${prefix}.${source}_score`, `${humanize(prefix)} ${source} score`, formatPercent(evidence.scorePercentForTarget));
   }
+  if (evidence.positionBaselineScorePercentForTarget !== null
+    && evidence.positionBaselineScorePercentForTarget !== undefined) {
+    addFact(
+      add,
+      `${prefix}.${source}_position_baseline_score`,
+      `${humanize(prefix)} ${source} position baseline score`,
+      formatPercent(evidence.positionBaselineScorePercentForTarget),
+    );
+  }
+  if (evidence.scoreDeltaVsPositionPercent !== null
+    && evidence.scoreDeltaVsPositionPercent !== undefined) {
+    addFact(
+      add,
+      `${prefix}.${source}_score_delta_vs_position`,
+      `${humanize(prefix)} ${source} score delta versus position`,
+      formatPercentagePoints(evidence.scoreDeltaVsPositionPercent),
+    );
+  }
 }
 
 function addStatusFact(
@@ -214,8 +232,9 @@ function validateText(
   }
 
   requireEvidenceForVocabulary(text, referenceIds, /\b(rank|ranked|ranking|higher|lower|order)\b/i, ['.rank']);
-  requireEvidenceForVocabulary(text, referenceIds, /\b(engine|evaluation|score|depth|mate|centipawn)\b/i, ['.engine_']);
-  requireEvidenceForVocabulary(text, referenceIds, /\b(population|target play|frequency|common|games)\b/i, ['.population_', '.masters_', '.personal_']);
+  requireEvidenceForVocabulary(text, referenceIds, /\b(engine|evaluation|depth|mate|centipawn)\b/i, ['.engine_']);
+  requireEvidenceForVocabulary(text, referenceIds, /\b(population|masters?|target play|frequency|common|games|baseline|percentage points?|overperform(?:s|ed|ing)?)\b/i, ['.population_', '.masters_', '.personal_']);
+  requireEvidenceForVocabulary(text, referenceIds, /\b(?:population|masters?|personal|position) score\b|\bscore delta\b/i, ['.population_', '.masters_', '.personal_']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(target fit|aligned|misaligned)\b/i, ['.target_fit']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(profile fit|profile evidence)\b/i, ['.profile_fit', '.player_profile_']);
   requireEvidenceForVocabulary(text, referenceIds, /\b(course|covered|conflict|transposes?)\b/i, ['.course_']);
@@ -262,6 +281,11 @@ function formatCentipawns(score: number): string {
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 10) / 10}%`;
+}
+
+function formatPercentagePoints(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return `${rounded > 0 ? '+' : ''}${rounded} pp`;
 }
 
 function humanize(value: string): string {
