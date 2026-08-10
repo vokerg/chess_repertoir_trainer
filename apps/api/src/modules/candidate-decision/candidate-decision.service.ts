@@ -268,12 +268,7 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         (personal?.nextMoves ?? []).map((move) => [move.moveUci.toLowerCase(), move]),
       );
       const coursesByMove = groupCoursesByMove(courses?.suggestions ?? []);
-      const engineByMove = new Map(
-        engineLines.flatMap((line) => {
-          const moveUci = lineMove(line);
-          return moveUci ? [[moveUci, line] as const] : [];
-        }),
-      );
+      const engineByMove = engineLineMap(engineLines, legalMoves);
 
       const seeds = new Set<string>();
       const populationSeedLimit = request.decisionRole === 'USER_MOVE'
@@ -294,8 +289,8 @@ export function createCandidateDecisionService(dependencies: CandidateDecisionDe
         }
       }
 
-      const comparableScores = engineLines
-        .filter((line) => isAuthoritativeStoredEngineLine(line, legalMoves))
+      const comparableScores = [...engineByMove.values()]
+        .filter(isUsableStoredEngineLine)
         .map((line) => targetComparableScore(line, request.target.side))
         .filter((score): score is number => score !== null);
       const safestTargetScore = comparableScores.length ? Math.max(...comparableScores) : null;
@@ -519,18 +514,23 @@ function lineMove(line: StoredEngineLine): string | null {
   return (line.moveUci ?? line.pvUci[0] ?? '').trim().toLowerCase() || null;
 }
 
+function engineLineMap(
+  lines: readonly StoredEngineLine[],
+  legalMoves: ReadonlyMap<string, LegalMove>,
+): Map<string, StoredEngineLine> {
+  const byMove = new Map<string, StoredEngineLine>();
+  for (const line of lines) {
+    const moveUci = lineMove(line);
+    if (!moveUci || !legalMoves.has(moveUci) || byMove.has(moveUci)) continue;
+    byMove.set(moveUci, line);
+  }
+  return byMove;
+}
+
 function isUsableStoredEngineLine(line: StoredEngineLine): boolean {
   return line.depth !== undefined
     && line.depth >= MIN_ENGINE_DEPTH
     && (line.scoreCpWhite !== undefined || line.mateWhite !== undefined);
-}
-
-function isAuthoritativeStoredEngineLine(
-  line: StoredEngineLine,
-  legalMoves: ReadonlyMap<string, LegalMove>,
-): boolean {
-  const moveUci = lineMove(line);
-  return isUsableStoredEngineLine(line) && moveUci !== null && legalMoves.has(moveUci);
 }
 
 function engineEvidence(
@@ -970,7 +970,7 @@ function engineSourceStatus(
   if (!result.ok || !result.value) return 'UNAVAILABLE';
   const lines = result.value.lines.slice(0, ENGINE_LINE_LIMIT);
   if (!lines.length) return 'INSUFFICIENT';
-  return lines.some((line) => isAuthoritativeStoredEngineLine(line, legalMoves))
+  return [...engineLineMap(lines, legalMoves).values()].some(isUsableStoredEngineLine)
     ? 'AVAILABLE'
     : 'INSUFFICIENT';
 }
