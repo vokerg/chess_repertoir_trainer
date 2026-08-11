@@ -501,47 +501,37 @@ export function createAccountImportRepository(
           accountId: run.accountId,
         });
 
-        const incomingProviderGameIds = input.games.map((game) => game.providerGameId);
-        const existingRows = await transaction.$queryRaw<Array<{ providerGameId: string }>>(Prisma.sql`
-          SELECT "providerGameId"
-          FROM "ImportedGame"
-          WHERE "accountId" = ${run.accountId}
-            AND "providerGameId" IN (${Prisma.join(incomingProviderGameIds)})
-        `);
-        const existingProviderGameIds = new Set(existingRows.map((row) => row.providerGameId));
-        const uniqueGames = input.games.filter((game) => !existingProviderGameIds.has(game.providerGameId));
-
-        if (uniqueGames.length > 0) {
-          await transaction.$executeRaw(Prisma.sql`
-            INSERT INTO "ImportedGame" (
-              "accountId", "providerGameId", "providerUrl", "pgn", "rated", "variant",
-              "speedCategory", "timeControlRaw", "timeControlInitial", "timeControlIncrement",
-              "startedAt", "endedAt", "whiteUsername", "blackUsername", "whiteRating", "blackRating",
-              "userColor", "opponentUsername", "result", "resultForUser", "status", "openingName", "openingEco",
-              "createdAt", "updatedAt"
-            ) VALUES ${Prisma.join(uniqueGames.map((game) => Prisma.sql`(
-              ${run.accountId}, ${game.providerGameId}, ${game.providerUrl ?? null}, ${game.pgn ?? null},
-              ${game.rated ?? null}, ${game.variant ?? null}, ${game.speedCategory ?? null}, ${game.timeControlRaw ?? null},
-              ${game.timeControlInitial ?? null}, ${game.timeControlIncrement ?? null}, ${game.startedAt ?? null},
-              ${game.endedAt ?? null}, ${game.whiteUsername ?? null}, ${game.blackUsername ?? null},
-              ${game.whiteRating ?? null}, ${game.blackRating ?? null}, ${game.userColor ?? null},
-              ${game.opponentUsername ?? null}, ${game.result ?? null}, ${game.resultForUser ?? null},
-              ${game.status ?? null}, ${game.openingName ?? null}, ${game.openingEco ?? null}, NOW(), NOW()
-            )`))}
-            ON CONFLICT ("accountId", "providerGameId") DO NOTHING
-          `);
-        }
-
-        const insertedRows = await transaction.$queryRaw<Array<{ providerGameId: string }>>(Prisma.sql`
-          SELECT "providerGameId"
-          FROM "ImportedGame"
-          WHERE "accountId" = ${run.accountId}
-            AND "providerGameId" IN (${Prisma.join(incomingProviderGameIds)})
-        `);
-        const persistedProviderGameIds = new Set(insertedRows.map((row) => row.providerGameId));
-        const inserted = input.games.filter(
-          (game) => persistedProviderGameIds.has(game.providerGameId) && !existingProviderGameIds.has(game.providerGameId),
-        ).length;
+        const write = await transaction.importedGame.createMany({
+          data: input.games.map((game) => ({
+            userId: input.userId,
+            accountId: run.accountId,
+            provider: run.provider,
+            providerGameId: game.providerGameId,
+            providerUrl: game.providerUrl ?? null,
+            pgn: game.pgn ?? null,
+            rated: game.rated ?? null,
+            variant: game.variant ?? null,
+            speedCategory: game.speedCategory ?? null,
+            timeControlRaw: game.timeControlRaw ?? null,
+            timeControlInitial: game.timeControlInitial ?? null,
+            timeControlIncrement: game.timeControlIncrement ?? null,
+            startedAt: game.startedAt ?? null,
+            endedAt: game.endedAt ?? null,
+            whiteUsername: game.whiteUsername ?? null,
+            blackUsername: game.blackUsername ?? null,
+            whiteRating: game.whiteRating ?? null,
+            blackRating: game.blackRating ?? null,
+            userColor: game.userColor ?? null,
+            opponentUsername: game.opponentUsername ?? null,
+            result: game.result ?? null,
+            resultForUser: game.resultForUser ?? null,
+            status: game.status ?? null,
+            openingName: game.openingName ?? null,
+            openingEco: game.openingEco ?? null,
+          })),
+          skipDuplicates: true,
+        });
+        const inserted = write.count;
         const duplicate = input.games.length - inserted;
 
         await transaction.$executeRaw(Prisma.sql`
