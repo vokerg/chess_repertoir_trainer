@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import type { LichessConnectionAccount } from '@chess-trainer/contracts/lichess';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import {
   FactGridComponent,
@@ -8,9 +9,8 @@ import {
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { AccountsApiService } from '../data-access/accounts-api.service';
-import type { LichessConnectionStatus } from '../data-access/accounts.models';
-import { missingLichessScopeLabels } from '../helpers/account-settings-view';
 import { dateLabel } from '../helpers/account-labels';
+import { missingLichessScopeLabels } from '../helpers/account-settings-view';
 import { AccountsStore } from '../state/accounts.store';
 
 @Component({
@@ -27,15 +27,17 @@ export class LichessSettingsPageComponent implements OnInit {
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly route = inject(ActivatedRoute);
   protected readonly missingLichessScopeLabels = missingLichessScopeLabels;
+  protected readonly connectedAccount = computed(() => {
+    const connection = this.store.lichessConnection();
+    return connection?.connected ? connection.account : null;
+  });
 
   ngOnInit(): void {
     void this.store.loadLichessConnection();
     this.showLichessCallbackNotice();
   }
 
-  protected connectionFacts(
-    account: NonNullable<LichessConnectionStatus['account']>,
-  ): readonly UiFactItem[] {
+  protected connectionFacts(account: LichessConnectionAccount): readonly UiFactItem[] {
     const facts: UiFactItem[] = [
       { id: 'connected', label: 'Connected', value: dateLabel(account.connectedAt) },
     ];
