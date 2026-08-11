@@ -220,6 +220,7 @@ export type AccountImportCoverageResponse = z.infer<typeof accountImportCoverage
 
 export const accountImportErrorCodeSchema = z.enum([
   'ACCOUNT_IMPORT_ACTIVE',
+  'ACCOUNT_IMPORT_ADMISSION_BLOCKED',
   'ACCOUNT_IMPORT_NOT_FOUND',
   'ACCOUNT_IMPORT_INVALID_RANGE',
   'ACCOUNT_IMPORT_COVERAGE_GAP',
