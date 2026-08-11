@@ -8,13 +8,14 @@ import {
   PageHeaderStat,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { LineTrainingSessionComponent } from '../components/line-training-session.component';
 import { LineTrainStore } from '../state/line-train.store';
 
 @Component({
   selector: 'app-line-train-page',
   standalone: true,
-  imports: [RouterLink, PageHeaderComponent, PanelComponent, LineTrainingSessionComponent],
+  imports: [RouterLink, PageHeaderComponent, PanelComponent, StateMessageComponent, LineTrainingSessionComponent],
   providers: [LineTrainStore],
   templateUrl: './line-train-page.component.html',
   styleUrl: './line-train-page.component.css',

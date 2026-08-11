@@ -57,8 +57,12 @@
   />
 
   <p class="status-note">Only games with indexed plies are included. Repeated mistakes use analysed moves played by you; bad positions use evaluation from your perspective.</p>
-  @if (store.loading()) { <p class="status-note">Building opening line report...</p> }
-  @if (store.error(); as error) { <p class="status-note danger-copy">{{ error }}</p> }
+  @if (store.loading()) {
+    <app-state-message tone="loading" message="Building opening line report..." />
+  }
+  @if (store.error(); as error) {
+    <app-state-message tone="error" [message]="error" />
+  }
   @if (store.loaded() && !store.loading() && !store.error()) { <p class="status-note">{{ store.indexedFilteredGames() }} indexed games from {{ store.totalFilteredGames() }} filtered games.</p> }
 
   @if (!store.loading() && store.items().length > 0) {
@@ -96,8 +100,8 @@
       }
     </tbody></table></div>
   } @else if (store.loaded() && !store.loading() && !store.error()) {
-    <div class="empty-state">No opening lines matched the selected thresholds.</div>
+    <app-state-message tone="empty" message="No opening lines matched the selected thresholds." />
   } @else if (!store.loaded() && !store.loading() && !store.error()) {
-    <div class="empty-state">Choose criteria and find opening struggles.</div>
+    <app-state-message tone="empty" message="Choose criteria and find opening struggles." />
   }
 </section>

@@ -24,6 +24,7 @@ import { GameAiReviewStore } from '../state/game-ai-review.store';
 import { GameTacticalFindingsStore } from '../state/game-tactical-findings.store';
 import { GameTacticalFindingsApiService } from '../data-access/game-tactical-findings-api.service';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 
 @Component({
@@ -35,6 +36,7 @@ import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-
     GameSummaryComponent,
     GameWorkbenchComponent,
     PanelComponent,
+    StateMessageComponent,
   ],
   providers: [
     GameAiReviewStore,

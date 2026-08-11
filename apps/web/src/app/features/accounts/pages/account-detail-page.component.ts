@@ -17,6 +17,7 @@ import {
 } from '../../../shared/ui/fact-grid/fact-grid.component';
 import { PageHeaderAction, PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { AccountPerformanceStatsComponent } from '../components/account-performance-stats.component';
 import { AccountRatingStatsComponent } from '../components/account-rating-stats.component';
 import { AccountYearlyHighsComponent } from '../components/account-yearly-highs.component';
@@ -41,6 +42,7 @@ import { getRatingHistoryRangeQuery } from '../helpers/rating-history-ranges';
     PageHeaderComponent,
     FactGridComponent,
     PanelComponent,
+    StateMessageComponent,
     AccountRatingStatsComponent,
     AccountYearlyHighsComponent,
     AccountPerformanceStatsComponent,

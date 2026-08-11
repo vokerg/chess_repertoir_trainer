@@ -4,10 +4,19 @@
       title="Loading training focus"
       subtitle="Preparing the selected active subline and its latest training state."
     >
-      <p class="status-note">Loading training focus...</p>
+      <app-state-message tone="loading" message="Loading training focus..." />
+    </app-panel>
+  } @else if (!store.sessionId()) {
+    <app-panel
+      title="Training unavailable"
+      subtitle="The selected line could not be prepared for training."
+    >
       @if (store.error(); as error) {
-        <p class="status-error">{{ error }}</p>
+        <app-state-message tone="error" [message]="error" />
+      } @else {
+        <app-state-message tone="empty" message="No training session is available for this line." />
       }
+      <a class="compact-action secondary" routerLink="/library">Back to library</a>
     </app-panel>
   } @else {
     <div class="line-train-header-shell">
@@ -21,7 +30,7 @@
     </div>
 
     @if (store.error(); as error) {
-      <p class="status-error">{{ error }}</p>
+      <app-state-message tone="error" [message]="error" />
     }
 
     <app-line-training-session

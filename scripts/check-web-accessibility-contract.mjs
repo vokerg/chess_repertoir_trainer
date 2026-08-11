@@ -36,6 +36,14 @@ const courseReviewPageHtmlUrl = new URL(
   '../apps/web/src/app/features/course-review/pages/course-review-page.component.html',
   import.meta.url,
 );
+const focusedLineTrainingHtmlUrl = new URL(
+  '../apps/web/src/app/features/lines/pages/line-train-page.component.html',
+  import.meta.url,
+);
+const marathonTrainingHtmlUrl = new URL(
+  '../apps/web/src/app/features/lines/pages/training-marathon-page.component.html',
+  import.meta.url,
+);
 const migratedStateConsumerUrls = [
   [
     'Courses',
@@ -46,6 +54,48 @@ const migratedStateConsumerUrls = [
     'Accounts',
     'accounts',
     new URL('../apps/web/src/app/features/accounts/pages/accounts-page.component.html', import.meta.url),
+  ],
+];
+const migratedRouteStateConsumers = [
+  [
+    'Progress entry',
+    new URL('../apps/web/src/app/features/accounts/pages/progress-entry-page.component.ts', import.meta.url),
+    ['loading', 'error'],
+  ],
+  [
+    'Account detail',
+    new URL('../apps/web/src/app/features/accounts/pages/account-detail-page.component.html', import.meta.url),
+    ['loading', 'error'],
+  ],
+  [
+    'Game review',
+    new URL('../apps/web/src/app/features/games/pages/game-detail-page.component.html', import.meta.url),
+    ['loading', 'error'],
+  ],
+  [
+    'Free Analysis',
+    new URL('../apps/web/src/app/features/analysis/pages/free-analysis-page.component.html', import.meta.url),
+    ['loading', 'error'],
+  ],
+  [
+    'Focused line training',
+    focusedLineTrainingHtmlUrl,
+    ['loading', 'empty', 'error'],
+  ],
+  [
+    'Marathon training',
+    marathonTrainingHtmlUrl,
+    ['loading', 'error'],
+  ],
+  [
+    'Opening struggles',
+    new URL('../apps/web/src/app/features/opening-struggles/pages/opening-struggles-page.component.html', import.meta.url),
+    ['loading', 'empty', 'error'],
+  ],
+  [
+    'Player chess profile',
+    new URL('../apps/web/src/app/features/player-chess-profile/pages/player-chess-profile-page.component.html', import.meta.url),
+    ['loading', 'empty', 'error'],
   ],
 ];
 
@@ -226,6 +276,41 @@ for (const [consumerName, collectionSignal, consumerUrl] of migratedStateConsume
     `${consumerName} must not regress to the legacy local empty-state presentation`,
   );
 }
+
+for (const [consumerName, consumerUrl, tones] of migratedRouteStateConsumers) {
+  const consumer = readFileSync(consumerUrl, 'utf8');
+  for (const tone of tones) {
+    assert.match(
+      consumer,
+      new RegExp(`<app-state-message\\b[^>]*tone=["']${tone}["']`, 's'),
+      `${consumerName} must retain the shared ${tone} route-state presentation`,
+    );
+  }
+}
+
+const focusedLineTrainingHtml = readFileSync(focusedLineTrainingHtmlUrl, 'utf8');
+assert.match(
+  focusedLineTrainingHtml,
+  /@if \(store\.loading\(\)\)[\s\S]*} @else if \(!store\.sessionId\(\)\) \{[\s\S]*title="Training unavailable"[\s\S]*routerLink="\/library"[\s\S]*} @else \{/s,
+  'Focused line training must keep terminal no-session recovery separate from the active training session',
+);
+assert.match(
+  focusedLineTrainingHtml,
+  /@else if \(!store\.sessionId\(\)\)[\s\S]*@if \(store\.error\(\); as error\)[\s\S]*tone="error"[\s\S]*@else[\s\S]*tone="empty"/s,
+  'Focused line training must expose an assertive failure or bounded no-session empty state before recovery',
+);
+
+const marathonTrainingHtml = readFileSync(marathonTrainingHtmlUrl, 'utf8');
+assert.match(
+  marathonTrainingHtml,
+  /@if \(store\.loaded\(\)\)[\s\S]*} @else if \(store\.error\(\); as error\) \{[\s\S]*title="Marathon unavailable"[\s\S]*} @else \{[\s\S]*tone="loading"/s,
+  'Marathon terminal failure and loading branches must remain mutually exclusive',
+);
+assert.match(
+  marathonTrainingHtml,
+  /<app-state-message\s+class="marathon-error"\s+tone="error"/s,
+  'In-session marathon errors must preserve the responsive grid ordering class',
+);
 
 const courseReviewPageHtml = readFileSync(courseReviewPageHtmlUrl, 'utf8');
 assert.match(

@@ -6,12 +6,12 @@
   />
 
   @if (store.error(); as error) {
-    <p class="status-error">{{ error }}</p>
+    <app-state-message tone="error" [message]="error" />
   }
 
   @if (store.loading()) {
     <app-panel title="Loading analysis">
-      <p class="status-note">Loading imported game moves...</p>
+      <app-state-message tone="loading" message="Loading imported game moves..." />
     </app-panel>
   } @else if (store.tree(); as tree) {
     <app-free-analysis-workbench
