@@ -377,6 +377,7 @@ export function createAccountImportLifecycleRepository(
         WHERE "id" = ${importRunId}
           AND "workKey" = ${workKey}
           AND "status" = 'RUNNING'
+          AND (${input.windowsCompleted ?? null}::int IS NULL OR ${input.windowsCompleted ?? null} >= "windowsCompleted")
           AND (${input.windowsCompleted ?? null}::int IS NULL OR "windowsTotal" IS NULL OR ${input.windowsCompleted ?? null} <= "windowsTotal")
       `);
       return updated === 1;
