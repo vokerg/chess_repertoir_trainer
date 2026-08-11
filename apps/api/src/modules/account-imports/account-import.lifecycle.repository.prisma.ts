@@ -278,7 +278,7 @@ export function createAccountImportLifecycleRepository(
       const providers = Prisma.join(supportedProviders.map((provider) => Prisma.sql`${normalizeProvider(provider)}`));
 
       return database.$transaction(async (transaction) => {
-        await transaction.$queryRaw(Prisma.sql`
+        await transaction.$executeRaw(Prisma.sql`
           SELECT pg_advisory_xact_lock(${ACCOUNT_IMPORT_CLAIM_LOCK_KEY})
         `);
 
