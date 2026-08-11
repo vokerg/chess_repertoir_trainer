@@ -21,7 +21,7 @@ try {
   const second = await createUserAccount('second');
   userIds.push(first.userId, second.userId);
 
-  const firstRun = await repository.createRun(runInput(first));
+  const firstRun = await repository.createRun(runInput({ ...first, windowsTotal: null }));
   const secondRun = await repository.createRun(runInput({ ...second, priority: 10 }));
 
   const candidatesBeforeClaim = await prisma.importRun.findMany({
@@ -89,11 +89,21 @@ try {
   assert.equal(
     await lifecycle.checkpointRun(active.id, active.workKey, {
       checkpoint: { window: 1 },
+      windowsTotal: 3,
       windowsCompleted: 1,
       gamesSeenDelta: 3,
       gamesSkippedOutOfScopeDelta: 1,
     }),
     true,
+    'the exact claimed worker can establish its fixed window denominator',
+  );
+  assert.equal(
+    await lifecycle.checkpointRun(active.id, active.workKey, {
+      windowsTotal: 4,
+      windowsCompleted: 1,
+    }),
+    false,
+    'a fixed window denominator cannot change after it is established',
   );
   assert.equal(
     await lifecycle.checkpointRun(active.id, active.workKey, {
@@ -104,6 +114,7 @@ try {
     'the active worker cannot move durable completed-window progress backwards',
   );
   const monotonicProgress = await lifecycle.getRunForUser(active.userId, active.id);
+  assert.equal(monotonicProgress.windowsTotal, 3);
   assert.equal(monotonicProgress.windowsCompleted, 1);
 
   assert.equal(await lifecycle.requestPause(active.userId, active.id), true);
@@ -255,7 +266,7 @@ function runInput(overrides) {
     requestedFrom,
     requestedTo,
     priority: overrides.priority ?? 100,
-    windowsTotal: 3,
+    windowsTotal: overrides.windowsTotal === undefined ? 3 : overrides.windowsTotal,
     retryOfImportRunId: overrides.retryOfImportRunId ?? null,
   };
 }
