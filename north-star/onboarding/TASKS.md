@@ -21,9 +21,9 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
 | 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime merged through PR #339 as `4c04d47`; ONB-019 retains ownership of persisted lifecycle fences |
-| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | REVIEW | Build durable account-import worker and API lifecycle | Implementation | ONB-007/011; consumes ONB-004 fence/drain contract |
-| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 |
-| 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 |
+| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | DONE | Build durable account-import worker and API lifecycle | Implementation | Runtime squash-merged through PR #352 as `640018e4`; completion reconciliation PR #354 |
+| 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | READY | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 complete; coordinate the existing ONB-019 admission seam |
+| 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | READY | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 complete; coordinate the existing ONB-019 admission seam |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
 | 155 | ONB-025 | [#276](https://github.com/vokerg/chess_repertoir_trainer/issues/276) | P1 | PROPOSED | Trigger daily stale account refresh on authenticated app bootstrap | Implementation | ONB-015; transitively ONB-011/012/013/014; coordinates ONB-010/019/020 |
 | 160 | ONB-019 | [#259](https://github.com/vokerg/chess_repertoir_trainer/issues/259) | P0 | PROPOSED | Persist destructive lifecycle operations, fences, audit, and provenance | Implementation | ONB-004 complete; coordinates schema with ONB-011/017 and audit/actor policy with ONB-005/022 |
@@ -177,15 +177,17 @@ ONB-017 / #253 delivered the preparation execution boundary through PR #282 and 
 
 ONB-011 / #199 delivered durable provider-neutral `ImportRun` persistence and exact account/scope coverage through merged PR #339 and merge commit `4c04d47dac40aa0ae254babbf65449b701b5c447`. Persisted destructive lifecycle fences remain explicitly owned by ONB-019.
 
+ONB-012 / #200 delivered the provider-neutral durable account-import API and worker lifecycle through PR #352. Final refreshed runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`) and squash-merged as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`. Completion PR #354 reconciles the task, queue, status, completion report, downstream provider-adapter promotion, and issue closure.
+
 ONB-022 / #272 delivered the migration-free administrator authorization and bounded read-only diagnostics foundation through PR #284. Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`) and squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. PR #298 reconciled the completion evidence and synchronized the task, queue, status, report, downstream task promotion, and issue closure.
 
 ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics experience through PR #307. Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`) and squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. PR #312 reconciles the task, queue, status, completion report, and live issue state; ONB-024 remains unpromoted.
 
 ## Deterministic next task
 
-ONB-012 / #200 is in `REVIEW` on PR #352. It remains open and incomplete until review/acceptance and a later completion reconciliation.
+ONB-013 / #201 and ONB-014 / #202 are the unclaimed `READY` provider-adapter tasks after ONB-012 completion. Their issue contracts explicitly allow parallel execution after #200 is merged and reconciled. Claim either only after a fresh live collision check and after recording the existing ONB-019 admission-seam coordination; this reconciliation does not claim either task.
 
-No onboarding implementation task is currently `READY`. Do not infer a new task from numeric order alone: ONB-024, ONB-018, ONB-008 through ONB-010, ONB-013 through ONB-015, ONB-019 through ONB-021, ONB-025, and ONB-026 remain `PROPOSED` until their task-file dependencies and promotion gates are satisfied.
+ONB-015 / #203 remains `PROPOSED` behind both provider adapters. ONB-018, ONB-008 through ONB-010, ONB-019 through ONB-021, ONB-024 through ONB-026 remain `PROPOSED` until their own task-file dependencies and promotion gates are satisfied.
 
 ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
 
