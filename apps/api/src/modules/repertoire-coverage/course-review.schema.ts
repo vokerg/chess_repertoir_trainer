@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import {
   importedGameSearchQuerySchema,
-  ImportedGameSummaryQuery,
 } from '../imported-games/imported-games.schemas';
 
 export const courseReviewQuerySchema = importedGameSearchQuerySchema
@@ -20,8 +19,12 @@ export const courseReviewQuerySchema = importedGameSearchQuerySchema
   });
 
 export type CourseReviewQuery = z.infer<typeof courseReviewQuerySchema>;
+export type CourseReviewGameFilters = Omit<
+  CourseReviewQuery,
+  'limit' | 'offset' | 'minCoveredPlies' | 'findingType'
+>;
 
-export function courseReviewGameFilters(query: CourseReviewQuery): ImportedGameSummaryQuery {
+export function courseReviewGameFilters(query: CourseReviewQuery): CourseReviewGameFilters {
   const {
     limit: _limit,
     offset: _offset,
