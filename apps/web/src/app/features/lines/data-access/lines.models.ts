@@ -1,3 +1,9 @@
+import type {
+  ActiveTrainingStatsDto,
+  SublineTrainingStatusDto,
+  TrainingStatusValue,
+} from '@chess-trainer/contracts/training';
+
 export type RepertoireColor = 'WHITE' | 'BLACK';
 
 export interface ChapterDetail {
@@ -20,22 +26,7 @@ export interface LineTransferTargetChapter {
   sortOrder: number;
 }
 
-export interface ActiveTrainingStats {
-  scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
-  scopeId: number;
-  activeSublineCount: number;
-  trainedSublineCount: number;
-  untrainedSublineCount: number;
-  weakSublineCount: number;
-  statsWindowSize: number;
-  totalAttempts: number;
-  passedCount: number;
-  failedCount: number;
-  passRate: number;
-  failureRate: number;
-  attemptPassRate: number | null;
-  status: LineTrainingStatusValue;
-}
+export type ActiveTrainingStats = ActiveTrainingStatsDto;
 
 export interface LineRowTrainingStats {
   totalAttempts: number;
@@ -188,7 +179,7 @@ export interface CopyLinePayload {
 export type MarathonScopeType = 'CHAPTER' | 'COURSE';
 export type MarathonMode = 'ALL' | 'WEAK_SUBLINES' | 'UNTRAINED_SUBLINES' | 'MIXED_WEAK_UNTRAINED';
 
-export type LineTrainingStatusValue = 'NEW' | 'WEAK' | 'REVIEW' | 'STABLE' | 'STRONG';
+export type LineTrainingStatusValue = TrainingStatusValue;
 
 export interface MarathonNextRequest {
   scope?: { type: MarathonScopeType; id: number };
@@ -199,21 +190,7 @@ export interface MarathonNextRequest {
 }
 export interface MarathonRunResponse { runId: string }
 
-export interface SublineTrainingStatus {
-  hash: string;
-  canonicalKeyVersion: number;
-  lineId: number;
-  lineName: string;
-  chapterId: number;
-  chapterName: string;
-  moveText: string;
-  leafNodeId: number;
-  recentAttempts: number;
-  passedCount: number;
-  failedCount: number;
-  passRate: number | null;
-  status: LineTrainingStatusValue;
-}
+export type SublineTrainingStatus = SublineTrainingStatusDto;
 
 export interface MarathonNextResponse {
   scope?: { type: MarathonScopeType; id: number } | null;

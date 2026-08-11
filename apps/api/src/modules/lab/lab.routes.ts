@@ -4,6 +4,7 @@ import {
   courseExtensionCandidatesResponseSchema,
   performanceByRatingQuerySchema,
   performanceByRatingResponseSchema,
+  topOpponentsResponseSchema,
 } from '@chess-trainer/contracts/lab';
 import { requireAuth } from '../../auth/request-auth';
 import { courseExtensionCandidatesQuerySchema } from './course-extension-candidates/course-extension-candidates.schema';
@@ -34,7 +35,7 @@ const labModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lab/top-opponents', {
     schema: labSchema('getTopOpponents', 'Get the most frequently faced opponents', {
       querystring: limitQuerySchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: topOpponentsResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);

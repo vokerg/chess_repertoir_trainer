@@ -1,8 +1,13 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import {
+  activeTrainingStatsSchema,
+  sublineTrainingStatusSchema,
+  trainingStatsSummarySchema,
+} from '@chess-trainer/contracts/training';
 import { StatsService } from '../../services/statsService';
 import { requireAuth } from '../../auth/request-auth';
-import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { apiErrorResponseSchema, unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 
 const lineIdParamsSchema = z.object({ lineId: z.coerce.number().int().positive() });
@@ -13,7 +18,7 @@ const statsSchema = <T extends Record<string, unknown>>(operationId: string, sum
 const statsModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/stats/summary', {
     schema: statsSchema('getTrainingStatsSummary', 'Get aggregate training statistics', {
-      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: trainingStatsSummarySchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -25,7 +30,7 @@ const statsModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lines/:lineId/stats', {
     schema: statsSchema('getLineStats', 'Get statistics for one repertoire line', {
       params: lineIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: activeTrainingStatsSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -41,7 +46,7 @@ const statsModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/lines/:lineId/sublines/status', {
     schema: statsSchema('getLineSublineStatuses', 'Get training status for line sublines', {
       params: lineIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: z.array(sublineTrainingStatusSchema), 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -57,7 +62,7 @@ const statsModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/courses/:courseId/stats', {
     schema: statsSchema('getCourseStats', 'Get statistics for one course', {
       params: courseIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: activeTrainingStatsSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -70,7 +75,7 @@ const statsModule: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/chapters/:chapterId/stats', {
     schema: statsSchema('getChapterStats', 'Get statistics for one chapter', {
       params: chapterIdParamsSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
+      response: { 200: activeTrainingStatsSchema, 400: validationErrorResponseSchema, 401: unauthorizedResponseSchema, 404: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
