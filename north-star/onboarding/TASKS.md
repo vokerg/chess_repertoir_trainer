@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-09
+Last updated: 2026-08-11
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -20,8 +20,8 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 80 | ONB-008 | [#193](https://github.com/vokerg/chess_repertoir_trainer/issues/193) | P0 | PROPOSED | Persist onboarding disposition and readiness projection | Implementation | ONB-001/007; ONB-017/018 execution state; consumes ONB-016 presentation requirements |
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
-| 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | PROPOSED | Persist durable account-import runs and scope coverage | Implementation | ONB-002/007; coordinates ONB-004/017/019 schema and lifecycle boundaries |
-| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | PROPOSED | Build durable account-import worker and API lifecycle | Implementation | ONB-007/011; consumes ONB-004 fence/drain contract |
+| 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | DONE | Persist durable account-import runs and scope coverage | Implementation | Runtime merged through PR #339 as `4c04d47`; ONB-019 retains ownership of persisted lifecycle fences |
+| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | REVIEW | Build durable account-import worker and API lifecycle | Implementation | ONB-007/011; consumes ONB-004 fence/drain contract |
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
@@ -175,19 +175,23 @@ ONB-016 defines the route-based lightweight first-value experience, progressive 
 
 ONB-017 / #253 delivered the preparation execution boundary through PR #282 and squash commit `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 reconciled its task, queue, status, exact implementation head, validation evidence, and preserved acceptance contract. Issue #253 was closed as completed after the reconciliation squash merge.
 
+ONB-011 / #199 delivered durable provider-neutral `ImportRun` persistence and exact account/scope coverage through merged PR #339 and merge commit `4c04d47dac40aa0ae254babbf65449b701b5c447`. Persisted destructive lifecycle fences remain explicitly owned by ONB-019.
+
 ONB-022 / #272 delivered the migration-free administrator authorization and bounded read-only diagnostics foundation through PR #284. Final runtime pull-request head `fad7a19216c3249827a111e75238aafccac0ec75` passed CI run #2089 (`31031618906`) and squash-merged as `f83d26157e5da2d69f643b0d12100244219d2771`. PR #298 reconciled the completion evidence and synchronized the task, queue, status, report, downstream task promotion, and issue closure.
 
 ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics experience through PR #307. Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passed CI run #2237 (`31248860891`) and squash-merged as `07d19790a20beedf79bb094fead2c48c76404912`. PR #312 reconciles the task, queue, status, completion report, and live issue state; ONB-024 remains unpromoted.
 
 ## Deterministic next task
 
-After PR #312 merges, no onboarding implementation task is currently `READY`. Do not infer a new task from numeric order alone: ONB-024, ONB-018, ONB-008 through ONB-015, ONB-019 through ONB-021, ONB-025, and ONB-026 remain `PROPOSED` until their task-file dependencies and promotion gates are satisfied.
+ONB-012 / #200 is in `REVIEW` on PR #352. It remains open and incomplete until review/acceptance and a later completion reconciliation.
+
+No onboarding implementation task is currently `READY`. Do not infer a new task from numeric order alone: ONB-024, ONB-018, ONB-008 through ONB-010, ONB-013 through ONB-015, ONB-019 through ONB-021, ONB-025, and ONB-026 remain `PROPOSED` until their task-file dependencies and promotion gates are satisfied.
 
 ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
 
 ## Implementation backlog rule
 
-Only `READY` implementation tasks may be claimed. All Prisma/schema/migration tasks must check current activity for ONB-011, ONB-017, and ONB-019 before branching. Do not fold destructive implementation into research branches or duplicate lifecycle logic in administration routes.
+Only `READY` implementation tasks may be claimed. All Prisma/schema/migration tasks must check current activity for ONB-017 and ONB-019 before branching; ONB-011 is complete. Do not fold destructive implementation into research branches or duplicate lifecycle logic in administration routes.
 
 Each remaining research completion must:
 

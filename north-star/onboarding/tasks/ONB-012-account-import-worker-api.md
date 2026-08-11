@@ -1,6 +1,6 @@
 # ONB-012 — Build durable account-import worker and API lifecycle
 
-Status: PROPOSED
+Status: REVIEW
 
 Priority: P0
 
@@ -12,13 +12,13 @@ Planning maturity: Researched; initial operational defaults supplied by ONB-007
 
 GitHub issue: [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / account-import implementation session
 
-Claim branch: none
+Claim branch: `account-import/onb-012-worker-api`
 
-Claimed at: none
+Claimed at: 2026-08-11
 
-Claim scope: none
+Claim scope: provider-neutral account-import command/read API, lifecycle repository, single-executor worker loop, exact work-key fencing/drain, pause/cancel acknowledgement, retry/retry-at recovery, shared admission-guard integration, worker-process hosting, and focused contracts/tests; no provider traversal, Angular, preparation orchestration, destructive lifecycle persistence, or `JobRun`/`JobTask` changes
 
 ## Outcome
 
@@ -93,6 +93,10 @@ ONB-012 may land before ONB-019 if the fence seam is explicit and its temporary 
 
 ## Completion
 
-Report: none
+Reports:
+
+- [ONB-012 self-review addendum](../reports/ONB-012-2026-08-11-self-review-addendum.md)
+- [ONB-012 second self-review addendum](../reports/ONB-012-2026-08-11-second-self-review-addendum.md)
+- [ONB-012 third self-review addendum](../reports/ONB-012-2026-08-11-third-self-review-addendum.md)
 
 Completed at: none

@@ -131,7 +131,7 @@ export class AccountImportInvalidRetryError extends Error {
 
 export class AccountImportCoverageGapError extends Error {
   constructor() {
-    super('Proved account import coverage cannot jump across an unproved gap.');
+    super('Coverage extension must overlap or touch the existing proved interval.');
     this.name = 'AccountImportCoverageGapError';
   }
 }
@@ -145,14 +145,14 @@ export class AccountImportRunNotWritableError extends Error {
 
 export class AccountImportClaimLostError extends Error {
   constructor() {
-    super('Account import claim no longer matches the active work key.');
+    super('Account import worker claim is no longer active.');
     this.name = 'AccountImportClaimLostError';
   }
 }
 
 export class AccountImportWriteBatchTooLargeError extends Error {
-  constructor(maxWriteBatchSize: number) {
-    super(`Account import write batch exceeds the configured maximum of ${maxWriteBatchSize}.`);
+  constructor(public readonly maxWriteBatchSize: number) {
+    super(`Account import write batch exceeds the configured maximum of ${maxWriteBatchSize} games.`);
     this.name = 'AccountImportWriteBatchTooLargeError';
   }
 }
@@ -185,7 +185,16 @@ export function createAccountImportRepository(
       const canonical = canonicalizeAccountImportScope(input.scope);
 
       return database.$transaction(async (transaction) => {
-        const account = await lockOwnedAccount(transaction, input.userId, input.accountId);
+        const accountRows = await transaction.$queryRaw<AccountRow[]>(Prisma.sql`
+          SELECT "id", "provider"
+          FROM "ExternalAccount"
+          WHERE "id" = ${input.accountId}
+            AND "userId" = ${input.userId}
+          FOR UPDATE
+        `);
+        const account = accountRows[0];
+        if (!account) throw new AccountImportAccountNotFoundError();
+
         await admissionGuard.assertAllowed(transaction, {
           userId: input.userId,
           accountId: input.accountId,
@@ -194,6 +203,17 @@ export function createAccountImportRepository(
         if (input.retryOfImportRunId !== undefined && input.retryOfImportRunId !== null) {
           await assertValidRetry(transaction, input, canonical.scopeHash);
         }
+
+        const activeRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
+          SELECT "id"
+          FROM "ImportRun"
+          WHERE "accountId" = ${input.accountId}
+            AND "status" IN (${nonTerminalStatusSql()})
+          ORDER BY "createdAt" DESC, "id" DESC
+          LIMIT 1
+        `);
+        const active = activeRows[0];
+        if (active) throw new AccountImportActiveRunError(active.id);
 
         const rows = await transaction.$queryRaw<ImportRunRow[]>(Prisma.sql`
           INSERT INTO "ImportRun" (
@@ -212,10 +232,24 @@ export function createAccountImportRepository(
             "priority",
             "windowsTotal",
             "windowsCompleted",
+            "gamesSeen",
+            "gamesMatchedScope",
+            "gamesImported",
+            "gamesDuplicate",
+            "gamesSkippedOutOfScope",
+            "gamesFailed",
+            "lastProgressAt",
+            "workKey",
+            "claimedAt",
+            "heartbeatAt",
+            "retryAt",
+            "rateLimitUntil",
+            "completedAt",
+            "errorCode",
+            "error",
             "createdAt",
             "updatedAt"
-          )
-          VALUES (
+          ) VALUES (
             ${input.userId},
             ${input.accountId},
             ${account.provider},
@@ -231,64 +265,87 @@ export function createAccountImportRepository(
             ${input.priority},
             ${input.windowsTotal ?? null},
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
             NOW(),
             NOW()
           )
-          ON CONFLICT DO NOTHING
-          RETURNING ${importRunColumns()}
+          RETURNING ${runColumns()}
         `);
-
-        const created = rows[0];
-        if (created) return toStoredRun(created);
-
-        const activeRows = await selectActiveRun(
-          transaction,
-          input.userId,
-          input.accountId,
-        );
-        const active = activeRows[0];
-        if (active) {
-          throw new AccountImportActiveRunError(active.id);
+        const run = rows[0];
+        if (!run) throw new Error('Account import run insert did not return a row.');
+        return toStoredRun(run);
+      }).catch(async (error: unknown) => {
+        if (isActiveRunConstraintError(error)) {
+          const active = await findActiveRunId(database, input.accountId);
+          if (active !== null) throw new AccountImportActiveRunError(active);
         }
-        throw new Error('Account import run creation was rejected by a database uniqueness invariant.');
+        throw error;
       });
     },
 
     async getRun(userId, importRunId) {
       const rows = await database.$queryRaw<ImportRunRow[]>(Prisma.sql`
-        SELECT ${importRunColumns('run')}
+        SELECT ${runColumns('run')}
         FROM "ImportRun" AS run
         WHERE run."id" = ${importRunId}
           AND run."userId" = ${userId}
         LIMIT 1
       `);
-      return rows[0] ? toStoredRun(rows[0]) : null;
+      const row = rows[0];
+      return row ? toStoredRun(row) : null;
     },
 
     async getActiveRunForAccount(userId, accountId) {
-      const rows = await selectActiveRun(database, userId, accountId);
-      return rows[0] ? toStoredRun(rows[0]) : null;
+      const rows = await database.$queryRaw<ImportRunRow[]>(Prisma.sql`
+        SELECT ${runColumns('run')}
+        FROM "ImportRun" AS run
+        WHERE run."userId" = ${userId}
+          AND run."accountId" = ${accountId}
+          AND run."status" IN (${nonTerminalStatusSql()})
+        ORDER BY run."createdAt" DESC, run."id" DESC
+        LIMIT 1
+      `);
+      const row = rows[0];
+      return row ? toStoredRun(row) : null;
     },
 
     async getCoverage(userId, accountId, scope) {
-      await assertOwnedAccount(database, userId, accountId);
       const canonical = canonicalizeAccountImportScope(scope);
       const rows = await database.$queryRaw<CoverageRow[]>(Prisma.sql`
         SELECT ${coverageColumns('coverage')}
         FROM "AccountImportCoverage" AS coverage
+        INNER JOIN "ExternalAccount" AS account
+          ON account."id" = coverage."accountId"
         WHERE coverage."accountId" = ${accountId}
           AND coverage."scopeHash" = ${canonical.scopeHash}
+          AND account."userId" = ${userId}
         LIMIT 1
       `);
-      return rows[0] ? toStoredCoverage(rows[0]) : null;
+      const row = rows[0];
+      return row ? toStoredCoverage(row) : null;
     },
 
     async extendCoverage(input) {
       validateCoverageRange(input.coveredFrom, input.coveredThrough);
+      validateWorkKey(input.workKey);
 
       return database.$transaction(async (transaction) => {
         const runRows = await transaction.$queryRaw<ImportRunRow[]>(Prisma.sql`
-          SELECT ${importRunColumns('run')}
+          SELECT ${runColumns('run')}
           FROM "ImportRun" AS run
           WHERE run."id" = ${input.importRunId}
             AND run."userId" = ${input.userId}
@@ -296,24 +353,33 @@ export function createAccountImportRepository(
         `);
         const run = runRows[0];
         if (!run) throw new AccountImportRunNotFoundError();
+        if (run.mode === 'LEGACY_SYNC' || run.status !== 'RUNNING') {
+          throw new AccountImportRunNotWritableError(run.status);
+        }
+        if (run.workKey === null || run.workKey !== input.workKey) {
+          throw new AccountImportClaimLostError();
+        }
         if (
-          run.mode === 'LEGACY_SYNC'
-          || run.scopeVersion === null
+          run.scopeVersion === null
           || run.scopeHash === null
           || run.scopeJson === null
           || run.requestedFrom === null
           || run.requestedTo === null
         ) {
-          throw new Error('Legacy import history cannot establish exact durable coverage.');
+          throw new Error('Durable account import is missing immutable scope metadata.');
         }
         if (
           input.coveredFrom < run.requestedFrom
           || input.coveredThrough > run.requestedTo
         ) {
-          throw new Error('Proved coverage must stay within the immutable import request range.');
+          throw new Error('Coverage extension must stay inside the immutable requested range.');
         }
 
         await lockOwnedAccount(transaction, input.userId, run.accountId);
+        await admissionGuard.assertAllowed(transaction, {
+          userId: input.userId,
+          accountId: run.accountId,
+        });
 
         const existingRows = await transaction.$queryRaw<CoverageRow[]>(Prisma.sql`
           SELECT ${coverageColumns('coverage')}
@@ -323,54 +389,67 @@ export function createAccountImportRepository(
           FOR UPDATE
         `);
         const existing = existingRows[0];
-
-        if (!existing) {
-          const createdRows = await transaction.$queryRaw<CoverageRow[]>(Prisma.sql`
-            INSERT INTO "AccountImportCoverage" (
-              "accountId",
-              "scopeVersion",
-              "scopeHash",
-              "scopeJson",
-              "coveredFrom",
-              "coveredThrough",
-              "createdAt",
-              "updatedAt"
-            )
-            VALUES (
-              ${run.accountId},
-              ${run.scopeVersion},
-              ${run.scopeHash},
-              ${JSON.stringify(accountImportScopeSchema.parse(run.scopeJson))}::jsonb,
-              ${input.coveredFrom},
-              ${input.coveredThrough},
-              NOW(),
-              NOW()
-            )
+        if (existing) {
+          const merged = mergeCoverage(existing, input.coveredFrom, input.coveredThrough);
+          if (
+            merged.coveredFrom.getTime() === existing.coveredFrom?.getTime()
+            && merged.coveredThrough.getTime() === existing.coveredThrough?.getTime()
+          ) {
+            return toStoredCoverage(existing);
+          }
+          const updatedRows = await transaction.$queryRaw<CoverageRow[]>(Prisma.sql`
+            UPDATE "AccountImportCoverage"
+            SET "coveredFrom" = ${merged.coveredFrom},
+                "coveredThrough" = ${merged.coveredThrough},
+                "updatedAt" = NOW()
+            WHERE "id" = ${existing.id}
             RETURNING ${coverageColumns()}
           `);
-          const created = createdRows[0];
-          if (!created) throw new Error('Coverage creation did not return a row.');
-          return toStoredCoverage(created);
+          const updated = updatedRows[0];
+          if (!updated) throw new Error('Account import coverage update did not return a row.');
+          return toStoredCoverage(updated);
         }
 
-        const merged = mergeCoverage(existing, input.coveredFrom, input.coveredThrough);
-        const updatedRows = await transaction.$queryRaw<CoverageRow[]>(Prisma.sql`
-          UPDATE "AccountImportCoverage"
-          SET "coveredFrom" = ${merged.coveredFrom},
-              "coveredThrough" = ${merged.coveredThrough},
-              "updatedAt" = NOW()
-          WHERE "id" = ${existing.id}
+        const rows = await transaction.$queryRaw<CoverageRow[]>(Prisma.sql`
+          INSERT INTO "AccountImportCoverage" (
+            "accountId",
+            "scopeVersion",
+            "scopeHash",
+            "scopeJson",
+            "coveredFrom",
+            "coveredThrough",
+            "lastCompletedImportRunId",
+            "createdAt",
+            "updatedAt"
+          ) VALUES (
+            ${run.accountId},
+            ${run.scopeVersion},
+            ${run.scopeHash},
+            ${JSON.stringify(run.scopeJson)}::jsonb,
+            ${input.coveredFrom},
+            ${input.coveredThrough},
+            NULL,
+            NOW(),
+            NOW()
+          )
           RETURNING ${coverageColumns()}
         `);
-        const updated = updatedRows[0];
-        if (!updated) throw new Error('Coverage update did not return a row.');
-        return toStoredCoverage(updated);
+        const created = rows[0];
+        if (!created) throw new Error('Account import coverage insert did not return a row.');
+        return toStoredCoverage(created);
       });
     },
 
     async clearCoverageForAccount(userId, accountId) {
       return database.$transaction(async (transaction) => {
-        await lockOwnedAccount(transaction, userId, accountId);
+        const accountRows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
+          SELECT "id"
+          FROM "ExternalAccount"
+          WHERE "id" = ${accountId}
+            AND "userId" = ${userId}
+          FOR UPDATE
+        `);
+        if (!accountRows[0]) throw new AccountImportAccountNotFoundError();
         return transaction.$executeRaw(Prisma.sql`
           DELETE FROM "AccountImportCoverage"
           WHERE "accountId" = ${accountId}
@@ -382,14 +461,15 @@ export function createAccountImportRepository(
       const rows = await database.$queryRaw<IdRow[]>(Prisma.sql`
         SELECT run."id"
         FROM "ImportRun" AS run
-        JOIN "ExternalAccount" AS account ON account."id" = run."accountId"
-        WHERE account."id" = ${accountId}
+        INNER JOIN "ExternalAccount" AS account
+          ON account."id" = run."accountId"
+        WHERE run."accountId" = ${accountId}
           AND account."userId" = ${userId}
           AND run."workKey" IS NOT NULL
-          AND run."status" IN (${nonTerminalStatusSql()})
+          AND run."status" IN ('RUNNING', 'PAUSE_REQUESTED', 'CANCEL_REQUESTED')
         LIMIT 1
       `);
-      return rows.length === 1;
+      return rows.length > 0;
     },
 
     async persistGames(input) {
@@ -400,7 +480,7 @@ export function createAccountImportRepository(
 
       return database.$transaction(async (transaction) => {
         const runRows = await transaction.$queryRaw<ImportRunRow[]>(Prisma.sql`
-          SELECT ${importRunColumns('run')}
+          SELECT ${runColumns('run')}
           FROM "ImportRun" AS run
           WHERE run."id" = ${input.importRunId}
             AND run."userId" = ${input.userId}
@@ -411,10 +491,11 @@ export function createAccountImportRepository(
         if (run.mode === 'LEGACY_SYNC' || run.status !== 'RUNNING') {
           throw new AccountImportRunNotWritableError(run.status);
         }
-        if (run.workKey !== (input.workKey ?? null)) {
+        if (run.workKey === null || run.workKey !== input.workKey) {
           throw new AccountImportClaimLostError();
         }
 
+        await lockOwnedAccount(transaction, input.userId, run.accountId);
         await admissionGuard.assertAllowed(transaction, {
           userId: input.userId,
           accountId: run.accountId,
@@ -450,21 +531,26 @@ export function createAccountImportRepository(
           })),
           skipDuplicates: true,
         });
-        const attempted = input.games.length;
         const inserted = write.count;
-        const duplicate = attempted - inserted;
+        const duplicate = input.games.length - inserted;
 
         await transaction.$executeRaw(Prisma.sql`
           UPDATE "ImportRun"
-          SET "gamesMatchedScope" = "gamesMatchedScope" + ${attempted},
+          SET "gamesMatchedScope" = "gamesMatchedScope" + ${input.games.length},
               "gamesImported" = "gamesImported" + ${inserted},
               "gamesDuplicate" = "gamesDuplicate" + ${duplicate},
               "lastProgressAt" = NOW(),
               "updatedAt" = NOW()
-          WHERE "id" = ${run.id}
+          WHERE "id" = ${input.importRunId}
+            AND "workKey" = ${input.workKey}
+            AND "status" = 'RUNNING'
         `);
 
-        return { attempted, inserted, duplicate };
+        return {
+          attempted: input.games.length,
+          inserted,
+          duplicate,
+        };
       });
     },
   };
@@ -472,36 +558,18 @@ export function createAccountImportRepository(
 
 export const AccountImportRepository = createAccountImportRepository();
 
-async function lockOwnedAccount(
-  transaction: Prisma.TransactionClient,
-  userId: number,
-  accountId: number,
-): Promise<AccountRow> {
-  const rows = await transaction.$queryRaw<AccountRow[]>(Prisma.sql`
-    SELECT "id", "provider"
-    FROM "ExternalAccount"
-    WHERE "id" = ${accountId}
-      AND "userId" = ${userId}
-    FOR UPDATE
-  `);
-  const account = rows[0];
-  if (!account) throw new AccountImportAccountNotFoundError();
-  return account;
-}
-
-async function assertOwnedAccount(
-  database: Pick<PrismaClient, '$queryRaw'>,
-  userId: number,
-  accountId: number,
-): Promise<void> {
-  const rows = await database.$queryRaw<IdRow[]>(Prisma.sql`
-    SELECT "id"
-    FROM "ExternalAccount"
-    WHERE "id" = ${accountId}
-      AND "userId" = ${userId}
-    LIMIT 1
-  `);
-  if (rows.length !== 1) throw new AccountImportAccountNotFoundError();
+function validateCreateRunInput(input: CreateAccountImportRunInput): void {
+  validatePositiveInteger(input.userId, 'userId');
+  validatePositiveInteger(input.accountId, 'accountId');
+  validateNonNegativeInteger(input.priority, 'priority');
+  if (input.windowsTotal !== undefined && input.windowsTotal !== null) {
+    validateNonNegativeInteger(input.windowsTotal, 'windowsTotal');
+  }
+  validateDate(input.requestedFrom, 'requestedFrom');
+  validateDate(input.requestedTo, 'requestedTo');
+  if (input.requestedFrom >= input.requestedTo) {
+    throw new Error('Account import requested range must be a non-empty half-open interval.');
+  }
 }
 
 async function assertValidRetry(
@@ -510,139 +578,61 @@ async function assertValidRetry(
   scopeHash: string,
 ): Promise<void> {
   const rows = await transaction.$queryRaw<RetryRunRow[]>(Prisma.sql`
-    SELECT
-      "id",
-      "mode",
-      "status",
-      "scopeHash",
-      "requestedFrom",
-      "requestedTo"
+    SELECT "id", "mode", "status", "scopeHash", "requestedFrom", "requestedTo"
     FROM "ImportRun"
-    WHERE "id" = ${input.retryOfImportRunId ?? null}
+    WHERE "id" = ${input.retryOfImportRunId ?? -1}
       AND "userId" = ${input.userId}
       AND "accountId" = ${input.accountId}
     FOR SHARE
   `);
-  const retry = rows[0];
-  if (!retry) {
-    throw new AccountImportInvalidRetryError('Retry source is not owned by the user/account.');
+  const retryOf = rows[0];
+  if (!retryOf) throw new AccountImportInvalidRetryError('Retry source import run not found.');
+  if (retryOf.mode === 'LEGACY_SYNC') {
+    throw new AccountImportInvalidRetryError('Legacy import history cannot be retried as durable work.');
   }
-  if (retry.status !== 'FAILED' && retry.status !== 'CANCELLED') {
-    throw new AccountImportInvalidRetryError('Only failed or cancelled imports can be retried.');
+  if (retryOf.status !== 'FAILED' && retryOf.status !== 'CANCELLED') {
+    throw new AccountImportInvalidRetryError('Only failed or cancelled import runs can be retried.');
   }
   if (
-    retry.mode !== input.mode
-    || retry.scopeHash !== scopeHash
-    || retry.requestedFrom?.getTime() !== input.requestedFrom.getTime()
-    || retry.requestedTo?.getTime() !== input.requestedTo.getTime()
+    retryOf.mode !== input.mode
+    || retryOf.scopeHash !== scopeHash
+    || retryOf.requestedFrom?.getTime() !== input.requestedFrom.getTime()
+    || retryOf.requestedTo?.getTime() !== input.requestedTo.getTime()
   ) {
     throw new AccountImportInvalidRetryError(
-      'Retry must preserve the source import mode, exact scope, and immutable range.',
+      'Retry must preserve the source import mode, immutable scope, and requested range.',
     );
   }
 }
 
-async function selectActiveRun(
-  database: Pick<PrismaClient, '$queryRaw'> | Prisma.TransactionClient,
+async function lockOwnedAccount(
+  transaction: Prisma.TransactionClient,
   userId: number,
   accountId: number,
-): Promise<ImportRunRow[]> {
-  return database.$queryRaw<ImportRunRow[]>(Prisma.sql`
-    SELECT ${importRunColumns('run')}
-    FROM "ImportRun" AS run
-    JOIN "ExternalAccount" AS account ON account."id" = run."accountId"
-    WHERE run."accountId" = ${accountId}
-      AND account."userId" = ${userId}
-      AND run."status" IN (${nonTerminalStatusSql()})
-    ORDER BY run."createdAt" DESC, run."id" DESC
+): Promise<void> {
+  const rows = await transaction.$queryRaw<IdRow[]>(Prisma.sql`
+    SELECT "id"
+    FROM "ExternalAccount"
+    WHERE "id" = ${accountId}
+      AND "userId" = ${userId}
+    FOR UPDATE
+  `);
+  if (!rows[0]) throw new AccountImportAccountNotFoundError();
+}
+
+async function findActiveRunId(database: PrismaClient, accountId: number): Promise<number | null> {
+  const rows = await database.$queryRaw<IdRow[]>(Prisma.sql`
+    SELECT "id"
+    FROM "ImportRun"
+    WHERE "accountId" = ${accountId}
+      AND "status" IN (${nonTerminalStatusSql()})
+    ORDER BY "createdAt" DESC, "id" DESC
     LIMIT 1
   `);
+  return rows[0]?.id ?? null;
 }
 
-function validateCreateRunInput(input: CreateAccountImportRunInput): void {
-  if (!Number.isSafeInteger(input.userId) || input.userId <= 0) {
-    throw new Error('Account import userId must be a positive integer.');
-  }
-  if (!Number.isSafeInteger(input.accountId) || input.accountId <= 0) {
-    throw new Error('Account import accountId must be a positive integer.');
-  }
-  if (!Number.isSafeInteger(input.priority) || input.priority < 0) {
-    throw new Error('Account import priority must be a non-negative integer.');
-  }
-  if (
-    input.windowsTotal !== undefined
-    && input.windowsTotal !== null
-    && (!Number.isSafeInteger(input.windowsTotal) || input.windowsTotal < 0)
-  ) {
-    throw new Error('Account import windowsTotal must be a non-negative integer or null.');
-  }
-  validateCoverageRange(input.requestedFrom, input.requestedTo);
-}
-
-function validatePersistGamesInput(
-  input: PersistAccountImportGamesInput,
-  maxWriteBatchSize: number,
-): void {
-  if (!Number.isSafeInteger(input.userId) || input.userId <= 0) {
-    throw new Error('Account import userId must be a positive integer.');
-  }
-  if (!Number.isSafeInteger(input.importRunId) || input.importRunId <= 0) {
-    throw new Error('Account import importRunId must be a positive integer.');
-  }
-  if (input.games.length > maxWriteBatchSize) {
-    throw new AccountImportWriteBatchTooLargeError(maxWriteBatchSize);
-  }
-  for (const game of input.games) {
-    if (typeof game.providerGameId !== 'string' || game.providerGameId.trim().length === 0) {
-      throw new Error('Every normalized import game requires a providerGameId.');
-    }
-  }
-}
-
-function resolveMaxWriteBatchSize(value: number | undefined): number {
-  if (value === undefined) return DEFAULT_MAX_WRITE_BATCH_SIZE;
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new Error('Account import maxWriteBatchSize must be a positive integer.');
-  }
-  return value;
-}
-
-function validateCoverageRange(from: Date, through: Date): void {
-  if (
-    !(from instanceof Date)
-    || !(through instanceof Date)
-    || !Number.isFinite(from.getTime())
-    || !Number.isFinite(through.getTime())
-    || from >= through
-  ) {
-    throw new Error('Account import range must be a non-empty half-open interval.');
-  }
-}
-
-function mergeCoverage(
-  existing: CoverageRow,
-  newFrom: Date,
-  newThrough: Date,
-): { coveredFrom: Date; coveredThrough: Date } {
-  if (existing.coveredFrom === null || existing.coveredThrough === null) {
-    return { coveredFrom: newFrom, coveredThrough: newThrough };
-  }
-  if (newFrom > existing.coveredThrough || newThrough < existing.coveredFrom) {
-    throw new AccountImportCoverageGapError();
-  }
-  return {
-    coveredFrom: newFrom < existing.coveredFrom ? newFrom : existing.coveredFrom,
-    coveredThrough: newThrough > existing.coveredThrough ? newThrough : existing.coveredThrough,
-  };
-}
-
-function nonTerminalStatusSql(): Prisma.Sql {
-  return Prisma.join(
-    NON_TERMINAL_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`),
-  );
-}
-
-function importRunColumns(alias?: string): Prisma.Sql {
+function runColumns(alias?: string): Prisma.Sql {
   const prefix = alias ? Prisma.raw(`"${alias}".`) : Prisma.empty;
   return Prisma.join([
     Prisma.sql`${prefix}"id"`,
@@ -713,4 +703,94 @@ function toStoredCoverage(row: CoverageRow): StoredAccountImportCoverage {
     ...row,
     scope: accountImportScopeSchema.parse(row.scopeJson),
   };
+}
+
+function nonTerminalStatusSql(): Prisma.Sql {
+  return Prisma.join(NON_TERMINAL_IMPORT_STATUSES.map((status) => Prisma.sql`${status}`));
+}
+
+function resolveMaxWriteBatchSize(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_MAX_WRITE_BATCH_SIZE;
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('Account import maxWriteBatchSize must be a positive integer.');
+  }
+  return value;
+}
+
+function validatePersistGamesInput(
+  input: PersistAccountImportGamesInput,
+  maxWriteBatchSize: number,
+): void {
+  validatePositiveInteger(input.userId, 'userId');
+  validatePositiveInteger(input.importRunId, 'importRunId');
+  validateWorkKey(input.workKey);
+  if (input.games.length > maxWriteBatchSize) {
+    throw new AccountImportWriteBatchTooLargeError(maxWriteBatchSize);
+  }
+  const providerGameIds = new Set<string>();
+  for (const game of input.games) {
+    if (typeof game.providerGameId !== 'string' || game.providerGameId.trim().length === 0) {
+      throw new Error('Account import providerGameId must be a non-empty string.');
+    }
+    if (providerGameIds.has(game.providerGameId)) {
+      throw new Error(`Account import write batch contains duplicate providerGameId ${game.providerGameId}.`);
+    }
+    providerGameIds.add(game.providerGameId);
+  }
+}
+
+function validateCoverageRange(from: Date, through: Date): void {
+  validateDate(from, 'coveredFrom');
+  validateDate(through, 'coveredThrough');
+  if (from >= through) {
+    throw new Error('Account import coverage range must be a non-empty half-open interval.');
+  }
+}
+
+function validateWorkKey(workKey: string): void {
+  if (typeof workKey !== 'string' || workKey.trim().length === 0) {
+    throw new Error('Account import workKey must be a non-empty string.');
+  }
+}
+
+function mergeCoverage(
+  existing: CoverageRow,
+  newFrom: Date,
+  newThrough: Date,
+): { coveredFrom: Date; coveredThrough: Date } {
+  if (existing.coveredFrom === null || existing.coveredThrough === null) {
+    return { coveredFrom: newFrom, coveredThrough: newThrough };
+  }
+
+  if (newThrough < existing.coveredFrom || newFrom > existing.coveredThrough) {
+    throw new AccountImportCoverageGapError();
+  }
+
+  return {
+    coveredFrom: newFrom < existing.coveredFrom ? newFrom : existing.coveredFrom,
+    coveredThrough: newThrough > existing.coveredThrough ? newThrough : existing.coveredThrough,
+  };
+}
+
+function validatePositiveInteger(value: number, name: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(`Account import ${name} must be a positive integer.`);
+  }
+}
+
+function validateNonNegativeInteger(value: number, name: string): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`Account import ${name} must be a non-negative integer.`);
+  }
+}
+
+function validateDate(value: Date, name: string): void {
+  if (!(value instanceof Date) || !Number.isFinite(value.getTime())) {
+    throw new Error(`Account import ${name} must be a valid Date.`);
+  }
+}
+
+function isActiveRunConstraintError(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError
+    && error.code === 'P2002';
 }

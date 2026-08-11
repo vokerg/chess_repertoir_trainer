@@ -3,6 +3,12 @@ import { z } from 'zod';
 const isoDateTimeSchema = z.iso.datetime({ offset: true });
 const nullableIsoDateTimeSchema = isoDateTimeSchema.nullable();
 const sha256HexSchema = z.string().regex(/^[a-f0-9]{64}$/);
+const booleanQueryParamSchema = z.preprocess((value) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}, z.boolean());
+const lastQueryParam = (value: unknown) => Array.isArray(value) ? value.at(-1) : value;
 
 export const accountImportScopeVersionSchema = z.literal(1);
 export type AccountImportScopeVersion = z.infer<typeof accountImportScopeVersionSchema>;
@@ -155,6 +161,17 @@ export const createAccountImportRunResponseSchema = z.object({
 });
 export type CreateAccountImportRunResponse = z.infer<typeof createAccountImportRunResponseSchema>;
 
+export const accountImportRunListQuerySchema = z.object({
+  active: booleanQueryParamSchema.default(false),
+  limit: z.preprocess(lastQueryParam, z.coerce.number().int().min(1).max(100).default(20)),
+});
+export type AccountImportRunListQuery = z.infer<typeof accountImportRunListQuerySchema>;
+
+export const accountImportRunListResponseSchema = z.object({
+  items: z.array(accountImportRunSchema),
+});
+export type AccountImportRunListResponse = z.infer<typeof accountImportRunListResponseSchema>;
+
 export const accountImportRunParamsSchema = z.object({
   importRunId: z.coerce.number().int().positive(),
 });
@@ -203,9 +220,11 @@ export type AccountImportCoverageResponse = z.infer<typeof accountImportCoverage
 
 export const accountImportErrorCodeSchema = z.enum([
   'ACCOUNT_IMPORT_ACTIVE',
+  'ACCOUNT_IMPORT_ADMISSION_BLOCKED',
   'ACCOUNT_IMPORT_NOT_FOUND',
   'ACCOUNT_IMPORT_INVALID_RANGE',
   'ACCOUNT_IMPORT_COVERAGE_GAP',
+  'ACCOUNT_IMPORT_INVALID_STATE',
 ]);
 export type AccountImportErrorCode = z.infer<typeof accountImportErrorCodeSchema>;
 

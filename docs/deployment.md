@@ -6,7 +6,7 @@ The hosted web/API stack is prepared for a split hobby deployment:
 
 - Neon Postgres for the API database;
 - Render Web Service for the Fastify API;
-- Render Background Worker for persistent imported-game jobs;
+- Render Background Worker for persistent imported-game jobs and durable account imports;
 - Vercel for the Angular web app;
 - GitHub Actions for CI only.
 
@@ -84,11 +84,11 @@ Notes:
 - `CORS_ORIGIN` must match the deployed Angular origin. Native requests are not browser CORS requests.
 - Mobile and web must use the same Clerk application that the API issuer/JWKS values validate.
 - The API exposes a health check at `/health` with `{ "ok": true }`.
-- The API process does not start the persistent-job worker loop or execute imported-game jobs.
+- The API process does not start persistent worker loops or execute imported-game/account-import work.
 
 ## Render persistent-job worker setup
 
-Create a separate Render **Background Worker** from the same repository and commit as the API service. This process is required when the application accepts imported-game indexing, analysis, processing, or tag-refresh jobs.
+Create a separate Render **Background Worker** from the same repository and commit as the API service. This process is required when the application accepts imported-game indexing, analysis, processing, tag-refresh jobs, or durable account imports.
 
 Settings:
 
@@ -121,7 +121,7 @@ STOCKFISH_ANALYSIS_TIMEOUT_MS=15000
 
 Each claimed analysis or processing task creates and disposes one engine instance. Keep the worker as one process initially so analysis remains single-task per process. PostgreSQL locking supports multiple worker processes, but Stockfish CPU/memory sizing must be validated before horizontal scaling.
 
-Worker timing and retention defaults are listed in `.env.example`:
+Imported-game worker timing and retention defaults are listed in `.env.example`:
 
 ```text
 JOB_WORKER_POLL_INTERVAL_MS=1000
@@ -135,7 +135,22 @@ JOB_WORKER_SHUTDOWN_TIMEOUT_MS=30000
 
 The stale timeout must remain more than twice the heartbeat interval. The platform shutdown grace period should be at least `JOB_WORKER_SHUTDOWN_TIMEOUT_MS`; that budget covers executor abort, retained cancellation leases, terminal-retention work, and Prisma disconnection. The worker exits unsuccessfully if complete cleanup exceeds the budget.
 
-Terminal job retention runs at worker startup and hourly. It removes only terminal jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs are never removed by retention.
+The account-import loop runs in the same worker process but uses its own PostgreSQL `ImportRun` claim/work-key lifecycle rather than `JobRun`/`JobTask`. Its initial single-executor defaults are:
+
+```text
+ACCOUNT_IMPORT_WORKER_POLL_INTERVAL_MS=1000
+ACCOUNT_IMPORT_WORKER_HEARTBEAT_INTERVAL_MS=15000
+ACCOUNT_IMPORT_WORKER_STALE_AFTER_MS=120000
+ACCOUNT_IMPORT_WORKER_STALE_RECOVERY_INTERVAL_MS=30000
+ACCOUNT_IMPORT_WORKER_SHUTDOWN_TIMEOUT_MS=30000
+ACCOUNT_IMPORT_WORKER_BACKLOG_RUN_THRESHOLD=20
+ACCOUNT_IMPORT_WORKER_BACKLOG_AGE_MS=300000
+ACCOUNT_IMPORT_WORKER_BACKLOG_SUSTAINED_MS=300000
+```
+
+Account-import stale-after must also remain more than twice its heartbeat interval. Backlog telemetry warns when oldest queue age exceeds five minutes, or when more than 20 queued runs persist for five minutes. The ONB-012 worker registry is intentionally provider-neutral: until provider executors register in follow-up provider tasks, accepted durable imports remain queued and the worker performs no provider network I/O.
+
+Terminal job retention runs at worker startup and hourly. It removes only terminal imported-game jobs whose `completedAt` is older than `JOB_WORKER_TERMINAL_RETENTION_DAYS`; task rows are deleted by cascade. Active jobs and account-import history are never removed by that retention pass.
 
 Run Prisma migrations once per deployment release, normally in the API build command or a dedicated release command. Do not run migrations independently from every worker replica.
 
@@ -213,7 +228,7 @@ CI does not deploy. Render and Vercel deployments should be configured directly 
 3. Install dependencies.
 4. Apply migrations.
 5. Start the API and web app.
-6. Start the worker in a separate terminal before submitting imported-game jobs.
+6. Start the worker in a separate terminal before submitting imported-game jobs or durable account imports.
 
 ```bash
 npm ci
@@ -227,7 +242,7 @@ Worker terminal:
 npm run dev:worker
 ```
 
-To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment.
+To execute analysis-backed jobs locally, enable batch Stockfish and ensure the selected engine is available in the worker terminal environment. Durable account imports require a provider executor to be registered; ONB-012 itself only supplies the provider-neutral lifecycle/worker seam.
 
 Mobile also runs separately:
 
