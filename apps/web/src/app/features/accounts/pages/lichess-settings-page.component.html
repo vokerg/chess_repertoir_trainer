@@ -17,7 +17,7 @@
 
     @if (store.loadingLichessConnection()) {
       <p class="status-note" role="status">Checking Lichess connection...</p>
-    } @else if (store.lichessConnection()?.connected && store.lichessConnection()?.account; as account) {
+    } @else if (connectedAccount(); as account) {
       @let missingScopes = missingLichessScopeLabels(account);
       <div class="lichess-connection">
         <div class="lichess-connection-main">

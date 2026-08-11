@@ -19,7 +19,6 @@ const expectedLegacyOpaqueResponseOccurrences = new Map([
   ['apps/api/src/modules/training-marathons/training-marathons.routes.ts', 3],
   ['apps/api/src/modules/training/training.routes.ts', 8],
   ['apps/api/src/routes/externalAccounts.ts', 13],
-  ['apps/api/src/routes/lichessAuth.ts', 5],
 ]);
 
 const actualLegacyOccurrences = new Map(

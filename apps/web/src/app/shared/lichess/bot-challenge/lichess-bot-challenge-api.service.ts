@@ -1,16 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import type {
+  LichessBotChallengeOptionsResponse,
+  LichessBotChallengeResponse,
+} from '@chess-trainer/contracts/lichess';
 import { ApiService } from '../../../core/api/api.service';
 
-export interface LichessBotChallengeOption {
-  username: string;
-  label: string;
-}
-
-export interface LichessBotChallengeOptionsResponse {
-  bots: LichessBotChallengeOption[];
-  defaultUsername: string;
-}
+export type { LichessBotChallengeOption } from '@chess-trainer/contracts/lichess';
 
 export interface LichessBotChallengeBody {
   username: string;
@@ -21,13 +17,6 @@ export interface LichessBotChallengeBody {
     limit: number;
     increment: number;
   };
-}
-
-export interface LichessBotChallengeResponse {
-  challengeId: string | null;
-  url: string | null;
-  username: string;
-  rawStatus?: string;
 }
 
 @Injectable()

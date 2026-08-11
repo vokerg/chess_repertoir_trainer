@@ -1,7 +1,6 @@
 import type {
   ImportedGameWorkflowCandidates,
   ImportRunSummary,
-  LichessConnectionStatus,
 } from '../data-access/accounts.models';
 
 export interface NewImportedWorkflowState {
@@ -9,8 +8,6 @@ export interface NewImportedWorkflowState {
   readonly unindexedGameIds: readonly number[];
   readonly indexedGameIds: readonly number[];
 }
-
-type ConnectedLichessAccount = NonNullable<LichessConnectionStatus['account']>;
 
 const LICHESS_SCOPE_LABELS = [
   { scope: 'challenge:write', label: 'bot challenges' },
@@ -36,7 +33,9 @@ export function buildNewImportedWorkflowState(
   };
 }
 
-export function missingLichessScopeLabels(account: ConnectedLichessAccount): readonly string[] {
+export function missingLichessScopeLabels(account: {
+  readonly scopes: readonly string[];
+}): readonly string[] {
   const grantedScopes = new Set(account.scopes);
   return LICHESS_SCOPE_LABELS.filter(({ scope }) => !grantedScopes.has(scope)).map(
     ({ label }) => label,

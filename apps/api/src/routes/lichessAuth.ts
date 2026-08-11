@@ -1,12 +1,18 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import {
+  lichessBotChallengeOptionsResponseSchema,
+  lichessBotChallengeResponseSchema,
+  lichessConnectionStatusSchema,
+  lichessDisconnectResponseSchema,
+} from '@chess-trainer/contracts/lichess';
 import { requireAuth } from '../auth/request-auth';
 import {
   LichessBotChallengeError,
   LichessBotChallengeService,
 } from '../services/lichessBotChallengeService';
 import { LichessConnectionService, LichessOAuthError } from '../services/lichessConnectionService';
-import { apiErrorResponseSchema, legacyOpaqueResponseSchema, unauthorizedResponseSchema } from './legacy-route.schemas';
+import { apiErrorResponseSchema, unauthorizedResponseSchema } from './legacy-route.schemas';
 import { validationErrorResponseSchema } from './api-error.schemas';
 
 const callbackQuerySchema = z.object({
@@ -40,7 +46,7 @@ const lichessSchema = <T extends Record<string, unknown>>(operationId: string, s
 const lichessAuthRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get('/api/me/lichess-connection', {
     schema: lichessSchema('getLichessConnection', 'Get the current user Lichess connection status', {
-      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: lichessConnectionStatusSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -51,7 +57,7 @@ const lichessAuthRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/api/me/lichess/bot-challenge-options', {
     schema: lichessSchema('getLichessBotChallengeOptions', 'Get available Lichess bot challenge settings', {
-      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: lichessBotChallengeOptionsResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -63,7 +69,7 @@ const lichessAuthRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post('/api/me/lichess/challenge-bot', {
     schema: lichessSchema('challengeLichessBot', 'Challenge a configured Lichess bot', {
       body: challengeBotSchema,
-      response: { 200: legacyOpaqueResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 409: apiErrorResponseSchema, 502: apiErrorResponseSchema },
+      response: { 200: lichessBotChallengeResponseSchema, 400: z.union([validationErrorResponseSchema, apiErrorResponseSchema]), 401: unauthorizedResponseSchema, 409: apiErrorResponseSchema, 502: apiErrorResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);
@@ -114,7 +120,7 @@ const lichessAuthRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.delete('/api/me/lichess-connection', {
     schema: lichessSchema('disconnectLichessAccount', 'Disconnect the current user Lichess account', {
-      response: { 200: legacyOpaqueResponseSchema, 401: unauthorizedResponseSchema },
+      response: { 200: lichessDisconnectResponseSchema, 401: unauthorizedResponseSchema },
     }),
   }, async (request, reply) => {
     const auth = requireAuth(request, reply);

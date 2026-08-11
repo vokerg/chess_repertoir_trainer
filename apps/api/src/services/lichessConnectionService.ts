@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import type { LichessConnectionStatus } from '@chess-trainer/contracts/lichess';
 import prisma from '../prisma';
 import { decryptToken, encryptToken } from './oauthTokenCrypto';
 
@@ -30,7 +31,7 @@ interface LichessAccountResponse {
 }
 
 export const LichessConnectionService = {
-  async getStatusForUser(userId: number) {
+  async getStatusForUser(userId: number): Promise<LichessConnectionStatus> {
     const connection = await prisma.lichessConnection.findUnique({
       where: { userId },
       select: {
