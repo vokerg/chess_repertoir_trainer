@@ -2,9 +2,10 @@
 
 Date: 2026-08-11
 Issue: #133
-Branch: `visual-transformation/vt-302-source-closeout-audit`
+Implementation branch: `visual-transformation/vt-302-source-closeout-audit`
 Implementation-start base: `main` `67f738ad2f40286b245d0fcb2837e81399222bf6`
-Refreshed review base: `main` `d8e096b068d3c1aaccb934af61396d5a6da86c55`
+Final merge parent: `main` `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2`
+Integrated: PR #337, squash commit `11b22206173000fa29f3f9526eec926901c8808c`
 
 ## Objective
 
@@ -75,6 +76,8 @@ The first review round found two state-consistency defects that were hidden by t
 
 The same review also caught that replacing the marathon error paragraph initially dropped the structural `.marathon-error` grid-order class. The class is now carried by `app-state-message`, preserving desktop and compact ordering. Retired local `status-note`/`status-error` style blocks in focused training, marathon training, and Account Detail were removed after their last local consumers disappeared.
 
+The accessibility contract also ratchets both training terminal-state branch shapes, including the no-session recovery boundary and marathon loading/error exclusivity.
+
 ## Library compatibility proof
 
 Earlier VT-302 work removed `.library-*` presentation usage from Lines but intentionally kept the global block until the complete Study/library consumer boundary was inspected.
@@ -113,21 +116,25 @@ This audit does not authorize a global short-token search/replace.
 
 ## Main refresh and collision review
 
-The slice began from integrated Home-cleanup head `67f738ad2f40286b245d0fcb2837e81399222bf6`. During review, `main` advanced by two commits to `d8e096b068d3c1aaccb934af61396d5a6da86c55`, including cleanup PR #338 and a new repository-hygiene CI gate.
+The slice began from integrated Home-cleanup head `67f738ad2f40286b245d0fcb2837e81399222bf6`.
 
-The intervening `main` changes do not touch any of this slice's 25 files. The branch was therefore rebuilt as one commit on the current `main` tree rather than merged, preserving all new contract/hygiene changes underneath the unchanged closeout patch. The refreshed compare is one commit ahead, zero behind.
+During review, `main` first advanced through cleanup PR #338 to `d8e096b068d3c1aaccb934af61396d5a6da86c55`, adding the repository-hygiene CI gate and unrelated contract cleanup. No #337 file overlapped, so the branch was rebuilt as one commit on that tree rather than merged.
+
+While the exact-head workflow was finishing, `main` advanced again through ONB-011 PR #339 / commit `4c04d47dac40aa0ae254babbf65449b701b5c447` and RB-030 PR #335 / commit `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2`. Those changes were exact-file disjoint from the 25-file VT-302 closeout patch: ONB-011 owned API/Prisma/contracts/onboarding-task files, while RB-030 touched a Player Chess Profile spec plus Repertoire Builder files rather than the Player Profile route HTML/TS changed here.
+
+PR #337 was then squash-merged as `11b22206173000fa29f3f9526eec926901c8808c` with parent `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2`. Post-merge verification confirmed that the ONB-011 and RB-030 integrations remain underneath the VT-302 squash.
 
 ## Remaining VT-302 blockers
 
 ### Functional onboarding
 
-The dedicated Onboarding program still owns the lifecycle/UI path required for coherent first-run and returning-user guidance. At this audit checkpoint:
+The dedicated Onboarding program still owns the lifecycle/UI path required for coherent first-run and returning-user guidance. Live re-check on 2026-08-11 confirms:
 
 - ONB-008 / #193 is `PROPOSED`;
 - ONB-009 / #194 is `PROPOSED`;
 - ONB-010 / #195 is `PROPOSED` and owns the Angular onboarding state/re-entry experience.
 
-VT-302 must not invent a competing onboarding lifecycle or duplicate those contracts. Functional onboarding acceptance therefore remains externally dependent on that program.
+ONB-011 is now integrated as persistence foundation, but it does not provide the server readiness projection, lifecycle commands, or Angular onboarding/re-entry experience owned by ONB-008/009/010. VT-302 must not invent a competing onboarding lifecycle or duplicate those contracts. Functional onboarding acceptance therefore remains externally dependent on that program.
 
 ### Manual authenticated evidence
 
@@ -145,16 +152,18 @@ These remain unobserved evidence unless a later session actually performs and re
 
 ## Validation
 
-The execution runner still cannot resolve `github.com` for a local checkout (`Could not resolve host: github.com`), so GitHub Actions is the validation authority. Before this slice can be treated as review-ready, its exact refreshed head must pass the repository CI workflow, including lint/template compilation, production build, opening audits, architecture guardrails, the repository-hygiene guard, migrations/imported-game audits, and the complete test step.
+The exact implementation head `ed1be6e064490e84746b425db5c5c1b69c60791e` passed GitHub Actions CI #2537 (`31457402173`). That pull-request run completed successfully across lint/template compilation, production build, opening audits, architecture guardrails, repository hygiene, migrations/imported-game audits, and the complete test step.
 
-The architecture guard specifically validates that the retired Library presentation namespace cannot return. The accessibility contract validates the shared state-message semantics and the exact eight newly migrated route-state consumers.
+The actual integrated squash `11b22206173000fa29f3f9526eec926901c8808c` then passed post-merge `main` CI #2540 (`31457752774`) across the same substantive gates, including the full test step. This push run is the final integrated validation authority for the source-closeout slice.
+
+The architecture guard validates that the retired Library presentation namespace cannot return. The accessibility contract validates the shared state-message semantics, the exact eight newly migrated route-state consumers, and the two training terminal-state corrections.
 
 No authenticated browser, screen-reader, zoom, contrast-tool, or representative-device pass is claimed by this report.
 
 ## Closeout disposition
 
-This slice is intended to eliminate the remaining **source-verifiable** generic route-state and documented Library-presentation compatibility gaps while reconciling the current 35-route/30-component registry.
+PR #337 eliminates the remaining source-verifiable generic route-state and documented Library-presentation compatibility gaps while reconciling the current 35-route/30-component registry. The implementation is integrated on `main`, and the integrated squash passed post-merge CI #2540.
 
-If exact-head CI and review are clean, the remaining barriers to closing issue #133 should be explicit rather than hidden source debt: functional onboarding owned by the Onboarding program, manual authenticated accessibility/responsive evidence, and final post-merge transformation reconciliation/approval.
+At this checkpoint no further ordinary VT-302 source slice is justified by the audited residuals. The barriers to closing issue #133 are explicit: functional onboarding owned by the Onboarding program, manual authenticated accessibility/responsive evidence, and final program-level acceptance of those residual boundaries.
 
-Issue #133 must remain open until those remaining acceptance boundaries are either completed or explicitly dispositioned through the normal transformation review process.
+Issue #133 must remain open until those remaining acceptance boundaries are completed or explicitly dispositioned through the normal transformation review process. A later session must not represent external/manual blockers as implementation work merely to keep VT-302 `IN_PROGRESS`.

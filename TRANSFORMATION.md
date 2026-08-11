@@ -4,13 +4,13 @@ This file is the stable entry point for ChatGPT, Copilot, Codex, and human sessi
 
 ## Current checkpoint
 
-Phase 3 is in progress. VT-301 page-family rollout and authenticated-route classification are complete for the route registry that existed at its completion checkpoint: the historical final inventory covers 34 URLs guarded by `authGuard`, 29 unique guarded route components, and three unguarded compatibility redirects into guarded destinations.
+Phase 3 source-verifiable implementation is complete through VT-302 PR #337. VT-301 page-family rollout and authenticated-route classification remain complete for the historical route registry at that checkpoint: 34 URLs guarded by `authGuard`, 29 unique guarded route components, and three unguarded compatibility redirects into guarded destinations.
 
-The current route registry contains 35 guarded URL entries and 30 unique guarded route components because `/admin` / `AdminDiagnosticsPageComponent` was added later by the Onboarding program. That route uses the transformed signed-in shell and explicit idle/loading/forbidden/unavailable/ready state semantics; its later addition does not reopen the historical VT-301 rollout. No current guarded route component is unclassified.
+The current route registry contains 35 guarded URL entries and 30 unique guarded route components because `/admin` / `AdminDiagnosticsPageComponent` was added later by the Onboarding program. PR #337 audited that current registry, standardized the remaining route-level generic async states on the shared state-message contract, and removed the proven-orphaned global `.library-*` presentation namespace. Exact implementation head `ed1be6e064490e84746b425db5c5c1b69c60791e` passed CI #2537 (`31457402173`), PR #337 was squash-merged as `11b22206173000fa29f3f9526eec926901c8808c`, and that integrated squash passed post-merge `main` CI #2540 (`31457752774`).
 
-VT-302 remains the sole active Visual Transformation boundary. Integrated slices have established the shared state-message contract, corrected cross-surface focus and responsive foundations, cleaned workbench/training compatibility, and removed the Home-local `--home-*` token namespace through PR #332 / squash commit `67f738ad2f40286b245d0fcb2837e81399222bf6`. Remaining work is closeout-oriented: finish evidence-bounded state/compatibility cleanup, reconcile current residual risks, and distinguish source-verifiable completion from functional onboarding and manual authenticated accessibility/responsive evidence that are owned or observed elsewhere.
+Issue #133 / VT-302 remains open because its remaining acceptance boundary is no longer ordinary source implementation: functional onboarding is owned by ONB-008/#193, ONB-009/#194 and ONB-010/#195, while authenticated browser, screen-reader, keyboard, zoom/reflow, rendered-contrast and representative-device evidence remains unobserved in the repository-connector environment. Do not invent a competing onboarding flow or claim unavailable manual evidence merely to close the transformation program.
 
-The authoritative integrated history, validation, residual risks, and completion boundary are in [`transformation/STATUS.md`](transformation/STATUS.md) and the focused reports under [`transformation/reports`](transformation/reports). The historical VT-301 route table remains in [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues remain authoritative for live review, merge, closure, readiness, and active-claim state. Issue #133 / VT-302 is currently the sole active `IN_PROGRESS` Visual Transformation execution boundary; continue it only through the branch and scope recorded in its live issue state.
+The authoritative integrated history, validation, residual risks, and completion boundary are in [`transformation/STATUS.md`](transformation/STATUS.md) and the focused reports under [`transformation/reports`](transformation/reports). The historical VT-301 route table remains in [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues remain authoritative for live review, merge, closure, readiness, blocker, and active-claim state.
 
 ## Branch and merge model
 
@@ -42,17 +42,18 @@ Code and tests are the source of truth for runtime behavior. Repository transfor
 
 Use issue #122 and its child issues:
 
-1. continue the sole active `IN_PROGRESS` execution issue while accepted scope remains;
-2. otherwise consider only open issues whose repository state is `READY`;
-3. exclude unresolved dependencies and already claimed work;
-4. choose the highest priority and then the lowest numeric order;
-5. comment to claim the issue before implementation;
-6. create the recorded task branch from current `main`;
-7. target the pull request at `main`;
-8. keep claim, branch, PR, blocker, and completion state in the issue;
-9. close only after approved squash merge and documentation reconciliation.
+1. continue the sole active `IN_PROGRESS` execution issue only while accepted executable scope remains;
+2. do not force implementation on an issue whose remaining acceptance is explicitly blocked on another program or unavailable manual evidence;
+3. otherwise consider only open issues whose repository state is `READY`;
+4. exclude unresolved dependencies and already claimed work;
+5. choose the highest priority and then the lowest numeric order;
+6. comment to claim the issue before implementation;
+7. create the recorded task branch from current `main`;
+8. target the pull request at `main`;
+9. keep claim, branch, PR, blocker, and completion state in the issue;
+10. close only after approved squash merge and documentation reconciliation.
 
-The exact active or ready task can change independently of this file. Resolve it from the live issue queue and `transformation/STATUS.md`.
+The exact active, blocked, or ready task can change independently of this file. Resolve it from the live issue queue and `transformation/STATUS.md`.
 
 ## Delivery contract
 
