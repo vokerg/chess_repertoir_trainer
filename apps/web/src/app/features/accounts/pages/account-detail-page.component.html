@@ -1,18 +1,18 @@
 <section class="account-detail-page stack">
   <app-page-header [title]="pageTitle()" [subtitle]="pageSubtitle()" [actions]="headerActions()" />
 
-  @if (accountsError()) {
-    <p class="status-error">{{ accountsError() }}</p>
+  @if (accountsError(); as error) {
+    <app-state-message tone="error" [message]="error" />
   }
 
-  @if (accountError()) {
+  @if (accountError(); as error) {
     <app-panel title="Account unavailable">
-      <p class="status-error">{{ accountError() }}</p>
+      <app-state-message tone="error" [message]="error" />
     </app-panel>
   } @else {
     <app-panel title="Account overview" subtitle="Imported account metadata.">
       @if (accountLoading() && !account()) {
-        <p class="status-note">Loading account...</p>
+        <app-state-message tone="loading" message="Loading account..." />
       }
 
       @if (account(); as account) {

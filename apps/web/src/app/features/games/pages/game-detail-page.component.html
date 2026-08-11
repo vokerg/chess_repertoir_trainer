@@ -13,15 +13,15 @@
   />
 
   @if (store.error(); as error) {
-    <p class="status-error">{{ error }}</p>
+    <app-state-message tone="error" [message]="error" />
   }
   @if (aiReviewStore.error(); as error) {
-    <p class="status-error">{{ error }}</p>
+    <app-state-message tone="error" [message]="error" />
   }
 
   @if (store.loading()) {
     <app-panel title="Loading game">
-      <p class="status-note">Loading imported game...</p>
+      <app-state-message tone="loading" message="Loading imported game..." />
     </app-panel>
   } @else if (store.game(); as game) {
     <app-game-summary

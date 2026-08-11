@@ -10,6 +10,7 @@ const mobilePackage = JSON.parse(readFileSync(new URL('../apps/mobile/package.js
 const domainPackage = JSON.parse(readFileSync(new URL('../packages/chess-domain/package.json', import.meta.url), 'utf8'));
 const contractsPackage = JSON.parse(readFileSync(new URL('../packages/contracts/package.json', import.meta.url), 'utf8'));
 const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8');
+const globalWebStyles = readFileSync(new URL('../apps/web/src/styles.css', import.meta.url), 'utf8');
 const importedGameRepository = readFileSync(
   new URL('../apps/api/src/modules/imported-games/imported-games.repository.prisma.ts', import.meta.url),
   'utf8',
@@ -38,7 +39,7 @@ const migratedWorkbenchStyles = [
     import.meta.url,
   ),
 ];
-const linesPresentationRoot = new URL('../apps/web/src/app/features/lines/', import.meta.url);
+const webPresentationRoot = new URL('../apps/web/src/app/', import.meta.url);
 const homePresentationRoot = new URL('../apps/web/src/app/features/home/', import.meta.url);
 const legacyVisualTokenUsage =
   /var\(--(?:bg(?:-strong)?|surface(?:-strong|-muted|-dark|-2|-3)?|border(?:-strong)?|text|muted(?:-strong)?|accent(?:-strong|-soft)?|danger(?:-soft)?|success(?:-soft)?|warning(?:-strong|-soft)?|radius-(?:sm|md|lg|xl)|shadow(?:-soft|-lg|-lifted)?|on-accent)\)/;
@@ -126,12 +127,17 @@ for (const fileUrl of migratedWorkbenchStyles) {
   );
 }
 
-for (const fileUrl of presentationFiles(linesPresentationRoot)) {
+assert.doesNotMatch(
+  globalWebStyles,
+  libraryPresentationClass,
+  'Global web styles must not reintroduce the retired Library presentation namespace',
+);
+for (const fileUrl of presentationFiles(webPresentationRoot)) {
   const source = readFileSync(fileUrl, 'utf8');
   assert.doesNotMatch(
     source,
     libraryPresentationClass,
-    `Lines presentation must not depend on Library-owned CSS classes: ${fileUrl.pathname}`,
+    `Angular presentation must not reintroduce retired Library CSS classes: ${fileUrl.pathname}`,
   );
 }
 

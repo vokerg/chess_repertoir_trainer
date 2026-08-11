@@ -4,13 +4,14 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { AccountsApiService } from '../data-access/accounts-api.service';
 import { type ExternalAccount } from '../data-access/accounts.models';
 
 @Component({
   selector: 'app-progress-entry-page',
   standalone: true,
-  imports: [PageHeaderComponent, PanelComponent, RouterLink],
+  imports: [PageHeaderComponent, PanelComponent, RouterLink, StateMessageComponent],
   providers: [AccountsApiService],
   template: `
     <section class="stack">
@@ -18,9 +19,9 @@ import { type ExternalAccount } from '../data-access/accounts.models';
 
       <app-panel title="Finding your dashboard">
         @if (loading()) {
-          <p class="status-note">Loading connected accounts...</p>
+          <app-state-message tone="loading" message="Loading connected accounts..." />
         } @else if (error(); as error) {
-          <p class="status-error">{{ error }}</p>
+          <app-state-message tone="error" [message]="error" />
           <a class="compact-action secondary" routerLink="/settings/accounts">Manage accounts</a>
         }
       </app-panel>

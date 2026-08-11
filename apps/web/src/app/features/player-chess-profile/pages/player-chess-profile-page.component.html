@@ -24,13 +24,13 @@
       (recalculate)="store.load()"
     />
     @if (store.accountsError(); as error) {
-      <p class="status-note">{{ error }}</p>
+      <app-state-message tone="error" [message]="error" />
     }
     @if (store.error(); as error) {
-      <p class="status-error">{{ error }}</p>
+      <app-state-message tone="error" [message]="error" />
     }
     @if (store.loading()) {
-      <p class="status-note">Calculating profile evidence…</p>
+      <app-state-message tone="loading" message="Calculating profile evidence…" />
     }
   </app-panel>
 
@@ -49,7 +49,7 @@
         title="No matching games"
         subtitle="Change the period, account, speed, colour, or rating context and recalculate."
       >
-        <p class="status-note">No eligible standard games matched this profile context.</p>
+        <app-state-message tone="empty" message="No eligible standard games matched this profile context." />
       </app-panel>
     } @else {
       @if (store.hasPartialAnalysis()) {
@@ -105,7 +105,7 @@
     }
   } @else if (store.loaded() && !store.loading()) {
     <app-panel title="Profile unavailable">
-      <p class="status-note">No profile response is available.</p>
+      <app-state-message tone="empty" message="No profile response is available." />
     </app-panel>
   }
 </section>

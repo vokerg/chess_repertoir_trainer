@@ -8,6 +8,7 @@ import {
   PageHeaderStat,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { LineTrainingSessionComponent } from '../components/line-training-session.component';
 import { parseMarathonOptions } from '../helpers/marathon-query.helpers';
 import { TrainingMarathonStore } from '../state/training-marathon.store';
@@ -15,7 +16,7 @@ import { TrainingMarathonStore } from '../state/training-marathon.store';
 @Component({
   selector: 'app-training-marathon-page',
   standalone: true,
-  imports: [RouterLink, PageHeaderComponent, PanelComponent, LineTrainingSessionComponent],
+  imports: [RouterLink, PageHeaderComponent, PanelComponent, StateMessageComponent, LineTrainingSessionComponent],
   providers: [TrainingMarathonStore],
   templateUrl: './training-marathon-page.component.html',
   styleUrl: './training-marathon-page.component.css',
