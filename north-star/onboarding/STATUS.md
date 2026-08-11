@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Status
 
-Last updated: 2026-08-09
+Last updated: 2026-08-11
 
 ## Program state
 
@@ -18,6 +18,10 @@ Preparation orchestration: ONB-003 squash-merged through [PR #256](https://githu
 
 Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](https://github.com/vokerg/chess_repertoir_trainer/pull/282) as `885ef785bdac1b0c77cc500e3345745b0e723912`; completion records reconciled through PR #293.
 
+Durable account-import persistence: ONB-011 runtime merged through [PR #339](https://github.com/vokerg/chess_repertoir_trainer/pull/339) as `4c04d47dac40aa0ae254babbf65449b701b5c447`; persisted destructive lifecycle fences remain ONB-019-owned.
+
+Durable account-import worker/API lifecycle: ONB-012 is in `REVIEW` on [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352); the provider executor registry remains intentionally empty until ONB-013/014.
+
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
 Throughput/progress: ONB-007 squash-merged through [PR #266](https://github.com/vokerg/chess_repertoir_trainer/pull/266) as `d6313823bd7da36991972a804f59d47d77578bdf` after corrected benchmark evidence and three self-review rounds.
@@ -32,9 +36,9 @@ Shared-position cleanup research: ONB-006 completed through [PR #281](https://gi
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next unclaimed `READY` onboarding task: none after ONB-023 completion reconciliation. Remaining implementation tasks stay `PROPOSED` until their canonical dependency and promotion gates are satisfied.
+Next unclaimed `READY` onboarding task: none while ONB-012 remains in review. Remaining implementation tasks stay `PROPOSED` until their canonical dependency and promotion gates are satisfied.
 
-Latest report: `reports/ONB-023-2026-08-09-completion-reconciliation.md`
+Latest report: `reports/ONB-012-2026-08-11-self-review-addendum.md`
 
 ## Completed contracts
 
@@ -172,6 +176,18 @@ Completed through squash-merged PR #266 as `d6313823bd7da36991972a804f59d47d7757
 
 Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e723912`. PR #293 preserved the original task contract and reconciled the task, queue, status, and completion evidence. Issue #253 was closed as completed after the reconciliation squash merge.
 
+### ONB-011
+
+- durable provider-neutral `ImportRun` persistence with explicit `LEGACY_SYNC` compatibility;
+- canonical versioned import scope hashes and immutable requested ranges;
+- exact contiguous `AccountImportCoverage` without cursor-derived overclaiming;
+- one non-terminal import per account and exact active-claim projection;
+- bounded duplicate-safe game persistence and coverage primitives;
+- retry lineage and replaceable lifecycle admission-guard seam;
+- no provider traversal, worker loop, Angular, or destructive lifecycle persistence.
+
+Runtime merged through PR #339 as `4c04d47dac40aa0ae254babbf65449b701b5c447`; issue #199 is completed. ONB-019 remains owner of persisted destructive lifecycle fences and audit persistence.
+
 ### ONB-022
 
 - disabled-by-default server-only administrator configuration;
@@ -208,11 +224,11 @@ Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passe
 
 ### Active implementation
 
-- None recorded after ONB-023 runtime integration; PR #312 is completion-record reconciliation only.
+- ONB-012 / #200 — durable account-import worker/API lifecycle — `REVIEW` on PR #352; provider adapters remain out of scope and issue #200 stays open until review/acceptance and later completion reconciliation.
 
 ### Ready implementation
 
-- None recorded after ONB-023 completion reconciliation. Remaining tasks are `PROPOSED` and must satisfy their own promotion gates.
+- None recorded while ONB-012 is in review. Remaining tasks are `PROPOSED` and must satisfy their own promotion gates.
 
 ## Allocated implementation backlog
 
@@ -220,8 +236,6 @@ Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passe
 - ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-007 exact progress/no-ETA contract.
 - ONB-009 / #194 — onboarding lifecycle commands — `PROPOSED`; destructive commands remain ONB-019/020/021-owned.
 - ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-007 presentation constraints.
-- ONB-011 / #199 — import persistence/coverage — `PROPOSED`; coordinates with ONB-017/019 and consumes ONB-007 telemetry/write-budget requirements.
-- ONB-012 / #200 — durable import worker/API — `PROPOSED`; initial 1s/15s/2m/30s loop defaults and one executor.
 - ONB-013 / #201 — Lichess adapter — `PROPOSED`; initial 14-day windows, serial access, and 100-row writes.
 - ONB-014 / #202 — Chess.com adapter — `PROPOSED`; serial monthly archives, cache validators, and 100-row writes.
 - ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
@@ -271,7 +285,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 ## Blockers to production implementation
 
 - ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
-- ONB-011/012/013/014/015 have not delivered durable provider import and cutover;
+- ONB-011 is delivered; ONB-012 remains in review and ONB-013/014/015 have not delivered durable provider adapters/cutover;
 - ONB-017 delivered the preparation execution boundary; ONB-018 has not delivered preparation reconciliation/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
 - ONB-022 and ONB-023 delivered the read-only administrator API and administrator diagnostics Angular feature;
@@ -387,4 +401,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-After PR #312 merges, no onboarding implementation task is currently `READY`. Re-inspect the canonical queue before any new claim; do not promote ONB-024 or any other `PROPOSED` task merely because ONB-023 is complete. ONB-025 / #276 remains `PROPOSED` behind ONB-015 and is not claimable yet.
+ONB-012 / #200 remains in `REVIEW` on PR #352. No other onboarding implementation task is currently `READY`; re-inspect the canonical queue after ONB-012 review/acceptance rather than promoting numeric successors automatically. ONB-025 / #276 remains `PROPOSED` behind ONB-015.
