@@ -20,7 +20,7 @@ Preparation execution boundary: ONB-017 runtime squash-merged through [PR #282](
 
 Durable account-import persistence: ONB-011 runtime merged through [PR #339](https://github.com/vokerg/chess_repertoir_trainer/pull/339) as `4c04d47dac40aa0ae254babbf65449b701b5c447`; persisted destructive lifecycle fences remain ONB-019-owned.
 
-Durable account-import worker/API lifecycle: ONB-012 is in `REVIEW` on [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352); the provider executor registry remains intentionally empty until ONB-013/014.
+Durable account-import worker/API lifecycle: ONB-012 runtime squash-merged through [PR #352](https://github.com/vokerg/chess_repertoir_trainer/pull/352) as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`; completion records are reconciled through PR #354. The provider executor registry remains intentionally empty until ONB-013/014.
 
 Destructive lifecycle: ONB-004 squash-merged through [PR #263](https://github.com/vokerg/chess_repertoir_trainer/pull/263) as `32db655a100ef1a55264b4d3739e2b7c38e72ee4`.
 
@@ -36,9 +36,9 @@ Shared-position cleanup research: ONB-006 completed through [PR #281](https://gi
 
 Lightweight experience blueprint: ONB-016 squash-merged through [PR #225](https://github.com/vokerg/chess_repertoir_trainer/pull/225)
 
-Next unclaimed `READY` onboarding task: none while ONB-012 remains in review. Remaining implementation tasks stay `PROPOSED` until their canonical dependency and promotion gates are satisfied.
+Next unclaimed `READY` onboarding tasks: ONB-013 / #201 and ONB-014 / #202. Their contracts permit parallel provider-adapter execution after ONB-012 completion; neither is claimed by the completion reconciliation.
 
-Latest report: `reports/ONB-012-2026-08-11-self-review-addendum.md`
+Latest report: `reports/ONB-012-2026-08-11-completion-reconciliation.md`
 
 ## Completed contracts
 
@@ -188,6 +188,22 @@ Runtime squash-merged through PR #282 as `885ef785bdac1b0c77cc500e3345745b0e7239
 
 Runtime merged through PR #339 as `4c04d47dac40aa0ae254babbf65449b701b5c447`; issue #199 is completed. ONB-019 remains owner of persisted destructive lifecycle fences and audit persistence.
 
+### ONB-012
+
+- authenticated ownership-scoped create/list/detail/pause/resume/cancel/retry account-import API;
+- durable globally serialized claim, exact work-key heartbeat/checkpoint/settlement fencing, retry-at deferral, and stale recovery;
+- one global provider execution lane in the existing worker process with provider I/O outside database transactions;
+- safe pause/cancel acknowledgement, non-cooperative-executor stale fallback, settlement-failure containment, and bounded shared-worker shutdown;
+- exact active-claim/drain projection consumed by ONB-020;
+- one starvation-safe provider-neutral lifecycle-fence admission seam consumed by ONB-019;
+- stable `ACCOUNT_IMPORT_ADMISSION_BLOCKED` conflict handling;
+- monotonic durable completed-window progress and fixed denominator initialization;
+- linked retry mode/scope/range lineage and conservative full-range coverage completion;
+- queue/stage/heartbeat/cancellation telemetry without raw personal payloads;
+- no provider adapter, Angular, lifecycle-operation persistence, broker/new deployment, parallel provider execution, or generic `JobRun`/`JobTask` change.
+
+Final refreshed runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`). PR #352 squash-merged into `main` as `640018e4cd3c5528a94b9d0217e971ab2a2215b7`. Completion PR #354 synchronizes the task, queue, status, completion evidence, issue closure, and promotion of ONB-013/014 to unclaimed `READY`.
+
 ### ONB-022
 
 - disabled-by-default server-only administrator configuration;
@@ -224,11 +240,14 @@ Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passe
 
 ### Active implementation
 
-- ONB-012 / #200 — durable account-import worker/API lifecycle — `REVIEW` on PR #352; provider adapters remain out of scope and issue #200 stays open until review/acceptance and later completion reconciliation.
+- None recorded by this completion reconciliation.
 
 ### Ready implementation
 
-- None recorded while ONB-012 is in review. Remaining tasks are `PROPOSED` and must satisfy their own promotion gates.
+- ONB-013 / #201 — bounded Lichess import adapter — `READY`, unclaimed; initial 14-day windows, serial access, 100-row writes, and the existing ONB-019 admission seam.
+- ONB-014 / #202 — bounded Chess.com import adapter — `READY`, unclaimed; serial calendar-month archives, cache validators, 100-row writes, and the existing ONB-019 admission seam.
+
+The provider adapters may execute in parallel after a fresh live collision check. This reconciliation claims neither task.
 
 ## Allocated implementation backlog
 
@@ -236,8 +255,6 @@ Final runtime pull-request head `d9b826054748d9d891584a593954c82b65520965` passe
 - ONB-008 / #193 — disposition/readiness projection — `PROPOSED`; consumes ONB-007 exact progress/no-ETA contract.
 - ONB-009 / #194 — onboarding lifecycle commands — `PROPOSED`; destructive commands remain ONB-019/020/021-owned.
 - ONB-010 / #195 — Angular onboarding/Home re-entry — `PROPOSED`; consumes ONB-007 presentation constraints.
-- ONB-013 / #201 — Lichess adapter — `PROPOSED`; initial 14-day windows, serial access, and 100-row writes.
-- ONB-014 / #202 — Chess.com adapter — `PROPOSED`; serial monthly archives, cache validators, and 100-row writes.
 - ONB-015 / #203 — sync cutover/preparation handoff — `PROPOSED`; current immediate account deletion cannot be final before this cutover.
 - ONB-025 / #276 — authenticated stale-account refresh trigger — `PROPOSED`; depends on accepted ONB-015 and reuses the durable account-import lifecycle without request-time provider traversal.
 - ONB-019 / #259 — destructive lifecycle operation/fence/guard/failure-state/audit/provenance/receipt foundation — `PROPOSED`.
@@ -285,7 +302,7 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 ## Blockers to production implementation
 
 - ONB-007 is complete; its consumers retain implementation-specific telemetry, controlled-clock, concurrency, and canary validation responsibilities;
-- ONB-011 is delivered; ONB-012 remains in review and ONB-013/014/015 have not delivered durable provider adapters/cutover;
+- ONB-011 and ONB-012 are delivered; ONB-013/014 are ready but have not delivered durable provider adapters, and ONB-015 has not delivered the cutover;
 - ONB-017 delivered the preparation execution boundary; ONB-018 has not delivered preparation reconciliation/control;
 - ONB-019/020/021 have not delivered lifecycle persistence/execution/user deletion;
 - ONB-022 and ONB-023 delivered the read-only administrator API and administrator diagnostics Angular feature;
@@ -297,6 +314,16 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 - Visual Transformation coordination remains required for final product-wide UI polish.
 
 ## Validation
+
+### ONB-012 implementation and completion reconciliation
+
+- runtime PR #352 delivered the provider-neutral account-import command/read API, globally serialized claim lifecycle, exact work-key fencing/drain, pause/cancel/retry/retry-at/stale recovery, one provider-neutral executor registry, one lifecycle-fence admission seam, safe shared-worker shutdown, telemetry, and focused contract/PostgreSQL/worker regressions;
+- three append-only adversarial review reports corrected exact persistence/coverage fencing, schema/counter drift, settlement resilience, control stale fallback, peer-worker shutdown bounds, retry lineage, starvation-safe future fence admission, typed conflict handling, and monotonic/fixed-denominator progress;
+- third-review code/test head `f0c29cbddd89c6d658ec3c03cff26e3bac8e5fa7` passed CI #2641 (`31480536544`);
+- third-review evidence head `64e1d63bee671cf75868f89e11b6d417bc929d95` passed CI #2643 (`31481147692`) across lint, full build, architecture/hygiene, migrations, all opening audits, and complete monorepo tests;
+- the implementation branch was refreshed over then-current `main` / RH-003; final runtime head `dc4e9bc40e9da45c03e83904dfe0864a10cef289` passed CI #2645 (`31505680257`);
+- PR #352 squash-merged into `main` as `640018e4cd3c5528a94b9d0217e971ab2a2215b7` on 2026-08-11;
+- PR #354 is documentation/execution-state reconciliation only: it synchronizes the task, queue, status, completion report, issue closure, and unclaimed promotion of ONB-013/014 without runtime changes.
 
 ### ONB-023 implementation and completion reconciliation
 
@@ -401,4 +428,4 @@ These tasks must not be claimed until their task-file dependencies are resolved 
 
 ## Next deterministic action
 
-ONB-012 / #200 remains in `REVIEW` on PR #352. No other onboarding implementation task is currently `READY`; re-inspect the canonical queue after ONB-012 review/acceptance rather than promoting numeric successors automatically. ONB-025 / #276 remains `PROPOSED` behind ONB-015.
+ONB-013 / #201 and ONB-014 / #202 are the unclaimed `READY` provider-adapter tasks after ONB-012 completion. Their contracts allow parallel execution after a fresh live collision check and explicit coordination with the existing ONB-019 admission seam. Do not infer a claim from promotion alone. ONB-015 / #203 remains `PROPOSED` behind both adapters, and ONB-025 / #276 remains `PROPOSED` behind ONB-015.
