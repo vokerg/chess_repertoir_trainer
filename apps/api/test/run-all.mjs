@@ -26,15 +26,8 @@ const testPaths = (await findTests(testRoot)).sort();
 let passed = 0;
 
 for (const testPath of testPaths) {
-  const relativePath = path.relative(cwd, testPath);
-  console.log(relativePath);
-  try {
-    await import(pathToFileURL(testPath).href);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`::error file=${relativePath}::${message.replaceAll('\n', '%0A')}`);
-    throw error;
-  }
+  console.log(path.relative(cwd, testPath));
+  await import(pathToFileURL(testPath).href);
   passed += 1;
 }
 
