@@ -276,6 +276,10 @@ export function createAccountImportLifecycleRepository(
     async claimNextRun(supportedProviders) {
       if (supportedProviders.length === 0) return null;
       const providers = Prisma.join(supportedProviders.map((provider) => Prisma.sql`${normalizeProvider(provider)}`));
+      const candidateAdmissionPredicate = admissionGuard.claimCandidatePredicate({
+        userId: Prisma.sql`run."userId"`,
+        accountId: Prisma.sql`run."accountId"`,
+      });
 
       return database.$transaction(async (transaction) => {
         await transaction.$executeRaw(Prisma.sql`
@@ -297,6 +301,7 @@ export function createAccountImportLifecycleRepository(
           WHERE run."status" = 'QUEUED'
             AND run."mode" <> 'LEGACY_SYNC'
             AND run."provider" IN (${providers})
+            AND (${candidateAdmissionPredicate})
             AND (run."retryAt" IS NULL OR run."retryAt" <= NOW())
             AND (run."rateLimitUntil" IS NULL OR run."rateLimitUntil" <= NOW())
           ORDER BY run."priority" DESC, run."createdAt" ASC, run."id" ASC
