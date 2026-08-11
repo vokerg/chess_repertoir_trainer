@@ -10,17 +10,17 @@
       <div>
         <p class="setup-kicker">Repertoire builder</p>
         <h2 id="builder-setup-title">
-          {{ replacingDraft() ? 'Restart this draft with a new target' : 'Choose the target for this draft' }}
+          {{ replacingDraft() ? 'Restart this draft with a new target' : 'Set up this repertoire draft' }}
         </h2>
         <p>
           @if (fixedSide()) {
-            This draft starts from an exact existing-course position. Adjust the evidence population and repertoire intent before building the continuation.
+            This launch keeps the exact existing-course position and side. Choose the evidence population and one repertoire intent for the continuation.
           } @else if (profileSuggestion()) {
-            Chess profile supplied a transparent starting point. Side and every visible target setting remain editable; changing them records a deliberate override without changing the factual profile.
+            Chess profile supplied a transparent starting point. Every visible choice remains editable; changing side removes profile provenance.
           } @else {
             {{ replacingDraft()
               ? 'Starting again replaces the current route-local draft. Cancel to keep the current work.'
-              : 'Setup starts from the initial position. The recursive work continues on the routed board.' }}
+              : 'Choose where to start, which games should inform the evidence, and the repertoire intent.' }}
           }
         </p>
       </div>
@@ -47,11 +47,29 @@
             <span>Black</span>
           </label>
           @if (fixedSide()) {
-            <small>The source course fixes this side. Other target settings remain editable.</small>
+            <small>The source course fixes this side.</small>
           } @else if (profileSuggestion()) {
-            <small>The suggestion was calculated for one side. Choosing the other side treats all values as manual choices.</small>
+            <small>Changing side treats the setup as a manual choice.</small>
           }
         </fieldset>
+
+        @if (fixedSide()) {
+          <div class="field">
+            <span>Starting scope</span>
+            <div class="fixed-starting-scope">Exact course position</div>
+            <small>The source link fixes the exact line position; no broader scope is applied.</small>
+          </div>
+        } @else {
+          <label class="field">
+            <span>Starting scope</span>
+            <select formControlName="startingScope">
+              @for (option of startingScopeOptions(); track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+            <small>Scoped starts become the exact root position of this draft.</small>
+          </label>
+        }
 
         <label class="field">
           <span>Speed population</span>
@@ -69,9 +87,25 @@
               <option [value]="option.value">{{ option.label }}</option>
             }
           </select>
-          <small>Peer targets use your factual account evidence. Explicit groups remain a manual target.</small>
+          <small>Peer targets use your factual account evidence. Explicit groups remain manual targets.</small>
         </label>
       </div>
+
+      @if (!fixedSide() && form.controls.startingScope.value === 'CUSTOM') {
+        <label class="field custom-start-field">
+          <span>Other starting position</span>
+          <textarea
+            formControlName="customStartingPosition"
+            rows="3"
+            aria-label="Custom starting position"
+            placeholder="FEN, PGN, SAN sequence, or UCI moves — for example: 1. e4 c5"
+          ></textarea>
+          <small>Use the same manual chess formats supported by analysis: FEN, PGN, SAN, or UCI moves.</small>
+          @if (manualStartError(); as startError) {
+            <small class="field-error" role="alert">{{ startError }}</small>
+          }
+        </label>
+      }
 
       <fieldset class="persona-group">
         <legend>Repertoire intent</legend>
@@ -81,29 +115,15 @@
               <input type="radio" formControlName="persona" [value]="preset.id" />
               <strong>{{ preset.label }}</strong>
               <span>{{ preset.description }}</span>
-              <small>{{ preset.intentSummary }}</small>
-              <small>{{ preset.defaultTheoryBurden.toLowerCase() }} theory</small>
             </label>
           }
         </div>
       </fieldset>
 
-      <div class="setup-grid setup-grid-secondary">
-        <label class="field">
-          <span>Maximum theory burden</span>
-          <select formControlName="maximumTheoryBurden">
-            @for (option of theoryOptions; track option) {
-              <option [value]="option">{{ option.toLowerCase() }}</option>
-            }
-          </select>
-        </label>
-        <div class="field">
-          <span>Opponent preparation</span>
-          <small>
-            Builder recommends replies from target-population relevance, your exact-position encounters, objective danger, and course context. Coverage is feedback from the replies you actually select.
-          </small>
-        </div>
-      </div>
+      <aside class="setup-boundary-note">
+        <strong>Opponent preparation is evidence-driven</strong>
+        <span>Coverage is feedback from the replies you select in the workbench, not a setup target. Theory burden is not a separate setup control.</span>
+      </aside>
 
       <aside class="persistence-note">
         <strong>Route-local draft</strong>

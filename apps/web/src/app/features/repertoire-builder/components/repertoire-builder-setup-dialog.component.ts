@@ -1,20 +1,27 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   effect,
-  inject,
   input,
   output,
+  signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import type {
   LichessGamesRatingGroup,
   LichessGamesRatingTarget,
 } from '@chess-trainer/contracts/opening-explorer';
+import {
+  repertoireBuilderStartingScopeOptions,
+  validateRepertoireBuilderStartingPosition,
+} from '../helpers/repertoire-builder-starting-position';
 import { repertoireBuilderPersonaPresets } from '../helpers/repertoire-builder-target';
-import type { RepertoireBuilderSetup } from '../state/repertoire-builder.models';
+import {
+  REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
+  REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+  type RepertoireBuilderSetup,
+  type RepertoireBuilderStartingScope,
+} from '../state/repertoire-builder.models';
 
 interface RatingOption {
   value: string;
@@ -59,8 +66,6 @@ const RATING_OPTIONS: readonly RatingOption[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepertoireBuilderSetupDialogComponent {
-  private readonly destroyRef = inject(DestroyRef);
-
   readonly initialSetup = input.required<RepertoireBuilderSetup>();
   readonly fixedSide = input<'WHITE' | 'BLACK' | null>(null);
   readonly profileSuggestion = input<string | null>(null);
@@ -74,27 +79,23 @@ export class RepertoireBuilderSetupDialogComponent {
   protected readonly speedOptions = SPEED_OPTIONS;
   protected readonly ratingOptions = RATING_OPTIONS;
   protected readonly personaPresets = repertoireBuilderPersonaPresets;
-  protected readonly theoryOptions = ['LOW', 'MEDIUM', 'HIGH'] as const;
+  protected readonly manualStartError = signal<string | null>(null);
 
   protected readonly form = new FormGroup({
     side: new FormControl<'WHITE' | 'BLACK'>('WHITE', { nonNullable: true }),
+    startingScope: new FormControl<RepertoireBuilderStartingScope>('FULL', { nonNullable: true }),
+    customStartingPosition: new FormControl('', { nonNullable: true }),
     speedPreset: new FormControl<RepertoireBuilderSetup['speedPreset']>('BLITZ_AND_SLOWER', {
       nonNullable: true,
     }),
     ratingSelection: new FormControl('MY_PEERS_PLUS_ONE', { nonNullable: true }),
     persona: new FormControl<RepertoireBuilderSetup['persona']>('BALANCED', { nonNullable: true }),
-    maximumTheoryBurden: new FormControl<RepertoireBuilderSetup['maximumTheoryBurden']>('MEDIUM', {
-      nonNullable: true,
-    }),
-    coveragePercent: new FormControl(80, {
-      nonNullable: true,
-      validators: [Validators.min(50), Validators.max(100)],
-    }),
   });
 
   constructor() {
     effect(() => {
       this.patchFromSetup(this.initialSetup());
+      this.manualStartError.set(null);
       const fixedSide = this.fixedSide();
       if (fixedSide) {
         this.form.controls.side.setValue(fixedSide, { emitEvent: false });
@@ -103,16 +104,10 @@ export class RepertoireBuilderSetupDialogComponent {
         this.form.controls.side.enable({ emitEvent: false });
       }
     });
-    this.form.controls.persona.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((persona) => {
-        const preset = this.personaPresets.find((entry) => entry.id === persona);
-        if (!preset) return;
-        this.form.patchValue({
-          maximumTheoryBurden: preset.defaultTheoryBurden,
-          coveragePercent: preset.defaultCoveragePercent,
-        });
-      });
+  }
+
+  protected startingScopeOptions() {
+    return repertoireBuilderStartingScopeOptions(this.form.controls.side.getRawValue());
   }
 
   protected submit(): void {
@@ -124,16 +119,29 @@ export class RepertoireBuilderSetupDialogComponent {
     const rating = this.ratingOptions.find((option) => option.value === value.ratingSelection);
     if (!rating) return;
     const profileDefaults = this.initialSetup().profileDefaults;
-    this.submitted.emit({
+    const setup: RepertoireBuilderSetup = {
       side: value.side,
+      startingScope: value.startingScope,
+      customStartingPosition: value.customStartingPosition.trim(),
       speedPreset: value.speedPreset,
       ratingTarget: rating.target,
       ratingGroup: rating.ratingGroup,
       persona: value.persona,
-      maximumTheoryBurden: value.maximumTheoryBurden,
-      coveragePercent: value.coveragePercent,
+      maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+      coveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
       ...(profileDefaults?.setup.side === value.side ? { profileDefaults } : {}),
-    });
+    };
+
+    if (!this.fixedSide()) {
+      const startingPositionError = validateRepertoireBuilderStartingPosition(setup);
+      if (startingPositionError) {
+        this.manualStartError.set(startingPositionError);
+        return;
+      }
+    }
+
+    this.manualStartError.set(null);
+    this.submitted.emit(setup);
   }
 
   protected cancel(): void {
@@ -146,11 +154,11 @@ export class RepertoireBuilderSetupDialogComponent {
       : setup.ratingTarget;
     this.form.setValue({
       side: setup.side,
+      startingScope: setup.startingScope,
+      customStartingPosition: setup.customStartingPosition,
       speedPreset: setup.speedPreset,
       ratingSelection,
       persona: setup.persona,
-      maximumTheoryBurden: setup.maximumTheoryBurden,
-      coveragePercent: setup.coveragePercent,
     }, { emitEvent: false });
   }
 }

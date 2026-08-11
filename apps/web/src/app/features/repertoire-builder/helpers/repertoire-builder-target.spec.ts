@@ -37,25 +37,27 @@ const profileDefaults: RepertoireBuilderProfileDefaults = {
   },
   setup: {
     side: 'WHITE',
+    startingScope: 'FULL',
+    customStartingPosition: '',
     speedPreset: 'BLITZ_AND_SLOWER',
     ratingTarget: 'MY_PEERS',
     ratingGroup: null,
     persona: 'SOLID',
-    maximumTheoryBurden: 'LOW',
-    coveragePercent: 85,
+    maximumTheoryBurden: 'HIGH',
+    coveragePercent: 80,
   },
 };
 
 describe('repertoire builder target factory', () => {
-  it('creates a schema-valid explicit population target with transparent overrides', () => {
+  it('creates a schema-valid explicit population target with non-gating V1 compatibility internals', () => {
     const target = buildRepertoireBuilderTarget({
       ...defaultRepertoireBuilderSetup(),
       speedPreset: 'BLITZ',
       ratingTarget: 'GROUP',
       ratingGroup: 1800,
       persona: 'SOLID',
-      maximumTheoryBurden: 'MEDIUM',
-      coveragePercent: 90,
+      maximumTheoryBurden: 'LOW',
+      coveragePercent: 95,
     }, null, NOW, TARGET_ID);
 
     expect(repertoireTargetSchema.safeParse(target).success).toBeTrue();
@@ -64,8 +66,10 @@ describe('repertoire builder target factory', () => {
       ratingGroup: 1800,
     });
     expect(target.population.peerResolution).toBeNull();
+    expect(target.objective.maximumTheoryBurden).toBe('HIGH');
+    expect(target.coverage.opponentResponseCoveragePercent).toBe(80);
     expect(target.defaults.some((entry) => entry.field === 'population')).toBeFalse();
-    expect(target.overriddenFields).toEqual(['speedPreset', 'objective', 'coverage']);
+    expect(target.overriddenFields).toEqual(['speedPreset']);
     expect(targetPopulationLabel(target)).toContain('1800–1999');
   });
 
@@ -89,7 +93,7 @@ describe('repertoire builder target factory', () => {
     expect(targetPopulationLabel(target)).toContain('My peers and one group higher');
   });
 
-  it('accepts profile defaults without converting the player profile into a constraint', () => {
+  it('accepts profile defaults while keeping coverage as a system compatibility field', () => {
     const target = buildRepertoireBuilderTarget({
       ...profileDefaults.setup,
       profileDefaults,
@@ -100,7 +104,10 @@ describe('repertoire builder target factory', () => {
     expect(target.defaults.filter((entry) => entry.field !== 'population')).toEqual([
       jasmine.objectContaining({ field: 'speedPreset', source: profileDefaults.source }),
       jasmine.objectContaining({ field: 'objective', source: profileDefaults.source }),
-      jasmine.objectContaining({ field: 'coverage', source: profileDefaults.source }),
+      jasmine.objectContaining({
+        field: 'coverage',
+        source: jasmine.objectContaining({ kind: 'SYSTEM_DEFAULT' }),
+      }),
     ]);
     expect(target.population.requested.kind).toBe('MY_PEERS');
     expect(target.defaults).toContain(jasmine.objectContaining({
@@ -109,18 +116,16 @@ describe('repertoire builder target factory', () => {
     }));
   });
 
-  it('records partial and alternate-persona overrides against immutable profile defaults', () => {
+  it('records an alternate persona override against immutable profile defaults', () => {
     const target = buildRepertoireBuilderTarget({
       ...profileDefaults.setup,
       profileDefaults,
       persona: 'SURPRISE',
-      maximumTheoryBurden: 'LOW',
-      coveragePercent: 70,
     }, peerResolution, NOW, TARGET_ID);
 
     expect(target.objective.persona).toBe('SURPRISE');
     expect(target.objective.preferredCharacters).toEqual(['SURPRISE', 'TACTICAL']);
-    expect(target.overriddenFields).toEqual(['objective', 'coverage']);
+    expect(target.overriddenFields).toEqual(['objective']);
     expect(target.defaults.find((entry) => entry.field === 'objective')?.source)
       .toEqual(profileDefaults.source);
   });

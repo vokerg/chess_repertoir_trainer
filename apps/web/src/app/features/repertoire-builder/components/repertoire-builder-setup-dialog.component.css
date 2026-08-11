@@ -64,7 +64,7 @@
 .persona-card,
 .side-group label,
 select,
-input[type='range'] {
+textarea {
   transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
@@ -81,13 +81,8 @@ input[type='range'] {
 
 .setup-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-}
-
-.setup-grid-secondary {
-  grid-template-columns: minmax(220px, 0.55fr) minmax(280px, 1fr);
-  margin-top: var(--space-4);
 }
 
 .field,
@@ -98,6 +93,7 @@ input[type='range'] {
 
 .field {
   display: grid;
+  align-content: start;
   gap: var(--space-2);
   color: var(--ui-text);
   font-weight: 600;
@@ -109,7 +105,9 @@ input[type='range'] {
   line-height: 1.35;
 }
 
-select {
+select,
+textarea,
+.fixed-starting-scope {
   width: 100%;
   min-height: 2.7rem;
   padding: 0 var(--space-3);
@@ -118,6 +116,18 @@ select {
   background: var(--ui-surface-muted);
   color: var(--ui-text);
   font: inherit;
+}
+
+textarea {
+  min-height: 5.75rem;
+  padding-block: var(--space-2);
+  resize: vertical;
+}
+
+.fixed-starting-scope {
+  display: flex;
+  align-items: center;
+  color: var(--ui-text-muted);
 }
 
 .side-group,
@@ -137,10 +147,12 @@ select {
 .side-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-content: start;
   gap: var(--space-2);
 }
 
-.side-group legend {
+.side-group legend,
+.side-group small {
   grid-column: 1 / -1;
 }
 
@@ -168,6 +180,14 @@ select {
   pointer-events: none;
 }
 
+.custom-start-field {
+  margin-top: var(--space-3);
+}
+
+.field-error {
+  color: var(--ui-danger) !important;
+}
+
 .persona-group {
   margin-top: var(--space-5);
 }
@@ -180,8 +200,9 @@ select {
 
 .persona-card {
   display: grid;
+  align-content: start;
   gap: var(--space-2);
-  min-height: 8.5rem;
+  min-height: 7rem;
   padding: var(--space-3);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-control);
@@ -205,34 +226,41 @@ select {
   line-height: 1.45;
 }
 
-.range-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 2.7rem;
-}
-
-.range-row input {
-  width: 100%;
-  accent-color: var(--ui-action-strong);
-}
-
-.range-row output {
-  min-width: 3.2rem;
-  color: var(--ui-text);
-  font-variant-numeric: tabular-nums;
-}
-
+.profile-suggestion-note,
+.setup-boundary-note,
 .persistence-note {
   display: flex;
   gap: var(--space-2);
   margin-top: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--ui-warning);
   border-radius: var(--ui-radius-control);
+}
+
+.profile-suggestion-note {
+  margin-top: calc(-1 * var(--space-2));
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+}
+
+.setup-boundary-note {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+}
+
+.persistence-note {
+  border: 1px solid var(--ui-warning);
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
+}
+
+.profile-suggestion-note strong,
+.setup-boundary-note strong,
+.persistence-note strong {
+  flex: 0 0 auto;
+  color: inherit;
 }
 
 .error-message {
@@ -271,6 +299,7 @@ select {
 
 button:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 input:focus-visible,
 .persona-card:focus-within,
 .side-group label:focus-within {
@@ -285,8 +314,6 @@ button:disabled {
 
 /* Keep in sync with VIEWPORT_BREAKPOINTS.workbenchSingleColumnMaxPx (980). */
 @media (max-width: 980px) {
-  .setup-grid,
-  .setup-grid-secondary,
   .persona-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -305,11 +332,12 @@ button:disabled {
   }
 
   .setup-grid,
-  .setup-grid-secondary,
   .persona-grid {
     grid-template-columns: 1fr;
   }
 
+  .profile-suggestion-note,
+  .setup-boundary-note,
   .persistence-note {
     display: grid;
   }

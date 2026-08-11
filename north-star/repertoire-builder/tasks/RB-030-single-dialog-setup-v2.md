@@ -1,6 +1,6 @@
 # RB-030 — Single-dialog Builder setup V2
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P1
 
@@ -12,13 +12,13 @@ Planning maturity: Agreed
 
 GitHub issue: #320
 
-Claimed by: unclaimed
+Claimed by: ChatGPT
 
-Claim branch: none
+Claim branch: `repertoire-builder/rb-030-single-dialog-setup-v2`
 
-Claimed at: none
+Claimed at: 2026-08-10
 
-Claim scope: none
+Claim scope: single-dialog Builder setup V2; side/scope, speed, rating and one persona; remove coverage/theory as normal setup decisions; preserve exact course-position launches, RB-026 Cockpit behavior, RB-029 opponent-preparation authority and versioned V1 target snapshot compatibility
 
 ## Objective
 

@@ -12,59 +12,51 @@ import {
   type RepertoireTargetPopulationRequest,
   type RepertoireTargetStartingPoint,
 } from '@chess-trainer/contracts/repertoire-target';
-import type {
-  RepertoireBuilderPersonaPreset,
-  RepertoireBuilderProfileDefaults,
-  RepertoireBuilderSetup,
+import {
+  REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
+  REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+  type RepertoireBuilderPersonaPreset,
+  type RepertoireBuilderProfileDefaults,
+  type RepertoireBuilderSetup,
 } from '../state/repertoire-builder.models';
 
-const PERSONA_PRESET_VERSION = '2026-07-builder-v1';
-const SYSTEM_DEFAULT_VERSION = '2026-07-builder-v1';
+const PERSONA_PRESET_VERSION = '2026-08-builder-v2';
+const SYSTEM_DEFAULT_VERSION = '2026-08-builder-v2';
 
 export const repertoireBuilderPersonaPresets: readonly RepertoireBuilderPersonaPreset[] = [
   {
     id: 'BALANCED',
     label: 'Balanced',
-    description: 'Prefer sound, flexible choices without committing to maximum theory.',
-    intentSummary: 'Balanced and dynamic · playable minimum · medium risk and complexity',
-    defaultTheoryBurden: 'MEDIUM',
-    defaultCoveragePercent: 80,
+    description: 'Practical peer-tested choices with sound validation.',
   },
   {
     id: 'SOLID',
     label: 'Solid',
-    description: 'Prioritize dependable structures, lower risk, and a lighter theory load.',
-    intentSummary: 'Solid and positional · sound minimum · low risk and complexity',
-    defaultTheoryBurden: 'LOW',
-    defaultCoveragePercent: 85,
+    description: 'Established, dependable choices with strong Master and objective support.',
   },
   {
     id: 'AGGRESSIVE',
     label: 'Aggressive',
-    description: 'Accept complexity and theory when it supports active, forcing play.',
-    intentSummary: 'Sharp, tactical, and dynamic · playable minimum · high risk and complexity',
-    defaultTheoryBurden: 'HIGH',
-    defaultCoveragePercent: 80,
+    description: 'Active, justified choices that accept bounded objective cost.',
   },
   {
     id: 'SURPRISE',
     label: 'Surprise',
-    description: 'Prefer practical and less expected choices while keeping explicit risk limits.',
-    intentSummary: 'Surprise and tactical · risky minimum · high risk and complexity',
-    defaultTheoryBurden: 'LOW',
-    defaultCoveragePercent: 70,
+    description: 'Uncommon viable choices that overperform in the selected population.',
   },
 ];
 
 export function defaultRepertoireBuilderSetup(): RepertoireBuilderSetup {
   return {
     side: 'WHITE',
+    startingScope: 'FULL',
+    customStartingPosition: '',
     speedPreset: 'BLITZ_AND_SLOWER',
     ratingTarget: 'MY_PEERS_PLUS_ONE',
     ratingGroup: null,
     persona: 'BALANCED',
-    maximumTheoryBurden: 'MEDIUM',
-    coveragePercent: 80,
+    maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
+    coveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
   };
 }
 
@@ -79,20 +71,14 @@ export function buildRepertoireBuilderTarget(
   const activeProfileDefaults = profileDefaults?.setup.side === setup.side ? profileDefaults : null;
   const populationRequest = toPopulationRequest(setup.ratingTarget, setup.ratingGroup);
   const population = resolveRepertoireTargetPopulation(populationRequest, peerResolution);
-  const preset = requirePersonaPreset(setup.persona);
-  const effectiveObjective = objectiveForPersona(setup.persona, setup.maximumTheoryBurden);
-  const effectiveCoverage = coverageForPreset(setup.coveragePercent);
+  const effectiveObjective = objectiveForPersona(setup.persona);
+  const effectiveCoverage = compatibilityCoverage();
   const defaultSetup = activeProfileDefaults?.setup ?? {
     ...setup,
     speedPreset: 'BLITZ_AND_SLOWER' as const,
-    maximumTheoryBurden: preset.defaultTheoryBurden,
-    coveragePercent: preset.defaultCoveragePercent,
   };
-  const defaultObjective = objectiveForPersona(
-    defaultSetup.persona,
-    defaultSetup.maximumTheoryBurden,
-  );
-  const defaultCoverage = coverageForPreset(defaultSetup.coveragePercent);
+  const defaultObjective = objectiveForPersona(defaultSetup.persona);
+  const defaultCoverage = compatibilityCoverage();
   const accountIds = peerResolution
     ? [...new Set(peerResolution.contributions.map((entry) => entry.accountId))].sort((a, b) => a - b)
     : [];
@@ -100,6 +86,10 @@ export function buildRepertoireBuilderTarget(
     ?? { kind: 'SYSTEM_DEFAULT' as const, policyVersion: SYSTEM_DEFAULT_VERSION };
   const intentDefaultSource = activeProfileDefaults?.source
     ?? { kind: 'PERSONA_PRESET' as const, presetVersion: PERSONA_PRESET_VERSION };
+  const compatibilityDefaultSource = {
+    kind: 'SYSTEM_DEFAULT' as const,
+    policyVersion: SYSTEM_DEFAULT_VERSION,
+  };
 
   return repertoireTargetSchema.parse({
     contractVersion: REPERTOIRE_TARGET_CONTRACT_VERSION,
@@ -131,14 +121,13 @@ export function buildRepertoireBuilderTarget(
       },
       {
         field: 'coverage',
-        source: intentDefaultSource,
+        source: compatibilityDefaultSource,
         value: defaultCoverage,
       },
     ],
     overriddenFields: [
       ...(setup.speedPreset === defaultSetup.speedPreset ? [] : ['speedPreset'] as const),
       ...(sameValue(effectiveObjective, defaultObjective) ? [] : ['objective'] as const),
-      ...(sameValue(effectiveCoverage, defaultCoverage) ? [] : ['coverage'] as const),
     ],
     createdAt: now,
     updatedAt: now,
@@ -187,7 +176,6 @@ function toPopulationRequest(
 
 function objectiveForPersona(
   persona: RepertoireBuilderSetup['persona'],
-  maximumTheoryBurden: RepertoireBuilderSetup['maximumTheoryBurden'],
 ): RepertoireTargetObjective {
   switch (persona) {
     case 'BALANCED':
@@ -197,7 +185,7 @@ function objectiveForPersona(
         minimumSoundness: 'PLAYABLE',
         riskTolerance: 'MEDIUM',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'MEDIUM',
       };
     case 'SOLID':
@@ -207,7 +195,7 @@ function objectiveForPersona(
         minimumSoundness: 'SOUND',
         riskTolerance: 'LOW',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'LOW',
       };
     case 'AGGRESSIVE':
@@ -217,7 +205,7 @@ function objectiveForPersona(
         minimumSoundness: 'PLAYABLE',
         riskTolerance: 'HIGH',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'HIGH',
       };
     case 'SURPRISE':
@@ -227,24 +215,18 @@ function objectiveForPersona(
         minimumSoundness: 'RISKY',
         riskTolerance: 'HIGH',
         allowDeliberatelyDubious: false,
-        maximumTheoryBurden,
+        maximumTheoryBurden: REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN,
         complexityTolerance: 'HIGH',
       };
   }
 }
 
-function coverageForPreset(percent: number): RepertoireTargetCoverage {
+function compatibilityCoverage(): RepertoireTargetCoverage {
   return {
-    opponentResponseCoveragePercent: Math.max(50, Math.min(100, Math.round(percent))),
+    opponentResponseCoveragePercent: REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT,
     alwaysCoverPersonalResponseCount: 4,
     minimumPopulationGames: 20,
   };
-}
-
-function requirePersonaPreset(persona: RepertoireBuilderSetup['persona']): RepertoireBuilderPersonaPreset {
-  const preset = repertoireBuilderPersonaPresets.find((entry) => entry.id === persona);
-  if (!preset) throw new Error(`Unsupported repertoire persona ${persona}.`);
-  return preset;
 }
 
 function ratingRangeLabel(groups: readonly LichessGamesRatingGroup[]): string {

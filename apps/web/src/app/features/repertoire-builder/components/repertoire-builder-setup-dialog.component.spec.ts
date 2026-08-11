@@ -19,15 +19,83 @@ describe('RepertoireBuilderSetupDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('presents the bounded setup and non-persistence boundary accessibly', () => {
+  it('presents one focused setup dialog without coverage or theory controls', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(root.textContent).toContain('Choose the target for this draft');
-    expect(root.textContent).toContain('Refreshing the page starts a new draft');
-    expect(root.querySelector('[aria-label="Opponent-response coverage percent"]')).toBeNull();
-    expect(root.textContent).toContain('playable minimum');
-    expect(root.textContent).not.toContain('coverage default');
-    expect(root.textContent).toContain('Coverage is feedback from the replies you actually select');
+    expect(root.textContent).toContain('Set up this repertoire draft');
+    expect(root.querySelector('[formControlName="startingScope"]')).not.toBeNull();
+    expect(root.querySelector('[formControlName="maximumTheoryBurden"]')).toBeNull();
+    expect(root.querySelector('[formControlName="coveragePercent"]')).toBeNull();
+    expect(root.querySelector('input[type="range"]')).toBeNull();
+    expect(root.textContent).toContain('Practical peer-tested choices with sound validation.');
+    expect(root.textContent).toContain('Uncommon viable choices that overperform in the selected population.');
+    expect(root.textContent).toContain('Coverage is feedback from the replies you select');
+  });
+
+  it('changes scoped-start shortcuts with the selected repertoire side', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const scope = root.querySelector('[formControlName="startingScope"]') as HTMLSelectElement;
+    expect(scope.textContent).toContain('Start with 1.e4');
+
+    const black = root.querySelector('input[value="BLACK"]') as HTMLInputElement;
+    black.click();
+    fixture.detectChanges();
+
+    expect(scope.textContent).toContain('Against 1.e4');
+    expect(scope.textContent).toContain('All White first moves');
+  });
+
+  it('validates and emits an other/manual starting position', () => {
+    const submissions: RepertoireBuilderSetup[] = [];
+    fixture.componentInstance.submitted.subscribe((value) => submissions.push(value));
+    const root = fixture.nativeElement as HTMLElement;
+    const scope = root.querySelector('[formControlName="startingScope"]') as HTMLSelectElement;
+    scope.value = 'CUSTOM';
+    scope.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const manual = root.querySelector('[formControlName="customStartingPosition"]') as HTMLTextAreaElement;
+    manual.value = '1. e4 c5';
+    manual.dispatchEvent(new Event('input'));
+    (root.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(submissions).toHaveSize(1);
+    expect(submissions[0]).toEqual(jasmine.objectContaining({
+      startingScope: 'CUSTOM',
+      customStartingPosition: '1. e4 c5',
+      maximumTheoryBurden: 'HIGH',
+      coveragePercent: 80,
+    }));
+  });
+
+  it('keeps an invalid manual start in the dialog', () => {
+    const submissions: RepertoireBuilderSetup[] = [];
+    fixture.componentInstance.submitted.subscribe((value) => submissions.push(value));
+    const root = fixture.nativeElement as HTMLElement;
+    const scope = root.querySelector('[formControlName="startingScope"]') as HTMLSelectElement;
+    scope.value = 'CUSTOM';
+    scope.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const manual = root.querySelector('[formControlName="customStartingPosition"]') as HTMLTextAreaElement;
+    manual.value = 'not a chess position';
+    manual.dispatchEvent(new Event('input'));
+    (root.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(submissions).toEqual([]);
+    expect(root.textContent).toContain('Could not read this as FEN, PGN, SAN, or UCI moves.');
+  });
+
+  it('keeps exact course launches fixed instead of asking for an irrelevant scope', () => {
+    fixture.componentRef.setInput('fixedSide', 'WHITE');
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[formControlName="startingScope"]')).toBeNull();
+    expect(root.textContent).toContain('Exact course position');
+    expect(root.textContent).toContain('source link fixes the exact line position');
   });
 
   it('makes replacement explicit when setup is reopened from an active draft', () => {
@@ -115,12 +183,14 @@ function createProfileDefaults(): RepertoireBuilderProfileDefaults {
     },
     setup: {
       side: 'WHITE',
+      startingScope: 'FULL',
+      customStartingPosition: '',
       speedPreset: 'BLITZ_AND_SLOWER',
       ratingTarget: 'MY_PEERS',
       ratingGroup: null,
       persona: 'SOLID',
-      maximumTheoryBurden: 'LOW',
-      coveragePercent: 85,
+      maximumTheoryBurden: 'HIGH',
+      coveragePercent: 80,
     },
   };
 }

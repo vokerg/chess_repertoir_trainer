@@ -6,6 +6,8 @@ import {
   parseRepertoireBuilderProfileLaunch,
   type RepertoireBuilderProfileLaunch,
 } from '../profile-launch';
+import type { RepertoireBuilderSetup } from '../state/repertoire-builder.models';
+import { resolveRepertoireBuilderStartingPosition } from './repertoire-builder-starting-position';
 
 const COURSE_ENDING_SOURCE = 'course-ending' as const;
 const OPPONENT_GAP_SOURCE = 'opponent-gap' as const;
@@ -55,6 +57,13 @@ export interface RepertoireBuilderOpponentGapLaunch extends OpponentGapBuilderLa
   intent: 'COVER_OPPONENT_GAP';
 }
 
+export interface RepertoireBuilderSetupStartingLaunch {
+  source: 'SETUP_SCOPE';
+  startingFen: string;
+  startingPoint: RepertoireTargetStartingPoint;
+  observedMoveUci?: undefined;
+}
+
 export type RepertoireBuilderCourseFindingLaunch =
   | RepertoireBuilderCourseEndingLaunchContext
   | RepertoireBuilderOpponentGapLaunch;
@@ -63,10 +72,12 @@ export type RepertoireBuilderLaunchContext =
   | RepertoireBuilderCourseFindingLaunch
   | RepertoireBuilderProfileLaunch;
 
-// Compatibility name used only by the route-local builder store. Historical in-memory
-// Course-ending fixtures predate explicit anchorKind; parsed external links remain strict.
+// Compatibility name used by the route-local Builder store. It now also carries a validated
+// setup-scoped starting position so normal drafts and exact course launches share one start path.
+// Historical in-memory Course-ending fixtures predate explicit anchorKind; parsed external links remain strict.
 export type RepertoireBuilderCourseEndingLaunch =
   | RepertoireBuilderCourseFindingLaunch
+  | RepertoireBuilderSetupStartingLaunch
   | (Omit<RepertoireBuilderCourseEndingLaunchContext, 'anchorKind'> & { anchorKind?: 'NODE' });
 
 export interface RepertoireBuilderLaunchParseResult {
@@ -80,6 +91,17 @@ export function buildCourseEndingBuilderLaunchQueryParams(input: CourseEndingBui
 
 export function buildOpponentGapBuilderLaunchQueryParams(input: OpponentGapBuilderLaunchInput): Params {
   return { ...buildCommonQueryParams(input), source: OPPONENT_GAP_SOURCE, intent: COVER_GAP_INTENT, minCoveredPlies: input.minCoveredPlies };
+}
+
+export function buildRepertoireBuilderSetupStartingLaunch(
+  setup: RepertoireBuilderSetup,
+): RepertoireBuilderSetupStartingLaunch {
+  const resolved = resolveRepertoireBuilderStartingPosition(setup);
+  return {
+    source: 'SETUP_SCOPE',
+    startingFen: resolved.startingFen,
+    startingPoint: resolved.startingPoint,
+  };
 }
 
 export function parseRepertoireBuilderLaunch(params: ParamMap, now = new Date()): RepertoireBuilderLaunchParseResult {
@@ -151,6 +173,7 @@ export function parseRepertoireBuilderLaunch(params: ParamMap, now = new Date())
 export function builderLaunchStartingPoint(
   context: RepertoireBuilderLaunchContext | RepertoireBuilderCourseEndingLaunch | null,
 ): RepertoireTargetStartingPoint {
+  if (context?.source === 'SETUP_SCOPE') return context.startingPoint;
   return context && isRepertoireBuilderCourseFindingLaunch(context)
     ? { kind: 'COURSE_POSITION', courseId: context.courseId, lineId: context.lineId }
     : { kind: 'INITIAL_POSITION' };

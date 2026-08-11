@@ -38,7 +38,7 @@ const profile: Pick<
 };
 
 describe('profile-derived Builder launch', () => {
-  it('derives independent transparent suggestions for White and Black', () => {
+  it('derives independent transparent persona suggestions without hidden theory or coverage policy', () => {
     const suggestions = buildRepertoireBuilderProfileSuggestions(profile);
 
     expect(suggestions).toHaveSize(2);
@@ -48,8 +48,9 @@ describe('profile-derived Builder launch', () => {
       strongestCharacter: 'SOLID',
       setup: jasmine.objectContaining({
         persona: 'SOLID',
-        maximumTheoryBurden: 'LOW',
-        coveragePercent: 85,
+        startingScope: 'FULL',
+        maximumTheoryBurden: 'HIGH',
+        coveragePercent: 80,
         speedPreset: 'BLITZ_AND_SLOWER',
         ratingTarget: 'MY_PEERS',
       }),
@@ -60,13 +61,14 @@ describe('profile-derived Builder launch', () => {
       strongestCharacter: 'SHARP',
       setup: jasmine.objectContaining({
         persona: 'AGGRESSIVE',
+        startingScope: 'FULL',
         maximumTheoryBurden: 'HIGH',
         coveragePercent: 80,
       }),
     }));
   });
 
-  it('round-trips one bounded profile suggestion through the unified Builder route', () => {
+  it('round-trips one bounded profile suggestion without serializing compatibility-only controls', () => {
     const suggestion = buildRepertoireBuilderProfileSuggestions(profile)[0];
     const params = buildRepertoireBuilderProfileLaunchQueryParams(suggestion);
     const parsed = parseRepertoireBuilderLaunch(
@@ -74,6 +76,8 @@ describe('profile-derived Builder launch', () => {
       new Date('2026-07-30T19:00:00.000Z'),
     );
 
+    expect(params['theoryBurden']).toBeUndefined();
+    expect(params['coveragePercent']).toBeUndefined();
     expect(parsed.error).toBeNull();
     expect(parsed.context).toEqual(jasmine.objectContaining({
       source: 'PLAYER_PROFILE',

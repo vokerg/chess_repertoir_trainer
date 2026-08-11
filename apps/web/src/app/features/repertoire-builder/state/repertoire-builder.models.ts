@@ -12,14 +12,28 @@ import type {
 export const REPERTOIRE_BUILDER_CANDIDATE_LIMIT = 6;
 export const REPERTOIRE_BUILDER_DECISION_LIMIT = 24;
 export const REPERTOIRE_BUILDER_PREVIEW_LIMIT = 128;
+export const REPERTOIRE_BUILDER_COMPATIBILITY_THEORY_BURDEN = 'HIGH' as const;
+export const REPERTOIRE_BUILDER_COMPATIBILITY_COVERAGE_PERCENT = 80;
+
+export type RepertoireBuilderStartingScope =
+  | 'FULL'
+  | 'E4'
+  | 'D4'
+  | 'C4'
+  | 'NF3'
+  | 'CUSTOM';
 
 export interface RepertoireBuilderSetupValues {
   side: 'WHITE' | 'BLACK';
+  startingScope: RepertoireBuilderStartingScope;
+  customStartingPosition: string;
   speedPreset: LichessGamesSpeedPreset;
   ratingTarget: LichessGamesRatingTarget;
   ratingGroup: LichessGamesRatingGroup | null;
   persona: Exclude<RepertoireTargetPersona, 'CUSTOM'>;
+  /** V1 target-contract compatibility only. Not a V2 setup decision. */
   maximumTheoryBurden: RepertoireTargetTheoryBurden;
+  /** V1 target-contract compatibility only. Not a V2 setup decision. */
   coveragePercent: number;
 }
 
@@ -36,9 +50,6 @@ export interface RepertoireBuilderPersonaPreset {
   id: RepertoireBuilderSetup['persona'];
   label: string;
   description: string;
-  intentSummary: string;
-  defaultTheoryBurden: RepertoireTargetTheoryBurden;
-  defaultCoveragePercent: number;
 }
 
 export interface RepertoireBuilderPreviewRow {
