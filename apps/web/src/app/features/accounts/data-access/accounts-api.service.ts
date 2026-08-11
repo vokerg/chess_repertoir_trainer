@@ -1,7 +1,11 @@
 import { Injectable, inject } from '@angular/core';
+import type {
+  LichessConnectionStatus,
+  LichessDisconnectResponse,
+} from '@chess-trainer/contracts/lichess';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
-import {
+import type {
   AccountPerformanceStatsResponse,
   AccountRatingHistoryQuery,
   AccountRatingHistoryResponse,
@@ -11,7 +15,6 @@ import {
   ExternalAccount,
   ImportedGameWorkflowCandidates,
   ImportRunSummary,
-  LichessConnectionStatus,
 } from './accounts.models';
 
 @Injectable()
@@ -104,7 +107,7 @@ export class AccountsApiService {
     return this.api.post<{ url: string }>('/me/lichess-connection/start', {});
   }
 
-  disconnectLichess(): Observable<{ disconnected: true }> {
-    return this.api.delete<{ disconnected: true }>('/me/lichess-connection');
+  disconnectLichess(): Observable<LichessDisconnectResponse> {
+    return this.api.delete<LichessDisconnectResponse>('/me/lichess-connection');
   }
 }
