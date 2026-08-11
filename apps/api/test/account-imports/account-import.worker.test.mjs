@@ -11,6 +11,7 @@ await shutdownReleasesExactClaim();
 await retryAtDefersWithoutFalseFailure();
 await unexpectedFailureDoesNotLeakProviderPayload();
 await backlogAgeEmitsTelemetry();
+await sustainedBacklogCountEmitsTelemetry();
 
 async function cancellationAcknowledgesOnlyAfterExecutorStops() {
   const run = claimedRun(1, 'ACCOUNT_IMPORT:test-cancel');
@@ -279,6 +280,47 @@ async function backlogAgeEmitsTelemetry() {
   assert.equal(backlog.context.queuedRuns, 1);
   assert.equal(backlog.context.oldestQueueAgeMs, 300_001);
   assert.equal(backlog.context.ageExceeded, true);
+}
+
+async function sustainedBacklogCountEmitsTelemetry() {
+  const base = new Date('2026-08-11T05:00:00.000Z').getTime();
+  let current = base;
+  let queueChecks = 0;
+  const warnings = [];
+  let worker;
+  const repository = repositoryStub({
+    async getQueueStats() {
+      queueChecks += 1;
+      if (queueChecks >= 2) worker.requestStop();
+      return {
+        queuedCount: 21,
+        oldestQueuedAt: new Date(base),
+      };
+    },
+  });
+
+  worker = createAccountImportWorker({
+    repository,
+    executors: new AccountImportExecutorRegistry(),
+    config: workerConfig({ backlogAgeMs: 10_000_000 }),
+    now: () => {
+      const observed = current;
+      current += 300_001;
+      return observed;
+    },
+    logger: {
+      info() {},
+      warn(context, message) { warnings.push({ context, message }); },
+      error() {},
+    },
+  });
+  await worker.run();
+
+  const backlog = warnings.find((entry) => entry.message === 'Account import backlog threshold exceeded');
+  assert.ok(backlog, 'a sustained queue-count breach emits the account-import backlog signal');
+  assert.equal(backlog.context.queuedRuns, 21);
+  assert.equal(backlog.context.countSustained, true);
+  assert.equal(backlog.context.ageExceeded, false);
 }
 
 function repositoryStub(overrides) {
