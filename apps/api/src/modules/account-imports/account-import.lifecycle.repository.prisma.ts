@@ -84,6 +84,7 @@ interface CoverageBoundsRow {
 
 export interface AccountImportCheckpointInput {
   checkpoint?: unknown;
+  windowsTotal?: number;
   windowsCompleted?: number;
   gamesSeenDelta?: number;
   gamesSkippedDelta?: number;
@@ -360,13 +361,19 @@ export function createAccountImportLifecycleRepository(
         : input.checkpoint === null
           ? Prisma.sql`NULL`
           : Prisma.sql`${JSON.stringify(input.checkpoint)}::jsonb`;
+      const windowsTotal = input.windowsTotal === undefined
+        ? Prisma.sql`"windowsTotal"`
+        : Prisma.sql`${input.windowsTotal}`;
       const windowsCompleted = input.windowsCompleted === undefined
         ? Prisma.sql`"windowsCompleted"`
         : Prisma.sql`${input.windowsCompleted}`;
+      const requestedWindowsTotal = input.windowsTotal ?? null;
+      const requestedWindowsCompleted = input.windowsCompleted ?? null;
 
       const updated = await database.$executeRaw(Prisma.sql`
         UPDATE "ImportRun"
         SET "checkpointJson" = ${checkpointJson},
+            "windowsTotal" = ${windowsTotal},
             "windowsCompleted" = ${windowsCompleted},
             "gamesSeen" = "gamesSeen" + ${input.gamesSeenDelta ?? 0},
             "gamesSkipped" = "gamesSkipped" + ${input.gamesSkippedDelta ?? 0},
@@ -377,8 +384,14 @@ export function createAccountImportLifecycleRepository(
         WHERE "id" = ${importRunId}
           AND "workKey" = ${workKey}
           AND "status" = 'RUNNING'
-          AND (${input.windowsCompleted ?? null}::int IS NULL OR ${input.windowsCompleted ?? null} >= "windowsCompleted")
-          AND (${input.windowsCompleted ?? null}::int IS NULL OR "windowsTotal" IS NULL OR ${input.windowsCompleted ?? null} <= "windowsTotal")
+          AND (${requestedWindowsTotal}::int IS NULL OR "windowsTotal" IS NULL OR ${requestedWindowsTotal} = "windowsTotal")
+          AND (${requestedWindowsTotal}::int IS NULL OR ${requestedWindowsTotal} >= "windowsCompleted")
+          AND (${requestedWindowsCompleted}::int IS NULL OR ${requestedWindowsCompleted} >= "windowsCompleted")
+          AND (
+            ${requestedWindowsCompleted}::int IS NULL
+            OR COALESCE(${requestedWindowsTotal}::int, "windowsTotal") IS NULL
+            OR ${requestedWindowsCompleted} <= COALESCE(${requestedWindowsTotal}::int, "windowsTotal")
+          )
       `);
       return updated === 1;
     },
@@ -689,6 +702,7 @@ function validateLimit(limit: number): number {
 
 function validateCheckpoint(input: AccountImportCheckpointInput): void {
   for (const [name, value] of Object.entries({
+    windowsTotal: input.windowsTotal,
     windowsCompleted: input.windowsCompleted,
     gamesSeenDelta: input.gamesSeenDelta,
     gamesSkippedDelta: input.gamesSkippedDelta,
