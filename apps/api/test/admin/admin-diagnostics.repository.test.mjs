@@ -34,6 +34,14 @@ try {
       isActive: true,
     },
   });
+  const secondAccount = await prisma.externalAccount.create({
+    data: {
+      userId: users[0].id,
+      provider: 'chess.com',
+      username: `admin-query-second-${suffix}`,
+      isActive: true,
+    },
+  });
   const oldestQueuedStartedAt = new Date('2026-08-04T18:00:00.000Z');
   const newestQueuedStartedAt = new Date('2026-08-04T19:59:00.000Z');
   await prisma.importRun.createMany({
@@ -47,8 +55,8 @@ try {
       },
       {
         userId: users[0].id,
-        accountId: account.id,
-        provider: account.provider,
+        accountId: secondAccount.id,
+        provider: secondAccount.provider,
         status: 'QUEUED',
         startedAt: newestQueuedStartedAt,
       },
@@ -62,8 +70,8 @@ try {
     assert.ok(first.rows[index - 1].id > first.rows[index].id, 'user list must be id DESC');
   }
   assert.equal(first.rows[0].id, users[0].id);
-  assert.equal(first.rows[0].accountCount, 1);
-  assert.equal(first.rows[0].activeAccountCount, 1);
+  assert.equal(first.rows[0].accountCount, 2);
+  assert.equal(first.rows[0].activeAccountCount, 2);
   assert.equal(first.rows[0].activeWorkCount, 2, 'active import runs contribute to active work');
   assert.equal(first.hasMore, true);
 
