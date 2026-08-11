@@ -1,6 +1,6 @@
 # ONB-012 — Build durable account-import worker and API lifecycle
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -93,6 +93,6 @@ ONB-012 may land before ONB-019 if the fence seam is explicit and its temporary 
 
 ## Completion
 
-Report: none
+Report: [ONB-012 self-review addendum](../reports/ONB-012-2026-08-11-self-review-addendum.md)
 
 Completed at: none
