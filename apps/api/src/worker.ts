@@ -17,6 +17,7 @@ const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
 async function bootstrap() {
   const config = loadJobWorkerConfig();
   const accountImportConfig = loadAccountImportWorkerConfig();
+  const shutdownTimeoutMs = Math.max(config.shutdownTimeoutMs, accountImportConfig.shutdownTimeoutMs);
   const worker = createJobWorker({
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
@@ -78,7 +79,6 @@ async function bootstrap() {
     worker.requestStop(`Worker received ${signal}.`);
     accountImportWorker.requestStop(`Worker received ${signal}.`);
 
-    const shutdownTimeoutMs = Math.max(config.shutdownTimeoutMs, accountImportConfig.shutdownTimeoutMs);
     const stopped = await settlesWithin(cleanupCompleted, shutdownTimeoutMs);
     if (!stopped) {
       console.error('Persistent worker cleanup exceeded the shutdown timeout', {
@@ -101,7 +101,14 @@ async function bootstrap() {
     process.exitCode = 1;
     worker.requestStop('Peer worker failed.');
     accountImportWorker.requestStop('Peer worker failed.');
-    await Promise.allSettled([jobWorkerPromise, accountImportWorkerPromise]);
+    const peerStopped = await settlesWithin(
+      Promise.allSettled([jobWorkerPromise, accountImportWorkerPromise]),
+      shutdownTimeoutMs,
+    );
+    if (!peerStopped) {
+      console.error('Peer worker cleanup exceeded the shutdown timeout', { shutdownTimeoutMs });
+      process.exit(1);
+    }
   } finally {
     if (retentionTimer) clearInterval(retentionTimer);
     try {
