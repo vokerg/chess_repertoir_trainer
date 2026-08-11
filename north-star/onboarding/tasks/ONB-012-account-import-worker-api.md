@@ -93,6 +93,9 @@ ONB-012 may land before ONB-019 if the fence seam is explicit and its temporary 
 
 ## Completion
 
-Report: [ONB-012 self-review addendum](../reports/ONB-012-2026-08-11-self-review-addendum.md)
+Reports:
+
+- [ONB-012 self-review addendum](../reports/ONB-012-2026-08-11-self-review-addendum.md)
+- [ONB-012 second self-review addendum](../reports/ONB-012-2026-08-11-second-self-review-addendum.md)
 
 Completed at: none
