@@ -66,6 +66,10 @@ const bodylessActions = new Map([
   ['POST /api/me/lichess-connection/start', 'creates an authorization URL for the authenticated user'],
   ['POST /api/me/accounts/{id}/sync', 'provider and cursor state come from the selected account'],
   ['POST /api/me/accounts/{id}/reset-cursor', 'resets the persisted cursor for the selected account'],
+  ['POST /api/me/account-imports/{importRunId}/pause', 'the import run id selects the persisted run to pause'],
+  ['POST /api/me/account-imports/{importRunId}/resume', 'the import run id selects the persisted paused run to return to the durable queue'],
+  ['POST /api/me/account-imports/{importRunId}/cancel', 'the import run id selects the persisted run to cancel'],
+  ['POST /api/me/account-imports/{importRunId}/retry', 'the persisted terminal import run supplies the immutable account, scope, range, and retry lineage'],
 ]);
 
 for (const { method, path, operation } of operations.filter(({ method }) => ['post', 'patch', 'put'].includes(method))) {
