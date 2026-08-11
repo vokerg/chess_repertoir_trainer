@@ -1,10 +1,10 @@
 # Visual Transformation Status
 
-Last updated: 2026-08-09
+Last updated: 2026-08-11
 
 ## Current state
 
-**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 continues through issue #133. Opening Analysis evidence-workbench refinement, the bounded workbench visual-semantic compatibility cleanup, the shared loading/empty/error presentation foundation, the Lines/Library presentation decoupling, and the Course Review async-status accessibility semantics from PR #316 are integrated. Issue #133 remains the active VT-302 execution boundary for residual scope; the Course Review slice does not complete VT-302.
+**Repository checkpoint:** VT-301 authenticated page-family rollout and guarded-route classification are complete. VT-302 source-verifiable closeout is integrated through PR #337 / squash commit `11b22206173000fa29f3f9526eec926901c8808c`. The current route registry is classified at 35 guarded URLs / 30 guarded components, the remaining audited route-level generic async states use the shared `app-state-message` contract, the Home-local `--home-*` namespace is retired, and the obsolete global `.library-*` presentation namespace is removed with regression guards. Exact implementation head `ed1be6e064490e84746b425db5c5c1b69c60791e` passed CI #2537 (`31457402173`).
 
 **Integration target:** `main`
 
@@ -12,7 +12,9 @@ Last updated: 2026-08-09
 
 **Live execution authority:** [Visual Transformation Program issue #122](https://github.com/vokerg/chess_repertoir_trainer/issues/122) and its child issues.
 
-Repository documents record integrated outcomes and completion evidence. GitHub Issues record whether the final reconciliation is still in review, merged, or closed. Do not infer live branch or pull-request state from this file.
+Repository documents record integrated outcomes and completion evidence. GitHub Issues record whether remaining acceptance is active, blocked, in review, merged, or closed. Do not infer live branch or pull-request state from this file.
+
+Issue #133 remains open, but ordinary source-verifiable implementation is exhausted at this checkpoint. Its remaining acceptance boundary is blocker-bound: functional onboarding is owned by ONB-008/#193, ONB-009/#194 and ONB-010/#195, while authenticated browser/screen-reader/keyboard/zoom/reflow/rendered-contrast/representative-device evidence remains unobserved in the repository-connector environment.
 
 All transformation work uses short-lived branches, pull requests to `main`, explicit approval, and squash merge.
 
@@ -40,7 +42,9 @@ VT-204 promoted only `app-context-strip` and `app-fact-grid`. D-027 later locked
 
 ### Phase 3 — rollout and polish
 
-VT-301 page-family implementation and route inventory are complete in repository records. VT-302 is in progress through live issue #133. Accessibility/responsive foundations, repertoire-authoring detail-state consistency, Opening Analysis evidence-workbench refinement, the workbench visual-semantic compatibility cleanup, the shared async-state foundation from PR #313, the Lines/Library presentation decoupling from PR #315, and the Course Review async-status semantics from PR #316 are integrated. Functional onboarding, wider state/recovery review, authenticated browser/assistive-technology evidence, remaining compatibility disposition, and final program reconciliation remain open.
+VT-301 page-family implementation and historical route inventory are complete. VT-302 source-verifiable implementation is complete through PR #337: accessibility/responsive foundations, repertoire-authoring detail-state consistency, Opening Analysis evidence-workbench refinement, workbench visual-semantic cleanup, shared async-state presentation, Lines/Library decoupling, Course Review async-status semantics, Home token cleanup, current 35/30 route classification, final audited route-state migration, and removal of the orphaned global Library presentation namespace are integrated.
+
+Phase 3 is not closed as fully observed product evidence. Functional onboarding remains externally dependent on the Onboarding program, and authenticated browser/assistive-technology/zoom/reflow/contrast/representative-device evidence is still unobserved. Those items must be completed or explicitly dispositioned before issue #133/program closure; they must not be represented as source implementation work.
 
 ## VT-301 integrated batches
 
@@ -58,27 +62,28 @@ VT-301 page-family implementation and route inventory are complete in repository
 
 ## Authenticated-route inventory result
 
-The inspected `apps/web/src/app/app.routes.ts` defines:
+The historical VT-301 completion report remains correct for the registry that existed at completion:
 
 - 34 URL entries guarded by `authGuard`;
 - 29 unique guarded route components after collapsing shared session routes;
 - three unguarded compatibility redirects into guarded destinations: `/settings`, `/accounts`, and `/accounts/:accountId`.
 
-Every guarded route component maps to an integrated Phase 1, Phase 2, or VT-301 implementation record. No guarded route family remains unclassified or requires another page-family rollout batch.
+The current registry contains 35 guarded URL entries and 30 unique guarded components because `/admin` → `AdminDiagnosticsPageComponent` was added later by the Onboarding program. PR #337 audited and classified that current route, and no current guarded route component remains unclassified.
 
-The exact inventory, owning route component, integration evidence, redirects, and residual debt are recorded in [`reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](./reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md).
+The historical exact inventory, owning route component, integration evidence, redirects, and residual debt are recorded in [`reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](./reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). The current 35/30 checkpoint is recorded in [`reports/VT_302_SOURCE_CLOSEOUT_AUDIT.md`](./reports/VT_302_SOURCE_CLOSEOUT_AUDIT.md).
 
 ## Accepted residual debt
 
-Completion of route-family rollout does not mean all legacy CSS is removed or all browser evidence exists.
+Completion of source-verifiable transformation work does not mean all manual product evidence exists or all short compatibility roles should be deleted.
 
-- Home retains its calibrated local `--home-*` role aliases. Their values match the approved graphite/mint direction, but the namespace predates the production `--ui-*` contract.
-- `apps/web/src/styles.css` remains the explicit amber-era compatibility layer for known remaining consumers and the established `--space-*` scale. It must not be globally redefined or copied into new transformed visual presentation.
+- Home no longer retains a local `--home-*` presentation namespace; PR #332 migrated the complete audited consumer boundary to production `--ui-*` roles.
+- `apps/web/src/styles.css` still owns the explicitly retained short legacy visual roles required by known compatibility consumers and the established `--space-*` scale. They must not be globally redefined or copied into new transformed presentation without complete-consumer evidence.
 - The former `apps/web/src/workbench.css` visual-semantic debt is resolved through integrated PR #309 together with the remaining Repertoire Builder workbench/setup/explanation surfaces. The shared spacing scale remains intentionally unchanged.
-- Global `.library-*` presentation remains a bounded Study/library compatibility layer, but Lines no longer consumes it after integrated PR #315. Removing or relocating that Library-owned block requires its own complete consumer inspection.
-- Direct authenticated browser review was explicitly deferred for several accepted batches. Deferred evidence is not represented as observed validation.
-- Cross-route onboarding and broader empty/loading/partial/error/recovery/retry consistency remain VT-302 scope. PR #313 establishes the bounded shared loading/empty/error presentation contract for Courses and Accounts; integrated PR #316 extends the same proven error/loading semantics to Course Review without claiming an all-route migration.
-- Keyboard and screen-reader review, contrast, focus, reduced motion, zoom, and representative responsive verification remain VT-302 scope where direct evidence is still missing.
+- The global `.library-*` presentation namespace is removed through PR #337 after a complete current Study/Angular consumer audit proved it orphaned. Architecture guardrails reject its reintroduction in global and Angular presentation.
+- Route-level generic async-state migration is source-complete for the audited remaining surfaces through PR #337. Informational notes, partial-data warnings, workflow progress, engine/training feedback, and domain-specific evidence intentionally remain feature-owned.
+- Direct authenticated browser review was explicitly deferred or unavailable for multiple accepted batches. Deferred evidence is not represented as observed validation.
+- Functional onboarding remains owned by the Onboarding program; VT-302 must not invent a parallel lifecycle or Home re-entry flow while ONB-008/009/010 remain unresolved.
+- Keyboard and screen-reader review, rendered contrast, zoom/reflow, and representative responsive verification remain unobserved where direct authenticated evidence is unavailable.
 
 ## Validation status
 
@@ -90,20 +95,40 @@ The VT-302 shared async-state presentation slice passed final CI #2272 on PR #31
 
 The VT-302 Lines/Library compatibility slice passed exact-head CI #2285 on PR #315 head `0e0074855c01b4619cc4b433293c4ab3b77ea613` and is integrated as squash commit `3e1f9d373fb85f946e29677e4f4445deaba643d3`.
 
-The VT-302 Course Review async-status accessibility slice passed exact-head CI #2298 (`31320653117`) on final PR #316 head `9650aaa573dbe80f1c911e895e5795285bd1d8d4`. Lint, full build, architecture guardrails, database migrations, all audits, and the complete test step succeeded. PR #316 is integrated as squash commit `050f9c80a11f08498089ca6bcd1834c60e6ba700`. The accessibility guard requires the shared assertive error message and both shared polite loading messages. Local checkout-based commands remained unavailable because the execution runner could not resolve `github.com`, so no local build/test result is claimed. Direct authenticated browser or assistive-technology review is also not claimed unless separately observed and recorded.
+The VT-302 Course Review async-status accessibility slice passed exact-head CI #2298 (`31320653117`) on final PR #316 head `9650aaa573dbe80f1c911e895e5795285bd1d8d4`. Lint, full build, architecture guardrails, database migrations, all audits, and the complete test step succeeded. PR #316 is integrated as squash commit `050f9c80a11f08498089ca6bcd1834c60e6ba700`.
+
+The VT-302 Home-token cleanup slice passed exact-head CI #2469 on PR #332 head `2d9044e97213ea323b88ed9e02756100266b1c25` and is integrated as squash commit `67f738ad2f40286b245d0fcb2837e81399222bf6`.
+
+The VT-302 source-closeout audit passed exact-head CI #2537 (`31457402173`) on PR #337 head `ed1be6e064490e84746b425db5c5c1b69c60791e`. The repository workflow completed successfully across lint/template compilation, production build, opening audits, architecture guardrails, repository hygiene, migrations/imported-game audits, and the complete test step. PR #337 is integrated as squash commit `11b22206173000fa29f3f9526eec926901c8808c`.
+
+Local checkout-based commands and authenticated browser/assistive-technology/device observation are not claimed by the source-closeout report where the execution environment did not provide them.
 
 ## Selection disposition
 
 - Issues #123–#132 are complete.
-- Issue #133 is the sole active VT-302 execution boundary; its live body and comments own current branch, review, and remaining-scope state.
-- Continue only a claimed, collision-checked #133 slice from current `main`; do not infer a branch or completion claim from this status file.
+- Issue #133 remains open, but no ordinary source-verifiable VT-302 implementation slice is justified by the audited residuals after PR #337.
+- Functional onboarding remains externally owned by ONB-008/#193, ONB-009/#194 and ONB-010/#195; authenticated browser/AT/device evidence remains a manual observation boundary.
+- Do not keep #133 artificially `IN_PROGRESS` by inventing source changes. Its live issue state should record the blocker/review disposition until those acceptance boundaries change.
+- If new concrete source defects are found, re-open executable VT-302 scope explicitly before claiming a branch.
 - The historical `visual-transformation/vt-302-onboarding-accessibility-polish` branch is stale/diverged from current `main` and is not a valid task base or source of current implementation truth.
 
-## Open work after VT-301
+## Open work after source closeout
 
-VT-302 owns coherent onboarding, broader empty/loading/partial/error/recovery/retry consistency, accessibility review, responsive polish, reduced-motion and appearance refinement, and final residual-risk disposition. It must build on the integrated system rather than introduce a second identity or reopen completed route-family rollout.
+VT-302 has no identified ordinary source implementation residual at this checkpoint. Remaining acceptance is limited to functional onboarding from the dedicated Onboarding program, authenticated manual accessibility/responsive/contrast evidence, and final program-level disposition once those dependencies are satisfied or explicitly accepted as residual risk.
 
 ## Session log
+
+### 2026-08-11 — VT-302 source-verifiable closeout integration and reconciliation
+
+- Continued the sole active issue #133 after the Home-token cleanup and audited the current 35 guarded URL / 30 component route registry rather than reopening the historical VT-301 34/29 checkpoint.
+- Migrated the final audited route-level generic loading/error/empty states across Progress Entry, Account Detail, Game Review, Free Analysis, focused and marathon training, Opening Struggles, and Player Chess Profile to the proven `app-state-message` contract while preserving feature-owned workflow state and actions.
+- Self-review found and fixed focused-training initialization fallthrough, marathon simultaneous loading/error presentation, and lost marathon grid ordering before final review.
+- Proved the global `.library-*` presentation namespace had no live Angular consumer, removed the orphaned block, and extended architecture guardrails so the retired namespace cannot return.
+- Preserved the global short visual-role/`--space-*` compatibility layer because the source audit did not prove a safe global removal boundary.
+- Exact implementation head `ed1be6e064490e84746b425db5c5c1b69c60791e` passed CI #2537 (`31457402173`) and PR #337 was squash-merged as `11b22206173000fa29f3f9526eec926901c8808c`.
+- Post-merge verification confirmed `main` at that integration point before this documentation reconciliation was claimed.
+- Functional onboarding remains owned by proposed ONB-008/#193, ONB-009/#194 and ONB-010/#195. Authenticated browser, screen-reader, keyboard, zoom/reflow, rendered contrast and representative-device evidence remains unobserved and is not claimed.
+- No further ordinary source-verifiable VT-302 slice is identified; issue #133 must remain open or blocked until those remaining acceptance boundaries are completed or explicitly dispositioned.
 
 ### 2026-08-09 — VT-302 Course Review async-status accessibility slice
 
