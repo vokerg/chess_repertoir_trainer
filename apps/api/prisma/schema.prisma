@@ -84,6 +84,7 @@ model ExternalAccount {
   lastSyncRunId          Int?
   importedGames          ImportedGame[]
   importRuns             ImportRun[]
+  importCoverages        AccountImportCoverage[]
   dataPreparationTargets DataPreparationTarget[]
   ratingStats            AccountRatingStats?
   lichessConnections     LichessConnection[]
@@ -417,27 +418,79 @@ model ImportedGamePly {
 }
 
 model ImportRun {
-  id                    Int                     @id @default(autoincrement())
-  userId                Int
-  user                  AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId             Int
-  account               ExternalAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  provider              String
-  status                String
-  syncSince             DateTime?
-  syncUntil             DateTime?
-  gamesSeen             Int                     @default(0)
-  gamesImported         Int                     @default(0)
-  gamesUpdated          Int                     @default(0)
-  gamesSkipped          Int                     @default(0)
-  gamesFailed           Int                     @default(0)
-  error                 String?
-  startedAt             DateTime                @default(now())
-  completedAt           DateTime?
-  dataPreparationTargets DataPreparationTarget[]
+  id                         Int                     @id @default(autoincrement())
+  userId                     Int
+  user                       AppUser                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId                  Int
+  account                    ExternalAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider                   String
+  mode                       String                  @default("LEGACY_SYNC")
+  source                     String                  @default("LEGACY_SYNC")
+  status                     String
+  scopeVersion               Int?
+  scopeHash                  String?                 @db.VarChar(64)
+  scopeJson                  Json?
+  requestedFrom              DateTime?
+  requestedTo                DateTime?
+  retryOfImportRunId         Int?
+  retryOfImportRun           ImportRun?              @relation("ImportRunRetries", fields: [retryOfImportRunId], references: [id], onDelete: SetNull)
+  retries                    ImportRun[]             @relation("ImportRunRetries")
+  priority                   Int                     @default(0)
+  checkpointJson             Json?
+  windowsTotal               Int?
+  windowsCompleted           Int                     @default(0)
+  syncSince                  DateTime?
+  syncUntil                  DateTime?
+  gamesSeen                  Int                     @default(0)
+  gamesMatchedScope          Int                     @default(0)
+  gamesImported              Int                     @default(0)
+  gamesDuplicate             Int                     @default(0)
+  gamesUpdated               Int                     @default(0)
+  gamesSkipped               Int                     @default(0)
+  gamesSkippedOutOfScope     Int                     @default(0)
+  gamesFailed                Int                     @default(0)
+  lastProgressAt             DateTime?
+  workKey                    String?                 @unique
+  claimedAt                  DateTime?
+  heartbeatAt                DateTime?
+  pauseRequestedAt           DateTime?
+  cancelRequestedAt          DateTime?
+  retryAt                    DateTime?
+  rateLimitUntil             DateTime?
+  errorCode                  String?
+  error                      String?
+  startedAt                  DateTime                @default(now())
+  completedAt                DateTime?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  dataPreparationTargets     DataPreparationTarget[]
+  lastCompletedCoverageRows  AccountImportCoverage[] @relation("AccountImportCoverageLastCompletedRun")
 
+  // The one-non-terminal-import-per-account invariant is a PostgreSQL partial unique index.
   @@index([accountId, startedAt])
   @@index([userId, startedAt])
+  @@index([accountId, status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([retryOfImportRunId])
+}
+
+model AccountImportCoverage {
+  id                       Int             @id @default(autoincrement())
+  accountId                Int
+  account                  ExternalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  scopeVersion             Int
+  scopeHash                String          @db.VarChar(64)
+  scopeJson                Json
+  coveredFrom              DateTime?
+  coveredThrough           DateTime?
+  lastCompletedImportRunId Int?
+  lastCompletedImportRun   ImportRun?      @relation("AccountImportCoverageLastCompletedRun", fields: [lastCompletedImportRunId], references: [id], onDelete: SetNull)
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+
+  @@unique([accountId, scopeHash])
+  @@index([accountId, updatedAt(sort: Desc)])
+  @@index([lastCompletedImportRunId])
 }
 
 model DataPreparationRun {

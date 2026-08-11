@@ -1,6 +1,6 @@
 # ONB-011 — Persist durable account-import runs and scope coverage
 
-Status: PROPOSED
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -8,17 +8,17 @@ Order: 110
 
 Delivery class: Implementation
 
-Planning maturity: Researched; operational persistence requirements supplied by ONB-007
+Planning maturity: Researched; operational persistence requirements supplied by ONB-007; ONB-017/ONB-019 schema ownership reconciled on 2026-08-10
 
 GitHub issue: [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199)
 
-Claimed by: unclaimed
+Claimed by: ChatGPT / onboarding recovery session
 
-Claim branch: none
+Claim branch: `onb-011/issue-199-import-persistence-coverage`
 
-Claimed at: none
+Claimed at: 2026-08-10
 
-Claim scope: none
+Claim scope: durable `ImportRun` evolution, `AccountImportCoverage`, canonical scope hashing/contracts, ownership-scoped repository primitives, focused migration/tests, and schema handoff documentation; no worker/provider/UI/destructive execution
 
 ## Outcome
 
@@ -30,6 +30,16 @@ Provide the provider-neutral schema, shared contracts, migration, and repository
 - ONB-007 report for initial 100-row write configuration, fixed-window progress denominators, timing/queue telemetry, and no-public-ETA policy.
 - Consume accepted ONB-004 purge/delete/import-history invariants.
 - Coordinate Prisma schema, migration order, relations, and indexes with ONB-017 and ONB-019 before implementation.
+
+## Resolved schema coordination
+
+The 2026-08-10 current-main inspection resolves the former coordination gate without creating a completion dependency between ONB-011 and ONB-019:
+
+- ONB-017 already owns `DataPreparationTarget.currentImportRunId` / `currentImportRun` with `onDelete: SetNull`; ONB-011 preserves that relation and keeps retry/checkpoint/coverage authority on `ImportRun`/`AccountImportCoverage`.
+- ONB-011 owns changes to the existing `ImportRun` model, the new `AccountImportCoverage` model, their account/user relations and indexes, canonical import scope semantics, and the ONB-011 migration.
+- ONB-019 owns new destructive lifecycle operation, resource-fence, mutation-audit, opening-provenance, and deleted-identity persistence. It must integrate through ONB-011 admission/guard seams later rather than adding competing import lifecycle or coverage fields.
+- ONB-011 does not add lifecycle-fence persistence or claim destructive safety. It leaves a stable admission seam for ONB-019 and exact active-claim/drain queries for ONB-020/ONB-012 integration.
+- Active PRs #335, #337 and #338 were collision-checked before claim; none changes Prisma, onboarding task records, or the account-import module boundary.
 
 ## In scope
 
