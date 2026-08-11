@@ -11,6 +11,7 @@ import {
 import { requireAuth } from '../../auth/request-auth';
 import { validationErrorResponseSchema } from '../../routes/api-error.schemas';
 import { unauthorizedResponseSchema } from '../../routes/legacy-route.schemas';
+import { AccountImportAdmissionBlockedError } from './account-import-admission.guard';
 import {
   AccountImportAccountNotFoundError,
   AccountImportActiveRunError,
@@ -51,6 +52,10 @@ const accountImportModule: FastifyPluginAsyncZod = async (app) => {
         if (error instanceof AccountImportAccountNotFoundError) {
           reply.code(404);
           return { error: error.message, code: 'ACCOUNT_IMPORT_NOT_FOUND' as const };
+        }
+        if (error instanceof AccountImportAdmissionBlockedError) {
+          reply.code(409);
+          return { error: error.message, code: error.code };
         }
         if (error instanceof AccountImportActiveRunError) {
           reply.code(409);
@@ -147,6 +152,10 @@ const accountImportModule: FastifyPluginAsyncZod = async (app) => {
             reply.code(404);
             return { error: error.message, code: error.code };
           }
+          if (error instanceof AccountImportAdmissionBlockedError) {
+            reply.code(409);
+            return { error: error.message, code: error.code };
+          }
           if (error instanceof AccountImportNotControllableError) {
             reply.code(409);
             return { error: error.message, code: error.code };
@@ -184,6 +193,10 @@ const accountImportModule: FastifyPluginAsyncZod = async (app) => {
       } catch (error) {
         if (error instanceof AccountImportNotFoundError) {
           reply.code(404);
+          return { error: error.message, code: error.code };
+        }
+        if (error instanceof AccountImportAdmissionBlockedError) {
+          reply.code(409);
           return { error: error.message, code: error.code };
         }
         if (error instanceof AccountImportNotControllableError) {
