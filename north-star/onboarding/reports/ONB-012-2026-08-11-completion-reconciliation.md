@@ -10,7 +10,7 @@ Final runtime pull-request head: `dc4e9bc40e9da45c03e83904dfe0864a10cef289`
 
 Runtime squash commit: `640018e4cd3c5528a94b9d0217e971ab2a2215b7`
 
-Completion reconciliation pull request: pending
+Completion reconciliation pull request: #354
 
 ## Decision
 
@@ -64,13 +64,14 @@ ONB-015 remains `PROPOSED` behind ONB-013/014. ONB-018 remains dependency-blocke
 
 ## Canonical-document reassessment
 
-- `TASKS.md`: must record ONB-012 `DONE` and ONB-013/014 `READY`;
-- ONB-012 task file: must record final runtime head/CI/squash commit, completion branch/PR, completion report, and `DONE` state;
-- ONB-013 and ONB-014 task files: must move from `PROPOSED` to `READY` without claim metadata;
-- `STATUS.md`: must record ONB-012 integrated/completed and both provider adapters as the unclaimed ready work;
-- `ROADMAP.md`: sequence remains structurally correct; no architecture decision changes are required by completion itself;
-- `DECISIONS.md` and `OPEN_QUESTIONS.md`: no accepted decision or open-question semantics change; ONB-019 remains the persisted-fence owner and provider-specific behavior remains ONB-013/014-owned;
-- `GITHUB_ISSUES.md`: issue/task mapping and state rules remain correct; live issue execution metadata is synchronized only after this reconciliation merges.
+- `TASKS.md` now records ONB-012 `DONE` and ONB-013/014 `READY`;
+- the ONB-012 task file records the final runtime head/CI/squash commit, completion branch/PR, completion report, and `DONE` state;
+- ONB-013 and ONB-014 task files are `READY` with claim metadata still explicitly unclaimed;
+- `STATUS.md` records ONB-012 as integrated/completed and both provider adapters as the unclaimed ready work;
+- `OPEN_QUESTIONS.md` closes the stale ONB-012 implementation-local questions against the merged runtime and leaves provider-specific questions with ONB-013/014 and persisted-fence questions with ONB-019;
+- `ROADMAP.md` was re-read and its ONB-011 → ONB-012 → ONB-013/014 → ONB-015 sequence remains structurally correct, so no roadmap architecture change is required by this completion reconciliation;
+- `DECISIONS.md` was re-read and the locked import decisions already match the delivered implementation, so no decision change is required;
+- `GITHUB_ISSUES.md` issue/task mapping and DONE/READY state rules remain applicable; live issue execution metadata is synchronized only after this reconciliation merges.
 
 ## Residual risks and handoff
 
@@ -81,4 +82,4 @@ ONB-015 remains `PROPOSED` behind ONB-013/014. ONB-018 remains dependency-blocke
 
 ## Completion condition
 
-After the completion reconciliation PR is approved and squash-merged, ONB-012 is canonically `DONE`, issue #200 may close as completed, and issues #201/#202 should be synchronized to repository state `READY`. No provider-adapter task is claimed by this reconciliation.
+After PR #354 is approved and squash-merged, ONB-012 is canonically `DONE`, issue #200 may close as completed, and issues #201/#202 should be synchronized to repository state `READY`. No provider-adapter task is claimed by this reconciliation.
