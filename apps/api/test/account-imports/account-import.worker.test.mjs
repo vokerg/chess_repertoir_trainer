@@ -6,6 +6,12 @@ import {
   createAccountImportWorker,
 } from '../../dist/modules/account-imports/account-import.worker.service.js';
 
+const silentLogger = {
+  info() {},
+  warn() {},
+  error() {},
+};
+
 await cancellationAcknowledgesOnlyAfterExecutorStops();
 await shutdownReleasesExactClaim();
 await retryAtDefersWithoutFalseFailure();
@@ -401,9 +407,3 @@ function workerConfig(overrides = {}) {
     ...overrides,
   };
 }
-
-const silentLogger = {
-  info() {},
-  warn() {},
-  error() {},
-};
