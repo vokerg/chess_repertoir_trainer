@@ -594,11 +594,14 @@ async function assertValidRetry(
     throw new AccountImportInvalidRetryError('Only failed or cancelled import runs can be retried.');
   }
   if (
-    retryOf.scopeHash !== scopeHash
+    retryOf.mode !== input.mode
+    || retryOf.scopeHash !== scopeHash
     || retryOf.requestedFrom?.getTime() !== input.requestedFrom.getTime()
     || retryOf.requestedTo?.getTime() !== input.requestedTo.getTime()
   ) {
-    throw new AccountImportInvalidRetryError('Retry must preserve the immutable import scope and requested range.');
+    throw new AccountImportInvalidRetryError(
+      'Retry must preserve the source import mode, immutable scope, and requested range.',
+    );
   }
 }
 
