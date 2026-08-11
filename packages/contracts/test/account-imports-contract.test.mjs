@@ -91,5 +91,9 @@ assert.equal(
   accountImportErrorCodeSchema.parse('ACCOUNT_IMPORT_ACTIVE'),
   'ACCOUNT_IMPORT_ACTIVE',
 );
+assert.equal(
+  accountImportErrorCodeSchema.parse('ACCOUNT_IMPORT_ADMISSION_BLOCKED'),
+  'ACCOUNT_IMPORT_ADMISSION_BLOCKED',
+);
 
 console.log('Account import lifecycle contract tests passed.');
