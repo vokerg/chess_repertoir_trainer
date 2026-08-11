@@ -1,7 +1,6 @@
 import type {
   ImportedGameWorkflowCandidates,
   ImportRunSummary,
-  LichessConnectionStatus,
 } from '../data-access/accounts.models';
 import {
   buildNewImportedWorkflowState,
@@ -55,11 +54,8 @@ describe('account settings view helpers', () => {
   });
 
   it('reports every missing required Lichess permission in user-facing order', () => {
-    const account: NonNullable<LichessConnectionStatus['account']> = {
-      username: 'tester',
-      lichessUserId: 'tester',
+    const account = {
       scopes: ['puzzle:read'],
-      connectedAt: '2026-08-05T00:00:00.000Z',
     };
 
     expect(missingLichessScopeLabels(account)).toEqual([
