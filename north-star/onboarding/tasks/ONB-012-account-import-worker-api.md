@@ -1,6 +1,6 @@
 # ONB-012 — Build durable account-import worker and API lifecycle
 
-Status: REVIEW
+Status: DONE
 
 Priority: P0
 
@@ -12,9 +12,17 @@ Planning maturity: Researched; initial operational defaults supplied by ONB-007
 
 GitHub issue: [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200)
 
-Claimed by: ChatGPT / account-import implementation session
+Target branch: `main`
 
-Claim branch: `account-import/onb-012-worker-api`
+Claimed branch: `account-import/onb-012-worker-api`
+
+Pull request: [#352](https://github.com/vokerg/chess_repertoir_trainer/pull/352)
+
+Completion branch: `account-import/onb-012-completion-reconciliation`
+
+Completion pull request: [#354](https://github.com/vokerg/chess_repertoir_trainer/pull/354)
+
+Claimed by: ChatGPT / account-import implementation session
 
 Claimed at: 2026-08-11
 
@@ -93,10 +101,22 @@ ONB-012 may land before ONB-019 if the fence seam is explicit and its temporary 
 
 ## Completion
 
-Reports:
+Runtime review-ready: 2026-08-11.
+
+Final runtime pull-request head: `dc4e9bc40e9da45c03e83904dfe0864a10cef289`.
+
+Runtime validation: final refreshed head CI #2645 (`31505680257`) completed successfully after the implementation branch was reconciled with then-current `main`. Earlier exact ONB-012 review heads also passed CI #2641 and #2643 across lint, full build, architecture/hygiene, migrations, all opening audits, and the complete monorepo test suite.
+
+Runtime integration: PR #352 squash-merged into `main` as `640018e4cd3c5528a94b9d0217e971ab2a2215b7` on 2026-08-11.
+
+Completion evidence:
 
 - [ONB-012 self-review addendum](../reports/ONB-012-2026-08-11-self-review-addendum.md)
 - [ONB-012 second self-review addendum](../reports/ONB-012-2026-08-11-second-self-review-addendum.md)
 - [ONB-012 third self-review addendum](../reports/ONB-012-2026-08-11-third-self-review-addendum.md)
+- [ONB-012 completion reconciliation](../reports/ONB-012-2026-08-11-completion-reconciliation.md)
+- completion PR #354 synchronizes this task, `TASKS.md`, `STATUS.md`, and the downstream ONB-013/014 task promotion after the runtime merge.
 
-Completed at: none
+Residual risks: the provider executor registry remains intentionally empty until ONB-013/014; persisted destructive lifecycle fences remain ONB-019-owned; destructive account/game execution remains ONB-020-owned; no public production ETA or throughput guarantee is implied by CI-local evidence.
+
+Completed at: 2026-08-11

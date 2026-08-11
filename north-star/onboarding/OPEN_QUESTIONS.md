@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Open Questions
 
-Last updated: 2026-08-04
+Last updated: 2026-08-11
 
 Every material question has one owning task. Other tasks may contribute evidence but must not silently finalize it.
 
@@ -256,21 +256,24 @@ Still owned by ONB-011:
 
 ## ONB-012 / #200 — Import worker and API lifecycle
 
-Resolved numeric input from ONB-007:
+Resolved by merged PR #352, the three ONB-012 adversarial review addenda, and `reports/ONB-012-2026-08-11-completion-reconciliation.md`:
 
-- one active executor initially;
+- one active provider executor initially in the existing worker deployment;
 - 1-second poll, 15-second heartbeat, 2-minute stale, and 30-second recovery defaults;
 - queue warning after more than 20 queued runs for five minutes or oldest queue age above five minutes;
-- explicit rate-limited/retry-at state distinct from stale-worker recovery.
+- explicit rate-limited/retry-at state distinct from stale-worker recovery;
+- pause/resume/cancel/retry API and acknowledged pause/cancel semantics;
+- globally serialized claim with exact work-key fencing for heartbeat/checkpoint/persistence/coverage/settlement/control/release;
+- stale-claim recovery that prevents old workers from checkpointing or settling;
+- one provider-neutral lifecycle-fence admission seam with starvation-safe claim candidate filtering and transactional race-safe recheck;
+- stable `ACCOUNT_IMPORT_ADMISSION_BLOCKED` conflict response;
+- exact active-claim/drain projection for ONB-020/021;
+- safe worker-loop supervision, settlement-failure containment, and bounded peer-worker shutdown;
+- retry lineage preserving immutable mode/scope/range;
+- monotonic completed-window progress and fixed denominator initialization;
+- aggregate queue/stage/heartbeat/cancellation telemetry without raw personal payloads.
 
-Still owned by ONB-012:
-
-- Paused-run retention policy.
-- Conflict response for a second active import.
-- Worker-loop supervisor shape.
-- Exact cancellation acknowledgement exposed to ONB-020/021.
-- Exact claim/fence checks ensuring no provider write survives destructive drain success.
-- Exact telemetry persistence/export shape.
+No ONB-012-owned implementation question remains open. Provider traversal, provider-specific malformed/error handling, canaries, and provider-window behavior remain with ONB-013/014. Persisted lifecycle fences remain with ONB-019, and destructive drain orchestration remains with ONB-020/021.
 
 ## ONB-013 / #201 — Lichess adapter
 

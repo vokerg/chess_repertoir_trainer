@@ -1,6 +1,6 @@
 # ONB-014 — Implement bounded Chess.com import adapter
 
-Status: PROPOSED
+Status: READY
 
 Priority: P0
 
@@ -19,6 +19,8 @@ Claim branch: none
 Claimed at: none
 
 Claim scope: none
+
+Promoted at: 2026-08-11 after ONB-012 runtime merge and completion reconciliation PR #354
 
 ## Outcome
 
