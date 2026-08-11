@@ -169,6 +169,7 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
     const heartbeat = setInterval(() => {
       heartbeatChain = heartbeatChain
         .then(async () => {
+          if (claimLost || requestedControl !== null) return;
           const heartbeatStartedAt = now();
           const status = await input.repository.heartbeatRun(run.id, run.workKey);
           recordTiming(run, 'HEARTBEAT', heartbeatStartedAt);
