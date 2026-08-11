@@ -95,6 +95,16 @@ try {
     }),
     true,
   );
+  assert.equal(
+    await lifecycle.checkpointRun(active.id, active.workKey, {
+      checkpoint: { window: 0 },
+      windowsCompleted: 0,
+    }),
+    false,
+    'the active worker cannot move durable completed-window progress backwards',
+  );
+  const monotonicProgress = await lifecycle.getRunForUser(active.userId, active.id);
+  assert.equal(monotonicProgress.windowsCompleted, 1);
 
   assert.equal(await lifecycle.requestPause(active.userId, active.id), true);
   const pauseRequested = await lifecycle.getRunForUser(active.userId, active.id);
