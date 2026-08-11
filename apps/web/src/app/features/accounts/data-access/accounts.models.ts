@@ -1,3 +1,5 @@
+export type { LichessConnectionStatus } from '@chess-trainer/contracts/lichess';
+
 export type AccountProvider = 'LICHESS' | 'CHESS_COM';
 
 export interface ExternalAccount {
@@ -72,18 +74,6 @@ export interface DefaultProgressAccountResponse {
   defaultProgressAccountId: number | null;
   account?: ExternalAccount | null;
   accounts: ExternalAccount[];
-}
-
-export interface LichessConnectionStatus {
-  connected: boolean;
-  account?: {
-    username: string;
-    lichessUserId: string;
-    externalAccountId?: number | null;
-    scopes: string[];
-    connectedAt: string;
-    expiresAt?: string | null;
-  };
 }
 
 export interface AccountForm {
