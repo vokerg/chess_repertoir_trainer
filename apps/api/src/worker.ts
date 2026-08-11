@@ -1,5 +1,9 @@
 import 'dotenv/config';
 import prisma from './prisma';
+import { defaultAccountImportExecutorRegistry } from './modules/account-imports/account-import.executor';
+import { AccountImportLifecycleRepository } from './modules/account-imports/account-import.lifecycle.repository.prisma';
+import { loadAccountImportWorkerConfig } from './modules/account-imports/account-import.worker.config';
+import { createAccountImportWorker } from './modules/account-imports/account-import.worker.service';
 import { defaultJobTaskExecutorRegistry } from './modules/jobs/imported-game-job-executors';
 import { JobRunRepository } from './modules/jobs/job-run.repository.prisma';
 import { loadJobWorkerConfig } from './modules/jobs/job-worker.config';
@@ -12,10 +16,16 @@ const TERMINAL_RETENTION_INTERVAL_MS = 60 * 60_000;
 
 async function bootstrap() {
   const config = loadJobWorkerConfig();
+  const accountImportConfig = loadAccountImportWorkerConfig();
   const worker = createJobWorker({
     repository: JobWorkerRepository,
     executors: defaultJobTaskExecutorRegistry,
     config,
+  });
+  const accountImportWorker = createAccountImportWorker({
+    repository: AccountImportLifecycleRepository,
+    executors: defaultAccountImportExecutorRegistry,
+    config: accountImportConfig,
   });
   let shuttingDown = false;
   let retentionTimer: NodeJS.Timeout | undefined;
@@ -53,7 +63,9 @@ async function bootstrap() {
   retentionTimer = setInterval(() => void runTerminalRetention(), TERMINAL_RETENTION_INTERVAL_MS);
   retentionTimer.unref();
 
-  const runPromise = worker.run();
+  const jobWorkerPromise = worker.run();
+  const accountImportWorkerPromise = accountImportWorker.run();
+  const runPromise = Promise.all([jobWorkerPromise, accountImportWorkerPromise]);
 
   const shutdown = async (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
@@ -62,14 +74,16 @@ async function bootstrap() {
       clearInterval(retentionTimer);
       retentionTimer = undefined;
     }
-    console.info('Shutting down persistent job worker', { signal });
+    console.info('Shutting down persistent background workers', { signal });
     worker.requestStop(`Worker received ${signal}.`);
+    accountImportWorker.requestStop(`Worker received ${signal}.`);
 
-    const stopped = await settlesWithin(cleanupCompleted, config.shutdownTimeoutMs);
+    const shutdownTimeoutMs = Math.max(config.shutdownTimeoutMs, accountImportConfig.shutdownTimeoutMs);
+    const stopped = await settlesWithin(cleanupCompleted, shutdownTimeoutMs);
     if (!stopped) {
-      console.error('Persistent job worker cleanup exceeded the shutdown timeout', {
+      console.error('Persistent worker cleanup exceeded the shutdown timeout', {
         signal,
-        shutdownTimeoutMs: config.shutdownTimeoutMs,
+        shutdownTimeoutMs,
       });
       process.exit(1);
     }
@@ -83,8 +97,11 @@ async function bootstrap() {
   try {
     await runPromise;
   } catch (error) {
-    console.error('Persistent job worker failed', error);
+    console.error('Persistent worker failed', error);
     process.exitCode = 1;
+    worker.requestStop('Peer worker failed.');
+    accountImportWorker.requestStop('Peer worker failed.');
+    await Promise.allSettled([jobWorkerPromise, accountImportWorkerPromise]);
   } finally {
     if (retentionTimer) clearInterval(retentionTimer);
     try {
@@ -100,13 +117,13 @@ async function bootstrap() {
 
 async function disconnectPrisma(): Promise<void> {
   await prisma.$disconnect().catch((error) => {
-    console.error('Persistent job worker Prisma shutdown failed', error);
+    console.error('Persistent worker Prisma shutdown failed', error);
     process.exitCode = 1;
   });
 }
 
 void bootstrap().catch(async (error) => {
-  console.error('Persistent job worker bootstrap failed', error);
+  console.error('Persistent worker bootstrap failed', error);
   process.exitCode = 1;
   await disconnectPrisma();
 });

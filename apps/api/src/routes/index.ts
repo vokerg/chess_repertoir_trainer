@@ -11,6 +11,7 @@ import openingAnalysisBreakdownsModule from '../modules/imported-games/opening-a
 import openingStrugglesModule from '../modules/opening-struggles/opening-struggles.routes';
 import labModule from '../modules/lab/lab.routes';
 import jobsModule from '../modules/jobs/job-run.routes';
+import accountImportModule from '../modules/account-imports/account-import.routes';
 import adminModule, { type AdminModuleOptions } from '../modules/admin/admin.routes';
 import externalAccountsRoutes from './externalAccounts';
 import lichessAuthRoutes from './lichessAuth';
@@ -43,6 +44,7 @@ export default function registerRoutes(app: FastifyInstance, options: RegisterRo
   app.register(openingStrugglesModule);
   app.register(labModule);
   app.register(jobsModule);
+  app.register(accountImportModule);
   app.register(adminModule, options.admin);
   app.register(repertoireCoverageModule);
   app.register(mcpModule);

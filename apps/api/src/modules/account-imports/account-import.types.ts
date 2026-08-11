@@ -41,12 +41,16 @@ export interface StoredAccountImportRun {
   gamesMatchedScope: number;
   gamesImported: number;
   gamesDuplicate: number;
+  gamesUpdated?: number;
+  gamesSkipped?: number;
   gamesSkippedOutOfScope: number;
   gamesFailed: number;
   lastProgressAt: Date | null;
   workKey: string | null;
   claimedAt: Date | null;
   heartbeatAt: Date | null;
+  pauseRequestedAt?: Date | null;
+  cancelRequestedAt?: Date | null;
   retryAt: Date | null;
   rateLimitUntil: Date | null;
   startedAt: Date | null;
@@ -73,6 +77,7 @@ export interface StoredAccountImportCoverage {
 export interface ExtendAccountImportCoverageInput {
   userId: number;
   importRunId: number;
+  workKey: string;
   coveredFrom: Date;
   coveredThrough: Date;
 }
@@ -105,7 +110,7 @@ export interface NormalizedAccountImportGame {
 export interface PersistAccountImportGamesInput {
   userId: number;
   importRunId: number;
-  workKey?: string | null;
+  workKey: string;
   games: NormalizedAccountImportGame[];
 }
 

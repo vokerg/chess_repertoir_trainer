@@ -96,9 +96,15 @@ try {
     'the database independently enforces one non-terminal import per account',
   );
 
+  const initialWorkKey = `account-import-initial-${suffix}`;
   await prisma.importRun.update({
     where: { id: initialRun.id },
-    data: { status: 'RUNNING' },
+    data: {
+      status: 'RUNNING',
+      workKey: initialWorkKey,
+      claimedAt: new Date(),
+      heartbeatAt: new Date(),
+    },
   });
   const twoGameRepository = createAccountImportRepository(
     prisma,
@@ -109,6 +115,7 @@ try {
     twoGameRepository.persistGames({
       userId: primary.userId,
       importRunId: initialRun.id,
+      workKey: initialWorkKey,
       games: [normalizedGame('batch-1'), normalizedGame('batch-2'), normalizedGame('batch-3')],
     }),
     AccountImportWriteBatchTooLargeError,
@@ -119,6 +126,7 @@ try {
     await twoGameRepository.persistGames({
       userId: primary.userId,
       importRunId: initialRun.id,
+      workKey: initialWorkKey,
       games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
     }),
     { attempted: 2, inserted: 2, duplicate: 0 },
@@ -127,6 +135,7 @@ try {
     await twoGameRepository.persistGames({
       userId: primary.userId,
       importRunId: initialRun.id,
+      workKey: initialWorkKey,
       games: [normalizedGame('batch-1'), normalizedGame('batch-2')],
     }),
     { attempted: 2, inserted: 0, duplicate: 2 },
@@ -142,6 +151,7 @@ try {
     guardRepository.persistGames({
       userId: primary.userId,
       importRunId: initialRun.id,
+      workKey: initialWorkKey,
       games: [normalizedGame('fenced-write')],
     }),
     /lifecycle-fenced/,
@@ -154,15 +164,29 @@ try {
   const firstCoverage = await repository.extendCoverage({
     userId: primary.userId,
     importRunId: initialRun.id,
+    workKey: initialWorkKey,
     coveredFrom: newestWindowFrom,
     coveredThrough: newestWindowThrough,
   });
   assert.equal(firstCoverage.coveredFrom.toISOString(), newestWindowFrom.toISOString());
   assert.equal(firstCoverage.coveredThrough.toISOString(), newestWindowThrough.toISOString());
 
+  await assert.rejects(
+    guardRepository.extendCoverage({
+      userId: primary.userId,
+      importRunId: initialRun.id,
+      workKey: initialWorkKey,
+      coveredFrom: newestWindowFrom,
+      coveredThrough: newestWindowThrough,
+    }),
+    /lifecycle-fenced/,
+    'coverage advancement rechecks the shared lifecycle fence inside the write transaction',
+  );
+
   const extendedBack = await repository.extendCoverage({
     userId: primary.userId,
     importRunId: initialRun.id,
+    workKey: initialWorkKey,
     coveredFrom: new Date('2026-07-01T00:00:00.000Z'),
     coveredThrough: newestWindowFrom,
   });
@@ -171,6 +195,7 @@ try {
   assert.equal((await repository.extendCoverage({
     userId: primary.userId,
     importRunId: initialRun.id,
+    workKey: initialWorkKey,
     coveredFrom: new Date('2026-07-01T00:00:00.000Z'),
     coveredThrough: newestWindowThrough,
   })).id, firstCoverage.id, 'coverage replay is idempotent');
@@ -179,6 +204,7 @@ try {
     repository.extendCoverage({
       userId: primary.userId,
       importRunId: initialRun.id,
+      workKey: initialWorkKey,
       coveredFrom: new Date('2026-06-01T00:00:00.000Z'),
       coveredThrough: new Date('2026-06-15T00:00:00.000Z'),
     }),
@@ -210,7 +236,14 @@ try {
 
   await prisma.importRun.update({
     where: { id: initialRun.id },
-    data: { status: 'FAILED', completedAt: new Date(), errorCode: 'PROVIDER_FAILURE' },
+    data: {
+      status: 'FAILED',
+      workKey: null,
+      claimedAt: null,
+      heartbeatAt: null,
+      completedAt: new Date(),
+      errorCode: 'PROVIDER_FAILURE',
+    },
   });
   await assert.rejects(
     repository.createRun(runInput({
@@ -243,6 +276,17 @@ try {
     AccountImportClaimLostError,
     'a stale worker cannot persist through a mismatched work key',
   );
+  await assert.rejects(
+    repository.extendCoverage({
+      userId: primary.userId,
+      importRunId: retryRun.id,
+      workKey: 'stale-work-key',
+      coveredFrom: requestedFrom,
+      coveredThrough: requestedTo,
+    }),
+    AccountImportClaimLostError,
+    'a stale worker cannot advance coverage through a mismatched work key',
+  );
   assert.deepEqual(
     await repository.persistGames({
       userId: primary.userId,
@@ -266,9 +310,20 @@ try {
   assert.equal(await repository.getCoverage(primary.userId, primary.accountId, scope), null);
 
   const cascadeRun = await repository.createRun(runInput(cascade));
+  const cascadeWorkKey = `account-import-cascade-${suffix}`;
+  await prisma.importRun.update({
+    where: { id: cascadeRun.id },
+    data: {
+      status: 'RUNNING',
+      workKey: cascadeWorkKey,
+      claimedAt: new Date(),
+      heartbeatAt: new Date(),
+    },
+  });
   await repository.extendCoverage({
     userId: cascade.userId,
     importRunId: cascadeRun.id,
+    workKey: cascadeWorkKey,
     coveredFrom: requestedFrom,
     coveredThrough: requestedTo,
   });
