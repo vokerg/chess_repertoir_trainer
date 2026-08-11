@@ -43,19 +43,23 @@
       (primaryAction)="store.startNextLine()"
     />
 
-    @if (store.error()) {
-      <p class="status-error marathon-error">{{ store.error() }}</p>
+    @if (store.error(); as error) {
+      <app-state-message class="marathon-error" tone="error" [message]="error" />
     }
   </section>
+} @else if (store.error(); as error) {
+  <app-panel
+    title="Marathon unavailable"
+    subtitle="The next training line could not be prepared."
+  >
+    <app-state-message tone="error" [message]="error" />
+    <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
+  </app-panel>
 } @else {
   <app-panel
     title="Loading marathon training"
     subtitle="Preparing the selected repertoire scope and the next eligible line."
   >
-    <p class="status-note">Loading marathon training...</p>
-    @if (store.error()) {
-      <p class="status-error">{{ store.error() }}</p>
-      <a class="compact-action secondary" [routerLink]="store.backLink()">Back</a>
-    }
+    <app-state-message tone="loading" message="Loading marathon training..." />
   </app-panel>
 }

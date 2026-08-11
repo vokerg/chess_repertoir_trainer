@@ -41,16 +41,6 @@
   border-radius: var(--ui-radius-control);
 }
 
-.status-error {
-  color: var(--ui-danger);
-  font-weight: 800;
-}
-
-.status-note {
-  color: var(--ui-text-muted);
-  font-weight: 700;
-}
-
 /* Keep in sync with COMPACT_BREAKPOINT_PX. */
 @media (max-width: 640px) {
   .marathon-training-page {

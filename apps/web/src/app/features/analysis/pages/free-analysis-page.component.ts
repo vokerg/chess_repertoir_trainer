@@ -15,6 +15,7 @@ import {
   PageHeaderComponent,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { type UiShellAction } from '../../../shared/ui/ui-shell.model';
 import { FreeAnalysisApiService } from '../data-access/free-analysis-api.service';
@@ -40,6 +41,7 @@ import { LichessBotChallengeStore } from '../../../shared/lichess/bot-challenge/
   imports: [
     PageHeaderComponent,
     PanelComponent,
+    StateMessageComponent,
     FreeAnalysisWorkbenchComponent,
     AnalysisReintegrationDialogComponent,
     LichessBotChallengeDialogComponent,

@@ -94,28 +94,28 @@ Do not infer status from colour alone. Preserve text, icons, labels, and accessi
 
 ## Proven shared primitive roles
 
-The shared page header, panel, shell actions, context strip, fact grid, and select menu consume production roles directly.
+The shared page header, panel, shell actions, context strip, fact grid, select menu, and state message consume production roles directly.
 
 - `app-context-strip` renders typed, read-only label/value context without deriving feature state.
 - `app-fact-grid` renders typed semantic facts; owning features retain status, formatting, eligibility, and command logic.
 - `app-select-menu` owns controlled single-choice trigger, overlay, selection, and keyboard presentation; consuming features own option meaning and state transitions.
+- `app-state-message` owns the generic loading/empty/error presentation contract; loading uses polite status semantics, errors use assertive alert semantics, and feature/domain notices remain feature-owned.
 - Shared primitives remain OnPush, router-free, store-free, HTTP-free, and feature-agnostic.
 - Feature-specific semantic data colours and responsive workflow composition remain with the owning feature.
 
 ## Route-family completion and compatibility boundary
 
-VT-301 has explicitly dispositioned every current authenticated route family. This does not mean every descendant widget has already abandoned all legacy roles.
+VT-301 dispositioned every authenticated route family that existed at its completion checkpoint. Later protected routes are reviewed against the same production contract rather than retroactively rewriting the historical VT-301 inventory.
 
 VT-302 has resolved the previously recorded visual-semantic compatibility boundary in `apps/web/src/workbench.css` and the remaining Repertoire Builder workbench/setup/explanation surfaces. Those files now use production `--ui-*` visual roles, and architecture guardrails prevent reintroduction of the bounded legacy semantic names.
 
-VT-302 also removed the only non-Library `.library-*` presentation consumers from the Lines feature. Focused and marathon training links now reuse the generic `compact-action secondary` contract, whose production override is owned by `design-system.css`, and architecture guardrails reject renewed `.library-*` coupling anywhere in Lines HTML/CSS.
+VT-302 first removed the non-Study `.library-*` consumers from Lines, then completed the consumer proof for the remaining global `.library-*` block. Current Study presentation is feature-local under `study-*`; runtime searches found no remaining `.library-*` presentation consumer, so the obsolete global block was removed. Architecture guardrails now reject the retired `.library-*` namespace in global styles and Angular HTML/CSS rather than preserving a special Library compatibility exception.
 
 VT-302 also resolves the bounded Home-local visual-token namespace. `home-page.component.css` and the Today Activity child stylesheet consume the existing production `--ui-*` canvas, surface, graphite, text, border, action, focus and elevation roles directly, and architecture guardrails reject `--home-*` in Home HTML/CSS. The colour, surface and border aliases map exactly to the production values. The former Home soft/raised shadow aliases were slightly lighter (`0.045`/`0.085` alpha) than `--ui-shadow-soft`/`--ui-shadow-raised` (`0.055`/`0.09`); using the production roles is a deliberate restrained elevation normalization rather than an exact pixel-value preservation claim. Direct authenticated browser evidence for that small visual delta remains unobserved unless separately recorded.
 
 Accepted compatibility boundaries that remain:
 
-- Global `.library-*` presentation remains a bounded Study/library compatibility layer. It no longer serves Lines; removing or relocating it requires inspection of the remaining Library-owned consumers rather than a global deletion.
-- `styles.css` still owns legacy roles required by other known compatibility consumers and the established `--space-*` scale; resolving the workbench, training and Home visual roles does not authorize global deletion or redefinition of that layer.
+- `styles.css` still owns legacy short visual roles required by other known compatibility consumers and the established `--space-*` scale; resolving workbench, training, Home, and Library presentation debt does not authorize global deletion or redefinition of that layer.
 - Feature-local semantic chart, board, and evaluation colours may remain when they do not represent a shared UI role.
 
 These boundaries are recorded debt, not permission for new code to use legacy visual names and not evidence of an untransformed route family.

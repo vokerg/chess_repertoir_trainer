@@ -11,6 +11,7 @@ import {
   type PageHeaderAction,
 } from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
+import { StateMessageComponent } from '../../../shared/ui/state-message/state-message.component';
 import {
   buildRepertoireBuilderProfileLaunchQueryParams,
   buildRepertoireBuilderProfileSuggestions,
@@ -30,6 +31,7 @@ import { PlayerChessProfileStore } from '../state/player-chess-profile.store';
   imports: [
     PageHeaderComponent,
     PanelComponent,
+    StateMessageComponent,
     PlayerChessProfileBreakdownComponent,
     PlayerChessProfileConclusionsComponent,
     PlayerChessProfileCoverageComponent,
