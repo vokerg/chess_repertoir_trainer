@@ -38,7 +38,7 @@ Adapt the integrated RB-026 Cockpit to the V2 decision model without replacing t
 
 ## User-move evidence hierarchy
 
-At-a-glance candidate evidence should foreground the facts that drive V2:
+At-a-glance candidate evidence foregrounds:
 
 - engine quality/cost;
 - target-population frequency and position-relative result;
@@ -48,22 +48,22 @@ At-a-glance candidate evidence should foreground the facts that drive V2:
 
 Opening classification and knowledge remain secondary explanatory context: what kind of chess the move creates and what plans matter.
 
-The focused brief must answer why a higher-ranked candidate outranks another without requiring the user to infer a hidden weighted score.
+The focused brief explains dominant tradeoffs using authoritative reason codes/evidence rather than creating a hidden Angular score.
 
 ## Opponent-move evidence hierarchy
 
-Use RB-029 preparation semantics: target-population frequency, personal encounters, danger, course state, recommended selection and computed coverage. Do not show persona/profile fit for opponent moves.
+Use RB-029 preparation semantics: target-population frequency, personal encounters, danger, course state, recommended selection and computed coverage. Persona/profile fit is not shown for opponent moves.
 
 ## Cleanup
 
-- remove ECO codes/badges from normal Builder UI while retaining underlying evidence;
-- replace ambiguous `target play` wording with explicit target-population language;
-- remove primary Target/Profile Aligned/Conflict chips where V2 no longer uses them;
-- avoid turning the Cockpit into a dense statistics dashboard.
+- normal ECO codes/badges removed from Builder presentation while retaining underlying evidence;
+- ambiguous `target play` wording replaced by explicit target-population language;
+- primary Target/Profile Aligned/Conflict chips removed where V2 no longer uses them;
+- Cockpit remains focused rather than becoming a dense statistics dashboard.
 
 ## Dependencies
 
-RB-027, RB-028 and corrected RB-029 contract/semantic work are complete on `main`. RB-030 remained concurrently active on PR #335; RB-031 stayed out of setup, launch, target, profile and page-composition files and had no changed-file overlap with #335 at final review.
+RB-027, RB-028 and corrected RB-029 contract/semantic work were complete before RB-031. RB-030 ran concurrently on disjoint setup/launch/target/profile/page-composition files and subsequently merged through PR #335.
 
 ## Acceptance criteria
 
@@ -81,7 +81,8 @@ RB-027, RB-028 and corrected RB-029 contract/semantic work are complete on `main
 
 - two full self-review passes completed with no blocking findings;
 - no external PR review submissions, inline review threads or PR comments were outstanding at final review;
-- exact implementation head `9a410681b5fb9cb9c10d530e76d640b6b7e82451` passed CI #2483 (`31421699741`), including lint, build/template compilation, audits, architecture guardrails, migrations and tests;
+- exact implementation head `9a410681b5fb9cb9c10d530e76d640b6b7e82451` passed CI #2483 (`31421699741`);
+- final documentation-adjusted head `a7ed94bdad896bc852685ad25de1dc87bee89e8f` passed exact-head CI #2486 (`31422515093`) and PR #336 was squash-merged as `e6c024afec1753838dec900181ca4023d6114676` on 2026-08-10;
 - focused view-model tests cover corpus metric formatting, position-relative results, empirical/preparation reason filtering, factual personal evidence and meaningful course relationships;
 - no API, contract, schema/migration, persistence, queue/job, Builder reducer/session or course-write redesign was introduced.
 

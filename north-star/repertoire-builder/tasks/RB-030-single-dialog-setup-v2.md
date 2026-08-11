@@ -1,6 +1,6 @@
 # RB-030 — Single-dialog Builder setup V2
 
-Status: IN_PROGRESS
+Status: DONE
 
 Priority: P1
 
@@ -8,7 +8,7 @@ Order: 230
 
 Delivery class: Frontend product flow
 
-Planning maturity: Agreed
+Planning maturity: Delivered on PR #335
 
 GitHub issue: #320
 
@@ -24,25 +24,39 @@ Claim scope: single-dialog Builder setup V2; side/scope, speed, rating and one p
 
 Simplify normal Builder launch to one focused setup dialog. Persona is chosen exactly once; there is no second persona/objective step.
 
-## Normal setup surface
+## Delivered normal setup surface
 
-Keep only understandable pre-build choices:
+The integrated setup keeps only understandable pre-build choices:
 
 - repertoire side and starting scope;
 - speed population;
 - rating target;
 - one persona: Balanced, Solid, Aggressive or Surprise.
 
-Starting scope should provide bounded practical shortcuts using existing starting-position/session mechanics, for example White full/`1.e4`/`1.d4`/`1.c4`/`1.Nf3`/other and Black full/against `1.e4`/against `1.d4`/common flank/other. Exact labels and the `other` interaction must be designed from existing board/FEN/manual-entry patterns after inspection.
+Starting scope reuses the existing chess/session boundary:
 
-## Remove from normal setup
+- White: full repertoire, `1.e4`, `1.d4`, `1.c4`, `1.Nf3`, or Other;
+- Black: all White first moves, against `1.e4`, against `1.d4`, against `1.c4`, against `1.Nf3`, or Other;
+- Other accepts FEN, PGN, SAN, or UCI move sequences and resolves them to the exact draft root FEN;
+- exact existing-course launches keep their fixed course position and do not expose a misleading broader scope choice.
+
+## Removed from normal setup
 
 - opponent-response coverage slider;
 - persona-specific coverage defaults;
 - hard maximum-theory-burden control;
 - duplicated persona/objective screens.
 
-A future independent theory preference may return only if it has understandable operational semantics; do not preserve the current control just for compatibility.
+Coverage is now workbench feedback from selected opponent replies under RB-029. Theory burden is not a separate V2 setup decision.
+
+## Compatibility boundary
+
+The existing V1 `RepertoireTarget` schema remains reproducible without restoring the removed controls as hidden product decisions.
+
+- `coveragePercent` remains route-local compatibility data fixed at `80` while V2 opponent recommendation/coverage does not consume it as intent;
+- `maximumTheoryBurden` remains compatibility data fixed to the non-restrictive `HIGH` ceiling so old Candidate Decision theory filtering cannot silently reject candidates according to an invisible setup choice;
+- V2 target defaults use `2026-08-builder-v2` provenance for this compatibility material;
+- no new persistence, session storage, queue, job, schema/migration, or automatic course-write path was introduced.
 
 ## Persona copy
 
@@ -51,38 +65,27 @@ A future independent theory preference may return only if it has understandable 
 - Aggressive — active, justified choices that accept bounded objective cost.
 - Surprise — uncommon viable choices that overperform in the selected population.
 
-## In scope
-
-- setup UI/state and target construction compatible with RB-027/RB-029;
-- starting-scope shortcuts;
-- fixed exact-position/course-review launch behavior;
-- destructive restart copy and tests;
-- responsive/keyboard behavior.
-
-## Out of scope
-
-- second persona step;
-- Builder Cockpit redesign;
-- persisted persona templates;
-- Builder-session persistence;
-- automatic course creation.
-
-## Dependencies
-
-Coordinate final target-contract cleanup with RB-027 and RB-029. Existing-course entry points from RB-012 must remain valid.
-
 ## Acceptance criteria
 
-- one dialog starts a normal draft and shows persona once;
-- White/Black and common scoped starts use existing starting-position semantics;
-- exact course-position launches remain exact and do not force an irrelevant scope choice;
-- coverage/theory internals are not mandatory setup decisions;
-- generated target/session snapshots remain versioned and reproducible;
-- restart remains explicitly destructive;
-- focused tests cover full scope, common scoped starts, fixed launches, restart and other/manual start.
+- [x] one dialog starts a normal draft and shows persona once;
+- [x] White/Black and common scoped starts use existing starting-position/session semantics;
+- [x] exact course-position launches remain exact and do not force an irrelevant scope choice;
+- [x] coverage/theory internals are not mandatory setup decisions;
+- [x] generated target/session snapshots remain versioned and reproducible;
+- [x] restart remains explicitly destructive;
+- [x] focused tests cover full scope, common scoped starts, fixed launches, restart and other/manual start.
+
+## Validation
+
+- final implementation head `621ee6abb9a311646859357f8de41d4a6c4528e7` passed CI #2478 (`31420953443`), including lint, build/template compilation, architecture guardrails, migrations, audits and the complete test step;
+- final self-review added the setup-scope-to-existing-start-path bridge assertion and corrected the hidden theory compatibility ceiling to `HIGH`;
+- PR #335 was squash-merged to `main` as `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2` on 2026-08-11;
+- issue #320 is closed as completed.
 
 ## Completion
 
-Report: none
+Report: `../reports/RB-030-2026-08-11-single-dialog-setup-v2-closure.md`
 
-Completed at: none
+Pull request: #335
+
+Completed at: 2026-08-11

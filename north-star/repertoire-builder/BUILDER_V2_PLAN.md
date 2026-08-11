@@ -1,14 +1,14 @@
 # Repertoire Builder V2 decision model
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
-Status: **Agreed product direction; RB-027 and RB-028 implemented, RB-029–RB-031 remain incremental delivery work**
+Status: **Delivered through RB-027–RB-031; retained as the V2 decision-model design record**
 
-This document records the product-owner review of the Builder and the agreed V2 decision model. It is both the target plan for the remaining V2 tasks and a coordination record for the portions already implemented. RB-027's empirical `USER_MOVE` ranking and RB-028 factual exact-position personal evidence are now implemented; opponent preparation/coverage, setup consolidation and final Cockpit hierarchy remain downstream work.
+This document records the product-owner review of the Builder and the agreed V2 decision model. RB-027 through RB-031 now implement that model: empirical `USER_MOVE` personas, factual exact-position personal evidence, role-specific opponent preparation/computed coverage, one-dialog setup, and the final Cockpit evidence hierarchy are integrated. Future changes require new evidence and explicit version/task changes rather than silently treating this plan as an unfinished queue.
 
 ## Why V2 exists
 
-The current Builder got several important things right: the board-first Cockpit, compact candidate preview, focused decision brief, reviewed opening plans, manual move entry, recursive branch queue, explicit defer/ignore/stop states, and course preview/apply boundaries are worth preserving.
+The Builder got several important things right: the board-first Cockpit, compact candidate preview, focused decision brief, reviewed opening plans, manual move entry, recursive branch queue, explicit defer/ignore/stop states, and course preview/apply boundaries were worth preserving.
 
 The review found a deeper problem in the decision semantics. The product mixed four different concepts — repertoire intent, opponent-response relevance, broad Player Chess Profile similarity, and opening classification — into badges and setup controls that looked more authoritative than they were.
 
@@ -50,25 +50,25 @@ select/defer/ignore important replies
 
 ## One setup dialog, not two persona steps
 
-Normal new-draft setup remains one focused dialog. Persona appears exactly once.
+RB-030 implements normal new-draft setup as one focused dialog. Persona appears exactly once.
 
-The target surface should contain:
+The integrated target surface contains:
 
 1. repertoire side and starting scope;
 2. speed population;
 3. rating target;
 4. one persona: **Balanced / Solid / Aggressive / Surprise**.
 
-Useful starting-scope shortcuts should reuse existing starting-position/session mechanics. Examples are White full repertoire or a common first move (`1.e4`, `1.d4`, `1.c4`, `1.Nf3`) and Black full repertoire or a response scope such as `against 1.e4` or `against 1.d4`.
+Starting-scope shortcuts reuse existing starting-position/session mechanics: White full repertoire or common first moves (`1.e4`, `1.d4`, `1.c4`, `1.Nf3`), Black full response scope or preparation against those same first moves, plus custom FEN/PGN/SAN/UCI input. Exact existing-course launches keep their source position rather than applying a broader setup scope.
 
-The normal setup should not ask the user to configure:
+The normal setup does not ask the user to configure:
 
 - an opponent-response coverage percentage;
 - persona-specific coverage defaults;
 - a hard low/medium/high maximum theory burden;
 - a second persona/objective page.
 
-If an independent theory preference later returns, it must have understandable operational semantics rather than being a static classification ceiling.
+The existing V1 target contract still receives fixed compatibility values for reproducibility: coverage `80` and a non-restrictive theory ceiling `HIGH`. They are compatibility material, not V2 user choices. If an independent theory preference later returns, it must have understandable operational semantics rather than being a static classification ceiling.
 
 ## Revised personas
 
@@ -168,33 +168,31 @@ RB-028 implements this model through Candidate Decision V4 and factual policy `2
 
 ## Opponent responses: preparation, not fit
 
-Opponent turns should not show `Target Conflict` because the opponent chose a high-theory opening. The opponent is not constrained by the user's persona.
+Opponent turns do not use Target/Profile fit. The relevant question is preparation priority.
 
-The relevant question is preparation priority.
-
-A useful response row should explain facts such as:
+A useful response row explains facts such as:
 
 ```text
-...c5   18% of target games   faced 192 times   high preparation priority
-...e6   10% of target games   faced 73 times
+...c5   18% of target games   faced 192 times   recommended
+...e6   10% of target games   faced 73 times   recommended
 ...d6    3% of target games   rare, but objectively dangerous
 ```
 
-Priority should combine separated evidence:
+RB-029 implements role-specific policy `2026-08-opponent-preparation-v1`. It uses separated evidence centered on:
 
 - peer frequency/relevance;
 - personal encounters;
 - objective danger;
-- existing course coverage/gap;
-- Masters only as secondary context where useful.
+- existing course coverage/transposition context;
+- Masters as secondary context where useful.
 
-RB-029 owns this policy. RB-027 intentionally leaves `OPPONENT_RESPONSE` ranking semantics unchanged; RB-028 factual personal evidence is available as separated encounter context.
+A post-merge correctness audit of the original PR #331 found that preparation had been applied after generic candidate truncation and that API/AI/course/provenance/default-selection boundaries were incomplete. Corrective PR #333 moved role-specific discovery/preparation authority before final truncation, aligned AI with the same decision path, supplied real opponent-side course context, returned authoritative policy provenance, default-selected the recommended set, and kept unknown selected coverage unavailable rather than fabricating `0%`.
 
 ## Coverage becomes feedback
 
-The current 50–100% setup slider asks the user to configure an implementation concept before seeing the responses. V2 removes it from normal setup.
+V2 removes the old setup coverage slider from the user flow.
 
-Instead, the opponent-response surface should produce a deterministic **recommended preparation set** and show the resulting coverage:
+The opponent-response surface produces a deterministic recommended preparation set and reports selected target-population coverage:
 
 ```text
 Recommended preparation
@@ -209,7 +207,7 @@ Selected replies represent 82% of target games.
 
 The user remains in control: add, remove, defer or ignore responses before acceptance. Every accepted response still creates its own continuation branch through the existing session reducer.
 
-The exact recommendation/stopping rule must be versioned and tested. V2 does not hide the old 70/80/85 persona defaults behind new labels.
+The recommendation rule is versioned as part of `2026-08-opponent-preparation-v1`; V2 does not hide the old 70/80/85 persona defaults behind new labels.
 
 ## Opening classification and opening knowledge
 
@@ -221,54 +219,23 @@ Both remain valuable, but with a clearer role.
 
 Opening knowledge stays ranking-neutral. Classification is secondary descriptive evidence rather than the cornerstone of persona fit. RB-027 enforces that separation in preset USER_MOVE ranking authority.
 
-Normal Builder UI should keep the opening name and reviewed plans while removing ECO codes/badges such as `A01`, which add little to this decision surface.
+RB-031 keeps opening identity and reviewed plans while removing normal ECO codes/badges and obsolete primary Target/Profile-fit chips from the decision surface.
 
 ## Cockpit presentation
 
-RB-026's three-zone Cockpit remains the base layout.
+RB-026's three-zone Cockpit remains the base layout. RB-031 implements the final V2 hierarchy inside it without replacing the workspace or recreating ranking in Angular.
 
 ### User move row
 
-A compact V2 row should tend toward:
-
-```text
-#1 Bf4   +0.25   Peers 20% · +6pp   Masters 8%
-          Rare for you · 4 games
-```
-
-rather than:
-
-```text
-#1 Bf4   +0.25   20% target play
-          Target Aligned   Profile Aligned
-```
+The V2 row foregrounds engine, selected target-population and Masters evidence plus factual personal/course context rather than opaque fit badges.
 
 ### Focused decision brief
 
-The brief should explain dominant tradeoffs deterministically:
-
-```text
-Why Balanced prefers Bf4
-
-Strong practical result
-Peers choose it in 20% of games and score +6pp versus the
-normal result from this position.
-
-Established enough
-Seen in 8% of Master games.
-
-Objectively safe
-Only 0.02 below the best stored line.
-
-Your experience
-Rare for you — 4 games. Last played Oct 2024.
-```
-
-Opening identity, intrinsic traits and strategic plans follow as explanatory context.
+The brief leads with deterministic ranking/preparation facts and authoritative reasons. Opening identity, intrinsic traits and strategic plans follow as explanatory context.
 
 ### Opponent response row
 
-Opponent rows foreground preparation evidence and selection state, not persona/profile fit.
+Opponent rows foreground Recommended/Optional preparation status, target-population contribution, personal/danger/course evidence and editable selection state, not persona/profile fit.
 
 ## What V2 preserves
 
@@ -288,41 +255,44 @@ Opponent rows foreground preparation evidence and selection state, not persona/p
 - optional generated interpretation as read-only/non-authoritative;
 - route-local session boundary until persistence is separately justified.
 
-## Implementation order
+## Delivery record
 
 ### RB-027 / #317 — empirical persona ranking V2
 
-**DONE.** Runtime PR #325 / squash `34dadd25`; final runtime CI #2392. Candidate Decision V3 introduced the versioned preset USER_MOVE corpus semantics.
+**DONE.** Runtime PR #325 / squash `34dadd25`; final runtime CI #2392.
 
 ### RB-028 / #318 — factual personal move evidence
 
-**DONE.** Runtime PR #327; implementation head `9d0a65a5`; final runtime CI #2409. Candidate Decision V4 carries factual Common/Rare/New, recency/share, qualified result context and effective all-indexed history scope without adding new preset ranking authority.
+**DONE.** Runtime PR #327; implementation head `9d0a65a5`; final runtime CI #2409.
 
 ### RB-029 / #319 — opponent preparation and computed coverage
 
-**READY; next unclaimed policy task.** Remove opponent target/profile fit, produce a recommended response set and make coverage observable feedback.
+**DONE.** Original PR #331 plus corrective PR #333; role-specific policy `2026-08-opponent-preparation-v1`. See `reports/RB-029-2026-08-10-opponent-preparation-closure.md`.
 
 ### RB-030 / #320 — single-dialog setup
 
-**READY.** Persona appears once. Keep side/scope, speed, rating target and persona; remove the coverage slider and hard theory control.
+**DONE.** PR #335 final head `621ee6abb9a311646859357f8de41d4a6c4528e7` passed CI #2478 (`31420953443`) and squash-merged as `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2`. See `reports/RB-030-2026-08-11-single-dialog-setup-v2-closure.md`.
 
 ### RB-031 / #321 — Cockpit evidence hierarchy V2
 
-**PROPOSED.** Integrate the final evidence models into the already-shipped Cockpit, including ECO removal and clear rank explanations after RB-029 settles opponent semantics.
+**DONE.** PR #336 final head `a7ed94bdad896bc852685ad25de1dc87bee89e8f` passed CI #2486 (`31422515093`) and squash-merged as `e6c024afec1753838dec900181ca4023d6114676`. See `reports/RB-031-2026-08-10-cockpit-evidence-hierarchy-closure.md`.
 
-RB-016 outcome feedback remains blocked. It should evaluate post-V2 behavior rather than calibrating semantics that V2 is replacing.
+RB-016 outcome feedback remains blocked. It should evaluate real post-V2 behavior after enough material has been built, trained and encountered in later games.
 
-## Decisions intentionally not locked yet
+## Decisions after V2 delivery
 
-RB-027 resolved the user-move persona weights, target-position baseline semantics, empirical sample floors, Surprise overperformance gate, bounded candidate seeding, and stored-engine evidence boundary for its current ranking-policy version.
+The delivered policies are explicit and versioned:
 
-RB-028 resolved the factual personal thresholds for policy `2026-08-personal-move-v1`: 5 distinct indexed games plus 20% exact-position move share for Common; at least 10 known-result games plus +/-5 percentage points versus the same-position baseline for a qualified result label.
+- RB-027 owns current preset user-move weights, sample floors, Surprise overperformance gate and stored-engine boundary;
+- RB-028 owns current factual personal Common/Rare and qualified-result thresholds through `2026-08-personal-move-v1`;
+- RB-029 owns current opponent recommendation/discovery/stopping semantics through `2026-08-opponent-preparation-v1`;
+- RB-030 fixes V1 setup compatibility to coverage `80` and theory ceiling `HIGH` while removing those as V2 user decisions;
+- RB-031 owns the final V2 presentation hierarchy but not ranking authority.
 
-Still open under downstream tasks:
+Still open only as future evidence questions, not unfinished V2 delivery:
 
-- exact recommended opponent-response stopping rule — RB-029;
-- V1 target-field compatibility/removal details required by setup/coverage changes — RB-029/RB-030;
-- whether a future understandable soft theory preference is valuable after V2 is used — deferred product evidence;
-- final compact evidence hierarchy and responsive wording — RB-031.
+- whether a genuinely understandable independent theory preference is valuable after real usage;
+- whether any current policy thresholds need recalibration after representative post-V2 outcome evidence;
+- whether the V1 target contract should receive a future structural version that removes compatibility fields.
 
-Future changes to RB-027 ranking policy or RB-028 personal-evidence thresholds must be explicit, evidence-backed, and versioned rather than silently changing the meaning of existing Builder decisions.
+Future changes to ranking, personal-evidence, opponent-preparation or target semantics must be explicit, evidence-backed, versioned where appropriate, and allocated to a new task or a legitimately unblocked existing task rather than silently changing the meaning of integrated Builder decisions.

@@ -1,6 +1,6 @@
 # Repertoire Builder Task Queue
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 This is the canonical ordered queue. Detailed scope, acceptance and implementation history live in the individual task and report files.
 
@@ -34,25 +34,25 @@ This is the canonical ordered queue. Detailed scope, acceptance and implementati
 | 190 | RB-026 | #310 | P1 | DONE | Reintegrate the Builder Cockpit workspace | Runtime PR #311; `fe0a5ada`; completion PR #314 |
 | 200 | RB-027 | #317 | P0 | DONE | Empirical persona ranking V2 | Runtime PR #325; `34dadd25`; CI #2392 |
 | 210 | RB-028 | #318 | P1 | DONE | Factual personal move evidence | PR #327; runtime head `9d0a65a5`; CI #2409 |
-| 220 | RB-029 | #319 | P1 | READY | Opponent preparation and computed coverage V2 | Planned |
-| 230 | RB-030 | #320 | P1 | READY | Single-dialog Builder setup V2 | Planned |
-| 240 | RB-031 | #321 | P1 | PROPOSED | Cockpit evidence hierarchy V2 | Depends on RB-027–RB-029 semantics |
+| 220 | RB-029 | #319 | P1 | DONE | Opponent preparation and computed coverage V2 | PRs #331/#333; policy `2026-08-opponent-preparation-v1` |
+| 230 | RB-030 | #320 | P1 | DONE | Single-dialog Builder setup V2 | PR #335; `9bfcf3f5`; CI #2478 |
+| 240 | RB-031 | #321 | P1 | DONE | Cockpit evidence hierarchy V2 | PR #336; `e6c024af`; CI #2486 |
 
 ## Current execution state
 
 - The deterministic Builder capability chain, opening-knowledge service, course integration and RB-026 Cockpit are complete in runtime.
-- RB-027 / #317 is complete in runtime. Preset `USER_MOVE` personas use versioned empirical selected-population, Masters and bounded objective evidence with exact-position baselines.
-- RB-028 / #318 is complete on PR #327. Candidate Decision V4 carries factual exact-position Common/Rare/New, all-indexed familiarity, recency/share, sample-qualified position-relative result context and effective personal-history scope without adding new preset-persona ranking authority.
-- RB-029 / #319 is the next unclaimed policy task: opponent turns become preparation priority and coverage becomes computed feedback rather than setup/persona intent.
-- RB-030 / #320 simplifies normal launch to one dialog with side/scope, speed, rating target and persona exactly once; it should coordinate with target-contract changes from RB-029.
-- RB-031 / #321 integrates the final evidence semantics into the existing Cockpit after RB-029 stabilizes.
-- RB-016 remains blocked; its useful cohort is post-V2 real usage rather than the semantics being replaced.
+- Builder V2 is integrated through RB-027–RB-031: empirical preset `USER_MOVE` personas, factual exact-position personal evidence, opponent preparation/computed coverage, the single-dialog setup, and the final Cockpit evidence hierarchy are all delivered.
+- RB-029's corrected opponent authority uses `2026-08-opponent-preparation-v1`, recommends before final truncation, defaults the recommended set selected, and reports selected target-population coverage without treating coverage as setup intent.
+- RB-030 keeps one normal setup dialog with side/scope, speed, rating target and one persona; common first-move/custom exact roots reuse the existing start/session path while V1 coverage/theory fields remain fixed compatibility data rather than user choices.
+- RB-031 preserves the RB-026 three-zone Cockpit while foregrounding authoritative V2 evidence and removing normal ECO plus obsolete Target/Profile-fit presentation.
+- RB-016 remains blocked; its useful cohort is now explicitly post-V2 real usage rather than semantics still being replaced.
 
 ## Queue recommendation
 
-1. RB-029 / #319 — next unclaimed shared candidate-policy change; preserve RB-009 reducer/queue semantics and consume RB-028 factual personal encounter evidence as context.
-2. RB-030 / #320 — simplify setup after V2 target/coverage compatibility is clear.
-3. RB-031 / #321 — final Cockpit integration over the settled V2 user/opponent evidence contracts.
-4. RB-016 / #104 — remain blocked until sufficient post-V2 training and follow-up-game evidence exists.
+There is no unclaimed READY Builder implementation task at this checkpoint.
+
+1. RB-016 / #104 remains BLOCKED until sufficient post-V2 Builder/course material has been built, trained and encountered in later games.
+2. Do not fabricate a replacement calibration task merely because RB-027–RB-031 are complete; new work requires new evidence and a new immutable RB task/issue.
+3. If real usage satisfies the RB-016 gate, re-check its task contract and promote it through the normal claim protocol before implementation/research.
 
 GitHub program tracker: #105. GitHub Issues own execution status; repository task files own detailed scope and acceptance.

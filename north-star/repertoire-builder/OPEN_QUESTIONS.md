@@ -1,8 +1,8 @@
 # Repertoire Builder Open Questions
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
-Open questions are not decisions. Resolve them in the assigned task and update `DECISIONS.md` when a product decision becomes locked, revised, or rejected.
+Open questions are not decisions. Resolve them in an assigned task and update `DECISIONS.md` when a product decision becomes locked, revised, or rejected.
 
 ## Settled foundations
 
@@ -24,112 +24,75 @@ The following remain settled and are not reopened by Builder V2:
 
 ## Builder V2 user-move ranking — RB-027 / #317
 
-Status: resolved by RB-027. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`.
+Status: resolved. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`.
 
-### Locked implementation policy
+Locked current policy includes role-specific personas, exact-position target-side baselines, 20-game selected-population and 10-game Masters authority floors, Surprise rarity/overperformance safeguards, bounded stored-engine authority, and explicit versioned weights/guardrails through `2026-08-empirical-persona-v2`.
 
-- Balanced/Solid/Aggressive/Surprise apply only to the repertoire side's move.
-- Selected-population and Masters performance are evaluated against the exact-position target-side baseline rather than a fixed 50% score.
-- Preset ranking authority is selected-population, Masters, and bounded objective evidence; opening classification/knowledge, Player Chess Profile fit, personal history, and existing-course coverage remain inspectable context rather than preset-persona rank authority.
-- Empirical preset population evidence requires at least 20 games; Masters evidence requires at least 10 games.
-- Surprise is an uncommon viable practical outlier. Its rarity signal is gated until selected-population performance exceeds the position baseline by at least 3 percentage points.
-- Bounded Surprise discovery uses the existing wider selected-population seed payload while keeping the final public candidate list bounded.
-- Stored objective evidence is authoritative only for legal, internally consistent roots with depth at least 12 and a score/mate value. Illegal, contradictory-root/PV, duplicate-later, shallow, or unscored lines cannot poison the objective baseline.
-- Numeric weights and objective-loss guardrails are versioned implementation policy, recorded in the closure report and ranking tests.
-- Manually requested legal candidates use the same deterministic ranking policy and retain their true rank.
-- Generated AI explanation remains explanation-only and may not rank, mutate eligibility, Builder state, or course data.
-
-### Future calibration, not an RB-027 blocker
-
-Representative production usage may justify changing weights, sample floors, overperformance thresholds, engine depth requirements, or objective guardrails. Such changes require an explicit new ranking-policy version and evidence-backed task; they are not open implementation questions for RB-027.
-
-Owner: future versioned calibration work if production evidence warrants it.
+Future calibration requires representative evidence and a new ranking-policy version; it is not unfinished RB-027 work.
 
 ## Personal move familiarity and performance — RB-028 / #318
 
-Status: resolved by RB-028. See `reports/RB-028-2026-08-10-personal-move-evidence-closure.md`.
+Status: resolved. See `reports/RB-028-2026-08-10-personal-move-evidence-closure.md`.
 
-### Locked implementation policy
+Locked current policy `2026-08-personal-move-v1` defines factual exact-position Common/Rare/New, all-indexed familiarity, recency, move share, sample-qualified result context and effective history scope. Result-less games can strengthen familiarity but not result confidence. These facts do not become hidden preset persona rank authority.
 
-- Builder shows exact-position factual personal history rather than broad Profile Aligned/Conflict as move familiarity.
-- Familiarity uses all eligible indexed history; recency is shown separately.
-- `COMMON` requires at least 5 distinct indexed games and at least 20% of the user's move choices from the exact position.
-- Any previously played move below the Common policy is `RARE`; a legal candidate absent from successfully loaded personal history is `NEW`.
-- Repeated occurrences in one game affect exact-position move share through occurrences, while familiarity game count remains distinct by game.
-- Result context uses W/D/L-qualified games only and requires at least 10 known-result games.
-- Result performance is compared with the user's result baseline from the same exact position; +/-5 percentage points separates above/below from neutral.
-- Result-less indexed games can establish familiarity and recency without strengthening result confidence.
-- Candidate Decision V4 exposes effective account, side, rated, speed and explicit all-indexed-history scope with the factual fields.
-- The new all-history/context fields do not enter the existing Candidate Ranking personal input; personal history remains primarily informational in V2.
-
-### Future calibration, not an RB-028 blocker
-
-Production evidence may justify different Common/Result sample thresholds or wording. Any such change requires a new personal-evidence policy version rather than silently changing the meaning of `2026-08-personal-move-v1`.
-
-Owner: future versioned calibration work if production evidence warrants it.
+Future threshold/copy calibration requires a new personal-evidence policy version.
 
 ## Opponent preparation and computed coverage — RB-029 / #319
 
-### Locked direction
+Status: resolved after original PR #331 plus corrective PR #333. See `reports/RB-029-2026-08-10-opponent-preparation-closure.md`.
 
-- Opponent replies are preparation priorities, not persona/target/profile fit decisions.
-- Primary evidence is peer relevance, personal encounters, objective challenge, and course state.
-- Coverage is calculated from selected replies and shown as feedback, not configured in setup.
-- The user can add/remove/defer/ignore responses before acceptance.
+### Locked current policy
 
-### Questions to resolve
+- opponent replies are preparation priorities, not persona/target/profile fit decisions;
+- policy version is `2026-08-opponent-preparation-v1`;
+- source discovery includes bounded engine, target population, Masters, exact-position personal replies, opponent-side course context and explicit manual inclusion before final truncation;
+- target-population evidence requires at least 20 games;
+- population relevance uses the greater of 3% absolute frequency or 20% of the strongest observed reply at the exact position;
+- at least three exact-position personal encounters independently qualify a reply;
+- forced mate against the repertoire side or at least 100 cp objective challenge independently qualifies danger;
+- course coverage/transposition is inspectable ordering context but does not alone make a long-tail reply recommended;
+- recommended replies default selected and remain individually editable/resettable;
+- selected coverage is the sum of usable target-population contributions of selected replies and remains unavailable when no usable contribution exists;
+- AI explanation, API policy provenance and Builder UI consume the same role-aware authority.
 
-- What deterministic rule creates the recommended response set without reintroducing a hidden fixed coverage percentage?
-- When should a low-frequency but objectively challenging response enter the recommended set?
-- When should repeated personal encounters promote a response that is uncommon in the target population?
-- How should sparse public evidence affect selection versus warning copy?
-- Does Masters evidence materially improve opponent preparation priority or only the detail view?
-- How should existing course coverage affect recommended selection without hiding important gaps?
-- Should cumulative coverage include responses with insufficient/stale population evidence, and if not how is that communicated?
-
-Owner: RB-029 / #319.
+Future opponent-policy recalibration requires representative evidence and an explicit policy-version change.
 
 ## Single-dialog setup — RB-030 / #320
 
-### Locked direction
+Status: resolved. See `reports/RB-030-2026-08-11-single-dialog-setup-v2-closure.md`.
+
+### Locked current behavior
 
 - normal setup is one dialog;
 - persona appears exactly once;
-- normal controls are side/starting scope, speed population, rating target, and persona;
-- coverage percentage and hard maximum-theory-burden controls leave the normal setup surface.
+- visible controls are side/starting scope, speed population, rating target, and persona;
+- coverage percentage and hard maximum-theory-burden controls are absent from normal setup;
+- White/Black common first-move scopes use `1.e4`, `1.d4`, `1.c4`, and `1.Nf3` roots;
+- `Other` accepts FEN, PGN, SAN or UCI and resolves to an exact draft-root FEN;
+- exact course-review/opponent-gap launches preserve their exact source position and do not expose a misleading broader scope choice;
+- V1 target compatibility remains fixed at coverage `80` and theory ceiling `HIGH`, with `HIGH` deliberately non-restrictive so an invisible setup value cannot reject high-theory candidates;
+- no Builder-session persistence or automatic course creation was introduced.
 
-### Questions to resolve
+### Future evidence question
 
-- Which first-move shortcuts provide enough value without turning setup into an opening browser?
-- What should `Other` do: use a small legal-move chooser, board entry, FEN/sequence input, or reuse an existing pattern?
-- For Black, which scope shortcuts are understandable beyond `against 1.e4` and `against 1.d4`?
-- How should exact course-review/profile launches lock or prefill scope without creating a second setup path?
-- Which V1 target fields must remain for snapshot compatibility after the V2 contract is introduced?
-- Is any independent soft theory preference still useful after the empirical personas are tested? This is deferred until evidence exists.
-
-Owner: RB-030 / #320.
+Whether a genuinely understandable independent soft theory preference is useful remains open only as future product evidence. It must not reappear merely to preserve the old classification ceiling.
 
 ## Cockpit evidence hierarchy — RB-031 / #321
 
-### Locked direction
+Status: resolved. See `reports/RB-031-2026-08-10-cockpit-evidence-hierarchy-closure.md`.
 
-- preserve RB-026's three-zone Cockpit;
-- user-move rows foreground engine, peer, Masters, and factual personal history;
-- opponent rows foreground preparation priority and computed coverage;
+### Locked current behavior
+
+- RB-026's three-zone Cockpit remains the product composition;
+- user-move rows/brief foreground engine, target-population, Masters, factual personal and meaningful course evidence;
+- opponent rows foreground RB-029 preparation priority and computed selected coverage;
+- deterministic reason filtering/formatting remains presentation-only and does not recreate ranking in Angular;
 - opening identity/plans remain concise secondary explanation;
-- ECO codes leave the normal Builder UI;
-- ambiguous `target play` wording is replaced by explicit population wording.
+- normal ECO codes and obsolete primary Target/Profile-fit chips are removed;
+- responsive ordering preserves target-population evidence longer than Masters in compressed rows while the full decision brief remains available.
 
-### Questions to resolve
-
-- Which 2–4 facts fit in a candidate row at desktop/tablet widths without losing scanability?
-- How should peer overperformance be phrased when confidence is weak?
-- Which deterministic reasons best explain why #1 outranks #2 without exposing a fake-precision aggregate?
-- How should personal poor-result context be visually strong enough to notice without behaving like a warning/exclusion?
-- Which current classification traits remain useful above the fold after recommendation authority moves to empirical evidence?
-- Can authenticated populated review validate the Cockpit at representative desktop/tablet/mobile widths after the new evidence lands?
-
-Owner: RB-031 / #321.
+Authenticated populated browser/device observation was unavailable during closure and remains observational evidence that can be collected later; it is not unfinished ranking/presentation implementation by itself.
 
 ## Player Chess Profile
 
@@ -137,9 +100,9 @@ The standalone `/progress/profile` capability remains valid. Remaining product q
 
 - Does the profile feel credible/useful across populated desktop/mobile data?
 - Are its opening dimensions understandable without more copy?
-- Which profile conclusions are useful as optional inspiration or entry points once Builder no longer uses broad Profile Fit as a rank component?
+- Which profile conclusions are useful as optional inspiration or entry points now that broad Profile Fit is not Builder rank authority?
 
-Profile changes require their own evidence-backed work and must not be hidden inside RB-027–RB-031.
+Profile changes require their own evidence-backed work and must not be hidden inside completed RB-027–RB-031 tasks.
 
 ## Builder session and persistence
 
@@ -151,7 +114,17 @@ Still open under RB-D024:
 - What expiry/archive/delete behavior would persistence require?
 - How should optimistic conflicts preserve the pure reducer as authority?
 
-No V2 task may add persistence merely because it changes target or candidate contracts.
+No completed V2 task implies persistence simply because target or candidate contracts changed.
+
+## V1 target compatibility
+
+RB-030 preserves the current V1 target shape with fixed compatibility coverage/theory values. A future structural cleanup remains an explicit contract-design question:
+
+- Is a new target contract version justified after enough V2 usage?
+- Which historical/current snapshots require backward parsing or migration?
+- Can compatibility fields be removed without silently changing replay/reproducibility semantics?
+
+This is not a READY implementation task today.
 
 ## Traps
 
@@ -163,11 +136,11 @@ Future questions remain:
 - what engine/sample/editorial policy production evidence requires;
 - how production trap evidence would remain separate from practical Surprise ranking.
 
-No RB-027–RB-031 task may silently turn Surprise into traps integration.
+No completed V2 semantics should silently turn Surprise into traps integration.
 
 ## Outcome feedback — RB-016 / #104
 
-RB-016 remains blocked. Its evidence cohort should be post-V2 so it does not measure superseded persona/profile/coverage semantics as the long-term product model.
+RB-016 remains blocked. Its evidence cohort is post-V2 and requires sufficient real usage before promotion.
 
 Questions remain:
 
@@ -175,6 +148,6 @@ Questions remain:
 - What constitutes recall versus coincidental move choice?
 - How is opening improvement separated from rating/opponent/context changes?
 - When does a deferred branch become newly important from later games?
-- Which post-V2 recommendation metadata must be retained to evaluate adoption honestly?
+- Which V2 recommendation metadata must be retained to evaluate adoption honestly?
 
-Owner: RB-016 / #104 after RB-027–RB-031 and sufficient real use.
+Owner: RB-016 / #104 after sufficient post-V2 Builder/course use, training and follow-up-game evidence.

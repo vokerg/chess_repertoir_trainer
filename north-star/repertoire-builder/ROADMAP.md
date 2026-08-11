@@ -1,6 +1,6 @@
 # Repertoire Builder Roadmap
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 This roadmap records capability stages and decision gates. Detailed implementation history lives in task and report files.
 
@@ -16,21 +16,19 @@ Complete through RB-001, RB-002, RB-003 and RB-018: peer population/level resolu
 
 Complete through RB-004 and RB-005. The deterministic API/contract and authenticated `/progress/profile` experience are integrated.
 
-The profile remains a standalone capability. Builder V2 deliberately stops treating broad profile similarity as direct candidate familiarity/ranking authority.
+The profile remains a standalone capability. Builder V2 deliberately does not treat broad profile similarity as direct candidate familiarity/ranking authority.
 
 ## Stage 3 — V1 target, personas and candidate decisions
 
 Complete through RB-006, RB-013 and RB-007: versioned target intent, editable defaults, deterministic candidate evidence and explainable V1 ranking.
 
-This stage is historical runtime foundation. The 2026-08-09 product review identified semantic revisions rather than discarding the evidence pipeline.
+This stage is historical runtime foundation. The 2026-08-09 product review revised its decision semantics without discarding the evidence pipeline or historical target snapshots.
 
 ## Stage 4 — visual decision proof and Cockpit
 
-Complete through RB-008 and RB-026.
+Complete through RB-008, RB-026 and RB-031.
 
-The accepted product composition remains one routed board-first workbench. RB-026 integrated the three-zone Cockpit through PR #311: board/candidates, focused decision context, and branch/action controls remain visible together on desktop.
-
-Builder V2 preserves this composition and changes its evidence hierarchy.
+RB-026 established the three-zone, board-first Cockpit: board/candidates, focused decision context, and branch/action controls remain visible together on desktop with responsive stacking. RB-031 completed the V2 evidence hierarchy inside that composition without creating a second client-side ranking model.
 
 ## Stage 5 — Builder lifecycle and MVP
 
@@ -52,9 +50,9 @@ Production traps remain separate from normal Surprise semantics. Generated inter
 
 RB-016 remains blocked.
 
-The useful evaluation cohort is explicitly **post-V2**. Outcome work should not calibrate semantics that are still being revised by the V2 queue.
+The evaluation cohort is explicitly **post-V2**. V2 is now integrated, but the evidence gate still requires enough Builder/course material to be built, trained and encountered in later games before adoption/outcome work is meaningful.
 
-Required future evidence still includes adoption, recall, opening-position quality, results and regression/coverage signals after Builder-created material has been trained and encountered in later games.
+Required future evidence includes adoption, recall, opening-position quality, results and regression/coverage signals after real post-V2 use.
 
 ## Stage 9 — opening knowledge enrichment
 
@@ -64,13 +62,13 @@ Opening knowledge is current runtime explanatory evidence with complete strategi
 
 ## Stage 10 — Builder V2 decision model
 
-Product direction locked on 2026-08-09. See [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md).
+Complete through RB-027–RB-031. See [`BUILDER_V2_PLAN.md`](BUILDER_V2_PLAN.md) for the design record.
 
 ### 10.1 RB-027 / #317 — empirical user-move personas
 
 Status: **DONE**, P0.
 
-Runtime PR #325 (`34dadd25`) implements versioned Balanced/Solid/Aggressive/Surprise `USER_MOVE` policies over exact-position selected-population, Masters and bounded objective evidence. The Candidate Decision V3 contract exposes position baselines/deltas; Surprise uses rarity plus material peer overperformance with explicit sample/objective safeguards. Final runtime CI #2392 is green.
+Runtime PR #325 (`34dadd25`) implements versioned Balanced/Solid/Aggressive/Surprise `USER_MOVE` policies over exact-position selected-population, Masters and bounded objective evidence. Final runtime CI #2392 is green.
 
 Gate: passed. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closure.md`.
 
@@ -78,55 +76,53 @@ Gate: passed. See `reports/RB-027-2026-08-10-empirical-persona-ranking-v2-closur
 
 Status: **DONE**, P1.
 
-Runtime PR #327 advances Candidate Decision to V4 and replaces primary Builder Profile Fit with exact-position Common/Rare/New, all-indexed game count/share, last-played recency, and sample-qualified result context versus the same-position baseline. Effective account/side/rated/speed/history scope remains inspectable. Result-less indexed games count for familiarity without strengthening result confidence or legacy personal ranking inputs.
-
-The factual policy is versioned as `2026-08-personal-move-v1`; the ranking policy remains `2026-08-empirical-persona-v2`. Runtime head `9d0a65a5` passed CI #2409.
+PR #327 advances Candidate Decision to V4 and replaces primary Builder Profile Fit with exact-position Common/Rare/New, all-indexed game count/share, recency, effective history scope and sample-qualified result context versus the same-position baseline. The factual policy is `2026-08-personal-move-v1`; preset ranking remains `2026-08-empirical-persona-v2`.
 
 Gate: passed. See `reports/RB-028-2026-08-10-personal-move-evidence-closure.md`.
 
 ### 10.3 RB-029 / #319 — opponent preparation and computed coverage
 
-Status: **READY**, P1.
+Status: **DONE**, P1.
 
-Opponent turns become preparation priority driven by peer relevance, personal encounters, objective challenge and course state. Remove persona/profile judgment from opponent moves. Recommend a response set and show cumulative selected target-population coverage as feedback.
+PR #331 introduced the V2 opponent policy and PR #333 corrected the complete authority boundary after a post-merge audit. `2026-08-opponent-preparation-v1` discovers and prioritizes replies before final truncation using target-population relevance, personal encounters, objective danger and course context. Recommended replies default selected, remain editable, and selected coverage is factual target-population share rather than setup intent.
 
-Gate: existing RB-009 multi-selection/branch semantics remain unchanged. RB-028 factual personal encounter evidence is available as separated context.
+Gate: passed. See `reports/RB-029-2026-08-10-opponent-preparation-closure.md`.
 
 ### 10.4 RB-030 / #320 — single-dialog setup
 
-Status: **READY**, P1.
+Status: **DONE**, P1.
 
-Normal setup remains one dialog with side/starting scope, speed population, rating target and persona exactly once. Remove normal coverage and hard theory controls. Reuse existing starting-position/session mechanics for common first-move scopes.
+PR #335 delivers one normal setup dialog with side/starting scope, speed population, rating target and persona exactly once. Common first-move scopes and custom FEN/PGN/SAN/UCI input resolve through the existing Builder start path. Exact course launches stay exact. Coverage/theory are not normal setup controls; V1 target fields remain fixed compatibility data (`80`, `HIGH`) for reproducible snapshots.
 
-Gate: V2 target-contract compatibility is clear after RB-029 shared changes.
+Final head `621ee6abb9a311646859357f8de41d4a6c4528e7` passed CI #2478 and squash-merged as `9bfcf3f5b4337c827719f5ee170bcd5f67b6f3c2`.
+
+Gate: passed. See `reports/RB-030-2026-08-11-single-dialog-setup-v2-closure.md`.
 
 ### 10.5 RB-031 / #321 — Cockpit evidence hierarchy
 
-Status: **PROPOSED**, P1.
+Status: **DONE**, P1.
 
-Integrate the settled V2 evidence into the RB-026 Cockpit. Foreground peer/Masters/engine and factual personal evidence on user turns; preparation priority/computed coverage on opponent turns; keep opening knowledge as concise explanation; remove normal ECO and obsolete fit badges.
+PR #336 preserves the RB-026 Cockpit and foregrounds authoritative V2 evidence: engine, target-population, Masters, factual personal context and meaningful course relationship on user turns; RB-029 preparation priority and coverage on opponent turns. Opening identity/plans remain secondary; normal ECO and obsolete primary Target/Profile-fit chips are removed.
 
-Gate: RB-029 opponent semantics/contracts are stable enough that Angular does not invent a second recommendation model.
+Final head `a7ed94bdad896bc852685ad25de1dc87bee89e8f` passed CI #2486 and squash-merged as `e6c024afec1753838dec900181ca4023d6114676`.
+
+Gate: passed. See `reports/RB-031-2026-08-10-cockpit-evidence-hierarchy-closure.md`.
 
 ## Release condition
 
-The deterministic Builder remains production runtime while V2 is implemented incrementally. RB-027 empirical user-move ranking and RB-028 factual personal move evidence are now part of that runtime; remaining V2 stages are incremental work.
-
-V2 is ready as the complete new product authority when:
+The complete Builder V2 decision/presentation authority is integrated:
 
 - [x] user-move personas are empirically calibrated and versioned;
 - [x] exact-position personal familiarity/results replace broad Builder Profile Fit;
-- [ ] opponent turns no longer use persona/profile fit and coverage is computed from selection;
-- [ ] normal setup is simplified to one understandable dialog;
-- [ ] the Cockpit communicates the new evidence hierarchy without losing existing state/course behavior.
+- [x] opponent turns no longer use persona/profile fit and coverage is computed from selection;
+- [x] normal setup is simplified to one understandable dialog;
+- [x] the Cockpit communicates the new evidence hierarchy without losing existing state/course behavior.
 
-Outcome claims remain excluded until RB-016 has sufficient post-V2 evidence.
+This is a product/runtime completion statement, not an outcome claim. Outcome quality remains excluded until RB-016 has sufficient post-V2 evidence.
 
 ## Queue impact
 
-- RB-027 is complete.
-- RB-028 is complete on PR #327 with Candidate Decision V4 factual personal evidence.
-- RB-029 is the next unclaimed candidate-policy task.
-- RB-030 follows target-policy compatibility work.
-- RB-031 integrates the settled V2 semantics into the Cockpit after RB-029.
-- RB-016 remains blocked behind both V2 delivery and real usage.
+- RB-027–RB-031 are complete.
+- There is no unclaimed READY Builder implementation task.
+- RB-016 remains blocked behind sufficient post-V2 real usage and follow-up-game evidence.
+- New Builder work requires a new immutable task/issue unless the RB-016 evidence gate is genuinely satisfied.
