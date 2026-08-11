@@ -1,6 +1,6 @@
 # Onboarding and Data Lifecycle Task Queue
 
-Last updated: 2026-08-09
+Last updated: 2026-08-11
 
 This is the canonical ordered queue. IDs are immutable. GitHub Issues carry execution visibility; task files carry detailed scope, acceptance, and claim metadata.
 
@@ -21,7 +21,7 @@ This is the canonical ordered queue. IDs are immutable. GitHub Issues carry exec
 | 90 | ONB-009 | [#194](https://github.com/vokerg/chess_repertoir_trainer/issues/194) | P0 | PROPOSED | Implement onboarding lifecycle commands | Implementation | ONB-001/002/007/008/017/018; destructive commands remain ONB-019/020/021-owned |
 | 100 | ONB-010 | [#195](https://github.com/vokerg/chess_repertoir_trainer/issues/195) | P1 | PROPOSED | Build functional onboarding and Home re-entry | Implementation | ONB-007/008/009; durable import/preparation; ONB-016; Visual Transformation coordination |
 | 110 | ONB-011 | [#199](https://github.com/vokerg/chess_repertoir_trainer/issues/199) | P0 | PROPOSED | Persist durable account-import runs and scope coverage | Implementation | ONB-002/007; coordinates ONB-004/017/019 schema and lifecycle boundaries |
-| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | PROPOSED | Build durable account-import worker and API lifecycle | Implementation | ONB-007/011; consumes ONB-004 fence/drain contract |
+| 120 | ONB-012 | [#200](https://github.com/vokerg/chess_repertoir_trainer/issues/200) | P0 | REVIEW | Build durable account-import worker and API lifecycle | Implementation | ONB-007/011; consumes ONB-004 fence/drain contract |
 | 130 | ONB-013 | [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201) | P0 | PROPOSED | Implement bounded Lichess import adapter | Implementation | ONB-007/011/012 |
 | 140 | ONB-014 | [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202) | P0 | PROPOSED | Implement bounded Chess.com import adapter | Implementation | ONB-007/011/012 |
 | 150 | ONB-015 | [#203](https://github.com/vokerg/chess_repertoir_trainer/issues/203) | P1 | PROPOSED | Cut over account sync and preparation handoff | Implementation | ONB-013/014; ONB-003/004/007/017/018; coordinates ONB-009/010/020 |
@@ -181,7 +181,9 @@ ONB-023 / #273 delivered the lazy direct-link Angular administrator diagnostics 
 
 ## Deterministic next task
 
-After PR #312 merges, no onboarding implementation task is currently `READY`. Do not infer a new task from numeric order alone: ONB-024, ONB-018, ONB-008 through ONB-015, ONB-019 through ONB-021, ONB-025, and ONB-026 remain `PROPOSED` until their task-file dependencies and promotion gates are satisfied.
+ONB-012 / #200 is in `REVIEW` on PR #352. It remains open and incomplete until review/acceptance and a later completion reconciliation.
+
+No onboarding implementation task is currently `READY`. Do not infer a new task from numeric order alone: ONB-024, ONB-018, ONB-008 through ONB-011, ONB-013 through ONB-015, ONB-019 through ONB-021, ONB-025, and ONB-026 remain `PROPOSED` until their task-file dependencies and promotion gates are satisfied.
 
 ONB-025 / #276 remains `PROPOSED` behind ONB-015. ONB-026 / #280 remains `PROPOSED` until its task-file promotion gates are met. ONB-024 remains `PROPOSED` behind canonical lifecycle services and proven signed reverification.
 
