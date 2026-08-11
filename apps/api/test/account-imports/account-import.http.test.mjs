@@ -8,6 +8,7 @@ const prisma = prismaModule.default;
 const repository = createAccountImportRepository(prisma);
 const suffix = randomUUID();
 const createdAccountIds = [];
+let createdDevUserId;
 let otherUserId;
 
 try {
@@ -17,6 +18,7 @@ try {
   const devUser = existingDevUser ?? await prisma.appUser.create({
     data: { displayName: 'Local user', authProvider: 'dev', authSubject: 'dev-single-user' },
   });
+  if (!existingDevUser) createdDevUserId = devUser.id;
   const userId = devUser.id;
 
   const ownAccount = await prisma.externalAccount.create({
@@ -154,6 +156,9 @@ try {
   }
   if (otherUserId !== undefined) {
     await prisma.appUser.deleteMany({ where: { id: otherUserId } });
+  }
+  if (createdDevUserId !== undefined) {
+    await prisma.appUser.deleteMany({ where: { id: createdDevUserId } });
   }
   await prisma.$disconnect();
 }
