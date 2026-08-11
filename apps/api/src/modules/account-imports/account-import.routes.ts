@@ -120,6 +120,7 @@ const accountImportModule: FastifyPluginAsyncZod = async (app) => {
         operationId: `${action}AccountImportRun`,
         tags: ['Account Imports'],
         summary: `${capitalize(action)} one current-user durable account import`,
+        description: accountImportActionDescription(action),
         params: accountImportRunParamsSchema,
         response: {
           200: accountImportRunResponseSchema,
@@ -163,6 +164,7 @@ const accountImportModule: FastifyPluginAsyncZod = async (app) => {
       operationId: 'retryAccountImportRun',
       tags: ['Account Imports'],
       summary: 'Retry one failed or cancelled current-user account import',
+      description: 'Bodyless action: the persisted terminal import run supplies the immutable account, scope, range, and retry lineage for the new user-action run.',
       params: accountImportRunParamsSchema,
       response: {
         202: createAccountImportRunResponseSchema,
@@ -202,4 +204,15 @@ export default accountImportModule;
 
 function capitalize(value: string): string {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
+function accountImportActionDescription(action: 'pause' | 'resume' | 'cancel'): string {
+  switch (action) {
+    case 'pause':
+      return 'Bodyless action: the import run id selects the persisted run to pause, and a running executor acknowledges the pause only after it has quiesced.';
+    case 'resume':
+      return 'Bodyless action: the import run id selects the persisted paused run to return to the durable queue with its immutable scope and range unchanged.';
+    case 'cancel':
+      return 'Bodyless action: the import run id selects the persisted run to cancel, and a running executor acknowledges cancellation only after it has quiesced.';
+  }
 }
