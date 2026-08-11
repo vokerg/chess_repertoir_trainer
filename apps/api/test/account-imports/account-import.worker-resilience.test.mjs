@@ -7,6 +7,7 @@ import {
 } from '../../dist/modules/account-imports/account-import.worker.service.js';
 
 await settlementFailureLeavesClaimForRecoveryAndKeepsWorkerAlive();
+await controlRequestStopsHeartbeatRenewal();
 
 async function settlementFailureLeavesClaimForRecoveryAndKeepsWorkerAlive() {
   const run = claimedRun(1, 'ACCOUNT_IMPORT:test-settlement-failure');
@@ -68,6 +69,66 @@ async function settlementFailureLeavesClaimForRecoveryAndKeepsWorkerAlive() {
     false,
     'settlement telemetry does not expose raw database/provider error messages',
   );
+}
+
+async function controlRequestStopsHeartbeatRenewal() {
+  const run = claimedRun(2, 'ACCOUNT_IMPORT:test-control-stale-fallback');
+  let claimed = false;
+  let heartbeatCalls = 0;
+  let acknowledged = false;
+  let releaseExecutor;
+  let worker;
+
+  const repository = repositoryStub({
+    async claimNextRun() {
+      if (claimed) return null;
+      claimed = true;
+      return run;
+    },
+    async heartbeatRun(importRunId, workKey) {
+      assert.equal(importRunId, run.id);
+      assert.equal(workKey, run.workKey);
+      heartbeatCalls += 1;
+      return 'CANCEL_REQUESTED';
+    },
+    async acknowledgeRequestedControl(importRunId, workKey) {
+      assert.equal(importRunId, run.id);
+      assert.equal(workKey, run.workKey);
+      acknowledged = true;
+      worker.requestStop('control acknowledgement proved');
+      return 'CANCELLED';
+    },
+  });
+
+  const executors = new AccountImportExecutorRegistry([{
+    provider: 'LICHESS',
+    async execute() {
+      await new Promise((resolve) => {
+        releaseExecutor = resolve;
+      });
+      return { kind: 'COMPLETED' };
+    },
+  }]);
+
+  worker = createAccountImportWorker({
+    repository,
+    executors,
+    config: workerConfig({ heartbeatIntervalMs: 5, staleAfterMs: 20 }),
+    logger: {
+      info() {},
+      warn() {},
+      error() {},
+    },
+  });
+
+  const runPromise = worker.run();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(heartbeatCalls, 1, 'control observation stops renewing the claim heartbeat');
+  assert.equal(typeof releaseExecutor, 'function', 'executor is still running after the abort request');
+  releaseExecutor();
+  await runPromise;
+
+  assert.equal(acknowledged, true, 'control is acknowledged after the executor eventually quiesces');
 }
 
 function repositoryStub(overrides) {
