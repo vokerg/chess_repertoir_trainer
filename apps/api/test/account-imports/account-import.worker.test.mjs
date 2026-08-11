@@ -67,7 +67,15 @@ async function cancellationAcknowledgesOnlyAfterExecutorStops() {
     config: workerConfig({ heartbeatIntervalMs: 5, staleAfterMs: 20 }),
     logger: silentLogger,
   });
-  await worker.run();
+  const watchdog = setTimeout(
+    () => worker.requestStop('cancellation heartbeat test watchdog'),
+    1_000,
+  );
+  try {
+    await worker.run();
+  } finally {
+    clearTimeout(watchdog);
+  }
 
   assert.equal(signalObserved, true);
   assert.equal(acknowledged, true);
