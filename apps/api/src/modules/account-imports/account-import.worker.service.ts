@@ -322,6 +322,15 @@ export function createAccountImportWorker(input: CreateAccountImportWorkerInput)
         }
         throw error;
       }
+    } catch (error) {
+      logger.error(
+        {
+          ...safeErrorContext(error),
+          importRunId: run.id,
+          provider: run.provider,
+        },
+        'Could not persist account import settlement; claim remains for stale recovery',
+      );
     } finally {
       if (activeController === controller) activeController = null;
     }
