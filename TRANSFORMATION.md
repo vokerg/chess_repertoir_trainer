@@ -4,13 +4,18 @@ This file is the stable entry point for ChatGPT, Copilot, Codex, and human sessi
 
 ## Current checkpoint
 
-Phase 3 source-verifiable implementation is complete through VT-302 PR #337. VT-301 page-family rollout and authenticated-route classification remain complete for the historical route registry at that checkpoint: 34 URLs guarded by `authGuard`, 29 unique guarded route components, and three unguarded compatibility redirects into guarded destinations.
+The Visual Transformation Program is complete as of 2026-08-11. Phase 1 shell/entry-point work, Phase 2 representative workflows, VT-301 systematic rollout, and VT-302 source-verifiable polish are integrated on `main`.
 
-The current route registry contains 35 guarded URL entries and 30 unique guarded route components because `/admin` / `AdminDiagnosticsPageComponent` was added later by the Onboarding program. PR #337 audited that current registry, standardized the remaining route-level generic async states on the shared state-message contract, and removed the proven-orphaned global `.library-*` presentation namespace. Exact implementation head `ed1be6e064490e84746b425db5c5c1b69c60791e` passed CI #2537 (`31457402173`), PR #337 was squash-merged as `11b22206173000fa29f3f9526eec926901c8808c`, and that integrated squash passed post-merge `main` CI #2540 (`31457752774`).
+The current authenticated route registry contains 35 guarded URL entries and 30 unique guarded route components. VT-302 PR #337 audited that current registry, standardized the remaining route-level generic async states on the shared state-message contract, removed the proven-orphaned global `.library-*` presentation namespace, and closed the identified source-verifiable transformation residuals. PR #337 was squash-merged as `11b22206173000fa29f3f9526eec926901c8808c`; its integrated squash passed post-merge `main` CI #2540 (`31457752774`). Documentation reconciliation PR #349 was then squash-merged as `37abcc6539fbeb3692d2ebc5976a6713d3032db7` after exact-head CI #2544 (`31458148632`) passed.
 
-Issue #133 / VT-302 remains open because its remaining acceptance boundary is no longer ordinary source implementation: functional onboarding is owned by ONB-008/#193, ONB-009/#194 and ONB-010/#195, while authenticated browser, screen-reader, keyboard, zoom/reflow, rendered-contrast and representative-device evidence remains unobserved in the repository-connector environment. Do not invent a competing onboarding flow or claim unavailable manual evidence merely to close the transformation program.
+Program closure deliberately dispositions two remaining boundaries rather than claiming they passed:
 
-The authoritative integrated history, validation, residual risks, and completion boundary are in [`transformation/STATUS.md`](transformation/STATUS.md) and the focused reports under [`transformation/reports`](transformation/reports). The historical VT-301 route table remains in [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues remain authoritative for live review, merge, closure, readiness, blocker, and active-claim state.
+- functional first-run/readiness/re-entry work remains owned by the separate Onboarding program (ONB-008/#193, ONB-009/#194, ONB-010/#195);
+- authenticated browser, screen-reader, complete keyboard, zoom/reflow, rendered-contrast, representative-device, and the small Home elevation-normalization observations remain unobserved residual evidence.
+
+Those items are follow-up/product-evidence concerns, not unfinished Visual Transformation implementation. They must never be rewritten as observed passes merely because this program is closed.
+
+The authoritative integrated history, validation, and residual-risk disposition are in [`transformation/STATUS.md`](transformation/STATUS.md) and the focused reports under [`transformation/reports`](transformation/reports). The historical VT-301 route table remains in [`transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md`](transformation/reports/VT_301_ROUTE_INVENTORY_AND_COMPLETION.md). GitHub issues #122 and #133 own the final completion state.
 
 ## Branch and merge model
 
@@ -40,30 +45,25 @@ Code and tests are the source of truth for runtime behavior. Repository transfor
 
 ## Task selection
 
-Use issue #122 and its child issues:
+The Visual Transformation execution queue is closed. Issues #123–#133 constitute the completed program and must not be treated as an active deterministic task queue.
 
-1. continue the sole active `IN_PROGRESS` execution issue only while accepted executable scope remains;
-2. do not force implementation on an issue whose remaining acceptance is explicitly blocked on another program or unavailable manual evidence;
-3. otherwise consider only open issues whose repository state is `READY`;
-4. exclude unresolved dependencies and already claimed work;
-5. choose the highest priority and then the lowest numeric order;
-6. comment to claim the issue before implementation;
-7. create the recorded task branch from current `main`;
-8. target the pull request at `main`;
-9. keep claim, branch, PR, blocker, and completion state in the issue;
-10. close only after approved squash merge and documentation reconciliation.
+For future visual work:
 
-The exact active, blocked, or ready task can change independently of this file. Resolve it from the live issue queue and `transformation/STATUS.md`.
+1. do not reopen a completed transformation issue merely because a later product program changes the application;
+2. create or explicitly reopen narrowly scoped executable work only when a concrete visual defect or approved follow-up exists;
+3. preserve the production token, primitive, route-layout, accessibility, and evidence boundaries established by this program;
+4. keep Onboarding-program work in its owning Onboarding issues rather than reclassifying it as VT-302;
+5. continue to record unobserved manual evidence as unobserved unless it is actually performed.
 
 ## Delivery contract
 
-Every meaningful transformation slice must:
+Every meaningful future visual slice must:
 
 - inspect and preserve the existing route, store/service, API, workflow, board, engine, persistence, and accessibility ownership unless the task explicitly changes it;
 - use the approved production design-token and shared-primitive boundaries;
 - avoid promoting feature-owned state or workflow components into generic presentation abstractions without evidence;
-- update the relevant master plan, decision, status, working-rule, and report records;
+- update the relevant plan, decision, status, working-rule, and report records when their accepted contracts change;
 - run the narrowest relevant checks and the required affected acceptance gates;
 - record deferred browser evidence as deferred, never as an observed pass.
 
-Do not bypass the issue queue, target the retired integration branch, or merge without explicit approval.
+Do not revive the retired integration branch or bypass the normal issue/PR review model for later visual work.
