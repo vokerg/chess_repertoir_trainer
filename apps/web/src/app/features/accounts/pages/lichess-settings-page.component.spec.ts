@@ -19,6 +19,7 @@ describe('LichessSettingsPageComponent', () => {
       externalAccountId: 7,
       scopes: ['puzzle:read'],
       connectedAt: '2026-08-05T04:00:00.000Z',
+      expiresAt: null,
     },
   };
 
