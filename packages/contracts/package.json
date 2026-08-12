@@ -29,6 +29,7 @@
       "default": "./dist/candidate-decision/index.js"
     },
     "./imported-games": {
+      "webpack": "./src/imported-games/index.ts",
       "types": "./dist/imported-games/index.d.ts",
       "default": "./dist/imported-games/index.js"
     },
@@ -37,6 +38,7 @@
       "default": "./dist/board-images/index.js"
     },
     "./courses": {
+      "webpack": "./src/courses/index.ts",
       "types": "./dist/courses/index.d.ts",
       "default": "./dist/courses/index.js"
     },
@@ -61,6 +63,7 @@
       "default": "./dist/opening-explorer/index.js"
     },
     "./player-chess-profile": {
+      "webpack": "./src/player-chess-profile/index.ts",
       "types": "./dist/player-chess-profile/index.d.ts",
       "default": "./dist/player-chess-profile/index.js"
     },
