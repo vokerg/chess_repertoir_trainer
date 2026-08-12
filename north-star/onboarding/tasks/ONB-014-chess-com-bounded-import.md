@@ -1,6 +1,6 @@
 # ONB-014 — Implement bounded Chess.com import adapter
 
-Status: IN_PROGRESS
+Status: REVIEW
 
 Priority: P0
 
@@ -16,13 +16,13 @@ Target branch: `main`
 
 Claimed branch: `account-import/onb-014-chess-com-adapter`
 
-Pull request: pending
+Pull request: [#356](https://github.com/vokerg/chess_repertoir_trainer/pull/356)
 
 Claimed by: ChatGPT / account-import implementation session
 
 Claimed at: 2026-08-12
 
-Claim scope: bounded Chess.com calendar-month planning and serial archive traversal, cancellation-aware retry/backoff and validators, shared normalization, provider-neutral guarded batch/window commits, exact checkpoint/coverage progression, worker registration, provider fixtures/canary harness, and focused tests; no Lichess, Angular, account-route cutover, ONB-019 persistence, destructive execution, or preparation orchestration
+Claim scope: bounded Chess.com calendar-month planning and serial archive traversal, cancellation-aware retry/backoff and validators, shared normalization, provider-neutral guarded plan/batch/window commits, exact checkpoint/coverage progression, worker registration, provider fixtures/canary harness, and focused tests; no Lichess, Angular, account-route cutover, ONB-019 persistence, destructive execution, or preparation orchestration
 
 Promoted at: 2026-08-11 after ONB-012 runtime merge and completion reconciliation PR #354
 
@@ -92,6 +92,14 @@ Provider network, retry delays, parsing, and normalization remain outside databa
 
 ## Completion
 
-Report: `reports/ONB-014-2026-08-12-chess-com-bounded-import.md` (implementation evidence in progress)
+Runtime pull request: [#356](https://github.com/vokerg/chess_repertoir_trainer/pull/356)
+
+Implementation report: `reports/ONB-014-2026-08-12-chess-com-bounded-import.md`
+
+Self-review addendum: `reports/ONB-014-2026-08-12-self-review-addendum.md`
+
+Runtime validation: exact runtime head `5e530a2a2b001ae0ee2ce42872b45c9b8f86a085` passed GitHub Actions CI #2666 after the self-review fixes.
+
+Residual completion gate: one real low-volume Chess.com canary remains required before general release / task completion; the current shell cannot reach the provider host. Keep #202 open until that evidence and completion reconciliation are recorded.
 
 Completed at: none
