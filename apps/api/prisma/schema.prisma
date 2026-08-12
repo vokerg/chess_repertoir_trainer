@@ -777,6 +777,8 @@ model Course {
   user             AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name             String
   description      String?
+  side             String    @default("WHITE")
+  coverKey         String?
   contentRevision  Int       @default(1)
   contentChangedAt DateTime  @default(now())
   chapters         Chapter[]

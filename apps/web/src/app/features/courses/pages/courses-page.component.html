@@ -1,45 +1,80 @@
 <section class="courses-page stack">
-  <app-page-header title="Courses" subtitle="Manage repertoires, chapters, and training lines." />
+  <app-page-header
+    title="Courses"
+    subtitle="Build focused repertoires, then use your games to find what needs attention."
+    [stats]="headerStats()"
+  />
 
   <div class="course-layout">
     <app-panel
       class="course-list-panel"
-      title="Your courses"
-      subtitle="Focused training spaces for complete repertoire branches."
-      [stats]="loadedCourseStats()"
+      title="Your repertoire"
+      subtitle="Each course is a complete repertoire for one side of the board."
     >
+      <div class="course-toolbar" aria-label="Filter courses by training side">
+        <div class="side-filter">
+          <button type="button" [class.active]="sideFilter() === 'ALL'" (click)="sideFilter.set('ALL')">All</button>
+          <button type="button" [class.active]="sideFilter() === 'WHITE'" (click)="sideFilter.set('WHITE')">White</button>
+          <button type="button" [class.active]="sideFilter() === 'BLACK'" (click)="sideFilter.set('BLACK')">Black</button>
+        </div>
+        <span class="visible-count">{{ courseCards().length }} shown</span>
+      </div>
+
       @if (store.loading()) {
         <app-state-message tone="loading" message="Loading courses..." />
       }
-      @if (store.error(); as error) {
-        <app-state-message tone="error" [message]="error" />
+      @if (store.error()) {
+        <app-state-message tone="error" [message]="store.error()!" />
       }
       @if (!store.loading() && !store.error() && store.courses().length === 0) {
         <app-state-message tone="empty" message="No courses yet. Create your first repertoire in the setup panel." />
+      } @else if (!store.loading() && !store.error() && courseCards().length === 0) {
+        <app-state-message tone="empty" message="No courses match this color filter." />
       }
-      @if (store.courses().length > 0) {
-        <div class="course-list">
-          @for (course of store.courses(); track course.id) {
-            <article class="course-card">
-              <div class="course-card-copy">
-                <div class="course-card-heading">
-                  <h3>{{ course.name }}</h3>
-                  <span class="course-id">#{{ course.id }}</span>
-                </div>
-                <p>{{ course.description || 'A focused training space for a complete repertoire branch.' }}</p>
-              </div>
 
-              <div class="course-actions">
-                <a [routerLink]="['/courses', course.id]" class="course-action course-action-primary">Open course</a>
-                <a [routerLink]="['/courses', course.id, 'review']" class="course-action">Review</a>
-                <button
-                  type="button"
-                  class="course-action course-action-danger"
-                  (click)="confirmDeleteCourse(course)"
-                  [disabled]="store.deletingId() === course.id"
-                >
-                  {{ store.deletingId() === course.id ? 'Deleting...' : 'Delete' }}
-                </button>
+      @if (courseCards().length > 0) {
+        <div class="course-grid">
+          @for (card of courseCards(); track card.course.id) {
+            <article class="course-card">
+              <a class="course-cover" [routerLink]="['/courses', card.course.id]" [attr.aria-label]="'Open ' + card.course.name">
+                <img [src]="card.cover.imageUrl" [alt]="card.cover.alt" />
+                <span class="side-badge">{{ card.sideLabel }}</span>
+              </a>
+
+              <div class="course-card-body">
+                <div class="course-card-heading">
+                  <div>
+                    <span class="course-kicker">Course {{ card.course.id }}</span>
+                    <h3>{{ card.course.name }}</h3>
+                  </div>
+                  @if (card.course.stats.weakSublineCount > 0) {
+                    <span class="attention-badge">{{ card.course.stats.weakSublineCount }} weak</span>
+                  }
+                </div>
+                <p>{{ card.course.description || 'A focused training space for a complete repertoire branch.' }}</p>
+
+                <dl class="course-metrics">
+                  <div><dt>Chapters</dt><dd>{{ card.chapterCount }}</dd></div>
+                  <div><dt>Lines</dt><dd>{{ card.lineCount }}</dd></div>
+                  <div><dt>Recent pass</dt><dd>{{ card.masteryLabel }}</dd></div>
+                </dl>
+
+                <div class="course-actions">
+                  <a [routerLink]="['/courses', card.course.id]" class="course-action course-action-primary">Open course</a>
+                  <a [routerLink]="['/courses', card.course.id, 'review']" class="course-action course-review-action">
+                    <span>Review games</span>
+                    <small>Find repertoire gaps</small>
+                  </a>
+                  <button
+                    type="button"
+                    class="course-action course-action-danger"
+                    (click)="confirmDeleteCourse(card.course)"
+                    [disabled]="store.deletingId() === card.course.id"
+                    [attr.aria-label]="'Delete ' + card.course.name"
+                  >
+                    {{ store.deletingId() === card.course.id ? 'Deleting...' : 'Delete' }}
+                  </button>
+                </div>
               </div>
             </article>
           }
@@ -50,7 +85,7 @@
     <app-panel
       class="course-create-panel"
       title="New course"
-      subtitle="Give the repertoire a memorable identity so it remains obvious months from now."
+      subtitle="Choose the side and a recognizable cover. Both can be changed later."
     >
       <form (ngSubmit)="store.createCourse()" class="course-form">
         <div class="field-group">
@@ -60,24 +95,58 @@
             [ngModel]="store.newCourseName()"
             (ngModelChange)="store.newCourseName.set($event)"
             name="name"
-            placeholder="Italian Game for White"
+            placeholder="Italian Game"
             required
           />
         </div>
 
+        <fieldset class="side-picker">
+          <legend>Training side</legend>
+          <div>
+            <label [class.selected]="store.newCourseSide() === 'WHITE'">
+              <input
+                type="radio"
+                name="side"
+                value="WHITE"
+                [checked]="store.newCourseSide() === 'WHITE'"
+                (change)="store.setNewCourseSide('WHITE')"
+              />
+              <span class="piece-dot piece-dot-white">♙</span>
+              White
+            </label>
+            <label [class.selected]="store.newCourseSide() === 'BLACK'">
+              <input
+                type="radio"
+                name="side"
+                value="BLACK"
+                [checked]="store.newCourseSide() === 'BLACK'"
+                (change)="store.setNewCourseSide('BLACK')"
+              />
+              <span class="piece-dot piece-dot-black">♟</span>
+              Black
+            </label>
+          </div>
+        </fieldset>
+
+        <app-course-cover-picker
+          [side]="store.newCourseSide()"
+          [selectedKey]="store.newCourseCoverKey()"
+          (selectedKeyChange)="store.newCourseCoverKey.set($event)"
+        />
+
         <div class="field-group">
-          <label for="course-description">Description</label>
+          <label for="course-description">Description <span>Optional</span></label>
           <textarea
             id="course-description"
             [ngModel]="store.newCourseDescription()"
             (ngModelChange)="store.newCourseDescription.set($event)"
             name="description"
-            rows="5"
+            rows="3"
             placeholder="What this course covers and why it matters."
           ></textarea>
         </div>
 
-        <button type="submit" class="primary create-course-action" [disabled]="store.saving()">
+        <button type="submit" class="primary create-course-action" [disabled]="store.saving() || !store.newCourseName().trim()">
           {{ store.saving() ? 'Creating...' : 'Create course' }}
         </button>
       </form>

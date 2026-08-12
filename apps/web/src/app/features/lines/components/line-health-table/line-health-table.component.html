@@ -4,8 +4,7 @@
       <tr>
         <th scope="col">Select</th>
         <th scope="col">Line</th>
-        <th scope="col">Side</th>
-        <th scope="col">Active sublines</th>
+        <th scope="col">Sublines</th>
         <th scope="col">Coverage</th>
         <th scope="col">Mastery</th>
         <th scope="col">Weak</th>
@@ -15,53 +14,93 @@
     <tbody>
       @for (line of lines(); track line.id) {
         <tr [class.transfer-active]="transferLineId() === line.id">
-          <td><input type="checkbox" [attr.aria-label]="'Select ' + line.name" [checked]="isSelected(line.id)" (change)="toggleLineSelected.emit(line.id)" /></td>
           <td>
-            <button
-              type="button"
-              class="line-expand"
-              [attr.aria-expanded]="expandedLineId() === line.id"
-              [attr.aria-label]="(expandedLineId() === line.id ? 'Collapse ' : 'Expand ') + line.name + ' sublines'"
-              (click)="toggleExpandedLine.emit(line.id)"
-            >
-              <span>Sublines</span>
-              <span class="line-expand-caret" aria-hidden="true">⌄</span>
-            </button>
-            <strong>{{ line.name }}</strong>
-            <span
-              class="status-chip"
-              [class.new]="line.trainingStats.status === 'NEW'"
-              [class.weak]="line.trainingStats.status === 'WEAK'"
-              [class.review]="line.trainingStats.status === 'REVIEW'"
-              [class.stable]="line.trainingStats.status === 'STABLE'"
-              [class.strong]="line.trainingStats.status === 'STRONG'"
-            >
-              {{ trainingStatusLabel(line.trainingStats.status) }}
-            </span>
-          </td>
-          <td>{{ line.sideToTrain }}</td>
-          <td class="numeric-cell">{{ line.trainingStats.activeSublineCount }}</td>
-          <td class="numeric-cell">{{ coverageLabel(line.trainingStats.trainedSublineCount, line.trainingStats.activeSublineCount) }}</td>
-          <td class="numeric-cell">{{ percentLabel(line.trainingStats.passRate) }}</td>
-          <td class="numeric-cell">{{ line.trainingStats.weakSublineCount }}</td>
-          <td>
-            <div class="primary-actions">
-              <button type="button" class="secondary line-train-action" (click)="trainLine.emit(line)">Train</button>
-              <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']">Edit</a>
-            </div>
-            <app-line-action-menu
-              [line]="line"
-              [deleting]="deletingLineId() === line.id"
-              (renameLine)="renameLine.emit($event)"
-              (moveLine)="moveLine.emit($event)"
-              (copyLine)="copyLine.emit($event)"
-              (deleteLine)="deleteLine.emit($event)"
+            <input
+              type="checkbox"
+              [attr.aria-label]="'Select ' + line.name"
+              [checked]="isSelected(line.id)"
+              (change)="toggleLineSelected.emit(line.id)"
             />
+          </td>
+          <td>
+            <div class="line-identity">
+              <button
+                type="button"
+                class="line-expand"
+                [attr.aria-expanded]="expandedLineId() === line.id"
+                [attr.aria-label]="
+                  (expandedLineId() === line.id ? 'Collapse ' : 'Expand ') + line.name + ' sublines'
+                "
+                (click)="toggleExpandedLine.emit(line.id)"
+              >
+                <span aria-hidden="true">{{ expandedLineId() === line.id ? '−' : '+' }}</span>
+              </button>
+              <div class="line-copy">
+                <div class="line-title-row">
+                  <strong>{{ line.name }}</strong>
+                  <span
+                    class="status-chip"
+                    [class.new]="line.trainingStats.status === 'NEW'"
+                    [class.weak]="line.trainingStats.status === 'WEAK'"
+                    [class.review]="line.trainingStats.status === 'REVIEW'"
+                    [class.stable]="line.trainingStats.status === 'STABLE'"
+                    [class.strong]="line.trainingStats.status === 'STRONG'"
+                  >
+                    {{ trainingStatusLabel(line.trainingStats.status) }}
+                  </span>
+                </div>
+                <small
+                  >{{ line.sideToTrain === 'WHITE' ? 'White' : 'Black' }} repertoire line</small
+                >
+              </div>
+            </div>
+          </td>
+          <td class="numeric-cell">{{ line.trainingStats.activeSublineCount }}</td>
+          <td class="numeric-cell">
+            {{
+              coverageLabel(
+                line.trainingStats.trainedSublineCount,
+                line.trainingStats.activeSublineCount
+              )
+            }}
+          </td>
+          <td>
+            <div class="mastery-cell">
+              <strong>{{ percentLabel(line.trainingStats.passRate) }}</strong>
+              <span class="mastery-track" aria-hidden="true">
+                <span [style.width.%]="line.trainingStats.passRate * 100"></span>
+              </span>
+            </div>
+          </td>
+          <td class="numeric-cell" [class.has-weak]="line.trainingStats.weakSublineCount > 0">
+            {{ line.trainingStats.weakSublineCount }}
+          </td>
+          <td>
+            <div class="row-actions">
+              <button
+                type="button"
+                class="secondary line-train-action"
+                (click)="trainLine.emit(line)"
+              >
+                Train
+              </button>
+              <a class="compact-action secondary" [routerLink]="['/lines', line.id, 'edit']"
+                >Edit</a
+              >
+              <app-line-action-menu
+                [line]="line"
+                [deleting]="deletingLineId() === line.id"
+                (renameLine)="renameLine.emit($event)"
+                (moveLine)="moveLine.emit($event)"
+                (copyLine)="copyLine.emit($event)"
+                (deleteLine)="deleteLine.emit($event)"
+              />
+            </div>
           </td>
         </tr>
         @if (expandedLineId() === line.id) {
           <tr class="expanded-row">
-            <td colspan="8">
+            <td colspan="7">
               <app-line-training-status-panel
                 [line]="line"
                 [sublines]="sublineStatusByLineId()[line.id] ?? []"

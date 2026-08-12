@@ -4,9 +4,10 @@ import { groupRecentAttempts, loadRecentScoredAttempts } from '../training/recen
 import { statsFromLoadedAttempts } from '../../services/statsService';
 import { deriveLineData, DerivedLineData } from './sublines.service';
 import { performanceDebug } from '../../utils/performance-debug';
+import type { CourseCoverKey } from '@chess-trainer/contracts/courses';
 
 const derivedCourseSelect = {
-  id: true, name: true, description: true,
+  id: true, name: true, description: true, side: true, coverKey: true,
   chapters: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], select: {
     id: true, courseId: true, name: true, description: true, sortOrder: true,
     lines: { orderBy: { id: 'asc' }, select: {
@@ -34,7 +35,7 @@ export const CourseDerivedDataService = {
     const result = { courses: data.courses.map((course) => {
       const courseSublines = course.chapters.flatMap((chapter) => chapter.lines.flatMap((line) => data.derivedById.get(line.id)?.sublines ?? []));
       return {
-        id: course.id, name: course.name, description: course.description,
+        id: course.id, name: course.name, description: course.description, side: course.side as 'WHITE' | 'BLACK', coverKey: course.coverKey as CourseCoverKey | null,
         stats: statsFromLoadedAttempts('COURSE', course.id, courseSublines, data.attempts),
         chapters: course.chapters.map((chapter) => ({
           id: chapter.id, courseId: chapter.courseId, name: chapter.name, description: chapter.description, sortOrder: chapter.sortOrder,
@@ -56,12 +57,16 @@ export const CourseDerivedDataService = {
     const course = await prisma.course.findFirst({ where: { id: courseId, userId }, select: derivedCourseSelect });
     if (!course) return null;
     const derived = course.chapters.flatMap((chapter) => chapter.lines.map((line) => deriveLineData(lineForDerivation(line, chapter))));
+    const derivedByLineId = new Map(derived.map((item) => [item.line.id, item]));
     const sublines = derived.flatMap((line) => line.sublines);
     const attempts = groupRecentAttempts(await loadRecentScoredAttempts(userId, sublines.map(({ lineId, hash }) => ({ lineId, sublineHash: hash }))));
     const stats = statsFromLoadedAttempts('COURSE', course.id, sublines, attempts);
     const result = {
-      course: { id: course.id, name: course.name, description: course.description },
-      chapters: course.chapters.map(({ lines: _lines, ...chapter }) => chapter),
+      course: { id: course.id, name: course.name, description: course.description, side: course.side as 'WHITE' | 'BLACK', coverKey: course.coverKey as CourseCoverKey | null },
+      chapters: course.chapters.map(({ lines, ...chapter }) => {
+        const chapterSublines = lines.flatMap((line) => derivedByLineId.get(line.id)?.sublines ?? []);
+        return { ...chapter, lineCount: lines.length, stats: statsFromLoadedAttempts('CHAPTER', chapter.id, chapterSublines, attempts) };
+      }),
       stats,
       sublines,
       weakestSublines: stats.weakestSublines ?? [],

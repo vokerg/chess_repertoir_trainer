@@ -13,10 +13,9 @@ import {
   storePositionAnalysisSchema,
 } from '../../dist/modules/analysis/analysis.schemas.js';
 import {
-  createCourseSchema,
-  updateCourseSchema,
   updateLineSchema,
 } from '../../dist/modules/courses/courses.schemas.js';
+import { createCourseSchema, updateCourseSchema } from '@chess-trainer/contracts/courses';
 import {
   scenarioTrainingAttemptSchema,
   tacticalScenarioStartSchema,
@@ -67,7 +66,7 @@ assert.deepEqual(storePositionAnalysisSchema.parse({
 assert.equal(storePositionAnalysisSchema.safeParse({ fen: 'startpos', lines: [null] }).success, false);
 assert.equal(bulkPositionAnalysisLookupSchema.safeParse({ fens: [] }).success, false);
 
-assert.deepEqual(createCourseSchema.parse({ name: 'Course' }), { name: 'Course' });
+assert.deepEqual(createCourseSchema.parse({ name: 'Course' }), { name: 'Course', side: 'WHITE' });
 assert.deepEqual(updateCourseSchema.parse({ description: null }), { description: null });
 assert.equal(updateLineSchema.safeParse({ tags: [1] }).success, false);
 

@@ -29,7 +29,6 @@
       "default": "./dist/candidate-decision/index.js"
     },
     "./imported-games": {
-      "webpack": "./src/imported-games/index.ts",
       "types": "./dist/imported-games/index.d.ts",
       "default": "./dist/imported-games/index.js"
     },
@@ -38,7 +37,6 @@
       "default": "./dist/board-images/index.js"
     },
     "./courses": {
-      "webpack": "./src/courses/index.ts",
       "types": "./dist/courses/index.d.ts",
       "default": "./dist/courses/index.js"
     },
@@ -63,7 +61,6 @@
       "default": "./dist/opening-explorer/index.js"
     },
     "./player-chess-profile": {
-      "webpack": "./src/player-chess-profile/index.ts",
       "types": "./dist/player-chess-profile/index.d.ts",
       "default": "./dist/player-chess-profile/index.js"
     },
@@ -99,7 +96,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node test/contracts.test.mjs && node test/account-imports-contract.test.mjs && node test/training-stats-contract.test.mjs && node test/top-opponents-contract.test.mjs && node test/opening-explorer-contract.test.mjs && node test/activity-feed-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/repertoire-target-contract.test.mjs && node test/repertoire-coverage-contract.test.mjs && node test/candidate-decision-contract.test.mjs && node test/candidate-decision-policy-version-contract.test.mjs && node test/builder-course-reintegration-contract.test.mjs && node test/lichess-puzzles-contract.test.mjs && node test/lichess-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs && node test/admin-contract.test.mjs"
+    "test": "npm run build && node test/contracts.test.mjs && node test/course-management-contract.test.mjs && node test/account-imports-contract.test.mjs && node test/training-stats-contract.test.mjs && node test/top-opponents-contract.test.mjs && node test/opening-explorer-contract.test.mjs && node test/activity-feed-contract.test.mjs && node test/player-chess-profile-contract.test.mjs && node test/repertoire-target-contract.test.mjs && node test/repertoire-coverage-contract.test.mjs && node test/candidate-decision-contract.test.mjs && node test/candidate-decision-policy-version-contract.test.mjs && node test/builder-course-reintegration-contract.test.mjs && node test/lichess-puzzles-contract.test.mjs && node test/lichess-contract.test.mjs && node test/ai-contract.test.mjs && node test/jobs-contract.test.mjs && node test/admin-contract.test.mjs"
   },
   "dependencies": {
     "zod": "^4.2.0"

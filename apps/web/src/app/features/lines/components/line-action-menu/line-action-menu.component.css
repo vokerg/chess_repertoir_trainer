@@ -1,24 +1,74 @@
-.action-menu {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+:host {
+  display: inline-block;
 }
 
-.action-menu button {
+.action-menu {
+  position: relative;
+}
+
+.action-menu[open] {
+  z-index: 6;
+}
+
+.action-menu summary {
+  display: grid;
+  width: 2.15rem;
   min-height: 34px;
-  padding: 0.48rem 0.68rem;
-  border-color: var(--ui-border);
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
   background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
 }
 
-.action-menu button:hover:not(:disabled) {
+.action-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.action-menu summary:hover,
+.action-menu[open] summary {
   border-color: var(--ui-border-strong);
   background: var(--ui-action-soft);
   color: var(--ui-action-strong);
 }
 
+.action-menu-popover {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  width: 10.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.action-menu-popover button {
+  min-height: 2.1rem;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-align: left;
+}
+
+.action-menu-popover button:hover:not(:disabled) {
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.action-menu summary:focus-visible,
 .action-menu button:focus-visible {
   outline: 3px solid var(--ui-focus-outline);
   outline-offset: 3px;

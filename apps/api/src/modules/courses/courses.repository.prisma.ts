@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { normalizeFenForPosition } from 'chess-domain';
 import prisma from '../../prisma';
 import { incrementCourseContentRevision } from './course-content-revision.repository.prisma';
+import type { CreateCourseInput, UpdateCourse } from '@chess-trainer/contracts/courses';
 
 export type DbClient = typeof prisma | Prisma.TransactionClient;
 
@@ -9,7 +10,7 @@ export async function listCourses(userId: number) {
   return prisma.course.findMany({ where: { userId }, orderBy: { id: 'asc' } });
 }
 
-export async function createCourse(userId: number, data: { name: string; description?: string | null }) {
+export async function createCourse(userId: number, data: CreateCourseInput) {
   return prisma.course.create({ data: { userId, ...data } });
 }
 
@@ -20,7 +21,7 @@ export async function getCourseById(userId: number, id: number, db: DbClient = p
 export async function updateCourse(
   userId: number,
   id: number,
-  data: { name?: string; description?: string | null },
+  data: UpdateCourse,
   db: DbClient = prisma,
 ) {
   if (!await getCourseById(userId, id, db)) return null;

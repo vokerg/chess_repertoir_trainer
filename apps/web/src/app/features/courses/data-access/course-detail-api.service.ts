@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import type { CreateCourseInput, LibraryCatalog, UpdateCourse } from '@chess-trainer/contracts/courses';
 import { ApiService } from '../../../core/api/api.service';
 import { CourseChapter, CourseDetail, CourseOverview, CourseStats } from './course-detail.models';
 
@@ -11,7 +12,11 @@ export class CourseDetailApiService {
     return this.api.get<CourseDetail[]>('/courses');
   }
 
-  createCourse(body: { name: string; description: string | null }): Observable<CourseDetail> {
+  getCatalog(): Observable<LibraryCatalog> {
+    return this.api.get<LibraryCatalog>('/library/catalog');
+  }
+
+  createCourse(body: CreateCourseInput): Observable<CourseDetail> {
     return this.api.post<CourseDetail>('/courses', body);
   }
 
@@ -35,8 +40,8 @@ export class CourseDetailApiService {
     return this.api.post<CourseChapter>(`/courses/${courseId}/chapters`, body);
   }
 
-  renameCourse(courseId: number, name: string): Observable<CourseDetail> {
-    return this.api.patch<CourseDetail>(`/courses/${courseId}`, { name });
+  updateCourse(courseId: number, body: UpdateCourse): Observable<CourseDetail> {
+    return this.api.patch<CourseDetail>(`/courses/${courseId}`, body);
   }
 
   renameChapter(chapterId: number, name: string): Observable<CourseChapter> {
