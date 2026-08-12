@@ -1,71 +1,74 @@
 # Chess.com import
 
-The app supports importing finished public Chess.com games through the same external-account flow used for Lichess.
+The app supports importing finished public Chess.com games through external accounts.
 
-## User flow
+## Current user flow
+
+The established account page still uses the transitional synchronous endpoint until ONB-015 cuts account refresh over to durable acceptance:
 
 1. Create an external account with provider `CHESS_COM` and the public Chess.com username.
 2. Call `POST /api/me/accounts/:id/sync`.
 3. Read imported games with `GET /api/me/accounts/:id/games`.
-4. Run the standard imported-game workflow for eligible blitz/rapid games:
-   - standard indexing parses ply rows and then assigns a missing opening from the opening book
-   - standard analysis records analysis and then refreshes imported-game tags
-5. Read analysed games and refreshed tags from the imported games endpoints.
+4. Run the standard imported-game workflow for eligible games.
 
-Sync only imports games. It does not index, assign openings, analyse, or refresh tags by itself.
+ONB-014 also registers the Chess.com executor in the durable account-import worker delivered by ONB-012. Durable import runs can therefore execute Chess.com provider work without holding an HTTP request once they are accepted by the account-import lifecycle. ONB-015 owns the final account-route/frontend cutover; this task does not silently change the existing sync endpoint.
 
-## Implementation notes
+Import only ingests games. It does not itself index, assign openings, analyse, or refresh tags.
 
-Chess.com does not expose a Lichess-style all-games-since stream. The importer uses the public archive API instead:
+## Durable provider traversal
 
-1. `GET https://api.chess.com/pub/player/{username}/games/archives`
-2. `GET https://api.chess.com/pub/player/{username}/games/{YYYY}/{MM}` for relevant monthly archives
+Chess.com exposes public game history as an archive index plus monthly JSON archives. The durable adapter:
 
-Monthly archives are fetched serially. This avoids unnecessary rate-limit pressure and matches Chess.com's guidance that serial archive access is safer than parallel fan-out.
+1. plans every UTC calendar month intersecting the immutable half-open requested range;
+2. processes initial/backfill months newest-first and forward months oldest-first;
+3. fetches the archive index once per execution;
+4. treats a month absent from a successful, well-formed index as exact empty coverage;
+5. fetches listed months serially;
+6. filters each game to the exact range and immutable variant/speed/rated scope;
+7. commits normalized games in batches of at most 100;
+8. advances checkpoint and contiguous coverage atomically only after the whole month and all bounded writes succeed.
 
-## Cursor behavior
+A listed monthly archive that fails, is malformed, or returns an unexpected terminal status never advances coverage. Incomplete work is replayable and duplicate-safe through the existing `(accountId, providerGameId)` uniqueness key.
 
-`ExternalAccount.syncCursorTime` stores the latest imported game end time. Incremental sync subtracts a one-month overlap from the cursor, fetches archive months that can contain games after that overlap, and then skips individual games older than the overlap.
+Provider HTTP runs outside database transactions. Immediately before each bounded game or window commit, the provider-neutral account-import guard is rechecked in the short write transaction. ONB-019 will replace the current allow-all guard with persisted lifecycle-fence enforcement.
 
-This overlap is intentionally wider than the Lichess importer because Chess.com data is grouped by month instead of streamed by timestamp.
+## Provider access behavior
+
+Requests are serial and carry the configured recognizable `CHESS_COM_USER_AGENT`. The durable client passes the worker `AbortSignal` to fetch and retry delays, retries transient 408/5xx responses with bounded backoff, honors `Retry-After` within that bound, and converts HTTP 429 into durable retry timing instead of sleeping indefinitely inside the worker.
+
+`ETag` and `Last-Modified` are used only as transfer optimizations. Validator metadata is bounded in memory and conditional requests are sent only while the corresponding cached response body remains usable. A `304 Not Modified` response is never interpreted as coverage proof without that body.
 
 ## Normalization
 
-Chess.com games are normalized into the existing `ImportedGame` shape:
+Both the durable adapter and the transitional synchronous service use one shared Chess.com normalizer:
 
-- `provider`: `CHESS_COM`
-- `providerGameId`: `uuid` when present, otherwise game URL or PGN site/link fallback
-- `providerUrl`: Chess.com game URL or PGN link/site fallback
-- `pgn`: game PGN from the monthly archive payload
-- `rated`: `rated`
-- `variant`: `rules` or PGN `Variant`
-- `speedCategory`: `time_class`
-- `timeControlRaw`: `time_control` or PGN `TimeControl`
-- `startedAt`: `start_time` Unix seconds or PGN date/time fallback
-- `endedAt`: `end_time` Unix seconds or PGN date/time fallback
-- `whiteUsername` / `blackUsername`: player usernames or PGN headers
-- `whiteRating` / `blackRating`: player ratings or PGN Elo headers
-- `userColor`, `opponentUsername`, `result`, and `resultForUser`: derived from player usernames and Chess.com result codes
-- `openingEco` / `openingName`: PGN headers when available
+- `providerGameId`: `uuid` when present, otherwise game URL or PGN site/link fallback;
+- `providerUrl`: Chess.com game URL or PGN link/site fallback;
+- `pgn`: game PGN from the monthly archive payload;
+- `rated`: `rated`;
+- `variant`: `rules` or PGN `Variant`;
+- `speedCategory`: `time_class`;
+- `timeControlRaw`: `time_control` or PGN `TimeControl`;
+- `startedAt`: `start_time` Unix seconds or PGN date/time fallback;
+- `endedAt`: `end_time` Unix seconds or PGN date/time fallback;
+- player usernames/ratings, user colour, opponent, result, status, and provider opening headers.
 
-Provider opening data is preserved. If Chess.com PGN headers include ECO/name data, the standard opening assignment step fills only missing fields and does not overwrite those provider values.
+Provider opening data is preserved. Standard opening assignment fills only missing values and does not overwrite provider values.
 
-## Standard workflow scope
+## Durable scope
 
-The standardized imported-game workflows currently apply to `blitz` and `rapid` games only. Bullet imports are still stored and remain available for account stats and rating views, but they are ignored by post-sync offers, bulk indexing, bulk analysis, and the temporary missing-opening backfill script.
+The durable scope is immutable per import run. It supports standard chess with the canonical selected speed set (`BULLET`, `BLITZ`, and/or `RAPID`) and rated policy (`BOTH`, `RATED`, or `UNRATED`). Exact filtering uses `requestedFrom <= end_time < requestedTo`.
+
+The transitional synchronous route keeps its pre-cutover behavior until ONB-015 removes it; it should not be used as evidence for durable coverage.
 
 ## Environment
 
-Set `CHESS_COM_USER_AGENT` when deploying the API. The default is usable for local development, but deployed environments should use a recognizable value with a contact URL or email.
+Set `CHESS_COM_USER_AGENT` when deploying the API. The default is usable for local development, but deployed environments should use a recognizable value with contact information.
 
 ```text
 CHESS_COM_USER_AGENT="chess-repertoire-trainer/0.1 (+https://github.com/vokerg/chess_repertoir_trainer)"
 ```
 
-## Current limitations
+## Validation and rollout
 
-- Import is synchronous, like the existing Lichess flow.
-- Only standard chess is persisted. Chess.com `chess` and Lichess `standard` games are accepted; Chess960 and other nonstandard variants are counted as skipped and never enter imported-game analysis or account rating projections.
-- First sync for very large accounts may take a while because all monthly archives must be fetched.
-- There is no per-request archive limit yet.
-- There is no Chess.com OAuth integration; only public finished games are imported.
+The repository includes provider/executor fixtures and an opt-in low-volume canary harness. The canary performs one archive-index request and at most one selected monthly archive; it is not a provider load test. General rollout requires the ONB-014 validation gates and the later ONB-015 account-sync cutover.
