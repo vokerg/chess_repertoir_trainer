@@ -61,8 +61,11 @@ async function validatesSynthetic429Cooldown() {
   const executor = createLichessAccountImportExecutor({
     repository: {
       async getCoverage() { return null; },
-      async persistGames() { assert.fail('429 must not persist games'); },
-      async extendCoverage() { coverageWrites += 1; return null; },
+    },
+    commitRepository: {
+      async initializePlan() {},
+      async persistBatch() { assert.fail('429 must not persist games'); },
+      async completeWindow() { coverageWrites += 1; },
     },
     config: { windowDays: 14, databaseWriteBatchSize: 100 },
     now: () => now,
