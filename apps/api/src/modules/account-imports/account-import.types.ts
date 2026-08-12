@@ -46,6 +46,7 @@ export interface StoredAccountImportRun {
   gamesSkippedOutOfScope: number;
   gamesFailed: number;
   lastProgressAt: Date | null;
+  checkpoint?: unknown | null;
   workKey: string | null;
   claimedAt: Date | null;
   heartbeatAt: Date | null;

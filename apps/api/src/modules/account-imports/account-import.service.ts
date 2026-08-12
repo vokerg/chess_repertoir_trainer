@@ -109,7 +109,7 @@ export const AccountImportService = {
         requestedFrom: source.requestedFrom,
         requestedTo: source.requestedTo,
         priority: USER_ACTION_ACCOUNT_IMPORT_PRIORITY,
-        windowsTotal: source.windowsTotal,
+        windowsTotal: null,
         retryOfImportRunId: source.id,
       });
       return { importRun: toAccountImportRun(retry) };

@@ -1,6 +1,6 @@
 # ONB-013 — Implement bounded Lichess import adapter
 
-Status: READY
+Status: REVIEW
 
 Priority: P0
 
@@ -12,13 +12,15 @@ Planning maturity: Researched; initial operational defaults supplied by ONB-007
 
 GitHub issue: [#201](https://github.com/vokerg/chess_repertoir_trainer/issues/201)
 
-Claimed by: unclaimed
+Pull request: [#357](https://github.com/vokerg/chess_repertoir_trainer/pull/357)
 
-Claim branch: none
+Claimed by: ChatGPT / chess trainer implementation session
 
-Claimed at: none
+Claim branch: `account-import/onb-013-lichess-adapter`
 
-Claim scope: none
+Claimed at: 2026-08-11
+
+Claim scope: bounded Lichess request planning/streaming/normalization/persistence/coverage, worker registration, provider-safe failures, checkpoint projection, fixtures/tests/canary harness, and deployment metadata; no Chess.com, Angular cutover, ONB-019 persisted fences, or destructive-safety claim
 
 Promoted at: 2026-08-11 after ONB-012 runtime merge and completion reconciliation PR #354
 
@@ -85,6 +87,8 @@ Provider network, streaming, and normalization remain outside database transacti
 
 ## Completion
 
-Report: none
+Report: `../reports/ONB-013-2026-08-12-implementation-progress.md`
 
-Completed at: none
+Review evidence: PR #357; low-volume Lichess canary workflow run #2665 (`31566377590`) passed; full repository CI run #2684 (`31571213970`) passed on reviewed runtime head `9d1bde8e563e60ab1c233d88123b675f419c5d74` before final metadata-only reconciliation.
+
+Completed at: none; pending squash merge of PR #357.

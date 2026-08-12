@@ -4,6 +4,11 @@ import type { StoredAccountImportRun } from './account-import.types';
 export type AccountImportExecutionResult =
   | { kind: 'COMPLETED' }
   | {
+      kind: 'FAILED';
+      errorCode: string;
+      safeError: string;
+    }
+  | {
       kind: 'RETRY_AT';
       retryAt: Date;
       rateLimitUntil?: Date | null;
