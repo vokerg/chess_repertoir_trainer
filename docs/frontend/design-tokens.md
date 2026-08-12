@@ -136,3 +136,9 @@ These boundaries are recorded debt, not permission for new code to use legacy vi
 - Hover is not the only indicator of interactivity.
 - Reduced-motion users do not depend on elevation or translation animation to perceive state.
 - Status and evaluation meanings use non-colour cues.
+
+## Course cover imagery
+
+Course covers are a bounded product asset set under `apps/web/src/assets/course-covers`. The database stores a stable semantic cover key rather than a file path, and the Angular feature maps that key to the current asset. New courses require an explicit White/Black repertoire side and offer only covers curated for that side. Existing courses without a key receive a deterministic visual fallback from their id, so covers do not reshuffle between visits.
+
+Cover photographs are supporting identity, not status or navigation by themselves. Every rendered cover keeps descriptive alternative text, the course name remains visible text, and color/status meaning continues to use labels and metrics. The image pool may grow, but arbitrary remote image URLs and per-render random assignment are outside this contract.

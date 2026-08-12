@@ -1,12 +1,22 @@
 <section class="status-panel">
   <div class="status-panel-header">
     <div>
-      <strong>Subline status</strong>
-      <p>Select exact sublines to drill, or train the whole line.</p>
+      <span class="eyebrow">Position evidence</span>
+      <strong>{{ line().name }} sublines</strong>
+      <p>Select the exact variations to drill, or train the whole repertoire line.</p>
     </div>
     <div class="status-panel-actions">
-      <button type="button" class="secondary" (click)="trainWholeLine.emit()">Train line</button>
-      <button type="button" class="primary" [disabled]="selectedHashes().length === 0" (click)="drillSelected.emit()">Drill selected</button>
+      <button type="button" class="secondary" (click)="trainWholeLine.emit()">
+        Train whole line
+      </button>
+      <button
+        type="button"
+        class="primary"
+        [disabled]="selectedHashes().length === 0"
+        (click)="drillSelected.emit()"
+      >
+        Drill selected{{ selectedHashes().length ? ' (' + selectedHashes().length + ')' : '' }}
+      </button>
       <a class="compact-action secondary" [routerLink]="['/lines', line().id, 'edit']">Edit tree</a>
     </div>
   </div>
@@ -24,7 +34,7 @@
           <tr>
             <th scope="col">Select</th>
             <th scope="col">Status</th>
-            <th scope="col">Moves</th>
+            <th scope="col">Move sequence</th>
             <th scope="col">Recent</th>
             <th scope="col">Pass rate</th>
           </tr>

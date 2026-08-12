@@ -1,14 +1,19 @@
 import { Injectable, inject, signal } from '@angular/core';
+import type { CourseCoverKey, CourseSide, LibraryCatalog } from '@chess-trainer/contracts/courses';
 import { firstValueFrom } from 'rxjs';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
-import { CourseDetail } from '../data-access/course-detail.models';
+import { defaultCourseCover } from '../helpers/course-presentation';
+
+export type CourseCatalogItem = LibraryCatalog['courses'][number];
 
 @Injectable()
 export class CoursesStore {
   private readonly api = inject(CourseDetailApiService);
-  readonly courses = signal<CourseDetail[]>([]);
+  readonly courses = signal<CourseCatalogItem[]>([]);
   readonly newCourseName = signal('');
   readonly newCourseDescription = signal<string | null>(null);
+  readonly newCourseSide = signal<CourseSide>('WHITE');
+  readonly newCourseCoverKey = signal<CourseCoverKey>(defaultCourseCover('WHITE'));
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly deletingId = signal<number | null>(null);
@@ -18,7 +23,7 @@ export class CoursesStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.courses.set(await firstValueFrom(this.api.getCourses()));
+      this.courses.set((await firstValueFrom(this.api.getCatalog())).courses);
     } catch (error) {
       this.error.set(readError(error, 'Could not load courses. Is the API running and seeded?'));
     } finally {
@@ -32,12 +37,15 @@ export class CoursesStore {
     this.saving.set(true);
     this.error.set(null);
     try {
-      const course = await firstValueFrom(
-        this.api.createCourse({ name, description: this.newCourseDescription()?.trim() || null }),
-      );
-      this.courses.update((courses) => [...courses, course]);
+      await firstValueFrom(this.api.createCourse({
+        name,
+        description: this.newCourseDescription()?.trim() || null,
+        side: this.newCourseSide(),
+        coverKey: this.newCourseCoverKey(),
+      }));
       this.newCourseName.set('');
       this.newCourseDescription.set(null);
+      await this.loadCourses();
     } catch (error) {
       this.error.set(readError(error, 'Could not create course.'));
     } finally {
@@ -45,7 +53,12 @@ export class CoursesStore {
     }
   }
 
-  async deleteCourse(course: CourseDetail): Promise<void> {
+  setNewCourseSide(side: CourseSide): void {
+    this.newCourseSide.set(side);
+    this.newCourseCoverKey.set(defaultCourseCover(side));
+  }
+
+  async deleteCourse(course: Pick<CourseCatalogItem, 'id' | 'name'>): Promise<void> {
     this.deletingId.set(course.id);
     this.error.set(null);
     try {

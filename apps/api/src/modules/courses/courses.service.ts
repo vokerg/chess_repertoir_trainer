@@ -30,6 +30,7 @@ import {
   updateMoveNode,
 } from './courses.repository.prisma';
 import { incrementCourseContentRevision } from './course-content-revision.repository.prisma';
+import type { CreateCourseInput, UpdateCourse } from '@chess-trainer/contracts/courses';
 
 function parseUci(moveUci: string): { from: string; to: string; promotion?: string } {
   return {
@@ -94,9 +95,9 @@ export async function createMoveNodeInTransaction(
 
 export const CourseService = {
   list: async (userId: number) => listCourses(userId),
-  create: async (userId: number, data: { name: string; description?: string | null }) => createCourse(userId, data),
+  create: async (userId: number, data: CreateCourseInput) => createCourse(userId, data),
   get: async (userId: number, id: number) => getCourseById(userId, id),
-  update: async (userId: number, id: number, data: { name?: string; description?: string | null }) =>
+  update: async (userId: number, id: number, data: UpdateCourse) =>
     prisma.$transaction(async (tx) => {
       const current = await getCourseById(userId, id, tx);
       if (!current) return null;

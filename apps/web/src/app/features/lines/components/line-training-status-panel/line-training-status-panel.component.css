@@ -5,12 +5,12 @@
 
 .status-panel {
   display: grid;
-  gap: var(--space-3);
-  margin-top: 0.25rem;
-  padding: var(--space-3);
+  gap: 1rem;
+  padding: 1rem;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-panel);
   background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-soft);
 }
 
 .status-panel-header {
@@ -24,13 +24,35 @@
 .status-panel-header p {
   margin: 0.25rem 0 0;
   color: var(--ui-text-muted);
+  font-size: 0.82rem;
   line-height: 1.5;
+}
+
+.status-panel-header strong {
+  font-size: 0.95rem;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--ui-action-strong);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .status-panel-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.status-panel-actions button,
+.status-panel-actions a {
+  min-height: 36px;
+  padding: 0.48rem 0.68rem;
+  font-size: 0.78rem;
 }
 
 .status-panel button:focus-visible,
@@ -49,6 +71,7 @@
 
 .subline-table {
   width: 100%;
+  min-width: 620px;
   border-collapse: collapse;
   color: var(--ui-text);
   font-size: 0.84rem;
@@ -63,7 +86,7 @@
 
 .subline-table th {
   color: var(--ui-text-subtle);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -97,6 +120,7 @@
   border-radius: 999px;
   background: var(--ui-surface-quiet);
   color: var(--ui-text-muted);
+  font-size: 0.75rem;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -125,5 +149,9 @@
 
   .status-panel-header {
     flex-direction: column;
+  }
+
+  .status-panel-actions {
+    width: 100%;
   }
 }

@@ -10,7 +10,12 @@ try {
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const user = await prisma.appUser.create({ data: { authProvider: 'test', authSubject: `course-read-model-${suffix}` } });
   userId = user.id;
-  const course = await CourseService.create(userId, { name: 'Catalog course', description: 'Lean read model' });
+  const course = await CourseService.create(userId, {
+    name: 'Catalog course',
+    description: 'Lean read model',
+    side: 'WHITE',
+    coverKey: 'QUEENS_GAMBIT',
+  });
   const chapter = await ChapterService.create(userId, course.id, { name: 'Chapter', sortOrder: 1 });
   const line = await LineService.create(userId, chapter.id, { name: 'Line', sideToTrain: 'WHITE', startingFen: 'startpos' });
   await MoveNodeService.create(userId, line.id, { moveUci: 'e2e4' });
@@ -22,6 +27,8 @@ try {
     const catalog = libraryCatalogSchema.parse(await CourseDerivedDataService.catalog(userId));
     assert.equal(attemptReads, 1);
     assert.equal(catalog.courses.length, 1);
+    assert.equal(catalog.courses[0].side, 'WHITE');
+    assert.equal(catalog.courses[0].coverKey, 'QUEENS_GAMBIT');
     assert.equal(catalog.courses[0].chapters[0].lines[0].trainingStats.activeSublineCount, 1);
 
     attemptReads = 0;
@@ -29,6 +36,9 @@ try {
     assert.equal(attemptReads, 1);
     assert.equal(overview.sublines.length, 1);
     assert.equal(overview.stats.activeSublineCount, 1);
+    assert.equal(overview.course.coverKey, 'QUEENS_GAMBIT');
+    assert.equal(overview.chapters[0].lineCount, 1);
+    assert.equal(overview.chapters[0].stats.activeSublineCount, 1);
   } finally {
     prisma.$queryRaw = originalQueryRaw;
   }

@@ -1,10 +1,21 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { distinctUntilChanged, map } from 'rxjs';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
-import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../shared/ui/page-header/page-header.component';
+import {
+  PageHeaderAction,
+  PageHeaderComponent,
+} from '../../../shared/ui/page-header/page-header.component';
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { LineHealthTableComponent } from '../components/line-health-table/line-health-table.component';
 import { LineSummary } from '../data-access/lines.models';
@@ -25,21 +36,31 @@ export class LinesPageComponent implements OnInit {
   private readonly confirmDialog = inject(ConfirmDialogService);
   protected readonly store = inject(LinesPageStore);
   protected readonly routeChapterId = signal<number | null>(null);
+  protected readonly lineFilter = signal<'ALL' | 'ATTENTION'>('ALL');
   protected readonly loadedChapter = computed(() => {
     const routeChapterId = this.routeChapterId();
     const chapter = this.store.chapter();
     return chapter && routeChapterId === chapter.id ? chapter : null;
   });
   protected readonly canRetryLoad = computed(() => this.routeChapterId() !== null);
-  protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
-    if (!this.loadedChapter()) return [];
-    return [
-      { id: 'lines', label: 'Lines', value: this.store.lines().length },
-      { id: 'sublines', label: 'Active sublines', value: this.store.activeSublineCount() },
-      { id: 'attempts', label: 'Recent attempts', value: this.store.totalAttempts() },
-      { id: 'pass-rate', label: 'Recent pass rate', value: `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%` },
-    ];
+  protected readonly attentionLineCount = computed(
+    () => this.store.lines().filter((line) => this.lineNeedsAttention(line)).length,
+  );
+  protected readonly displayedLines = computed(() => {
+    const lines = this.store.lines();
+    return this.lineFilter() === 'ATTENTION'
+      ? lines.filter((line) => this.lineNeedsAttention(line))
+      : lines;
   });
+  protected readonly recentPassRate = computed(
+    () => `${Math.round((this.store.chapterStats()?.passRate ?? 0) * 100)}%`,
+  );
+  protected readonly selectedSublineCount = computed(() =>
+    Object.values(this.store.selectedSublineHashesByLineId()).reduce(
+      (total, hashes) => total + hashes.length,
+      0,
+    ),
+  );
   protected readonly headerActions = computed<readonly PageHeaderAction[]>(() => {
     const chapter = this.loadedChapter();
     const courseId = chapter ? this.store.courseId() : null;
@@ -50,33 +71,12 @@ export class LinesPageComponent implements OnInit {
     };
     if (!chapter) return [backAction];
 
-    const marathonAction: PageHeaderAction = this.store.selectedLineCount() > 0
-      ? {
-          id: 'selected-marathon',
-          label: `Train selected (${this.store.selectedLineCount()})`,
-          run: () => this.store.startSelectedLinesMarathon('ALL'),
-        }
-      : { id: 'marathon', label: 'Train chapter', link: ['/chapters', chapter.id, 'marathon'] };
     return [
       backAction,
-      marathonAction,
-      {
-        id: 'select-all',
-        label: 'Select all',
-        disabled: this.store.lines().length === 0,
-        run: () => this.store.selectAllLines(),
-      },
+      { id: 'marathon', label: 'Train chapter', link: ['/chapters', chapter.id, 'marathon'] },
       ...(!this.store.editingChapterName()
-        ? [{ id: 'rename', label: 'Rename', run: () => this.store.startChapterEdit() }]
+        ? [{ id: 'rename', label: 'Edit chapter', run: () => this.store.startChapterEdit() }]
         : []),
-    ];
-  });
-  protected readonly linePanelStats = computed<readonly PageHeaderStat[]>(() => {
-    const selectedSublineCount = Object.values(this.store.selectedSublineHashesByLineId())
-      .reduce((total, hashes) => total + hashes.length, 0);
-    return [
-      { id: 'selected', label: 'Selected lines', value: this.store.selectedLineCount() },
-      { id: 'selected-sublines', label: 'Selected sublines', value: selectedSublineCount },
     ];
   });
 
@@ -103,5 +103,15 @@ export class LinesPageComponent implements OnInit {
     });
 
     if (confirmed) void this.store.deleteLine(line);
+  }
+
+  private lineNeedsAttention(line: LineSummary): boolean {
+    return (
+      line.trainingStats.status === 'NEW' ||
+      line.trainingStats.status === 'WEAK' ||
+      line.trainingStats.status === 'REVIEW' ||
+      line.trainingStats.untrainedSublineCount > 0 ||
+      line.trainingStats.weakSublineCount > 0
+    );
   }
 }

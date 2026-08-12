@@ -1,9 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import type { CourseCoverKey, CourseSide } from '@chess-trainer/contracts/courses';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
-import { CourseChapter, CourseDetail, CourseStats } from '../data-access/course-detail.models';
+import { CourseDetail, CourseOverviewChapter, CourseStats } from '../data-access/course-detail.models';
 import { AvailableSubline } from '../data-access/sublines/sublines.models';
+import { defaultCourseCover } from '../helpers/course-presentation';
 
 @Injectable()
 export class CourseDetailStore {
@@ -14,7 +16,7 @@ export class CourseDetailStore {
   readonly courseId = signal<number | null>(null);
   readonly course = signal<CourseDetail | null>(null);
   readonly stats = signal<CourseStats | null>(null);
-  readonly chapters = signal<CourseChapter[]>([]);
+  readonly chapters = signal<CourseOverviewChapter[]>([]);
   readonly sublines = signal<AvailableSubline[]>([]);
   readonly sublinesLoading = signal(false);
   readonly sublinesError = signal<string | null>(null);
@@ -24,6 +26,9 @@ export class CourseDetailStore {
   readonly saving = signal(false);
   readonly editingCourseName = signal(false);
   readonly courseNameDraft = signal('');
+  readonly courseDescriptionDraft = signal<string | null>(null);
+  readonly courseSideDraft = signal<CourseSide>('WHITE');
+  readonly courseCoverKeyDraft = signal<CourseCoverKey>('QUEENS_GAMBIT');
   readonly savingCourseName = signal(false);
   readonly editingChapterId = signal<number | null>(null);
   readonly chapterNameDraft = signal('');
@@ -57,7 +62,7 @@ export class CourseDetailStore {
       this.stats.set(result.value.stats);
       this.chapters.set(result.value.chapters);
       this.sublines.set(result.value.sublines);
-      if (!this.editingCourseName()) this.courseNameDraft.set(result.value.course.name);
+      if (!this.editingCourseName()) this.setCourseDrafts(result.value.course);
     } else {
       this.course.set(null);
       this.stats.set(null);
@@ -76,13 +81,12 @@ export class CourseDetailStore {
     this.saving.set(true);
     this.error.set(null);
     try {
-      const chapter = await firstValueFrom(
+      await firstValueFrom(
         this.api.createChapter(courseId, { name, description: this.newChapterDescription()?.trim() || null }),
       );
-      this.chapters.update((chapters) => [...chapters, chapter].sort((a, b) => a.sortOrder - b.sortOrder));
       this.newChapterName.set('');
       this.newChapterDescription.set(null);
-      void this.refreshStats();
+      await this.loadCoursePage();
     } catch (error) {
       this.error.set(readError(error, 'Could not create chapter.'));
     } finally {
@@ -94,12 +98,13 @@ export class CourseDetailStore {
     const course = this.course();
     if (!course) return;
     this.editingCourseName.set(true);
-    this.courseNameDraft.set(course.name);
+    this.setCourseDrafts(course);
   }
 
   cancelCourseEdit(): void {
     this.editingCourseName.set(false);
-    this.courseNameDraft.set(this.course()?.name || '');
+    const course = this.course();
+    if (course) this.setCourseDrafts(course);
   }
 
   async saveCourseName(): Promise<void> {
@@ -109,9 +114,14 @@ export class CourseDetailStore {
     this.savingCourseName.set(true);
     this.error.set(null);
     try {
-      const course = await firstValueFrom(this.api.renameCourse(courseId, name));
+      const course = await firstValueFrom(this.api.updateCourse(courseId, {
+        name,
+        description: this.courseDescriptionDraft()?.trim() || null,
+        side: this.courseSideDraft(),
+        coverKey: this.courseCoverKeyDraft(),
+      }));
       this.course.set(course);
-      this.courseNameDraft.set(course.name);
+      this.setCourseDrafts(course);
       this.editingCourseName.set(false);
     } catch (error) {
       this.error.set(readError(error, 'Could not rename course.'));
@@ -120,7 +130,7 @@ export class CourseDetailStore {
     }
   }
 
-  startChapterEdit(chapter: CourseChapter): void {
+  startChapterEdit(chapter: CourseOverviewChapter): void {
     this.editingChapterId.set(chapter.id);
     this.chapterNameDraft.set(chapter.name);
   }
@@ -130,7 +140,7 @@ export class CourseDetailStore {
     this.chapterNameDraft.set('');
   }
 
-  async saveChapterName(chapter: CourseChapter): Promise<void> {
+  async saveChapterName(chapter: CourseOverviewChapter): Promise<void> {
     const name = this.chapterNameDraft().trim();
     if (!name) return;
     this.savingChapterId.set(chapter.id);
@@ -146,7 +156,7 @@ export class CourseDetailStore {
     }
   }
 
-  async deleteChapter(chapter: CourseChapter): Promise<void> {
+  async deleteChapter(chapter: CourseOverviewChapter): Promise<void> {
     this.deletingChapterId.set(chapter.id);
     this.error.set(null);
     try {
@@ -182,6 +192,18 @@ export class CourseDetailStore {
     } catch {
       this.stats.set(null);
     }
+  }
+
+  setCourseSideDraft(side: CourseSide): void {
+    this.courseSideDraft.set(side);
+    this.courseCoverKeyDraft.set(defaultCourseCover(side));
+  }
+
+  private setCourseDrafts(course: CourseDetail): void {
+    this.courseNameDraft.set(course.name);
+    this.courseDescriptionDraft.set(course.description);
+    this.courseSideDraft.set(course.side);
+    this.courseCoverKeyDraft.set(course.coverKey ?? (course.side === 'WHITE' ? 'QUEENS_GAMBIT' : 'SICILIAN'));
   }
 }
 

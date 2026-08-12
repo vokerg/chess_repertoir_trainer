@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.cover-picker {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.cover-picker legend {
+  margin-bottom: 0.55rem;
+  color: var(--ui-text);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.cover-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.cover-option {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 0.38rem;
+  border: 2px solid transparent;
+  border-radius: var(--ui-radius-control);
+  padding: 0.24rem;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  cursor: pointer;
+}
+
+.cover-option:hover {
+  border-color: var(--ui-border-strong);
+}
+
+.cover-option-selected {
+  border-color: var(--ui-action-strong);
+  background: var(--ui-action-soft);
+  color: var(--ui-action-strong);
+}
+
+.cover-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.cover-option:has(input:focus-visible) {
+  outline: 3px solid var(--ui-focus-outline);
+  outline-offset: 2px;
+}
+
+.cover-option img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.cover-option span {
+  overflow: hidden;
+  padding: 0 0.2rem 0.16rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Keep in sync with VIEWPORT_BREAKPOINTS.compactMaxPx. */
+@media (max-width: 640px) {
+  .cover-options {
+    grid-template-columns: repeat(3, minmax(86px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+}

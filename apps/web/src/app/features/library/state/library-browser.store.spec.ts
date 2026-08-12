@@ -76,6 +76,8 @@ function catalog(): LibraryCatalogResponse {
         id: 1,
         name: 'Black repertoire',
         description: null,
+        side: 'BLACK',
+        coverKey: null,
         stats: stats(1, 9, 2, 1),
         chapters: [
           {

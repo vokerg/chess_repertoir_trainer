@@ -1,13 +1,18 @@
 <section class="lines-page stack">
   <app-page-header
     [title]="loadedChapter()?.name || 'Chapter lines'"
-    [subtitle]="loadedChapter()?.description || 'Diagnose line health and drill weak or untrained sublines.'"
-    [stats]="headerStats()"
+    [subtitle]="
+      loadedChapter()?.description ||
+      'Diagnose line health and drill the branches that need attention.'
+    "
     [actions]="headerActions()"
   />
 
   @if (store.error() && !loadedChapter()) {
-    <app-panel title="Chapter unavailable" subtitle="The chapter could not be loaded, so training and authoring actions are temporarily unavailable.">
+    <app-panel
+      title="Chapter unavailable"
+      subtitle="The chapter could not be loaded, so training and authoring actions are temporarily unavailable."
+    >
       <p class="status-error" role="alert">{{ store.error() }}</p>
       <div class="collection-actions">
         @if (canRetryLoad()) {
@@ -26,34 +31,103 @@
     }
 
     @if (store.editingChapterName()) {
-      <app-panel title="Rename chapter" subtitle="Update the chapter label without changing its lines or training history.">
+      <app-panel
+        title="Rename chapter"
+        subtitle="Update the chapter label without changing its lines or training history."
+      >
         <div class="rename-form">
           <div class="stack form-field">
             <label for="chapter-page-rename" class="metric-label">Chapter name</label>
-            <input id="chapter-page-rename" [ngModel]="store.chapterNameDraft()" (ngModelChange)="store.setChapterNameDraft($event)" name="chapterPageRename" />
+            <input
+              id="chapter-page-rename"
+              [ngModel]="store.chapterNameDraft()"
+              (ngModelChange)="store.setChapterNameDraft($event)"
+              name="chapterPageRename"
+            />
           </div>
-          <button type="button" class="primary" (click)="store.saveChapterName()" [disabled]="store.savingChapterName()">{{ store.savingChapterName() ? 'Saving...' : 'Save' }}</button>
-          <button type="button" class="secondary" (click)="store.cancelChapterEdit()" [disabled]="store.savingChapterName()">Cancel</button>
+          <button
+            type="button"
+            class="primary"
+            (click)="store.saveChapterName()"
+            [disabled]="store.savingChapterName()"
+          >
+            {{ store.savingChapterName() ? 'Saving...' : 'Save' }}
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="store.cancelChapterEdit()"
+            [disabled]="store.savingChapterName()"
+          >
+            Cancel
+          </button>
         </div>
       </app-panel>
     }
 
-    <app-panel
-      title="Training status"
-      subtitle="Inspect repertoire coverage, select lines, and drill weak or untrained sublines."
-      [stats]="linePanelStats()"
-    >
-      <div class="section-header">
-        <p class="section-help">Expand a line for subline-level evidence or select several lines for one marathon.</p>
-        <div class="collection-actions">
-          <button type="button" class="primary" [disabled]="!store.canStartSelectedMarathon()" (click)="store.startSelectedLinesMarathon('ALL')">
-            Train selected
-          </button>
-          <button type="button" class="secondary" [disabled]="store.selectedLineCount() === 0" (click)="store.clearLineSelection()">
-            Clear selection
+    <section class="chapter-summary" aria-label="Chapter training summary">
+      <div>
+        <span>Lines</span><strong>{{ store.lines().length }}</strong>
+      </div>
+      <div>
+        <span>Active sublines</span><strong>{{ store.activeSublineCount() }}</strong>
+      </div>
+      <div>
+        <span>Recent attempts</span><strong>{{ store.totalAttempts() }}</strong>
+      </div>
+      <div class="summary-accent">
+        <span>Recent pass rate</span><strong>{{ recentPassRate() }}</strong>
+      </div>
+    </section>
+
+    <app-panel class="lines-panel">
+      <div class="lines-toolbar">
+        <div>
+          <span class="eyebrow">Training status</span>
+          <h2>Repertoire lines</h2>
+          <p>Expand a line for position evidence, or select several for one focused session.</p>
+        </div>
+        <div class="toolbar-actions">
+          <div class="line-filter" aria-label="Filter repertoire lines">
+            <button
+              type="button"
+              [class.active]="lineFilter() === 'ALL'"
+              (click)="lineFilter.set('ALL')"
+            >
+              All lines
+            </button>
+            <button
+              type="button"
+              [class.active]="lineFilter() === 'ATTENTION'"
+              (click)="lineFilter.set('ATTENTION')"
+            >
+              Needs attention <span>{{ attentionLineCount() }}</span>
+            </button>
+          </div>
+          <button
+            type="button"
+            class="primary train-selected-action"
+            [disabled]="!store.canStartSelectedMarathon()"
+            (click)="store.startSelectedLinesMarathon('ALL')"
+          >
+            Train selected{{
+              store.selectedLineCount() ? ' (' + store.selectedLineCount() + ')' : ''
+            }}
           </button>
         </div>
       </div>
+
+      @if (store.selectedLineCount() > 0 || selectedSublineCount() > 0) {
+        <div class="selection-strip" aria-live="polite">
+          <span
+            ><strong>{{ store.selectedLineCount() }}</strong> lines selected</span
+          >
+          <span
+            ><strong>{{ selectedSublineCount() }}</strong> sublines selected</span
+          >
+          <button type="button" (click)="store.clearLineSelection()">Clear line selection</button>
+        </div>
+      }
 
       @if (store.loading()) {
         <p class="status-note" aria-live="polite">Refreshing lines...</p>
@@ -64,9 +138,12 @@
       @if (!store.loading() && store.lines().length === 0) {
         <div class="empty-state">No lines yet. Add your first trainable branch below.</div>
       }
-      @if (store.lines().length > 0) {
+      @if (!store.loading() && store.lines().length > 0 && displayedLines().length === 0) {
+        <div class="empty-state">No lines currently need attention.</div>
+      }
+      @if (displayedLines().length > 0) {
         <app-line-health-table
-          [lines]="store.lines()"
+          [lines]="displayedLines()"
           [selectedLineIds]="store.selectedLineIds()"
           [expandedLineId]="store.expandedLineId()"
           [sublineStatusByLineId]="store.lineSublineStatusByLineId()"
@@ -90,14 +167,29 @@
     </app-panel>
 
     @if (store.editingLineId()) {
-      <app-panel title="Rename line" subtitle="Change the display name without modifying the move tree.">
+      <app-panel
+        title="Rename line"
+        subtitle="Change the display name without modifying the move tree."
+      >
         <div class="rename-form">
           <div class="stack form-field">
             <label for="line-rename" class="metric-label">Line name</label>
-            <input id="line-rename" [ngModel]="store.lineNameDraft()" (ngModelChange)="store.setLineNameDraft($event)" name="lineRename" />
+            <input
+              id="line-rename"
+              [ngModel]="store.lineNameDraft()"
+              (ngModelChange)="store.setLineNameDraft($event)"
+              name="lineRename"
+            />
           </div>
           @if (store.editingLine(); as line) {
-            <button type="button" class="primary" (click)="store.saveLineName(line)" [disabled]="store.savingLineId() === line.id">{{ store.savingLineId() === line.id ? 'Saving...' : 'Save' }}</button>
+            <button
+              type="button"
+              class="primary"
+              (click)="store.saveLineName(line)"
+              [disabled]="store.savingLineId() === line.id"
+            >
+              {{ store.savingLineId() === line.id ? 'Saving...' : 'Save' }}
+            </button>
           }
           <button type="button" class="secondary" (click)="store.cancelLineEdit()">Cancel</button>
         </div>
@@ -113,7 +205,15 @@
           <div class="line-transfer-form">
             <div class="stack form-field">
               <label for="target-course" class="metric-label">Target course</label>
-              <select id="target-course" [ngModel]="store.targetCourseId()" (ngModelChange)="store.setTargetCourseId($event)" name="targetCourse" [disabled]="store.loadingTransferTargets() || store.transferringLineId() === line.id">
+              <select
+                id="target-course"
+                [ngModel]="store.targetCourseId()"
+                (ngModelChange)="store.setTargetCourseId($event)"
+                name="targetCourse"
+                [disabled]="
+                  store.loadingTransferTargets() || store.transferringLineId() === line.id
+                "
+              >
                 @for (course of store.targetCourses(); track course.id) {
                   <option [ngValue]="course.id">{{ course.name }}</option>
                 }
@@ -121,7 +221,15 @@
             </div>
             <div class="stack form-field">
               <label for="target-chapter" class="metric-label">Target chapter</label>
-              <select id="target-chapter" [ngModel]="store.targetChapterId()" (ngModelChange)="store.setTargetChapterId($event)" name="targetChapter" [disabled]="store.loadingTransferTargets() || store.transferringLineId() === line.id">
+              <select
+                id="target-chapter"
+                [ngModel]="store.targetChapterId()"
+                (ngModelChange)="store.setTargetChapterId($event)"
+                name="targetChapter"
+                [disabled]="
+                  store.loadingTransferTargets() || store.transferringLineId() === line.id
+                "
+              >
                 <option [ngValue]="null">Choose a chapter...</option>
                 @for (targetChapter of store.targetChapters(); track targetChapter.id) {
                   <option [ngValue]="targetChapter.id">{{ targetChapter.name }}</option>
@@ -131,16 +239,35 @@
             <div class="collection-actions line-transfer-actions">
               @if (store.targetChapterId(); as targetChapterId) {
                 @if (store.transferMode() === 'MOVE') {
-                  <button type="button" class="primary" (click)="store.moveLine(line, targetChapterId)" [disabled]="targetChapterId === chapter.id || store.transferringLineId() === line.id">
+                  <button
+                    type="button"
+                    class="primary"
+                    (click)="store.moveLine(line, targetChapterId)"
+                    [disabled]="
+                      targetChapterId === chapter.id || store.transferringLineId() === line.id
+                    "
+                  >
                     {{ store.transferringLineId() === line.id ? 'Moving...' : 'Move line' }}
                   </button>
                 } @else {
-                  <button type="button" class="primary" (click)="store.copyLine(line, targetChapterId)" [disabled]="store.transferringLineId() === line.id">
+                  <button
+                    type="button"
+                    class="primary"
+                    (click)="store.copyLine(line, targetChapterId)"
+                    [disabled]="store.transferringLineId() === line.id"
+                  >
                     {{ store.transferringLineId() === line.id ? 'Copying...' : 'Copy line' }}
                   </button>
                 }
               }
-              <button type="button" class="secondary" (click)="store.closeLineTransfer()" [disabled]="store.transferringLineId() === line.id">Cancel</button>
+              <button
+                type="button"
+                class="secondary"
+                (click)="store.closeLineTransfer()"
+                [disabled]="store.transferringLineId() === line.id"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </app-panel>
@@ -152,20 +279,43 @@
       <form (ngSubmit)="store.createLine()" class="stack disclosure-body">
         <div class="stack form-field">
           <label for="line-name" class="metric-label">Line name</label>
-          <input id="line-name" [ngModel]="store.newLineName()" (ngModelChange)="store.setNewLineName($event)" name="name" placeholder="Mainline after 6...Bb4+" required />
+          <input
+            id="line-name"
+            [ngModel]="store.newLineName()"
+            (ngModelChange)="store.setNewLineName($event)"
+            name="name"
+            placeholder="Mainline after 6...Bb4+"
+            required
+          />
         </div>
         <div class="stack form-field">
           <label for="line-side" class="metric-label">Side to train</label>
-          <select id="line-side" [ngModel]="store.newLineSide()" (ngModelChange)="store.setNewLineSide($event)" name="sideToTrain" required>
+          <select
+            id="line-side"
+            [ngModel]="store.newLineSide()"
+            (ngModelChange)="store.setNewLineSide($event)"
+            name="sideToTrain"
+            required
+          >
             <option value="WHITE">White</option>
             <option value="BLACK">Black</option>
           </select>
         </div>
         <div class="stack form-field">
           <label for="line-fen" class="metric-label">Starting position</label>
-          <input id="line-fen" [ngModel]="store.newLineStartingFen()" (ngModelChange)="store.setNewLineStartingFen($event)" name="startingFen" placeholder="startpos" />
+          <input
+            id="line-fen"
+            [ngModel]="store.newLineStartingFen()"
+            (ngModelChange)="store.setNewLineStartingFen($event)"
+            name="startingFen"
+            placeholder="startpos"
+          />
         </div>
-        <div class="collection-actions"><button type="submit" class="primary" [disabled]="store.saving()">{{ store.saving() ? 'Creating...' : 'Add line' }}</button></div>
+        <div class="collection-actions">
+          <button type="submit" class="primary" [disabled]="store.saving()">
+            {{ store.saving() ? 'Creating...' : 'Add line' }}
+          </button>
+        </div>
       </form>
     </details>
 
@@ -174,27 +324,77 @@
       <div class="pgn-tools disclosure-body">
         <div class="stack form-field pgn-tool-card">
           <label class="metric-label" for="export-line-id">Export line</label>
-          <select id="export-line-id" [ngModel]="store.exportLineId()" (ngModelChange)="store.setExportLineId($event)" name="exportLineId">
+          <select
+            id="export-line-id"
+            [ngModel]="store.exportLineId()"
+            (ngModelChange)="store.setExportLineId($event)"
+            name="exportLineId"
+          >
             <option [ngValue]="null">Choose a line...</option>
             @for (line of store.lines(); track line.id) {
               <option [ngValue]="line.id">{{ line.name }}</option>
             }
           </select>
-          <button type="button" class="secondary" (click)="store.exportPgn()" [disabled]="!store.exportLineId() || store.exporting()">{{ store.exporting() ? 'Exporting...' : 'Export PGN' }}</button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="store.exportPgn()"
+            [disabled]="!store.exportLineId() || store.exporting()"
+          >
+            {{ store.exporting() ? 'Exporting...' : 'Export PGN' }}
+          </button>
         </div>
         @if (store.exportedPgn()) {
-          <textarea rows="7" class="pgn-textarea" [ngModel]="store.exportedPgn()" readonly aria-label="Exported PGN"></textarea>
+          <textarea
+            rows="7"
+            class="pgn-textarea"
+            [ngModel]="store.exportedPgn()"
+            readonly
+            aria-label="Exported PGN"
+          ></textarea>
         }
         <div class="stack form-field pgn-tool-card">
           <label class="metric-label" for="import-name">Import PGN as new line</label>
-          <input id="import-name" [ngModel]="store.importName()" (ngModelChange)="store.setImportName($event)" name="importName" placeholder="Imported line name" />
-          <select [ngModel]="store.importSide()" (ngModelChange)="store.setImportSide($event)" name="importSide" aria-label="Side to train for imported line">
+          <input
+            id="import-name"
+            [ngModel]="store.importName()"
+            (ngModelChange)="store.setImportName($event)"
+            name="importName"
+            placeholder="Imported line name"
+          />
+          <select
+            [ngModel]="store.importSide()"
+            (ngModelChange)="store.setImportSide($event)"
+            name="importSide"
+            aria-label="Side to train for imported line"
+          >
             <option value="WHITE">Train White</option>
             <option value="BLACK">Train Black</option>
           </select>
-          <input [ngModel]="store.importStartingFen()" (ngModelChange)="store.setImportStartingFen($event)" name="importStartingFen" placeholder="startpos" aria-label="Starting position for imported line" />
-          <textarea rows="8" class="pgn-textarea" [ngModel]="store.importPgnText()" (ngModelChange)="store.setImportPgnText($event)" name="importPgnText" placeholder="Paste PGN here" aria-label="PGN text to import"></textarea>
-          <button type="button" class="primary" (click)="store.importPgn()" [disabled]="store.importing() || !store.importName() || !store.importPgnText()">{{ store.importing() ? 'Importing...' : 'Import PGN' }}</button>
+          <input
+            [ngModel]="store.importStartingFen()"
+            (ngModelChange)="store.setImportStartingFen($event)"
+            name="importStartingFen"
+            placeholder="startpos"
+            aria-label="Starting position for imported line"
+          />
+          <textarea
+            rows="8"
+            class="pgn-textarea"
+            [ngModel]="store.importPgnText()"
+            (ngModelChange)="store.setImportPgnText($event)"
+            name="importPgnText"
+            placeholder="Paste PGN here"
+            aria-label="PGN text to import"
+          ></textarea>
+          <button
+            type="button"
+            class="primary"
+            (click)="store.importPgn()"
+            [disabled]="store.importing() || !store.importName() || !store.importPgnText()"
+          >
+            {{ store.importing() ? 'Importing...' : 'Import PGN' }}
+          </button>
         </div>
         @if (store.pgnMessage(); as message) {
           <p class="status-success" aria-live="polite">{{ message }}</p>
