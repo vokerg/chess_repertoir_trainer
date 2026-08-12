@@ -33,10 +33,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -54,7 +54,7 @@ jobs:
         run: npm --silent run opening-book:classification-audit --workspace=apps/api > opening-classification-audit.json
 
       - name: Upload opening classification audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: opening-classification-audit
           path: opening-classification-audit.json
@@ -63,7 +63,7 @@ jobs:
         run: npm --silent run opening-book:knowledge-audit --workspace=apps/api > opening-knowledge-audit.json
 
       - name: Upload opening knowledge audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: opening-knowledge-audit
           path: opening-knowledge-audit.json
@@ -81,7 +81,7 @@ jobs:
         run: npm --silent run opening-book:classification-game-audit --workspace=apps/api > imported-game-opening-classification-audit.json
 
       - name: Upload imported-game opening classification audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: imported-game-opening-classification-audit
           path: imported-game-opening-classification-audit.json
@@ -90,7 +90,7 @@ jobs:
         run: npm --silent run opening-book:knowledge-game-audit --workspace=apps/api > imported-game-opening-knowledge-audit.json
 
       - name: Upload imported-game opening knowledge audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: imported-game-opening-knowledge-audit
           path: imported-game-opening-knowledge-audit.json
@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload trap validation report
         if: always() && hashFiles('apps/api/trap-pilot-validation.txt') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: trap-pilot-validation
           path: apps/api/trap-pilot-validation.txt
