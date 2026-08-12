@@ -75,7 +75,7 @@ async function malformedWindowFlushesAndFailsWithoutCoverage() {
     errorCode: 'LICHESS_MALFORMED_NDJSON',
     safeError: 'Lichess returned a malformed game record.',
   });
-  assert.deepEqual(fixture.persistedBatches.map((batch) => batch.length), [3]);
+  assert.deepEqual(fixture.persistedBatches.map((batch) => batch.length), [3, 0]);
   assert.equal(fixture.windowCommits.length, 0);
   assert.equal(fixture.batchCommits[0].gamesSeenDelta, 3);
   assert.equal(fixture.batchCommits[1].gamesSeenDelta, 1);
