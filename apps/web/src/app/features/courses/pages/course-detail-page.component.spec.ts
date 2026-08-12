@@ -4,7 +4,11 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { of } from 'rxjs';
 import type { CourseCoverKey, CourseSide } from '@chess-trainer/contracts/courses';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
-import { CourseDetail, CourseOverviewChapter, CourseStats } from '../data-access/course-detail.models';
+import {
+  CourseDetail,
+  CourseOverviewChapter,
+  CourseStats,
+} from '../data-access/course-detail.models';
 import { AvailableSubline } from '../data-access/sublines/sublines.models';
 import { CourseDetailStore } from '../state/course-detail.store';
 import { CourseDetailPageComponent } from './course-detail-page.component';
@@ -61,7 +65,10 @@ describe('CourseDetailPageComponent state presentation', () => {
       imports: [CourseDetailPageComponent],
       providers: [
         provideRouter([]),
-        { provide: ConfirmDialogService, useValue: jasmine.createSpyObj('ConfirmDialogService', ['confirm']) },
+        {
+          provide: ConfirmDialogService,
+          useValue: jasmine.createSpyObj('ConfirmDialogService', ['confirm']),
+        },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ courseId: '7' })) },
@@ -77,31 +84,39 @@ describe('CourseDetailPageComponent state presentation', () => {
   });
 
   it('renders loading instead of stale course content while the route identity changes', () => {
-    store.course.set({ id: 6, name: 'Previous course', description: null, side: 'WHITE', coverKey: null });
-    store.chapters.set([{
-      id: 60,
-      courseId: 6,
-      name: 'Previous chapter',
+    store.course.set({
+      id: 6,
+      name: 'Previous course',
       description: null,
-      sortOrder: 0,
-      lineCount: 0,
-      stats: {
-        scopeType: 'CHAPTER',
-        scopeId: 60,
-        activeSublineCount: 0,
-        trainedSublineCount: 0,
-        untrainedSublineCount: 0,
-        weakSublineCount: 0,
-        statsWindowSize: 5,
-        totalAttempts: 0,
-        passedCount: 0,
-        failedCount: 0,
-        passRate: 0,
-        failureRate: 0,
-        attemptPassRate: null,
-        status: 'NEW',
+      side: 'WHITE',
+      coverKey: null,
+    });
+    store.chapters.set([
+      {
+        id: 60,
+        courseId: 6,
+        name: 'Previous chapter',
+        description: null,
+        sortOrder: 0,
+        lineCount: 0,
+        stats: {
+          scopeType: 'CHAPTER',
+          scopeId: 60,
+          activeSublineCount: 0,
+          trainedSublineCount: 0,
+          untrainedSublineCount: 0,
+          weakSublineCount: 0,
+          statsWindowSize: 5,
+          totalAttempts: 0,
+          passedCount: 0,
+          failedCount: 0,
+          passRate: 0,
+          failureRate: 0,
+          attemptPassRate: null,
+          status: 'NEW',
+        },
       },
-    }]);
+    ]);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Loading course details...');
@@ -117,15 +132,87 @@ describe('CourseDetailPageComponent state presentation', () => {
     fixture.detectChanges();
 
     const alert = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
-    const retryButton = Array.from(
-      fixture.nativeElement.querySelectorAll('button'),
-    ).find((button) => (button as HTMLButtonElement).textContent?.trim() === 'Retry') as HTMLButtonElement;
+    const retryButton = Array.from(fixture.nativeElement.querySelectorAll('button')).find(
+      (button) => (button as HTMLButtonElement).textContent?.trim() === 'Retry',
+    ) as HTMLButtonElement;
 
     expect(alert.textContent).toContain('Could not load course.');
     expect(fixture.nativeElement.textContent).not.toContain('Create a chapter');
-    expect(fixture.nativeElement.textContent).not.toContain('Available sublines and repertoire structure');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Available sublines and repertoire structure',
+    );
 
     retryButton.click();
     expect(store.loadCoursePage).toHaveBeenCalledTimes(1);
+  });
+
+  it('presents course identity, compact chapter navigation, and game review before authoring controls', () => {
+    store.loading.set(false);
+    store.course.set({
+      id: 7,
+      name: 'D4 for the score',
+      description: 'A practical White repertoire.',
+      side: 'WHITE',
+      coverKey: 'QUEENS_GAMBIT',
+    });
+    store.stats.set({
+      scopeType: 'COURSE',
+      scopeId: 7,
+      activeSublineCount: 21,
+      trainedSublineCount: 16,
+      untrainedSublineCount: 3,
+      weakSublineCount: 2,
+      statsWindowSize: 5,
+      totalAttempts: 95,
+      passedCount: 55,
+      failedCount: 40,
+      passRate: 55 / 95,
+      failureRate: 40 / 95,
+      attemptPassRate: 0.58,
+      status: 'REVIEW',
+    });
+    store.chapters.set([
+      {
+        id: 17,
+        courseId: 7,
+        name: 'Queens gambit',
+        description: null,
+        sortOrder: 0,
+        lineCount: 4,
+        stats: {
+          scopeType: 'CHAPTER',
+          scopeId: 17,
+          activeSublineCount: 21,
+          trainedSublineCount: 16,
+          untrainedSublineCount: 3,
+          weakSublineCount: 2,
+          statsWindowSize: 5,
+          totalAttempts: 95,
+          passedCount: 55,
+          failedCount: 40,
+          passRate: 55 / 95,
+          failureRate: 40 / 95,
+          attemptPassRate: 0.58,
+          status: 'REVIEW',
+        },
+      },
+    ]);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.course-hero')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.chapter-row').length).toBe(1);
+    expect(fixture.nativeElement.querySelector('.review-panel').textContent).toContain(
+      'Review games',
+    );
+    expect(fixture.nativeElement.querySelector('.chapter-create-panel')).toBeNull();
+
+    const addChapterButton = fixture.nativeElement.querySelector(
+      '.add-chapter-action',
+    ) as HTMLButtonElement;
+    addChapterButton.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.chapter-create-panel')).not.toBeNull();
   });
 });

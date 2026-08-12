@@ -1,13 +1,11 @@
 <section class="course-detail-page stack">
-  <app-page-header
-    [title]="loadedCourse()?.name || 'Course'"
-    [subtitle]="loadedCourse()?.description || 'Manage chapters, training, and game review from one workspace.'"
-    [stats]="headerStats()"
-    [actions]="headerActions()"
-  />
+  <a routerLink="/courses" class="course-breadcrumb">← All courses</a>
 
   @if (store.error() && !loadedCourse()) {
-    <app-panel title="Course unavailable" subtitle="The course could not be loaded, so authoring actions are temporarily unavailable.">
+    <app-panel
+      title="Course unavailable"
+      subtitle="The course could not be loaded, so authoring actions are temporarily unavailable."
+    >
       <p class="status-error" role="alert">{{ store.error() }}</p>
       <div class="inline-actions">
         @if (routeCourseId()) {
@@ -25,33 +23,61 @@
       <p class="status-error" role="alert">{{ store.error() }}</p>
     }
 
-    <article class="course-identity">
+    <header class="course-hero">
       @if (courseCover(); as cover) {
-        <div class="course-identity-cover">
+        <div class="hero-cover">
           <img [src]="cover.imageUrl" [alt]="cover.alt" />
+          <span>{{ courseSide() }}</span>
         </div>
       }
-      <div class="course-identity-copy">
-        <span class="identity-eyebrow">{{ courseSide() }}</span>
-        <h2>Your working repertoire</h2>
-        <p>Keep the course healthy by training chapters and checking imported games for deviations and missing opponent replies.</p>
-        <div class="identity-actions">
-          <a [routerLink]="['/courses', course.id, 'marathon']" class="identity-action identity-action-primary">Start marathon</a>
-          <a [routerLink]="['/courses', course.id, 'review']" class="review-card-action">
-            <span class="review-card-icon" aria-hidden="true">↗</span>
-            <span><strong>Review games</strong><small>See how this repertoire performs in real play</small></span>
-          </a>
+
+      <div class="hero-copy">
+        <span class="eyebrow">{{ courseSide() }} · Course workspace</span>
+        <h1>{{ course.name }}</h1>
+        <p>
+          {{ course.description || 'A focused training space for a complete repertoire branch.' }}
+        </p>
+        <div class="hero-facts" aria-label="Course summary">
+          <span
+            ><strong>{{ store.chapters().length }}</strong> chapters</span
+          >
+          <span
+            ><strong>{{ courseLineCount() }}</strong> lines</span
+          >
+          <span [class.attention]="courseAttentionCount() > 0"
+            ><strong>{{ courseAttentionCount() }}</strong> need work</span
+          >
+          <span
+            ><strong>{{ coursePassRate() }}</strong> recent pass</span
+          >
         </div>
       </div>
-      <dl class="identity-metrics">
-        <div><dt>Recent pass</dt><dd>{{ coursePassRate() }}</dd></div>
-        <div><dt>Needs work</dt><dd>{{ store.stats()?.weakSublineCount || 0 }}</dd></div>
-        <div><dt>Untrained</dt><dd>{{ store.stats()?.untrainedSublineCount || 0 }}</dd></div>
-      </dl>
-    </article>
+
+      <div class="hero-actions">
+        <a
+          [routerLink]="['/courses', course.id, 'marathon']"
+          class="hero-action hero-action-primary"
+          >▶ Train course</a
+        >
+        <a [routerLink]="['/courses', course.id, 'review']" class="hero-action hero-action-review"
+          >Review games</a
+        >
+        <button
+          type="button"
+          class="hero-action hero-action-secondary"
+          (click)="store.startCourseEdit()"
+        >
+          Customize
+        </button>
+      </div>
+    </header>
 
     @if (store.editingCourseName()) {
-      <app-panel class="customize-panel" title="Customize course" subtitle="Update its identity without changing the repertoire inside it.">
+      <app-panel
+        class="customize-panel"
+        title="Customize course"
+        subtitle="Update its identity without changing the repertoire inside it."
+      >
         <div class="customize-grid">
           <div class="customize-fields">
             <div class="field-group">
@@ -77,11 +103,23 @@
               <legend>Training side</legend>
               <div>
                 <label [class.selected]="store.courseSideDraft() === 'WHITE'">
-                  <input type="radio" name="courseSideEdit" value="WHITE" [checked]="store.courseSideDraft() === 'WHITE'" (change)="store.setCourseSideDraft('WHITE')" />
+                  <input
+                    type="radio"
+                    name="courseSideEdit"
+                    value="WHITE"
+                    [checked]="store.courseSideDraft() === 'WHITE'"
+                    (change)="store.setCourseSideDraft('WHITE')"
+                  />
                   White
                 </label>
                 <label [class.selected]="store.courseSideDraft() === 'BLACK'">
-                  <input type="radio" name="courseSideEdit" value="BLACK" [checked]="store.courseSideDraft() === 'BLACK'" (change)="store.setCourseSideDraft('BLACK')" />
+                  <input
+                    type="radio"
+                    name="courseSideEdit"
+                    value="BLACK"
+                    [checked]="store.courseSideDraft() === 'BLACK'"
+                    (change)="store.setCourseSideDraft('BLACK')"
+                  />
                   Black
                 </label>
               </div>
@@ -94,104 +132,263 @@
           />
         </div>
         <div class="inline-actions customize-actions">
-          <button type="button" class="primary" (click)="store.saveCourseName()" [disabled]="store.savingCourseName() || !store.courseNameDraft().trim()">
+          <button
+            type="button"
+            class="primary"
+            (click)="store.saveCourseName()"
+            [disabled]="store.savingCourseName() || !store.courseNameDraft().trim()"
+          >
             {{ store.savingCourseName() ? 'Saving...' : 'Save changes' }}
           </button>
-          <button type="button" class="secondary" (click)="store.cancelCourseEdit()" [disabled]="store.savingCourseName()">Cancel</button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="store.cancelCourseEdit()"
+            [disabled]="store.savingCourseName()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="danger-text delete-course-action"
+            (click)="confirmDeleteCurrentCourse()"
+            [disabled]="store.deletingCourse()"
+          >
+            {{ store.deletingCourse() ? 'Deleting...' : 'Delete course' }}
+          </button>
         </div>
       </app-panel>
     }
 
-    <div class="course-detail-grid">
-      <app-panel
-        class="chapter-list-panel"
-        title="Chapters"
-        subtitle="Open a chapter to organize lines, or train it as a focused session."
-      >
+    <div class="course-overview-grid">
+      <app-panel class="chapter-list-panel">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Course structure</span>
+            <h2>Chapters</h2>
+            <p>Ordered from your core repertoire to secondary responses.</p>
+          </div>
+          <button
+            type="button"
+            class="secondary add-chapter-action"
+            (click)="chapterFormOpen.set(true)"
+          >
+            ＋ Add chapter
+          </button>
+        </div>
+
         @if (store.loading()) {
           <p class="status-note" role="status">Refreshing chapters...</p>
         }
         @if (!store.loading() && store.chapters().length === 0) {
-          <div class="empty-state">No chapters yet. Add the first chapter in the setup panel.</div>
+          <div class="empty-state">
+            No chapters yet. Add the first chapter to start organizing this repertoire.
+          </div>
         }
         @if (store.chapters().length > 0) {
           <div class="chapter-list">
             @for (chapter of store.chapters(); track chapter.id) {
-              <article class="chapter-card">
-                <div class="chapter-index" aria-hidden="true">{{ $index + 1 }}</div>
-                <div class="chapter-card-copy">
-                  @if (store.editingChapterId() === chapter.id) {
-                    <div class="chapter-rename-form">
-                      <div class="field-group">
-                        <label [for]="'chapter-rename-' + chapter.id">Chapter name</label>
-                        <input
-                          [id]="'chapter-rename-' + chapter.id"
-                          [ngModel]="store.chapterNameDraft()"
-                          (ngModelChange)="store.chapterNameDraft.set($event)"
-                          [name]="'chapterRename' + chapter.id"
-                        />
-                      </div>
-                      <div class="inline-actions">
-                        <button type="button" class="primary" (click)="store.saveChapterName(chapter)" [disabled]="store.savingChapterId() === chapter.id">
-                          {{ store.savingChapterId() === chapter.id ? 'Saving...' : 'Save' }}
-                        </button>
-                        <button type="button" class="secondary" (click)="store.cancelChapterEdit()" [disabled]="store.savingChapterId() === chapter.id">Cancel</button>
-                      </div>
-                    </div>
-                  } @else {
-                    <div class="chapter-title-row">
-                      <div>
-                        <h3>{{ chapter.name }}</h3>
-                        <p>{{ chapter.description || 'A focused branch of this repertoire.' }}</p>
-                      </div>
-                      <span class="chapter-status" [class.chapter-status-attention]="chapter.stats.weakSublineCount > 0">
-                        {{ chapter.stats.weakSublineCount > 0 ? chapter.stats.weakSublineCount + ' weak' : 'On track' }}
-                      </span>
-                    </div>
+              <article
+                class="chapter-row"
+                [class.chapter-row-editing]="store.editingChapterId() === chapter.id"
+              >
+                <span class="chapter-index" aria-hidden="true">{{
+                  ($index + 1).toString().padStart(2, '0')
+                }}</span>
 
-                    <dl class="chapter-metrics">
-                      <div><dt>Lines</dt><dd>{{ chapter.lineCount }}</dd></div>
-                      <div><dt>Sublines</dt><dd>{{ chapter.stats.activeSublineCount }}</dd></div>
-                      <div><dt>Recent pass</dt><dd>{{ chapterPassRate(chapter) }}</dd></div>
-                    </dl>
-                  }
-                </div>
+                @if (store.editingChapterId() === chapter.id) {
+                  <div class="chapter-rename-form">
+                    <div class="field-group">
+                      <label [for]="'chapter-rename-' + chapter.id">Chapter name</label>
+                      <input
+                        [id]="'chapter-rename-' + chapter.id"
+                        [ngModel]="store.chapterNameDraft()"
+                        (ngModelChange)="store.chapterNameDraft.set($event)"
+                        [name]="'chapterRename' + chapter.id"
+                      />
+                    </div>
+                    <div class="inline-actions">
+                      <button
+                        type="button"
+                        class="primary"
+                        (click)="store.saveChapterName(chapter)"
+                        [disabled]="store.savingChapterId() === chapter.id"
+                      >
+                        {{ store.savingChapterId() === chapter.id ? 'Saving...' : 'Save' }}
+                      </button>
+                      <button
+                        type="button"
+                        class="secondary"
+                        (click)="store.cancelChapterEdit()"
+                        [disabled]="store.savingChapterId() === chapter.id"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <a [routerLink]="['/chapters', chapter.id, 'lines']" class="chapter-main">
+                    <span class="chapter-title">
+                      <strong>{{ chapter.name }}</strong>
+                      <span class="chapter-status" [attr.data-status]="chapter.stats.status">{{
+                        chapterStatusLabel(chapter)
+                      }}</span>
+                    </span>
+                    <small
+                      >{{ chapter.lineCount }} lines · {{ chapter.stats.activeSublineCount }} active
+                      sublines</small
+                    >
+                  </a>
 
-                <div class="chapter-actions">
-                  <a [routerLink]="['/chapters', chapter.id, 'lines']" class="chapter-action chapter-action-primary">Open lines</a>
-                  <a [routerLink]="['/chapters', chapter.id, 'marathon']" class="chapter-action">Train</a>
-                  <button type="button" class="chapter-action" (click)="store.startChapterEdit(chapter)" [disabled]="store.savingChapterId() === chapter.id">Rename</button>
-                  <button type="button" class="chapter-action chapter-action-danger" (click)="confirmDeleteChapter(chapter)" [disabled]="store.deletingChapterId() === chapter.id">
-                    {{ store.deletingChapterId() === chapter.id ? 'Deleting...' : 'Delete' }}
-                  </button>
-                </div>
+                  <div class="chapter-progress">
+                    <small>{{ chapterPassRate(chapter) }} mastery</small>
+                    <span class="progress-track"
+                      ><i [style.width.%]="chapterPassRatePercent(chapter)"></i
+                    ></span>
+                  </div>
+
+                  <span
+                    class="chapter-attention"
+                    [class.clear]="chapterAttentionLabel(chapter) === 'Ready'"
+                    >{{ chapterAttentionLabel(chapter) }}</span
+                  >
+
+                  <a
+                    [routerLink]="['/chapters', chapter.id, 'lines']"
+                    class="chapter-arrow"
+                    [attr.aria-label]="'Open ' + chapter.name"
+                    >→</a
+                  >
+
+                  <details class="chapter-menu">
+                    <summary [attr.aria-label]="'More actions for ' + chapter.name">•••</summary>
+                    <div>
+                      <a [routerLink]="['/chapters', chapter.id, 'marathon']">Train chapter</a>
+                      <button type="button" (click)="store.startChapterEdit(chapter)">
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        class="menu-danger"
+                        (click)="confirmDeleteChapter(chapter)"
+                        [disabled]="store.deletingChapterId() === chapter.id"
+                      >
+                        {{ store.deletingChapterId() === chapter.id ? 'Deleting...' : 'Delete' }}
+                      </button>
+                    </div>
+                  </details>
+                }
               </article>
             }
           </div>
         }
       </app-panel>
 
-      <app-panel class="chapter-create-panel" title="Create a chapter" subtitle="Split the repertoire into systems you can understand and train independently.">
-        <form (ngSubmit)="store.createChapter()" class="chapter-form">
-          <div class="field-group">
-            <label for="chapter-name">Chapter name</label>
-            <input id="chapter-name" [ngModel]="store.newChapterName()" (ngModelChange)="store.newChapterName.set($event)" name="name" placeholder="Main line ideas" required />
+      <aside class="course-side-stack">
+        <section class="review-panel">
+          <div class="review-heading">
+            <div>
+              <span class="eyebrow">From your imported games</span>
+              <h2>Review games</h2>
+            </div>
+            <span class="review-count">Real play</span>
           </div>
-          <div class="field-group">
-            <label for="chapter-description">Description <span>Optional</span></label>
-            <textarea id="chapter-description" [ngModel]="store.newChapterDescription()" (ngModelChange)="store.newChapterDescription.set($event)" name="description" rows="4" placeholder="What this chapter covers and when it appears."></textarea>
+          <p>
+            See where your real games left this repertoire and which opponent replies still need
+            coverage.
+          </p>
+          <ul class="review-modes">
+            <li><strong>My deviations</strong><span>Where your move left the repertoire</span></li>
+            <li><strong>Opponent gaps</strong><span>Replies the course does not cover</span></li>
+            <li><strong>Course endings</strong><span>Where your prepared lines run out</span></li>
+          </ul>
+          <a [routerLink]="['/courses', course.id, 'review']" class="review-cta"
+            >Open game review <span>→</span></a
+          >
+        </section>
+
+        <section class="next-session-panel">
+          <span class="eyebrow">Recommended next</span>
+          <div class="session-ring" [style.--progress]="coursePassRatePercent() + '%'">
+            <strong>{{ courseAttentionCount() }}</strong>
+            <small>branches</small>
           </div>
-          <button type="submit" class="primary create-chapter-action" [disabled]="store.saving() || !store.newChapterName().trim()">
-            {{ store.saving() ? 'Creating...' : 'Add chapter' }}
-          </button>
-        </form>
-      </app-panel>
+          <h2>{{ courseAttentionCount() > 0 ? 'Reinforce weak spots' : 'Keep the rhythm' }}</h2>
+          <p>
+            {{
+              courseAttentionCount() > 0
+                ? 'Train the weak and untrained branches before adding more material.'
+                : 'This course is healthy. A short review will keep it ready.'
+            }}
+          </p>
+          <a
+            [routerLink]="['/courses', course.id, 'marathon']"
+            class="hero-action hero-action-primary"
+            >Start session</a
+          >
+        </section>
+
+        @if (chapterFormOpen()) {
+          <app-panel
+            class="chapter-create-panel"
+            title="Create a chapter"
+            subtitle="Split the repertoire into a system you can train independently."
+          >
+            <form (ngSubmit)="createChapter()" class="chapter-form">
+              <div class="field-group">
+                <label for="chapter-name">Chapter name</label>
+                <input
+                  id="chapter-name"
+                  [ngModel]="store.newChapterName()"
+                  (ngModelChange)="store.newChapterName.set($event)"
+                  name="name"
+                  placeholder="Main line ideas"
+                  required
+                />
+              </div>
+              <div class="field-group">
+                <label for="chapter-description">Description <span>Optional</span></label>
+                <textarea
+                  id="chapter-description"
+                  [ngModel]="store.newChapterDescription()"
+                  (ngModelChange)="store.newChapterDescription.set($event)"
+                  name="description"
+                  rows="3"
+                  placeholder="What this chapter covers and when it appears."
+                ></textarea>
+              </div>
+              <div class="inline-actions">
+                <button
+                  type="submit"
+                  class="primary create-chapter-action"
+                  [disabled]="store.saving() || !store.newChapterName().trim()"
+                >
+                  {{ store.saving() ? 'Creating...' : 'Add chapter' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="chapterFormOpen.set(false)"
+                  [disabled]="store.saving()"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </app-panel>
+        }
+      </aside>
     </div>
 
     <details class="sublines-details">
       <summary>Available sublines and repertoire structure</summary>
       <div class="sublines-content">
-        <app-sublines-list [items]="store.sublines()" [loading]="store.sublinesLoading()" [error]="store.sublinesError()" title="Available sublines" />
+        <app-sublines-list
+          [items]="store.sublines()"
+          [loading]="store.sublinesLoading()"
+          [error]="store.sublinesError()"
+          title="Available sublines"
+        />
       </div>
     </details>
   }
