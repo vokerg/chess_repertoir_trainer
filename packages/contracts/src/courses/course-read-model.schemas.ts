@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { courseCoverKeySchema, courseSideSchema } from './course-management.schemas';
 
 export const trainingStatsSchema = z.object({
   scopeType: z.enum(['LINE', 'CHAPTER', 'COURSE']), scopeId: z.number().int(), activeSublineCount: z.number().int(),
@@ -8,7 +9,7 @@ export const trainingStatsSchema = z.object({
 });
 export const lineTrainingStatsSchema = trainingStatsSchema.omit({ scopeType: true, scopeId: true, statsWindowSize: true, failureRate: true, attemptPassRate: true });
 export const libraryCatalogSchema = z.object({ courses: z.array(z.object({
-  id: z.number().int(), name: z.string(), description: z.string().nullable(), stats: trainingStatsSchema,
+  id: z.number().int(), name: z.string(), description: z.string().nullable(), side: courseSideSchema, coverKey: courseCoverKeySchema.nullable(), stats: trainingStatsSchema,
   chapters: z.array(z.object({ id: z.number().int(), courseId: z.number().int(), name: z.string(), description: z.string().nullable(), sortOrder: z.number().int(),
     lines: z.array(z.object({ id: z.number().int(), chapterId: z.number().int(), name: z.string(), sideToTrain: z.enum(['WHITE', 'BLACK']), startingFen: z.string(), trainingStats: lineTrainingStatsSchema })) })),
 })) });
@@ -17,8 +18,8 @@ export const availableSublineSchema = z.object({
   moves: z.array(z.object({ nodeId: z.number().int(), moveUci: z.string(), moveSan: z.string(), plyNumber: z.number().int(), sortOrder: z.number().int() })),
 });
 export const courseOverviewSchema = z.object({
-  course: z.object({ id: z.number().int(), name: z.string(), description: z.string().nullable() }),
-  chapters: z.array(z.object({ id: z.number().int(), courseId: z.number().int(), name: z.string(), description: z.string().nullable(), sortOrder: z.number().int() })),
+  course: z.object({ id: z.number().int(), name: z.string(), description: z.string().nullable(), side: courseSideSchema, coverKey: courseCoverKeySchema.nullable() }),
+  chapters: z.array(z.object({ id: z.number().int(), courseId: z.number().int(), name: z.string(), description: z.string().nullable(), sortOrder: z.number().int(), lineCount: z.number().int().nonnegative(), stats: trainingStatsSchema })),
   stats: trainingStatsSchema,
   sublines: z.array(availableSublineSchema),
   weakestSublines: z.array(z.object({ hash: z.string(), lineId: z.number().int(), lineName: z.string(), chapterId: z.number().int(), chapterName: z.string(), moveText: z.string(), recentAttempts: z.number().int(), passedCount: z.number().int(), failedCount: z.number().int(), passRate: z.number() })),

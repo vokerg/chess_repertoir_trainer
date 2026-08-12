@@ -1,8 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
-import { CourseDetail } from '../data-access/course-detail.models';
-import { CoursesStore } from '../state/courses.store';
+import { CourseCatalogItem, CoursesStore } from '../state/courses.store';
 import { CoursesPageComponent } from './courses-page.component';
 
 describe('CoursesPageComponent', () => {
@@ -12,7 +11,7 @@ describe('CoursesPageComponent', () => {
 
   beforeEach(async () => {
     store = jasmine.createSpyObj<CoursesStore>('CoursesStore', ['deleteCourse', 'loadCourses'], {
-      courses: signal<CourseDetail[]>([]),
+      courses: signal<CourseCatalogItem[]>([]),
       deletingId: signal<number | null>(null),
     });
     confirmDialog = jasmine.createSpyObj<ConfirmDialogService>('ConfirmDialogService', ['confirm']);
@@ -44,12 +43,12 @@ describe('CoursesPageComponent', () => {
   it('does not delete a course when cancelled', async () => {
     confirmDialog.confirm.and.resolveTo(false);
 
-    await page().confirmDeleteCourse({ id: 1, name: 'Italian Game', description: null });
+    await page().confirmDeleteCourse({ id: 1, name: 'Italian Game' });
 
     expect(store.deleteCourse).not.toHaveBeenCalled();
   });
 
-  function page(): { confirmDeleteCourse(course: CourseDetail): Promise<void> } {
-    return fixture.componentInstance as unknown as { confirmDeleteCourse(course: CourseDetail): Promise<void> };
+  function page(): { confirmDeleteCourse(course: Pick<CourseCatalogItem, 'id' | 'name'>): Promise<void> } {
+    return fixture.componentInstance as unknown as { confirmDeleteCourse(course: Pick<CourseCatalogItem, 'id' | 'name'>): Promise<void> };
   }
 });

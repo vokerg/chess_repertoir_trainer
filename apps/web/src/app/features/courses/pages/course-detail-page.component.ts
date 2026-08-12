@@ -7,14 +7,16 @@ import { PageHeaderAction, PageHeaderComponent, PageHeaderStat } from '../../../
 import { PanelComponent } from '../../../shared/ui/panel/panel.component';
 import { ConfirmDialogService } from '../../../shared/ui/confirm-dialog/confirm-dialog.service';
 import { CourseDetailApiService } from '../data-access/course-detail-api.service';
-import { CourseChapter } from '../data-access/course-detail.models';
+import { CourseOverviewChapter } from '../data-access/course-detail.models';
 import { CourseDetailStore } from '../state/course-detail.store';
 import { SublinesListComponent } from '../components/sublines/sublines-list.component';
+import { CourseCoverPickerComponent } from '../components/course-cover-picker/course-cover-picker.component';
+import { courseCoverOption, courseSideLabel, percentLabel } from '../helpers/course-presentation';
 
 @Component({
   selector: 'app-course-detail-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, PageHeaderComponent, PanelComponent, SublinesListComponent],
+  imports: [FormsModule, RouterLink, PageHeaderComponent, PanelComponent, SublinesListComponent, CourseCoverPickerComponent],
   providers: [CourseDetailApiService, CourseDetailStore],
   templateUrl: './course-detail-page.component.html',
   styleUrl: './course-detail-page.component.css',
@@ -31,6 +33,15 @@ export class CourseDetailPageComponent implements OnInit {
     const course = this.store.course();
     return course && routeCourseId === course.id ? course : null;
   });
+  protected readonly courseCover = computed(() => {
+    const course = this.loadedCourse();
+    return course ? courseCoverOption(course.id, course.side, course.coverKey) : null;
+  });
+  protected readonly courseSide = computed(() => {
+    const course = this.loadedCourse();
+    return course ? courseSideLabel(course.side) : '';
+  });
+  protected readonly coursePassRate = computed(() => percentLabel(this.store.stats()?.attemptPassRate));
   protected readonly headerStats = computed<readonly PageHeaderStat[]>(() => {
     if (!this.loadedCourse()) return [];
     return [
@@ -47,9 +58,9 @@ export class CourseDetailPageComponent implements OnInit {
     return [
       backAction,
       { id: 'marathon', label: 'Marathon', link: ['/courses', courseId, 'marathon'] },
-      { id: 'review', label: 'Review', link: ['/courses', courseId, 'review'] },
+      { id: 'review', label: 'Review games', link: ['/courses', courseId, 'review'] },
       ...(!this.store.editingCourseName()
-        ? [{ id: 'rename', label: 'Rename', run: () => this.store.startCourseEdit() }]
+        ? [{ id: 'customize', label: 'Customize', run: () => this.store.startCourseEdit() }]
         : []),
       {
         id: 'delete',
@@ -73,7 +84,11 @@ export class CourseDetailPageComponent implements OnInit {
       });
   }
 
-  protected async confirmDeleteChapter(chapter: CourseChapter): Promise<void> {
+  protected chapterPassRate(chapter: CourseOverviewChapter): string {
+    return percentLabel(chapter.stats.attemptPassRate);
+  }
+
+  protected async confirmDeleteChapter(chapter: CourseOverviewChapter): Promise<void> {
     const confirmed = await this.confirmDialog.confirm({
       title: 'Delete chapter?',
       message: `Delete chapter "${chapter.name}" and all lines inside it? This cannot be undone.`,

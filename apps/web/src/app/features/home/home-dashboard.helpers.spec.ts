@@ -95,6 +95,8 @@ function course(
     id,
     name,
     description: null,
+    side: 'WHITE',
+    coverKey: null,
     chapters: [],
     stats: {
       scopeType: 'COURSE',

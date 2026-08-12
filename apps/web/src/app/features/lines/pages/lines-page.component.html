@@ -39,12 +39,12 @@
     }
 
     <app-panel
-      title="Training status"
-      subtitle="Inspect repertoire coverage, select lines, and drill weak or untrained sublines."
+      title="Lines and training status"
+      subtitle="Scan the health of each branch, then expand only the lines that need closer attention."
       [stats]="linePanelStats()"
     >
       <div class="section-header">
-        <p class="section-help">Expand a line for subline-level evidence or select several lines for one marathon.</p>
+        <p class="section-help">Select several lines for one marathon, or expand a line to drill exact variations.</p>
         <div class="collection-actions">
           <button type="button" class="primary" [disabled]="!store.canStartSelectedMarathon()" (click)="store.startSelectedLinesMarathon('ALL')">
             Train selected

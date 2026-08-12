@@ -1,29 +1,15 @@
-export interface CourseDetail {
-  id: number;
-  name: string;
-  description?: string | null;
-}
+import type { Course, CourseOverview as CourseOverviewContract } from '@chess-trainer/contracts/courses';
 
-export interface CourseStats {
-  scopeType: 'LINE' | 'CHAPTER' | 'COURSE';
-  scopeId: number;
-  activeSublineCount: number;
-  trainedSublineCount: number;
-  untrainedSublineCount: number;
-  statsWindowSize: number;
-  totalAttempts: number;
-  passedCount: number;
-  failedCount: number;
-  passRate: number;
-  failureRate: number;
-  attemptPassRate: number | null;
-}
+export type CourseDetail = Pick<Course, 'id' | 'name' | 'description' | 'side' | 'coverKey'>;
 
 export interface CourseChapter {
   id: number;
+  courseId: number;
   name: string;
   description?: string | null;
   sortOrder: number;
 }
+
 export type CourseOverview = CourseOverviewContract;
-import type { CourseOverview as CourseOverviewContract } from '@chess-trainer/contracts/courses';
+export type CourseOverviewChapter = CourseOverviewContract['chapters'][number];
+export type CourseStats = CourseOverviewContract['stats'];
