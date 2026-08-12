@@ -28,7 +28,7 @@
       }
       @if (!store.loading() && !store.error() && store.courses().length === 0) {
         <app-state-message tone="empty" message="No courses yet. Create your first repertoire in the setup panel." />
-      } @else if (!store.loading() && courseCards().length === 0) {
+      } @else if (!store.loading() && !store.error() && courseCards().length === 0) {
         <app-state-message tone="empty" message="No courses match this color filter." />
       }
 
