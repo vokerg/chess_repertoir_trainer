@@ -1,8 +1,18 @@
-<div class="action-menu">
-  <button type="button" class="secondary" (click)="renameLine.emit(line())">Rename</button>
-  <button type="button" class="secondary" (click)="moveLine.emit(line())">Move</button>
-  <button type="button" class="secondary" (click)="copyLine.emit(line())">Copy</button>
-  <button type="button" class="secondary danger-text" [disabled]="deleting()" (click)="deleteLine.emit(line())">
-    {{ deleting() ? 'Deleting...' : 'Delete' }}
-  </button>
-</div>
+<details class="action-menu">
+  <summary [attr.aria-label]="'More actions for ' + line().name">
+    <span aria-hidden="true">•••</span>
+  </summary>
+  <div class="action-menu-popover">
+    <button type="button" (click)="renameLine.emit(line())">Rename</button>
+    <button type="button" (click)="moveLine.emit(line())">Move to chapter</button>
+    <button type="button" (click)="copyLine.emit(line())">Copy to chapter</button>
+    <button
+      type="button"
+      class="danger-text"
+      [disabled]="deleting()"
+      (click)="deleteLine.emit(line())"
+    >
+      {{ deleting() ? 'Deleting...' : 'Delete line' }}
+    </button>
+  </div>
+</details>
