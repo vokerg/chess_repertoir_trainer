@@ -1,6 +1,6 @@
 # ONB-014 — Implement bounded Chess.com import adapter
 
-Status: READY
+Status: IN_PROGRESS
 
 Priority: P0
 
@@ -12,13 +12,17 @@ Planning maturity: Researched; initial operational defaults supplied by ONB-007
 
 GitHub issue: [#202](https://github.com/vokerg/chess_repertoir_trainer/issues/202)
 
-Claimed by: unclaimed
+Target branch: `main`
 
-Claim branch: none
+Claimed branch: `account-import/onb-014-chess-com-adapter`
 
-Claimed at: none
+Pull request: pending
 
-Claim scope: none
+Claimed by: ChatGPT / account-import implementation session
+
+Claimed at: 2026-08-12
+
+Claim scope: bounded Chess.com calendar-month planning and serial archive traversal, cancellation-aware retry/backoff and validators, shared normalization, provider-neutral guarded batch/window commits, exact checkpoint/coverage progression, worker registration, provider fixtures/canary harness, and focused tests; no Lichess, Angular, account-route cutover, ONB-019 persistence, destructive execution, or preparation orchestration
 
 Promoted at: 2026-08-11 after ONB-012 runtime merge and completion reconciliation PR #354
 
@@ -88,6 +92,6 @@ Provider network, retry delays, parsing, and normalization remain outside databa
 
 ## Completion
 
-Report: none
+Report: `reports/ONB-014-2026-08-12-chess-com-bounded-import.md` (implementation evidence in progress)
 
 Completed at: none

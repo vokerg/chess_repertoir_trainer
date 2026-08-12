@@ -11,7 +11,13 @@ export type AccountImportExecutionResult =
       safeError?: string | null;
     };
 
-export type AccountImportExecutionStage = 'PROVIDER' | 'PARSE' | 'WRITE';
+export type AccountImportExecutionStage =
+  | 'DISCOVERY'
+  | 'PROVIDER'
+  | 'PARSE'
+  | 'WRITE'
+  | 'CHECKPOINT'
+  | 'WINDOW';
 
 export interface AccountImportExecutionContext {
   signal: AbortSignal;

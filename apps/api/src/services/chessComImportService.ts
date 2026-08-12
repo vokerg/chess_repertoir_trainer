@@ -1,63 +1,32 @@
 import prisma from '../prisma';
 import {
-  isStandardImportedGameSpeed,
-  isStandardImportedGameVariant,
-  normalizeImportedGameVariant,
-} from '../modules/imported-games/imported-game-workflow-eligibility';
-import {
   PlayedGameActivityReconciliationService,
   resolveCommittedImportReconciliationRange,
 } from '../modules/activity-feed/played-game-activity.service';
+import {
+  isStandardImportedGameSpeed,
+  isStandardImportedGameVariant,
+} from '../modules/imported-games/imported-game-workflow-eligibility';
+import {
+  normalizeChessComGame,
+  parseChessComArchiveMonth,
+  type ChessComArchivesResponse,
+  type ChessComMonthlyGamesResponse,
+} from '../modules/account-imports/providers/chess-com/chess-com.provider';
 import { AccountRatingStatsService } from './accountRatingStatsService';
 
 const CHESS_COM_API_BASE_URL = 'https://api.chess.com/pub/player';
 const MONTH_OVERLAP_MS = 31 * 24 * 60 * 60 * 1000;
 const CHESS_COM_FETCH_RETRIES = 2;
 const CHESS_COM_RETRY_BASE_DELAY_MS = 500;
-const CHESS_COM_USER_AGENT = process.env['CHESS_COM_USER_AGENT'] || 'chess-repertoire-trainer/0.1 (+https://github.com/vokerg/chess_repertoir_trainer)';
+const CHESS_COM_USER_AGENT = process.env['CHESS_COM_USER_AGENT']
+  || 'chess-repertoire-trainer/0.1 (+https://github.com/vokerg/chess_repertoir_trainer)';
 
-type ChessComArchivesResponse = {
-  archives?: string[];
-};
-
-type ChessComMonthlyGamesResponse = {
-  games?: ChessComGame[];
-};
-
-type ChessComGame = {
-  url?: string;
-  uuid?: string;
-  pgn?: string;
-  time_control?: string;
-  end_time?: number;
-  start_time?: number;
-  rated?: boolean;
-  fen?: string;
-  time_class?: string;
-  rules?: string;
-  eco?: string;
-  white?: ChessComPlayer;
-  black?: ChessComPlayer;
-};
-
-type ChessComPlayer = {
-  username?: string;
-  rating?: number;
-  result?: string;
-  '@id'?: string;
-};
-
-type ParsedTimeControl = {
-  raw: string | null;
-  initial: number | null;
-  increment: number | null;
-};
-
-type ArchiveMonth = {
+interface ArchiveMonth {
   url: string;
   year: number;
   month: number;
-};
+}
 
 class ChessComHttpError extends Error {
   constructor(
@@ -71,165 +40,8 @@ class ChessComHttpError extends Error {
 
 const RETRYABLE_CHESS_COM_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
-const DRAW_RESULTS = new Set([
-  'agreed',
-  'repetition',
-  'stalemate',
-  'insufficient',
-  '50move',
-  'timevsinsufficient',
-]);
-
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function normalizeChessComName(value?: string | null) {
-  return value?.trim().toLowerCase() ?? null;
-}
-
-function getPgnHeader(pgn: string | undefined, header: string) {
-  if (!pgn) return null;
-  const escaped = header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = pgn.match(new RegExp(`\\[${escaped}\\s+"([^"]*)"\\]`));
-  return match?.[1] ?? null;
-}
-
-function parsePgnDateTime(dateValue: string | null, timeValue: string | null) {
-  if (!dateValue || !/^\d{4}\.\d{2}\.\d{2}$/.test(dateValue)) return null;
-  const datePart = dateValue.replace(/\./g, '-');
-  const timePart = timeValue && /^\d{2}:\d{2}:\d{2}$/.test(timeValue) ? timeValue : '00:00:00';
-  const parsed = new Date(`${datePart}T${timePart}Z`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function timestampSecondsToDate(value?: number) {
-  return typeof value === 'number' ? new Date(value * 1000) : null;
-}
-
-function parseTimeControlRaw(raw: string | null): ParsedTimeControl {
-  if (!raw || raw === '-' || raw === '?') {
-    return { raw, initial: null, increment: null };
-  }
-
-  const match = raw.match(/^(\d+)(?:\+(\d+))?$/);
-  if (!match) {
-    return { raw, initial: null, increment: null };
-  }
-
-  return {
-    raw,
-    initial: Number(match[1]),
-    increment: match[2] ? Number(match[2]) : 0,
-  };
-}
-
-function getTimeControl(game: ChessComGame): ParsedTimeControl {
-  return parseTimeControlRaw(game.time_control ?? getPgnHeader(game.pgn, 'TimeControl'));
-}
-
-function parseRating(value: string | null) {
-  if (!value) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getUserColor(game: ChessComGame, accountUsername: string): 'WHITE' | 'BLACK' | null {
-  const account = normalizeChessComName(accountUsername);
-  const white = normalizeChessComName(game.white?.username ?? getPgnHeader(game.pgn, 'White'));
-  const black = normalizeChessComName(game.black?.username ?? getPgnHeader(game.pgn, 'Black'));
-
-  if (account && white === account) return 'WHITE';
-  if (account && black === account) return 'BLACK';
-  return null;
-}
-
-function getResult(game: ChessComGame) {
-  const whiteResult = game.white?.result;
-  const blackResult = game.black?.result;
-
-  if (whiteResult === 'win') return '1-0';
-  if (blackResult === 'win') return '0-1';
-  if ((whiteResult && DRAW_RESULTS.has(whiteResult)) || (blackResult && DRAW_RESULTS.has(blackResult))) {
-    return '1/2-1/2';
-  }
-
-  return getPgnHeader(game.pgn, 'Result') ?? '*';
-}
-
-function getResultForUser(game: ChessComGame, userColor: 'WHITE' | 'BLACK' | null) {
-  if (!userColor) return null;
-  const ownResult = userColor === 'WHITE' ? game.white?.result : game.black?.result;
-  if (!ownResult) return null;
-  if (ownResult === 'win') return 'WIN';
-  if (DRAW_RESULTS.has(ownResult)) return 'DRAW';
-  return 'LOSS';
-}
-
-function getStatus(game: ChessComGame) {
-  const termination = getPgnHeader(game.pgn, 'Termination');
-  if (termination) return termination;
-  const whiteResult = game.white?.result;
-  const blackResult = game.black?.result;
-  return whiteResult || blackResult ? `${whiteResult ?? 'unknown'}/${blackResult ?? 'unknown'}` : null;
-}
-
-function getStartedAt(game: ChessComGame) {
-  return timestampSecondsToDate(game.start_time)
-    ?? parsePgnDateTime(getPgnHeader(game.pgn, 'UTCDate'), getPgnHeader(game.pgn, 'UTCTime'))
-    ?? parsePgnDateTime(getPgnHeader(game.pgn, 'Date'), null);
-}
-
-function getEndedAt(game: ChessComGame) {
-  return timestampSecondsToDate(game.end_time)
-    ?? parsePgnDateTime(getPgnHeader(game.pgn, 'EndDate'), getPgnHeader(game.pgn, 'EndTime'))
-    ?? getStartedAt(game);
-}
-
-function buildChessComGameUrl(game: ChessComGame) {
-  return game.url ?? getPgnHeader(game.pgn, 'Link') ?? getPgnHeader(game.pgn, 'Site');
-}
-
-function getProviderGameId(game: ChessComGame) {
-  const providerGameId = game.uuid ?? game.url ?? getPgnHeader(game.pgn, 'Link') ?? getPgnHeader(game.pgn, 'Site');
-  if (!providerGameId) throw new Error('Chess.com game has no stable id or URL');
-  return providerGameId;
-}
-
-function normalizeGame(game: ChessComGame, account: { id: number; userId: number; username: string; provider: string }) {
-  const timeControl = getTimeControl(game);
-  const userColor = getUserColor(game, account.username);
-  const whiteUsername = game.white?.username ?? getPgnHeader(game.pgn, 'White');
-  const blackUsername = game.black?.username ?? getPgnHeader(game.pgn, 'Black');
-  const opponentUsername = userColor === 'WHITE' ? blackUsername : userColor === 'BLACK' ? whiteUsername : null;
-
-  return {
-    userId: account.userId,
-    accountId: account.id,
-    provider: account.provider,
-    providerGameId: getProviderGameId(game),
-    providerUrl: buildChessComGameUrl(game),
-    pgn: game.pgn ?? null,
-    rated: game.rated ?? null,
-    variant: normalizeImportedGameVariant(game.rules ?? getPgnHeader(game.pgn, 'Variant')),
-    speedCategory: game.time_class ?? null,
-    timeControlRaw: timeControl.raw,
-    timeControlInitial: timeControl.initial,
-    timeControlIncrement: timeControl.increment,
-    startedAt: getStartedAt(game),
-    endedAt: getEndedAt(game),
-    whiteUsername,
-    blackUsername,
-    whiteRating: game.white?.rating ?? parseRating(getPgnHeader(game.pgn, 'WhiteElo')),
-    blackRating: game.black?.rating ?? parseRating(getPgnHeader(game.pgn, 'BlackElo')),
-    userColor,
-    opponentUsername,
-    result: getResult(game),
-    resultForUser: getResultForUser(game, userColor),
-    status: getStatus(game),
-    openingName: getPgnHeader(game.pgn, 'Opening'),
-    openingEco: getPgnHeader(game.pgn, 'ECO'),
-  };
 }
 
 function parseRetryAfterMs(value: string | null) {
@@ -254,9 +66,7 @@ async function fetchJson<T>(url: string): Promise<T> {
         },
       });
 
-      if (response.ok) {
-        return response.json() as Promise<T>;
-      }
+      if (response.ok) return response.json() as Promise<T>;
 
       const error = new ChessComHttpError(response.status, response.statusText, url);
       if (!RETRYABLE_CHESS_COM_STATUSES.has(response.status) || attempt === CHESS_COM_FETCH_RETRIES) {
@@ -265,14 +75,12 @@ async function fetchJson<T>(url: string): Promise<T> {
 
       const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'));
       await sleep(retryAfterMs ?? CHESS_COM_RETRY_BASE_DELAY_MS * 2 ** attempt);
-    } catch (err) {
-      lastError = err;
-      if (err instanceof ChessComHttpError && !RETRYABLE_CHESS_COM_STATUSES.has(err.status)) {
-        throw err;
+    } catch (error) {
+      lastError = error;
+      if (error instanceof ChessComHttpError && !RETRYABLE_CHESS_COM_STATUSES.has(error.status)) {
+        throw error;
       }
-      if (attempt === CHESS_COM_FETCH_RETRIES) {
-        throw err;
-      }
+      if (attempt === CHESS_COM_FETCH_RETRIES) throw error;
       await sleep(CHESS_COM_RETRY_BASE_DELAY_MS * 2 ** attempt);
     }
   }
@@ -281,12 +89,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 function parseArchiveMonth(url: string): ArchiveMonth | null {
-  const match = url.match(/\/games\/(\d{4})\/(\d{2})\/?$/);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return null;
-  return { url, year, month };
+  const parsed = parseChessComArchiveMonth(url);
+  return parsed ? { url, year: parsed.year, month: parsed.month } : null;
 }
 
 function monthEndDate(year: number, month: number) {
@@ -348,28 +152,32 @@ export const ChessComImportService = {
         let monthlyGames: ChessComMonthlyGamesResponse;
         try {
           monthlyGames = await fetchJson<ChessComMonthlyGamesResponse>(archive.url);
-        } catch (err) {
-          if (err instanceof ChessComHttpError && err.status === 404) {
+        } catch (error) {
+          if (error instanceof ChessComHttpError && error.status === 404) {
             archivesSkipped += 1;
             continue;
           }
-          throw err;
+          throw error;
         }
         archivesFetched += 1;
 
         for (const game of monthlyGames.games ?? []) {
           gamesSeen += 1;
           try {
-            const data = normalizeGame(game, account);
+            const normalized = normalizeChessComGame(game, account);
+            const data = {
+              userId: account.userId,
+              accountId: account.id,
+              provider: account.provider,
+              ...normalized,
+            };
             if (syncSince && data.endedAt && data.endedAt < syncSince) {
               gamesSkipped += 1;
               continue;
             }
             if (!isStandardImportedGameVariant(data.variant)) {
               gamesSkipped += 1;
-              if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) {
-                maxEndedAt = data.endedAt;
-              }
+              if (data.endedAt && (!maxEndedAt || data.endedAt > maxEndedAt)) maxEndedAt = data.endedAt;
               continue;
             }
 
@@ -386,24 +194,15 @@ export const ChessComImportService = {
             if (existing) {
               gamesSkipped += 1;
             } else {
-              const created = await prisma.importedGame.create({
-                data,
-                select: { id: true },
-              });
+              const created = await prisma.importedGame.create({ data, select: { id: true } });
               importedGameIds.push(created.id);
-              if (isStandardImportedGameSpeed(data.speedCategory)) {
-                eligibleImportedGameIds.push(created.id);
-              }
+              if (isStandardImportedGameSpeed(data.speedCategory)) eligibleImportedGameIds.push(created.id);
               gamesImported += 1;
             }
 
             if (data.endedAt) {
-              if (!minActivityEndedAt || data.endedAt < minActivityEndedAt) {
-                minActivityEndedAt = data.endedAt;
-              }
-              if (!maxEndedAt || data.endedAt > maxEndedAt) {
-                maxEndedAt = data.endedAt;
-              }
+              if (!minActivityEndedAt || data.endedAt < minActivityEndedAt) minActivityEndedAt = data.endedAt;
+              if (!maxEndedAt || data.endedAt > maxEndedAt) maxEndedAt = data.endedAt;
             }
           } catch {
             gamesFailed += 1;
@@ -468,7 +267,7 @@ export const ChessComImportService = {
         eligibleImportedGameIds,
         eligibleUnindexedGameIds: eligibleImportedGameIds,
       };
-    } catch (err: any) {
+    } catch (error: unknown) {
       await prisma.importRun.update({
         where: { id: importRun.id },
         data: {
@@ -478,12 +277,12 @@ export const ChessComImportService = {
           gamesUpdated: 0,
           gamesSkipped,
           gamesFailed,
-          error: err.message ?? String(err),
+          error: error instanceof Error ? error.message : String(error),
           completedAt: new Date(),
           syncUntil: maxEndedAt,
         },
       });
-      throw err;
+      throw error;
     }
   },
 };
