@@ -1,6 +1,5 @@
 import prisma from '../prisma';
 import {
-  isStandardImportedGameSpeed,
   isStandardImportedGameVariant,
 } from '../modules/imported-games/imported-game-workflow-eligibility';
 import {
@@ -54,8 +53,6 @@ export const LichessImportService = {
     let gamesImported = 0;
     let gamesSkipped = 0;
     let gamesFailed = 0;
-    const importedGameIds: number[] = [];
-    const eligibleImportedGameIds: number[] = [];
     let minActivityEndedAt: Date | null = null;
     let maxEndedAt = account.syncCursorTime ?? null;
     let pendingGames: LegacyLichessImportGame[] = [];
@@ -65,22 +62,12 @@ export const LichessImportService = {
       const batch = pendingGames;
       pendingGames = [];
       try {
-        const created = await prisma.importedGame.createManyAndReturn({
+        const created = await prisma.importedGame.createMany({
           data: batch,
           skipDuplicates: true,
-          select: {
-            id: true,
-            speedCategory: true,
-          },
         });
-        gamesImported += created.length;
-        gamesSkipped += batch.length - created.length;
-        for (const persisted of created) {
-          importedGameIds.push(persisted.id);
-          if (isStandardImportedGameSpeed(persisted.speedCategory)) {
-            eligibleImportedGameIds.push(persisted.id);
-          }
-        }
+        gamesImported += created.count;
+        gamesSkipped += batch.length - created.count;
         for (const game of batch) {
           if (!game.endedAt) continue;
           if (!minActivityEndedAt || game.endedAt < minActivityEndedAt) {
@@ -193,9 +180,6 @@ export const LichessImportService = {
         gamesFailed,
         syncSince,
         syncUntil: maxEndedAt,
-        importedGameIds,
-        eligibleImportedGameIds,
-        eligibleUnindexedGameIds: eligibleImportedGameIds,
       };
     } catch (err: any) {
       await prisma.importRun.update({
