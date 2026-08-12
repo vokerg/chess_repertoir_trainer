@@ -34,9 +34,10 @@ async function absentMonthAdvancesExactCoverageWithoutMonthlyFetch() {
   assert.equal(repository.windowCommits.length, 1);
   assert.equal(repository.persistedBatches.length, 0);
   assert.equal(repository.windowCommits[0].windowsCompleted, 1);
-  assert.deepEqual(events.filter((event) => ['archives', 'window-commit', 'checkpoint'].includes(event)), [
-    'checkpoint', 'archives', 'window-commit',
-  ]);
+  assert.deepEqual(
+    events.filter((event) => ['archives', 'window-commit', 'plan-commit', 'checkpoint'].includes(event)),
+    ['plan-commit', 'archives', 'window-commit'],
+  );
 }
 
 async function listedMonthUsesBoundedWritesAndExactScope() {
@@ -71,12 +72,13 @@ async function listedMonthUsesBoundedWritesAndExactScope() {
 
   assert.deepEqual(repository.persistedBatches.map((batch) => batch.length), [100, 100, 5]);
   assert.equal(repository.persistedBatches.flat().length, 205);
+  assert.equal(repository.planCommits.length, 1);
   assert.equal(repository.windowCommits.length, 1);
   assert.deepEqual(repository.batchCounters.map((counter) => counter.gamesSeenDelta), [100, 100, 6]);
   assert.deepEqual(repository.batchCounters.map((counter) => counter.gamesSkippedOutOfScopeDelta), [0, 0, 1]);
   assert.ok(events.indexOf('persist') < events.indexOf('activity'));
   assert.ok(events.lastIndexOf('activity') < events.indexOf('window-commit'));
-  assert.equal(context.checkpoints.length, 1, 'window completion is committed atomically outside lifecycle checkpoint');
+  assert.equal(context.checkpoints.length, 0, 'provider progress never bypasses the guarded commit seam');
 }
 
 async function listedArchiveFailureDoesNotAdvanceCoverage() {
@@ -124,17 +126,16 @@ async function provedCoverageRepairsCheckpointAfterRestart() {
       },
     },
   });
-  const context = executionContext();
 
   await executor.execute(claimedRun({
     mode: 'BOUNDED_INITIAL',
     windowsCompleted: 0,
     requestedFrom: new Date('2026-01-01T00:00:00Z'),
     requestedTo: new Date('2026-04-01T00:00:00Z'),
-  }), context);
+  }), executionContext());
 
   assert.deepEqual(fetchedMonths, ['2026-02', '2026-01']);
-  assert.equal(context.checkpoints[0].windowsCompleted, 1, 'proved March coverage repairs stale checkpoint');
+  assert.equal(repository.planCommits[0].windowsCompleted, 1, 'proved March coverage repairs stale checkpoint');
   assert.equal(repository.windowCommits.at(-1).windowsCompleted, 3);
 }
 
@@ -251,14 +252,20 @@ function createExecutor({ repository, client, events = [] }) {
 
 function repositoryStub({ coverage: initialCoverage = null, events = [] } = {}) {
   let currentCoverage = initialCoverage;
+  const planCommits = [];
   const persistedBatches = [];
   const batchCounters = [];
   const windowCommits = [];
   return {
+    planCommits,
     persistedBatches,
     batchCounters,
     windowCommits,
     async getCoverage() { return currentCoverage; },
+    async initializePlan(input) {
+      events.push('plan-commit');
+      planCommits.push(input);
+    },
     async persistBatch(input) {
       events.push('persist');
       persistedBatches.push(input.games);
