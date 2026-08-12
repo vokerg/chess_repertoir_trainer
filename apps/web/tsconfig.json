@@ -3,7 +3,6 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc/apps/web",
     "moduleResolution": "bundler",
-    "customConditions": ["webpack"],
     "types": []
   },
   "files": [],
