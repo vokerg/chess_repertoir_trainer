@@ -43,6 +43,14 @@ interface IdRow {
   id: number;
 }
 
+export interface AccountImportProviderPlanCommitInput {
+  userId: number;
+  importRunId: number;
+  workKey: string;
+  windowsTotal: number;
+  windowsCompleted: number;
+}
+
 export interface AccountImportProviderBatchCommitInput {
   userId: number;
   importRunId: number;
@@ -71,6 +79,7 @@ export interface AccountImportProviderWindowCommitInput {
 }
 
 export interface AccountImportProviderCommitRepository {
+  initializePlan(input: AccountImportProviderPlanCommitInput): Promise<void>;
   persistBatch(
     input: AccountImportProviderBatchCommitInput,
   ): Promise<AccountImportProviderBatchCommitResult>;
@@ -89,6 +98,38 @@ export function createAccountImportProviderCommitRepository(
   const maxWriteBatchSize = resolveMaxWriteBatchSize(options.maxWriteBatchSize);
 
   return {
+    async initializePlan(input) {
+      validatePlanInput(input);
+      await database.$transaction(async (transaction) => {
+        const run = await lockWritableRun(transaction, input);
+        if (run.windowsTotal !== null && run.windowsTotal !== input.windowsTotal) {
+          throw new Error('Account import window denominator cannot change after initialization.');
+        }
+        if (input.windowsCompleted < run.windowsCompleted) {
+          throw new Error('Account import completed-window progress cannot move backwards.');
+        }
+
+        await lockOwnedAccount(transaction, input.userId, run.accountId);
+        await admissionGuard.assertAllowed(transaction, {
+          userId: input.userId,
+          accountId: run.accountId,
+        });
+
+        const updated = await transaction.$executeRaw(Prisma.sql`
+          UPDATE "ImportRun"
+          SET "windowsTotal" = ${input.windowsTotal},
+              "windowsCompleted" = ${input.windowsCompleted},
+              "lastProgressAt" = NOW(),
+              "updatedAt" = NOW()
+          WHERE "id" = ${input.importRunId}
+            AND "userId" = ${input.userId}
+            AND "workKey" = ${input.workKey}
+            AND "status" = 'RUNNING'
+        `);
+        if (updated !== 1) throw new AccountImportClaimLostError();
+      });
+    },
+
     async persistBatch(input) {
       validateBatchInput(input, maxWriteBatchSize);
       return database.$transaction(async (transaction) => {
@@ -319,6 +360,17 @@ async function lockOwnedAccount(
     FOR UPDATE
   `);
   if (!rows[0]) throw new AccountImportAccountNotFoundError();
+}
+
+function validatePlanInput(input: AccountImportProviderPlanCommitInput): void {
+  validatePositiveInteger(input.userId, 'userId');
+  validatePositiveInteger(input.importRunId, 'importRunId');
+  if (!input.workKey.trim()) throw new Error('Account import workKey is required.');
+  validateNonNegativeInteger(input.windowsTotal, 'windowsTotal');
+  validateNonNegativeInteger(input.windowsCompleted, 'windowsCompleted');
+  if (input.windowsCompleted > input.windowsTotal) {
+    throw new Error('Account import completed-window progress cannot exceed its denominator.');
+  }
 }
 
 function validateBatchInput(
